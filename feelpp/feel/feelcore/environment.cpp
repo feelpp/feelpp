@@ -234,7 +234,7 @@ AboutData makeAboutDefault( std::string name )
                      "0.1",
                      name,
                      AboutData::License_GPL,
-                     "Copyright (c) 2012-2016 Feel++ Consortium" );
+                     "Copyright (c) 2012-2020 Feel++ Consortium" );
 
     about.addAuthor( "Feel++ Consortium",
                      "",
@@ -293,7 +293,7 @@ fs::path scratchdir()
 Environment::Environment()
     :
 #if BOOST_VERSION >= 105500
-    Environment( 0, nullptr, mpi::threading::single, feel_nooptions(), feel_options(), makeAboutDefault("feelpp"), makeAboutDefault("feelpp").appName() )
+    Environment( 0, nullptr, mpi::threading::single, feel_nooptions(), feel_options(), makeAboutDefault("feelpp"), globalRepository(makeAboutDefault("feelpp").appName()) )
 #else
     Environment( 0, nullptr, feel_nooptions(), feel_options(), makeAboutDefault("feelpp"), makeAboutDefault("feelpp").appName() )
 #endif
@@ -306,12 +306,8 @@ Environment::Environment()
 //! Constructor
 Environment::Environment( int& argc, char**& argv )
     :
-#if BOOST_VERSION >= 105500
-    Environment( argc, argv, mpi::threading::single, feel_nooptions(), feel_options(), makeAboutDefault(argv[0]), makeAboutDefault(argv[0]).appName() )
-#else
-    Environment( argc, argv, feel_nooptions(), feel_options(), makeAboutDefault(argv[0]), makeAboutDefault(argv[0]).appName() )
-#endif
-
+    Environment( argc, argv, mpi::threading::single, feel_nooptions(), feel_options(), 
+                 makeAboutDefault(argv[0]), globalRepository( makeAboutDefault(argv[0]).appName() ) )
 {
 }
 
@@ -370,22 +366,14 @@ char** PythonArgs::argv = nullptr;
 // Constructor
 Environment::Environment( pybind11::list arg )
     :
-#if BOOST_VERSION >= 105500
-    Environment( PythonArgs(arg).argc, PythonArgs::argv, mpi::threading::single, feel_nooptions(), feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
-#else
-    Environment( PythonArgs(arg).argc, PythonArgs::argv, desc, feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
-#endif
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, mpi::threading::single, feel_nooptions(), feel_options(), makeAboutDefault(PythonArgs::argv[0]), globalRepository( makeAboutDefault(PythonArgs::argv[0]).appName() ) )
 {
 }
 
 // Constructor
-Environment::Environment( pybind11::list arg, po::options_description const& desc )
+Environment::Environment( pybind11::list arg, po::options_description const& desc, Repository::Config const& config )
     :
-#if BOOST_VERSION >= 105500
-    Environment( PythonArgs(arg).argc, PythonArgs::argv, mpi::threading::single, desc, feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
-#else
-    Environment( PythonArgs(arg).argc, PythonArgs::argv, desc, feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
-#endif
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, mpi::threading::single, desc, feel_options(), makeAboutDefault(PythonArgs::argv[0]), config )
 {
 }
 
@@ -437,14 +425,11 @@ Environment::initPetsc( int * argc, char *** argv )
 
 // Constructor
 Environment::Environment( int argc, char** argv,
-#if BOOST_VERSION >= 105500
                           mpi::threading::level lvl,
-#endif
                           po::options_description const& desc,
                           po::options_description const& desc_lib,
                           AboutData const& about,
-                          std::string directory,
-                          bool add_subdir_np )
+                          Repository::Config const& config )
 {
     if ( argc == 0 )
     {
@@ -469,7 +454,11 @@ Environment::Environment( int argc, char** argv,
     S_worldcomm = worldcomm_type::New();
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
-
+    cout.attachWorldComm( S_worldcomm );
+    cerr.attachWorldComm( S_worldcomm );
+    clog.attachWorldComm( S_worldcomm );
+    
+#if 0
     // define root dir (example $HOME/feel or $FEELPP_REPOSITORY)
     for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
     {
@@ -499,11 +488,17 @@ Environment::Environment( int argc, char** argv,
             break;
         }
     }
+#else
+    S_repository = Repository( config );
+    S_repository.configure();
+    S_rootdir = S_repository.root();
+    S_appdir = S_repository.directory();
+    S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
+    
+#endif
 
 
-    cout.attachWorldComm( S_worldcomm );
-    cerr.attachWorldComm( S_worldcomm );
-    clog.attachWorldComm( S_worldcomm );
+    
 
     S_desc_app = std::make_shared<po::options_description>( desc );
     S_desc_lib = std::make_shared<po::options_description>( desc_lib );
@@ -565,26 +560,31 @@ Environment::Environment( int argc, char** argv,
     tic();
     cout << "[ Starting Feel++ ] " << tc::green << "application "  << about.appName()
          <<  " version " << about.version() << " date " << today << tc::reset << std::endl;
-
+#if 0
     if ( S_vm.count( "nochdir" ) == 0 )
     {
-        if ( S_vm.count( "directory" ) )
-            directory = S_vm["directory"].as<std::string>();
-        if ( S_vm.count( "repository.prefix" ) )
-            directory = S_vm["repository.prefix"].as<std::string>();
-        if ( S_vm.count( "repository.case" ) )
+        if ( changedir )
         {
-            fs::path d( directory );
-            d /= S_vm["repository.case"].as<std::string>();
-            directory = d.string();
+            if ( S_vm.count( "directory" ) )
+                directory = S_vm["directory"].as<std::string>();
+            if ( S_vm.count( "repository.prefix" ) )
+                directory = S_vm["repository.prefix"].as<std::string>();
+            if ( S_vm.count( "repository.case" ) )
+            {
+                fs::path d( directory );
+                d /= S_vm["repository.case"].as<std::string>();
+                directory = d.string();
+            }
+
+            boost::format f( directory );
+            bool createSubdir = add_subdir_np &&
+                                ( S_vm["repository.npdir"].as<bool>() || S_vm["npdir"].as<bool>() );
+            changeRepository( _directory = f, _subdir = createSubdir );
         }
-
-        boost::format f( directory );
-        bool createSubdir = add_subdir_np &&
-            ( S_vm["repository.npdir"].as<bool>() || S_vm["npdir"].as<bool>() );
-        changeRepository( _directory=f,_subdir=createSubdir );
     }
-
+#else
+    changeRepository(  _directory=boost::format{S_repository.directory().string()} );
+#endif
     if( S_vm.count( "journal.filename" ) )
     {
         // TODO relative or absolute path
@@ -1589,8 +1589,8 @@ Environment::doOptions( int argc, char** argv,
 void
 Environment::setConfigFile( std::string const& cfgfile )
 {
-    if ( !fs::exists( cfgfile ) ) return;
-    fs::path cfgAbsolutePath = fs::absolute( cfgfile );
+    if ( !fs::exists( findFile( cfgfile, {} ) ) ) return;
+    fs::path cfgAbsolutePath = fs::absolute( findFile( cfgfile ) );
     cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
     // LOG( INFO ) << "Reading " << cfgfile << "...";
     S_cfgdir = cfgAbsolutePath.parent_path();
