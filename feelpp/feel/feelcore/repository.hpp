@@ -100,7 +100,7 @@ public:
     struct Config {
         Config() = default;
         Config( fs::path d, Location l): directory(d), location(l) {};
-
+        Config( fs::path d, Location l, nl::json dat ): directory(d), location(l), data(dat) {};
         fs::path directory;
         Location location =  Location::global;
         nl::json data;
@@ -109,6 +109,8 @@ public:
     Repository() = default;
     Repository( Config c );
 
+    void configure();
+    
     /**
      * @return get the root of the repository
      */
@@ -133,6 +135,13 @@ public:
      * @return fs::path 
      */
     fs::path directory() const; 
+
+    /**
+     * @brief the result repository absolute directory without appenders
+     * 
+     * @return fs::path 
+     */
+    fs::path directoryWithoutAppenders() const;
 
     /**
      * @brief the result repository directory relative to root
@@ -187,4 +196,16 @@ private:
     fs::path geo_;
 };
 
+inline Repository::Config globalRepository( std::string reldir, nl::json d = {} )
+{
+    return Repository::Config(fs::path(reldir), Location::global, d);
+}
+inline Repository::Config localRepository( std::string reldir, nl::json d = {} )
+{
+    return Repository::Config(fs::path(reldir), Location::global, d );
+}   
+inline Repository::Config unknownRepository()
+{
+    return Repository::Config({}, Location::unknown, {} );
+}
 } // namespace Feel
