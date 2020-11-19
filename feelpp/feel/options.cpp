@@ -492,7 +492,7 @@ geim_options( std::string const& prefix )
         ( "geim.db.filename", po::value<std::string>()->default_value(""), "path to the db when db.load or db.update = 0" )
         ( "geim.db.id", po::value<std::string>()->default_value(""), "id of the db when db.load or db.update = 3" )
         ;
-    return geimoptions;
+    return geimoptions.add( backend_options( prefixvm(prefix,"geim") ) );
 }
 
 Feel::po::options_description
@@ -561,7 +561,7 @@ pbdw_options( std::string const& prefix )
         ( "pbdw.db.filename", po::value<std::string>()->default_value(""), "path to the db when db.load or db.update = 0" )
         ( "pbdw.db.id", po::value<std::string>()->default_value(""), "id of the db when db.load or db.update = 3" )
         ;
-    return pbdwoptions.add( backend_options("pbdw"));
+    return pbdwoptions.add( backend_options( prefixvm(prefix,"pbdw")) );
 }
 
 Feel::po::options_description
