@@ -845,6 +845,11 @@ Environment::~Environment()
     {
         cout << tc::red << "Removing all files (--rm)  in " << appRepository() << "..." << tc::reset << std::endl;
         fs::remove_all( S_appdir );
+        if ( fs::exists( S_repository.root()/"crbdb"/S_about.appName()))
+        {
+            cout << tc::red << "Removing all files (--rm)  in " << S_repository.root()/"crbdb"/S_about.appName()<< std::endl;
+            fs::remove_all( S_repository.root()/"crbdb"/S_about.appName() );
+        }
     }
 }
 
