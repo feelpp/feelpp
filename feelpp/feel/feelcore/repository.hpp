@@ -202,7 +202,7 @@ inline Repository::Config globalRepository( std::string reldir, nl::json d = {} 
 }
 inline Repository::Config localRepository( std::string reldir, nl::json d = {} )
 {
-    return Repository::Config(fs::path(reldir), Location::global, d );
+    return Repository::Config(fs::path(reldir), Location::local, d );
 }   
 inline Repository::Config unknownRepository()
 {
