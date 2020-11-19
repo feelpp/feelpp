@@ -1,5 +1,8 @@
 var NAVTREEINDEX40 =
 {
+"structFeel_1_1StencilRangeMap2Type.html#a1abb73bf295e7f89ca105c0ca90c14c3":[6,1,1,249,3],
+"structFeel_1_1StencilRangeMap2Type.html#a64b1778df8009a60fe38edad79424df9":[6,1,1,249,0],
+"structFeel_1_1StencilRangeMap2Type.html#af49d217cebf6a536075b09c3a262451b":[6,1,1,249,4],
 "structFeel_1_1StencilRangeMapTypeBase.html":[6,1,1,250],
 "structFeel_1_1Stencil_1_1rangeExtendedIteratorType.html":[6,1,1,243,0],
 "structFeel_1_1Stencil_1_1rangeExtendedIteratorType.html#a1b159bc98e590bb875e74cca14c1a0ba":[6,1,1,243,0,6],
@@ -246,8 +249,5 @@ var NAVTREEINDEX40 =
 "structFeel_1_1detail_1_1InitializeSpace.html":[6,1,1,1,36],
 "structFeel_1_1detail_1_1InitializeSpace.html#a31ef49e299d96fbe845565cd34f663a3":[6,1,1,1,36,0],
 "structFeel_1_1detail_1_1InitializeSpace.html#a350e49ce3a56cde9d6eb331e96c9ffa8":[6,1,1,1,36,13],
-"structFeel_1_1detail_1_1InitializeSpace.html#a41676b1c3fcce9ddb0e8a133023be1b1":[6,1,1,1,36,6],
-"structFeel_1_1detail_1_1InitializeSpace.html#a44f5b000ebcd61116e798ed6eb18422b":[6,1,1,1,36,8],
-"structFeel_1_1detail_1_1InitializeSpace.html#a7915c0a3c9c6a1043753fed31972db70":[6,1,1,1,36,1],
-"structFeel_1_1detail_1_1InitializeSpace.html#a80cc168cd1a0eecbf0c97be7310055ca":[6,1,1,1,36,5]
+"structFeel_1_1detail_1_1InitializeSpace.html#a41676b1c3fcce9ddb0e8a133023be1b1":[6,1,1,1,36,6]
 };
