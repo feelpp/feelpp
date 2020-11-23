@@ -8,7 +8,7 @@ INSTALL( FILES ${CMAKE_CURRENT_BINARY_DIR}/feelmodelscoreconstconfig.hpp DESTINA
 
 add_library(feelpp_modelcore
   SHARED
-  options.cpp log.cpp timertool.cpp
+  options.cpp log.cpp timertool.cpp tabulateinformation.cpp terminalsize.cpp
   modelbase.cpp modelalgebraic.cpp modelnumerical.cpp modelphysics.cpp modelgenericpde.cpp modelmeshes.cpp
   markermanagement.cpp modelmeasures.cpp
   )

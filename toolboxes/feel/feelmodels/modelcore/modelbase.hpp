@@ -40,60 +40,15 @@
 #include <feel/feelmodels/modelcore/log.hpp>
 #include <feel/feelmodels/modelcore/timertool.hpp>
 
-#include <tabulate/table.hpp>
-#include <feel/feelcore/json.hpp>
+// #include <tabulate/table.hpp>
+// #include <feel/feelcore/json.hpp>
+#include <feel/feelmodels/modelcore/tabulateinformation.hpp>
 
 namespace Feel
 {
 
 BOOST_PARAMETER_NAME( keyword )
 BOOST_PARAMETER_NAME( repository )
-
-class TabulateInformationProperties
-{
-public:
-    enum class VerboseLevel { NONE,SMALL,MEDIUM,FULL };
-
-    TabulateInformationProperties( VerboseLevel vl = VerboseLevel::FULL )
-        :
-        M_information_level( 0 ),
-        M_verbose_level( vl )
-        {}
-private:
-    uint16_type M_information_level;
-    VerboseLevel M_verbose_level;
-};
-
-namespace TabulateInformationTools
-{
-namespace FromJSON
-{
-
-void
-addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::vector<std::string> const& keys );
-
-inline
-void
-addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::initializer_list<std::string> const& keys )
-{
-    addKeyToValues( table, jsonInfo, tabInfoProp, std::vector<std::string>(keys) );
-}
-
-void
-addAllKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
-
-tabulate::Table
-tabulateFunctionSpace( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
-
-} // namespace FromJSON
-
-void
-mergeSections( tabulate::Table & tabInfoMerge, std::vector<std::pair<std::string,tabulate::Table>> tabInfos, bool hasTitle = false );
-
-tabulate::Table
-createSections( std::vector<std::pair<std::string,tabulate::Table>> tabInfos, std::string const& title = "" );
-
-} // namespace TabulateInformationTools
 
 namespace FeelModels
 {
