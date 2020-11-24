@@ -122,7 +122,7 @@ Backend<T,SizeT>::Backend( po::variables_map const& vm, std::string const& prefi
     M_fieldSplit( soption(_name="fieldsplit-type",_prefix=prefix,_vm=vm) ),
     M_pcFactorMatSolverPackage( soption(_name="pc-factor-mat-solver-package-type",_prefix=prefix,_vm=vm) ),
     M_constant_null_space( boption(_name="constant-null-space",_prefix=prefix,_vm=vm) ),
-    M_showKSPMonitor( vm.count(prefixvm( prefix,"ksp-monitor" )) ),
+    M_showKSPMonitor( boption(_name="ksp-monitor",_prefix=prefix,_vm=vm) ),
     M_showKSPConvergedReason( vm.count(prefixvm( prefix,"ksp-converged-reason" )) ),
     M_verbose( boption(_name="backend.verbose",_prefix=prefix,_vm=vm) )
 {
