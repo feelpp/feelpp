@@ -157,7 +157,7 @@ MarkerManagementDirichletBC::markerDirichletBClm( ComponentType ct ) const
 
 
 void
-MarkerManagementDirichletBC::updateInformationObjectDirichletBC( pt::ptree & p )
+MarkerManagementDirichletBC::updateInformationObjectDirichletBC( pt::ptree & p ) const
 {
     for ( auto const& bykindbase : M_dirichletBCType )
     {
@@ -264,7 +264,7 @@ MarkerManagementNeumannBC::markerNeumannBC( NeumannBCShape shape,std::string con
 }
 
 void
-MarkerManagementNeumannBC::updateInformationObjectNeumannBC( pt::ptree & p )
+MarkerManagementNeumannBC::updateInformationObjectNeumannBC( pt::ptree & p ) const
 {
    for ( auto const& markNeumanBase : M_containerMarkers )
     {
@@ -359,7 +359,7 @@ MarkerManagementNeumannEulerianFrameBC::markerNeumannEulerianFrameBC( NeumannEul
 }
 
 void
-MarkerManagementNeumannEulerianFrameBC::updateInformationObjectNeumannEulerianFrameBC( pt::ptree & p )
+MarkerManagementNeumannEulerianFrameBC::updateInformationObjectNeumannEulerianFrameBC( pt::ptree & p ) const
 {
     // TODO
 }
@@ -440,7 +440,7 @@ MarkerManagementALEMeshBC::markerALEMeshBC( std::string const& type ) const
 }
 
 void
-MarkerManagementALEMeshBC::updateInformationObjectALEMeshBC( pt::ptree & p )
+MarkerManagementALEMeshBC::updateInformationObjectALEMeshBC( pt::ptree & p ) const
 {
     // TODO
 }
@@ -504,7 +504,7 @@ MarkerManagementSlipBC::markerSlipBC() const
 }
 
 void
-MarkerManagementSlipBC::updateInformationObjectSlipBC( pt::ptree & p )
+MarkerManagementSlipBC::updateInformationObjectSlipBC( pt::ptree & p ) const
 {
     // TODO
 }
@@ -591,7 +591,7 @@ MarkerManagementPressureBC::hasMarkerPressureBC() const
 }
 
 void
-MarkerManagementPressureBC::updateInformationObjectPressureBC( pt::ptree & p )
+MarkerManagementPressureBC::updateInformationObjectPressureBC( pt::ptree & p ) const
 {
     // TODO
 }
@@ -665,7 +665,7 @@ MarkerManagementRobinBC::markerRobinBC( std::string const& markerNameId ) const
 }
 
 void
-MarkerManagementRobinBC::updateInformationObjectRobinBC( pt::ptree & p )
+MarkerManagementRobinBC::updateInformationObjectRobinBC( pt::ptree & p ) const
 {
     // TODO
 }
@@ -732,7 +732,7 @@ MarkerManagementFluidStructureInterfaceBC::getInfoFluidStructureInterfaceBC() co
 }
 
 void
-MarkerManagementFluidStructureInterfaceBC::updateInformationObjectFluidStructureInterfaceBC( pt::ptree & p )
+MarkerManagementFluidStructureInterfaceBC::updateInformationObjectFluidStructureInterfaceBC( pt::ptree & p ) const
 {
     // TODO
 }

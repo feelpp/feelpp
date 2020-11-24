@@ -110,6 +110,8 @@ struct SymbolExpr1
         {}
     SymbolExpr1( SymbolExpr1 const& ) = default;
     SymbolExpr1( SymbolExpr1 && ) = default;
+    SymbolExpr1& operator=( SymbolExpr1 const& ) = default;
+    SymbolExpr1& operator=( SymbolExpr1&& ) = default;
 
     std::string const& symbol() const { return M_symbol; }
     expr_type const& expr() const { return M_expr; }
@@ -143,6 +145,8 @@ struct SymbolExpr : public std::vector<SymbolExpr1<ExprT>>
     SymbolExpr() = default;
     SymbolExpr( SymbolExpr const& ) = default;
     SymbolExpr( SymbolExpr && ) = default;
+    SymbolExpr& operator=( SymbolExpr const& ) = default;
+    SymbolExpr& operator=( SymbolExpr&& ) = default;
     explicit SymbolExpr( typename super_type::value_type const& e ) : super_type( 1,e ) {}
     explicit SymbolExpr( typename super_type::value_type && e ) : super_type( 1,e ) {}
     explicit SymbolExpr( std::initializer_list<typename super_type::value_type> const& e ) : super_type( e ) {}
@@ -228,17 +232,22 @@ template <typename ExprT>
 SymbolExpr<ExprT>
 symbolExpr( std::vector<std::tuple<std::string,ExprT,SymbolExprComponentSuffix,SymbolExprUpdateFunction>> const& e ) { return SymbolExpr<ExprT>( e ); }
 
+struct SymbolsExprBase {};
 
 struct SymbolsExprTag {};
 
 //! store set of SymbolExpr object into a hana::tuple
 template<typename TupleExprType>
-struct SymbolsExpr
+struct SymbolsExpr : public SymbolsExprBase
 {
     using tuple_type = TupleExprType;
     using feelpp_tag = SymbolsExprTag;
 
     SymbolsExpr() = default;
+    SymbolsExpr( SymbolsExpr const& ) = default;
+    SymbolsExpr( SymbolsExpr && ) = default;
+    SymbolsExpr& operator=( SymbolsExpr const& ) = default;
+    SymbolsExpr& operator=( SymbolsExpr&& ) = default;
 
     explicit SymbolsExpr( tuple_type const& tse )
         :
@@ -329,6 +338,13 @@ template<typename... ExprT>
 using symbols_expression_t = typename SymbolsExprTraits<ExprT...>::type;
 
 using symbols_expression_empty_t = SymbolsExpr<hana::tuple<>>;
+
+template<typename SymbolsExprType>
+using is_symbols_expression = typename std::is_base_of<SymbolsExprBase,SymbolsExprType>::type;
+
+template<typename SymbolsExprType>
+constexpr bool is_symbols_expression_v = is_symbols_expression<SymbolsExprType>::value;
+
 
 //! build a SymbolsExpr object
 template<typename... ExprT>

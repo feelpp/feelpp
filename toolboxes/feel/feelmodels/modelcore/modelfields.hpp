@@ -28,6 +28,8 @@ const size_type ID           = ( 1<<0 );
 const size_type MAGNITUDE    = ( 1<<1 );
 const size_type GRAD         = ( 1<<2 );
 const size_type GRAD_NORMAL  = ( 1<<3 );
+const size_type CURL         = ( 1<<4 );
+const size_type CURL_MAGNITUDE = ( 1<<5 );
 
 }
 
@@ -150,7 +152,9 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
         return Feel::vf::symbolsExpr( this->symbolsExpr_ID(),
                                       this->symbolsExpr_MAGNITUDE(),
                                       this->symbolsExpr_GRAD(),
-                                      this->symbolsExpr_GRAD_NORMAL()
+                                      this->symbolsExpr_GRAD_NORMAL(),
+                                      this->symbolsExpr_CURL(),
+                                      this->symbolsExpr_CURL_MAGNITUDE()
                                       );
 
     }
@@ -184,10 +188,10 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
         if constexpr ( has_value_v<Ctx,FieldCtx::MAGNITUDE> )
             {
                 SymbolExprComponentSuffix secs( 1, 1 );
-                using _expr_type = std::decay_t<decltype( inner(idv(this->front().field()), mpl::int_<InnerProperties::SQRT>() ) )>;
+                using _expr_type = std::decay_t<decltype( norm2(idv(this->front().field()) ) )>;
                 symbol_expression_t<_expr_type> se;
                 for ( auto const& mfield : *this )
-                    se.add( prefixvm( mfield.prefixSymbol(), mfield.symbol()+"_magnitude","_" ), inner(idv(mfield.field()),mpl::int_<InnerProperties::SQRT>()) , secs, mfield.updateFunctionSymbolExpr() );
+                    se.add( prefixvm( mfield.prefixSymbol(), mfield.symbol()+"_magnitude","_" ), norm2(idv(mfield.field())) , secs, mfield.updateFunctionSymbolExpr() );
                 return Feel::vf::symbolsExpr( se );
             }
         else
@@ -224,6 +228,35 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
             return symbols_expression_empty_t{};
     }
 
+    auto symbolsExpr_CURL() const
+    {
+        if constexpr ( has_value_v<Ctx,FieldCtx::CURL> && nComponents1 > 1 && nComponents2 == 1 )
+        {
+            SymbolExprComponentSuffix secs( nRealDim==3 ? 3 : 1, 1 );
+            using _expr_type = std::decay_t<decltype( curlv(this->front().field()) )>;
+            symbol_expression_t<_expr_type> se;
+            for ( auto const& mfield : *this )
+                se.add( prefixvm( mfield.prefixSymbol(), "curl_"+mfield.symbol(),"_" ), curlv(mfield.field()), secs, mfield.updateFunctionSymbolExpr() );
+            return Feel::vf::symbolsExpr( se );
+        }
+        else
+            return symbols_expression_empty_t{};
+    }
+
+    auto symbolsExpr_CURL_MAGNITUDE() const
+    {
+        if constexpr ( has_value_v<Ctx,FieldCtx::CURL_MAGNITUDE> && nComponents1 > 1 && nComponents2 == 1 )
+        {
+            SymbolExprComponentSuffix secs( 1, 1 );
+            using _expr_type = std::decay_t<decltype( norm2(curlv(this->front().field())) )>;
+            symbol_expression_t<_expr_type> se;
+            for ( auto const& mfield : *this )
+                se.add( prefixvm( mfield.prefixSymbol(), "curl_"+mfield.symbol()+"_magnitude","_" ), norm2(curlv(mfield.field())), secs, mfield.updateFunctionSymbolExpr() );
+            return Feel::vf::symbolsExpr( se );
+        }
+        else
+            return symbols_expression_empty_t{};
+    }
 
 
     template <typename SelectorModelFieldType>
@@ -447,6 +480,7 @@ template <typename TupleFieldType>
 class ModelFields
 {
 public :
+    using self_type = ModelFields<TupleFieldType>;
     using feelpp_tag = ModelFieldsFeelppTag;
     using tuple_type = TupleFieldType;
 
@@ -490,7 +524,42 @@ public :
             return this->fieldImpl<found_field_type,TagType,0>( thetag,name,dummyRet );
         }
 
+    //! create a new ModelFields object by copying the current object but exclude fields defined in mfieldsToExclude (with same tag and name)
+    template <typename AnOtherTupleFieldType>
+    self_type exclude( ModelFields<AnOtherTupleFieldType> const& mfieldsToExclude ) const
+        {
+            auto newTupleField = hana::transform( this->tuple(), [&mfieldsToExclude](auto const& ef)
+                                                  {
+                                                      using mfield_type = std::decay_t<decltype(ef)>;
+                                                      mfield_type mfieldNew;
+                                                      for ( auto const& mfield : ef )
+                                                      {
+                                                          bool hasFoundThisField = false;
+                                                          hana::for_each( mfieldsToExclude.tuple(), [&mfield,&hasFoundThisField](auto const& ef2)
+                                                                          {
+                                                                              using mfield2_type = std::decay_t<decltype(ef2)>;
+                                                                              if constexpr ( std::is_same_v< typename mfield_type::tag_type, typename mfield2_type::tag_type > )
+                                                                                  {
+                                                                                      for ( auto const& mfield2 : ef2 )
+                                                                                      {
+                                                                                          if ( mfield.name() != mfield2.name() || mfield.tag() != mfield2.tag() )
+                                                                                              continue;
+                                                                                          hasFoundThisField = true;
+                                                                                      }
+                                                                                  }
+                                                                          });
+                                                          if ( hasFoundThisField )
+                                                              continue;
+                                                          mfieldNew.push_back( mfield );
+                                                      }
+                                                      return mfieldNew;
+                                                  });
+
+            return self_type{ std::move(newTupleField) };
+        }
+
     tuple_type const& tuple() const { return M_tuple; }
+    tuple_type & tuple() { return M_tuple; }
 
 private :
     tuple_type M_tuple;

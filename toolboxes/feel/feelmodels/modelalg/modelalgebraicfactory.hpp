@@ -145,7 +145,8 @@ namespace FeelModels
         std::shared_ptr<std::ostringstream> getInfo() const;
         void printInfo() const;
 
-        void updateInformationObject( pt::ptree & p );
+        void updateInformationObject( pt::ptree & p ) const;
+        static tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
 
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
@@ -232,6 +233,8 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
 
         void setFunctionLinearAssembly( function_assembly_linear_type const& func ) { M_functionLinearAssembly = func; }
+        void setFunctionLinearDofElimination( function_assembly_linear_type const& func ) { M_functionLinearDofElimination = func; }
+        void setFunctionNewtonInitialGuess( function_newton_initial_guess_type const& func ) { M_functionNewtonInitialGuess = func; }
         void setFunctionJacobianAssembly( function_assembly_jacobian_type const& func ) { M_functionJacobianAssembly = func; }
         void setFunctionResidualAssembly( function_assembly_residual_type const& func ) { M_functionResidualAssembly = func; }
 
@@ -252,7 +255,7 @@ namespace FeelModels
         void setActivationAddVectorResidualAssembly( std::string const& key, bool b );
 
         void updateNewtonIteration( int step, vector_ptrtype residual, vector_ptrtype sol, typename backend_type::solvernonlinear_type::UpdateIterationData const& data );
-
+        void updatePicardIteration( int step, vector_ptrtype sol );
     private :
 
         void
@@ -298,6 +301,8 @@ namespace FeelModels
         ModelAlgebraic::DataUpdateBase M_dataInfos;
 
         function_assembly_linear_type M_functionLinearAssembly;
+        function_assembly_linear_type M_functionLinearDofElimination;
+        function_newton_initial_guess_type M_functionNewtonInitialGuess;
         function_assembly_jacobian_type M_functionJacobianAssembly;
         function_assembly_residual_type M_functionResidualAssembly;
 

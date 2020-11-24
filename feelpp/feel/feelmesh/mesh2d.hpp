@@ -137,9 +137,9 @@ class Mesh2D
     /**
      * default constructor
      */
-    explicit Mesh2D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    explicit Mesh2D( std::string const& name = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         : super_visitable(),
-          super( 2, nRealDim, worldComm ),
+          super( name, 2, nRealDim, worldComm ),
           super_elements( worldComm ),
           super_points( worldComm ),
           super_faces( worldComm )
