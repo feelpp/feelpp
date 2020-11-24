@@ -117,6 +117,7 @@ The following tables present the Continuous Integration status of the packaging 
 | feelpp-toolboxes
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/90ee47c7b5c62a516f7ef0911058f7a41626ccd752147119f0.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-toolboxes-buster"]
+| 
 | image:https://badge.buildkite.com/bb9c483c95e71e919d159e93d8c3803127c18cbcedbde8a4bb.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-toolboxes-eoan"]
 | image:https://badge.buildkite.com/c9763aa25f307c5d404c9354780d4d0eca94d0c0c6343b5cc2.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-toolboxes-focal"]
 
@@ -125,6 +126,7 @@ The following tables present the Continuous Integration status of the packaging 
 |
 |
 |
+| image:https://badge.buildkite.com/67c2155af0d97f29f825af63b112cfa79db0da6f5b12cbea69.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-mor-focal"]
 |===
 
 
