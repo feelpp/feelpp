@@ -74,7 +74,6 @@ Each commit in the main development branch triggers a new full build with more t
 Instructions are available for http://docs.feelpp.org/user/0.107/install/containers/[docker] and http://docs.feelpp.org/user/0.107/install/distributions/[debian and ubuntu packages].
 
 WARNING: Providing Debian and ubuntu packages for `feelpp-toolboxes` and `feelpp-mor` is a work in progress.
-They are currently available only via docker.
 
 [[cipkg]]
 The following tables present the Continuous Integration status of the packaging of {feelpp}.
