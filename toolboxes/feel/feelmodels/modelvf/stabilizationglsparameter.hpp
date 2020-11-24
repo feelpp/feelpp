@@ -370,6 +370,9 @@ public:
                 this->setReaction( exprReaction );
         }
 
+    StabilizationGLSParameterExpr( StabilizationGLSParameterExpr const& ) = default;
+    StabilizationGLSParameterExpr( StabilizationGLSParameterExpr && ) = default;
+
     stabilization_glsparameter_type const& stabGLSParameter() const { return M_stabGLSParameter; }
 
     expression_convection_type const& exprConvection() const { CHECK( this->hasConvection() ) << "no convection expr"; return *M_exprConvection; }

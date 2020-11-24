@@ -311,6 +311,9 @@ public :
     void solve( bool upVelAcc=true );
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
+    void updateInformationObject( pt::ptree & p ) const override;
+    std::vector<tabulate::Table> tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
 
     bool hasSolidEquation1dReduced() const { return M_solid1dReduced.use_count() > 0; }
     bool hasSolidEquationStandard() const { return !this->hasSolidEquation1dReduced(); } // TOOD
@@ -482,8 +485,8 @@ public :
     // standart model
     //-----------------------------------------------------------------------------------//
 
-    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
-    mesh_ptrtype const& mesh() const { return M_mesh; }
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_displacement_ptrtype const& functionSpace() const { return this->functionSpaceDisplacement(); }
@@ -753,7 +756,6 @@ private :
     // standard model
     //-------------------------------------------//
     // mesh
-    mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
     MeshMover<mesh_type> M_meshMover;
     MeshMover<typename mesh_type::trace_mesh_type> M_meshMoverTrace;

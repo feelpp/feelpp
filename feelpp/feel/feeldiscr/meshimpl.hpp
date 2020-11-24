@@ -139,8 +139,7 @@ void print( MeshT* m )
 // Constructor.
 template <typename Shape, typename T, int Tag, typename IndexT>
 Mesh<Shape, T, Tag, IndexT>::Mesh( std::string const& name, worldcomm_ptr_t const& worldComm, std::string const& props )
-    : super( worldComm ),
-      super2( "Mesh", name ),
+    : super( name, worldComm ),
       M_numGlobalElements( 0 ),
       M_gm( new gm_type ),
       M_gm1( Feel::meshdetail::initGm1<type>( M_gm, mpl::bool_<nOrder == 1>() ) ),

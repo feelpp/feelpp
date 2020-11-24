@@ -10,7 +10,16 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    this->updateLinearPDE( data, this->modelContext() );
+    const vector_ptrtype& XVec = data.currentSolution();
+    auto mctx = this->modelContext( XVec, this->rowStartInVector() );
+    if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
+    {
+        auto previousSol = data.vectorInfo( "time-stepping.previous-solution");
+        auto mctxPrevious = this->modelContextNoTrialSymbolsExpr( previousSol,this->rowStartInVector() );
+        mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
+    }
+
+    this->updateLinearPDE( data, mctx );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS

@@ -238,7 +238,7 @@ endmacro( genLibSolidMechanics )
 
 macro(genLibFluidMechanics)
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;U_ORDER;P_ORDER;P_CONTINUITY;GEO_ORDER;DENSITY_VISCOSITY_CONTINUITY;DENSITY_VISCOSITY_ORDER"
+    "DIM;U_ORDER;P_ORDER;P_CONTINUITY;GEO_ORDER"
     ""
     ${ARGN}
     )
@@ -269,36 +269,9 @@ macro(genLibFluidMechanics)
     unset(FLUIDMECHANICS_PRESSURE_CONTINUITY_TAG) # default tag continuous
   endif()
   #######################################################
-  if (FEELMODELS_APP_DENSITY_VISCOSITY_ORDER)
-    set(FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY ${FEELMODELS_APP_DENSITY_VISCOSITY_ORDER} )
-  else()
-    # default value
-    set(FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY 0)
-  endif()
-  #######################################################
-  if (FEELMODELS_APP_DENSITY_VISCOSITY_CONTINUITY)
-    if ("${FEELMODELS_APP_DENSITY_VISCOSITY_CONTINUITY}" STREQUAL "Continuous" )
-      set(FLUIDMECHANICS_USE_CONTINUOUS_DENSITY_VISCOSITY 1)
-      set(FLUIDMECHANICS_DENSITY_VISCOSITY_TAG DVP${FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY}c)
-    elseif ("${FEELMODELS_APP_DENSITY_VISCOSITY_CONTINUITY}" STREQUAL "Discontinuous" )
-      set(FLUIDMECHANICS_USE_CONTINUOUS_DENSITY_VISCOSITY 0)
-      if ( "${FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY}" STREQUAL "0" )
-        unset(FLUIDMECHANICS_DENSITY_VISCOSITY_TAG) # default value P0d
-      else()
-        set(FLUIDMECHANICS_DENSITY_VISCOSITY_TAG DVP${FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY}d)
-      endif()
-    else()
-      message(FATAL_ERROR "DENSITY_VISCOSITY_CONTINUITY ${FEELMODELS_APP_DENSITY_VISCOSITY}_CONTINUITY : is not valid! It must be Continuous or Discontinuous")
-    endif()
-  else()
-    # default value
-    set(FLUIDMECHANICS_USE_CONTINUOUS_DENSITY_VISCOSITY 0)
-    unset(FLUIDMECHANICS_DENSITY_VISCOSITY_TAG) # default value P0d
-  endif()
-  #######################################################
 
 
-  set(FLUIDMECHANICS_LIB_VARIANTS ${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDER_VELOCITY}P${FLUIDMECHANICS_ORDER_PRESSURE}${FLUIDMECHANICS_PRESSURE_CONTINUITY_TAG}G${FLUIDMECHANICS_ORDERGEO}${FLUIDMECHANICS_DENSITY_VISCOSITY_TAG})
+  set(FLUIDMECHANICS_LIB_VARIANTS ${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDER_VELOCITY}P${FLUIDMECHANICS_ORDER_PRESSURE}${FLUIDMECHANICS_PRESSURE_CONTINUITY_TAG}G${FLUIDMECHANICS_ORDERGEO})
   set(FLUIDMECHANICS_LIB_NAME feelpp_toolbox_fluid_lib_${FLUIDMECHANICS_LIB_VARIANTS})
 
   if ( NOT TARGET ${FLUIDMECHANICS_LIB_NAME} )
@@ -307,26 +280,22 @@ macro(genLibFluidMechanics)
     set(FLUIDMECHANICS_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicscreate_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsothers_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatelinear_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatelinearbc_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatejacobian_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatejacobianbc_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdateresidual_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdateresidualbc_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsassemblyjacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsassemblyresidual_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatestabilisation_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsassemblyturbulence_inst.cpp
       )
     set(FLUIDMECHANICS_CODEGEN_SOURCES
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicscreate_inst.cpp
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsothers_inst.cpp
-      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatelinear_inst.cpp
-      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatelinearbc_inst.cpp
-      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatejacobian_inst.cpp
-      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatejacobianbc_inst.cpp
-      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdateresidual_inst.cpp
-      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdateresidualbc_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsassemblylinear_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsassemblyjacobian_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsassemblyresidual_inst.cpp
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatestabilisation_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsassemblyturbulence_inst.cpp
       )
-    set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
+    set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdes_${FLUIDMECHANICS_DIM}dG${FLUIDMECHANICS_ORDERGEO} )
     if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
       set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelmeshale ${FLUIDMECHANICS_LIB_DEPENDS})
     endif()
@@ -352,7 +321,7 @@ endmacro( genLibFluidMechanics )
 
 macro(genLibFSI)
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;BC_MARKERS;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;FLUID_GEO_ORDER;FLUID_GEO_DESC;FLUID_BC_DESC;FLUID_DENSITY_VISCOSITY_CONTINUITY;FLUID_DENSITY_VISCOSITY_ORDER;SOLID_DISP_ORDER;SOLID_GEO_ORDER;SOLID_BC_DESC;SOLID_GEO_DESC"
+    "DIM;BC_MARKERS;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;FLUID_GEO_ORDER;FLUID_GEO_DESC;FLUID_BC_DESC;SOLID_DISP_ORDER;SOLID_GEO_ORDER;SOLID_BC_DESC;SOLID_GEO_DESC"
     ""
     ${ARGN}
     )
@@ -369,8 +338,6 @@ macro(genLibFSI)
     U_ORDER      ${FEELMODELS_APP_FLUID_U_ORDER}
     P_ORDER      ${FEELMODELS_APP_FLUID_P_ORDER}
     P_CONTINUITY ${FEELMODELS_APP_FLUID_P_CONTINUITY}
-    DENSITY_VISCOSITY_CONTINUITY ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_CONTINUITY}
-    DENSITY_VISCOSITY_ORDER      ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_ORDER}
     )
   # solid lib
   genLibSolidMechanics(
@@ -426,6 +393,7 @@ macro( genLibCoefficientFormPDEs )
 
   set(COEFFICIENTFORMPDES_DIM ${FEELMODELS_APP_DIM})
   set(COEFFICIENTFORMPDES_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+  set(COEFFICIENTFORMPDES_GEOSHAPE Simplex<${COEFFICIENTFORMPDES_DIM},${COEFFICIENTFORMPDES_ORDERGEO},${COEFFICIENTFORMPDES_DIM}>)
 
   list(LENGTH FEELMODELS_APP_UNKNOWN_BASIS_TYPE count)
   list(LENGTH FEELMODELS_APP_UNKNOWN_BASIS_TAG count2)
@@ -433,6 +401,7 @@ macro( genLibCoefficientFormPDEs )
     message( FATAL_ERROR "UNKNOWN_BASIS_TYPE and UNKNOWN_BASIS_TAG should be same size" )
   endif()
 
+  unset( COEFFICIENTFORMPDES_LIB_DEPENDS )
   math(EXPR count "${count}-1")
   foreach(i RANGE ${count})
     list(GET FEELMODELS_APP_UNKNOWN_BASIS_TYPE ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE)
@@ -531,6 +500,9 @@ macro( genLibCoefficientFormPDEs )
       CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesconfig.h.in
       TARGET_COPY_FILES ${COEFFICIENTFORMPDES_TARGET_COPY_FILES}
       )
+
+    set(FEELPP_TOOLBOX_COEFFICIENTFORMPDES_REGISTER_ENTRY_CLASS_TYPE "boost::mpl::pair< ${COEFFICIENTFORMPDES_GEOSHAPE}, Feel::FeelModels::CoefficientFormPDEs< ${COEFFICIENTFORMPDES_GEOSHAPE}, ${COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE} > >" )
+    
   endif()
 
 
@@ -818,8 +790,6 @@ macro(genLibMultiFluid)
     U_ORDER      ${FEELMODELS_APP_FLUID_U_ORDER}
     P_ORDER      ${FEELMODELS_APP_FLUID_P_ORDER}
     P_CONTINUITY ${FEELMODELS_APP_FLUID_P_CONTINUITY}
-    DENSITY_VISCOSITY_CONTINUITY ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_CONTINUITY}
-    DENSITY_VISCOSITY_ORDER      ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_ORDER}
     )
   ###############################################################
   # levelset lib

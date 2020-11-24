@@ -1,0 +1,19 @@
+namespace Feel
+{
+namespace FeelModels
+{
+
+namespace detail
+{
+
+using map_geoshape_to_coefficient_form_PDEs_registered_type =
+    boost::mpl::map<
+@FEELPP_TOOLBOX_COEFFICIENTFORMPDES_REGISTER_ALL_ENTRIES_CLASS_TYPE@
+    >;
+}
+
+template <typename ShapeType>
+using coefficient_form_PDEs_t = typename boost::mpl::at< Feel::FeelModels::detail::map_geoshape_to_coefficient_form_PDEs_registered_type, ShapeType>::type;
+
+}
+}

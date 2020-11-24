@@ -106,11 +106,13 @@ public:
               worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
               std::string const& subPrefix = "",
               ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ElectricMesh.path"); }
-    std::shared_ptr<std::ostringstream> getInfo() const override;
-    void updateInformationObject( pt::ptree & p ) override;
 
-    mesh_ptrtype const& mesh() const { return M_mesh; }
+    std::shared_ptr<std::ostringstream> getInfo() const override;
+    void updateInformationObject( pt::ptree & p ) const override;
+    tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_electricpotential_ptrtype const& spaceElectricPotential() const { return M_XhElectricPotential; }
@@ -135,7 +137,6 @@ private :
     void initPostProcess() override;
 
 public :
-    void setMesh(mesh_ptrtype const& mesh) { M_mesh = mesh; }
     // update for use
     void init( bool buildModelAlgebraicFactory = true );
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
@@ -361,9 +362,6 @@ public :
 
 private :
 
-    bool M_hasBuildFromMesh, M_isUpdatedForUse;
-
-    mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
     space_electricpotential_ptrtype M_XhElectricPotential;

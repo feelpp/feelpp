@@ -41,6 +41,9 @@ public :
 
     void add( std::string const& propName, ModelExpression const& expr )
         {
+            auto itFind = this->find( propName );
+            if ( itFind != this->end() )
+                this->erase( itFind );
             this->emplace(propName, MaterialProperty(propName, expr) );
         }
 
@@ -67,6 +70,8 @@ public :
 
     std::set<std::string> markers() const { return M_markers; }
     void setMarkers( std::set<std::string> const& m ) { M_markers = m; }
+
+    std::string const& materialName() const { return M_materialName; }
 
 private :
     std::string M_materialName;
@@ -309,7 +314,19 @@ public :
         }
 
 
-
+    //! return the physics that are used in the material \matName from \physicsCollection
+    std::map<std::string,typename modelphysics_type::model_physic_ptrtype> physicsFromMaterial( std::string const& matName, std::map<std::string,typename modelphysics_type::model_physic_ptrtype> const& physicsCollection ) const
+        {
+            std::map<std::string,typename modelphysics_type::model_physic_ptrtype> res;
+            for ( auto const& [physicName,physicData] : physicsCollection )
+            {
+                auto const& matNames = this->physicToMaterials( physicName );
+                if ( matNames.find( matName ) == matNames.end() )
+                    continue;
+                res[physicName] = physicData;
+            }
+            return res;
+        }
 
 
     void addProperty( MaterialProperties & matProperties, std::string const& propName, ModelExpression const& propExpr, bool onlyInPhysicDescription = false )
@@ -362,6 +379,14 @@ public :
 
     MaterialProperties const&
     materialProperties( std::string const& matName ) const
+        {
+            auto itFindMatProp = M_materialNameToProperties.find( matName );
+            CHECK( itFindMatProp != M_materialNameToProperties.end() ) << "material name not registered : " << matName;
+            return itFindMatProp->second;
+        }
+
+    MaterialProperties &
+    materialProperties( std::string const& matName )
         {
             auto itFindMatProp = M_materialNameToProperties.find( matName );
             CHECK( itFindMatProp != M_materialNameToProperties.end() ) << "material name not registered : " << matName;
@@ -626,7 +651,7 @@ public :
             return ostr;
         }
 
-    void updateInformationObject( pt::ptree & p )
+    void updateInformationObject( pt::ptree & p ) const
         {
             p.put( "number of materials", this->numberOfMaterials() );
             for ( auto const& [matName,matProps] : M_materialNameToProperties )
@@ -639,6 +664,30 @@ public :
                 p.add_child( matName, matPt );
             }
         }
+
+    tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+        {
+            tabulate::Table tabInfo;
+            tabulate::Table tabInfoOthers;
+            TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
+            tabInfo.add_row({tabInfoOthers});
+
+            for ( auto const& [matName,matProps] : M_materialNameToProperties )
+            {
+                if ( !jsonInfo.contains(matName) )
+                    continue;
+                tabulate::Table tabInfoMat;
+                tabInfoMat.add_row({"Material : "+matName});
+                tabulate::Table tabInfoMatEntries;
+                TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoMatEntries, jsonInfo.at( matName ), tabInfoProp );
+                tabInfoMat.add_row( { tabInfoMatEntries});
+                tabInfo.add_row( {tabInfoMat} );
+            }
+            tabInfo.format().hide_border();
+
+            return tabInfo;
+        }
+
 
     void setParameterValues( std::map<std::string,double> const& mp )
         {
