@@ -110,7 +110,7 @@ public :
         {
             for( int i = 0; i < ps.numberOfSpaces(); ++i )
             {
-                cout << "creating dyn vector block (" << i  << ")\n";
+                VLOG(3) << "[BlocksBaseVector] creating dyn vector block (" << i  << ")\n";
                 (*this)(i,0) = ps[i]->elementPtr();
             }
 
@@ -501,12 +501,12 @@ blockVector( PS && ps, backend_ptrtype b = backend(),
                                   [&] (auto&& x) {
                                       for( int i = 0; i < x->numberOfSpaces(); ++i, ++n  )
                                       {
-                                          cout << "creating dyn vector block (" << n  << ")\n";
+                                          VLOG(3) << "[blockVector] creating dyn vector block (" << n  << ")\n";
                                           g(n,0) = b->newVector( (*x)[i] );
                                       }
                                   },
                                   [&] (auto&& x){
-                                      cout << "creating vector block (" << n  << ")\n";
+                                      VLOG(3) << "[blockVector] creating vector block (" << n  << ")\n";
                                       g(n++,0) = b->newVector( x );
                                   })(e);
                     });
@@ -538,7 +538,7 @@ blockElement( PS && ps, backend_ptrtype b = backend(),
     int n = 0;
     hana::for_each( ps.tupleSpaces(), [&]( auto const& e )
                     {
-                        cout << "creating vector element (" << n  << ")\n";
+                        VLOG(3) << "[blockElement] creating vector element (" << n  << ")\n";
                         g(n,0) = e->elementPtr();
                         ++n;
                     });
