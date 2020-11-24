@@ -470,7 +470,7 @@ var group__Mesh =
       [ "super_visitable", "classFeel_1_1Mesh1D.html#a8d95f90e4499d63cbebb9e11e2e394b3", null ],
       [ "update_element_neighbor_type", "classFeel_1_1Mesh1D.html#a3ff7dd1353a98d722eedecc8d45dae0a", null ],
       [ "vertex_permutation_type", "classFeel_1_1Mesh1D.html#acaf3886688e8cbb2b1971516d84684e2", null ],
-      [ "Mesh1D", "classFeel_1_1Mesh1D.html#a5c9d2b2d138cbe15ecaa10a300b5f0a9", null ],
+      [ "Mesh1D", "classFeel_1_1Mesh1D.html#aab8b3d975dcfd749b7066230ba47ecdf", null ],
       [ "Mesh1D", "classFeel_1_1Mesh1D.html#a54b5f15f7b0984adf483a7d97ac00e90", null ],
       [ "~Mesh1D", "classFeel_1_1Mesh1D.html#af27d8aedfdcd0399c1434e93cdd2f371", null ]
     ] ],
@@ -531,7 +531,7 @@ var group__Mesh =
       [ "super_points", "classFeel_1_1Mesh2D.html#a8364cbd37784986c9242cde6f27c72bc", null ],
       [ "super_visitable", "classFeel_1_1Mesh2D.html#ae3c25c3831d4db0af5c6c44ae46d8554", null ],
       [ "update_element_neighbor_type", "classFeel_1_1Mesh2D.html#a223286cfe58cad0c8a364a94473c143b", null ],
-      [ "Mesh2D", "classFeel_1_1Mesh2D.html#afaac0d23970d3840557a5b9812916f59", null ],
+      [ "Mesh2D", "classFeel_1_1Mesh2D.html#a3abf7f3071040c69fd82710bf2089176", null ],
       [ "Mesh2D", "classFeel_1_1Mesh2D.html#a1f6e923970d0e32a01cb40b7917e16fa", null ],
       [ "Mesh2D", "classFeel_1_1Mesh2D.html#a4f06c7e025f40cb7f9b8540287c1176b", null ],
       [ "~Mesh2D", "classFeel_1_1Mesh2D.html#aeae572dc955f4f55195e0e2e41016138", null ]
@@ -594,7 +594,7 @@ var group__Mesh =
       [ "super_points", "classFeel_1_1Mesh3D.html#a8a0960630e7fa1e4f5a87b7a339ceb3a", null ],
       [ "super_visitable", "classFeel_1_1Mesh3D.html#a0b51f3c1186147ffd3966eae51e4d9a9", null ],
       [ "update_element_neighbor_type", "classFeel_1_1Mesh3D.html#a24fb16115bdd7e59a05a907208e90f60", null ],
-      [ "Mesh3D", "classFeel_1_1Mesh3D.html#a2821708290c10e30b3bc33c21dc4cf21", null ],
+      [ "Mesh3D", "classFeel_1_1Mesh3D.html#aaa6a2435d257ba4f0dfde79658ffd285", null ],
       [ "Mesh3D", "classFeel_1_1Mesh3D.html#afa98c2b423f2c85ca32505ad42cbdd55", null ],
       [ "Mesh3D", "classFeel_1_1Mesh3D.html#abdd89987b86df7b2552d81081892dc4e", null ],
       [ "~Mesh3D", "classFeel_1_1Mesh3D.html#a2e6e9fd11ae21d6e20fb476008378c0a", null ]
@@ -690,7 +690,8 @@ var group__Mesh =
       [ "MeshBase", "classFeel_1_1MeshBase.html#abbde20ce5239c632bf0e33c6aa21877b", null ],
       [ "MeshBase", "classFeel_1_1MeshBase.html#afcb698f62f591ac546ab1a3fb1ad8ae7", null ],
       [ "~MeshBase", "classFeel_1_1MeshBase.html#aa172f5a588939063d5a420a7d0586aca", null ],
-      [ "MeshBase", "classFeel_1_1MeshBase.html#a05251024eec7f7427d6cbe66f1a6fba8", null ]
+      [ "MeshBase", "classFeel_1_1MeshBase.html#a05251024eec7f7427d6cbe66f1a6fba8", null ],
+      [ "MeshBase", "classFeel_1_1MeshBase.html#a0c7b8fb747386044a4925c60b98298de", null ]
     ] ],
     [ "MeshComponents", "group__Mesh.html#ga82cf55da340f64b682d0bea678d6cdf4", null ]
 ];

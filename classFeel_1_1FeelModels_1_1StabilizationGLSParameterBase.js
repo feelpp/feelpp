@@ -3,6 +3,7 @@ var classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase =
     [ "fieldTau", "classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase.html#a103e7bd99428a0764282325cd110188b", null ],
     [ "fieldTauPtr", "classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase.html#a39b08189f2be12a7e7b2958d0d8f8b47", null ],
     [ "hSize", "classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase.html#ad701aa07026432ab9a20d35a51ecf602", null ],
+    [ "hSizeMethod", "classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase.html#ac67d02158151766a76c80f6ba320e006", null ],
     [ "init", "classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase.html#ac2205f5cd6c252fcd1e10c3bab0d2be5", null ],
     [ "lambdaK", "classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase.html#ab5090a55082ef73103a1e40b2f7dac1d", null ],
     [ "mesh", "classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase.html#acdb6538b639d2aa0099e2dbf42bee82f", null ],

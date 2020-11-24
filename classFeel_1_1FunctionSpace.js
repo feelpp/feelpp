@@ -110,6 +110,7 @@ var classFeel_1_1FunctionSpace =
     [ "shallowCopy", "classFeel_1_1FunctionSpace.html#a3125708860e1a8486623a61835c28365", null ],
     [ "trace", "classFeel_1_1FunctionSpace.html#a98ddac7c7f6135df39187946ca18d6b5", null ],
     [ "trace", "classFeel_1_1FunctionSpace.html#a30b7074de8c544b2a014c3bee4518225", null ],
+    [ "updateInformationObject", "classFeel_1_1FunctionSpace.html#a3828a749e9db1277b233ca69bcce608b", null ],
     [ "updateRegionTree", "classFeel_1_1FunctionSpace.html#ac74c0f102bfac545277b068319dad437", null ],
     [ "wireBasket", "classFeel_1_1FunctionSpace.html#ae9e623c6d9eca65c3b313bacaa7e8908", null ],
     [ "wireBasket", "classFeel_1_1FunctionSpace.html#ad64ac1d72925084969929d4b1f6520a4", null ],

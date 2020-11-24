@@ -7,7 +7,7 @@ var classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC =
     [ "markerNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#a6b8907d6c5d478e5d88485f59383cbea", null ],
     [ "markerNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#a52574e9861440e026db69cadf2422c8a", null ],
     [ "setMarkerNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#acbb85704a4bf950270a225723d2415e6", null ],
-    [ "updateInformationObjectNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#a04d3c15eb1c763dafb5106c8e9779f88", null ],
+    [ "updateInformationObjectNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#aa0093f50ee5609f3131d26d317c74938", null ],
     [ "NeumannEulerianFrameBCShape", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#a0204ffb173d73c9b37edcdf82f3d7cbb", [
       [ "SCALAR", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#a0204ffb173d73c9b37edcdf82f3d7cbba2a46f0e16514eb7f0821f437a42d6c23", null ],
       [ "VECTORIAL", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#a0204ffb173d73c9b37edcdf82f3d7cbba633822e8619c4c9906e14a123943b944", null ],

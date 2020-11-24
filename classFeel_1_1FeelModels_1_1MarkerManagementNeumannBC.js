@@ -7,7 +7,7 @@ var classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC =
     [ "markerNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a185b57c6e091219237c3d14578065c4b", null ],
     [ "markerNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a51652d01fd9361f75ef29f8a869cb6da", null ],
     [ "setMarkerNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a5ccf9eb9416356f3351d590e46764344", null ],
-    [ "updateInformationObjectNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a821f6d35b9fef573a93af3ffdf90872a", null ],
+    [ "updateInformationObjectNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a09b5442a8c3859b9501452e5af14d804", null ],
     [ "NeumannBCShape", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a21cd46a0e4430c0fbb054028a63e62e9", [
       [ "SCALAR", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a21cd46a0e4430c0fbb054028a63e62e9aed0322d55ec37490affedc9a40d6259f", null ],
       [ "VECTORIAL", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a21cd46a0e4430c0fbb054028a63e62e9af5f32d9130ca942655d9acb7cbaba78f", null ],

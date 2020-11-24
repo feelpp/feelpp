@@ -143,6 +143,12 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>material_property_de
 <tr class="memitem:a0b682a427693314ef0f5cd4a80492121 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysics"><td class="memItemLeft" align="right" valign="top"><a id="a0b682a427693314ef0f5cd4a80492121"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>material_property_shape_dim_type</b> = typename material_property_description_type::shape_dim_type</td></tr>
 <tr class="separator:a0b682a427693314ef0f5cd4a80492121 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysics"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b5ba502bf03e0eace25a74ad9e1f099 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysics"><td class="memItemLeft" align="right" valign="top"><a id="a2b5ba502bf03e0eace25a74ad9e1f099"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>model_physic_ptrtype</b> = std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html">model_physic_type</a> &gt;</td></tr>
+<tr class="separator:a2b5ba502bf03e0eace25a74ad9e1f099 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysics"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d2d5b0cd0919fb096d4299da712ef81 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysics"><td class="memItemLeft" align="right" valign="top"><a id="a3d2d5b0cd0919fb096d4299da712ef81"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>model_physic_type</b> = <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html">ModelPhysic</a>&lt; nDim &gt;</td></tr>
+<tr class="separator:a3d2d5b0cd0919fb096d4299da712ef81 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysics"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d68fb37bbbc45a4c36d3d52b4f98888 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysics"><td class="memItemLeft" align="right" valign="top"><a id="a6d68fb37bbbc45a4c36d3d52b4f98888"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>subphysic_description_type</b> = std::map&lt; std::string, std::tuple&lt; std::string, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysics.html">ModelPhysics</a>&lt; Dim &gt; &gt;&gt; &gt;</td></tr>
 <tr class="separator:a6d68fb37bbbc45a4c36d3d52b4f98888 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysics"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -252,6 +258,12 @@ std::string const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a c
 <tr class="memitem:a696a2895012416e16ef3969d080501c8 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelPhysics"><td class="memItemLeft" align="right" valign="top"><a id="a696a2895012416e16ef3969d080501c8"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setPhysics</b> (std::map&lt; std::string, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html">ModelPhysic</a>&lt; Dim &gt;&gt;&gt; const &amp;thePhysics, std::string const &amp;<a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysics.html#a1dfa228293d0a6f7b09d55ce8402fc55">physicDefault</a>=&quot;&quot;)</td></tr>
 <tr class="separator:a696a2895012416e16ef3969d080501c8 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelPhysics"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a53bcc7f134273233ffee2ddf5964cfdf inherit pub_methods_classFeel_1_1FeelModels_1_1ModelPhysics"><td class="memItemLeft" align="right" valign="top"><a id="a53bcc7f134273233ffee2ddf5964cfdf"></a>
+auto&#160;</td><td class="memItemRight" valign="bottom"><b>symbolsExprPhysics</b> (std::map&lt; std::string, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html">ModelPhysic</a>&lt; nDim &gt;&gt;&gt; const &amp;mphysics) const</td></tr>
+<tr class="separator:a53bcc7f134273233ffee2ddf5964cfdf inherit pub_methods_classFeel_1_1FeelModels_1_1ModelPhysics"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aceaea6004f9bb68c5fea6e46d4ff53e9 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelPhysics"><td class="memItemLeft" align="right" valign="top"><a id="aceaea6004f9bb68c5fea6e46d4ff53e9"></a>
+auto&#160;</td><td class="memItemRight" valign="bottom"><b>symbolsExprPhysicsFromCurrentType</b> () const</td></tr>
+<tr class="separator:aceaea6004f9bb68c5fea6e46d4ff53e9 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelPhysics"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>

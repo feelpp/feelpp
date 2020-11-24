@@ -78,7 +78,7 @@ var classFeel_1_1Mesh1D =
     [ "super_visitable", "classFeel_1_1Mesh1D.html#a8d95f90e4499d63cbebb9e11e2e394b3", null ],
     [ "update_element_neighbor_type", "classFeel_1_1Mesh1D.html#a3ff7dd1353a98d722eedecc8d45dae0a", null ],
     [ "vertex_permutation_type", "classFeel_1_1Mesh1D.html#acaf3886688e8cbb2b1971516d84684e2", null ],
-    [ "Mesh1D", "classFeel_1_1Mesh1D.html#a5c9d2b2d138cbe15ecaa10a300b5f0a9", null ],
+    [ "Mesh1D", "classFeel_1_1Mesh1D.html#aab8b3d975dcfd749b7066230ba47ecdf", null ],
     [ "Mesh1D", "classFeel_1_1Mesh1D.html#a54b5f15f7b0984adf483a7d97ac00e90", null ],
     [ "~Mesh1D", "classFeel_1_1Mesh1D.html#af27d8aedfdcd0399c1434e93cdd2f371", null ]
 ];

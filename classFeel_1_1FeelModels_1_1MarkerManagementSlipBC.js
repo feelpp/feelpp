@@ -6,7 +6,7 @@ var classFeel_1_1FeelModels_1_1MarkerManagementSlipBC =
     [ "getInfoSlipBC", "classFeel_1_1FeelModels_1_1MarkerManagementSlipBC.html#aaaab39821eff9ac2075f8db2712aa169", null ],
     [ "markerSlipBC", "classFeel_1_1FeelModels_1_1MarkerManagementSlipBC.html#a7a540613f47498de57ce66cb4b40f955", null ],
     [ "setMarkerSlipBC", "classFeel_1_1FeelModels_1_1MarkerManagementSlipBC.html#a8986b6d8a8de5319d60f7148ba5f8fd9", null ],
-    [ "updateInformationObjectSlipBC", "classFeel_1_1FeelModels_1_1MarkerManagementSlipBC.html#a0c89361c83f49cf2c0e93398c198fb93", null ],
+    [ "updateInformationObjectSlipBC", "classFeel_1_1FeelModels_1_1MarkerManagementSlipBC.html#af6ecd5cbcf23874e859b2e3a1086cac8", null ],
     [ "MarkerManagementSlipBC", "classFeel_1_1FeelModels_1_1MarkerManagementSlipBC.html#a8766869b802fc78747518e38b0acd3c7", null ],
     [ "MarkerManagementSlipBC", "classFeel_1_1FeelModels_1_1MarkerManagementSlipBC.html#a99dff23055e7e7b31764744d75de4661", null ]
 ];

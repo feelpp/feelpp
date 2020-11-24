@@ -56,7 +56,7 @@ var classFeel_1_1Mesh2D =
     [ "super_points", "classFeel_1_1Mesh2D.html#a8364cbd37784986c9242cde6f27c72bc", null ],
     [ "super_visitable", "classFeel_1_1Mesh2D.html#ae3c25c3831d4db0af5c6c44ae46d8554", null ],
     [ "update_element_neighbor_type", "classFeel_1_1Mesh2D.html#a223286cfe58cad0c8a364a94473c143b", null ],
-    [ "Mesh2D", "classFeel_1_1Mesh2D.html#afaac0d23970d3840557a5b9812916f59", null ],
+    [ "Mesh2D", "classFeel_1_1Mesh2D.html#a3abf7f3071040c69fd82710bf2089176", null ],
     [ "Mesh2D", "classFeel_1_1Mesh2D.html#a1f6e923970d0e32a01cb40b7917e16fa", null ],
     [ "Mesh2D", "classFeel_1_1Mesh2D.html#a4f06c7e025f40cb7f9b8540287c1176b", null ],
     [ "~Mesh2D", "classFeel_1_1Mesh2D.html#aeae572dc955f4f55195e0e2e41016138", null ]

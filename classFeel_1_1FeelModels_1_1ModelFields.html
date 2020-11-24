@@ -115,12 +115,20 @@ Public Types</h2></td></tr>
 <tr class="memitem:a4255231b6df1ad5990da981090f42275"><td class="memItemLeft" align="right" valign="top"><a id="a4255231b6df1ad5990da981090f42275"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>feelpp_tag</b> = <a class="el" href="structFeel_1_1FeelModels_1_1ModelFieldsFeelppTag.html">ModelFieldsFeelppTag</a></td></tr>
 <tr class="separator:a4255231b6df1ad5990da981090f42275"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af43549ae56281965260baa4c7f4dbffe"><td class="memItemLeft" align="right" valign="top"><a id="af43549ae56281965260baa4c7f4dbffe"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>self_type</b> = <a class="el" href="classFeel_1_1FeelModels_1_1ModelFields.html">ModelFields</a>&lt; TupleFieldType &gt;</td></tr>
+<tr class="separator:af43549ae56281965260baa4c7f4dbffe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2cb2d8df7cb65cbf5b6ed449229021b7"><td class="memItemLeft" align="right" valign="top"><a id="a2cb2d8df7cb65cbf5b6ed449229021b7"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_type</b> = TupleFieldType</td></tr>
 <tr class="separator:a2cb2d8df7cb65cbf5b6ed449229021b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:aca9ea2fea74c756d4dd3ba9fee77c183"><td class="memTemplParams" colspan="2"><a id="aca9ea2fea74c756d4dd3ba9fee77c183"></a>
+template&lt;typename AnOtherTupleFieldType &gt; </td></tr>
+<tr class="memitem:aca9ea2fea74c756d4dd3ba9fee77c183"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FeelModels_1_1ModelFields.html">self_type</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelFields.html#aca9ea2fea74c756d4dd3ba9fee77c183">exclude</a> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelFields.html">ModelFields</a>&lt; AnOtherTupleFieldType &gt; const &amp;mfieldsToExclude) const</td></tr>
+<tr class="memdesc:aca9ea2fea74c756d4dd3ba9fee77c183"><td class="mdescLeft">&#160;</td><td class="mdescRight">create a new <a class="el" href="classFeel_1_1FeelModels_1_1ModelFields.html">ModelFields</a> object by copying the current object but exclude fields defined in mfieldsToExclude (with same tag and name) <br /></td></tr>
+<tr class="separator:aca9ea2fea74c756d4dd3ba9fee77c183"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee649dc6c2885e6ba050901823820398"><td class="memTemplParams" colspan="2"><a id="aee649dc6c2885e6ba050901823820398"></a>
 template&lt;typename TagType &gt; </td></tr>
 <tr class="memitem:aee649dc6c2885e6ba050901823820398"><td class="memTemplItemLeft" align="right" valign="top">auto const  &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>field</b> (TagType const &amp;thetag, std::string const &amp;name) const</td></tr>
@@ -147,6 +155,9 @@ auto&#160;</td><td class="memItemRight" valign="bottom"><b>symbolsExpr</b> () co
 template&lt;typename TupleSelectorModelFieldType &gt; </td></tr>
 <tr class="memitem:af82360c173bd633e3f8b1dee1150eaca"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>trialSymbolsExpr</b> (<a class="el" href="classFeel_1_1FeelModels_1_1SelectorModelFields.html">SelectorModelFields</a>&lt; TupleSelectorModelFieldType &gt; const &amp;smf) const</td></tr>
 <tr class="separator:af82360c173bd633e3f8b1dee1150eaca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17978c63f01e5e5dcddd685b3ff75fdf"><td class="memItemLeft" align="right" valign="top"><a id="a17978c63f01e5e5dcddd685b3ff75fdf"></a>
+tuple_type &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>tuple</b> ()</td></tr>
+<tr class="separator:a17978c63f01e5e5dcddd685b3ff75fdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6ef6eab42cbc2b21cb3dc4e240295d45"><td class="memItemLeft" align="right" valign="top"><a id="a6ef6eab42cbc2b21cb3dc4e240295d45"></a>
 tuple_type const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>tuple</b> () const</td></tr>
 <tr class="separator:a6ef6eab42cbc2b21cb3dc4e240295d45"><td class="memSeparator" colspan="2">&#160;</td></tr>
