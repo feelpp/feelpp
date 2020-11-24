@@ -1749,7 +1749,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
         else if ( bpbc.hasElasticVelocityFromExpr() )
             this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), rangeMFOF );
         else
-            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, idv(this->fieldVelocity())/*bpbc.rigidVelocityExprFromFields()*/, rangeMFOF );
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields(), rangeMFOF ); // TO FIX : use idv(this->fieldVelocity() require to need a range with partial support mesh info
+            //this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, idv(this->fieldVelocity())/*bpbc.rigidVelocityExprFromFields()*/, rangeMFOF );
 #if 0
         (*M_meshDisplacementOnInterface)[Component::X].on(_range=bpbc.rangeMarkedFacesOnFluid(),_expr=cst(0.) );
 #endif
@@ -1988,7 +1989,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
+
     nBlock += 2*M_bodySetBC.size();
+    for ( auto const& [bname,bbc] : M_bodySetBC )
+        if ( bbc.hasArticulationTranslationalVelocity() && bbc.articulationMethod() == "lm" )
+            ++nBlock;
     return nBlock;
 }
 
@@ -2107,14 +2112,31 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         indexBlock += this->nFluidOutletWindkesselImplicit();//this->nFluidOutlet();
     }
 
-    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    for ( auto const& [bpname,bbc] : M_bodySetBC )
     {
-        myblockGraph(indexBlock,indexBlock) = stencil(_test=bpbc.spaceTranslationalVelocity(),_trial=bpbc.spaceTranslationalVelocity(),
-                                                      _diag_is_nonzero=false,_close=false)->graph();
-        ++indexBlock;
-        myblockGraph(indexBlock,indexBlock) = stencil(_test=bpbc.spaceAngularVelocity(),_trial=bpbc.spaceAngularVelocity(),
-                                                      _diag_is_nonzero=false,_close=false)->graph();
-        ++indexBlock;
+        size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".translational-velocity");
+        size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".angular-velocity");
+        myblockGraph(startBlockIndexTranslationalVelocity,startBlockIndexTranslationalVelocity) = stencil(_test=bbc.spaceTranslationalVelocity(),_trial=bbc.spaceTranslationalVelocity(),
+                                                                                                          _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(startBlockIndexAngularVelocity,startBlockIndexAngularVelocity) = stencil(_test=bbc.spaceAngularVelocity(),_trial=bbc.spaceAngularVelocity(),
+                                                                                              _diag_is_nonzero=false,_close=false)->graph();
+        indexBlock +=2;
+
+        if ( bbc.hasArticulationTranslationalVelocity() && bbc.articulationMethod() == "lm" )
+        {
+            auto const& bbcArticulation = *(bbc.articulationBodiesUsed().begin()->second); // WARNING : we guess that we have only one body! TODO
+            size_type startBlockIndexTranslationalVelocityOtherBody = this->startSubBlockSpaceIndex("body-bc."+bbcArticulation.name()+".translational-velocity");
+            size_type startBlockIndexArticulationLMTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".articulation-lm.translational-velocity");
+            myblockGraph(startBlockIndexTranslationalVelocity,startBlockIndexArticulationLMTranslationalVelocity) = stencil(_test=bbc.spaceTranslationalVelocity(),_trial=bbc.spaceTranslationalVelocity(),
+                                                                                                                            _diag_is_nonzero=false,_close=false)->graph();
+            myblockGraph(startBlockIndexTranslationalVelocityOtherBody,startBlockIndexArticulationLMTranslationalVelocity) = stencil(_test=bbcArticulation.spaceTranslationalVelocity(),_trial=bbc.spaceTranslationalVelocity(),
+                                                                                                                                     _diag_is_nonzero=false,_close=false)->graph();
+            myblockGraph(startBlockIndexArticulationLMTranslationalVelocity,startBlockIndexTranslationalVelocity) = stencil(_test=bbc.spaceTranslationalVelocity(),_trial=bbc.spaceTranslationalVelocity(),
+                                                                                                                                     _diag_is_nonzero=false,_close=false)->graph();
+            myblockGraph(startBlockIndexArticulationLMTranslationalVelocity,startBlockIndexTranslationalVelocityOtherBody) = stencil(_test=bbc.spaceTranslationalVelocity(),_trial=bbcArticulation.spaceTranslationalVelocity(),
+                                                                                                                                     _diag_is_nonzero=false,_close=false)->graph();
+            ++indexBlock;
+        }
     }
 
     this->log("FluidMechanics","buildBlockMatrixGraph", "finish" );

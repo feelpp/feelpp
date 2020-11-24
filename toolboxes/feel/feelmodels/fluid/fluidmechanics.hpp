@@ -377,6 +377,8 @@ public:
         moment_of_inertia_type M_momentOfInertia;
     };
 
+    // fwd type
+    class BodySetBoundaryCondition;
     // bc body
     class BodyBoundaryCondition
     {
@@ -402,6 +404,7 @@ public:
 
         void setup( std::string const& bodyName, pt::ptree const& p, self_type const& fluidToolbox );
         void init( self_type const& fluidToolbox );
+        void initArticulation( self_type const& fluidToolbox, BodySetBoundaryCondition const& bsbc );
         void updateForUse( self_type const& fluidToolbox );
 
 
@@ -517,6 +520,32 @@ public:
                     std::get<0>( eve ).setParameterValues( mp );
                 if ( M_body )
                     M_body->setParameterValues( mp );
+
+                M_articulationTranslationalVelocityExpr.setParameterValues( mp );
+            }
+
+        //---------------------------------------------------------------------------//
+        // articulation
+        bool hasArticulationTranslationalVelocity() const { return !M_articulationBodiesUsed.empty() && M_articulationTranslationalVelocityExpr.template hasExpr<1,1>(); }
+        std::map<std::string,BodyBoundaryCondition const*> const& articulationBodiesUsed() const { return M_articulationBodiesUsed; }
+        std::string const& articulationMethod() const { return M_articulationMethod; }
+        element_trace_p0c_vectorial_ptrtype fieldArticulationLagrangeMultiplierTranslationalVelocity() const { return M_fieldArticulationLagrangeMultiplierTranslationalVelocity; }
+
+        template <typename SymbolsExprType>
+        auto articulationTranslationalVelocityExpr( SymbolsExprType const& se ) const
+            {
+                auto mc1 = M_body->massCenter();
+                auto mc2 = this->articulationBodiesUsed().begin()->second->body().massCenter();
+                eigen_vector_type<nRealDim> /*auto*/ unitDir = (mc2-mc1);
+                unitDir.normalize();
+                //std::cout << "unit dir : " << unitDir << std::endl;
+                auto e = expr( M_articulationTranslationalVelocityExpr.template expr<1,1>(), se );
+                // std::cout << "e=" << str(e.expression()) << std::endl;
+                // std::cout << "e.eval=" << e.evaluate()(false) << std::endl;
+                if constexpr ( nDim == 2 )
+                    return e*vec( cst(unitDir(0)), cst(unitDir(1)) );
+                else
+                    return e*vec( cst(unitDir(0)), cst(unitDir(1)), cst(unitDir(2)) );
             }
 
     private :
@@ -543,6 +572,12 @@ public:
         bool M_gravityForceEnabled;
         //double M_massOfFluid;
         eigen_vector_type<nRealDim> M_gravityForceWithMass;
+
+        // articulation
+        std::map<std::string,BodyBoundaryCondition const*> M_articulationBodiesUsed;
+        element_trace_p0c_vectorial_ptrtype M_fieldArticulationLagrangeMultiplierTranslationalVelocity;
+        ModelExpression M_articulationTranslationalVelocityExpr;
+        std::string M_articulationMethod;
     };
 
     class BodySetBoundaryCondition : public std::map<std::string,BodyBoundaryCondition>
@@ -570,6 +605,9 @@ public:
             {
                 for ( auto & [name,bpbc] : *this )
                     bpbc.init( fluidToolbox );
+                // second pass init articulation
+                for ( auto & [name,bpbc] : *this )
+                    bpbc.initArticulation( fluidToolbox, *this );
             }
         void setParameterValues( std::map<std::string,double> const& mp )
             {

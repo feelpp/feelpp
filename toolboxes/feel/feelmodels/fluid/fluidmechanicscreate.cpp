@@ -1693,6 +1693,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessExportsAllFieldsAvailable( "trace_mesh", {"trace.normal-stress","trace.wall-shear-stress" /*, "trace.body.translational-velocity", "trace.body.angular-velocity"*/ } );
+    for ( auto const& [bname,bbc] : M_bodySetBC )
+        this->addPostProcessExportsAllFieldsAvailable( "trace_mesh", { (boost::format("body.%1%.translational-velocity")%bname).str(), (boost::format("body.%1%.angular-velocity")%bname).str() } );
     this->setPostProcessExportsPidName( "trace_mesh", "trace.pid" );
     this->setPostProcessSaveAllFieldsAvailable( {"velocity","pressure","vorticity","displacement"} );
     super_type::initPostProcess();
@@ -1851,6 +1853,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
     {
         this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".translational-velocity", currentStartIndex++ );
         this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".angular-velocity", currentStartIndex++ );
+        if ( bpbc.hasArticulationTranslationalVelocity() && bpbc.articulationMethod() == "lm" )
+            this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".articulation-lm.translational-velocity", currentStartIndex++ );
     }
 
 
@@ -1926,6 +1930,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
         {
             M_blockVectorSolution(cptBlock++) = bpbc.fieldTranslationalVelocityPtr();
             M_blockVectorSolution(cptBlock++) = bpbc.fieldAngularVelocityPtr();
+            if ( bpbc.hasArticulationTranslationalVelocity() && bpbc.articulationMethod() == "lm" )
+                M_blockVectorSolution(cptBlock++) = bpbc.fieldArticulationLagrangeMultiplierTranslationalVelocity();
         }
     }
 
@@ -2665,6 +2671,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string co
             }
         }
     }
+
+    if ( auto ptArticulation = pt.get_child_optional("articulation") )
+    {
+        if ( auto ptBodyName = ptArticulation->get_optional<std::string>( "body" ) )
+            M_articulationBodiesUsed[*ptBodyName] = nullptr;
+        else
+            CHECK( false ) << "require body";
+        M_articulationTranslationalVelocityExpr.setExpr( "translational-velocity", *ptArticulation, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+        if ( !M_articulationTranslationalVelocityExpr.template hasExpr<1,1>() )
+            CHECK( false ) << "required a scalar expr";
+
+        M_articulationMethod = "lm";
+    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -2698,6 +2717,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
             M_gravityForceEnabled = true;
             break;
         }
+    }
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::initArticulation( self_type const& fluidToolbox, BodySetBoundaryCondition const& bsbc )
+{
+    for ( auto & [name,bbPtr] : M_articulationBodiesUsed )
+    {
+        auto itFind = bsbc.find( name );
+        CHECK( itFind != bsbc.end() ) << "body not found";
+        bbPtr = &(itFind->second);
+    }
+    if ( this->hasArticulationTranslationalVelocity() )
+    {
+        if ( this->articulationMethod() == "lm" )
+            M_fieldArticulationLagrangeMultiplierTranslationalVelocity = M_XhTranslationalVelocity->elementPtr();
     }
 }
 
