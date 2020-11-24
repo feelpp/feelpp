@@ -62,12 +62,6 @@ void defFM(py::module &m)
         .def("functionSpacePressure",&fm_t::functionSpacePressure, "get the pressure function space")
         .def("fieldPressure",static_cast<typename fm_t::element_pressure_type& (fm_t::*)()>(&fm_t::fieldPressure), "get the pressure field")
 
-        // normal stress
-        .def("createFunctionSpacesNormalStress",&fm_t::createFunctionSpacesNormalStress, "create a normal stress function space")
-        //.def("functionSpaceNormalStress",&fm_t::functionSpaceNormalStress, "get the normal stress function space")
-        .def("fieldNormalStressPtr",static_cast<typename fm_t::element_normalstress_ptrtype& (fm_t::*)()>(&fm_t::fieldNormalStressPtr), "get the normal stress field")
-        .def("fieldNormalStress",static_cast<typename fm_t::element_normalstress_type const& (fm_t::*)() const>(&fm_t::fieldNormalStress), "get the normal stress field")
-        
         // time stepping
         .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (fm_t::*)() const>(&fm_t::timeStepBase), "get time stepping base")
         .def("updateTimeStep",&fm_t::updateTimeStep, "update time stepping")

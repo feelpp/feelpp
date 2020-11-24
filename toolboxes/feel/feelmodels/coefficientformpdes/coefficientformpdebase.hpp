@@ -82,9 +82,9 @@ public :
 
     //___________________________________________________________________________________//
     // mesh
-    mesh_ptrtype const& mesh() const { return M_mesh; }
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
-    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
 
     //___________________________________________________________________________________//
     // physical parameters
@@ -98,6 +98,7 @@ public :
     std::string const& stabilizationType() const { return M_stabilizationType; }
     stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
     bool stabilizationGLS_applyShockCapturing() const { return M_stabilizationGLS_applyShockCapturing; }
+    bool stabilizationDoAssemblyWithGradDiffusionCoeff() const { return M_stabilizationDoAssemblyWithGradDiffusionCoeff; }
 
     //___________________________________________________________________________________//
     // time discretisation
@@ -129,7 +130,6 @@ protected :
 
 protected :
 
-    mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
     // physical parameters
@@ -145,6 +145,7 @@ protected :
     std::string M_stabilizationType;
     stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
     bool M_stabilizationGLS_applyShockCapturing;
+    bool M_stabilizationDoAssemblyWithGradDiffusionCoeff;
 
     // post-process
     export_ptrtype M_exporter;

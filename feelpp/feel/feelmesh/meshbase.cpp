@@ -33,9 +33,10 @@ namespace Feel
 {
 
 template <typename IndexT>
-MeshBase<IndexT>::MeshBase( uint16_type topoDim, uint16_type realDim, worldcomm_ptr_t const& worldComm )
+MeshBase<IndexT>::MeshBase( std::string const& name, uint16_type topoDim, uint16_type realDim, worldcomm_ptr_t const& worldComm )
     :
     super( worldComm ),
+    super2( "Mesh", name ),
     M_topodim( topoDim ),
     M_realdim( realDim ),
     M_components( MESH_ALL_COMPONENTS ),

@@ -62,6 +62,7 @@ public :
 
     mesh_ptr_t const& mesh() const { return M_mesh; }
     std::string const& method() const { return M_method; }
+    std::string const& hSizeMethod() const { return M_hSizeMethod; }
     double penalLambdaK() const { return M_penalLambdaK; }
     void setPenalLambdaK( double val ) { M_penalLambdaK = val; }
 

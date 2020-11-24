@@ -1,55 +1,359 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
- */
-
-#include <feel/feelmodels/fluid/fluidmechanics.hpp>
-
-#include <feel/feelvf/vf.hpp>
-
-//#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
-
+#ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_ASSEMBLY_RESIDUAL_HPP
+#define FEELPP_TOOLBOXES_FLUIDMECHANICS_ASSEMBLY_RESIDUAL_HPP 1
 
 namespace Feel
 {
 namespace FeelModels
 {
 
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
+template <typename ModelContextType>
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( DataUpdateResidual & data, ModelContextType const& mctx ) const
 {
-    this->log("FluidMechanics","updateResidualModel", "start" );
-
-    boost::mpi::timer thetimer,thetimer2;
     const vector_ptrtype& XVec = data.currentSolution();
     vector_ptrtype& R = data.residual();
     bool BuildCstPart = data.buildCstPart();
     bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
     bool BuildNonCstPart = !BuildCstPart;
 
+    std::string sc=(BuildCstPart)?" (build cst part)":" (build non cst part)";
+    this->log("FluidMechanics","updateResidual", "start"+sc );
+    this->timerTool("Solve").start();
+
+    //--------------------------------------------------------------------------------------------------//
+
     bool doAssemblyRhs = !data.hasInfo( "ignore-assembly.rhs" );
+    // if ( !doAssemblyRhs )
+    //     std::cout << "hola \n";
 
     double timeSteppingScaling = 1.;
+    bool timeSteppingEvaluateResidualWithoutTimeDerivative = false;
     if ( !this->isStationaryModel() )
-        timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"time-stepping.scaling") );
+    {
+        timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( prefixvm(this->prefix(),"time-stepping.evaluate-residual-without-time-derivative") );
+        if ( M_timeStepping == "Theta" )
+        {
+            if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
+                timeSteppingScaling = 1. - M_timeStepThetaValue;
+            else
+                timeSteppingScaling = M_timeStepThetaValue;
+        }
+        data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
+    }
+
     //--------------------------------------------------------------------------------------------------//
 
     auto mesh = this->mesh();
     auto XhV = this->functionSpaceVelocity();
+    auto XhP = this->functionSpacePressure();
+
+    size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+    size_type startBlockIndexPressure = this->startSubBlockSpaceIndex("pressure");
+    size_type rowStartInVector = this->rowStartInVector();
+    auto linearFormV_PatternDefault = form1( _test=XhV, _vector=R,
+                                            _pattern=size_type(Pattern::DEFAULT),
+                                            _rowstart=rowStartInVector+startBlockIndexVelocity );
+    auto linearFormV = form1( _test=XhV, _vector=R,
+                                             _pattern=size_type(Pattern::COUPLED),
+                                             _rowstart=rowStartInVector+startBlockIndexVelocity );
+    auto linearFormP = form1( _test=XhP, _vector=R,
+                              _pattern=size_type(Pattern::COUPLED),
+                              _rowstart=rowStartInVector+startBlockIndexPressure );
+
+    auto const& u = mctx.field( FieldTag::velocity(this), "velocity" );
+    auto const& p = mctx.field( FieldTag::pressure(this), "pressure" );
     auto const& v = u;
     auto const& q = p;
+    auto const& se = mctx.symbolsExpr();
 
-    size_type rowStartInVector = this->rowStartInVector();
-    auto linearFormV = form1( _test=XhV, _vector=R,
-                              _pattern=size_type(Pattern::COUPLED),
-                              _rowstart=this->rowStartInVector() );
+    //--------------------------------------------------------------------------------------------------//
 
-
+    // identity Matrix
     auto Id = eye<nDim,nDim>();
-    // dynamic viscosity
-    auto const& mu = this->materialProperties()->fieldMu();
-    // density
-    auto const& rho = this->materialProperties()->fieldRho();
+
+    //--------------------------------------------------------------------------------------------------//
+
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    {
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+        {
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            auto const& matProps = this->materialsProperties()->materialProperties( matName );
+
+            // stress tensor sigma : grad(v)
+            if ( !timeSteppingEvaluateResidualWithoutTimeDerivative && BuildNonCstPart && !UseJacobianLinearTerms )
+            {
+                linearFormV +=
+                    integrate( _range=range,
+                               _expr= -idv(p)*div(v),
+                               _geomap=this->geomap() );
+            }
+
+            bool doAssemblyStressTensor = ( physicFluidData->dynamicViscosity().isNewtonianLaw() && !physicFluidData->turbulence().isEnabled() )? BuildNonCstPart && !UseJacobianLinearTerms : BuildNonCstPart;
+            if ( doAssemblyStressTensor )
+            {
+                auto const StressTensorExpr = Feel::FeelModels::fluidMecStressTensor(u/*gradv(u)*/,idv(p),*physicFluidData,matProps,false/*true*/,se);
+                // sigma : grad(v) on Omega
+                linearFormV +=
+                    integrate( _range=range,
+                               _expr= timeSteppingScaling*inner( StressTensorExpr,grad(v) ),
+                               _geomap=this->geomap() );
+            }
+            
+#if 0
+            if ( physicFluidData->turbulence().isEnabled() && BuildNonCstPart )
+            {
+                auto lmix = min( 0.41*idv(M_fieldDist2Wall), cst(0.09)*cst(0.0635/2.) );
+                auto mut = pow(lmix,2)*abs(gradv(u)(0,1));
+                linearFormV +=
+                    integrate( _range=range,
+                               _expr= timeSteppingScaling*inner( 2*mut*sym(gradv(u)),grad(v) ),
+                               _geomap=this->geomap() );
+            }
+#endif
+            
+
+
+            // convection
+            if ( BuildNonCstPart && physicFluidData->equation() == "Navier-Stokes" )
+            {
+                auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
+                if ( this->useSemiImplicitTimeScheme() )
+                {
+                    auto const& beta_u = this->useSemiImplicitTimeScheme()? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
+                    linearFormV +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*densityExpr*trans( gradv(u)*idv(beta_u) )*id(v),
+                                   _geomap=this->geomap() );
+                    if ( this->doStabConvectionEnergy() )
+                        CHECK( false ) << "TODO";
+                }
+                else
+                {
+                    if ( this->doStabConvectionEnergy() )
+                    {
+                        linearFormV +=
+                            integrate( _range=range,
+                                       //_expr= /*idv(*M_P0Rho)**/inner( Feel::vf::FSI::fluidMecConvection(u,*M_P0Rho) + idv(*M_P0Rho)*0.5*divv(u)*idv(u), id(v) ),
+                                       _expr=timeSteppingScaling*densityExpr*inner( Feel::FeelModels::fluidMecConvectionWithEnergyStab(u), id(v) ),
+                                       _geomap=this->geomap() );
+                    }
+                    else
+                    {
+                        // convection term
+                        // auto convecTerm = val( idv(rho)*trans( gradv(u)*idv(u) ))*id(v);
+                        auto convecTerm = densityExpr*inner( Feel::FeelModels::fluidMecConvection(u),id(v) );
+                        linearFormV +=
+                            integrate( _range=range,
+                                       _expr=timeSteppingScaling*convecTerm,
+                                       _geomap=this->geomap() );
+                    }
+                }
+            }
+
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+            if ( M_isMoveDomain && !BuildCstPart && !UseJacobianLinearTerms )
+            {
+                auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
+                // mesh velocity (convection) term
+                linearFormV +=
+                    integrate( _range=range,
+                               _expr= -timeSteppingScaling*val(densityExpr*trans( gradv(u)*( idv( this->meshVelocity() ))))*id(v),
+                               _geomap=this->geomap() );
+            }
+#endif
+
+
+            if ( !BuildCstPart && !UseJacobianLinearTerms && physicFluidData->equation() == "Navier-Stokes" && data.hasVectorInfo( "explicit-part-of-solution" ) )
+            {
+                auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
+                auto uExplicitPartOfSolution = XhV->element( data.vectorInfo( "explicit-part-of-solution" ), rowStartInVector+startBlockIndexVelocity );
+                linearFormV +=
+                    integrate( _range=M_rangeMeshElements,
+                               _expr= timeSteppingScaling*val( densityExpr*trans( gradv(u)*idv(uExplicitPartOfSolution) + gradv(uExplicitPartOfSolution )*idv(u)  ))*id(v),
+                               _geomap=this->geomap() );
+            }
+
+
+            //------------------------------------------------------------------------------------//
+            //transients terms
+            if ( !this->isStationaryModel() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
+            {
+                bool Build_TransientTerm = !BuildCstPart;
+                if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=!BuildCstPart && !UseJacobianLinearTerms;
+
+                auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
+                if (Build_TransientTerm) //  !BuildCstPart && !UseJacobianLinearTerms )
+                {
+                    linearFormV_PatternDefault +=
+                        integrate( _range=range,
+                                   _expr= densityExpr*inner(idv(u),id(v))*M_bdfVelocity->polyDerivCoefficient(0),
+                                   _geomap=this->geomap() );
+                }
+
+                if (BuildCstPart && doAssemblyRhs)
+                {
+                    auto buzz = M_bdfVelocity->polyDeriv();
+                    linearFormV_PatternDefault +=
+                        integrate( _range=range,
+                                   _expr= -densityExpr*inner(idv(buzz),id(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+
+            //------------------------------------------------------------------------------------//
+            //! gravity force
+            if ( doAssemblyRhs && physicFluidData->gravityForceEnabled() )
+            {
+                auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
+                auto const& gravityForce = physicFluidData->gravityForceExpr();
+                bool assembleGravityTerm = gravityForce.expression().isNumericExpression()? BuildCstPart : BuildNonCstPart;
+                if ( assembleGravityTerm )
+                {
+                    auto const& gravityForceExpr = gravityForce; // TODO apply symbols expr
+                    linearFormV +=
+                        integrate( _range=M_rangeMeshElements,
+                                   _expr= -timeSteppingScaling*densityExpr*inner(gravityForceExpr,id(u)),
+                                   _geomap=this->geomap() );
+                }
+            }
+
+            //--------------------------------------------------------------------------------------------------//
+            // take into account that div u != 0
+            if (!this->velocityDivIsEqualToZero() && BuildCstPart && doAssemblyRhs )
+            {
+                linearFormP +=
+                    integrate( _range=range,
+                               _expr= idv(this->velocityDiv())*id(q),
+                               _geomap=this->geomap() );
+
+                auto muExpr = expr( matProps.property("dynamic-viscosity").template expr<1,1>(), se );
+                auto coeffDiv = (2./3.)*muExpr;
+                linearFormV +=
+                    integrate( _range=range,
+                               _expr= val(-timeSteppingScaling*coeffDiv*gradv(this->velocityDiv()))*id(v),
+                               _geomap=this->geomap() );
+            }
+
+            // stabilization gls
+            if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
+            {
+                this->updateResidualStabilizationGLS( data, mctx, *physicFluidData, matProps, range );
+            }
+
+        } // foreach mat
+    } // foreach physic
+
+    //--------------------------------------------------------------------------------------------------//
+
+    // incompressibility term
+    if (!BuildCstPart && !UseJacobianLinearTerms )
+    {
+        linearFormP +=
+            integrate( _range=M_rangeMeshElements,
+                       _expr= -divv(u)*id(q),
+                       _geomap=this->geomap() );
+    }
+
+    //--------------------------------------------------------------------------------------------------//
+
+    // body forces
+    if (BuildCstPart && doAssemblyRhs)
+    {
+        if ( this->M_overwritemethod_updateSourceTermResidual != NULL )
+        {
+            this->M_overwritemethod_updateSourceTermResidual(R);
+        }
+        else
+        {
+            for( auto const& d : this->M_volumicForcesProperties )
+            {
+                auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
+                linearFormV +=
+                    integrate( _range=rangeBodyForceUsed,
+                               _expr= -timeSteppingScaling*inner( expression(d,se),id(v) ),
+                               _geomap=this->geomap() );
+            }
+        }
+
+        if (M_haveSourceAdded)
+        {
+            linearFormV +=
+                integrate( _range=M_rangeMeshElements,
+                           _expr= -timeSteppingScaling*trans(idv(*M_SourceAdded))*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
+
+    //------------------------------------------------------------------------------------//
+    // define pressure cst
+    if ( this->definePressureCst() )
+    {
+        if ( this->definePressureCstMethod() == "penalisation" && !BuildCstPart && !UseJacobianLinearTerms )
+        {
+            double beta = this->definePressureCstPenalisationBeta();
+            for ( auto const& rangeElt : M_definePressureCstMeshRanges )
+                linearFormP +=
+                    integrate( _range=rangeElt,
+                               _expr=beta*idv(p)*id(q),
+                               _geomap=this->geomap() );
+        }
+        if ( this->definePressureCstMethod() == "lagrange-multiplier" )
+        {
+            CHECK( this->hasStartSubBlockSpaceIndex("define-pressure-cst-lm") ) << " start dof index for define-pressure-cst-lm is not present\n";
+            size_type startBlockIndexDefinePressureCstLM = this->startSubBlockSpaceIndex("define-pressure-cst-lm");
+
+            if ( !BuildCstPart && !UseJacobianLinearTerms )
+            {
+                for ( int k=0;k<M_XhMeanPressureLM.size();++k )
+                {
+                    auto lambda = M_XhMeanPressureLM[k]->element(XVec,rowStartInVector+startBlockIndexDefinePressureCstLM+k);
+                    //M_blockVectorSolution.setSubVector( lambda, *XVec, rowStartInVector+startBlockIndexDefinePressureCstLM+k );
+                    //for ( size_type k=0;k<M_XhMeanPressureLM->nLocalDofWithGhost();++k )
+                    //    lambda( k ) = XVec->operator()( startDofIndexDefinePressureCstLM + k);
+
+                    form1( _test=M_XhMeanPressureLM[k],_vector=R,
+                           _rowstart=rowStartInVector+startBlockIndexDefinePressureCstLM+k ) +=
+                        integrate( _range=M_definePressureCstMeshRanges[k],
+                                   _expr= id(p)*idv(lambda) + idv(p)*id(lambda),
+                                   _geomap=this->geomap() );
+                }
+            }
+#if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE)
+            if ( BuildCstPart && doAssemblyRhs )
+            {
+                for ( int k=0;k<M_XhMeanPressureLM.size();++k )
+                {
+                    auto lambda = M_XhMeanPressureLM[k]->element();
+                    form1( _test=M_XhMeanPressureLM[k],_vector=R,
+                           _rowstart=rowStartInVector+startDofIndexDefinePressureCstLM+k ) +=
+                        integrate( _range=M_definePressureCstMeshRanges[k],
+                                   _expr= -(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE(this->shared_from_this()))*id(lambda),
+                                   _geomap=this->geomap() );
+                }
+            }
+#endif
+        }
+    }
+
+
+
+    //------------------------------------------------------------------------------------//
+#if 0
+    if ( UsePeriodicity && !BuildCstPart )
+    {
+        std::string marker1 = soption(_name="periodicity.marker1",_prefix=this->prefix());
+        double pressureJump = doption(_name="periodicity.pressure-jump",_prefix=this->prefix());
+        linearForm_PatternCoupled +=
+            integrate( _range=markedfaces( this->mesh(),this->mesh()->markerName(marker1) ),
+                       _expr=-inner(pressureJump*N(),id(v) ) );
+    }
+#endif
+    //------------------------------------------------------------------------------------//
+    //------------------------------------------------------------------------------------//
+    //------------------------------------------------------------------------------------//
 
     //--------------------------------------------------------------------------------------------------//
     // Neumann boundary condition
@@ -58,17 +362,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
         for( auto const& d : this->M_bcNeumannScalar )
             linearFormV +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= -timeSteppingScaling*expression(d,this->symbolsExpr())*inner( N(),id(v) ),
+                           _expr= -timeSteppingScaling*expression(d,se)*inner( N(),id(v) ),
                            _geomap=this->geomap() );
         for( auto const& d : this->M_bcNeumannVectorial )
             linearFormV +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,name(d)) ),
-                           _expr= -timeSteppingScaling*inner( expression(d,this->symbolsExpr()),id(v) ),
+                           _expr= -timeSteppingScaling*inner( expression(d,se),id(v) ),
                            _geomap=this->geomap() );
         for( auto const& d : this->M_bcNeumannTensor2 )
             linearFormV +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,name(d)) ),
-                           _expr= -timeSteppingScaling*inner( expression(d,this->symbolsExpr())*N(),id(v) ),
+                           _expr= -timeSteppingScaling*inner( expression(d,se)*N(),id(v) ),
                            _geomap=this->geomap() );
     }
 
@@ -215,16 +519,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
 
     if (!BuildCstPart && !UseJacobianLinearTerms && !this->markerSlipBC().empty() )
     {
-        // slip condition :
+        auto muExpr = this->dynamicViscosityExpr( u,se );
+        auto densityExpr = this->materialsProperties()->template materialPropertyExpr<1,1>( "density", se );
         auto P = Id-N()*trans(N());
         double gammaN = doption(_name="bc-slip-gammaN",_prefix=this->prefix());
         double gammaTau = doption(_name="bc-slip-gammaTau",_prefix=this->prefix());
         auto betaExtrapolated = M_bdfVelocity->poly();
         auto beta = vf::project( _space=XhV,
                                  _range=boundaryfaces(mesh),
-                                 _expr=idv(rho)*idv(betaExtrapolated) );
-        auto Cn = gammaN*max(abs(trans(idv(beta))*N()),idv(mu)/vf::h());
-        auto Ctau = gammaTau*idv(mu)/vf::h() + max( -trans(idv(beta))*N(),cst(0.) );
+                                 _expr=densityExpr*idv(betaExtrapolated) );
+        auto Cn = gammaN*max(abs(trans(idv(beta))*N()),muExpr/vf::h());
+        auto Ctau = gammaTau*muExpr/vf::h() + max( -trans(idv(beta))*N(),cst(0.) );
 
         linearFormV +=
             integrate( _range=markedfaces(mesh,this->markerSlipBC()),
@@ -244,9 +549,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
     {
         if ( !BuildCstPart && !UseJacobianLinearTerms )
         {
-            // deformation and stress tensor (eval)
-            auto defv = sym(gradv(u));
-            auto Sigmav = -idv(p)*Id + 2*idv(mu)*defv;
+            auto Sigmav = this->stressTensorExpr(u,p,se);
             linearFormV +=
                 integrate( _range=markedfaces(mesh,this->markerDirichletBCnitsche() ),
                            _expr= -timeSteppingScaling*trans(Sigmav*N())*id(v)
@@ -258,7 +561,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
             for( auto const& d : this->M_bcDirichlet )
                 linearFormV +=
                     integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "nitsche",name(d) ) ),
-                               _expr= -timeSteppingScaling*this->dirichletBCnitscheGamma()*inner( expression(d,this->symbolsExpr()),id(v) )/hFace(),
+                               _expr= -timeSteppingScaling*this->dirichletBCnitscheGamma()*inner( expression(d,se),id(v) )/hFace(),
                                _geomap=this->geomap() );
         }
     }
@@ -295,7 +598,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                        _rowstart=rowStartInVector+startBlockIndexDirichletLM ) +=
                     integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "lm",name(d) ) ),
                                //_range=markedelements(this->meshDirichletLM(),PhysicalName),
-                               _expr= -inner( expression(d,this->symbolsExpr()),id(lambdaBC) ),
+                               _expr= -inner( expression(d,se),id(lambdaBC) ),
                                _geomap=this->geomap() );
         }
 #endif
@@ -366,7 +669,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
             {
                 linearFormV +=
                     integrate( _range=markedfaces(this->mesh(),this->markerPressureBC(name(d)) ),
-                               _expr= timeSteppingScaling*expression(d,this->symbolsExpr())*trans(N())*id(v),
+                               _expr= timeSteppingScaling*expression(d,se)*trans(N())*id(v),
                                _geomap=this->geomap() );
             }
         }
@@ -454,13 +757,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
         }
     }
 
-    //--------------------------------------------------------------------------------------------------//
+    //------------------------------------------------------------------------------------//
 
-    double timeElapsed = thetimer.elapsed();
-    this->log("FluidMechanics","updateResidualModel","finish in "+(boost::format("%1% s") % timeElapsed).str() );
+    this->updateResidualStabilisation( data, unwrap_ptr(u), unwrap_ptr(p) );
 
+    //------------------------------------------------------------------------------------//
 
-} // updateResidual
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("FluidMechanics","updateResidual","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
 
-} // namespace FeelModels
 } // namespace Feel
+} // namespace FeelModels
+
+#endif

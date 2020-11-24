@@ -55,6 +55,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+        auto const& matProps = this->materialsProperties()->materialProperties( matName );
         auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
         if ( thermalConductivity.isMatrix() )
         {
@@ -118,17 +119,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
             // update stabilization gls
             if ( M_stabilizationGLS && buildNonCstPart && this->hasVelocityConvectionExpr( matName ) )
             {
-                auto velConvExpr = expr( this->velocityConvectionExpr( matName ), symbolsExpr );
-                if ( thermalConductivity.isMatrix() )
-                {
-                    auto const& kappa = expr( thermalConductivity.template expr<nDim,nDim>(), symbolsExpr );
-                    this->updateLinearPDEStabilizationGLS(  rhoHeatCapacityExpr, kappa, velConvExpr, range, data );
-                }
-                else
-                {
-                    auto const& kappa = expr( thermalConductivity.expr(), symbolsExpr );
-                    this->updateLinearPDEStabilizationGLS(  rhoHeatCapacityExpr, kappa, velConvExpr, range, data );
-                }
+                this->updateLinearPDEStabilizationGLS( data, mctx, *physicData, matProps, range );
             }
         }
     }
@@ -325,6 +316,7 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+        auto const& matProps = this->materialsProperties()->materialProperties( matName );
         auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
 
         bool thermalConductivityDependOnTrialSymbol = thermalConductivity.hasSymbolDependency( trialSymbolNames,se );
@@ -413,17 +405,7 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
             // update stabilization gls
             if ( M_stabilizationGLS && buildNonCstPart && this->hasVelocityConvectionExpr( matName ) )
             {
-                auto velConvExpr = expr( this->velocityConvectionExpr( matName ), se );
-                if ( thermalConductivity.isMatrix() )
-                {
-                    auto const& kappa = expr( thermalConductivity.template expr<nDim,nDim>(), se );
-                    this->updateJacobianStabilizationGLS( rhoHeatCapacityExpr, kappa, velConvExpr, range, data );
-                }
-                else
-                {
-                    auto const& kappa = expr(thermalConductivity.expr(),se);
-                    this->updateJacobianStabilizationGLS( rhoHeatCapacityExpr, kappa, velConvExpr, range, data );
-                }
+                this->updateJacobianStabilizationGLS( data, mctx, *physicData, matProps, range );
             }
 
         }
@@ -494,6 +476,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+        auto const& matProps = this->materialsProperties()->materialProperties( matName );
         auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
 
         if ( thermalConductivity.template hasExpr<nDim,nDim>() )
@@ -556,17 +539,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
             // update stabilization gls
             if ( M_stabilizationGLS && buildNonCstPart && this->hasVelocityConvectionExpr( matName ) )
             {
-                auto velConvExpr = expr( this->velocityConvectionExpr( matName ), symbolsExpr );
-                if ( thermalConductivity.isMatrix() )
-                {
-                    auto const& kappa = expr( thermalConductivity.template expr<nDim,nDim>(), symbolsExpr );
-                    this->updateResidualStabilizationGLS( rhoHeatCapacityExpr, kappa, velConvExpr, range, data );
-                }
-                else
-                {
-                    auto const& kappa = expr(thermalConductivity.expr(),symbolsExpr);
-                    this->updateResidualStabilizationGLS( rhoHeatCapacityExpr, kappa, velConvExpr, range, data );
-                }
+                this->updateResidualStabilizationGLS( data, mctx, *physicData, matProps, range );
             }
 
         }

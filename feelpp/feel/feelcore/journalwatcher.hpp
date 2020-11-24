@@ -105,6 +105,9 @@ public:
     //! The disconnection is safe.
     void journalDisconnect();
 
+    //! update information object into p
+    virtual void updateInformationObject( pt::ptree & p ) const {}
+
     //! set information object
     void setInformationObject( pt::ptree const& informationObject )
         {
@@ -134,7 +137,6 @@ protected:
         {
             M_function_updateInformationObject( M_informationObject );
         }
-    virtual void updateInformationObject( pt::ptree & p ) {}
 
 private :
     //! Watch child properties and notify the manager.

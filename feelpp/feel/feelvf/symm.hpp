@@ -145,6 +145,44 @@ public:
                 return 0.5*( a-at );
         }
 
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+        {
+            M_expr.setParameterValues( mp );
+        }
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+        {
+             M_expr.updateParameterValues( pv );
+        }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newExpr = M_expr.applySymbolsExpr( se );
+            using new_expr_type = std::decay_t<decltype(newExpr)>;
+            return Sym<new_expr_type,Part>( newExpr );
+        }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            return M_expr.hasSymbolDependency( symb, se );
+        }
+
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+        {
+            M_expr.dependentSymbols( symb,res,se );
+        }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+    {
+        CHECK( false ) << "TODO";
+        return *this;
+    }
+
+
     //@}
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>

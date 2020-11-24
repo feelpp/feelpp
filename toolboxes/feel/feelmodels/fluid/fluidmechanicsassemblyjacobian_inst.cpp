@@ -1,6 +1,6 @@
 
 #include "fluidmechanicsconfig.h"
-#include <feel/feelmodels/fluid/fluidmechanicsupdatejacobianbc.cpp>
+#include <feel/feelmodels/fluid/fluidmechanicsassemblyjacobian.cpp>
 
 namespace Feel {
 namespace FeelModels {

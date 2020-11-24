@@ -130,11 +130,10 @@ class Heat : public ModelNumerical,
               std::string const& subPrefix  = "",
               ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-        std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"HeatMesh.path"); }
-
         //___________________________________________________________________________________//
         // mesh, space, element temperature
-        mesh_ptrtype const& mesh() const { return M_mesh; }
+        mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+        void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
         elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
         space_temperature_ptrtype const& spaceTemperature() const { return M_Xh; }
@@ -174,10 +173,15 @@ class Heat : public ModelNumerical,
         std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBdfTemperature(); }
         void startTimeStep();
         void updateTimeStep();
+
+        template <typename SymbolsExprType>
+        void updateInitialConditions( SymbolsExprType const& se );
         //___________________________________________________________________________________//
 
         std::shared_ptr<std::ostringstream> getInfo() const override;
-        void updateInformationObject( pt::ptree & p ) override;
+        void updateInformationObject( pt::ptree & p ) const override;
+        tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
     private :
         void loadParameterFromOptionsVm();
         void initMesh();
@@ -185,13 +189,10 @@ class Heat : public ModelNumerical,
         void initFunctionSpaces();
         void initBoundaryConditions();
         void initTimeStep();
-        void initInitialConditions();
         void initPostProcess() override;
 
     public :
         void initAlgebraicFactory();
-
-        void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
 
         BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
         int nBlockMatrixGraph() const { return 1; }
@@ -256,6 +257,15 @@ class Heat : public ModelNumerical,
             }
         auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
             {
+                auto field_t = this->spaceTemperature()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "temperature" ) );
+                return this->modelFields( field_t, prefix );
+            }
+        auto modelFields( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorData, std::string const& prefix = "" ) const
+            {
+                auto itFindSolution = vectorData.find( "solution" );
+                CHECK( itFindSolution != vectorData.end() ) << "require solution data";
+                vector_ptrtype sol = std::get<0>( itFindSolution->second );
+                size_type rowStartInVector =  std::get<1>( itFindSolution->second );
                 auto field_t = this->spaceTemperature()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "temperature" ) );
                 return this->modelFields( field_t, prefix );
             }
@@ -339,6 +349,12 @@ class Heat : public ModelNumerical,
                 auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( rowStartInVector ) );
                 return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
             }
+        auto modelContextNoTrialSymbolsExpr( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+            {
+                auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+                auto se = this->symbolsExpr( mfields );
+                return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
+            }
 
         //___________________________________________________________________________________//
         // toolbox expressions
@@ -390,9 +406,10 @@ class Heat : public ModelNumerical,
         void updateLinearPDE( DataUpdateLinear & data ) const override;
         template <typename ModelContextType>
         void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
-        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
-        void updateLinearPDEStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
-                                              Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateLinear & data ) const;
+        template <typename ModelContextType,typename RangeType>
+        void updateLinearPDEStabilizationGLS(  DataUpdateLinear & data, ModelContextType const& mctx,
+                                               ModelPhysic<nDim> const& physicData,
+                                               MaterialProperties const& matProps, RangeType const& range ) const;
         void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
         template <typename ModelContextType>
         void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mfields ) const;
@@ -405,18 +422,20 @@ class Heat : public ModelNumerical,
         void updateJacobian( DataUpdateJacobian & data ) const override;
         template <typename ModelContextType>
         void updateJacobian( DataUpdateJacobian & data, ModelContextType const& mfields ) const;
-        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
-        void updateJacobianStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
-                                             Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateJacobian & data ) const;
+        template <typename ModelContextType,typename RangeType>
+        void updateJacobianStabilizationGLS( DataUpdateJacobian & data, ModelContextType const& mctx,
+                                             ModelPhysic<nDim> const& physicData,
+                                             MaterialProperties const& matProps, RangeType const& range ) const;
         void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
 
         void updateResidual( DataUpdateResidual & data ) const override;
         template <typename ModelContextType>
         void updateResidual( DataUpdateResidual & data, ModelContextType const& mfields ) const;
-        template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType,typename... ExprT>
-        void updateResidualStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
-                                             Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateResidual & data,
-                                             const ExprT&... exprs ) const;
+        template <typename ModelContextType,typename RangeType,typename... ExprAddedType>
+        void updateResidualStabilizationGLS( DataUpdateResidual & data, ModelContextType const& mctx,
+                                             ModelPhysic<nDim> const& physicData,
+                                             MaterialProperties const& matProps, RangeType const& range,
+                                             const ExprAddedType&... exprsAddedInResidual ) const;
         void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
         //___________________________________________________________________________________//
@@ -426,9 +445,6 @@ class Heat : public ModelNumerical,
 
     protected :
 
-        bool M_hasBuildFromMesh, M_isUpdatedForUse;
-
-        mesh_ptrtype M_mesh;
         elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
         space_temperature_ptrtype M_Xh;
@@ -440,6 +456,8 @@ class Heat : public ModelNumerical,
         bdf_temperature_ptrtype M_bdfTemperature;
         double M_timeStepThetaValue;
         vector_ptrtype M_timeStepThetaSchemePreviousContrib;
+
+        std::map<std::string,double> M_currentParameterValues;
 
         // physical parameter
         materialsproperties_ptrtype M_materialsProperties;
@@ -469,6 +487,36 @@ class Heat : public ModelNumerical,
         measure_points_evaluation_ptrtype M_measurePointsEvaluation;
     };
 
+
+template< typename ConvexType, typename BasisTemperatureType>
+template <typename SymbolsExprType>
+void
+Heat<ConvexType,BasisTemperatureType>::updateInitialConditions( SymbolsExprType const& se )
+{
+    if ( !this->doRestart() )
+    {
+        std::vector<element_temperature_ptrtype> icTemperatureFields;
+        if ( this->isStationary() )
+            icTemperatureFields = { this->fieldTemperaturePtr() };
+        else
+            icTemperatureFields = M_bdfTemperature->unknowns();
+
+        super_type::updateInitialConditions( "temperature", M_rangeMeshElements, se, icTemperatureFields );
+
+        if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
+        {
+            auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
+                                "",this->worldComm(),this->repository().expr() );
+            icTemperatureFields[0]->on(_range=M_rangeMeshElements,_expr=myexpr);
+            for ( int k=1;k<icTemperatureFields.size();++k )
+                *icTemperatureFields[k] = *icTemperatureFields[0];
+        }
+
+        if ( !this->isStationary() )
+            *this->fieldTemperaturePtr() = M_bdfTemperature->unknown(0);
+    }
+
+}
 
 template< typename ConvexType, typename BasisTemperatureType>
 template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprType>
