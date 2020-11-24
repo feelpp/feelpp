@@ -105,11 +105,12 @@ The following tables present the Continuous Integration status of the packaging 
 
 .Build status for each component for the latest channel
 |===
-| Component | Docker | Debian/Buster | Ubuntu/Eoan | Ubuntu/Focal
+| Component | Docker | Debian/Buster | Ubuntu/Bionic(18.04 LTS) | Ubuntu/Eoan | Ubuntu/Focal(20.04 LTS)
 
 | feelpp
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/8b8635a2a63929d7d2087b5169d8d6e4e1e3d5417ee83d0754.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp]
+| image:https://badge.buildkite.com/62d58af01a599314b4ecf5751cedc062d386fbb636d0039b32.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-bionic]
 | image:https://badge.buildkite.com/663cf620a1e2d9c420c64e41998a9ba4d2023772872f88a893.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-eoan]
 | image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-focal]
 
