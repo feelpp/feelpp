@@ -34,12 +34,10 @@
 #define FEELPP_MODELNUMERICAL_HPP 1
 
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
+#include <feel/feelmodels/modelcore/modelmeshes.hpp>
 
 #include <feel/feelpoly/geomap.hpp>
 
-#include <boost/fusion/tuple.hpp>
-#include <boost/fusion/sequence.hpp>
-#include <boost/fusion/algorithm.hpp>
 #include <feel/feelvf/ginac.hpp>
 
 #include <feel/feelmodels/modelproperties.hpp>
@@ -63,12 +61,15 @@ namespace FeelModels
 /**
  * Handles some numerical model aspects: timestepping, mesh and properties
  */
-class ModelNumerical : public ModelAlgebraic
+class ModelNumerical : virtual public ModelBase,
+                       public ModelAlgebraic,
+                       public ModelMeshes<typename ModelAlgebraic::index_type>
     {
+    protected :
+        using super_model_base_type = ModelBase;
+        using super_model_meshes_type = ModelMeshes<typename ModelAlgebraic::index_type>;
     public:
         typedef ModelAlgebraic super_type;
-
-        static const bool is_class_null = false;
 
         typedef double value_type;
         using index_type = typename super_type::index_type;
@@ -101,9 +102,6 @@ class ModelNumerical : public ModelAlgebraic
         ModelNumerical( ModelNumerical const& app ) = default;
 
         virtual ~ModelNumerical() {};
-
-        //std::shared_ptr<PsLogger> psLogger()  { return M_PsLogger; }
-        //std::shared_ptr<PsLogger> const& psLogger() const { return M_PsLogger; }
 
         bool isStationary() const { return M_isStationary; }
         void setStationary(bool b);
@@ -192,16 +190,6 @@ class ModelNumerical : public ModelAlgebraic
 
         //----------------------------------------------------------------------------------//
 
-
-        std::string meshFile() const { return M_meshFile; }
-        void setMeshFile(std::string const& file)  { M_meshFile=file; }
-        std::string geoFile() const { return M_geoFile; }
-        void setGeoFile(std::string const& file)  { M_geoFile=file; }
-        bool hasMeshFile() const { return !M_meshFile.empty(); }
-        bool hasGeoFile() const { return !M_geoFile.empty(); }
-
-        void saveMeshFile( std::string const& fileSavePath, std::string const& meshPath = "" ) const;
-
         void setExporterPath(std::string const& s)  { M_exporterPath=s; }
         std::string exporterPath() const { return M_exporterPath; }
 
@@ -282,6 +270,12 @@ class ModelNumerical : public ModelAlgebraic
                     return std::decay_t<decltype(this->modelProperties().parameters().symbolsExpr())>{};
             }
 
+        auto symbolsExprMeshes() const
+            {
+                return super_model_meshes_type::symbolsExpr();
+            }
+
+
         template <typename ElementType, typename RangeType, typename SymbolsExpr>
         void
         updateInitialConditions( std::string const& fieldName,  RangeType const& defaultRange, SymbolsExpr const& symbolsExpr,
@@ -313,9 +307,6 @@ class ModelNumerical : public ModelAlgebraic
         std::shared_ptr<ModelProperties> M_modelProps;
         bool M_manageParameterValues, M_manageParameterValuesOfModelProperties;
 
-
-        std::string M_meshFile, M_geoFile;
-
         std::string M_exporterPath;
         std::map<std::string,std::tuple< std::set<std::string>, std::set<std::string>, std::string > > M_postProcessExportsFields; // (fields, allFieldsAvailable,pidName)
         std::set<std::string> M_postProcessSaveFields, M_postProcessSaveAllFieldsAvailable;
@@ -323,8 +314,6 @@ class ModelNumerical : public ModelAlgebraic
         fs::path M_postProcessSaveRepository;
         ModelMeasuresIO M_postProcessMeasuresIO;
         ModelMeasuresEvaluatorContext M_postProcessMeasuresEvaluatorContext;
-
-        //std::shared_ptr<PsLogger> M_PsLogger;
 
         GeomapStrategyType M_geomap;
 
@@ -508,6 +497,10 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                 continue;
                             for ( auto const&[theexpr,range,reprs] : exprDatas )
                             {
+                                using entity_range_type = entity_range_t<std::decay_t<decltype(range)>>;
+                                if constexpr ( decay_type<ExporterType>::mesh_type::nRealDim == entity_range_type::nRealDim &&
+                                               decay_type<ExporterType>::mesh_type::nDim >= entity_range_type::nDim )
+                                {
                                 if constexpr ( std::is_base_of_v<ExprBase,decay_type<decltype(theexpr)>> )
                                 {
                                     using _expr_shape = typename std::decay_t<decltype(theexpr)>::template evaluator_t<typename  decay_type<ExporterType>::mesh_type::element_type>::shape;
@@ -565,6 +558,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                                     });
                                 } // is ModelExpression
 #endif
+                                } // range compatibility with exporter
                             }
                         }
                     });

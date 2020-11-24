@@ -146,9 +146,9 @@ class Mesh1D
     /**
      * default constructor
      */
-    explicit Mesh1D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    explicit Mesh1D( std::string const& name = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         : super_visitable(),
-          super( 1, nRealDim, worldComm ),
+          super( name, 1, nRealDim, worldComm ),
           super_elements( worldComm ),
           super_points( worldComm )
     {

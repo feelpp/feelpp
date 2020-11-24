@@ -1949,7 +1949,7 @@ Environment::generateSummary( std::string fname, std::string stage, bool write )
 
 
 void
-Environment::updateInformationObject( pt::ptree & p )
+Environment::updateInformationObject( pt::ptree & p ) const
 {
     if ( !p.get_child_optional( "application" ) )
     {

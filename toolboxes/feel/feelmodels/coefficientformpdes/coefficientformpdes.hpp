@@ -180,7 +180,8 @@ public :
     void initAlgebraicFactory();
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
-    void updateInformationObject( pt::ptree & p ) override;
+    void updateInformationObject( pt::ptree & p ) const override;
+    std::vector<tabulate::Table> tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
     //! return all subtoolboxes related to each equation
     std::vector<std::shared_ptr<coefficient_form_pde_base_type>> const& coefficientFormPDEs() const { return M_coefficientFormPDEs; }
@@ -219,8 +220,8 @@ public :
 
     //___________________________________________________________________________________//
     // mesh
-    mesh_ptrtype const& mesh() const { return M_mesh; }
-    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
+    mesh_ptrtype /*const&*/ mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
 
     //___________________________________________________________________________________//
     // physical parameters
@@ -233,6 +234,10 @@ public :
     std::shared_ptr<TSBase> timeStepBase() const;
     void startTimeStep();
     void updateTimeStep();
+
+    //! update initial conditions with symbols expression \se
+    template <typename SymbolsExprType>
+    void updateInitialConditions( SymbolsExprType const& se );
 
     //___________________________________________________________________________________//
     // post-process
@@ -339,12 +344,11 @@ public :
     template <typename ModelFieldsType>
     auto symbolsExpr( ModelFieldsType const& mfields ) const
         {
-            //auto seHeat = this->heatModel()->symbolsExprToolbox( mfields );
-            //auto seElectric = this->electricModel()->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
+            auto seMeshes = this->symbolsExprMeshes();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
-            return Feel::vf::symbolsExpr( /*seHeat,seElectric,*/seParam,seMat,seFields );
+            return Feel::vf::symbolsExpr( seParam,seMeshes,seMat,seFields );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
@@ -453,8 +457,6 @@ private :
 
     static const std::vector<std::string> S_unknownBasisTags;
 
-    mesh_ptrtype M_mesh;
-
     // physical parameters
     materialsproperties_ptrtype M_materialsProperties;
 
@@ -475,6 +477,27 @@ private :
     std::vector<std::shared_ptr<coefficient_form_pde_base_type>> M_coefficientFormPDEs;
 
 };
+
+
+template< typename ConvexType, typename... BasisUnknownType>
+template <typename SymbolsExprType>
+void
+CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateInitialConditions( SymbolsExprType const& se )
+{
+    hana::for_each( tuple_type_unknown_basis, [this,&se]( auto & e )
+                    {
+                        for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+                        {
+                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                continue;
+
+                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+
+                            cfpde->updateInitialConditions( se );
+                        }
+                    });
+}
 
 
 template< typename ConvexType, typename... BasisUnknownType>

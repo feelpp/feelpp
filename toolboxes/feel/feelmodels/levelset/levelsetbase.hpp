@@ -274,8 +274,8 @@ public:
     space_scalar_ptrtype const& functionSpaceScalar() const { return M_spaceLevelset; }
     space_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceVectorial; }
 
-    mesh_ptrtype const& mesh() const { return this->functionSpace()->mesh(); }
-    void setMesh( mesh_ptrtype const& m ) { M_mesh = m; }
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
 
     bool useSpaceIsoPN() const { return M_useSpaceIsoPN; }
 
@@ -728,7 +728,6 @@ protected:
 private:
     //--------------------------------------------------------------------//
     // Meshes 
-    mesh_ptrtype M_mesh;
     range_elements_type M_rangeMeshElements;
 
     mutable mesh_ptrtype M_submeshDirac;

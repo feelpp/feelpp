@@ -33,7 +33,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     this->initMaterialProperties();
 
-    if ( !this->M_mesh )
+    if ( !this->mesh() )
         this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
@@ -46,8 +46,6 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( !this->isStationary() )
         this->initTimeStep();
 
-    this->initInitialConditions();
-
     // stabilization gls
     if ( this->M_applyStabilization && !this->M_stabilizationGLSParameter )
     {
@@ -56,11 +54,15 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->M_stabilizationGLSParameter->init();
     }
 
+    // update constant parameters into
+    this->updateParameterValues();
+
+    // update initial conditions
+    this->updateInitialConditions( this->symbolsExpr() );
+
     // post-process
     this->initPostProcess();
 
-    // update constant parameters into
-    this->updateParameterValues();
 
     // backend
     this->M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr(), this->clovm() );
@@ -164,29 +166,6 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     auto const& listMarkedPointsUnknown = std::get<2>( meshMarkersUnknownByEntities );
     if ( !listMarkedPointsUnknown.empty() )
         this->updateDofEliminationIds( this->unknownName(), Xh, markedpoints( mesh,listMarkedPointsUnknown ) );
-
-}
-
-COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
-void
-COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initInitialConditions()
-{
-    if ( !this->doRestart() )
-    {
-        std::vector<element_unknown_ptrtype> icFields;
-        if ( this->isStationary() )
-            icFields = { this->fieldUnknownPtr() };
-        else
-            icFields = this->timeStepBdfUnknown()->unknowns();
-
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().initialConditions().setParameterValues( paramValues );
-
-        this->updateInitialConditions( this->unknownName(), this->rangeMeshElements(), this->symbolsExpr(), icFields );
-
-        if ( !this->isStationary() )
-            *this->fieldUnknownPtr() = this->timeStepBdfUnknown()->unknown(0);
-    }
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
@@ -272,9 +251,93 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
-COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
 {
-    // TODO
+    pt::ptree subPt;
+    super_type::super_type::super_model_base_type::updateInformationObject( subPt );
+    p.put_child( "Environment", subPt );
+    subPt.clear();
+    super_type::super_type::super_model_meshes_type::updateInformationObject( subPt );
+    p.put_child( "Meshes", subPt );
+
+
+    // FunctionSpace
+    subPt.clear();
+    pt::ptree subPt2;
+    M_Xh->updateInformationObject( subPt2 );
+    subPt.put_child( this->unknownName(), subPt2 );
+    p.put_child( "Function Spaces",  subPt );
+
+#if 0
+    if ( M_algebraicFactory )
+    {
+        subPt.clear();
+        M_algebraicFactory->updateInformationObject( subPt );
+        p.put_child( "Algebraic Solver", subPt );
+    }
+#endif
+}
+
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+tabulate::Table
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    std::vector<std::pair<std::string,tabulate::Table>> tabInfos;
+
+    if ( jsonInfo.contains("Environment") )
+        tabInfos.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
+
+    if ( jsonInfo.contains("Meshes") )
+        tabInfos.push_back( std::make_pair( "Meshes", super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) ) );
+
+    tabInfos.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
+
+    if ( jsonInfo.contains("Function Spaces") )
+    {
+        auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
+        tabulate::Table tabInfoFunctionSpaces;
+        if ( jsonInfoFunctionSpaces.contains( this->unknownName() ) )
+        {
+            tabInfoFunctionSpaces.add_row({this->unknownName()});
+            tabInfoFunctionSpaces.add_row({ TabulateInformationTools::FromJSON::tabulateFunctionSpace( jsonInfoFunctionSpaces.at( this->unknownName() ), tabInfoProp ) });
+            tabInfos.push_back( std::make_pair( "Function Spaces",  tabInfoFunctionSpaces ) );
+        }
+    }
+
+    return TabulateInformationTools::createSections( tabInfos, (boost::format("Toolbox Coefficient Form PDE : %1%")%this->keyword()).str() );
+
+
+#if 0
+    tabulate::Table tabInfo;
+
+    tabulate::Table tabInfoEnv;
+    tabInfoEnv.add_row({"Environment"});
+    tabInfoEnv.add_row({ super_type::super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) });
+    tabInfo.add_row({tabInfoEnv});
+
+    tabulate::Table tabInfoPDE;
+    tabInfoPDE.add_row({"PDE"});
+    tabInfo.add_row({tabInfoPDE});
+
+    tabulate::Table tabInfoMesh;
+    tabInfoMesh.add_row({"Meshes"});
+    tabInfoMesh.add_row({ super_type::super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) });
+    tabInfo.add_row({tabInfoMesh});
+
+    tabulate::Table tabInfoBC;
+    tabInfoBC.add_row({"Boundary conditions"});
+    tabInfo.add_row({tabInfoBC});
+
+    tabulate::Table tabInfoFunctionSpace;
+    tabInfoFunctionSpace.add_row({"Function Space Unknown Discretization"});
+    tabInfo.add_row({tabInfoFunctionSpace});
+
+    tabulate::Table tabInfoAlg;
+    tabInfoAlg.add_row({"Algebraic Solver"});
+    tabInfo.add_row({tabInfoAlg});
+
+    return tabInfo;
+#endif
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
@@ -299,10 +362,12 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::getInfo() const
            << M_bcNeumannMarkerManagement.getInfoNeumannBC()
            << M_bcRobinMarkerManagement.getInfoRobinBC();
     *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
+#if 0
     *_ostr << "\n   Mesh Discretization"
            << "\n     -- mesh filename      : " << this->meshFile()
            << "\n     -- number of element : " << this->mesh()->numGlobalElements()
            << "\n     -- order             : " << nOrderGeo;
+#endif
     *_ostr << "\n   Space Unknown Discretization"
            << "\n     -- name of unknown         : " << this->unknownName()
            << "\n     -- symbol of unknown : " << this->unknownSymbol()
@@ -403,6 +468,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string
     {
         this->modelProperties().parameters().setParameterValues( paramValues );
         this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
     }
 

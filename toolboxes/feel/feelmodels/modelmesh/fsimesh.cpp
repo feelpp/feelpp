@@ -57,6 +57,7 @@ template< class ConvexType >
 void
 FSIMesh<ConvexType>::buildFSIMeshFromMsh()
 {
+#if 0
     if ( this->worldComm().isMasterRank() )
         std::cout << "[FSIMesh] : buildFSIMeshFromMsh start" << std::endl;
 
@@ -85,6 +86,7 @@ FSIMesh<ConvexType>::buildFSIMeshFromMsh()
 
     if ( this->worldComm().isMasterRank() )
         std::cout << "[FSIMesh] : buildFSIMeshFromMsh finish" << std::endl;
+#endif
 }
 
 //-------------------------------------------------------------------------------------------------//
@@ -93,6 +95,7 @@ template< class ConvexType >
 void
 FSIMesh<ConvexType>::buildFSIMeshFromGeo()
 {
+#if 0
     if ( this->worldComm().isMasterRank() )
         std::cout << "[FSIMesh] : buildFSIMeshFromGeo start" << std::endl;
 
@@ -179,7 +182,7 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
 
     if ( this->worldComm().isMasterRank() )
         std::cout << "[FSIMesh] : buildFSIMeshFromGeo finish" << std::endl;
-
+#endif
 } // buildFSImesh
 
 
