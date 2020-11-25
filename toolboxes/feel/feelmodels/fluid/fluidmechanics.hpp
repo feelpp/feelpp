@@ -529,7 +529,8 @@ public:
         bool hasArticulationTranslationalVelocity() const { return !M_articulationBodiesUsed.empty() && M_articulationTranslationalVelocityExpr.template hasExpr<1,1>(); }
         std::map<std::string,BodyBoundaryCondition const*> const& articulationBodiesUsed() const { return M_articulationBodiesUsed; }
         std::string const& articulationMethod() const { return M_articulationMethod; }
-        element_trace_p0c_vectorial_ptrtype fieldArticulationLagrangeMultiplierTranslationalVelocity() const { return M_fieldArticulationLagrangeMultiplierTranslationalVelocity; }
+        datamap_ptr_t<> dataMapArticulationLagrangeMultiplierTranslationalVelocity() const { return M_dataMapArticulationLagrangeMultiplierTranslationalVelocity; }
+        vector_ptrtype vectorArticulationLagrangeMultiplierTranslationalVelocity() const { return M_vectorArticulationLagrangeMultiplierTranslationalVelocity; }
 
         template <typename SymbolsExprType>
         auto articulationTranslationalVelocityExpr( SymbolsExprType const& se ) const
@@ -575,7 +576,8 @@ public:
 
         // articulation
         std::map<std::string,BodyBoundaryCondition const*> M_articulationBodiesUsed;
-        element_trace_p0c_vectorial_ptrtype M_fieldArticulationLagrangeMultiplierTranslationalVelocity;
+        datamap_ptr_t<> M_dataMapArticulationLagrangeMultiplierTranslationalVelocity;
+        vector_ptrtype M_vectorArticulationLagrangeMultiplierTranslationalVelocity;
         ModelExpression M_articulationTranslationalVelocityExpr;
         std::string M_articulationMethod;
     };
