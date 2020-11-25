@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE( test_eim_offline )
                       return u;
                   };
 
-    geim_type geim = geim_type("test_geim", sigmas, Pset, solver);
+    geim_type geim("test_geim", sigmas, Pset, solver);
     geim.offline();
 
     int M = geim.dimension();
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE( test_eim_offline )
             BOOST_CHECK_SMALL(B(j,i), 1e-10);
         BOOST_CHECK_SMALL(B(i,i)-1, 1e-10);
     }
-    Feel::cout << B << std::endl;
+    BOOST_TEST_MESSAGE("B="<< B);
 
     auto Pset2 = Dmu->sampling();
     Pset2->randomize(20);
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE( test_eim_offline )
         errors.push_back(err);
     }
     double max = *max_element(errors.begin(), errors.end());
-    Feel::cout << "maximum error = " << max << std::endl;
+    BOOST_TEST_MESSAGE("offline maximum error ="<< max);
     BOOST_CHECK_SMALL( max , 1e-5 );
 }
 
@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE( test_eim_online )
     int nbSensors = ioption("nb-sensors");
     double r = doption("radius");
 
-    geim_type geim = geim_type("test_geim", crb::load::fe);
+    geim_type geim("test_geim", crb::load::fe);
     auto Xh = geim.space();
     auto mesh = Xh->mesh();
     auto u = Xh->element();
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE( test_eim_online )
         errors.push_back(err);
     }
     double max = *max_element(errors.begin(), errors.end());
-    Feel::cout << "maximum error = " << max << std::endl;
+    BOOST_TEST_MESSAGE("online maximum error ="<< max);
     BOOST_CHECK_SMALL( max , 1e-5 );
 }
 BOOST_AUTO_TEST_SUITE_END()

@@ -162,7 +162,7 @@ public:
             {
                 if constexpr ( CType == -1 )
                     M_one = vector_type::Ones();
-                else if constexpr ( CType >= 0 )
+                else if constexpr ( CType >= 0 && CType < gmc_type::nDim )
                     M_one(CType) = 1;
                 else if constexpr ( CType == -3 )
                 {

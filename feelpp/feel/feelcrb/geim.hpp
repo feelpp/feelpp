@@ -85,8 +85,8 @@ public:
     explicit GEIM(std::string const& name, crb::load l = crb::load::rb,
                   uuids::uuid const& uuid = uuids::nil_uuid(),
                   int dbLoad = ioption("geim.db.load"),
-                  std::string dbFilename = soption("geim.db.filename"),
-                  std::string dbId = soption("geim.db.id"));
+                  std::string const& dbFilename = soption("geim.db.filename"),
+                  std::string const& dbId = soption("geim.db.id"));
     /**
      * Constructor for offline phase.
      * @param name Name of geim
@@ -106,8 +106,8 @@ public:
          uuids::uuid const& uuid = uuids::nil_uuid(),
          bool rebuildDB = boption("geim.rebuild-database"),
          int dbLoad = ioption("geim.db.load"),
-         std::string dbFilename = soption("geim.db.filename"),
-         std::string dbId = soption("geim.db.id"));
+         std::string const& dbFilename = soption("geim.db.filename"),
+         std::string const& dbId = soption("geim.db.id"));
     int dimension() const { return M_M; } /**< dimension of the geim */
     /**
      * Beta coefficients.
@@ -195,7 +195,7 @@ GEIM<FunctionSpace>::GEIM(std::string const& name, crb::load l,
                           std::string const& dbId):
     super_type(name, "geim", uuid),
     M_name(name),
-    M_rebuildDb(rebuildDb),
+    M_rebuildDb(false),
     M_dbLoad(dbLoad),
     M_dbFilename(dbFilename),
     M_dbId(dbId),

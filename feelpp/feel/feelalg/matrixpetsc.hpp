@@ -176,13 +176,13 @@ public:
      * use the \p el function.
      */
     value_type operator () ( const size_type i,
-                             const size_type j ) const;
+                             const size_type j ) const override;
 
     /**
      * create a PETSc matrix which is a copy of \p M
      * \param M the matrix to copy
      */
-    MatrixPetsc& operator=( MatrixSparse<value_type> const& M );
+    MatrixPetsc& operator=( MatrixSparse<value_type> const& M ) override;
 
     using clone_ptrtype = typename super::clone_ptrtype;
     /**
@@ -202,30 +202,30 @@ public:
      * @returns \p m, the row-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    size_type size1 () const;
+    size_type size1 () const override;
 
     /**
      * @returns \p n, the column-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    size_type size2 () const;
+    size_type size2 () const override;
 
     /**
      * return row_start, the index of the first
      * matrix row stored on this processor
      */
-    size_type rowStart () const;
+    size_type rowStart () const override;
 
     /**
      * return row_stop, the index of the last
      * matrix row (+1) stored on this processor
      */
-    size_type rowStop () const;
+    size_type rowStop () const override;
 
     //!
     //! @return the number of non-zero entries
     //!
-    size_type nnz() const;
+    size_type nnz() const override;
 
     //@}
 
@@ -253,7 +253,7 @@ public:
                 const size_type m_l,
                 const size_type n_l,
                 const size_type nnz=30,
-                const size_type noz=10 );
+                const size_type noz=10 ) override;
 
     /**
      * Initialize using sparsity structure computed by \p dof_map.
@@ -262,12 +262,12 @@ public:
                 const size_type n,
                 const size_type m_l,
                 const size_type n_l,
-                graph_ptrtype const& graph );
+                graph_ptrtype const& graph ) override;
 
     /**
      *
      */
-    void setIndexSplit( indexsplit_ptrtype const& indexSplit );
+    void setIndexSplit( indexsplit_ptrtype const& indexSplit ) override;
 
     /**
      * reinitialize the matrix
@@ -286,33 +286,33 @@ public:
      * having called the default
      * constructor.
      */
-    void clear ();
+    void clear () override;
 
     /**
      * Set all entries to 0. This method retains
      * sparsity structure.
      */
-    void zero ();
+    void zero () override;
 
     /**
      * Set all entries to 0 in the range
      * [start1-stop1,start2-stop2]. This method retains sparsity
      * structure.
      */
-    void zero ( size_type start1, size_type stop1, size_type start2, size_type stop2 );
+    void zero ( size_type start1, size_type stop1, size_type start2, size_type stop2 ) override;
 
     /**
      * Call the Petsc assemble routines.
      * sends necessary messages to other
      * processors
      */
-    void close () const;
+    void close () const override;
 
     /**
      * see if Petsc matrix has been closed
      * and fully assembled yet
      */
-    bool closed() const;
+    bool closed() const override;
 
     /**
      * Return the l1-norm of the matrix, that is
@@ -321,7 +321,7 @@ public:
      * This is the natural matrix norm that is compatible to the
      * l1-norm for vectors, i.e.  \f$|Mv|_1\leq |M|_1 |v|_1\f$.
      */
-    real_type l1Norm () const;
+    real_type l1Norm () const override;
 
     /**
      * Return the linfty-norm of the matrix, that is
@@ -333,7 +333,7 @@ public:
      * compatible to the linfty-norm of vectors, i.e.
      * \f$|Mv|_\infty \leq |M|_\infty |v|_\infty\f$.
      */
-    real_type linftyNorm () const;
+    real_type linftyNorm () const override;
 
     /**
      * Set the element \p (i,j) to \p value.
@@ -343,7 +343,7 @@ public:
      */
     void set ( const size_type i,
                const size_type j,
-               const value_type& value );
+               const value_type& value ) override;
 
     /**
      * Add \p value to the element
@@ -355,7 +355,7 @@ public:
      */
     void add ( const size_type i,
                const size_type j,
-               const value_type& value );
+               const value_type& value ) override;
 
     /**
      * Add the full matrix to the
@@ -365,7 +365,7 @@ public:
      */
     void addMatrix ( const ublas::matrix<value_type> &dm,
                      const std::vector<size_type> &rows,
-                     const std::vector<size_type> &cols );
+                     const std::vector<size_type> &cols ) override;
 
     /**
      * Add the full matrix to the
@@ -377,14 +377,14 @@ public:
                      int* cols, int ncols,
                      value_type* data,
                      size_type K = 0,
-                     size_type K2 = invalid_v<size_type>);
+                     size_type K2 = invalid_v<size_type>) override;
 
     /**
      * Same, but assumes the row and column maps are the same.
      * Thus the matrix \p dm must be square.
      */
     void addMatrix ( const ublas::matrix<value_type> &dm,
-                     const std::vector<size_type> &dof_indices )
+                     const std::vector<size_type> &dof_indices ) override
     {
         this->addMatrix ( dm, dof_indices, dof_indices );
     }
@@ -400,56 +400,56 @@ public:
      * whenever you add a non-zero value to \p X.  Note: \p X will
      * be closed, if not already done, before performing any work.
      */
-    void addMatrix ( const T a, MatrixSparse<T> const&X, Feel::MatrixStructure matStruc = Feel::SAME_NONZERO_PATTERN );
+    void addMatrix ( const T a, MatrixSparse<T> const&X, Feel::MatrixStructure matStruc = Feel::SAME_NONZERO_PATTERN ) override;
 
     /**
      * set diagonal entries from vector
      */
-    void setDiagonal( const Vector<T>& vecDiag );
+    void setDiagonal( const Vector<T>& vecDiag ) override;
 
     /**
      * add diagonal entries from vector
      */
-    void addDiagonal( const Vector<T>& vecDiag );
+    void addDiagonal( const Vector<T>& vecDiag ) override;
 
     /**
      * Multiplies the matrix with \p arg and stores the result in \p
      * dest.
      */
-    void multVector( const Vector<T>& arg, Vector<T>& dest, bool transpose ) const;
+    void multVector( const Vector<T>& arg, Vector<T>& dest, bool transpose ) const override;
 
     /**
      * Multiply this by a Sparse matrix \p In,
      * stores the result in \p Res:
      * \f$ Res = \texttt{this}*In \f$.
      */
-    void matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res ) const;
+    void matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res ) const override;
 
     /**
      * Creates the matrix product C = P^T * A * P with A the current matrix
      */
-    void PtAP( MatrixSparse<value_type> const& P, MatrixSparse<value_type> & C ) const;
+    void PtAP( MatrixSparse<value_type> const& P, MatrixSparse<value_type> & C ) const override;
 
     /**
      * Creates the matrix product C = P * A * P^T with A the current matrix
      */
-    void PAPt( MatrixSparse<value_type> const& P, MatrixSparse<value_type> & C ) const;
+    void PAPt( MatrixSparse<value_type> const& P, MatrixSparse<value_type> & C ) const override;
 
     /**
      * scale the matrix by the factor \p a
      * \param a scaling factor
      */
-    void scale( T const a );
+    void scale( T const a ) override;
 
     /**
      * Copies the diagonal part of the matrix into \p dest.
      */
-    void diagonal ( Vector<value_type>& dest ) const;
+    void diagonal ( Vector<value_type>& dest ) const override;
 
     /**
      * Return copy vector of the diagonal part of the matrix.
      */
-    std::shared_ptr<Vector<T> > diagonal() const;
+    std::shared_ptr<Vector<T> > diagonal() const override;
 
     /**
      * Returns the transpose of a matrix
@@ -457,19 +457,19 @@ public:
      * \param Mt the matrix transposed
      * \param options options for tranpose
      */
-    void transpose( MatrixSparse<value_type>& Mt, size_type options ) const;
+    void transpose( MatrixSparse<value_type>& Mt, size_type options ) const override;
 
     /**
      * Returns the transpose of a matrix
      *
      * \param options options for tranpose
      */
-    std::shared_ptr<MatrixSparse<T> > transpose( size_type options ) const;
+    std::shared_ptr<MatrixSparse<T> > transpose( size_type options ) const override;
 
     /**
     * Returns the symmetric part of the matrix
     */
-    virtual void symmetricPart( MatrixSparse<value_type>& Ms ) const;
+    virtual void symmetricPart( MatrixSparse<value_type>& Ms ) const override;
 
     /**
      * Returns the raw PETSc matrix context pointer.  Note this is generally
@@ -493,7 +493,7 @@ public:
      * matrix to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL" ) const;
+    void printMatlab( const std::string name="NULL" ) const override;
 
     /**
      * This function creates a matrix called "submatrix" which is defined
@@ -503,7 +503,7 @@ public:
     createSubMatrix( std::vector<size_type> const& rows,
                      std::vector<size_type> const& cols,
                      bool useSameDataMap=false,
-                     bool checkAndFixRange=true ) const;
+                     bool checkAndFixRange=true ) const override;
 
     /**
      * copy matrix entries in submatrix ( submatrix is already built from a createSubMatrix)
@@ -512,7 +512,7 @@ public:
     void
     updateSubMatrix( std::shared_ptr<MatrixSparse<T> > & submatrix,
                      std::vector<size_type> const& rows,
-                     std::vector<size_type> const& cols, bool doClose = true );
+                     std::vector<size_type> const& cols, bool doClose = true ) override;
 
 
     /**
@@ -522,7 +522,7 @@ public:
      */
     void createSubmatrix( MatrixSparse<T>& submatrix,
                           const std::vector<size_type>& rows,
-                          const std::vector<size_type>& cols ) const;
+                          const std::vector<size_type>& cols ) const override;
 
     /**
      * \return \f$ v^T M u \f$
@@ -530,7 +530,7 @@ public:
     real_type
     energy( Vector<value_type> const& __v,
             Vector<value_type> const& __u,
-            bool transpose = false ) const;
+            bool transpose = false ) const override;
 
     /**
      * eliminate row without change pattern, and put 1 on the diagonal
@@ -539,12 +539,12 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal ) override;
 
     /**
      * update a block matrix
      */
-    void updateBlockMat( std::shared_ptr<MatrixSparse<T> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
+    void updateBlockMat( std::shared_ptr<MatrixSparse<T> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j ) override;
 
     void updatePCFieldSplit( PC & pc, indexsplit_ptrtype const& is );
     void updatePCFieldSplit( PC & pc );
@@ -556,9 +556,9 @@ public:
     std::vector<PetscInt> ja() { return M_ja; }
 
 
-    bool isSymmetric ( bool check = false ) const;
+    bool isSymmetric ( bool check = false ) const override;
 
-    bool isTransposeOf ( MatrixSparse<T> &Trans ) const;
+    bool isTransposeOf ( MatrixSparse<T> &Trans ) const override;
 
     //@}
 
@@ -570,16 +570,16 @@ public:
     //!
     //! get some matrix information use MatInfo data structure from Petsc
     //!
-    virtual void getMatInfo(std::vector<double> &);
+    virtual void getMatInfo(std::vector<double> &) override;
 
     //!
     //!
     //!
-    virtual void threshold( void );
+    virtual void threshold( void ) override;
 
-    void save( std::string const& filename="default_archive_name", std::string const& format="binary" );
+    void save( std::string const& filename="default_archive_name", std::string const& format="binary" ) override;
 
-    void load( std::string const& filename="default_archive_name", std::string const& format="binary" );
+    void load( std::string const& filename="default_archive_name", std::string const& format="binary" ) override;
 
 
 private:
