@@ -345,8 +345,12 @@ public :
     //ModelPhysics() = default;
     explicit ModelPhysics( std::string const& type ) : ModelBase(""), M_physicType( type ) {}
     ModelPhysics( std::string const& type, ModelBase const& mbase ) : ModelBase(mbase), M_physicType( type ) {}
+    ModelPhysics( std::string const& type, ModelBase && mbase ) : ModelBase(std::move(mbase)), M_physicType( type ) {}
     ModelPhysics( ModelPhysics const& ) = default;
     ModelPhysics( ModelPhysics && ) = default;
+    virtual ~ModelPhysics() = default;
+
+    //void updateInformationObject( pt::ptree & p ) const override {}
 
     //! return all physics registerd
     std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> const& physics() const { return M_physics; }
