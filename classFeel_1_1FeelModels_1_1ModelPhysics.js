@@ -24,6 +24,8 @@ var classFeel_1_1FeelModels_1_1ModelPhysics =
     [ "subphysic_description_type", "classFeel_1_1FeelModels_1_1ModelPhysics.html#a6d68fb37bbbc45a4c36d3d52b4f98888", null ],
     [ "ModelPhysics", "classFeel_1_1FeelModels_1_1ModelPhysics.html#a33207413c4d00eb12e813261618020f8", null ],
     [ "ModelPhysics", "classFeel_1_1FeelModels_1_1ModelPhysics.html#a40e9c1c9c0e439c2c0b4b1a9b982ef36", null ],
+    [ "ModelPhysics", "classFeel_1_1FeelModels_1_1ModelPhysics.html#aab25da1f2a132adaebac86194145237f", null ],
     [ "ModelPhysics", "classFeel_1_1FeelModels_1_1ModelPhysics.html#a2ec50d0bea28e50abd2c550d27a0c207", null ],
-    [ "ModelPhysics", "classFeel_1_1FeelModels_1_1ModelPhysics.html#a6ec0db1bcb7549624bc3a54e3ddb004a", null ]
+    [ "ModelPhysics", "classFeel_1_1FeelModels_1_1ModelPhysics.html#a6ec0db1bcb7549624bc3a54e3ddb004a", null ],
+    [ "~ModelPhysics", "classFeel_1_1FeelModels_1_1ModelPhysics.html#a711c0f844e505bc4991526528eb2b44b", null ]
 ];

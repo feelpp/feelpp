@@ -24,7 +24,7 @@ var searchData=
   ['journalsetdbport_1164',['journalSetDBPort',['../classFeel_1_1JournalManager.html#a97592926bcd7c286d5e7901545273557',1,'Feel::JournalManager']]],
   ['journalsetdbusername_1165',['journalSetDBUsername',['../classFeel_1_1JournalManager.html#a43ee7ea4b636156a6726edbe3b78094f',1,'Feel::JournalManager']]],
   ['journalsignal_1166',['journalSignal',['../classFeel_1_1JournalManager.html#a4c45a94b804e8445e999389e38bdfeff',1,'Feel::JournalManager']]],
-  ['journalwatcher_1167',['JournalWatcher',['../classFeel_1_1JournalWatcher.html',1,'Feel::JournalWatcher'],['../classFeel_1_1JournalWatcher.html#abd9945cd29d3edeb37883dccde52fd1f',1,'Feel::JournalWatcher::JournalWatcher()']]],
+  ['journalwatcher_1167',['JournalWatcher',['../classFeel_1_1JournalWatcher.html',1,'Feel::JournalWatcher'],['../classFeel_1_1JournalWatcher.html#abd9945cd29d3edeb37883dccde52fd1f',1,'Feel::JournalWatcher::JournalWatcher(std::string const &amp;category=&quot;&quot;, std::string const &amp;name=&quot;&quot;, bool connect=JournalManager::journalAutoMode())'],['../classFeel_1_1JournalWatcher.html#ad5bc65581ee15e28b7b952a1cb7550d8',1,'Feel::JournalWatcher::JournalWatcher(JournalWatcher const &amp;jw)']]],
   ['journalwatcherinstancename_1168',['journalWatcherInstanceName',['../classFeel_1_1JournalWatcher.html#a0909ccad7d0a8064c5e618801ac0321d',1,'Feel::JournalWatcher']]],
   ['json_1169',['json',['../namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474',1,'nlohmann']]],
   ['json_2ehpp_1170',['json.hpp',['../json_8hpp.html',1,'']]],

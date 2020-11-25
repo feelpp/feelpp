@@ -17,5 +17,6 @@ var classFeel_1_1JournalWatcher =
     [ "JournalWatcher", "classFeel_1_1JournalWatcher.html#abd9945cd29d3edeb37883dccde52fd1f", null ],
     [ "JournalWatcher", "classFeel_1_1JournalWatcher.html#a5dbcbf72916fdaf212547f2234a2b6b3", null ],
     [ "JournalWatcher", "classFeel_1_1JournalWatcher.html#a88ea87a03996b1fdd594fba5d73628af", null ],
+    [ "JournalWatcher", "classFeel_1_1JournalWatcher.html#ad5bc65581ee15e28b7b952a1cb7550d8", null ],
     [ "~JournalWatcher", "classFeel_1_1JournalWatcher.html#a57e786ea451e75b7e8ae4c18588070f9", null ]
 ];

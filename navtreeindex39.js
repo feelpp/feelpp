@@ -1,5 +1,9 @@
 var NAVTREEINDEX39 =
 {
+"structFeel_1_1FeelModels_1_1TrialSymbolsExprTraits.html#a1cf749a6fc6c80dc15c4225703f1f232":[6,1,1,4,68,2],
+"structFeel_1_1FeelModels_1_1TrialSymbolsExprTraits.html#a97354c2a681417633d97fdcda624ae8f":[6,1,1,4,68,1],
+"structFeel_1_1FeelModels_1_1TrialSymbolsExprTraits.html#af2694e9851e8ebef9327400b29f8108c":[6,1,1,4,68,0],
+"structFeel_1_1FeelModels_1_1TrialsSymbolsExprFeelppTag.html":[6,1,1,4,61],
 "structFeel_1_1FeelModels_1_1TrialsSymbolsExprTraits.html":[6,1,1,4,62],
 "structFeel_1_1FeelModels_1_1TrialsSymbolsExprTraits.html#a4f978ecaf8365ec82de70dc606018305":[6,1,1,4,62,2],
 "structFeel_1_1FeelModels_1_1TrialsSymbolsExprTraits.html#a69aade9edff2e2a8564ebdb396d2efee":[6,1,1,4,62,1],
@@ -245,9 +249,5 @@ var NAVTREEINDEX39 =
 "structFeel_1_1OseenDefaults.html":[6,1,1,197],
 "structFeel_1_1OseenDefaults.html#a261b29565ab247d2e14501a13e805ced":[6,1,1,197,7],
 "structFeel_1_1OseenDefaults.html#a3aa0959e02a3192be6e22850f1a0c9ad":[6,1,1,197,4],
-"structFeel_1_1OseenDefaults.html#a3ac9d9b4add02144f5870f8a54622b2d":[6,1,1,197,3],
-"structFeel_1_1OseenDefaults.html#a72c3d7774be8c4330937a59082d54e8e":[6,1,1,197,6],
-"structFeel_1_1OseenDefaults.html#a72e6ce3c79b9fd9277571083e292531d":[6,1,1,197,8],
-"structFeel_1_1OseenDefaults.html#a9d26c3996172826bb23bc883d7728d64":[6,1,1,197,5],
-"structFeel_1_1OseenDefaults.html#aa88d3e38233b67e497d73dec3888fd53":[6,1,1,197,0]
+"structFeel_1_1OseenDefaults.html#a3ac9d9b4add02144f5870f8a54622b2d":[6,1,1,197,3]
 };

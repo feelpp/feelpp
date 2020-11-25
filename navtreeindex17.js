@@ -1,9 +1,12 @@
 var NAVTREEINDEX17 =
 {
+"classFeel_1_1JournalManager.html#adca6ff9f7e53eac59d5d8974efeda645":[6,1,1,155,23],
+"classFeel_1_1JournalManager.html#af335d14e7941469c443fb530b5b40ad0":[6,1,1,155,3],
+"classFeel_1_1JournalManager.html#af3998caa18c821abfa5dba41170473a3":[6,1,1,155,18],
 "classFeel_1_1JournalWatcher.html":[6,1,1,156],
 "classFeel_1_1JournalWatcher.html#a06b0658fd9351626fe4a61bc43ad053f":[6,1,1,156,3],
 "classFeel_1_1JournalWatcher.html#a0909ccad7d0a8064c5e618801ac0321d":[6,1,1,156,8],
-"classFeel_1_1JournalWatcher.html#a57e786ea451e75b7e8ae4c18588070f9":[6,1,1,156,17],
+"classFeel_1_1JournalWatcher.html#a57e786ea451e75b7e8ae4c18588070f9":[6,1,1,156,18],
 "classFeel_1_1JournalWatcher.html#a592427cd0d4b37a402b5238157bb4eb0":[6,1,1,156,11],
 "classFeel_1_1JournalWatcher.html#a5dbcbf72916fdaf212547f2234a2b6b3":[6,1,1,156,15],
 "classFeel_1_1JournalWatcher.html#a7281440e6bedae2c791013bb0d5153e5":[6,1,1,156,6],
@@ -17,6 +20,7 @@ var NAVTREEINDEX17 =
 "classFeel_1_1JournalWatcher.html#ac4fe7b05debcbc3fd43502d47dddb589":[6,1,1,156,5],
 "classFeel_1_1JournalWatcher.html#ace7e1916b49e2d851c7253f6c79347b7":[6,1,1,156,1],
 "classFeel_1_1JournalWatcher.html#ad40d7885c77ccd671b9990ffc4734991":[6,1,1,156,12],
+"classFeel_1_1JournalWatcher.html#ad5bc65581ee15e28b7b952a1cb7550d8":[6,1,1,156,17],
 "classFeel_1_1JournalWatcher.html#adc4a0bb4dfb22a1d345372c4ed8bb043":[6,1,1,156,0],
 "classFeel_1_1JournalWatcher.html#af5082eae85da5055e3195f87c4f076c5":[6,1,1,156,2],
 "classFeel_1_1KDTree.html":[6,1,1,157],
@@ -245,9 +249,5 @@ var NAVTREEINDEX17 =
 "classFeel_1_1Mesh.html#a9f6d6ac7647f0faaa249e123c9ceffe1":[6,1,1,163,112],
 "classFeel_1_1Mesh.html#aa012daf8007499bdeed2908e60a654b2":[6,1,1,163,152],
 "classFeel_1_1Mesh.html#aa0ec4a25b68821c4be5144135e293466":[6,1,1,163,147],
-"classFeel_1_1Mesh.html#aa0ef10270f74ba1a155768844520cc4e":[6,1,1,163,95],
-"classFeel_1_1Mesh.html#aa45d0a74151105c40d518a1cb59e5d10":[6,1,1,163,138],
-"classFeel_1_1Mesh.html#aa49fb95484a2c5b60fd36db59afde5dc":[6,1,1,163,156],
-"classFeel_1_1Mesh.html#aa5a8cee85adc1ef3bde057d9b56ec0c3":[6,1,1,163,175],
-"classFeel_1_1Mesh.html#aa7c9c3cfca29a1379e4f27cf446f43f2":[6,1,1,163,28]
+"classFeel_1_1Mesh.html#aa0ef10270f74ba1a155768844520cc4e":[6,1,1,163,95]
 };

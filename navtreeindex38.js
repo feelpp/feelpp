@@ -1,5 +1,9 @@
 var NAVTREEINDEX38 =
 {
+"structFeel_1_1DofTableInfos.html#ae2ec2f0e31c340403b98c577b5c4147d":[6,1,1,61,29],
+"structFeel_1_1DofTableInfos.html#ae70e66b0d12d7fcf740889a42ab1dde9":[6,1,1,61,25],
+"structFeel_1_1DofTableInfos.html#af5fc690dc5fa86618a9fe7c238c9ac92":[6,1,1,61,16],
+"structFeel_1_1DofTableInfos.html#af84024d9ef6ae9d2f28c2f0e081f46f3":[6,1,1,61,19],
 "structFeel_1_1DofTableInfos.html#afe593e86998f3fa599f9c6c71892479e":[6,1,1,61,22],
 "structFeel_1_1DofTableInfos.html#afea90f140329f680d1f82651d54654e1":[6,1,1,61,17],
 "structFeel_1_1DofTable_1_1element__access.html":[6,1,1,59,0],
@@ -245,9 +249,5 @@ var NAVTREEINDEX38 =
 "structFeel_1_1FeelModels_1_1TransformDiffSymbolicExpr.html#afd0788fdad4e6323a6dc1932e0b35a1f":[6,1,1,4,59,0],
 "structFeel_1_1FeelModels_1_1TrialSymbolExprFeelppTag.html":[6,1,1,4,65],
 "structFeel_1_1FeelModels_1_1TrialSymbolsExprFeelppTag.html":[6,1,1,4,67],
-"structFeel_1_1FeelModels_1_1TrialSymbolsExprTraits.html":[6,1,1,4,68],
-"structFeel_1_1FeelModels_1_1TrialSymbolsExprTraits.html#a1cf749a6fc6c80dc15c4225703f1f232":[6,1,1,4,68,2],
-"structFeel_1_1FeelModels_1_1TrialSymbolsExprTraits.html#a97354c2a681417633d97fdcda624ae8f":[6,1,1,4,68,1],
-"structFeel_1_1FeelModels_1_1TrialSymbolsExprTraits.html#af2694e9851e8ebef9327400b29f8108c":[6,1,1,4,68,0],
-"structFeel_1_1FeelModels_1_1TrialsSymbolsExprFeelppTag.html":[6,1,1,4,61]
+"structFeel_1_1FeelModels_1_1TrialSymbolsExprTraits.html":[6,1,1,4,68]
 };

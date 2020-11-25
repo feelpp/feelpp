@@ -1,5 +1,6 @@
 var NAVTREEINDEX8 =
 {
+"classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html#a1914d79ecde0d293de37cea0602504ad":[6,1,1,4,22,2,1],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html#aaaa56cccfe6b4a012f8e7e4088295807":[6,1,1,4,22,2,3],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html#ac1a879d1b40a407c1197424026275ede":[6,1,1,4,22,2,0],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html#ad8ee533a3a6394487672afcde4a25786":[6,1,1,4,22,2,2],
@@ -248,6 +249,5 @@ var NAVTREEINDEX8 =
 "classFeel_1_1FeelModels_1_1ModelMeshes.html":[6,1,1,4,41],
 "classFeel_1_1FeelModels_1_1ModelMeshes.html#a0267aa39317da11ae0c16aa5c8338d4d":[6,1,1,4,41,9],
 "classFeel_1_1FeelModels_1_1ModelMeshes.html#a24533c1e7a3add86caf9d40b662d2722":[6,1,1,4,41,11],
-"classFeel_1_1FeelModels_1_1ModelMeshes.html#a346c1b10f9de2803a2f41c3a5845e31b":[6,1,1,4,41,1],
-"classFeel_1_1FeelModels_1_1ModelMeshes.html#a36010f9e4a9141c895d61f3ab9ae023f":[6,1,1,4,41,3]
+"classFeel_1_1FeelModels_1_1ModelMeshes.html#a346c1b10f9de2803a2f41c3a5845e31b":[6,1,1,4,41,1]
 };

@@ -1,5 +1,9 @@
 var NAVTREEINDEX43 =
 {
+"structFeel_1_1is__iterable__of.html":[6,1,1,136],
+"structFeel_1_1is__iterable__of_3_01T_00_01V_00_01std_1_1void__t_3_01decltype_07std_1_1declval_3_dfe806ee660b09a85b57435717287147.html":[6,1,1,137],
+"structFeel_1_1is__mesh__structured.html":[6,1,1,138],
+"structFeel_1_1is__point.html":[6,1,1,139],
 "structFeel_1_1is__ptr__or__shared__ptr.html":[6,1,1,140],
 "structFeel_1_1is__reference__convex.html":[6,1,1,141],
 "structFeel_1_1is__reference__convex_3_01Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_d10526581737785a3b6f78d52185ed4f.html":[6,1,1,142],
@@ -245,9 +249,5 @@ var NAVTREEINDEX43 =
 "structFeel_1_1tag_1_1diag__is__nonzero.html#ab306407ecb6c631ae682a8c21a2e2821":[6,1,1,11,38,1],
 "structFeel_1_1tag_1_1diag__is__nonzero.html#acc61042c7de38a20e77bc716580bbaef":[6,1,1,11,38,0],
 "structFeel_1_1tag_1_1dim.html":[6,1,1,11,39],
-"structFeel_1_1tag_1_1dim.html#a1eab3d0c2d159e0854b671d3768eb029":[6,1,1,11,39,1],
-"structFeel_1_1tag_1_1dim.html#af42f568f9521761a042ba9329818b1f7":[6,1,1,11,39,0],
-"structFeel_1_1tag_1_1dim.html#afdae1f75b76ec77db5c3f6d1a004aaa1":[6,1,1,11,39,2],
-"structFeel_1_1tag_1_1directory.html":[6,1,1,11,40],
-"structFeel_1_1tag_1_1directory.html#a4ae94a65be26cc48b112d49590c912f5":[6,1,1,11,40,1]
+"structFeel_1_1tag_1_1dim.html#a1eab3d0c2d159e0854b671d3768eb029":[6,1,1,11,39,1]
 };
