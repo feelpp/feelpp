@@ -94,6 +94,9 @@ PYBIND11_MODULE(_core, m )
         .def_readwrite("location", &Repository::Config::location)
         .def_readwrite("data", &Repository::Config::data)
         ;
+    m.def( "globalRepository", &Feel::globalRepository,  "create a Global Repository Config", py::arg("directory"), py::arg("data")=nl::json{} );
+    m.def( "localRepository", &Feel::localRepository,  "create a Local Repository Config", py::arg("directory"), py::arg("data")=nl::json{} );
+    m.def( "unknownRepository", &Feel::unknownRepository,  "create an Unknown Repository Config" );
     py::class_<Repository>(m,"Repository")
         .def(py::init<>())
         .def(py::init<Repository::Config>(),"Construct a repository from a path and location type",py::arg("config"))
@@ -111,7 +114,7 @@ PYBIND11_MODULE(_core, m )
         ;
 
     py::class_<Environment>(m,"Environment")
-        .def( py::init<py::list,po::options_description,std::string,bool>(),"Construct a Feel++ Environment",py::arg("arg"), py::arg("opts") = feel_nooptions(),py::arg("dir")=".", py::arg("chdir")=false)
+        .def( py::init<py::list,po::options_description,Repository::Config>(),"Construct a Feel++ Environment",py::arg("arg"), py::arg("opts") = feel_nooptions(),py::arg("config")=localRepository("."))
         .def( py::init<py::list>(),"Construct a Feel++ Environment")//,py::arg("arg"), py::arg("opts") = feel_nooptions())
         .def_static("initialized",&Feel::Environment::initialized, "return true if MPI is initialized, false otherwise",py::return_value_policy::copy)
         .def_static("finalized",&Feel::Environment::finalized, "return true if MPI is finalized, false otherwise",py::return_value_policy::copy)

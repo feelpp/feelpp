@@ -85,52 +85,25 @@ double OptimizationLinearProgramming::getColumnPrimalValue(int i)
     return glp_get_col_prim( M_pb, i );
 }
 
-std::string OptimizationLinearProgramming::check(int e)
+std::string const& OptimizationLinearProgramming::check(int e)
 {
     std::string s;
-    switch(e)
-    {
-    case 0:
-        s = "The LP problem instance has been successfully solved.";
-        break;
-    case GLP_EBADB:
-        s = "Unable to start the search, because the initial basis specified in the problem object is invalid—the number of basic (auxiliary and structural) variables is not the same as the number of rows in the problem object.";
-        break;
-    case GLP_ESING:
-        s = "Unable to start the search, because the basis matrix corresponding to the initial basis is singular within the working precision.";
-        break;
-    case GLP_ECOND:
-        s = "Unable to start the search, because the basis matrix corresponding to the initial basis is ill-conditioned, i.e. its condition number is too large.";
-        break;
-    case GLP_EBOUND:
-        s = "Unable to start the search, because some double-bounded (auxiliary or structural) variables have incorrect bounds.";
-        break;
-    case GLP_EFAIL:
-        s = "The search was prematurely terminated due to the solver failure.";
-        break;
-    case GLP_EOBJLL:
-        s = "The search was prematurely terminated, because the objective function being maximized has reached its lower limit and continues decreasing (the dual simplex only).";
-        break;
-    case GLP_EOBJUL:
-        s = "The search was prematurely terminated, because the objective function being minimized has reached its upper limit and continues increasing (the dual simplex only).";
-        break;
-    case GLP_EITLIM:
-        s = "The search was prematurely terminated, because the simplex iteration limit has been exceeded.";
-        break;
-    case GLP_ETMLIM:
-        s = "The search was prematurely terminated, because the time limit has been exceeded.";
-        break;
-    case GLP_ENOPFS:
-        s = "The LP problem instance has no primal feasible solution (only if the LP presolver is used).";
-        break;
-    case GLP_ENODFS:
-        s = "The LP problem instance has no dual feasible solution (only if the LP presolver is used).";
-        break;
-    default:
-        s = "Unknown state " + std::to_string(e);
-        break;
-    }
-    return s;
+    static std::map<int,std::string> status_codes_strings= {
+        { 0, "The LP problem instance has been successfully solved." },
+        { GLP_EBADB, "Unable to start the search, because the initial basis specified in the problem object is invalid—the number of basic (auxiliary and structural) variables is not the same as the number of rows in the problem object."},
+        { GLP_ESING, "Unable to start the search, because the basis matrix corresponding to the initial basis is singular within the working precision." },
+        { GLP_ECOND, "Unable to start the search, because the basis matrix corresponding to the initial basis is ill-conditioned, i.e. its condition number is too large." },
+        { GLP_EBOUND, "Unable to start the search, because some double-bounded (auxiliary or structural) variables have incorrect bounds." },
+        { GLP_EFAIL, "The search was prematurely terminated due to the solver failure." },
+        { GLP_EOBJLL, "The search was prematurely terminated, because the objective function being maximized has reached its lower limit and continues decreasing (the dual simplex only)."},
+        { GLP_EOBJUL, "The search was prematurely terminated, because the objective function being minimized has reached its upper limit and continues increasing (the dual simplex only)." },
+        { GLP_EITLIM, "The search was prematurely terminated, because the simplex iteration limit has been exceeded." },
+        { GLP_ETMLIM, "The search was prematurely terminated, because the time limit has been exceeded." }, 
+        { GLP_ENOPFS, "The LP problem instance has no primal feasible solution (only if the LP presolver is used)." },
+        { GLP_ENODFS, "The LP problem instance has no dual feasible solution (only if the LP presolver is used)." } };
+    if ( status_codes_strings.find(e) == status_codes_strings.end() )
+        status_codes_strings.insert( { e, "Unknown state" }  );
+    return status_codes_strings.at(e);
 }
 
 FeelGlpkException::FeelGlpkException(int e) : std::exception(), M_e(e) {}

@@ -54,6 +54,9 @@ std::optional<fs::path> findGitDirectory( fs::path p )
 Repository::Repository( Config c )
     :
     config_( c )
+{}
+void
+Repository::configure()
 {
     fs::path home = findHome();
     if ( fs::exists( home / "feel" ) && fs::is_directory( home / "feel" ) )
@@ -87,13 +90,13 @@ Repository::Repository( Config c )
     // read config file in root_/.feelppconfig then try $HOME/.feelppconfig
     if ( fs::exists( root_/".feelppconfig" ) )
     {
-        std::ifstream i(root_/".feelppconfig");
+        std::ifstream i((root_/".feelppconfig").string());
         i >> config_.data;
     }
     else if ( config_.location != Location::global && fs::exists( global_root_.parent_path()/".feelppconfig" ) )
     {
         Feel::cout << "[feelpp] reading config " << this->globalRoot().parent_path()/".feelppconfig" << std::endl;
-        std::ifstream i(this->globalRoot().parent_path()/".feelppconfig");
+        std::ifstream i((this->globalRoot().parent_path()/".feelppconfig").string());
         i >> config_.data;
 
     }
@@ -115,12 +118,22 @@ Repository::Repository( Config c )
             Feel::cout << "[feelpp] create Feel++ results directory " << this->directory() << " ..." << std::endl;
         }
     }
+    Environment::worldComm().barrier();
     
 }
 fs::path
 Repository::directory() const 
 { 
     return  root() / relativeDirectory(); 
+}
+fs::path
+Repository::directoryWithoutAppenders() const 
+{ 
+    if ( isGiven() ) return {};
+    else
+    {
+        return config_.directory;
+    }
 }
 fs::path 
 Repository::relativeDirectory() const 
@@ -129,21 +142,25 @@ Repository::relativeDirectory() const
     else
     {
         fs::path p = config_.directory;
-        bool append_date = config_.data.value("/directory/append/date"_json_pointer,false);
-        if ( append_date )
+        if ( !config_.data.empty() )
         {
-            using boost::posix_time::ptime;
-            using boost::posix_time::second_clock;
-            using boost::posix_time::to_simple_string;
-            using boost::gregorian::day_clock;
+            std::cout << config_.data.dump( 1 ) << std::endl;
+            bool append_date = config_.data.value( "/directory/append/date"_json_pointer, false );
+            if ( append_date )
+            {
+                using boost::gregorian::day_clock;
+                using boost::posix_time::ptime;
+                using boost::posix_time::second_clock;
+                using boost::posix_time::to_simple_string;
 
-            ptime todayUtc(day_clock::universal_day(), second_clock::universal_time().time_of_day());
-            std::string today = boost::replace_all_copy( boost::replace_all_copy( to_simple_string(todayUtc), " ", "-"), ":", "-");
-            p=p/today;
+                ptime todayUtc( day_clock::universal_day(), second_clock::universal_time().time_of_day() );
+                std::string today = boost::replace_all_copy( boost::replace_all_copy( to_simple_string( todayUtc ), " ", "-" ), ":", "-" );
+                p = p / today;
+            }
+            bool append_np = config_.data.value( "/directory/append/np"_json_pointer, false );
+            if ( append_np )
+                p /= "np_" + std::to_string( Environment::numberOfProcessors() );
         }
-        bool append_np = config_.data.value("/directory/append/np"_json_pointer,false);
-        if ( append_np )
-            p /= "np_"+std::to_string(Environment::numberOfProcessors()); 
         return p; 
     }        
 }

@@ -58,7 +58,7 @@
 		        {
 		            "markers":["SphereRight"],
 		            //"materials":"MySolid",
-		            "materials":
+x		            "materials":
 		            {
 			            "names":["SphRight"]
 		            },
