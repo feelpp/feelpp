@@ -56,6 +56,9 @@ public:
     explicit JournalWatcher( function_update_information_type const& func, std::string const& category = "", std::string const& name = "",
                              bool useDefaultNameIfEmpty = true, bool connect = JournalManager::journalAutoMode() );
 
+    //! Copy constructor
+    JournalWatcher( JournalWatcher const& jw );
+
     //! Default destructor.
     //! The (inherited) object is always disconnected from the journal during the
     //! destruction.
@@ -64,6 +67,7 @@ public:
         this->journalFinalize();
     }
     //! @}
+
 
     //! Getters
     //! @{
