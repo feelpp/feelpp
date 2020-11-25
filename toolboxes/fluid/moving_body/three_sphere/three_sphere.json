@@ -25,6 +25,10 @@
 	        "rho":"1e-3"
 	    }
     },
+    "Parameters":
+    {
+        "eps":1e-10
+    },
     "BoundaryConditions":
     {
 	    "velocity":
@@ -61,7 +65,9 @@
                     "articulation":
                     {
                         "body":"SphereCenter",
-                        "translational-velocity":"4*pulse(t,1,2,4)-4*pulse(t,3,4,4):t"
+                        //"translational-velocity":"4*pulse(t,1,2,4)-4*pulse(t,3,4,4):t"
+                        //"translational-velocity":"4*pulse(t,1-eps,2+eps,4)-4*pulse(t,3-eps,4+eps,4+2*eps):t:eps"
+                        "translational-velocity":"4*pulse(t,1-eps,2-eps,4)-4*pulse(t,3-eps,4-eps,4):t:eps"
                     }
 				},
 				"SphereLeft":
@@ -75,7 +81,8 @@
                     "articulation":
                     {
                         "body":"SphereCenter",
-                        "translational-velocity":"4*pulse(t,0,1,4)-4*pulse(t,2,3,4):t"
+                        //"translational-velocity":"4*pulse(t,0,1,4)-4*pulse(t,2,3,4):t"
+                        "translational-velocity":"4*pulse(t,0,1-eps,4-eps)-4*pulse(t,2-eps,3-eps,4):t:eps"
                     }
 		        }
 	        }
