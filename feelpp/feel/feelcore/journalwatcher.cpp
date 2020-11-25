@@ -54,6 +54,22 @@ JournalWatcher::JournalWatcher( function_update_information_type const& func, st
     S_counterObjectByCategory[category]++;
 }
 
+JournalWatcher::JournalWatcher( JournalWatcher const& jw )
+    :
+    M_journal_is_connected( false ),
+    M_category( jw.M_category ),
+    M_name( jw.M_name ),
+    M_function_updateInformationObject( std::bind( &JournalWatcher::updateInformationObject, this, std::placeholders::_1 ) ),
+    M_informationObject( jw.M_informationObject )
+{
+    slotNew< void ( notify_type & ) >( "journalWatcher", std::bind( &JournalWatcher::journalNotify, this, std::placeholders::_1 ) );
+
+    if ( jw.journalIsConnected() )
+        this->journalConnect();
+
+    S_counterObjectByCategory[M_category]++;
+}
+
 std::string
 JournalWatcher::journalSectionName() const
 {
