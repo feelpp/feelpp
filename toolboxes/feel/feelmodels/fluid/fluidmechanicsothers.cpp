@@ -2127,6 +2127,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
             auto const& bbcArticulation = *(bbc.articulationBodiesUsed().begin()->second); // WARNING : we guess that we have only one body! TODO
             size_type startBlockIndexTranslationalVelocityOtherBody = this->startSubBlockSpaceIndex("body-bc."+bbcArticulation.name()+".translational-velocity");
             size_type startBlockIndexArticulationLMTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".articulation-lm.translational-velocity");
+#if 0
             myblockGraph(startBlockIndexTranslationalVelocity,startBlockIndexArticulationLMTranslationalVelocity) = stencil(_test=bbc.spaceTranslationalVelocity(),_trial=bbc.spaceTranslationalVelocity(),
                                                                                                                             _diag_is_nonzero=false,_close=false)->graph();
             myblockGraph(startBlockIndexTranslationalVelocityOtherBody,startBlockIndexArticulationLMTranslationalVelocity) = stencil(_test=bbcArticulation.spaceTranslationalVelocity(),_trial=bbc.spaceTranslationalVelocity(),
@@ -2135,6 +2136,51 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                                                                                                                      _diag_is_nonzero=false,_close=false)->graph();
             myblockGraph(startBlockIndexArticulationLMTranslationalVelocity,startBlockIndexTranslationalVelocityOtherBody) = stencil(_test=bbc.spaceTranslationalVelocity(),_trial=bbcArticulation.spaceTranslationalVelocity(),
                                                                                                                                      _diag_is_nonzero=false,_close=false)->graph();
+#endif
+
+            auto createArticulationGraph = [] ( auto const& map1, auto const& map2, bool closeGraph = true, size_type pattern = Pattern::COUPLED ) {
+                Feel::Context graph_prop( pattern );
+                auto sparsity_graph = std::make_shared<GraphCSR>( map1, map2 );
+                if ( map2->nLocalDofWithGhost() > 0 )
+                {
+                    for ( size_type i=0;i<map1->nLocalDofWithGhost();++i )
+                    {
+                        const size_type ig1 = map1->mapGlobalProcessToGlobalCluster(i);
+                        const rank_type theproc = map1->procOnGlobalCluster( ig1 );
+                        // define row in graph
+                        auto& row = sparsity_graph->row( ig1 );
+                        row.template get<0>() = theproc;
+                        const size_type il1 = ig1 - map1->firstDofGlobalCluster( theproc );
+                        row.template get<1>() = il1;
+                        //up the pattern graph
+                        if ( graph_prop.test( Pattern::COUPLED ) )
+                        {
+                            for ( size_type j=0;j<map2->nLocalDofWithGhost();++j )
+                                row.template get<2>().insert( map2->mapGlobalProcessToGlobalCluster(j) );
+                        }
+                        else if ( graph_prop.test( Pattern::DEFAULT ) )
+                        {
+                            row.template get<2>().insert( map2->mapGlobalProcessToGlobalCluster(i) );
+                        }
+                    }
+                }
+                if ( closeGraph )
+                    sparsity_graph->close();
+                return sparsity_graph;
+            };
+
+            myblockGraph(startBlockIndexTranslationalVelocity,startBlockIndexArticulationLMTranslationalVelocity) = createArticulationGraph( bbc.spaceTranslationalVelocity()->mapPtr(),
+                                                                                                                                             bbc.dataMapArticulationLagrangeMultiplierTranslationalVelocity(),
+                                                                                                                                             false, Pattern::DEFAULT );
+            myblockGraph(startBlockIndexTranslationalVelocityOtherBody,startBlockIndexArticulationLMTranslationalVelocity) = createArticulationGraph( bbcArticulation.spaceTranslationalVelocity()->mapPtr(),
+                                                                                                                                                      bbc.dataMapArticulationLagrangeMultiplierTranslationalVelocity(),
+                                                                                                                                                      false, Pattern::DEFAULT );
+            myblockGraph(startBlockIndexArticulationLMTranslationalVelocity,startBlockIndexTranslationalVelocity) = createArticulationGraph( bbc.dataMapArticulationLagrangeMultiplierTranslationalVelocity(),
+                                                                                                                                             bbc.spaceTranslationalVelocity()->mapPtr(),
+                                                                                                                                             false, Pattern::DEFAULT );
+            myblockGraph(startBlockIndexArticulationLMTranslationalVelocity,startBlockIndexTranslationalVelocityOtherBody) = createArticulationGraph( bbc.dataMapArticulationLagrangeMultiplierTranslationalVelocity(),
+                                                                                                                                                      bbcArticulation.spaceTranslationalVelocity()->mapPtr(),
+                                                                                                                                                      false, Pattern::DEFAULT );
             ++indexBlock;
         }
     }
