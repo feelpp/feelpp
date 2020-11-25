@@ -225,7 +225,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n";
 
     if ( this->worldComm().isMasterRank() )
-        std::cout << "holalla \n "<<  this->symbolsExpr().names() << std::endl;
+        std::cout << "symbolsExpr : \n "<<  this->symbolsExpr().names() << std::endl;
 
     return _ostr;
 }
