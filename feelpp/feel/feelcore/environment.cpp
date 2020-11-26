@@ -490,7 +490,7 @@ Environment::Environment( int argc, char** argv,
     }
 #else
     S_repository = Repository( config );
-    S_repository.configure();
+//    S_repository.configure();
     S_rootdir = S_repository.root();
     S_appdir = S_repository.directory();
     S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
@@ -1897,7 +1897,7 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
     S_appdirWithoutNumProc = rep_path;
 
     bool append_np = (!S_repository.data().empty())?S_repository.data().value( "/directory/append/np"_json_pointer, false ):false;
-    if ( append_np ||add_subdir_np )
+    if ( append_np ||add_subdir_np )
     {
         rep_path = rep_path / ( boost::format( "np_%1%" ) % Environment::numberOfProcessors() ).str();
 
