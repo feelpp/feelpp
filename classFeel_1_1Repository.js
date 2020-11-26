@@ -2,8 +2,11 @@ var classFeel_1_1Repository =
 [
     [ "Config", "structFeel_1_1Repository_1_1Config.html", "structFeel_1_1Repository_1_1Config" ],
     [ "configure", "classFeel_1_1Repository.html#a75eb8dd647b083d73f671a58d31eeb9a", null ],
+    [ "configure", "classFeel_1_1Repository.html#a6a0e1a6490165e2c3f85bfc9c865f611", null ],
+    [ "data", "classFeel_1_1Repository.html#a42a0e0fd1244ea81f8e6388f01fcaa13", null ],
     [ "directory", "classFeel_1_1Repository.html#ab6f60083e5ba3fb0f53606a74e430e87", null ],
     [ "directoryWithoutAppenders", "classFeel_1_1Repository.html#a1540f6307530108c5a56dd7754878c89", null ],
+    [ "exprs", "classFeel_1_1Repository.html#a14fb2428451f748efc6d1620a0522b8e", null ],
     [ "geo", "classFeel_1_1Repository.html#a69633884773071a83a28f4b0546c3fd9", null ],
     [ "globalRoot", "classFeel_1_1Repository.html#aa2de6a6d0f0d9c1d32ef05fa48749007", null ],
     [ "isGit", "classFeel_1_1Repository.html#a0f07bf456f23917853a0ceb1ce6d6416", null ],

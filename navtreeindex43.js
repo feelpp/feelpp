@@ -1,5 +1,8 @@
 var NAVTREEINDEX43 =
 {
+"structFeel_1_1is__hypercube.html":[6,1,1,133],
+"structFeel_1_1is__iterable.html":[6,1,1,134],
+"structFeel_1_1is__iterable_3_01T_00_01std_1_1void__t_3_01decltype_07std_1_1declval_3_01T_01_4_07e321607a6dd151c547f374e68b86fe92.html":[6,1,1,135],
 "structFeel_1_1is__iterable__of.html":[6,1,1,136],
 "structFeel_1_1is__iterable__of_3_01T_00_01V_00_01std_1_1void__t_3_01decltype_07std_1_1declval_3_dfe806ee660b09a85b57435717287147.html":[6,1,1,137],
 "structFeel_1_1is__mesh__structured.html":[6,1,1,138],
@@ -246,8 +249,5 @@ var NAVTREEINDEX43 =
 "structFeel_1_1tag_1_1desc__lib.html#a3b6016f98b4ea59e140e3be65a41b937":[6,1,1,11,37,0],
 "structFeel_1_1tag_1_1diag__is__nonzero.html":[6,1,1,11,38],
 "structFeel_1_1tag_1_1diag__is__nonzero.html#a6855cc5e75abc24084efcd7498ef7e0c":[6,1,1,11,38,2],
-"structFeel_1_1tag_1_1diag__is__nonzero.html#ab306407ecb6c631ae682a8c21a2e2821":[6,1,1,11,38,1],
-"structFeel_1_1tag_1_1diag__is__nonzero.html#acc61042c7de38a20e77bc716580bbaef":[6,1,1,11,38,0],
-"structFeel_1_1tag_1_1dim.html":[6,1,1,11,39],
-"structFeel_1_1tag_1_1dim.html#a1eab3d0c2d159e0854b671d3768eb029":[6,1,1,11,39,1]
+"structFeel_1_1tag_1_1diag__is__nonzero.html#ab306407ecb6c631ae682a8c21a2e2821":[6,1,1,11,38,1]
 };

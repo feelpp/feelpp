@@ -1,5 +1,8 @@
 var NAVTREEINDEX37 =
 {
+"operatorinterpolation_8hpp.html#af9f4228a944e32fa347efaccd20bc110":[6,2,0,0,1,37,18],
+"operatorlinear_8hpp.html":[6,2,0,0,1,38],
+"operatorlinear_8hpp.html#a1bfc32f17859e3555b3ce31476efaef6":[6,2,0,0,1,38,3],
 "operatorlinearfree_8hpp.html":[6,2,0,0,1,39],
 "operatorlinearfree_8hpp.html#a797b7be558c28dc43bdf66d0e1534f28":[6,2,0,0,1,39,2],
 "operators2_8hpp.html":[6,2,0,0,3,45],
@@ -246,8 +249,5 @@ var NAVTREEINDEX37 =
 "structFeel_1_1DofTableInfos.html#a9e917fe5d8f644e9780ed033d3a86943":[6,1,1,61,12],
 "structFeel_1_1DofTableInfos.html#ab20d330211a8e3b20c2cd7fedb30a039":[6,1,1,61,23],
 "structFeel_1_1DofTableInfos.html#ab6d3ee9edf7a32b2d99e43f0fb03d1a9":[6,1,1,61,4],
-"structFeel_1_1DofTableInfos.html#acea550693ca7b0132300417d2bbed9c4":[6,1,1,61,10],
-"structFeel_1_1DofTableInfos.html#acebad556d071d3c1051eae0141af203b":[6,1,1,61,1],
-"structFeel_1_1DofTableInfos.html#adb82208708501d70d5f84ae33e25d2b1":[6,1,1,61,28],
-"structFeel_1_1DofTableInfos.html#ae0ca11015d7dcf7ccacc79caf438b08e":[6,1,1,61,7]
+"structFeel_1_1DofTableInfos.html#acea550693ca7b0132300417d2bbed9c4":[6,1,1,61,10]
 };
