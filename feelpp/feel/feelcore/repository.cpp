@@ -122,6 +122,11 @@ Repository::configure()
             bool created = fs::create_directories( directory() );
             Feel::cout << "[feelpp] create Feel++ results directory " << this->directory() << " ..." << std::endl;
         }
+        if ( !fs::exists( exprs() ) )
+        {
+            bool created = fs::create_directories( exprs() );
+            Feel::cout << "[feelpp] create Feel++ exprs directory " << ( this->exprs() ) << " ..." << std::endl;
+        }
     }
     Environment::worldComm().barrier();
     
@@ -136,11 +141,9 @@ Repository::directory() const
 fs::path
 Repository::directoryWithoutAppenders() const 
 { 
-    if ( isGiven() ) return {};
-    else
-    {
+    if ( isGiven() )
         return config_.directory;
-    }
+    return root() / config_.directory;
 }
 fs::path 
 Repository::relativeDirectory() const 
