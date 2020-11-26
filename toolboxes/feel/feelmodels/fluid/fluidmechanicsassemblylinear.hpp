@@ -824,22 +824,25 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                     {
                         auto const& basisToContainerGpTranslationalVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity );
                         auto const& basisToContainerGpTranslationalVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexTranslationalVelocity );
-                        auto const& basisToContainerGpTranslationalVelocityOtherBodyCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexTranslationalVelocityOtherBody );
                         auto const& basisToContainerGpArticulationLMTranslationalVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexArticulationLMTranslationalVelocity );
                         auto const& basisToContainerGpArticulationLMTranslationalVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexArticulationLMTranslationalVelocity );
                         for (int d=0;d<nDim;++d)
                         {
                             A->add( basisToContainerGpTranslationalVelocityRow[d],basisToContainerGpArticulationLMTranslationalVelocityCol[d],1.0 );
                             A->add( basisToContainerGpArticulationLMTranslationalVelocityRow[d],basisToContainerGpTranslationalVelocityCol[d],1.0 );
-                            A->add( basisToContainerGpArticulationLMTranslationalVelocityRow[d],basisToContainerGpTranslationalVelocityOtherBodyCol[d],-1.0 );
                         }
                     }
                     if ( hasActiveDofTranslationalVelocityOtherBody )
                     {
                         auto const& basisToContainerGpTranslationalVelocityOtherBodyRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocityOtherBody );
+                        auto const& basisToContainerGpTranslationalVelocityOtherBodyCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexTranslationalVelocityOtherBody );
+                        auto const& basisToContainerGpArticulationLMTranslationalVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexArticulationLMTranslationalVelocity );
                         auto const& basisToContainerGpArticulationLMTranslationalVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexArticulationLMTranslationalVelocity );
                         for (int d=0;d<nDim;++d)
+                        {
+                            A->add( basisToContainerGpArticulationLMTranslationalVelocityRow[d],basisToContainerGpTranslationalVelocityOtherBodyCol[d],-1.0 );
                             A->add( basisToContainerGpTranslationalVelocityOtherBodyRow[d],basisToContainerGpArticulationLMTranslationalVelocityCol[d],-1.0 );
+                        }
                     }
                 }
                 if ( BuildNonCstPart )

@@ -1931,7 +1931,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
             M_blockVectorSolution(cptBlock++) = bpbc.fieldTranslationalVelocityPtr();
             M_blockVectorSolution(cptBlock++) = bpbc.fieldAngularVelocityPtr();
             if ( bpbc.hasArticulationTranslationalVelocity() && bpbc.articulationMethod() == "lm" )
-                M_blockVectorSolution(cptBlock++) = bpbc.fieldArticulationLagrangeMultiplierTranslationalVelocity();
+                M_blockVectorSolution(cptBlock++) = bpbc.vectorArticulationLagrangeMultiplierTranslationalVelocity();
         }
     }
 
@@ -2733,7 +2733,72 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::initArticulation( sel
     if ( this->hasArticulationTranslationalVelocity() )
     {
         if ( this->articulationMethod() == "lm" )
-            M_fieldArticulationLagrangeMultiplierTranslationalVelocity = M_XhTranslationalVelocity->elementPtr();
+        {
+            auto const& bbcArticulation = *(this->articulationBodiesUsed().begin()->second); // WARNING : we guess that we have only one body! TODO
+
+            if ( true )
+            {
+                // create a new DataMap that allow to couple constant spaces (map1 and map2) which are not defined on same processor.
+                // active dofs are assigned on the proc which contains the active dofs of map1.
+                // ghost dofs are defined on all proc that contains active/ghost in map1 and map2.
+                auto map1 = this->spaceTranslationalVelocity()->mapPtr();
+                auto map2 = bbcArticulation.spaceTranslationalVelocity()->mapPtr();
+                auto const& thecomm = fluidToolbox.worldCommPtr();
+                M_dataMapArticulationLagrangeMultiplierTranslationalVelocity = std::make_shared<datamap_t<>>( thecomm );
+                auto & mapNew = M_dataMapArticulationLagrangeMultiplierTranslationalVelocity;
+                // define number of dof (with and without ghost)
+                mapNew->setNDof( map1->nDof() );
+                rank_type themasterRank = 0;
+                for (rank_type p=0;p<thecomm->localSize();++p)
+                {
+                    auto const& mapUsed =  ( map1->nLocalDofWithGhost(p) > 0 )?  *map1 : *map2;
+                    if ( mapUsed.nLocalDofWithGhost(p) > 0 )
+                    {
+                        mapNew->setNLocalDofWithGhost( p, mapUsed.nLocalDofWithGhost(p) );
+                        mapNew->setLastDof( p, mapUsed.nLocalDofWithGhost(p) -1 );
+                    }
+                    if ( map1->nLocalDofWithoutGhost(p) > 0 )
+                    {
+                        themasterRank = p;
+                        mapNew->setNLocalDofWithoutGhost( p, map1->nLocalDofWithoutGhost(p) );
+                        mapNew->setLastDofGlobalCluster( p, map1->nLocalDofWithoutGhost(p) -1 );
+                    }
+                }
+                // define mapping GlobalProcessToGlobalCluster
+                auto const& mapUsed =  ( map1->nLocalDofWithGhost() > 0 )? *map1 : *map2;
+                if ( mapUsed.nLocalDofWithGhost() > 0 )
+                    mapNew->setMapGlobalProcessToGlobalCluster( mapUsed.mapGlobalProcessToGlobalCluster() );
+
+                // add all partition as neighbor (if has localdof)
+                if ( mapNew->nLocalDofWithGhost() > 0 )
+                {
+                    for ( rank_type proc=0; proc<mapNew->worldComm().localSize(); ++proc )
+                        if ( proc!=mapNew->worldComm().localRank() && mapNew->nLocalDofWithGhost(proc) > 0 )
+                            mapNew->addNeighborSubdomain( proc );
+                }
+                // update activeDofSharedOnCluster
+                if ( themasterRank == mapNew->worldComm().localRank() )
+                {
+                    for ( size_type k = 0; k < mapNew->nLocalDofWithGhost() ; ++k )
+                    {
+                        for ( rank_type proc=0; proc<mapNew->worldComm().localSize(); ++proc )
+                        {
+                            if ( proc == themasterRank ) continue;
+                            if ( mapNew->nLocalDofWithGhost(proc) == 0 ) continue;
+                            mapNew->setActiveDofSharedOnCluster(k, { proc });
+                        }
+                    }
+                }
+                mapNew->initNumberOfDofIdToContainerId( 1 );
+                mapNew->initDofIdToContainerIdIdentity( 0,mapNew->nLocalDofWithGhost() );
+                mapNew->buildIndexSplit();
+                // mapNew->buildIndexSplitWithComponents( nRealDim );
+
+            } // if (true)
+
+            CHECK( M_dataMapArticulationLagrangeMultiplierTranslationalVelocity ) << "datamap not init";
+            M_vectorArticulationLagrangeMultiplierTranslationalVelocity = fluidToolbox.backend()->newVector( M_dataMapArticulationLagrangeMultiplierTranslationalVelocity );
+        }
     }
 }
 
