@@ -1,10 +1,9 @@
-// Gmsh project created on Thu Sep 24 09:40:14 2020
-// Mesh where the three sphere are filled as a unique Body entity; VERY COARSE
 RSphere = 1.;
-lcSphere = 0.3;
-
 RDom = 10;
-lcDom = 5.;
+
+h=3;
+lcSphere = h/10;//0.3;
+lcDom = h;//5.;
 
 Center = 0.0;
 
@@ -139,69 +138,47 @@ Point(407) = {-HalfSide,-HalfHeight, HalfHeight,lcDom};
 Point(408) = {-HalfSide, HalfHeight, HalfHeight,lcDom};
 
 
-//+
 Line(413) = {408, 406};
-//+
 Line(414) = {406, 405};
-//+
 Line(415) = {405, 407};
-//+
 Line(416) = {407, 408};
-//+
 Line(417) = {408, 401};
-//+
 Line(418) = {401, 403};
-//+
 Line(419) = {403, 404};
-//+
 Line(420) = {404, 405};
-//+
 Line(421) = {403, 407};
-//+
 Line(422) = {404, 402};
-//+
 Line(423) = {402, 401};
-//+
 Line(424) = {406, 402};
 
 
 
-//+
 Curve Loop(428) = {416, 413, 414, 415};
-//+
 Plane Surface(429) = {428};
-//+
 Curve Loop(429) = {418, 419, 422, 423};
-//+
 Plane Surface(430) = {429};
-//+
 Curve Loop(430) = {421, -415, -420, -419};
-//+
 Plane Surface(431) = {430};
-//+
 Curve Loop(431) = {417, -423, -424, -413};
-//+
 Plane Surface(432) = {431};
-//+
 Curve Loop(432) = {416, 417, 418, 421};
-//+
 Plane Surface(433) = {432};
-//+
 Curve Loop(433) = {420, -414, 424, -422};
-//+
 Plane Surface(434) = {433};
 
 Physical Surface("SphereCenter") = {28,26,16,14,20,24,22,18};
 Physical Surface("SphereRight") = {128,126,116,114,120,124,122,118};
 Physical Surface("SphereLeft") = {228,226,216,214,220,224,222,218};
 Physical Surface("BoxWalls") = {429, 431, 433, 432, 434, 430};
-//+
+
 Physical Volume("SphLeft") = {3333};
 Physical Volume("SphCent") = {1111};
 Physical Volume("SphRight") = {2222};
 //Physical Volume("Body") = {1111,2222,3333};
 Surface Loop(230) = {431, 433, 429, 432, 430, 434};
-//+
 Volume(4444) = {29, 129, 229, 230};
-//+
 Physical Volume("Fluid") = {4444};
+
+Line(425) = {202, 4};
+Line(426) = {2, 104};
+Curve {425,426 } In Volume{4444};
