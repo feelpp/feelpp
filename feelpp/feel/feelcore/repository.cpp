@@ -87,6 +87,7 @@ Repository::configure()
         }
     }
     geo_ = root_ / "geo";
+
     // read config file in root_/.feelppconfig then try $HOME/.feelppconfig
     if ( fs::exists( root_/".feelppconfig" ) )
     {
@@ -98,8 +99,12 @@ Repository::configure()
         Feel::cout << "[feelpp] reading config " << this->globalRoot().parent_path()/".feelppconfig" << std::endl;
         std::ifstream i((this->globalRoot().parent_path()/".feelppconfig").string());
         i >> config_.data;
-
     }
+    std::string e_d = "exprs";
+    if ( Environment::vm().count( "subdir.expr" ) )
+        e_d = Environment::vm()["subdir.expr"].as<std::string>();
+    exprs_ = ( !config_.data.empty() ) ? directoryWithoutAppenders() / config_.data.value("/directory/exprs"_json_pointer,e_d): directoryWithoutAppenders() / e_d;
+
     if ( Environment::isMasterRank() )
     {
         if ( !fs::exists( root_ ) )
@@ -121,6 +126,8 @@ Repository::configure()
     Environment::worldComm().barrier();
     
 }
+
+
 fs::path
 Repository::directory() const 
 { 

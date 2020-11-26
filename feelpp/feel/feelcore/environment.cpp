@@ -583,7 +583,25 @@ Environment::Environment( int argc, char** argv,
         }
     }
 #else
-    changeRepository(  _directory=boost::format{S_repository.directory().string()} );
+    fs::path directory;
+    if ( S_vm.count( "directory" ) )
+        directory = S_vm["directory"].as<std::string>();
+    if ( S_vm.count( "repository.prefix" ) )
+        directory = S_vm["repository.prefix"].as<std::string>();
+    if ( S_vm.count( "repository.case" ) )
+    {
+        fs::path d{ directory };
+        d /= S_vm["repository.case"].as<std::string>();
+        directory = d.string();
+    }
+    if ( !directory.empty() )
+    {
+        S_repository.configure(directory);
+        S_rootdir = S_repository.root();
+        S_appdir = S_repository.directory();
+        S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
+    }
+    changeRepository( _directory = boost::format{ S_repository.directory().string() } );
 #endif
     if( S_vm.count( "journal.filename" ) )
     {
@@ -1787,15 +1805,9 @@ Environment::appRepositoryWithoutNumProc()
 std::string
 Environment::exprRepository()
 {
-    fs::path rep_path( S_appdirWithoutNumProc );
-
-    std::string exprdir = "exprs";
-    if ( S_vm.count( "subdir.expr" ) )
-        exprdir = S_vm["subdir.expr"].as<std::string>();
-    rep_path /= exprdir;
-
-    return rep_path.string();
+    return S_repository.exprs().string();
 }
+
 std::string
 Environment::logsRepository()
 {
@@ -1884,7 +1896,8 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
 
     S_appdirWithoutNumProc = rep_path;
 
-    if ( add_subdir_np )
+    bool append_np = (!S_repository.data().empty())?S_repository.data().value( "/directory/append/np"_json_pointer, false ):false;
+    if ( append_np ||add_subdir_np )
     {
         rep_path = rep_path / ( boost::format( "np_%1%" ) % Environment::numberOfProcessors() ).str();
 

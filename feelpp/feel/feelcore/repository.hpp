@@ -109,8 +109,19 @@ public:
     Repository() = default;
     Repository( Config c );
 
+    /**
+     * @brief configure the repository directories based on @p Config
+     * 
+     */
     void configure();
     
+    /**
+     * @brief configure for a given directory
+     * 
+     * @param d directory path
+     */
+    void configure( fs::path const& d ) { config_.directory = d; configure(); }
+
     /**
      * @return get the root of the repository
      */
@@ -128,6 +139,14 @@ public:
      * @return get the geo directory of the repository
      */
     fs::path const& geo()  const { return geo_; }
+
+    /**
+     * @brief get the expressions directory
+     * The expressions directory contains c++ and plugins associated with the expressions
+     *
+     * @return get the exprs directory of the repository
+     */
+    fs::path const& exprs()  const { return exprs_; }
 
     /**
      * @brief the result repository absolute directory 
@@ -188,12 +207,17 @@ public:
      */
     std::string userEmail() const { return ( config_.data.contains("user") && config_.data["user"].contains("email") )?config_.data["user"]["email"].get<std::string>():""; }
 
-
+    /**
+     * @brief data configuration
+     * 
+     */
+    json const& data() const { return config_.data; }
 private:
     Config config_;
     fs::path root_;
     fs::path global_root_;
     fs::path geo_;
+    fs::path exprs_;
 };
 
 inline Repository::Config globalRepository( std::string reldir, nl::json d = {} )
