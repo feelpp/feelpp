@@ -398,7 +398,7 @@ public:
             static auto angular_velocity( BodyBoundaryCondition const* t ) { return ModelFieldTag<BodyBoundaryCondition,1>( t ); }
         };
 
-        BodyBoundaryCondition();
+        BodyBoundaryCondition( self_type const& fluidToolbox );
         BodyBoundaryCondition( BodyBoundaryCondition const& ) = default;
         BodyBoundaryCondition( BodyBoundaryCondition && ) = default;
 
@@ -601,6 +601,7 @@ public:
                     bpbc.updateTimeStep();
             }
         void updateForUse( self_type const& fluidToolbox );
+        void initAlgebraicFactory( self_type const& fluidToolbox, model_algebraic_factory_ptrtype algebraicFactory );
         void updateAlgebraicFactoryForUse( self_type const& fluidToolbox, model_algebraic_factory_ptrtype algebraicFactory );
 
         void init( self_type const& fluidToolbox )
@@ -641,6 +642,14 @@ public:
             {
                 for ( auto const& [name,bpbc] : *this )
                     if ( bpbc.hasElasticVelocityFromExpr() )
+                        return true;
+                return false;
+            }
+
+        bool hasArticulationWithMethodPMatrix() const
+            {
+                for ( auto const& [name,bpbc] : *this )
+                    if ( bpbc.hasArticulationTranslationalVelocity() && bpbc.articulationMethod() == "p-matrix" )
                         return true;
                 return false;
             }
