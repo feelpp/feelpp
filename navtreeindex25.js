@@ -1,6 +1,5 @@
 var NAVTREEINDEX25 =
 {
-"classFeel_1_1RegionTree.html#a49a6a9b0c6bf78d9a79aff368a489c8a":[6,1,1,228,2],
 "classFeel_1_1RegionTree.html#a510c6c6073869147cd18872b0ede78ee":[6,1,1,228,15],
 "classFeel_1_1RegionTree.html#a5c352f35daab7913c4dbee0549932671":[6,1,1,228,17],
 "classFeel_1_1RegionTree.html#a8754181920a13660797547646e1dccb2":[6,1,1,228,18],
@@ -249,5 +248,6 @@ var NAVTREEINDEX25 =
 "classFeel_1_1Stencil.html#a115f8b136248542bfa2d51fac330e807":[6,1,1,245,45],
 "classFeel_1_1Stencil.html#a13716ae1d0c58cc25ae801bb0ef574bd":[6,1,1,245,11],
 "classFeel_1_1Stencil.html#a1dd99db94699ebec5971202fa726d628":[6,1,1,245,10],
-"classFeel_1_1Stencil.html#a215a3af662f56af219e931db5fdb1e3d":[6,1,1,245,19]
+"classFeel_1_1Stencil.html#a215a3af662f56af219e931db5fdb1e3d":[6,1,1,245,19],
+"classFeel_1_1Stencil.html#a22b27a15053a4fdb859b5d1cf8e5fb67":[6,1,1,245,25]
 };

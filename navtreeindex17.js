@@ -1,6 +1,5 @@
 var NAVTREEINDEX17 =
 {
-"classFeel_1_1JournalManager.html#adca6ff9f7e53eac59d5d8974efeda645":[6,1,1,155,23],
 "classFeel_1_1JournalManager.html#af335d14e7941469c443fb530b5b40ad0":[6,1,1,155,3],
 "classFeel_1_1JournalManager.html#af3998caa18c821abfa5dba41170473a3":[6,1,1,155,18],
 "classFeel_1_1JournalWatcher.html":[6,1,1,156],
@@ -249,5 +248,6 @@ var NAVTREEINDEX17 =
 "classFeel_1_1Mesh.html#a9f6d6ac7647f0faaa249e123c9ceffe1":[6,1,1,163,112],
 "classFeel_1_1Mesh.html#aa012daf8007499bdeed2908e60a654b2":[6,1,1,163,152],
 "classFeel_1_1Mesh.html#aa0ec4a25b68821c4be5144135e293466":[6,1,1,163,147],
-"classFeel_1_1Mesh.html#aa0ef10270f74ba1a155768844520cc4e":[6,1,1,163,95]
+"classFeel_1_1Mesh.html#aa0ef10270f74ba1a155768844520cc4e":[6,1,1,163,95],
+"classFeel_1_1Mesh.html#aa45d0a74151105c40d518a1cb59e5d10":[6,1,1,163,138]
 };

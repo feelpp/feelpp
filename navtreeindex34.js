@@ -1,6 +1,5 @@
 var NAVTREEINDEX34 =
 {
-"feel_8hpp.html#af87c1e8b3de6fcd633bd8bac9af4cd65":[6,2,0,0,0,15,5],
 "feel_8hpp.html#gaa90565f9cd5f52a52eeea0e4b7858b87":[6,2,0,0,0,15,3],
 "feel_8hpp.html#gafdf3582bcb29eaf28321e1f5c48bfa36":[6,2,0,0,0,15,2],
 "feelassert_8hpp.html":[6,2,0,0,0,16],
@@ -246,8 +245,9 @@ var NAVTREEINDEX34 =
 "functions_e.html":[6,0,0,5],
 "functions_enum.html":[6,0,4],
 "functions_f.html":[6,0,0,6],
-"functions_func.html":[6,0,1],
 "functions_func.html":[6,0,1,0],
+"functions_func.html":[6,0,1],
 "functions_func_a.html":[6,0,1,1],
-"functions_func_b.html":[6,0,1,2]
+"functions_func_b.html":[6,0,1,2],
+"functions_func_c.html":[6,0,1,3]
 };

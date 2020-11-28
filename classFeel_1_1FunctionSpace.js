@@ -81,7 +81,6 @@ var classFeel_1_1FunctionSpace =
     [ "nDof", "classFeel_1_1FunctionSpace.html#a82ddbf31a1a520893179493f56711ced", null ],
     [ "nDofPerComponent", "classFeel_1_1FunctionSpace.html#a10c8d44ca49dd80f4b2bb59977bb7d52", null ],
     [ "nDofStart", "classFeel_1_1FunctionSpace.html#a4f49f477c667ca9d09269aeecbbb2d38", null ],
-    [ "New", "classFeel_1_1FunctionSpace.html#a9064c6117ad62c56cc68254be5e37c1a", null ],
     [ "NewFromList", "classFeel_1_1FunctionSpace.html#adb0acf618c9b3db3ffc3401e0038e70d", null ],
     [ "NewImpl", "classFeel_1_1FunctionSpace.html#a1f82ac7f12d74babbe2f17f20f9dd184", null ],
     [ "nLocalDof", "classFeel_1_1FunctionSpace.html#a1496b8655c6b869263c4e9a22820694d", null ],

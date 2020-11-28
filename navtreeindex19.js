@@ -1,6 +1,5 @@
 var NAVTREEINDEX19 =
 {
-"classFeel_1_1Mesh2D.html#a4bf2f93b62c6799499dc5655c9433bc1":[5,1,7,28],
 "classFeel_1_1Mesh2D.html#a4f06c7e025f40cb7f9b8540287c1176b":[5,1,7,58],
 "classFeel_1_1Mesh2D.html#a51e696ded995330dfa9938999dcb0015":[5,1,7,24],
 "classFeel_1_1Mesh2D.html#a54bc5a4f04ebeadd4861bc4fbf4e2667":[5,1,7,50],
@@ -249,5 +248,6 @@ var NAVTREEINDEX19 =
 "classFeel_1_1MeshHighOrder.html#a0b07ae1c6b7d0bf5c4ced9ba3adeed41":[6,1,1,172,1],
 "classFeel_1_1MeshHighOrder.html#a3bf215f2f45933a45b4ae1b569d2655a":[6,1,1,172,0],
 "classFeel_1_1MeshHighOrder.html#a4be3a4322ec755a5e92e307f0b6ef447":[6,1,1,172,2],
-"classFeel_1_1MeshHighOrder.html#a5dc6fea9bc2bc27b5e03a919ed896ced":[6,1,1,172,8]
+"classFeel_1_1MeshHighOrder.html#a5dc6fea9bc2bc27b5e03a919ed896ced":[6,1,1,172,8],
+"classFeel_1_1MeshHighOrder.html#a729d34e64118051cbcd67b68f12a0cd7":[6,1,1,172,4]
 };

@@ -1,6 +1,5 @@
 var NAVTREEINDEX16 =
 {
-"classFeel_1_1GeoND.html#ab4def565c9a6070a0de6898d7d6bfe62":[5,1,4,40],
 "classFeel_1_1GeoND.html#ab8adcd81fb8c20f7c0ab75c15adbac10":[5,1,4,128],
 "classFeel_1_1GeoND.html#abcfb19e78bf19f9c25729ea6d43af890":[5,1,4,97],
 "classFeel_1_1GeoND.html#abe77dd340410458a6dda8c4f6823bcef":[5,1,4,129],
@@ -249,5 +248,6 @@ var NAVTREEINDEX16 =
 "classFeel_1_1JournalManager.html#a99491d1f40d95a437b0f641e13fa2a26":[6,1,1,155,12],
 "classFeel_1_1JournalManager.html#aa22d14a63e58f83e174f112e4c7dde42":[6,1,1,155,13],
 "classFeel_1_1JournalManager.html#ac58f5acd5c4f1a6750101f2aa7b7ac78":[6,1,1,155,11],
-"classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c":[6,1,1,155,0]
+"classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c":[6,1,1,155,0],
+"classFeel_1_1JournalManager.html#adca6ff9f7e53eac59d5d8974efeda645":[6,1,1,155,23]
 };
