@@ -617,6 +617,7 @@ struct InitializeSpace
     PeriodicityType M_periodicity;
     std::vector<bool> M_extendedDofTable;
 };
+
 template<typename DofType>
 struct updateDataMapProcess
 {
@@ -716,7 +717,6 @@ struct updateDataMapProcess
     mutable std::shared_ptr<DofType> M_dm;
     mutable std::shared_ptr<DofType> M_dmOnOff;
 }; // updateDataMapProcess
-
 
 template<typename DofType>
 struct updateDataMapProcessStandard
@@ -4628,11 +4628,12 @@ public:
         return pointer_type( new functionspace_type( __m, mesh_components ) );
     }
 #endif // 0
-
+#if 0
     static pointer_type New( mesh_ptrtype const& __m, std::vector<Dof<typename mesh_type::size_type> > const& dofindices )
     {
         return pointer_type( new functionspace_type( __m, dofindices ) );
     }
+#endif    
     BOOST_PARAMETER_MEMBER_FUNCTION( ( pointer_type ),
                                      static New,
                                      tag,
@@ -6034,79 +6035,85 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                                          mpl::bool_<true> )
 {
     DVLOG(2) << "calling init(<composite>) begin\n";
-    M_mesh = __m;
+    if constexpr ( is_composite )
+    { 
+        M_mesh = __m;
 
-    // todo : check worldsComm size and M_functionspaces are the same!
-    mpl::range_c<int,0,nSpaces> keySpaces;
-    fusion::for_each( keySpaces,
-                      Feel::detail::InitializeSpace<functionspace_type>( M_functionspaces,__m, meshSupport, periodicity,
-                                                                         dofindices,
-                                                                         this->worldsComm(),
-                                                                         this->extendedDofTableComposite() ) );
+        // todo : check worldsComm size and M_functionspaces are the same!
+        mpl::range_c<int,0,nSpaces> keySpaces;
+        fusion::for_each( keySpaces,
+                        Feel::detail::InitializeSpace<functionspace_type>( M_functionspaces,__m, meshSupport, periodicity,
+                                                                            dofindices,
+                                                                            this->worldsComm(),
+                                                                            this->extendedDofTableComposite() ) );
 
-    this->initList();
+        this->initList();
+    }
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::initList()
 {
-    if ( !this->hasWorldComm() )
-        this->setWorldComm( M_worldsComm[0] );
-
-    if ( true )// this->worldComm().globalSize()>1 )
+    if constexpr ( is_composite )
     {
-        if ( this->hasEntriesForAllSpaces() )
-            {
-                // construction with same partionment for all subspaces
-                // and each processors has entries for all subspaces
-                DVLOG(2) << "init(<composite>) type hasEntriesForAllSpaces\n";
+        if ( !this->hasWorldComm() )
+            this->setWorldComm( M_worldsComm[0] );
 
-                // build datamap
-                auto dofInitTool=Feel::detail::updateDataMapProcessStandard<dof_type>( this->worldCommPtr(),
-                                                                                       this->nSubFunctionSpace() );
-                M_dof = fusion::fold( M_functionspaces, M_dof, dofInitTool );
-                // finish update datamap
-                M_dof->setNDof( this->nDof() );
-                M_dofOnOff = M_dof;
-            }
-        else
-            {
-                CHECK( false ) << "deprecated";
-                // construction with same partionment for all subspaces
-                // and one processor has entries for only one subspace
-                DVLOG(2) << "init(<composite>) type Not hasEntriesForAllSpaces\n";
+        if ( true )// this->worldComm().globalSize()>1 )
+        {
+            if ( this->hasEntriesForAllSpaces() )
+                {
+                    // construction with same partionment for all subspaces
+                    // and each processors has entries for all subspaces
+                    DVLOG(2) << "init(<composite>) type hasEntriesForAllSpaces\n";
 
-                // build the WorldComm associated to mix space
-                worldcomm_ptr_t mixSpaceWorldComm = this->worldsComm()[0]->clone();
+                    // build datamap
+                    auto dofInitTool=Feel::detail::updateDataMapProcessStandard<dof_type>( this->worldCommPtr(),
+                                                                                        this->nSubFunctionSpace() );
+                    M_dof = fusion::fold( M_functionspaces, M_dof, dofInitTool );
+                    // finish update datamap
+                    M_dof->setNDof( this->nDof() );
+                    M_dofOnOff = M_dof;
+                }
+            else
+                {
+                    CHECK( false ) << "deprecated";
+                    // construction with same partionment for all subspaces
+                    // and one processor has entries for only one subspace
+                    DVLOG(2) << "init(<composite>) type Not hasEntriesForAllSpaces\n";
 
-                if ( this->worldsComm().size()>1 )
-                    for ( int i=1; i<( int )this->worldsComm().size(); ++i )
-                        {
-                            mixSpaceWorldComm = *mixSpaceWorldComm + *this->worldsComm()[i];
-                        }
+                    // build the WorldComm associated to mix space
+                    worldcomm_ptr_t mixSpaceWorldComm = this->worldsComm()[0]->clone();
 
-                this->setWorldComm( mixSpaceWorldComm );
-                //mixSpaceWorldComm.showMe();
+                    if ( this->worldsComm().size()>1 )
+                        for ( int i=1; i<( int )this->worldsComm().size(); ++i )
+                            {
+                                mixSpaceWorldComm = *mixSpaceWorldComm + *this->worldsComm()[i];
+                            }
 
-                // update DofTable for the mixedSpace (we have 2 dofTables : On and OnOff)
-                auto dofInitTool=Feel::detail::updateDataMapProcess<dof_type>( this->worldsComm(), mixSpaceWorldComm, this->nSubFunctionSpace()-1 );
-                fusion::for_each( M_functionspaces, dofInitTool );
-                // finish update datamap
-                M_dof = dofInitTool.dataMap();
-                M_dof->setNDof( this->nDof() );
-                M_dof->updateDataInWorld();
-                M_dofOnOff = dofInitTool.dataMapOnOff();
-                M_dofOnOff->setNDof( this->nDof() );
-                M_dofOnOff->updateDataInWorld();
-            }
+                    this->setWorldComm( mixSpaceWorldComm );
+                    //mixSpaceWorldComm.showMe();
+
+                    // update DofTable for the mixedSpace (we have 2 dofTables : On and OnOff)
+                    auto dofInitTool=Feel::detail::updateDataMapProcess<dof_type>( this->worldsComm(), mixSpaceWorldComm, this->nSubFunctionSpace()-1 );
+                    fusion::for_each( M_functionspaces, dofInitTool );
+                    // finish update datamap
+                    M_dof = dofInitTool.dataMap();
+                    M_dof->setNDof( this->nDof() );
+                    M_dof->updateDataInWorld();
+                    M_dofOnOff = dofInitTool.dataMapOnOff();
+                    M_dofOnOff->setNDof( this->nDof() );
+                    M_dofOnOff->updateDataInWorld();
+                }
+        }
+    #if 0
+        M_dof->setIndexSplit( this->buildDofIndexSplit() );
+        M_dof->setIndexSplitWithComponents( this->buildDofIndexSplitWithComponents() );
+    #endif
+        //M_dof->indexSplit().showMe();
+        this->applyUpdateInformationObject();
     }
-#if 0
-    M_dof->setIndexSplit( this->buildDofIndexSplit() );
-    M_dof->setIndexSplitWithComponents( this->buildDofIndexSplitWithComponents() );
-#endif
-    //M_dof->indexSplit().showMe();
-    this->applyUpdateInformationObject();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -6279,12 +6286,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::updateRegionTree() const
     BoundingBox<> __bb( M_mesh->gm()->isLinear() );
 
     typedef typename mesh_type::element_iterator mesh_element_iterator;
+#if 0    
     mesh_element_iterator it = M_mesh->beginElementWithProcessId( M_mesh->comm().rank() );
     mesh_element_iterator en = M_mesh->endElementWithProcessId( M_mesh->comm().rank() );
+#else
+    auto it = M_mesh->beginElement();
+    auto en = M_mesh->endElement();
+#endif
 
     for ( size_type __i = 0; it != en; ++__i, ++it )
     {
-        __bb.make( it->G() );
+        __bb.make( it->second.G() );
 
         for ( unsigned k=0; k < __bb.min.size(); ++k )
         {
@@ -6292,7 +6304,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::updateRegionTree() const
             __bb.max[k]+=EPS;
         }
 
-        __rt->addBox( __bb.min, __bb.max, it->id() );
+        __rt->addBox( __bb.min, __bb.max, it->second.id() );
     }
 
     //__rt->dump();
