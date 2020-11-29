@@ -1879,13 +1879,13 @@ public:
     typedef typename std::shared_ptr<trace_functionspace_type> trace_functionspace_ptrtype;
 
     // wirebasket
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<2> >,
             mpl::identity<typename mesh_type::trace_trace_mesh_type>,
             mpl::identity<mpl::void_> >::type::type trace_trace_mesh_type;
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<2> >,
             mpl::identity<typename mesh_type::trace_trace_mesh_ptrtype>,
             mpl::identity<mpl::void_> >::type::type trace_trace_mesh_ptrtype;
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<2> >,
             mpl::identity<FunctionSpace<trace_trace_mesh_type, bases_list> >,
             mpl::identity<mpl::void_> >::type::type trace_trace_functionspace_type;
     typedef typename std::shared_ptr<trace_trace_functionspace_type> trace_trace_functionspace_ptrtype;
@@ -5453,14 +5453,17 @@ public:
     trace_trace_functionspace_ptrtype
     wireBasket()  const
     {
-        //return trace( mpl::greater<mpl::int_<nDim>,mpl::int_<1> >::type() )
-        return trace_trace_functionspace_type::New( _mesh=mesh()->wireBasket( markededges( mesh(),"WireBasket" ) ), _worldscomm=this->worldsComm() );
+        if constexpr ( nDim > 2 )
+            return trace_trace_functionspace_type::New( _mesh=mesh()->wireBasket( markededges( mesh(),"WireBasket" ) ), _worldscomm=this->worldsComm() );
+        return trace_trace_functionspace_ptrtype{};
     }
     template<typename RangeT>
     trace_trace_functionspace_ptrtype
     wireBasket( RangeT range  )  const
     {
-        return trace_trace_functionspace_type::New( mesh()->wireBasket( range ) );
+        if constexpr ( nDim > 2 )
+            return trace_trace_functionspace_type::New( mesh()->wireBasket( range ) );
+        return trace_trace_functionspace_ptrtype{};            
     }
 
 
