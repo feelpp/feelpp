@@ -1,0 +1,14 @@
+#include <feel/feeldiscr/pch.hpp>
+
+using namespace Feel;
+int main( int argc, char** argv )
+{
+    
+    using mesh_t = Mesh<Simplex<<%= n %>>>;
+    auto mesh = std::make_shared<mesh_t>();
+#if defined(METABENCH)
+    FunctionSpace<Mesh<Simplex<<%= n %>>>,bases<Lagrange<2,Scalar>>> Xh1( mesh );
+    FunctionSpace<Mesh<Simplex<<%= n %>>>,bases<Lagrange<2,Scalar>>> Xh2( mesh );
+#endif
+
+}

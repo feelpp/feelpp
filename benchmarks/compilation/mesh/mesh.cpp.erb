@@ -1,0 +1,14 @@
+#include <feel/feeldiscr/mesh.hpp>
+extern template class Feel::Mesh<Feel::Simplex<3>>;
+Feel::Mesh<Feel::Simplex<3>> T1;
+int main( int argc, char** argv )
+{
+    using namespace Feel;
+    
+#if defined(METABENCH)
+//    Mesh<Simplex<<%= n %>>> T;
+   
+    Mesh<Simplex<3>> T2;
+#endif
+
+}
