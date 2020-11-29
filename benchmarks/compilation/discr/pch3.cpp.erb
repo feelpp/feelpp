@@ -8,8 +8,13 @@ int main( int argc, char** argv )
     auto mesh = std::make_shared<mesh_t>();
 #if defined(METABENCH)
     auto Xh1=Pch<3>( mesh );
+    auto e1=Xh1->element();
+#if 0    
     auto Xh2=Pch<3>( mesh );
+    auto e2=Xh2->element();
     auto Xh3=Pch<3>( mesh );
+    auto e3=Xh3->element();
+#endif    
 #endif
 
 }
