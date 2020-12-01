@@ -354,15 +354,15 @@ typedef mpl::if_&lt; mpl::greater&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 1 &
 <tr class="memitem:af74809378722725179a29c3a5c6120f4"><td class="memItemLeft" align="right" valign="top"><a id="af74809378722725179a29c3a5c6120f4"></a>
 typedef std::shared_ptr&lt; trace_functionspace_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>trace_functionspace_ptrtype</b></td></tr>
 <tr class="separator:af74809378722725179a29c3a5c6120f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aadb8590b92185c121e26d3f0babe784c"><td class="memItemLeft" align="right" valign="top"><a id="aadb8590b92185c121e26d3f0babe784c"></a>
-typedef mpl::if_&lt; mpl::greater&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 1 &gt; &gt;, mpl::identity&lt; typename mesh_type::trace_trace_mesh_type &gt;, mpl::identity&lt; mpl::void_ &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>trace_trace_mesh_type</b></td></tr>
-<tr class="separator:aadb8590b92185c121e26d3f0babe784c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6f6ae6bd28b7a41fc0ea3566f37f2edd"><td class="memItemLeft" align="right" valign="top"><a id="a6f6ae6bd28b7a41fc0ea3566f37f2edd"></a>
-typedef mpl::if_&lt; mpl::greater&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 1 &gt; &gt;, mpl::identity&lt; typename mesh_type::trace_trace_mesh_ptrtype &gt;, mpl::identity&lt; mpl::void_ &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>trace_trace_mesh_ptrtype</b></td></tr>
-<tr class="separator:a6f6ae6bd28b7a41fc0ea3566f37f2edd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a69239a0ed93ba3030631d660400eaefb"><td class="memItemLeft" align="right" valign="top"><a id="a69239a0ed93ba3030631d660400eaefb"></a>
-typedef mpl::if_&lt; mpl::greater&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 1 &gt; &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; trace_trace_mesh_type, bases_list &gt; &gt;, mpl::identity&lt; mpl::void_ &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>trace_trace_functionspace_type</b></td></tr>
-<tr class="separator:a69239a0ed93ba3030631d660400eaefb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee16d3982f6b546548e5d78526266fd5"><td class="memItemLeft" align="right" valign="top"><a id="aee16d3982f6b546548e5d78526266fd5"></a>
+typedef mpl::if_&lt; mpl::greater&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 2 &gt; &gt;, mpl::identity&lt; typename mesh_type::trace_trace_mesh_type &gt;, mpl::identity&lt; mpl::void_ &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>trace_trace_mesh_type</b></td></tr>
+<tr class="separator:aee16d3982f6b546548e5d78526266fd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0cbbc1e18d248abb0ff0ff8c48bf8e7e"><td class="memItemLeft" align="right" valign="top"><a id="a0cbbc1e18d248abb0ff0ff8c48bf8e7e"></a>
+typedef mpl::if_&lt; mpl::greater&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 2 &gt; &gt;, mpl::identity&lt; typename mesh_type::trace_trace_mesh_ptrtype &gt;, mpl::identity&lt; mpl::void_ &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>trace_trace_mesh_ptrtype</b></td></tr>
+<tr class="separator:a0cbbc1e18d248abb0ff0ff8c48bf8e7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e1d032b40dc45f3970bc1d3729f061d"><td class="memItemLeft" align="right" valign="top"><a id="a5e1d032b40dc45f3970bc1d3729f061d"></a>
+typedef mpl::if_&lt; mpl::greater&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 2 &gt; &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; trace_trace_mesh_type, bases_list &gt; &gt;, mpl::identity&lt; mpl::void_ &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>trace_trace_functionspace_type</b></td></tr>
+<tr class="separator:a5e1d032b40dc45f3970bc1d3729f061d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a924100cd86fdfae9f3ae6987a0e09299"><td class="memItemLeft" align="right" valign="top"><a id="a924100cd86fdfae9f3ae6987a0e09299"></a>
 typedef std::shared_ptr&lt; trace_trace_functionspace_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>trace_trace_functionspace_ptrtype</b></td></tr>
 <tr class="separator:a924100cd86fdfae9f3ae6987a0e09299"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1997,8 +1997,6 @@ template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parame
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the number of degrees of freedom per dim </dd></dl>
-
-<p class="reference">References <a class="el" href="namespaceFeel.html#aeb29bac2a3e332bb2282ce149f33bcc3">Feel::worldComm()</a>.</p>
 
 </div>
 </div>
