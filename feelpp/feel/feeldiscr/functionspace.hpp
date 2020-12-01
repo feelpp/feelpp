@@ -4844,7 +4844,17 @@ public:
      */
     size_type nDof() const
     {
-        return this->nDof( mpl::bool_<is_composite>() );
+        if constexpr ( is_composite )
+        {
+            DVLOG(2) << "calling nDof(<composite>) begin\n";
+            size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NbDof() );
+            DVLOG(2) << "calling nDof(<composite>) end\n";
+            return ndof;
+        }
+        else
+        {
+            return M_dof->nDof();
+        }
     }
 
     /**
@@ -4852,27 +4862,78 @@ public:
      */
     size_type nLocalDof() const
     {
-        return this->nLocalDof( mpl::bool_<is_composite>() );
+        if constexpr( is_composite ) 
+        {
+            DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
+            size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
+            DVLOG(2) << "calling nLocalDof(<composite>) end\n";
+            return ndof;
+        }
+        else
+        {
+            //return M_dof->nLocalDof();
+            return M_dof->nLocalDofWithGhost();
+        }        
     }
 
     size_type nLocalDofWithGhost() const
     {
-        return this->nLocalDofWithGhost( mpl::bool_<is_composite>() );
+        if constexpr ( is_composite )
+        {
+            DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
+            size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
+            DVLOG(2) << "calling nLocalDof(<composite>) end\n";
+            return ndof;
+        }
+        else
+        {
+            return M_dof->nLocalDofWithGhost();
+        }
     }
 
     size_type nLocalDofWithoutGhost() const
     {
-        return this->nLocalDofWithoutGhost( mpl::bool_<is_composite>() );
+        if constexpr ( is_composite )
+        {
+            DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
+            size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<false> >( this->worldsComm() ) );
+            DVLOG(2) << "calling nLocalDof(<composite>) end\n";
+            return ndof;
+        }
+        else
+        {
+            return M_dof->nLocalDofWithoutGhost();
+        }        
     }
 
     size_type nLocalDofWithGhostOnProc( const int proc ) const
     {
-        return this->nLocalDofWithGhostOnProc( proc, mpl::bool_<is_composite>() );
-    }
+        if constexpr ( is_composite )
+        {
+            DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
+            size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDofOnProc<mpl::bool_<true> >( proc, this->worldsComm() ) );
+            DVLOG(2) << "calling nLocalDof(<composite>) end\n";
+            return ndof;
+        }
+        else
+        {
+            return M_dof->nLocalDofWithGhost(proc);
+        }        
+     }
 
     size_type nLocalDofWithoutGhostOnProc(const int proc) const
     {
-        return this->nLocalDofWithoutGhostOnProc( proc, mpl::bool_<is_composite>() );
+        if constexpr ( is_composite )
+        {
+            DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
+            size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDofOnProc<mpl::bool_<false> >( proc, this->worldsComm() ) );
+            DVLOG(2) << "calling nLocalDof(<composite>) end\n";
+            return ndof;
+        }
+        else
+        {
+            return M_dof->nLocalDofWithoutGhost(proc);
+        }
     }
 
     /**
@@ -5582,22 +5643,6 @@ private:
     template<typename FSpaceHead>
     FEELPP_NO_EXPORT void initHead( FSpaceHead& fspacehead );
 
-    FEELPP_NO_EXPORT size_type nDof( mpl::bool_<false> ) const;
-    FEELPP_NO_EXPORT size_type nDof( mpl::bool_<true> ) const;
-
-    FEELPP_NO_EXPORT size_type nLocalDof( mpl::bool_<false> ) const;
-    FEELPP_NO_EXPORT size_type nLocalDof( mpl::bool_<true> ) const;
-
-    FEELPP_NO_EXPORT size_type nLocalDofWithGhost( mpl::bool_<false> ) const;
-    FEELPP_NO_EXPORT size_type nLocalDofWithGhost( mpl::bool_<true> ) const;
-    FEELPP_NO_EXPORT size_type nLocalDofWithoutGhost( mpl::bool_<false> ) const;
-    FEELPP_NO_EXPORT size_type nLocalDofWithoutGhost( mpl::bool_<true> ) const;
-
-    FEELPP_NO_EXPORT size_type nLocalDofWithGhostOnProc( const int proc, mpl::bool_<false> ) const;
-    FEELPP_NO_EXPORT size_type nLocalDofWithGhostOnProc( const int proc, mpl::bool_<true> ) const;
-    FEELPP_NO_EXPORT size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<false> ) const;
-    FEELPP_NO_EXPORT size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<true> ) const;
-
     FEELPP_NO_EXPORT void rebuildDofPoints( mpl::bool_<false> );
     FEELPP_NO_EXPORT void rebuildDofPoints( mpl::bool_<true> );
 
@@ -6139,108 +6184,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList( FSpaceHead& head, FSpaceTail... tai
     initList( tail... );
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
-FunctionSpace<A0, A1, A2, A3, A4>::nDof( mpl::bool_<true> ) const
-{
-    DVLOG(2) << "calling nDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NbDof() );
-    DVLOG(2) << "calling nDof(<composite>) end\n";
-    return ndof;
-}
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
-FunctionSpace<A0, A1, A2, A3, A4>::nDof( mpl::bool_<false> ) const
-{
-    return M_dof->nDof();
-}
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
-FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<true> ) const
-{
-    DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
-    DVLOG(2) << "calling nLocalDof(<composite>) end\n";
-    return ndof;
-}
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
-FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<false> ) const
-{
-    //return M_dof->nLocalDof();
-    return M_dof->nLocalDofWithGhost();
-}
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
-FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<true> ) const
-{
-    DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
-    DVLOG(2) << "calling nLocalDof(<composite>) end\n";
-    return ndof;
-}
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
-FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<false> ) const
-{
-    return M_dof->nLocalDofWithGhost();
-}
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
-FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhostOnProc( const int proc, mpl::bool_<true> ) const
-{
-    DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDofOnProc<mpl::bool_<true> >( proc, this->worldsComm() ) );
-    DVLOG(2) << "calling nLocalDof(<composite>) end\n";
-    return ndof;
-}
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
-FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhostOnProc( const int proc, mpl::bool_<false> ) const
-{
-    return M_dof->nLocalDofWithGhost(proc);
-}
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
-FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<true> ) const
-{
-    DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<false> >( this->worldsComm() ) );
-    DVLOG(2) << "calling nLocalDof(<composite>) end\n";
-    return ndof;
-}
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
-FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<false> ) const
-{
-    return M_dof->nLocalDofWithoutGhost();
-}
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
-FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<true> ) const
-{
-    DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDofOnProc<mpl::bool_<false> >( proc, this->worldsComm() ) );
-    DVLOG(2) << "calling nLocalDof(<composite>) end\n";
-    return ndof;
-}
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
-FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<false> ) const
-{
-    return M_dof->nLocalDofWithoutGhost(proc);
-}
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
