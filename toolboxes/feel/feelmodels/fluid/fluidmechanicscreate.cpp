@@ -1158,56 +1158,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
     if ( !M_bodySetBC.empty() )
     {
         M_bodySetBC.initAlgebraicFactory( *this, M_algebraicFactory );
-#if 0
-        int nBlock = this->nBlockMatrixGraph();
-        BlocksBaseSparseMatrix<double> myblockMat(nBlock,nBlock);
-        for (int i=0;i<nBlock;++i)
-            myblockMat(i,i) = this->backend()->newIdentityMatrix( M_blockVectorSolution(i)->mapPtr(),M_blockVectorSolution(i)->mapPtr() );
 
-        size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
-        std::set<size_type> dofsAllBodies;
-        for ( auto const& [bpname,bpbc] : M_bodySetBC )
-        {
-            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
-            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
-
-            myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc.matrixPTilde_translational();
-            myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bpbc.matrixPTilde_angular();
-
-            auto rangeBody = bpbc.rangeMarkedFacesOnFluid();
-            auto dofsBody = this->functionSpaceVelocity()->dofs( rangeBody );
-            auto matFI_Id = myblockMat(startBlockIndexVelocity,startBlockIndexVelocity);
-            for ( auto dofid : dofsBody )
-            {
-                matFI_Id->set( dofid,dofid, 0.);
-                dofsAllBodies.insert( dofid );
-            }
-            matFI_Id->close();
-        }
-
-        auto matP = backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
-        M_algebraicFactory->initSolverPtAP( matP );
-
-        this->functionSpaceVelocity()->dof()->updateIndexSetWithParallelMissingDof( dofsAllBodies );
-        std::set<size_type> dofEliminationIdsPtAP;
-        matP->mapRow().dofIdToContainerId(startBlockIndexVelocity, dofsAllBodies, dofEliminationIdsPtAP );
-
-        for ( auto const& [bpname,bbc] : M_bodySetBC )
-        {
-            if ( !bbc.hasArticulationTranslationalVelocity() || bbc.articulationMethod() != "p-matrix" )
-                continue;
-            if ( bbc.spaceTranslationalVelocity()->nLocalDofWithGhost() > 0 )
-            {
-                size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".translational-velocity");
-                auto const& basisToContainerGpTranslationalVelocity = matP->mapRow().dofIdToContainerId( startBlockIndexTranslationalVelocity );
-                for( size_type _dofId : basisToContainerGpTranslationalVelocity )
-                    dofEliminationIdsPtAP.insert( _dofId );
-            }
-        }
-
-
-        M_algebraicFactory->solverPtAP_setDofEliminationIds( dofEliminationIdsPtAP );
-#endif
         if ( M_bodySetBC.hasElasticVelocity() ||  M_bodySetBC.hasArticulationWithMethodPMatrix() )
             M_algebraicFactory->initExplictPartOfSolution();
     }
@@ -1868,8 +1819,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
     {
         this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".translational-velocity", currentStartIndex++ );
         this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".angular-velocity", currentStartIndex++ );
-        if ( bpbc.hasArticulationTranslationalVelocity() && bpbc.articulationMethod() == "lm" )
-            this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".articulation-lm.translational-velocity", currentStartIndex++ );
+    }
+    for ( auto const& nba : M_bodySetBC.nbodyArticulated() )
+    {
+        if ( nba.articulationMethod() != "lm" )
+            continue;
+        for ( auto const& ba : nba.articulations() )
+            this->setStartSubBlockSpaceIndex( "body-bc.articulation-lm."+ba.name()+".translational-velocity", currentStartIndex++ );
     }
 
 
@@ -1945,8 +1901,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
         {
             M_blockVectorSolution(cptBlock++) = bpbc.fieldTranslationalVelocityPtr();
             M_blockVectorSolution(cptBlock++) = bpbc.fieldAngularVelocityPtr();
-            if ( bpbc.hasArticulationTranslationalVelocity() && bpbc.articulationMethod() == "lm" )
-                M_blockVectorSolution(cptBlock++) = bpbc.vectorArticulationLagrangeMultiplierTranslationalVelocity();
+        }
+        for ( auto const& nba : M_bodySetBC.nbodyArticulated() )
+        {
+            if ( nba.articulationMethod() != "lm" )
+                continue;
+            for ( auto const& ba : nba.articulations() )
+                M_blockVectorSolution(cptBlock++) = ba.vectorLagrangeMultiplierTranslationalVelocity();
         }
     }
 
@@ -2606,8 +2567,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::updateForUse()
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::BodyBoundaryCondition( self_type const& fluidToolbox )
     :
-    M_gravityForceEnabled( false ),
-    M_articulationMethod( soption(_prefix=fluidToolbox.prefix(),_name="body.articulation.method") )
+    M_gravityForceEnabled( false )
+    //M_articulationMethod( soption(_prefix=fluidToolbox.prefix(),_name="body.articulation.method") )
 {}
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -2697,10 +2658,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string co
         M_articulationTranslationalVelocityExpr.setExpr( "translational-velocity", *ptArticulation, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
         if ( !M_articulationTranslationalVelocityExpr.template hasExpr<1,1>() )
             CHECK( false ) << "required a scalar expr";
-
-        if ( auto ptArtMethod = ptArticulation->get_optional<std::string>( "method" ) )
-            M_articulationMethod = *ptArtMethod;
-        CHECK( M_articulationMethod == "lm" || M_articulationMethod == "p-matrix" ) << "invalid " <<M_articulationMethod;
     }
 }
 
@@ -2738,87 +2695,99 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
     }
 }
 
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::initArticulation( self_type const& fluidToolbox, BodySetBoundaryCondition const& bsbc )
+namespace utility_constant_functionspace
 {
-    for ( auto & [name,bbPtr] : M_articulationBodiesUsed )
+
+std::shared_ptr<datamap_t<>>
+aggregateParallelSupport( std::vector<std::shared_ptr<datamap_t<>>> const& datamaps, worldcomm_ptr_t const& thecomm )
+{
+    // create a new DataMap that allow to couple constant spaces (map1 and map2) which are not defined on same processor.
+    // active dofs are assigned on the proc which contains the active dofs of map1.
+    // ghost dofs are defined on all proc that contains active/ghost in map1 and map2.
+
+    CHECK( !datamaps.empty() ) << "no data map";
+
+    // TODO check some properties nDof ..
+
+    auto const& mapRef = datamaps.front();
+    auto mapNew = std::make_shared<datamap_t<>>( thecomm );
+    // define number of dof (with and without ghost)
+    mapNew->setNDof( mapRef->nDof() );
+    rank_type themasterRank = 0;
+    for (rank_type p=0;p<thecomm->localSize();++p)
     {
-        auto itFind = bsbc.find( name );
-        CHECK( itFind != bsbc.end() ) << "body not found";
-        bbPtr = &(itFind->second);
-    }
-    if ( this->hasArticulationTranslationalVelocity() )
-    {
-        if ( this->articulationMethod() == "lm" )
+        //auto mapUsed =
+        auto itMapUsed = std::find_if(datamaps.begin(), datamaps.end(), [&p](auto const& x){return x->nLocalDofWithGhost(p) > 0 ;});
+        if ( itMapUsed != datamaps.end() )
         {
-            auto const& bbcArticulation = *(this->articulationBodiesUsed().begin()->second); // WARNING : we guess that we have only one body! TODO
-
-            if ( true )
-            {
-                // create a new DataMap that allow to couple constant spaces (map1 and map2) which are not defined on same processor.
-                // active dofs are assigned on the proc which contains the active dofs of map1.
-                // ghost dofs are defined on all proc that contains active/ghost in map1 and map2.
-                auto map1 = this->spaceTranslationalVelocity()->mapPtr();
-                auto map2 = bbcArticulation.spaceTranslationalVelocity()->mapPtr();
-                auto const& thecomm = fluidToolbox.worldCommPtr();
-                M_dataMapArticulationLagrangeMultiplierTranslationalVelocity = std::make_shared<datamap_t<>>( thecomm );
-                auto & mapNew = M_dataMapArticulationLagrangeMultiplierTranslationalVelocity;
-                // define number of dof (with and without ghost)
-                mapNew->setNDof( map1->nDof() );
-                rank_type themasterRank = 0;
-                for (rank_type p=0;p<thecomm->localSize();++p)
-                {
-                    auto const& mapUsed =  ( map1->nLocalDofWithGhost(p) > 0 )?  *map1 : *map2;
-                    if ( mapUsed.nLocalDofWithGhost(p) > 0 )
-                    {
-                        mapNew->setNLocalDofWithGhost( p, mapUsed.nLocalDofWithGhost(p) );
-                        mapNew->setLastDof( p, mapUsed.nLocalDofWithGhost(p) -1 );
-                    }
-                    if ( map1->nLocalDofWithoutGhost(p) > 0 )
-                    {
-                        themasterRank = p;
-                        mapNew->setNLocalDofWithoutGhost( p, map1->nLocalDofWithoutGhost(p) );
-                        mapNew->setLastDofGlobalCluster( p, map1->nLocalDofWithoutGhost(p) -1 );
-                    }
-                }
-                // define mapping GlobalProcessToGlobalCluster
-                auto const& mapUsed =  ( map1->nLocalDofWithGhost() > 0 )? *map1 : *map2;
-                if ( mapUsed.nLocalDofWithGhost() > 0 )
-                    mapNew->setMapGlobalProcessToGlobalCluster( mapUsed.mapGlobalProcessToGlobalCluster() );
-
-                // add all partition as neighbor (if has localdof)
-                if ( mapNew->nLocalDofWithGhost() > 0 )
-                {
-                    for ( rank_type proc=0; proc<mapNew->worldComm().localSize(); ++proc )
-                        if ( proc!=mapNew->worldComm().localRank() && mapNew->nLocalDofWithGhost(proc) > 0 )
-                            mapNew->addNeighborSubdomain( proc );
-                }
-                // update activeDofSharedOnCluster
-                if ( themasterRank == mapNew->worldComm().localRank() )
-                {
-                    for ( size_type k = 0; k < mapNew->nLocalDofWithGhost() ; ++k )
-                    {
-                        for ( rank_type proc=0; proc<mapNew->worldComm().localSize(); ++proc )
-                        {
-                            if ( proc == themasterRank ) continue;
-                            if ( mapNew->nLocalDofWithGhost(proc) == 0 ) continue;
-                            mapNew->setActiveDofSharedOnCluster(k, { proc });
-                        }
-                    }
-                }
-                mapNew->initNumberOfDofIdToContainerId( 1 );
-                mapNew->initDofIdToContainerIdIdentity( 0,mapNew->nLocalDofWithGhost() );
-                mapNew->buildIndexSplit();
-                // mapNew->buildIndexSplitWithComponents( nRealDim );
-
-            } // if (true)
-
-            CHECK( M_dataMapArticulationLagrangeMultiplierTranslationalVelocity ) << "datamap not init";
-            M_vectorArticulationLagrangeMultiplierTranslationalVelocity = fluidToolbox.backend()->newVector( M_dataMapArticulationLagrangeMultiplierTranslationalVelocity );
+            auto const& mapUsed = *itMapUsed;
+            mapNew->setNLocalDofWithGhost( p, mapUsed->nLocalDofWithGhost(p) );
+            mapNew->setLastDof( p, mapUsed->nLocalDofWithGhost(p) - 1 );
+        }
+        if ( mapRef->nLocalDofWithoutGhost(p) > 0 )
+        {
+            themasterRank = p;
+            mapNew->setNLocalDofWithoutGhost( p, mapRef->nLocalDofWithoutGhost(p) );
+            mapNew->setLastDofGlobalCluster( p, mapRef->nLocalDofWithoutGhost(p) - 1 );
         }
     }
+    // define mapping GlobalProcessToGlobalCluster
+    auto itMapUsed = std::find_if(datamaps.begin(), datamaps.end(), [](auto const& x){return x->nLocalDofWithGhost() > 0 ;});
+    if ( itMapUsed != datamaps.end() )
+    {
+        auto const& mapUsed = *itMapUsed;
+        mapNew->setMapGlobalProcessToGlobalCluster( mapUsed->mapGlobalProcessToGlobalCluster() );
+    }
+
+    // add all partition as neighbor (if has localdof)
+    if ( mapNew->nLocalDofWithGhost() > 0 )
+    {
+        for ( rank_type proc=0; proc<mapNew->worldComm().localSize(); ++proc )
+            if ( proc!=mapNew->worldComm().localRank() && mapNew->nLocalDofWithGhost(proc) > 0 )
+                mapNew->addNeighborSubdomain( proc );
+    }
+    // update activeDofSharedOnCluster
+    if ( themasterRank == mapNew->worldComm().localRank() )
+    {
+        for ( size_type k = 0; k < mapNew->nLocalDofWithGhost() ; ++k )
+        {
+            for ( rank_type proc=0; proc<mapNew->worldComm().localSize(); ++proc )
+            {
+                if ( proc == themasterRank ) continue;
+                if ( mapNew->nLocalDofWithGhost(proc) == 0 ) continue;
+                mapNew->setActiveDofSharedOnCluster(k, { proc });
+            }
+        }
+    }
+    mapNew->initNumberOfDofIdToContainerId( 1 );
+    mapNew->initDofIdToContainerIdIdentity( 0,mapNew->nLocalDofWithGhost() );
+    mapNew->buildIndexSplit();
+    // mapNew->buildIndexSplitWithComponents( nRealDim );
+
+    return mapNew;
 }
+
+std::shared_ptr<GraphCSR>
+aggregateGraph( std::vector<std::shared_ptr<GraphCSR>> const& graphs, std::shared_ptr<datamap_t<>> mapCol )
+{
+    auto sparsity_graph = std::make_shared<GraphCSR>( graphs.front()->mapRowPtr(), mapCol );
+    for ( auto const& g : graphs )
+    {
+        for ( auto it = g->begin(), en=g->end(); it!=en ;++it )
+        {
+            auto/*row_type*/ const& irow = it->second;
+            size_type ig = it->first;
+            auto& row = sparsity_graph->row( ig );
+            row.get<0>() = irow.get<0>(); // rank
+            row.get<1>() = irow.get<1>(); // rank
+            row.get<2>().insert( irow.get<2>().begin(), irow.get<2>().end() );
+        }
+    }
+    sparsity_graph->close();
+    return sparsity_graph;
+}
+
+} // namespace utility_constant_functionspace
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -2948,6 +2917,57 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateElasticVelocity
         fluidToolbox.meshALE()->revertMovingMesh( false );
 }
 
+
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyArticulation::initLagrangeMultiplier( self_type const& fluidToolbox )
+{
+    M_dataMapLagrangeMultiplierTranslationalVelocity =
+        utility_constant_functionspace::aggregateParallelSupport( { this->body1().spaceTranslationalVelocity()->mapPtr(), this->body2().spaceTranslationalVelocity()->mapPtr() },
+                                                                  fluidToolbox.worldCommPtr() );
+    M_vectorLagrangeMultiplierTranslationalVelocity = fluidToolbox.backend()->newVector( M_dataMapLagrangeMultiplierTranslationalVelocity );
+}
+
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::init( self_type const& fluidToolbox )
+{
+    if ( this->articulationMethod() == "lm" )
+    {
+        for ( auto & ba : M_articulations )
+            ba.initLagrangeMultiplier( fluidToolbox );
+    }
+    else
+    {
+        std::map<std::string,int> count;
+        for ( auto const& ba : M_articulations )
+        {
+            for ( std::string bbc_name : { ba.body1().name(), ba.body2().name() } )
+            {
+                if ( count.find( bbc_name ) == count.end() )
+                    count[bbc_name] = 1;
+                else
+                    ++count[bbc_name];
+            }
+        }
+        auto itMax = std::max_element(count.begin(), count.end(), [](auto const& e1,auto const& e2) { return e1.second < e2.second; } );
+        CHECK ( itMax != count.end() ) << "something wrong";
+        M_pmatrixMasterBodyName = itMax->first;
+
+        // std::cout << "M_pmatrixMasterBodyName = "<< M_pmatrixMasterBodyName << std::endl;
+        // std::cout << "this->bodyList().size()="<< this->bodyList().size() << std::endl;
+        // std::cout << "this->bodyList(false).size()="<< this->bodyList(false).size() << std::endl;
+
+        // create datamap shared on all processess where a body bc is defined (active dofs use the master body)
+        std::vector<std::shared_ptr<datamap_t<>>> datamaps = { this->pmatrixMasterBody().spaceTranslationalVelocity()->mapPtr() };
+        for ( auto const& bbcPtr : this->bodyList(false) )
+            datamaps.push_back( bbcPtr->spaceTranslationalVelocity()->mapPtr() );
+        M_dataMapPMatrixTranslationalVelocity = utility_constant_functionspace::aggregateParallelSupport( datamaps, fluidToolbox.worldCommPtr() );
+    }
+}
+
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateForUse( self_type const& fluidToolbox )
@@ -2956,6 +2976,74 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateForUse( self
         bpbc.updateForUse( fluidToolbox );
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::init( self_type const& fluidToolbox )
+{
+    for ( auto & [name,bpbc] : *this )
+        bpbc.init( fluidToolbox );
+
+    std::vector<BodyArticulation> articulations;
+    for ( auto const& [name,bbc] : *this )
+    {
+        if ( bbc.articulationBodiesUsed().empty() )
+            continue;
+        std::string const& bbcName = bbc.articulationBodiesUsed().begin()->first; // WARNING : we guess that we have only one body! TODO 
+        auto itFind = this->find( bbcName );
+        CHECK( itFind != this->end() ) << "body not found";
+
+        BodyArticulation ba( &bbc, &(itFind->second) );
+        ba.setTranslationalVelocityExpr( bbc.articulationTranslationalVelocityModelExpr() );
+        articulations.push_back( std::move( ba ) );
+    }
+
+    if ( articulations.size() > 0 )
+    {
+        std::set<int> baDone;
+        while ( true )
+        {
+            int first=-1;
+            for (int k=0;k<articulations.size();++k )
+                if ( baDone.find(k) == baDone.end() )
+                {
+                    first = k;
+                    break;
+                }
+            if ( first < 0 )
+                break;
+            NBodyArticulated nba( fluidToolbox );
+            nba.addArticulation( articulations[first] );
+            baDone.insert( first );
+            while ( true )
+            {
+                int nAddedCurrently = 0;
+                for (int k=0;k<articulations.size();++k )
+                {
+                    if ( baDone.find( k ) != baDone.end() )
+                        continue;
+
+                    if ( nba.canBeConnectedTo( articulations[k] ) )
+                    {
+                        nba.addArticulation( articulations[k] );
+                        baDone.insert( k );
+                        ++nAddedCurrently;
+                    }
+                }
+                if ( nAddedCurrently == 0 )
+                    break;
+            }
+            M_nbodyArticulated.push_back( std::move( nba ) );
+        }
+    }
+
+    // std::cout << "M_nbodyArticulated.size()="<<M_nbodyArticulated.size()<<std::endl;
+    // for ( auto const& nba : M_nbodyArticulated )
+    //     std::cout << "nba.articulations.size()="<<nba.articulations().size()<<std::endl;
+
+    for ( auto & nba : M_nbodyArticulated )
+        nba.init( fluidToolbox );
+
+}
 
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -2968,17 +3056,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::initAlgebraicFacto
     size_type startBlockIndexVelocity = fluidToolbox.startSubBlockSpaceIndex("velocity");
 
     std::set<size_type> blockIndexNotDiagIdendity;
-    for ( auto & [bname,bbc] : *this )
-        if ( bbc.hasArticulationTranslationalVelocity() && bbc.articulationMethod() == "p-matrix" )
-            blockIndexNotDiagIdendity.insert( fluidToolbox.rowStartInVector() + fluidToolbox.startSubBlockSpaceIndex("body-bc."+bbc.name()+".translational-velocity") );
+    std::set<std::string> bodyInPMatrixArticulation;
+    for ( auto const& nba : this->nbodyArticulated() )
+    {
+        if ( nba.articulationMethod() != "p-matrix" )
+            continue;
 
-    std::map<std::string,std::set<std::string>> masterToSlaveArticulationPMatrix;
-    for ( auto const& [bname,bbc] : *this )
-        if ( bbc.hasArticulationTranslationalVelocity() && bbc.articulationMethod() == "p-matrix" )
+        for ( auto const& bbcPtr : nba.bodyList() )
         {
-            auto const& bbcArticulation = *(bbc.articulationBodiesUsed().begin()->second); // WARNING : we guess that we have only one body! TODO
-            masterToSlaveArticulationPMatrix[bbcArticulation.name()].insert(bbc.name());
+            blockIndexNotDiagIdendity.insert( fluidToolbox.rowStartInVector() + fluidToolbox.startSubBlockSpaceIndex("body-bc."+bbcPtr->name()+".translational-velocity") );
+            bodyInPMatrixArticulation.insert(bbcPtr->name());
         }
+    }
 
     int nBlock = fluidToolbox.nBlockMatrixGraph();
     BlocksBaseSparseMatrix<double> myblockMat(nBlock,nBlock);
@@ -2986,27 +3075,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::initAlgebraicFacto
     {
         if ( blockIndexNotDiagIdendity.find( i ) == blockIndexNotDiagIdendity.end() )
             myblockMat(i,i) = fluidToolbox.backend()->newIdentityMatrix( fluidToolbox.blockVectorSolution()(i)->mapPtr(),fluidToolbox.blockVectorSolution()(i)->mapPtr() );
-        else
-            myblockMat(i,i) = fluidToolbox.backend()->newZeroMatrix( fluidToolbox.blockVectorSolution()(i)->mapPtr(),fluidToolbox.blockVectorSolution()(i)->mapPtr() );
     }
 
-#if 1
-    sparse_matrix_ptrtype TemporaryMat;
-    if ( this->hasArticulationWithMethodPMatrix() )
-    {
-#if 0
-        auto rangeBodyBoundary = markedfaces(fluidToolbox.mesh(), {"SphereCenter","SphereLeft","SphereRight"} );
-        auto newMesh = createSubmesh(_mesh=fluidToolbox.functionSpaceVelocity()->template meshSupport<0>(),_range=rangeBodyBoundary,_view=true );
-        space_trace_p0c_vectorial_ptrtype newSpace = space_trace_p0c_vectorial_type::New(_mesh=newMesh);
-        TemporaryMat= fluidToolbox.backend()->newMatrix(_test=fluidToolbox.functionSpaceVelocity(),_trial=newSpace);//bpbc.spaceTranslationalVelocity());
-#else
-        auto const& bbcMaster = this->find( masterToSlaveArticulationPMatrix.begin()->first )->second;
-        TemporaryMat = fluidToolbox.backend()->newZeroMatrix( bbcMaster.spaceTranslationalVelocity()->mapPtr(),fluidToolbox.functionSpaceVelocity()->mapPtr() );
-#endif
-        for ( auto & [bpname,bbc] : *this )
-            TemporaryMat->addMatrix( 1.0, bbc.matrixPTilde_translational(), Feel::DIFFERENT_NONZERO_PATTERN );
-    }
-#endif
 
     std::set<size_type> dofsAllBodies;
     for ( auto & [bpname,bpbc] : *this )
@@ -3014,19 +3084,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::initAlgebraicFacto
         size_type startBlockIndexTranslationalVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
         size_type startBlockIndexAngularVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
 
-        if ( bpbc.hasArticulationTranslationalVelocity() && bpbc.articulationMethod() == "lm" )
-        {
+        if ( bodyInPMatrixArticulation.find( bpbc.name() ) == bodyInPMatrixArticulation.end() )
             myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc.matrixPTilde_translational();
-        }
-        else if ( !bpbc.hasArticulationTranslationalVelocity() )
-        {
-            auto itFindM2S = masterToSlaveArticulationPMatrix.find( bpname );
-            if ( itFindM2S == masterToSlaveArticulationPMatrix.end() )
-                myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc.matrixPTilde_translational();
-            else
-                myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = TemporaryMat;
-        }
-
         myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bpbc.matrixPTilde_angular();
 
         auto dofsBody = fluidToolbox.functionSpaceVelocity()->dofs( bpbc.rangeMarkedFacesOnFluid() );
@@ -3037,47 +3096,98 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::initAlgebraicFacto
             dofsAllBodies.insert( dofid );
         }
         matFI_Id->close();
+    }
 
 
-        if ( bpbc.hasArticulationTranslationalVelocity() && bpbc.articulationMethod() == "p-matrix" )
-        {
-            auto const& bbcArticulation = *(bpbc.articulationBodiesUsed().begin()->second); // WARNING : we guess that we have only one body! TODO
-            size_type startBlockIndexTranslationalVelocityOtherBody = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bbcArticulation.name()+".translational-velocity");
+    // p-matrix articulation
+    for ( auto const& nba : this->nbodyArticulated() )
+    {
+        if ( nba.articulationMethod() != "p-matrix" )
+            continue;
 #if 0
-            if ( !myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocityOtherBody) )
-                myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocityOtherBody) = bpbc.matrixPTilde_translational();
-            else
-                myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocityOtherBody)->addMatrix(1.0,bpbc.matrixPTilde_translational(),Feel::DIFFERENT_NONZERO_PATTERN);
+        sparse_matrix_ptrtype TemporaryMat = fluidToolbox.backend()->newZeroMatrix( nba.dataMapPMatrixTranslationalVelocity(), fluidToolbox.functionSpaceVelocity()->mapPtr() );
+        //sparse_matrix_ptrtype TemporaryMat = fluidToolbox.backend()->newZeroMatrix( nba.pmatrixMasterBody().spaceTranslationalVelocity()->mapPtr(),fluidToolbox.functionSpaceVelocity()->mapPtr() );
+        for ( auto const& bbcPtr : nba.bodyList() )
+        {
+ #if 0
+            auto XhV = fluidToolbox.functionSpaceVelocity();
+            OperatorInterpolationMatrixSetup matSetup( TemporaryMat, Feel::SUBSET_NONZERO_PATTERN );
+            auto opI_partTranslationalVelocity = opInterpolation( _domainSpace=bbcPtr->spaceTranslationalVelocity() ,_imageSpace=XhV,_range=bbcPtr->rangeMarkedFacesOnFluid(),_matrix=matSetup );
+            TemporaryMat = opI_partTranslationalVelocity->matPtr();
+#else
+            TemporaryMat->addMatrix( 1.0, bbcPtr->matrixPTilde_translational(), Feel::DIFFERENT_NONZERO_PATTERN );
 #endif
-            // WARNING TODO IN //
-            myblockMat(startBlockIndexTranslationalVelocity,startBlockIndexTranslationalVelocityOtherBody) = fluidToolbox.backend()->newIdentityMatrix( bpbc.spaceTranslationalVelocity()->mapPtr(),
-                                                                                                                                                        bbcArticulation.spaceTranslationalVelocity()->mapPtr() /*M_dataMapArticulationLagrangeMultiplierTranslationalVelocity*/ );
+        }
+#else // TO REMOVE
+
+#if 0
+        sparse_matrix_ptrtype TemporaryMatBIS = fluidToolbox.backend()->newZeroMatrix( nba.dataMapPMatrixTranslationalVelocity(), fluidToolbox.functionSpaceVelocity()->mapPtr() );
+        for ( auto const& bbcPtr : nba.bodyList() )
+        {
+            auto XhV = fluidToolbox.functionSpaceVelocity();
+            OperatorInterpolationMatrixSetup matSetup( TemporaryMatBIS, Feel::SUBSET_NONZERO_PATTERN );
+            auto opI_partTranslationalVelocity = opInterpolation( _domainSpace=bbcPtr->spaceTranslationalVelocity() ,_imageSpace=XhV,_range=bbcPtr->rangeMarkedFacesOnFluid(),_matrix=matSetup );
+            TemporaryMatBIS = opI_partTranslationalVelocity->matPtr();
+        }
+        sparse_matrix_ptrtype TemporaryMat = fluidToolbox.backend()->newMatrix( nba.dataMapPMatrixTranslationalVelocity(), fluidToolbox.functionSpaceVelocity()->mapPtr(),TemporaryMatBIS->graph() );
+#else
+
+        std::vector<std::shared_ptr<GraphCSR>> graphs;
+        for ( auto const& bbcPtr : nba.bodyList() )
+            graphs.push_back( bbcPtr->matrixPTilde_translational()->graph() );
+        auto newGraph =  utility_constant_functionspace::aggregateGraph( graphs, nba.dataMapPMatrixTranslationalVelocity() );
+        std::cout << "HOLA " << std::endl;
+        sparse_matrix_ptrtype matrixPMatrixPTilde_TranslationalVelocity = fluidToolbox.backend()->newMatrix( nba.dataMapPMatrixTranslationalVelocity(), fluidToolbox.functionSpaceVelocity()->mapPtr(),newGraph );
+#endif
+        for ( auto const& bbcPtr : nba.bodyList() )
+        {
+            auto XhV = fluidToolbox.functionSpaceVelocity();
+            OperatorInterpolationMatrixSetup matSetup( matrixPMatrixPTilde_TranslationalVelocity, Feel::SAME_NONZERO_PATTERN );
+            auto opI_partTranslationalVelocity = opInterpolation( _domainSpace=bbcPtr->spaceTranslationalVelocity() ,_imageSpace=XhV,_range=bbcPtr->rangeMarkedFacesOnFluid(),_matrix=matSetup );
+            //matrixPMatrixPTilde_TranslationalVelocity = opI_partTranslationalVelocity->matPtr();
+        }
+#endif
+        size_type startBlockIndexTranslationalVelocityMasterBody = fluidToolbox.startSubBlockSpaceIndex("body-bc."+nba.pmatrixMasterBodyName()+".translational-velocity");
+        myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocityMasterBody) = matrixPMatrixPTilde_TranslationalVelocity;
+
+        myblockMat(startBlockIndexTranslationalVelocityMasterBody,startBlockIndexTranslationalVelocityMasterBody) = fluidToolbox.backend()->newIdentityMatrix( nba.dataMapPMatrixTranslationalVelocity(), nba.pmatrixMasterBody().spaceTranslationalVelocity()->mapPtr() );
+
+        for ( auto const& bbcPtr : nba.bodyList(false) )
+        {
+            size_type startBlockIndexTranslationalVelocityOtherBody = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bbcPtr->name()+".translational-velocity");
+            myblockMat(startBlockIndexTranslationalVelocityOtherBody,startBlockIndexTranslationalVelocityMasterBody) = fluidToolbox.backend()->newIdentityMatrix( nba.dataMapPMatrixTranslationalVelocity(), bbcPtr->spaceTranslationalVelocity()->mapPtr() );
+            myblockMat(startBlockIndexTranslationalVelocityOtherBody,startBlockIndexTranslationalVelocityOtherBody) = fluidToolbox.backend()->newZeroMatrix(  bbcPtr->spaceTranslationalVelocity()->mapPtr() , bbcPtr->spaceTranslationalVelocity()->mapPtr() );
         }
 
     }
 
     auto matP = fluidToolbox.backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
+
     algebraicFactory->initSolverPtAP( matP );
 
     fluidToolbox.functionSpaceVelocity()->dof()->updateIndexSetWithParallelMissingDof( dofsAllBodies );
     std::set<size_type> dofEliminationIdsPtAP;
-    matP->mapRow().dofIdToContainerId(startBlockIndexVelocity, dofsAllBodies, dofEliminationIdsPtAP );
+    //matP->mapRow().dofIdToContainerId(startBlockIndexVelocity, dofsAllBodies, dofEliminationIdsPtAP );
+    matP->mapCol().dofIdToContainerId(startBlockIndexVelocity, dofsAllBodies, dofEliminationIdsPtAP );
 
-
-    for ( auto const& [bpname,bbc] : *this )
+    for ( auto const& nba : this->nbodyArticulated() )
     {
-        if ( !bbc.hasArticulationTranslationalVelocity() || bbc.articulationMethod() != "p-matrix" )
+        if ( nba.articulationMethod() != "p-matrix" )
             continue;
-        if ( bbc.spaceTranslationalVelocity()->nLocalDofWithGhost() > 0 )
+        for ( auto const& bbcPtr : nba.bodyList(false) )
         {
-            size_type startBlockIndexTranslationalVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bbc.name()+".translational-velocity");
-            auto const& basisToContainerGpTranslationalVelocity = matP->mapRow().dofIdToContainerId( startBlockIndexTranslationalVelocity );
-            for( size_type _dofId : basisToContainerGpTranslationalVelocity )
-                dofEliminationIdsPtAP.insert( _dofId );
+            if ( bbcPtr->spaceTranslationalVelocity()->nLocalDofWithGhost() > 0 )
+            {
+                size_type startBlockIndexTranslationalVelocityOtherBody = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bbcPtr->name()+".translational-velocity");
+                auto const& basisToContainerGpTranslationalVelocity = matP->mapCol().dofIdToContainerId( startBlockIndexTranslationalVelocityOtherBody );
+                for( size_type _dofId : basisToContainerGpTranslationalVelocity )
+                    dofEliminationIdsPtAP.insert( _dofId );
+            }
         }
     }
 
     algebraicFactory->solverPtAP_setDofEliminationIds( dofEliminationIdsPtAP );
+
 }
 
 
@@ -3091,15 +3201,26 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFac
     // not very nice, we need to update direclty P, not rebuild
     this->initAlgebraicFactory( fluidToolbox, algebraicFactory );
 
+    bool applyCloseInExplictPartOfSolution = false;
     size_type startBlockIndexVelocity = fluidToolbox.startSubBlockSpaceIndex("velocity");
+
     // update explicit part of solution if use articulation with p-matrix
-    for ( auto & [bname,bbc] : *this )
+    for ( auto const& nba : this->nbodyArticulated() )
     {
-        if ( bbc.hasArticulationTranslationalVelocity() && bbc.articulationMethod() == "p-matrix" )
+        if ( nba.articulationMethod() != "p-matrix" )
+            continue;
+
+        for ( auto const& ba : nba.articulations() )
         {
+            auto const& bbc1 = ba.body1();
+            auto const& bbc2 = ba.body2();
+            CHECK( bbc1.name() == nba.pmatrixMasterBodyName() || bbc2.name() == nba.pmatrixMasterBodyName() ) << "Case not handle : too complex articulation";
+            auto const& bbc = bbc1.name() == nba.pmatrixMasterBodyName()? bbc2 : bbc1;
+
+            applyCloseInExplictPartOfSolution = true;
             size_type startBlockIndexTranslationalVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bbc.name()+".translational-velocity");
 
-            auto articulationTranslationalVelocityExpr = bbc.articulationTranslationalVelocityExpr( fluidToolbox.symbolsExpr() );
+            auto articulationTranslationalVelocityExpr = ba.translationalVelocityExpr( fluidToolbox.symbolsExpr() );
             auto uExplictiPart = fluidToolbox.functionSpaceVelocity()->element( algebraicFactory->explictPartOfSolution(), fluidToolbox.rowStartInVector()+startBlockIndexVelocity);
             uExplictiPart.on(_range=bbc.rangeMarkedFacesOnFluid(),_expr=articulationTranslationalVelocityExpr,_close=true ); // TODO sync all body in one call
             if ( bbc.spaceTranslationalVelocity()->nLocalDofWithGhost() > 0 )
@@ -3119,6 +3240,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFac
         for ( auto const& [bname,bbc] : *this )
             uExplictiPart.on(_range=bbc.rangeMarkedFacesOnFluid(),_expr=idv(bbc.fieldElasticVelocityPtr()),_close=true ); // TODO sync all body in one call
     }
+
+    if ( applyCloseInExplictPartOfSolution )
+        algebraicFactory->explictPartOfSolution()->close();
 
 }
 
