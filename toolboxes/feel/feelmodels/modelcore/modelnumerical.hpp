@@ -53,6 +53,7 @@
 #include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
 #include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresquantities.hpp>
 
 namespace Feel
 {
@@ -224,8 +225,8 @@ class ModelNumerical : virtual public ModelBase,
 
         template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename ModelFieldsType, typename TupleQuantitiesType>
         void executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, ModelFieldsType const& tupleFields, TupleQuantitiesType const& tupleQuantities );
-        template<typename TupleQuantitiesType>
-        bool updatePostProcessMeasuresQuantities( TupleQuantitiesType const& tupleQuantities );
+        template<typename TupleQuantitiesType, typename SymbolsExprType = symbols_expression_empty_t>
+        bool updatePostProcessMeasuresQuantities( TupleQuantitiesType const& tupleQuantities, SymbolsExprType const& symbolsExpr = symbols_expression_empty_t{} );
         template <typename MeshType, typename RangeType, typename SymbolsExpr, typename ModelFieldsType>
         bool updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, ModelFieldsType const& tupleFields );
         template <typename MeshType, typename RangeType, typename SymbolsExpr, typename ModelFieldsType>
@@ -581,13 +582,35 @@ ModelNumerical::executePostProcessMeasures( double time, std::shared_ptr<MeshTyp
     }
 }
 
-template<typename TupleQuantitiesType>
-bool 
-ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& tupleQuantities )
+template<typename TupleQuantitiesType, typename SymbolsExprType>
+bool
+ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& tupleQuantities, SymbolsExprType const& se )
 {
     bool hasMeasure = false;
+    std::string prefix_quantities = "quantities";
+
+    if ( this->hasModelProperties() )
+    {
+        for ( auto const& [_name,_expr] : this->modelProperties().postProcess().measuresQuantities( this->keyword() ).expressions() )
+        {
+            std::string nameUsed = prefixvm( prefixvm( prefix_quantities, "expr", "_" ), _name, "_" );
+            auto const& _exprBIS = _expr;
+            hana::for_each( ModelExpression::expr_shapes, [this,&hasMeasure,&nameUsed,&_exprBIS,&se]( auto const& e_ij )
+                            {
+                                constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                                constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                                if ( _exprBIS.template hasExpr<ni,nj>() )
+                                {
+                                    auto theExpr = _exprBIS.template expr<ni,nj>().applySymbolsExpr( se );
+                                    this->postProcessMeasuresIO().setMeasure( nameUsed,theExpr.evaluate() );
+                                    hasMeasure = true;
+                                }
+                            });
+        }
+    }
+
     std::set<std::string> const& quantitiesToMeasure = this->modelProperties().postProcess().measuresQuantities( this->keyword() ).quantities();
-    Feel::for_each( tupleQuantities, [this,&hasMeasure,&quantitiesToMeasure]( auto const& mquantity )
+    Feel::for_each( tupleQuantities, [this,&hasMeasure,&quantitiesToMeasure,&prefix_quantities]( auto const& mquantity )
             {
                 if constexpr( is_iterable_v<decltype(mquantity)> )
                 {
@@ -596,14 +619,19 @@ ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& 
                         std::string quantityName = quantity.nameWithPrefix();
                         if( quantitiesToMeasure.find( quantityName ) != quantitiesToMeasure.end() )
                         {
+                            std::string quantityNameUsed = prefixvm( prefix_quantities, quantityName, "_" );
+                            this->postProcessMeasuresIO().setMeasure( quantityNameUsed, quantity.value() );
+#if 0
                             if constexpr( is_iterable_v<decltype(quantity.value())> )
                             {
-                                this->postProcessMeasuresIO().setMeasureComp( quantityName, quantity.value() );
+                                //this->postProcessMeasuresIO().setMeasureComp( quantityName, quantity.value() );
+                                this->postProcessMeasuresIO().setMeasure( quantityName, quantity.value() );
                             }
                             else
                             {
                                 this->postProcessMeasuresIO().setMeasure( quantityName, quantity.value() );
                             }
+#endif
                             hasMeasure = true;
                         }
                     }
@@ -613,14 +641,19 @@ ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& 
                     std::string quantityName = mquantity.nameWithPrefix();
                     if( quantitiesToMeasure.find( quantityName ) != quantitiesToMeasure.end() )
                     {
+                        std::string quantityNameUsed = prefixvm( prefix_quantities, quantityName, "_" );
+                        this->postProcessMeasuresIO().setMeasure( quantityNameUsed, mquantity.value() );
+#if 0
                         if constexpr( is_iterable_v<decltype(mquantity.value())> )
                         {
-                            this->postProcessMeasuresIO().setMeasureComp( quantityName, mquantity.value() );
+                            //this->postProcessMeasuresIO().setMeasureComp( quantityName, mquantity.value() );
+                            this->postProcessMeasuresIO().setMeasure( quantityName, mquantity.value() );
                         }
                         else
                         {
                             this->postProcessMeasuresIO().setMeasure( quantityName, mquantity.value() );
                         }
+#endif
                         hasMeasure = true;
                     }
                 }
