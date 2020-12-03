@@ -489,6 +489,7 @@ public:
         sparse_matrix_ptrtype matrixPTilde_translational() const { return M_matrixPTilde_translational; }
         sparse_matrix_ptrtype matrixPTilde_angular() const { return M_matrixPTilde_angular; }
 
+        void updateMatrixPTilde_angular( self_type const& fluidToolbox, sparse_matrix_ptrtype & mat, size_type startBlockIndexVelocity = 0, size_type startBlockIndexAngularVelocity = 0 ) const;
 
         //---------------------------------------------------------------------------//
         // elastic velocity
@@ -519,14 +520,11 @@ public:
                     std::get<0>( eve ).setParameterValues( mp );
                 if ( M_body )
                     M_body->setParameterValues( mp );
-
-                M_articulationTranslationalVelocityExpr.setParameterValues( mp );
             }
 
         //---------------------------------------------------------------------------//
-        // articulation
-        std::map<std::string,BodyBoundaryCondition const*> const& articulationBodiesUsed() const { return M_articulationBodiesUsed; }
-        ModelExpression const& articulationTranslationalVelocityModelExpr() const { return M_articulationTranslationalVelocityExpr; }
+        // articulation info (only used for build a BodyArticulation)
+        std::map<std::string,ModelExpression> const& articulationTranslationalVelocityExpr() const { return M_articulationTranslationalVelocityExpr; }
 
     private :
         std::string M_name;
@@ -553,9 +551,8 @@ public:
         //double M_massOfFluid;
         eigen_vector_type<nRealDim> M_gravityForceWithMass;
 
-        // articulation
-        std::map<std::string,BodyBoundaryCondition const*> M_articulationBodiesUsed;
-        ModelExpression M_articulationTranslationalVelocityExpr;
+        // articulation info (only used for build a BodyArticulation)
+        std::map<std::string,ModelExpression> M_articulationTranslationalVelocityExpr;
     };
 
     class BodyArticulation
