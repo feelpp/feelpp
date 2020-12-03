@@ -180,7 +180,8 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
 
 void ModelAlgebraicFactory::initExplictPartOfSolution()
 {
-    M_explictPartOfSolution = M_backend->newVector( M_R->mapPtr() );
+    if ( !M_explictPartOfSolution )
+        M_explictPartOfSolution = M_backend->newVector( M_R->mapPtr() );
 }
 
     void ModelAlgebraicFactory::initSolverPtAP( sparse_matrix_ptrtype matP )
@@ -196,8 +197,6 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         {
             M_solverPtAP_backend = backend_type::build( soption( _name="backend" ), this->model()->prefix(), this->model()->worldCommPtr() );
 
-
-            //M_solverPtAP_matPtAP = M_solverPtAP_backend->newZeroMatrix( M_solverPtAP_matP->mapColPtr(), M_solverPtAP_matP->mapRowPtr() );
             M_solverPtAP_matPtAP = M_solverPtAP_backend->newZeroMatrix( M_solverPtAP_matP->mapColPtr(), M_solverPtAP_matP->mapColPtr() );
             M_solverPtAP_matPtAP->clear();
             M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
@@ -206,7 +205,6 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
 
 
             M_solverPtAP_solution = M_solverPtAP_backend->newVector( M_solverPtAP_matPtAP->mapColPtr() );
-            //M_solverPtAP_PtF = M_solverPtAP_backend->newVector( M_solverPtAP_matPtAP->mapRowPtr() );
             M_solverPtAP_PtF = M_solverPtAP_backend->newVector( M_solverPtAP_matP->mapColPtr() );
 
             M_solverPtAP_Psolution = M_solverPtAP_backend->newVector( M_solverPtAP_matP->mapRowPtr() );
