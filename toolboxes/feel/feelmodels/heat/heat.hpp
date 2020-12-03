@@ -217,8 +217,8 @@ class Heat : public ModelNumerical,
                 return this->exportResults( time, this->modelFields(), symbolsExpr, this->exprPostProcessExports( symbolsExpr ) );
             }
 
-        template <typename ModelFieldsType,typename SymbolsExpr>
-        void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr );
+        template <typename ModelFieldsType,typename SymbolsExpr, typename ModelMeasuresQuantitiesType>
+        void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities );
 
         //___________________________________________________________________________________//
         // export expressions
@@ -527,7 +527,7 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, ModelFieldsTy
     this->timerTool("PostProcessing").start();
 
     this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
-    this->executePostProcessMeasures( time, mfields, symbolsExpr );
+    this->executePostProcessMeasures( time, mfields, symbolsExpr, hana::make_tuple() );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), mfields );
 
     this->timerTool("PostProcessing").stop("exportResults");
@@ -541,9 +541,9 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, ModelFieldsTy
 }
 
 template< typename ConvexType, typename BasisTemperatureType>
-template <typename ModelFieldsType, typename SymbolsExpr>
+template <typename ModelFieldsType, typename SymbolsExpr, typename ModelMeasuresQuantitiesType>
 void
-Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
+Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities )
 {
     bool hasMeasure = false;
 
@@ -562,7 +562,8 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
     bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
     bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
     bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
-    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
+    bool hasMeasureQuantity = this->updatePostProcessMeasuresQuantities( mquantities, symbolsExpr );
+    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint || hasMeasureQuantity )
         hasMeasure = true;
 
     if ( hasMeasure )
