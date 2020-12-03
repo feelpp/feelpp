@@ -511,6 +511,19 @@ public:
         eigen_vector_type<nRealDim> const& gravityForceWithMass() const { return M_gravityForceWithMass; }
 
         //---------------------------------------------------------------------------//
+        void updateParameterValues( std::map<std::string,double> & mp, std::string const& prefix_symbol )
+            {
+                if ( M_body )
+                {
+                    auto mc = M_body->massCenter();
+                    std::string nameWithPrefix = prefixvm( prefix_symbol, this->name(), "_" );
+                    std::string nameSymb = prefixvm(nameWithPrefix,"mass_center", "_");
+                    for (int i=0;i<mc.size();++i)
+                    {
+                        mp[ nameSymb + "_" + std::to_string(i) ] = mc(i);
+                    }
+                }
+            }
 
         void setParameterValues( std::map<std::string,double> const& mp )
             {
@@ -720,13 +733,6 @@ public:
         std::vector<NBodyArticulated> const& nbodyArticulated() const { return M_nbodyArticulated; }
 
 
-        void setParameterValues( std::map<std::string,double> const& mp )
-            {
-                for ( auto & [name,bpbc] : *this )
-                    bpbc.setParameterValues( mp );
-                for (auto & nba : M_nbodyArticulated )
-                    nba.setParameterValues( mp );
-            }
         bool hasTranslationalVelocityExpr() const
             {
                 for ( auto const& [name,bpbc] : *this )
@@ -762,6 +768,21 @@ public:
                     if ( nba.articulationMethod() == "p-matrix" )
                         return true;
                 return false;
+            }
+
+        void setParameterValues( std::map<std::string,double> const& mp )
+            {
+                for ( auto & [name,bpbc] : *this )
+                    bpbc.setParameterValues( mp );
+                for (auto & nba : M_nbodyArticulated )
+                    nba.setParameterValues( mp );
+            }
+        void updateParameterValues( std::map<std::string,double> & mp, std::string const& prefix_symbol = "" )
+            {
+                // start by updated the expression from mp
+                //this->setParameterValues( mp );
+                for ( auto & [name,bbc] : *this )
+                    bbc.updateParameterValues( mp, prefixvm( prefix_symbol, "body", "_" ) );
             }
 
         auto modelFields( self_type const& fluidToolbox, std::string const& prefix = "" ) const
@@ -1104,9 +1125,9 @@ public :
 
     void setDoExport(bool b);
 private :
-    void executePostProcessMeasures( double time );
-    template <typename TupleFieldsType,typename SymbolsExpr>
-    void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
+    //void executePostProcessMeasures( double time );
+    template <typename ModelFieldsType,typename SymbolsExpr,typename ModelMeasuresQuantitiesType>
+    void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities );
     void updateVelocityExtrapolated();
     void updateTimeStepCurrentResidual();
     void exportResultsImplHO( double time );
@@ -1788,6 +1809,16 @@ private :
             return Feel::FeelModels::modelFields( mfieldDisp );
         }
 
+    auto modelMeasuresQuantities( std::string const& prefix = "" ) const
+        {
+            auto thequantity = hana::make_tuple(
+                ModelMeasuresQuantity( this->prefix(), "q1", 3.1 ),
+                ModelMeasuresQuantity( this->prefix(), "q2", std::vector<double>({3.8,3.9,3.10}) )
+                //ModelMeasuresQuantity( prefix, "volume", std::bind( &self_type::volume, this ) )
+                                                );
+            return thequantity;
+        }
+
     //----------------------------------------------------
     // mesh
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
@@ -2003,7 +2034,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::exportResults( d
     if ( M_isHOVisu )
         this->exportResultsImplHO( time );
 
-    this->executePostProcessMeasures( time, mfields, symbolsExpr );
+    this->executePostProcessMeasures( time, mfields, symbolsExpr, this->modelMeasuresQuantities() );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfVelocity->iteration(), mfields );
 
     if ( this->isMoveDomain() && this->hasPostProcessExportsField( "alemesh" ) )
@@ -2020,9 +2051,9 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::exportResults( d
 }
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
-template <typename TupleFieldsType, typename SymbolsExpr>
+template <typename ModelFieldsType, typename SymbolsExpr, typename ModelMeasuresQuantitiesType>
 void
-FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities )
 {
     bool hasMeasure = false;
 
@@ -2071,10 +2102,11 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::executePostProce
     }
 
 
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, tupleFields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, tupleFields );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, tupleFields );
-    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
+    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
+    bool hasMeasureQuantity = this->updatePostProcessMeasuresQuantities( mquantities, symbolsExpr );
+    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint || hasMeasureQuantity )
         hasMeasure = true;
 
     if ( hasMeasure )

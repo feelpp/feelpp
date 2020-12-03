@@ -789,6 +789,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFieldsOnTrace( export_trace_pt
 }
 #endif
 
+#if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
@@ -796,7 +797,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
     auto mfields = this->modelFields();
     this->executePostProcessMeasures( time, mfields, this->symbolsExpr( mfields ) );
 }
-
+#endif
 
 //---------------------------------------------------------------------------------------------------------//
 
@@ -813,6 +814,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
     for ( auto [physicName,physicData] : this->physicsFromCurrentType() )
         physicData->updateParameterValues( paramValues );
 
+    M_bodySetBC.updateParameterValues( paramValues );
+#if 0
+    std::cout << "parameter values\n";
+    for ( auto const& [name,val] : paramValues )
+        std::cout << name << " : " << val << std::endl;
+#endif
     this->setParameterValues( paramValues );
 }
 
