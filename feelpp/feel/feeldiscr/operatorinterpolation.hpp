@@ -369,11 +369,12 @@ struct OperatorInterpolationMatrixSetup
     using sparse_matrix_type = MatrixSparse<T>;
     using sparse_matrix_ptrtype = std::shared_ptr<sparse_matrix_type>;
 
-    OperatorInterpolationMatrixSetup( sparse_matrix_ptrtype m = sparse_matrix_ptrtype{}, Feel::MatrixStructure c = Feel::DIFFERENT_NONZERO_PATTERN )
+    OperatorInterpolationMatrixSetup( sparse_matrix_ptrtype m = sparse_matrix_ptrtype{}, Feel::MatrixStructure c = Feel::DIFFERENT_NONZERO_PATTERN,
+                                      size_type indexBlockRow = 0, size_type indexBlockCol = 0 )
         :
         M_matrix( m ),
-        M_indexBlockSpaceRow( 0 ),
-        M_indexBlockSpaceCol( 0 ),
+        M_indexBlockSpaceRow( indexBlockRow ),
+        M_indexBlockSpaceCol( indexBlockCol ),
         M_context( c )
         {}
 
@@ -1490,6 +1491,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         sparsity_graph = std::make_shared<graph_type>( dmRow, dmCol );
     }
 
+    auto const& dofIdToContainerIdRow = sparsity_graph->mapRowPtr()->dofIdToContainerId( M_matrixSetup.indexBlockSpaceRow() );
+    auto const& dofIdToContainerIdCol = sparsity_graph->mapColPtr()->dofIdToContainerId( M_matrixSetup.indexBlockSpaceCol() );
+
     // Local assembly: compute matrix by evaluating
     // the domain space basis function at the dual image space
     // dof points (nodal basis)
@@ -1617,7 +1621,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                         {
                                             const value_type val = s(jloc)*IhLoc( cdomain*domain_basis_type::nLocalDof+jloc,
                                                                                   ilocprime );
+#if 0
                                             this->matPtr()->set( i,j,val );
+#else
+                                            this->matPtr()->set( dofIdToContainerIdRow[i], dofIdToContainerIdCol[j], val );
+#endif
                                         }
                                     }
                                 }
