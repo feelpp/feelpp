@@ -135,8 +135,8 @@ public:
             return this->exportResults( time, this->modelFields(), symbolsExpr, this->exprPostProcessExports( symbolsExpr ) );
         }
 
-    template <typename ModelFieldsType,typename SymbolsExpr>
-    void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr );
+    template <typename ModelFieldsType,typename SymbolsExpr, typename ModelMeasuresQuantitiesType>
+    void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities );
 
     template <typename SymbExprType>
     auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
@@ -321,7 +321,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::exportResults( double time, Mod
     this->timerTool("PostProcessing").start();
 
     this->executePostProcessExports( this->M_exporter, time, mfields, symbolsExpr, exportsExpr );
-    this->executePostProcessMeasures( time, mfields, symbolsExpr );
+    this->executePostProcessMeasures( time, mfields, symbolsExpr, model_measures_quantities_empty_t{} );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : this->timeStepBase()->iteration(), mfields );
 
     this->timerTool("PostProcessing").stop("exportResults");
@@ -335,15 +335,16 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::exportResults( double time, Mod
 }
 
 template< typename ConvexType, typename BasisUnknownType>
-template <typename ModelFieldsType, typename SymbolsExpr>
+template <typename ModelFieldsType, typename SymbolsExpr, typename ModelMeasuresQuantitiesType>
 void
-CoefficientFormPDE<ConvexType,BasisUnknownType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
+CoefficientFormPDE<ConvexType,BasisUnknownType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities )
 {
     bool hasMeasure = false;
     bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields );
     bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields );
     bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
-    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
+    bool hasMeasureQuantity = this->updatePostProcessMeasuresQuantities( mquantities, symbolsExpr );
+    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint || hasMeasureQuantity )
         hasMeasure = true;
 
     if ( hasMeasure )
