@@ -390,6 +390,7 @@ public:
     // bc body
     class BodyBoundaryCondition
     {
+        using self2_type = BodyBoundaryCondition;
     public :
         typedef typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
                                    space_trace_p0c_scalar_type,
@@ -518,6 +519,25 @@ public:
         //double massOfFluid() const { return M_massOfFluid; }
         eigen_vector_type<nRealDim> const& gravityForceWithMass() const { return M_gravityForceWithMass; }
 
+        //! fluid forces
+        eigen_vector_type<nRealDim> fluidForces() const
+            {
+                eigen_vector_type<nRealDim> res = eigen_vector_type<nRealDim>::Zero();
+                res = M_body->mass()*(M_bdfTranslationalVelocity->polyDerivCoefficient(0)*idv(M_fieldTranslationalVelocity)-idv(M_bdfTranslationalVelocity->polyDeriv())).evaluate(true,M_mesh->worldCommPtr());
+                if ( this->gravityForceEnabled() )
+                    res -= this->gravityForceWithMass();
+                return res;
+            }
+
+        //! fluid torques
+        using evaluate_torques_type = typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
+                                                         eigen_vector_type<nDim>,
+                                                         eigen_matrix_type<1, 1> >::type;
+        evaluate_torques_type fluidTorques() const
+            {
+                evaluate_torques_type res = M_body->momentOfInertia()*(M_bdfAngularVelocity->polyDerivCoefficient(0)*idv(M_fieldAngularVelocity)-idv(M_bdfAngularVelocity->polyDeriv())).evaluate(true,M_mesh->worldCommPtr());
+                return res;
+            }
         //---------------------------------------------------------------------------//
         void updateParameterValues( std::map<std::string,double> & mp, std::string const& prefix_symbol )
             {
@@ -545,7 +565,10 @@ public:
 
         auto modelMeasuresQuantities( std::string const& prefix ) const
             {
-                return M_body->modelMeasuresQuantities( prefix );
+                return Feel::FeelModels::modelMeasuresQuantities( modelMeasuresQuantity( prefix, "fluid_forces", std::bind( &self2_type::fluidForces, this ) ),
+                                                                  modelMeasuresQuantity( prefix, "fluid_torques", std::bind( &self2_type::fluidTorques, this ) ),
+                                                                  M_body->modelMeasuresQuantities( prefix )
+                                                                  );
             }
 
 
