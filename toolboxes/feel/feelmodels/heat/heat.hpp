@@ -443,6 +443,18 @@ class Heat : public ModelNumerical,
     private :
         void updateTimeStepCurrentResidual();
 
+        auto modelMeasuresQuantities( std::string const& prefix = "" ) const
+            {
+#if 0
+                return Feel::FeelModels::modelMeasuresQuantities( modelMeasuresQuantity( prefix, "q1", 3.1 ),
+                                                                  modelMeasuresQuantity( prefix, "q2", std::vector<double>({3.8,3.9,3.10}) ),
+                                                                  modelMeasuresQuantity( prefix, "q3", eigen_matrix_type<nDim, nDim>::Constant(5.0) )
+                                                                  //modelMeasuresQuantity( prefix, "q4", std::bind( &self_type::volume, this ) )
+                                                                  );
+#endif
+                return model_measures_quantities_empty_t{};
+            }
+
     protected :
 
         elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
@@ -527,7 +539,7 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, ModelFieldsTy
     this->timerTool("PostProcessing").start();
 
     this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
-    this->executePostProcessMeasures( time, mfields, symbolsExpr, hana::make_tuple() );
+    this->executePostProcessMeasures( time, mfields, symbolsExpr, this->modelMeasuresQuantities() );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), mfields );
 
     this->timerTool("PostProcessing").stop("exportResults");
