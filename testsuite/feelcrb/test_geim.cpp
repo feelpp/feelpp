@@ -20,7 +20,7 @@ po::options_description makeOptions()
     options.add_options()
         ("nb-sensors", po::value<int>()->default_value(5), "nb of sensors in x direction")
         ("radius", po::value<double>()->default_value(0.2), "radius of sensors")
-        ("trainset-size", po::value<int>()->default_value(7), "number of parameter in the trainset")
+        ("trainset-size", po::value<int>()->default_value(9), "number of parameter in the trainset")
         ;
     options.add(geim_options());
 
@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE( test_eim_offline )
                       return u;
                   };
 
-    geim_type geim("test_geim", sigmas, Pset, solver);
+    geim_type geim("test_geim", sigmas, Pset, solver, uuids::nil_uuid(), true);
     geim.offline();
 
     int M = geim.dimension();
@@ -113,8 +113,8 @@ BOOST_AUTO_TEST_CASE( test_eim_offline )
     for(int i = 0; i < M; ++i )
     {
         for(int j = 0; j < i; ++j )
-            BOOST_CHECK_SMALL(B(j,i), 1e-10);
-        BOOST_CHECK_SMALL(B(i,i)-1, 1e-10);
+            BOOST_CHECK_SMALL(B(j,i), 1e-8);
+        BOOST_CHECK_SMALL(B(i,i)-1, 1e-8);
     }
     BOOST_TEST_MESSAGE("B="<< B);
 
@@ -148,6 +148,7 @@ BOOST_AUTO_TEST_CASE( test_eim_online )
     double r = doption("radius");
 
     geim_type geim("test_geim", crb::load::fe);
+    BOOST_TEST_MESSAGE("B="<< geim.matrixB());
     auto Xh = geim.space();
     auto mesh = Xh->mesh();
     auto u = Xh->element();
