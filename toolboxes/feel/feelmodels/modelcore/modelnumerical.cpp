@@ -175,6 +175,7 @@ ModelNumerical::initPostProcess()
 
         M_postProcessSaveFields = this->postProcessSaveFields( this->modelProperties().postProcess().save( this->keyword() ).fieldsNames() );
         M_postProcessSaveFieldsFormat = this->modelProperties().postProcess().save( this->keyword() ).fieldsFormat();
+        M_postProcessMeasuresQuantitiesNames = this->postProcessMeasuresQuantitiesNames( this->modelProperties().postProcess().measuresQuantities( this->keyword() ).quantities() );
     }
     if ( M_postProcessSaveFieldsFormat.empty() )
         M_postProcessSaveFieldsFormat = "default";
@@ -214,6 +215,19 @@ ModelNumerical::postProcessSaveFields( std::set<std::string> const& ifields, std
     return res;
 }
 
+
+std::set<std::string>
+ModelNumerical::postProcessMeasuresQuantitiesNames( std::set<std::string> const& inames ) const
+{
+    std::set<std::string> res;
+    for ( auto const& o : inames )
+    {
+        for ( auto const& nameAvailable : M_postProcessMeasuresQuantitiesAllNamesAvailable )
+            if ( o == nameAvailable || o == "all" )
+                res.insert( nameAvailable );
+    }
+    return res;
+}
 
 } // namespace FeelModels
 
