@@ -492,14 +492,16 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
 
     if ( auto measures = p.get_child_optional("Measures") )
     {
-        if ( auto quantities = measures->get_child_optional("quantities")  )
-        {
-            ModelPostprocessQuantities ppquantities( this->worldCommPtr() );
-            ppquantities.setDirectoryLibExpr( M_directoryLibExpr );
-            ppquantities.setup( *quantities );
-            if( !ppquantities.quantities().empty() || !ppquantities.expressions().empty() )
-                M_measuresQuantities[name] = ppquantities;
-        }
+        for ( std::string const& quantitiesSectionName : { "Quantities", "quantities" } )
+            if ( auto quantities = measures->get_child_optional( quantitiesSectionName ) )
+            {
+                ModelPostprocessQuantities ppquantities( this->worldCommPtr() );
+                ppquantities.setDirectoryLibExpr( M_directoryLibExpr );
+                ppquantities.setup( *quantities );
+                if( !ppquantities.quantities().empty() || !ppquantities.expressions().empty() )
+                    M_measuresQuantities[name] = ppquantities;
+                break;
+            }
 
         auto evalPoints = measures->get_child_optional("Points");
         if ( evalPoints )
