@@ -470,6 +470,7 @@ public:
     // Measures quantities
     auto allMeasuresQuantities( std::string const& prefix = "" ) const
     {
+#if 0
         // TODO : we need to explicitly convert Eigen::Matrix to std::vector as
         // the begin and end iterators used in ModelNumerical::588 are only implemented from
         // Eigen v3.4 on (not released yet).
@@ -479,11 +480,12 @@ public:
             Eigen::Matrix<value_type, nDim, 1>::Map( &v[0], v.size() ) = m;
             return v;
         };
-        return hana::make_tuple(
-                ModelMeasuresQuantity( prefix, "volume", std::bind( &self_type::volume, this ) ),
-                ModelMeasuresQuantity( prefix, "perimeter", std::bind( &self_type::perimeter, this ) ),
-                ModelMeasuresQuantity( prefix, "position-com", std::bind( eigenToVec, std::bind( &self_type::positionCOM, this ) ) )
-                );
+#endif
+        return Feel::FeelModels::modelMeasuresQuantities( modelMeasuresQuantity( prefix, "volume", std::bind( &self_type::volume, this ) ),
+                                                          modelMeasuresQuantity( prefix, "perimeter", std::bind( &self_type::perimeter, this ) ),
+                                                          modelMeasuresQuantity( prefix, "position-com", std::bind( &self_type::positionCOM, this ) )
+                                                          //ModelMeasuresQuantity( prefix, "position-com", std::bind( eigenToVec, std::bind( &self_type::positionCOM, this ) ) )
+                                                          );
     }
     //--------------------------------------------------------------------//
     // Curvature diffusion
