@@ -299,6 +299,7 @@ public:
     //  public std::enable_shared_from_this<Body>
     {
     public :
+        using self_type = Body;
         using moment_of_inertia_type = typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
                                                        eigen_matrix_type<nDim, nDim>,
                                                        eigen_matrix_type<1, 1> >::type;
@@ -366,6 +367,13 @@ public:
             {
                 if ( M_materialsProperties )
                     M_materialsProperties->setParameterValues( mp );
+            }
+
+        auto modelMeasuresQuantities( std::string const& prefix ) const
+            {
+                return Feel::FeelModels::modelMeasuresQuantities( modelMeasuresQuantity( prefix, "mass_center", std::bind( &self_type::massCenter, this ) ),
+                                                                  modelMeasuresQuantity( prefix, "moment_of_inertia", std::bind( &self_type::momentOfInertia, this ) )
+                                                                  );
             }
 
     private :
@@ -534,6 +542,13 @@ public:
                 if ( M_body )
                     M_body->setParameterValues( mp );
             }
+
+        auto modelMeasuresQuantities( std::string const& prefix ) const
+            {
+                return M_body->modelMeasuresQuantities( prefix );
+            }
+
+
 
         //---------------------------------------------------------------------------//
         // articulation info (only used for build a BodyArticulation)
@@ -811,6 +826,18 @@ public:
                                                             bpbc.spaceAngularVelocity()->elementPtr( *sol, rowStartInVector+startBlockIndexAngularVelocity ) );
                 }
                 return this->modelFieldsImpl( fluidToolbox,registerFields,prefix );
+            }
+
+        auto modelMeasuresQuantities( std::string const& prefix = "" ) const
+            {
+                using _res_type = std::decay_t<decltype(this->begin()->second.modelMeasuresQuantities(""))>;
+                _res_type res;
+                for ( auto const& [name,bbc] : *this )
+                {
+                    std::string currentPrefix = prefixvm( prefix, (boost::format("body_%1%")%name).str() );
+                    res = Feel::FeelModels::modelMeasuresQuantities( res, bbc.modelMeasuresQuantities( currentPrefix ) );
+                }
+                return res;
             }
     private:
 
@@ -1811,12 +1838,7 @@ private :
 
     auto modelMeasuresQuantities( std::string const& prefix = "" ) const
         {
-            auto thequantity = hana::make_tuple(
-                ModelMeasuresQuantity( this->prefix(), "q1", 3.1 ),
-                ModelMeasuresQuantity( this->prefix(), "q2", std::vector<double>({3.8,3.9,3.10}) )
-                //ModelMeasuresQuantity( prefix, "volume", std::bind( &self_type::volume, this ) )
-                                                );
-            return thequantity;
+            return M_bodySetBC.modelMeasuresQuantities( prefix );
         }
 
     //----------------------------------------------------
