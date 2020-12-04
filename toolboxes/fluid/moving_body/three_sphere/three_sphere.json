@@ -96,9 +96,9 @@
         "Measures":
         {
             //"Forces":"SphereCenter"
-            "quantities":
+            "Quantities":
             {
-                "names":["body_SphereLeft.mass_center","body_SphereCenter.mass_center","body_SphereRight.mass_center"]
+                "names":"all"//"body_SphereLeft.fluid_forces"// ["body_SphereLeft.mass_center","body_SphereCenter.mass_center","body_SphereRight.mass_center"]
                 // "expr":
                 // {
                 //     "mc_Left":"{body_SphereLeft_mass_center_0,body_SphereLeft_mass_center_1,body_SphereLeft_mass_center_2}:body_SphereLeft_mass_center_0:body_SphereLeft_mass_center_1:body_SphereLeft_mass_center_2",
