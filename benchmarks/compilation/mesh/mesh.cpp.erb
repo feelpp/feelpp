@@ -1,0 +1,28 @@
+#include <feel/feelconfig.h>
+#include <feel/feelmesh/simplex.hpp>
+#include <feel/feeldiscr/mesh.hpp>
+
+namespace Feel {
+    using lineartetra_t = Simplex<<%= n %>,1,<%= n %>>;
+    //extern template class Mesh<lineartetra_t,double, 0, uint32_type>;
+    //extern template class Mesh<lineartetra_t>;
+}
+int main( int argc, char** argv )
+{
+    using namespace Feel;
+    
+    
+#if defined(METABENCH)
+    //lineartetra_t T;
+    //Mesh<lineartetra_t> T;
+    Mesh<lineartetra_t>* m = new Mesh<lineartetra_t>;
+    //auto m = std::make_shared<Mesh<lineartetra_t>>();
+#if 0    
+    for( auto const& ew : elements(m))
+    {
+        auto const& e = boost::unwrap_ref( ew );
+    }
+#endif    
+#endif
+
+}
