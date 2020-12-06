@@ -94,7 +94,7 @@ public:
 
     BilinearFormBase( BilinearFormBase const& __vf );
     BilinearFormBase( BilinearFormBase && __vf ) = default;
-    virtual ~BilinearFormBase()
+    ~BilinearFormBase() override
         {
             //toc(M_name, FLAGS_v > 0 );
         }

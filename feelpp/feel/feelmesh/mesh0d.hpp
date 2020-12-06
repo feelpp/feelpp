@@ -177,7 +177,7 @@ public:
     Mesh0D( Mesh0D const& m ) = default;
     Mesh0D( Mesh0D && m ) = default;
 
-    ~Mesh0D()
+    ~Mesh0D() override
         {}
 
     //@}

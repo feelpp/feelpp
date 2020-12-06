@@ -66,7 +66,7 @@ public:
     //@{
 
     MatrixShellSparse( sparse_matrix_ptrtype m ) : M_m( m ) {}
-    ~MatrixShellSparse() {}
+    ~MatrixShellSparse() override {}
 
     //@}
 
@@ -85,7 +85,7 @@ public:
      * @returns \p m, the row-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    virtual size_type size1 () const
+    size_type size1 () const override
     {
         return M_m->size1();
     }
@@ -94,7 +94,7 @@ public:
      * @returns \p n, the column-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    virtual size_type size2 () const
+    size_type size2 () const override
     {
         return M_m->size2();
     }
@@ -113,13 +113,13 @@ public:
     //@{
 
     //! copies the diagonal of the matrix into \p v.
-    void diagonal( vector_type& v ) const;
+    void diagonal( vector_type& v ) const override;
 
     //! Multiplies the matrix with arg and stores the result in dest.
-    void multVector( vector_type const& in, vector_type& out ) const;
+    void multVector( vector_type const& in, vector_type& out ) const override;
 
     //! Multiplies the matrix with arg and adds the result to dest.
-    void multAddVector( vector_type const& in, vector_type& out ) const;
+    void multAddVector( vector_type const& in, vector_type& out ) const override;
 
     //@}
 

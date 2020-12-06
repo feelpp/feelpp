@@ -589,7 +589,7 @@ public:
     {
     }
 
-    ~GeoElement0D()
+    ~GeoElement0D() override
     {}
 
     GeoElement0D & operator = ( GeoElement0D const& g ) = default;
@@ -828,7 +828,7 @@ public:
     /**
      * destructor
      */
-    ~GeoElement1D()
+    ~GeoElement1D() override
     {}
 
     /**
@@ -1015,7 +1015,7 @@ public:
         //FEELPP_ASSERT( i < numLocalVertices )( i )( numLocalVertices ).error( "invalid local vertex index" );
         //return M_vertex_permutation[i];
     }
-    vertex_permutation_type permutation( uint16_type, mpl::int_<1> ) const
+    vertex_permutation_type permutation( uint16_type, mpl::int_<1> ) const override
     {
         return vertex_permutation_type();
     }
@@ -1125,7 +1125,7 @@ public:
     /**
      * destructor
      */
-    ~GeoElement2D()
+    ~GeoElement2D() override
     {}
 
     /**
@@ -1312,7 +1312,7 @@ public:
         return M_edge_permutation[i];
     }
 
-    edge_permutation_type permutation( uint16_type i, mpl::int_<1> ) const
+    edge_permutation_type permutation( uint16_type i, mpl::int_<1> ) const override
     {
         return this->edgePermutation( i );
     }
@@ -1477,7 +1477,7 @@ public:
     /**
      * destructor
      */
-    ~GeoElement3D()
+    ~GeoElement3D() override
     {}
 
     /**
@@ -1685,7 +1685,7 @@ public:
         DCHECK( M_faces[i] ) <<  "invalid face (null pointer in elt " << this->id() << " face " << i;
         return M_face_permutation[i];
     }
-    face_permutation_type permutation( uint16_type i, mpl::int_<1> ) const
+    face_permutation_type permutation( uint16_type i, mpl::int_<1> ) const override
     {
         return this->facePermutation( i );
     }

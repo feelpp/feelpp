@@ -131,7 +131,7 @@ public :
 
     ExporterEnsight( ExporterEnsight const & __ex );
 
-    ~ExporterEnsight();
+    ~ExporterEnsight() override;
 
 
     //@}

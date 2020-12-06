@@ -100,7 +100,7 @@ public:
 
     MatrixEigenDense( MatrixEigenDense const & m );
 
-    ~MatrixEigenDense();
+    ~MatrixEigenDense() override;
 
 
     //@}

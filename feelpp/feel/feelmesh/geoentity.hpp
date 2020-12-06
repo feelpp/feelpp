@@ -5,7 +5,9 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-08-10
 
+  Copyright (C) 2011-2020 Feel++ Consortium
   Copyright (C) 2005,2006 EPFL
+  
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -179,7 +181,7 @@ public:
             return *this;
         }
 
-    virtual ~GeoEntity()
+    ~GeoEntity() override
     {}
 
     //@}
@@ -603,7 +605,7 @@ public:
     /**
      * \return the measure of the entity
      */
-    virtual value_type measure() const = 0;
+    virtual value_type measure() const { return value_type{0}; }
 
     //@}
 
