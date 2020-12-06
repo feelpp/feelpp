@@ -381,6 +381,9 @@ struct OperatorInterpolationMatrixSetup
     OperatorInterpolationMatrixSetup( OperatorInterpolationMatrixSetup const& ) = default;
     OperatorInterpolationMatrixSetup( OperatorInterpolationMatrixSetup && ) = default;
 
+    OperatorInterpolationMatrixSetup& operator=( OperatorInterpolationMatrixSetup const& ) = default;
+    OperatorInterpolationMatrixSetup& operator=( OperatorInterpolationMatrixSetup && ) = default;
+
     sparse_matrix_ptrtype matrix() const { return M_matrix; }
     size_type indexBlockSpaceRow() const { return M_indexBlockSpaceRow; }
     size_type indexBlockSpaceCol() const { return M_indexBlockSpaceCol; }
