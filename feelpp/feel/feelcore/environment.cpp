@@ -597,10 +597,14 @@ Environment::Environment( int argc, char** argv,
     if ( !directory.empty() )
     {
         S_repository.configure(directory);
-        S_rootdir = S_repository.root();
-        S_appdir = S_repository.directory();
-        S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
     }
+    else
+    {
+        S_repository.configure();
+    }
+    S_rootdir = S_repository.root();
+    S_appdir = S_repository.directory();
+    S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
     changeRepository( _directory = boost::format{ S_repository.directory().string() } );
 #endif
     if( S_vm.count( "journal.filename" ) )
