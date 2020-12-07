@@ -307,7 +307,7 @@ class GeoMap
     /**
             destructor
             */
-    ~GeoMap()
+    ~GeoMap() override
     {
     }
 
@@ -831,6 +831,8 @@ class GeoMap
         using hessian_type = tensor3_fixed_size_t<NDim,PDim,PDim,value_type>;
         using vector_hessian_type = vector_tensor3_fixed_size_t<NDim,PDim,PDim,value_type>;
 
+        Context() = default;
+        
         Context( gm_ptrtype __gm,
                  element_type const& __e,
                  precompute_ptrtype const& __pc = precompute_ptrtype(),
@@ -2276,8 +2278,6 @@ class GeoMap
                     for ( int q = 0; q < nComputedPoints(); ++q )
                         updateNormals<CTX>( M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
             }
-
-        Context();
 
         friend class boost::serialization::access;
 

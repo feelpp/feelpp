@@ -144,7 +144,7 @@ public:
         M_beta( b.M_beta )
     {}
 
-    ~Newmark();
+    ~Newmark() override;
 
     /**
        Initialize all the entries of the unknown vector to be derived with the
@@ -171,7 +171,7 @@ public:
     template<typename container_type>
     void shiftRight( typename space_type::template Element<value_type, container_type> const& u_curr );
 
-    double next() const;
+    double next() const override;
 
     /**
      * shift previousstored solutions with respect to the new one \c u_curr

@@ -60,7 +60,7 @@ public:
     HwSysBase& operator=( HwSysBase&& ) = default;
 
     //! Destructor
-    virtual ~HwSysBase() override = default;
+    ~HwSysBase() override = default;
 
     //! Accessors
     //! @{

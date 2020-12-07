@@ -444,7 +444,7 @@ public:
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
         //showMe();
     }
-    ~ImporterGmsh()
+    ~ImporterGmsh() override
     {}
 
     //@}
@@ -517,7 +517,7 @@ public:
      */
     //@{
 
-    void visit( mesh_type* mesh );
+    void visit( mesh_type* mesh ) override;
 
     void showMe() const;
 

@@ -93,7 +93,7 @@ public:
         meshSize( this->vm()["hsize"].as<double>() )
         {
         }
-    void run()
+    void run() override
 
         {
             BOOST_CHECK( mpi::environment::initialized() );

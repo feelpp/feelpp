@@ -80,8 +80,8 @@ public:
         meshSize( doption(_name="hsize") )
     {
     }
-    void run() {}
-    void run( const double*, long unsigned int, double*, long unsigned int ) {}
+    void run() override {}
+    void run( const double*, long unsigned int, double*, long unsigned int ) override {}
 private:
     double meshSize;
 };

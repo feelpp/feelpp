@@ -44,7 +44,7 @@ class Test:
 {
 public :
 
-    void run()
+    void run() override
     {
         auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<Dim,1>>,
                                     _desc=domain( _name=( boost::format( "%1%-%2%" ) % soption(_name="gmsh.domain.shape") % Dim ).str() ,

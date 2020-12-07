@@ -91,7 +91,7 @@ public:
 #endif
     MatrixCondensed( MatrixCondensed const& ) = default;
     MatrixCondensed& operator=( MatrixCondensed const& ) = default;
-    ~MatrixCondensed() = default;
+    ~MatrixCondensed() override = default;
 
     //!
     //! @return true if strategy is monolithic, false otherwise
@@ -118,7 +118,7 @@ public:
     void setStrategy( solve::strategy s ) { M_strategy = s; }
 
 
-    virtual void addMatrix ( int* rows, int nrows,
+    void addMatrix ( int* rows, int nrows,
                              int* cols, int ncols,
                              value_type* data,
                              size_type K, size_type K2

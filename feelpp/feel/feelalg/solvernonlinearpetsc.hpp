@@ -116,12 +116,12 @@ public:
     /**
      * Destructor.
      */
-    ~SolverNonLinearPetsc();
+    ~SolverNonLinearPetsc() override;
 
     /**
      * Initialize data structures if not done so already.
      */
-    virtual void init ();
+    void init () override;
 
     //@}
 
@@ -141,7 +141,7 @@ public:
     /** @name  Mutators
      */
     //@{
-    void setReuse( int jac=1, int prec=1 );
+    void setReuse( int jac=1, int prec=1 ) override;
     //@}
 
     /** @name  Methods
@@ -151,30 +151,30 @@ public:
     /**
      * Release all memory and clear data structures.
      */
-    virtual void clear ();
+    void clear () override;
 
     /**
      * Call the Petsc solver.  It calls the method below, using the
      * same matrix for the system and preconditioner matrices.
      */
-    virtual solve_return_type solve ( sparse_matrix_ptrtype&,    // System Jacobian Matrix
+    solve_return_type solve ( sparse_matrix_ptrtype&,    // System Jacobian Matrix
             vector_ptrtype&,          // Solution vector
             vector_ptrtype&,          // Residual vector
             const double,        // Stopping tolerance
-            const unsigned int ); // N. Iterations
+            const unsigned int ) override; // N. Iterations
 
-    virtual std::pair<unsigned int, real_type> solve ( dense_matrix_type&,    // System Jacobian Matrix
+    std::pair<unsigned int, real_type> solve ( dense_matrix_type&,    // System Jacobian Matrix
             dense_vector_type&,          // Solution vector
             dense_vector_type&,          // Residual vector
             const double,        // Stopping tolerance
-            const unsigned int ); // N. Iterations
+            const unsigned int ) override; // N. Iterations
 
     //use eigen
-    virtual std::pair<unsigned int, real_type> solve ( map_dense_matrix_type&,    // System Jacobian Matrix
+    std::pair<unsigned int, real_type> solve ( map_dense_matrix_type&,    // System Jacobian Matrix
             map_dense_vector_type&,          // Solution vector
             map_dense_vector_type&,          // Residual vector
             const double,        // Stopping tolerance
-            const unsigned int ); // N. Iterations
+            const unsigned int ) override; // N. Iterations
 
 
 

@@ -144,7 +144,7 @@ public:
     //!
     Checker & operator=( Checker const& c ) = default;
     Checker & operator=( Checker && c ) = default;
-    ~Checker() = default;
+    ~Checker() override = default;
 
     bool check() const { return M_check; }
     void setCheck( bool c ) { M_check = c; }
