@@ -1,5 +1,7 @@
 var feelpp_2feel_2feelcore_2traits_8hpp =
 [
+    [ "is_eigen_matrix", "structFeel_1_1is__eigen__matrix.html", null ],
+    [ "is_eigen_matrix< T, std::void_t< Eigen::MatrixBase< T > > >", "structFeel_1_1is__eigen__matrix_3_01T_00_01std_1_1void__t_3_01Eigen_1_1MatrixBase_3_01T_01_4_01_4_01_4.html", null ],
     [ "is_iterable", "structFeel_1_1is__iterable.html", null ],
     [ "is_iterable< T, std::void_t< decltype(std::declval< T >().begin()), decltype(std::declval< T >().end())> >", "structFeel_1_1is__iterable_3_01T_00_01std_1_1void__t_3_01decltype_07std_1_1declval_3_01T_01_4_07e321607a6dd151c547f374e68b86fe92.html", null ],
     [ "is_iterable_of", "structFeel_1_1is__iterable__of.html", null ],
@@ -21,6 +23,7 @@ var feelpp_2feel_2feelcore_2traits_8hpp =
     [ "strongest_numeric_type", "feelpp_2feel_2feelcore_2traits_8hpp.html#a063718b9d752656a387bb75b4aeab5b2", null ],
     [ "type_identity_t", "feelpp_2feel_2feelcore_2traits_8hpp.html#a62a2fb3d607993a8bf0c33be2b19cf5d", null ],
     [ "remove_shared_ptr_f", "feelpp_2feel_2feelcore_2traits_8hpp.html#a322157952fa97946e5894fa1bc281816", null ],
+    [ "is_eigen_matrix_v", "feelpp_2feel_2feelcore_2traits_8hpp.html#a144f469080fe9acd188eaad6ed019524", null ],
     [ "is_iterable_of_v", "feelpp_2feel_2feelcore_2traits_8hpp.html#a73ac8b066e67602eaf7d62b0de2fccbf", null ],
     [ "is_iterable_v", "feelpp_2feel_2feelcore_2traits_8hpp.html#a6e9f3331c4a340c6951c8d5ce141a3b5", null ],
     [ "is_shared_ptr_v", "feelpp_2feel_2feelcore_2traits_8hpp.html#a00c0b1b304b8a013aeaeb20e4acdeb43", null ],

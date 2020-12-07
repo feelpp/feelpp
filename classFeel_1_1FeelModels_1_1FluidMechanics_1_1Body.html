@@ -115,6 +115,9 @@ Public Types</h2></td></tr>
 <tr class="memitem:a1368e2d6df8b64e52651eda87d7f1c06"><td class="memItemLeft" align="right" valign="top"><a id="a1368e2d6df8b64e52651eda87d7f1c06"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>moment_of_inertia_type</b> = typename mpl::if_&lt; mpl::equal_to&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 3 &gt; &gt;, eigen_matrix_type&lt; nDim, nDim &gt;, eigen_matrix_type&lt; 1, 1 &gt; &gt;::type</td></tr>
 <tr class="separator:a1368e2d6df8b64e52651eda87d7f1c06"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36b82bba5c81cf4665db3a3db6f45d97"><td class="memItemLeft" align="right" valign="top"><a id="a36b82bba5c81cf4665db3a3db6f45d97"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>self_type</b> = <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html">Body</a></td></tr>
+<tr class="separator:a36b82bba5c81cf4665db3a3db6f45d97"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -146,6 +149,9 @@ auto&#160;</td><td class="memItemRight" valign="bottom"><b>massCenterExpr</b> ()
 <tr class="memitem:af69f23263f0e2cab777a6e1e566f6817"><td class="memItemLeft" align="right" valign="top"><a id="af69f23263f0e2cab777a6e1e566f6817"></a>
 auto&#160;</td><td class="memItemRight" valign="bottom"><b>massExpr</b> () const</td></tr>
 <tr class="separator:af69f23263f0e2cab777a6e1e566f6817"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1fcf99d49e864791b0aafc9657cac8cf"><td class="memItemLeft" align="right" valign="top"><a id="a1fcf99d49e864791b0aafc9657cac8cf"></a>
+auto&#160;</td><td class="memItemRight" valign="bottom"><b>modelMeasuresQuantities</b> (std::string const &amp;prefix) const</td></tr>
+<tr class="separator:a1fcf99d49e864791b0aafc9657cac8cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa1211ed4bb59abe6130cf60337629434"><td class="memItemLeft" align="right" valign="top"><a id="aa1211ed4bb59abe6130cf60337629434"></a>
 moment_of_inertia_type const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>momentOfInertia</b> () const</td></tr>
 <tr class="separator:aa1211ed4bb59abe6130cf60337629434"><td class="memSeparator" colspan="2">&#160;</td></tr>

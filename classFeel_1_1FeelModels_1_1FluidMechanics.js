@@ -1,12 +1,14 @@
 var classFeel_1_1FeelModels_1_1FluidMechanics =
 [
     [ "Body", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body" ],
+    [ "BodyArticulation", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyArticulation.html", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyArticulation" ],
     [ "BodyBoundaryCondition", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition" ],
     [ "BodySetBoundaryCondition", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition" ],
     [ "FieldTag", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1FieldTag.html", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1FieldTag" ],
     [ "FilterBasisUnknownTurbulenceModel", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1FilterBasisUnknownTurbulenceModel.html", [
       [ "apply", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1FilterBasisUnknownTurbulenceModel_1_1apply.html", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1FilterBasisUnknownTurbulenceModel_1_1apply" ]
     ] ],
+    [ "NBodyArticulated", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated" ],
     [ "TurbulenceModelBoundaryConditions", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1TurbulenceModelBoundaryConditions.html", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1TurbulenceModelBoundaryConditions" ],
     [ "addUpdateInHousePreconditionerPCD", "classFeel_1_1FeelModels_1_1FluidMechanics.html#a78a0c9144a27445f202b4e3a2dbc2a2c", null ],
     [ "algebraicFactory", "classFeel_1_1FeelModels_1_1FluidMechanics.html#a53251e4d0c4cc5407ebffb1c4b6d689c", null ],

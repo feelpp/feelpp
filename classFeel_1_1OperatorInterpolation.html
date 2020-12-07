@@ -216,6 +216,9 @@ typedef std::shared_ptr&lt; <a class="el" href="classGraphCSR.html">graph_type</
 <tr class="memitem:a2cbf686e0c15a8a8cb785558db03b9bc"><td class="memItemLeft" align="right" valign="top"><a id="a2cbf686e0c15a8a8cb785558db03b9bc"></a>
 typedef matrix_node&lt; typename image_mesh_type::value_type &gt;::<a class="el" href="classFeel_1_1OperatorInterpolation.html#ad34cde3a8e3f1f29570fd34a8d5294e8">type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_node_type</b></td></tr>
 <tr class="separator:a2cbf686e0c15a8a8cb785558db03b9bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad62c4b16dd689df03d6ceeefb14eb0ea"><td class="memItemLeft" align="right" valign="top"><a id="ad62c4b16dd689df03d6ceeefb14eb0ea"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_setup_type</b> = <a class="el" href="structFeel_1_1OperatorInterpolationMatrixSetup.html">OperatorInterpolationMatrixSetup</a>&lt; typename super::matrix_type::value_type &gt;</td></tr>
+<tr class="separator:ad62c4b16dd689df03d6ceeefb14eb0ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75a554a7273d702d2d815e84abefee07"><td class="memItemLeft" align="right" valign="top">static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nLocalDofInDualImageElt</b></td></tr>
 <tr class="separator:a75a554a7273d702d2d815e84abefee07"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -225,16 +228,16 @@ Constructors, destructor</h2></td></tr>
 &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1OperatorInterpolation.html#ae857399db44ed87ccb938b9728f7553d">OperatorInterpolation</a> ()=default</td></tr>
 <tr class="memdesc:ae857399db44ed87ccb938b9728f7553d"><td class="mdescLeft">&#160;</td><td class="mdescRight">default constructor <br /></td></tr>
 <tr class="separator:ae857399db44ed87ccb938b9728f7553d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a20a59dad2b06d9df25aa83360ec60976"><td class="memItemLeft" align="right" valign="top"><a id="a20a59dad2b06d9df25aa83360ec60976"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1OperatorInterpolation.html#a20a59dad2b06d9df25aa83360ec60976">OperatorInterpolation</a> (domain_space_ptrtype const &amp;domainspace, dual_image_space_ptrtype const &amp;imagespace, backend_ptrtype const &amp;backend, InterpType const &amp;interptype, <a class="el" href="classbool.html">bool</a> ddmethod=false)</td></tr>
-<tr class="memdesc:a20a59dad2b06d9df25aa83360ec60976"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construction the global interpolation operator from <code>domainspace</code> to <code>imagespace</code> and represent it in matrix form using the backend <code>backend</code>. <br /></td></tr>
-<tr class="separator:a20a59dad2b06d9df25aa83360ec60976"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f9c59703a7bc6fa52fd973cfbcec019"><td class="memItemLeft" align="right" valign="top"><a id="a5f9c59703a7bc6fa52fd973cfbcec019"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>OperatorInterpolation</b> (domain_space_ptrtype const &amp;domainspace, dual_image_space_ptrtype const &amp;imagespace, IteratorRange const &amp;r, backend_ptrtype const &amp;backend, InterpType const &amp;interptype, <a class="el" href="classbool.html">bool</a> ddmethod=false)</td></tr>
-<tr class="separator:a5f9c59703a7bc6fa52fd973cfbcec019"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afbc31f8e359c82b4a2ac38c1e3b5cb83"><td class="memItemLeft" align="right" valign="top"><a id="afbc31f8e359c82b4a2ac38c1e3b5cb83"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>OperatorInterpolation</b> (domain_space_ptrtype const &amp;domainspace, dual_image_space_ptrtype const &amp;imagespace, std::list&lt; IteratorRange &gt; const &amp;r, backend_ptrtype const &amp;backend, InterpType const &amp;interptype, <a class="el" href="classbool.html">bool</a> ddmethod=false)</td></tr>
-<tr class="separator:afbc31f8e359c82b4a2ac38c1e3b5cb83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3b97944179a9f3f65d611e1ba0e8db19"><td class="memItemLeft" align="right" valign="top"><a id="a3b97944179a9f3f65d611e1ba0e8db19"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1OperatorInterpolation.html#a3b97944179a9f3f65d611e1ba0e8db19">OperatorInterpolation</a> (domain_space_ptrtype const &amp;domainspace, dual_image_space_ptrtype const &amp;imagespace, backend_ptrtype const &amp;backend, InterpType const &amp;interptype, <a class="el" href="classbool.html">bool</a> ddmethod=false, <a class="el" href="structFeel_1_1OperatorInterpolationMatrixSetup.html">matrix_setup_type</a> const &amp;matSetup=<a class="el" href="structFeel_1_1OperatorInterpolationMatrixSetup.html">matrix_setup_type</a>{})</td></tr>
+<tr class="memdesc:a3b97944179a9f3f65d611e1ba0e8db19"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construction the global interpolation operator from <code>domainspace</code> to <code>imagespace</code> and represent it in matrix form using the backend <code>backend</code>. <br /></td></tr>
+<tr class="separator:a3b97944179a9f3f65d611e1ba0e8db19"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a1c0a11b95b9383e549232bdac9cdfe"><td class="memItemLeft" align="right" valign="top"><a id="a1a1c0a11b95b9383e549232bdac9cdfe"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>OperatorInterpolation</b> (domain_space_ptrtype const &amp;domainspace, dual_image_space_ptrtype const &amp;imagespace, IteratorRange const &amp;r, backend_ptrtype const &amp;backend, InterpType const &amp;interptype, <a class="el" href="classbool.html">bool</a> ddmethod=false, <a class="el" href="structFeel_1_1OperatorInterpolationMatrixSetup.html">matrix_setup_type</a> const &amp;matSetup=<a class="el" href="structFeel_1_1OperatorInterpolationMatrixSetup.html">matrix_setup_type</a>{})</td></tr>
+<tr class="separator:a1a1c0a11b95b9383e549232bdac9cdfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b34ae7e9b7894ed114ca1dbfd37b0b9"><td class="memItemLeft" align="right" valign="top"><a id="a0b34ae7e9b7894ed114ca1dbfd37b0b9"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>OperatorInterpolation</b> (domain_space_ptrtype const &amp;domainspace, dual_image_space_ptrtype const &amp;imagespace, std::list&lt; IteratorRange &gt; const &amp;r, backend_ptrtype const &amp;backend, InterpType const &amp;interptype, <a class="el" href="classbool.html">bool</a> ddmethod=false, <a class="el" href="structFeel_1_1OperatorInterpolationMatrixSetup.html">matrix_setup_type</a> const &amp;matSetup=<a class="el" href="structFeel_1_1OperatorInterpolationMatrixSetup.html">matrix_setup_type</a>{})</td></tr>
+<tr class="separator:a0b34ae7e9b7894ed114ca1dbfd37b0b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac0482e765f62385e844f7a8ce0de3427"><td class="memItemLeft" align="right" valign="top"><a id="ac0482e765f62385e844f7a8ce0de3427"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1OperatorInterpolation.html#ac0482e765f62385e844f7a8ce0de3427">OperatorInterpolation</a> (<a class="el" href="classFeel_1_1OperatorInterpolation.html">OperatorInterpolation</a> const &amp;oi)=default</td></tr>
 <tr class="memdesc:ac0482e765f62385e844f7a8ce0de3427"><td class="mdescLeft">&#160;</td><td class="mdescRight">copy constructor <br /></td></tr>
@@ -488,6 +491,9 @@ T2&#160;</td><td class="memItemRight" valign="bottom"><b>operator()</b> (T1 &amp
 <tr class="memitem:a1ada6a019fd13b778f65d514cd34c941 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="a1ada6a019fd13b778f65d514cd34c941"></a>
 <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>pattern</b> ()</td></tr>
 <tr class="separator:a1ada6a019fd13b778f65d514cd34c941 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10707225bbf06d2027fa52484a4f5f48 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="a10707225bbf06d2027fa52484a4f5f48"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setMatrix</b> (matrix_ptrtype m)</td></tr>
+<tr class="separator:a10707225bbf06d2027fa52484a4f5f48 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a62a29d18bee3df0e60557e61fae433b5 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="a62a29d18bee3df0e60557e61fae433b5"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setName</b> (std::string name)</td></tr>
 <tr class="separator:a62a29d18bee3df0e60557e61fae433b5 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>

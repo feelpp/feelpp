@@ -109,18 +109,23 @@ $(document).ready(function(){initNavTree('classFeel_1_1FeelModels_1_1ModelMeasur
 <div class="title">Feel::FeelModels::ModelMeasuresQuantity&lt; QuantityType &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::FeelModels::ModelMeasuresQuantity&lt; QuantityType &gt;:</div>
+<div id="dynsection-0-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-0-content" class="dyncontent" style="display:none;">
+ <div class="center">
+  <img src="classFeel_1_1FeelModels_1_1ModelMeasuresQuantity.png" alt=""/>
+ </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a8da4d5cf20db35858e6b7be1e19c1d6b"><td class="memItemLeft" align="right" valign="top"><a id="a8da4d5cf20db35858e6b7be1e19c1d6b"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>quantity_type</b> = QuantityType</td></tr>
-<tr class="separator:a8da4d5cf20db35858e6b7be1e19c1d6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa81be328c92e79106cd1d70296b34542"><td class="memItemLeft" align="right" valign="top"><a id="aa81be328c92e79106cd1d70296b34542"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>self_type</b> = <a class="el" href="classFeel_1_1FeelModels_1_1ModelMeasuresQuantity.html">ModelMeasuresQuantity</a>&lt; QuantityType &gt;</td></tr>
-<tr class="separator:aa81be328c92e79106cd1d70296b34542"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a86649147b7563e269e0bcb34e7246f06"><td class="memItemLeft" align="right" valign="top"><a id="a86649147b7563e269e0bcb34e7246f06"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b> = typename std::conditional&lt; std::is_invocable_v&lt; quantity_type &gt;, std::invoke_result&lt; quantity_type &gt;, <a class="el" href="structFeel_1_1type__identity.html">Feel::type_identity</a>&lt; quantity_type &gt; &gt;::type::type</td></tr>
-<tr class="separator:a86649147b7563e269e0bcb34e7246f06"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade39834158f91fcc66d4f529b56b9acf"><td class="memItemLeft" align="right" valign="top"><a id="ade39834158f91fcc66d4f529b56b9acf"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>feelpp_tag</b> = <a class="el" href="structFeel_1_1FeelModels_1_1ModelMeasuresQuantityFeelppTag.html">ModelMeasuresQuantityFeelppTag</a></td></tr>
+<tr class="separator:ade39834158f91fcc66d4f529b56b9acf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a5fcb5893b1b04f436800918b861b37"><td class="memItemLeft" align="right" valign="top"><a id="a3a5fcb5893b1b04f436800918b861b37"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>quantity_type</b> = typename model_measure_quantity1_type::quantity_type</td></tr>
+<tr class="separator:a3a5fcb5893b1b04f436800918b861b37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -133,21 +138,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa1bbca83a2c4bd53f01d4e2da5311207"><td class="memItemLeft" align="right" valign="top"><a id="aa1bbca83a2c4bd53f01d4e2da5311207"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ModelMeasuresQuantity</b> (std::string const &amp;prefix, std::string const &amp;name, quantity_type const &amp;q)</td></tr>
 <tr class="separator:aa1bbca83a2c4bd53f01d4e2da5311207"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5e764b42f463675912e2bcc612dc6c63"><td class="memItemLeft" align="right" valign="top"><a id="a5e764b42f463675912e2bcc612dc6c63"></a>
-std::string const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>name</b> () const</td></tr>
-<tr class="separator:a5e764b42f463675912e2bcc612dc6c63"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a09ad9720fc3a195ca72f012cbe87ab5b"><td class="memItemLeft" align="right" valign="top"><a id="a09ad9720fc3a195ca72f012cbe87ab5b"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>nameWithPrefix</b> () const</td></tr>
-<tr class="separator:a09ad9720fc3a195ca72f012cbe87ab5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1ca1041ee731e4ccecba62237d53846e"><td class="memItemLeft" align="right" valign="top"><a id="a1ca1041ee731e4ccecba62237d53846e"></a>
-std::string const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>prefix</b> () const</td></tr>
-<tr class="separator:a1ca1041ee731e4ccecba62237d53846e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5a28cbbb225fa8fca1e49bfb4d765c78"><td class="memItemLeft" align="right" valign="top"><a id="a5a28cbbb225fa8fca1e49bfb4d765c78"></a>
-quantity_type const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>quantity</b> () const</td></tr>
-<tr class="separator:a5a28cbbb225fa8fca1e49bfb4d765c78"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acedabb83c019d22b77b82927dc832165"><td class="memItemLeft" align="right" valign="top"><a id="acedabb83c019d22b77b82927dc832165"></a>
-value_type&#160;</td><td class="memItemRight" valign="bottom"><b>value</b> () const</td></tr>
-<tr class="separator:acedabb83c019d22b77b82927dc832165"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab2999b4d81a71505f3408825ad3592a0"><td class="memItemLeft" align="right" valign="top"><a id="ab2999b4d81a71505f3408825ad3592a0"></a>
+<a class="el" href="classFeel_1_1FeelModels_1_1ModelMeasuresQuantity.html">ModelMeasuresQuantity</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelMeasuresQuantity.html">ModelMeasuresQuantity</a> &amp;&amp;)=default</td></tr>
+<tr class="separator:ab2999b4d81a71505f3408825ad3592a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

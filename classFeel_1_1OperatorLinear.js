@@ -36,6 +36,7 @@ var classFeel_1_1OperatorLinear =
     [ "operator=", "classFeel_1_1OperatorLinear.html#a0b475beda6bc46fac8c0bedcdb2b2821", null ],
     [ "operator=", "classFeel_1_1OperatorLinear.html#aea8b39cf185d3f1fd27051ba7a064008", null ],
     [ "pattern", "classFeel_1_1OperatorLinear.html#a1ada6a019fd13b778f65d514cd34c941", null ],
+    [ "setMatrix", "classFeel_1_1OperatorLinear.html#a10707225bbf06d2027fa52484a4f5f48", null ],
     [ "setName", "classFeel_1_1OperatorLinear.html#a62a29d18bee3df0e60557e61fae433b5", null ],
     [ "adjoint_ptrtype", "classFeel_1_1OperatorLinear.html#a224e822072064f566f31d3e4461b3123", null ],
     [ "adjoint_type", "classFeel_1_1OperatorLinear.html#abe716b32d1921c01de2909d7f25bad29", null ],

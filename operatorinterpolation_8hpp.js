@@ -13,6 +13,7 @@ var operatorinterpolation_8hpp =
     [ "InterpolationTypeBase", "classFeel_1_1InterpolationTypeBase.html", "classFeel_1_1InterpolationTypeBase" ],
     [ "InterpolationTypeBaseBase", "classFeel_1_1InterpolationTypeBaseBase.html", "classFeel_1_1InterpolationTypeBaseBase" ],
     [ "OperatorInterpolation", "classFeel_1_1OperatorInterpolation.html", "classFeel_1_1OperatorInterpolation" ],
+    [ "OperatorInterpolationMatrixSetup", "structFeel_1_1OperatorInterpolationMatrixSetup.html", "structFeel_1_1OperatorInterpolationMatrixSetup" ],
     [ "conforming_t", "operatorinterpolation_8hpp.html#abc696eee6120b99c8c2e6fd8c99c1f39", null ],
     [ "Curl_ptr_t", "operatorinterpolation_8hpp.html#a8b25b3c4120d10374fce65d3e7ff2019", null ],
     [ "Curl_t", "operatorinterpolation_8hpp.html#a6cd237cc78ce0c282c9a3903d823726c", null ],
@@ -35,7 +36,7 @@ var operatorinterpolation_8hpp =
       [ "EXPR", "operatorinterpolation_8hpp.html#a9e6052cedc9a0e1076a962dededc8d48ab0cd8af157ed30eaa1980da18b07a38d", null ]
     ] ],
     [ "BOOST_PARAMETER_FUNCTION", "operatorinterpolation_8hpp.html#ad60883dd76c4bd3e0b0dd92c5221257c", null ],
-    [ "BOOST_PARAMETER_FUNCTION", "operatorinterpolation_8hpp.html#a26ef0228bb74b16dbc2ba95c6349339e", null ],
+    [ "BOOST_PARAMETER_FUNCTION", "operatorinterpolation_8hpp.html#aa66b5ffc01912ca22d6a139bd0b1ce88", null ],
     [ "BOOST_PARAMETER_FUNCTION", "operatorinterpolation_8hpp.html#a2c2b1e39b1a3ddffc15fcb4f2279a9ec", null ],
     [ "BOOST_PARAMETER_FUNCTION", "operatorinterpolation_8hpp.html#a599c9b920ef0f8a8188a3960e94748ff", null ],
     [ "BOOST_PARAMETER_FUNCTION", "operatorinterpolation_8hpp.html#af1f2a9824271624235288cca1d92e0c6", null ],
@@ -48,7 +49,7 @@ var operatorinterpolation_8hpp =
     [ "makeInterpolation", "operatorinterpolation_8hpp.html#a9a4bf04d6eaa3641232e034d8a8cbe3e", null ],
     [ "operator<<", "operatorinterpolation_8hpp.html#a1d81c802c8ab9f81a2db5e5f2decbe75", null ],
     [ "opInterp", "operatorinterpolation_8hpp.html#a19b501421c239732866557cacfa83a66", null ],
-    [ "opInterpPtr", "operatorinterpolation_8hpp.html#aeda50af6b0ed8333a126997593f3a8d1", null ],
+    [ "opInterpPtr", "operatorinterpolation_8hpp.html#ad0c7da3380885602989cd96c1d258181", null ],
     [ "precomputeDomainBasisFunction", "operatorinterpolation_8hpp.html#ad18b21efdd589322d0efbec2cbc692b7", null ],
     [ "is_conforming", "operatorinterpolation_8hpp.html#aa84c49f28cc801323d811be5e9435958", null ]
 ];
