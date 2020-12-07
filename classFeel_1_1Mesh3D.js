@@ -17,7 +17,7 @@ var classFeel_1_1Mesh3D =
     [ "operator=", "classFeel_1_1Mesh3D.html#a30f795e40dcae4a3ca16f9b8fc4da6b6", null ],
     [ "operator=", "classFeel_1_1Mesh3D.html#abf4122f707669025fbe53774e7a6b7e9", null ],
     [ "renumber", "classFeel_1_1Mesh3D.html#a2829f505754a1579fabd673f39a7b447", null ],
-    [ "setWorldComm", "classFeel_1_1Mesh3D.html#aa40a47e1288ed55bb9a468e47296b372", null ],
+    [ "setWorldComm", "classFeel_1_1Mesh3D.html#a39a2ecefdd1b4754fe69ad2e6ca30d91", null ],
     [ "updateEntitiesCoDimensionOnePermutation", "classFeel_1_1Mesh3D.html#af7b442d1789dec0419d5a7ff8628568e", null ],
     [ "updateEntitiesCoDimensionTwo", "classFeel_1_1Mesh3D.html#ae8431f8f497faada1e10bc8cb6caa54d", null ],
     [ "nDim", "classFeel_1_1Mesh3D.html#afd41e5ef83d0e967bdfbf3abf851c2e1", null ],
@@ -60,5 +60,5 @@ var classFeel_1_1Mesh3D =
     [ "Mesh3D", "classFeel_1_1Mesh3D.html#aaa6a2435d257ba4f0dfde79658ffd285", null ],
     [ "Mesh3D", "classFeel_1_1Mesh3D.html#afa98c2b423f2c85ca32505ad42cbdd55", null ],
     [ "Mesh3D", "classFeel_1_1Mesh3D.html#abdd89987b86df7b2552d81081892dc4e", null ],
-    [ "~Mesh3D", "classFeel_1_1Mesh3D.html#a2e6e9fd11ae21d6e20fb476008378c0a", null ]
+    [ "~Mesh3D", "classFeel_1_1Mesh3D.html#a2fad707017c7860a5444774431743bfd", null ]
 ];

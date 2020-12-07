@@ -14,7 +14,7 @@ var searchData=
   ['ones_1599',['ones',['../ones_8hpp.html#ac967b4d51f3308cab2e1c34b95ce2529',1,'Feel::vf']]],
   ['ones_2ehpp_1600',['ones.hpp',['../ones_8hpp.html',1,'']]],
   ['only_5fon_5fboundary_5ffaces_1601',['only_on_boundary_faces',['../structFeel_1_1tag_1_1only__on__boundary__faces.html',1,'Feel::tag']]],
-  ['onsurface_1602',['onSurface',['../classFeel_1_1Sphere.html#a1213393b90472d53760c08c41da3fb03',1,'Feel::Sphere::onSurface()'],['../classFeel_1_1Surface.html#a709e34cf96a992bd8a3e8551fa2d4e11',1,'Feel::Surface::onSurface()']]],
+  ['onsurface_1602',['onSurface',['../classFeel_1_1Sphere.html#a745849d4e9047dc03a06ca166e16737c',1,'Feel::Sphere::onSurface()'],['../classFeel_1_1Surface.html#a709e34cf96a992bd8a3e8551fa2d4e11',1,'Feel::Surface::onSurface()']]],
   ['operations_2ehpp_1603',['operations.hpp',['../operations_8hpp.html',1,'']]],
   ['operator_1604',['Operator',['../classFeel_1_1Operator.html',1,'Feel']]],
   ['operator_20size_5ft_1605',['operator size_t',['../structnlohmann_1_1detail_1_1position__t.html#ac9ad1e0f143f162e2e0c979cd678d683',1,'nlohmann::detail::position_t']]],

@@ -10,7 +10,7 @@ var classFeel_1_1OperatorLinear =
     [ "apply", "classFeel_1_1OperatorLinear.html#a7d796802c72d5e31c93db21d612af8a7", null ],
     [ "apply", "classFeel_1_1OperatorLinear.html#a91cc65816285c61c0f966eb1e3bd8091", null ],
     [ "apply", "classFeel_1_1OperatorLinear.html#a04bf95760b91814eb8620cfbf49c881b", null ],
-    [ "apply", "classFeel_1_1OperatorLinear.html#a23ab07b3a496e64e57f46aab6679c339", null ],
+    [ "apply", "classFeel_1_1OperatorLinear.html#ad170d8da2d8e0c0e098fc590c5b27169", null ],
     [ "apply", "classFeel_1_1OperatorLinear.html#aba62505d279a167e5b39a52c65e70fde", null ],
     [ "apply", "classFeel_1_1OperatorLinear.html#ad42fbdf2d311c40450aee2a15b8bc17d", null ],
     [ "apply", "classFeel_1_1OperatorLinear.html#a264782a9f1c07c24c5ce1285fde48d50", null ],
@@ -63,5 +63,5 @@ var classFeel_1_1OperatorLinear =
     [ "OperatorLinear", "classFeel_1_1OperatorLinear.html#a9dff591fe9c87a45f96b1e4a18e114de", null ],
     [ "OperatorLinear", "classFeel_1_1OperatorLinear.html#afb0dd27114b75b1769e33208beeb18be", null ],
     [ "OperatorLinear", "classFeel_1_1OperatorLinear.html#a551623161a09882ded43dbbbb1f9be30", null ],
-    [ "~OperatorLinear", "classFeel_1_1OperatorLinear.html#a62757c36657e46f5602c6db9623c4352", null ]
+    [ "~OperatorLinear", "classFeel_1_1OperatorLinear.html#ab877fdee7159d49c2ce686dd73864b5e", null ]
 ];

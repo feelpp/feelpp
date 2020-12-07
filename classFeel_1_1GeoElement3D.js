@@ -28,7 +28,7 @@ var classFeel_1_1GeoElement3D =
     [ "partition1", "classFeel_1_1GeoElement3D.html#aec69058e2f23e61993580af6af45cdaf", null ],
     [ "partition2", "classFeel_1_1GeoElement3D.html#aadfba0ea402c3537e38cb66602f09059", null ],
     [ "permutation", "classFeel_1_1GeoElement3D.html#a331b9c8799aab3df6473b61461f7a408", null ],
-    [ "permutation", "classFeel_1_1GeoElement3D.html#a94f484f6d50fac60a91c05d02ef1c951", null ],
+    [ "permutation", "classFeel_1_1GeoElement3D.html#a046cd06a1e580e46cf646932d27ee62f", null ],
     [ "permutation", "classFeel_1_1GeoElement3D.html#abbf20211f40e25d50c3f59d18408b069", null ],
     [ "permutation", "classFeel_1_1GeoElement3D.html#ad6247e7e0ad95ba3ea4a320b6bb71919", null ],
     [ "pos_first", "classFeel_1_1GeoElement3D.html#ad87839ad51ad2cf78368e1eb4a9014e5", null ],
@@ -63,5 +63,5 @@ var classFeel_1_1GeoElement3D =
     [ "GeoElement3D", "classFeel_1_1GeoElement3D.html#a4504219dc10abfa1a2fc2a9819d81ef8", null ],
     [ "GeoElement3D", "classFeel_1_1GeoElement3D.html#a74e8499668b76b1f06f41dce27570cf3", null ],
     [ "GeoElement3D", "classFeel_1_1GeoElement3D.html#a35485e7a096dc2ca4b4c7b440052c7c8", null ],
-    [ "~GeoElement3D", "classFeel_1_1GeoElement3D.html#a3223990c3f5aa39e53e2b4cd596e1b56", null ]
+    [ "~GeoElement3D", "classFeel_1_1GeoElement3D.html#a3af74346ed994639791c5813da8d32fb", null ]
 ];

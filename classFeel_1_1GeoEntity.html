@@ -105,7 +105,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1GeoEntity.html',''); init
 <a href="#nested-classes">Instances and minimal complete definitions</a> &#124;
 <a href="classFeel_1_1GeoEntity-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">Feel::GeoEntity&lt; Entity, T, IndexT &gt; Class Template Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
+<div class="title">Feel::GeoEntity&lt; Entity, T, IndexT &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Description</h2>
@@ -247,9 +247,9 @@ Constructors, destructor</h2></td></tr>
 <tr class="memitem:abaae6a17e234b0eeefac82454d3ada9e"><td class="memItemLeft" align="right" valign="top"><a id="abaae6a17e234b0eeefac82454d3ada9e"></a>
 <a class="el" href="classFeel_1_1GeoEntity.html">GeoEntity</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1GeoEntity.html">GeoEntity</a> &amp;&amp;__me)</td></tr>
 <tr class="separator:abaae6a17e234b0eeefac82454d3ada9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abe030a8b5adbd3965a8de0f84cf30a4a"><td class="memItemLeft" align="right" valign="top"><a id="abe030a8b5adbd3965a8de0f84cf30a4a"></a>
-virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~GeoEntity</b> ()</td></tr>
-<tr class="separator:abe030a8b5adbd3965a8de0f84cf30a4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5bd53d9aec597450bf329c48588f0fd"><td class="memItemLeft" align="right" valign="top"><a id="ab5bd53d9aec597450bf329c48588f0fd"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>~GeoEntity</b> () override</td></tr>
+<tr class="separator:ab5bd53d9aec597450bf329c48588f0fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Operator overloads</h2></td></tr>
@@ -382,8 +382,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="separator:ace652b54b24499260ae651ff5413d8cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac06205fa0578e8bc4c9c4b01c30e41f6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#ac06205fa0578e8bc4c9c4b01c30e41f6">active</a> () const</td></tr>
 <tr class="separator:ac06205fa0578e8bc4c9c4b01c30e41f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1216688c114fcdf405d22311d67868f5"><td class="memItemLeft" align="right" valign="top">virtual value_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a1216688c114fcdf405d22311d67868f5">measure</a> () const =0</td></tr>
-<tr class="separator:a1216688c114fcdf405d22311d67868f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abbd6ba41fc8fcb9c6b9aae3cba9d0bee"><td class="memItemLeft" align="right" valign="top">virtual value_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#abbd6ba41fc8fcb9c6b9aae3cba9d0bee">measure</a> () const</td></tr>
+<tr class="separator:abbd6ba41fc8fcb9c6b9aae3cba9d0bee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Mutators</h2></td></tr>
@@ -950,8 +950,8 @@ template&lt;typename Entity , typename T  = double, typename IndexT  = uint32_ty
 
 </div>
 </div>
-<a id="a1216688c114fcdf405d22311d67868f5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1216688c114fcdf405d22311d67868f5">&#9670;&nbsp;</a></span>measure()</h2>
+<a id="abbd6ba41fc8fcb9c6b9aae3cba9d0bee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abbd6ba41fc8fcb9c6b9aae3cba9d0bee">&#9670;&nbsp;</a></span>measure()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -970,13 +970,13 @@ template&lt;typename Entity , typename T  = double, typename IndexT  = uint32_ty
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the measure of the entity </dd></dl>
 
-<p>Implemented in <a class="el" href="classFeel_1_1Geo0D.html#afc38ad636f14a5be5eca08218f81d37f">Feel::Geo0D&lt; Dim, double, uint32_type &gt;</a>, and <a class="el" href="classFeel_1_1Geo0D.html#afc38ad636f14a5be5eca08218f81d37f">Feel::Geo0D&lt; 3 &gt;</a>.</p>
+<p>Reimplemented in <a class="el" href="classFeel_1_1Geo0D.html#aeb047415b76f24a8be9a966c41f33cb7">Feel::Geo0D&lt; Dim, double, uint32_type &gt;</a>, and <a class="el" href="classFeel_1_1Geo0D.html#aeb047415b76f24a8be9a966c41f33cb7">Feel::Geo0D&lt; 3 &gt;</a>.</p>
 
 </div>
 </div>

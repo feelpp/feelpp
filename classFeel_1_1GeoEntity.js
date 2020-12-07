@@ -38,7 +38,7 @@ var classFeel_1_1GeoEntity =
     [ "isOnBoundary", "classFeel_1_1GeoEntity.html#ab74d1fa9921e621e3dedb1dd862eeb52", null ],
     [ "isQuadratic", "classFeel_1_1GeoEntity.html#afbef6e12cf48545b96f4e24c73248dcc", null ],
     [ "isSubEntityOfGhostElement", "classFeel_1_1GeoEntity.html#ac7eadff3c6249e2b9fe62582afd3d951", null ],
-    [ "measure", "classFeel_1_1GeoEntity.html#a1216688c114fcdf405d22311d67868f5", null ],
+    [ "measure", "classFeel_1_1GeoEntity.html#abbd6ba41fc8fcb9c6b9aae3cba9d0bee", null ],
     [ "nEdges", "classFeel_1_1GeoEntity.html#a2de94e71e4777020762082291ee5f961", null ],
     [ "neighborPartitionIds", "classFeel_1_1GeoEntity.html#a52b844144c44399baa4103501a8e5a5b", null ],
     [ "neighborPartitionIds", "classFeel_1_1GeoEntity.html#adbe4dbe07e17f14d92327e0bee56d1d7", null ],
@@ -106,5 +106,5 @@ var classFeel_1_1GeoEntity =
     [ "GeoEntity", "classFeel_1_1GeoEntity.html#acc7fb220c8514615c1f473a49ecf90ac", null ],
     [ "GeoEntity", "classFeel_1_1GeoEntity.html#a024f1e461f16419099580783187df79d", null ],
     [ "GeoEntity", "classFeel_1_1GeoEntity.html#a53400e76ecb74a3e8376e7c8085e3cb6", null ],
-    [ "~GeoEntity", "classFeel_1_1GeoEntity.html#abe030a8b5adbd3965a8de0f84cf30a4a", null ]
+    [ "~GeoEntity", "classFeel_1_1GeoEntity.html#ab5bd53d9aec597450bf329c48588f0fd", null ]
 ];

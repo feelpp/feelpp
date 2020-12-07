@@ -235,6 +235,6 @@ var classFeel_1_1FunctionSpace =
     [ "FunctionSpace", "classFeel_1_1FunctionSpace.html#af2618e53afbe69e6545ac510882006fa", null ],
     [ "FunctionSpace", "classFeel_1_1FunctionSpace.html#ab203dc331671825027af0b35501d8ef8", null ],
     [ "FunctionSpace", "classFeel_1_1FunctionSpace.html#ae6f5e2219d55ac9ea802989fffe13348", null ],
-    [ "~FunctionSpace", "classFeel_1_1FunctionSpace.html#a6c649a5b4e556c0eaae40635f24a5fb4", null ],
+    [ "~FunctionSpace", "classFeel_1_1FunctionSpace.html#af1079314c4d707f7452e20c874ac085f", null ],
     [ "FunctionSpace", "classFeel_1_1FunctionSpace.html#a9606ca4c8167991e5cde79d9cd79b334", null ]
 ];

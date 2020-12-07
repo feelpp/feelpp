@@ -8,7 +8,7 @@ var searchData=
   ['unaryplus_2322',['UnaryPlus',['../classFeel_1_1vf_1_1UnaryPlus.html',1,'Feel::vf']]],
   ['unflatten_2323',['unflatten',['../classnlohmann_1_1basic__json.html#adea158bff8642202420898f6322da479',1,'nlohmann::basic_json']]],
   ['uninitialized_2324',['uninitialized',['../classnlohmann_1_1detail_1_1lexer__base.html#aa3538cce439a2de6c7893e627b38c454a42dd1a73d072bb6bf3f494f22b15db8e',1,'nlohmann::detail::lexer_base']]],
-  ['unitnormal_2325',['unitNormal',['../classFeel_1_1Sphere.html#a28ee5a21db8f624f2167c1c8c8233360',1,'Feel::Sphere::unitNormal()'],['../classFeel_1_1Surface.html#a9547488d0de97286c259e579b03edf41',1,'Feel::Surface::unitNormal()']]],
+  ['unitnormal_2325',['unitNormal',['../classFeel_1_1Sphere.html#ae1560ea6a02fa8ae237c0910d6394685',1,'Feel::Sphere::unitNormal()'],['../classFeel_1_1Surface.html#a9547488d0de97286c259e579b03edf41',1,'Feel::Surface::unitNormal()']]],
   ['unknownargc_2326',['unknownArgc',['../classFeel_1_1Application.html#a28775cb65bd0035acab43ba1f39a239b',1,'Feel::Application']]],
   ['unknownargv_2327',['unknownArgv',['../classFeel_1_1Application.html#a6b8a8f5d855cb2cd6d5c32de1ef39d40',1,'Feel::Application']]],
   ['unregisterproduct_2328',['unregisterProduct',['../classFeel_1_1Factory.html#aa19ab8b052114ca1d7e5dd74e7bda1da',1,'Feel::Factory']]],

@@ -13,7 +13,7 @@ var searchData=
   ['worldcomm_5fptr_5ft_2423',['worldcomm_ptr_t',['../group__Core.html#gad8f8196f0b8ff9495dd4119eda223772',1,'Feel']]],
   ['worldcomm_5ft_2424',['worldcomm_t',['../group__Core.html#ga092633e7720ec4d42cf92197b9c35c3a',1,'Feel']]],
   ['worldcommptr_2425',['worldCommPtr',['../classFeel_1_1CommObject.html#a4d68cd0c08cbd913f3c6a03700376efa',1,'Feel::CommObject::worldCommPtr()'],['../classFeel_1_1Environment.html#a3ffa1e65a0e0cf627d2187173c7feebb',1,'Feel::Environment::worldCommPtr()']]],
-  ['worldcoords_2426',['worldCoords',['../classFeel_1_1Sphere.html#a8c640f9c3bd0f345c5380e5a25f408c3',1,'Feel::Sphere::worldCoords()'],['../classFeel_1_1Surface.html#a3f5424813a50f436107fd05b8f7a9652',1,'Feel::Surface::worldCoords()']]],
+  ['worldcoords_2426',['worldCoords',['../classFeel_1_1Sphere.html#a1aec0c7eab3a1303de827119962fca82',1,'Feel::Sphere::worldCoords()'],['../classFeel_1_1Surface.html#a3f5424813a50f436107fd05b8f7a9652',1,'Feel::Surface::worldCoords()']]],
   ['worldscomm_2427',['worldscomm',['../structFeel_1_1tag_1_1worldscomm.html',1,'Feel::tag::worldscomm'],['../classFeel_1_1WorldsComm.html',1,'Feel::WorldsComm'],['../classFeel_1_1Environment.html#a372e7cff15a7e7132a18b5d11c780fd1',1,'Feel::Environment::worldsComm()'],['../classFeel_1_1FunctionSpace_1_1Element.html#a3b6bd7d6d3cda2693f069f332eb9aff6',1,'Feel::FunctionSpace::Element::worldsComm()']]],
   ['worldscomm_2ehpp_2428',['worldscomm.hpp',['../worldscomm_8hpp.html',1,'']]],
   ['worldscomm_5fptr_5ft_2429',['worldscomm_ptr_t',['../group__Core.html#ga56d5cf37fceae464425abf8d94524b7e',1,'Feel']]],

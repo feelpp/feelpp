@@ -6,5 +6,5 @@ var classFeel_1_1DofComposite =
     [ "DofComposite", "classFeel_1_1DofComposite.html#a3583d44ec9b484c7356016943026c18c", null ],
     [ "DofComposite", "classFeel_1_1DofComposite.html#a8b1c72c8c79e777ff1c6964060e082d5", null ],
     [ "DofComposite", "classFeel_1_1DofComposite.html#a7768b5c4997677da2b9ef044d116d228", null ],
-    [ "~DofComposite", "classFeel_1_1DofComposite.html#a45619d5c473ea7dc7cd606a73599461f", null ]
+    [ "~DofComposite", "classFeel_1_1DofComposite.html#a4b300d7b1a54afa295b642946079b13d", null ]
 ];

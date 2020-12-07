@@ -5,7 +5,7 @@ var classFeel_1_1Mesh1D =
     [ "addFace", "classFeel_1_1Mesh1D.html#ac6a28ab4086d80ff0b88f08f97f97632", null ],
     [ "beginFace", "classFeel_1_1Mesh1D.html#a2b22e968bc3700569f0c61361ffb526f", null ],
     [ "beginFace", "classFeel_1_1Mesh1D.html#a23666107f525bc4df26be80f3127b933", null ],
-    [ "clear", "classFeel_1_1Mesh1D.html#a57364bd565019318d491e20182f538f2", null ],
+    [ "clear", "classFeel_1_1Mesh1D.html#af798f0e4ed2de4f007d1f23d7f861c76", null ],
     [ "endFace", "classFeel_1_1Mesh1D.html#a96f8196e75aac43806b6a65f7d589b41", null ],
     [ "endFace", "classFeel_1_1Mesh1D.html#aed34d3d9f7ddd44fa06da7f39416651b", null ],
     [ "eraseFace", "classFeel_1_1Mesh1D.html#ab2ab72f08fc8df173e5312f0a5a3c138", null ],
@@ -37,7 +37,7 @@ var classFeel_1_1Mesh1D =
     [ "numPoints", "classFeel_1_1Mesh1D.html#ab735ee315ee93e672048bbea7f576abe", null ],
     [ "operator=", "classFeel_1_1Mesh1D.html#ad95e2987c3532a284aebc2634be8842c", null ],
     [ "renumber", "classFeel_1_1Mesh1D.html#adcd34657d4fdc6c6aa721e572a0a6083", null ],
-    [ "setWorldComm", "classFeel_1_1Mesh1D.html#a31958b3e705ea9eeae25ee7fdf53954a", null ],
+    [ "setWorldComm", "classFeel_1_1Mesh1D.html#a2b22af24bc4b42578a0022672609d6f3", null ],
     [ "updateEntitiesCoDimensionOnePermutation", "classFeel_1_1Mesh1D.html#abf484bb27c9db30c4b2ca4124d6f895d", null ],
     [ "updateEntitiesCoDimensionTwo", "classFeel_1_1Mesh1D.html#a304e3a70dee28067319881c4b4d64374", null ],
     [ "nDim", "classFeel_1_1Mesh1D.html#a7d3d2571b13c6ecc69d40dc075839572", null ],
@@ -80,5 +80,5 @@ var classFeel_1_1Mesh1D =
     [ "vertex_permutation_type", "classFeel_1_1Mesh1D.html#acaf3886688e8cbb2b1971516d84684e2", null ],
     [ "Mesh1D", "classFeel_1_1Mesh1D.html#aab8b3d975dcfd749b7066230ba47ecdf", null ],
     [ "Mesh1D", "classFeel_1_1Mesh1D.html#a54b5f15f7b0984adf483a7d97ac00e90", null ],
-    [ "~Mesh1D", "classFeel_1_1Mesh1D.html#af27d8aedfdcd0399c1434e93cdd2f371", null ]
+    [ "~Mesh1D", "classFeel_1_1Mesh1D.html#a02588a509a561b44b8de4ebeba38d4bf", null ]
 ];

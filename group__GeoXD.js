@@ -25,7 +25,7 @@ var group__GeoXD =
       [ "markers", "classFeel_1_1Geo0D.html#a22f30ecae6fa83a40b7b4cf81780b3fd", null ],
       [ "masterId", "classFeel_1_1Geo0D.html#a1d4c52f636b653084eeac5bead021107", null ],
       [ "masterVertex", "classFeel_1_1Geo0D.html#af3ea8fe2e4a6adf2092472ebaa0aad5f", null ],
-      [ "measure", "classFeel_1_1Geo0D.html#afc38ad636f14a5be5eca08218f81d37f", null ],
+      [ "measure", "classFeel_1_1Geo0D.html#aeb047415b76f24a8be9a966c41f33cb7", null ],
       [ "mesh", "classFeel_1_1Geo0D.html#a8e346912139836609f6ab8f9b1c24f09", null ],
       [ "node", "classFeel_1_1Geo0D.html#ace2545c1292734297032000e12b58714", null ],
       [ "operator()", "classFeel_1_1Geo0D.html#a19258b3313ca0952b9410307ec2a2823", null ],
@@ -82,6 +82,6 @@ var group__GeoXD =
       [ "Geo0D", "classFeel_1_1Geo0D.html#a6ef0c2fab8f16705e150e98783c3ecd4", null ],
       [ "Geo0D", "classFeel_1_1Geo0D.html#a7435fbf4d9cc08e5b02136d8793c6138", null ],
       [ "Geo0D", "classFeel_1_1Geo0D.html#afb1e4be1ea0316b8a54a19f6ae73be97", null ],
-      [ "~Geo0D", "classFeel_1_1Geo0D.html#a615936d8b9117f17bed885f504713e42", null ]
+      [ "~Geo0D", "classFeel_1_1Geo0D.html#ad592f0d8d7104fc7f31aa879a3b541a7", null ]
     ] ]
 ];

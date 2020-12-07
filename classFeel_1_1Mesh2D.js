@@ -2,7 +2,7 @@ var classFeel_1_1Mesh2D =
 [
     [ "boost::serialization::access", "classFeel_1_1Mesh2D.html#ac98d07dd8f7b70e16ccb9a01abf56b9c", null ],
     [ "beginEdge", "classFeel_1_1Mesh2D.html#ad009654348cc1fe89e3a18d4b86b79d6", null ],
-    [ "clear", "classFeel_1_1Mesh2D.html#acf9c96bbf94870fef67590b7401b0dde", null ],
+    [ "clear", "classFeel_1_1Mesh2D.html#ad1824b2b07c49e1dae04fea340d63265", null ],
     [ "edges", "classFeel_1_1Mesh2D.html#a9345ec0b7473e1cae990bfa0e84afd9c", null ],
     [ "endEdge", "classFeel_1_1Mesh2D.html#a93bf6deb9649be8510d72a8441f74b05", null ],
     [ "FEELPP_DEFINE_VISITABLE", "classFeel_1_1Mesh2D.html#a27316d03d2b953c8805347fd32338768", null ],
@@ -59,5 +59,5 @@ var classFeel_1_1Mesh2D =
     [ "Mesh2D", "classFeel_1_1Mesh2D.html#a3abf7f3071040c69fd82710bf2089176", null ],
     [ "Mesh2D", "classFeel_1_1Mesh2D.html#a1f6e923970d0e32a01cb40b7917e16fa", null ],
     [ "Mesh2D", "classFeel_1_1Mesh2D.html#a4f06c7e025f40cb7f9b8540287c1176b", null ],
-    [ "~Mesh2D", "classFeel_1_1Mesh2D.html#aeae572dc955f4f55195e0e2e41016138", null ]
+    [ "~Mesh2D", "classFeel_1_1Mesh2D.html#a5b9cfb02fda265e6fc15a7800276dac3", null ]
 ];

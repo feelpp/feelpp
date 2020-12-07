@@ -130,12 +130,12 @@ var classFeel_1_1FunctionSpace_1_1Element =
     [ "laplacianInterpolate", "classFeel_1_1FunctionSpace_1_1Element.html#a8d1d172af279dff6498af7286239dd0c", null ],
     [ "loadImpl", "classFeel_1_1FunctionSpace_1_1Element.html#a35ce80988cfa11dbc180586965569ed4", null ],
     [ "localToGlobal", "classFeel_1_1FunctionSpace_1_1Element.html#aabd7a9db122519b77c1f78b7bc098e62", null ],
-    [ "max", "classFeel_1_1FunctionSpace_1_1Element.html#a264569d53af594fff5c02369e8522609", null ],
+    [ "max", "classFeel_1_1FunctionSpace_1_1Element.html#ab07537e7c8ebb64d6887bbd568859d36", null ],
     [ "max", "classFeel_1_1FunctionSpace_1_1Element.html#a323f78adee1b9610b7691c1bfa8297b5", null ],
     [ "max", "classFeel_1_1FunctionSpace_1_1Element.html#a8a80c8a470d7a08aa97f3e99dd252072", null ],
     [ "mesh", "classFeel_1_1FunctionSpace_1_1Element.html#a44dfae35c3eeb0100867655c46e0cb26", null ],
     [ "mesh", "classFeel_1_1FunctionSpace_1_1Element.html#a8c302e003bf9d76d54bcc2a953a1b365", null ],
-    [ "min", "classFeel_1_1FunctionSpace_1_1Element.html#a92555f4a22e234db2518bff70b383b4e", null ],
+    [ "min", "classFeel_1_1FunctionSpace_1_1Element.html#a0fd31b96001d55a6db4451ab692f07ae", null ],
     [ "min", "classFeel_1_1FunctionSpace_1_1Element.html#a073804172592ecd4b5b0611e00b6813a", null ],
     [ "min", "classFeel_1_1FunctionSpace_1_1Element.html#adc72a400ab11cf2bfb5b2c23d6d1855a", null ],
     [ "name", "classFeel_1_1FunctionSpace_1_1Element.html#a4f483954320a6dc780d542c00ab0af74", null ],
@@ -183,7 +183,7 @@ var classFeel_1_1FunctionSpace_1_1Element =
     [ "plus_assign", "classFeel_1_1FunctionSpace_1_1Element.html#ae760946c9158ed55823de7afd2d69eff", null ],
     [ "plusAssign", "classFeel_1_1FunctionSpace_1_1Element.html#ad3e3bb87e2c1464fae84d8b9f15bd1e5", null ],
     [ "pow", "classFeel_1_1FunctionSpace_1_1Element.html#abcc61416ab233e4fb2d89a51b258e6e6", null ],
-    [ "printMatlab", "classFeel_1_1FunctionSpace_1_1Element.html#a58755725c93358e26be6e3e6d3208f93", null ],
+    [ "printMatlab", "classFeel_1_1FunctionSpace_1_1Element.html#a35889833963d6a1037a21b96c5dd0e04", null ],
     [ "ptsInContext", "classFeel_1_1FunctionSpace_1_1Element.html#a9765a310c1ea0a273c82c642d9ba7591", null ],
     [ "ptsInContext", "classFeel_1_1FunctionSpace_1_1Element.html#a6cb5ac1635720e83fa86e08027409e86", null ],
     [ "saveImpl", "classFeel_1_1FunctionSpace_1_1Element.html#a8a2ab8427fbddcc0ac2e165d71ed974b", null ],
@@ -294,5 +294,5 @@ var classFeel_1_1FunctionSpace_1_1Element =
     [ "Element", "classFeel_1_1FunctionSpace_1_1Element.html#a24a068e3fbc749739c8e0fee89760ba8", null ],
     [ "Element", "classFeel_1_1FunctionSpace_1_1Element.html#a1add8bda9316c8bc80e54b236159e0d4", null ],
     [ "Element", "classFeel_1_1FunctionSpace_1_1Element.html#a99237383be575355df450c7d75cf9004", null ],
-    [ "~Element", "classFeel_1_1FunctionSpace_1_1Element.html#a2347c9467914be5ddffb3ec88c7a5feb", null ]
+    [ "~Element", "classFeel_1_1FunctionSpace_1_1Element.html#a9f1e0009ad01207d2954481b7ef4c7c5", null ]
 ];
