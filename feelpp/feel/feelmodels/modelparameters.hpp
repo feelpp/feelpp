@@ -47,32 +47,35 @@ struct FEELPP_EXPORT ModelParameter
     ModelParameter& operator=( ModelParameter const& ) = default;
     ModelParameter& operator=( ModelParameter && ) = default;
 
-    ModelParameter( std::string const& name, double value, double min = 0., double max = 0. )
+    ModelParameter( std::string const& name, double value, double min = 0., double max = 0., std::string const& desc = "" )
         :
         M_name( name ),
         M_type( "value" ),
         M_min( min ),
         M_max( max ),
-        M_expr( value )
+        M_expr( value ),
+        M_desc( desc )
         {}
 
     ModelParameter( std::string const& name, ModelExpression const& mexpr,
-                    double min = 0., double max = 0. )
+                    double min = 0., double max = 0., std::string const& desc = "" )
         :
         M_name( name ),
         M_type( "expression" ),
         M_min( min ),
         M_max( max ),
-        M_expr( mexpr )
+        M_expr( mexpr ),
+        M_desc( desc )
         {}
-    ModelParameter( std::string const& name, std::shared_ptr<Interpolator> interpolator, ModelExpression const& mexpr )
+    ModelParameter( std::string const& name, std::shared_ptr<Interpolator> interpolator, ModelExpression const& mexpr, std::string const& desc = "" )
         :
         M_name( name ),
         M_type( "fit" ),
         M_min( 0. ),
         M_max( 0. ),
         M_expr( mexpr ),
-        M_interpolator( interpolator )
+        M_interpolator( interpolator ),
+        M_desc( desc )
         {}
 
     std::string const& name() const { return M_name; }
@@ -87,6 +90,9 @@ struct FEELPP_EXPORT ModelParameter
     double max() const { return M_max; }
     void setMax( double v ) { M_max = v; }
     bool hasMinMax() const { return M_min != 0 || M_max != 0; }
+
+    std::string const& description() const { return M_desc; }
+    void setDescription( std::string const& desc ) { M_desc = desc; }
 
     //bool hasExpression() const { return M_expr.hasAtLeastOneExpr(); }
     template <int M=1,int N=1>
@@ -137,6 +143,7 @@ private:
     double M_min, M_max;
     ModelExpression M_expr;
     std::shared_ptr<Interpolator> M_interpolator;
+    std::string M_desc;
 
 };
 

@@ -61,6 +61,12 @@ public:
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
+    FsFunctionalLinear() :
+        super_type(),
+        M_backend( backend_type::build( soption( _name="backend" ) ) ),
+        M_name("functionallinear")
+    {
+    }
     FsFunctionalLinear( space_ptrtype space ) :
         super_type( space ),
         M_backend( backend_type::build( soption( _name="backend" ) ) ), // BACKEND_PETSC is the default backend
@@ -80,11 +86,17 @@ public:
 
     ~FsFunctionalLinear() override {}
 
+    virtual void setSpace( space_ptrtype const& space ) override
+    {
+        super_type::setSpace(space);
+        M_vector = M_backend->newVector(space);
+    }
+
     void setName( std::string name ) { M_name = name; }
     std::string name() const { return M_name ; }
 
     // apply the functional
-    value_type
+    virtual value_type
     operator()( const element_type& x ) const override
     {
         M_vector->close();

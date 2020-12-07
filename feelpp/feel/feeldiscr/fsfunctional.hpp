@@ -47,6 +47,7 @@ public:
 
     typedef typename space_type::value_type value_type;
 
+    FsFunctional() = default;
     FsFunctional( space_ptrtype space ) :
         M_space( space )
     {
@@ -62,6 +63,8 @@ public:
     {
         return M_space;
     }
+
+    virtual void setSpace( space_ptrtype const& Xh ) { M_space = Xh; }
 
 private:
 
