@@ -11,11 +11,10 @@ using namespace Feel;
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
-BOOST_AUTO_TEST_SUITE( sensorssuite )
-
-BOOST_AUTO_TEST_CASE( test_create )
+template<int Dim>
+void testCreate()
 {
-    using mesh_type = Mesh<Simplex<2> >;
+    using mesh_type = Mesh<Simplex<Dim> >;
     using space_type = Pch_type<mesh_type, 1>;
     using sensormap_type = SensorMap<space_type>;
 
@@ -43,9 +42,10 @@ BOOST_AUTO_TEST_CASE( test_create )
     BOOST_CHECK_EQUAL(j.size(), 1);
 }
 
-BOOST_AUTO_TEST_CASE( test_load )
+template<int Dim>
+void testLoad()
 {
-    using mesh_type = Mesh<Simplex<2> >;
+    using mesh_type = Mesh<Simplex<Dim> >;
     using space_type = Pch_type<mesh_type, 1>;
     using sensormap_type = SensorMap<space_type>;
 
@@ -72,6 +72,28 @@ BOOST_AUTO_TEST_CASE( test_load )
 
     json j = sm.to_json();
     BOOST_CHECK_EQUAL(j.size(), 1);
+}
+
+BOOST_AUTO_TEST_SUITE( sensorssuite )
+
+BOOST_AUTO_TEST_CASE( test_create_2d )
+{
+    testCreate<2>();
+}
+
+BOOST_AUTO_TEST_CASE( test_load_2d )
+{
+    testLoad<2>();
+}
+
+BOOST_AUTO_TEST_CASE( test_create_3d )
+{
+    testCreate<3>();
+}
+
+BOOST_AUTO_TEST_CASE( test_load_3d )
+{
+    testLoad<3>();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
