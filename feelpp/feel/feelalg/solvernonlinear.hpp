@@ -180,7 +180,7 @@ public:
     /**
      * Destructor.
      */
-    virtual ~SolverNonLinear();
+    ~SolverNonLinear() override;
 
 
     /**

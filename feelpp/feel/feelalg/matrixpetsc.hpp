@@ -156,7 +156,7 @@ public:
      * release the memory of the sparsity
      * structure.
      */
-    ~MatrixPetsc();
+    ~MatrixPetsc() override;
 
     //@}
 
@@ -469,7 +469,7 @@ public:
     /**
     * Returns the symmetric part of the matrix
     */
-    virtual void symmetricPart( MatrixSparse<value_type>& Ms ) const override;
+    void symmetricPart( MatrixSparse<value_type>& Ms ) const override;
 
     /**
      * Returns the raw PETSc matrix context pointer.  Note this is generally
@@ -570,12 +570,12 @@ public:
     //!
     //! get some matrix information use MatInfo data structure from Petsc
     //!
-    virtual void getMatInfo(std::vector<double> &) override;
+    void getMatInfo(std::vector<double> &) override;
 
     //!
     //!
     //!
-    virtual void threshold( void ) override;
+    void threshold( void ) override;
 
     void save( std::string const& filename="default_archive_name", std::string const& format="binary" ) override;
 
@@ -645,7 +645,7 @@ public :
 
     MatrixPetscMPI( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, bool initLocalToGlobalMapping=false, bool destroyMatOnExit=false );
 
-    ~MatrixPetscMPI()
+    ~MatrixPetscMPI() override
     {
         this->clear();
     }
@@ -655,7 +655,7 @@ public :
                 const size_type m_l,
                 const size_type n_l,
                 const size_type nnz=30,
-                const size_type noz=10 );
+                const size_type noz=10 ) override;
 
     /**
      * Initialize using sparsity structure computed by \p dof_map.
@@ -664,7 +664,7 @@ public :
                 const size_type n,
                 const size_type m_l,
                 const size_type n_l,
-                graph_ptrtype const& graph );
+                graph_ptrtype const& graph ) override;
 
     /**
      * define in petsc matrix the dof mapping between
@@ -675,31 +675,31 @@ public :
 
     void set( const size_type i,
               const size_type j,
-              const value_type& value );
+              const value_type& value ) override;
 
     void add ( const size_type i,
                const size_type j,
-               const value_type& value );
+               const value_type& value ) override;
 
     void addMatrix( const ublas::matrix<value_type>& dm,
                     const std::vector<size_type>& rows,
-                    const std::vector<size_type>& cols );
+                    const std::vector<size_type>& cols ) override;
 
     void addMatrix( int* rows, int nrows,
                     int* cols, int ncols,
-                    value_type* data, size_type K = 0, size_type K2 = invalid_v<size_type> );
+                    value_type* data, size_type K = 0, size_type K2 = invalid_v<size_type> ) override;
 
     //void addMatrix( const T a, MatrixSparse<T> const&X );
 
 
-    void zero();
-    void zero( size_type start1, size_type stop1, size_type start2, size_type stop2 );
+    void zero() override;
+    void zero( size_type start1, size_type stop1, size_type start2, size_type stop2 ) override;
     //void zeroEntriesDiagonal();
     void zeroRows( std::vector<int> const& rows,
                    Vector<value_type> const& values,
                    Vector<value_type>& rhs,
                    Context const& on_context,
-                   value_type value_on_diagonal );
+                   value_type value_on_diagonal ) override;
 
 private :
 

@@ -311,7 +311,7 @@ class Mesh
     explicit Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& props = "00001"  )
         : Mesh( "", worldComm, props ) {}
 
-    ~Mesh() {}
+    ~Mesh() override {}
 
     void clear() override
     {
@@ -1531,7 +1531,7 @@ public:
         {
         }
 
-        ~Inverse()
+        ~Inverse() override
         {
         }
 

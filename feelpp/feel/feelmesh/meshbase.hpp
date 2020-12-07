@@ -126,7 +126,7 @@ public:
     {}
     MeshBase( MeshBase const& ) = default;
     MeshBase( MeshBase && ) = default;
-    virtual ~MeshBase();
+    ~MeshBase() override;
 
     /**
      * build from a topological dimension, a real dimension and a communicator

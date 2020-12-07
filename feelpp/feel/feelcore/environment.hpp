@@ -307,7 +307,7 @@ public:
      *  down (finalized), this destructor will shut down the Feel
      *  environment.
      */
-    ~Environment();
+    ~Environment() override;
 
     //@}
 

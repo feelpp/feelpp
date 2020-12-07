@@ -157,17 +157,17 @@ public:
     /**
      * Destructor.
      */
-    ~SolverLinearPetsc ();
+    ~SolverLinearPetsc () override;
 
     /**
      * Release all memory and clear data structures.
      */
-    void clear ();
+    void clear () override;
 
     /**
      * Initialize data structures if not done so already.
      */
-    void init ();
+    void init () override;
 
     /**
      * if \p cns is true, set the null space to be the constant values
@@ -195,7 +195,7 @@ public:
             Vector<T> const& b,
             const double tolerance,
             const unsigned int maxit,
-            bool transpose )
+            bool transpose ) override
     {
         return this->solve( mat, mat, x, b, tolerance, maxit, transpose );
     }
@@ -240,7 +240,7 @@ public:
             Vector<T> const& b,
             const double tolerance,
             const unsigned int maxit,
-            bool transpose );
+            bool transpose ) override;
 
     /**
      * @retun the Krylov SubsPace  data structure

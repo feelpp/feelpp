@@ -149,7 +149,7 @@ public:
     BackendBase( worldcomm_ptr_t const& w ) : super( w ) {}
     BackendBase( BackendBase const& ) = default;
     BackendBase( BackendBase && ) = default;
-    virtual ~BackendBase() = default;
+    ~BackendBase() override = default;
 };
 /**
  * \class Backend
@@ -212,7 +212,7 @@ public:
     Backend( po::variables_map const& vm, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
     Backend( Backend const& ) = default;
     Backend( Backend && ) = default;
-    virtual ~Backend();
+    ~Backend() override;
 
 
     /**

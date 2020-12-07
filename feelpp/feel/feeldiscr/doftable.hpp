@@ -369,7 +369,7 @@ public:
      */
     DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm );
 
-    ~DofTable()
+    ~DofTable() override
         {
             M_el_l2g.clear();
             M_face_l2g.clear();

@@ -182,7 +182,7 @@ public:
     /**
      * \return the family name of the polynomial set
      */
-    std::string familyName() const
+    std::string familyName() const override
     {
         return "dubiner";
     }
@@ -329,7 +329,7 @@ public:
     {
         return OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar,T, TheTAG, Hypercube >();
     }
-    std::string familyName() const
+    std::string familyName() const override
     {
         return "legendre";
     }

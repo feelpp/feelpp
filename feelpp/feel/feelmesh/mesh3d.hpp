@@ -167,7 +167,7 @@ class Mesh3D
     /**
      * destructor
      */
-    ~Mesh3D();
+    ~Mesh3D() override;
 
     //@}
 
@@ -292,7 +292,7 @@ class Mesh3D
     /** @name  Methods
      */
     //@{
-    virtual void setWorldComm( worldcomm_ptr_t const& _worldComm ) override
+    void setWorldComm( worldcomm_ptr_t const& _worldComm ) override
     {
         MeshBase<IndexT>::setWorldComm( _worldComm );
         this->setWorldCommElements( _worldComm );
@@ -305,7 +305,7 @@ class Mesh3D
      * clear out all data from the mesh, \p isEmpty() should return
      * \p true after a \p clear()
      */
-    virtual void clear() override;
+    void clear() override;
 
     FEELPP_DEFINE_VISITABLE();
 

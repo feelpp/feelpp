@@ -44,8 +44,8 @@ class B
     : public A
 {
 public:
-    virtual ~B() {}
-    const char* hello() const
+    ~B() override {}
+    const char* hello() const override
     {
         return "hello";
     }
@@ -55,8 +55,8 @@ class C
     : public A
 {
 public:
-    ~C() {}
-    const char* hello() const
+    ~C() override {}
+    const char* hello() const override
     {
         return "hie";
     }
@@ -66,7 +66,7 @@ class D
     : public B
 {
 public:
-    const char* hello() const
+    const char* hello() const override
     {
         return "Yo";
     }
@@ -76,7 +76,7 @@ class E
     : public C
 {
 public:
-    const char* hello() const
+    const char* hello() const override
     {
         return "Ciao";
     }
@@ -93,7 +93,7 @@ public:
     {
         VLOG(1) << "calling F::copy constructor\n";
     }
-    const char* hello() const
+    const char* hello() const override
     {
         return str.c_str();
     }

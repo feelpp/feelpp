@@ -2784,23 +2784,23 @@ public:
         return M_model->bdfModel();
     }
 
-    int numberOfTimeStep() const { return M_numberOfTimeStep; }
+    int numberOfTimeStep() const override { return M_numberOfTimeStep; }
 
-    double timeStep() const
+    double timeStep() const override
     {
         double timestep = 1e30;
         if ( !this->isSteady() )
             timestep = this->bdfModel()->timeStep();
         return timestep;
     }
-    double timeInitial() const
+    double timeInitial() const override
     {
         double timeinitial = 0.;
         if ( !this->isSteady() )
             timeinitial = this->bdfModel()->timeInitial();
         return timeinitial;
     }
-    double timeFinal() const
+    double timeFinal() const override
     {
         double timefinal=1e30;
         if ( !this->isSteady() )
@@ -2816,7 +2816,7 @@ public:
     }
 
 
-    bool isSteady() const
+    bool isSteady() const override
     {
         return M_isSteadyModel;
     }

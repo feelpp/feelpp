@@ -74,7 +74,7 @@ public :
             
         }
 
-    ~MeshSupport() = default;
+    ~MeshSupport() override = default;
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
     worldcomm_ptr_t const& worldCommPtr() const { return M_mesh->worldCommPtr(); }
