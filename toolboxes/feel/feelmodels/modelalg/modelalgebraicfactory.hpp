@@ -101,36 +101,11 @@ namespace FeelModels
         void initExplictPartOfSolution();
         vector_ptrtype explictPartOfSolution() { return M_explictPartOfSolution; }
 
+        bool useSolverPtAP() const { return M_useSolverPtAP; }
         void initSolverPtAP( sparse_matrix_ptrtype matP );
+        bool hasInitSolverPtAP() const { return M_solverPtAP_backend? true : false; }
         void solverPtAP_setDofEliminationIds( std::set<index_type> const& dofId ) { M_solverPtAP_dofEliminationIds = dofId; }
-#if 0
-        template <typename SpaceType>
-        void
-        initFromFunctionSpace(std::shared_ptr<SpaceType> const& space )
-        {
-
-            if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".MethodNum","initFromFunctionSpace", "start",
-                                                                this->model()->worldComm(),this->model()->verboseAllProc());
-
-            this->model()->timerTool("Constructor").start();
-            auto graph=stencil(_test=space,_trial=space,
-                               _pattern_block=this->model()->blockPattern(),
-                               _diag_is_nonzero=true)->graph();
-            auto indexSplit= space->dofIndexSplit();
-            this->model()->timerTool("Constructor").elapsed("graph");
-
-            this->model()->timerTool("Constructor").restart();
-            this->buildMatrixVector(graph,indexSplit);
-            this->model()->timerTool("Constructor").elapsed("matrixVector");
-
-            this->model()->timerTool("Constructor").restart();
-            this->buildOthers();
-            this->model()->timerTool("Constructor").elapsed("algebraicOthers");
-
-            if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".MethodNum","initFromFunctionSpace", "finish",
-                                                                this->model()->worldComm(),this->model()->verboseAllProc());
-        }
-#endif
+        sparse_matrix_ptrtype solverPtAP_matrixP() const { return M_solverPtAP_matP; }
 
         //---------------------------------------------------------------------------------------------------------------//
 
