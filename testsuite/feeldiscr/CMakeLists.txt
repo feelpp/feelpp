@@ -101,3 +101,4 @@ feelpp_add_test( on_dofs SRCS test_on_dofs GEO square_mmarked.geo CFG test_on_do
 
 feelpp_add_test( operatorlagrangep1 CLI "--pc-type=gamg --gmsh.hsize=0.25" )
 
+feelpp_add_test( sensors CFG sensors.cfg GEO sensorsdesc.json )
