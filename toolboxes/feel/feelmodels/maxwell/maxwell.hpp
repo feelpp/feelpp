@@ -127,11 +127,11 @@ public:
              worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
              std::string const& subPrefix = "",
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"MaxwellMesh.path"); }
+
     std::shared_ptr<std::ostringstream> getInfo() const;
 private :
     void loadParameterFromOptionsVm();
-    void createMesh();
+    void initMesh();
     void initBoundaryConditions();
     template<typename convex = convex_type>
     void initDirichlet(std::enable_if_t<convex::nDim==2>* = nullptr) { this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getScalarFields<nDim>( "magnetic-potential", "Dirichlet" ); }
@@ -139,7 +139,6 @@ private :
     void initDirichlet(std::enable_if_t<convex::nDim==3>* = nullptr) { this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "magnetic-potential", "Dirichlet" ); }
     void initPostProcess();
 public :
-    void setMesh(mesh_ptrtype const& mesh) { M_mesh = mesh; }
     // update for use
     void init( bool buildModelAlgebraicFactory = true );
     BlocksBaseGraphCSR buildBlockMatrixGraph() const;
@@ -159,7 +158,8 @@ public :
 
     //___________________________________________________________________________________//
 
-    mesh_ptrtype const& mesh() const { return M_mesh; }
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_magneticpotential_ptrtype const& spaceMagneticPotential() const { return M_XhMagneticPotential; }
@@ -204,9 +204,8 @@ public :
     // auto vcurlv(T f, std::enable_if_t<convex::nDim==2>* = nullptr) const -> decltype(curlxv(f)) { return curlxv(f); }
 
 private :
-    bool M_hasBuildFromMesh, M_isUpdatedForUse;
+    //bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
-    mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
     space_magneticpotential_ptrtype M_XhMagneticPotential;

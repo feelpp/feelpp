@@ -30,7 +30,6 @@
 #include <feel/feelmodels/maxwell/maxwell.hpp>
 
 #include <feel/feelvf/vf.hpp>
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
 
 namespace Feel
 {
@@ -45,6 +44,7 @@ MAXWELL_CLASS_TEMPLATE_TYPE::Maxwell( std::string const& prefix,
                                       ModelBaseRepository const& modelRep )
     :
     super_type( prefix, worldComm, subPrefix, modelRep ),
+    ModelBase( prefix, worldComm, subPrefix, modelRep ),
     M_maxwellProperties( std::make_shared<maxwellproperties_type>( prefix ) ),
     M_epsilon( doption(_name="regularization-epsilon", _prefix=prefix) )
 {
@@ -59,14 +59,9 @@ MAXWELL_CLASS_TEMPLATE_TYPE::Maxwell( std::string const& prefix,
     this->addTimerTool("PostProcessing",nameFilePostProcessing);
     this->addTimerTool("TimeStepping",nameFileTimeStepping);
 
-    this->setFilenameSaveInfo( prefixvm(this->prefix(),"Maxwell.info") );
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
-    //-----------------------------------------------------------------------------//
-    // build mesh
-    if ( buildMesh )
-        this->createMesh();
     //-----------------------------------------------------------------------------//
     this->log("Maxwell","constructor", "finish");
 
@@ -81,16 +76,19 @@ MAXWELL_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
 MAXWELL_CLASS_TEMPLATE_DECLARATIONS
 void
-MAXWELL_CLASS_TEMPLATE_TYPE::createMesh()
+MAXWELL_CLASS_TEMPLATE_TYPE::initMesh()
 {
-    this->log("Maxwell","createMesh", "start");
+    this->log("Maxwell","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
-    CHECK( M_mesh ) << "mesh generation fail";
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
 
-    double tElpased = this->timerTool("Constructor").stop("createMesh");
-    this->log("Maxwell","createMesh",(boost::format("finish in %1% s")%tElpased).str() );
+    CHECK( this->mesh() ) << "mesh generation fail";
+
+    double tElpased = this->timerTool("Constructor").stop("initMesh");
+    this->log("Maxwell","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
 
 } // createMesh()
 
@@ -122,25 +120,28 @@ MAXWELL_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("Maxwell","init", "start" );
     this->timerTool("Constructor").start();
 
-    CHECK( M_mesh ) << "no mesh defined";
+    if ( !this->mesh() )
+        this->initMesh();
+
+    CHECK( this->mesh() ) << "no mesh defined";
 
     // physical properties
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().materials().setParameterValues( paramValues );
-    M_maxwellProperties->updateForUse( M_mesh, this->modelProperties().materials(),  this->localNonCompositeWorldsComm());
+    M_maxwellProperties->updateForUse( this->mesh(), this->modelProperties().materials(),  this->localNonCompositeWorldsComm());
 
     // functionspace
     if ( M_maxwellProperties->isDefinedOnWholeMesh() )
     {
-        M_rangeMeshElements = elements(M_mesh);
-        M_XhMagneticPotential = space_magneticpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
-        M_XhMagneticField = space_magneticfield_type::New(_mesh=M_mesh, _worldscomm=this->worldsComm() );
+        M_rangeMeshElements = elements(this->mesh());
+        M_XhMagneticPotential = space_magneticpotential_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+        M_XhMagneticField = space_magneticfield_type::New(_mesh=this->mesh(), _worldscomm=this->worldsComm() );
     }
     else
     {
-        M_rangeMeshElements = markedelements(M_mesh, M_maxwellProperties->markers());
-        M_XhMagneticPotential = space_magneticpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
-        M_XhMagneticField = space_magneticfield_type::New(_mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
+        M_rangeMeshElements = markedelements(this->mesh(), M_maxwellProperties->markers());
+        M_XhMagneticPotential = space_magneticpotential_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
+        M_XhMagneticField = space_magneticfield_type::New(_mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
     M_fieldMagneticPotential.reset( new element_magneticpotential_type(M_XhMagneticPotential,"V"));
     M_fieldMagneticField.reset( new element_magneticfield_type(M_XhMagneticField,"E"));
@@ -302,10 +303,12 @@ MAXWELL_CLASS_TEMPLATE_TYPE::getInfo() const
            << this->getInfoNeumannBC()
            << this->getInfoRobinBC();
     *_ostr << M_maxwellProperties->getInfoMaterialParameters()->str();
+#if 0
     *_ostr << "\n   Mesh Discretization"
            << "\n     -- mesh filename      : " << this->meshFile()
            << "\n     -- number of element : " << M_mesh->numGlobalElements()
            << "\n     -- order             : " << nOrderGeo;
+#endif
     *_ostr << "\n   Space MagneticPotential Discretization"
            << "\n     -- order         : " << nOrderPolyMagneticPotential
            << "\n     -- number of dof : " << M_XhMagneticPotential->nDof() << " (" << M_XhMagneticPotential->nLocalDof() << ")";

@@ -20,8 +20,8 @@ FSI<FluidType,SolidType>::updateLinearPDEDofElimination_Fluid( DataUpdateLinear 
         vector_ptrtype& F = data.rhs();
 
         auto mesh = M_fluidModel->mesh();
-        auto Xh = M_fluidModel->spaceVelocityPressure();
-        auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
+        auto XhV = M_fluidModel->functionSpaceVelocity();
+        auto bilinearForm = form2( _test=XhV,_trial=XhV,_matrix=A,
                                    _pattern=size_type(Pattern::COUPLED),
                                    _rowstart=M_fluidModel->rowStartInMatrix(),
                                    _colstart=M_fluidModel->colStartInMatrix() );
@@ -45,9 +45,8 @@ FSI<FluidType,SolidType>::updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess
 
         vector_ptrtype& U = data.initialGuess();
         auto mesh = M_fluidModel->mesh();
-        auto Xh = M_fluidModel->spaceVelocityPressure();
-        auto up = Xh->element( U, M_fluidModel->rowStartInVector() );
-        auto u = up.template element<0>();
+        auto XhV = M_fluidModel->functionSpaceVelocity();
+        auto u = XhV->element( U, M_fluidModel->rowStartInVector() );
         u.on(_range=M_rangeFSI_fluid,
              _expr=idv( this/*M_fluidModel*/->meshVelocity2() ) );
         // update info for synchronization
@@ -109,162 +108,150 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
     M_fluidModel->timerTool("Solve").start();
 
     auto mesh = M_fluidModel->mesh();
-    auto Xh = M_fluidModel->spaceVelocityPressure();
+    auto XhV = M_fluidModel->functionSpaceVelocity();
+    auto XhP = M_fluidModel->functionSpacePressure();
 
     auto const& u = M_fluidModel->fieldVelocity();
     auto const& p = M_fluidModel->fieldPressure();
-    auto const& uEval = (true)? M_fluidModel->fieldVelocity() : M_fluidModel->timeStepBDF()->unknown(0).template element<0>();
-    auto const& pEval = (true)? M_fluidModel->fieldPressure() : M_fluidModel->timeStepBDF()->unknown(0).template element<1>();
+    auto const& uEval = (true)? M_fluidModel->fieldVelocity() : M_fluidModel->timeStepBDF()->unknown(0);
+    auto const& pEval = M_fluidModel->fieldPressure();
 
-    CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
-    std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-    auto sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(uEval),idv(pEval),*M_fluidModel->materialProperties(),matName,true);
-    auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(uEval),*M_fluidModel->materialProperties(),matName);
     auto const Id = eye<fluid_type::nDim,fluid_type::nDim>();
 
-    auto linearForm = form1( _test=Xh, _vector=F,
+    auto linearForm = form1( _test=XhV, _vector=F,
                              _rowstart=M_fluidModel->rowStartInVector() );
-    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
+    auto bilinearForm = form2( _test=XhV,_trial=XhV,_matrix=A,
                                _pattern=size_type(Pattern::COUPLED),
                                _rowstart=M_fluidModel->rowStartInMatrix(),
                                _colstart=M_fluidModel->colStartInMatrix() );
 
-    auto rangeFSI = M_rangeFSI_fluid;
-
     if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
          this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
          this->fsiCouplingBoundaryCondition() == "nitsche" )
-        //---------------------------------------------------------------------------//
     {
-        double gammaRobinFSI = M_couplingNitscheFamily_gamma;
+        for ( auto const& rangeFacesMat : this->fluidModel()->rangeDistributionByMaterialName()->rangeMeshFacesByMaterial( "interface_fsi" ) )
+        {
+            std::string matName = rangeFacesMat.first;
+            auto const& rangeFacesInMatFSI = rangeFacesMat.second;
+
+            auto sigmav = this->fluidModel()->stressTensorExpr( uEval,pEval, matName/*, this->symbolsExpr()*/ );
+            auto muExpr = this->fluidModel()->dynamicViscosityExpr( uEval, matName/*, this->symbolsExpr()*/ );
+
+            double gammaRobinFSI = M_couplingNitscheFamily_gamma;
+            if ( buildCstPart )
+            {
+                bilinearForm +=
+                    integrate( _range=rangeFacesInMatFSI,
+                               _expr= ( gammaRobinFSI*muExpr/hFace() )*inner(idt(u),id(u)),
+                               _geomap=this->geomap() );
+            }
+            if ( buildNonCstPart )
+            {
+                linearForm +=
+                    integrate( _range=rangeFacesInMatFSI,
+                               _expr= inner( sigmav*N(),id(u)),
+                               _geomap=this->geomap() );
+
+                //M_fluidModel->meshALE()->revertReferenceMesh();
+                linearForm +=
+                    integrate( _range=rangeFacesInMatFSI,
+                               _expr= ( gammaRobinFSI*muExpr/hFace() )*inner(idv(this/*M_fluidModel*/->meshVelocity2()),id(u)),
+                               _geomap=this->geomap() );
+                //M_fluidModel->meshALE()->revertMovingMesh();
+            }
+            if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
+                 this->fsiCouplingBoundaryCondition() == "nitsche" )
+            {
+                double alpha = M_couplingNitscheFamily_alpha;
+                double gamma0RobinFSI = M_couplingNitscheFamily_gamma0;
+                auto mysigma_p = id(p)*Id;
+                auto mysigma_u = 2*alpha*muExpr*sym(grad(u));
+                if ( buildCstPart )
+                {
+                    auto bilinearFormPP = form2( _test=XhP,_trial=XhP,_matrix=A,
+                                                 _pattern=size_type(Pattern::COUPLED),
+                                                 _rowstart=M_fluidModel->rowStartInMatrix()+1,
+                                                 _colstart=M_fluidModel->colStartInMatrix()+1 );
+                    auto bilinearFormPV = form2( _test=XhP,_trial=XhV,_matrix=A,
+                                                 _pattern=size_type(Pattern::COUPLED),
+                                                 _rowstart=M_fluidModel->rowStartInMatrix()+1,
+                                                 _colstart=M_fluidModel->colStartInMatrix() );
+                    bilinearFormPP +=
+                        integrate( _range=rangeFacesInMatFSI,
+                                   _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idt(p)*id(p),
+                                   _geomap=this->geomap() );
+                    if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
+                    {
+                        bilinearFormPV +=
+                            integrate( _range=rangeFacesInMatFSI,
+                                       _expr= -inner( idt(u), vf::N() )*id(p),
+                                       _geomap=this->geomap() );
+                    }
+                    else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
+                    {
+                        bilinearForm +=
+                            integrate( _range=rangeFacesInMatFSI,
+                                       _expr= -inner( idt(u), mysigma_u*vf::N() ),
+                                       _geomap=this->geomap() );
+                        bilinearFormPV +=
+                            integrate( _range=rangeFacesInMatFSI,
+                                       _expr= -inner( idt(u), mysigma_p*vf::N() ),
+                                       _geomap=this->geomap() );
+                    }
+                }
+                if ( buildNonCstPart )
+                {
+                    auto linearFormP = form1( _test=XhP, _vector=F,
+                                              _rowstart=M_fluidModel->rowStartInVector()+1 );
+                    linearFormP +=
+                        integrate( _range=rangeFacesInMatFSI,
+                                   _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idv(pEval)*id(p),
+                                   _geomap=this->geomap() );
+
+                    if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
+                    {
+                        //M_fluidModel->meshALE()->revertReferenceMesh();
+                        linearFormP +=
+                            integrate( _range=rangeFacesInMatFSI,
+                                       _expr= -inner(idv(this/*M_fluidModel*/->meshVelocity2()),vf::N())*id(p),
+                                       _geomap=this->geomap() );
+                    }
+                    else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
+                    {
+                        //M_fluidModel->meshALE()->revertReferenceMesh();
+                        linearForm +=
+                            integrate( _range=rangeFacesInMatFSI,
+                                       _expr= -inner(idv(this/*M_fluidModel*/->meshVelocity2()),mysigma_u*vf::N()),
+                                       _geomap=this->geomap() );
+                        linearFormP +=
+                            integrate( _range=rangeFacesInMatFSI,
+                                       _expr= -inner(idv(this/*M_fluidModel*/->meshVelocity2()),mysigma_p*vf::N()),
+                                       _geomap=this->geomap() );
+                    }
+                    //M_fluidModel->meshALE()->revertMovingMesh();
+                }
+            }
+        } // rangeFacesMat
+    }
+    else if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
+    {
         if ( buildCstPart )
         {
-            bilinearForm +=
-                integrate( _range=rangeFSI,
-                           _expr= ( gammaRobinFSI*muExpr/hFace() )*inner(idt(u),id(u)),
-                           _geomap=this->geomap() );
+            A->close();
+            A->addMatrix( this->couplingRNG_coeffForm2(), M_coulingRNG_matrixTimeDerivative, Feel::SUBSET_NONZERO_PATTERN );
         }
         if ( buildNonCstPart )
         {
-            linearForm +=
-                integrate( _range=rangeFSI,
-                           _expr= inner( sigmav*N(),id(u)),
-                           _geomap=this->geomap() );
+            auto uWrap = XhV->element( M_coulingRNG_vectorTimeDerivative, 0 );
+            uWrap.zero();
+            uWrap.add( -1., *this->couplingRNG_evalForm1() );
+            F->close();
+            F->addVector( M_coulingRNG_vectorTimeDerivative, M_coulingRNG_matrixTimeDerivative );
 
-            //M_fluidModel->meshALE()->revertReferenceMesh();
-            linearForm +=
-                integrate( _range=rangeFSI,
-                           _expr= ( gammaRobinFSI*muExpr/hFace() )*inner(idv(this/*M_fluidModel*/->meshVelocity2()),id(u)),
-                           _geomap=this->geomap() );
-            //M_fluidModel->meshALE()->revertMovingMesh();
+            *M_coulingRNG_vectorStress = *M_fieldNormalStressRefMesh_fluid;
+            F->addVector( M_coulingRNG_vectorStress, M_coulingRNG_matrixStress );
         }
-        if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
-             this->fsiCouplingBoundaryCondition() == "nitsche" )
-        {
-            double alpha = M_couplingNitscheFamily_alpha;
-            double gamma0RobinFSI = M_couplingNitscheFamily_gamma0;
-            auto mysigma = id(p)*Id+2*alpha*muExpr*sym(grad(u));
-            if ( buildCstPart )
-            {
-                bilinearForm +=
-                    integrate( _range=rangeFSI,
-                               _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idt(p)*id(p),
-                               _geomap=this->geomap() );
-                if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
-                {
-                    bilinearForm +=
-                        integrate( _range=rangeFSI,
-                                   _expr= -inner( idt(u), vf::N() )*id(p),
-                                   _geomap=this->geomap() );
-                }
-                else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
-                {
-                    bilinearForm +=
-                        integrate( _range=rangeFSI,
-                                   _expr= -inner( idt(u), mysigma*vf::N() ),
-                                   _geomap=this->geomap() );
-                }
-            }
-            if ( buildNonCstPart )
-            {
-                linearForm +=
-                    integrate( _range=rangeFSI,
-                               _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idv(pEval)*id(p),
-                               _geomap=this->geomap() );
 
-                if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
-                {
-                    //M_fluidModel->meshALE()->revertReferenceMesh();
-                    linearForm +=
-                        integrate( _range=rangeFSI,
-                                   _expr= -inner(idv(this/*M_fluidModel*/->meshVelocity2()),vf::N())*id(p),
-                                   _geomap=this->geomap() );
-                }
-                else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
-                {
-                    //M_fluidModel->meshALE()->revertReferenceMesh();
-                    linearForm +=
-                        integrate( _range=rangeFSI,
-                                   _expr= -inner(idv(this/*M_fluidModel*/->meshVelocity2()),mysigma*vf::N()),
-                                   _geomap=this->geomap() );
-                }
-                //M_fluidModel->meshALE()->revertMovingMesh();
-            }
-        }
-    }
-    //---------------------------------------------------------------------------//
-    else if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
-        //---------------------------------------------------------------------------//
-    {
-        if ( !M_coulingRNG_usePrecomputeBC )
-        {
-            auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
-            if ( buildCstPart )
-            {
-                M_fluidModel->meshALE()->revertReferenceMesh();
-                bilinearForm +=
-                    integrate( _range=rangeFSI,
-                               //_expr=this->couplingRNG_coeffForm2()*inner(idt(u),id(u)),
-                               _expr=this->couplingRNG_coeffForm2()*inner(myB*idt(u),id(u)),
-                               _geomap=this->geomap() );
-            }
-            if ( buildNonCstPart )
-            {
-                M_fluidModel->meshALE()->revertReferenceMesh();
-                linearForm +=
-                    integrate( _range=rangeFSI,
-                               //_expr= -inner(idv(this->couplingRNG_evalForm1()),id(u)),
-                               _expr= -inner(myB*idv(this->couplingRNG_evalForm1()),id(u)),
-                               _geomap=this->geomap() );
-                auto sigmaSolidN = idv( M_fieldNormalStressRefMesh_fluid );
-                //auto sigmaSolidN = -idv( this->fluidModel()->normalStressFromStruct() );
-                linearForm +=
-                    integrate( _range=rangeFSI,
-                               _expr= inner( sigmaSolidN,id(u)),
-                               _geomap=this->geomap() );
-            }
-            M_fluidModel->meshALE()->revertMovingMesh();
-        }
-        else
-        {
-            if ( buildCstPart )
-            {
-                A->close();
-                A->addMatrix( this->couplingRNG_coeffForm2(), M_coulingRNG_matrixTimeDerivative, Feel::SUBSET_NONZERO_PATTERN );
-            }
-            if ( buildNonCstPart )
-            {
-                auto UWrap = this->fluidModel()->spaceVelocityPressure()->element( M_coulingRNG_vectorTimeDerivative, 0 );
-                auto uWrap = UWrap.template element<0>();
-                uWrap.zero();
-                uWrap.add( -1., *this->couplingRNG_evalForm1() );
-                F->close();
-                F->addVector( M_coulingRNG_vectorTimeDerivative, M_coulingRNG_matrixTimeDerivative );
-
-                *M_coulingRNG_vectorStress = *M_fieldNormalStressRefMesh_fluid;
-                F->addVector( M_coulingRNG_vectorStress, M_coulingRNG_matrixStress );
-            }
-        }
     }
 
     double timeElapsed = M_fluidModel->timerTool("Solve").stop();
@@ -289,91 +276,89 @@ FSI<FluidType,SolidType>::updateJacobian_Fluid( DataUpdateJacobian & data ) cons
     this->log("FSI","updateJacobian_Fluid", "start"+sc );
 
     auto mesh = M_fluidModel->mesh();
-    auto Xh = M_fluidModel->spaceVelocityPressure();
+    auto XhV = M_fluidModel->functionSpaceVelocity();
+    auto XhP = M_fluidModel->functionSpacePressure();
 
-    auto U = Xh->element(XVec, M_fluidModel->rowStartInVector());
-    auto u = U.template element<0>();
-    auto p = U.template element<1>();
-    auto const& uPrevious = (true)? M_fluidModel->fieldVelocity() : M_fluidModel->timeStepBDF()->unknown(0).template element<0>();
-    auto const& pPrevious = (true)? M_fluidModel->fieldPressure() : M_fluidModel->timeStepBDF()->unknown(0).template element<1>();
+    auto u = XhV->element(XVec, M_fluidModel->rowStartInVector());
+    auto const& q =  M_fluidModel->fieldPressure();
+    auto const& uPrevious = (true)? M_fluidModel->fieldVelocity() : M_fluidModel->timeStepBDF()->unknown(0);
+    auto const& pPrevious = M_fluidModel->fieldPressure();
 
     auto const Id = eye<fluid_type::nDim,fluid_type::nDim>();
 
-    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=J,
+    auto bilinearForm = form2( _test=XhV,_trial=XhV,_matrix=J,
                                _pattern=size_type(Pattern::COUPLED),
                                _rowstart=M_fluidModel->rowStartInMatrix(),
                                _colstart=M_fluidModel->colStartInMatrix() );
-
-    auto rangeFSI = M_rangeFSI_fluid;
-
-    CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
-    std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-    auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(uPrevious),*M_fluidModel->materialProperties(),matName);
-
 
     if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
          this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
          this->fsiCouplingBoundaryCondition() == "nitsche" )
     {
-        double gammaRobinFSI = M_couplingNitscheFamily_gamma;
-        if ( buildCstPart )
+        for ( auto const& rangeFacesMat : this->fluidModel()->rangeDistributionByMaterialName()->rangeMeshFacesByMaterial( "interface_fsi" ) )
         {
-            bilinearForm +=
-                integrate( _range=rangeFSI,
-                           _expr= ( gammaRobinFSI*muExpr/hFace() )*inner(idt(u),id(u)),
-                           _geomap=this->geomap() );
+            std::string matName = rangeFacesMat.first;
+            auto const& rangeFacesInMatFSI = rangeFacesMat.second;
 
-            if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
-                 this->fsiCouplingBoundaryCondition() == "nitsche" )
+            auto muExpr = this->fluidModel()->dynamicViscosityExpr( uPrevious, matName/*, this->symbolsExpr()*/ );
+
+            double gammaRobinFSI = M_couplingNitscheFamily_gamma;
+            if ( buildCstPart )
             {
-                double alpha = M_couplingNitscheFamily_alpha;
-                double gamma0RobinFSI = M_couplingNitscheFamily_gamma0;
-                auto mysigma = id(p)*Id+2*alpha*muExpr*sym(grad(u));
-
                 bilinearForm +=
-                    integrate( _range=rangeFSI,
-                               _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idt(p)*id(p),
+                    integrate( _range=rangeFacesInMatFSI,
+                               _expr= ( gammaRobinFSI*muExpr/hFace() )*inner(idt(u),id(u)),
                                _geomap=this->geomap() );
 
-                if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
+                if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
+                     this->fsiCouplingBoundaryCondition() == "nitsche" )
                 {
-                    bilinearForm +=
-                        integrate( _range=rangeFSI,
-                                   _expr= -inner( idt(u), vf::N() )*id(p),
+                    double alpha = M_couplingNitscheFamily_alpha;
+                    double gamma0RobinFSI = M_couplingNitscheFamily_gamma0;
+                    auto mysigma_u = 2*alpha*muExpr*sym(grad(u));
+                    auto mysigma_p = id(q)*Id;
+                    auto bilinearFormPV = form2( _test=XhP,_trial=XhV,_matrix=J,
+                                                 _pattern=size_type(Pattern::COUPLED),
+                                                 _rowstart=M_fluidModel->rowStartInMatrix()+1,
+                                                 _colstart=M_fluidModel->colStartInMatrix() );
+                    auto bilinearFormPP = form2( _test=XhP,_trial=XhP,_matrix=J,
+                                                 _pattern=size_type(Pattern::COUPLED),
+                                                 _rowstart=M_fluidModel->rowStartInMatrix()+1,
+                                                 _colstart=M_fluidModel->colStartInMatrix()+1 );
+
+                    bilinearFormPP +=
+                        integrate( _range=rangeFacesInMatFSI,
+                                   _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idt(q)*id(q),
                                    _geomap=this->geomap() );
-                }
-                else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
-                {
-                    bilinearForm +=
-                        integrate( _range=rangeFSI,
-                                   _expr= -inner( idt(u), mysigma*vf::N() ),
-                                   _geomap=this->geomap() );
+
+                    if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
+                    {
+                        bilinearFormPV +=
+                            integrate( _range=rangeFacesInMatFSI,
+                                       _expr= -inner( idt(u), vf::N() )*id(q),
+                                       _geomap=this->geomap() );
+                    }
+                    else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
+                    {
+                        bilinearForm +=
+                            integrate( _range=rangeFacesInMatFSI,
+                                       _expr= -inner( idt(u), mysigma_u*vf::N() ),
+                                       _geomap=this->geomap() );
+                        bilinearFormPV +=
+                            integrate( _range=rangeFacesInMatFSI,
+                                       _expr= -inner( idt(u), mysigma_p*vf::N() ),
+                                       _geomap=this->geomap() );
+                    }
                 }
             }
-        }
+        } // rangeFacesMat
     }
     else if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     {
-        if ( !M_coulingRNG_usePrecomputeBC )
+        if ( buildCstPart )
         {
-            if ( buildCstPart )
-            {
-                auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
-                M_fluidModel->meshALE()->revertReferenceMesh();
-                bilinearForm +=
-                    integrate( _range=rangeFSI,
-                               _expr=this->couplingRNG_coeffForm2()*inner(myB*idt(u),id(u)),
-                               _geomap=this->geomap() );
-                M_fluidModel->meshALE()->revertMovingMesh();
-            }
-        }
-        else
-        {
-            if ( buildCstPart )
-            {
-                J->close();
-                J->addMatrix( this->couplingRNG_coeffForm2(), M_coulingRNG_matrixTimeDerivative, Feel::SUBSET_NONZERO_PATTERN );
-            }
+            J->close();
+            J->addMatrix( this->couplingRNG_coeffForm2(), M_coulingRNG_matrixTimeDerivative, Feel::SUBSET_NONZERO_PATTERN );
         }
     }
 
@@ -400,149 +385,133 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
     this->log("FSI","updateResidual_Fluid", "start"+sc );
 
     auto mesh = M_fluidModel->mesh();
-    auto Xh = M_fluidModel->spaceVelocityPressure();
+    auto XhV = M_fluidModel->functionSpaceVelocity();
+    auto XhP = M_fluidModel->functionSpacePressure();
+    auto u = XhV->element(XVec, M_fluidModel->rowStartInVector());
+    auto p = XhP->element(XVec, M_fluidModel->rowStartInVector() +1);
+    auto const& q = M_fluidModel->fieldPressure();
 
-    auto U = Xh->element(XVec, M_fluidModel->rowStartInVector());
-    auto u = U.template element<0>();
-    auto p = U.template element<1>();
-
-    auto linearForm = form1( _test=Xh, _vector=R,
+    auto linearForm = form1( _test=XhV, _vector=R,
                              _rowstart=M_fluidModel->rowStartInVector() );
+    auto linearFormP = form1( _test=XhP, _vector=R,
+                             _rowstart=M_fluidModel->rowStartInVector()+1 );
 
     auto const Id = eye<fluid_type::nDim,fluid_type::nDim>();
 
-    auto rangeFSI = M_rangeFSI_fluid;
-
-    auto const& uPrevious = (true)? M_fluidModel->fieldVelocity() : M_fluidModel->timeStepBDF()->unknown(0).template element<0>();
-    auto const& pPrevious = (true)? M_fluidModel->fieldPressure() : M_fluidModel->timeStepBDF()->unknown(0).template element<1>();
-
-    CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
-    std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-    auto sigmavPrevious = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(uPrevious),idv(pPrevious),*M_fluidModel->materialProperties(),matName,true);
-    auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(uPrevious),*M_fluidModel->materialProperties(),matName);
+    auto const& uPrevious = (true)? M_fluidModel->fieldVelocity() : M_fluidModel->timeStepBDF()->unknown(0);
+    auto const& pPrevious = M_fluidModel->fieldPressure();
 
     if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
          this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
          this->fsiCouplingBoundaryCondition() == "nitsche" )
     {
-        double gammaRobinFSI = M_couplingNitscheFamily_gamma;
-        if ( buildNonCstPart && !useJacobianLinearTerms )
+        for ( auto const& rangeFacesMat : this->fluidModel()->rangeDistributionByMaterialName()->rangeMeshFacesByMaterial( "interface_fsi" ) )
         {
-            linearForm +=
-                integrate( _range=rangeFSI,
-                           _expr= (gammaRobinFSI*muExpr/hFace())*inner(idv(u),id(u)),
-                           _geomap=this->geomap() );
-        }
+            std::string matName = rangeFacesMat.first;
+            auto const& rangeFacesInMatFSI = rangeFacesMat.second;
 
-        if ( buildCstPart )
-        {
-            linearForm +=
-                integrate( _range=rangeFSI,
-                           _expr= -inner( sigmavPrevious*N(),id(u)),
-                           _geomap=this->geomap() );
-            linearForm +=
-                integrate( _range=rangeFSI,
-                           _expr= -(gammaRobinFSI*muExpr/hFace())*inner(idv(this/*M_fluidModel*/->meshVelocity2()),id(u)),
-                           _geomap=this->geomap() );
-        }
-        if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
-             this->fsiCouplingBoundaryCondition() == "nitsche" )
-        {
-            double alpha = M_couplingNitscheFamily_alpha;
-            double gamma0RobinFSI = M_couplingNitscheFamily_gamma0;
-            auto mysigma = id(p)*Id+2*alpha*muExpr*sym(grad(u));
+            auto sigmavPrevious = this->fluidModel()->stressTensorExpr( uPrevious,pPrevious, matName/*, this->symbolsExpr()*/ );
+            auto muExpr = this->fluidModel()->dynamicViscosityExpr( uPrevious, matName/*, this->symbolsExpr()*/ );
+
+            double gammaRobinFSI = M_couplingNitscheFamily_gamma;
             if ( buildNonCstPart && !useJacobianLinearTerms )
             {
                 linearForm +=
-                    integrate( _range=rangeFSI,
-                               _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idv(p)*id(p),
+                    integrate( _range=rangeFacesInMatFSI,
+                               _expr= (gammaRobinFSI*muExpr/hFace())*inner(idv(u),id(u)),
                                _geomap=this->geomap() );
-                if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
-                {
-                    linearForm +=
-                        integrate( _range=rangeFSI,
-                                   _expr= -inner( idv(u), vf::N() )*id(p),
-                                   _geomap=this->geomap() );
-                }
-                else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
-                {
-                    linearForm +=
-                        integrate( _range=rangeFSI,
-                                   _expr= -inner( idv(u), mysigma*vf::N() ),
-                                   _geomap=this->geomap() );
-                }
             }
+
             if ( buildCstPart )
             {
                 linearForm +=
-                    integrate( _range=rangeFSI,
-                               _expr= -( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idv(pPrevious)*id(p),
+                    integrate( _range=rangeFacesInMatFSI,
+                               _expr= -inner( sigmavPrevious*N(),id(u)),
                                _geomap=this->geomap() );
-
-                if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
+                linearForm +=
+                    integrate( _range=rangeFacesInMatFSI,
+                               _expr= -(gammaRobinFSI*muExpr/hFace())*inner(idv(this/*M_fluidModel*/->meshVelocity2()),id(u)),
+                               _geomap=this->geomap() );
+            }
+            if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
+                 this->fsiCouplingBoundaryCondition() == "nitsche" )
+            {
+                double alpha = M_couplingNitscheFamily_alpha;
+                double gamma0RobinFSI = M_couplingNitscheFamily_gamma0;
+                auto mysigma_u = 2*alpha*muExpr*sym(grad(u));
+                auto mysigma_p = id(q)*Id;
+                if ( buildNonCstPart && !useJacobianLinearTerms )
                 {
-                    linearForm +=
-                        integrate( _range=rangeFSI,
-                                   _expr= inner(idv(this/*M_fluidModel*/->meshVelocity2()),vf::N())*id(p),
+                    auto p = XhP->element(XVec, M_fluidModel->rowStartInVector()+1);
+                    linearFormP +=
+                        integrate( _range=rangeFacesInMatFSI,
+                                   _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idv(p)*id(p),
                                    _geomap=this->geomap() );
+                    if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
+                    {
+                        linearFormP +=
+                            integrate( _range=rangeFacesInMatFSI,
+                                       _expr= -inner( idv(u), vf::N() )*id(p),
+                                       _geomap=this->geomap() );
+                    }
+                    else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
+                    {
+                        linearForm +=
+                            integrate( _range=rangeFacesInMatFSI,
+                                       _expr= -inner( idv(u), mysigma_u*vf::N() ),
+                                       _geomap=this->geomap() );
+                        linearFormP +=
+                            integrate( _range=rangeFacesInMatFSI,
+                                       _expr= -inner( idv(u), mysigma_p*vf::N() ),
+                                       _geomap=this->geomap() );
+                    }
                 }
-                else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
+                if ( buildCstPart )
                 {
-                    linearForm +=
-                        integrate( _range=rangeFSI,
-                                   _expr= inner(idv(this/*M_fluidModel*/->meshVelocity2()),mysigma*vf::N()),
+                    linearFormP +=
+                        integrate( _range=rangeFacesInMatFSI,
+                                   _expr= -( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idv(pPrevious)*id(p),
                                    _geomap=this->geomap() );
+
+                    if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
+                    {
+                        linearFormP +=
+                            integrate( _range=rangeFacesInMatFSI,
+                                       _expr= inner(idv(this/*M_fluidModel*/->meshVelocity2()),vf::N())*id(p),
+                                       _geomap=this->geomap() );
+                    }
+                    else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
+                    {
+                        linearForm +=
+                            integrate( _range=rangeFacesInMatFSI,
+                                       _expr= inner(idv(this/*M_fluidModel*/->meshVelocity2()),mysigma_u*vf::N()),
+                                       _geomap=this->geomap() );
+                        linearFormP +=
+                            integrate( _range=rangeFacesInMatFSI,
+                                       _expr= inner(idv(this/*M_fluidModel*/->meshVelocity2()),mysigma_p*vf::N()),
+                                       _geomap=this->geomap() );
+                    }
                 }
             }
-        }
+        } // rangeFacesInMatFSI
     }
     else if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     {
-        if ( !M_coulingRNG_usePrecomputeBC )
+        if ( buildNonCstPart && !useJacobianLinearTerms )
         {
-            auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
-            if ( buildNonCstPart && !useJacobianLinearTerms )
-            {
-                M_fluidModel->meshALE()->revertReferenceMesh();
-                linearForm +=
-                    integrate( _range=rangeFSI,
-                               _expr=this->couplingRNG_coeffForm2()*inner(myB*idv(u),id(u)),
-                               _geomap=this->geomap() );
-            }
-            if ( buildCstPart )
-            {
-                M_fluidModel->meshALE()->revertReferenceMesh();
-                linearForm +=
-                    integrate( _range=rangeFSI,
-                               _expr= inner(myB*idv(this->couplingRNG_evalForm1()),id(u)),
-                               _geomap=this->geomap() );
-                auto sigmaSolidN = idv( M_fieldNormalStressRefMesh_fluid );
-                linearForm +=
-                    integrate( _range=rangeFSI,
-                               _expr= -inner( sigmaSolidN,id(u)),
-                               _geomap=this->geomap() );
-            }
-            M_fluidModel->meshALE()->revertMovingMesh();
+            CHECK(false) << "Not implemented";
         }
-        else
+        if ( buildCstPart )
         {
-            if ( buildNonCstPart && !useJacobianLinearTerms )
-            {
-                CHECK(false) << "Not implemented";
-            }
-            if ( buildCstPart )
-            {
-                auto UWrap = this->fluidModel()->spaceVelocityPressure()->element( M_coulingRNG_vectorTimeDerivative, 0 );
-                auto uWrap = UWrap.template element<0>();
-                uWrap.zero();
-                uWrap.add( 1., *this->couplingRNG_evalForm1() );
-                R->close();
-                R->addVector( M_coulingRNG_vectorTimeDerivative, M_coulingRNG_matrixTimeDerivative );
+            auto uWrap = XhV->element( M_coulingRNG_vectorTimeDerivative, 0 );
+            uWrap.zero();
+            uWrap.add( 1., *this->couplingRNG_evalForm1() );
+            R->close();
+            R->addVector( M_coulingRNG_vectorTimeDerivative, M_coulingRNG_matrixTimeDerivative );
 
-                *M_coulingRNG_vectorStress = *M_fieldNormalStressRefMesh_fluid;
-                M_coulingRNG_vectorStress->scale(-1.);
-                R->addVector( M_coulingRNG_vectorStress, M_coulingRNG_matrixStress );
-            }
+            *M_coulingRNG_vectorStress = *M_fieldNormalStressRefMesh_fluid;
+            M_coulingRNG_vectorStress->scale(-1.);
+            R->addVector( M_coulingRNG_vectorStress, M_coulingRNG_matrixStress );
         }
     }
 
@@ -593,16 +562,17 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
     {
         double gammaRobinFSI = M_couplingNitscheFamily_gamma;
 
-        CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
-        std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-#if 0
-        auto const& dynamicViscosity = M_fluidModel->materialProperties()->dynamicViscosity(matName);
-        CHECK( dynamicViscosity.isNewtonianLaw() && dynamicViscosity.newtonian().isConstant() ) << "TODO";
-        double muFluid = dynamicViscosity.newtonian().value();
-#endif
+
+        auto const& matNames = this->fluidModel()->materialsProperties()->physicToMaterials( this->fluidModel()->physicsAvailableFromCurrentType() );
+        CHECK( matNames.size() == 1 ) << "support only one";
+        std::string matName = *matNames.begin();
+        auto const& matProps = this->fluidModel()->materialsProperties()->materialProperties( matName );
+        auto mphysics = this->fluidModel()->materialsProperties()->physicsFromMaterial( matName, this->fluidModel()->physicsFromCurrentType() );
+        CHECK( mphysics.size() == 1 ) << "something wrong";
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<fluid_type::nDim>>(mphysics.begin()->second);
 
         auto gradVelocityExpr = gradVelocityExpr_fluid2solid( hana::int_<fluid_type::nDim>() );
-        auto muFluid = Feel::FeelModels::fluidMecViscosity( gradVelocityExpr, *M_fluidModel->materialProperties(), matName, invalid_uint16_type_value, true );
+        auto muFluid = Feel::FeelModels::fluidMecViscosity( gradVelocityExpr,*physicFluidData,matProps/*,se*/);
 
 #if 0
         MeshMover<mesh_type> mymesh_mover;
@@ -695,18 +665,19 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
 
     double gammaRobinFSI = M_couplingNitscheFamily_gamma;
 
-    CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
-    std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-#if 0
-    auto const& dynamicViscosity = M_fluidModel->materialProperties()->dynamicViscosity(matName);
-    CHECK( dynamicViscosity.isNewtonianLaw() && dynamicViscosity.newtonian().isConstant() ) << "TODO";
-    double muFluid = dynamicViscosity.newtonian().value();
-#endif
-
     if ( buildCstPart )
     {
+        auto const& matNames = this->fluidModel()->materialsProperties()->physicToMaterials( this->fluidModel()->physicsAvailableFromCurrentType() );
+        CHECK( matNames.size() == 1 ) << "support only one";
+        std::string matName = *matNames.begin();
+        auto const& matProps = this->fluidModel()->materialsProperties()->materialProperties( matName );
+        auto mphysics = this->fluidModel()->materialsProperties()->physicsFromMaterial( matName, this->fluidModel()->physicsFromCurrentType() );
+        CHECK( mphysics.size() == 1 ) << "something wrong";
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<fluid_type::nDim>>(mphysics.begin()->second);
+
         auto gradVelocityExpr = gradVelocityExpr_fluid2solid( hana::int_<fluid_type::nDim>() );
-        auto muFluid = Feel::FeelModels::fluidMecViscosity( gradVelocityExpr, *M_fluidModel->materialProperties(),matName, invalid_uint16_type_value, true );
+        auto muFluid = Feel::FeelModels::fluidMecViscosity( gradVelocityExpr,*physicFluidData,matProps/*,se*/);
+
         auto rangeFSI = M_rangeFSI_solid;
 
         if ( this->solidModel()->timeStepping() == "Newmark" )
@@ -776,15 +747,16 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
     {
         double gammaRobinFSI = M_couplingNitscheFamily_gamma;
 
-        CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
-        std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-#if 0
-        auto const& dynamicViscosity = M_fluidModel->materialProperties()->dynamicViscosity(matName);
-        CHECK( dynamicViscosity.isNewtonianLaw() && dynamicViscosity.newtonian().isConstant() ) << "TODO";
-        double muFluid = dynamicViscosity.newtonian().value();
-#endif
+        auto const& matNames = this->fluidModel()->materialsProperties()->physicToMaterials( this->fluidModel()->physicsAvailableFromCurrentType() );
+        CHECK( matNames.size() == 1 ) << "support only one";
+        std::string matName = *matNames.begin();
+        auto const& matProps = this->fluidModel()->materialsProperties()->materialProperties( matName );
+        auto mphysics = this->fluidModel()->materialsProperties()->physicsFromMaterial( matName, this->fluidModel()->physicsFromCurrentType() );
+        CHECK( mphysics.size() == 1 ) << "something wrong";
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<fluid_type::nDim>>(mphysics.begin()->second);
+
         auto gradVelocityExpr = gradVelocityExpr_fluid2solid( hana::int_<fluid_type::nDim>() );
-        auto muFluid = Feel::FeelModels::fluidMecViscosity( gradVelocityExpr, *M_fluidModel->materialProperties(), matName, invalid_uint16_type_value, true );
+        auto muFluid = Feel::FeelModels::fluidMecViscosity( gradVelocityExpr,*physicFluidData,matProps/*,se*/);
 
         if ( buildNonCstPart && !useJacobianLinearTerms )
         {
@@ -846,11 +818,11 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid1dReduced( DataUpdateLinear & dat
     if ( buildNonCstPart )
     {
         auto mesh = M_solidModel->mesh();
-        auto Xh = M_solidModel->functionSpace1dReduced();
-        auto const& v = M_solidModel->fieldDisplacementScal1dReduced();
+        auto Xh = M_solidModel->solid1dReduced()->functionSpace1dReduced();
+        auto const& v = M_solidModel->solid1dReduced()->fieldDisplacementScal1dReduced();
         auto linearForm = form1( _test=Xh, _vector=F,
                                  _rowstart=M_solidModel->rowStartInVector() );
-        auto rangeMeshElements1dReduced = elements(M_solidModel->mesh1dReduced());
+        auto rangeMeshElements1dReduced = elements(M_solidModel->solid1dReduced()->mesh());
 
         linearForm +=
             integrate( _range=rangeMeshElements1dReduced,

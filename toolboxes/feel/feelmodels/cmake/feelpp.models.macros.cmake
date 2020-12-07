@@ -3,7 +3,7 @@
 #############################################################################
 macro(genLibBase)
   PARSE_ARGUMENTS(FEELMODELS_GENLIB_BASE
-    "LIB_NAME;LIB_DIR;LIB_DEPENDS;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH"
+    "LIB_NAME;LIB_DIR;LIB_DEPENDS;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH;TARGET_COPY_FILES"
     ""
     ${ARGN}
     )
@@ -24,7 +24,12 @@ macro(genLibBase)
     CONFIGURE_FILE( ${FEELMODELS_GENLIB_CONFIG_PATH} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${FEELMODELS_GENLIB_CONFIG_FILENAME_WE}.h  )
   endif()
 
-  add_custom_target(codegen_${LIB_APPLICATION_NAME}  ALL COMMENT "Copying modified files"  )
+  if ( FEELMODELS_GENLIB_BASE_TARGET_COPY_FILES )
+    set( TARGET_COPY_FILES ${FEELMODELS_GENLIB_BASE_TARGET_COPY_FILES} )
+  else()
+    set( TARGET_COPY_FILES ${LIB_APPLICATION_NAME}_copyfiles)
+    add_custom_target(${TARGET_COPY_FILES}  ALL COMMENT "Copying modified files"  )
+  endif()
 
   # lib files
   foreach(filepath ${CODEGEN_FILES_TO_COPY})
@@ -33,7 +38,7 @@ macro(genLibBase)
       #configure_file( ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} COPYONLY)
       file(WRITE ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} "") #write empty file
     endif()
-    add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    add_custom_command(TARGET ${TARGET_COPY_FILES} COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} )
   endforeach()
 
@@ -45,7 +50,7 @@ macro(genLibBase)
     SHARED
     ${CODEGEN_SOURCES}
     )
-  add_dependencies(${LIB_APPLICATION_NAME} codegen_${LIB_APPLICATION_NAME})
+  add_dependencies(${LIB_APPLICATION_NAME} ${TARGET_COPY_FILES})
   target_link_libraries(${LIB_APPLICATION_NAME} ${LIB_DEPENDS} )
   set_target_properties(${LIB_APPLICATION_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${FEELMODELS_GENLIB_APPLICATION_DIR}")
   set_property(TARGET ${LIB_APPLICATION_NAME} PROPERTY MACOSX_RPATH ON)
@@ -93,9 +98,15 @@ macro( genLibHeat )
     set(HEAT_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/heat/${HEAT_LIB_VARIANTS})
     set(HEAT_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heat_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatassemblyjacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatassemblyresidual_inst.cpp
       )
     set(HEAT_CODEGEN_SOURCES
       ${HEAT_LIB_DIR}/heat_inst.cpp
+      ${HEAT_LIB_DIR}/heatassemblylinear_inst.cpp
+      ${HEAT_LIB_DIR}/heatassemblyjacobian_inst.cpp
+      ${HEAT_LIB_DIR}/heatassemblyresidual_inst.cpp
       )
     set(HEAT_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore  ) 
     # generate the lib target
@@ -138,9 +149,17 @@ macro( genLibElectric )
     # configure the lib
     set(ELECTRIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/electric/${ELECTRIC_LIB_VARIANTS})
     set(ELECTRIC_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electric_inst.cpp )
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electric_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electricassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electricassemblyjacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electricassemblyresidual_inst.cpp
+      )
     set(ELECTRIC_CODEGEN_SOURCES
-      ${ELECTRIC_LIB_DIR}/electric_inst.cpp )
+      ${ELECTRIC_LIB_DIR}/electric_inst.cpp
+      ${ELECTRIC_LIB_DIR}/electricassemblylinear_inst.cpp
+      ${ELECTRIC_LIB_DIR}/electricassemblyjacobian_inst.cpp
+      ${ELECTRIC_LIB_DIR}/electricassemblyresidual_inst.cpp
+      )
     set(ELECTRIC_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore  )
     # generate the lib target
     genLibBase(
@@ -161,7 +180,7 @@ endmacro(genLibElectric)
 
 macro( genLibSolidMechanics )
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;DISP_ORDER;GEO_ORDER;DENSITY_COEFFLAME_TYPE"
+    "DIM;DISP_ORDER;GEO_ORDER"
     ""
     ${ARGN}
     )
@@ -174,23 +193,7 @@ macro( genLibSolidMechanics )
   set(SOLIDMECHANICS_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
   set(SOLIDMECHANICS_ORDER_DISPLACEMENT ${FEELMODELS_APP_DISP_ORDER})
 
-  if (FEELMODELS_APP_DENSITY_COEFFLAME_TYPE)
-    if ("${FEELMODELS_APP_DENSITY_COEFFLAME_TYPE}" STREQUAL "P0c" )
-      set(FEELMODELS_DENSITY_COEFFLAME_TAG DCLP0c)
-      set(SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME 1)
-    elseif ("${FEELMODELS_APP_DENSITY_COEFFLAME_TYPE}" STREQUAL "P0d" )
-      unset(FEELMODELS_DENSITY_COEFFLAME_TAG) # default tag P0d
-      set(SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME 0)
-    else()
-      message(FATAL_ERROR "DENSITY_COEFFLAME_TYPE : ${FEELMODELS_APP_DENSITY_COEFFLAME_TYPE} is not valid! It must be P0c or P0d")
-    endif()
-  else()
-    # default value
-    unset(FEELMODELS_DENSITY_COEFFLAME_TAG) # default tag P0d
-    set(SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME 0)
-  endif()
-
-  set(SOLIDMECHANICS_LIB_VARIANTS ${SOLIDMECHANICS_DIM}dP${SOLIDMECHANICS_ORDER_DISPLACEMENT}G${SOLIDMECHANICS_ORDERGEO}${FEELMODELS_DENSITY_COEFFLAME_TAG})
+  set(SOLIDMECHANICS_LIB_VARIANTS ${SOLIDMECHANICS_DIM}dP${SOLIDMECHANICS_ORDER_DISPLACEMENT}G${SOLIDMECHANICS_ORDERGEO})
   set(SOLIDMECHANICS_LIB_NAME feelpp_toolbox_solid_lib_${SOLIDMECHANICS_LIB_VARIANTS})
 
   if ( NOT TARGET ${SOLIDMECHANICS_LIB_NAME} )
@@ -200,7 +203,8 @@ macro( genLibSolidMechanics )
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicscreate_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsothers_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdatelinear_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdatelinear1dreduced_inst.cpp
+      #${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdatelinear1dreduced_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanics1dreduced_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdatejacobian_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdateresidual_inst.cpp
       )
@@ -208,7 +212,8 @@ macro( genLibSolidMechanics )
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicscreate_inst.cpp
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsothers_inst.cpp
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatelinear_inst.cpp
-      ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatelinear1dreduced_inst.cpp
+      #${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatelinear1dreduced_inst.cpp
+      ${SOLIDMECHANICS_LIB_DIR}/solidmechanics1dreduced_inst.cpp
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatejacobian_inst.cpp
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdateresidual_inst.cpp
       )
@@ -233,7 +238,7 @@ endmacro( genLibSolidMechanics )
 
 macro(genLibFluidMechanics)
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;U_ORDER;P_ORDER;P_CONTINUITY;GEO_ORDER;DENSITY_VISCOSITY_CONTINUITY;DENSITY_VISCOSITY_ORDER"
+    "DIM;U_ORDER;P_ORDER;P_CONTINUITY;GEO_ORDER"
     ""
     ${ARGN}
     )
@@ -264,36 +269,9 @@ macro(genLibFluidMechanics)
     unset(FLUIDMECHANICS_PRESSURE_CONTINUITY_TAG) # default tag continuous
   endif()
   #######################################################
-  if (FEELMODELS_APP_DENSITY_VISCOSITY_ORDER)
-    set(FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY ${FEELMODELS_APP_DENSITY_VISCOSITY_ORDER} )
-  else()
-    # default value
-    set(FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY 0)
-  endif()
-  #######################################################
-  if (FEELMODELS_APP_DENSITY_VISCOSITY_CONTINUITY)
-    if ("${FEELMODELS_APP_DENSITY_VISCOSITY_CONTINUITY}" STREQUAL "Continuous" )
-      set(FLUIDMECHANICS_USE_CONTINUOUS_DENSITY_VISCOSITY 1)
-      set(FLUIDMECHANICS_DENSITY_VISCOSITY_TAG DVP${FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY}c)
-    elseif ("${FEELMODELS_APP_DENSITY_VISCOSITY_CONTINUITY}" STREQUAL "Discontinuous" )
-      set(FLUIDMECHANICS_USE_CONTINUOUS_DENSITY_VISCOSITY 0)
-      if ( "${FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY}" STREQUAL "0" )
-        unset(FLUIDMECHANICS_DENSITY_VISCOSITY_TAG) # default value P0d
-      else()
-        set(FLUIDMECHANICS_DENSITY_VISCOSITY_TAG DVP${FLUIDMECHANICS_ORDER_DENSITY_VISCOSITY}d)
-      endif()
-    else()
-      message(FATAL_ERROR "DENSITY_VISCOSITY_CONTINUITY ${FEELMODELS_APP_DENSITY_VISCOSITY}_CONTINUITY : is not valid! It must be Continuous or Discontinuous")
-    endif()
-  else()
-    # default value
-    set(FLUIDMECHANICS_USE_CONTINUOUS_DENSITY_VISCOSITY 0)
-    unset(FLUIDMECHANICS_DENSITY_VISCOSITY_TAG) # default value P0d
-  endif()
-  #######################################################
 
 
-  set(FLUIDMECHANICS_LIB_VARIANTS ${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDER_VELOCITY}P${FLUIDMECHANICS_ORDER_PRESSURE}${FLUIDMECHANICS_PRESSURE_CONTINUITY_TAG}G${FLUIDMECHANICS_ORDERGEO}${FLUIDMECHANICS_DENSITY_VISCOSITY_TAG})
+  set(FLUIDMECHANICS_LIB_VARIANTS ${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDER_VELOCITY}P${FLUIDMECHANICS_ORDER_PRESSURE}${FLUIDMECHANICS_PRESSURE_CONTINUITY_TAG}G${FLUIDMECHANICS_ORDERGEO})
   set(FLUIDMECHANICS_LIB_NAME feelpp_toolbox_fluid_lib_${FLUIDMECHANICS_LIB_VARIANTS})
 
   if ( NOT TARGET ${FLUIDMECHANICS_LIB_NAME} )
@@ -302,26 +280,22 @@ macro(genLibFluidMechanics)
     set(FLUIDMECHANICS_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicscreate_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsothers_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatelinear_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatelinearbc_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatejacobian_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatejacobianbc_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdateresidual_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdateresidualbc_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsassemblyjacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsassemblyresidual_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatestabilisation_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsassemblyturbulence_inst.cpp
       )
     set(FLUIDMECHANICS_CODEGEN_SOURCES
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicscreate_inst.cpp
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsothers_inst.cpp
-      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatelinear_inst.cpp
-      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatelinearbc_inst.cpp
-      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatejacobian_inst.cpp
-      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatejacobianbc_inst.cpp
-      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdateresidual_inst.cpp
-      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdateresidualbc_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsassemblylinear_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsassemblyjacobian_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsassemblyresidual_inst.cpp
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatestabilisation_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsassemblyturbulence_inst.cpp
       )
-    set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
+    set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdes_${FLUIDMECHANICS_DIM}dG${FLUIDMECHANICS_ORDERGEO} )
     if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
       set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelmeshale ${FLUIDMECHANICS_LIB_DEPENDS})
     endif()
@@ -347,7 +321,7 @@ endmacro( genLibFluidMechanics )
 
 macro(genLibFSI)
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;BC_MARKERS;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;FLUID_GEO_ORDER;FLUID_GEO_DESC;FLUID_BC_DESC;FLUID_DENSITY_VISCOSITY_CONTINUITY;FLUID_DENSITY_VISCOSITY_ORDER;SOLID_DISP_ORDER;SOLID_GEO_ORDER;SOLID_BC_DESC;SOLID_GEO_DESC;SOLID_DENSITY_COEFFLAME_TYPE"
+    "DIM;BC_MARKERS;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;FLUID_GEO_ORDER;FLUID_GEO_DESC;FLUID_BC_DESC;SOLID_DISP_ORDER;SOLID_GEO_ORDER;SOLID_BC_DESC;SOLID_GEO_DESC"
     ""
     ${ARGN}
     )
@@ -364,15 +338,12 @@ macro(genLibFSI)
     U_ORDER      ${FEELMODELS_APP_FLUID_U_ORDER}
     P_ORDER      ${FEELMODELS_APP_FLUID_P_ORDER}
     P_CONTINUITY ${FEELMODELS_APP_FLUID_P_CONTINUITY}
-    DENSITY_VISCOSITY_CONTINUITY ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_CONTINUITY}
-    DENSITY_VISCOSITY_ORDER      ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_ORDER}
     )
   # solid lib
   genLibSolidMechanics(
     DIM ${FEELMODELS_APP_DIM}
     DISP_ORDER ${FEELMODELS_APP_SOLID_DISP_ORDER}
     GEO_ORDER ${FEELMODELS_APP_SOLID_GEO_ORDER}
-    DENSITY_COEFFLAME_TYPE ${FEELMODELS_APP_SOLID_DENSITY_COEFFLAME_TYPE}
     )
 
   set(FSI_LIB_VARIANTS ${FLUIDMECHANICS_LIB_VARIANTS}_${SOLIDMECHANICS_LIB_VARIANTS})
@@ -408,6 +379,142 @@ endmacro( genLibFSI )
 #############################################################################
 #############################################################################
 #############################################################################
+
+macro( genLibCoefficientFormPDEs )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;UNKNOWN_BASIS_TYPE;UNKNOWN_BASIS_TAG;GEO_ORDER"
+    ""
+    ${ARGN}
+    )
+
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_UNKNOWN_BASIS_TYPE OR FEELMODELS_APP_UNKNOWN_BASIS_TAG OR  FEELMODELS_APP_GEO_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR  FEELMODELS_APP_UNKNOWN_BASIS_TYPE OR FEELMODELS_APP_UNKNOWN_BASIS_TAG OR  FEELMODELS_APP_GEO_ORDER")
+  endif()
+
+  set(COEFFICIENTFORMPDES_DIM ${FEELMODELS_APP_DIM})
+  set(COEFFICIENTFORMPDES_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+  set(COEFFICIENTFORMPDES_GEOSHAPE Simplex<${COEFFICIENTFORMPDES_DIM},${COEFFICIENTFORMPDES_ORDERGEO},${COEFFICIENTFORMPDES_DIM}>)
+
+  list(LENGTH FEELMODELS_APP_UNKNOWN_BASIS_TYPE count)
+  list(LENGTH FEELMODELS_APP_UNKNOWN_BASIS_TAG count2)
+  if ( NOT (count EQUAL count2) )
+    message( FATAL_ERROR "UNKNOWN_BASIS_TYPE and UNKNOWN_BASIS_TAG should be same size" )
+  endif()
+
+  unset( COEFFICIENTFORMPDES_LIB_DEPENDS )
+  math(EXPR count "${count}-1")
+  foreach(i RANGE ${count})
+    list(GET FEELMODELS_APP_UNKNOWN_BASIS_TYPE ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE)
+    list(GET FEELMODELS_APP_UNKNOWN_BASIS_TAG ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG)
+
+    if ( i EQUAL 0 )
+      set( COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE "${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE}")
+      set( COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TAG "\"${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG}\"")
+    else()
+      set( COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE "${COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE} , ${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE}")
+      set( COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TAG "${COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TAG} , \"${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG}\"")
+    endif()
+    set(COEFFICIENTFORMPDE_LIB_VARIANTS ${COEFFICIENTFORMPDES_DIM}d${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG}G${COEFFICIENTFORMPDES_ORDERGEO} )
+    set(COEFFICIENTFORMPDE_LIB_NAME feelpp_toolbox_coefficientformpde_${COEFFICIENTFORMPDE_LIB_VARIANTS})
+
+    set(COEFFICIENTFORMPDES_LIB_DEPENDS ${COEFFICIENTFORMPDES_LIB_DEPENDS} ${COEFFICIENTFORMPDE_LIB_NAME})
+
+    if ( NOT TARGET ${COEFFICIENTFORMPDE_LIB_NAME} )
+      # configure the lib
+      set(COEFFICIENTFORMPDE_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/coefficientformpdes/pde_${COEFFICIENTFORMPDE_LIB_VARIANTS})
+      set(COEFFICIENTFORMPDE_CODEGEN_FILES_TO_COPY
+        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpde_inst.cpp
+        )
+      set(COEFFICIENTFORMPDE_CODEGEN_SOURCES
+        ${COEFFICIENTFORMPDE_LIB_DIR}/coefficientformpde_inst.cpp
+        )
+      set(COEFFICIENTFORMPDE_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdebase  ) 
+      # generate the lib target
+      genLibBase(
+        LIB_NAME ${COEFFICIENTFORMPDE_LIB_NAME}
+        LIB_DIR ${COEFFICIENTFORMPDE_LIB_DIR}
+        LIB_DEPENDS ${COEFFICIENTFORMPDE_LIB_DEPENDS}
+        FILES_TO_COPY ${COEFFICIENTFORMPDE_CODEGEN_FILES_TO_COPY}
+        FILES_SOURCES ${COEFFICIENTFORMPDE_CODEGEN_SOURCES}
+        CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdeconfig.h.in
+        )
+    endif()
+  endforeach()
+
+  set(COEFFICIENTFORMPDES_LIB_VARIANTS ${COEFFICIENTFORMPDES_DIM}dG${COEFFICIENTFORMPDES_ORDERGEO} )
+  set(COEFFICIENTFORMPDES_LIB_NAME feelpp_toolbox_coefficientformpdes_${COEFFICIENTFORMPDES_LIB_VARIANTS})
+
+  if ( NOT TARGET ${COEFFICIENTFORMPDES_LIB_NAME} )
+    # configure the lib
+    set(COEFFICIENTFORMPDES_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/coefficientformpdes/pdes_${COEFFICIENTFORMPDES_LIB_VARIANTS})
+    set(COEFFICIENTFORMPDES_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdes_inst.cpp
+      )
+    set(COEFFICIENTFORMPDES_CODEGEN_SOURCES
+      ${COEFFICIENTFORMPDES_LIB_DIR}/coefficientformpdes_inst.cpp
+      )
+
+    set(COEFFICIENTFORMPDES_TARGET_COPY_FILES ${COEFFICIENTFORMPDES_LIB_NAME}_copyfiles)
+    add_custom_target(${COEFFICIENTFORMPDES_TARGET_COPY_FILES}  ALL COMMENT "Copying modified files"  )
+
+    # specialisation
+    foreach(i RANGE ${count})
+      list(GET FEELMODELS_APP_UNKNOWN_BASIS_TYPE ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE)
+      list(GET FEELMODELS_APP_UNKNOWN_BASIS_TAG ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG)
+
+      set( COEFFICIENTFORMPDES_UNKNOWN_BASIS_SPECIALISATION ${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE} )
+      set( COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR  ${COEFFICIENTFORMPDES_LIB_DIR}/${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG} )
+
+      set(FEELMODELS_GENLIB_CONFIG_BASISSPEC_PATH  ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesbasisspecialisation.h.in)
+      get_filename_component(FEELMODELS_GENLIB_CONFIG_BASISSPEC_FILENAME_WE ${FEELMODELS_GENLIB_CONFIG_BASISSPEC_PATH} NAME_WE)
+      CONFIGURE_FILE( ${FEELMODELS_GENLIB_CONFIG_BASISSPEC_PATH} ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${FEELMODELS_GENLIB_CONFIG_BASISSPEC_FILENAME_WE}.h )
+
+
+      set( COEFFICIENTFORMPDES_SPECIALISATION_CODEGEN_FILES_TO_COPY
+        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblylinear_spec.cpp
+        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblyjacobian_spec.cpp
+        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblyresidual_spec.cpp
+        )
+      # lib files
+      foreach(filepath ${COEFFICIENTFORMPDES_SPECIALISATION_CODEGEN_FILES_TO_COPY})
+        get_filename_component(filename ${filepath} NAME)
+        if ( NOT EXISTS ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} )
+          file(WRITE ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} "") #write empty file
+        endif()
+        add_custom_command(TARGET ${COEFFICIENTFORMPDES_TARGET_COPY_FILES} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${filepath} ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} )
+
+        set(COEFFICIENTFORMPDES_CODEGEN_SOURCES ${COEFFICIENTFORMPDES_CODEGEN_SOURCES} ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} )
+      endforeach()
+
+    endforeach()
+
+
+    # generate the lib target
+    genLibBase(
+      LIB_NAME ${COEFFICIENTFORMPDES_LIB_NAME}
+      LIB_DIR ${COEFFICIENTFORMPDES_LIB_DIR}
+      LIB_DEPENDS ${COEFFICIENTFORMPDES_LIB_DEPENDS}
+      FILES_TO_COPY ${COEFFICIENTFORMPDES_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${COEFFICIENTFORMPDES_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesconfig.h.in
+      TARGET_COPY_FILES ${COEFFICIENTFORMPDES_TARGET_COPY_FILES}
+      )
+
+    set(FEELPP_TOOLBOX_COEFFICIENTFORMPDES_REGISTER_ENTRY_CLASS_TYPE "boost::mpl::pair< ${COEFFICIENTFORMPDES_GEOSHAPE}, Feel::FeelModels::CoefficientFormPDEs< ${COEFFICIENTFORMPDES_GEOSHAPE}, ${COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE} > >" )
+    
+  endif()
+
+
+
+endmacro(genLibCoefficientFormPDEs)
+
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+
 macro( genLibAdvection )
   PARSE_ARGUMENTS(FEELMODELS_APP
       "DIM;POLY_ORDER;CONTINUITY;POLY_SET;GEO_ORDER;DIFFUSION_REACTION_ORDER;DIFFUSIONCOEFF_POLY_SET;REACTIONCOEFF_POLY_SET;DIFFUSION_REACTION_CONTINUITY"
@@ -544,9 +651,62 @@ endmacro(genLibAdvection)
 #############################################################################
 #############################################################################
 #############################################################################
+macro( genLibLevelsetBase )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;LEVELSET_ORDER;LEVELSET_PN_ORDER;GEO_ORDER"
+    ""
+    ${ARGN}
+    )
+
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_LEVELSET_ORDER OR  FEELMODELS_APP_GEO_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_LEVELSET_ORDER OR  FEELMODELS_APP_GEO_ORDER")
+  endif()
+
+  set(LEVELSETBASE_DIM ${FEELMODELS_APP_DIM})
+  set(LEVELSETBASE_ORDERPOLY ${FEELMODELS_APP_LEVELSET_ORDER})
+  set(LEVELSETBASE_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+  #######################################################
+  if(FEELMODELS_APP_LEVELSET_PN_ORDER)
+      set(LEVELSETBASE_PN_ORDERPOLY ${FEELMODELS_APP_LEVELSET_PN_ORDER})
+  else()
+      set(LEVELSETBASE_PN_ORDERPOLY ${FEELMODELS_APP_LEVELSET_ORDER})
+  endif()
+  #######################################################
+
+  set(LEVELSETBASE_LIB_VARIANTS ${LEVELSETBASE_DIM}dP${LEVELSETBASE_ORDERPOLY}G${LEVELSETBASE_ORDERGEO} )
+  set(LEVELSETBASE_LIB_NAME feelpp_toolbox_levelsetbase_lib_${LEVELSETBASE_LIB_VARIANTS})
+
+  if ( NOT TARGET ${LEVELSETBASE_LIB_NAME} )
+      # configure the lib
+      set(LEVELSETBASE_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/levelset/${LEVELSETBASE_LIB_VARIANTS})
+      set(LEVELSETBASE_CODEGEN_FILES_TO_COPY
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetbase_inst.cpp
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetspacemanager_inst.cpp
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetredistanciation_hj_inst.cpp
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetredistanciation_fm_inst.cpp
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/parameter_map.cpp )
+      set(LEVELSETBASE_CODEGEN_SOURCES
+          ${LEVELSETBASE_LIB_DIR}/levelsetbase_inst.cpp
+          ${LEVELSETBASE_LIB_DIR}/levelsetspacemanager_inst.cpp
+          ${LEVELSETBASE_LIB_DIR}/levelsetredistanciation_hj_inst.cpp
+          ${LEVELSETBASE_LIB_DIR}/levelsetredistanciation_fm_inst.cpp
+          ${LEVELSETBASE_LIB_DIR}/parameter_map.cpp )
+      set(LEVELSETBASE_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
+      # generate the lib target
+      genLibBase(
+          LIB_NAME ${LEVELSETBASE_LIB_NAME}
+          LIB_DIR ${LEVELSETBASE_LIB_DIR}
+          LIB_DEPENDS ${LEVELSETBASE_LIB_DEPENDS}
+          FILES_TO_COPY ${LEVELSETBASE_CODEGEN_FILES_TO_COPY}
+          FILES_SOURCES ${LEVELSETBASE_CODEGEN_SOURCES}
+          CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetbaseconfig.h.in
+          )
+  endif()
+endmacro(genLibLevelsetBase)
+
 macro( genLibLevelset )
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;LEVELSET_ORDER;LEVELSET_PN_ORDER;GEO_ORDER;VELOCITY_ORDER;ADVECTION_DIFFUSION_REACTION_ORDER;ADVECTION_DIFFUSION_REACTION_CONTINUITY"
+    "DIM;LEVELSET_ORDER;LEVELSET_PN_ORDER;GEO_ORDER;VELOCITY_ORDER"
     ""
     ${ARGN}
     )
@@ -571,42 +731,38 @@ macro( genLibLevelset )
   set(LEVELSET_VELOCITY_ORDER ${FEELMODELS_APP_LEVELSET_ORDER})
   endif()
   #######################################################
-  if(FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_ORDER)
-    set(LEVELSET_ADVECTION_DIFFUSION_REACTION_ORDER ${FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_ORDER})
-  else()
-    set(LEVELSET_ADVECTION_DIFFUSION_REACTION_ORDER ${LEVELSET_ORDERPOLY})
-  endif()
-  if(FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_CONTINUITY)
-    set(LEVELSET_ADVECTION_DIFFUSION_REACTION_CONTINUITY ${FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_CONTINUITY})
-  else()
-    set(LEVELSET_ADVECTION_DIFFUSION_REACTION_CONTINUITY Continuous)
-  endif()
-  #######################################################
 
   set(LEVELSET_LIB_VARIANTS ${LEVELSET_DIM}dP${LEVELSET_ORDERPOLY}P${LEVELSET_VELOCITY_ORDER}G${LEVELSET_ORDERGEO} )
   set(LEVELSET_LIB_NAME feelpp_toolbox_levelset_lib_${LEVELSET_LIB_VARIANTS})
 
-  if ( NOT TARGET ${LEVELSET_LIB_NAME} )
-    # configure the lib
-    set(LEVELSET_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/levelset/${LEVELSET_LIB_VARIANTS})
-    set(LEVELSET_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelset_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetadvection_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/parameter_map.cpp )
-    set(LEVELSET_CODEGEN_SOURCES
-      ${LEVELSET_LIB_DIR}/levelset_inst.cpp
-      ${LEVELSET_LIB_DIR}/levelsetadvection_inst.cpp
-      ${LEVELSET_LIB_DIR}/parameter_map.cpp )
-    set(LEVELSET_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
-    # generate the lib target
-    genLibBase(
-      LIB_NAME ${LEVELSET_LIB_NAME}
-      LIB_DIR ${LEVELSET_LIB_DIR}
-      LIB_DEPENDS ${LEVELSET_LIB_DEPENDS}
-      FILES_TO_COPY ${LEVELSET_CODEGEN_FILES_TO_COPY}
-      FILES_SOURCES ${LEVELSET_CODEGEN_SOURCES}
-      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetconfig.h.in
+  genLibLevelsetBase(
+      DIM               ${FEELMODELS_APP_DIM}
+      LEVELSET_ORDER    ${FEELMODELS_APP_LEVELSET_ORDER}
+      LEVELSET_PN_ORDER ${FEELMODELS_APP_LEVELSET_PN_ORDER}
+      GEO_ORDER         ${FEELMODELS_APP_GEO_ORDER}
       )
+
+  if ( NOT TARGET ${LEVELSET_LIB_NAME} )
+      # configure the lib
+      set(LEVELSET_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/levelset/${LEVELSET_LIB_VARIANTS})
+      set(LEVELSET_CODEGEN_FILES_TO_COPY
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelset_inst.cpp
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetadvection_inst.cpp
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/parameter_map.cpp )
+      set(LEVELSET_CODEGEN_SOURCES
+          ${LEVELSET_LIB_DIR}/levelset_inst.cpp
+          ${LEVELSET_LIB_DIR}/levelsetadvection_inst.cpp
+          ${LEVELSET_LIB_DIR}/parameter_map.cpp )
+      set(LEVELSET_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${LEVELSETBASE_LIB_NAME} )
+      # generate the lib target
+      genLibBase(
+          LIB_NAME ${LEVELSET_LIB_NAME}
+          LIB_DIR ${LEVELSET_LIB_DIR}
+          LIB_DEPENDS ${LEVELSET_LIB_DEPENDS}
+          FILES_TO_COPY ${LEVELSET_CODEGEN_FILES_TO_COPY}
+          FILES_SOURCES ${LEVELSET_CODEGEN_SOURCES}
+          CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetconfig.h.in
+          )
   endif()
 endmacro(genLibLevelset)
 #############################################################################
@@ -615,9 +771,9 @@ endmacro(genLibLevelset)
 #############################################################################
 
 macro(genLibMultiFluid)
-  PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;GEO_ORDER;FLUID_DENSITY_VISCOSITY_CONTINUITY;FLUID_DENSITY_VISCOSITY_ORDER;LEVELSET_ORDER;LEVELSET_PN_ORDER;LEVELSET_DIFFUSION_REACTION_ORDER;LEVELSET_DIFFUSION_REACTION_CONTINUITY"
-    ""
+    PARSE_ARGUMENTS(FEELMODELS_APP
+        "DIM;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;GEO_ORDER;FLUID_DENSITY_VISCOSITY_CONTINUITY;FLUID_DENSITY_VISCOSITY_ORDER;LEVELSET_ORDER;LEVELSET_PN_ORDER;LEVELSET_DIFFUSION_REACTION_ORDER;LEVELSET_DIFFUSION_REACTION_CONTINUITY"
+        ""
     ${ARGN}
     )
 
@@ -634,8 +790,6 @@ macro(genLibMultiFluid)
     U_ORDER      ${FEELMODELS_APP_FLUID_U_ORDER}
     P_ORDER      ${FEELMODELS_APP_FLUID_P_ORDER}
     P_CONTINUITY ${FEELMODELS_APP_FLUID_P_CONTINUITY}
-    DENSITY_VISCOSITY_CONTINUITY ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_CONTINUITY}
-    DENSITY_VISCOSITY_ORDER      ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_ORDER}
     )
   ###############################################################
   # levelset lib
@@ -645,8 +799,8 @@ macro(genLibMultiFluid)
     LEVELSET_PN_ORDER ${FEELMODELS_APP_LEVELSET_PN_ORDER}
     GEO_ORDER ${FEELMODELS_APP_GEO_ORDER}
     VELOCITY_ORDER ${FEELMODELS_APP_FLUID_U_ORDER}
-    ADVECTION_DIFFUSION_REACTION_ORDER ${FEELMODELS_APP_LEVELSET_DIFFUSION_REACTION_ORDER}
-    ADVECTION_DIFFUSION_REACTION_CONTINUITY ${FEELMODELS_APP_LEVELSET_DIFFUSION_REACTION_CONTINUITY}
+    #ADVECTION_DIFFUSION_REACTION_ORDER ${FEELMODELS_APP_LEVELSET_DIFFUSION_REACTION_ORDER}
+    #ADVECTION_DIFFUSION_REACTION_CONTINUITY ${FEELMODELS_APP_LEVELSET_DIFFUSION_REACTION_CONTINUITY}
     )
   ###############################################################
   # multifluid lib
@@ -715,9 +869,17 @@ macro( genLibThermoElectric )
     # configure the lib
     set(THERMOELECTRIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/thermoelectric/${THERMOELECTRIC_LIB_VARIANTS})
     set(THERMOELECTRIC_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectric_inst.cpp )
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectric_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectricassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectricassemblyjacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectricassemblyresidual_inst.cpp
+      )
     set(THERMOELECTRIC_CODEGEN_SOURCES
-      ${THERMOELECTRIC_LIB_DIR}/thermoelectric_inst.cpp )
+      ${THERMOELECTRIC_LIB_DIR}/thermoelectric_inst.cpp
+      ${THERMOELECTRIC_LIB_DIR}/thermoelectricassemblylinear_inst.cpp
+      ${THERMOELECTRIC_LIB_DIR}/thermoelectricassemblyjacobian_inst.cpp
+      ${THERMOELECTRIC_LIB_DIR}/thermoelectricassemblyresidual_inst.cpp
+      )
     set(THERMOELECTRIC_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
     set(THERMOELECTRIC_LIB_DEPENDS ${HEAT_LIB_NAME} ${ELECTRIC_LIB_NAME} ${THERMOELECTRIC_LIB_DEPENDS} )
     # generate the lib target
@@ -774,9 +936,17 @@ macro( genLibHeatFluid )
     # configure the lib
     set(HEATFLUID_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/heatfluid/${HEATFLUID_LIB_VARIANTS})
     set(HEATFLUID_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluid_inst.cpp )
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluid_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluidassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluidassemblyjacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluidassemblyresidual_inst.cpp
+      )
     set(HEATFLUID_CODEGEN_SOURCES
-      ${HEATFLUID_LIB_DIR}/heatfluid_inst.cpp )
+      ${HEATFLUID_LIB_DIR}/heatfluid_inst.cpp
+      ${HEATFLUID_LIB_DIR}/heatfluidassemblylinear_inst.cpp
+      ${HEATFLUID_LIB_DIR}/heatfluidassemblyjacobian_inst.cpp
+      ${HEATFLUID_LIB_DIR}/heatfluidassemblyresidual_inst.cpp
+      )
     set(HEATFLUID_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
     set(HEATFLUID_LIB_DEPENDS ${HEAT_LIB_NAME} ${FLUIDMECHANICS_LIB_NAME} ${HEATFLUID_LIB_DEPENDS} )
     # generate the lib target

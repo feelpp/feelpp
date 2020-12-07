@@ -834,7 +834,7 @@ struct minmaxData : public boost::tuple<double,double, Eigen::Matrix<double, Dim
     /**
      * coordinates of the points where  min and max are attained
      */
-    Eigen::Matrix<double, Dim,1> const& coords() const { return this->template get<2>(); }
+    Eigen::Matrix<double, Dim,2> const& coords() const { return this->template get<2>(); }
 
     /**
      * Serialization for minmaxData
@@ -891,8 +891,8 @@ BOOST_PARAMETER_FUNCTION(
 
     int indexmin = 0;
     int indexmax = 0;
-    double mine = 1e-30;
-    double maxe = 1e-30;
+    double mine = std::numeric_limits<double>::max();
+    double maxe = std::numeric_limits<double>::lowest();
 
     if ( e.data().size() )
     {

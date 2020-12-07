@@ -30,16 +30,7 @@
 #ifndef __ReducedBasisSpace_H
 #define __ReducedBasisSpace_H 1
 
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-
-#include <feel/feel.hpp>
 #include <feel/feelcrb/crb.hpp>
-
-#include <Eigen/Core>
-#include <Eigen/LU>
-#include <Eigen/Dense>
-#include <boost/timer.hpp>
 
 
 namespace Feel
@@ -578,6 +569,77 @@ public :
     void updateDualBasisForUse()
         {
             this->setDualBasisInSubSpace( M_dual_rb_basis, mpl::bool_<fespace_type::is_composite>() );
+        }
+
+    /**
+     * orthonormalize the reduced basis using Gram-Schmidt process.
+     * the tolerance is used to reiterate the process, by default we do not reiterate
+     * @param norm norm to use (L2, H1, dot)
+     * @param dual orthonormalize dual basis
+     * @param tol tolerance above which we reiterate the process
+     */
+    void orthonormalize(std::string const& norm = "L2", bool dual = false, double tol = 1000)
+        {
+            auto wn = dual ? this->dualRB() : this->primalRB();
+            auto N = wn.size();
+            if( N == 0 )
+                return;
+
+            auto mf = form2(_test=this->functionSpace(), _trial=this->functionSpace());
+            if( norm == "L2" || norm == "H1" )
+                mf = integrate(_range=elements(support(this->functionSpace())),
+                               _expr=inner(id(wn[0]), idt(wn[0])));
+            if( norm == "H1" )
+                mf += integrate(_range=elements(support(this->functionSpace())),
+                                _expr=inner(grad(wn[0]), gradt(wn[0])));
+            auto m = mf.matrixPtr();
+
+            double max;
+            int iter = 0;
+            do
+            {
+                for( size_type i = 0; i < N; ++i )
+                {
+                    auto & wni = unwrap_ptr( wn[i] );
+                    for( size_type j = 0; j < i; ++j )
+                    {
+                        auto const& wnj = unwrap_ptr( wn[j] );
+                        double pij;
+                        if( norm == "L2" || norm == "H1" )
+                            pij = m->energy( wni, wnj );
+                        else
+                            pij = dot( wni, wnj );
+                        wni.add( -pij, wnj );
+                    }
+                }
+                for( size_type i = 0; i < N; ++i )
+                {
+                    auto& wni = unwrap_ptr( wn[i] );
+                    double pii;
+                    if( norm == "L2" || norm == "H1" )
+                        pii = math::sqrt( m->energy( wni, wni ) );
+                    else
+                        pii = math::sqrt( dot(wni, wni ) );
+                    wni.scale( 1./pii );
+                }
+                max = 0;
+                for ( size_type i = 0; i < N; ++i )
+                {
+                    auto const & wni = unwrap_ptr( wn[i] );
+                    for ( size_type j = 0; j < i; ++j )
+                    {
+                        auto const& wnj = unwrap_ptr( wn[j] );
+                        double pij;
+                        if( norm == "L2" || norm == "H1" )
+                            pij = std::abs(m->energy( wni, wnj ) );
+                        else
+                            pij = std::abs(dot( wni, wnj ) );
+                        if( pij > max )
+                            max = pij;
+                    }
+                }
+                iter++;
+            } while(max > tol && iter < N);
         }
 
     //basis of RB space are elements of FEM function space

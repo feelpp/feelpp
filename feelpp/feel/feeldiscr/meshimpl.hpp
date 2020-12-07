@@ -45,6 +45,7 @@
 #include <feel/feelmesh/geoentity.hpp>
 #include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelmesh/simplex.hpp>
+#include <feel/feeldiscr/measures.hpp>
 
 namespace Feel
 {
@@ -138,8 +139,7 @@ void print( MeshT* m )
 // Constructor.
 template <typename Shape, typename T, int Tag, typename IndexT>
 Mesh<Shape, T, Tag, IndexT>::Mesh( std::string const& name, worldcomm_ptr_t const& worldComm, std::string const& props )
-    : super( worldComm ),
-      super2( "Mesh", name ),
+    : super( name, worldComm ),
       M_numGlobalElements( 0 ),
       M_gm( new gm_type ),
       M_gm1( Feel::meshdetail::initGm1<type>( M_gm, mpl::bool_<nOrder == 1>() ) ),
@@ -538,6 +538,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
     // compute h information: average, min and max
     {
         tic();
+#if 0
         M_h_avg = 0;
         M_h_min = std::numeric_limits<value_type>::max();
         M_h_max = 0;
@@ -558,7 +559,12 @@ void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
         M_h_avg = reduction[0];
         M_h_min = reduction[1];
         M_h_max = reduction[2];
-
+#else
+        auto [ havg, hmin, hmax ] = hMeasures( this->shared_from_this() );
+        M_h_avg = havg;
+        M_h_min = hmin;
+        M_h_max = hmax;
+#endif
         LOG( INFO ) << "h average : " << this->hAverage() << "\n";
         LOG( INFO ) << "    h min : " << this->hMin() << "\n";
         LOG( INFO ) << "    h max : " << this->hMax() << "\n";
@@ -2406,125 +2412,50 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
             continue;
         const rank_type ghosteltPid = ghostelt.processId();
         // update info for parallelism
-        //auto & eltModified = this->elementIterator( ghostelt )->second;
         elementGhostConnectPointToElement( ghostelt );
         if ( nDim == 3 )
             elementGhostConnectEdgeToElement( ghostelt );
 
-        // be sure that the counter start to 0
-        //if ( nDataInVecToSend.find(ghosteltPid) == nDataInVecToSend.end() )
-        //nDataInVecToSend[ghosteltPid]=0;
-
-        //const rank_type idProc = __element.processId();
         const size_type idEltInOtherPartition = ghostelt.idInOthersPartitions( ghosteltPid );
 
-        //memoryMsgToSend[ghosteltPid][nDataInVecToSend/*Bis*/[ghosteltPid]] = &ghostelt;
         memoryMsgToSend[ghosteltPid][dataToSend[ghosteltPid].size()] = std::addressof( ghostelt );
         // update container
-        //dataToSend[ghosteltPid][nDataInVecToSend/*Bis*/[ghosteltPid]].push_back( std::make_pair( ghostelt.id(),idEltInOtherPartition) );
         dataToSend[ghosteltPid].push_back( std::make_pair( ghostelt.id(), idEltInOtherPartition ) );
-
-        // update counter
-        //nDataInVecToSend[ghosteltPid]++;
     }
     //------------------------------------------------------------------------------------------------//
-#if 0
-    // init and resize the container to send
-    std::map< rank_type, std::vector<std::pair<size_type,size_type> > > dataToSend;
-    auto itNDataInVecToSend = nDataInVecToSend.begin();
-    auto const enNDataInVecToSend = nDataInVecToSend.end();
-    for ( ; itNDataInVecToSend!=enNDataInVecToSend ; ++itNDataInVecToSend )
-    {
-        const rank_type idProc = itNDataInVecToSend->first;
-        const int nData = itNDataInVecToSend->second;
-        dataToSend[idProc].resize( nData );
-    }
     //------------------------------------------------------------------------------------------------//
-
-    // prepare container to send
-    std::map< rank_type, std::map<int,element_type*/*size_type*/> > memoryMsgToSend;
-    std::map< rank_type, int > nDataInVecToSendBis;
-    iv = std::get<2>( rangeGhostElement )->begin();
-    for ( ; iv != en; ++iv )
-    {
-        element_type const& __element = *iv;
-        const rank_type idProc = __element.processId();
-        const size_type idEltInOtherPartition = __element.idInOthersPartitions( idProc );
-        // be sure that the counter start to 0
-        if ( nDataInVecToSendBis.find(idProc) == nDataInVecToSendBis.end() )
-            nDataInVecToSendBis[idProc]=0;
-        // save request
-        memoryMsgToSend[idProc][nDataInVecToSendBis[idProc]] = __element.id();
-        // update container
-        dataToSend[idProc][nDataInVecToSendBis[idProc]] = std::make_pair(__element.id(),idEltInOtherPartition);
-        // update counter
-        nDataInVecToSendBis[idProc]++;
-    }
-#endif
-    //------------------------------------------------------------------------------------------------//
-#if 0
-    // compute nbMsgToRecv
-    std::set<rank_type> procToRecv;
-    auto itEltActif = this->beginElementWithProcessId( MeshBase<IndexT>::worldComm().localRank() );
-    auto const enEltActif = this->endElementWithProcessId( MeshBase<IndexT>::worldComm().localRank() );
-    for ( ; itEltActif!=enEltActif ; ++itEltActif )
-    {
-        if (itEltActif->numberOfNeighborPartitions() == 0 ) continue;
-        auto itneighbor = itEltActif->neighborPartitionIds().begin();
-        auto const enneighbor = itEltActif->neighborPartitionIds().end();
-        for ( ; itneighbor!=enneighbor ; ++itneighbor )
-            procToRecv.insert(*itneighbor);
-    }
-    //------------------------------------------------------------------------------------------------//
-    // counter of request
-    int nbRequest=0;
-    for ( rank_type proc=0; proc<nProc; ++proc )
-    {
-        if ( dataToSend.find(proc) != dataToSend.end() )
-            ++nbRequest;
-        if ( procToRecv.find(proc) != procToRecv.end() )
-            ++nbRequest;
-    }
-    if ( nbRequest == 0 ) return;
-
-    mpi::request * reqs = new mpi::request[nbRequest];
-    int cptRequest=0;
-    //------------------------------------------------------------------------------------------------//
-    // first send
-    auto itDataToSend = dataToSend.begin();
-    auto const enDataToSend = dataToSend.end();
-    for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
-    {
-        reqs[cptRequest] = MeshBase<IndexT>::worldComm().localComm().isend( itDataToSend->first , 0, itDataToSend->second );
-        ++cptRequest;
-    }
-    //------------------------------------------------------------------------------------------------//
-    // first recv
-    std::map<rank_type,std::vector<std::pair<size_type,size_type> > > dataToRecv;
-    auto itProcToRecv = procToRecv.begin();
-    auto const enProcToRecv = procToRecv.end();
-    for ( ; itProcToRecv != enProcToRecv ; ++itProcToRecv )
-    {
-        const rank_type idProc = *itProcToRecv;
-        reqs[cptRequest] = MeshBase<IndexT>::worldComm().localComm().irecv( idProc , 0, dataToRecv[idProc] );
-        ++cptRequest;
-    }
-#else
     std::map<rank_type, std::vector<std::pair<size_type, size_type>>> dataToRecv;
     int neighborSubdomains = this->neighborSubdomains().size();
     int nbRequest = 2 * neighborSubdomains;
     mpi::request* reqs = new mpi::request[nbRequest];
     int cptRequest = 0;
-    // first send/recv
+
+    // get size of data to transfer
+    std::map<rank_type,size_type> sizeRecv;
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank] );
-        reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank] );
+        reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 0, (size_type)dataToSend[neighborRank].size() );
+        reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
     }
-#endif
+    // wait all requests
+    mpi::wait_all( reqs, reqs + cptRequest );
+
+    // first send/recv
+    cptRequest = 0;
+    for ( rank_type neighborRank : this->neighborSubdomains() )
+    {
+        int nSendData = dataToSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 2, &(dataToSend[neighborRank][0]), nSendData );
+
+        int nRecvData = sizeRecv[neighborRank];
+        dataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 2, &(dataToRecv[neighborRank][0]), nRecvData );
+    }
     //------------------------------------------------------------------------------------------------//
     // wait all requests
-    mpi::wait_all( reqs, reqs + nbRequest );
+    mpi::wait_all( reqs, reqs + cptRequest );
     //------------------------------------------------------------------------------------------------//
     // build the container to ReSend
     std::map<rank_type, std::vector<boost::tuple<resultghost_point_type, resultghost_edge_type, resultghost_face_type>>> dataToReSend;
@@ -2542,7 +2473,6 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
             if ( !this->hasElement( idEltOnProcess ) )
                 continue;
 
-            //auto const& theelt = this->element( idEltOnProcess );
             auto& theelt = this->elementIterator( idEltOnProcess )->second;
             theelt.setIdInOtherPartitions( idProc, idEltOtherProcess );
 
@@ -2601,40 +2531,28 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
         } // for ( int k=0; k<nDataRecv; ++k )
     }
     //------------------------------------------------------------------------------------------------//
-#if 0
-    // send respond to the request
-    cptRequest=0;
-    auto itDataToReSend = dataToReSend.begin();
-    auto const enDataToReSend = dataToReSend.end();
-    for ( ; itDataToReSend!=enDataToReSend ; ++itDataToReSend )
-    {
-        reqs[cptRequest] = MeshBase<IndexT>::worldComm().localComm().isend( itDataToReSend->first , 0, itDataToReSend->second );
-        ++cptRequest;
-    }
     //------------------------------------------------------------------------------------------------//
-    // recv the initial request
-    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_edge_type,resultghost_face_type>  > > finalDataToRecv;
-
-    itDataToSend = dataToSend.begin();
-    for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
-    {
-        const rank_type idProc = itDataToSend->first;
-        reqs[cptRequest] = MeshBase<IndexT>::worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc] );
-        ++cptRequest;
-    }
-#else
     std::map<rank_type, std::vector<boost::tuple<resultghost_point_type, resultghost_edge_type, resultghost_face_type>>> finalDataToRecv;
     cptRequest = 0;
     // second send/recv
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
+#if 0
         reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 0, dataToReSend[neighborRank] );
         reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 0, finalDataToRecv[neighborRank] );
-    }
+#else
+        int nSendData = dataToReSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 1, &(dataToReSend[neighborRank][0]), nSendData );
+
+        int nRecvData = dataToSend[neighborRank].size();
+        finalDataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 1, &(finalDataToRecv[neighborRank][0]), nRecvData );
 #endif
-    //------------------------------------------------------------------------------------------------//
+    }
     // wait all requests
-    mpi::wait_all( reqs, reqs + nbRequest );
+    mpi::wait_all( reqs, reqs + cptRequest/*nbRequest*/ );
     // delete reqs because finish comm
     delete[] reqs;
     //------------------------------------------------------------------------------------------------//

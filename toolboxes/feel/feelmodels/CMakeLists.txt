@@ -30,6 +30,7 @@ add_subdirectory(modelcore)
 add_subdirectory(modelalg)
 add_subdirectory(modelmesh)
 add_subdirectory(modelvf)
+add_subdirectory(modelmaterials)
 
 
 add_custom_target(feelpp-models-algebra)
@@ -64,6 +65,9 @@ endif()
 if ( FEELPP_TOOLBOXES_ENABLE_FSI )
   add_subdirectory(fsi)
 endif()
+
+add_subdirectory(coefficientformpdes)
+
 if ( FEELPP_TOOLBOXES_ENABLE_ADVECTION )
   add_subdirectory(advection)
 endif()

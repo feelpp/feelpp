@@ -111,7 +111,7 @@ runApplicationThermoElectric()
                                _quad=quadError, _quad1=quadError );
         errT[2*i+1] = normH1( Th->template rangeElements<0>(),
                               _expr=idv(T_h)-tExpr,
-                              _grad_expr=gradv(T_h)-grad<3>(tExpr),
+                              _grad_expr=gradv(T_h)-grad<mesh_type::nRealDim>(tExpr),
                               _quad=quadError, _quad1=quadError );
         errRelT[2*i+1] = errT[2*i+1]/normT[2*i+1];
         if( e->doExport() )
@@ -136,7 +136,7 @@ runApplicationThermoElectric()
                                _quad=quadError, _quad1=quadError );
         errV[2*i+1] = normH1( _range=Vh->template rangeElements<0>(),
                               _expr=idv(V_h)-idv(V_ex),
-                              _grad_expr=gradv(V_h)-grad<3>(vExpr),
+                              _grad_expr=gradv(V_h)-grad<mesh_type::nRealDim>(vExpr),
                               _quad=quadError, _quad1=quadError );
         errRelV[2*i+1] = errV[2*i+1]/normV[2*i+1];
         if( e->doExport() )
@@ -162,7 +162,7 @@ runApplicationThermoElectric()
                                    _quad=quadError, _quad1=quadError );
             errC[2*i+1] = normH1( _range=Ch->template rangeElements<0>(),
                                   _expr=idv(C_h)-idv(C_ex),
-                                  _grad_expr=gradv(C_h)-grad(cExpr),
+                                  _grad_expr=gradv(C_h)-grad<mesh_type::nRealDim>(cExpr),
                                   _quad=quadError, _quad1=quadError );
             errRelC[2*i+1] = errC[2*i+1]/normC[2*i+1];
             if( e->doExport() )

@@ -26,7 +26,7 @@
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
-
+#include <feel/feelcore/json.hpp>
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feelmodels/modelmodels.hpp>
 #include <feel/feelmodels/modelparameters.hpp>
@@ -48,6 +48,14 @@ class FEELPP_EXPORT ModelProperties : public CommObject
 public:
     using super = CommObject;
     ModelProperties( std::string const& filename = Environment::expand(soption("mod-file")),
+                     std::string const& directoryLibExpr = "",
+                     worldcomm_ptr_t const& world = Environment::worldCommPtr(),
+                     std::string const& prefix="" );
+    ModelProperties( pt::ptree const& pt,
+                     std::string const& directoryLibExpr = "",
+                     worldcomm_ptr_t const& world = Environment::worldCommPtr(),
+                     std::string const& prefix="" );
+    ModelProperties( nl::json const& j,
                      std::string const& directoryLibExpr = "",
                      worldcomm_ptr_t const& world = Environment::worldCommPtr(),
                      std::string const& prefix="" );
@@ -79,7 +87,18 @@ public:
     BoundaryConditions & boundaryConditions()  { return M_bc; }
     BoundaryConditions const& boundaryConditions() const { return M_bc; }
 
-    ModelBoundaryConditions & boundaryConditions2() { return M_bc2; }
+    /**
+     * enable BoundaryConditions2 class as a simplified BC class
+     * @return ModelProperties reference for chaining
+     */
+    ModelProperties& enableBoundaryConditions2();
+    
+    ModelBoundaryConditions & boundaryConditions2() 
+    { 
+      if ( !M_bc2_enabled ) 
+        throw std::logic_error("BoundaryConditions2 are not enabled, call enableBoundaryConditions2() first");   
+      return M_bc2; 
+    }
     ModelBoundaryConditions const& boundaryConditions2() const { return M_bc2; }
 
     ModelInitialConditions & initialConditions() { return M_ic; }
@@ -111,17 +130,22 @@ public:
      * @param[in] filename The file to save the current tree
      **/
     void write(std::string const &filename);
+  private :
+
+    void setup();
 
 private:
+    std::string M_prefix, M_directoryLibExpr;
     pt::ptree M_p;
 
-    std::string M_name, M_shortname, M_description, M_prefix, M_unit;
+    std::string M_name, M_shortname, M_description, M_unit;
     ModelModels M_models;
     ModelParameters M_params;
     ModelMaterials M_mat;
     BoundaryConditions M_bc;
     ModelInitialConditions M_ic;
     BoundaryConditions M_icDeprecated; // DEPRECATED
+    bool M_bc2_enabled = false;
     ModelBoundaryConditions M_bc2;
     ModelPostprocess M_postproc;
     ModelFunctions M_functions;

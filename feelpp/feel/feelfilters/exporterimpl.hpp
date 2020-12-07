@@ -175,7 +175,7 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
     if ( N == 1 && ( exportername == "ensight" ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
 #if defined(FEELPP_HAS_MPIIO)
-    else if ( N == 1 && ( exportername == "ensightgold"  ) )
+    else if ( N <= 2 && ( exportername == "ensightgold"  ) )
         exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
 #endif
     else if ( N == 1 && ( exportername == "exodus"  ) )
@@ -224,7 +224,7 @@ Exporter<MeshType, N>::New( std::string prefix, worldcomm_ptr_t const& worldComm
     if ( N == 1 && ( estr == "ensight"   ) )
         exporter = std::make_shared<ExporterEnsight<MeshType, N>>( prefix, worldComm );
 #if defined(FEELPP_HAS_MPIIO)
-    else if ( N == 1 && ( estr == "ensightgold"   ) )
+    else if ( N <= 2 && ( estr == "ensightgold"   ) )
         exporter = std::make_shared<ExporterEnsightGold<MeshType, N>>( prefix, worldComm );
 #endif
     else if ( N == 1 && ( estr == "exodus"   ) )
