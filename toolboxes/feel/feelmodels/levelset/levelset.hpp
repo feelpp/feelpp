@@ -397,6 +397,7 @@ public:
     // Measures quantities
     auto allMeasuresQuantities( std::string const& prefix = "" ) const
     {
+#if 0
         // TODO : we need to explicitly convert Eigen::Matrix to std::vector as
         // the begin and end iterators used in ModelNumerical::588 are only implemented from
         // Eigen v3.4 on (not released yet).
@@ -409,6 +410,10 @@ public:
         return hana::concat( super_type::allMeasuresQuantities( prefix ), hana::make_tuple(
                     ModelMeasuresQuantity( prefix, "velocity-com", std::bind( eigenToVec, std::bind( &self_type::velocityCOM, this ) ) )
                     ) );
+#endif
+        return Feel::FeelModels::modelMeasuresQuantities( super_type::allMeasuresQuantities( prefix ),
+                                                          modelMeasuresQuantity(prefix, "velocity-com", std::bind( &self_type::velocityCOM, this ) )
+                                                          );
     }
     //--------------------------------------------------------------------//
     // Export

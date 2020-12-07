@@ -34,6 +34,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/typetraits.hpp>
 
+#include <Eigen/Core>
 
 namespace Feel
 {
@@ -128,6 +129,14 @@ struct remove_std_vector<std::vector<T> >
 };
 template<typename T>
 using remove_std_vector_t = typename remove_std_vector<T>::type;
+
+
+template <typename T, typename = void>
+struct is_eigen_matrix : std::false_type {};
+template <typename T>
+struct is_eigen_matrix<T, std::void_t<Eigen::MatrixBase<T>> > : std::true_type {};
+template <typename T>
+inline constexpr bool is_eigen_matrix_v = is_eigen_matrix<T>::value;
 
 } // namespace Feel
 #endif

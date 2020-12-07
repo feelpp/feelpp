@@ -291,7 +291,7 @@ public:
 
     sparse_matrix_ptrtype newIdentityMatrix( datamap_ptrtype const& domainmap, datamap_ptrtype const& imagemap )
     {
-        graph_ptrtype sparsity_graph( new graph_type( imagemap,imagemap ) );
+        graph_ptrtype sparsity_graph( new graph_type( imagemap,domainmap ) );
         sparsity_graph->addMissingZeroEntriesDiagonal();
         sparsity_graph->close();
         sparse_matrix_ptrtype mat = this->newMatrix(0,0,0,0,sparsity_graph);

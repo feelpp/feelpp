@@ -217,8 +217,8 @@ class Heat : public ModelNumerical,
                 return this->exportResults( time, this->modelFields(), symbolsExpr, this->exprPostProcessExports( symbolsExpr ) );
             }
 
-        template <typename ModelFieldsType,typename SymbolsExpr>
-        void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr );
+        template <typename ModelFieldsType,typename SymbolsExpr, typename ModelMeasuresQuantitiesType>
+        void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities );
 
         //___________________________________________________________________________________//
         // export expressions
@@ -443,6 +443,18 @@ class Heat : public ModelNumerical,
     private :
         void updateTimeStepCurrentResidual();
 
+        auto modelMeasuresQuantities( std::string const& prefix = "" ) const
+            {
+#if 0
+                return Feel::FeelModels::modelMeasuresQuantities( modelMeasuresQuantity( prefix, "q1", 3.1 ),
+                                                                  modelMeasuresQuantity( prefix, "q2", std::vector<double>({3.8,3.9,3.10}) ),
+                                                                  modelMeasuresQuantity( prefix, "q3", eigen_matrix_type<nDim, nDim>::Constant(5.0) )
+                                                                  //modelMeasuresQuantity( prefix, "q4", std::bind( &self_type::volume, this ) )
+                                                                  );
+#endif
+                return model_measures_quantities_empty_t{};
+            }
+
     protected :
 
         elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
@@ -527,7 +539,7 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, ModelFieldsTy
     this->timerTool("PostProcessing").start();
 
     this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
-    this->executePostProcessMeasures( time, mfields, symbolsExpr );
+    this->executePostProcessMeasures( time, mfields, symbolsExpr, this->modelMeasuresQuantities() );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), mfields );
 
     this->timerTool("PostProcessing").stop("exportResults");
@@ -541,9 +553,9 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, ModelFieldsTy
 }
 
 template< typename ConvexType, typename BasisTemperatureType>
-template <typename ModelFieldsType, typename SymbolsExpr>
+template <typename ModelFieldsType, typename SymbolsExpr, typename ModelMeasuresQuantitiesType>
 void
-Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
+Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities )
 {
     bool hasMeasure = false;
 
@@ -562,7 +574,8 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
     bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
     bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
     bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
-    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
+    bool hasMeasureQuantity = this->updatePostProcessMeasuresQuantities( mquantities, symbolsExpr );
+    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint || hasMeasureQuantity )
         hasMeasure = true;
 
     if ( hasMeasure )

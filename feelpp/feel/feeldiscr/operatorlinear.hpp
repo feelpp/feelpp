@@ -134,6 +134,7 @@ public:
     void setName( std::string name ) { M_name = name; }
     std::string name() const { return M_name ; }
 
+    void setMatrix( matrix_ptrtype m ) { M_matrix = m; }
 
     // apply the operator: ie := Op de
     template<typename Storage>
