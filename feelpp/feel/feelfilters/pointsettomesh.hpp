@@ -142,7 +142,7 @@ public:
         M_vertices( p.M_vertices )
     {}
 
-    ~PointSetToMesh()
+    ~PointSetToMesh() override
     {}
 
     //@}
@@ -184,7 +184,7 @@ public:
      * visit the point set \p pset and transform it into a mesh data
      * structure using Delaunay triangulation
      */
-    void visit( pointset_type* pset )
+    void visit( pointset_type* pset ) override
     {
         visit( pset, mpl::int_<nDim>() );
     }

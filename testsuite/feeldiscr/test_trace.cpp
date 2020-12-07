@@ -92,7 +92,7 @@ public:
         shape( soption(_name="shape") )
     {}
 
-    void run();
+    void run() override;
 
 private:
 
