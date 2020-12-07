@@ -65,6 +65,8 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( filename )
     BOOST_PARAMETER_NAME( sep )
     BOOST_PARAMETER_NAME( directory )
+    BOOST_PARAMETER_NAME( chdir )
+    BOOST_PARAMETER_NAME( config )
     BOOST_PARAMETER_NAME( subdir )
     BOOST_PARAMETER_NAME( format )
     BOOST_PARAMETER_NAME( argc )
@@ -317,8 +319,14 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( only_on_boundary_faces )
     BOOST_PARAMETER_NAME( view )
 
-
-
+    //BOOST_PARAMETER_NAME( solution )
+    BOOST_PARAMETER_NAME( solution_key )
+    BOOST_PARAMETER_NAME( gradient )
+    BOOST_PARAMETER_NAME( gradient_key )
+    BOOST_PARAMETER_NAME( inputs )
+    BOOST_PARAMETER_NAME( script )
+    BOOST_PARAMETER_NAME( use_script )
+    BOOST_PARAMETER_NAME( compute_pde_coefficients )
 } // Feel
 
 

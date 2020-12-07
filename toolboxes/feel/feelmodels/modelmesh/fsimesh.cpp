@@ -57,6 +57,7 @@ template< class ConvexType >
 void
 FSIMesh<ConvexType>::buildFSIMeshFromMsh()
 {
+#if 0
     if ( this->worldComm().isMasterRank() )
         std::cout << "[FSIMesh] : buildFSIMeshFromMsh start" << std::endl;
 
@@ -85,6 +86,7 @@ FSIMesh<ConvexType>::buildFSIMeshFromMsh()
 
     if ( this->worldComm().isMasterRank() )
         std::cout << "[FSIMesh] : buildFSIMeshFromMsh finish" << std::endl;
+#endif
 }
 
 //-------------------------------------------------------------------------------------------------//
@@ -93,6 +95,7 @@ template< class ConvexType >
 void
 FSIMesh<ConvexType>::buildFSIMeshFromGeo()
 {
+#if 0
     if ( this->worldComm().isMasterRank() )
         std::cout << "[FSIMesh] : buildFSIMeshFromGeo start" << std::endl;
 
@@ -179,7 +182,7 @@ FSIMesh<ConvexType>::buildFSIMeshFromGeo()
 
     if ( this->worldComm().isMasterRank() )
         std::cout << "[FSIMesh] : buildFSIMeshFromGeo finish" << std::endl;
-
+#endif
 } // buildFSImesh
 
 
@@ -240,7 +243,8 @@ FSIMesh<ConvexType>::buildMeshesPartitioning()
                       << "Write : " << this->mshPathFluidPartN() <<"\n";
             auto fluidmeshSeq = loadMesh(_mesh=new mesh_type(this->worldComm().subWorldCommSeqPtr()), _savehdf5=0,
                                          _filename=this->mshPathFluidPart1().string(),
-                                         _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
+                                         _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES),
+                                         _straighten=false );
             PartitionIO<mesh_fluid_type> iofluid( this->mshPathFluidPartN().string() );
             iofluid.write( partitionMesh( fluidmeshSeq,  this->nPartitions() ) );
         }
@@ -252,7 +256,8 @@ FSIMesh<ConvexType>::buildMeshesPartitioning()
                       << "Write : " << this->mshPathSolidPartN() <<"\n";
             auto solidmeshSeq = loadMesh(_mesh=new mesh_type(this->worldComm().subWorldCommSeqPtr()), _savehdf5=0,
                                          _filename=this->mshPathSolidPart1().string(),
-                                         _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
+                                         _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES),
+                                         _straighten=false );
             PartitionIO<mesh_solid_type> iosolid( this->mshPathSolidPartN().string() );
             iosolid.write( partitionMesh( solidmeshSeq,  this->nPartitions() ) );
         }

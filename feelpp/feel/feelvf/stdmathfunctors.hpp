@@ -221,6 +221,41 @@ sign( T const& x )
                                                                         \
         expression_1_type const& expression() const { return M_expr_1; } \
                                                                         \
+        void setParameterValues( std::map<std::string,value_type> const& mp ) \
+        {                                                               \
+            M_expr_1.setParameterValues( mp );                          \
+        }                                                               \
+        void updateParameterValues( std::map<std::string,double> & pv ) const \
+        {                                                               \
+            M_expr_1.updateParameterValues( pv );                       \
+        }                                                               \
+                                                                        \
+        template <typename SymbolsExprType>                             \
+            auto applySymbolsExpr( SymbolsExprType const& se ) const    \
+        {                                                               \
+            return VF_FUNC_SYMBOL( O ) ( M_expr_1.applySymbolsExpr( se ) ); \
+        }                                                               \
+                                                                        \
+        template <typename TheSymbolExprType>                           \
+            bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const \
+        {                                                               \
+            return M_expr_1.hasSymbolDependency( symb, se );            \
+        }                                                               \
+                                                                        \
+        template <typename TheSymbolExprType>                           \
+            void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const \
+        {                                                               \
+            M_expr_1.dependentSymbols( symb,res,se );                   \
+        }                                                               \
+                                                                        \
+        template <int diffOrder, typename TheSymbolExprType>            \
+            auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr, \
+                       TheSymbolExprType const& se ) const              \
+        {                                                               \
+            CHECK( false ) << "TODO";                                   \
+            return *this;                                               \
+        }                                                               \
+                                                                        \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \
         {                                                               \
@@ -432,6 +467,44 @@ sign( T const& x )
                                                                         \
         expression_1_type const& expression1() const { return M_expr_1; } \
         expression_2_type const& expression2() const { return M_expr_2; } \
+                                                                        \
+        void setParameterValues( std::map<std::string,value_type> const& mp ) \
+        {                                                               \
+            M_expr_1.setParameterValues( mp );                          \
+            M_expr_2.setParameterValues( mp );                          \
+        }                                                               \
+        void updateParameterValues( std::map<std::string,double> & pv ) const \
+        {                                                               \
+            M_expr_1.updateParameterValues( pv );                       \
+            M_expr_2.updateParameterValues( pv );                       \
+        }                                                               \
+                                                                        \
+        template <typename SymbolsExprType>                             \
+            auto applySymbolsExpr( SymbolsExprType const& se ) const    \
+        {                                                               \
+            return VF_FUNC_SYMBOL( O ) ( M_expr_1.applySymbolsExpr( se ), M_expr_2.applySymbolsExpr( se ) ); \
+        }                                                               \
+                                                                        \
+        template <typename TheSymbolExprType>                           \
+            bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const \
+        {                                                               \
+            return M_expr_1.hasSymbolDependency( symb, se ) || M_expr_2.hasSymbolDependency( symb, se ); \
+        }                                                               \
+                                                                        \
+        template <typename TheSymbolExprType>                           \
+            void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const \
+        {                                                               \
+            M_expr_1.dependentSymbols( symb,res,se );                   \
+            M_expr_2.dependentSymbols( symb,res,se );                   \
+        }                                                               \
+                                                                        \
+        template <int diffOrder, typename TheSymbolExprType>            \
+            auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr, \
+                       TheSymbolExprType const& se ) const              \
+        {                                                               \
+            CHECK( false ) << "TODO";                                   \
+            return *this;                                               \
+        }                                                               \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \

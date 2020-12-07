@@ -26,6 +26,7 @@
 #include <feel/feelcore/checker.hpp>
 #include <feel/feelmath/polyfit.hpp>
 #include <feel/feelmath/vector.hpp>
+#include <feel/feelpython/pyexpr.hpp>
 
 namespace Feel {
 
@@ -160,18 +161,20 @@ hp::operator()( std::string const& sol, std::pair<std::string,double> const& r, 
 
 
 } // rate
-
+#if 0
 Checker
-checker( std::string const& s, std::string const& p )
+checker( std::string const& c_name, std::string const& solution, std::string const& gradient )
 {
-    if ( p.empty() && soption("checker.solution" ).empty() )
+    if ( solution.empty() && soption("checker.solution" ).empty() )
         throw std::logic_error("Invalid setup of Checker system, no solution provided");
-    auto sol = p.empty()?soption("checker.solution" ):p;
-    Checker c{s};
-    c.setSolution( sol );
+    auto sol = solution.empty()?soption("checker.solution" ):solution;
+    Checker c{c_name};
+    c.setSolution( solution );
+    if ( !gradient.empty() || !soption("checker.gradient" ).empty() )
+        c.setGradient( gradient.empty()?soption("checker.gradient" ):gradient );
     return c;
 }
-
+#endif
 Checker::Checker( std::string const& name )
     :
     super( "Checker", name ),
@@ -181,6 +184,31 @@ Checker::Checker( std::string const& name )
     M_etol( doption("checker.tolerance.exact" ) ),
     M_otol( doption("checker.tolerance.order" ) )
 {
+}
+
+void
+Checker::setScript( std::string const& s, variables_t const& in, bool u )
+{
+    M_use_script = u;
+    M_script_in = in;
+    M_script = s;
+}
+Checker::variables_t
+Checker::runScript()
+{
+    variables_t locals{ M_script_in };
+    locals[M_solution_key]=M_solution;
+    if ( M_gradient )
+        locals[M_gradient_key]=*M_gradient;
+    else
+        locals[M_gradient_key]="";
+    std::cout << "gradient(" << M_gradient_key << "):" << locals[M_gradient_key] << std::endl;
+    locals["compute_pde_coefficients"]=boption("checker.compute-pde-coefficients")?"true":"false";
+    Feel::pyexprFromFile( Environment::expand(M_script), locals );
+    std::cout << "gradient 2:" << locals[M_gradient_key] << std::endl;
+    M_solution=locals[M_solution_key];
+    M_gradient=locals[M_gradient_key];
+    return locals;
 }
 
 }

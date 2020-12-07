@@ -24,36 +24,8 @@
 #
 # setup pyfeelpp-mor
 
-OPTION(FEELPP_ENABLE_PYFEELPP_MOR "Enable PyFeel++ for MOR" ON  )
-if (FEELPP_ENABLE_PYFEELPP_MOR) 
-  message(STATUS "Enabling PyFeel++ MOR" )
-   # additional cmake args can be necessary for paraview
-  set(PYFEELPP_SETUP_HAS_PARAVIEW_CMAKE_ARGS 0)
-  set(PYFEELPP_SETUP_PARAVIEW_CMAKE_ARGS "[]")
-  if ( FEELPP_HAS_PARAVIEW AND PARAVIEW_ENABLE_QT_SUPPORT )
-    if (PARAVIEW_QT_VERSION VERSION_GREATER "4")
-      set(PYFEELPP_SETUP_HAS_PARAVIEW_CMAKE_ARGS 1)
-      set(PYFEELPP_SETUP_PARAVIEW_CMAKE_ARGS "['-DQt${PARAVIEW_QT_VERSION}_DIR=${Qt${PARAVIEW_QT_VERSION}_DIR}']")
-    else()
-      # TODO QT4
-    endif()
-  endif()
-
-  set(FEELPP_MOR_DIR ${CMAKE_INSTALL_PREFIX})
-
-  set(SETUP_MOR_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup-mor.py")
-  set(SETUP_MOR_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup-mor.py")
-  set(PYFEELPP_MOR_PYTHONPATH $ENV{PYTHONPATH})
-  configure_file(${SETUP_MOR_PY_IN} ${SETUP_MOR_PY})
-  set(PYFEELPP_MOR_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages/)
-  install(DIRECTORY DESTINATION ${PYFEELPP_MOR_INSTALL_DIR})
-  install(
-    CODE "set(ENV{PYTHONPATH} \"${PYFEELPP_MOR_INSTALL_DIR}:$ENV{PYTHONPATH}\")"
-    CODE "
-      execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_MOR_PY} install  --prefix ${CMAKE_INSTALL_PREFIX} RESULT_VARIABLE ret )
-      if(ret EQUAL \"1\")
-         message( FATAL_ERROR \"pyfeelpp-mor setup.py bad exit status\")
-      endif()
-    "
-    )
+OPTION(FEELPP_ENABLE_PYFEELPP_MOR "Enable PyFeel++ MOR" ON  )
+if (FEELPP_ENABLE_PYFEELPP_MOR)
+  message(STATUS "Enabling pyfeelpp mor")
+  add_subdirectory(feelpp)
 endif()

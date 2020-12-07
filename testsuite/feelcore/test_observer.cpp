@@ -65,7 +65,7 @@ class Object2
         Object2( std::string name = "" ) :
             JournalWatcher( "Object2", name ) {}
 
-    void updateInformationObject( pt::ptree & p ) override
+    void updateInformationObject( pt::ptree & p ) const override
         {
             p.put( "a","1" );
             p.put( "b","2" );

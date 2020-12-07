@@ -22,8 +22,21 @@
 //! @date 03 May 2017
 //! @copyright 2017 Feel++ Consortium
 //!
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/checker.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/thch.hpp>
+#include <feel/feeldiscr/p2ch.hpp>
+#include <feel/feeldiscr/traits.hpp>
+#include <feel/feeldiscr/check.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <tabulate/table.hpp>
+#include <feel/feelpython/pyexpr.hpp>
+#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/print.hpp>
 
+///[stokes]
 template<typename SpacePtrType>
 int
 stokes(SpacePtrType Vh)
@@ -40,7 +53,7 @@ stokes(SpacePtrType Vh)
     auto q = U.template element<1>();
     auto mu = doption(_name="mu");
     auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f") );
-    auto thechecker = checker("qs_stokes");
+    auto thechecker = checker("qs_stokes",soption("checker.solution"));
     auto solution = expr<FEELPP_DIM,1>( thechecker.check()? thechecker.solution() : soption(_name="functions.g") );
     auto g = solution;
     toc("Vh");
@@ -88,33 +101,18 @@ stokes(SpacePtrType Vh)
     e->add( "ph", p );
     if ( thechecker.check() )
     {
-        v.on(_range=elements(mesh), _expr=solution );
-        e->add( "u", v );
+        e->add( "u", solution );
     }
     e->save();
     toc("Exporter");
     // end::export[]
 
-    // tag::check[]
-    // compute l2 and h1 norm of u-u_h where u=solution
-    auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
-        {
-            tic();
-            auto s = expr<FEELPP_DIM,1>(solution);
-            double l2 = normL2(_range=elements(mesh), _expr=idv(u)-s );
-            toc("L2 error norm");
-            tic();
-            double h1 = normH1(_range=elements(mesh), _expr=idv(u)-s, _grad_expr=gradv(u)-grad(s) );
-            toc("H1 error norm");
-            return { { "L2", l2 }, {  "H1", h1 } };
-        };
-    int status = thechecker.runOnce( norms, rate::hp( mesh->hMax(), Vh->template functionSpace<0>()->fe()->order() ) );
-    // end::check[]
-
-    return status;
+    return check( thechecker, u );
 }
+///[stokes]
 int main(int argc, char**argv )
 {
+    ///[stokes-env]
     using namespace Feel;
 	po::options_description laplacianoptions( "Stokes options" );
 	laplacianoptions.add_options()
@@ -128,11 +126,15 @@ int main(int argc, char**argv )
                    _about=about(_name="qs_stokes",
                                 _author="Feel++ Consortium",
                                 _email="feelpp-devel@feelpp.org"));
-
+    ///[stokes-env]
+    
     tic();
+    ///[stokes-mesh]
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
+    ///[stokes-mesh]
     toc("loadMesh");
 
+    ///[stokes-space]
     int status;
     if ( soption("space") == "P1P0" )
         status = stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<0,Scalar,Discontinuous>>( mesh ) );
@@ -143,5 +145,6 @@ int main(int argc, char**argv )
         // default P2P1: good space
         status = stokes( THch<1>( mesh ) );
     }
-    return !status;
+    ///[stokes-space]
+    return status;
 }

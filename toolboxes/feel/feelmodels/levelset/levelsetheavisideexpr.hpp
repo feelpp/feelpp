@@ -3,7 +3,6 @@
 
 namespace Feel {
 namespace FeelModels {
-//namespace vf {
 
 template<typename LSExprType, typename EpsExprType, int IMOrder>
 class LevelsetHeavisideExpr
@@ -206,7 +205,6 @@ levelsetHeaviside( LSExprT phi, EpsExprT eps )
     return Expr< lsheaviside_t >(  lsheaviside_t( phi, eps ) );
 }
 
-//}
 }
 }
 

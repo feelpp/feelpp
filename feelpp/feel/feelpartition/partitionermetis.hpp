@@ -46,7 +46,14 @@ public:
     /**
      * Constructor.
      */
-    PartitionerMetis () {}
+    PartitionerMetis() = default;
+
+    /**
+     * @brief Construct a new Partitioner Metis object
+     * 
+     * @param j json data
+     */
+    PartitionerMetis ( json const& j ): super(j) {}
 
     /**
      * Creates a new partitioner of this type 

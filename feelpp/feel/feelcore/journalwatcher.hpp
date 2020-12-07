@@ -56,6 +56,9 @@ public:
     explicit JournalWatcher( function_update_information_type const& func, std::string const& category = "", std::string const& name = "",
                              bool useDefaultNameIfEmpty = true, bool connect = JournalManager::journalAutoMode() );
 
+    //! Copy constructor
+    JournalWatcher( JournalWatcher const& jw );
+
     //! Default destructor.
     //! The (inherited) object is always disconnected from the journal during the
     //! destruction.
@@ -64,6 +67,7 @@ public:
         this->journalFinalize();
     }
     //! @}
+
 
     //! Getters
     //! @{
@@ -105,6 +109,9 @@ public:
     //! The disconnection is safe.
     void journalDisconnect();
 
+    //! update information object into p
+    virtual void updateInformationObject( pt::ptree & p ) const {}
+
     //! set information object
     void setInformationObject( pt::ptree const& informationObject )
         {
@@ -134,7 +141,6 @@ protected:
         {
             M_function_updateInformationObject( M_informationObject );
         }
-    virtual void updateInformationObject( pt::ptree & p ) {}
 
 private :
     //! Watch child properties and notify the manager.

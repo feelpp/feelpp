@@ -63,12 +63,12 @@ void f( int nparts )
     using namespace vf;
     auto e1 = normLinf( _range=elements(mesh), _pset=_Q<5>(), _expr=sin(2*constants::pi<double>()*Px()) );
     BOOST_CHECK_CLOSE( e1.value(), 1., 1e-1 );
-    BOOST_TEST_MESSAGE( "maximum absolute value atteined at " << e1.arg() );
+    BOOST_TEST_MESSAGE( "maximum absolute value reached at " << e1.arg() );
 
     BOOST_TEST_MESSAGE("Checking on faces...");
     auto e2 = normLinf( _range=boundaryfaces(mesh), _pset=_Q<5>(), _expr=sin(2*constants::pi<double>()*Px()) );
     BOOST_CHECK_CLOSE( e2.value(), 1., 1e-1 );
-    BOOST_TEST_MESSAGE( "maximum over boundary absolute value atteined at " << e2.template get<1>() );
+    BOOST_TEST_MESSAGE( "maximum over boundary absolute value reached at " << e2.template get<1>() );
 
     size_type nfaces = nelements( boundaryfaces(mesh), false);
     BOOST_TEST_MESSAGE("Checking on faces..." << nfaces );
@@ -76,8 +76,20 @@ void f( int nparts )
     auto e3 = minmax( _range=boundaryfaces(mesh), _pset=_Q<5>(), _expr=sin(2*constants::pi<double>()*Px()) );
     BOOST_CHECK_CLOSE( e3.min(), -1., 1e-1 );
     BOOST_CHECK_CLOSE( e3.max(), 1., 1e-1 );
-    BOOST_TEST_MESSAGE( "minimum over boundary absolute value atteined at " << e3.argmin() );
-    BOOST_TEST_MESSAGE( "maximum over boundary absolute value atteined at " << e3.argmax() );
+    BOOST_TEST_MESSAGE( "minimum over boundary absolute value reached at " << e3.argmin() );
+    BOOST_TEST_MESSAGE( "maximum over boundary absolute value reached at " << e3.argmax() );
+
+    auto e4 = minmax( _range=Feel::detail::elements( mesh, 0 ), _pset=_Q<5>(), _expr=cst(1.) );
+    BOOST_CHECK_CLOSE( e4.min(), 1., 1e-6 );
+    BOOST_CHECK_CLOSE( e4.max(), 1., 1e-6 );
+    BOOST_TEST_MESSAGE( "minimum in partition 0 reached at " << e4.argmin() );
+    BOOST_TEST_MESSAGE( "maximum in partition 0 reached at " << e4.argmax() );
+
+    auto e5 = minmax( _range=Feel::detail::elements( mesh, 0 ), _pset=_Q<5>(), _expr=cst(-1.) );
+    BOOST_CHECK_CLOSE( e5.min(), -1., 1e-6 );
+    BOOST_CHECK_CLOSE( e5.max(), -1., 1e-6 );
+    BOOST_TEST_MESSAGE( "minimum in partition 0 reached at " << e5.argmin() );
+    BOOST_TEST_MESSAGE( "maximum in partition 0 reached at " << e5.argmax() );
 
 }
 FEELPP_ENVIRONMENT_NO_OPTIONS

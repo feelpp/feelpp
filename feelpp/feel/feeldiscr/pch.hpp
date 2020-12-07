@@ -113,6 +113,25 @@ Pch( std::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> cons
                                                     _components=components );
 }
 
+#if !defined( FEELPP_INSTANTIATE )
+extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<0,Scalar>>>;
+extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<1,Scalar>>>;
+extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<2,Scalar>>>;
+extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<3,Scalar>>>;
+extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<0,Scalar>>>;
+extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<1,Scalar>>>;
+extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<2,Scalar>>>;
+extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<3,Scalar>>>;
+
+extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<0,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
+extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<1,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
+extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<2,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
+extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<3,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
+extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<0,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
+extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<1,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
+extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<2,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
+extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<3,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
+#endif
 
 } // Feel
 

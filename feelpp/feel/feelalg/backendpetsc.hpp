@@ -103,15 +103,10 @@ public:
                   worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() )
         :
         super( vm, prefix, worldComm ),
-        M_solver_petsc( vm, worldComm )
+        M_solver_petsc( prefix, worldComm, vm )
         //M_nl_solver_petsc( prefix,worldComm )
     {
         this->M_backend = BackendType::BACKEND_PETSC;
-
-        std::string _prefix = prefix;
-
-        if ( !_prefix.empty() )
-            _prefix += "-";
     }
     ~BackendPetsc();
     void clear();
@@ -291,6 +286,18 @@ public:
         //mat->setMatrixProperties( matrix_properties );
         mat->init( m, n, m_l, n_l, sparsity_graph );
 
+        return mat;
+    }
+
+    sparse_matrix_ptrtype newIdentityMatrix( datamap_ptrtype const& domainmap, datamap_ptrtype const& imagemap )
+    {
+        graph_ptrtype sparsity_graph( new graph_type( imagemap,domainmap ) );
+        sparsity_graph->addMissingZeroEntriesDiagonal();
+        sparsity_graph->close();
+        sparse_matrix_ptrtype mat = this->newMatrix(0,0,0,0,sparsity_graph);
+        auto vecDiag = this->newVector( imagemap );
+        vecDiag->setConstant( 1. );
+        mat->setDiagonal( vecDiag );
         return mat;
     }
 

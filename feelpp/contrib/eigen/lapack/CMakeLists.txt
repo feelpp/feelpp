@@ -94,6 +94,7 @@ add_library(eigen_lapack_static ${EigenLapack_SRCS} ${ReferenceLapack_SRCS})
 add_library(eigen_lapack SHARED ${EigenLapack_SRCS})
 
 target_link_libraries(eigen_lapack  eigen_blas)
+target_link_libraries(eigen_lapack_static  eigen_blas_static)
 
 if(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO)
   target_link_libraries(eigen_lapack_static ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})

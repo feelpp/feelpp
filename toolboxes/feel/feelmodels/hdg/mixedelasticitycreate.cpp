@@ -11,6 +11,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::MixedElasticity( std::string const& prefix,
                                                       std::string const& subPrefix,
                                                       ModelBaseRepository const& modelRep )
     : super_type( prefix, worldComm, subPrefix, modelRep ),
+      ModelBase( prefix, worldComm, subPrefix, modelRep ),
       M_tauCst(doption (prefixvm(this->prefix(), "tau_constant") )),
       M_tauOrder(ioption( prefixvm(this->prefix(), "tau_order") )),
       M_hFace(ioption( prefixvm(this->prefix(), "hface")) ),

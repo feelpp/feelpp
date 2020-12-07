@@ -1,0 +1,163 @@
+{
+    "cpp": {
+        "default": "cpp17",
+        "description": "Select C++ standard 17 or 20",
+        "choices": {
+            "cpp17": {
+                "short": "Cpp17",
+                "long": "Select C++17 standard.",
+                "settings": {
+                    "FEELPP_STD_CPP": "17"
+                }
+            },
+            "cpp20": {
+                "short": "Cpp20",
+                "long": "Select C++20 standard.",
+                "settings": {
+                    "FEELPP_STD_CPP": "20"
+                }
+            }
+        }
+    },
+    "toolboxes": {
+        "default": "toolboxes",
+        "description": "Enable/Disable Feel++ Toolboxes build",
+        "choices": {
+            "toolboxes": {
+                "short": "Toolboxes",
+                "long": "Enable Feel++ Toolboxes.",
+                "settings": {
+                    "FEELPP_ENABLE_TOOLBOXES": "ON"
+                }
+            },
+            "notoolboxes": {
+                "short": "No Toolboxes",
+                "long": "Disable Feel++ toolboxes.",
+                "settings": {
+                    "FEELPP_ENABLE_TOOLBOXES": "OFF"
+                }
+            }
+        }
+    },
+    "mor": {
+        "default": "nomor",
+        "description": "Enable/Disable Feel++ MOR build",
+        "choices": {
+            "mor": {
+                "short": "MOR",
+                "long": "Enable Feel++ MOR.",
+                "settings": {
+                    "FEELPP_ENABLE_MOR": "ON"
+                }
+            },
+            "nomor": {
+                "short": "No MOR",
+                "long": "Disable Feel++ MOR.",
+                "settings": {
+                    "FEELPP_ENABLE_MOR": "OFF"
+                }
+            }
+        }
+    },
+    "buildType": {
+        "default": "debug",
+        "description": "The build type.",
+        "choices": {
+            "debug": {
+                "short": "Debug",
+                "long": "Disable optimizations - include debug information.",
+                "buildType": "Debug"
+            },
+            "debug-full": {
+                "short": "DebugFull",
+                "long": "Disable optimizations - include full debug information.",
+                "buildType": "DebugFull"
+            },
+            "asan": {
+                "short": "Asan",
+                "long": "Instrument with Address Sanitizer.",
+                "buildType": "Asan"
+            },
+            "coverage": {
+                "short": "Coverage",
+                "long": "Enable coverage reporting in Clang/GCC.",
+                "buildType": "Coverage"
+            },
+            "release": {
+                "short": "Release",
+                "long": "Optimize for speed - exclude debug information.",
+                "buildType": "Release"
+            },
+            "minsize": {
+                "short": "MinSizeRel",
+                "long": "Optimize for smallest binary size - exclude debug information.",
+                "buildType": "MinSizeRel"
+            },
+            "reldeb": {
+                "short": "RelWithDebInfo",
+                "long": "Optimize for speed - include debug information.",
+                "buildType": "RelWithDebInfo"
+            }
+        }
+    },
+    "webserver": {
+        "default": "no",
+        "description": "Enable/Disable the Web Server REST API.",
+        "choices": {
+            "sws": {
+                "short": "SimpleWebServer",
+                "long": "Use Simple Web Server for the REST API.",
+                "settings": {
+                    "FEELPP_ENABLE_SIMPLE_WEB_SERVER": "ON"
+                }
+            },
+            "nosws": {
+                "short": "No SimpleWebServer",
+                "long": "Do not enable Simple Web Server for the REST API.",
+                "settings": {
+                    "FEELPP_ENABLE_SIMPLE_WEB_SERVER": "OFF"
+                }
+            }
+        }
+    },
+    "doxygen": {
+        "default": "nodoxygen",
+        "description": "Enable/Disable Doxygen API docs build",
+        "choices": {
+            "doxygen": {
+                "short": "Doxygen",
+                "long": "Enable Doxygen to build the API Docs.",
+                "settings": {
+                    "FEELPP_ENABLE_DOXYGEN": "ON"
+                }
+            },
+            "nodoxygen": {
+                "short": "No Doxygen",
+                "long": "Disable Doxygen to build the API Docs.",
+                "settings": {
+                    "FEELPP_ENABLE_DOXYGEN": "OFF"
+                }
+            }
+        }
+    },
+    "matplot": {
+        "default": "nomatplot",
+        "description": "Enable/Disable MatPlot++",
+        "choices": {
+            "matplot": {
+                "short": "MatPlot",
+                "long": "Enable MatPlot++ for data visualisation.",
+                "settings": {
+                    "FEELPP_ENABLE_MATPLOT": "ON"
+                }
+            },
+            "nomatplot": {
+                "short": "No MatPlot",
+                "long": "Disable MatPlot++ for data visualisation.",
+                "settings": {
+                    "FEELPP_ENABLE_MATPLOT": "OFF"
+                }
+            }
+        }
+    }
+}

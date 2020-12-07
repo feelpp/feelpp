@@ -28,14 +28,20 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelmesh/partitionmesh.hpp>
+#include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/partitionio.hpp>
+#include <feel/feelmesh/remesh.hpp>
+#include <feel/feelcore/json.hpp>
+
 //#include <feel/feelfilters/savegmshmesh.hpp>
+#include "dump.hpp"
 
 namespace Feel {
 
+namespace nl = nlohmann;
 
 template <typename ShapeType>
-void partition( std::vector<int> const& nParts)
+void partition( std::vector<int> const& nParts, nl::json const& partconfig )
 {
     typedef Mesh<ShapeType> mesh_type;
 
@@ -47,31 +53,42 @@ void partition( std::vector<int> const& nParts)
 
         tic();
         size_type update_ = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED;
-        if ( boption( "sc.ibc_partitioning" ) )
+        if ( partconfig && partconfig["partitioner"].contains( "aggregates" ) ) //boption( "sc.ibc_partitioning" ) )
             update_ |= MESH_UPDATE_FACES_MINIMAL;
         auto mesh = loadMesh(_mesh=new mesh_type(Environment::worldCommSeqPtr()), _savehdf5=0,
                              _filename=inputPathMesh.string(),
                              _update=update_,
                              _straighten=false );
-                             //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
-                             //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
+        //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
+        //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
         toc("loading mesh done",FLAGS_v>0);
 
-        std::cout << "      number of elements in memory : " << mesh->numGlobalElements() << std::endl;
-        std::cout << "      number of faces in memory : " << mesh->numGlobalFaces() << std::endl;
-        if ( mesh_type::nDim == 3 )
-            std::cout << "      number of edges in memory : " << mesh->numGlobalEdges() << std::endl;
-        std::cout << "      number of points  in memory : " << mesh->numGlobalPoints() << std::endl;
-        for( auto marker: mesh->markerNames() )
+        if constexpr ( is_simplex_v<ShapeType> )
         {
-            auto name = marker.first;
-            auto data = marker.second;
-            if ( data[1] == mesh->dimension()-1 )
+            if ( boption( "remesh" ) )
             {
-                size_type nelts = nelements( markedfaces(mesh, name ), true );
-                std::cout << "      number of marked faces " << name << " with tag " << data[0] << " : " << nelts << std::endl;
+                auto Xh = Pch<1>( mesh );
+                auto met = Xh->element();
+                if ( !soption( "remesh.metric" ).empty() )
+                    met.on( _range=elements(mesh), _expr=expr(soption("remesh.metric")) );
+                else
+                {
+                    auto [ havg, hmin, hmax ] = hMeasures( mesh );
+                    std::map<std::string, double> hs { {"havg",havg },{"hmin",hmin },{"hmax",hmax } };
+                    double h_ = hs.at("hmax");
+                    if ( hs.count( soption("remesh.h") ) )
+                        h_=hs.at( soption("remesh.h"));
+                    met.on( _range=elements(mesh), _expr=cst(h_)  );
+                }
+                auto r =  remesher( mesh );
+    
+                r.setMetric( met );
+                auto out = r.execute();
+                out->updateForUse();
+                mesh = out;
             }
         }
+        dump(mesh);
 
         //saveGMSHMesh(_mesh=mesh,_filename="tototi.msh");
 
@@ -145,7 +162,7 @@ void partition( std::vector<int> const& nParts)
             tic();
             using io_t = PartitionIO<mesh_t<decltype(mesh)>>;
             io_t io( outputPathMesh );
-            io.write( partitionMesh( mesh, nPartition, partitionByRange ) );
+            io.write( partitionMesh( mesh, nPartition, partitionByRange, partconfig ) );
             toc("paritioning and save on disk done",FLAGS_v>0);
         }
     }

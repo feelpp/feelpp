@@ -73,6 +73,7 @@ class ReversePoint
 
 /**
  * @class GeoNDCommon
+ * @ingroup Mesh
  * @brief Common data shared in a collection of multi-dimensional geometrical entity.
  */
 template <typename GeoNDType>
@@ -181,6 +182,7 @@ private :
 
 /**
  * @class GeoND
+ * @ingroup Mesh
  * @brief Base class for Multi-dimensional basis Geometrical Entities.
  *
  */
@@ -974,6 +976,20 @@ class GeoND
     {
         return M_markers[1];
     }
+    Marker1 markerOr( uint16_type v = 0 ) const
+    {
+        if ( hasMarker() )
+            return M_markers.find( 1 )->second;
+        else
+            return Marker1{v};
+    }
+    Marker1 markerOr( uint16_type v = 0 )
+    {
+        if ( hasMarker() )
+            return M_markers[1];
+        else
+            return Marker1{v};
+    }
     void setMarker( flag_type v )
     {
         M_markers[1].assign( v );
@@ -1055,7 +1071,7 @@ class GeoND
                 return this->faceMeasureBIS( f );
             else
             {
-                                gm_ptrtype gm = this->gm();
+                gm_ptrtype gm = this->gm();
                 if ( !gm.use_count() )
                     gm = gm_ptrtype( new gm_type );
 
@@ -1064,6 +1080,13 @@ class GeoND
                 auto ctxf = gm->template context<vm::NORMAL | vm::KB | vm::JACOBIAN>( *this, pcf, f );
                 return this->computeFaceMeasureImpl( thequad, ctxf, f );
             }
+        }
+    Eigen::Matrix<value_type,numTopologicalFaces,1> faceMeasures() const
+        {
+            Eigen::Matrix<value_type,numTopologicalFaces,1> m;
+            for( int f = 0; f < numTopologicalFaces; ++f )
+                m( f ) = faceMeasure( f );
+            return m;
         }
 
     void setMeasurePointElementNeighbors( value_type meas )

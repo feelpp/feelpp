@@ -1,4 +1,4 @@
-build/
+build*/
 *.bak
 *.aux
 *.cppbck
@@ -131,3 +131,7 @@ autom4te.cache
 pyfeelpp-env
 projects
 *bak
+/build*
+feelpp/quickstart/laplacian/qs_laplacian/
+doc/api/DocCmakeLists.doc
+node_modules

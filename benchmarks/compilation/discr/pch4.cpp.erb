@@ -1,0 +1,13 @@
+#include <feel/feeldiscr/pch.hpp>
+
+using namespace Feel;
+int main( int argc, char** argv )
+{
+    
+    using mesh_t = Mesh<Simplex<<%= n %>>>;
+    auto mesh = std::make_shared<mesh_t>();
+#if defined(METABENCH)
+    auto Xh1=Pch<4>( mesh );
+#endif
+
+}

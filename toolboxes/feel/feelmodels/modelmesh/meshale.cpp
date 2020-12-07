@@ -297,13 +297,9 @@ template< class Convex >
 void
 MeshALE<Convex>::updateTimeStep()
 {
-    M_bdf_ale_identity->shiftRight( *M_identity_ale );
-    M_bdf_ale_velocity->shiftRight( *M_meshVelocity );
-    M_bdf_ale_displacement_ref->shiftRight( *M_displacement_ref );
-
-    M_bdf_ale_identity->next();
-    M_bdf_ale_velocity->next();
-    M_bdf_ale_displacement_ref->next();
+    M_bdf_ale_identity->next( *M_identity_ale );
+    M_bdf_ale_velocity->next( *M_meshVelocity );
+    M_bdf_ale_displacement_ref->next( *M_displacement_ref );
 }
 //------------------------------------------------------------------------------------------------//
 
@@ -329,7 +325,7 @@ MeshALE<Convex>::exportResults(double time)
     M_exporter_ref->step( time )->add( prefixvm(this->prefix(),"ref_dispOnMovingBoundary"),*this->displacementOnMovingBoundaryInRef());
     M_exporter_ref->save();
 
-    if ( mesh_type::nOrder == 1 )
+    if constexpr ( mesh_type::nOrder <= 2 )
     {
         if (!M_exporter)
         {

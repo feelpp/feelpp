@@ -32,7 +32,7 @@
 
 #include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
-#include <feel/feelcore/pslogger.hpp>
+//#include <feel/feelcore/pslogger.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/remotedata.hpp>
 
@@ -40,15 +40,42 @@
 #include <feel/feelmodels/modelcore/log.hpp>
 #include <feel/feelmodels/modelcore/timertool.hpp>
 
+// #include <tabulate/table.hpp>
+// #include <feel/feelcore/json.hpp>
+#include <feel/feelmodels/modelcore/tabulateinformation.hpp>
 
 namespace Feel
 {
+
+BOOST_PARAMETER_NAME( keyword )
+BOOST_PARAMETER_NAME( repository )
+
 namespace FeelModels
 {
 
+void printToolboxApplication( std::string const& toolboxName, worldcomm_t const& worldComm = Environment::worldComm() );
+
+struct ModelBaseCommandLineOptions
+{
+    ModelBaseCommandLineOptions() = default;
+    explicit ModelBaseCommandLineOptions( po::options_description const& _options );
+    ModelBaseCommandLineOptions( ModelBaseCommandLineOptions const& ) = default;
+    ModelBaseCommandLineOptions( ModelBaseCommandLineOptions && ) = default;
+
+    po::variables_map const& vm() const
+        {
+            if ( M_vm.has_value() )
+                return *M_vm;
+            else
+                return Environment::vm();
+        }
+private :
+    std::optional<po::variables_map> M_vm;
+};
+
 struct ModelBaseRepository
 {
-    ModelBaseRepository( std::string const& rootDirWithoutNumProc = "" );
+    ModelBaseRepository( std::string const& rootDirWithoutNumProc = "", bool use_npSubDir = true, std::string const& exprRepository = "" );
     ModelBaseRepository( ModelBaseRepository const& ) = default;
     ModelBaseRepository( ModelBaseRepository && ) = default;
 
@@ -105,20 +132,25 @@ public :
     ModelBase( std::string const& prefix, std::string const& keyword,
                worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                std::string const& subPrefix = "",
-               ModelBaseRepository const& modelRep = ModelBaseRepository() );
+               ModelBaseRepository const& modelRep = ModelBaseRepository(),
+               ModelBaseCommandLineOptions const& modelCmdLineOpt = ModelBaseCommandLineOptions() );
     ModelBase( std::string const& prefix,
                worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                std::string const& subPrefix = "",
-               ModelBaseRepository const& modelRep = ModelBaseRepository() )
+               ModelBaseRepository const& modelRep = ModelBaseRepository(),
+               ModelBaseCommandLineOptions const& modelCmdLineOpt = ModelBaseCommandLineOptions() )
         :
-        ModelBase( prefix, prefix, worldComm, subPrefix, modelRep )
+        ModelBase( prefix, prefix, worldComm, subPrefix, modelRep, modelCmdLineOpt )
         {}
+    //ModelBase() : ModelBase("") {}
+    ModelBase() = delete;
 
     ModelBase( ModelBase const& app ) = default;
+    ModelBase( ModelBase && app ) = default;
     virtual ~ModelBase();
 
     // worldcomm
-    worldcomm_ptr_t const&  worldCommPtr() const;
+    worldcomm_ptr_t const& worldCommPtr() const;
     worldcomm_ptr_t & worldCommPtr();
     worldcomm_t & worldComm();
     worldcomm_t const& worldComm() const;
@@ -129,6 +161,8 @@ public :
     worldscomm_ptr_t const& localNonCompositeWorldsComm() const;
     void setLocalNonCompositeWorldsComm( worldscomm_ptr_t & _worldsComm);
     virtual void createWorldsComm();
+    //! return variables map from command line options
+    po::variables_map const& clovm() const { return M_modelCommandLineOptions.vm(); }
     // prefix
     std::string const& prefix() const;
     std::string const& subPrefix() const;
@@ -143,12 +177,22 @@ public :
     bool verboseAllProc() const;
     void log( std::string const& _className,std::string const& _functionName,std::string const& _msg ) const;
     // info
+    void updateInformationObject( pt::ptree & p ) const override;
+    std::vector<tabulate::Table> tabulateInformations() const;
+    virtual tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
+    virtual std::vector<tabulate::Table> tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
+
+
     std::string filenameSaveInfo() const;
     void setFilenameSaveInfo(std::string const& s);
     virtual std::shared_ptr<std::ostringstream> getInfo() const;
-    virtual void printInfo() const;
-    virtual void saveInfo() const;
-    virtual void printAndSaveInfo() const;
+    void printInfo() const { this->printInfo( this->tabulateInformations() ); }
+    void saveInfo() const { this->saveInfo( this->tabulateInformations() ); }
+    void printAndSaveInfo() const;
+private :
+    void printInfo( std::vector<tabulate::Table> const& tabInfo ) const;
+    void saveInfo( std::vector<tabulate::Table> const& tabInfo ) const;
+public :
     // timer
     TimerToolBase & timerTool( std::string const& s ) const;
     void addTimerTool( std::string const& s, std::string const& fileName ) const;
@@ -179,6 +223,8 @@ private :
     std::string M_keyword;
     // directory
     ModelBaseRepository M_modelRepository;
+    // command line options
+    ModelBaseCommandLineOptions M_modelCommandLineOptions;
     // verbose
     bool M_verbose,M_verboseAllProc;
     // filename for save info
@@ -196,13 +242,6 @@ private :
     // upload data tools
     ModelBaseUpload M_upload;
 };
-
-// null application
-struct ModelBaseNull
-{
-    static const bool is_class_null = true;
-};
-
 
 } // namespace FeelModels
 } // namespace feel

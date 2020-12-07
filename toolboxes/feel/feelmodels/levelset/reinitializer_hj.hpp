@@ -102,7 +102,8 @@ public:
         bool hasSourceTerm() const { return false; }
     };
 
-    typedef AdvectionHJ<FunctionSpaceType> advectionhj_type;
+    //typedef AdvectionHJ<FunctionSpaceType> advectionhj_type;
+    typedef Feel::FeelModels::AdvDiffReac<FunctionSpaceType> advectionhj_type;
     typedef std::shared_ptr<advectionhj_type> advectionhj_ptrtype;
 
     //--------------------------------------------------------------------//
@@ -159,16 +160,20 @@ REINITIALIZERHJ_CLASS_TEMPLATE_DECLARATIONS
 REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::ReinitializerHJ( 
         functionspace_ptrtype const& space,
         std::string const& prefix )
-    : super_type( space, prefix )
-    , M_nGlobalIter(1)
+: 
+    super_type( space, prefix ),
+    M_advectionHJ( new advectionhj_type( prefix, space->worldCommPtr() ) ),
+    M_nGlobalIter(1)
 {
     this->loadParametersFromOptionsVm();
 
-    M_advectionHJ = advectionhj_type::New( prefix );
+    //M_advectionHJ = advectionhj_type::New( prefix );
+    M_advectionHJ->setModelName( "Advection" );
     M_advectionHJ->setTimeInitial(0.);
     M_advectionHJ->setTimeFinal( M_timeStep * M_maxIterations );
     M_advectionHJ->setTimeStep( M_timeStep );
-    M_advectionHJ->init( space );
+    M_advectionHJ->setFunctionSpace( space );
+    M_advectionHJ->init();
 
     M_functionSpaceP1Vec = functionspace_P1v_type::New( space->mesh() );
     M_projectorL2Vec = projector(M_functionSpaceP1Vec, M_functionSpaceP1Vec, 
@@ -239,10 +244,10 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
         //auto phi_sign = idv(phi_reinit) / vf::max( vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit))), 0.92 );
         auto phi_sign = idv(phi_reinit) / vf::sqrt( trans(idv(gradPhiReinit))*idv(gradPhiReinit) );
         auto H_reinit = vf::project(
-                space,
-                elements(mesh),
-                vf::abs(
-                    ( phi_sign < -M_thicknessHeaviside )*vf::constant(0.0)
+            _space=space,
+            _range=elements(mesh),
+            _expr=vf::abs(
+                ( phi_sign < -M_thicknessHeaviside )*vf::constant(0.0)
                     +
                     ( phi_sign >= -M_thicknessHeaviside && phi_sign <= M_thicknessHeaviside )*
                     0.5*(1 + phi_sign/M_thicknessHeaviside + 1/M_PI*vf::sin( M_PI*phi_sign/M_thicknessHeaviside ) )

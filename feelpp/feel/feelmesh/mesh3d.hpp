@@ -159,7 +159,7 @@ class Mesh3D
     /**
      * default constructor
      */
-    explicit Mesh3D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit Mesh3D( std::string const& name = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     Mesh3D( Mesh3D const& m ) = default;
     Mesh3D( Mesh3D&& m ) = default;
@@ -370,9 +370,9 @@ class Mesh3D
 };
 
 template <typename GEOSHAPE, typename T, typename IndexT>
-Mesh3D<GEOSHAPE, T, IndexT>::Mesh3D( worldcomm_ptr_t const& worldComm )
+Mesh3D<GEOSHAPE, T, IndexT>::Mesh3D( std::string const& name, worldcomm_ptr_t const& worldComm )
     : super_visitable(),
-      super( 3, nRealDim, worldComm ),
+      super( name, 3, nRealDim, worldComm ),
       super_elements( worldComm ),
       super_points( worldComm ),
       super_faces( worldComm ),

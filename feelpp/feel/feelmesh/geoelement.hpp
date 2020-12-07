@@ -503,6 +503,7 @@ private:
 
 /**
  * Class for Points and Vertices
+ * @ingroup Mesh
  */
 template <uint16_type Dim,
           typename SubFace = SubFaceOfNone<Dim>,
@@ -729,6 +730,7 @@ private:
 
 /**
  * \class GeoElement1D
+ * @ingroup Mesh
  * \brief class for 1D elements
  *
  * In the 2D case, we store the size_types of the adjacent 2D elements
@@ -1041,6 +1043,7 @@ private:
 
 /**
  * \class GeoElement2D
+ * @ingroup Mesh
  * \brief  Class for 2D elements.
  *
  * In the 3D case, we store the size_types of the adjacent 3D elements
@@ -1400,6 +1403,7 @@ private:
 
 /**
  * \class GeoElement3D
+ * @ingroup Mesh
  * \brief Class for 3D elements
  *
  */
@@ -1650,35 +1654,35 @@ public:
 
     face_type const& face( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalFaces ) << "invalid local edge index elt " << this->id() << " face " << i;
+        DCHECK( M_faces[i] ) << "invalid edge (null pointer) elt " << this->id() << " face " << i;
         return *M_faces[i];
     }
 
     face_type& face( uint16_type i )
     {
-        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalFaces ) << "invalid local edge index elt " << this->id() << " face " << i;
+        DCHECK( M_faces[i] ) << "invalid edge (null pointer) elt " << this->id() << " face " << i;
         return *M_faces[i];
     }
 
     face_type const* facePtr( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local edge index" );
+        DCHECK( i < numLocalFaces ) << "invalid local edge index elt " << this->id() << " face " << i;
         //FEELPP_ASSERT( M_faces[i] )( i ).error( "invalid edge (null pointer)" );
         return M_faces[i];
     }
 
     face_permutation_type facePermutation( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
-        FEELPP_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid face (null pointer)" );
+        DCHECK( i < numLocalFaces ) <<  "invalid local face index in elt " << this->id() << " face " << i;
+        DCHECK( M_faces[i] ) <<  "invalid face (null pointer in elt " << this->id() << " face " << i;
         return M_face_permutation[i];
     }
     face_permutation_type permutation( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
-        FEELPP_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid face (null pointer)" );
+        DCHECK( i < numLocalFaces ) <<  "invalid local face index in elt " << this->id() << " face " << i;
+        DCHECK( M_faces[i] ) <<  "invalid face (null pointer in elt " << this->id() << " face " << i;
         return M_face_permutation[i];
     }
     face_permutation_type permutation( uint16_type i, mpl::int_<1> ) const
@@ -1789,9 +1793,11 @@ template<uint16_type Dim,
 struct is_geoelement<GeoElement3D<Dim,GEOSHAPE,T,IndexT,UseMeasuresStorage>>: std::true_type {};
 
 
-
 /**
- * \return true if the element \p e has a face with \p flag, false otherwise
+ * @brief get if a face of an element has the marker @p flag
+ * 
+ * @tparam EltType type of mesh element
+ * @return true if the element \p e has a face with \p flag, false otherwise
  */
 template<typename EltType>
 bool
@@ -1807,6 +1813,35 @@ hasFaceWithMarker( EltType const& e, boost::any const& flag,
         {
             if ( (*f)->marker().value() == theflag )
                 return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief check if a element as faces with any of the string markers
+ * 
+ * @tparam EltType element type to be checked
+ * @param e element to be checked
+ * @param flags vector of strings cotnaining the markers
+ * @return bool true if has face with at least one of the markers, false otherwise
+ */
+template<typename EltType>
+bool
+hasFaceWithAnyOfTheMarkers( EltType const& e, std::vector<std::string> const& flags,
+                            std::enable_if_t<(dimension_v<EltType> > 0) && is_geoelement_v<EltType>>* = nullptr )
+{
+    //flag_type theflag = e.mesh()->markerId( flag );
+    // for( auto const& f : e.faces() )
+    auto [ fbegin, fend ] = e.faces();
+    for( auto f = fbegin; f != fend; ++f )
+    {
+        if ( *f && (*f)->hasMarker() )
+        {
+            if ( auto it = std::find( flags.begin(), flags.end(), e.mesh()->markerName( (*f)->marker().value() ) ); it !=  flags.end() )
+            {
+                return true;
+            }
         }
     }
     return false;

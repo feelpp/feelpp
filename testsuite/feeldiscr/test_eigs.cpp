@@ -29,15 +29,16 @@
 #define BOOST_TEST_MODULE test_slepc
 #include <feel/feelcore/testsuite.hpp>
 
-#include <fstream>
-
-#include <feel/feel.hpp>
+#include <feel/feelfilters/unithypercube.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/solvereigen.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelvf/vf.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
 
-
+#if 0
 inline
 po::options_description
 makeOptions()
@@ -52,25 +53,7 @@ makeOptions()
         ;
     return  slepc.add( Feel::feel_options() ) ;
 }
-
-
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "test_slepc" ,
-                     "test_slepc" ,
-                     "0.2",
-                     "nD(n=1,2,3) test context of functionspace",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2013 Feel++ Consortium" );
-
-    about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
-    return about;
-
-}
-
-
+#endif
 
 template<int Dim, int Order>
 void
@@ -79,11 +62,7 @@ testSlepc()
     auto mesh=unitHypercube<Dim>();
     auto Xh = Pch<Order>( mesh );
     LOG(INFO)<<"nDof : "<<Xh->nLocalDof();
-#if 0
-    auto backend = backend_type::build( BACKEND_PETSC );
-#else
     auto backend = backend_type::build( "petsc" );
-#endif
 
     auto u = Xh->element();
     auto v = Xh->element();
@@ -99,13 +78,13 @@ testSlepc()
     modes=
         eigs( _matrixA=A,
               _matrixB=B,
-              _solver=( EigenSolverType )ioption(_name="solver-type"),
+              //_solver=( EigenSolverType )ioption(_name="solver-type"),
               _spectrum=SMALLEST_REAL,
-              _transform=SINVERT,
-              _ncv=ioption(_name="ncv"),
-              _nev=ioption(_name="nev"),
-              _tolerance=doption(_name="tol"),
-              _maxit=ioption(_name="maxiter")
+              _transform=SINVERT
+              //_ncv=ioption(_name="ncv"),
+              //_nev=ioption(_name="nev"),
+              //_tolerance=doption(_name="tol"),
+              //_maxit=ioption(_name="maxiter")
               );
 
     double eigen_value = modes.begin()->second.template get<0>();
@@ -126,11 +105,9 @@ testSlepc()
 }
 
 
-/**
- * main code
- */
+//FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAboutDefault("test_eigs"), makeOptions() )
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
+FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( slepc )
 

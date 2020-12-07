@@ -157,9 +157,9 @@ public:
 				// use parameter as filename
 				ofs.open(filename.c_str(), std::ios::out);
 			}
-
 			if (!ofs) {
-				throw std::runtime_error("could not create source code file for compilation");
+                using namespace std::string_literals;
+				throw std::runtime_error("could not create source code file "s + filename+" for compilation");
 			}
 
 			/*****
@@ -266,7 +266,8 @@ public:
 		void* module = nullptr;
 		module = dlopen(filename.c_str(), RTLD_NOW);
 		if (module == nullptr)	{
-			throw std::runtime_error("excompiler::link_so_file: could not open compiled module!");
+            using namespace std::string_literals;
+			throw std::runtime_error("excompiler::link_so_file: could not open compiled module "s + filename);
 		}
 
 		add_opened_module(module, filename, clean_up);
@@ -399,7 +400,7 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
     {
         global_excompiler.create_src_file(unique_filename, ofs);
 
-        ofs << "void compiled_ex(const int* an, const double a[], const int* fn, double f[])" << std::endl;
+        ofs << "extern \"C\" void compiled_ex(const int* an, const double a[], const int* fn, double f[])" << std::endl;
         ofs << "{" << std::endl;
         for (std::size_t count=0; count<exprs.nops(); ++count) {
             ofs << "f[" << count << "] = ";

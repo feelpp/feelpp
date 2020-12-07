@@ -116,7 +116,7 @@ BOOST_PARAMETER_FUNCTION(
       ( test,             *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) ) )
     ( optional                                  //    four optional parameters, with defaults
       //( in_out( vector ),   *( detail::is_vector_ptr<mpl::_> ), backend()->newVector( _test=test ) )
-      ( backend,          *, Feel::backend() )
+      ( backend,          *, Feel::backend(_worldcomm=test->worldCommPtr()) )
       ( in_out( vector ),   *, backend->newVector( test ) )
       ( init,             *( boost::is_integral<mpl::_> ), false )
       ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
@@ -194,7 +194,7 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
                              ( init,             *( boost::is_integral<mpl::_> ), false )
                              ( properties,       ( size_type ), NON_HERMITIAN )
                              ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
-                             ( backend,          *, Feel::backend() )
+                             ( backend,          *, Feel::backend(_worldcomm=test->worldCommPtr()) )
                              ( in_out( matrix ),   *(boost::is_convertible<mpl::_, std::shared_ptr<MatrixSparse<double>>>), backend->newMatrix( _test=test, _trial=trial, _pattern=pattern, _properties=properties ) )
                              ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
                              ( colstart,         *( boost::is_integral<mpl::_> ), 0 )
@@ -203,6 +203,7 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
                               ) // deduced
                         )
 {
+    //DCHECK( test->worldCommPtr() == trial->worldCommPtr( )) << "test and trial spaces communicators should be the same" << std::endl;
 #if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
 #endif

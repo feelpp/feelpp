@@ -343,7 +343,7 @@ struct MinNewEntryForAllReduce
 template<typename FunctionSpaceType, typename periodicity_type>
 typename ReinitializerFMS<FunctionSpaceType, periodicity_type>::element_type
 ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
-  ( element_type const& phi, bool useMarker2AsDoneMarker ) /*const*/
+  ( element_type const& phi, range_elements_type const& rangeInitialElts ) /*const*/
 {
 
 #if defined( FM_EXPORT )
@@ -354,65 +354,22 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 
     auto __v = vf::project(_space=M_functionspace, _range=elements(M_functionspace->mesh()), _expr=idv(phi) );
 
-    // acquire interface (=done) cells
-    // the chosen approach assumes monotonicity of the FE-function in the
-    // element, thus valid only for P1 elements
-
     std::set<size_type> done;
     auto status = vf::project( _space=M_functionspace, _range=elements(M_functionspace->mesh()), _expr=vf::cst(FAR) );
 
-    /* VD, sometime, I need to give myself the elements which are already done, thus use marker2*/
-    if (useMarker2AsDoneMarker)
-      {
-        auto rangeMarked2Elements = M_functionspace->mesh()->elementsWithMarker2(1, M_functionspace->mesh()->worldComm().localRank());
-        auto it_marked = std::get<0>( rangeMarked2Elements );
-        auto en_marked = std::get<1>( rangeMarked2Elements );
+    auto it_marked = boost::get<1>(rangeInitialElts);
+    auto en_marked = boost::get<2>(rangeInitialElts);
 
-        for ( ; it_marked!=en_marked ; ++it_marked )
+    for ( ; it_marked!=en_marked ; ++it_marked )
+    {
+        auto const& elt = boost::unwrap_ref( *it_marked );
+        for ( uint16_type j = 0; j < ndofv; ++j )
         {
-            auto const& elt = boost::unwrap_ref( *it_marked );
-          for ( uint16_type j = 0; j < ndofv; ++j )
-            {
-              size_type index = M_functionspace->dof()->localToGlobal( elt, j, 0).index();
-              done.insert( index );
-              status[index] = DONE;
-            }
+            size_type index = M_functionspace->dof()->localToGlobal( elt, j, 0).index();
+            done.insert( index );
+            status[index] = DONE;
         }
-      }
-
-    else
-        {
-            auto rangeElements = M_functionspace->mesh()->elementsWithProcessId();
-            auto it = std::get<0>( rangeElements );
-            auto en = std::get<1>( rangeElements );
-          // auto it = M_functionspace->mesh()->beginElementWithProcessId();
-          // auto en = M_functionspace->mesh()->endElementWithProcessId();
-
-            for ( ; it!=en ; ++it )
-                {
-                    auto const& elt = boost::unwrap_ref( *it );
-                    uint16_type nPlus = 0;
-                    uint16_type nMinus = 0;
-                    std::vector<size_type> indices( ndofv );
-                    for ( uint16_type j = 0; j < ndofv; ++j )
-                        {
-                            size_type index = M_functionspace->dof()->localToGlobal(elt, j, 0).index();
-                            indices[j] = index;
-                            if ( phi[index] < 0.0 )
-                                ++nMinus;
-                            else if ( phi[index] > 0.0 )
-                                ++nPlus;
-                        }
-                    //if the element has nodes with positive and negative values
-                    //mark as done
-                    if ( nPlus != ndofv && nMinus != ndofv )
-                            for ( uint16_type j = 0; j < ndofv; ++j )
-                                {
-                                    done.insert( indices[j] );
-                                    status[indices[j]] = DONE;
-                                }
-                }
-        }
+    }
 
     // //communicate the DONE list between all the proc
     reduceDonePoints(__v, status, done );
@@ -528,6 +485,66 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 
     return __v;
 
+} // operator()
+
+template<typename FunctionSpaceType, typename periodicity_type>
+typename ReinitializerFMS<FunctionSpaceType, periodicity_type>::element_type
+ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
+  ( element_type const& phi ) /*const*/
+{
+    auto const& mesh = M_functionspace->mesh();
+    const rank_type pid = mesh->worldCommElements().localRank();
+    const uint16_type ndofv = functionspace_type::fe_type::nDof;
+
+    // Find interface elements
+    auto it = mesh->beginOrderedElement();
+    auto en = mesh->endOrderedElement();
+
+    elements_reference_wrapper_ptrtype interfaceElts( new elements_reference_wrapper_type );
+
+    for ( ; it!=en ; it++ )
+    {
+        auto const& elt = boost::unwrap_ref( *it );
+        if ( elt.processId() != pid )
+            continue;
+        bool mark_elt = false;
+        bool hasPositivePhi = false;
+        bool hasNegativePhi = false;
+        for (int j=0; j<ndofv; j++)
+        {
+            if ( phi.localToGlobal(elt.id(), j, 0) < 0. )
+            {
+                // phi < 0
+                if( hasPositivePhi )
+                {
+                    mark_elt = true;
+                    break; //don't need to do the others dof
+                }
+                hasNegativePhi = true;
+            }
+            if ( phi.localToGlobal(elt.id(), j, 0) > 0. )
+            {
+                // phi > 0
+                if( hasNegativePhi )
+                {
+                    mark_elt = true;
+                    break; //don't need to do the others dof
+                }
+                hasPositivePhi = true;
+            }
+        }
+        if( mark_elt )
+            interfaceElts->push_back( boost::cref(elt) );
+    }
+
+    range_elements_type rangeInterfaceElts = boost::make_tuple( 
+            mpl::size_t<MESH_ELEMENTS>(),
+            interfaceElts->begin(),
+            interfaceElts->end(),
+            interfaceElts
+            );
+
+    return this->operator()( phi, rangeInterfaceElts );
 } // operator()
 
 

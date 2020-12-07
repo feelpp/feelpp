@@ -36,6 +36,9 @@ feelpp_add_test( db CFG test_db.cfg GEO test_db.geo CLI "-st_pc_factor_mat_solve
 feelpp_add_test( parameterspace )
 feelpp_add_test( reducedglobaldof )
 
+feelpp_add_test( geim GEO test_geim.geo )
+feelpp_add_test( pbdw GEO test_geim.geo )
+
 if (FEELPP_HAS_GLPK)
   feelpp_add_test( empiricalquadrature )
 endif()

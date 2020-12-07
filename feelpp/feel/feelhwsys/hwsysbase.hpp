@@ -72,14 +72,14 @@ public:
     virtual void updateCurrentState() {};
 
     //! Journal watcher notification.
-    void updateInformationObject( pt::ptree & p ) override
+    void updateInformationObject( pt::ptree & p ) const override
     {
         if ( M_host_name.empty() )
             return;
 
-        this->updateCurrentState();
+        const_cast<HwSysBase&>(*this).updateCurrentState();
 
-        std::string prefix = M_host_name;
+        std::string const& prefix = M_host_name;
         if ( !p.get_child_optional( "application" ) )
         {
             p.put( prefix + ".backend", M_backend );
@@ -171,7 +171,7 @@ protected:
 	std::string M_mem_host_total;
 	std::string M_mem_host_avail;
 	std::string M_mem_proc_avail;
-	std::string M_mem_host_used;
+    std::string M_mem_host_used;
 	std::string M_mem_proc_used;
 	std::string M_load_avg;
 

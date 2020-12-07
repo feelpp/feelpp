@@ -74,7 +74,6 @@ Each commit in the main development branch triggers a new full build with more t
 Instructions are available for http://docs.feelpp.org/user/0.107/install/containers/[docker] and http://docs.feelpp.org/user/0.107/install/distributions/[debian and ubuntu packages].
 
 WARNING: Providing Debian and ubuntu packages for `feelpp-toolboxes` and `feelpp-mor` is a work in progress.
-They are currently available only via docker.
 
 [[cipkg]]
 The following tables present the Continuous Integration status of the packaging of {feelpp}.
@@ -92,8 +91,8 @@ The following tables present the Continuous Integration status of the packaging 
 
 | feelpp-toolboxes
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
-|
-|
+| 
+| 
 |
 
 | feelpp-mor
@@ -105,25 +104,28 @@ The following tables present the Continuous Integration status of the packaging 
 
 .Build status for each component for the latest channel
 |===
-| Component | Docker | Debian/Buster | Ubuntu/Eoan | Ubuntu/Focal
+| Component | Docker | Debian/Buster | Ubuntu/Bionic(18.04 LTS) | Ubuntu/Eoan | Ubuntu/Focal(20.04 LTS)
 
 | feelpp
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/8b8635a2a63929d7d2087b5169d8d6e4e1e3d5417ee83d0754.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp]
+| image:https://badge.buildkite.com/62d58af01a599314b4ecf5751cedc062d386fbb636d0039b32.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-bionic]
 | image:https://badge.buildkite.com/663cf620a1e2d9c420c64e41998a9ba4d2023772872f88a893.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-eoan]
 | image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-focal]
 
 | feelpp-toolboxes
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
-|
-|
-|
+| image:https://badge.buildkite.com/90ee47c7b5c62a516f7ef0911058f7a41626ccd752147119f0.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-toolboxes-buster"]
+| 
+| image:https://badge.buildkite.com/bb9c483c95e71e919d159e93d8c3803127c18cbcedbde8a4bb.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-toolboxes-eoan"]
+| image:https://badge.buildkite.com/c9763aa25f307c5d404c9354780d4d0eca94d0c0c6343b5cc2.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-toolboxes-focal"]
 
 | feelpp-mor
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 |
 |
 |
+| image:https://badge.buildkite.com/67c2155af0d97f29f825af63b112cfa79db0da6f5b12cbea69.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-mor-focal"]
 |===
 
 
@@ -161,10 +163,6 @@ The essence of a feature branch is that it exists as long as the feature is in d
 |  Ubuntu Focal/20.04 clang-9
 |  image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 |  image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
-
-|  Ubuntu Disco/19.04 clang-9
-| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=master[https://buildkite.com/feelpp/feelpp-ubuntu-disco-19-dot-04-clang9]
-| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=develop[https://buildkite.com/feelpp/feelpp-ubuntu-disco-19-dot-04-clang9]
 
 |  Debian Buster/10 clang-7
 |image:https://badge.buildkite.com/3828dcf05f226bd39dfe7dc4da7effb6c1e84af2fa7eab4d0c.svg?branch=master[https://buildkite.com/feelpp/feelpp-debian-buster-10-clang-7]
