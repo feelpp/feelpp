@@ -104,7 +104,7 @@ public:
 
     // -- FACTORY METHODS --
     sparse_matrix_ptrtype
-    newMatrix()
+    newMatrix() override
     {
         auto A= std::make_shared<eigen_sparse_matrix_type>(0,0,this->worldCommPtr());
         return A;
@@ -132,7 +132,7 @@ public:
                const size_type n_l,
                const size_type nnz=30,
                const size_type noz=10,
-               size_type matrix_properties = NON_HERMITIAN )
+               size_type matrix_properties = NON_HERMITIAN ) override
     {
         //sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n ) );
         sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n,this->worldCommPtr() ) );
@@ -146,7 +146,7 @@ public:
                const size_type m_l,
                const size_type n_l,
                graph_ptrtype const & graph,
-               size_type matrix_properties = NON_HERMITIAN )
+               size_type matrix_properties = NON_HERMITIAN ) override
     {
         //sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n ) );
         sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n,this->worldCommPtr() ) );
@@ -155,7 +155,7 @@ public:
     }
 
     sparse_matrix_ptrtype
-    newMatrix( datamap_ptrtype const& d1, datamap_ptrtype const& d2, size_type matrix_properties = NON_HERMITIAN, bool init = true )
+    newMatrix( datamap_ptrtype const& d1, datamap_ptrtype const& d2, size_type matrix_properties = NON_HERMITIAN, bool init = true ) override
     {
         auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d2, d1 ) );
         A->setMatrixProperties( matrix_properties );
@@ -166,7 +166,7 @@ public:
     newZeroMatrix( const size_type m,
                    const size_type n,
                    const size_type m_l,
-                   const size_type n_l )
+                   const size_type n_l ) override
     {
         auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( m, n ) );
         //A->setMatrixProperties( matrix_properties );
@@ -175,7 +175,7 @@ public:
 
 
     sparse_matrix_ptrtype
-    newZeroMatrix( datamap_ptrtype const& d1, datamap_ptrtype const& d2 )
+    newZeroMatrix( datamap_ptrtype const& d1, datamap_ptrtype const& d2 ) override
     {
         auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d2, d1 ) );
         //A->setMatrixProperties( matrix_properties );
@@ -197,12 +197,12 @@ public:
     }
 
     vector_ptrtype
-    newVector( datamap_ptrtype const& d )
+    newVector( datamap_ptrtype const& d ) override
     {
         return vector_ptrtype( new eigen_vector_type( d->nGlobalElements(), this->worldCommPtr() ) );
     }
 
-    vector_ptrtype newVector( const size_type n, const size_type n_local )
+    vector_ptrtype newVector( const size_type n, const size_type n_local ) override
     {
         return vector_ptrtype( new eigen_vector_type( n, this->worldCommPtr() ) );
     }
@@ -211,7 +211,7 @@ public:
     // -- LINEAR ALGEBRA INTERFACE --
     void prod( sparse_matrix_type const& A,
                vector_type const& x,
-               vector_type& b, bool transpose ) const
+               vector_type& b, bool transpose ) const override
     {
         eigen_sparse_matrix_type const& _A = dynamic_cast<eigen_sparse_matrix_type const&>( A );
         eigen_vector_type const& _x = dynamic_cast<eigen_vector_type const&>( x );
@@ -239,14 +239,14 @@ public:
     solve_return_type solve( sparse_matrix_ptrtype const& A,
                              sparse_matrix_ptrtype const& P,
                              vector_ptrtype& x,
-                             const vector_ptrtype& b )
+                             const vector_ptrtype& b ) override
     {
         return this->solve( *A, *x, *b );
     }
 
 
     value_type dot( const vector_type& f,
-                   const vector_type& x ) const
+                   const vector_type& x ) const override
     {
         eigen_vector_type const& _f = dynamic_cast<eigen_vector_type const&>( f );
         eigen_vector_type const& _x = dynamic_cast<eigen_vector_type const&>( x );

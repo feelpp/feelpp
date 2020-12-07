@@ -1431,7 +1431,7 @@ public:
         }
 #endif
     //! destructor
-    virtual ~ParameterSpace() = default;
+    ~ParameterSpace() override = default;
 
     /**
      * generate a shared_ptr out of a parameter space

@@ -139,7 +139,7 @@ public:
         }
     }
 
-    virtual ~PointSet() = default;
+    ~PointSet() override = default;
 
     self_type& operator=( self_type const& p ) = default;
 

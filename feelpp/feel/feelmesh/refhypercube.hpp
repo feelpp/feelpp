@@ -256,7 +256,7 @@ public:
 
     Reference( Reference const & r ) = default;
 
-    ~Reference() = default;
+    ~Reference() override = default;
 
     //@}
 

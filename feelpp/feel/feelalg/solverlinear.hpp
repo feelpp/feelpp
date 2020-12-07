@@ -93,7 +93,7 @@ public:
     /**
      * Destructor.
      */
-    virtual ~SolverLinear ();
+    ~SolverLinear () override;
 
     /**
      * @returns true if the data structures are

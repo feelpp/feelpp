@@ -119,7 +119,7 @@ public:
     /**
      * destructor
      */
-    ~GraphCSR();
+    ~GraphCSR() override;
 
     //@}
 

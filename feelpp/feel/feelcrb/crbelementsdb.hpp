@@ -117,7 +117,7 @@ public :
         {}
 
     //! destructor
-    ~CRBElementsDB()
+    ~CRBElementsDB() override
     {}
 
     void setup( boost::property_tree::ptree const& ptree, std::string const& dbDir )

@@ -156,7 +156,7 @@ public:
     /**
      * destructor
      */
-    virtual ~Exporter();
+    ~Exporter() override;
 
     /**
      * Static function instantiating from the Exporter Factory an exporter out

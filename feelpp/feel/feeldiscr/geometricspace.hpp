@@ -41,7 +41,7 @@ struct GeometricSpaceBase : public CommObject
     GeometricSpaceBase( GeometricSpaceBase && ) = default;
     GeometricSpaceBase& operator=( GeometricSpaceBase const& ) = default;
     GeometricSpaceBase& operator=( GeometricSpaceBase && ) = default;
-    virtual ~GeometricSpaceBase() = default;
+    ~GeometricSpaceBase() override = default;
 
 };
 struct ContextGeometricBase {};

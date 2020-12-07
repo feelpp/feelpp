@@ -116,7 +116,7 @@ public:
 
 
 
-    ~Sphere()
+    ~Sphere() override
     {}
 
     //@}
@@ -212,7 +212,7 @@ public:
      * @returns true if the point p is above the surface,
      * false otherwise.
      */
-    bool aboveSurface ( const Point& p ) const
+    bool aboveSurface ( const Point& p ) const override
     {
         FEELPP_ASSERT( M_radius > 0 )( M_radius ).error( "radius negative" );
 
@@ -227,7 +227,7 @@ public:
      * @returns true if the point p is below the surface,
      * false otherwise.
      */
-    bool belowSurface ( const Point& p ) const
+    bool belowSurface ( const Point& p ) const override
     {
         return ( !this->aboveSurface ( p ) );
     }
@@ -239,7 +239,7 @@ public:
      * the surface really means "very close" to account
      * for roundoff error.
      */
-    bool onSurface ( const Point& p ) const
+    bool onSurface ( const Point& p ) const override
     {
         FEELPP_ASSERT( M_radius > 0 )( M_radius ).error( "radius negative" );
 
@@ -254,7 +254,7 @@ public:
     /**
      * @return the closest point on the surface to point p.
      */
-    Point closestPoint ( const Point& p ) const
+    Point closestPoint ( const Point& p ) const override
     {
         FEELPP_ASSERT( M_radius > 0 )( M_radius ).error( "radius negative" );
 
@@ -274,7 +274,7 @@ public:
      * @return a unit vector normal to the surface at
      * point p.
      */
-    Point unitNormal ( const Point& p ) const
+    Point unitNormal ( const Point& p ) const override
     {
         FEELPP_ASSERT( M_radius > 0 )( M_radius ).error( "radius negative" );
 
@@ -293,7 +293,7 @@ public:
      * @returns the spherical coordinates for the
      * cartesian coordinates \p cart.
      */
-    Point surfaceCoords ( const Point& cart ) const
+    Point surfaceCoords ( const Point& cart ) const override
     {
         // constant translation in the origin
         const Point c ( cart.node() - this->center().node() );
@@ -311,7 +311,7 @@ public:
      * @returns the cartesian coordinates for the
      * spherical coordinates \p sph.
      */
-    Point worldCoords ( const Point& sph ) const
+    Point worldCoords ( const Point& sph ) const override
     {
         const double r     = sph( 0 );
         const double theta = sph( 1 );
