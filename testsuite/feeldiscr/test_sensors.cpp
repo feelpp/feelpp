@@ -1,0 +1,78 @@
+#define BOOST_TEST_MODULE sensors testsuite
+
+#include <feel/feelcore/testsuite.hpp>
+
+#include <feel/feeldiscr/sensors.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelvf/vf.hpp>
+
+using namespace Feel;
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+BOOST_AUTO_TEST_SUITE( sensorssuite )
+
+BOOST_AUTO_TEST_CASE( test_create )
+{
+    using mesh_type = Mesh<Simplex<2> >;
+    using space_type = Pch_type<mesh_type, 1>;
+    using sensormap_type = SensorMap<space_type>;
+
+    auto mesh = loadMesh( _mesh=new mesh_type );
+    auto Xh = Pch<1>(mesh);
+    auto i = std::ifstream(Environment::expand("$cfgdir/sensorsdesc.json"));
+    auto sm = sensormap_type(Xh, json::parse(i));
+
+    auto e = "x*y:x:y";
+    auto ex = expr(e);
+    auto u = Xh->element(ex);
+    for( auto const& [name, f] : sm )
+    {
+        auto n = f->position();
+        auto vv = ex.evaluate({{"x", n(0)}, {"y", n(1)}})(0,0);
+        auto v = (*f)(u);
+        BOOST_CHECK_CLOSE(v, vv, 1 );
+    }
+
+    auto ofa = std::ofstream("sensors.db");
+    boost::archive::binary_oarchive oa( ofa );
+    oa << sm;
+
+    json j = sm.to_json();
+    BOOST_CHECK_EQUAL(j.size(), 1);
+}
+
+BOOST_AUTO_TEST_CASE( test_load )
+{
+    using mesh_type = Mesh<Simplex<2> >;
+    using space_type = Pch_type<mesh_type, 1>;
+    using sensormap_type = SensorMap<space_type>;
+
+    auto mesh = loadMesh( _mesh=new mesh_type );
+    auto Xh = Pch<1>(mesh);
+    auto sm = sensormap_type(Xh);
+
+    auto ifa = std::ifstream("sensors.db");
+    boost::archive::binary_iarchive ia( ifa );
+    ia >> sm;
+
+    std::cout << "loaded with " << sm.size() << " sensors" << std::endl;
+
+    auto e = "x*y:x:y";
+    auto ex = expr(e);
+    auto u = Xh->element(ex);
+    for( auto const& [name, f] : sm )
+    {
+        auto n = f->position();
+        auto vv = ex.evaluate({{"x", n(0)}, {"y", n(1)}})(0,0);
+        auto v = (*f)(u);
+        BOOST_CHECK_CLOSE(v, vv, 1 );
+    }
+
+    json j = sm.to_json();
+    BOOST_CHECK_EQUAL(j.size(), 1);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
