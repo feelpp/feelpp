@@ -183,7 +183,7 @@ class MatrixBlockBase : public MatrixSparse<T>
     {
     }
 
-    ~MatrixBlockBase()
+    ~MatrixBlockBase() override
     {
     }
 

@@ -560,6 +560,7 @@ Environment::Environment( int argc, char** argv,
     tic();
     cout << "[ Starting Feel++ ] " << tc::green << "application "  << about.appName()
          <<  " version " << about.version() << " date " << today << tc::reset << std::endl;
+    
 #if 0
     if ( S_vm.count( "nochdir" ) == 0 )
     {
@@ -607,6 +608,25 @@ Environment::Environment( int argc, char** argv,
     S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
     changeRepository( _directory = boost::format{ S_repository.directory().string() } );
 #endif
+
+    if ( S_vm.count( "dirs" ) == 1 )
+    {
+        cout<< "- root: " << rootRepository() << std::endl 
+            << "-  app: " << appRepository() << std::endl 
+            // << "-  geo: " << geoRepository() << std::endl
+            << "- home: " << expand("$home") << std::endl
+            << "-  cfg: " << expand("$cfgdir") << std::endl
+            << "- data: " << expand("$datadir") << std::endl;
+        if ( Environment::initialized() )
+        {
+            worldComm().barrier();
+            MPI_Finalize();
+        }
+#if defined(FEELPP_HAS_MONGOCXX )
+        MongoCxx::reset();
+#endif
+        exit( 0 );
+    }
     if( S_vm.count( "journal.filename" ) )
     {
         // TODO relative or absolute path

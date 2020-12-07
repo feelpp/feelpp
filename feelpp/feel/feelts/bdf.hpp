@@ -136,7 +136,7 @@ public:
     //! copy operator
     Bdf( Bdf const& b );
 
-    ~Bdf();
+    ~Bdf() override;
 
 
     //! return a deep copy of the bdf object
@@ -249,7 +249,7 @@ public:
     /**
      * Move to next time step (solution not shifted).
      */
-    double next() const
+    double next() const override
     {
         double tcur = super::next();
 
@@ -340,7 +340,7 @@ public:
     //! Load current unknown in a file (hdf5, binary, ...)
     void loadCurrent();
 
-    void print() const
+    void print() const override
     {
         LOG(INFO) << "============================================================\n";
         LOG(INFO) << "BDF Information\n";

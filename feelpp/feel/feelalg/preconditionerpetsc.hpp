@@ -76,22 +76,22 @@ public:
     //! copy constructor
     PreconditionerPetsc( PreconditionerPetsc const & );
     //! destructor
-    virtual ~PreconditionerPetsc();
+    ~PreconditionerPetsc() override;
 
     /**
      * Release all memory and clear data structures.
      */
-    virtual void clear ();
+    void clear () override;
 
     /**
      * Initialize data structures if not done so already.
      */
-    virtual void init ();
+    void init () override;
 
     /**
      * View preconditioner context
      */
-    virtual void view() const;
+    void view() const override;
 
     //@}
 
@@ -142,7 +142,7 @@ public:
                                              worldcomm_ptr_t const& worldComm=Environment::worldCommPtr(),
                                              std::string const& prefix="");
 
-    void setPrecMatrixStructure( MatrixStructure mstruct  );
+    void setPrecMatrixStructure( MatrixStructure mstruct  ) override;
 
     //@}
 
@@ -154,7 +154,7 @@ public:
      * Computes the preconditioned vector "y" based on input "x".
      * Usually by solving Py=x to get the action of P^-1 x.
      */
-    virtual void apply( const Vector<T> & x, Vector<T> & y ) const;
+    void apply( const Vector<T> & x, Vector<T> & y ) const override;
 
     void apply( Vec x, Vec y ) const;
 
