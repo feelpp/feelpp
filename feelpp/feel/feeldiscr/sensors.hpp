@@ -27,6 +27,7 @@
 
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/fsfunctionallinear.hpp>
+#include <feel/feelcore/json.hpp>
 
 namespace Feel
 {
@@ -49,6 +50,7 @@ public:
     using mesh_type = typename space_type::mesh_type;
 
 
+    SensorBase() = default;
     SensorBase( space_ptrtype const& space, node_t const& p, std::string const& name = "sensor" , std::string const& t = ""):
         super_type( space ),
         M_name( name ),
@@ -58,6 +60,11 @@ public:
 
     virtual ~SensorBase() = default;
 
+    void setSpace( space_ptrtype const& space ) override
+    {
+        super_type::setSpace(space);
+        this->init();
+    }
     virtual void init() = 0;
 
     void setName( std::string const& n ) { M_name = n; }
@@ -67,12 +74,31 @@ public:
     node_t const& position() const { return M_position; }
 
     std::string const& type() const { return M_type; }
+    virtual json to_json() const
+    {
+        json j;
+        j["type"] = M_type;
+        j["coord"] = json::array();
+        for(int i = 0; i < space_type::nDim; ++i)
+            j["coord"].push_back(M_position(i));
+        return j;
+    }
 
     //!
     //! other interface may include:
     //!  - DB storage for past measurements
     //!  - DB storage for future measurements
     //!
+private:
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & M_name;
+        ar & M_position;
+        ar & M_type;
+    }
+
 protected:
     std::string M_name;
     node_t M_position;
@@ -95,6 +121,7 @@ public:
     using space_ptrtype = typename super_type::space_ptrtype;
     using node_t = typename super_type::node_t;
 
+    SensorPointwise() = default;
     SensorPointwise( space_ptrtype const& space, node_t const& p, std::string const& n = "pointwise"):
         super_type( space, p, n, "pointwise" )
     {
@@ -109,6 +136,14 @@ public:
         //auto expr=integrate(_range=elements(M_space->mesh()), _expr=id(v)*phi);
         //super_type::operator=( expr );
         // this->close();
+    }
+
+private:
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & boost::serialization::base_object<super_type>(*this);
     }
 };
 
@@ -131,6 +166,7 @@ public:
     using node_t = typename super_type::node_t;
     static const int nDim = space_type::mesh_type::nDim;
 
+    SensorGaussian() = default;
     SensorGaussian( space_ptrtype const& space, node_t const& center,
                     double radius = 1., std::string const& n = "gaussian"):
         super_type( space, center, n, "gaussian" ),
@@ -154,6 +190,13 @@ public:
         this->close();
     }
 
+    json to_json() const override
+    {
+        json j = super_type::to_json();
+        j["radius"] = M_radius;
+        return j;
+    }
+
 private:
     auto phiExpr( mpl::int_<1> /**/ )
     {
@@ -168,107 +211,104 @@ private:
         return exp( -inner(P()-vec(cst(this->M_position[0]),cst(this->M_position[1]),cst(this->M_position[2])))/(2*std::pow(M_radius,2)));
     }
 
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & boost::serialization::base_object<super_type>(*this);
+        ar & M_radius;
+    }
+
     double M_radius;
 };
 
-#if 0
 template<typename Space>
-class SensorMap : public std::map<std::string,std::shared_ptr<SensorBase<Space>>>
+class SensorMap : public std::map<std::string, std::shared_ptr<SensorBase<Space>>>
 {
-
 public:
+    using this_type = SensorMap<Space>;
+    using super_type = std::map<std::string, std::shared_ptr<SensorBase<Space>>>;
+    using value_type = typename super_type::value_type;
+    using element_type = SensorBase<Space>;
 
-    // -- TYPEDEFS --
-    typedef SensorMap<Space> this_type;
-    typedef SensorBase<Space> element_type;
+    using space_type = Space;
+    using space_ptrtype = std::shared_ptr<space_type>;
+    using fselement_type = typename space_type::element_type;
 
-    typedef Space space_type;
-
-    typedef std::shared_ptr<space_type> space_ptrtype;
-    using mesh_type = typename space_type::mesh_type;
-    using p0_space_ptrtype = Pdh_ptrtype<mesh_type,0>;
-
-    static const int nDim = space_type::mesh_type::nDim;
-    
-    using sensor_type = SensorBase<Space>;
-    using node_t = typename sensor_type::node_t;
-    using sensor_ptrtype = std::shared_ptr<sensor_type>;
+    using node_t = typename element_type::node_t;
 
     SensorMap() = default;
-    SensorMap( space_ptrtype const& space, SensorDescriptionMap<nDim>  const& sensor_desc):
-        M_sensor_desc(sensor_desc),
-        M_space(space),
-        M_space_p0( Pdh<0>( space->mesh() ) )
+    explicit SensorMap( space_ptrtype const& Xh ): M_Xh(Xh) {}
+    explicit SensorMap( space_ptrtype const& Xh, json j)
+        : M_Xh(Xh),
+          M_j(j)
     {
-        this->init();
-    }
-
-    space_ptrtype const&  space()
-    {
-        return M_space;
-    }
-    p0_space_ptrtype const&  spaceP0()
-    {
-        return M_space_p0;
-    }
-
-    SensorDescriptionMap<nDim> const& sensor_desc()
-    {
-        return M_sensor_desc;
-    }
-
-    void setSpace( space_ptrtype const& space )
-    {
-        M_space = space;
-    }
-
-    void setSensor_desc( SensorDescriptionMap<nDim> const& sensor_desc)
-    {
-        M_sensor_desc = sensor_desc;
-    }
-
-
-    virtual ~SensorMap() {}
-
-    int size() const
-    {
-        return M_sensor_desc.size();
-    }
-
-    void init()
-    {
-        Feel::cout << "init " << M_sensor_desc.size() << " sensors" << std::endl;
-        //this->reserve( this->size() );
-        for( auto const& [sensor_name, sensor_desc]  : M_sensor_desc )
+        for( auto const& /*it*/[name, sensor] : M_j.items() )
         {
-            Feel::cout << "sensor " << sensor_name << std::endl;
-            sensor_ptrtype newElement;
-            node_t n( sensor_desc.position().size() );
-            for ( int i = 0; i < sensor_desc.position().size(); ++i )
-                n( i ) = sensor_desc.position()[i];
-            if (sensor_desc.type() == "gaussian" )
+            // auto name = it.first;
+            // auto sensor = it.second;
+            std::string type = sensor.value("type", "");
+            node_t n(space_type::nDim);
+            auto coords = sensor["coord"].template get<std::vector<double>>();
+            for( int i = 0; i < space_type::nDim; ++i )
+                n(i) = coords[i];
+
+            if( type == "pointwise" )
             {
-                newElement = std::make_shared<SensorGaussian<space_type>> (M_space, M_space_p0, n, sensor_desc.radius(),sensor_desc.name());
+                auto s = std::make_shared<SensorPointwise<space_type>>(M_Xh, n, name);
+                this->insert(value_type(name, s));
             }
-            else
+            else if( type == "gaussian" )
             {
-               if (sensor_desc.type() == "pointwise" )
-               {
-                   newElement = std::make_shared<SensorPointwise<space_type>> (M_space, M_space_p0, n,sensor_desc.name());
-               }
+                double radius = sensor.value("radius", 0.1);
+                auto s = std::make_shared<SensorGaussian<space_type>>(M_Xh, n, radius, name);
+                this->insert(value_type(name, s));
             }
-            this->insert( std::pair( sensor_name, newElement ) );
-            Feel::cout << "Sensor " << sensor_name << " added to map" << std::endl;
         }
     }
 
+    Eigen::VectorXd apply(fselement_type const& u) const
+    {
+        Eigen::VectorXd v(this->size());
+        int i = 0;
+        for( auto const& it /*[name, sensor]*/ : *this )
+            v(i++) = (*it.second)(u);
+        return v;
+    }
+
+    json to_json()
+    {
+        if( M_j.empty() )
+        {
+            for( auto const& it /*[name, sensor]*/ : *this )
+            {
+                auto name = it.first;
+                auto sensor = it.second;
+                M_j[name] = sensor->to_json();
+            }
+        }
+        return M_j;
+    }
+
 private:
-    
-    SensorDescriptionMap<nDim> M_sensor_desc;
-    space_ptrtype M_space;
-    p0_space_ptrtype M_space_p0;
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        // add any subtype of SensorBase here
+        ar.template register_type<SensorPointwise<space_type>>();
+        ar.template register_type<SensorGaussian<space_type>>();
+        ar & boost::serialization::base_object<super_type>(*this);
+        if( Archive::is_loading::value )
+        {
+            for( auto& it /*[name, sensor]*/ : *this)
+                it.second->setSpace(M_Xh);
+        }
+    }
+
+    space_ptrtype M_Xh;
+    json M_j;
 };
-#endif
 
 }
 #endif /* _FEELPP_CRB_SENSORS_HPP */
