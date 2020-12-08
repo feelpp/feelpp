@@ -1085,6 +1085,49 @@ ModelAlgebraicFactory::tabulateInformation( nl::json const& jsonInfo, TabulateIn
 
     //---------------------------------------------------------------------------------------------------------------//
 
+
+    void
+    ModelAlgebraicFactory::applyAssemblyLinear(const vector_ptrtype& U, sparse_matrix_ptrtype& lhs, vector_ptrtype& rhs, std::vector<std::string> const& infos, bool applyDofElimination ) const
+    {
+        ModelAlgebraic::DataUpdateLinear dataLinear(U,lhs,rhs,true);
+        dataLinear.copyInfos( this->dataInfos() );
+        for ( std::string const& info : infos )
+            dataLinear.addInfo( info );
+        this->applyAssemblyLinear( dataLinear, applyDofElimination );
+    }
+    void
+    ModelAlgebraicFactory::applyAssemblyLinear( ModelAlgebraic::DataUpdateLinear & dataLinear, bool applyDofElimination ) const
+    {
+        // cst part
+        dataLinear.setBuildCstPart( true );
+        M_functionLinearAssembly( dataLinear );
+        for ( auto const& func : M_addFunctionLinearAssembly )
+            func.second( dataLinear );
+
+        // non cst part
+        dataLinear.setBuildCstPart( false );
+        M_functionLinearAssembly( dataLinear );
+        for ( auto const& func : M_addFunctionLinearAssembly )
+            func.second( dataLinear );
+
+        // add maybe vector to rhs
+        for ( auto const& av : M_addVectorLinearRhsAssembly )
+            if ( /*std::get<2>( av.second ) &&*/ std::get<3>( av.second ) )
+                dataLinear.rhs()->add( std::get<1>( av.second ), std::get<0>( av.second ) );
+
+        // dof elimination
+        if ( applyDofElimination )
+        {
+            M_functionLinearDofElimination( dataLinear );
+            for ( auto const& func : M_addFunctionLinearDofElimination )
+                func.second( dataLinear );
+        }
+
+        // post-assembly
+        for ( auto const& func : M_addFunctionLinearPostAssembly )
+            func.second( dataLinear );
+    }
+
     void
     ModelAlgebraicFactory::evaluateResidual(const vector_ptrtype& U, vector_ptrtype& R, std::vector<std::string> const& infos, bool applyDofElimination ) const
     {
