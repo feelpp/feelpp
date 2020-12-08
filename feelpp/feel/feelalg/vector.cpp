@@ -379,7 +379,7 @@ struct syncOperatorEqual : syncOperator<T,SizeT>
         super_type( m ),
         M_hasOperator( true )
         {}
-    virtual T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const
+    T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const override
         {
             auto itFindGCDof = this->activeDofClusterUsedByProc().find( gcdof );
             if ( itFindGCDof != this->activeDofClusterUsedByProc().end()  )
@@ -399,7 +399,7 @@ struct syncOperatorEqual : syncOperator<T,SizeT>
             }
             return activeDofValue;
         }
-    virtual bool hasOperator() const { return M_hasOperator; }
+    bool hasOperator() const override { return M_hasOperator; }
 private :
     bool M_hasOperator;
 };
@@ -418,7 +418,7 @@ struct syncOperatorPlus : syncOperator<T,SizeT>
         :
         super_type( m )
         {}
-    virtual T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const
+    T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const override
         {
             T res = 0;
             auto itFindGCDof = this->activeDofClusterUsedByProc().find( gcdof );
@@ -448,7 +448,7 @@ struct syncOperatorPlus : syncOperator<T,SizeT>
                 return res;
             }
         }
-    virtual bool hasOperator() const { return true; }
+    bool hasOperator() const override { return true; }
 };
 // BinaryFuncType = 0 -> min, BinaryFuncType=1 -> max
 template <typename T, int BinaryFuncType,typename SizeT>
@@ -465,7 +465,7 @@ struct syncOperatorBinaryFunc : syncOperator<T,SizeT>
         :
         super_type( m )
         {}
-    virtual T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const
+    T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const override
         {
             auto itFindGCDof = this->activeDofClusterUsedByProc().find( gcdof );
             if ( itFindGCDof == this->activeDofClusterUsedByProc().end() )
@@ -509,7 +509,7 @@ struct syncOperatorBinaryFunc : syncOperator<T,SizeT>
     static T applyBinaryFunc( T const& val1, T const& val2, mpl::int_<0> /**/ ) { return std::min( val1,val2 ); }
     static T applyBinaryFunc( T const& val1, T const& val2, mpl::int_<1> /**/ ) { return std::max( val1,val2 ); }
 
-    virtual bool hasOperator() const { return true; }
+    bool hasOperator() const override { return true; }
 };
 
 } // detail

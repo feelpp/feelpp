@@ -174,7 +174,7 @@ public:
     /**
      * run the convergence test
      */
-    void run();
+    void run() override;
 
 private:
 

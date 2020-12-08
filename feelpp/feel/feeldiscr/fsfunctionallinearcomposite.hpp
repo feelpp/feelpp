@@ -74,7 +74,7 @@ public:
         M_backend( backend )
     {}
 
-    virtual ~FsFunctionalLinearComposite() {}
+    ~FsFunctionalLinearComposite() override {}
 
     int size()
     {
@@ -343,7 +343,7 @@ public:
 
 
     //return the sum of all vectors
-    virtual void containerPtr( vector_ptrtype & vector_to_fill )
+    void containerPtr( vector_ptrtype & vector_to_fill ) override
     {
         //vector_to_fill = sumAllVectors(true);
         sumAllVectors( vector_to_fill , true );
@@ -351,8 +351,8 @@ public:
     }
 
     // apply the functional
-    virtual value_type
-    operator()( const element_type& x ) const
+    value_type
+    operator()( const element_type& x ) const override
     {
         //auto vector = sumAllVectors( true );
         auto vector = M_backend->newVector( this->space() );

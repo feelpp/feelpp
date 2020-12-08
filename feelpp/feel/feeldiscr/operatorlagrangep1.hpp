@@ -172,7 +172,7 @@ public:
     /**
      * destructor. nothing really to be done here
      */
-    ~OperatorLagrangeP1()
+    ~OperatorLagrangeP1() override
     {}
 
     //@}

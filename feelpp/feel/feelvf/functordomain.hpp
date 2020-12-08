@@ -121,12 +121,12 @@ public:
         super()
     {}
 
-    virtual bool hasLowerBound() const
+    bool hasLowerBound() const override
     {
         return true;
     }
 
-    virtual value_type lowerBound() const
+    value_type lowerBound() const override
     {
         return 0.0;
     }

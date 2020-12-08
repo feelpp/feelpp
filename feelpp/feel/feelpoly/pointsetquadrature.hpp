@@ -120,7 +120,7 @@ public :
     {}
 
     
-    virtual ~PointSetQuadrature() = default;
+    ~PointSetQuadrature() override = default;
 
     virtual bool isFaceIm() const noexcept
     {
@@ -556,7 +556,7 @@ public :
 
             return *this;
         }
-        bool isFaceIm() const noexcept
+        bool isFaceIm() const noexcept override
         {
             return is_face_im;
         }

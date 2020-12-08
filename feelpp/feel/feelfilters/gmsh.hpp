@@ -126,7 +126,7 @@ public:
 
     Gmsh( int nDim = 1, int nOrder = GMSH_ORDER_ONE, worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
     Gmsh( Gmsh const & __g );
-    virtual ~Gmsh();
+    ~Gmsh() override;
 
     //@}
 
@@ -589,13 +589,13 @@ public:
         }
 
     //! set the communicator
-    void setWorldComm( WorldComm & _worldcomm )
+    void setWorldComm( WorldComm & _worldcomm ) override
         {
             super::setWorldComm( _worldcomm );
             M_partitions = this->worldComm().size();
         }
     //! set the communicator
-    void setWorldComm( worldcomm_ptr_t const& _worldcomm )
+    void setWorldComm( worldcomm_ptr_t const& _worldcomm ) override
         {
             super::setWorldComm( _worldcomm );
             M_partitions = this->worldComm().size();

@@ -471,7 +471,7 @@ public:
 
 public:
     //! destructor
-    ~CRB()
+    ~CRB() override
         {}
 
     void init()
@@ -899,7 +899,7 @@ public:
      */
 
     //    boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> & uNold=std::vector<vectorN_type>(), std::vector<vectorN_type> & uNduold=std::vector<vectorN_type>(), int K=0) const;
-    virtual boost::tuple<std::vector<double>,matrix_info_tuple> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu ,
+    boost::tuple<std::vector<double>,matrix_info_tuple> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu ,
                                                                     std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix=false, int K=0,
                                                                     bool computeOutput = true ) const override;
 
@@ -1221,7 +1221,7 @@ public:
      * \phi_i\f$ where $\phi_i, i=1...N$ are the basis function of the reduced
      * basis space
      */
-    virtual element_type expansion( vectorN_type const& u , int N = -1, bool dual=false ) const override;
+    element_type expansion( vectorN_type const& u , int N = -1, bool dual=false ) const override;
 
     // Summary of number of iterations (at the current step)
     std::pair<int,double> online_iterations() override {return online_iterations_summary;}
@@ -1319,7 +1319,7 @@ public:
     //! @param filename filename (with crb.json extension) including path
     //! @param l loading strategy (reduced basis, finite element, all)
     //!
-    virtual void loadDB( std::string const& filename, crb::load l ) override;
+    void loadDB( std::string const& filename, crb::load l ) override;
 
 
     /**
@@ -1340,12 +1340,12 @@ public:
     /**
      * save the CRB database
      */
-    virtual void saveDB() override;
+    void saveDB() override;
 
     /**
      * load the CRB database
      */
-    virtual bool loadDB() override;
+    bool loadDB() override;
 
     /**
      *  do the projection on the POD space of u (for transient problems)

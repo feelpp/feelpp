@@ -515,7 +515,7 @@ public:
         :
         M_expr( __expr )
     {}
-    virtual ~Expr()
+    ~Expr() override
     {}
 
     //@}
