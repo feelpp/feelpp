@@ -200,6 +200,13 @@ namespace FeelModels
         void rebuildCstJacobian( vector_ptrtype U );
         void rebuildCstLinearPDE( vector_ptrtype U );
 
+
+        //! apply assembly of linear operators rhs and lhs (can be usefull for an external use)
+        void applyAssemblyLinear(const vector_ptrtype& U, sparse_matrix_ptrtype& lhs, vector_ptrtype& rhs,
+                                 std::vector<std::string> const& infos = std::vector<std::string>(),
+                                 bool applyDofElimination = true ) const;
+        void applyAssemblyLinear( ModelAlgebraic::DataUpdateLinear & dataLinear, bool applyDofElimination = true ) const;
+
         void evaluateResidual( const vector_ptrtype& U, vector_ptrtype& R,
                                std::vector<std::string> const& infos = std::vector<std::string>(),
                                bool applyDofElimination = true ) const;
