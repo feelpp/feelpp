@@ -106,6 +106,7 @@ class PyVectorDouble : Vector<double,unsigned int>
 class PyMatrixSparseDouble : MatrixSparse<double>
 {
     using super = MatrixSparse<double>;
+    using self_t = PyMatrixSparseDouble;
     using super::super;
     void init ( const size_type m,
                 const size_type n,
@@ -118,10 +119,16 @@ class PyMatrixSparseDouble : MatrixSparse<double>
                 const size_type n,
                 const size_type m_l,
                 const size_type n_l,
-                graph_ptrtype const& graph ) override {
-        PYBIND11_OVERLOAD_PURE(void, super, init, m, n, m_l, n_l); }
-    size_type nnz() const override {
-        PYBIND11_OVERLOAD_PURE(size_type, super, nnz); }
+                graph_ptrtype const& graph ) override 
+    {
+        PYBIND11_OVERLOAD_PURE(void, super, init, m, n, m_l, n_l); 
+    }
+    clone_ptrtype clone() const override { PYBIND11_OVERLOAD_PURE( clone_ptrtype, super, clone ); }
+
+    size_type nnz() const override 
+    {
+        PYBIND11_OVERLOAD_PURE(size_type, super, nnz); 
+    }
     void clear () override {
         PYBIND11_OVERLOAD_PURE(void, super, clear); }
     void zero () override {
@@ -207,7 +214,7 @@ PYBIND11_MODULE(_alg, m )
     py::class_<MatrixPetsc<double>, MatrixSparse<double>, std::shared_ptr<MatrixPetsc<double> > >(m, "MatrixPetscDouble")
         .def(py::init<>())
         ;
-    py::class_<VectorUblas<double>, PyVectorDouble, std::shared_ptr<VectorUblas<double>>> vublas(m,"VectorUBlas<double,ublas::vector<double>>");
+    py::class_<VectorUblas<double>, Vector<double,uint32_type>, std::shared_ptr<VectorUblas<double>>> vublas(m,"VectorUBlas<double,ublas::vector<double>>");
     vublas.def(py::init<>())
         .def(py::self + py::self )
         .def(py::self - py::self)
