@@ -348,6 +348,8 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( DataUpda
     bool buildCstPart = data.buildCstPart();
     if ( buildCstPart )
         return;
+    bool doAssemblyRhs = !data.hasInfo( "ignore-assembly.rhs" );
+    bool doAssemblyLhs = !data.hasInfo( "ignore-assembly.lhs" );
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("Heat","updateLinearPDEStabilizationGLS", "start"+sc);
@@ -467,12 +469,15 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( DataUpda
         tauFieldPtr->on(_range=range,_expr=tauExprScalarDiffusion);
     auto tau = idv(tauFieldPtr);
 
-    bilinearFormTT +=
-        integrate( _range=range,
-                   _expr=tau*residual_lhs*stab_test,
-                   _geomap=this->geomap() );
+    if ( doAssemblyLhs )
+    {
+        bilinearFormTT +=
+            integrate( _range=range,
+                       _expr=tau*residual_lhs*stab_test,
+                       _geomap=this->geomap() );
+    }
 
-    if ( residual_rhs.expression().hasExpr() )
+    if ( doAssemblyRhs && residual_rhs.expression().hasExpr() )
     {
         myLinearFormT +=
             integrate( _range=range,
