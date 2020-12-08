@@ -100,7 +100,7 @@ public:
 
     MatrixEigenSparse( MatrixEigenSparse const & m );
 
-    ~MatrixEigenSparse();
+    ~MatrixEigenSparse() override;
 
 
     //@}

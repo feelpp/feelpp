@@ -78,14 +78,14 @@ public:
     }
 
 
-    virtual ~FsFunctionalLinear() {}
+    ~FsFunctionalLinear() override {}
 
     void setName( std::string name ) { M_name = name; }
     std::string name() const { return M_name ; }
 
     // apply the functional
-    virtual value_type
-    operator()( const element_type& x ) const
+    value_type
+    operator()( const element_type& x ) const override
     {
         M_vector->close();
         return M_backend->dot( *M_vector, x.container() );

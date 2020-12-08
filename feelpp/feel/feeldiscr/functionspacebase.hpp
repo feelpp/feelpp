@@ -78,7 +78,7 @@ public:
     FunctionSpaceBase( FunctionSpaceBase const& ) = default;
     FunctionSpaceBase( FunctionSpaceBase && ) = default;
     //! destructor
-    virtual ~FunctionSpaceBase() = default;
+    ~FunctionSpaceBase() override = default;
 
     //@}
 

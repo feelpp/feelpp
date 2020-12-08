@@ -88,7 +88,7 @@ public:
     //! copy constructor
     CRBDB( CRBDB const & ) = default;
     //! destructor
-    virtual ~CRBDB();
+    ~CRBDB() override;
 
     //@}
 

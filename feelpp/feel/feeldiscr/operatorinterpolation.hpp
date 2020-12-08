@@ -1060,7 +1060,7 @@ public:
      */
     OperatorInterpolation( OperatorInterpolation const& oi ) = default;
     OperatorInterpolation( OperatorInterpolation && oi ) = default;
-    ~OperatorInterpolation() = default;
+    ~OperatorInterpolation() override = default;
 
     //@}
 
