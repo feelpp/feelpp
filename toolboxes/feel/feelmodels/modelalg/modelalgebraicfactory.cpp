@@ -554,8 +554,14 @@ ModelAlgebraicFactory::tabulateInformation( nl::json const& jsonInfo, TabulateIn
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    ModelAlgebraicFactory::assembleLinear( vector_ptrtype& U )
+    ModelAlgebraicFactory::solveLinear( vector_ptrtype& U )
     {
+        auto model = this->model();
+        if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".ModelAlgebraicFactory","linearSolver", "start",
+                                                            this->model()->worldComm(),this->model()->verboseAllProc());
+
+        this->model()->timerTool("Solve").start();
+
         // assembling cst part
         if (!M_hasBuildLinearSystemCst)
         {

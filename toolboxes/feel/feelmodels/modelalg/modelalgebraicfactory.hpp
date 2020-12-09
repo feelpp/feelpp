@@ -181,7 +181,6 @@ namespace FeelModels
         FEELPP_DEPRECATED void linearSolver( vector_ptrtype &U ) { this->solveLinear( U ); }
         FEELPP_DEPRECATED void AlgoNewton2( vector_ptrtype &U ) { this->solveNewton( U ); }
         FEELPP_DEPRECATED void AlgoPicard(vector_ptrtype &U) { this->solvePicard( U ); }
-        void assembleLinear( vector_ptrtype& U );
         void solveLinear( vector_ptrtype &U );
         void solveNewton( vector_ptrtype &U );
         void solvePicard( vector_ptrtype &U );

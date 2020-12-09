@@ -18,17 +18,19 @@ def assembleDEIM(mu):
     for i in range(0,mu.size()):
         heatBox.addParameterInModelProperties(mu.parameterName(i),mu(i))
     heatBox.updateParameterValues()
-    heatBox.updateFieldVelocityConvection()
-    heatBox.assembleLinear()
-    return heatBox.rhs()
+    return heatBox.assembleRhs()
+    # heatBox.updateFieldVelocityConvection()
+    # heatBox.assembleLinear()
+    # return heatBox.rhs()
 
 def assembleMDEIM(mu):
     for i in range(0,mu.size()):
         heatBox.addParameterInModelProperties(mu.parameterName(i),mu(i))
     heatBox.updateParameterValues()
-    heatBox.updateFieldVelocityConvection()
-    heatBox.assembleLinear()
-    return heatBox.matrix()
+    return heatBox.assembleMatrix()
+    # heatBox.updateFieldVelocityConvection()
+    # heatBox.assembleLinear()
+    # return heatBox.matrix()
 
 model.setAssembleDEIM(fct=assembleDEIM)
 model.setAssembleMDEIM(fct=assembleMDEIM)
@@ -43,9 +45,10 @@ def assembleOnlineDEIM(mu):
     for i in range(0,mu.size()):
         heatBoxDEIM.addParameterInModelProperties(mu.parameterName(i),mu(i))
     heatBoxDEIM.updateParameterValues()
-    heatBoxDEIM.updateFieldVelocityConvection()
-    heatBoxDEIM.assembleLinear()
-    return heatBoxDEIM.rhs()
+    return heatBoxDEIM.assembleRhs()
+    # heatBoxDEIM.updateFieldVelocityConvection()
+    # heatBoxDEIM.assembleLinear()
+    # return heatBoxDEIM.rhs()
 
 model.setOnlineAssembleDEIM(assembleOnlineDEIM)
 
@@ -58,9 +61,10 @@ def assembleOnlineMDEIM(mu):
     for i in range(0,mu.size()):
         heatBoxMDEIM.addParameterInModelProperties(mu.parameterName(i),mu(i))
     heatBoxMDEIM.updateParameterValues()
-    heatBoxMDEIM.updateFieldVelocityConvection()
-    heatBoxMDEIM.assembleLinear()
-    return heatBoxMDEIM.matrix()
+    return heatBoxMDEIM.assembleMatrix()
+    # heatBoxMDEIM.updateFieldVelocityConvection()
+    # heatBoxMDEIM.assembleLinear()
+    # return heatBoxMDEIM.matrix()
 
 model.setOnlineAssembleMDEIM(assembleOnlineMDEIM)
 
