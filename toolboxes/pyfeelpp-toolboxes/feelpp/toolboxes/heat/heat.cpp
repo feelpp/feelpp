@@ -81,6 +81,7 @@ void defSM(py::module &m)
         .def( "updateParameterValues", &toolbox_t::updateParameterValues, "update parameter values" )
         .def( "assembleMatrix", [](const toolbox_t& t) {
                                     auto mat = t.algebraicFactory()->matrix()->clone();
+                                    mat->zero();
                                     auto rhsTMP = t.algebraicFactory()->rhs()->clone();
                                     t.algebraicFactory()->applyAssemblyLinear( t.blockVectorSolution().vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
                                     return mat;
@@ -88,6 +89,7 @@ void defSM(py::module &m)
             "returns the assembled matrix" )
         .def( "assembleRhs", [](const toolbox_t& t) {
                                     auto rhs = t.algebraicFactory()->rhs()->clone();
+                                    rhs->zero();
                                     auto matTMP = t.algebraicFactory()->matrix()->clone();
                                     t.algebraicFactory()->applyAssemblyLinear( t.blockVectorSolution().vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
                                     return rhs;

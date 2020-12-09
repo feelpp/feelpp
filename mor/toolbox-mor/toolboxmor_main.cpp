@@ -53,7 +53,7 @@ int main( int argc, char** argv)
     using deim_function_type = typename rb_model_type::deim_function_type;
     using mdeim_function_type = typename rb_model_type::mdeim_function_type;
 
-    auto heatBox = std::make_shared<heat_tb_type>("heat");
+    auto heatBox = heat_tb_type::New(_prefix="heat");
     heatBox->init();
     heatBox->printAndSaveInfo();
     rb_model_ptrtype model = std::make_shared<rb_model_type>();
@@ -64,9 +64,11 @@ int main( int argc, char** argv)
                 for( int i = 0; i < mu.size(); ++i )
                     heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
                 heatBox->updateParameterValues();
-                heatBox->updateFieldVelocityConvection();
-                heatBox->algebraicFactory()->assembleLinear(heatBox->blockVectorSolution().vectorMonolithic());
-                return heatBox->algebraicFactory()->rhs();
+                auto rhs = heatBox->algebraicFactory()->rhs()->clone();
+                rhs->zero();
+                auto matTMP = heatBox->algebraicFactory()->matrix()->clone();
+                heatBox->algebraicFactory()->applyAssemblyLinear( heatBox->blockVectorSolution().vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
+                return rhs;
             };
     model->setAssembleDEIM(assembleDEIM);
     mdeim_function_type assembleMDEIM =
@@ -75,9 +77,11 @@ int main( int argc, char** argv)
                 for( int i = 0; i < mu.size(); ++i )
                     heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
                 heatBox->updateParameterValues();
-                heatBox->updateFieldVelocityConvection();
-                heatBox->algebraicFactory()->assembleLinear(heatBox->blockVectorSolution().vectorMonolithic());
-                return heatBox->algebraicFactory()->matrix();
+                auto mat = heatBox->algebraicFactory()->matrix()->clone();
+                mat->zero();
+                auto rhsTMP = heatBox->algebraicFactory()->rhs()->clone();
+                heatBox->algebraicFactory()->applyAssemblyLinear( heatBox->blockVectorSolution().vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
+                return mat;
             };
     model->setAssembleMDEIM(assembleMDEIM);
     model->initModel();
@@ -92,9 +96,11 @@ int main( int argc, char** argv)
                 for( int i = 0; i < mu.size(); ++i )
                     deimHeatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
                 deimHeatBox->updateParameterValues();
-                deimHeatBox->updateFieldVelocityConvection();
-                deimHeatBox->algebraicFactory()->assembleLinear(deimHeatBox->blockVectorSolution().vectorMonolithic());
-                return deimHeatBox->algebraicFactory()->rhs();
+                auto rhs = deimHeatBox->algebraicFactory()->rhs()->clone();
+                rhs->zero();
+                auto matTMP = deimHeatBox->algebraicFactory()->matrix()->clone();
+                deimHeatBox->algebraicFactory()->applyAssemblyLinear( deimHeatBox->blockVectorSolution().vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
+                return rhs;
             };
     model->setOnlineAssembleDEIM(assembleOnlineDEIM);
 
@@ -108,9 +114,11 @@ int main( int argc, char** argv)
                 for( int i = 0; i < mu.size(); ++i )
                     mdeimHeatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
                 mdeimHeatBox->updateParameterValues();
-                mdeimHeatBox->updateFieldVelocityConvection();
-                mdeimHeatBox->algebraicFactory()->assembleLinear(mdeimHeatBox->blockVectorSolution().vectorMonolithic());
-                return mdeimHeatBox->algebraicFactory()->matrix();
+                auto mat = mdeimHeatBox->algebraicFactory()->matrix()->clone();
+                mat->zero();
+                auto rhsTMP = mdeimHeatBox->algebraicFactory()->rhs()->clone();
+                mdeimHeatBox->algebraicFactory()->applyAssemblyLinear( mdeimHeatBox->blockVectorSolution().vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
+                return mat;
             };
     model->setOnlineAssembleMDEIM(assembleOnlineMDEIM);
 
@@ -148,7 +156,7 @@ int main( int argc, char** argv)
         for( int i = 0; i < mu.size(); ++i )
             heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
         heatBox->updateParameterValues();
-        heatBox->updateFieldVelocityConvection();
+        // heatBox->updateFieldVelocityConvection();
         heatBox->solve();
         TFE = heatBox->fieldTemperature();
         auto normT = normL2( rangeT, idv(TFE) );
