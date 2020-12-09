@@ -77,7 +77,7 @@ int main( int argc, char** argv)
                 for( int i = 0; i < mu.size(); ++i )
                     heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
                 heatBox->updateParameterValues();
-                auto mat = heatBox->algebraicFactory()->matrix()->clone();
+                auto mat = heatBox->algebraicFactory()->matrix();//->clone();
                 mat->zero();
                 auto rhsTMP = heatBox->algebraicFactory()->rhs()->clone();
                 heatBox->algebraicFactory()->applyAssemblyLinear( heatBox->blockVectorSolution().vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
@@ -86,41 +86,43 @@ int main( int argc, char** argv)
     model->setAssembleMDEIM(assembleMDEIM);
     model->initModel();
 
-    auto deimHeatBox = std::make_shared<heat_tb_type>("heat");
-    deimHeatBox->setMesh(model->getDEIMReducedMesh());
-    deimHeatBox->init();
-    deimHeatBox->printAndSaveInfo();
-    deim_function_type assembleOnlineDEIM =
-        [deimHeatBox](parameter_type const& mu)
-            {
-                for( int i = 0; i < mu.size(); ++i )
-                    deimHeatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
-                deimHeatBox->updateParameterValues();
-                auto rhs = deimHeatBox->algebraicFactory()->rhs()->clone();
-                rhs->zero();
-                auto matTMP = deimHeatBox->algebraicFactory()->matrix()->clone();
-                deimHeatBox->algebraicFactory()->applyAssemblyLinear( deimHeatBox->blockVectorSolution().vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
-                return rhs;
-            };
-    model->setOnlineAssembleDEIM(assembleOnlineDEIM);
+    // auto deimHeatBox = std::make_shared<heat_tb_type>("heat");
+    // deimHeatBox->setMesh(model->getDEIMReducedMesh());
+    // deimHeatBox->init();
+    // deimHeatBox->printAndSaveInfo();
+    // deim_function_type assembleOnlineDEIM =
+    //     [deimHeatBox](parameter_type const& mu)
+    //         {
+    //             for( int i = 0; i < mu.size(); ++i )
+    //                 deimHeatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
+    //             deimHeatBox->updateParameterValues();
+    //             auto rhs = deimHeatBox->algebraicFactory()->rhs()->clone();
+    //             rhs->zero();
+    //             auto matTMP = deimHeatBox->algebraicFactory()->matrix()->clone();
+    //             deimHeatBox->algebraicFactory()->applyAssemblyLinear( deimHeatBox->blockVectorSolution().vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
+    //             return rhs;
+    //         };
+    // model->setOnlineAssembleDEIM(assembleOnlineDEIM);
+    model->setOnlineAssembleDEIM(assembleDEIM);
 
-    auto mdeimHeatBox = std::make_shared<heat_tb_type>("heat");
-    mdeimHeatBox->setMesh(model->getMDEIMReducedMesh());
-    mdeimHeatBox->init();
-    mdeimHeatBox->printAndSaveInfo();
-    mdeim_function_type assembleOnlineMDEIM =
-        [mdeimHeatBox](parameter_type const& mu)
-            {
-                for( int i = 0; i < mu.size(); ++i )
-                    mdeimHeatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
-                mdeimHeatBox->updateParameterValues();
-                auto mat = mdeimHeatBox->algebraicFactory()->matrix()->clone();
-                mat->zero();
-                auto rhsTMP = mdeimHeatBox->algebraicFactory()->rhs()->clone();
-                mdeimHeatBox->algebraicFactory()->applyAssemblyLinear( mdeimHeatBox->blockVectorSolution().vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
-                return mat;
-            };
-    model->setOnlineAssembleMDEIM(assembleOnlineMDEIM);
+    // auto mdeimHeatBox = std::make_shared<heat_tb_type>("heat");
+    // mdeimHeatBox->setMesh(model->getMDEIMReducedMesh());
+    // mdeimHeatBox->init();
+    // mdeimHeatBox->printAndSaveInfo();
+    // mdeim_function_type assembleOnlineMDEIM =
+    //     [mdeimHeatBox](parameter_type const& mu)
+    //         {
+    //             for( int i = 0; i < mu.size(); ++i )
+    //                 mdeimHeatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
+    //             mdeimHeatBox->updateParameterValues();
+    //             auto mat = mdeimHeatBox->algebraicFactory()->matrix()->clone();
+    //             mat->zero();
+    //             auto rhsTMP = mdeimHeatBox->algebraicFactory()->rhs()->clone();
+    //             mdeimHeatBox->algebraicFactory()->applyAssemblyLinear( mdeimHeatBox->blockVectorSolution().vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
+    //             return mat;
+    //         };
+    // model->setOnlineAssembleMDEIM(assembleOnlineMDEIM);
+    model->setOnlineAssembleMDEIM(assembleMDEIM);
 
     model->postInitModel();
     model->setInitialized(true);

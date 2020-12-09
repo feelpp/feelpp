@@ -28,31 +28,33 @@ model.setAssembleDEIM(fct=assembleDEIM)
 model.setAssembleMDEIM(fct=assembleMDEIM)
 model.initModel()
 
-heatBoxDEIM=heat(dim=2,order=1)
-meshDEIM = model.getDEIMReducedMesh()
-heatBoxDEIM.setMesh(meshDEIM)
-heatBoxDEIM.init()
+# heatBoxDEIM=heat(dim=2,order=1)
+# meshDEIM = model.getDEIMReducedMesh()
+# heatBoxDEIM.setMesh(meshDEIM)
+# heatBoxDEIM.init()
 
-def assembleOnlineDEIM(mu):
-    for i in range(0,mu.size()):
-        heatBoxDEIM.addParameterInModelProperties(mu.parameterName(i),mu(i))
-    heatBoxDEIM.updateParameterValues()
-    return heatBoxDEIM.assembleRhs()
+# def assembleOnlineDEIM(mu):
+#     for i in range(0,mu.size()):
+#         heatBoxDEIM.addParameterInModelProperties(mu.parameterName(i),mu(i))
+#     heatBoxDEIM.updateParameterValues()
+#     return heatBoxDEIM.assembleRhs()
 
-model.setOnlineAssembleDEIM(assembleOnlineDEIM)
+# model.setOnlineAssembleDEIM(assembleOnlineDEIM)
+model.setOnlineAssembleDEIM(assembleDEIM)
 
-heatBoxMDEIM=heat(dim=2,order=1)
-meshMDEIM = model.getMDEIMReducedMesh()
-heatBoxMDEIM.setMesh(meshMDEIM)
-heatBoxMDEIM.init()
+# heatBoxMDEIM=heat(dim=2,order=1)
+# meshMDEIM = model.getMDEIMReducedMesh()
+# heatBoxMDEIM.setMesh(meshMDEIM)
+# heatBoxMDEIM.init()
 
-def assembleOnlineMDEIM(mu):
-    for i in range(0,mu.size()):
-        heatBoxMDEIM.addParameterInModelProperties(mu.parameterName(i),mu(i))
-    heatBoxMDEIM.updateParameterValues()
-    return heatBoxMDEIM.assembleMatrix()
+# def assembleOnlineMDEIM(mu):
+#     for i in range(0,mu.size()):
+#         heatBoxMDEIM.addParameterInModelProperties(mu.parameterName(i),mu(i))
+#     heatBoxMDEIM.updateParameterValues()
+#     return heatBoxMDEIM.assembleMatrix()
 
-model.setOnlineAssembleMDEIM(assembleOnlineMDEIM)
+# model.setOnlineAssembleMDEIM(assembleOnlineMDEIM)
+model.setOnlineAssembleMDEIM(assembleMDEIM)
 
 model.postInitModel()
 model.setInitialized(True)
