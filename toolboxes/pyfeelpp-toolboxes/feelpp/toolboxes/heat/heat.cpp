@@ -80,7 +80,7 @@ void defSM(py::module &m)
         .def( "addParameterInModelProperties", &toolbox_t::addParameterInModelProperties,"add parameter in model properties", py::arg("symbolName"), py::arg("value") )
         .def( "updateParameterValues", &toolbox_t::updateParameterValues, "update parameter values" )
         .def( "assembleMatrix", [](const toolbox_t& t) {
-                                    auto mat = t.algebraicFactory()->matrix()->clone();
+                                    auto mat = t.algebraicFactory()->matrix();//->clone();
                                     mat->zero();
                                     auto rhsTMP = t.algebraicFactory()->rhs()->clone();
                                     t.algebraicFactory()->applyAssemblyLinear( t.blockVectorSolution().vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
