@@ -1,13 +1,11 @@
 import sys
-from pyfeelpptoolboxes.heat import *
-from pyfeelppmor.crb import *
-from pyfeelppmor.toolboxmor import *
-from pyfeelpp import discr
-from pyfeelpp import alg
+from feelpp.toolboxes.heat import *
+from feelpp.mor import *
+import feelpp
 
 o=toolboxes_options("heat")
 o.add(makeToolboxMorOptions())
-e=core.Environment(sys.argv,opts=o)
+e=feelpp.Environment(sys.argv,opts=o)
 
 heatBox=heat(dim=2,order=1)
 heatBox.init()
@@ -19,18 +17,12 @@ def assembleDEIM(mu):
         heatBox.addParameterInModelProperties(mu.parameterName(i),mu(i))
     heatBox.updateParameterValues()
     return heatBox.assembleRhs()
-    # heatBox.updateFieldVelocityConvection()
-    # heatBox.assembleLinear()
-    # return heatBox.rhs()
 
 def assembleMDEIM(mu):
     for i in range(0,mu.size()):
         heatBox.addParameterInModelProperties(mu.parameterName(i),mu(i))
     heatBox.updateParameterValues()
     return heatBox.assembleMatrix()
-    # heatBox.updateFieldVelocityConvection()
-    # heatBox.assembleLinear()
-    # return heatBox.matrix()
 
 model.setAssembleDEIM(fct=assembleDEIM)
 model.setAssembleMDEIM(fct=assembleMDEIM)
@@ -46,9 +38,6 @@ def assembleOnlineDEIM(mu):
         heatBoxDEIM.addParameterInModelProperties(mu.parameterName(i),mu(i))
     heatBoxDEIM.updateParameterValues()
     return heatBoxDEIM.assembleRhs()
-    # heatBoxDEIM.updateFieldVelocityConvection()
-    # heatBoxDEIM.assembleLinear()
-    # return heatBoxDEIM.rhs()
 
 model.setOnlineAssembleDEIM(assembleOnlineDEIM)
 
@@ -62,9 +51,6 @@ def assembleOnlineMDEIM(mu):
         heatBoxMDEIM.addParameterInModelProperties(mu.parameterName(i),mu(i))
     heatBoxMDEIM.updateParameterValues()
     return heatBoxMDEIM.assembleMatrix()
-    # heatBoxMDEIM.updateFieldVelocityConvection()
-    # heatBoxMDEIM.assembleLinear()
-    # return heatBoxMDEIM.matrix()
 
 model.setOnlineAssembleMDEIM(assembleOnlineMDEIM)
 
