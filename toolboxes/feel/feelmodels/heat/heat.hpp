@@ -440,26 +440,6 @@ class Heat : public ModelNumerical,
 
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
-        // update field from expr
-        void updateFieldVelocityConvection( bool onlyExprWithTimeSymbol = false );
-        template < typename ExprT >
-        void updateFieldVelocityConvection( vf::Expr<ExprT> const& expr )
-        {
-            this->updateFieldVelocityConvection( elements(this->mesh()), expr );
-        }
-        template < typename ExprT >
-        void updateFieldVelocityConvection( elements_reference_wrapper_t<mesh_type> const& range, vf::Expr<ExprT> const& expr )
-        {
-            if ( !M_fieldVelocityConvection )
-                this->updateForUseFunctionSpacesVelocityConvection();
-            M_exprVelocityConvection.reset();// symbolic expression is remove
-            M_fieldVelocityConvection->on(_range=range, _expr=expr );
-        }
-
-        void assembleLinear() { this->algebraicFactory()->assembleLinear(this->blockVectorSolution().vectorMonolithic()); }
-        vector_ptrtype rhs() { return this->algebraicFactory()->rhs(); }
-        sparse_matrix_ptrtype matrix() { return this->algebraicFactory()->matrix(); }
-
     private :
         void updateTimeStepCurrentResidual();
 
