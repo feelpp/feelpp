@@ -828,20 +828,20 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 size_type startBlockIndexTranslationalVelocityBody2 = this->startSubBlockSpaceIndex("body-bc."+bbc2.name()+".translational-velocity");
                 bool hasActiveDofTranslationalVelocityBody1 = bbc1.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
                 bool hasActiveDofTranslationalVelocityBody2 = bbc2.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
-                //size_type startBlockIndexArticulationLMTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc1.name()+".articulation-lm.translational-velocity");
                 size_type startBlockIndexArticulationLMTranslationalVelocity = this->startSubBlockSpaceIndex( "body-bc.articulation-lm."+ba.name()+".translational-velocity");
                 if ( BuildCstPart)
                 {
+                    A->setIsClosed( false );
                     if ( hasActiveDofTranslationalVelocityBody1 )
                     {
-                        auto const& basisToContainerGpTranslationalVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocityBody1 );
-                        auto const& basisToContainerGpTranslationalVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexTranslationalVelocityBody1 );
+                        auto const& basisToContainerGpTranslationalVelocityBody1Row = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocityBody1 );
+                        auto const& basisToContainerGpTranslationalVelocityBody1Col = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexTranslationalVelocityBody1 );
                         auto const& basisToContainerGpArticulationLMTranslationalVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexArticulationLMTranslationalVelocity );
                         auto const& basisToContainerGpArticulationLMTranslationalVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexArticulationLMTranslationalVelocity );
                         for (int d=0;d<nDim;++d)
                         {
-                            A->add( basisToContainerGpTranslationalVelocityRow[d],basisToContainerGpArticulationLMTranslationalVelocityCol[d],1.0 );
-                            A->add( basisToContainerGpArticulationLMTranslationalVelocityRow[d],basisToContainerGpTranslationalVelocityCol[d],1.0 );
+                            A->add( basisToContainerGpTranslationalVelocityBody1Row[d],basisToContainerGpArticulationLMTranslationalVelocityCol[d],1.0 );
+                            A->add( basisToContainerGpArticulationLMTranslationalVelocityRow[d],basisToContainerGpTranslationalVelocityBody1Col[d],1.0 );
                         }
                     }
                     if ( hasActiveDofTranslationalVelocityBody2 )
@@ -859,6 +859,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 }
                 if ( BuildNonCstPart )
                 {
+                    F->setIsClosed( false );
                     if ( hasActiveDofTranslationalVelocityBody1 )
                     {
                         auto const& basisToContainerGpArticulationLMTranslationalVelocityVector = F->map().dofIdToContainerId( rowStartInVector+startBlockIndexArticulationLMTranslationalVelocity );
