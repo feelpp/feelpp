@@ -559,7 +559,8 @@ ModelBase::saveInfo( std::vector<tabulate::Table> const& tabInfos ) const
 void
 ModelBase::printAndSaveInfo() const
 {
-    auto tabInfo = this->tabulateInformations();
+    //auto tabInfo = this->tabulateInformations();
+    std::vector<tabulate::Table> tabInfo;
     this->printInfo( tabInfo );
     this->saveInfo( tabInfo );
 }

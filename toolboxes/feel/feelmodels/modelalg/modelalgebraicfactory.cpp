@@ -961,8 +961,10 @@ ModelAlgebraicFactory::tabulateInformation( nl::json const& jsonInfo, TabulateIn
         model->timerTool("Solve").elapsed("algebraic-newton-initial-guess");
         model->timerTool("Solve").restart();
 
+#if 0
         if ( M_explictPartOfSolution )
             M_solverPtAP_solution->add( -1.0, M_explictPartOfSolution );
+#endif
 
         //---------------------------------------------------------------------//
         if (model->useCstMatrix())
@@ -1036,7 +1038,10 @@ ModelAlgebraicFactory::tabulateInformation( nl::json const& jsonInfo, TabulateIn
         typename backend_type::nl_solve_return_type solveStat;
         if ( M_useSolverPtAP )
         {
-            *M_solverPtAP_solution = *U; // actually always same size
+            // TODO REMOVE EXPLICIT PART
+            // Not sure that is good!
+            M_solverPtAP_matP->multVector( *U, *M_solverPtAP_solution, true );
+            //*M_solverPtAP_solution = *U; // actually always same size
             solveStat = M_solverPtAP_backend->nlSolve( _jacobian=M_solverPtAP_matPtAP,
                                                        _solution=M_solverPtAP_solution,
                                                        _residual=M_solverPtAP_PtF,

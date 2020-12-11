@@ -733,6 +733,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
             bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
             if ( BuildCstPart )
             {
+                J->setIsClosed( false );
                 if ( hasActiveDofTranslationalVelocity )
                 {
                     auto const& basisToContainerGpTranslationalVelocityRow = J->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity );
@@ -758,6 +759,52 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                 }
             }
         }
+
+        for ( auto const& nba : M_bodySetBC.nbodyArticulated() )
+        {
+            if ( nba.articulationMethod() != "lm" )
+                continue;
+
+            for ( auto const& ba : nba.articulations() )
+            {
+                auto const& bbc1 = ba.body1();
+                auto const& bbc2 = ba.body2();
+                size_type startBlockIndexTranslationalVelocityBody1 = this->startSubBlockSpaceIndex("body-bc."+bbc1.name()+".translational-velocity");
+                size_type startBlockIndexTranslationalVelocityBody2 = this->startSubBlockSpaceIndex("body-bc."+bbc2.name()+".translational-velocity");
+                bool hasActiveDofTranslationalVelocityBody1 = bbc1.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
+                bool hasActiveDofTranslationalVelocityBody2 = bbc2.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
+                size_type startBlockIndexArticulationLMTranslationalVelocity = this->startSubBlockSpaceIndex( "body-bc.articulation-lm."+ba.name()+".translational-velocity");
+                if ( BuildCstPart)
+                {
+                    J->setIsClosed( false );
+                    if ( hasActiveDofTranslationalVelocityBody1 )
+                    {
+                        auto const& basisToContainerGpTranslationalVelocityBody1Row = J->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocityBody1 );
+                        auto const& basisToContainerGpTranslationalVelocityBody1Col = J->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexTranslationalVelocityBody1 );
+                        auto const& basisToContainerGpArticulationLMTranslationalVelocityRow = J->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexArticulationLMTranslationalVelocity );
+                        auto const& basisToContainerGpArticulationLMTranslationalVelocityCol = J->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexArticulationLMTranslationalVelocity );
+                        for (int d=0;d<nDim;++d)
+                        {
+                            J->add( basisToContainerGpTranslationalVelocityBody1Row[d],basisToContainerGpArticulationLMTranslationalVelocityCol[d],1.0 );
+                            J->add( basisToContainerGpArticulationLMTranslationalVelocityRow[d],basisToContainerGpTranslationalVelocityBody1Col[d],1.0 );
+                        }
+                    }
+                    if ( hasActiveDofTranslationalVelocityBody2 )
+                    {
+                        auto const& basisToContainerGpTranslationalVelocityBody2Row = J->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocityBody2 );
+                        auto const& basisToContainerGpTranslationalVelocityBody2Col = J->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexTranslationalVelocityBody2 );
+                        auto const& basisToContainerGpArticulationLMTranslationalVelocityRow = J->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexArticulationLMTranslationalVelocity );
+                        auto const& basisToContainerGpArticulationLMTranslationalVelocityCol = J->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexArticulationLMTranslationalVelocity );
+                        for (int d=0;d<nDim;++d)
+                        {
+                            J->add( basisToContainerGpArticulationLMTranslationalVelocityRow[d],basisToContainerGpTranslationalVelocityBody2Col[d],-1.0 );
+                            J->add( basisToContainerGpTranslationalVelocityBody2Row[d],basisToContainerGpArticulationLMTranslationalVelocityCol[d],-1.0 );
+                        }
+                    }
+                }
+            } // ba
+        } // nba
+
     }
 
     //--------------------------------------------------------------------------------------------------//
