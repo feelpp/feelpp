@@ -278,53 +278,49 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) con
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-std::vector<tabulate::Table>
+tabulate_informations_ptr_t
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    std::vector<tabulate::Table> tabInfos;
+    auto tabInfo = TabulateInformationsSections::New();
 
-    std::vector<std::pair<std::string,tabulate::Table>> tabInfoSections;
-    // ------------------------------------------------------------------
     // Environment
     if ( jsonInfo.contains("Environment") )
-        tabInfoSections.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
-    // ------------------------------------------------------------------
+        tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
+
     // Physics
     if ( jsonInfo.contains("Physics") )
     {
         tabulate::Table tabInfoPhysics;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
-        tabInfoSections.push_back( std::make_pair( "Physics",  tabInfoPhysics ) );
+        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics ) );
     }
-    // ------------------------------------------------------------------
+
     // Materials Properties
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
-        tabInfoSections.push_back( std::make_pair( "Materials Properties", this->materialsProperties()->tabulateInformation(jsonInfo.at("Materials Properties"), tabInfoProp ) ) );
-    // ------------------------------------------------------------------
+        tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
+
     // Meshes
     if ( jsonInfo.contains("Meshes") )
-        tabInfoSections.push_back( std::make_pair( "Meshes", super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) ) );
-    // ------------------------------------------------------------------
+        tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
+
     // Function Spaces
     if ( jsonInfo.contains("Function Spaces") )
     {
         auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
-        tabulate::Table tabInfoFunctionSpaces;
+        auto tabInfoFunctionSpaces = TabulateInformationsSections::New();
         for ( std::string const& spaceName : std::vector<std::string>({"Velocity","Pressure"}) )
         {
-            tabInfoFunctionSpaces.add_row({spaceName});
-            tabInfoFunctionSpaces.add_row({ TabulateInformationTools::FromJSON::tabulateFunctionSpace( jsonInfoFunctionSpaces.at( spaceName ), tabInfoProp ) });
+            if ( jsonInfoFunctionSpaces.contains( spaceName ) )
+                tabInfoFunctionSpaces->add( spaceName, TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( jsonInfoFunctionSpaces.at( spaceName ), tabInfoProp ) );
         }
-        tabInfoSections.push_back( std::make_pair( "Function Spaces", tabInfoFunctionSpaces ) );
+        tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
     }
-    // ------------------------------------------------------------------
+
     // Algebraic Solver
     if ( jsonInfo.contains( "Algebraic Solver" ) )
-        tabInfoSections.push_back( std::make_pair( "Algebraic Solver", model_algebraic_factory_type::tabulateInformation( jsonInfo.at("Algebraic Solver"), tabInfoProp ) ) );
+        tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
 
-    tabInfos.push_back( TabulateInformationTools::createSections( tabInfoSections, (boost::format("Toolbox Coefficient Form PDEs : %1%")%this->keyword()).str() ) );
-
-    return tabInfos;
+    return tabInfo;
 }
 
 

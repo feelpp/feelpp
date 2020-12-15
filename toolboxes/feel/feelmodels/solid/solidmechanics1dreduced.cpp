@@ -264,18 +264,17 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree
     p.put_child( "Meshes", subPt );
 }
 SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_DECLARATIONS
-tabulate::Table
-SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+tabulate_informations_ptr_t
+SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    std::vector<std::pair<std::string,tabulate::Table>> tabInfoSections;
-
+    auto tabInfo = TabulateInformationsSections::New();
     if ( jsonInfo.contains("Environment") )
-        tabInfoSections.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
+        tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
     if ( jsonInfo.contains("Meshes") )
-        tabInfoSections.push_back( std::make_pair( "Meshes", super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) ) );
+        tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
 
-    return TabulateInformationTools::createSections( tabInfoSections, (boost::format("Toolbox Solid 1d : %1%")%this->keyword()).str() );
+    return tabInfo;
 }
 
 

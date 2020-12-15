@@ -1313,33 +1313,24 @@ FSI<FluidType,SolidType>::updateInformationObject( pt::ptree & p ) const
 }
 
 template< class FluidType, class SolidType >
-std::vector<tabulate::Table>
+tabulate_informations_ptr_t
 FSI<FluidType,SolidType>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    std::vector<tabulate::Table> tabInfos;
-
-    std::vector<std::pair<std::string,tabulate::Table>> tabInfoSections;
-
+    auto tabInfo = TabulateInformationsSections::New();
     if ( jsonInfo.contains("Environment") )
-        tabInfoSections.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
+        tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
-    tabInfos.push_back( TabulateInformationTools::createSections( tabInfoSections, (boost::format("Toolbox FSI : %1%")%this->keyword()).str() ) );
-
-    // generate sub toolboxes info
     if ( M_fluidModel && jsonInfo.contains( "Toolbox Fluid" ) )
     {
         auto tabInfos_fluid = M_fluidModel->tabulateInformations( jsonInfo.at("Toolbox Fluid"), tabInfoProp );
-        for ( auto const& tabInfo_fluid : tabInfos_fluid )
-            tabInfos.push_back( std::move( tabInfo_fluid ) );
+        tabInfo->add( "Toolbox Fluid", tabInfos_fluid );
     }
     if ( M_solidModel && jsonInfo.contains( "Toolbox Solid" ) )
     {
         auto tabInfos_solid = M_solidModel->tabulateInformations( jsonInfo.at("Toolbox Solid"), tabInfoProp );
-        for ( auto const& tabInfo_solid  : tabInfos_solid )
-            tabInfos.push_back( std::move( tabInfo_solid  ) );
+        tabInfo->add( "Toolbox Solid", tabInfos_solid );
     }
-
-    return tabInfos;
+    return tabInfo;
 }
 
 } // namespace FeelModels
