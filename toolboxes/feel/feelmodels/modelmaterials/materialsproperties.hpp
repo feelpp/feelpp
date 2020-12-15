@@ -665,26 +665,22 @@ public :
             }
         }
 
-    tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
         {
-            tabulate::Table tabInfo;
+            auto tabInfo = TabulateInformationsSections::New();
+
             tabulate::Table tabInfoOthers;
             TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
-            tabInfo.add_row({tabInfoOthers});
+            tabInfo->add( "", TabulateInformations::New( tabInfoOthers ) );
 
             for ( auto const& [matName,matProps] : M_materialNameToProperties )
             {
                 if ( !jsonInfo.contains(matName) )
                     continue;
-                tabulate::Table tabInfoMat;
-                tabInfoMat.add_row({"Material : "+matName});
                 tabulate::Table tabInfoMatEntries;
                 TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoMatEntries, jsonInfo.at( matName ), tabInfoProp );
-                tabInfoMat.add_row( { tabInfoMatEntries});
-                tabInfo.add_row( {tabInfoMat} );
+                tabInfo->add( "Material : "+matName, TabulateInformations::New( tabInfoMatEntries ) );
             }
-            tabInfo.format().hide_border();
-
             return tabInfo;
         }
 

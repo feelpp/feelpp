@@ -121,7 +121,7 @@ namespace FeelModels
         void printInfo() const;
 
         void updateInformationObject( pt::ptree & p ) const;
-        static tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
 
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//

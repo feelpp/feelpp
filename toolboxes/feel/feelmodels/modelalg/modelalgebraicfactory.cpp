@@ -462,22 +462,20 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             subPt.put( "mat-solver-package", this->backend()->pcFactorMatSolverPackageType() );
         p.put_child( "PC", subPt );
     }
-tabulate::Table
-ModelAlgebraicFactory::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+
+tabulate_informations_ptr_t
+ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
 {
-    tabulate::Table tabInfo;
+    auto tabInfo = TabulateInformationsSections::New();
 
     for ( std::string const& section : std::vector<std::string>({"Backend","KSP","SNES","KSP in SNES", "PC" }) )
         {
-            tabulate::Table tabInfoSection;
-            tabInfoSection.add_row({section});
+            if ( !jsonInfo.contains( section ) )
+                continue;
             tabulate::Table tabInfoSectionEntries;
             TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoSectionEntries, jsonInfo.at( section ), tabInfoProp );
-            tabInfoSection.add_row({tabInfoSectionEntries});
-            tabInfo.add_row({tabInfoSection});
+            tabInfo->add( section, TabulateInformations::New( tabInfoSectionEntries ) );
         }
-
-    tabInfo.format().hide_border();
 
     return tabInfo;
 }
