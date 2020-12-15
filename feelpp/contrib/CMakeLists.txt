@@ -497,6 +497,7 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
   if ( SCOTCH_FOUND )
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_SCOTCH )
   endif() 
+  
 
   # setup parmmg only if mmg is ok
   feelppContribPrepare( parmmg )
@@ -504,15 +505,16 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     SET ( LIBPARMMG_STATIC OFF )
     SET ( LIBPARMMG_SHARED ON )
     SET( DOWNLOAD_MMG OFF )
-    SET( DOWNLOAD_METIS OFF )
-    SET(MMG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
-    SET(MMG_BUILDDIR ${CMAKE_CURRENT_BINARY_DIR}/mmg)
-    if ( 0 )
-      add_subdirectory( parmmg )
-      target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PARMMG )
-      target_link_libraries(feelpp_contrib INTERFACE libfeelpp_parmmg_so )
-      set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} ParMmg/Contrib")
-    endif( 0 )
+    SET( DOWNLOAD_METIS ON )
+    
+#    SET(MMG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
+#    SET(MMG_BUILDDIR ${CMAKE_CURRENT_BINARY_DIR}/mmg)
+#    SET(MMG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
+    add_subdirectory( parmmg )
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PARMMG )
+    target_link_libraries(feelpp_contrib INTERFACE libfeelpp_parmmg_so )
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} ParMmg/Contrib")
+
   endif()
 endif()
 
