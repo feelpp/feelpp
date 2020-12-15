@@ -4,6 +4,10 @@
 #include <feel/feelmodels/modelcore/tabulateinformation.hpp>
 #include <feel/feelmodels/modelcore/terminalsize.hpp>
 
+#include <tabulate/asciidoc_exporter.hpp>
+//#include <tabulate/markdown_exporter.hpp>
+
+
 namespace Feel
 {
 
@@ -18,57 +22,53 @@ typename TabulateInformations::self_ptrtype TabulateInformations::New( tabulate:
     return std::make_shared<TabulateInformationsTable>( table );
 }
 
-
-size_t
-TabulateInformations::outputStringWidth() const
-{
-    size_t res = 0;
-    for (auto const& l : this->outputStringByLines() )
-        res = std::max( res, l.size() );
-    return res;
-}
-
-
 std::ostream& operator<<( std::ostream& o, TabulateInformations const& ti )
 {
-    for ( std::string const& s : ti.outputStringByLines() )
+    return o << ti.exporterAscii();
+}
+
+std::ostream& operator<<( std::ostream& o, TabulateInformations::ExporterAscii const& ea )
+{
+    for ( std::string const& s : ea.M_outputStringByLines )
         o << s << "\n";
     return o;
 }
 
-void
-TabulateInformationsTable::updateForUse()
+std::ostream& operator<<( std::ostream& o, TabulateInformations::ExporterAsciiDoc const& ead )
+{
+    ead.M_tabulateInformations->exportAsciiDoc( o, ead.M_startLevelSection );
+    return o;
+}
+
+
+std::vector<std::string>
+TabulateInformationsTable::exportAscii() const
 {
     std::ostringstream ostr;
     ostr << M_table;
     std::istringstream istr(ostr.str());
     std::string to;
-    this->M_outputStringByLines.clear();
+
+    std::vector<std::string> outputStringByLines;
     while ( std::getline(istr,to,'\n') )
     {
-        M_outputStringByLines.push_back( to );
+        outputStringByLines.push_back( to );
     }
+    return outputStringByLines;
 }
+
 void
-TabulateInformationsSections::updateForUse()
+TabulateInformationsTable::exportAsciiDoc( std::ostream &o, int levelSection ) const
 {
-    for ( auto & [name,st] : M_subTab )
-        st->updateForUse();
+    tabulate::AsciiDocExporter exporter;
+    //tabulate::MarkdownExporter exporter;
+    auto asciidoc = exporter.dump(const_cast<tabulate::Table&>(M_table));
+    o << asciidoc;
+}
 
-    this->M_outputStringByLines.clear();
-#if 0
-    size_t maxLineSize = 0;
-    for ( auto const& [name,st] : M_subTab )
-    {
-        std::max( maxLineSize, name.size() );
-        if ( st->outputStringByLines().empty() )
-            continue;
-        maxLineSize = std::max( maxLineSize, st->outputStringByLines().front().size() );
-    }
-    if ( maxLineSize == 0 )
-        return;
-#endif
-
+std::vector<std::string>
+TabulateInformationsSections::exportAscii() const
+{
     auto gethorizontalLine = [] ( size_t maxLineSize, bool addLeftBorder, bool addRightBorder ) {
         std::string horizontalLine;
         if ( addLeftBorder )
@@ -106,29 +106,61 @@ TabulateInformationsSections::updateForUse()
         return res;
     };
 
+    auto outputStringWidth = []( std::vector<std::string> const& osbl ) {
+        size_t res = 0;
+        for (auto const& l : osbl )
+            res = std::max( res, l.size() );
+        return res;
+    };
+
+    std::vector<std::string> outputStringByLines;
+
     //bool hasDoFirstSection = false;
-    for ( auto & [name,st] : M_subTab )
+    for ( auto const& [name,st] : M_subTab )
     {
-        if ( st->outputStringByLines().empty() )
+        //auto outputStringByLinesCurrent = st->exportAscii();
+        auto exporterAsciiCurrent = st->exporterAscii();
+        auto const& outputStringByLinesCurrent = exporterAsciiCurrent.outputStringByLines();
+        if ( outputStringByLinesCurrent.empty() )
             continue;
 
-        size_t maxLineSize = std::max( st->outputStringWidth(), name.size() );
+        size_t maxLineSize = std::max( outputStringWidth( outputStringByLinesCurrent ), name.size() );
         bool addLeftBorder = !name.empty(), addRightBorder = addLeftBorder;
         std::string horizontalLine = gethorizontalLine( maxLineSize, addLeftBorder, addRightBorder );
         if ( !name.empty() )
         {
-            this->M_outputStringByLines.push_back( horizontalLine );
-            this->M_outputStringByLines.push_back( getLineInContext(name,maxLineSize,addLeftBorder, addRightBorder) );
-            this->M_outputStringByLines.push_back( horizontalLine );
+            outputStringByLines.push_back( horizontalLine );
+            outputStringByLines.push_back( getLineInContext(name,maxLineSize,addLeftBorder, addRightBorder) );
+            outputStringByLines.push_back( horizontalLine );
         }
-        for ( std::string const& s : st->outputStringByLines() )
-            this->M_outputStringByLines.push_back( getLineInContext(s,maxLineSize,addLeftBorder, addRightBorder) );
+        for ( std::string const& s : outputStringByLinesCurrent )
+            outputStringByLines.push_back( getLineInContext(s,maxLineSize,addLeftBorder, addRightBorder) );
         if ( !name.empty() )
-            this->M_outputStringByLines.push_back( horizontalLine );
+            outputStringByLines.push_back( horizontalLine );
 
         //hasDoFirstSection = true;
     }
+    return outputStringByLines;
 }
+
+
+void
+TabulateInformationsSections::exportAsciiDoc( std::ostream &o, int levelSection ) const
+{
+    // TODO
+    std::string levelSectionStr = std::string(levelSection+1,'=');
+    for ( auto const& [name,st] : M_subTab )
+    {
+        int currentLevelSection = levelSection;
+        if ( !name.empty() )
+        {
+            o << levelSectionStr << " " << name << "\n";
+            ++currentLevelSection;
+        }
+        o <<  st->exporterAsciiDoc( currentLevelSection ) << "\n";
+    }
+}
+
 
 namespace TabulateInformationTools
 {

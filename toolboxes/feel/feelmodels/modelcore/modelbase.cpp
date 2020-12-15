@@ -29,11 +29,6 @@
 
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 
-#if 0
-#include <tabulate/asciidoc_exporter.hpp>
-#include <tabulate/markdown_exporter.hpp>
-#endif
-
 namespace Feel {
 
 namespace FeelModels {
@@ -480,7 +475,7 @@ ModelBase::tabulateInformations() const
     std::string title = (boost::format("Toolbox : %1%")%this->keyword()).str();
     tabRes->add( title, tabInfo );
 
-    tabRes->updateForUse();
+    //tabRes->updateForUse();
     return tabRes;
 #if 0
     auto tabRes = this->tabulateInformation( jsonInfo, TabulateInformationProperties{} );
@@ -515,25 +510,6 @@ ModelBase::printInfo( tabulate_informations_ptr_t const& tabInfos ) const
     {
         std::cout << this->getInfo()->str();
         std::cout << *tabInfos << std::endl;
-#if 0
-        for ( tabulate::Table const& tabInfo : tabInfos )
-        {
-#if 1
-            std::cout << tabInfo << std::endl;
-#else
-            tabulate::Table tabInfo2 = tabInfo;
-            if ( TabulateInformationProperties::hasTerminalSize() )
-            {
-                int term_width = TabulateInformationProperties::terminalWidth();// get_terminal_size().first;
-                int table_width = tabInfo2.shape().first;
-                //std::cout << "term_width="<<term_width<< " vs table_width=" << table_width << std::endl;
-                if ( (term_width >10) && (term_width-10) < table_width )
-                    tabInfo2.format().width( term_width-10 );
-                std::cout << tabInfo2 << std::endl;
-            }
-#endif
-        }
-#endif
     }
 }
 void
@@ -542,36 +518,27 @@ ModelBase::saveInfo( tabulate_informations_ptr_t const& tabInfos ) const
     Environment::journalCheckpoint();
 
     fs::path thepath = fs::path(this->rootRepository())/fs::path(this->filenameSaveInfo());
+    std::string filename_adoc = prefixvm(this->prefix(),prefixvm(this->subPrefix(),"informations.adoc") );
+    std::string filepath_adoc = (fs::path(this->rootRepository())/filename_adoc).string();
     if (this->worldComm().isMasterRank() )
     {
         std::ofstream file( thepath.string().c_str(), std::ios::out);
         file << this->getInfo()->str();
-#if 0
-        for ( tabulate::Table const& tabInfo : tabInfos )
-            file << tabInfo << std::endl;
-#endif
         file.close();
+
+        std::ofstream file_adoc( filepath_adoc, std::ios::out);
+        file_adoc << ":sectnums:" << "\n";
+        file_adoc << tabInfos->exporterAsciiDoc() << "\n";
+        file_adoc.close();
     }
 
     this->upload( thepath.string() );
-#if 0
-    auto tabInfo = this->tabulateInformation();
-    if (this->worldComm().isMasterRank() )
-    {
-        //tabulate::AsciiDocExporter exporter;
-        tabulate::MarkdownExporter exporter;
-        auto asciidoc = exporter.dump(tabInfo);
-        std::ofstream file( "toto.adoc", std::ios::out);
-        file << asciidoc;
-        file.close();
-    }
-#endif
+    this->upload( filepath_adoc );
 }
 void
 ModelBase::printAndSaveInfo() const
 {
     auto tabInfo = this->tabulateInformations();
-    //std::vector<tabulate::Table> tabInfo;
     this->printInfo( tabInfo );
     this->saveInfo( tabInfo );
 }
