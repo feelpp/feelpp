@@ -360,6 +360,14 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) con
     // p.put( "toolbox-heat", M_heatModel->journalSectionName() );
     // p.put( "toolbox-electric", M_electricModel->journalSectionName() );
 
+    // Materials properties
+    if ( this->materialsProperties() )
+    {
+        subPt.clear();
+        this->materialsProperties()->updateInformationObject( subPt );
+        p.put_child( "Materials Properties", subPt );
+    }
+
     // Numerical Solver
     subPt.clear();
     subPt.put( "solver", M_solverName );
@@ -395,55 +403,45 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) con
 }
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-std::vector<tabulate::Table>
+tabulate_informations_ptr_t
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    std::vector<tabulate::Table> tabInfos;
-
-    std::vector<std::pair<std::string,tabulate::Table>> tabInfoSections;
-    // ------------------------------------------------------------------
-    // Environment
+    auto tabInfo = TabulateInformationsSections::New();
     if ( jsonInfo.contains("Environment") )
-        tabInfoSections.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
-    // ------------------------------------------------------------------
-    // Materials Properties
+        tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
+
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
-        tabInfoSections.push_back( std::make_pair( "Materials Properties", this->materialsProperties()->tabulateInformation(jsonInfo.at("Materials Properties"), tabInfoProp ) ) );
-    // ------------------------------------------------------------------
-    // Meshes
+        tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
+
     if ( jsonInfo.contains("Meshes") )
-        tabInfoSections.push_back( std::make_pair( "Meshes", super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) ) );
-    // ------------------------------------------------------------------
+        tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
+
     // Numerical Solver
     if ( jsonInfo.contains( "Numerical Solver" ) )
     {
         tabulate::Table tabInfoNumSolver;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoNumSolver, jsonInfo.at("Numerical Solver"), tabInfoProp );
-        tabInfoSections.push_back( std::make_pair(  "Numerical Solver", tabInfoNumSolver ) );
+        tabInfo->add( "Numerical Solver",  TabulateInformations::New( tabInfoNumSolver ) );
     }
-    // ------------------------------------------------------------------
-    // Algebraic Solver
-    if ( jsonInfo.contains( "Algebraic Solver" ) )
-        tabInfoSections.push_back( std::make_pair( "Algebraic Solver", model_algebraic_factory_type::tabulateInformation( jsonInfo.at("Algebraic Solver"), tabInfoProp ) ) );
 
-    // generate info
-    tabInfos.push_back( TabulateInformationTools::createSections( tabInfoSections, (boost::format("Toolbox Thermo-Electric : %1%")%this->keyword()).str() ) );
+    if ( jsonInfo.contains( "Algebraic Solver" ) )
+        tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
 
     // generate sub toolboxes info
     if ( M_heatModel && jsonInfo.contains( "Toolbox Heat" ) )
     {
         auto tabInfos_heat = M_heatModel->tabulateInformations( jsonInfo.at("Toolbox Heat"), tabInfoProp );
-        for ( auto const& tabInfo_heat : tabInfos_heat )
-            tabInfos.push_back( std::move( tabInfo_heat ) );
+        TabulateInformationsSections::cast( tabInfos_heat )->erase( "Materials Properties" );
+        tabInfo->add( "Toolbox Heat", tabInfos_heat );
     }
     if ( M_electricModel && jsonInfo.contains( "Toolbox Electric" ) )
     {
         auto tabInfos_electric = M_electricModel->tabulateInformations( jsonInfo.at("Toolbox Electric"), tabInfoProp );
-        for ( auto const& tabInfo_electric  : tabInfos_electric )
-            tabInfos.push_back( std::move( tabInfo_electric  ) );
+        TabulateInformationsSections::cast( tabInfos_electric )->erase( "Materials Properties" );
+        tabInfo->add( "Toolbox Electric", tabInfos_electric );
     }
 
-    return tabInfos;
+    return tabInfo;
 }
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS

@@ -426,56 +426,58 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
-tabulate::Table
-HEAT_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+tabulate_informations_ptr_t
+HEAT_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    std::vector<std::pair<std::string,tabulate::Table>> tabInfoSections;
-
+    auto tabInfo = TabulateInformationsSections::New();
     if ( jsonInfo.contains("Environment") )
-        tabInfoSections.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
+        tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
     if ( jsonInfo.contains("Physics") )
     {
         tabulate::Table tabInfoPhysics;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
-        tabInfoSections.push_back( std::make_pair( "Physics",  tabInfoPhysics ) );
+        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics ) );
     }
 
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
-        tabInfoSections.push_back( std::make_pair( "Materials Properties", this->materialsProperties()->tabulateInformation(jsonInfo.at("Materials Properties"), tabInfoProp ) ) );
+        tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
 
-    tabInfoSections.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
+    //tabInfoSections.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
 
     if ( jsonInfo.contains("Meshes") )
-       tabInfoSections.push_back( std::make_pair( "Meshes", super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) ) );
+        tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
 
     if ( jsonInfo.contains("Function Spaces") )
     {
         auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
-        tabulate::Table tabInfoFunctionSpaces;
-        tabInfoFunctionSpaces.add_row({"Temperature"});
-        tabInfoFunctionSpaces.add_row({ TabulateInformationTools::FromJSON::tabulateFunctionSpace( jsonInfoFunctionSpaces.at( "Temperature" ), tabInfoProp ) });
-        tabInfoSections.push_back( std::make_pair( "Function Spaces",  tabInfoFunctionSpaces ) );
+        auto tabInfoFunctionSpaces = TabulateInformationsSections::New();
+        tabInfoFunctionSpaces->add( "Temperature", TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( jsonInfoFunctionSpaces.at( "Temperature" ), tabInfoProp ) );
+        tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
     }
 
     if ( jsonInfo.contains("Time Discretization") )
     {
         tabulate::Table tabInfoTimeDiscr;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoTimeDiscr, jsonInfo.at("Time Discretization"), tabInfoProp );
-        tabInfoSections.push_back( std::make_pair( "Time Discretization",  tabInfoTimeDiscr ) );
+        tabInfo->add( "Time Discretization", TabulateInformations::New( tabInfoTimeDiscr ) );
     }
 
     if ( jsonInfo.contains("Finite element stabilization") )
     {
         tabulate::Table tabInfoStab;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoStab, jsonInfo.at("Finite element stabilization"), tabInfoProp );
-        tabInfoSections.push_back( std::make_pair( "Finite element stabilization",  tabInfoStab ) );
+        tabInfo->add( "Finite element stabilization", TabulateInformations::New( tabInfoStab ) );
     }
 
     if ( jsonInfo.contains( "Algebraic Solver" ) )
-        tabInfoSections.push_back( std::make_pair( "Algebraic Solver", model_algebraic_factory_type::tabulateInformation( jsonInfo.at("Algebraic Solver"), tabInfoProp ) ) );
+        tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
 
-    return TabulateInformationTools::createSections( tabInfoSections, (boost::format("Toolbox Heat : %1%")%this->keyword()).str() );
+    return tabInfo;
+    // auto tabInfo2 = TabulateInformationsSections::New();
+    // tabInfo2->add( (boost::format("Toolbox Heat : %1%")%this->keyword()).str(), tabInfo );
+    // return tabInfo2;
+    //return TabulateInformationsSections::New( (boost::format("Toolbox Heat : %1%")%this->keyword()).str(), tabInfo);
 }
 
 
