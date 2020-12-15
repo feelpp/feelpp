@@ -3,10 +3,24 @@
 
 #pragma once
 
-#include <utility>
+#include <optional>
 
 namespace Feel
 {
-std::pair<int,int> get_terminal_size();
+
+class TerminalProperties
+{
+public :
+    TerminalProperties();
+    static bool hasWidth() { return S_width && *S_width > 0; }
+    static bool hasHeight() { return S_height && *S_height > 0; }
+    static int width() { return *S_width; }
+    static int height() { return *S_height; }
+
+    static void updateTerminalSize( bool updateEvenIfAlreadyDefined = false );
+private :
+    inline static std::optional<int> S_width;
+    inline static std::optional<int> S_height;
+};
 
 } // Feel
