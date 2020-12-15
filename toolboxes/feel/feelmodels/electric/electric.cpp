@@ -362,39 +362,40 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-tabulate::Table
-ELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+tabulate_informations_ptr_t
+ELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    std::vector<std::pair<std::string,tabulate::Table>> tabInfoSections;
-
+    auto tabInfo = TabulateInformationsSections::New();
     if ( jsonInfo.contains("Environment") )
-        tabInfoSections.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
+        tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
     if ( jsonInfo.contains("Physics") )
     {
         tabulate::Table tabInfoPhysics;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
-        tabInfoSections.push_back( std::make_pair( "Physics",  tabInfoPhysics ) );
+        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics ) );
     }
 
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
-        tabInfoSections.push_back( std::make_pair( "Materials Properties", this->materialsProperties()->tabulateInformation(jsonInfo.at("Materials Properties"), tabInfoProp ) ) );
+        tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
 
-    tabInfoSections.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
+    //tabInfoSections.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
 
     if ( jsonInfo.contains("Meshes") )
-       tabInfoSections.push_back( std::make_pair( "Meshes", super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) ) );
+        tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
 
     if ( jsonInfo.contains("Function Spaces") )
     {
         auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
-        tabulate::Table tabInfoFunctionSpaces;
-        tabInfoFunctionSpaces.add_row({"Electric Potential"});
-        tabInfoFunctionSpaces.add_row({ TabulateInformationTools::FromJSON::tabulateFunctionSpace( jsonInfoFunctionSpaces.at( "Electric Potential" ), tabInfoProp ) });
-        tabInfoSections.push_back( std::make_pair( "Function Spaces",  tabInfoFunctionSpaces ) );
+        auto tabInfoFunctionSpaces = TabulateInformationsSections::New();
+        tabInfoFunctionSpaces->add( "Electric Potential", TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( jsonInfoFunctionSpaces.at( "Electric Potential" ), tabInfoProp ) );
+        tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
     }
 
-    return TabulateInformationTools::createSections( tabInfoSections, (boost::format("Toolbox Electric : %1%")%this->keyword()).str() );
+    if ( jsonInfo.contains( "Algebraic Solver" ) )
+        tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
+
+    return tabInfo;
 }
 
 
