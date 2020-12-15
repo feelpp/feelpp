@@ -181,7 +181,7 @@ public :
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
     void updateInformationObject( pt::ptree & p ) const override;
-    std::vector<tabulate::Table> tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
     //! return all subtoolboxes related to each equation
     std::vector<std::shared_ptr<coefficient_form_pde_base_type>> const& coefficientFormPDEs() const { return M_coefficientFormPDEs; }
