@@ -30,42 +30,75 @@ class TabulateInformations
 public :
     using self_ptrtype = std::shared_ptr<TabulateInformations>;
 
+    struct ExporterAscii
+    {
+        ExporterAscii( std::vector<std::string> && osbl ) : M_outputStringByLines( std::move( osbl ) ) {}
+        ExporterAscii( ExporterAscii const& ) = default;
+        ExporterAscii( ExporterAscii && ) = default;
+        friend std::ostream& operator<<( std::ostream& o, ExporterAscii const& ea );
+
+        std::vector<std::string> const& outputStringByLines() const { return M_outputStringByLines; }
+    private :
+        std::vector<std::string> M_outputStringByLines;
+    };
+
+     struct ExporterAsciiDoc
+     {
+         ExporterAsciiDoc( std::shared_ptr<const TabulateInformations> ti, int startLevelSection )
+             :
+             M_tabulateInformations( std::const_pointer_cast<TabulateInformations>( ti) ),
+             M_startLevelSection( startLevelSection )
+             {}
+         ExporterAsciiDoc( ExporterAsciiDoc const& ) = default;
+         ExporterAsciiDoc( ExporterAsciiDoc && ) = default;
+         friend std::ostream& operator<<( std::ostream& o, ExporterAsciiDoc const& ea );
+     private :
+         self_ptrtype M_tabulateInformations;
+         int M_startLevelSection;
+     };
+
     TabulateInformations() = default;
     TabulateInformations( TabulateInformations const& ) = default;
     TabulateInformations( TabulateInformations && ) = default;
 
+    ExporterAscii exporterAscii() const { return ExporterAscii( this->exportAscii() ); }
+    ExporterAsciiDoc exporterAsciiDoc( int startLevelSection = 0 ) const { return ExporterAsciiDoc( this->shared_from_this_tabulate_informations(), startLevelSection ); }
+
     static self_ptrtype New( tabulate::Table const& table );
 
-    virtual void updateForUse() = 0;
-
     friend std::ostream& operator<<( std::ostream& o, TabulateInformations const& ti );
-
-    std::vector<std::string> const& outputStringByLines() const { return M_outputStringByLines; }
-
-    size_t outputStringWidth() const;
-protected:
-    //std::ostringstream M_ostr;
-    std::vector<std::string> M_outputStringByLines;
+    friend std::ostream& operator<<( std::ostream& o, ExporterAsciiDoc const& ea );
+protected :
+    virtual std::shared_ptr<const TabulateInformations> shared_from_this_tabulate_informations() const = 0;
+    virtual std::vector<std::string> exportAscii() const = 0;
+    virtual void exportAsciiDoc( std::ostream &o, int levelSection ) const = 0;
 };
 
 std::ostream& operator<<( std::ostream& o, TabulateInformations const& ti );
+std::ostream& operator<<( std::ostream& o, TabulateInformations::ExporterAscii const& ti );
+std::ostream& operator<<( std::ostream& o, TabulateInformations::ExporterAsciiDoc const& ti );
 
+using tabulate_informations_t = TabulateInformations;
 using tabulate_informations_ptr_t = typename TabulateInformations::self_ptrtype;
 
-class TabulateInformationsTable : public TabulateInformations
+class TabulateInformationsTable : public TabulateInformations,
+                                  public std::enable_shared_from_this<TabulateInformationsTable>
 {
 public :
     explicit TabulateInformationsTable( tabulate::Table const& table ) : M_table( table ) {}
     TabulateInformationsTable( TabulateInformationsTable const& ) = default;
     TabulateInformationsTable( TabulateInformationsTable && ) = default;
 
-    void updateForUse() override;
-
+private:
+    std::shared_ptr<const TabulateInformations> shared_from_this_tabulate_informations() const override { return std::dynamic_pointer_cast<const TabulateInformations>( this->shared_from_this() );  }
+    std::vector<std::string> exportAscii() const override;
+    void exportAsciiDoc( std::ostream &o, int levelSection ) const override;
 private:
     tabulate::Table M_table;
 };
 
-class TabulateInformationsSections : public TabulateInformations
+class TabulateInformationsSections : public TabulateInformations,
+                                     public std::enable_shared_from_this<TabulateInformationsSections>
 {
 public:
     TabulateInformationsSections() = default;
@@ -76,8 +109,6 @@ public:
 
     static std::shared_ptr<TabulateInformationsSections> cast( tabulate_informations_ptr_t t ) { return std::dynamic_pointer_cast<TabulateInformationsSections>(t); }
 
-    void updateForUse() override;
-
     void add( std::string const& name, tabulate_informations_ptr_t t ) { M_subTab.push_back( std::make_pair( name, t ) ); }
 
     void erase( std::string const& name )
@@ -86,6 +117,12 @@ public:
             if ( itFind != M_subTab.end() )
                 M_subTab.erase( itFind );
         }
+private:
+    std::shared_ptr<const TabulateInformations> shared_from_this_tabulate_informations() const override { return std::dynamic_pointer_cast<const TabulateInformations>( this->shared_from_this() );  }
+    std::vector<std::string> exportAscii() const override;
+    void exportAsciiDoc( std::ostream &o, int levelSection ) const override;
+
+
 private:
     std::vector<std::pair<std::string,tabulate_informations_ptr_t>> M_subTab;
 };
