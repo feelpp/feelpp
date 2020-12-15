@@ -11,16 +11,123 @@ TabulateInformationProperties::TabulateInformationProperties( VerboseLevel vl )
     :
     M_information_level( 0 ),
     M_verbose_level( vl )
+{}
+
+typename TabulateInformations::self_ptrtype TabulateInformations::New( tabulate::Table const& table )
 {
-    this->updateTerminalSize();
+    return std::make_shared<TabulateInformationsTable>( table );
+}
+
+
+size_t
+TabulateInformations::outputStringWidth() const
+{
+    size_t res = 0;
+    for (auto const& l : this->outputStringByLines() )
+        res = std::max( res, l.size() );
+    return res;
+}
+
+
+std::ostream& operator<<( std::ostream& o, TabulateInformations const& ti )
+{
+    for ( std::string const& s : ti.outputStringByLines() )
+        o << s << "\n";
+    return o;
 }
 
 void
-TabulateInformationProperties::updateTerminalSize( bool updateEvenIfAlreadyDefined )
+TabulateInformationsTable::updateForUse()
 {
-    if ( S_terminalSize && !updateEvenIfAlreadyDefined )
+    std::ostringstream ostr;
+    ostr << M_table;
+    std::istringstream istr(ostr.str());
+    std::string to;
+    this->M_outputStringByLines.clear();
+    while ( std::getline(istr,to,'\n') )
+    {
+        M_outputStringByLines.push_back( to );
+    }
+}
+void
+TabulateInformationsSections::updateForUse()
+{
+    for ( auto & [name,st] : M_subTab )
+        st->updateForUse();
+
+    this->M_outputStringByLines.clear();
+#if 0
+    size_t maxLineSize = 0;
+    for ( auto const& [name,st] : M_subTab )
+    {
+        std::max( maxLineSize, name.size() );
+        if ( st->outputStringByLines().empty() )
+            continue;
+        maxLineSize = std::max( maxLineSize, st->outputStringByLines().front().size() );
+    }
+    if ( maxLineSize == 0 )
         return;
-    S_terminalSize = get_terminal_size();
+#endif
+
+    auto gethorizontalLine = [] ( size_t maxLineSize, bool addLeftBorder, bool addRightBorder ) {
+        std::string horizontalLine;
+        if ( addLeftBorder )
+            horizontalLine += "+-";
+        horizontalLine += std::string(maxLineSize,'-');
+        if ( addRightBorder )
+            horizontalLine += "-+";
+        return horizontalLine;
+    };
+
+    auto getLineInContext = []( std::string const& s, size_t maxLineSize, bool addLeftBorder, bool addRightBorder ) {
+
+        std::string sModif;
+        if ( s.size() < maxLineSize )
+        {
+            std::ostringstream ostr;
+            if ( false )//if ( s.size() < (maxLineSize-1) )
+            {
+                ostr << std::setw(maxLineSize-1);
+                sModif += " ";
+            }
+            else
+                ostr << std::setw(maxLineSize);
+            ostr  << std::left << s;
+            sModif += ostr.str();
+        }
+        std::string const& sUsed = ( s.size() < maxLineSize )? sModif: s;
+
+        std::string res;
+        if ( addLeftBorder )
+            res += "| ";
+        res += sUsed;
+        if ( addRightBorder )
+            res += " |";
+        return res;
+    };
+
+    //bool hasDoFirstSection = false;
+    for ( auto & [name,st] : M_subTab )
+    {
+        if ( st->outputStringByLines().empty() )
+            continue;
+
+        size_t maxLineSize = std::max( st->outputStringWidth(), name.size() );
+        bool addLeftBorder = !name.empty(), addRightBorder = addLeftBorder;
+        std::string horizontalLine = gethorizontalLine( maxLineSize, addLeftBorder, addRightBorder );
+        if ( !name.empty() )
+        {
+            this->M_outputStringByLines.push_back( horizontalLine );
+            this->M_outputStringByLines.push_back( getLineInContext(name,maxLineSize,addLeftBorder, addRightBorder) );
+            this->M_outputStringByLines.push_back( horizontalLine );
+        }
+        for ( std::string const& s : st->outputStringByLines() )
+            this->M_outputStringByLines.push_back( getLineInContext(s,maxLineSize,addLeftBorder, addRightBorder) );
+        if ( !name.empty() )
+            this->M_outputStringByLines.push_back( horizontalLine );
+
+        //hasDoFirstSection = true;
+    }
 }
 
 namespace TabulateInformationTools
@@ -70,7 +177,7 @@ void addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateI
     {
         CHECK( t.size() == 2 ) << "invalid table";
         ++nrow;
-        if ( TabulateInformationProperties::hasTerminalSize() )
+        if ( TabulateInformationProperties::terminalProperties().hasWidth() )
         {
             max_size_col0 = std::max( t[0].size(), max_size_col0 );
             max_size_col1 = std::max( t[1].size(), max_size_col1 );
@@ -104,17 +211,17 @@ void addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateI
         table[nrow-1][0].format().hide_border_left();
         table[nrow-1][1].format().hide_border_right();
         table[nrow-1][1].format().border_left(":");
-        if ( TabulateInformationProperties::hasTerminalSize() )
+        if ( TabulateInformationProperties::terminalProperties().hasWidth() )
         {
             max_size_col0 = std::max( table[nrow-1][0].size(), max_size_col0 );
             max_size_col1 = std::max( table[nrow-1][1].size(), max_size_col1 );
         }
     }
     //table.column(1).format().border_left(":");
-    if ( TabulateInformationProperties::hasTerminalSize() )
+    if ( TabulateInformationProperties::terminalProperties().hasWidth() )
     {
         int table_width = max_size_col0+max_size_col1+1;// table.shape().first;
-        int table_width_max = (int)std::floor( (3./4)*TabulateInformationProperties::terminalWidth());
+        int table_width_max = (int)std::floor( (3./4)*TabulateInformationProperties::terminalProperties().width());
         if ( table_width > table_width_max )
         {
             table.column(0).format().width( max_size_col0 );
@@ -131,29 +238,24 @@ void addAllKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, Tabula
     addKeyToValues(table,jsonInfo,tabInfoProp,keys );
 }
 
-
-tabulate::Table tabulateFunctionSpace(  nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+tabulate_informations_ptr_t
+tabulateInformationsFunctionSpace( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
 {
-    tabulate::Table tabInfo;
+    auto tabInfo = TabulateInformationsSections::New();
 
     tabulate::Table tabInfoOthers;
     TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
-    tabInfo.add_row({tabInfoOthers});
+    tabInfo->add( "", TabulateInformations::New( tabInfoOthers ) );
 
-    tabulate::Table tabInfoBasis;
-    tabInfoBasis.add_row({"Basis"});
     tabulate::Table tabInfoBasisEntries;
     TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoBasisEntries, jsonInfo.at("basis"), tabInfoProp );
-    tabInfoBasis.add_row({tabInfoBasisEntries});
-    tabInfo.add_row({tabInfoBasis});
+    tabInfo->add( "Basis", TabulateInformations::New( tabInfoBasisEntries ) );
 
-    tabulate::Table tabInfoDofTable;
-    tabInfoDofTable.add_row({"Dof Table"});
-    tabulate::Table tabInfoDofTableEntries;
+    auto tabInfoDofTable = TabulateInformationsSections::New();
     auto const& jsonInfoDofTable = jsonInfo.at("doftable");
+    tabulate::Table tabInfoDofTableEntries;
     TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoDofTableEntries, jsonInfoDofTable, tabInfoProp );
-    tabInfoDofTable.add_row({tabInfoDofTableEntries});
-
+    tabInfoDofTable->add( "", TabulateInformations::New( tabInfoDofTableEntries ) );
     if ( jsonInfoDofTable.contains( "nLocalDofWithoutGhost" ) )
     {
         tabulate::Table tabInfoDofTableEntriesDatByPartition;
@@ -165,11 +267,9 @@ tabulate::Table tabulateFunctionSpace(  nl::json const& jsonInfo, TabulateInform
         for (auto it1=jarray_nLocalDofWithGhost.begin(), it2 = jarray_nLocalDofWithoutGhost.begin(), it3=jarray_nLocalGhost.begin();
              it1 != jarray_nLocalDofWithGhost.end(); ++it1,++it2,++it3,++procId )
             tabInfoDofTableEntriesDatByPartition.add_row({ std::to_string(procId), it1.value().get<std::string>(), it2.value().get<std::string>(), it3.value().get<std::string>() });
-        tabInfoDofTable.add_row({tabInfoDofTableEntriesDatByPartition});
+        tabInfoDofTable->add( "", TabulateInformations::New( tabInfoDofTableEntriesDatByPartition ) );
     }
-    tabInfo.add_row({tabInfoDofTable});
-
-    tabInfo.format().hide_border();
+    tabInfo->add( "Dof Table", tabInfoDofTable );
 
     return tabInfo;
 }

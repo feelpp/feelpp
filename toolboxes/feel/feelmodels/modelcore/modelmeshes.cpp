@@ -111,8 +111,8 @@ ModelMesh<IndexType>::ImportConfig::updateInformationObject( pt::ptree & p ) con
 }
 
 template <typename IndexType>
-tabulate::Table
-ModelMesh<IndexType>::ImportConfig::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+tabulate_informations_ptr_t
+ModelMesh<IndexType>::ImportConfig::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
 {
     tabulate::Table tabInfo;
     if ( jsonInfo.contains("mesh-filename") )
@@ -121,7 +121,7 @@ ModelMesh<IndexType>::ImportConfig::tabulateInformation( nl::json const& jsonInf
         TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "geo-filename","hsize" } );
 
     TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "generate-partitioning", "number-of-partition" } );
-    return tabInfo;
+    return TabulateInformations::New( tabInfo );
 }
 
 template <typename IndexType>
@@ -291,31 +291,27 @@ ModelMesh<IndexType>::updateInformationObject( pt::ptree & p ) const
 }
 
 template <typename IndexType>
-tabulate::Table
-ModelMesh<IndexType>::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+tabulate_informations_ptr_t
+ModelMesh<IndexType>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
 {
-    tabulate::Table tabInfo;
+    auto tabInfo = TabulateInformationsSections::New();
 
     tabulate::Table tabInfoOthers;
     TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
     if ( tabInfoOthers.begin() != tabInfoOthers.end() )
-        tabInfo.add_row({tabInfoOthers});
+        tabInfo->add( "", TabulateInformations::New( tabInfoOthers ) );
 
     if ( jsonInfo.contains("Import configuration") )
     {
-        tabulate::Table tabInfoImportConfig;
-        tabInfoImportConfig.add_row({"Import configuration"});
-        tabInfoImportConfig.add_row( { ImportConfig::tabulateInformation( jsonInfo.at("Import configuration"), tabInfoProp ) });
-        tabInfo.add_row( {tabInfoImportConfig} );
+        tabInfo->add( "Import configuration",  ImportConfig::tabulateInformations( jsonInfo.at("Import configuration"), tabInfoProp ) );
     }
 
     if ( jsonInfo.contains("Discretization") )
     {
-        tabulate::Table tabInfoDiscr;
-        tabInfoDiscr.add_row({"Discretization"});
+        auto tabInfoDiscr = TabulateInformationsSections::New();
         tabulate::Table tabInfoDiscrEntries;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoDiscrEntries, jsonInfo.at( "Discretization" ), tabInfoProp );
-        tabInfoDiscr.add_row( { tabInfoDiscrEntries});
+        tabInfoDiscr->add( "", TabulateInformations::New( tabInfoDiscrEntries ) );
 
         auto const& jsonInfoDiscr = jsonInfo.at( "Discretization" );
         if ( jsonInfoDiscr.contains( "partitioning" ) )
@@ -361,14 +357,11 @@ ModelMesh<IndexType>::tabulateInformation( nl::json const& jsonInfo, TabulateInf
                                 itFind_n_points.value()[p].template get<std::string>() });
                 }
             }
-            tabInfoDiscr.add_row({tabInfoDiscrEntriesDataByPartition});
+            tabInfoDiscr->add( "", TabulateInformations::New( tabInfoDiscrEntriesDataByPartition ) );
         }
 
-        tabInfo.add_row( {tabInfoDiscr} );
+        tabInfo->add("Discretization", tabInfoDiscr );
     }
-
-    tabInfo.format().hide_border();
-
     return tabInfo;
 }
 
@@ -403,9 +396,10 @@ ModelMeshes<IndexType>::updateInformationObject( pt::ptree & p ) const
 }
 
 template <typename IndexType>
-tabulate::Table
-ModelMeshes<IndexType>::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+tabulate_informations_ptr_t
+ModelMeshes<IndexType>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
+#if 0
     tabulate::Table tabInfo;
     for ( auto & [meshName,mMesh] : *this )
     {
@@ -419,6 +413,15 @@ ModelMeshes<IndexType>::tabulateInformation( nl::json const& jsonInfo, TabulateI
     }
     tabInfo.format().hide_border();
     return tabInfo;
+#else
+    auto tabInfo = TabulateInformationsSections::New();
+    for ( auto & [meshName,mMesh] : *this )
+    {
+        if ( jsonInfo.contains(meshName) )
+            tabInfo->add( (boost::format("Mesh : %1%")%meshName ).str(), mMesh->tabulateInformations( jsonInfo.at(meshName), tabInfoProp ) );
+    }
+    return tabInfo;
+#endif
 }
 
 

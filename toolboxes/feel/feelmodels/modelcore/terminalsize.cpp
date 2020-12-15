@@ -18,8 +18,21 @@
 
 namespace Feel
 {
-std::pair<int,int> get_terminal_size()
+
+TerminalProperties::TerminalProperties()
 {
+    this->updateTerminalSize();
+}
+
+void
+TerminalProperties::updateTerminalSize( bool updateEvenIfAlreadyDefined )
+{
+    if ( S_width && S_height && !updateEvenIfAlreadyDefined )
+        return;
+
+    S_width = 0;
+    S_height = 0;
+
 #if defined(FEELPP_OS_WINDOWS)
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
@@ -34,15 +47,17 @@ std::pair<int,int> get_terminal_size()
     // https://rosettacode.org/wiki/Terminal_control/Dimensions#C
     int fd = open("/dev/tty", O_RDWR);
     if (fd < 0 )
-        return std::make_pair(0,0);
+        return;
     if (ioctl(fd, TIOCGWINSZ, &w) < 0)
-        return std::make_pair(0,0);
+        return;
     close(fd);
 #endif
     int width = (int)(w.ws_col);
     int height = (int)(w.ws_row);
 #endif // Windows/Linux
-    return std::make_pair(width,height);
+
+    S_width = width;
+    S_height = height;
 }
 
 } // Feel

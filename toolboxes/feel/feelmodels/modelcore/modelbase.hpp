@@ -178,10 +178,9 @@ public :
     void log( std::string const& _className,std::string const& _functionName,std::string const& _msg ) const;
     // info
     void updateInformationObject( pt::ptree & p ) const override;
-    std::vector<tabulate::Table> tabulateInformations() const;
-    virtual tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
-    virtual std::vector<tabulate::Table> tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
 
+    tabulate_informations_ptr_t tabulateInformations() const;
+    virtual tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
 
     std::string filenameSaveInfo() const;
     void setFilenameSaveInfo(std::string const& s);
@@ -190,8 +189,8 @@ public :
     void saveInfo() const { this->saveInfo( this->tabulateInformations() ); }
     void printAndSaveInfo() const;
 private :
-    void printInfo( std::vector<tabulate::Table> const& tabInfo ) const;
-    void saveInfo( std::vector<tabulate::Table> const& tabInfo ) const;
+    void printInfo( tabulate_informations_ptr_t const& tabInfo ) const;
+    void saveInfo( tabulate_informations_ptr_t const& tabInfo ) const;
 public :
     // timer
     TimerToolBase & timerTool( std::string const& s ) const;

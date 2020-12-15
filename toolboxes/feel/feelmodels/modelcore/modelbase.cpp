@@ -443,10 +443,9 @@ ModelBase::updateInformationObject( pt::ptree & p ) const
     p.put( "number of processus", this->worldComm().localSize() );
 }
 
-tabulate::Table
-ModelBase::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+tabulate_informations_ptr_t
+ModelBase::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-
     tabulate::Table tabInfo;
     TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "prefix","keyword","root repository","expr eepository", "number of processus" } );
     //TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfo, jsonInfo, tabInfoProp ); // bad ordering due to boost properties
@@ -455,16 +454,16 @@ ModelBase::tabulateInformation( nl::json const& jsonInfo, TabulateInformationPro
         .font_style({tabulate::FontStyle::bold})
         .font_background_color(tabulate::Color::blue);
 #endif
-    return tabInfo;
+    return TabulateInformations::New( tabInfo );
 }
-std::vector<tabulate::Table>
-ModelBase::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
-{
-    std::vector<tabulate::Table> res = { tabulateInformation( jsonInfo, tabInfoProp ) };
-    return res;
-}
+// std::vector<tabulate::Table>
+// ModelBase::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+// {
+//     std::vector<tabulate::Table> res = { tabulateInformation( jsonInfo, tabInfoProp ) };
+//     return res;
+// }
 
-std::vector<tabulate::Table>
+tabulate_informations_ptr_t
 ModelBase::tabulateInformations() const
 {
     pt::ptree pt;
@@ -475,7 +474,14 @@ ModelBase::tabulateInformations() const
     nl::json jsonInfo;
     pt_istream >> jsonInfo;
 
-    return this->tabulateInformations( jsonInfo, TabulateInformationProperties{} );
+    auto tabInfo = this->tabulateInformations( jsonInfo, TabulateInformationProperties{} );
+
+    auto tabRes = TabulateInformationsSections::New();
+    std::string title = (boost::format("Toolbox : %1%")%this->keyword()).str();
+    tabRes->add( title, tabInfo );
+
+    tabRes->updateForUse();
+    return tabRes;
 #if 0
     auto tabRes = this->tabulateInformation( jsonInfo, TabulateInformationProperties{} );
     tabRes.format()
@@ -503,11 +509,13 @@ ModelBase::getInfo() const
     return _ostr;
 }
 void
-ModelBase::printInfo( std::vector<tabulate::Table> const& tabInfos ) const
+ModelBase::printInfo( tabulate_informations_ptr_t const& tabInfos ) const
 {
     if ( this->verboseAllProc() || this->worldComm().isMasterRank() )
     {
         std::cout << this->getInfo()->str();
+        std::cout << *tabInfos << std::endl;
+#if 0
         for ( tabulate::Table const& tabInfo : tabInfos )
         {
 #if 1
@@ -525,10 +533,11 @@ ModelBase::printInfo( std::vector<tabulate::Table> const& tabInfos ) const
             }
 #endif
         }
+#endif
     }
 }
 void
-ModelBase::saveInfo( std::vector<tabulate::Table> const& tabInfos ) const
+ModelBase::saveInfo( tabulate_informations_ptr_t const& tabInfos ) const
 {
     Environment::journalCheckpoint();
 
@@ -537,8 +546,10 @@ ModelBase::saveInfo( std::vector<tabulate::Table> const& tabInfos ) const
     {
         std::ofstream file( thepath.string().c_str(), std::ios::out);
         file << this->getInfo()->str();
+#if 0
         for ( tabulate::Table const& tabInfo : tabInfos )
             file << tabInfo << std::endl;
+#endif
         file.close();
     }
 
@@ -559,8 +570,8 @@ ModelBase::saveInfo( std::vector<tabulate::Table> const& tabInfos ) const
 void
 ModelBase::printAndSaveInfo() const
 {
-    //auto tabInfo = this->tabulateInformations();
-    std::vector<tabulate::Table> tabInfo;
+    auto tabInfo = this->tabulateInformations();
+    //std::vector<tabulate::Table> tabInfo;
     this->printInfo( tabInfo );
     this->saveInfo( tabInfo );
 }

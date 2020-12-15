@@ -59,7 +59,7 @@ public :
         void setupSequentialAndLoadByMasterRankOnly();
 
         void updateInformationObject( pt::ptree & p ) const;
-        static tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
 
     private :
         std::string M_inputFilename, M_meshFilename, M_geoFilename;
@@ -121,7 +121,7 @@ public :
 
     void updateInformationObject( pt::ptree & p ) const;
 
-    static tabulate::Table tabulateInformation( nl::json const& p, TabulateInformationProperties const& tabInfoProp );
+    static tabulate_informations_ptr_t tabulateInformations( nl::json const& p, TabulateInformationProperties const& tabInfoProp );
 
 private:
     std::string M_name;
@@ -210,7 +210,7 @@ public:
 
     void updateInformationObject( pt::ptree & p ) const override;
 
-    tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
 };
 
