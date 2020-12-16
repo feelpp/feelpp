@@ -182,8 +182,6 @@ public :
     tabulate_informations_ptr_t tabulateInformations() const;
     virtual tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
 
-    std::string filenameSaveInfo() const;
-    void setFilenameSaveInfo(std::string const& s);
     virtual std::shared_ptr<std::ostringstream> getInfo() const;
     void printInfo() const { this->printInfo( this->tabulateInformations() ); }
     void saveInfo() const { this->saveInfo( this->tabulateInformations() ); }
@@ -226,8 +224,6 @@ private :
     ModelBaseCommandLineOptions M_modelCommandLineOptions;
     // verbose
     bool M_verbose,M_verboseAllProc;
-    // filename for save info
-    std::string M_filenameSaveInfo;
     // timertool register by a name id
     mutable std::map<std::string,std::shared_ptr<TimerToolBase> > M_mapTimerTool;
     bool M_timersActivated;
