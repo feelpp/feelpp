@@ -8,6 +8,9 @@
 namespace Feel
 {
 
+/**
+ * @brief describe terminal properties if available : width, height
+ */
 class TerminalProperties
 {
 public :

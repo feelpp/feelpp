@@ -350,7 +350,6 @@ ModelBase::ModelBase( std::string const& prefix, std::string const& keyword,
     M_modelRepository( modelRep ),
     M_verbose( boption(_name="verbose",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_verboseAllProc( boption(_name="verbose_allproc",_prefix=this->prefix(),_vm=this->clovm()) ),
-    M_filenameSaveInfo( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"toolbox-info.txt")) ),
     M_timersActivated( boption(_name="timers.activated",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_timersSaveFileMasterRank( boption(_name="timers.save-master-rank",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_timersSaveFileMax( boption(_name="timers.save-max",_prefix=this->prefix(),_vm=this->clovm()) ),
@@ -451,16 +450,12 @@ ModelBase::tabulateInformations( nl::json const& jsonInfo, TabulateInformationPr
 #endif
     return TabulateInformations::New( tabInfo );
 }
-// std::vector<tabulate::Table>
-// ModelBase::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
-// {
-//     std::vector<tabulate::Table> res = { tabulateInformation( jsonInfo, tabInfoProp ) };
-//     return res;
-// }
 
 tabulate_informations_ptr_t
 ModelBase::tabulateInformations() const
 {
+    Environment::journalCheckpoint();
+
     pt::ptree pt;
     this->updateInformationObject( pt );
     std::ostringstream pt_ostr;
@@ -475,28 +470,9 @@ ModelBase::tabulateInformations() const
     std::string title = (boost::format("Toolbox : %1%")%this->keyword()).str();
     tabRes->add( title, tabInfo );
 
-    //tabRes->updateForUse();
     return tabRes;
-#if 0
-    auto tabRes = this->tabulateInformation( jsonInfo, TabulateInformationProperties{} );
-    tabRes.format()
-    //.hide_border()
-    .multi_byte_characters(true)
-    ;
-    return tabRes;
-#endif
 }
 
-std::string
-ModelBase::filenameSaveInfo() const
-{
-    return M_filenameSaveInfo;
-}
-void
-ModelBase::setFilenameSaveInfo( std::string const& s )
-{
-    M_filenameSaveInfo = s;
-}
 std::shared_ptr<std::ostringstream>
 ModelBase::getInfo() const
 {
@@ -506,7 +482,7 @@ ModelBase::getInfo() const
 void
 ModelBase::printInfo( tabulate_informations_ptr_t const& tabInfos ) const
 {
-    if ( this->verboseAllProc() || this->worldComm().isMasterRank() )
+    if ( this->worldComm().isMasterRank() )
     {
         std::cout << this->getInfo()->str();
         std::cout << *tabInfos << std::endl;
@@ -515,16 +491,15 @@ ModelBase::printInfo( tabulate_informations_ptr_t const& tabInfos ) const
 void
 ModelBase::saveInfo( tabulate_informations_ptr_t const& tabInfos ) const
 {
-    Environment::journalCheckpoint();
-
-    fs::path thepath = fs::path(this->rootRepository())/fs::path(this->filenameSaveInfo());
-    std::string filename_adoc = prefixvm(this->prefix(),prefixvm(this->subPrefix(),"informations.adoc") );
+    std::string filename_ascii = prefixvm(this->keyword(),"informations.txt");
+    std::string filename_adoc = prefixvm(this->keyword(),"informations.adoc");
+    std::string filepath_ascii = (fs::path(this->rootRepository())/filename_ascii).string();
     std::string filepath_adoc = (fs::path(this->rootRepository())/filename_adoc).string();
-    if (this->worldComm().isMasterRank() )
+    if ( this->worldComm().isMasterRank() )
     {
-        std::ofstream file( thepath.string().c_str(), std::ios::out);
-        file << this->getInfo()->str();
-        file.close();
+        std::ofstream file_ascii( filepath_ascii, std::ios::out);
+        file_ascii << this->getInfo()->str();
+        file_ascii.close();
 
         std::ofstream file_adoc( filepath_adoc, std::ios::out);
         file_adoc << ":sectnums:" << "\n";
@@ -532,7 +507,7 @@ ModelBase::saveInfo( tabulate_informations_ptr_t const& tabInfos ) const
         file_adoc.close();
     }
 
-    this->upload( thepath.string() );
+    this->upload( filepath_ascii );
     this->upload( filepath_adoc );
 }
 void

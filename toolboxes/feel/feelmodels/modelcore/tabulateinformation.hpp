@@ -25,6 +25,9 @@ private:
     inline static TerminalProperties S_terminalProperties;
 };
 
+/**
+ * @brief base class that describe informations by tabulate/section design
+ */
 class TabulateInformations
 {
 public :
@@ -61,9 +64,12 @@ public :
     TabulateInformations( TabulateInformations const& ) = default;
     TabulateInformations( TabulateInformations && ) = default;
 
+    //! get an exporter in ascii format
     ExporterAscii exporterAscii() const { return ExporterAscii( this->exportAscii() ); }
+    //! get an exporter in asciidoc format
     ExporterAsciiDoc exporterAsciiDoc( int startLevelSection = 0 ) const { return ExporterAsciiDoc( this->shared_from_this_tabulate_informations(), startLevelSection ); }
 
+    //! create an new tabulate informations from a table
     static self_ptrtype New( tabulate::Table const& table );
 
     friend std::ostream& operator<<( std::ostream& o, TabulateInformations const& ti );
@@ -74,13 +80,18 @@ protected :
     virtual void exportAsciiDoc( std::ostream &o, int levelSection ) const = 0;
 };
 
+//! ostream operator
 std::ostream& operator<<( std::ostream& o, TabulateInformations const& ti );
 std::ostream& operator<<( std::ostream& o, TabulateInformations::ExporterAscii const& ti );
 std::ostream& operator<<( std::ostream& o, TabulateInformations::ExporterAsciiDoc const& ti );
 
+//! types
 using tabulate_informations_t = TabulateInformations;
 using tabulate_informations_ptr_t = typename TabulateInformations::self_ptrtype;
 
+/**
+ * @brief describe informations in table
+ */
 class TabulateInformationsTable : public TabulateInformations,
                                   public std::enable_shared_from_this<TabulateInformationsTable>
 {
@@ -97,6 +108,9 @@ private:
     tabulate::Table M_table;
 };
 
+/**
+ * @brief describe informations by section
+ */
 class TabulateInformationsSections : public TabulateInformations,
                                      public std::enable_shared_from_this<TabulateInformationsSections>
 {
@@ -105,12 +119,16 @@ public:
     TabulateInformationsSections( TabulateInformationsSections const& ) = default;
     TabulateInformationsSections( TabulateInformationsSections && ) = default;
 
+    //! create a new tabulate informations of section
     static std::shared_ptr<TabulateInformationsSections> New() { return std::make_shared<TabulateInformationsSections>(); }
 
+    //! cast from the base class
     static std::shared_ptr<TabulateInformationsSections> cast( tabulate_informations_ptr_t t ) { return std::dynamic_pointer_cast<TabulateInformationsSections>(t); }
 
+    //! add a section
     void add( std::string const& name, tabulate_informations_ptr_t t ) { M_subTab.push_back( std::make_pair( name, t ) ); }
 
+    //! erase a section from the name
     void erase( std::string const& name )
         {
             auto itFind = std::find_if( M_subTab.begin(), M_subTab.end(), [&name]( auto const& e ) { return name == e.first; } );
@@ -121,7 +139,6 @@ private:
     std::shared_ptr<const TabulateInformations> shared_from_this_tabulate_informations() const override { return std::dynamic_pointer_cast<const TabulateInformations>( this->shared_from_this() );  }
     std::vector<std::string> exportAscii() const override;
     void exportAsciiDoc( std::ostream &o, int levelSection ) const override;
-
 
 private:
     std::vector<std::pair<std::string,tabulate_informations_ptr_t>> M_subTab;
@@ -149,12 +166,6 @@ tabulate_informations_ptr_t
 tabulateInformationsFunctionSpace( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
 
 } // namespace FromJSON
-
-void
-mergeSections( tabulate::Table & tabInfoMerge, std::vector<std::pair<std::string,tabulate::Table>> tabInfos, bool hasTitle = false );
-
-tabulate::Table
-createSections( std::vector<std::pair<std::string,tabulate::Table>> tabInfos, std::string const& title = "" );
 
 } // namespace TabulateInformationTools
 

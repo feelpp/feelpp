@@ -308,37 +308,6 @@ tabulateInformationsFunctionSpace( nl::json const& jsonInfo, TabulateInformation
 
 } // namespace FromJSON
 
-
-void
-mergeSections( tabulate::Table & tabInfoMerge, std::vector<std::pair<std::string,tabulate::Table>> tabInfos, bool hasTitle )
-{
-    size_t rowStartSections = hasTitle? 1 : 0;
-    size_t nrow = 0; //std::distance(table.begin(),table.end());
-    for ( auto const& t : tabInfoMerge ) ++nrow;
-    for ( auto const& [tableName,tableInfo] : tabInfos )
-    {
-        tabulate::Table tabInfoSection;
-        tabInfoSection.add_row({tableName});
-        tabInfoSection.add_row({tableInfo});
-        tabInfoMerge.add_row({tabInfoSection});
-
-        if ( nrow > rowStartSections )
-            tabInfoMerge[nrow].format().hide_border_top();
-        ++nrow;
-    }
-}
-tabulate::Table
-createSections( std::vector<std::pair<std::string,tabulate::Table>> tabInfos, std::string const& title )
-{
-    tabulate::Table tabInfo;
-    bool hasTitle = !title.empty();
-    if ( hasTitle )
-        tabInfo.add_row( {title} );
-    mergeSections( tabInfo, tabInfos, hasTitle );
-    return tabInfo;
-}
-
-
 } // namespace TabulateInformationTools
 } //namespace Feel
 
