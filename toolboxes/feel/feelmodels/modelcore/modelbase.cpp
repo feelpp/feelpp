@@ -440,14 +440,13 @@ ModelBase::updateInformationObject( pt::ptree & p ) const
 tabulate_informations_ptr_t
 ModelBase::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    tabulate::Table tabInfo;
+    Feel::Table tabInfo;
     TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "prefix","keyword","root repository","expr eepository", "number of processus" } );
     //TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfo, jsonInfo, tabInfoProp ); // bad ordering due to boost properties
-#if 0
-    tabInfo/*[0][0]*/.format()
-        .font_style({tabulate::FontStyle::bold})
-        .font_background_color(tabulate::Color::blue);
-#endif
+    tabInfo.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
     return TabulateInformations::New( tabInfo );
 }
 

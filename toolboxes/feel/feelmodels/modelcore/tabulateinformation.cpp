@@ -17,9 +17,13 @@ TabulateInformationProperties::TabulateInformationProperties( VerboseLevel vl )
     M_verbose_level( vl )
 {}
 
-typename TabulateInformations::self_ptrtype TabulateInformations::New( tabulate::Table const& table )
+typename TabulateInformations::self_ptrtype TabulateInformations::New( Feel::Table const& table )
 {
     return std::make_shared<TabulateInformationsTable>( table );
+}
+typename TabulateInformations::self_ptrtype TabulateInformations::New( tabulate::Table const& table )
+{
+    return std::make_shared<TabulateInformationsTableAlternative>( table );
 }
 
 std::ostream& operator<<( std::ostream& o, TabulateInformations const& ti )
@@ -44,6 +48,18 @@ std::ostream& operator<<( std::ostream& o, TabulateInformations::ExporterAsciiDo
 std::vector<std::string>
 TabulateInformationsTable::exportAscii() const
 {
+    return M_table.toRawString( M_table.format() );
+}
+
+void
+TabulateInformationsTable::exportAsciiDoc( std::ostream &o, int levelSection ) const
+{
+    M_table.exportAsciiDoc( o );
+}
+
+std::vector<std::string>
+TabulateInformationsTableAlternative::exportAscii() const
+{
     std::ostringstream ostr;
     ostr << M_table;
     std::istringstream istr(ostr.str());
@@ -58,7 +74,7 @@ TabulateInformationsTable::exportAscii() const
 }
 
 void
-TabulateInformationsTable::exportAsciiDoc( std::ostream &o, int levelSection ) const
+TabulateInformationsTableAlternative::exportAsciiDoc( std::ostream &o, int levelSection ) const
 {
     tabulate::AsciiDocExporter exporter;
     //tabulate::MarkdownExporter exporter;
@@ -201,6 +217,37 @@ tabulate::Table tabulateArrayOfPrimitive( nl::json const& jsonInfo )
 }
 #endif
 
+void addKeyToValues( Feel::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::vector<std::string> const& keys )
+{
+    // TODO
+    for ( std::string const& key : keys )
+    {
+        if ( !jsonInfo.contains(key) )
+            continue;
+        auto const& valAtKey = jsonInfo.at(key);
+
+        if ( !valAtKey.is_primitive() )
+            continue;
+        if ( valAtKey.is_string() )
+            table.add_row( {key, valAtKey.get<std::string>()} );
+        else if ( valAtKey.is_number_integer() )
+            table.add_row( {key, std::to_string(valAtKey.get<int>())} );
+        else if ( valAtKey.is_number_float() )
+            table.add_row( {key, std::to_string(valAtKey.get<double>())} );
+        else
+            CHECK( false ) << "TODO missing primitive or not primitive";
+    }
+#if 0
+    if ( TabulateInformationProperties::terminalProperties().hasWidth() )
+    {
+        //int table_width = max_size_col0+max_size_col1+1;// table.shape().first;
+        int table_width_max = (int)std::floor( (3./4)*TabulateInformationProperties::terminalProperties().width());
+        t(2,1).format().setWidthMax(8);
+    }
+#endif
+}
+
+
 void addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::vector<std::string> const& keys )
 {
     size_t nrow = 0; //std::distance(table.begin(),table.end());
@@ -262,6 +309,13 @@ void addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateI
     }
 }
 
+void addAllKeyToValues( Feel::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    std::vector<std::string> keys;
+    for ( auto const& el : jsonInfo.items() )
+        keys.push_back( el.key() );
+    addKeyToValues(table,jsonInfo,tabInfoProp,keys );
+}
 void addAllKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
 {
     std::vector<std::string> keys;
