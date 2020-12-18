@@ -42,6 +42,7 @@ set(SRC
   remotedata.cpp
   journalmanager.cpp
   journalwatcher.cpp
+  table.cpp
   )
 if(FEELPP_HAS_MONGOCXX)
     set( SRC mongocxx.cpp ${SRC} )
