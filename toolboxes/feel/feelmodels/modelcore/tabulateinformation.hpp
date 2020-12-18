@@ -4,6 +4,7 @@
 #pragma once
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/table.hpp>
 #include <tabulate/table.hpp>
 #include <feel/feelcore/json.hpp>
 #include <feel/feelmodels/modelcore/terminalsize.hpp>
@@ -70,6 +71,8 @@ public :
     ExporterAsciiDoc exporterAsciiDoc( int startLevelSection = 0 ) const { return ExporterAsciiDoc( this->shared_from_this_tabulate_informations(), startLevelSection ); }
 
     //! create an new tabulate informations from a table
+    static self_ptrtype New( Feel::Table const& table );
+    //! create an new tabulate informations from a table
     static self_ptrtype New( tabulate::Table const& table );
 
     friend std::ostream& operator<<( std::ostream& o, TabulateInformations const& ti );
@@ -96,9 +99,28 @@ class TabulateInformationsTable : public TabulateInformations,
                                   public std::enable_shared_from_this<TabulateInformationsTable>
 {
 public :
-    explicit TabulateInformationsTable( tabulate::Table const& table ) : M_table( table ) {}
+    explicit TabulateInformationsTable( Feel::Table const& table ) : M_table( table ) {}
     TabulateInformationsTable( TabulateInformationsTable const& ) = default;
     TabulateInformationsTable( TabulateInformationsTable && ) = default;
+
+private:
+    std::shared_ptr<const TabulateInformations> shared_from_this_tabulate_informations() const override { return std::dynamic_pointer_cast<const TabulateInformations>( this->shared_from_this() );  }
+    std::vector<std::string> exportAscii() const override;
+    void exportAsciiDoc( std::ostream &o, int levelSection ) const override;
+private:
+    Feel::Table M_table;
+};
+
+/**
+ * @brief describe informations in table
+ */
+class TabulateInformationsTableAlternative : public TabulateInformations,
+                                             public std::enable_shared_from_this<TabulateInformationsTableAlternative>
+{
+public :
+    explicit TabulateInformationsTableAlternative( tabulate::Table const& table ) : M_table( table ) {}
+    TabulateInformationsTableAlternative( TabulateInformationsTableAlternative const& ) = default;
+    TabulateInformationsTableAlternative( TabulateInformationsTableAlternative && ) = default;
 
 private:
     std::shared_ptr<const TabulateInformations> shared_from_this_tabulate_informations() const override { return std::dynamic_pointer_cast<const TabulateInformations>( this->shared_from_this() );  }
@@ -148,6 +170,19 @@ namespace TabulateInformationTools
 {
 namespace FromJSON
 {
+
+void
+addKeyToValues( Feel::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::vector<std::string> const& keys );
+
+inline
+void
+addKeyToValues( Feel::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::initializer_list<std::string> const& keys )
+{
+    addKeyToValues( table, jsonInfo, tabInfoProp, std::vector<std::string>(keys) );
+}
+
+void
+addAllKeyToValues( Feel::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
 
 void
 addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::vector<std::string> const& keys );
