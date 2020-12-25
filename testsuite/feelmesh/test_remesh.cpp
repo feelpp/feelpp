@@ -63,8 +63,8 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "Test_Mmg" ,
-                     "Test_Mmg" ,
+    AboutData about( "test_remesh" ,
+                     "test_remesh" ,
                      "0.1",
                      "test Mmg",
                      Feel::AboutData::License_GPL,
@@ -82,11 +82,15 @@ BOOST_AUTO_TEST_SUITE( mmg )
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 typedef boost::mpl::list<
     std::pair<boost::mpl::int_<2>,boost::mpl::int_<2>>,
+    //std::pair<boost::mpl::int_<2>,boost::mpl::int_<3>>,
     std::pair<boost::mpl::int_<3>,boost::mpl::int_<3>> > dim_types;
 BOOST_AUTO_TEST_CASE_TEMPLATE( testnD, T, dim_types )
 {
     using namespace Feel;
     
+    if ( Environment::isParallel() && T::first_type::value == 2 )
+        return;
+
     typedef Mesh<Simplex<T::first_type::value,1,T::second_type::value>> mesh_type;
     typedef std::shared_ptr<  mesh_type > mesh_ptrtype;
 
@@ -101,6 +105,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( testnD, T, dim_types )
                            {
                                auto m = unitCube();
                                auto mS = createSubmesh( _mesh=m, _range=boundaryfaces( m ) );
+                               return mS;
                            }
                            else if constexpr ( T::first_type::value == 3 )
                            {
@@ -108,7 +113,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( testnD, T, dim_types )
                            }
                        };
     auto m = create_mesh();
-
     auto Xh = Pch<1>( m );
     auto met = Xh->element();
     met.on( _range=elements(m), _expr=expr(soption("functions.s")) );
@@ -125,10 +129,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( testnD, T, dim_types )
     auto w= Vh->element( expr(soption("functions.s") ));
     double err = normL2(_range=elements(out), _expr=idv(v)-idv(w));
     BOOST_MESSAGE( "L2 error norm: " << err );
+    eout->addRegions();
     eout->add( "metricout", v );
     eout->save();
+
     auto ein = exporter( _mesh=m, _name="initial" );
+    ein->addRegions();
     ein->add( "metric", met );
     ein->save();
+
 }
 BOOST_AUTO_TEST_SUITE_END()
