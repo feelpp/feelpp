@@ -49,3 +49,6 @@
 [submodule "feelpp/contrib/matplot"]
 	path = feelpp/contrib/matplot
 	url = https://github.com/feelpp/matplotplusplus.git
+[submodule "feelpp/contrib/cpr"]
+	path = feelpp/contrib/cpr
+	url = https://github.com/whoshuu/cpr.git
