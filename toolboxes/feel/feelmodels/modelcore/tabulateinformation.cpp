@@ -163,7 +163,6 @@ TabulateInformationsSections::exportAscii() const
 void
 TabulateInformationsSections::exportAsciiDoc( std::ostream &o, int levelSection ) const
 {
-    // TODO
     std::string levelSectionStr = std::string(levelSection+1,'=');
     for ( auto const& [name,st] : M_subTab )
     {
@@ -329,22 +328,23 @@ tabulateInformationsFunctionSpace( nl::json const& jsonInfo, TabulateInformation
 {
     auto tabInfo = TabulateInformationsSections::New();
 
-    tabulate::Table tabInfoOthers;
+    Feel::Table tabInfoOthers;
     TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
     tabInfo->add( "", TabulateInformations::New( tabInfoOthers ) );
 
-    tabulate::Table tabInfoBasisEntries;
+    Feel::Table tabInfoBasisEntries;
     TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoBasisEntries, jsonInfo.at("basis"), tabInfoProp );
     tabInfo->add( "Basis", TabulateInformations::New( tabInfoBasisEntries ) );
 
     auto tabInfoDofTable = TabulateInformationsSections::New();
     auto const& jsonInfoDofTable = jsonInfo.at("doftable");
-    tabulate::Table tabInfoDofTableEntries;
+    Feel::Table tabInfoDofTableEntries;
     TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoDofTableEntries, jsonInfoDofTable, tabInfoProp );
     tabInfoDofTable->add( "", TabulateInformations::New( tabInfoDofTableEntries ) );
     if ( jsonInfoDofTable.contains( "nLocalDofWithoutGhost" ) )
     {
-        tabulate::Table tabInfoDofTableEntriesDatByPartition;
+        Feel::Table tabInfoDofTableEntriesDatByPartition;
+        tabInfoDofTableEntriesDatByPartition.format().setFirstRowIsHeader( true );
         tabInfoDofTableEntriesDatByPartition.add_row({"partition id","nLocalDofWithGhost","nLocalDofWithoutGhost","nLocalGhost"});
         auto jarray_nLocalDofWithGhost = jsonInfoDofTable.at("nLocalDofWithGhost").items();
         auto jarray_nLocalDofWithoutGhost = jsonInfoDofTable.at("nLocalDofWithoutGhost").items();
