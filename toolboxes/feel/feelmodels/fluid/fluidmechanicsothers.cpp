@@ -290,7 +290,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
     // Physics
     if ( jsonInfo.contains("Physics") )
     {
-        tabulate::Table tabInfoPhysics;
+        Feel::Table tabInfoPhysics;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
         tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics ) );
     }

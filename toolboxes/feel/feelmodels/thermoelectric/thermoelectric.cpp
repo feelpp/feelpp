@@ -419,7 +419,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
     // Numerical Solver
     if ( jsonInfo.contains( "Numerical Solver" ) )
     {
-        tabulate::Table tabInfoNumSolver;
+        Feel::Table tabInfoNumSolver;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoNumSolver, jsonInfo.at("Numerical Solver"), tabInfoProp );
         tabInfo->add( "Numerical Solver",  TabulateInformations::New( tabInfoNumSolver ) );
     }

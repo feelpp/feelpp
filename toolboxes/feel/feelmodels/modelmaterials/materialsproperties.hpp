@@ -669,7 +669,7 @@ public :
         {
             auto tabInfo = TabulateInformationsSections::New();
 
-            tabulate::Table tabInfoOthers;
+            Feel::Table tabInfoOthers;
             TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
             tabInfo->add( "", TabulateInformations::New( tabInfoOthers ) );
 
@@ -677,7 +677,7 @@ public :
             {
                 if ( !jsonInfo.contains(matName) )
                     continue;
-                tabulate::Table tabInfoMatEntries;
+                Feel::Table tabInfoMatEntries;
                 TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoMatEntries, jsonInfo.at( matName ), tabInfoProp );
                 tabInfo->add( "Material : "+matName, TabulateInformations::New( tabInfoMatEntries ) );
             }
