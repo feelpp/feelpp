@@ -89,7 +89,7 @@ template < typename T > struct centre
 namespace Feel
 {
 
-#if 1
+#if 0
 std::vector<std::string>
 splitByLines( std::string const& input )
 {
@@ -293,7 +293,58 @@ Table::toRawString( Cell::Format const& format ) const
 void
 Table::exportAsciiDoc( std::ostream &o ) const
 {
+    o<< "\n";
+    o << "[cols=\"";
+    if ( this->format().firstColumnIsHeader() )
+    {
+        o << "h";
+        if ( this->nCol() > 1 )
+            o << "," << this->nCol()-1 << "*";
+    }
+    else
+        o << this->nCol();
+    o << "\"";
 
+    if ( this->format().firstRowIsHeader() )
+        o << ",options=\"header\"";
+    o << "]" << "\n";
+    o << "|===" << "\n";
+
+    for (int i=0;i<this->nRow();++i)
+    {
+        for (int j=0;j<this->nCol();++j)
+        {
+            auto const& cell = this->operator()(i,j);
+            auto format = cell.format().newFromParent( this->format() );
+
+            Table::updateOutputStreamOfCellUsingAsciiDoc(o,cell,format);
+            o << "\n";
+        }
+        o << "\n";
+    }
+    o << "|===" << "\n";
+}
+
+void
+Table::updateOutputStreamOfCellUsingAsciiDoc( std::ostream &o, Cell const& c, Cell::Format const& format )
+{
+    switch ( format.fontAlign() )
+    {
+    case Font::Align::left:
+        o << "<";
+        break;
+    case Font::Align::right:
+        o << ">";
+        break;
+    case Font::Align::center:
+        o << "^";
+        break;
+    }
+
+    o << "|";
+    auto strByLine = c.toRawString( format );
+    for ( std::string const& s : strByLine )
+        o << s;
 }
 
 std::vector<std::string>

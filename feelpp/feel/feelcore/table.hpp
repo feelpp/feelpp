@@ -196,6 +196,8 @@ public :
     void exportAsciiDoc( std::ostream &o ) const;
 
     std::vector<std::string> toRawString( Cell::Format const& format ) const;
+private :
+    static void updateOutputStreamOfCellUsingAsciiDoc( std::ostream &o, Cell const& c, Cell::Format const& format );
 
 private :
     int M_nRow, M_nCol;
