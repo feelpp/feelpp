@@ -435,7 +435,7 @@ HEAT_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Tabula
 
     if ( jsonInfo.contains("Physics") )
     {
-        tabulate::Table tabInfoPhysics;
+        Feel::Table tabInfoPhysics;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
         tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics ) );
     }
@@ -458,14 +458,14 @@ HEAT_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Tabula
 
     if ( jsonInfo.contains("Time Discretization") )
     {
-        tabulate::Table tabInfoTimeDiscr;
+        Feel::Table tabInfoTimeDiscr;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoTimeDiscr, jsonInfo.at("Time Discretization"), tabInfoProp );
         tabInfo->add( "Time Discretization", TabulateInformations::New( tabInfoTimeDiscr ) );
     }
 
     if ( jsonInfo.contains("Finite element stabilization") )
     {
-        tabulate::Table tabInfoStab;
+        Feel::Table tabInfoStab;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoStab, jsonInfo.at("Finite element stabilization"), tabInfoProp );
         tabInfo->add( "Finite element stabilization", TabulateInformations::New( tabInfoStab ) );
     }
@@ -474,10 +474,6 @@ HEAT_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Tabula
         tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
 
     return tabInfo;
-    // auto tabInfo2 = TabulateInformationsSections::New();
-    // tabInfo2->add( (boost::format("Toolbox Heat : %1%")%this->keyword()).str(), tabInfo );
-    // return tabInfo2;
-    //return TabulateInformationsSections::New( (boost::format("Toolbox Heat : %1%")%this->keyword()).str(), tabInfo);
 }
 
 
