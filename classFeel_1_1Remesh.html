@@ -113,7 +113,13 @@ $(document).ready(function(){initNavTree('classFeel_1_1Remesh.html',''); initRes
 <div class="textblock"><h3>template&lt;typename MeshType&gt;<br />
 class Feel::Remesh&lt; MeshType &gt;</h3>
 
-<p>Class that handles remeshing in sequential and parallel. </p>
+<p>Class that handles remeshing in sequential using mmg and parallel using parmmg. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>mesh type to be remeshed </td></tr>
+  </table>
+  </dd>
+</dl>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -123,12 +129,12 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_ptrtype</b> = s
 <tr class="memitem:a2827a63be844c631f242dfd8915a57ee"><td class="memItemLeft" align="right" valign="top"><a id="a2827a63be844c631f242dfd8915a57ee"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_t</b> = MeshType</td></tr>
 <tr class="separator:a2827a63be844c631f242dfd8915a57ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a25f2801f4399077b589f468d1ba5e624"><td class="memItemLeft" align="right" valign="top"><a id="a25f2801f4399077b589f468d1ba5e624"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>mmg_mesh_t</b> = MMG5_pMesh</td></tr>
-<tr class="separator:a25f2801f4399077b589f468d1ba5e624"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a3af4d7b572fb989ad8abc36a0405a5"><td class="memItemLeft" align="right" valign="top"><a id="a2a3af4d7b572fb989ad8abc36a0405a5"></a>
+<tr class="memitem:a254e5b0390311dfd64ebc1e053a6713a"><td class="memItemLeft" align="right" valign="top"><a id="a254e5b0390311dfd64ebc1e053a6713a"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mmg_mesh_t</b> = std::variant&lt; MMG5_pMesh, PMMG_pParMesh &gt;</td></tr>
+<tr class="separator:a254e5b0390311dfd64ebc1e053a6713a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a372d53184584384932de6c19bfbff43f"><td class="memItemLeft" align="right" valign="top"><a id="a372d53184584384932de6c19bfbff43f"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_metric_t</b> = typename Pch_type&lt; mesh_t, 1 &gt;::element_type</td></tr>
-<tr class="separator:a2a3af4d7b572fb989ad8abc36a0405a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a372d53184584384932de6c19bfbff43f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -139,10 +145,10 @@ mesh_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr class="memitem:ae40e1ba3e79bae8a340299d7521d16a9"><td class="memItemLeft" align="right" valign="top"><a id="ae40e1ba3e79bae8a340299d7521d16a9"></a>
 mmg_mesh_t&#160;</td><td class="memItemRight" valign="bottom"><b>mesh2Mmg</b> ()</td></tr>
 <tr class="separator:ae40e1ba3e79bae8a340299d7521d16a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adba7ab04bff5acb98deab0a74e36dd5e"><td class="memItemLeft" align="right" valign="top"><a id="adba7ab04bff5acb98deab0a74e36dd5e"></a>
-mmg_mesh_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Remesh.html#adba7ab04bff5acb98deab0a74e36dd5e">mesh2Mmg</a> (std::shared_ptr&lt; MeshType &gt; const &amp;m_in)</td></tr>
-<tr class="memdesc:adba7ab04bff5acb98deab0a74e36dd5e"><td class="mdescLeft">&#160;</td><td class="mdescRight">transform a Feel++ <code>mesh</code> into an Mmg mesh <br /></td></tr>
-<tr class="separator:adba7ab04bff5acb98deab0a74e36dd5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a58161e11ba6668ab3c1925af70255ea7"><td class="memItemLeft" align="right" valign="top"><a id="a58161e11ba6668ab3c1925af70255ea7"></a>
+mmg_mesh_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Remesh.html#a58161e11ba6668ab3c1925af70255ea7">mesh2Mmg</a> (std::shared_ptr&lt; MeshType &gt; const &amp;m_in)</td></tr>
+<tr class="memdesc:a58161e11ba6668ab3c1925af70255ea7"><td class="mdescLeft">&#160;</td><td class="mdescRight">transform a Feel++ <code>mesh</code> into an Mmg mesh <br /></td></tr>
+<tr class="separator:a58161e11ba6668ab3c1925af70255ea7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae4b2066cedd76fd334cc938c46214b00"><td class="memItemLeft" align="right" valign="top"><a id="ae4b2066cedd76fd334cc938c46214b00"></a>
 mesh_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>mmg2Mesh</b> ()</td></tr>
 <tr class="separator:ae4b2066cedd76fd334cc938c46214b00"><td class="memSeparator" colspan="2">&#160;</td></tr>
