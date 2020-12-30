@@ -23,6 +23,7 @@
 #
 message(STATUS "============================================================")
 message(STATUS "Contrib libraries")
+include(FetchContent)
 add_library(feelpp_contrib INTERFACE)
 add_library( Feelpp::feelpp_contrib ALIAS feelpp_contrib)
 
@@ -536,24 +537,6 @@ if ( FEELPP_ENABLE_CPR )
       $<INSTALL_INTERFACE:include/feelpp> )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} CPR/Contrib")
 endif()
-
-  feelppContribPrepare( cpr )
-  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
-    if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
-      set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
-    endif()
-    message( STATUS "cpr CMAKE_INSTALL_INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
-    add_subdirectory( cpr )
-    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_CPR )
-#    target_link_libraries(feelpp_contrib INTERFACE matplot )
-    target_include_directories(feelpp_contrib INTERFACE
-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/cpr/include/cpr>
-      $<INSTALL_INTERFACE:include/feelpp> )
-    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} CPR/Contrib")
-  endif()
-endif( FEELPP_ENABLE_CPR )
-
-
 
 # Add an info message to be displayed at the end of the cmake process.
 if( FEELPP_CONTRIB_SUBMODULE_UPDATED )
