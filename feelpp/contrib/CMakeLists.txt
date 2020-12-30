@@ -111,7 +111,7 @@ if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
   FIND_PACKAGE(Eigen3 REQUIRED)
   MESSAGE(STATUS "Eigen3 system found:")
 else()
-
+if ( 0 )
   set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 1)
   set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
   add_subdirectory(eigen)
@@ -139,6 +139,7 @@ else()
   endif()
 
 endif()
+endif()
 
 # there is an issue with eigen+mkl
 if ( 0 ) #MKL_FOUND )
@@ -148,8 +149,24 @@ if ( 0 ) #MKL_FOUND )
   target_include_directories(eigen INTERFACE ${MKL_INCLUDE_DIRS})
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_MKL )
 endif()
+
+include(FetchContent)
+set(EIGEN_BUILD_DOC OFF)
+set(BUILD_TESTING OFF)
+set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 1)
+set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
+FetchContent_Declare(eigen GIT_REPOSITORY https://gitlab.com/feelpp/eigen.git) # the commit hash for 1.5.0
+FetchContent_MakeAvailable(eigen)
+target_include_directories( feelpp_contrib BEFORE
+      INTERFACE
+      $<BUILD_INTERFACE:${eigen_SOURCE_DIR}>
+      $<BUILD_INTERFACE:${eigen_SOURCE_DIR}/unsupported>
+      $<INSTALL_INTERFACE:include/feelpp/eigen>
+      $<INSTALL_INTERFACE:include/feelpp/eigen/unsupported>
+      )
+
 target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_EIGEN3 )
-target_link_libraries(feelpp_contrib INTERFACE eigen )
+target_link_libraries(feelpp_contrib INTERFACE Eigen3::Eigen )
 
 SET(FEELPP_HAS_EIGEN3 1)
 SET(FEELPP_HAS_EIGEN3 1 PARENT_SCOPE)
