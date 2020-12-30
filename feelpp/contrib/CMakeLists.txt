@@ -523,8 +523,20 @@ option( FEELPP_ENABLE_CPR "Enable CPR" ON )
 if ( FEELPP_ENABLE_CPR )
   message(STATUS "------------------------------------------------------------")
   message(STATUS "Configuring CPR")
+  FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/whoshuu/cpr.git GIT_TAG c8d33915dbd88ad6c92b258869b03aba06587ff9) # the commit hash for 1.5.0
   set( USE_SYSTEM_CURL ON )
   set( BUILD_CPR_TESTS OFF )
+  if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
+      set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+  endif()
+  FetchContent_MakeAvailable(cpr)
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_CPR )
+  target_include_directories(feelpp_contrib INTERFACE
+      $<BUILD_INTERFACE:${cpr_SOURCE_DIR}/include/>
+      $<INSTALL_INTERFACE:include/feelpp> )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} CPR/Contrib")
+endif()
+
   feelppContribPrepare( cpr )
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
