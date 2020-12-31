@@ -49,8 +49,11 @@ endif()
 if ( ${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.13.0 )
   message(STATUS "[feelpp] use new policy CMP0079" )
   cmake_policy(SET CMP0079 NEW)
-  message(STATUS "[feelpp] use new policy CMP0077" )
+endif()
+
+if (POLICY CMP0077)
   cmake_policy(SET CMP0077 NEW)
+  set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 endif()
 
 if (POLICY CMP0045)
