@@ -248,20 +248,17 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
 SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
+SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
     if ( !this->isUpdatedForUse() )
         return;
-    if ( p.get_child_optional( "Environment" ) )
+    if ( p.contains( "Environment" ) )
         return;
 
-    pt::ptree subPt;
-    super_type::super_model_base_type::updateInformationObject( subPt );
-    p.put_child( "Environment", subPt );
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
 
-    subPt.clear();
-    super_type::super_model_meshes_type::updateInformationObject( subPt );
-    p.put_child( "Meshes", subPt );
+    super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
+
 }
 SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_DECLARATIONS
 tabulate_informations_ptr_t

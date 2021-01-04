@@ -343,37 +343,31 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
     if ( !this->isUpdatedForUse() )
         return;
-    if ( p.get_child_optional( "Environment" ) )
+    if ( p.contains( "Environment" ) )
         return;
 
-    pt::ptree subPt;
-    super_type::super_model_base_type::updateInformationObject( subPt );
-    p.put_child( "Environment", subPt );
-    subPt.clear();
-    super_type::super_model_meshes_type::updateInformationObject( subPt );
-    p.put_child( "Meshes", subPt );
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
+
+    super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
     // p.put( "toolbox-heat", M_heatModel->journalSectionName() );
     // p.put( "toolbox-electric", M_electricModel->journalSectionName() );
 
     // Materials properties
     if ( this->materialsProperties() )
-    {
-        subPt.clear();
-        this->materialsProperties()->updateInformationObject( subPt );
-        p.put_child( "Materials Properties", subPt );
-    }
+        this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
 
     // Numerical Solver
-    subPt.clear();
-    subPt.put( "solver", M_solverName );
-    p.put_child( "Numerical Solver", subPt );
+    nl::json subPt;
+    subPt.emplace( "solver", M_solverName );
+    p["Numerical Solver"] = subPt;
 
     // Exporter
+#if 0
     if ( M_exporter )
     {
         subPt.clear();
@@ -385,21 +379,14 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) con
         subPt.put_child( "fields", subPt2 );
         p.put_child( "Exporter", subPt );
     }
+#endif
 
     // Algebraic Solver
     if ( M_algebraicFactoryMonolithic )
-    {
-        subPt.clear();
-        M_algebraicFactoryMonolithic->updateInformationObject( subPt );
-        p.put_child( "Algebraic Solver", subPt );
-    }
+        M_algebraicFactoryMonolithic->updateInformationObject( p["Algebraic Solver"] );
 
-    subPt.clear();
-    M_heatModel->updateInformationObject( subPt );
-    p.put_child( "Toolbox Heat", subPt );
-    subPt.clear();
-    M_electricModel->updateInformationObject( subPt );
-    p.put_child( "Toolbox Electric", subPt );
+    M_heatModel->updateInformationObject( p["Toolbox Heat"] );
+    M_electricModel->updateInformationObject( p[ "Toolbox Electric"] );
 }
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS

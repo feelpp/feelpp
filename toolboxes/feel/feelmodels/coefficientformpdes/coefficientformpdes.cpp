@@ -386,31 +386,22 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::getInfo() const
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
-COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
-    pt::ptree subPt;
-    super_type::super_model_base_type::updateInformationObject( subPt );
-    p.put_child( "Environment", subPt );
-    subPt.clear();
-    super_type::super_model_meshes_type::updateInformationObject( subPt );
-    p.put_child( "Meshes", subPt );
+    if ( p.contains( "Environment" ) )
+        return;
+
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
+
+    super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
     if ( M_algebraicFactory )
-    {
-        subPt.clear();
-        M_algebraicFactory->updateInformationObject( subPt );
-        p.put_child( "Algebraic Solver", subPt );
-    }
+        M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
 
-    subPt.clear();
-    for (auto & cfpde  : M_coefficientFormPDEs )
-    {
-        pt::ptree subPt2;
-        cfpde->updateInformationObject( subPt2 );
-        subPt.put_child( cfpde->keyword(), subPt2 );
-    }
-    p.put_child( "Coefficient Form PDE", subPt );
-
+    nl::json subPt;
+    for (auto & cfpde : M_coefficientFormPDEs )
+        cfpde->updateInformationObject( subPt[cfpde->keyword()] );
+    p.emplace( "Coefficient Form PDE", subPt );
 }
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS

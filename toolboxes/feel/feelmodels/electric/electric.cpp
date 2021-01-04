@@ -301,27 +301,25 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
     if ( !this->isUpdatedForUse() )
         return;
-    if ( p.get_child_optional( "Environment" ) )
+    if ( p.contains( "Environment" ) )
         return;
 
-    pt::ptree subPt;
-    super_type::super_model_base_type::updateInformationObject( subPt );
-    p.put_child( "Environment", subPt );
-    subPt.clear();
-    super_type::super_model_meshes_type::updateInformationObject( subPt );
-    p.put_child( "Meshes", subPt );
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
+
+    super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
+
 
     // Physics
-    pt::ptree subPt2;
-    subPt.clear();
-    subPt.put( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
-    p.put_child( "Physics", subPt );
+    nl::json subPt;
+    subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
+    p["Physics"] = subPt;
 
     // Boundary Conditions
+#if 0
     subPt.clear();
     subPt2.clear();
     M_bcDirichletMarkerManagement.updateInformationObjectDirichletBC( subPt2 );
@@ -336,29 +334,20 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
     for( const auto& ptIter : subPt2 )
         subPt.put_child( ptIter.first, ptIter.second );
     p.put_child( "Boundary Conditions",subPt );
+#endif
 
     // Materials properties
     if ( this->materialsProperties() )
-    {
-        subPt.clear();
-        this->materialsProperties()->updateInformationObject( subPt );
-        p.put_child( "Materials Properties", subPt );
-    }
+        this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
 
     // Function Spaces
     subPt.clear();
-    subPt2.clear();
-    M_XhElectricPotential->updateInformationObject( subPt2 );
-    subPt.put_child( "Electric Potential", subPt2 );
-    p.put_child( "Function Spaces",  subPt );
+    M_XhElectricPotential->updateInformationObject( subPt["Electric Potential"] );
+    p.emplace( "Function Spaces", subPt );
 
     // Algebraic Solver
     if ( M_algebraicFactory )
-    {
-        subPt.clear();
-        M_algebraicFactory->updateInformationObject( subPt );
-        p.put_child( "Algebraic Solver", subPt );
-    }
+        M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
