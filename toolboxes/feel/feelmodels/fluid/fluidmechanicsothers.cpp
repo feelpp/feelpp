@@ -233,48 +233,34 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
     if ( !this->isUpdatedForUse() )
         return;
-    if ( p.get_child_optional( "Environment" ) )
+
+    if ( p.contains( "Environment" ) )
         return;
 
-    pt::ptree subPt, subPt2;
-    super_type::super_model_base_type::updateInformationObject( subPt );
-    p.put_child( "Environment", subPt );
-    subPt.clear();
-    super_type::super_model_meshes_type::updateInformationObject( subPt );
-    p.put_child( "Meshes", subPt );
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
 
-    subPt.clear();
-    subPt.put( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
-    p.put_child( "Physics", subPt );
+    super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
+
+    nl::json subPt;
+    subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
+    p["Physics"] = subPt;
 
     // Materials properties
     if ( this->materialsProperties() )
-    {
-        subPt.clear();
-        this->materialsProperties()->updateInformationObject( subPt );
-        p.put_child( "Materials Properties", subPt );
-    }
+        this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
 
     // FunctionSpace
     subPt.clear();
-    subPt2.clear();
-    this->functionSpaceVelocity()->updateInformationObject( subPt2 );
-    subPt.put_child( "Velocity", subPt2 );
-    subPt2.clear();
-    this->functionSpacePressure()->updateInformationObject( subPt2 );
-    subPt.put_child( "Pressure", subPt2 );
-    p.put_child( "Function Spaces",  subPt );
+    this->functionSpaceVelocity()->updateInformationObject( subPt["Velocity"] );
+    this->functionSpacePressure()->updateInformationObject( subPt["Pressure"] );
+    p["Function Spaces"] = subPt;
 
     if ( M_algebraicFactory )
-    {
-        subPt.clear();
-        M_algebraicFactory->updateInformationObject( subPt );
-        p.put_child( "Algebraic Solver", subPt );
-    }
+        M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

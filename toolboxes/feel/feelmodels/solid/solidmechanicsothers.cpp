@@ -158,61 +158,39 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
     if ( !this->isUpdatedForUse() )
         return;
-    if ( p.get_child_optional( "Environment" ) )
+    if ( p.contains( "Environment" ) )
         return;
 
-    pt::ptree subPt, subPt2;
-    super_type::super_model_base_type::updateInformationObject( subPt );
-    p.put_child( "Environment", subPt );
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
 
-    subPt.clear();
-    subPt.put( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
-    p.put_child( "Physics", subPt );
+    nl::json subPt;
+    subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
+    p["Physics"] = subPt;
 
     // Materials properties
     if ( this->materialsProperties() )
-    {
-        subPt.clear();
-        this->materialsProperties()->updateInformationObject( subPt );
-        p.put_child( "Materials Properties", subPt );
-    }
+        this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
 
     if (this->hasSolidEquationStandard())
     {
-        subPt.clear();
-        super_type::super_model_meshes_type::updateInformationObject( subPt );
-        p.put_child( "Meshes", subPt );
+        super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
         subPt.clear();
-        subPt2.clear();
-        this->functionSpaceDisplacement()->updateInformationObject( subPt2 );
-        subPt.put_child( "Displacement", subPt2 );
+        this->functionSpaceDisplacement()->updateInformationObject( subPt["Displacement"] );
         if ( this->hasDisplacementPressureFormulation() )
-        {
-            subPt2.clear();
-            this->functionSpacePressure()->updateInformationObject( subPt2 );
-            subPt.put_child( "Pressure", subPt2 );
-        }
-        p.put_child( "Function Spaces",  subPt );
+            this->functionSpacePressure()->updateInformationObject( subPt["Pressure"] );
+        p["Function Spaces"] = subPt;
 
         if ( M_algebraicFactory )
-        {
-            subPt.clear();
-            M_algebraicFactory->updateInformationObject( subPt );
-            p.put_child( "Algebraic Solver", subPt );
-        }
+            M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
     }
 
     if ( this->hasSolidEquation1dReduced() )
-    {
-        subPt.clear();
-        M_solid1dReduced->updateInformationObject( subPt );
-        p.put_child( "Toolbox Solid 1d Reduced", subPt );
-    }
+        M_solid1dReduced->updateInformationObject( p["Toolbox Solid 1d Reduced"] );
 
 }
 

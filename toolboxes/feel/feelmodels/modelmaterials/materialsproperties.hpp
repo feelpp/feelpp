@@ -651,17 +651,15 @@ public :
             return ostr;
         }
 
-    void updateInformationObject( pt::ptree & p ) const
+    void updateInformationObject( nl::json & p ) const
         {
-            p.put( "number of materials", this->numberOfMaterials() );
+            p.emplace( "number of materials", this->numberOfMaterials() );
             for ( auto const& [matName,matProps] : M_materialNameToProperties )
             {
-                pt::ptree matPt;
                 for ( auto const& [propName,matProp] : matProps )
                 {
-                    matPt.put( propName, matProp.exprToString() );
+                    p[matName].emplace( propName, matProp.exprToString() );
                 }
-                p.add_child( matName, matPt );
             }
         }
 
@@ -671,6 +669,10 @@ public :
 
             Feel::Table tabInfoOthers;
             TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
+            tabInfoOthers.format()
+                .setShowAllBorders( false )
+                .setColumnSeparator(":")
+                .setHasRowSeparator( false );
             tabInfo->add( "", TabulateInformations::New( tabInfoOthers ) );
 
             for ( auto const& [matName,matProps] : M_materialNameToProperties )
@@ -679,6 +681,11 @@ public :
                     continue;
                 Feel::Table tabInfoMatEntries;
                 TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoMatEntries, jsonInfo.at( matName ), tabInfoProp );
+                tabInfoMatEntries.format()
+                    .setShowAllBorders( false )
+                    .setColumnSeparator(":")
+                    .setHasRowSeparator( false );
+
                 tabInfo->add( "Material : "+matName, TabulateInformations::New( tabInfoMatEntries ) );
             }
             return tabInfo;

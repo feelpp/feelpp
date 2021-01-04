@@ -251,30 +251,24 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
-COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
-    pt::ptree subPt;
-    super_type::super_type::super_model_base_type::updateInformationObject( subPt );
-    p.put_child( "Environment", subPt );
-    subPt.clear();
-    super_type::super_type::super_model_meshes_type::updateInformationObject( subPt );
-    p.put_child( "Meshes", subPt );
+    if ( p.contains( "Environment" ) )
+        return;
+
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
+
+    super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
 
     // FunctionSpace
-    subPt.clear();
-    pt::ptree subPt2;
-    M_Xh->updateInformationObject( subPt2 );
-    subPt.put_child( this->unknownName(), subPt2 );
-    p.put_child( "Function Spaces",  subPt );
+    nl::json subPt;
+    M_Xh->updateInformationObject( subPt[this->unknownName()] );
+    p.emplace( "Function Spaces",  subPt );
 
 #if 0
     if ( M_algebraicFactory )
-    {
-        subPt.clear();
-        M_algebraicFactory->updateInformationObject( subPt );
-        p.put_child( "Algebraic Solver", subPt );
-    }
+        M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
 #endif
 }
 
