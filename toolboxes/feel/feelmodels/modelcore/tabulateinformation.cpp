@@ -218,7 +218,6 @@ tabulate::Table tabulateArrayOfPrimitive( nl::json const& jsonInfo )
 
 void addKeyToValues( Feel::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::vector<std::string> const& keys )
 {
-    // TODO
     for ( std::string const& key : keys )
     {
         if ( !jsonInfo.contains(key) )
@@ -229,21 +228,15 @@ void addKeyToValues( Feel::Table &table, nl::json const& jsonInfo, TabulateInfor
             continue;
         if ( valAtKey.is_string() )
             table.add_row( {key, valAtKey.get<std::string>()} );
+        else if ( valAtKey.is_boolean() )
+            table.add_row( {key, valAtKey.get<bool>()} );
         else if ( valAtKey.is_number_integer() )
-            table.add_row( {key, std::to_string(valAtKey.get<int>())} );
+            table.add_row( {key, valAtKey.get<int>()} );
         else if ( valAtKey.is_number_float() )
-            table.add_row( {key, std::to_string(valAtKey.get<double>())} );
+            table.add_row( {key, valAtKey.get<double>()} );
         else
-            CHECK( false ) << "TODO missing primitive or not primitive";
+            CHECK( false ) << "TODO missing primitive or not primitive at key " << key ;
     }
-#if 0
-    if ( TabulateInformationProperties::terminalProperties().hasWidth() )
-    {
-        //int table_width = max_size_col0+max_size_col1+1;// table.shape().first;
-        int table_width_max = (int)std::floor( (3./4)*TabulateInformationProperties::terminalProperties().width());
-        t(2,1).format().setWidthMax(8);
-    }
-#endif
 }
 
 
@@ -273,6 +266,8 @@ void addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateI
             continue;
         if ( valAtKey.is_string() )
             table.add_row( {key, valAtKey.get<std::string>()} );
+        else if ( valAtKey.is_boolean() )
+            table.add_row( {key, std::to_string(valAtKey.get<bool>())} );
         else if ( valAtKey.is_number_integer() )
             table.add_row( {key, std::to_string(valAtKey.get<int>())} );
         else if ( valAtKey.is_number_float() )
@@ -330,16 +325,28 @@ tabulateInformationsFunctionSpace( nl::json const& jsonInfo, TabulateInformation
 
     Feel::Table tabInfoOthers;
     TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
+    tabInfoOthers.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
     tabInfo->add( "", TabulateInformations::New( tabInfoOthers ) );
 
     Feel::Table tabInfoBasisEntries;
     TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoBasisEntries, jsonInfo.at("basis"), tabInfoProp );
+    tabInfoBasisEntries.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
     tabInfo->add( "Basis", TabulateInformations::New( tabInfoBasisEntries ) );
 
     auto tabInfoDofTable = TabulateInformationsSections::New();
     auto const& jsonInfoDofTable = jsonInfo.at("doftable");
     Feel::Table tabInfoDofTableEntries;
     TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoDofTableEntries, jsonInfoDofTable, tabInfoProp );
+    tabInfoDofTableEntries.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
     tabInfoDofTable->add( "", TabulateInformations::New( tabInfoDofTableEntries ) );
     if ( jsonInfoDofTable.contains( "nLocalDofWithoutGhost" ) )
     {
@@ -352,7 +359,7 @@ tabulateInformationsFunctionSpace( nl::json const& jsonInfo, TabulateInformation
         int procId = 0;
         for (auto it1=jarray_nLocalDofWithGhost.begin(), it2 = jarray_nLocalDofWithoutGhost.begin(), it3=jarray_nLocalGhost.begin();
              it1 != jarray_nLocalDofWithGhost.end(); ++it1,++it2,++it3,++procId )
-            tabInfoDofTableEntriesDatByPartition.add_row({ std::to_string(procId), it1.value().get<std::string>(), it2.value().get<std::string>(), it3.value().get<std::string>() });
+            tabInfoDofTableEntriesDatByPartition.add_row({ procId, it1.value().get<int>(), it2.value().get<int>(), it3.value().get<int>() });
         tabInfoDofTable->add( "", TabulateInformations::New( tabInfoDofTableEntriesDatByPartition ) );
     }
     tabInfo->add( "Dof Table", tabInfoDofTable );

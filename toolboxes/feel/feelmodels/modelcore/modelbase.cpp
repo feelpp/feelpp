@@ -428,13 +428,15 @@ ModelBase::log( std::string const& _className,std::string const& _functionName,s
 // info
 
 void
-ModelBase::updateInformationObject( pt::ptree & p ) const
+ModelBase::updateInformationObject( nl::json & p ) const
 {
-    p.put( "prefix", this->prefix() );
-    p.put( "keyword", this->keyword() );
-    p.put( "root repository", this->rootRepository() );
-    p.put( "expr repository", this->repository().expr() );
-    p.put( "number of processus", this->worldComm().localSize() );
+    if ( p.contains( "prefix" ) )
+        return;
+    p.emplace( "prefix", this->prefix() );
+    p.emplace( "keyword", this->keyword() );
+    p.emplace( "root repository", this->rootRepository() );
+    p.emplace( "expr repository", this->repository().expr() );
+    p.emplace( "number of processus", this->worldComm().localSize() );
 }
 
 tabulate_informations_ptr_t
@@ -454,7 +456,7 @@ tabulate_informations_ptr_t
 ModelBase::tabulateInformations() const
 {
     Environment::journalCheckpoint();
-
+#if 0
     pt::ptree pt;
     this->updateInformationObject( pt );
     std::ostringstream pt_ostr;
@@ -462,6 +464,10 @@ ModelBase::tabulateInformations() const
     std::istringstream pt_istream( pt_ostr.str() );
     nl::json jsonInfo;
     pt_istream >> jsonInfo;
+#else
+    nl::json jsonInfo;
+    this->updateInformationObject( jsonInfo );
+#endif
 
     auto tabInfo = this->tabulateInformations( jsonInfo, TabulateInformationProperties{} );
 

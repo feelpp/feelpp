@@ -177,7 +177,7 @@ public :
     bool verboseAllProc() const;
     void log( std::string const& _className,std::string const& _functionName,std::string const& _msg ) const;
     // info
-    void updateInformationObject( pt::ptree & p ) const override;
+    void updateInformationObject( nl::json & p ) const override;
 
     tabulate_informations_ptr_t tabulateInformations() const;
     virtual tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
