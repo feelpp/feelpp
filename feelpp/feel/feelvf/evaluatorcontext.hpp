@@ -113,7 +113,7 @@ public:
         DVLOG(2) << "EvaluatorContext copy constructor\n";
     }
 
-    virtual ~EvaluatorContext() {}
+    ~EvaluatorContext() override {}
 
     //@}
 

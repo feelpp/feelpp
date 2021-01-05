@@ -1108,7 +1108,7 @@ public:
 
     BilinearForm( BilinearForm const& __vf ) = default;
     BilinearForm( BilinearForm && __vf ) = default;
-    ~BilinearForm()
+    ~BilinearForm() override
     {
         //toc(M_name, FLAGS_v > 0 );
     }

@@ -262,6 +262,8 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"use-semi-implicit-turbulence-coupling").c_str(), Feel::po::value<bool>()->default_value( false ), "use-semi-implicit-turbulence-coupling")
 
         (prefixvm(prefix,"pcd.apply-homogeneous-dirichlet-in-newton").c_str(), Feel::po::value<bool>()->default_value(false), "use-gravity-force")
+
+        (prefixvm(prefix,"body.articulation.method").c_str(), Feel::po::value<std::string>()->default_value("lm"), "lm or p-matrix")
         ;
 
     fluidOptions

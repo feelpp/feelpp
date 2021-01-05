@@ -180,7 +180,8 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
 
 void ModelAlgebraicFactory::initExplictPartOfSolution()
 {
-    M_explictPartOfSolution = M_backend->newVector( M_R->mapPtr() );
+    if ( !M_explictPartOfSolution )
+        M_explictPartOfSolution = M_backend->newVector( M_R->mapPtr() );
 }
 
     void ModelAlgebraicFactory::initSolverPtAP( sparse_matrix_ptrtype matP )
@@ -196,8 +197,7 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         {
             M_solverPtAP_backend = backend_type::build( soption( _name="backend" ), this->model()->prefix(), this->model()->worldCommPtr() );
 
-
-            M_solverPtAP_matPtAP = M_solverPtAP_backend->newZeroMatrix( M_solverPtAP_matP->mapColPtr(), M_solverPtAP_matP->mapRowPtr() );
+            M_solverPtAP_matPtAP = M_solverPtAP_backend->newZeroMatrix( M_solverPtAP_matP->mapColPtr(), M_solverPtAP_matP->mapColPtr() );
             M_solverPtAP_matPtAP->clear();
             M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
 
@@ -205,7 +205,7 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
 
 
             M_solverPtAP_solution = M_solverPtAP_backend->newVector( M_solverPtAP_matPtAP->mapColPtr() );
-            M_solverPtAP_PtF = M_solverPtAP_backend->newVector( M_solverPtAP_matPtAP->mapRowPtr() );
+            M_solverPtAP_PtF = M_solverPtAP_backend->newVector( M_solverPtAP_matP->mapColPtr() );
 
             M_solverPtAP_Psolution = M_solverPtAP_backend->newVector( M_solverPtAP_matP->mapRowPtr() );
 
@@ -620,7 +620,6 @@ ModelAlgebraicFactory::tabulateInformation( nl::json const& jsonInfo, TabulateIn
             if ( !std::get<2>( av.second ) && std::get<3>( av.second ) )
                 M_R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
 
-
         if ( M_explictPartOfSolution )
         {
             M_explictPartOfSolution->scale( -1. );
@@ -633,7 +632,11 @@ ModelAlgebraicFactory::tabulateInformation( nl::json const& jsonInfo, TabulateIn
 
         if ( M_useSolverPtAP )
         {
-            *M_solverPtAP_solution = *U;
+
+            // Not sure that is good!
+            M_solverPtAP_matP->multVector( *U, *M_solverPtAP_solution, true );
+            //*M_solverPtAP_solution = *U;
+
             // PtAP = P^T A P
             M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
             // PtF = P^T F
@@ -958,8 +961,10 @@ ModelAlgebraicFactory::tabulateInformation( nl::json const& jsonInfo, TabulateIn
         model->timerTool("Solve").elapsed("algebraic-newton-initial-guess");
         model->timerTool("Solve").restart();
 
+#if 0
         if ( M_explictPartOfSolution )
             M_solverPtAP_solution->add( -1.0, M_explictPartOfSolution );
+#endif
 
         //---------------------------------------------------------------------//
         if (model->useCstMatrix())
@@ -1033,7 +1038,10 @@ ModelAlgebraicFactory::tabulateInformation( nl::json const& jsonInfo, TabulateIn
         typename backend_type::nl_solve_return_type solveStat;
         if ( M_useSolverPtAP )
         {
-            *M_solverPtAP_solution = *U; // actually always same size
+            // TODO REMOVE EXPLICIT PART
+            // Not sure that is good!
+            M_solverPtAP_matP->multVector( *U, *M_solverPtAP_solution, true );
+            //*M_solverPtAP_solution = *U; // actually always same size
             solveStat = M_solverPtAP_backend->nlSolve( _jacobian=M_solverPtAP_matPtAP,
                                                        _solution=M_solverPtAP_solution,
                                                        _residual=M_solverPtAP_PtF,
@@ -1087,6 +1095,49 @@ ModelAlgebraicFactory::tabulateInformation( nl::json const& jsonInfo, TabulateIn
     }
 
     //---------------------------------------------------------------------------------------------------------------//
+
+
+    void
+    ModelAlgebraicFactory::applyAssemblyLinear(const vector_ptrtype& U, sparse_matrix_ptrtype& lhs, vector_ptrtype& rhs, std::vector<std::string> const& infos, bool applyDofElimination ) const
+    {
+        ModelAlgebraic::DataUpdateLinear dataLinear(U,lhs,rhs,true);
+        dataLinear.copyInfos( this->dataInfos() );
+        for ( std::string const& info : infos )
+            dataLinear.addInfo( info );
+        this->applyAssemblyLinear( dataLinear, applyDofElimination );
+    }
+    void
+    ModelAlgebraicFactory::applyAssemblyLinear( ModelAlgebraic::DataUpdateLinear & dataLinear, bool applyDofElimination ) const
+    {
+        // cst part
+        dataLinear.setBuildCstPart( true );
+        M_functionLinearAssembly( dataLinear );
+        for ( auto const& func : M_addFunctionLinearAssembly )
+            func.second( dataLinear );
+
+        // non cst part
+        dataLinear.setBuildCstPart( false );
+        M_functionLinearAssembly( dataLinear );
+        for ( auto const& func : M_addFunctionLinearAssembly )
+            func.second( dataLinear );
+
+        // add maybe vector to rhs
+        for ( auto const& av : M_addVectorLinearRhsAssembly )
+            if ( /*std::get<2>( av.second ) &&*/ std::get<3>( av.second ) )
+                dataLinear.rhs()->add( std::get<1>( av.second ), std::get<0>( av.second ) );
+
+        // dof elimination
+        if ( applyDofElimination )
+        {
+            M_functionLinearDofElimination( dataLinear );
+            for ( auto const& func : M_addFunctionLinearDofElimination )
+                func.second( dataLinear );
+        }
+
+        // post-assembly
+        for ( auto const& func : M_addFunctionLinearPostAssembly )
+            func.second( dataLinear );
+    }
 
     void
     ModelAlgebraicFactory::evaluateResidual(const vector_ptrtype& U, vector_ptrtype& R, std::vector<std::string> const& infos, bool applyDofElimination ) const

@@ -80,10 +80,13 @@ class FEELPP_EXPORT ModelPostprocessSave
     std::string M_fieldsFormat;
 };
 
-class FEELPP_EXPORT ModelPostprocessQuantities
+class FEELPP_EXPORT ModelPostprocessQuantities : public CommObject
 {
+    using super = CommObject;
   public :
-    ModelPostprocessQuantities()
+    ModelPostprocessQuantities( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
+        :
+        super( world )
     {}
     ModelPostprocessQuantities( ModelPostprocessQuantities const& ) = default;
     ModelPostprocessQuantities( ModelPostprocessQuantities&& ) = default;
@@ -91,11 +94,17 @@ class FEELPP_EXPORT ModelPostprocessQuantities
     ModelPostprocessQuantities& operator=( ModelPostprocessQuantities && ) = default;
 
     std::set<std::string> const& quantities() const { return M_quantities; }
+    std::map<std::string,ModelExpression> const& expressions() const { return M_exprs; }
 
     void setup( pt::ptree const& p );
 
+    void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+    void setParameterValues( std::map<std::string,double> const& mp );
+
   private :
+    std::string M_directoryLibExpr;
     std::set<std::string> M_quantities;
+    std::map<std::string,ModelExpression> M_exprs;
 };
 
 class FEELPP_EXPORT ModelPointPosition

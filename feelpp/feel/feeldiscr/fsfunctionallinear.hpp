@@ -84,7 +84,7 @@ public:
     }
 
 
-    virtual ~FsFunctionalLinear() {}
+    ~FsFunctionalLinear() override {}
 
     virtual void setSpace( space_ptrtype const& space ) override
     {
@@ -96,7 +96,7 @@ public:
     std::string name() const { return M_name ; }
 
     // apply the functional
-    virtual value_type
+    value_type
     operator()( const element_type& x ) const override
     {
         M_vector->close();

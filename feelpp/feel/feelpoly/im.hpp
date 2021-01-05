@@ -119,7 +119,7 @@ public:
                 this->constructQROnFace( makeReferenceConvex<convex_type,nDim,1,nRealDim>(), gm, face_qr );
             }
         }
-    ~IMGeneral() = default;
+    ~IMGeneral() override = default;
 
     IMGeneral( IMGeneral const& i ) = default;
     IMGeneral( IMGeneral && i ) = default;

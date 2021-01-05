@@ -127,7 +127,7 @@ class Val
         }
 
 
-    void eval( int nx, value_type const* x, value_type* f ) const
+    void eval( int nx, value_type const* x, value_type* f ) const override
     {
         for ( int i = 0; i < nx; ++i )
             f[i] = x[i];

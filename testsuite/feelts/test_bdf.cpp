@@ -63,7 +63,7 @@ public:
         super(),
         bdf( "bdf","test_bdf", Environment::worldComm() )
     {}
-    void run()
+    void run() override
     {
         for ( bdf.start(); bdf.isFinished() == false; bdf.next() )
         {
