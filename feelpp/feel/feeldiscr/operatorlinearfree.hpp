@@ -95,15 +95,15 @@ public:
         M_pattern( pattern )
     {}
 
-    virtual ~OperatorLinearFree() {}
+    ~OperatorLinearFree() override {}
 
 
-    virtual void
+    void
     init( domain_space_ptrtype     domainSpace,
           dual_image_space_ptrtype dualImageSpace,
           backend_ptrtype          backend,
           bool buildMatrix = false ,
-          size_type pattern = Pattern::COUPLED )
+          size_type pattern = Pattern::COUPLED ) override
     {
         this->setDomainSpace( domainSpace );
         this->setDualImageSpace( dualImageSpace );
@@ -117,9 +117,9 @@ public:
         return M_expr;
     }
 
-    virtual void
+    void
     apply( const domain_element_type& de,
-           image_element_type&        ie ) const
+           image_element_type&        ie ) const override
     {
 
         auto matrix = M_backend->newMatrix( _test=this->dualImageSpace() ,
@@ -142,9 +142,9 @@ public:
     }
 
 
-    virtual double
+    double
     energy( const typename domain_space_type::element_type & de,
-            const typename dual_image_space_type::element_type & ie ) const
+            const typename dual_image_space_type::element_type & ie ) const override
     {
 
         auto matrix = M_backend->newMatrix( _test=this->dualImageSpace() ,
@@ -168,9 +168,9 @@ public:
     }
 
 
-    virtual void
+    void
     apply( const typename domain_space_type::element_type & de,
-           typename dual_image_space_type::element_type & ie )
+           typename dual_image_space_type::element_type & ie ) override
     {
         auto matrix = M_backend->newMatrix( _test=this->dualImageSpace() ,
                                             _trial=this->domainSpace(),
@@ -191,9 +191,9 @@ public:
     }
 
 
-    virtual void
+    void
     apply( const domain_element_range_type & de,
-           typename dual_image_space_type::element_type & ie )
+           typename dual_image_space_type::element_type & ie ) override
     {
         auto matrix = M_backend->newMatrix( _test=this->dualImageSpace() ,
                                             _trial=this->domainSpace(),
@@ -213,9 +213,9 @@ public:
         ie.container() = *_v2;
     }
 
-    virtual void
+    void
     apply( const typename domain_space_type::element_type & de,
-           dual_image_element_range_type & ie )
+           dual_image_element_range_type & ie ) override
     {
 
         auto matrix = M_backend->newMatrix( _test=this->dualImageSpace() ,
@@ -236,9 +236,9 @@ public:
         ie.container() = *_v2;
     }
 
-    virtual void
+    void
     apply( const domain_element_range_type & de,
-           dual_image_element_range_type & ie )
+           dual_image_element_range_type & ie ) override
     {
 
         auto matrix = M_backend->newMatrix( _test=this->dualImageSpace() ,
@@ -259,9 +259,9 @@ public:
         ie.container() = *_v2;
     }
 
-    virtual void
+    void
     apply( const domain_element_slice_type & de,
-           typename dual_image_space_type::element_type & ie )
+           typename dual_image_space_type::element_type & ie ) override
     {
         auto matrix = M_backend->newMatrix( _test=this->dualImageSpace() ,
                                             _trial=this->domainSpace(),
@@ -282,9 +282,9 @@ public:
     }
 
 
-    virtual void
+    void
     apply( const typename domain_space_type::element_type & de,
-           dual_image_element_slice_type & ie )
+           dual_image_element_slice_type & ie ) override
     {
         auto matrix = M_backend->newMatrix( _test=this->dualImageSpace() ,
                                             _trial=this->domainSpace(),
@@ -304,9 +304,9 @@ public:
         ie.container() = *_v2;
     }
 
-    virtual void
+    void
     apply( /*const*/ domain_element_slice_type /*&*/ de,
-                     dual_image_element_slice_type /*&*/ ie )
+                     dual_image_element_slice_type /*&*/ ie ) override
     {
         auto matrix = M_backend->newMatrix( _test=this->dualImageSpace() ,
                                             _trial=this->domainSpace(),
@@ -328,9 +328,9 @@ public:
 
 
 
-    virtual void
+    void
     apply( const domain_element_range_type & de,
-           dual_image_element_slice_type & ie )
+           dual_image_element_slice_type & ie ) override
     {
         auto matrix = M_backend->newMatrix( _test=this->dualImageSpace() ,
                                             _trial=this->domainSpace(),
@@ -350,9 +350,9 @@ public:
         ie.container() = *_v2;
     }
 
-    virtual void
+    void
     apply( const domain_element_slice_type & de,
-           dual_image_element_range_type & ie )
+           dual_image_element_range_type & ie ) override
     {
         auto matrix = M_backend->newMatrix( _test=this->dualImageSpace() ,
                                             _trial=this->domainSpace(),
@@ -373,9 +373,9 @@ public:
     }
 
     //! apply the inverse of the operator: \f$de = O^{-1} ie\f$
-    virtual void
+    void
     applyInverse( domain_element_type&      de,
-                  const image_element_type& ie )
+                  const image_element_type& ie ) override
     {
         auto matrix = M_backend->newMatrix( _test=this->dualImageSpace() ,
                                             _trial=this->domainSpace(),
@@ -407,7 +407,7 @@ public:
 
 
     // retrieve underlying matrix
-    virtual void matPtr( matrix_ptrtype & matrix )
+    void matPtr( matrix_ptrtype & matrix ) override
     {
         form2( _trial=this->domainSpace(),
                _test=this->dualImageSpace(),

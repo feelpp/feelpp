@@ -119,7 +119,7 @@ public:
     /**
      * destructor
      */
-    ~GraphCSR();
+    ~GraphCSR() override;
 
     //@}
 
@@ -349,6 +349,9 @@ public:
      * add missing zero entries diagonal
      */
     void addMissingZeroEntriesDiagonal();
+
+    //! allow to add new entries after called a close
+    void unlock() { M_is_closed = false; }
 
     /**
      * showMe

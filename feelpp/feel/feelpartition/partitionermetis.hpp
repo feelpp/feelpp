@@ -58,7 +58,7 @@ public:
     /**
      * Creates a new partitioner of this type 
      */
-    virtual clone_ptrtype clone () const override
+    clone_ptrtype clone () const override
         {
             return std::make_unique<PartitionerMetis<mesh_type>>();
         }

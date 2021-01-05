@@ -333,7 +333,7 @@ class GeoND
     /**
      * destructor, make it virtual for derived classes
      */
-    ~GeoND()
+    ~GeoND() override
     {
     }
 

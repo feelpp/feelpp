@@ -128,7 +128,7 @@ public :
 
     ExporterExodus( ExporterExodus const & __ex );
 
-    ~ExporterExodus();
+    ~ExporterExodus() override;
 
 
     //@}

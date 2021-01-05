@@ -398,7 +398,7 @@ public :
     // Measures quantities
     auto allMeasuresQuantities() const
     {
-        return hana::make_tuple();
+        return model_measures_quantities_empty_t{};
     }
 
     //--------------------------------------------------------------------//

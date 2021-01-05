@@ -467,7 +467,7 @@ public:
         // std::cout << "[LagrangeDual] points= " << M_pts << "\n";
     }
 
-    virtual ~Lagrange() {}
+    ~Lagrange() override {}
 
     //@}
 

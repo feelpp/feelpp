@@ -696,7 +696,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
 
             if ( !BuildCstPart && !UseJacobianLinearTerms )
             {
-                if ( hasActiveDofTranslationalVelocity )
+                R->setIsClosed( false );
+                if ( hasActiveDofTranslationalVelocity)
                 {
                     auto uTranslationalVelocity = bpbc.spaceTranslationalVelocity()->element( XVec, rowStartInVector+startBlockIndexTranslationalVelocity );
                     auto const& basisToContainerGpTranslationalVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexTranslationalVelocity );
@@ -710,11 +711,12 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                 {
                     auto uAngularVelocity = bpbc.spaceAngularVelocity()->element( XVec, rowStartInVector+startBlockIndexAngularVelocity );
                     auto const& basisToContainerGpAngularVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
-                    auto contribLhsAngularVelocity = bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*((momentOfInertiaExpr*idv(uAngularVelocity)).evaluate(false));
+
+                    //auto contribLhsAngularVelocity = (bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*((momentOfInertiaExpr*idv(uAngularVelocity)).evaluate(false))).eval(); // not works if not call eval(), probably aliasing issue
+                    auto contribLhsAngularVelocity = bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia*(idv(uAngularVelocity).evaluate(false));
                     for (int i=0;i<nLocalDofAngularVelocity;++i)
                     {
                         R->add( basisToContainerGpAngularVelocityVector[i],
-                                //uAngularVelocity(d)*bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia
                                 contribLhsAngularVelocity(i,0)
                                 );
                     }
@@ -722,11 +724,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
             }
             if ( BuildCstPart && doAssemblyRhs )
             {
+                R->setIsClosed( false );
                 if ( hasActiveDofTranslationalVelocity )
                 {
                     auto const& basisToContainerGpTranslationalVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexTranslationalVelocity );
-                    //std::vector<double> _gravity = { 0., 2. };
-                    //double massTilde = 10;
                     auto translationalVelocityPolyDeriv = bpbc.bdfTranslationalVelocity()->polyDeriv();
                     for (int d=0;d<nDim;++d)
                     {
@@ -755,6 +756,62 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                 }
             }
         }
+
+        for ( auto const& nba : M_bodySetBC.nbodyArticulated() )
+        {
+            if ( nba.articulationMethod() != "lm" )
+                continue;
+
+            for ( auto const& ba : nba.articulations() )
+            {
+                auto const& bbc1 = ba.body1();
+                auto const& bbc2 = ba.body2();
+                size_type startBlockIndexTranslationalVelocityBody1 = this->startSubBlockSpaceIndex("body-bc."+bbc1.name()+".translational-velocity");
+                size_type startBlockIndexTranslationalVelocityBody2 = this->startSubBlockSpaceIndex("body-bc."+bbc2.name()+".translational-velocity");
+                bool hasActiveDofTranslationalVelocityBody1 = bbc1.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
+                bool hasActiveDofTranslationalVelocityBody2 = bbc2.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
+                size_type startBlockIndexArticulationLMTranslationalVelocity = this->startSubBlockSpaceIndex( "body-bc.articulation-lm."+ba.name()+".translational-velocity");
+                if ( !BuildCstPart && !UseJacobianLinearTerms )
+                {
+                    R->setIsClosed( false );
+                    if ( hasActiveDofTranslationalVelocityBody1 )
+                    {
+                        auto const& basisToContainerGpTranslationalVelocityBody1 = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexTranslationalVelocityBody1 );
+                        auto const& basisToContainerGpArticulationLMTranslationalVelocity = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexArticulationLMTranslationalVelocity );
+                        for (int d=0;d<nDim;++d)
+                        {
+                            R->add( basisToContainerGpTranslationalVelocityBody1[d], XVec->operator()( basisToContainerGpArticulationLMTranslationalVelocity[d] ) );
+                            R->add( basisToContainerGpArticulationLMTranslationalVelocity[d], XVec->operator()( basisToContainerGpTranslationalVelocityBody1[d] ) );
+                        }
+                    }
+                    if ( hasActiveDofTranslationalVelocityBody2 )
+                    {
+                        auto const& basisToContainerGpTranslationalVelocityBody2 = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexTranslationalVelocityBody2 );
+                        auto const& basisToContainerGpArticulationLMTranslationalVelocity = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexArticulationLMTranslationalVelocity );
+                        for (int d=0;d<nDim;++d)
+                        {
+                            R->add( basisToContainerGpArticulationLMTranslationalVelocity[d], -XVec->operator()( basisToContainerGpTranslationalVelocityBody2[d] ) );
+                            R->add( basisToContainerGpTranslationalVelocityBody2[d], -XVec->operator()( basisToContainerGpArticulationLMTranslationalVelocity[d] ) );
+                        }
+                    }
+                }
+                if ( BuildCstPart && doAssemblyRhs )
+                {
+                    R->setIsClosed( false );
+                    if ( hasActiveDofTranslationalVelocityBody1 )
+                    {
+                        auto const& basisToContainerGpArticulationLMTranslationalVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexArticulationLMTranslationalVelocity );
+                        auto articulationTranslationalVelocityExpr = ba.translationalVelocityExpr( se ).evaluate(false);
+                        for (int d=0;d<nDim;++d)
+                        {
+                            R->add( basisToContainerGpArticulationLMTranslationalVelocityVector[d],
+                                    -articulationTranslationalVelocityExpr(d) );
+                        }
+                    }
+                }
+            } // ba
+        } // nba
+
     }
 
     //------------------------------------------------------------------------------------//

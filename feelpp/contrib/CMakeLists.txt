@@ -497,6 +497,7 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
   if ( SCOTCH_FOUND )
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_SCOTCH )
   endif() 
+  
 
   # setup parmmg only if mmg is ok
   feelppContribPrepare( parmmg )
@@ -505,16 +506,40 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     SET ( LIBPARMMG_SHARED ON )
     SET( DOWNLOAD_MMG OFF )
     SET( DOWNLOAD_METIS OFF )
-    SET(MMG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
-    SET(MMG_BUILDDIR ${CMAKE_CURRENT_BINARY_DIR}/mmg)
-    if ( 0 )
-      add_subdirectory( parmmg )
-      target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PARMMG )
-      target_link_libraries(feelpp_contrib INTERFACE libfeelpp_parmmg_so )
-      set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} ParMmg/Contrib")
-    endif( 0 )
+    
+#    SET(MMG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
+#    SET(MMG_BUILDDIR ${CMAKE_CURRENT_BINARY_DIR}/mmg)
+#    SET(MMG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
+    add_subdirectory( parmmg )
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PARMMG )
+    target_link_libraries(feelpp_contrib INTERFACE libfeelpp_parmmg_so )
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} ParMmg/Contrib")
+
   endif()
 endif()
+
+
+option( FEELPP_ENABLE_CPR "Enable CPR" ON )
+if ( FEELPP_ENABLE_CPR )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring CPR")
+  set( USE_SYSTEM_CURL ON )
+  set( BUILD_CPR_TESTS OFF )
+  feelppContribPrepare( cpr )
+  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
+      set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+    endif()
+    message( STATUS "cpr CMAKE_INSTALL_INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
+    add_subdirectory( cpr )
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_CPR )
+#    target_link_libraries(feelpp_contrib INTERFACE matplot )
+    target_include_directories(feelpp_contrib INTERFACE
+      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/cpr/include/cpr>
+      $<INSTALL_INTERFACE:include/feelpp> )
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} CPR/Contrib")
+  endif()
+endif( FEELPP_ENABLE_CPR )
 
 
 

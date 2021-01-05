@@ -2375,7 +2375,7 @@ public:
                  size_type nGhostDof, value_type* arrayGhostDof );
 
 
-        ~Element();
+        ~Element() override;
 
         void initFromSpace( functionspace_ptrtype const& __functionspace,
                             container_type const& __c );
@@ -3124,7 +3124,7 @@ public:
             return p0Element;
         }
 
-        value_type max() const
+        value_type max() const override
         {
             return this->max( true );
         }
@@ -3139,7 +3139,7 @@ public:
             return this->extremeValue( P0h, "max" );
         }
 
-        value_type min() const
+        value_type min() const override
         {
             return this->min( true );
         }
@@ -4296,7 +4296,7 @@ public:
 
         }
 
-        void printMatlab( std::string fname, bool gmsh = false ) const
+        void printMatlab( std::string fname, bool gmsh = false ) const override
             {
                 container_type m( *this );
                 if ( gmsh )
@@ -4746,7 +4746,7 @@ public:
     }
 
     //! destructor: do nothing thanks to shared_ptr<>
-    ~FunctionSpace()
+    ~FunctionSpace() override
         {
             VLOG(1) << "FunctionSpace Destructor...";
             M_dof.reset();
