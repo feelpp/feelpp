@@ -23,6 +23,7 @@
 #
 message(STATUS "============================================================")
 message(STATUS "Contrib libraries")
+include(FetchContent)
 add_library(feelpp_contrib INTERFACE)
 add_library( Feelpp::feelpp_contrib ALIAS feelpp_contrib)
 
@@ -425,6 +426,7 @@ if ( FEELPP_ENABLE_SIMPLE_WEB_SERVER )
   message(STATUS "Configuring Simplee Web Server")
   feelppContribPrepare( simple-web-server )
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    set(BUILD_TESTING OFF)
     add_subdirectory( simple-web-server )
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_SIMPLE_WEB_SERVER )
     target_link_libraries(feelpp_contrib INTERFACE simple-web-server )
@@ -523,25 +525,31 @@ option( FEELPP_ENABLE_CPR "Enable CPR" ON )
 if ( FEELPP_ENABLE_CPR )
   message(STATUS "------------------------------------------------------------")
   message(STATUS "Configuring CPR")
+  set(FETCHCONTENT_SOURCE_DIR_CPR ${CMAKE_CURRENT_SOURCE_DIR}/cpr)
+  FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/feelpp/cpr.git GIT_TAG 41fbaca90160950f1397e0ffc6b58bd81063f131) # the commit hash for 1.5.0
   set( USE_SYSTEM_CURL ON )
   set( BUILD_CPR_TESTS OFF )
-  feelppContribPrepare( cpr )
-  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
-    if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
+  if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
       set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
-    endif()
-    message( STATUS "cpr CMAKE_INSTALL_INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
-    add_subdirectory( cpr )
-    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_CPR )
-#    target_link_libraries(feelpp_contrib INTERFACE matplot )
-    target_include_directories(feelpp_contrib INTERFACE
-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/cpr/include/cpr>
-      $<INSTALL_INTERFACE:include/feelpp> )
-    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} CPR/Contrib")
   endif()
-endif( FEELPP_ENABLE_CPR )
-
-
+  FetchContent_MakeAvailable(cpr)
+  add_library(feelpp_cpr INTERFACE)  
+  set_target_properties(cpr PROPERTIES OUTPUT_NAME "feelpp_cpr")
+  target_link_libraries(feelpp_cpr INTERFACE cpr)
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_CPR )
+  add_library(Feelpp::feelpp_cpr ALIAS feelpp_cpr)
+  target_include_directories(feelpp_cpr INTERFACE
+      $<BUILD_INTERFACE:${cpr_SOURCE_DIR}/include/>
+      $<INSTALL_INTERFACE:include/feelpp> )
+  install(TARGETS feelpp_cpr cpr EXPORT feelpp-contrib-export-targets
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
+  target_link_libraries( feelpp_contrib INTERFACE feelpp_cpr )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} CPR/Contrib")
+endif()
 
 # Add an info message to be displayed at the end of the cmake process.
 if( FEELPP_CONTRIB_SUBMODULE_UPDATED )
