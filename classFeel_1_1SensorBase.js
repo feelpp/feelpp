@@ -1,10 +1,13 @@
 var classFeel_1_1SensorBase =
 [
+    [ "boost::serialization::access", "classFeel_1_1SensorBase.html#ac98d07dd8f7b70e16ccb9a01abf56b9c", null ],
     [ "init", "classFeel_1_1SensorBase.html#a56dd5d271e656e69dd32318259c8351b", null ],
     [ "name", "classFeel_1_1SensorBase.html#ae60d613a2774baf9818865be7e82fcbb", null ],
     [ "position", "classFeel_1_1SensorBase.html#ac07086ecc6b210e4f7e258d405a2fb98", null ],
     [ "setName", "classFeel_1_1SensorBase.html#ab6162dec9b33d5e7b567fc8772c908f4", null ],
     [ "setPosition", "classFeel_1_1SensorBase.html#a1499fe9390a8e4950a9a5ca2ac5caae6", null ],
+    [ "setSpace", "classFeel_1_1SensorBase.html#a262e240655e7a4d5721f1815fff79a24", null ],
+    [ "to_json", "classFeel_1_1SensorBase.html#a55708037acf15d8a1213173df60a593b", null ],
     [ "type", "classFeel_1_1SensorBase.html#af56a7c8cc650a674da348d72b39a64b0", null ],
     [ "M_name", "classFeel_1_1SensorBase.html#a2d7671f804d23915b6960b6b9ea5a306", null ],
     [ "M_position", "classFeel_1_1SensorBase.html#aaeb8d040247deda8a89cc7daf85ec6b2", null ],
@@ -15,6 +18,7 @@ var classFeel_1_1SensorBase =
     [ "space_type", "classFeel_1_1SensorBase.html#a526c08621119a393089a54a043216f16", null ],
     [ "super_type", "classFeel_1_1SensorBase.html#aff48a54fd95da5acdf31dedc5248bb7d", null ],
     [ "this_type", "classFeel_1_1SensorBase.html#a4340b6dda858955e117c32c4303a9350", null ],
+    [ "SensorBase", "classFeel_1_1SensorBase.html#ab8292a8ad7ba27fedc3a4d3bc41dd2e4", null ],
     [ "SensorBase", "classFeel_1_1SensorBase.html#ae29993de81002e803fe331dd6b9dd666", null ],
     [ "~SensorBase", "classFeel_1_1SensorBase.html#ada871ec7f572306c65ded5f4ca6b0594", null ]
 ];

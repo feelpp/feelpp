@@ -7,7 +7,7 @@ var searchData=
   ['m_5findex_1260',['M_index',['../classFeel_1_1detail_1_1TimeSet.html#a3e0289c18c0be6e939c6dc2d4544074a',1,'Feel::detail::TimeSet']]],
   ['m_5flexer_1261',['m_lexer',['../classnlohmann_1_1detail_1_1parser.html#a01a73810f794c239aaf123aa2af7371d',1,'nlohmann::detail::parser']]],
   ['m_5fmarkername_1262',['M_markername',['../classFeel_1_1MeshBase.html#af3c545665ed90d1eabf264355187ace4',1,'Feel::MeshBase']]],
-  ['m_5fname_1263',['M_name',['../classFeel_1_1SensorBase.html#a2d7671f804d23915b6960b6b9ea5a306',1,'Feel::SensorBase::M_name()'],['../classFeel_1_1detail_1_1TimeSet.html#a2e6c8f07791678451e0460b96666fbaf',1,'Feel::detail::TimeSet::M_name()']]],
+  ['m_5fname_1263',['M_name',['../classFeel_1_1detail_1_1TimeSet.html#a2e6c8f07791678451e0460b96666fbaf',1,'Feel::detail::TimeSet']]],
   ['m_5foutput_5fvalues_1264',['M_output_values',['../classFeel_1_1ApplicationXML.html#ad5737ff4630b9a1c7f4df9d34a7c846f',1,'Feel::ApplicationXML']]],
   ['m_5foutputs_1265',['M_outputs',['../classFeel_1_1ApplicationXML.html#a6f6d67a73ad46fa079e5c364d91a0dd0',1,'Feel::ApplicationXML']]],
   ['m_5fparameter_5fvalues_1266',['M_parameter_values',['../classFeel_1_1ApplicationXML.html#a761010147debbe6490651101b48d5c47',1,'Feel::ApplicationXML']]],

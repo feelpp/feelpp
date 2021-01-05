@@ -13,6 +13,7 @@ var classFeel_1_1FsFunctionalLinear =
     [ "operator+=", "classFeel_1_1FsFunctionalLinear.html#a696eb72bd3c14e50b29b45ccc061c982", null ],
     [ "operator=", "classFeel_1_1FsFunctionalLinear.html#a8c47e190a8cc2894e828b43efbff20ce", null ],
     [ "setName", "classFeel_1_1FsFunctionalLinear.html#a2c14002ca1182eefbf4e1d8d0dc5d856", null ],
+    [ "setSpace", "classFeel_1_1FsFunctionalLinear.html#a46237888fb47d20390bf82c4f3ccce65", null ],
     [ "backend_ptrtype", "classFeel_1_1FsFunctionalLinear.html#aef5eec232c95df415490bd4ddeba9d4f", null ],
     [ "backend_type", "classFeel_1_1FsFunctionalLinear.html#a6d415a5ba0f2102504f62031873ca5da", null ],
     [ "element_type", "classFeel_1_1FsFunctionalLinear.html#a8f75e76e7f078cd70bba0d5cff92b6fa", null ],
@@ -23,6 +24,7 @@ var classFeel_1_1FsFunctionalLinear =
     [ "value_type", "classFeel_1_1FsFunctionalLinear.html#ace73feb90a860dbf38e462fbab95aac4", null ],
     [ "vector_ptrtype", "classFeel_1_1FsFunctionalLinear.html#a18f2adc9831d1f6ad6880ef3606aabb2", null ],
     [ "vector_type", "classFeel_1_1FsFunctionalLinear.html#ade9085ac4e3001a735db139b620e36fb", null ],
+    [ "FsFunctionalLinear", "classFeel_1_1FsFunctionalLinear.html#aff4de6ef0bd4210ce028abb6d48f11bd", null ],
     [ "FsFunctionalLinear", "classFeel_1_1FsFunctionalLinear.html#aee915176edfd031a58127ca62dd473ca", null ],
     [ "FsFunctionalLinear", "classFeel_1_1FsFunctionalLinear.html#a2c08aa6173e7035f1b2f5d379bae1551", null ],
     [ "~FsFunctionalLinear", "classFeel_1_1FsFunctionalLinear.html#a180edfece65258a2a98facef30e9bd7f", null ]
