@@ -36,14 +36,14 @@ public :
 
     struct ExporterAscii
     {
-        ExporterAscii( std::vector<std::string> && osbl ) : M_outputStringByLines( std::move( osbl ) ) {}
+        ExporterAscii( std::vector<Printer::OutputText> && osbl ) : M_outputStringByLines( std::move( osbl ) ) {}
         ExporterAscii( ExporterAscii const& ) = default;
         ExporterAscii( ExporterAscii && ) = default;
         friend std::ostream& operator<<( std::ostream& o, ExporterAscii const& ea );
 
-        std::vector<std::string> const& outputStringByLines() const { return M_outputStringByLines; }
+        std::vector<Printer::OutputText> const& outputStringByLines() const { return M_outputStringByLines; }
     private :
-        std::vector<std::string> M_outputStringByLines;
+        std::vector<Printer::OutputText> M_outputStringByLines;
     };
 
      struct ExporterAsciiDoc
@@ -79,7 +79,7 @@ public :
     friend std::ostream& operator<<( std::ostream& o, ExporterAsciiDoc const& ea );
 protected :
     virtual std::shared_ptr<const TabulateInformations> shared_from_this_tabulate_informations() const = 0;
-    virtual std::vector<std::string> exportAscii() const = 0;
+    virtual std::vector<Printer::OutputText> exportAscii() const = 0;
     virtual void exportAsciiDoc( std::ostream &o, int levelSection ) const = 0;
 };
 
@@ -105,7 +105,7 @@ public :
 
 private:
     std::shared_ptr<const TabulateInformations> shared_from_this_tabulate_informations() const override { return std::dynamic_pointer_cast<const TabulateInformations>( this->shared_from_this() );  }
-    std::vector<std::string> exportAscii() const override;
+    std::vector<Printer::OutputText> exportAscii() const override;
     void exportAsciiDoc( std::ostream &o, int levelSection ) const override;
 private:
     Feel::Table M_table;
@@ -124,7 +124,7 @@ public :
 
 private:
     std::shared_ptr<const TabulateInformations> shared_from_this_tabulate_informations() const override { return std::dynamic_pointer_cast<const TabulateInformations>( this->shared_from_this() );  }
-    std::vector<std::string> exportAscii() const override;
+    std::vector<Printer::OutputText> exportAscii() const override;
     void exportAsciiDoc( std::ostream &o, int levelSection ) const override;
 private:
     tabulate::Table M_table;
@@ -159,7 +159,7 @@ public:
         }
 private:
     std::shared_ptr<const TabulateInformations> shared_from_this_tabulate_informations() const override { return std::dynamic_pointer_cast<const TabulateInformations>( this->shared_from_this() );  }
-    std::vector<std::string> exportAscii() const override;
+    std::vector<Printer::OutputText> exportAscii() const override;
     void exportAsciiDoc( std::ostream &o, int levelSection ) const override;
 
 private:
