@@ -24,19 +24,11 @@
 
 #include <feel/feelcore/table.hpp>
 
-#if 0
-#include <iostream>
-#include <variant>
-#include <string>
-#include <vector>
-#include <sstream>
-#include <optional>
-#endif
-
 #include <iomanip>
 #include <algorithm>
 
-
+#include <feel/feelcore/termcolor.hpp>
+#include <feel/feelcore/traits.hpp>
 
 
 
@@ -106,54 +98,19 @@ splitByLines( std::string const& input )
 #endif
   
 
-typename Table::Cell::Format
-Table::Cell::Format::newFromParent( Format const& parentFormat ) const
-{
-    Format newFormat;
-    if ( M_fontAlign || parentFormat.M_fontAlign )
-        newFormat.setFontAlign( M_fontAlign? *M_fontAlign : *(parentFormat.M_fontAlign) );
-    if ( M_fontFloatingPoint || parentFormat.M_fontFloatingPoint )
-        newFormat.setFloatingPoint( M_fontFloatingPoint? *M_fontFloatingPoint : *(parentFormat.M_fontFloatingPoint) );
-    if ( M_paddingLeft || parentFormat.M_paddingLeft )
-        newFormat.setPaddingLeft( M_paddingLeft? *M_paddingLeft : *(parentFormat.M_paddingLeft) );
-    if ( M_paddingRight || parentFormat.M_paddingRight )
-        newFormat.setPaddingRight( M_paddingRight? *M_paddingRight : *(parentFormat.M_paddingRight) );
 
-    if ( M_widthMax || parentFormat.M_widthMax )
-        newFormat.setWidthMax( M_widthMax? *M_widthMax : *(parentFormat.M_widthMax) );
+Table::Table()
+    :
+    M_nRow(0), M_nCol(0), M_format( new TableImpl::Format{} )
+{}
 
-    return newFormat;
-}
-
-void
-Table::Cell::updateStream( std::ostream &o, std::string const& input, size_t width, Format const& format )
-{
-    //std::cout << "updateStream : "<< input << std::endl;
-    int widthInput = width - format.paddingLeft() - format.paddingRight();
-    if ( widthInput <= 0 )
-        return;
-
-    std::string paddingLeftStr(format.paddingLeft(),' ');
-    std::string paddingRightStr(format.paddingRight(),' ');
-
-    o << paddingLeftStr
-      << std::setw(widthInput);
-    switch ( format.fontAlign() )
-    {
-    case Font::Align::left:
-        o << std::left << input;
-        break;
-    case Font::Align::right:
-        o << std::right << input;
-        break;
-    case Font::Align::center:
-        o << utility::centre(input);
-        break;
-    }
-
-    o << paddingRightStr;
-}
-
+Table::Table( Table const& t )
+    :
+    M_nRow( t.M_nRow ),
+    M_nCol( t.M_nCol ),
+    M_cells( t.M_cells ),
+    M_format( new TableImpl::Format{t.format()} )
+{}
 
 void
 Table::add_row( std::initializer_list<variant_value_type> const& rowValues )
@@ -164,24 +121,24 @@ Table::add_row( std::initializer_list<variant_value_type> const& rowValues )
     this->resize( M_nRow+1, rowValues.size() );
     int j = 0, i= M_nRow-1;
     for ( auto const& rowValue : rowValues )
-        this->operator()(i,j++) = Cell(rowValue);
+        this->operator()(i,j++) = TableImpl::Cell(rowValue);
 }
 
-std::vector<std::string>
-Table::toRawString( Cell::Format const& format ) const
+std::vector<Printer::OutputText>
+Table::toOutputText( TableImpl::Format const& format ) const
 {
     auto const& c = *this;
 
     int nRow = this->nRow();
     int nCol = this->nCol();
-    std::vector<std::vector<std::string>> allOutputStringByLine(nRow*nCol);
-    std::vector<Table::Cell::Format> allNewFormat(nRow*nCol);
+    std::vector<std::vector<Printer::OutputText>> allOutputStringByLine(nRow*nCol);
+    std::vector<TableImpl::Cell::Format> allNewFormat(nRow*nCol);
     for (int i=0;i<nRow;++i)
     {
         for (int j=0;j<nCol;++j)
         {
-            allNewFormat[i*nCol+j] = c(i,j).format().newFromParent( this->format() );
-            allOutputStringByLine[i*nCol+j] = c(i,j).toRawString( allNewFormat[i*nCol+j] );
+            allNewFormat[i*nCol+j] = c(i,j).format().newFromParent( format );
+            allOutputStringByLine[i*nCol+j] = c(i,j).toOutputText( allNewFormat[i*nCol+j] );
         }
     }
 
@@ -199,7 +156,7 @@ Table::toRawString( Cell::Format const& format ) const
 
             columnsWidth[j] = std::max( columnsWidth[j],
                                         std::max_element(outputStringByLine.begin(),outputStringByLine.end(),
-                                                         [](std::string const& a, std::string const& b) { return a.size() < b.size(); } )->size() + paddingWidth );
+                                                         [](auto const& a, auto const& b) { return a.size() < b.size(); } )->size() + paddingWidth );
 
             rowsHeight[i] = std::max( rowsHeight[i], outputStringByLine.size() );
         }
@@ -210,7 +167,7 @@ Table::toRawString( Cell::Format const& format ) const
         int rowHeight = rowsHeight[i];
         for (int j=0;j<nCol;++j)
         {
-            allOutputStringByLine[i*nCol+j].resize( rowHeight, std::string{} );
+            allOutputStringByLine[i*nCol+j].resize( rowHeight, Printer::OutputText{} );
         }
     }
 
@@ -252,40 +209,40 @@ Table::toRawString( Cell::Format const& format ) const
         horizontalLineHeaderSep += "+";
     }
 
-    std::vector<std::string> output;
+    std::vector<Printer::OutputText> output;
     if ( this->format().showTopBorder() )
-        output.push_back( horizontalLine );
+        output.push_back( Printer::OutputText{horizontalLine} );
     for (int i=0;i<nRow;++i)
     {
         if ( nCol > 1 && i == 1 && this->format().firstRowIsHeader() )
         {
-            output.push_back( horizontalLineHeaderSep );
+            output.push_back( Printer::OutputText{horizontalLineHeaderSep} );
         }
         else if ( i>0 && this->format().hasRowSeparator() )
-            output.push_back( horizontalLine );
+            output.push_back( Printer::OutputText{horizontalLine} );
 
         for ( int i2 = 0; i2 <rowsHeight[i] ;++i2 )
         {
-            std::ostringstream o;
+            Printer::OutputText o;
             if ( addLeftBorder )
                 o << "|";
             for (int j=0;j<nCol;++j)
             {
-                std::string const& cijStr = allOutputStringByLine[i*nCol+j][i2];
                 if ( nCol > 1 && j==1 && this->format().firstColumnIsHeader() )
                     o << headerColumnSep;
                 else if ( j>0 && this->format().hasColumnSeparator() )
                     o << colSep;
 
-                Table::Cell::updateStream( o, cijStr, columnsWidth[j], allNewFormat[i*nCol+j] );
+                TableImpl::Cell::updateWidthAndHorizontalAlign( allOutputStringByLine[i*nCol+j][i2], columnsWidth[j], allNewFormat[i*nCol+j] );
+                o << allOutputStringByLine[i*nCol+j][i2];
             }
             if ( addRightBorder )
                 o << "|";
-            output.push_back( o.str() );
+            output.push_back( o );
         }
     }
     if ( this->format().showBottomBorder() )
-        output.push_back( horizontalLine );
+        output.push_back( Printer::OutputText{horizontalLine} );
     return output;
 }
 
@@ -317,7 +274,7 @@ Table::exportAsciiDoc( std::ostream &o ) const
             auto const& cell = this->operator()(i,j);
             auto format = cell.format().newFromParent( this->format() );
 
-            Table::updateOutputStreamOfCellUsingAsciiDoc(o,cell,format);
+            TableImpl::updateOutputStreamOfCellUsingAsciiDoc(o,cell,format);
             o << "\n";
         }
         o << "\n";
@@ -325,40 +282,149 @@ Table::exportAsciiDoc( std::ostream &o ) const
     o << "|===" << "\n";
 }
 
-void
-Table::updateOutputStreamOfCellUsingAsciiDoc( std::ostream &o, Cell const& c, Cell::Format const& format )
+std::ostream&
+operator<<(std::ostream& o, Printer::OutputText const& cb )
 {
-    switch ( format.fontAlign() )
+    //namespace tc = termcolor;
+    for ( auto const& d : cb.data() )
     {
-    case Font::Align::left:
-        o << "<";
-        break;
-    case Font::Align::right:
-        o << ">";
-        break;
-    case Font::Align::center:
-        o << "^";
-        break;
-    }
+        std::string const& txt = d.first;
 
-    o << "|";
-    auto strByLine = c.toRawString( format );
-    for ( std::string const& s : strByLine )
-        o << s;
+        Font::Color color = std::get<0>(d.second);
+        bool hasColor = color != Font::Color::none;
+        if ( hasColor )
+        {
+            switch ( color )
+            {
+            case Font::Color::grey: o << termcolor::grey; break;
+            case Font::Color::red: o << termcolor::red; break;
+            case Font::Color::green: o << termcolor::green; break;
+            case Font::Color::yellow: o << termcolor::yellow; break;
+            case Font::Color::blue: o << termcolor::blue; break;
+            case Font::Color::magenta: o << termcolor::magenta; break;
+            case Font::Color::cyan: o << termcolor::cyan; break;
+            case Font::Color::white: o << termcolor::white; break;
+            default:
+                break;
+            }
+        }
+        o << txt;
+
+        if ( hasColor )
+            o << termcolor::reset;
+    }
+    return o;
 }
 
-std::vector<std::string>
-Table::Cell::toRawString( Format const& format ) const
+std::ostream&
+operator<<(std::ostream& o, Table const& c )
+{
+    for ( auto const& s : c.toOutputText( /*c.format()*/ ) )
+        o << s << "\n";
+    return o;
+}
+
+std::ostream&
+operator<<( std::ostream& o, TableImpl::Cell const& c )
+{
+    for ( auto const& ot : c.toOutputText( c.format() ) )
+        o << ot << "\n";
+    return o;
+}
+
+namespace TableImpl
+{
+
+typename Cell::Format
+Cell::Format::newFromParent( Format const& parentFormat ) const
+{
+    Format newFormat;
+    if ( M_fontAlign || parentFormat.M_fontAlign )
+        newFormat.setFontAlign( M_fontAlign? *M_fontAlign : *(parentFormat.M_fontAlign) );
+    if ( M_fontColor || parentFormat.M_fontColor )
+        newFormat.setFontColor( M_fontColor? *M_fontColor : *(parentFormat.M_fontColor) );
+    if ( M_fontFloatingPoint || parentFormat.M_fontFloatingPoint )
+        newFormat.setFloatingPoint( M_fontFloatingPoint? *M_fontFloatingPoint : *(parentFormat.M_fontFloatingPoint) );
+    if ( M_paddingLeft || parentFormat.M_paddingLeft )
+        newFormat.setPaddingLeft( M_paddingLeft? *M_paddingLeft : *(parentFormat.M_paddingLeft) );
+    if ( M_paddingRight || parentFormat.M_paddingRight )
+        newFormat.setPaddingRight( M_paddingRight? *M_paddingRight : *(parentFormat.M_paddingRight) );
+
+    if ( M_widthMax || parentFormat.M_widthMax )
+        newFormat.setWidthMax( M_widthMax? *M_widthMax : *(parentFormat.M_widthMax) );
+
+    return newFormat;
+}
+
+void
+Cell::updateWidthAndHorizontalAlign( Printer::OutputText & ot, size_t width, Format const& format )
+{
+    int widthInput = width - format.paddingLeft() - format.paddingRight();
+    if ( widthInput <= 0 )
+        return;
+
+    std::string paddingLeftStr(format.paddingLeft(),' ');
+    std::string paddingRightStr(format.paddingRight(),' ');
+
+    if ( ot.data().size() == 0 )
+    {
+        ot.push_back( std::string( width,' ' ) );
+    }
+    else if ( ot.data().size() == 1 )
+    {
+        std::string const& input = ot.data().front().first;
+        std::ostringstream o;
+        o << paddingLeftStr
+          << std::setw(widthInput);
+        switch ( format.fontAlign() )
+        {
+        case Font::Align::left:
+            o << std::left << input;
+            break;
+        case Font::Align::right:
+            o << std::right << input;
+            break;
+        case Font::Align::center:
+            o << utility::centre(input);
+            break;
+        }
+
+        o << paddingRightStr;
+
+        ot.data().front().first = o.str();
+    }
+    else
+    {
+        int widthMissing = widthInput - ot.size();
+
+        std::string missingSpace( widthMissing, ' ' );
+
+        ot.push_front( paddingLeftStr );
+        ot.push_back( paddingRightStr + missingSpace );
+    }
+}
+
+std::vector<Printer::OutputText>
+Cell::toOutputText( Format const& format, bool enableWidthMax ) const
 {
     std::ostringstream ostr;
-    if ( std::holds_alternative<Feel::TableBase>( this->M_value ) )
+    if ( std::holds_alternative<Feel::Table>( this->M_value ) )
     {
-        std::cout << "TODO" << std::endl;
+        auto const& c = std::get<Feel::Table>( this->M_value );
+        return c.toOutputText( TableImpl::Format( c.format().newFromParent( format ) ) );
+    }
+    else if ( std::holds_alternative<Printer::OutputText>( this->M_value ) )
+    {
+        return std::vector<Printer::OutputText>(1,std::get<Printer::OutputText>( this->M_value ) );
+    }
+    else if ( std::holds_alternative<std::vector<Printer::OutputText>>( this->M_value ) )
+    {
+        return std::get<std::vector<Printer::OutputText>>( this->M_value );
     }
     else if ( std::holds_alternative<double>( this->M_value ) )
     {
-        double val  = std::get<double>(this->M_value);
-        switch ( this->format().floatingPoint() )
+        double val = std::get<double>(this->M_value);
+        switch ( format.floatingPoint() )
         {
         case Font::FloatingPoint::fixed:
             ostr << std::fixed << val;
@@ -375,22 +441,24 @@ Table::Cell::toRawString( Format const& format ) const
         };
     }
     else
-        std::visit([&ostr](auto && val) { ostr << val; }, this->M_value );
+        std::visit([&ostr](auto && val)
+                   {
+                       if constexpr ( !is_std_vector_v<std::decay_t<decltype(val)>> )
+                                        ostr << val;
+                   }, this->M_value );
 
-    // auto res = splitByLines( ostr.str() );
-    // return res;
-    //return ostr.str();
-
-    int witdhMax = format.widthMax();
+    int witdhMax = enableWidthMax? format.widthMax() : -1;
 #if 1
     std::istringstream istr(ostr.str());
     std::string to;
 
-    std::vector<std::string> outputStringByLines;
+    //std::vector<std::string> outputStringByLines;
+    std::vector<Printer::OutputText> outputStringByLines;
+
     while ( std::getline(istr,to,'\n') )
     {
         if ( witdhMax < 0 ) // not enable
-            outputStringByLines.push_back( to );
+            outputStringByLines.push_back( Printer::OutputText( to ) );
         else
         {
             size_t currentWidth = to.size();
@@ -398,32 +466,41 @@ Table::Cell::toRawString( Format const& format ) const
             while ( pos < currentWidth )
             {
                 int widthUsed = std::min( currentWidth-pos, (size_t)witdhMax);
-                outputStringByLines.push_back( to.substr( pos,widthUsed ) );
+                outputStringByLines.push_back( Printer::OutputText( to.substr( pos,widthUsed ) ) );
                 pos += widthUsed;
             }
         }
     }
+    for ( auto & rs : outputStringByLines )
+        rs.setColor( format.fontColor() );
     return outputStringByLines;
 #endif
+
+    //    return res;
 }
 
-std::ostream&
-operator<<(std::ostream& o, TableBase const& cb )
+void updateOutputStreamOfCellUsingAsciiDoc( std::ostream &o, Cell const& c, Cell::Format const& format )
 {
-    auto const& c = static_cast<Table const&>( cb );
+    switch ( format.fontAlign() )
+    {
+    case Font::Align::left:
+        o << "<";
+        break;
+    case Font::Align::right:
+        o << ">";
+        break;
+    case Font::Align::center:
+        o << "^";
+        break;
+    }
 
-    for ( std::string const& s : c.toRawString( c.format() ) )
-        o << s << "\n";
-    return o;
+    o << "|";
+    for ( auto const& ot : c.toOutputText( format, false ) )
+        for ( auto const& [s,p] : ot.data() )
+            o << s;
 }
 
-std::ostream&
-operator<<( std::ostream& o, Table::Cell const& c )
-{
-    for ( std::string const& s : c.toRawString( c.format() ) )
-        o << s << "\n";
-    return o;
-}
 
+} // namespace TableImpl
 
 } // namespace Feel
