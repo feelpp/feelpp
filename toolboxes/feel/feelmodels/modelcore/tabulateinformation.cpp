@@ -33,7 +33,7 @@ std::ostream& operator<<( std::ostream& o, TabulateInformations const& ti )
 
 std::ostream& operator<<( std::ostream& o, TabulateInformations::ExporterAscii const& ea )
 {
-    for ( std::string const& s : ea.M_outputStringByLines )
+    for ( auto const& s : ea.M_outputStringByLines )
         o << s << "\n";
     return o;
 }
@@ -45,10 +45,10 @@ std::ostream& operator<<( std::ostream& o, TabulateInformations::ExporterAsciiDo
 }
 
 
-std::vector<std::string>
+std::vector<Printer::OutputText>
 TabulateInformationsTable::exportAscii() const
 {
-    return M_table.toRawString( M_table.format() );
+    return M_table.toOutputText();
 }
 
 void
@@ -57,7 +57,7 @@ TabulateInformationsTable::exportAsciiDoc( std::ostream &o, int levelSection ) c
     M_table.exportAsciiDoc( o );
 }
 
-std::vector<std::string>
+std::vector<Printer::OutputText>
 TabulateInformationsTableAlternative::exportAscii() const
 {
     std::ostringstream ostr;
@@ -65,10 +65,10 @@ TabulateInformationsTableAlternative::exportAscii() const
     std::istringstream istr(ostr.str());
     std::string to;
 
-    std::vector<std::string> outputStringByLines;
+    std::vector<Printer::OutputText> outputStringByLines;
     while ( std::getline(istr,to,'\n') )
     {
-        outputStringByLines.push_back( to );
+        outputStringByLines.push_back( Printer::OutputText(to) );
     }
     return outputStringByLines;
 }
@@ -82,9 +82,10 @@ TabulateInformationsTableAlternative::exportAsciiDoc( std::ostream &o, int level
     o << asciidoc;
 }
 
-std::vector<std::string>
+std::vector<Printer::OutputText>
 TabulateInformationsSections::exportAscii() const
 {
+#if 0
     auto gethorizontalLine = [] ( size_t maxLineSize, bool addLeftBorder, bool addRightBorder ) {
         std::string horizontalLine;
         if ( addLeftBorder )
@@ -95,8 +96,8 @@ TabulateInformationsSections::exportAscii() const
         return horizontalLine;
     };
 
-    auto getLineInContext = []( std::string const& s, size_t maxLineSize, bool addLeftBorder, bool addRightBorder ) {
-
+    auto getLineInContext = []( Printer::OutputText const& s, size_t maxLineSize, bool addLeftBorder, bool addRightBorder ) {
+#if 0
         std::string sModif;
         if ( s.size() < maxLineSize )
         {
@@ -120,23 +121,26 @@ TabulateInformationsSections::exportAscii() const
         if ( addRightBorder )
             res += " |";
         return res;
+#else
+        return s;
+#endif
     };
 
-    auto outputStringWidth = []( std::vector<std::string> const& osbl ) {
+    auto outputStringWidth = []( std::vector<Printer::OutputText> const& osbl ) {
         size_t res = 0;
         for (auto const& l : osbl )
             res = std::max( res, l.size() );
         return res;
     };
 
-    std::vector<std::string> outputStringByLines;
+    std::vector<Printer::OutputText> outputStringByLines;
 
     //bool hasDoFirstSection = false;
     for ( auto const& [name,st] : M_subTab )
     {
         //auto outputStringByLinesCurrent = st->exportAscii();
         auto exporterAsciiCurrent = st->exporterAscii();
-        auto const& outputStringByLinesCurrent = exporterAsciiCurrent.outputStringByLines();
+        auto & outputStringByLinesCurrent = exporterAsciiCurrent.outputStringByLines();
         if ( outputStringByLinesCurrent.empty() )
             continue;
 
@@ -145,18 +149,45 @@ TabulateInformationsSections::exportAscii() const
         std::string horizontalLine = gethorizontalLine( maxLineSize, addLeftBorder, addRightBorder );
         if ( !name.empty() )
         {
-            outputStringByLines.push_back( horizontalLine );
-            outputStringByLines.push_back( getLineInContext(name,maxLineSize,addLeftBorder, addRightBorder) );
-            outputStringByLines.push_back( horizontalLine );
+            outputStringByLines.push_back( Printer::OutputText{horizontalLine} );
+            //outputStringByLines.push_back( getLineInContext( Printer::OutputText{name},maxLineSize,addLeftBorder, addRightBorder) );
+            outputStringByLines.push_back( Printer::OutputText{horizontalLine} );
         }
-        for ( std::string const& s : outputStringByLinesCurrent )
-            outputStringByLines.push_back( getLineInContext(s,maxLineSize,addLeftBorder, addRightBorder) );
+        for ( Printer::OutputText const & s : outputStringByLinesCurrent )
+        {
+
+            //outputStringByLines.push_back( getLineInContext(s,maxLineSize,addLeftBorder, addRightBorder) );
+        }
         if ( !name.empty() )
-            outputStringByLines.push_back( horizontalLine );
+            outputStringByLines.push_back( Printer::OutputText{horizontalLine} );
 
         //hasDoFirstSection = true;
     }
     return outputStringByLines;
+#else
+    //std::vector<Printer::OutputText> outputStringByLines;
+
+    Feel::Table t;
+    t.format().setShowAllBorders( false ).setHasRowSeparator( false ).setAllPadding( 0 );
+    for ( auto const& [name,st] : M_subTab )
+    {
+        auto exporterAsciiCurrent = st->exporterAscii();
+        auto const& outputStringByLinesCurrent = exporterAsciiCurrent.outputStringByLines();
+        if ( outputStringByLinesCurrent.empty() )
+            continue;
+
+        Feel::Table t2;
+         if ( !name.empty() )
+             t2.add_row( {name} );
+         else
+             t2.format().setShowAllBorders( false ).setHasRowSeparator( false );
+
+        t2.add_row( { outputStringByLinesCurrent } );
+
+        t.add_row( { t2.toOutputText() } );
+    }
+    return t.toOutputText();
+#endif
 }
 
 
