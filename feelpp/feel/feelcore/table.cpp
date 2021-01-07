@@ -397,10 +397,34 @@ Cell::updateWidthAndHorizontalAlign( Printer::OutputText & ot, size_t width, For
     {
         int widthMissing = widthInput - ot.size();
 
-        std::string missingSpace( widthMissing, ' ' );
+        switch ( format.fontAlign() )
+        {
+        case Font::Align::left:
+        {
+            std::string missingSpace( widthMissing, ' ' );
+            ot.push_front( paddingLeftStr );
+            ot.push_back( paddingRightStr + missingSpace );
+            break;
+        }
+        case Font::Align::right:
+        {
+            std::string missingSpace( widthMissing, ' ' );
+            ot.push_front( paddingLeftStr + missingSpace );
+            ot.push_back( paddingRightStr  );
+            break;
+        }
+        case Font::Align::center:
+        {
+            int widthMissingLeft = widthMissing/2;
+            int widthMissingRight = widthMissing - widthMissingLeft;
+            std::string missingSpaceLeft( widthMissingLeft, ' ' );
+            std::string missingSpaceRight( widthMissingRight, ' ' );
+            ot.push_front( paddingLeftStr + missingSpaceLeft );
+            ot.push_back( paddingRightStr + missingSpaceRight );
+            break;
+        }
+        }
 
-        ot.push_front( paddingLeftStr );
-        ot.push_back( paddingRightStr + missingSpace );
     }
 }
 
@@ -452,7 +476,6 @@ Cell::toOutputText( Format const& format, bool enableWidthMax ) const
     std::istringstream istr(ostr.str());
     std::string to;
 
-    //std::vector<std::string> outputStringByLines;
     std::vector<Printer::OutputText> outputStringByLines;
 
     while ( std::getline(istr,to,'\n') )
@@ -475,8 +498,6 @@ Cell::toOutputText( Format const& format, bool enableWidthMax ) const
         rs.setColor( format.fontColor() );
     return outputStringByLines;
 #endif
-
-    //    return res;
 }
 
 void updateOutputStreamOfCellUsingAsciiDoc( std::ostream &o, Cell const& c, Cell::Format const& format )
