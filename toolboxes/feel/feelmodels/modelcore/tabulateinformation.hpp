@@ -36,14 +36,14 @@ public :
 
     struct ExporterAscii
     {
-        ExporterAscii( std::vector<Printer::OutputText> && osbl ) : M_outputStringByLines( std::move( osbl ) ) {}
+        ExporterAscii( std::vector<Printer::OutputText> && ot ) : M_outputText( std::move( ot ) ) {}
         ExporterAscii( ExporterAscii const& ) = default;
         ExporterAscii( ExporterAscii && ) = default;
         friend std::ostream& operator<<( std::ostream& o, ExporterAscii const& ea );
 
-        std::vector<Printer::OutputText> const& outputStringByLines() const { return M_outputStringByLines; }
+        std::vector<Printer::OutputText> const& outputText() const { return M_outputText; }
     private :
-        std::vector<Printer::OutputText> M_outputStringByLines;
+        std::vector<Printer::OutputText> M_outputText;
     };
 
      struct ExporterAsciiDoc
