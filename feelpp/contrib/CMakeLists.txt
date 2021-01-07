@@ -526,7 +526,8 @@ if ( FEELPP_ENABLE_CPR )
   message(STATUS "------------------------------------------------------------")
   message(STATUS "Configuring CPR")
   set(FETCHCONTENT_SOURCE_DIR_CPR ${CMAKE_CURRENT_SOURCE_DIR}/cpr)
-  FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/feelpp/cpr.git GIT_TAG 41fbaca90160950f1397e0ffc6b58bd81063f131) # the commit hash for 1.5.0
+  # patch includes fix for 18.04 compilation
+  FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/feelpp/cpr.git GIT_TAG e554da6bde33edc35f1c28bd8197ae50bdf4a4d4) 
   set( USE_SYSTEM_CURL ON )
   set( BUILD_CPR_TESTS OFF )
   if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
