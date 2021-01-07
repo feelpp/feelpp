@@ -436,6 +436,7 @@ std::shared_ptr<std::ostringstream>
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+#if 0
     *_ostr << M_heatModel->getInfo()->str();
     *_ostr << M_electricModel->getInfo()->str();
 
@@ -472,7 +473,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n";
-
+#endif
     return _ostr;
 }
 
