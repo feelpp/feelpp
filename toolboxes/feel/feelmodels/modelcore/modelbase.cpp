@@ -449,7 +449,7 @@ ModelBase::tabulateInformations( nl::json const& jsonInfo, TabulateInformationPr
         .setShowAllBorders( false )
         .setColumnSeparator(":")
         .setHasRowSeparator( false );
-    return TabulateInformations::New( tabInfo );
+    return TabulateInformations::New( tabInfo, tabInfoProp );
 }
 
 tabulate_informations_ptr_t

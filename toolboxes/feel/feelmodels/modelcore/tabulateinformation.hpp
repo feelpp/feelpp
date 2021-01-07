@@ -15,14 +15,22 @@ namespace Feel
 class TabulateInformationProperties
 {
 public:
-    enum class VerboseLevel { NONE,SMALL,MEDIUM,FULL };
+    TabulateInformationProperties( uint16_type vl = 1 );
+    TabulateInformationProperties( TabulateInformationProperties const& ) = default;
+    TabulateInformationProperties( TabulateInformationProperties && ) = default;
 
-    TabulateInformationProperties( VerboseLevel vl = VerboseLevel::FULL );
+    uint16_type verboseLevel() const { return M_verboseLevel; }
+
+    TabulateInformationProperties newByIncreasingVerboseLevel( uint16_type vl = 1 ) const
+        {
+            TabulateInformationProperties tip( *this );
+            tip.M_verboseLevel += vl;
+            return tip;
+        }
 
     static TerminalProperties const& terminalProperties() { return S_terminalProperties; }
 private:
-    uint16_type M_information_level;
-    VerboseLevel M_verbose_level;
+    uint16_type M_verboseLevel;
     inline static TerminalProperties S_terminalProperties;
 };
 
@@ -61,9 +69,11 @@ public :
          int M_startLevelSection;
      };
 
-    TabulateInformations() = default;
+    TabulateInformations( uint16_type vl = 1 ) : M_verboseLevel( vl ) {}
     TabulateInformations( TabulateInformations const& ) = default;
     TabulateInformations( TabulateInformations && ) = default;
+
+    uint16_type verboseLevel() const { return M_verboseLevel; }
 
     //! get an exporter in ascii format
     ExporterAscii exporterAscii() const { return ExporterAscii( this->exportAscii() ); }
@@ -71,9 +81,9 @@ public :
     ExporterAsciiDoc exporterAsciiDoc( int startLevelSection = 0 ) const { return ExporterAsciiDoc( this->shared_from_this_tabulate_informations(), startLevelSection ); }
 
     //! create an new tabulate informations from a table
-    static self_ptrtype New( Feel::Table const& table );
+    static self_ptrtype New( Feel::Table const& table, TabulateInformationProperties const& tip = TabulateInformationProperties{} );
     //! create an new tabulate informations from a table
-    static self_ptrtype New( tabulate::Table const& table );
+    static self_ptrtype New( tabulate::Table const& table, TabulateInformationProperties const& tip = TabulateInformationProperties{} );
 
     friend std::ostream& operator<<( std::ostream& o, TabulateInformations const& ti );
     friend std::ostream& operator<<( std::ostream& o, ExporterAsciiDoc const& ea );
@@ -81,6 +91,7 @@ protected :
     virtual std::shared_ptr<const TabulateInformations> shared_from_this_tabulate_informations() const = 0;
     virtual std::vector<Printer::OutputText> exportAscii() const = 0;
     virtual void exportAsciiDoc( std::ostream &o, int levelSection ) const = 0;
+    uint16_type M_verboseLevel;
 };
 
 //! ostream operator
@@ -99,7 +110,7 @@ class TabulateInformationsTable : public TabulateInformations,
                                   public std::enable_shared_from_this<TabulateInformationsTable>
 {
 public :
-    explicit TabulateInformationsTable( Feel::Table const& table ) : M_table( table ) {}
+    explicit TabulateInformationsTable( Feel::Table const& table, uint16_type vl = 1 ) : TabulateInformations( vl ), M_table( table ) {}
     TabulateInformationsTable( TabulateInformationsTable const& ) = default;
     TabulateInformationsTable( TabulateInformationsTable && ) = default;
 
@@ -118,7 +129,7 @@ class TabulateInformationsTableAlternative : public TabulateInformations,
                                              public std::enable_shared_from_this<TabulateInformationsTableAlternative>
 {
 public :
-    explicit TabulateInformationsTableAlternative( tabulate::Table const& table ) : M_table( table ) {}
+    explicit TabulateInformationsTableAlternative( tabulate::Table const& table, uint16_type vl = 1 ) : TabulateInformations( vl ), M_table( table ) {}
     TabulateInformationsTableAlternative( TabulateInformationsTableAlternative const& ) = default;
     TabulateInformationsTableAlternative( TabulateInformationsTableAlternative && ) = default;
 
@@ -137,12 +148,12 @@ class TabulateInformationsSections : public TabulateInformations,
                                      public std::enable_shared_from_this<TabulateInformationsSections>
 {
 public:
-    TabulateInformationsSections() = default;
+    TabulateInformationsSections( uint16_type vl = 1 ) : TabulateInformations( vl ) {}
     TabulateInformationsSections( TabulateInformationsSections const& ) = default;
     TabulateInformationsSections( TabulateInformationsSections && ) = default;
 
     //! create a new tabulate informations of section
-    static std::shared_ptr<TabulateInformationsSections> New() { return std::make_shared<TabulateInformationsSections>(); }
+    static std::shared_ptr<TabulateInformationsSections> New( TabulateInformationProperties const& tip = TabulateInformationProperties{} ) { return std::make_shared<TabulateInformationsSections>( tip.verboseLevel() ); }
 
     //! cast from the base class
     static std::shared_ptr<TabulateInformationsSections> cast( tabulate_informations_ptr_t t ) { return std::dynamic_pointer_cast<TabulateInformationsSections>(t); }

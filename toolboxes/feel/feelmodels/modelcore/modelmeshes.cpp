@@ -371,7 +371,7 @@ ModelMesh<IndexType>::tabulateInformations( nl::json const& jsonInfo, TabulateIn
                                 itFind_n_points.value()[p].template get<int>() });
                 }
             }
-            tabInfoDiscr->add( "", TabulateInformations::New( tabInfoDiscrEntriesDataByPartition ) );
+            tabInfoDiscr->add( "", TabulateInformations::New( tabInfoDiscrEntriesDataByPartition, tabInfoProp.newByIncreasingVerboseLevel() ) );
         }
 
         tabInfo->add("Discretization", tabInfoDiscr );
