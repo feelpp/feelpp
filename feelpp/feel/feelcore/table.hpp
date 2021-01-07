@@ -110,7 +110,7 @@ public :
     //! resize the table
     void resize( int nRow, int nCol )
         {
-            // TODO case reduce size
+            CHECK( nRow*nCol > M_nRow*M_nCol) << "TODO case reduce size";
             M_cells.resize( nRow*nCol );
             M_nRow = nRow;
             M_nCol = nCol;
@@ -130,11 +130,15 @@ public :
     //! get table format
     TableImpl::Format const& format() const { return *M_format; }
 
-    void exportAsciiDoc( std::ostream &o ) const;
-
+    //! return the output text of the table representation (each element of the vector start at a new line)
     std::vector<Printer::OutputText> toOutputText() const { return this->toOutputText( this->format() ); }
-    //private :
+
+    //! return the output text of the table representation (each element of the vector start at a new line)
+    //! the \format arg override the format of the table
     std::vector<Printer::OutputText> toOutputText( TableImpl::Format const& format ) const;
+
+    //! export into stream \o the asciidoc representation of the table
+    void exportAsciiDoc( std::ostream &o ) const;
 
 private :
     int M_nRow, M_nCol;
@@ -158,6 +162,9 @@ class Cell
 {
 public:
 
+    /**
+     * Format of a Cell in a Table
+     */
     struct Format
     {
         Format() = default;
@@ -260,6 +267,15 @@ struct Format : public Cell::Format
     Format& setFirstRowIsHeader( bool b ) { M_firstRowIsHeader = b; return *this; }
     bool firstColumnIsHeader() const { return M_firstColumnIsHeader; }
     Format& setFirstColumnIsHeader( bool b ) { M_firstColumnIsHeader = b; return *this; }
+
+    // override Cell::Format (return the good type)
+    Format& setFontAlign( Font::Align a ) { Cell::Format::setFontAlign( a ); return *this; }
+    Format& setFontColor( Font::Color a ) { Cell::Format::setFontColor( a ); return *this; }
+    Format& setPaddingLeft( int v ) { Cell::Format::setPaddingLeft( v ); return *this; }
+    Format& setPaddingRight( int v ) { Cell::Format::setPaddingRight( v ); return *this; }
+    Format& setAllPadding( int v ) { Cell::Format::setAllPadding( v ); return *this; }
+    Format& setFloatingPoint( Font::FloatingPoint a ) { Cell::Format::setFloatingPoint( a ); return *this; }
+    Format& setWidthMax( int i ) { Cell::Format::setWidthMax( i ); return *this; }
 private :
 
     bool M_hasRowSeparator = true;
