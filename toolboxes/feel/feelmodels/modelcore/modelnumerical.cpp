@@ -134,10 +134,10 @@ ModelNumerical::checkResults() const
 
     bool resultsAreOk = true;
     bool isMasterRank = this->worldComm().isMasterRank();
-    if ( isMasterRank )
-        std::cout << "||==============================================||\n"
-                  << "||---------------> Checkers : " << modelKeyword << "\n"
-                  << "||==============================================||" << std::endl;
+
+    Feel::Table tableCheckerMeasures;
+    tableCheckerMeasures.add_row( {"check","name","measure","reference","error","tolerance"} );
+    tableCheckerMeasures.format().setFirstRowIsHeader( true );
 
     for ( auto const& checkerMeasure : this->modelProperties().postProcess().checkersMeasure( modelKeyword ) )
     {
@@ -150,17 +150,16 @@ ModelNumerical::checkResults() const
 
         double valueMeasured = M_postProcessMeasuresIO.measure( measureName );
         auto [checkIsOk, diffVal] = checkerMeasure.run( valueMeasured );
-        if ( isMasterRank )
-        {
-            std::cout << " - ";
-            if ( checkIsOk )
-                std::cout << tc::green << "[success]";
-            else
-                std::cout << tc::red << "[failure]";
-            std::cout << tc::reset << " check measure " << measureName <<  " : measure=" << valueMeasured << " , reference=" << checkerMeasure.value() << " , error=" << diffVal << " [tolerance=" << checkerMeasure.tolerance() << "]" << std::endl;
-        }
+        std::string checkStr = checkIsOk? "[success]" : "[failure]";
+        tableCheckerMeasures.add_row( {checkStr,measureName,valueMeasured,checkerMeasure.value(),diffVal,checkerMeasure.tolerance()} );
+        tableCheckerMeasures( tableCheckerMeasures.nRow()-1,0).format().setFontColor( checkIsOk ? Font::Color::green :Font::Color::red );
+
         resultsAreOk = resultsAreOk && checkIsOk;
     }
+    auto tabInfoChecker = TabulateInformationsSections::New();
+    tabInfoChecker->add( (boost::format("Checkers : %1%")%modelKeyword).str(), TabulateInformations::New( tableCheckerMeasures ) );
+    if ( tableCheckerMeasures.nRow() > 1 && isMasterRank )
+        std::cout << *tabInfoChecker << std::endl;
     return resultsAreOk;
 }
 

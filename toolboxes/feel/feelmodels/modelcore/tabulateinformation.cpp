@@ -11,19 +11,18 @@
 namespace Feel
 {
 
-TabulateInformationProperties::TabulateInformationProperties( VerboseLevel vl )
+TabulateInformationProperties::TabulateInformationProperties( uint16_type vl )
     :
-    M_information_level( 0 ),
-    M_verbose_level( vl )
+    M_verboseLevel( vl )
 {}
 
-typename TabulateInformations::self_ptrtype TabulateInformations::New( Feel::Table const& table )
+typename TabulateInformations::self_ptrtype TabulateInformations::New( Feel::Table const& table, TabulateInformationProperties const& tip )
 {
-    return std::make_shared<TabulateInformationsTable>( table );
+    return std::make_shared<TabulateInformationsTable>( table, tip.verboseLevel() );
 }
-typename TabulateInformations::self_ptrtype TabulateInformations::New( tabulate::Table const& table )
+typename TabulateInformations::self_ptrtype TabulateInformations::New( tabulate::Table const& table, TabulateInformationProperties const& tip )
 {
-    return std::make_shared<TabulateInformationsTableAlternative>( table );
+    return std::make_shared<TabulateInformationsTableAlternative>( table, tip.verboseLevel() );
 }
 
 std::ostream& operator<<( std::ostream& o, TabulateInformations const& ti )
@@ -85,10 +84,13 @@ TabulateInformationsTableAlternative::exportAsciiDoc( std::ostream &o, int level
 std::vector<Printer::OutputText>
 TabulateInformationsSections::exportAscii() const
 {
+    uint16_type maxVerboseLevel = 1;
     Feel::Table t;
     t.format().setShowAllBorders( false ).setHasRowSeparator( false ).setAllPadding( 0 );
     for ( auto const& [name,st] : M_subTab )
     {
+        if ( maxVerboseLevel != invalid_v<uint16_type> && st->verboseLevel() > maxVerboseLevel )
+            continue;
         auto exporterAsciiCurrent = st->exporterAscii();
         auto const& otCurrent = exporterAsciiCurrent.outputText();
         if ( otCurrent.empty() )
@@ -269,7 +271,7 @@ void addAllKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, Tabula
 tabulate_informations_ptr_t
 tabulateInformationsFunctionSpace( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
 {
-    auto tabInfo = TabulateInformationsSections::New();
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
 
     Feel::Table tabInfoOthers;
     TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
@@ -277,7 +279,7 @@ tabulateInformationsFunctionSpace( nl::json const& jsonInfo, TabulateInformation
         .setShowAllBorders( false )
         .setColumnSeparator(":")
         .setHasRowSeparator( false );
-    tabInfo->add( "", TabulateInformations::New( tabInfoOthers ) );
+    tabInfo->add( "", TabulateInformations::New( tabInfoOthers,tabInfoProp ) );
 
     Feel::Table tabInfoBasisEntries;
     TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoBasisEntries, jsonInfo.at("basis"), tabInfoProp );
@@ -285,7 +287,7 @@ tabulateInformationsFunctionSpace( nl::json const& jsonInfo, TabulateInformation
         .setShowAllBorders( false )
         .setColumnSeparator(":")
         .setHasRowSeparator( false );
-    tabInfo->add( "Basis", TabulateInformations::New( tabInfoBasisEntries ) );
+    tabInfo->add( "Basis", TabulateInformations::New( tabInfoBasisEntries,tabInfoProp ) );
 
     auto tabInfoDofTable = TabulateInformationsSections::New();
     auto const& jsonInfoDofTable = jsonInfo.at("doftable");
@@ -295,7 +297,7 @@ tabulateInformationsFunctionSpace( nl::json const& jsonInfo, TabulateInformation
         .setShowAllBorders( false )
         .setColumnSeparator(":")
         .setHasRowSeparator( false );
-    tabInfoDofTable->add( "", TabulateInformations::New( tabInfoDofTableEntries ) );
+    tabInfoDofTable->add( "", TabulateInformations::New( tabInfoDofTableEntries,tabInfoProp ) );
     if ( jsonInfoDofTable.contains( "nLocalDofWithoutGhost" ) )
     {
         Feel::Table tabInfoDofTableEntriesDatByPartition;
@@ -308,7 +310,7 @@ tabulateInformationsFunctionSpace( nl::json const& jsonInfo, TabulateInformation
         for (auto it1=jarray_nLocalDofWithGhost.begin(), it2 = jarray_nLocalDofWithoutGhost.begin(), it3=jarray_nLocalGhost.begin();
              it1 != jarray_nLocalDofWithGhost.end(); ++it1,++it2,++it3,++procId )
             tabInfoDofTableEntriesDatByPartition.add_row({ procId, it1.value().get<int>(), it2.value().get<int>(), it3.value().get<int>() });
-        tabInfoDofTable->add( "", TabulateInformations::New( tabInfoDofTableEntriesDatByPartition ) );
+        tabInfoDofTable->add( "", TabulateInformations::New( tabInfoDofTableEntriesDatByPartition, tabInfoProp.newByIncreasingVerboseLevel() ) );
     }
     tabInfo->add( "Dof Table", tabInfoDofTable );
 
