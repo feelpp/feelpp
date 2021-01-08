@@ -23,6 +23,7 @@
 #
 message(STATUS "============================================================")
 message(STATUS "Contrib libraries")
+include(FetchContent)
 add_library(feelpp_contrib INTERFACE)
 add_library( Feelpp::feelpp_contrib ALIAS feelpp_contrib)
 
@@ -425,6 +426,7 @@ if ( FEELPP_ENABLE_SIMPLE_WEB_SERVER )
   message(STATUS "Configuring Simplee Web Server")
   feelppContribPrepare( simple-web-server )
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    set(BUILD_TESTING OFF)
     add_subdirectory( simple-web-server )
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_SIMPLE_WEB_SERVER )
     target_link_libraries(feelpp_contrib INTERFACE simple-web-server )
@@ -497,6 +499,7 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
   if ( SCOTCH_FOUND )
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_SCOTCH )
   endif() 
+  
 
   # setup parmmg only if mmg is ok
   feelppContribPrepare( parmmg )
@@ -505,18 +508,49 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     SET ( LIBPARMMG_SHARED ON )
     SET( DOWNLOAD_MMG OFF )
     SET( DOWNLOAD_METIS OFF )
-    SET(MMG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
-    SET(MMG_BUILDDIR ${CMAKE_CURRENT_BINARY_DIR}/mmg)
-    if ( 0 )
-      add_subdirectory( parmmg )
-      target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PARMMG )
-      target_link_libraries(feelpp_contrib INTERFACE libfeelpp_parmmg_so )
-      set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} ParMmg/Contrib")
-    endif( 0 )
+    
+#    SET(MMG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
+#    SET(MMG_BUILDDIR ${CMAKE_CURRENT_BINARY_DIR}/mmg)
+#    SET(MMG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
+    add_subdirectory( parmmg )
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PARMMG )
+    target_link_libraries(feelpp_contrib INTERFACE libfeelpp_parmmg_so )
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} ParMmg/Contrib")
+
   endif()
 endif()
 
 
+option( FEELPP_ENABLE_CPR "Enable CPR" ON )
+if ( FEELPP_ENABLE_CPR )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring CPR")
+  set(FETCHCONTENT_SOURCE_DIR_CPR ${CMAKE_CURRENT_SOURCE_DIR}/cpr)
+  # patch includes fix for 18.04 compilation
+  FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/feelpp/cpr.git GIT_TAG e554da6bde33edc35f1c28bd8197ae50bdf4a4d4) 
+  set( USE_SYSTEM_CURL ON )
+  set( BUILD_CPR_TESTS OFF )
+  if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
+      set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+  endif()
+  FetchContent_MakeAvailable(cpr)
+  add_library(feelpp_cpr INTERFACE)  
+  set_target_properties(cpr PROPERTIES OUTPUT_NAME "feelpp_cpr")
+  target_link_libraries(feelpp_cpr INTERFACE cpr)
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_CPR )
+  add_library(Feelpp::feelpp_cpr ALIAS feelpp_cpr)
+  target_include_directories(feelpp_cpr INTERFACE
+      $<BUILD_INTERFACE:${cpr_SOURCE_DIR}/include/>
+      $<INSTALL_INTERFACE:include/feelpp> )
+  install(TARGETS feelpp_cpr cpr EXPORT feelpp-contrib-export-targets
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
+  target_link_libraries( feelpp_contrib INTERFACE feelpp_cpr )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} CPR/Contrib")
+endif()
 
 # Add an info message to be displayed at the end of the cmake process.
 if( FEELPP_CONTRIB_SUBMODULE_UPDATED )
