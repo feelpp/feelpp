@@ -255,8 +255,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
 
     // FunctionSpace
     subPt.clear();
-    this->functionSpaceVelocity()->updateInformationObject( subPt["Velocity"] );
-    this->functionSpacePressure()->updateInformationObject( subPt["Pressure"] );
+    subPt["Velocity"] = this->functionSpaceVelocity()->journalSection().to_string();
+    subPt["Pressure"] = this->functionSpaceVelocity()->journalSection().to_string();
     p["Function Spaces"] = subPt;
 
     if ( M_algebraicFactory )
@@ -267,7 +267,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 tabulate_informations_ptr_t
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    auto tabInfo = TabulateInformationsSections::New();
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
 
     // Environment
     if ( jsonInfo.contains("Environment") )
@@ -278,7 +278,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
     {
         Feel::Table tabInfoPhysics;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
-        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics ) );
+        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics, tabInfoProp ) );
     }
 
     // Materials Properties
@@ -293,11 +293,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
     if ( jsonInfo.contains("Function Spaces") )
     {
         auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
-        auto tabInfoFunctionSpaces = TabulateInformationsSections::New();
+        auto tabInfoFunctionSpaces = TabulateInformationsSections::New( tabInfoProp );
         for ( std::string const& spaceName : std::vector<std::string>({"Velocity","Pressure"}) )
         {
-            if ( jsonInfoFunctionSpaces.contains( spaceName ) )
-                tabInfoFunctionSpaces->add( spaceName, TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( jsonInfoFunctionSpaces.at( spaceName ), tabInfoProp ) );
+            nl::json::json_pointer jsonPointerSpace( jsonInfoFunctionSpaces.at( spaceName ).template get<std::string>() );
+            if ( JournalManager::journalData().contains( jsonPointerSpace ) )
+                tabInfoFunctionSpaces->add( spaceName, TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( JournalManager::journalData().at( jsonPointerSpace ), tabInfoProp ) );
         }
         tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
     }

@@ -263,7 +263,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) 
 
     // FunctionSpace
     nl::json subPt;
-    M_Xh->updateInformationObject( subPt[this->unknownName()] );
+    subPt[this->unknownName()] = M_Xh->journalSection().to_string();
     p.emplace( "Function Spaces",  subPt );
 
 #if 0
@@ -276,7 +276,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 tabulate_informations_ptr_t
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    auto tabInfo = TabulateInformationsSections::New();
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
     if ( jsonInfo.contains("Environment") )
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
@@ -286,8 +286,10 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& js
     if ( jsonInfo.contains("Function Spaces") )
     {
         auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
-        auto tabInfoFunctionSpaces = TabulateInformationsSections::New();
-        tabInfoFunctionSpaces->add( this->unknownName(), TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( jsonInfoFunctionSpaces.at( this->unknownName() ), tabInfoProp ) );
+        auto tabInfoFunctionSpaces = TabulateInformationsSections::New( tabInfoProp );
+        nl::json::json_pointer jsonPointerSpaceUnknown( jsonInfoFunctionSpaces.at( this->unknownName() ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerSpaceUnknown ) )
+            tabInfoFunctionSpaces->add( this->unknownName(), TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( JournalManager::journalData().at( jsonPointerSpaceUnknown ), tabInfoProp ) );
         tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
     }
 
@@ -299,6 +301,7 @@ std::shared_ptr<std::ostringstream>
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+#if 0
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -343,7 +346,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n";
-
+#endif
     return _ostr;
 }
 

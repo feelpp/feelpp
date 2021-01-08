@@ -382,11 +382,8 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 
     // FunctionSpace
     subPt.clear();
-    M_Xh->updateInformationObject( subPt["Temperature"] );
-    //subPt.put_child( "FunctionSpace Temperature",  M_Xh->journalSectionName() );
+    subPt["Temperature"] = M_Xh->journalSection().to_string();
     p.emplace( "Function Spaces",  subPt );
-    //if ( this->fieldVelocityConvectionIsUsedAndOperational() )
-    //    p.put( "FunctionSpace Velocity Convection", M_XhVelocityConvection->journalSectionName() );
     if ( M_stabilizationGLS )
     {
         subPt.clear();
@@ -418,7 +415,7 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 tabulate_informations_ptr_t
 HEAT_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    auto tabInfo = TabulateInformationsSections::New();
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
     if ( jsonInfo.contains("Environment") )
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
@@ -426,7 +423,7 @@ HEAT_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Tabula
     {
         Feel::Table tabInfoPhysics;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
-        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics ) );
+        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics, tabInfoProp ) );
     }
 
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
@@ -440,8 +437,12 @@ HEAT_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Tabula
     if ( jsonInfo.contains("Function Spaces") )
     {
         auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
-        auto tabInfoFunctionSpaces = TabulateInformationsSections::New();
-        tabInfoFunctionSpaces->add( "Temperature", TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( jsonInfoFunctionSpaces.at( "Temperature" ), tabInfoProp ) );
+        auto tabInfoFunctionSpaces = TabulateInformationsSections::New( tabInfoProp );
+
+        nl::json::json_pointer jsonPointerSpaceTemperature( jsonInfoFunctionSpaces.at( "Temperature" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerSpaceTemperature ) )
+            tabInfoFunctionSpaces->add( "Temperature", TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( JournalManager::journalData().at( jsonPointerSpaceTemperature ), tabInfoProp ) );
+
         tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
     }
 
@@ -449,14 +450,14 @@ HEAT_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Tabula
     {
         Feel::Table tabInfoTimeDiscr;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoTimeDiscr, jsonInfo.at("Time Discretization"), tabInfoProp );
-        tabInfo->add( "Time Discretization", TabulateInformations::New( tabInfoTimeDiscr ) );
+        tabInfo->add( "Time Discretization", TabulateInformations::New( tabInfoTimeDiscr, tabInfoProp ) );
     }
 
     if ( jsonInfo.contains("Finite element stabilization") )
     {
         Feel::Table tabInfoStab;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoStab, jsonInfo.at("Finite element stabilization"), tabInfoProp );
-        tabInfo->add( "Finite element stabilization", TabulateInformations::New( tabInfoStab ) );
+        tabInfo->add( "Finite element stabilization", TabulateInformations::New( tabInfoStab, tabInfoProp ) );
     }
 
     if ( jsonInfo.contains( "Algebraic Solver" ) )

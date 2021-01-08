@@ -385,15 +385,15 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
     if ( M_algebraicFactoryMonolithic )
         M_algebraicFactoryMonolithic->updateInformationObject( p["Algebraic Solver"] );
 
-    M_heatModel->updateInformationObject( p["Toolbox Heat"] );
-    M_electricModel->updateInformationObject( p[ "Toolbox Electric"] );
+    p["Toolbox Heat"] = M_heatModel->journalSection().to_string();
+    p["Toolbox Electric"] = M_electricModel->journalSection().to_string();
 }
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 tabulate_informations_ptr_t
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    auto tabInfo = TabulateInformationsSections::New();
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
     if ( jsonInfo.contains("Environment") )
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
@@ -408,7 +408,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
     {
         Feel::Table tabInfoNumSolver;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoNumSolver, jsonInfo.at("Numerical Solver"), tabInfoProp );
-        tabInfo->add( "Numerical Solver",  TabulateInformations::New( tabInfoNumSolver ) );
+        tabInfo->add( "Numerical Solver",  TabulateInformations::New( tabInfoNumSolver, tabInfoProp ) );
     }
 
     if ( jsonInfo.contains( "Algebraic Solver" ) )
@@ -417,15 +417,23 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
     // generate sub toolboxes info
     if ( M_heatModel && jsonInfo.contains( "Toolbox Heat" ) )
     {
-        auto tabInfos_heat = M_heatModel->tabulateInformations( jsonInfo.at("Toolbox Heat"), tabInfoProp );
-        TabulateInformationsSections::cast( tabInfos_heat )->erase( "Materials Properties" );
-        tabInfo->add( "Toolbox Heat", tabInfos_heat );
+        nl::json::json_pointer jsonPointerHeat( jsonInfo.at( "Toolbox Heat" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerHeat ) )
+        {
+            auto tabInfos_heat = M_heatModel->tabulateInformations( JournalManager::journalData().at( jsonPointerHeat ), tabInfoProp );
+            TabulateInformationsSections::cast( tabInfos_heat )->erase( "Materials Properties" );
+            tabInfo->add( "Toolbox Heat", tabInfos_heat );
+        }
     }
     if ( M_electricModel && jsonInfo.contains( "Toolbox Electric" ) )
     {
-        auto tabInfos_electric = M_electricModel->tabulateInformations( jsonInfo.at("Toolbox Electric"), tabInfoProp );
-        TabulateInformationsSections::cast( tabInfos_electric )->erase( "Materials Properties" );
-        tabInfo->add( "Toolbox Electric", tabInfos_electric );
+        nl::json::json_pointer jsonPointerElectric( jsonInfo.at( "Toolbox Electric" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerElectric ) )
+        {
+            auto tabInfos_electric = M_electricModel->tabulateInformations( JournalManager::journalData().at( jsonPointerElectric ), tabInfoProp );
+            TabulateInformationsSections::cast( tabInfos_electric )->erase( "Materials Properties" );
+            tabInfo->add( "Toolbox Electric", tabInfos_electric );
+        }
     }
 
     return tabInfo;

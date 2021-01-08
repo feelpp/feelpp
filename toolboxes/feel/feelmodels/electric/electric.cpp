@@ -342,7 +342,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 
     // Function Spaces
     subPt.clear();
-    M_XhElectricPotential->updateInformationObject( subPt["Electric Potential"] );
+    subPt["Electric Potential"] = M_XhElectricPotential->journalSection().to_string();
     p.emplace( "Function Spaces", subPt );
 
     // Algebraic Solver
@@ -354,7 +354,7 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 tabulate_informations_ptr_t
 ELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    auto tabInfo = TabulateInformationsSections::New();
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
     if ( jsonInfo.contains("Environment") )
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
@@ -362,7 +362,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Ta
     {
         Feel::Table tabInfoPhysics;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
-        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics ) );
+        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics, tabInfoProp ) );
     }
 
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
@@ -376,8 +376,10 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Ta
     if ( jsonInfo.contains("Function Spaces") )
     {
         auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
-        auto tabInfoFunctionSpaces = TabulateInformationsSections::New();
-        tabInfoFunctionSpaces->add( "Electric Potential", TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( jsonInfoFunctionSpaces.at( "Electric Potential" ), tabInfoProp ) );
+        auto tabInfoFunctionSpaces = TabulateInformationsSections::New( tabInfoProp );
+        nl::json::json_pointer jsonPointerSpaceElectricPotential( jsonInfoFunctionSpaces.at( "Electric Potential" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerSpaceElectricPotential ) )
+            tabInfoFunctionSpaces->add( "Electric Potential", TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( JournalManager::journalData().at( jsonPointerSpaceElectricPotential ), tabInfoProp ) );
         tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
     }
 
