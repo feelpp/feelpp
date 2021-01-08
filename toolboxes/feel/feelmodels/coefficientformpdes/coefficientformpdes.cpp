@@ -379,8 +379,6 @@ std::shared_ptr<std::ostringstream>
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-    for (auto const& cfpde  : M_coefficientFormPDEs )
-        *_ostr << cfpde->getInfo()->str();
     return _ostr;
 }
 
@@ -400,7 +398,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p )
 
     nl::json subPt;
     for (auto & cfpde : M_coefficientFormPDEs )
-        cfpde->updateInformationObject( subPt[cfpde->keyword()] );
+        subPt[cfpde->keyword()] = cfpde->journalSection().to_string();
     p.emplace( "Coefficient Form PDE", subPt );
 }
 
@@ -408,7 +406,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 tabulate_informations_ptr_t
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    auto tabInfo = TabulateInformationsSections::New();
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
     if ( jsonInfo.contains("Environment") )
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
@@ -422,8 +420,12 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& j
         {
             if ( jsonInfo_cfpde.contains(cfpde->keyword()) )
             {
-                auto tabInfos_cfpde = cfpde->tabulateInformations( jsonInfo_cfpde.at(cfpde->keyword()), tabInfoProp );
-                tabInfo->add( (boost::format("Toolbox Coefficient Form PDE : %1%")%cfpde->keyword()).str(), tabInfos_cfpde );
+                nl::json::json_pointer jsonPointerCFPDE( jsonInfo_cfpde.at( cfpde->keyword() ).template get<std::string>() );
+                if ( JournalManager::journalData().contains( jsonPointerCFPDE ) )
+                {
+                    auto tabInfos_cfpde = cfpde->tabulateInformations(  JournalManager::journalData().at( jsonPointerCFPDE ), tabInfoProp );
+                    tabInfo->add( (boost::format("Toolbox Coefficient Form PDE : %1%")%cfpde->keyword()).str(), tabInfos_cfpde );
+                }
             }
         }
     }
