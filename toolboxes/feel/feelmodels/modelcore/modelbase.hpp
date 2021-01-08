@@ -40,9 +40,7 @@
 #include <feel/feelmodels/modelcore/log.hpp>
 #include <feel/feelmodels/modelcore/timertool.hpp>
 
-// #include <tabulate/table.hpp>
-// #include <feel/feelcore/json.hpp>
-#include <feel/feelmodels/modelcore/tabulateinformation.hpp>
+#include <feel/feelcore/tabulateinformations.hpp>
 
 namespace Feel
 {
