@@ -43,6 +43,8 @@ set(SRC
   journalmanager.cpp
   journalwatcher.cpp
   table.cpp
+  tabulateinformations.cpp
+  terminalproperties.cpp
   )
 if(FEELPP_HAS_MONGOCXX)
     set( SRC mongocxx.cpp ${SRC} )
