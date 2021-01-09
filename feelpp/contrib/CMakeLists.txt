@@ -478,6 +478,8 @@ if ( FEELPP_ENABLE_MATPLOT )
   endif()
 endif( FEELPP_ENABLE_MATPLOT )
 
+option( FEELPP_ENABLE_MMG "Enable MMG/PARMMG" ON )
+if ( FEELPP_ENABLE_MMG )
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring Mmg")
 feelppContribPrepare( mmg )
@@ -518,8 +520,8 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} ParMmg/Contrib")
 
   endif()
-endif()
-
+endif(FEELPP_CONTRIB_PREPARE_SUCCEED)
+endif(FEELPP_ENABLE_MMG)
 
 option( FEELPP_ENABLE_CPR "Enable CPR" ON )
 if ( FEELPP_ENABLE_CPR )
