@@ -1,16 +1,7 @@
-#add_subdirectory( hana )
 include(FetchContent)
-FetchContent_Declare(hana GIT_REPOSITORY https://github.com/boostorg/hana.git GIT_TAG 77b0f5ad6dad24717599e8323705149fc0f01c24) # the commit hash for develop branch Dec 28 2020
-# hana requires workaround for cmake
-FetchContent_GetProperties(hana)
-if(NOT hana_POPULATED)
-  FetchContent_Populate(hana)
-
-  # Copy an additional/replacement file into the populated source
-  file(COPY hana/CMakeLists.txt DESTINATION ${hana_SOURCE_DIR}/)
-
-  add_subdirectory(${hana_SOURCE_DIR} ${hana_BINARY_DIR})
-endif()
+set(FETCHCONTENT_SOURCE_DIR_HANA ${CMAKE_CURRENT_SOURCE_DIR}/hana)
+FetchContent_Declare(hana GIT_REPOSITORY https://github.com/feelpp/hana.git GIT_TAG 77b0f5ad6dad24717599e8323705149fc0f01c24) # the commit hash for develop branch Dec 28 2020
+FetchContent_MakeAvailable(hana)
 
 target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_BOOST_HANA )
 #target_link_libraries(feelpp_contrib INTERFACE feelpp_hana )

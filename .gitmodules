@@ -52,3 +52,6 @@
 [submodule "feelpp/contrib/cpr"]
 	path = feelpp/contrib/cpr
 	url = https://github.com/feelpp/cpr.git
+[submodule "feelpp/contrib/boost/hana"]
+	path = feelpp/contrib/boost/hana
+	url = https://github.com/feelpp/hana.git
