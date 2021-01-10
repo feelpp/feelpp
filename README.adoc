@@ -201,7 +201,7 @@ Some basic installation procedure are available in the link:INSTALL.md[INSTALL] 
 
 In the spirit of {uri-freesoftware}[free software], _everyone_ is encouraged to help improve this project.
 If you discover errors or omissions in the source code, documentation, or website content, please don't hesitate to submit an issue or open a pull request with a fix.
- New contributors are always welcome!
+New contributors are always welcome!
 
 Here are some ways *you* can contribute:
 
