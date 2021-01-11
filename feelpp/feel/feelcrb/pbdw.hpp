@@ -22,12 +22,11 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef _FEELPP_GEIM_HPP
-#define _FEELPP_GEIM_HPP 1
+#ifndef _FEELPP_PBDW_HPP
+#define _FEELPP_PBDW_HPP 1
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelcrb/crbdb.hpp>
-#include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcore/unwrapptr.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
 #include <feel/feeldiscr/sensors.hpp>
@@ -52,13 +51,12 @@ public:
     using reducedspace_ptrtype = std::shared_ptr<reducedspace_type>;
     using space_type = typename reducedspace_type::fespace_type;
     using space_ptrtype = std::shared_ptr<space_type>;
+    using element_type = typename space_type::element_type;
     using mesh_type = typename space_type::mesh_type;
     using node_t = typename mesh_type::node_type;
-    using element_type = typename space_type::element_type;
     using vectorN_type = Eigen::VectorXd;
     using matrixN_type = Eigen::MatrixXd;
-    using sensorbase_type = SensorBase<space_type>;
-    using sensorbase_ptrtype = std::shared_ptr<sensorbase_type>;
+    using sensormap_type = SensorMap<space_type>;
     static const int nDim = space_type::mesh_type::nDim;
 
     /**
@@ -89,7 +87,7 @@ public:
      */
     PBDW(std::string const& name,
          reducedspace_ptrtype const& XR,
-         std::vector<sensorbase_ptrtype> const& sigmas,
+         sensormap_type const& sigmas,
          uuids::uuid const& uuid = uuids::nil_uuid(),
          bool rebuildDB = boption("pbdw.rebuild-database"),
          int dbLoad = ioption("pbdw.db.load"),
@@ -99,6 +97,9 @@ public:
     int dimensionM() const { return M_M; } /**< Number of sensors */
     int dimension() const { return M_N+M_M; } /**< Dimension of PBDW */
     space_ptrtype functionSpace() const { return M_XR->functionSpace(); } /**< Function Space */
+    sensormap_type const& sensors() const { return M_sigmas; } /**< Sensors */
+    std::vector<element_type> const& riesz() const { return M_qs; } /**< Riesz representant */
+    reducedspace_ptrtype const& reducedBasis() const { M_XR; } /**< Reduced basis */
     matrixN_type matrix() const { return M_matrix; } /**< Matrix of PBDW */
     void offline(); /** Do offline phase */
     /**
@@ -122,7 +123,8 @@ protected:
 private:
     std::string M_name;
     reducedspace_ptrtype M_XR;
-    std::vector<sensorbase_ptrtype> M_sigmas;
+    sensormap_type M_sigmas;
+    std::vector<element_type> M_qs;
     matrixN_type M_matrix;
     int M_M;
     int M_N;
@@ -158,7 +160,7 @@ PBDW<RBSpace>::PBDW(std::string const& name,
 template<typename RBSpace>
 PBDW<RBSpace>::PBDW(std::string const& name,
                     reducedspace_ptrtype const& XR,
-                    std::vector<sensorbase_ptrtype> const& sigmas,
+                    sensormap_type const& sigmas,
                     uuids::uuid const& uuid,
                     bool rebuildDb,
                     int dbLoad,
@@ -189,26 +191,29 @@ PBDW<RBSpace>::offline()
 {
     Feel::cout << "offline phase start with M=" << M_M << " and N=" << M_N << std::endl;
     auto u = M_XR->functionSpace()->element();
-    std::vector<element_type> qs(M_M, M_XR->functionSpace()->element());
+    M_qs = std::vector<element_type>(M_M, M_XR->functionSpace()->element());
     auto a = form2(_test=M_XR->functionSpace(), _trial=M_XR->functionSpace());
     a = integrate(_range=elements(M_XR->mesh()), _expr=inner(vf::id(u),vf::idt(u)) + inner(grad(u),gradt(u)) );
     auto am = a.matrixPtr();
-    for( int m = 0; m < M_M; ++m )
+    int m = 0;
+    for( auto const& it /*[name, sensor]*/ : M_sigmas )
     {
-        auto f = form1(_test=M_XR->functionSpace(), _vector=M_sigmas[m]->containerPtr());
-        a.solve(_solution=qs[m], _rhs=f, _name="pbdw");
+        auto name = it.first;
+        auto sensor = it.second;
+        auto f = form1(_test=M_XR->functionSpace(), _vector=sensor->containerPtr());
+        a.solve(_solution=M_qs[m++], _rhs=f, _name="pbdw");
     }
     M_matrix = matrixN_type::Zero(M_M+M_N, M_M+M_N);
     for(int i = 0; i < M_M; ++i )
     {
         for(int j = 0; j < i; ++j )
         {
-            M_matrix(i, j) = am->energy(qs[i], qs[j]);
+            M_matrix(i, j) = am->energy(M_qs[i], M_qs[j]);
             M_matrix(j, i) = M_matrix(i, j);
         }
-        M_matrix(i, i) = am->energy(qs[i], qs[i]);
+        M_matrix(i, i) = am->energy(M_qs[i], M_qs[i]);
         for(int j = 0; j < M_N; ++j )
-            M_matrix(i, M_M+j) = am->energy(qs[i], M_XR->primalBasisElement(j));
+            M_matrix(i, M_M+j) = am->energy(M_qs[i], M_XR->primalBasisElement(j));
     }
     M_matrix.bottomLeftCorner(M_N, M_M) = M_matrix.topRightCorner(M_M, M_N).transpose();
 
@@ -237,7 +242,7 @@ PBDW<RBSpace>::solution(vectorN_type const& yobs) const
     auto I = Xh->element();
     I.zero();
     for(int i = 0; i < M; ++i )
-        I.add(vn(i), Xh->element(M_sigmas[i]->containerPtr()));
+        I.add(vn(i), M_qs[i]);
     for(int i = 0; i < N; ++i )
         I.add(vn(M+i), unwrap_ptr(wn[i]));
     return I;
@@ -288,21 +293,7 @@ PBDW<RBSpace>::saveDB()
         boost::archive::binary_oarchive oa( ofsp );
         for( int n = 0; n < M_N; ++n )
             oa << M_XR->primalBasisElement(n);
-        for( int m = 0; m < M_M; ++m )
-        {
-            auto t = M_sigmas[m]->type();
-            oa << t;
-            oa << M_sigmas[m]->name();
-            oa << M_sigmas[m]->position();
-            if( t == "pointwise" )
-            {
-            }
-            else if( t == "gaussian" )
-            {
-                auto s = std::dynamic_pointer_cast<SensorGaussian<space_type>>(M_sigmas[m]);
-                oa << s->radius();
-            }
-        }
+        oa << M_sigmas;
     }
 }
 
@@ -347,27 +338,8 @@ PBDW<RBSpace>::loadDB( std::string const& filename, crb::load l )
                     M_XR->addPrimalBasisElement(u);
                 }
                 node_t n(nDim);
-                for( int m = 0; m < M_M; ++m )
-                {
-                    std::string type;
-                    ia >> type;
-                    std::string name;
-                    ia >> name;
-                    node_t n(nDim);
-                    ia >> n;
-                    if( type == "pointwise" )
-                    {
-                        auto s = std::make_shared<SensorPointwise<space_type> >(Xh, n, name);
-                        M_sigmas.push_back(s);
-                    }
-                    else if( type == "gaussian" )
-                    {
-                        double r;
-                        ia >> r;
-                        auto s = std::make_shared<SensorGaussian<space_type> >(Xh, n, r, name);
-                        M_sigmas.push_back(s);
-                    }
-                }
+                M_sigmas = sensormap_type(Xh);
+                ia >> M_sigmas;
             }
         }
     }
