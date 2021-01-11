@@ -1244,6 +1244,7 @@ FSI<FluidType,SolidType>::getInfo() const
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << this->fluidModel()->getInfo()->str()
            << this->solidModel()->getInfo()->str();
+#if 0
     *_ostr << "\n||==============================================||"
            << "\n||-----------------Info : FSI-------------------||"
            << "\n||==============================================||"
@@ -1291,45 +1292,118 @@ FSI<FluidType,SolidType>::getInfo() const
 
     *_ostr << "\n||==============================================||"
            << "\n";
-
+#endif
     return _ostr;
 }
 
 template< class FluidType, class SolidType >
 void
-FSI<FluidType,SolidType>::updateInformationObject( pt::ptree & p ) const
+FSI<FluidType,SolidType>::updateInformationObject( nl::json & p ) const
 {
-    pt::ptree subPt;
-    super_type::super_model_base_type::updateInformationObject( subPt );
-    p.put_child( "Environment", subPt );
+    if ( p.contains( "Environment" ) )
+        return;
+
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
+
+    p["Toolbox Fluid"] = M_fluidModel->journalSection().to_string();
+    p["Toolbox Solid"] = M_solidModel->journalSection().to_string();
+
+
+    nl::json subPt;
+    subPt["type"] = this->fsiCouplingType();
+    subPt["BC"] = this->fsiCouplingBoundaryCondition();
+    subPt["Interface property"] = M_interfaceFSIisConforme? "conformal":"non conformal";
+
+    bool useAitken = false;
+    if ( this->fsiCouplingBoundaryCondition()  == "dirichlet-neumann" )
+    {
+        useAitken = true;
+    }
+    else if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
+              this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
+              this->fsiCouplingBoundaryCondition() == "nitsche" )
+    {
+        nl::json subPt2;
+        subPt2["gamma"] = M_couplingNitscheFamily_gamma;
+        if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
+              this->fsiCouplingBoundaryCondition() == "nitsche" )
+            subPt2["gamma0"] = M_couplingNitscheFamily_gamma0;
+        subPt2["alpha"] = M_couplingNitscheFamily_alpha;
+        subPt["Nitsche family parameters"] = subPt2;
+    }
+    else if (this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
+    {
+    }
+
+    p["Coupling"] = std::move( subPt );
 
     subPt.clear();
-    M_fluidModel->updateInformationObject( subPt );
-    p.put_child( "Toolbox Fluid", subPt );
-    subPt.clear();
-    M_solidModel->updateInformationObject( subPt );
-    p.put_child( "Toolbox Solid", subPt );
-
+    subPt["method"] = useAitken? "fix point with Aitken relaxation" : "fix point";
+    subPt["tolerance"] = M_fixPointTolerance;
+    subPt["maxit"] = M_fixPointMaxIt;
+    if ( useAitken )
+    {
+        subPt["initial theta"] = M_fixPointInitialTheta;
+        subPt["min theta"] = M_fixPointMinTheta;
+    }
+    p["Numerical Solver"] = std::move( subPt );
 }
 
 template< class FluidType, class SolidType >
 tabulate_informations_ptr_t
 FSI<FluidType,SolidType>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    auto tabInfo = TabulateInformationsSections::New();
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
     if ( jsonInfo.contains("Environment") )
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
+    if ( jsonInfo.contains( "Coupling" ) )
+    {
+        auto tabInfoCoupling = TabulateInformationsSections::New( tabInfoProp );
+        auto const& jsonInfoCoupling = jsonInfo.at("Coupling");
+        Feel::Table tabInfoCouplingOther;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoCouplingOther, jsonInfoCoupling, tabInfoProp );
+        tabInfoCouplingOther.format().setShowAllBorders( false ).setColumnSeparator(":").setHasRowSeparator( false );
+        tabInfoCoupling->add( "", TabulateInformations::New( tabInfoCouplingOther, tabInfoProp ) );
+        if ( jsonInfoCoupling.contains( "Nitsche family parameters" ) )
+        {
+            Feel::Table tabInfoCouplingNitsche;
+            TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoCouplingNitsche, jsonInfoCoupling.at( "Nitsche family parameters" ), tabInfoProp );
+            tabInfoCouplingNitsche.format().setShowAllBorders( false ).setColumnSeparator(":").setHasRowSeparator( false );
+            tabInfoCoupling->add( "Nitsche family parameters", TabulateInformations::New( tabInfoCouplingNitsche, tabInfoProp ) );
+        }
+        tabInfo->add( "Coupling", tabInfoCoupling );
+    }
+
+    // Numerical Solver
+    if ( jsonInfo.contains( "Numerical Solver" ) )
+    {
+        Feel::Table tabInfoNumSolver;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoNumSolver, jsonInfo.at("Numerical Solver"), tabInfoProp );
+        tabInfoNumSolver.format().setShowAllBorders( false ).setColumnSeparator(":").setHasRowSeparator( false );
+        tabInfo->add( "Numerical Solver",  TabulateInformations::New( tabInfoNumSolver, tabInfoProp ) );
+    }
+
+    // generate sub toolboxes info
     if ( M_fluidModel && jsonInfo.contains( "Toolbox Fluid" ) )
     {
-        auto tabInfos_fluid = M_fluidModel->tabulateInformations( jsonInfo.at("Toolbox Fluid"), tabInfoProp );
-        tabInfo->add( "Toolbox Fluid", tabInfos_fluid );
+        nl::json::json_pointer jsonPointerFluid( jsonInfo.at( "Toolbox Fluid" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerFluid ) )
+        {
+            auto tabInfos_fluid = M_fluidModel->tabulateInformations( JournalManager::journalData().at( jsonPointerFluid ), tabInfoProp );
+            tabInfo->add( "Toolbox Fluid", tabInfos_fluid );
+        }
     }
     if ( M_solidModel && jsonInfo.contains( "Toolbox Solid" ) )
     {
-        auto tabInfos_solid = M_solidModel->tabulateInformations( jsonInfo.at("Toolbox Solid"), tabInfoProp );
-        tabInfo->add( "Toolbox Solid", tabInfos_solid );
+        nl::json::json_pointer jsonPointerSolid( jsonInfo.at( "Toolbox Solid" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerSolid ) )
+        {
+            auto tabInfos_solid = M_solidModel->tabulateInformations( JournalManager::journalData().at( jsonPointerSolid ), tabInfoProp );
+            tabInfo->add( "Toolbox Solid", tabInfos_solid );
+        }
     }
+
     return tabInfo;
 }
 
