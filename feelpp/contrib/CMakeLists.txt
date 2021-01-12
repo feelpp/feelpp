@@ -105,9 +105,14 @@ target_link_libraries(feelpp_contrib INTERFACE feelpp_ginac)
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring MKL")
-find_package(MKL)
-target_include_directories( feelpp_contrib BEFORE INTERFACE ${MKL_INCLUDE_DIRS})
-target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_MKL )
+option( FEELPP_ENABLE_MKL "Enable MKL Support" ON )
+if ( FEELPP_ENABLE_MKL )
+  find_package(MKL)
+  target_include_directories( feelpp_contrib BEFORE INTERFACE ${MKL_INCLUDE_DIRS})
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_MKL )
+endif()
+
+
 # Eigen
 #
 
@@ -132,8 +137,9 @@ target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_EIGEN3 )
 target_link_libraries(feelpp_contrib INTERFACE Eigen3::Eigen )
 # there is an issue with eigen+mkl
 if ( MKL_FOUND )
-  target_compile_definitions(Eigen3::Eigen INTERFACE EIGEN_USE_MKL_ALL)
-  target_link_libraries(Eigen3::Eigen INTERFACE ${MKL_LIBRARIES})  # error with cmake < 3.13, see CMP0079, use instead feelpp_contrib
+  target_include_directories( eigen  INTERFACE ${MKL_INCLUDE_DIRS})
+  target_compile_definitions(eigen INTERFACE EIGEN_USE_MKL_ALL)
+  target_link_libraries(eigen INTERFACE ${MKL_LIBRARIES})  # error with cmake < 3.13, see CMP0079, use instead feelpp_contrib
   #target_link_libraries(feelpp_contrib INTERFACE ${MKL_LIBRARIES})
   #target_include_directories(eigen INTERFACE ${MKL_INCLUDE_DIRS})
   
