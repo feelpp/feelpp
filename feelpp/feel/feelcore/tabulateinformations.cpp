@@ -186,6 +186,13 @@ void addKeyToValues( Feel::Table &table, nl::json const& jsonInfo, TabulateInfor
         else
             CHECK( false ) << "TODO missing primitive or not primitive at key " << key ;
     }
+
+    // TODO : to improve (not very nice and perfect, should be done in printer)
+    if ( TabulateInformationProperties::terminalProperties().hasWidth() )
+    {
+        int table_width_max = (int)std::floor( (3./4)*TabulateInformationProperties::terminalProperties().width());
+        table.format().setWidthMax( table_width_max );
+    }
 }
 
 
