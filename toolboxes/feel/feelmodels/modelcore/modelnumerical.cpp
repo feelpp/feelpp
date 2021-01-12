@@ -117,6 +117,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         M_timeCurrent=t;
         if ( M_modelProps )
             this->addParameterInModelProperties( "t", M_timeCurrent );
+        super_model_meshes_type::updateTime( t );
     }
 
 
