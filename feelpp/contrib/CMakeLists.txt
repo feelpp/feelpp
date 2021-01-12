@@ -104,53 +104,46 @@ target_link_libraries(feelpp_contrib INTERFACE feelpp_ginac)
 
 
 message(STATUS "------------------------------------------------------------")
-message(STATUS "Configuring Eigen")
-#
+message(STATUS "Configuring MKL")
+option( FEELPP_ENABLE_MKL "Enable MKL Support" ON )
+if ( FEELPP_ENABLE_MKL )
+  find_package(MKL)
+  target_include_directories( feelpp_contrib BEFORE INTERFACE ${MKL_INCLUDE_DIRS})
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_MKL )
+endif()
+
+
 # Eigen
 #
-if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
-  FIND_PACKAGE(Eigen3 REQUIRED)
-  MESSAGE(STATUS "Eigen3 system found:")
-else()
 
-  set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 1)
-  set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
-  add_subdirectory(eigen)
 
-  if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/feel AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/contrib )
-    option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
-    
-    set( EIGEN3_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen/unsupported )
-    target_include_directories( feelpp_contrib BEFORE
+include(FetchContent)
+set(EIGEN_BUILD_DOC OFF)
+set(BUILD_TESTING OFF)
+set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 1)
+set(FETCHCONTENT_SOURCE_DIR_EIGEN ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
+set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
+FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 20440849794789eb9d9d29bc834296ce0e73b05c) # the commit hash for 1.5.0
+FetchContent_MakeAvailable(eigen)
+target_include_directories( feelpp_contrib BEFORE
       INTERFACE
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/contrib/eigen/>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen/unsupported>
+      $<BUILD_INTERFACE:${eigen_SOURCE_DIR}>
+      $<BUILD_INTERFACE:${eigen_SOURCE_DIR}/unsupported>
       $<INSTALL_INTERFACE:include/feelpp/eigen>
       $<INSTALL_INTERFACE:include/feelpp/eigen/unsupported>
       )
 
-    SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Eigen3/Contrib" )
-  else()
-    message(FATAL_ERROR "Eigen contrib not found" )
-    # find_path(EIGEN3_INCLUDE_DIR NAMES signature_of_eigen3_matrix_library
-    #   PATHS
-    #   $ENV{FEELPP_DIR}/include/feelpp
-    #   NO_DEFAULT_PATH
-    #   )
-  endif()
-
-endif()
-
+target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_EIGEN3 )
+target_link_libraries(feelpp_contrib INTERFACE Eigen3::Eigen )
 # there is an issue with eigen+mkl
-if ( 0 ) #MKL_FOUND )
+if ( MKL_FOUND )
+  target_include_directories( eigen  INTERFACE ${MKL_INCLUDE_DIRS})
   target_compile_definitions(eigen INTERFACE EIGEN_USE_MKL_ALL)
   target_link_libraries(eigen INTERFACE ${MKL_LIBRARIES})  # error with cmake < 3.13, see CMP0079, use instead feelpp_contrib
   #target_link_libraries(feelpp_contrib INTERFACE ${MKL_LIBRARIES})
-  target_include_directories(eigen INTERFACE ${MKL_INCLUDE_DIRS})
-  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_MKL )
+  #target_include_directories(eigen INTERFACE ${MKL_INCLUDE_DIRS})
+  
 endif()
-target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_EIGEN3 )
-target_link_libraries(feelpp_contrib INTERFACE eigen )
 
 SET(FEELPP_HAS_EIGEN3 1)
 SET(FEELPP_HAS_EIGEN3 1 PARENT_SCOPE)
