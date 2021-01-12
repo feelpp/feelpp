@@ -3,16 +3,12 @@ feelpp_add_application( coefficientformpdes SRCS main.cpp
   LINK_LIBRARIES
   feelpp_toolbox_coefficientformpdes_lib
   #feelpp_toolbox_coefficientformpdes_2dG1
+  #feelpp_toolbox_coefficientformpdes_3dG1
   INSTALL TESTS
   PROJECT toolbox
 #  MAN coefficientformpdes
   )
 
-# feelpp_add_application( coefficientformpdes_predefined SRCS main_predefined.cpp
-#   LINK_LIBRARIES
-#   feelpp_toolbox_coefficientformpdes_lib
-#   #feelpp_toolbox_coefficientformpdes_2dG1
-#   INSTALL #TESTS
-#   PROJECT toolbox
-# #  MAN coefficientformpdes
-#   )
+foreach( _testcase IN ITEMS "adr" "bratu" "convection-diffusion" "diffusion-reaction"  "heat" " predator-prey" "thermoelectric" )
+  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_coefficientformpdes CATEGORY toolboxes/coefficientformpdes)
+endforeach()
