@@ -5,7 +5,7 @@ FetchContent_MakeAvailable(hana)
 
 target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_BOOST_HANA )
 #target_link_libraries(feelpp_contrib INTERFACE feelpp_hana )
-target_include_directories(feelpp_contrib INTERFACE
+target_include_directories(feelpp_contrib BEFORE INTERFACE
   $<BUILD_INTERFACE:${hana_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/feelpp/boost/hana> )
 set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Boost/Hana")
