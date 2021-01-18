@@ -29,7 +29,7 @@ var searchData=
   ['info_2ecpp_877',['info.cpp',['../info_8cpp.html',1,'']]],
   ['informationobject_878',['informationObject',['../classFeel_1_1JournalWatcher.html#af5082eae85da5055e3195f87c4f076c5',1,'Feel::JournalWatcher']]],
   ['infos_879',['Infos',['../structFeel_1_1FeelModels_1_1ModelGenericPDE_1_1Infos.html',1,'Feel::FeelModels::ModelGenericPDE']]],
-  ['init_880',['init',['../structFeel_1_1tag_1_1init.html',1,'Feel::tag::init'],['../classFeel_1_1FunctionSpace.html#a8a579328c64f638e4c43ab75ef8c59b4',1,'Feel::FunctionSpace::init()'],['../classFeel_1_1TwoSpacesMap.html#aabfd0c4468b82cf035e7a01eed1a30e9',1,'Feel::TwoSpacesMap::init()'],['../classFeel_1_1FeelModels_1_1RangeDistributionByMaterialName.html#ac312ac3e17d50f273edf5d7cc9982306',1,'Feel::FeelModels::RangeDistributionByMaterialName::init()']]],
+  ['init_880',['init',['../structFeel_1_1tag_1_1init.html',1,'Feel::tag::init'],['../classFeel_1_1FunctionSpace.html#a8f637459586d6ad3b61830242e0cbf25',1,'Feel::FunctionSpace::init()'],['../classFeel_1_1TwoSpacesMap.html#aabfd0c4468b82cf035e7a01eed1a30e9',1,'Feel::TwoSpacesMap::init()'],['../classFeel_1_1FeelModels_1_1RangeDistributionByMaterialName.html#ac312ac3e17d50f273edf5d7cc9982306',1,'Feel::FeelModels::RangeDistributionByMaterialName::init()']]],
   ['initdofmap_881',['initDofMap',['../classFeel_1_1DofTable.html#a762db74f163ee972cb1ec9335a94ad8b',1,'Feel::DofTable']]],
   ['initial_5ftheta_882',['initial_theta',['../structFeel_1_1tag_1_1initial__theta.html',1,'Feel::tag']]],
   ['initial_5ftime_883',['initial_time',['../structFeel_1_1tag_1_1initial__time.html',1,'Feel::tag']]],
