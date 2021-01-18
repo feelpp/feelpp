@@ -28,6 +28,27 @@ add_library(feelpp_contrib INTERFACE)
 add_library( Feelpp::feelpp_contrib ALIAS feelpp_contrib)
 
 message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring FMT")
+set(FETCHCONTENT_SOURCE_DIR_FMT ${CMAKE_CURRENT_SOURCE_DIR}/fmt)
+FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/feelpp/fmt.git GIT_TAG 7bdf0628b1276379886c7f6dda2cef2b3b374f0b) 
+if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
+    set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+endif()
+FetchContent_MakeAvailable(fmt)
+set_target_properties(fmt PROPERTIES OUTPUT_NAME "feelpp_fmt")
+target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_FMT )
+target_include_directories(fmt INTERFACE
+    $<BUILD_INTERFACE:${fmt_SOURCE_DIR}/include/>
+    $<INSTALL_INTERFACE:include/feelpp> )
+target_link_libraries( feelpp_contrib INTERFACE fmt )
+install(TARGETS fmt EXPORT feelpp-contrib-export-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring GFlags")
 set( FEELPP_HAS_GFLAGS 1 )
 set( FEELPP_HAS_GFLAGS 1 PARENT_SCOPE )

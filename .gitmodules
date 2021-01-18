@@ -58,3 +58,6 @@
 [submodule "feelpp/contrib/eigen"]
 	path = feelpp/contrib/eigen
 	url = https://gitlab.com/feelpp/eigen.git
+[submodule "feelpp/contrib/fmt"]
+	path = feelpp/contrib/fmt
+	url = https://github.com/feelpp/fmt.git
