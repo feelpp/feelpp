@@ -23,6 +23,8 @@
  */
 #pragma once
 //#include <boost/container_hash/hash.hpp>
+#include <fmt/color.h>
+#include <fmt/core.h>
 #include <mmg/libmmg.h>
 #include <parmmg/libparmmg.h>
 #include <variant>
@@ -54,6 +56,11 @@ constexpr int cantor_pairing( int a, int b, T&&... ts )
 {
     return cantor_pairing( cantor_pairing( a, b ), ts... );
 }
+
+enum class RemeshMode {
+    MMG=1,
+    PARMMG=2
+};
 /**
  * @brief Class that handles remeshing in sequential using mmg and parallel using parmmg
  * 
@@ -108,22 +115,35 @@ class Remesh
     /**
      * execute remesh task
      */
-    mesh_ptrtype execute()
+    mesh_ptrtype execute(bool run = true)
     {
-        if ( std::holds_alternative<MMG5_pMesh>( M_mmg_mesh ) )
+        if ( run )
         {
-            if constexpr ( dimension_v<MeshType> == 3 )
-                MMG3D_mmg3dlib( std::get<MMG5_pMesh>( M_mmg_mesh ), M_mmg_sol );
-            else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 3 )
-                MMGS_mmgslib( std::get<MMG5_pMesh>( M_mmg_mesh ), M_mmg_sol );
-            else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 2 )
-                MMG2D_mmg2dlib( std::get<MMG5_pMesh>( M_mmg_mesh ), M_mmg_sol );
-        }
-        else if ( std::holds_alternative<PMMG_pParMesh>( M_mmg_mesh ) )
-        {
-            int ier = PMMG_parmmglib_distributed( std::get<PMMG_pParMesh>( M_mmg_mesh ) );
-            if ( ier == PMMG_STRONGFAILURE )
-                throw std::logic_error( "Unable to adapt mesh in parallel." );
+            if ( std::holds_alternative<MMG5_pMesh>( M_mmg_mesh ) )
+            {
+                if constexpr ( dimension_v<MeshType> == 3 )
+                    MMG3D_mmg3dlib( std::get<MMG5_pMesh>( M_mmg_mesh ), M_mmg_sol );
+                else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 3 )
+                    MMGS_mmgslib( std::get<MMG5_pMesh>( M_mmg_mesh ), M_mmg_sol );
+                else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 2 )
+                    MMG2D_mmg2dlib( std::get<MMG5_pMesh>( M_mmg_mesh ), M_mmg_sol );
+            }
+            else if ( std::holds_alternative<PMMG_pParMesh>( M_mmg_mesh ) )
+            {
+                auto mesh = std::get<PMMG_pParMesh>( M_mmg_mesh );
+                if ( M_mesh->worldCommPtr()->localSize() > 1 )
+                {
+                    int ier = PMMG_parmmglib_distributed( mesh );
+                    if ( ier == PMMG_STRONGFAILURE )
+                        throw std::logic_error( "Unable to adapt mesh in distributed mode." );
+                }
+                else
+                {
+                    int ier = PMMG_parmmglib_centralized( mesh );
+                    if ( ier == PMMG_STRONGFAILURE )
+                        throw std::logic_error( "Unable to adapt mesh in centralized mode." );
+                }
+            }
         }
         auto r = this->mmg2Mesh();
         return r;
@@ -147,7 +167,7 @@ class Remesh
 
   private:
     std::shared_ptr<MeshType> M_mesh;
-
+    RemeshMode M_mode = RemeshMode::PARMMG;
     mmg_mesh_t M_mmg_mesh;
     MMG5_pSol M_mmg_sol;
     MMG5_pSol M_mmg_met;
@@ -173,13 +193,14 @@ Remesh<MeshType>::Remesh( std::shared_ptr<MeshType> const& mesh,
                           boost::any const& required_element_markers,
                           boost::any const& required_facet_markers )
     : M_mesh( mesh ),
+      M_mode( RemeshMode::MMG ),
       M_mmg_mesh(),
       M_mmg_sol( nullptr ),
       M_mmg_met( nullptr ),
       M_required_element_markers( required_element_markers ),
       M_required_facet_markers( required_facet_markers )
 {
-    if ( mesh->worldCommPtr()->localSize() == 1 )
+    if ( mesh->worldCommPtr()->localSize() == 1 && M_mode == RemeshMode::MMG)
     {
         MMG5_pMesh m = nullptr;
         if constexpr ( dimension_v<MeshType> == 3 )
@@ -207,6 +228,10 @@ Remesh<MeshType>::Remesh( std::shared_ptr<MeshType> const& mesh,
                            PMMG_ARG_end );
 
         M_mmg_mesh = m;
+        PMMG_Set_iparameter( std::get<PMMG_pParMesh>( M_mmg_mesh ), PMMG_IPARAM_verbose, 1 );
+        PMMG_Set_iparameter( std::get<PMMG_pParMesh>( M_mmg_mesh ), PMMG_IPARAM_mmgVerbose, 1 );
+        PMMG_Set_iparameter( std::get<PMMG_pParMesh>( M_mmg_mesh ), PMMG_IPARAM_debug, 5 );
+        //PMMG_Set_dparameter( std::get<PMMG_pParMesh>( M_mmg_mesh ), PMMG_DPARAM_hmin, 1e-2 );
     }
 
     this->mesh2Mmg();
@@ -277,23 +302,73 @@ void Remesh<MeshType>::setMetric( scalar_metric_t const& m )
             }
         }
     }
+    if ( std::holds_alternative<PMMG_pParMesh>( M_mmg_mesh ) )
+    {
+        auto mesh = std::get<PMMG_pParMesh>( M_mmg_mesh );
+        if ( M_mesh->worldComm().isMasterRank() )
+            fmt::print( " - setting metric  size: {}...", m.nDof() );
+        if ( PMMG_Set_metSize( mesh, MMG5_Vertex, m.nLocalDof(), MMG5_Scalar ) != 1 )
+        {
+            fmt::print( fg( fmt::color::crimson ) | fmt::emphasis::bold, 
+                        "Unable to allocate the metric array.\n" );
+            throw std::logic_error( "Unable to set metric size" );
+        }
+        for ( auto const& welt : M_mesh->elements() )
+        {
+            auto const& [key, elt] = boost::unwrap_ref( welt );
+            for ( auto const& ldof : m.functionSpace()->dof()->localDof( elt.id() ) )
+            {
+                size_type index = ldof.second.index();
+                uint16_type local_dof = ldof.first.localDof();
+                auto s = m( index );
+                int pos = pt_id[elt.point( local_dof ).id()];
+                if constexpr ( dimension_v<MeshType> == 3 )
+                {
+                    fmt::print( " add metric {} at pos {}.\n", s, pos );
+                    if ( PMMG_Set_scalarMet( mesh, s, pos ) != 1 )
+                    {
+                        fmt::print( fg( fmt::color::crimson ) | fmt::emphasis::bold,
+                                    "Unable to set metric {} at pos {}.\n", s, pos );
+                        throw std::logic_error( "Unable to set metric" );
+                    }
+                }
+            }
+        }
+        double* sol = new double[ m.nLocalDof() ];
+        for ( int k = 0; k < m.nLocalDof(); k++ )
+        {
+            /* Vertex by vertex */
+            if ( PMMG_Get_scalarMet( mesh, &sol[k] ) != 1 )
+            {
+                fmt::print( fg( fmt::color::crimson ) | fmt::emphasis::bold, 
+                            "Unable to get metrics {} \n", k );
+            }
+            if( sol[k] <= 0.0 )
+            {
+                fmt::print( fg( fmt::color::crimson ) | fmt::emphasis::bold,
+                            "Invalid metrics {} at {} \n", sol[k], k );
+            }
+        }
+        delete[] sol;
+    }
 }
 template <typename MeshType>
 typename Remesh<MeshType>::mmg_mesh_t
 Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
 {
-    int nVertices = m_in->numPoints();
-    int nTetrahedra = ( dimension_v<MeshType> == 3 ) ? m_in->numElements() : 0;
+    int nVertices = nelements(points(m_in));
+    int nTetrahedra = ( dimension_v<MeshType> == 3 ) ? nelements(elements(m_in)) : 0;
     int nPrisms = 0;
-    int nTriangles = ( dimension_v<MeshType> == 3 ) ? m_in->numFaces() : m_in->numElements();
+    int nTriangles = ( dimension_v<MeshType> == 3 ) ? nelements(faces(m_in)) : nelements(elements(m_in));
     int nQuadrilaterals = 0;
     int nEdges = ( dimension_v<MeshType> == 2 ) ? m_in->numFaces() : 0;
 
     if ( std::holds_alternative<MMG5_pMesh>( M_mmg_mesh ) )
     {
+        auto mesh = std::get<MMG5_pMesh>( M_mmg_mesh );
         if constexpr ( dimension_v<MeshType> == 3 )
         {
-            if ( MMG3D_Set_meshSize( std::get<MMG5_pMesh>( M_mmg_mesh ), nVertices, nTetrahedra, nPrisms, nTriangles,
+            if ( MMG3D_Set_meshSize( mesh, nVertices, nTetrahedra, nPrisms, nTriangles,
                                      nQuadrilaterals, nEdges ) != 1 )
             {
                 throw std::logic_error( "Error in MMG3D_Set_meshSize" );
@@ -301,14 +376,14 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
         }
         else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 3 )
         {
-            if ( MMGS_Set_meshSize( std::get<MMG5_pMesh>( M_mmg_mesh ), nVertices, nTriangles, nEdges ) != 1 )
+            if ( MMGS_Set_meshSize( mesh, nVertices, nTriangles, nEdges ) != 1 )
             {
                 throw std::logic_error( "Error in MMGS_Set_meshSize" );
             }
         }
         else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 2 )
         {
-            if ( MMG2D_Set_meshSize( std::get<MMG5_pMesh>( M_mmg_mesh ), nVertices, nTriangles, nQuadrilaterals, nEdges ) != 1 )
+            if ( MMG2D_Set_meshSize( mesh, nVertices, nTriangles, nQuadrilaterals, nEdges ) != 1 )
             {
                 throw std::logic_error( "Error in MMG2D_Set_meshSize" );
             }
@@ -316,8 +391,9 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
 
         pt_id.reserve( nVertices );
         int k = 1;
-        for ( auto const& [key, pt] : m_in->points() )
+        for ( auto const& wpt : points(m_in) )
         {
+            auto const& pt = boost::unwrap_ref( wpt );
             if constexpr ( dimension_v<MeshType> == 3 )
             {
                 if ( MMG3D_Set_vertex( std::get<MMG5_pMesh>( M_mmg_mesh ), pt( 0 ), pt( 1 ), pt( 2 ), pt.markerOr( 0 ).value(), k ) != 1 )
@@ -461,6 +537,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
     }
     else if ( std::holds_alternative<PMMG_pParMesh>( M_mmg_mesh ) )
     {
+        fmt::print( "nvertices: {}, nTriangles:{}, ntetra: {}", nVertices, nTriangles, nTetrahedra );
         if constexpr ( dimension_v<MeshType> == 3 )
         {
             if ( PMMG_Set_meshSize( std::get<PMMG_pParMesh>( M_mmg_mesh ), nVertices, nTetrahedra, nPrisms, nTriangles,
@@ -471,8 +548,9 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
         }
         pt_id.reserve( nVertices );
         int k = 1;
-        for ( auto const& [key, pt] : m_in->points() )
+        for ( auto const& wpt : points(m_in) )
         {
+            auto const& pt = boost::unwrap_ref( wpt );
             if constexpr ( dimension_v<MeshType> == 3 )
             {
                 if ( PMMG_Set_vertex( std::get<PMMG_pParMesh>( M_mmg_mesh ), pt( 0 ), pt( 1 ), pt( 2 ), pt.markerOr( 0 ).value(), k ) != 1 )
@@ -486,11 +564,12 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                 pt_id[pt.id()] = k++;
             }
         }
+        assert( k == nVertices + 1 );
         auto required_element_ids = m_in->markersId( M_required_element_markers );
         k = 1;
-        for ( auto const& welt : m_in->elements() )
+        for ( auto const& welt : elements(m_in) )
         {
-            auto const& [key, elt] = boost::unwrap_ref( welt );
+            auto const& elt = boost::unwrap_ref( welt );
             if constexpr ( dimension_v<MeshType> == 3 )
             {
                 if ( PMMG_Set_tetrahedron( std::get<PMMG_pParMesh>( M_mmg_mesh ),
@@ -510,12 +589,13 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                 k++;
             }
         }
+        assert(k == nTetrahedra+1);
         auto required_facet_ids = m_in->markersId( M_required_facet_markers );
 
         k = 1;
-        for ( auto const& wface : m_in->faces() )
+        for ( auto const& wface : faces(m_in) )
         {
-            auto const& [key, face] = boost::unwrap_ref( wface );
+            auto const& face = boost::unwrap_ref( wface );
             if constexpr ( dimension_v<MeshType> == 3 )
             {
 
@@ -540,6 +620,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                 k++;
             }
         }
+        assert( k == nTriangles + 1 );
     }
     return M_mmg_mesh;
 }
@@ -694,11 +775,12 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
         }
         out->setMarkerNames( M_mesh->markerNames() );
         out->updateForUse();
-        std::cout << "vertices =" << nVertices << std::endl;
-        std::cout << "tetrahedrons =" << nTetrahedra << std::endl;
-        std::cout << "triangles =" << nTriangles << std::endl;
-        std::cout << "edges =" << nEdges << std::endl;
-        std::cout << "Mesh" << out->numGlobalPoints() << " " << out->numGlobalElements() << " " << out->numGlobalFaces() << std::endl;
+        std::cout << "mmg2Mesh statistics" << std::endl;
+        std::cout << " - vertices =" << nVertices << std::endl;
+        std::cout << " - tetrahedrons =" << nTetrahedra << std::endl;
+        std::cout << " - triangles =" << nTriangles << std::endl;
+        std::cout << " - edges =" << nEdges << std::endl;
+        std::cout << " - Mesh" << out->numGlobalPoints() << " " << out->numGlobalElements() << " " << out->numGlobalFaces() << std::endl;
 
         for ( auto marker : out->markerNames() )
         {
@@ -707,7 +789,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
             if ( data[1] == out->dimension() )
             {
                 size_type nelts = nelements( markedelements( out, name ), true );
-                std::cout << "      number of marked elements " << name << " with tag " << data[0] << " : " << nelts << std::endl;
+                std::cout << "      * number of marked elements " << name << " with tag " << data[0] << " : " << nelts << std::endl;
             }
         }
         for ( auto marker : out->markerNames() )
@@ -718,7 +800,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
             if ( data[1] == out->dimension() - 1 )
             {
                 size_type nelts = nelements( markedfaces( out, name ), true );
-                std::cout << "      number of marked faces " << name << " with tag " << data[0] << " : " << nelts << std::endl;
+                std::cout << "      * number of marked faces " << name << " with tag " << data[0] << " : " << nelts << std::endl;
             }
         }
     }
@@ -857,12 +939,13 @@ void Remesh<MeshType>::setParameters()
 #endif
     if ( std::holds_alternative<PMMG_pParMesh>( M_mmg_mesh ) )
     {
+#if 0        
         /* Set number of iterations */
-        if ( !PMMG_Set_iparameter( std::get<PMMG_pParMesh>( M_mmg_mesh ), PMMG_IPARAM_niter, 0 ) )
+        if ( !PMMG_Set_iparameter( std::get<PMMG_pParMesh>( M_mmg_mesh ), PMMG_IPARAM_niter, 1 ) )
         {
             throw std::logic_error( "Unable to set the number of iteration of the adaptation process." );
         }
-
+#endif
         /* Don't remesh the surface */
         if ( !PMMG_Set_iparameter( std::get<PMMG_pParMesh>( M_mmg_mesh ), PMMG_IPARAM_nosurf, 1 ) )
         {
@@ -888,6 +971,7 @@ void Remesh<MeshType>::setCommunicatorAPI()
         }
         auto [ifaces_beg, ifaces_end, ifaces] = M_mesh->interProcessFaces();
         std::map<int, int> neighbor_ent;
+        std::map<std::pair<int,int>, int> ids_other;
         std::vector<int> loc;
         for ( auto it = ifaces_beg; it != ifaces_end; ++it )
         {
@@ -900,14 +984,16 @@ void Remesh<MeshType>::setCommunicatorAPI()
             if ( !neighbor_ent.count( eltOffProc.processId() ) )
                 neighbor_ent[eltOffProc.processId()] = 0;
             ++neighbor_ent[eltOffProc.processId()];
+            ids_other[std::pair{ faceip.id(), eltOffProc.processId() }] = faceip.idInOthersPartitions( eltOffProc.processId() );
         }
         /* Set the number of interfaces */
         if ( !PMMG_Set_numberOfFaceCommunicators( std::get<PMMG_pParMesh>( M_mmg_mesh ), neighbor_ent.size() ) )
         {
             throw std::logic_error( "Unable to set the number of local parallel faces." );
         }
-        LOG( INFO ) << "number of interfaces: " << neighbor_ent.size();
+        LOG(INFO) << "number of interfaces: " << neighbor_ent.size() << "\n";
         int lcomm = 0;
+        int current_pid = M_mesh->worldComm().localRank();
         for ( auto [pid, sz] : neighbor_ent )
         {
             LOG( INFO ) << "setting ParMmg communicator with " << pid << " (" << sz << " shared faces)" << std::endl;
@@ -919,20 +1005,59 @@ void Remesh<MeshType>::setCommunicatorAPI()
 #if 1
             /* Set local and global index for each entity on the interface */
             std::vector<int> local( sz );
-            std::vector<int> global( sz );
+            std::vector<std::pair<int,int>> local_sorted( sz );
+            std::vector<int> local_wo_ren( sz );
+            std::vector<int> global( sz, 0 );
+            std::vector<int> other( sz );
             int fid = 0;
             for ( auto const& wf : interprocessfaces( M_mesh, pid ) )
             {
                 auto const& f = boost::unwrap_ref( wf );
+                // if current  pid is greater than pid then sort the local faces with respect to the id
+                // in the partition pid so that the faces are set in the same order
+                if ( current_pid < pid )
+                    local_sorted[fid] = { f.id(), ids_other[std::pair{ f.id(), pid }] };
+                else
+                    local_sorted[fid] = { ids_other[std::pair{ f.id(), pid }], f.id() };
+#if 0
                 local[fid] = face_id[f.id()].first;
-                global[fid] = face_id[f.id()].second;
+               
+                global[fid] = 0;//face_id[f.id()].second;
+                
+#endif
+                local_wo_ren[fid] = f.id();
+                other[fid] = ids_other[std::pair{ f.id(), pid }];
                 ++fid;
             }
+            LOG( INFO ) << "before local_sorted(" << pid << "," << sz << ") : " << local_sorted;
+            std::sort( local_sorted.begin(), local_sorted.end() );
+            LOG( INFO ) << "after local_sorted(" << pid << "," << sz << ") : " << local_sorted;
+            int i = 0;
+            for( auto [id1, id2]: local_sorted )
+            {
+                int id = ( current_pid < pid )?id1:id2;
+                local[i] = face_id[id].first;
+                for ( auto it = ifaces_beg; it != ifaces_end; ++it )
+                {
+                    auto const& faceip = boost::unwrap_ref( *it );                
+                    if ( faceip.id() == id )
+                    {
+                        LOG(INFO) << faceip;
+                    }
+                }
+                ++i;
+            }
+
             LOG( INFO ) << "local(" << pid << "," << sz << ") : " << local;
-            LOG( INFO ) << "global(" << pid << "," << sz << ") : " << global;
+            
+            LOG( INFO ) << "local_wo_ren(" << pid << "," << sz << ") : " << local_wo_ren;
+            LOG( INFO ) << "other(" << pid << "," << sz << ") : " << other;
+
+            // we have sorted the faces so that we don't have to provide a global index
             if ( !PMMG_Set_ithFaceCommunicator_faces( std::get<PMMG_pParMesh>( M_mmg_mesh ), lcomm,
                                                       local.data(),
-                                                      global.data(), 1 ) )
+                                                      global.data(), 
+                                                      0 ) ) 
             {
                 throw std::logic_error( "Unable to set interprocess face data." );
             }
