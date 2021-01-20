@@ -493,6 +493,7 @@ if ( FEELPP_ENABLE_MATPLOT )
   endif()
 endif( FEELPP_ENABLE_MATPLOT )
 
+option( FEELPP_PARMMG_DOWNLOAD_METIS "Download Metis for PARMMG" OFF )
 option( FEELPP_ENABLE_MMG "Enable MMG/PARMMG" ON )
 option( FEELPP_PARMMG_DOWNLOAD_METIS "Disable metis dowload" OFF )
 if ( FEELPP_ENABLE_MMG )
