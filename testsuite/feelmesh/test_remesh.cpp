@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( testnD, T, dim_types )
 {
     using namespace Feel;
     
-    if ( Environment::isParallel() && T::first_type::value == 2 )
+    if ( Environment::isParallel() ) //&& T::first_type::value == 2 )
         return;
 
     typedef Mesh<Simplex<T::first_type::value,1,T::second_type::value>> mesh_type;
