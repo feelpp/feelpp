@@ -97,7 +97,7 @@ class TestRemesh
     using mesh_ptr_t = std::shared_ptr< mesh_t >;
     
     TestRemesh() = default;
-    mesh_ptr_t setMesh( std::string const& fname = "", std::string const& e = "", std::string const& f = "" );
+    mesh_ptr_t setMesh( std::string const& fname = "", std::string const& e = "", std::string const& f = "", std::vector<std::string> const& f_c = {} );
     auto createMetricSpace( mesh_ptr_t m )
     {
         return Pch<1>( m );
@@ -119,12 +119,12 @@ class TestRemesh
     {
         if constexpr ( real_dim == 2 )
         {
-            return std::vector<std::pair<std::string, std::string>>{ { "10", "{10,11}" }, { "0.3*x:x", "{0.3*x,0.4*x}:x" }, { "0.3*x+0.4*y:x:y", "{0.3*x+0.4*y,0.4*x+5*y}:x:y" } };
+            return std::vector<std::pair<std::string, std::string>>{ { "10", "{10,11}" }, { "0.3*x:x", "{0.3*x,0.4*x}:x" }, { "0.3*x+0.4*y:x:y", "{0.3*x+0.4*y,0.4*x+5*y}:x:y" }, { "0.3*x+0.4*y+x*x+2*y*y:x:y", "{0.3*x+0.4*y+x*x+2*y*y,0.4*x+5*y+x*x+2*y*y}:x:y" } };
         }
         else if constexpr ( real_dim == 3 )
         {
             //clang-format off
-            return std::vector<std::pair<std::string, std::string>>{ { "10", "{10,11,12}" }, { "0.3*x:x", "{0.3*x,0.4*x,0.5*x}:x" }, { "0.3*x+0.4*y:x:y", "{0.3*x+0.4*y,0.4*x+5*y,0.4*x+5*y}:x:y" }, { "0.3*x+0.4*y:x:y", "{0.3*x+0.4*y,0.4*x+5*y,0.4*x+5*y}:x:y" }, { "0.3*x+0.4*y+10*z:x:y:z", "{0.3*x+0.4*y+0.5*z,0.4*x+5*y+6*z,0.4*x+5*y+7*z}:x:y:z" } };
+            return std::vector<std::pair<std::string, std::string>>{ { "10", "{10,11,12}" }, { "0.3*x:x", "{0.3*x,0.4*x,0.5*x}:x" }, { "0.3*x+0.4*y:x:y", "{0.3*x+0.4*y,0.4*x+5*y,0.4*x+5*y}:x:y" }, { "0.3*x+0.4*y:x:y", "{0.3*x+0.4*y,0.4*x+5*y,0.4*x+5*y}:x:y" }, { "0.3*x+0.4*y+10*z:x:y:z", "{0.3*x+0.4*y+0.5*z,0.4*x+5*y+6*z,0.4*x+5*y+7*z}:x:y:z" }, { "0.3*x+0.4*y+10*z+x*x+y*y-2*z*z:x:y:z", "{0.3*x+0.4*y+0.5*z+x*x+y*y-2*z*z,0.4*x+5*y+6*z+x*x+y*y-2*z*z,0.4*x+5*y+7*z+x*x+y*y-2*z*z}:x:y:z" } };
             //clang-format on
         }
     }
@@ -132,10 +132,11 @@ class TestRemesh
     mesh_ptr_t mesh_;
     std::string required_elements_str_;
     std::string required_facets_str_;
+    std::vector<std::string> check_facets_;
 };
 template <int Dim, int RDim>
 typename TestRemesh<Dim, RDim>::mesh_ptr_t 
-TestRemesh<Dim, RDim>::setMesh( std::string const& filename, std::string const& r_e, std::string const& r_f )
+TestRemesh<Dim, RDim>::setMesh( std::string const& filename, std::string const& r_e, std::string const& r_f, std::vector<std::string> const& r_c )
 {
     auto create_mesh = [&]() {
         if constexpr ( topo_dim == 2 && real_dim == 2 )
@@ -162,6 +163,7 @@ TestRemesh<Dim, RDim>::setMesh( std::string const& filename, std::string const& 
     mesh_ = create_mesh();
     required_elements_str_=r_e;
     required_facets_str_ = r_f;
+    check_facets_ = r_c;
     dump( mesh_ );
     return mesh_;
 }
@@ -239,6 +241,17 @@ TestRemesh<Dim, RDim>::execute( int niter )
                 BOOST_MESSAGE( fmt::format( "check element set measure {} initial: {} remesh: {} error: {}", required_facets_str_, measinit, measremesh, measinit - measremesh ) );
             BOOST_CHECK_SMALL( measinit - measremesh, 1e-10 );
         }
+        if ( !check_facets_.empty() )
+        {
+            for( auto m : check_facets_ )
+            {
+                double measinit = measure( _range = markedfaces( Vh->mesh(), m ) );
+                double measremesh = measure( _range = markedfaces( Vhr->mesh(), m ) );
+                if ( Environment::isMasterRank() )
+                    BOOST_MESSAGE( fmt::format( "check element set measure {} initial: {} remesh: {} error: {}", m, measinit, measremesh, measinit - measremesh ) );
+                BOOST_CHECK_SMALL( measinit - measremesh, 1e-10 );
+            }
+        }
 
         ein->save();
         eout->save();
@@ -308,7 +321,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( testnDMatTwo, T, dim_types )
     }
     else
     {
-        r.setMesh( "$datadir/geo/cube_twoMaterials.geo", "MatTwo", "BdryFixedDiscr" );
+        // r.setMesh( "$datadir/geo/cube_twoMaterials.geo", "MatTwo", "BdryFixedDiscr" );
+        //r.setMesh( "$datadir/geo/cube_twoMaterials.geo", "MatTwo", "", { "BdryFixedDiscr"} );
+        r.setMesh( "$datadir/geo/cube_twoMaterials.geo", "MatTwo");
     }
     r.execute( 1 );
 }
