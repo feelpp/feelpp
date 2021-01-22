@@ -30,6 +30,7 @@
 #include <mmg/libmmg.h>
 #include <parmmg/libparmmg.h>
 #include <variant>
+#include <feel/feelmesh/concatenate.hpp>
 
 namespace Feel
 {
@@ -359,9 +360,9 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
     int nVertices = nelements(points(m_in));
     int nTetrahedra = ( dimension_v<MeshType> == 3 ) ? nelements(elements(m_in)) : 0;
     int nPrisms = 0;
-    
+    auto boundary_and_marked_faces = concatenate( boundaryfaces( m_in ), markedfaces( m_in, M_required_facet_markers ) );
     int nTriangles = ( dimension_v<MeshType> == 3 ) ? ( (m_in->worldCommPtr()->localSize() > 1)?
-        nelements(boundaryfaces(m_in))+nelements(interprocessfaces(m_in)):m_in->numFaces() ) : nelements(elements(m_in));
+        nelements(boundary_and_marked_faces)+nelements(interprocessfaces(m_in)):m_in->numFaces() ) : nelements(elements(m_in));
     int nQuadrilaterals = 0;
     int nEdges = ( dimension_v<MeshType> == 2 ) ? m_in->numFaces() : 0;
     
@@ -597,7 +598,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
         auto required_facet_ids = m_in->markersId( M_required_facet_markers );
 
         k = 1;
-        for ( auto const& wface : boundaryfaces(m_in) )
+        for ( auto const& wface : boundary_and_marked_faces )
         {
             auto const& face = boost::unwrap_ref( wface );
             if constexpr ( dimension_v<MeshType> == 3 )
