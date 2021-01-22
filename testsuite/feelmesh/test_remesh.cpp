@@ -304,11 +304,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( testnDMatTwo, T, dim_types )
     TestRemesh<T::first_type::value, T::second_type::value> r;
     if constexpr ( T::first_type::value == 2 )
     {
-        r.setMesh( "$datadir/geo/square_squareHole.geo", "MatTwo","BdryFixedDiscr" );
+        r.setMesh( "$datadir/data/geo/square_twoMaterials.geo", "MatTwo", "BdryFixedDiscr" );
     }
     else
     {
-        r.setMesh( "$datadir/geo/cube_cubeHole.geo", "MatTwo","BdryFixedDiscr" );
+        r.setMesh( "$datadir/geo/cube_twoMaterials.geo", "MatTwo", "BdryFixedDiscr" );
     }
     r.execute( 1 );
 }
