@@ -119,11 +119,13 @@ class TestRemesh
     {
         if constexpr ( real_dim == 2 )
         {
-            return std::vector<std::pair<std::string, std::string>>{ { "10", "{10,11}" }, { "0.3*x:x", "{0.3*x,0.4*x}:x" } };
+            return std::vector<std::pair<std::string, std::string>>{ { "10", "{10,11}" }, { "0.3*x:x", "{0.3*x,0.4*x}:x" }, { "0.3*x+0.4*y:x:y", "{0.3*x+0.4*y,0.4*x+5*y}:x:y" } };
         }
         else if constexpr ( real_dim == 3 )
         {
-            return std::vector<std::pair<std::string, std::string>>{ { "10", "{10,11,12}" }, { "0.3*x:x", "{0.3*x,0.4*x,0.5*x}:x" } };
+            //clang-format off
+            return std::vector<std::pair<std::string, std::string>>{ { "10", "{10,11,12}" }, { "0.3*x:x", "{0.3*x,0.4*x,0.5*x}:x" }, { "0.3*x+0.4*y:x:y", "{0.3*x+0.4*y,0.4*x+5*y,0.4*x+5*y}:x:y" }, { "0.3*x+0.4*y:x:y", "{0.3*x+0.4*y,0.4*x+5*y,0.4*x+5*y}:x:y" }, { "0.3*x+0.4*y+10*z:x:y:z", "{0.3*x+0.4*y+0.5*z,0.4*x+5*y+6*z,0.4*x+5*y+7*z}:x:y:z" } };
+            //clang-format on
         }
     }
     int execute( int loop = 1 );
@@ -220,6 +222,22 @@ TestRemesh<Dim, RDim>::execute( int niter )
             if ( Environment::isMasterRank() )
                 BOOST_MESSAGE( fmt::format( "L2 error norm {}: {}", f.second, errw ) );
             BOOST_CHECK_SMALL( errw, 1e-10 );
+        }
+        if ( !required_elements_str_.empty() )
+        {
+            double measinit = measure( _range = markedelements( Vh->mesh(), required_elements_str_ ) );
+            double measremesh = measure( _range = markedelements( Vhr->mesh(), required_elements_str_ ) );
+            if ( Environment::isMasterRank() )
+                BOOST_MESSAGE( fmt::format( "check element set measure {} initial: {} remesh: {} error: {}", required_elements_str_, measinit, measremesh, measinit - measremesh ) );
+            BOOST_CHECK_SMALL( measinit-measremesh, 1e-10 );
+        }
+        if ( !required_facets_str_.empty() )
+        {
+            double measinit = measure( _range = markedfaces( Vh->mesh(), required_facets_str_ ) );
+            double measremesh = measure( _range = markedfaces( Vhr->mesh(), required_facets_str_ ) );
+            if ( Environment::isMasterRank() )
+                BOOST_MESSAGE( fmt::format( "check element set measure {} initial: {} remesh: {} error: {}", required_facets_str_, measinit, measremesh, measinit - measremesh ) );
+            BOOST_CHECK_SMALL( measinit - measremesh, 1e-10 );
         }
 
         ein->save();
