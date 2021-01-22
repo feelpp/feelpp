@@ -2032,7 +2032,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
    boost::mpi::timer mytimer;
    this->worldCommFusion().globalComm().barrier();
    if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
-       std::cout << " start while " << std::endl;
+       LOG(INFO) << " start while " << std::endl;
 
    size_type nbLocalisationFail=1;
    while(!FinishMPIsearch)
@@ -2046,7 +2046,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            //std::cout <<  "proc " << this->worldCommFusion().globalRank() <<  " pointsSearched.size() " << pointsSearched.size() << std::endl;
            double t1 = mytimer.elapsed();
            if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
-               std::cout << "finish-step1 in " << (boost::format("%1%") % t1).str() << std::endl;
+               LOG(INFO) << "finish-step1 in " << (boost::format("%1%") % t1).str() << std::endl;
            //this->worldCommFusion().globalComm().barrier();
            mytimer.restart();
 
@@ -2064,7 +2064,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            //std::cout <<  "proc " << this->worldCommFusion().globalRank() <<  " memory_localisationFail.size() " << memory_localisationFail.size() << std::endl;
            double t2 = mytimer.elapsed();
            if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
-               std::cout << "finish-step2 in " << (boost::format("%1%") % t2).str() << std::endl;
+               LOG(INFO) << "finish-step2 in " << (boost::format("%1%") % t2).str() << std::endl;
            //this->worldCommFusion().globalComm().barrier();
            mytimer.restart();
 
@@ -2095,11 +2095,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
            double t3 = mytimer.elapsed();
            if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
-               std::cout << "finish-step3 in " << (boost::format("%1%") % t3).str() << std::endl;
+               LOG(INFO) << "finish-step3 in " << (boost::format("%1%") % t3).str() << std::endl;
            mytimer.restart();
 
            if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
-               std::cout << " it " << counterMPIsearch << "  nbLocalisationFail " << nbLocalisationFail << std::endl;
+               LOG(INFO) << " it " << counterMPIsearch << "  nbLocalisationFail " << nbLocalisationFail << std::endl;
 
            //std::cout <<  "proc " << this->worldCommFusion().globalRank()
            //          << " et " <<nbLocalisationFail << std::endl;
@@ -2111,7 +2111,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
    if ( doExtrapolationAtStart && nbLocalisationFail>0 )
        {
-           std::cout << " Start Extrapolation" << std::endl;
+           LOG(INFO) << " Start Extrapolation" << std::endl;
            std::vector<std::set<size_type> > dof_searchWithProcExtrap(this->dualImageSpace()->nLocalDof());
            //locTool->setExtrapolation(true);
            uint16_type nMPIsearchExtrap=5;
