@@ -33,7 +33,7 @@
 #include <feel/feelpython/pyexpr.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/print.hpp>
-#include "cg_laplacian.hpp"
+#include <feel/feelpde/cg_laplacian.hpp>
 
 
 namespace Feel 
