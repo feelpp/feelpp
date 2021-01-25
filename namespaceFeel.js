@@ -180,6 +180,9 @@ var namespaceFeel =
       [ "MpfrClass", "classFeel_1_1mpfr_1_1MpfrClass.html", "classFeel_1_1mpfr_1_1MpfrClass" ],
       [ "RefCounter", "classFeel_1_1mpfr_1_1RefCounter.html", "classFeel_1_1mpfr_1_1RefCounter" ]
     ] ],
+    [ "Printer", null, [
+      [ "OutputText", "classFeel_1_1Printer_1_1OutputText.html", "classFeel_1_1Printer_1_1OutputText" ]
+    ] ],
     [ "Private", null, [
       [ "isNullFinder", "structFeel_1_1Private_1_1isNullFinder.html", "structFeel_1_1Private_1_1isNullFinder" ],
       [ "isNullFinder< char * >", "structFeel_1_1Private_1_1isNullFinder_3_01char_01_5_01_4.html", "structFeel_1_1Private_1_1isNullFinder_3_01char_01_5_01_4" ],
@@ -187,6 +190,10 @@ var namespaceFeel =
     ] ],
     [ "rate", null, [
       [ "hp", "classFeel_1_1rate_1_1hp.html", "classFeel_1_1rate_1_1hp" ]
+    ] ],
+    [ "TableImpl", null, [
+      [ "Cell", "classFeel_1_1TableImpl_1_1Cell.html", "classFeel_1_1TableImpl_1_1Cell" ],
+      [ "Format", "structFeel_1_1TableImpl_1_1Format.html", "structFeel_1_1TableImpl_1_1Format" ]
     ] ],
     [ "tag", null, [
       [ "about", "structFeel_1_1tag_1_1about.html", "structFeel_1_1tag_1_1about" ],
@@ -734,8 +741,14 @@ var namespaceFeel =
     [ "SubMeshData", "classFeel_1_1SubMeshData.html", "classFeel_1_1SubMeshData" ],
     [ "Surface", "classFeel_1_1Surface.html", "classFeel_1_1Surface" ],
     [ "Symbols", "classFeel_1_1Symbols.html", "classFeel_1_1Symbols" ],
+    [ "Table", "classFeel_1_1Table.html", "classFeel_1_1Table" ],
     [ "TabulateInformationProperties", "classFeel_1_1TabulateInformationProperties.html", "classFeel_1_1TabulateInformationProperties" ],
+    [ "TabulateInformations", "classFeel_1_1TabulateInformations.html", "classFeel_1_1TabulateInformations" ],
+    [ "TabulateInformationsSections", "classFeel_1_1TabulateInformationsSections.html", "classFeel_1_1TabulateInformationsSections" ],
+    [ "TabulateInformationsTable", "classFeel_1_1TabulateInformationsTable.html", "classFeel_1_1TabulateInformationsTable" ],
+    [ "TabulateInformationsTableAlternative", "classFeel_1_1TabulateInformationsTableAlternative.html", "classFeel_1_1TabulateInformationsTableAlternative" ],
     [ "Tag", "structFeel_1_1Tag.html", null ],
+    [ "TerminalProperties", "classFeel_1_1TerminalProperties.html", "classFeel_1_1TerminalProperties" ],
     [ "Tetrahedron", "structFeel_1_1Tetrahedron.html", null ],
     [ "TimerData", "classFeel_1_1TimerData.html", "classFeel_1_1TimerData" ],
     [ "TimerMap", "classFeel_1_1TimerMap.html", "classFeel_1_1TimerMap" ],

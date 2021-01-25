@@ -1,5 +1,8 @@
 var NAVTREEINDEX8 =
 {
+"classFeel_1_1FeelModels_1_1ModelAlgebraic.html#acfb9be0d3824553e3d70403a7c78d833":[6,1,1,4,22,47],
+"classFeel_1_1FeelModels_1_1ModelAlgebraic.html#ad0029c8913b5067278ebd9ba23a82b29":[6,1,1,4,22,28],
+"classFeel_1_1FeelModels_1_1ModelAlgebraic.html#ad0d8744dab29e1088dc954a49dd972dd":[6,1,1,4,22,23],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic.html#ad4ba98e4e14e60cdde10a2d3d46d88f4":[6,1,1,4,22,20],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic.html#ad98e7ffaa4e1e8feab85cd5383ca3119":[6,1,1,4,22,17],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic.html#ada66ead2f32edab93f1dc70b94817a71":[6,1,1,4,22,55],
@@ -246,8 +249,5 @@ var NAVTREEINDEX8 =
 "classFeel_1_1FeelModels_1_1ModelMeasuresQuantity.html#a8f9925f3070d5edd541f861e7412b1a0":[6,1,1,4,42,3],
 "classFeel_1_1FeelModels_1_1ModelMeasuresQuantity.html#aa1bbca83a2c4bd53f01d4e2da5311207":[6,1,1,4,42,4],
 "classFeel_1_1FeelModels_1_1ModelMeasuresQuantity.html#aae68690af870cc1582318398d49e714d":[6,1,1,4,42,6],
-"classFeel_1_1FeelModels_1_1ModelMeasuresQuantity.html#ab2999b4d81a71505f3408825ad3592a0":[6,1,1,4,42,0],
-"classFeel_1_1FeelModels_1_1ModelMeasuresQuantity.html#ade39834158f91fcc66d4f529b56b9acf":[6,1,1,4,42,1],
-"classFeel_1_1FeelModels_1_1ModelMeasuresQuantity1.html":[6,1,1,4,43],
-"classFeel_1_1FeelModels_1_1ModelMeasuresQuantity1.html#a22a9ed097a5bb5d48c54bc8b60fa4612":[6,1,1,4,43,11]
+"classFeel_1_1FeelModels_1_1ModelMeasuresQuantity.html#ab2999b4d81a71505f3408825ad3592a0":[6,1,1,4,42,0]
 };

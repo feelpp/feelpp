@@ -18,6 +18,9 @@ var annotated =
       [ "tuple_size<::nlohmann::detail::iteration_proxy_value< IteratorType > >", "classstd_1_1tuple__size_3_1_1nlohmann_1_1detail_1_1iteration__proxy__value_3_01IteratorType_01_4_01_4.html", null ]
     ] ],
     [ "termcolor", "namespacetermcolor.html", null ],
+    [ "utility", null, [
+      [ "centre", "structutility_1_1centre.html", "structutility_1_1centre" ]
+    ] ],
     [ "B1", "classB1.html", null ],
     [ "bases", "structbases.html", "structbases" ],
     [ "BinaryType", "classBinaryType.html", null ],

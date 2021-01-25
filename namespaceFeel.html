@@ -726,9 +726,26 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Symbols.html">Symbols</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html">Table</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1TabulateInformationProperties.html">TabulateInformationProperties</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1TabulateInformations.html">TabulateInformations</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">base class that describe informations by tabulate/section design  <a href="classFeel_1_1TabulateInformations.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1TabulateInformationsSections.html">TabulateInformationsSections</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">describe informations by section  <a href="classFeel_1_1TabulateInformationsSections.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1TabulateInformationsTable.html">TabulateInformationsTable</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">describe informations in table  <a href="classFeel_1_1TabulateInformationsTable.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1TabulateInformationsTableAlternative.html">TabulateInformationsTableAlternative</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">describe informations in table  <a href="classFeel_1_1TabulateInformationsTableAlternative.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1Tag.html">Tag</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1TerminalProperties.html">TerminalProperties</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">describe terminal properties if available : width, height  <a href="classFeel_1_1TerminalProperties.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1Tetrahedron.html">Tetrahedron</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1492,6 +1509,13 @@ template&lt;typename IteratorRangeT &gt; </td></tr>
 template&lt;typename MeshSupportType , std::enable_if_t&lt; std::is_base_of_v&lt; MeshSupportBase, unwrap_ptr_t&lt; MeshSupportType &gt;&gt;, int &gt;  = 0&gt; </td></tr>
 <tr class="memitem:ae738a0c6a98549e30df5cc2f69b5e651"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>support_mesh_t</b> = typename unwrap_ptr_t&lt; MeshSupportType &gt;::<a class="el" href="structFeel_1_1mesh__type.html">mesh_type</a></td></tr>
 <tr class="separator:ae738a0c6a98549e30df5cc2f69b5e651"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35847c2dabf7d1c135dc0c366f041df5"><td class="memItemLeft" align="right" valign="top"><a id="a35847c2dabf7d1c135dc0c366f041df5"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>tabulate_informations_ptr_t</b> = typename TabulateInformations::self_ptrtype</td></tr>
+<tr class="separator:a35847c2dabf7d1c135dc0c366f041df5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c0cb9d439901c645259639155f4e94f"><td class="memItemLeft" align="right" valign="top"><a id="a0c0cb9d439901c645259639155f4e94f"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a0c0cb9d439901c645259639155f4e94f">tabulate_informations_t</a> = <a class="el" href="classFeel_1_1TabulateInformations.html">TabulateInformations</a></td></tr>
+<tr class="memdesc:a0c0cb9d439901c645259639155f4e94f"><td class="mdescLeft">&#160;</td><td class="mdescRight">types <br /></td></tr>
+<tr class="separator:a0c0cb9d439901c645259639155f4e94f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4f9fa85fe40871fb5b813fcc4734c9a3"><td class="memItemLeft" align="right" valign="top">
 using&#160;</td><td class="memItemRight" valign="bottom"><b>tensor2symm_false</b> = std::integral_constant&lt; <a class="el" href="classbool.html">bool</a>, false &gt;</td></tr>
 <tr class="separator:ga4f9fa85fe40871fb5b813fcc4734c9a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2247,9 +2271,6 @@ template&lt;typename X1 , typename X2 &gt; </td></tr>
 <tr class="memitem:ab045c366ff0ef1d8a171ce2beef132ef"><td class="memItemLeft" align="right" valign="top"><a id="ab045c366ff0ef1d8a171ce2beef132ef"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>freeargv</b> (char **<a class="el" href="classboost_1_1fusion_1_1vector.html">vector</a>)</td></tr>
 <tr class="separator:ab045c366ff0ef1d8a171ce2beef132ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af69bb8555281085280b03ef6ebb66cb7"><td class="memItemLeft" align="right" valign="top"><a id="af69bb8555281085280b03ef6ebb66cb7"></a>
-std::pair&lt; <a class="el" href="classint.html">int</a>, <a class="el" href="classint.html">int</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_terminal_size</b> ()</td></tr>
-<tr class="separator:af69bb8555281085280b03ef6ebb66cb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga94ebd5aca3f55c90213198cee1435566"><td class="memTemplParams" colspan="2">
 template&lt;typename BareItem &gt; </td></tr>
 <tr class="memitem:ga94ebd5aca3f55c90213198cee1435566"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>getId</b> (std::pair&lt; <a class="el" href="classBareItem.html">BareItem</a>, <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> &gt; const &amp;i)</td></tr>
@@ -2772,6 +2793,25 @@ template&lt;uint16_type Dim, typename GEOSHAPE , typename T , typename IndexT , 
 template&lt;int NC, typename SizeT  = uint32_type&gt; </td></tr>
 <tr class="memitem:a602d427ba52252d850d56bc69fca91fa"><td class="memTemplItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>operator&lt;&lt;</b> (std::ostream &amp;__os, <a class="el" href="classFeel_1_1LocalDof.html">LocalDof</a>&lt; NC, SizeT &gt; const &amp;__dof)</td></tr>
 <tr class="separator:a602d427ba52252d850d56bc69fca91fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e42843f5d7c0f5b55b93249039311d8"><td class="memItemLeft" align="right" valign="top"><a id="a6e42843f5d7c0f5b55b93249039311d8"></a>
+std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator&lt;&lt;</b> (std::ostream &amp;o, <a class="el" href="classFeel_1_1Printer_1_1OutputText.html">Printer::OutputText</a> const &amp;cb)</td></tr>
+<tr class="separator:a6e42843f5d7c0f5b55b93249039311d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa728db698601e18c789cb3d435f773b2"><td class="memItemLeft" align="right" valign="top"><a id="aa728db698601e18c789cb3d435f773b2"></a>
+std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator&lt;&lt;</b> (std::ostream &amp;o, <a class="el" href="classFeel_1_1Table.html">Table</a> const &amp;c)</td></tr>
+<tr class="separator:aa728db698601e18c789cb3d435f773b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af144a3fc7f46fb7a947f526d9dfd19c8"><td class="memItemLeft" align="right" valign="top"><a id="af144a3fc7f46fb7a947f526d9dfd19c8"></a>
+std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator&lt;&lt;</b> (std::ostream &amp;o, <a class="el" href="classFeel_1_1TableImpl_1_1Cell.html">TableImpl::Cell</a> const &amp;c)</td></tr>
+<tr class="separator:af144a3fc7f46fb7a947f526d9dfd19c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68bd689be2da307c0c7cafc4570c255d"><td class="memItemLeft" align="right" valign="top"><a id="a68bd689be2da307c0c7cafc4570c255d"></a>
+std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a68bd689be2da307c0c7cafc4570c255d">operator&lt;&lt;</a> (std::ostream &amp;o, <a class="el" href="classFeel_1_1TabulateInformations.html">TabulateInformations</a> const  &amp;ti)</td></tr>
+<tr class="memdesc:a68bd689be2da307c0c7cafc4570c255d"><td class="mdescLeft">&#160;</td><td class="mdescRight">ostream operator <br /></td></tr>
+<tr class="separator:a68bd689be2da307c0c7cafc4570c255d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af0186a2c6530158f3ee99258c973cf31"><td class="memItemLeft" align="right" valign="top"><a id="af0186a2c6530158f3ee99258c973cf31"></a>
+std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator&lt;&lt;</b> (std::ostream &amp;o, <a class="el" href="structFeel_1_1TabulateInformations_1_1ExporterAscii.html">TabulateInformations::ExporterAscii</a> const &amp;ea)</td></tr>
+<tr class="separator:af0186a2c6530158f3ee99258c973cf31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad16383ea2959fb1ada43484daf410618"><td class="memItemLeft" align="right" valign="top"><a id="ad16383ea2959fb1ada43484daf410618"></a>
+std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator&lt;&lt;</b> (std::ostream &amp;o, <a class="el" href="structFeel_1_1TabulateInformations_1_1ExporterAsciiDoc.html">TabulateInformations::ExporterAsciiDoc</a> const &amp;ead)</td></tr>
+<tr class="separator:ad16383ea2959fb1ada43484daf410618"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7b467de013f75f6900cd3ff1ec1d362"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#ae7b467de013f75f6900cd3ff1ec1d362">operator&lt;&lt;</a> (std::ostream &amp;os, <a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const  &amp;about)</td></tr>
 <tr class="memdesc:ae7b467de013f75f6900cd3ff1ec1d362"><td class="mdescLeft">&#160;</td><td class="mdescRight">outpout stream an <a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a> structure  <a href="namespaceFeel.html#ae7b467de013f75f6900cd3ff1ec1d362">More...</a><br /></td></tr>
 <tr class="separator:ae7b467de013f75f6900cd3ff1ec1d362"><td class="memSeparator" colspan="2">&#160;</td></tr>
