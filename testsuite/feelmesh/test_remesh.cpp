@@ -36,6 +36,7 @@
 #include <feel/feeldiscr/createsubmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmesh/remesh.hpp>
+#include <feel/feelpde/cg_laplacian.hpp>
 #include <feel/feelmesh/dump.hpp>
 
 using namespace Feel;
@@ -171,14 +172,16 @@ template <int Dim, int RDim>
 int
 TestRemesh<Dim, RDim>::execute( int niter )
 {
-    for( int iter: ranges::views::ints( 0, niter ) )
+    std::vector<std::tuple<int,std::string>> iters{ {0,"0.2"}, {1,"0.1"}, {2,"0.05"} };
+    for( auto [iter,metric]: iters) //ranges::views::ints( 0, niter ) )
     {
         auto Vh = createSpace<scalar,2>( mesh_ );
         auto Wh = createSpace<vectorial,2>( mesh_ );
         
         auto Mh = createMetricSpace( mesh_ );
         auto met = Mh->element();
-        met.on( _range = elements( mesh_ ), _expr = expr( soption( "functions.s" ) ) );
+        //met.on( _range = elements( mesh_ ), _expr = expr( soption( "functions.s" ) ) );
+        met.on( _range = elements( mesh_ ), _expr = expr( metric ) );
 
         auto r = remesher( mesh_, mesh_->markerName( required_elements_str_ ), mesh_->markerName( required_facets_str_ ) );
 
@@ -196,7 +199,7 @@ TestRemesh<Dim, RDim>::execute( int niter )
         auto ein = exporter( _mesh = mesh_, _name = fmt::format( "initial-{}", iter ) );
         auto eout = exporter( _mesh = out, _name = fmt::format("remeshed-{}", iter) );
         eout->addRegions();
-        auto metout = Mhr->element( expr( soption( "functions.s" ) ) );
+        auto metout = Mhr->element( expr( metric ) );
         eout->add( "metricout", metout );
         ein->addRegions();
         ein->add( "metric", met );
@@ -252,7 +255,16 @@ TestRemesh<Dim, RDim>::execute( int niter )
                 BOOST_CHECK_SMALL( measinit - measremesh, 1e-10 );
             }
         }
-
+        //auto ur = cgLaplacianDirichlet( Vhr, std::tuple{ expr( "1" ), expr( "0" ), expr( "x+y:x:y" ) } );
+        auto ur = cgLaplacianDirichlet( Vhr, std::tuple{ expr( "1" ), expr( "pi*pi*sin(pi*x):x" ), expr( "sin(pi*x):x" ) } );
+        eout->add( "lap_u", ur );
+        //eout->add( "lap_u_exact", expr( "x+y:x:y" ) );
+        eout->add( "lap_u_exact", expr( "sin(pi*x):x" ) );
+        //double errv = normL2( _range = elements( out ), _expr = idv( ur ) - expr( "x+y:x:y" ) );
+        double errv = normL2( _range = elements( out ), _expr = idv( ur ) - expr( "sin(pi*x):x" ) );
+        if ( Environment::isMasterRank() )
+            BOOST_MESSAGE( fmt::format( "cglaplacian L2 error norm {}: {}", "x+y:x:y", errv ) );
+        //BOOST_CHECK_SMALL( errv, 1e-10 );
         ein->save();
         eout->save();
         mesh_ = out;
@@ -279,7 +291,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( testnD, T, dim_types )
 
     TestRemesh<T::first_type::value, T::second_type::value> r;
     r.setMesh();
-    r.execute(1);
+    r.execute(3);
 
 }
 
