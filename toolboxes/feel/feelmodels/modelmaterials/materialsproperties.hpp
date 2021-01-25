@@ -651,40 +651,43 @@ public :
             return ostr;
         }
 
-    void updateInformationObject( pt::ptree & p ) const
+    void updateInformationObject( nl::json & p ) const
         {
-            p.put( "number of materials", this->numberOfMaterials() );
+            p.emplace( "number of materials", this->numberOfMaterials() );
             for ( auto const& [matName,matProps] : M_materialNameToProperties )
             {
-                pt::ptree matPt;
                 for ( auto const& [propName,matProp] : matProps )
                 {
-                    matPt.put( propName, matProp.exprToString() );
+                    p[matName].emplace( propName, matProp.exprToString() );
                 }
-                p.add_child( matName, matPt );
             }
         }
 
-    tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
         {
-            tabulate::Table tabInfo;
-            tabulate::Table tabInfoOthers;
+            auto tabInfo = TabulateInformationsSections::New();
+
+            Feel::Table tabInfoOthers;
             TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
-            tabInfo.add_row({tabInfoOthers});
+            tabInfoOthers.format()
+                .setShowAllBorders( false )
+                .setColumnSeparator(":")
+                .setHasRowSeparator( false );
+            tabInfo->add( "", TabulateInformations::New( tabInfoOthers ) );
 
             for ( auto const& [matName,matProps] : M_materialNameToProperties )
             {
                 if ( !jsonInfo.contains(matName) )
                     continue;
-                tabulate::Table tabInfoMat;
-                tabInfoMat.add_row({"Material : "+matName});
-                tabulate::Table tabInfoMatEntries;
+                Feel::Table tabInfoMatEntries;
                 TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoMatEntries, jsonInfo.at( matName ), tabInfoProp );
-                tabInfoMat.add_row( { tabInfoMatEntries});
-                tabInfo.add_row( {tabInfoMat} );
-            }
-            tabInfo.format().hide_border();
+                tabInfoMatEntries.format()
+                    .setShowAllBorders( false )
+                    .setColumnSeparator(":")
+                    .setHasRowSeparator( false );
 
+                tabInfo->add( "Material : "+matName, TabulateInformations::New( tabInfoMatEntries ) );
+            }
             return tabInfo;
         }
 

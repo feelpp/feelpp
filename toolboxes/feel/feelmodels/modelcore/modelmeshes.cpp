@@ -93,35 +93,41 @@ ModelMesh<IndexType>::ImportConfig::updateForUse( ModelMeshes<IndexType> const& 
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::ImportConfig::updateInformationObject( pt::ptree & p ) const
+ModelMesh<IndexType>::ImportConfig::updateInformationObject( nl::json & p ) const
 {
     if ( this->hasMeshFilename() )
     {
-        p.put( "mesh-filename", M_meshFilename );
+        p.emplace( "mesh-filename", M_meshFilename );
     }
     else
     {
-        p.put( "geo-filename", M_geoFilename );
-        p.put( "hsize", M_meshSize );
+        p.emplace( "geo-filename", M_geoFilename );
+        p.emplace( "hsize", M_meshSize );
     }
 
-    p.put( "generate-partitioning", M_generatePartitioning );
+    p.emplace( "generate-partitioning", M_generatePartitioning );
     if ( M_generatePartitioning )
-        p.put( "number-of-partition", M_numberOfPartition );
+        p.emplace( "number-of-partition", M_numberOfPartition );
 }
 
 template <typename IndexType>
-tabulate::Table
-ModelMesh<IndexType>::ImportConfig::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+tabulate_informations_ptr_t
+ModelMesh<IndexType>::ImportConfig::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
 {
-    tabulate::Table tabInfo;
+    Feel::Table tabInfo;
     if ( jsonInfo.contains("mesh-filename") )
         TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "mesh-filename" } );
     else
         TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "geo-filename","hsize" } );
 
     TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "generate-partitioning", "number-of-partition" } );
-    return tabInfo;
+
+    tabInfo.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+
+    return TabulateInformations::New( tabInfo );
 }
 
 template <typename IndexType>
@@ -274,101 +280,106 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::updateInformationObject( pt::ptree & p ) const
+ModelMesh<IndexType>::updateInformationObject( nl::json & p ) const
 {
     if ( M_mesh )
     {
-        pt::ptree subPt;
-        M_mesh->updateInformationObject( subPt );
-        p.put_child( "Discretization", subPt );
-        subPt.clear();
-        M_importConfig.updateInformationObject( subPt );
-        p.put_child( "Import configuration", subPt );
+        p["Discretization"] = M_mesh->journalSection().to_string();
+        M_importConfig.updateInformationObject( p["Import configuration"] );
 
         if ( !M_meshFilename.empty() )
-            p.put( "filename", M_meshFilename );
+            p.emplace( "filename", M_meshFilename );
     }
 }
 
 template <typename IndexType>
-tabulate::Table
-ModelMesh<IndexType>::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+tabulate_informations_ptr_t
+ModelMesh<IndexType>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
 {
-    tabulate::Table tabInfo;
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
 
-    tabulate::Table tabInfoOthers;
+    Feel::Table tabInfoOthers;
     TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
-    if ( tabInfoOthers.begin() != tabInfoOthers.end() )
-        tabInfo.add_row({tabInfoOthers});
+    tabInfoOthers.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+    if ( tabInfoOthers.nRow() > 0 )
+        tabInfo->add( "", TabulateInformations::New( tabInfoOthers, tabInfoProp ) );
 
     if ( jsonInfo.contains("Import configuration") )
     {
-        tabulate::Table tabInfoImportConfig;
-        tabInfoImportConfig.add_row({"Import configuration"});
-        tabInfoImportConfig.add_row( { ImportConfig::tabulateInformation( jsonInfo.at("Import configuration"), tabInfoProp ) });
-        tabInfo.add_row( {tabInfoImportConfig} );
+        tabInfo->add( "Import configuration",  ImportConfig::tabulateInformations( jsonInfo.at("Import configuration"), tabInfoProp ) );
     }
 
     if ( jsonInfo.contains("Discretization") )
     {
-        tabulate::Table tabInfoDiscr;
-        tabInfoDiscr.add_row({"Discretization"});
-        tabulate::Table tabInfoDiscrEntries;
-        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoDiscrEntries, jsonInfo.at( "Discretization" ), tabInfoProp );
-        tabInfoDiscr.add_row( { tabInfoDiscrEntries});
-
-        auto const& jsonInfoDiscr = jsonInfo.at( "Discretization" );
-        if ( jsonInfoDiscr.contains( "partitioning" ) )
+        nl::json::json_pointer jsonPointerInfoDiscr( jsonInfo.at( "Discretization" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerInfoDiscr ) )
         {
-            int dim = std::stoi( jsonInfoDiscr.at("dim").template get<std::string>());
-            auto const& jsonInfoDiscrPartitioning = jsonInfoDiscr.at( "partitioning" );
-            tabulate::Table tabInfoDiscrEntriesDataByPartition;
-            if ( dim == 1 )
-                tabInfoDiscrEntriesDataByPartition.add_row({"partition id","n_elements","n_elements_with_ghost","n_points"});
-            else if ( dim == 2 )
-                tabInfoDiscrEntriesDataByPartition.add_row({"partition id","n_elements","n_elements_with_ghost","n_faces","n_points"});
-            else if ( dim == 3 )
-                tabInfoDiscrEntriesDataByPartition.add_row({"partition id","n_elements","n_elements_with_ghost","n_faces","n_edges","n_points"});
-            auto jarray_n_elements = jsonInfoDiscrPartitioning.at("n_elements");
-            auto jarray_n_elements_with_ghost = jsonInfoDiscrPartitioning.at("n_elements_with_ghost");
-            auto itFind_n_faces = jsonInfoDiscrPartitioning.find( "n_faces" );
-            auto itFind_n_edges = jsonInfoDiscrPartitioning.find( "n_edges" );
-            auto itFind_n_points = jsonInfoDiscrPartitioning.find( "n_points" );
-            for (int p=0;p<jarray_n_elements.size();++p)
+            auto const& jsonInfoDiscr = JournalManager::journalData().at( jsonPointerInfoDiscr );
+            auto tabInfoDiscr = TabulateInformationsSections::New( tabInfoProp );
+            Feel::Table tabInfoDiscrEntries;
+            TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoDiscrEntries, jsonInfoDiscr, tabInfoProp );
+            tabInfoDiscrEntries.format()
+                .setShowAllBorders( false )
+                .setColumnSeparator(":")
+                .setHasRowSeparator( false );
+            tabInfoDiscr->add( "", TabulateInformations::New( tabInfoDiscrEntries, tabInfoProp ) );
+
+            if ( jsonInfoDiscr.contains( "partitioning" ) )
             {
+                int dim = jsonInfoDiscr.at("dim").template get<int>();
+                auto const& jsonInfoDiscrPartitioning = jsonInfoDiscr.at( "partitioning" );
+                Feel::Table tabInfoDiscrEntriesDataByPartition;
+                tabInfoDiscrEntriesDataByPartition.format().setFirstRowIsHeader( true );
                 if ( dim == 1 )
-                    tabInfoDiscrEntriesDataByPartition.add_row({ std::to_string(p),
-                                jarray_n_elements[p].template get<std::string>(),
-                                jarray_n_elements_with_ghost[p].template get<std::string>(),
-                                itFind_n_points.value()[p].template get<std::string>() });
+                    tabInfoDiscrEntriesDataByPartition.add_row({"partition id","n_elements","n_elements_with_ghost","n_points"});
                 else if ( dim == 2 )
-                {
-                    CHECK( itFind_n_faces != jsonInfoDiscrPartitioning.end() ) << "aiaia";
-                    tabInfoDiscrEntriesDataByPartition.add_row({ std::to_string(p),
-                                jarray_n_elements[p].template get<std::string>(),
-                                jarray_n_elements_with_ghost[p].template get<std::string>(),
-                                itFind_n_faces.value()[p].template get<std::string>(),
-                                itFind_n_points.value()[p].template get<std::string>() });
-                }
+                    tabInfoDiscrEntriesDataByPartition.add_row({"partition id","n_elements","n_elements_with_ghost","n_faces","n_points"});
                 else if ( dim == 3 )
+                    tabInfoDiscrEntriesDataByPartition.add_row({"partition id","n_elements","n_elements_with_ghost","n_faces","n_edges","n_points"});
+                auto jarray_n_elements = jsonInfoDiscrPartitioning.at("n_elements");
+                auto jarray_n_elements_with_ghost = jsonInfoDiscrPartitioning.at("n_elements_with_ghost");
+                auto itFind_n_faces = jsonInfoDiscrPartitioning.find( "n_faces" );
+                auto itFind_n_edges = jsonInfoDiscrPartitioning.find( "n_edges" );
+                auto itFind_n_points = jsonInfoDiscrPartitioning.find( "n_points" );
+                for (int p=0;p<jarray_n_elements.size();++p)
                 {
-                    CHECK( itFind_n_faces != jsonInfoDiscrPartitioning.end() ) << "aiaia";
-                    tabInfoDiscrEntriesDataByPartition.add_row({ std::to_string(p),
-                                jarray_n_elements[p].template get<std::string>(),
-                                jarray_n_elements_with_ghost[p].template get<std::string>(),
-                                itFind_n_faces.value()[p].template get<std::string>(),
-                                itFind_n_edges.value()[p].template get<std::string>(),
-                                itFind_n_points.value()[p].template get<std::string>() });
+                    if ( dim == 1 )
+                        tabInfoDiscrEntriesDataByPartition.add_row({ p,
+                                    jarray_n_elements[p].template get<int>(),
+                                    jarray_n_elements_with_ghost[p].template get<int>(),
+                                    itFind_n_points.value()[p].template get<int>() });
+                    else if ( dim == 2 )
+                    {
+                        CHECK( itFind_n_faces != jsonInfoDiscrPartitioning.end() ) << "missing face infos";
+                        CHECK( itFind_n_points != jsonInfoDiscrPartitioning.end() ) << "missing points infos";
+                        tabInfoDiscrEntriesDataByPartition.add_row({ p,
+                                    jarray_n_elements[p].template get<int>(),
+                                    jarray_n_elements_with_ghost[p].template get<int>(),
+                                    itFind_n_faces.value()[p].template get<int>(),
+                                    itFind_n_points.value()[p].template get<int>() });
+                    }
+                    else if ( dim == 3 )
+                    {
+                        CHECK( itFind_n_faces != jsonInfoDiscrPartitioning.end() ) << "missing face infos";
+                        CHECK( itFind_n_edges != jsonInfoDiscrPartitioning.end() ) << "missing edges infos";
+                        CHECK( itFind_n_points != jsonInfoDiscrPartitioning.end() ) << "missing points infos";
+                        tabInfoDiscrEntriesDataByPartition.add_row({ p,
+                                    jarray_n_elements[p].template get<int>(),
+                                    jarray_n_elements_with_ghost[p].template get<int>(),
+                                    itFind_n_faces.value()[p].template get<int>(),
+                                    itFind_n_edges.value()[p].template get<int>(),
+                                    itFind_n_points.value()[p].template get<int>() });
+                    }
                 }
+                tabInfoDiscr->add( "", TabulateInformations::New( tabInfoDiscrEntriesDataByPartition, tabInfoProp.newByIncreasingVerboseLevel() ) );
             }
-            tabInfoDiscr.add_row({tabInfoDiscrEntriesDataByPartition});
+
+            tabInfo->add("Discretization", tabInfoDiscr );
         }
-
-        tabInfo.add_row( {tabInfoDiscr} );
     }
-
-    tabInfo.format().hide_border();
-
     return tabInfo;
 }
 
@@ -392,20 +403,19 @@ ModelMeshes<IndexType>::setup( pt::ptree const& pt )
 
 template <typename IndexType>
 void
-ModelMeshes<IndexType>::updateInformationObject( pt::ptree & p ) const
+ModelMeshes<IndexType>::updateInformationObject( nl::json & p ) const
 {
     for ( auto & [meshName,mMesh] : *this )
     {
-        pt::ptree subPt;
-        mMesh->updateInformationObject( subPt );
-        p.put_child( meshName, subPt );
+        mMesh->updateInformationObject( p[meshName] );
     }
 }
 
 template <typename IndexType>
-tabulate::Table
-ModelMeshes<IndexType>::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+tabulate_informations_ptr_t
+ModelMeshes<IndexType>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
+#if 0
     tabulate::Table tabInfo;
     for ( auto & [meshName,mMesh] : *this )
     {
@@ -419,6 +429,15 @@ ModelMeshes<IndexType>::tabulateInformation( nl::json const& jsonInfo, TabulateI
     }
     tabInfo.format().hide_border();
     return tabInfo;
+#else
+    auto tabInfo = TabulateInformationsSections::New();
+    for ( auto & [meshName,mMesh] : *this )
+    {
+        if ( jsonInfo.contains(meshName) )
+            tabInfo->add( (boost::format("Mesh : %1%")%meshName ).str(), mMesh->tabulateInformations( jsonInfo.at(meshName), tabInfoProp ) );
+    }
+    return tabInfo;
+#endif
 }
 
 

@@ -22,8 +22,8 @@
 
 #include <feel/feelcore/journalmanager.hpp>
 
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree_serialization.hpp>
+//#include <boost/property_tree/json_parser.hpp>
+//#include <boost/property_tree/ptree_serialization.hpp>
 #include <feel/feelcore/environment.hpp>
 
 #if defined(FEELPP_HAS_MONGOCXX )
@@ -45,10 +45,13 @@ JournalManager::JournalManager()
     //M_journal_uuid = Env::randomUUID();
     std::time_t t = std::time(nullptr);
     const std::string tag = "journal.time";
-    S_journal_ptree.put( "journal.version", FEELPP_DB_JOURNAL_VERSION );
-    S_journal_ptree.put( tag + ".time_t", t );
-    S_journal_ptree.put( tag + ".gm", std::put_time(std::gmtime(&t), "%c %Z") );
-    S_journal_ptree.put( tag + ".local", std::put_time(std::localtime(&t), "%c %Z") );
+    S_journal_ptree["journal"]["version"] = FEELPP_DB_JOURNAL_VERSION;
+    S_journal_ptree["journal"]["time"]["time_t"] = t;
+    std::ostringstream ostr; ostr << std::put_time(std::gmtime(&t), "%c %Z");
+    S_journal_ptree["journal"]["time"]["gm"] = ostr.str();
+    ostr.str(""); ostr << std::put_time(std::localtime(&t), "%c %Z");
+    S_journal_ptree["journal"]["time"]["local"] = ostr.str();
+
     // Create a signal for simulation info.
     signalStaticNew< void ( notify_type& ) >( "journalManager" );
 }
@@ -56,22 +59,14 @@ JournalManager::JournalManager()
 
 //! Save the global property tree into a json file.
 void
-JournalManager::journalSave( std::string filename )
+JournalManager::journalSave( std::string const& filename )
 {
-    if( filename.empty() )
-        filename = journalFilename();
-#if 0
-    pt::ptree ptGlobal;
-    if ( Environment::isParallel() )
-        mpi::reduce( Environment::worldComm(), S_journal_ptree, ptGlobal, ptMerge, Environment::masterRank() );
-    else
-        ptGlobal = S_journal_ptree;
-#endif
+    std::string const& filenameUsed = filename.empty()? journalFilename() : filename;
 
     if( Environment::isMasterRank() )
     {
-        journalJSONSave( filename, S_journal_ptree );
-        journalDBSave( filename );
+        journalJSONSave( filenameUsed, S_journal_ptree );
+        journalDBSave( filenameUsed );
     }
 }
 
@@ -86,11 +81,14 @@ JournalManager::journalCheckpoint( bool save,
         journalPull();
 
         std::time_t t = std::time(nullptr);
-        const std::string tag = "journal.checkpoints.checkpoint-" + std::to_string( S_journal_checkpoint ) + ".time";
-        S_journal_ptree.put( "journal.checkpoints.number", S_journal_checkpoint);
-        S_journal_ptree.put( tag + ".time_t", t );
-        S_journal_ptree.put( tag + ".gm", std::put_time(std::gmtime(&t), "%c %Z") );
-        S_journal_ptree.put( tag + ".local", std::put_time(std::localtime(&t), "%c %Z") );
+        auto & jJournalCheckpoints = S_journal_ptree["journal"]["checkpoints"];
+        auto & jJournalCheckpointsCurrentTime = jJournalCheckpoints["checkpoint-" + std::to_string( S_journal_checkpoint )]["time"];
+        jJournalCheckpoints["number"] = S_journal_checkpoint;
+        jJournalCheckpointsCurrentTime["time_t"] = t;
+        std::ostringstream ostr;  ostr << std::put_time(std::gmtime(&t), "%c %Z");
+        jJournalCheckpointsCurrentTime["gm"] = ostr.str();
+        ostr.str(""); ostr << std::put_time(std::localtime(&t), "%c %Z");
+        jJournalCheckpointsCurrentTime["local"] = ostr.str();
 
         if ( save )
             journalSave( filename );
@@ -98,13 +96,15 @@ JournalManager::journalCheckpoint( bool save,
 }
 
 void
-JournalManager::journalJSONSave( const std::string& filename, pt::ptree const& pt )
+JournalManager::journalJSONSave( const std::string& filename, nl::json const& pt )
 {
     if( !journalEnabled() )
         return;
 
     //std::cout << "[Observer: Journal] generate report (JSON).";
-    write_json( filename, pt );
+    //write_json( filename, pt );
+    std::ofstream o( filename );
+    o << pt.dump(1);
 }
 
 void
@@ -143,7 +143,7 @@ JournalManager::journalDBSave( const std::string& filename )
 
 // Init static variables.
 std::string JournalManager::S_journal_filename = "journal.json";
-pt::ptree JournalManager::S_journal_ptree = {};
+nl::json JournalManager::S_journal_ptree = {};
 MongoConfig JournalManager::S_journal_db_config = {};
 uint32_type JournalManager::S_journal_checkpoint = 0;
 

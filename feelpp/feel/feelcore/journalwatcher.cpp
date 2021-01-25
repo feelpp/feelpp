@@ -70,17 +70,15 @@ JournalWatcher::JournalWatcher( JournalWatcher const& jw )
     S_counterObjectByCategory[M_category]++;
 }
 
-std::string
-JournalWatcher::journalSectionName() const
+typename nl::json::json_pointer
+JournalWatcher::journalSection() const
 {
-    std::string thename;
-    if ( !M_category.empty() && !M_name.empty() )
-        thename = M_category + "." + M_name;
-    else if ( !M_category.empty() )
-        thename = M_category;
-    else
-        thename = M_name;
-    return thename;
+    std::string res;
+    if ( !M_category.empty() )
+        res += "/" + M_category;
+    if ( !M_name.empty() )
+        res += "/" + M_name;
+    return nl::json::json_pointer( res );
 }
 
 void
@@ -128,16 +126,7 @@ JournalWatcher::journalNotify( notify_type & journalData )
     if ( M_informationObject.empty() )
         return;
 
-    std::string prefix = this->journalSectionName();
-    if ( prefix.empty() )
-    {
-        for( const auto& lpt : M_informationObject )
-            journalData.put_child( lpt.first, lpt.second );
-    }
-    else
-    {
-        journalData.put_child( prefix, M_informationObject );
-    }
+    journalData[this->journalSection()].update( M_informationObject.begin(), M_informationObject.end() );
 }
 
 
