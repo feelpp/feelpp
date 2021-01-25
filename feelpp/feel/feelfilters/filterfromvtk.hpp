@@ -122,7 +122,7 @@ public:
      */
     //@{
 
-    void visit( mesh_type* mesh )
+    void visit( mesh_type* mesh ) override
     {
         visit( mesh, mpl::int_<nDim>() );
     }
@@ -214,7 +214,7 @@ public:
      */
     //@{
 
-    void visit( mesh_type* mesh )
+    void visit( mesh_type* mesh ) override
     {
         visit( mesh, mpl::int_<nDim>() );
     }

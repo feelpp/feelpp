@@ -5870,10 +5870,10 @@ private:
     };
 public :
     //! update informations for the current object
-    void updateInformationObject( pt::ptree & p ) const override { this->updateInformationObject( p, mpl::bool_<is_composite>() ); }
+    void updateInformationObject( nl::json & p ) const override { this->updateInformationObject( p, mpl::bool_<is_composite>() ); }
 private :
-    void updateInformationObject( pt::ptree & p, mpl::true_ ) const;
-    void updateInformationObject( pt::ptree & p, mpl::false_ ) const;
+    void updateInformationObject( nl::json & p, mpl::true_ ) const;
+    void updateInformationObject( nl::json & p, mpl::false_ ) const;
 
 protected:
 
@@ -6284,24 +6284,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p, mpl::false_ ) const
+FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( nl::json & p, mpl::false_ ) const
 {
-    if ( p.get_child_optional( "nSpace" ) )
+    if ( p.contains( "nSpace" ) )
         return;
 
-    p.put( "nSpace", functionspace_type::nSpaces );
+    p["nSpace"] = functionspace_type::nSpaces;
     if ( this->mesh() )
-        p.put( "mesh", this->mesh()->journalSectionName() );
-
-    p.put( "basis.name", basisName() );
-    p.put( "basis.order", basisOrder() );
-    p.put( "basis.is_continuous", is_continuous );
-    p.put( "basis.nComponents", nComponents );
-    p.put( "basis.nComponents1", nComponents1 );
-    p.put( "basis.nComponents2", nComponents2 );
-    if ( is_tensor2symm )
-        p.put( "basis.nRealComponents", nRealComponents );
-    p.put( "basis.nLocalDof", fe_type::nLocalDof );
+        p["mesh"] = this->mesh()->journalSection().to_string();
 
     std::string shape;
     if ( is_scalar )
@@ -6312,54 +6302,66 @@ FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p, mpl::
         shape = "tensor2";
     else if ( is_tensor2symm )
         shape = "tensor2symm";
-    p.put( "basis.shape", shape );
+    p.emplace( "basis", nl::json( {
+                { "name", basisName() },
+                { "order", basisOrder() },
+                { "shape", shape },
+                { "is_continuous", is_continuous },
+                { "nComponents", nComponents },
+                { "nComponents1", nComponents1 },
+                { "nComponents2", nComponents2 },
+                { "nLocalDof", fe_type::nLocalDof }
+            }) );
+    if ( is_tensor2symm )
+        p["/basis/nRealComponents"_json_pointer] = nRealComponents;
 
-    pt::ptree subPt;
-    subPt.put("nDof", this->nDof());
+    nl::json subPt;
+    subPt["nDof"] = this->nDof();
     rank_type nProc = this->worldComm().localSize();
     if ( nProc > 1 )
     {
-        pt::ptree subPt1, subPt2, subPt3;
+        nl::json::array_t subPt1, subPt2, subPt3;
         for ( rank_type p=0;p<nProc;++p )
         {
-            subPt1.push_back( std::make_pair("", pt::ptree( std::to_string( this->dof()->nLocalDofWithGhost( p ) ) ) ) );
-            subPt2.push_back( std::make_pair("", pt::ptree( std::to_string( this->dof()->nLocalDofWithoutGhost( p ) ) ) ) );
-            subPt3.push_back( std::make_pair("", pt::ptree( std::to_string( this->dof()->nLocalGhosts( p ) ) ) ) );
+            subPt1.push_back( this->dof()->nLocalDofWithGhost( p ) );
+            subPt2.push_back( this->dof()->nLocalDofWithoutGhost( p ) );
+            subPt3.push_back( this->dof()->nLocalGhosts( p ) );
         }
-        subPt.put_child( "nLocalDofWithGhost", subPt1 );
-        subPt.put_child( "nLocalDofWithoutGhost", subPt2 );
-        subPt.put_child( "nLocalGhost", subPt3 );
-        subPt.put( "extended-doftable", this->dof()->buildDofTableMPIExtended() );
+        subPt.emplace( "nLocalDofWithGhost", subPt1 );
+        subPt.emplace( "nLocalDofWithoutGhost", subPt2 );
+        subPt.emplace( "nLocalGhost", subPt3 );
+        subPt.emplace( "extended-doftable", this->dof()->buildDofTableMPIExtended() );
     }
-    p.put_child( "doftable", subPt );
+    p.emplace( "doftable", std::move(subPt) );
 }
 
 template<typename SpaceType>
 struct UpdateInformationObject
 {
-    UpdateInformationObject( SpaceType const& space, pt::ptree & p ) : M_space( space ), M_p( p ) {}
+    UpdateInformationObject( SpaceType const& space, nl::json & p ) : M_space( space ), M_p( p ) {}
     template<typename T>
     void operator()( T const& t ) const
         {
-            std::string jsname = boost::fusion::at_c<T::value>( M_space.functionSpaces() )->journalSectionName();
-            M_p.push_back( std::make_pair("", pt::ptree( jsname ) ) );
+            std::string jsname = boost::fusion::at_c<T::value>( M_space.functionSpaces() )->journalSection().to_string();
+            M_p.push_back( jsname );
         }
     SpaceType const& M_space;
-    pt::ptree & M_p;
+    nl::json & M_p;
 };
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p, mpl::true_ ) const
+FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( nl::json & p, mpl::true_ ) const
 {
-    if ( p.get_child_optional( "nSpace" ) )
+    if ( p.contains( "nSpace" ) )
         return;
-    pt::ptree subPt;
+
+    auto subPt = nl::json::array({});;
     mpl::range_c<int,0,functionspace_type::nSpaces> keySpaces;
     boost::fusion::for_each( keySpaces, UpdateInformationObject<functionspace_type>( *this, subPt ) );
-    p.put( "nSpace", functionspace_type::nSpaces );
-    p.put( "nDof", this->nDof());
-    p.put_child( "subfunctionspaces", subPt );
+    p.emplace( "nSpace", functionspace_type::nSpaces );
+    p.emplace( "nDof", this->nDof());
+    p.emplace( "subfunctionspaces", subPt );
 }
 
 template<typename T,int M,int N>
