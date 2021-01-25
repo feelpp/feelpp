@@ -29,11 +29,6 @@
 
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 
-#if 0
-#include <tabulate/asciidoc_exporter.hpp>
-#include <tabulate/markdown_exporter.hpp>
-#endif
-
 namespace Feel {
 
 namespace FeelModels {
@@ -355,7 +350,6 @@ ModelBase::ModelBase( std::string const& prefix, std::string const& keyword,
     M_modelRepository( modelRep ),
     M_verbose( boption(_name="verbose",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_verboseAllProc( boption(_name="verbose_allproc",_prefix=this->prefix(),_vm=this->clovm()) ),
-    M_filenameSaveInfo( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"toolbox-info.txt")) ),
     M_timersActivated( boption(_name="timers.activated",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_timersSaveFileMasterRank( boption(_name="timers.save-master-rank",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_timersSaveFileMax( boption(_name="timers.save-max",_prefix=this->prefix(),_vm=this->clovm()) ),
@@ -434,39 +428,35 @@ ModelBase::log( std::string const& _className,std::string const& _functionName,s
 // info
 
 void
-ModelBase::updateInformationObject( pt::ptree & p ) const
+ModelBase::updateInformationObject( nl::json & p ) const
 {
-    p.put( "prefix", this->prefix() );
-    p.put( "keyword", this->keyword() );
-    p.put( "root repository", this->rootRepository() );
-    p.put( "expr repository", this->repository().expr() );
-    p.put( "number of processus", this->worldComm().localSize() );
+    if ( p.contains( "prefix" ) )
+        return;
+    p.emplace( "prefix", this->prefix() );
+    p.emplace( "keyword", this->keyword() );
+    p.emplace( "root repository", this->rootRepository() );
+    p.emplace( "expr repository", this->repository().expr() );
+    p.emplace( "number of processus", this->worldComm().localSize() );
 }
 
-tabulate::Table
-ModelBase::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
-{
-
-    tabulate::Table tabInfo;
-    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "prefix","keyword","root repository","expr eepository", "number of processus" } );
-    //TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfo, jsonInfo, tabInfoProp ); // bad ordering due to boost properties
-#if 0
-    tabInfo/*[0][0]*/.format()
-        .font_style({tabulate::FontStyle::bold})
-        .font_background_color(tabulate::Color::blue);
-#endif
-    return tabInfo;
-}
-std::vector<tabulate::Table>
+tabulate_informations_ptr_t
 ModelBase::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    std::vector<tabulate::Table> res = { tabulateInformation( jsonInfo, tabInfoProp ) };
-    return res;
+    Feel::Table tabInfo;
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "prefix","keyword","root repository","expr eepository", "number of processus" } );
+    //TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfo, jsonInfo, tabInfoProp ); // bad ordering due to boost properties
+    tabInfo.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+    return TabulateInformations::New( tabInfo, tabInfoProp );
 }
 
-std::vector<tabulate::Table>
+tabulate_informations_ptr_t
 ModelBase::tabulateInformations() const
 {
+    Environment::journalCheckpoint();
+#if 0
     pt::ptree pt;
     this->updateInformationObject( pt );
     std::ostringstream pt_ostr;
@@ -474,28 +464,20 @@ ModelBase::tabulateInformations() const
     std::istringstream pt_istream( pt_ostr.str() );
     nl::json jsonInfo;
     pt_istream >> jsonInfo;
-
-    return this->tabulateInformations( jsonInfo, TabulateInformationProperties{} );
-#if 0
-    auto tabRes = this->tabulateInformation( jsonInfo, TabulateInformationProperties{} );
-    tabRes.format()
-    //.hide_border()
-    .multi_byte_characters(true)
-    ;
-    return tabRes;
+#else
+    nl::json jsonInfo;
+    this->updateInformationObject( jsonInfo );
 #endif
+
+    auto tabInfo = this->tabulateInformations( jsonInfo, TabulateInformationProperties{} );
+
+    auto tabRes = TabulateInformationsSections::New();
+    std::string title = (boost::format("Toolbox : %1%")%this->keyword()).str();
+    tabRes->add( title, tabInfo );
+
+    return tabRes;
 }
 
-std::string
-ModelBase::filenameSaveInfo() const
-{
-    return M_filenameSaveInfo;
-}
-void
-ModelBase::setFilenameSaveInfo( std::string const& s )
-{
-    M_filenameSaveInfo = s;
-}
 std::shared_ptr<std::ostringstream>
 ModelBase::getInfo() const
 {
@@ -503,64 +485,40 @@ ModelBase::getInfo() const
     return _ostr;
 }
 void
-ModelBase::printInfo( std::vector<tabulate::Table> const& tabInfos ) const
+ModelBase::printInfo( tabulate_informations_ptr_t const& tabInfos ) const
 {
-    if ( this->verboseAllProc() || this->worldComm().isMasterRank() )
+    if ( this->worldComm().isMasterRank() )
     {
         std::cout << this->getInfo()->str();
-        for ( tabulate::Table const& tabInfo : tabInfos )
-        {
-#if 1
-            std::cout << tabInfo << std::endl;
-#else
-            tabulate::Table tabInfo2 = tabInfo;
-            if ( TabulateInformationProperties::hasTerminalSize() )
-            {
-                int term_width = TabulateInformationProperties::terminalWidth();// get_terminal_size().first;
-                int table_width = tabInfo2.shape().first;
-                //std::cout << "term_width="<<term_width<< " vs table_width=" << table_width << std::endl;
-                if ( (term_width >10) && (term_width-10) < table_width )
-                    tabInfo2.format().width( term_width-10 );
-                std::cout << tabInfo2 << std::endl;
-            }
-#endif
-        }
+        std::cout << *tabInfos << std::endl;
     }
 }
 void
-ModelBase::saveInfo( std::vector<tabulate::Table> const& tabInfos ) const
+ModelBase::saveInfo( tabulate_informations_ptr_t const& tabInfos ) const
 {
-    Environment::journalCheckpoint();
-
-    fs::path thepath = fs::path(this->rootRepository())/fs::path(this->filenameSaveInfo());
-    if (this->worldComm().isMasterRank() )
+    std::string filename_ascii = prefixvm(this->keyword(),"informations.txt");
+    std::string filename_adoc = prefixvm(this->keyword(),"informations.adoc");
+    std::string filepath_ascii = (fs::path(this->rootRepository())/filename_ascii).string();
+    std::string filepath_adoc = (fs::path(this->rootRepository())/filename_adoc).string();
+    if ( this->worldComm().isMasterRank() )
     {
-        std::ofstream file( thepath.string().c_str(), std::ios::out);
-        file << this->getInfo()->str();
-        for ( tabulate::Table const& tabInfo : tabInfos )
-            file << tabInfo << std::endl;
-        file.close();
+        std::ofstream file_ascii( filepath_ascii, std::ios::out);
+        file_ascii << this->getInfo()->str();
+        file_ascii.close();
+
+        std::ofstream file_adoc( filepath_adoc, std::ios::out);
+        file_adoc << ":sectnums:" << "\n";
+        file_adoc << tabInfos->exporterAsciiDoc() << "\n";
+        file_adoc.close();
     }
 
-    this->upload( thepath.string() );
-#if 0
-    auto tabInfo = this->tabulateInformation();
-    if (this->worldComm().isMasterRank() )
-    {
-        //tabulate::AsciiDocExporter exporter;
-        tabulate::MarkdownExporter exporter;
-        auto asciidoc = exporter.dump(tabInfo);
-        std::ofstream file( "toto.adoc", std::ios::out);
-        file << asciidoc;
-        file.close();
-    }
-#endif
+    this->upload( filepath_ascii );
+    this->upload( filepath_adoc );
 }
 void
 ModelBase::printAndSaveInfo() const
 {
-    //auto tabInfo = this->tabulateInformations();
-    std::vector<tabulate::Table> tabInfo;
+    auto tabInfo = this->tabulateInformations();
     this->printInfo( tabInfo );
     this->saveInfo( tabInfo );
 }
