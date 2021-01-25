@@ -65,6 +65,10 @@ geo/steps/step-elmann-2009.geo
 geo/tripod.geo
 geo/tripod.med
 geo/tripod.mesh
+geo/square_squareHole.geo
+geo/square_twoMaterials.geo
+geo/cube_twoMaterials.geo
+geo/cube_cubeHole.geo
 )
 
 install( FILES ${MESHES} DESTINATION share/feelpp/data/geo )

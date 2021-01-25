@@ -82,8 +82,12 @@ using idelements_t = elements_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
 using ext_elements_t = elements_reference_wrapper_t<MeshType>;
+template <typename MeshType>
+using range_element_t = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
+template <typename MeshType>
+using range_element_ptr_t = typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype;
 
-template<typename MeshType>
+template <typename MeshType>
 using boundaryelements_t = elements_reference_wrapper_t<MeshType>;
 template<typename MeshType>
 using internalelements_t = elements_reference_wrapper_t<MeshType>;
