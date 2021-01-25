@@ -30,6 +30,14 @@ namespace Feel {
 
 /**
  * Basic laplacian implementation with Dirichlet condition
+ * \tparam FunctionSpace type
+ * \tparam DataT data type for right hand side, source and diffusion terms
+ * 
+ * The following code solve \f$-\Delta u = 1, u = 0 \mbox{ on } \Omega \f$ using
+ * \f$P1\f$ piecewise polynomial continuous functions
+ * \code
+ * cgLaplacianDirichlet( Pch<1>(mesh), std::tuple{ expr("1"), expr("1"),expr("0") } );
+ * \endcode
  */
 template<typename SpaceType, typename DataT, typename = std::enable_if_t<is_functionspace_v<SpaceType>>>
 auto
