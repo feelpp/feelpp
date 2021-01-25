@@ -76,6 +76,7 @@ class Remesh
     using mmg_mesh_t = std::variant<MMG5_pMesh, PMMG_pParMesh>;
     using mesh_t = MeshType;
     using mesh_ptrtype = std::shared_ptr<MeshType>;
+    using mesh_ptr_t = mesh_ptrtype;
     using scalar_metric_t = typename Pch_type<mesh_t, 1>::element_type;
     Remesh()
         : Remesh( nullptr )
@@ -167,6 +168,10 @@ class Remesh
   private:
     void setParameters();
     void setCommunicatorAPI();
+    using neighbor_ent_t = std::map<int, std::pair<int,int>>;
+    using local_face_index_t = std::vector<std::vector<int>>;
+    using comm_t = std::tuple<neighbor_ent_t, local_face_index_t, std::map<int,int>>;
+    comm_t getCommunicatorAPI();
 
   private:
     std::shared_ptr<MeshType> M_mesh;
@@ -839,7 +844,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
             pt.setProcessIdInPartition( out->worldComm().localRank() );
             pt.setProcessId( out->worldComm().localRank() );
             pt.setMarker( tag );
-            out->addPoint( pt );
+            out->addPoint( std::move(pt) );
         }
 
         if constexpr ( dimension_v<MeshType> == 3 )
@@ -858,14 +863,16 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
 
                 using element_type = typename mesh_t::element_type;
                 element_type newElem;
+                newElem.setId( k );
                 newElem.setMarker( lab );
                 newElem.setProcessIdInPartition( out->worldComm().localRank() );
                 newElem.setProcessId( out->worldComm().localRank() );
                 for ( int i = 0; i < 4; i++ )
                     newElem.setPoint( i, out->point( iv[i] ) );
-                out->addElement( newElem, true );
+                out->addElement( std::move(newElem) );
             }
         }
+        auto [neigh_interface, local_faces, face_to_interface] = getCommunicatorAPI();
         for ( int k = 1; k <= nTriangles; k++ )
         {
             int iv[3], lab;
@@ -881,16 +888,67 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 using face_type = typename mesh_t::face_type;
                 face_type newElem;
                 newElem.setId( k );
+                
+                if ( auto fit = face_to_interface.find(k); fit != face_to_interface.end() )
+                {
+                    LOG(INFO) << fmt::format("interface {} face {} with pid {}", fit->second, k, neigh_interface[fit->second].first );
+                    lab = 1234567;
+                }
                 newElem.setMarker( lab );
                 newElem.setProcessIdInPartition( out->worldComm().localRank() );
                 newElem.setProcessId( out->worldComm().localRank() );
                 for ( int i = 0; i < 3; i++ )
                     newElem.setPoint( i, out->point( iv[i] ) );
-                out->addFace( newElem );
+                out->addFace( std::move(newElem) );
             }
         }
         out->setMarkerNames( M_mesh->markerNames() );
         out->updateForUse();
+#if 0        
+        int current_pid = M_mesh->worldComm().localRank();
+        int interf = 0;
+        std::vector<mesh_ptr_t> ghost_out( neigh_interface.size() );
+        std::vector<mesh_ptr_t> ghost_in( neigh_interface.size() );
+        std::vector<mpi::request> reqs( 2*neigh_interface.size() );
+        for ( auto [pid, sz] : neigh_interface )
+        {
+            ext_elements_t<mesh_t> range_ghost;
+            range_element_ptr_t<mesh_t> r( new range_element_t<mesh_t>() );
+#if 0            
+            // now extract elements shared elements
+            for ( auto const& welt : elements( out ) )
+            {
+                auto const& elt = boost::unwrap_ref( welt );
+                if ( elt.hasFaceWithMarker( 1234567 ) )
+                    r->push_back( boost::cref( elt ) );
+            }
+#else
+            auto rfaces = markedfaces(out, 1234567 );
+            LOG(INFO) << fmt::format("interface with {} nfaces interface {} nfaces marked {} ", 
+                                     pid, sz, nelements(rfaces));
+            for( auto const& wf : rfaces )
+            {
+                auto const& f = boost::unwrap_ref( wf );
+                CHECK( f.isConnectedTo0() ) << f;
+                r->push_back( boost::cref( f.element0() ) );
+            }
+#endif
+            range_ghost = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                             r->begin(),
+                                             r->end(),
+                                             r );
+            ghost_out[interf] = createSubmesh( out, range_ghost );
+            // send mesh to pid and get back the ghosts from the other side
+            ghost_in[interf] = std::make_shared<mesh_t>();
+            int  tag_send = (current_pid < pid)?0:1;
+            int  tag_recv = (current_pid < pid)?1:0;
+
+            reqs[2 * interf] = out->worldCommPtr()->localComm().isend( pid, tag_send, *ghost_out[interf] );
+            reqs[2 * interf + 1] = out->worldCommPtr()->localComm().irecv( pid, tag_recv, *ghost_in[interf] );
+            interf++;
+        }
+        mpi::wait_all( reqs.data(), reqs.data() + 2 * neigh_interface.size() );
+#endif        
     }
     return out;
 }
@@ -1025,5 +1083,55 @@ void Remesh<MeshType>::setCommunicatorAPI()
             ++lcomm;
         }
     }
+}
+template <typename MeshType>
+typename Remesh<MeshType>::comm_t
+Remesh<MeshType>::getCommunicatorAPI()
+{
+    LOG(INFO) << "getCommunicatorAPI - set interface data with neighbors...";
+    int n_neigh;
+    if ( !PMMG_Get_numberOfFaceCommunicators( std::get<PMMG_pParMesh>( M_mmg_mesh ), &n_neigh ) )
+    {
+        throw std::logic_error( "Unable to get the number of local parallel faces." );
+    }
+    //using neighbor_ent_t = std::map<int, int>;
+    //using local_face_index_t = std::vector<std::vector<int>>;
+    //using comm_t = std::tuple<neighbor_ent_t, local_face_index_t>;
+    neighbor_ent_t neighbor_ent;
+    
+    int** local_faces = new int*[n_neigh];
+    for ( int s = 0; s < n_neigh; ++ s )
+    {
+        int pid, sz;
+        /* Set nb. of entities on interface and rank of the outward proc */
+        if ( !PMMG_Get_ithFaceCommunicatorSize( std::get<PMMG_pParMesh>( M_mmg_mesh ), s, &pid, &sz ) )
+        {
+            throw std::logic_error( "Unable to get interface data." );
+        }
+        LOG( INFO ) << fmt::format( "setting ParMmg communicator {} with {} and {} shared faces)", s, pid, sz );
+        neighbor_ent[s]=std::pair{pid,sz};
+        local_faces[s]=new int[sz];
+    }
+
+    if ( !PMMG_Get_FaceCommunicator_faces( std::get<PMMG_pParMesh>( M_mmg_mesh ), local_faces ) )
+    {
+        throw std::logic_error( "Unable to get interface faces data." );
+    }
+
+    std::map<int,int> face_to_interface;
+    local_face_index_t local_face_index( n_neigh );
+    for ( int s = 0; s < n_neigh; ++s )
+    {
+        local_face_index[s].resize( neighbor_ent[s].second );
+        std::copy( local_faces[s], local_faces[s] + neighbor_ent[s].second, local_face_index[s].begin() );
+        for(int f: local_face_index[s] )
+        {
+            face_to_interface[f] = s;
+        }
+        LOG(INFO) << fmt::format("interface {} local face with pid {} : {}", s, neighbor_ent[s].first, local_face_index );
+        delete [] local_faces[s];
+    }
+    delete [] local_faces;
+    return  std::tuple{ neighbor_ent, local_face_index, face_to_interface };
 }
 } // namespace Feel
