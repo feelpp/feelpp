@@ -21,9 +21,6 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::MixedElasticity( std::string const& prefix,
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedElasticity","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
 
-    this->setFilenameSaveInfo( prefixvm(this->prefix(),"MixedElasticity.info") );
-
-
     if (M_useSC)
     {
         if ( this->prefix().empty())
