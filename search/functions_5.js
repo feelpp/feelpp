@@ -41,7 +41,7 @@ var searchData=
   ['ewisemean_4042',['ewiseMean',['../classFeel_1_1FunctionSpace_1_1Element.html#a9ce5402381edbf1943cf498f6bff4340',1,'Feel::FunctionSpace::Element']]],
   ['exchangepoints_4043',['exchangePoints',['../classFeel_1_1GeoND.html#a039a8c9d3cb24e0f8db68951a83ca12a',1,'Feel::GeoND']]],
   ['exclude_4044',['exclude',['../classFeel_1_1FeelModels_1_1ModelFields.html#aca9ea2fea74c756d4dd3ba9fee77c183',1,'Feel::FeelModels::ModelFields']]],
-  ['execute_4045',['execute',['../classFeel_1_1Remesh.html#a139b0996d7cfcd6274ae0a4b041122cc',1,'Feel::Remesh']]],
+  ['execute_4045',['execute',['../classFeel_1_1Remesh.html#a8af86b6999bda354d4078cedd7103fa0',1,'Feel::Remesh']]],
   ['expand_4046',['expand',['../classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7',1,'Feel::Environment']]],
   ['expansion_4047',['expansion',['../namespaceFeel.html#affd58b7d24b04852404899355eb31f93',1,'Feel::expansion(std::vector&lt; ElementType &gt; const &amp;b, CoeffType const &amp;c, Vector&lt; typename Feel::remove_shared_ptr_type&lt; ElementType &gt;::value_type &gt; &amp;res, int M=-1)'],['../namespaceFeel.html#ae2c6d6043a5ccf2f1a499aec6364d18b',1,'Feel::expansion(std::vector&lt; ElementType &gt; const &amp;b, CoeffType const &amp;c, int M=-1)']]],
   ['exportasciidoc_4048',['exportAsciiDoc',['../classFeel_1_1Table.html#aa03178b17e1e3f10e7e81264783c2752',1,'Feel::Table']]],

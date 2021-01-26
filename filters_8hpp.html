@@ -291,6 +291,14 @@ template&lt;typename MeshType &gt; </td></tr>
 template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:a0eb9660987e8db7a68ad4053973f7fe3"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::points_reference_wrapper_t</b> = boost::tuple&lt; mpl::size_t&lt; MESH_POINTS &gt;, typename MeshTraits&lt; MeshType &gt;::point_reference_wrapper_const_iterator, typename MeshTraits&lt; MeshType &gt;::point_reference_wrapper_const_iterator, typename MeshTraits&lt; MeshType &gt;::points_reference_wrapper_ptrtype &gt;</td></tr>
 <tr class="separator:a0eb9660987e8db7a68ad4053973f7fe3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a966a06db00113b44d61a9b1d5bde1040"><td class="memTemplParams" colspan="2"><a id="a966a06db00113b44d61a9b1d5bde1040"></a>
+template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:a966a06db00113b44d61a9b1d5bde1040"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::range_element_ptr_t</b> = typename MeshTraits&lt; MeshType &gt;::elements_reference_wrapper_ptrtype</td></tr>
+<tr class="separator:a966a06db00113b44d61a9b1d5bde1040"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab807ea5b828b075f8be0e04266bd6926"><td class="memTemplParams" colspan="2"><a id="ab807ea5b828b075f8be0e04266bd6926"></a>
+template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:ab807ea5b828b075f8be0e04266bd6926"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::range_element_t</b> = typename MeshTraits&lt; MeshType &gt;::elements_reference_wrapper_type</td></tr>
+<tr class="separator:ab807ea5b828b075f8be0e04266bd6926"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2512946a9caa632d22ac8d531b15a1a2"><td class="memTemplParams" colspan="2"><a id="a2512946a9caa632d22ac8d531b15a1a2"></a>
 template&lt;typename RangeType &gt; </td></tr>
 <tr class="memitem:a2512946a9caa632d22ac8d531b15a1a2"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a2512946a9caa632d22ac8d531b15a1a2">Feel::range_t</a> = typename mpl::if_&lt; boost::is_std_list&lt; RangeType &gt;, mpl::identity&lt; RangeType &gt;, mpl::identity&lt; std::list&lt; RangeType &gt; &gt; &gt;::type::type::value_type</td></tr>

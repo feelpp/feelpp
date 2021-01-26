@@ -1,5 +1,8 @@
 var NAVTREEINDEX39 =
 {
+"structFeel_1_1FeelModels_1_1DynamicViscosityPowerLaw.html":[6,1,1,4,5],
+"structFeel_1_1FeelModels_1_1DynamicViscosityPowerLaw.html#a15716d1a744a1d3e0bdfd864518d5bbb":[6,1,1,4,5,12],
+"structFeel_1_1FeelModels_1_1DynamicViscosityPowerLaw.html#a2dd25102c243711f44358e7b6d6e9567":[6,1,1,4,5,4],
 "structFeel_1_1FeelModels_1_1DynamicViscosityPowerLaw.html#a43aea42d7f0a37aead7bf71c3e25748d":[6,1,1,4,5,1],
 "structFeel_1_1FeelModels_1_1DynamicViscosityPowerLaw.html#a46106bdc8839b2c98e025ab3855ad6e1":[6,1,1,4,5,0],
 "structFeel_1_1FeelModels_1_1DynamicViscosityPowerLaw.html#a4ca372ced45f2ec43337e1e9b7810aca":[6,1,1,4,5,5],
@@ -246,8 +249,5 @@ var NAVTREEINDEX39 =
 "structFeel_1_1FunctionSpace_1_1Element_1_1ChangeElement.html#abfab8e1e34a94355ea482ee149202650a8ab028d84d4c8b9368bcd0aa2660bd59":[6,1,1,84,8,1,5],
 "structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html":[6,1,1,84,8,2],
 "structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html#ab48d25e3214e7ae9a8ffd2466128d77b":[6,1,1,84,8,2,1],
-"structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html#abcec047a8d1dc1c8a5004eab8e51bea5":[6,1,1,84,8,2,0],
-"structFeel_1_1FunctionSpace_1_1GetComponentBasis.html":[6,1,1,84,9],
-"structFeel_1_1FunctionSpace_1_1GetComponentBasis.html#adbbf7d5d3ba3c0fc054f5e7a86b84b56":[6,1,1,84,9,0],
-"structFeel_1_1FunctionSpace_1_1GetMesh.html":[6,1,1,84,10]
+"structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html#abcec047a8d1dc1c8a5004eab8e51bea5":[6,1,1,84,8,2,0]
 };

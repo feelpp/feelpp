@@ -1,5 +1,6 @@
 var NAVTREEINDEX32 =
 {
+"classnlohmann_1_1basic__json.html#a603be713183ad63dd8c9e1052c606004":[6,1,2,17,242],
 "classnlohmann_1_1basic__json.html#a60b643c02a19fa52f99db8215ff58e0f":[6,1,2,17,244],
 "classnlohmann_1_1basic__json.html#a6275ed57bae6866cdf5db5370a7ad47c":[6,1,2,17,6],
 "classnlohmann_1_1basic__json.html#a642213bf5f206f13d2447098b737bee7":[6,1,2,17,92],
@@ -248,6 +249,5 @@ var NAVTREEINDEX32 =
 "classnlohmann_1_1detail_1_1iteration__proxy__value.html":[6,1,2,0,71],
 "classnlohmann_1_1detail_1_1iteration__proxy__value.html#a10accadf05a172fdc69a016bec201e81":[6,1,2,0,71,2],
 "classnlohmann_1_1detail_1_1iteration__proxy__value.html#a1ab8c44e3772c03651b5ad07216043cf":[6,1,2,0,71,7],
-"classnlohmann_1_1detail_1_1iteration__proxy__value.html#a1fc63b88a585fa39942007aab69a74e6":[6,1,2,0,71,10],
-"classnlohmann_1_1detail_1_1iteration__proxy__value.html#a44c64feee85b8e7164a05310e6418a4b":[6,1,2,0,71,8]
+"classnlohmann_1_1detail_1_1iteration__proxy__value.html#a1fc63b88a585fa39942007aab69a74e6":[6,1,2,0,71,10]
 };

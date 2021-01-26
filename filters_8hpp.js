@@ -43,6 +43,8 @@ var filters_8hpp =
     [ "pid_edges_t", "filters_8hpp.html#ac9a71ee1b90bd20ac00a949a045b9428", null ],
     [ "points_pid_t", "filters_8hpp.html#a8939b93c679713b2997bd4259e15fa9c", null ],
     [ "points_reference_wrapper_t", "filters_8hpp.html#a0eb9660987e8db7a68ad4053973f7fe3", null ],
+    [ "range_element_ptr_t", "filters_8hpp.html#a966a06db00113b44d61a9b1d5bde1040", null ],
+    [ "range_element_t", "filters_8hpp.html#ab807ea5b828b075f8be0e04266bd6926", null ],
     [ "range_t", "filters_8hpp.html#a2512946a9caa632d22ac8d531b15a1a2", null ],
     [ "submeshrange_t", "filters_8hpp.html#a6e2804852c2acf9dcf87299bb8cd6559", null ],
     [ "allelements", "filters_8hpp.html#aac30fcf41903db59697680b4ad4b1a27", null ],

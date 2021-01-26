@@ -1,5 +1,8 @@
 var NAVTREEINDEX47 =
 {
+"structFeel_1_1tag_1_1pset.html#af30027f99a257d30e2515fd072eb8c66":[6,1,1,13,159,2],
+"structFeel_1_1tag_1_1pset.html#af49a262ee4a9335614b27944ffe0e81d":[6,1,1,13,159,1],
+"structFeel_1_1tag_1_1quad.html":[6,1,1,13,160],
 "structFeel_1_1tag_1_1quad.html#a4ade90fdfb282bea4fd0c4b2eb66210f":[6,1,1,13,160,0],
 "structFeel_1_1tag_1_1quad.html#ab2247556243b0a00ed99892b2f8f5377":[6,1,1,13,160,2],
 "structFeel_1_1tag_1_1quad.html#af19006e1723e1513c2e9613ef98e58bb":[6,1,1,13,160,1],
@@ -246,8 +249,5 @@ var NAVTREEINDEX47 =
 "structFeel_1_1tag_1_1type.html":[6,1,1,13,221],
 "structFeel_1_1tag_1_1type.html#a2b4aff9203fdee75dfbdf0f3ca3a8aa6":[6,1,1,13,221,0],
 "structFeel_1_1tag_1_1type.html#ad35cb3ceb3abc37d9c7594f78c58081b":[6,1,1,13,221,2],
-"structFeel_1_1tag_1_1type.html#af972b04edb08b6f166ae1e903296535f":[6,1,1,13,221,1],
-"structFeel_1_1tag_1_1update.html":[6,1,1,13,222],
-"structFeel_1_1tag_1_1update.html#a2000f087794f429a1a9f362cf00c4a8b":[6,1,1,13,222,1],
-"structFeel_1_1tag_1_1update.html#a34cef4468b6130120daa97101675c9f0":[6,1,1,13,222,0]
+"structFeel_1_1tag_1_1type.html#af972b04edb08b6f166ae1e903296535f":[6,1,1,13,221,1]
 };
