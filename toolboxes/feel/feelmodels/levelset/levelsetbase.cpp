@@ -53,7 +53,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetBase(
     M_redistanciationIsUpdatedForUse(false),
     M_hasRedistanciated(false)
 {
-    this->setFilenameSaveInfo( prefixvm(this->prefix(),"Levelset.info") );
     //-----------------------------------------------------------------------------//
     // Load parameters
     this->loadParametersFromOptionsVm();

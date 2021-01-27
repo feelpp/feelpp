@@ -1262,7 +1262,7 @@ public:
     //! @{
 
     //! update informations for the current object
-    void updateInformationObject( pt::ptree& p ) const override;
+    void updateInformationObject( nl::json& p ) const override;
 
 #if defined( FEELPP_HAS_HDF5 )
     //!
@@ -2434,49 +2434,50 @@ Mesh<Shape, T, Tag, IndexT>::exportVTK( bool exportMarkers, std::string const& v
 
 //! Fill mesh properties in journal publication
 template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::updateInformationObject( pt::ptree& p ) const
+void Mesh<Shape, T, Tag, IndexT>::updateInformationObject( nl::json& p ) const
 {
-    if ( p.get_child_optional( "shape" ) )
+    if ( p.contains( "shape" ) )
         return;
-    p.put( "shape", Shape::name() );
-    p.put( "dim", this->dimension() );
-    p.put( "order", this->nOrder );
-    p.put( "real_dim", this->realDimension() );
-    p.put( "h_min", this->hMin() );
-    p.put( "h_max", this->hMax() );
-    p.put( "h_average", this->hAverage() );
-    p.put( "n_points", this->numGlobalPoints() );
+    p.emplace( "shape", Shape::name() );
+    p.emplace( "dim", this->dimension() );
+    p.emplace( "order", this->nOrder );
+    p.emplace( "real_dim", this->realDimension() );
+    p.emplace( "h_min", this->hMin() );
+    p.emplace( "h_max", this->hMax() );
+    p.emplace( "h_average", this->hAverage() );
+    p.emplace( "n_points", this->numGlobalPoints() );
     if ( nOrder > 1 )
-        p.put( "n_vertices", this->numGlobalVertices() );
+        p.emplace( "n_vertices", this->numGlobalVertices() );
     if ( this->dimension() == 3 )
-        p.put( "n_edges", this->numGlobalEdges() );
-    p.put( "n_faces", this->numGlobalFaces() );
-    p.put( "n_elements", this->numGlobalElements() );
+        p.emplace( "n_edges", this->numGlobalEdges() );
+    p.emplace( "n_faces", this->numGlobalFaces() );
+    p.emplace( "n_elements", this->numGlobalElements() );
 
     rank_type nProc = MeshBase<>::worldComm().localSize();
-    p.put( "n_partition", nProc );
+    p.emplace( "n_partition", nProc );
+
     if ( nProc > 1 )
     {
-        pt::ptree ptEltActive, ptEltAll, ptFacesActives, ptEdgesActives, ptPointsActives;
+        nl::json::array_t ptEltActive, ptEltAll, ptFacesActives, ptEdgesActives, ptPointsActives;
         for ( rank_type p = 0; p < nProc; ++p )
         {
-            ptEltActive.push_back( std::make_pair( "", pt::ptree( std::to_string( this->statNumElementsActive( p ) ) ) ) );
-            ptEltAll.push_back( std::make_pair( "", pt::ptree( std::to_string( this->statNumElementsAll( p ) ) ) ) );
+            ptEltActive.push_back( this->statNumElementsActive( p ) );
+            ptEltAll.push_back( this->statNumElementsAll( p ) );;
             if ( this->dimension() > 1 )
-                ptFacesActives.push_back( std::make_pair( "", pt::ptree( std::to_string( this->statNumFacesActive( p ) ) ) ) );
+                ptFacesActives.push_back( this->statNumFacesActive( p ) );
             if ( this->dimension() > 2 )
-                ptEdgesActives.push_back( std::make_pair( "", pt::ptree( std::to_string( this->statNumEdgesActive( p ) ) ) ) );
+                ptEdgesActives.push_back( this->statNumEdgesActive( p ) );
             if ( this->dimension() > 0 )
-                ptPointsActives.push_back( std::make_pair( "", pt::ptree( std::to_string( this->statNumPointsActive( p ) ) ) ) );
+                ptPointsActives.push_back( this->statNumPointsActive( p ) );
         }
-        p.put_child( "partitioning.n_elements", ptEltActive );
-        p.put_child( "partitioning.n_elements_with_ghost", ptEltAll );
+        p["/partitioning/n_elements"_json_pointer] = ptEltActive;
+        p["/partitioning/n_elements_with_ghost"_json_pointer] = ptEltAll;
         if ( this->dimension() > 1 )
-            p.put_child( "partitioning.n_faces", ptFacesActives );
+            p["/partitioning/n_faces"_json_pointer] = ptFacesActives;
         if ( this->dimension() > 2 )
-            p.put_child( "partitioning.n_edges", ptEdgesActives );
+            p["/partitioning/n_edges"_json_pointer] = ptEdgesActives;
         if ( this->dimension() > 0 )
-            p.put_child( "partitioning.n_points", ptPointsActives );
+            p["/partitioning/n_points"_json_pointer] = ptPointsActives;
     }
 }
 

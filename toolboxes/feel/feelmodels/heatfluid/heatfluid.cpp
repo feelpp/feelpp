@@ -26,7 +26,6 @@
 
 #include <feel/feelvf/vf.hpp>
 
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/modelcore/utils.hpp>
 
 namespace Feel
@@ -90,8 +89,11 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("HeatFluid","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
-    CHECK( M_mesh ) << "mesh generation fail";
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
+    CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
     this->log("HeatFluid","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
@@ -184,7 +186,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
-    if ( !M_mesh )
+    if ( !this->mesh() )
         this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
@@ -321,6 +323,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                                                                                     boost::ref( *this ), _1 ) );
     }
 
+    this->setIsUpdatedForUse( true );
+
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
     this->log("HeatFluid","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
@@ -415,6 +419,73 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n";
 
     return _ostr;
+}
+
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
+{
+    if ( !this->isUpdatedForUse() )
+        return;
+    if ( p.contains( "Environment" ) )
+        return;
+
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
+
+    super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
+
+    // Materials properties
+    if ( this->materialsProperties() )
+        this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
+
+    // Algebraic Solver
+    if ( M_algebraicFactory )
+        M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
+
+    p["Toolbox Heat"] = M_heatModel->journalSection().to_string();
+    p["Toolbox Fluid"] = M_fluidModel->journalSection().to_string();
+}
+
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+tabulate_informations_ptr_t
+HEATFLUID_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Environment") )
+        tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
+
+    if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
+        tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Meshes") )
+        tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
+
+    if ( jsonInfo.contains( "Algebraic Solver" ) )
+        tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
+
+    // generate sub toolboxes info
+    if ( M_heatModel && jsonInfo.contains( "Toolbox Heat" ) )
+    {
+        nl::json::json_pointer jsonPointerHeat( jsonInfo.at( "Toolbox Heat" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerHeat ) )
+        {
+            auto tabInfos_heat = M_heatModel->tabulateInformations( JournalManager::journalData().at( jsonPointerHeat ), tabInfoProp );
+            TabulateInformationsSections::cast( tabInfos_heat )->erase( "Materials Properties" );
+            tabInfo->add( "Toolbox Heat", tabInfos_heat );
+        }
+    }
+    if ( M_fluidModel && jsonInfo.contains( "Toolbox Fluid" ) )
+    {
+        nl::json::json_pointer jsonPointerFluid( jsonInfo.at( "Toolbox Fluid" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerFluid ) )
+        {
+            auto tabInfos_fluid = M_fluidModel->tabulateInformations( JournalManager::journalData().at( jsonPointerFluid ), tabInfoProp );
+            TabulateInformationsSections::cast( tabInfos_fluid )->erase( "Materials Properties" );
+            tabInfo->add( "Toolbox Fluid", tabInfos_fluid );
+        }
+    }
+
+    return tabInfo;
 }
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
