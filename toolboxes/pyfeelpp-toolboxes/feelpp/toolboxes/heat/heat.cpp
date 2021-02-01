@@ -77,7 +77,6 @@ void defSM(py::module &m)
         .def("exportResults",static_cast<void (toolbox_t::*)( double )>(&toolbox_t::exportResults), "export the results of the heat mechanics problem", py::arg("time"))
 
         .def( "setMesh", &toolbox_t::setMesh, "set the mesh", py::arg("mesh") )
-        .def( "addParameterInModelProperties", &toolbox_t::addParameterInModelProperties,"add parameter in model properties", py::arg("symbolName"), py::arg("value") )
         .def( "updateParameterValues", &toolbox_t::updateParameterValues, "update parameter values" )
         .def( "assembleMatrix", [](const toolbox_t& t) {
                                     auto mat = t.algebraicFactory()->matrix();//->clone();
