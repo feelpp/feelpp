@@ -73,9 +73,9 @@ class Heat : public ModelNumerical,
         static const uint16_type nOrderTemperature = BasisTemperatureType::nOrder;
         static const uint16_type nOrderPoly = nOrderTemperature;
         typedef BasisTemperatureType basis_temperature_type;
-        typedef Lagrange<nOrderPoly, Vectorial,Continuous,PointSetFekete,0> basis_velocityconvection_type;
+        typedef Lagrange<nOrderPoly, Vectorial,Continuous,PointSetFekete> basis_velocityconvection_type;
         // function space temperature
-        typedef FunctionSpace<mesh_type, bases<basis_temperature_type>, double, Periodicity <NoPeriodicity>,mortars<NoMortar> > space_temperature_type;
+        typedef FunctionSpace<mesh_type, bases<basis_temperature_type> > space_temperature_type;
         typedef std::shared_ptr<space_temperature_type> space_temperature_ptrtype;
         typedef typename space_temperature_type::element_type element_temperature_type;
         typedef std::shared_ptr<element_temperature_type> element_temperature_ptrtype;

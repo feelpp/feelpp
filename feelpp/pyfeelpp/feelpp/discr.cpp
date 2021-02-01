@@ -214,8 +214,9 @@ PYBIND11_MODULE(_discr, m )
     defDiscr<Pch_type<Mesh<Simplex<1,1,1>,double,0,uint32_type>,1,double,PointSetFekete,0>>( m );
     defDiscr<Pch_type<Mesh<Simplex<1,1,1>,double,0,uint32_type>,2,double,PointSetFekete,0>>( m );
     defDiscr<Pch_type<Mesh<Simplex<1,1,1>,double,0,uint32_type>,3,double,PointSetFekete,0>>( m );
-    
-    defDiscr<Pch_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,1,double,PointSetFekete,0>>( m );
+
+    defDiscr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<1, Scalar, Continuous, PointSetFekete>>>>(m);
+    // defDiscr<Pch_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,1,double,PointSetFekete,0>>( m );
     defDiscr<Pch_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,2,double,PointSetFekete,0>>( m );
     defDiscr<Pch_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,3,double,PointSetFekete,0>>( m );
 

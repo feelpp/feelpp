@@ -18,10 +18,10 @@ FEELPP_EXPORT AboutData
 makeToolboxMorAbout( std::string const& str = "opusheat-tb" );
 
 template<int Dim>
-class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, FunctionSpace<Mesh<Simplex<Dim,1,Dim>,double,0,uint32_type>, bases<Lagrange<1, Scalar, Continuous, PointSetFekete,0> >, double, Periodicity<NoPeriodicity>, mortars<NoMortar> > >
+class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, FunctionSpace<Mesh<Simplex<Dim,1,Dim>,double,0,uint32_type>, bases<Lagrange<1, Scalar, Continuous, PointSetFekete> > > >
 {
     using self_type = ToolboxMor<Dim>;
-    using super_type = ModelCrbBase< ParameterSpace<>, FunctionSpace<Mesh<Simplex<Dim,1,Dim>,double,0,uint32_type>, bases<Lagrange<1, Scalar, Continuous, PointSetFekete,0> >, double, Periodicity<NoPeriodicity>, mortars<NoMortar> > >;
+    using super_type = ModelCrbBase< ParameterSpace<>, FunctionSpace<Mesh<Simplex<Dim,1,Dim>,double,0,uint32_type>, bases<Lagrange<1, Scalar, Continuous, PointSetFekete> > > >;
 
   public:
 
