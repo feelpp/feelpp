@@ -24,13 +24,17 @@
 #ifndef FEELPP_MESH_PARTITIONER_HPP
 #define FEELPP_MESH_PARTITIONER_HPP 1
 
+#include <fmt/core.h>
+#include <fmt/color.h>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelmesh/partitionmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/partitionio.hpp>
+#if defined( FEELPP_HAS_MMG ) && defined( FEELPP_HAS_PARMMG )
 #include <feel/feelmesh/remesh.hpp>
+#endif
 #include <feel/feelcore/json.hpp>
 
 //#include <feel/feelfilters/savegmshmesh.hpp>
@@ -48,12 +52,13 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
     // only master rank because only metis is supported at this time
     if ( Environment::isMasterRank() )
     {
-        std::cout << "run partioner with shape " << ShapeType::name() << "\n";
+        fmt::print( fmt::emphasis::bold, 
+                    "** Run partioner with shape {}...\n", ShapeType::name() );
         fs::path inputPathMesh = fs::system_complete( soption("ifile") );
 
         tic();
         size_type update_ = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED;
-        if ( partconfig && partconfig["partitioner"].contains( "aggregates" ) ) //boption( "sc.ibc_partitioning" ) )
+        if ( !partconfig.is_null() && !partconfig.empty() && partconfig["partitioner"].contains( "aggregates" ) ) //boption( "sc.ibc_partitioning" ) )
             update_ |= MESH_UPDATE_FACES_MINIMAL;
         auto mesh = loadMesh(_mesh=new mesh_type(Environment::worldCommSeqPtr()), _savehdf5=0,
                              _filename=inputPathMesh.string(),
@@ -65,6 +70,7 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
 
         if constexpr ( is_simplex_v<ShapeType> )
         {
+            
             if ( boption( "remesh" ) )
             {
                 auto Xh = Pch<1>( mesh );
@@ -80,12 +86,18 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
                         h_=hs.at( soption("remesh.h"));
                     met.on( _range=elements(mesh), _expr=cst(h_)  );
                 }
+#if defined( FEELPP_HAS_MMG ) && defined( FEELPP_HAS_PARMMG ) 
                 auto r =  remesher( mesh );
-    
                 r.setMetric( met );
                 auto out = r.execute();
                 out->updateForUse();
                 mesh = out;
+#else
+                fmt::print( fg( fmt::color::crimson ) | fmt::emphasis::bold, 
+                            "mmg and parmmg are not configured with feelpp!\n"
+                            " - remeshing is disabled\n"
+                            " - result mesh is the initial mesh\n" );
+#endif
             }
         }
         dump(mesh);
