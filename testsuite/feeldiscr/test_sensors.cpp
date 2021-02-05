@@ -13,9 +13,11 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( sensorssuite )
 
-BOOST_AUTO_TEST_CASE( test_create )
+typedef boost::mpl::list<boost::mpl::integral_c<int, 2>, boost::mpl::integral_c<int, 3>> test_types;
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(test_create, T, test_types)
 {
-    using mesh_type = Mesh<Simplex<2> >;
+    using mesh_type = Mesh<Simplex<T::value> >;
     using space_type = Pch_type<mesh_type, 1>;
     using sensormap_type = SensorMap<space_type>;
 
@@ -43,9 +45,9 @@ BOOST_AUTO_TEST_CASE( test_create )
     BOOST_CHECK_EQUAL(j.size(), 1);
 }
 
-BOOST_AUTO_TEST_CASE( test_load )
+BOOST_AUTO_TEST_CASE_TEMPLATE(test_load, T, test_types)
 {
-    using mesh_type = Mesh<Simplex<2> >;
+    using mesh_type = Mesh<Simplex<T::value> >;
     using space_type = Pch_type<mesh_type, 1>;
     using sensormap_type = SensorMap<space_type>;
 

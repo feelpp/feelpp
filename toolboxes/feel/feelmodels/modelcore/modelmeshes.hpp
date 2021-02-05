@@ -58,8 +58,8 @@ public :
         void setupInputMeshFilenameWithoutApplyPartitioning( std::string const& filename );
         void setupSequentialAndLoadByMasterRankOnly();
 
-        void updateInformationObject( pt::ptree & p ) const;
-        static tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+        void updateInformationObject( nl::json & p ) const;
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
 
     private :
         std::string M_inputFilename, M_meshFilename, M_geoFilename;
@@ -119,9 +119,9 @@ public :
         }
 
 
-    void updateInformationObject( pt::ptree & p ) const;
+    void updateInformationObject( nl::json & p ) const;
 
-    static tabulate::Table tabulateInformation( nl::json const& p, TabulateInformationProperties const& tabInfoProp );
+    static tabulate_informations_ptr_t tabulateInformations( nl::json const& p, TabulateInformationProperties const& tabInfoProp );
 
 private:
     std::string M_name;
@@ -208,9 +208,9 @@ public:
             mMesh->updateTime( time );
     }
 
-    void updateInformationObject( pt::ptree & p ) const override;
+    void updateInformationObject( nl::json & p ) const override;
 
-    tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
 };
 
