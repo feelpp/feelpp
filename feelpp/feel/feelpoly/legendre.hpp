@@ -407,7 +407,7 @@ private:
     static matrix_type
     evaluate( points_type const& __pts, mpl::int_<1> )
     {
-        matrix_type m ( JacobiBatchEvaluation<nOrder,value_type>( 0.0, 0.0, ublas::row( __pts, 0 ) ) );
+        matrix_type m ( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts, 0 ) ) );
 
         if ( is_normalized )
         {
@@ -428,7 +428,7 @@ private:
     {
         vector_matrix_type D( 1 );
         D[0].resize( nOrder+1, __pts().size2() );
-        D[0] = JacobiBatchDerivation<nOrder,value_type>( 0.0, 0.0, ublas::row( __pts(),0 ) );
+        D[0] = JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(),0 ) );
 
         if ( is_normalized )
             for ( uint16_type i = 0; i < nOrder+1; ++i )
@@ -563,8 +563,8 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate(
     ublas::vector<value_type> eta1s = ublas::row( __pts, 0 );
     ublas::vector<value_type> eta2s = ublas::row( __pts, 1 );
 
-    matrix_type as( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta1s ) );
-    matrix_type bs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta2s ) );
+    matrix_type as( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
+    matrix_type bs( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta2s ) );
 
     for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
     {
@@ -593,10 +593,10 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate(
     res[1].resize( convex_type::polyDims( nOrder ), __pts().size2() );
 
     // evaluate Legendre polynomials components
-    matrix_type as( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
-    matrix_type das( JacobiBatchDerivation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
-    matrix_type bs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
-    matrix_type dbs( JacobiBatchDerivation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
+    matrix_type as( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
+    matrix_type das( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
+    matrix_type bs( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
+    matrix_type dbs( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
 
     for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
     {
@@ -627,9 +627,9 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate(
     ublas::vector<value_type> eta2s = ublas::row( __pts, 1 );
     ublas::vector<value_type> eta3s = ublas::row( __pts, 2 );
 
-    matrix_type as( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta1s ) );
-    matrix_type bs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta2s ) );
-    matrix_type cs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta3s ) );
+    matrix_type as( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
+    matrix_type bs( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta2s ) );
+    matrix_type cs( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta3s ) );
 
     for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
     {
@@ -665,12 +665,12 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate(
     res[2].resize( convex_type::polyDims( nOrder ), __pts().size2() );
 
     // evaluate Legendre polynomials components
-    matrix_type as( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
-    matrix_type das( JacobiBatchDerivation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
-    matrix_type bs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
-    matrix_type dbs( JacobiBatchDerivation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
-    matrix_type cs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 2 ) ) );
-    matrix_type dcs( JacobiBatchDerivation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 2 ) ) );
+    matrix_type as(  JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
+    matrix_type das( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
+    matrix_type bs(  JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
+    matrix_type dbs( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
+    matrix_type cs(  JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 2 ) ) );
+    matrix_type dcs( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 2 ) ) );
 
     for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
     {
