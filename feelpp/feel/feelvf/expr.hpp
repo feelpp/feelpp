@@ -229,6 +229,14 @@ public:
             M_c2( expr.M_c2 )
         {
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_tensor_expr( std::true_type{}, exprExpanded.expression(), ttse, expr.expression(), geom, theInitArgs... ),
+            M_c1( exprExpanded.M_c1 ),
+            M_c2( exprExpanded.M_c2 )
+            {}
 
         template<typename IM>
         void init( IM const& im )
@@ -251,6 +259,12 @@ public:
         {
             M_tensor_expr.update( geom, face );
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                M_tensor_expr.update( std::true_type{}, exprExpanded.expression(), ttse, geom, theUpdateArgs... );
+            }
 
 
         value_type
@@ -646,7 +660,12 @@ public:
     template <typename SymbolsExprType>
     auto applySymbolsExpr( SymbolsExprType const& se ) const
         {
-            return Feel::vf::expr( M_expr.applySymbolsExpr( se ) );
+            auto theNewExpr = M_expr.applySymbolsExpr( se );
+            if constexpr( std::is_base_of_v<ExprBase, std::decay_t<decltype(theNewExpr)> > )
+                return theNewExpr;
+            else
+                return Feel::vf::expr( std::move( theNewExpr ) );
+            //return Feel::vf::expr( M_expr.applySymbolsExpr( se ) );
         }
 
     //! return true if the symbol \symb is used in the current expression
@@ -750,8 +769,15 @@ public:
             :
             M_geo( fusion::at_key<key_type>( geom ).get() ),
             M_tensor_expr( expr.expression(), geom )
-        {
-        }
+        {}
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_geo( fusion::at_key<key_type>( geom ).get() ),
+            M_tensor_expr( std::true_type{}, exprExpanded.expression(), ttse, expr.expression(), geom, theInitArgs... )
+        {}
 
         gmc_ptrtype geom() const { return M_geo; }
 
@@ -784,6 +810,13 @@ public:
             M_tensor_expr.updateContext( ctx... );
         }
 
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                M_tensor_expr.update( std::true_type{}, exprExpanded.expression(), ttse, geom, theUpdateArgs... );
+            }
 
         value_type
         evalij( uint16_type i, uint16_type j ) const noexcept

@@ -139,7 +139,9 @@ template <typename ExprT>
 struct SymbolExpr : public std::vector<SymbolExpr1<ExprT>>
 {
     using super_type = std::vector<SymbolExpr1<ExprT>>;
-    using symbolexpr1_type = SymbolExpr1<ExprT>;
+    using symbolexpr1_type = typename super_type::value_type;
+    using expr_type = ExprT;
+
     using update_function_type = SymbolExprUpdateFunction;
     using feelpp_tag = SymbolExprTag;
     SymbolExpr() = default;
@@ -237,11 +239,12 @@ struct SymbolsExprBase {};
 struct SymbolsExprTag {};
 
 //! store set of SymbolExpr object into a hana::tuple
-template<typename TupleExprType>
+template<typename TupleExprType,bool IsLocked = false>
 struct SymbolsExpr : public SymbolsExprBase
 {
     using tuple_type = TupleExprType;
     using feelpp_tag = SymbolsExprTag;
+    static const bool is_locked = IsLocked;
 
     SymbolsExpr() = default;
     SymbolsExpr( SymbolsExpr const& ) = default;
@@ -282,6 +285,10 @@ struct SymbolsExpr : public SymbolsExprBase
 
     tuple_type const& tuple() const { return tupleExpr; }
     tuple_type & tuple() { return tupleExpr; }
+
+    // template <bool IL = IsLocked>
+    // SymbolsExpr<TupleExprType,IL> const&
+    // lock() const { return *this;
 
 
     template<typename... TheExpr>
@@ -345,6 +352,9 @@ using is_symbols_expression = typename std::is_base_of<SymbolsExprBase,SymbolsEx
 template<typename SymbolsExprType>
 constexpr bool is_symbols_expression_v = is_symbols_expression<SymbolsExprType>::value;
 
+template<typename SymbolsExprType>
+using symbols_expression_locked_t = SymbolsExpr<typename SymbolsExprType::tuple_type,true>;
+
 
 //! build a SymbolsExpr object
 template<typename... ExprT>
@@ -353,6 +363,50 @@ symbolsExpr( const ExprT&... exprs )
 {
     return symbols_expression_t<ExprT...>(Feel::detail::AdvancedConcatOfTupleContainerType<SymbolsExprTag,SymbolExprTag>::template apply( exprs... ) );
 }
+
+#if 0
+template<typename TupleExprType>
+auto
+lock2( SymbolsExpr<TupleExprType> const& se )
+{
+    auto newTuple = hana::transform( se.tuple(), [&se]( auto const& t) { return t.applySymbolsExpr(se); } );
+    return SymbolsExpr<std::decay_t<decltype(newTuple)> >( std::move( newTuple ) );
+}
+#endif
+
+
+template<typename TupleExprType,bool IsLocked>
+SymbolsExpr<TupleExprType,true/*IsLocked*/> const&
+lock( SymbolsExpr<TupleExprType,IsLocked> const& se,
+      std::enable_if_t<IsLocked>* = nullptr )
+{
+    return se;
+}
+template<typename TupleExprType,bool IsLocked>
+SymbolsExpr<TupleExprType,true>
+lock( SymbolsExpr<TupleExprType,IsLocked> const& se,
+      std::enable_if_t<!IsLocked>* = nullptr )
+{
+    return SymbolsExpr<TupleExprType,true>( se.tuple() );
+}
+
+
+// #if 0
+// template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename TupleExprType>
+// auto
+// lock( SymbolsExpr<TupleExprType> const& se )
+// {
+// #if 1
+//     using new_tuple_tensor_type = std::tuple<Geo_t,Basis_i_t,Basis_j_t>;
+//     auto newTuple = hana::transform( se.tuple(), [&se]( auto const& t ) { return t.template applySymbolsExprAndTensor<new_tuple_tensor_type>(se); } );
+//     return SymbolsExpr<std::decay_t<decltype(newTuple)>/*, std::tuple<Geo_t,Basis_i_t,TupleExprType>*/ >( std::move( newTuple ) );
+// #else
+//     return SymbolsExpr<TupleExprType, std::tuple<Geo_t,Basis_i_t,TupleExprType> >( se.tuple() );
+// #endif
+// }
+// #endif
+
+
 
 } // namespace vf
 

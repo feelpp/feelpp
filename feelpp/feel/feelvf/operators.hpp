@@ -593,6 +593,13 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                             /*update( geom ); */                        \
                             BOOST_MPL_ASSERT_MSG( VF_OP_TYPE_IS_VALUE( T ), INVALID_CALL_TO_CONSTRUCTOR, ()); \
                         }                                               \
+                template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
+                    tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
+                            this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs ) \
+                    :                                                   \
+                    tensor( expr, geom, theInitArgs... )                \
+                {}                                                      \
+                                                                        \
                 template<typename IM>                                   \
                     void init( IM const& im )                           \
                 {                                                       \
@@ -735,6 +742,12 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     Feel::detail::ignore_unused_variable_warning(geom); \
                 }                                                       \
                                                                         \
+                template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
+                    void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
+                                 Geo_t const& geom, const TheArgsType&... theUpdateArgs ) \
+                {                                                       \
+                    this->update( geom,theUpdateArgs... );              \
+                }                                                       \
                 ret_type                                                \
                     evalijq( uint16_type i,                             \
                              uint16_type VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), j ), \
