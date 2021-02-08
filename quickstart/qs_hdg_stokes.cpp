@@ -35,15 +35,13 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description testhdivoptions( "test qs_hdg_elasticity options" );
+    po::options_description testhdivoptions( "test qs_hdg_stokes options" );
     testhdivoptions.add_options()
-        ( "pyexpr.filename", po::value<std::string>()->default_value("${top_srcdir}/quickstart/elasticity.py"), "python file to evaluate" )
+        ( "pyexpr.filename", po::value<std::string>()->default_value("${top_srcdir}/quickstart/stokes.py"), "python file to evaluate" )
         ( "hsize", po::value<double>()->default_value( 0.8 ), "mesh size" )
         ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
         ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
         ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
-        ( "displ", po::value<std::string>()->default_value( "0" ), "displacement is given" )
-        ( "lambda", po::value<std::string>()->default_value( "1" ), "Lame coefficient" )
         ( "mu", po::value<double>()->default_value( 1 ), "viscosity" )
         ( "hface", po::value<int>()->default_value( 0 ), "hface" )
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
@@ -56,10 +54,10 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "qs_hdg_elasticity" ,
-                     "qs_hdg_elasticity" ,
+    AboutData about( "qs_hdg_stokes" ,
+                     "qs_hdg_stokes" ,
                      "0.1",
-                     "Quickstart for HDG method for linear elasticity",
+                     "Quickstart for HDG method for Stokes",
                      AboutData::License_GPL,
                      "Copyright (c) 2016-2017 Feel++ Consortium" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
@@ -72,7 +70,7 @@ makeAbout()
 
 
 template<int Dim, int OrderP, int OrderG=1>
-int hdg_elasticity( std::map<std::string,std::map<std::string,std::string>>& locals )
+int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals )
 {
 
 	typedef Simplex<Dim,OrderG> convex_type;
@@ -82,19 +80,10 @@ int hdg_elasticity( std::map<std::string,std::map<std::string,std::string>>& loc
 
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
-#if 0
-    auto displ_exact = expr<Dim,1>( locals.at("displ") );
-    auto grad_displ_exact = expr<Dim,1>( locals.at("grad_displ") );
-    auto sigma_exact = expr<Dim,Dim>( locals.at("stress") );
-    
-    
-    auto c1 = expr( locals.at("c1") );
-    auto c2 = expr( locals.at("c2") );
-#else
     auto stressn = locals.at("stressn");
-    auto rhs_f = locals.at("f");
+    auto f = locals.at("f");
     auto displ = locals.at("displ");
-#endif
+
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
     
@@ -115,7 +104,7 @@ int hdg_elasticity( std::map<std::string,std::map<std::string,std::string>>& loc
     toc("spaces",true);
 
     cout << "Vh<" << OrderP   << "> : " << Vh->nDof() << std::endl
-         << "Wh<" << OrderP+1 << "> : " << Wh->nDof() << std::endl
+         << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
          << "Ph<" << OrderP   << "> : " << Ph->nDof() << std::endl
          << "Mh<" << OrderP   << "> : " << Mh->nDof() << std::endl;
 
@@ -160,20 +149,8 @@ int hdg_elasticity( std::map<std::string,std::map<std::string,std::string>>& loc
         H.on( _range=elements(face_mesh), _expr=pow(h(),tau_order) );
 
     tic();
-    if ( rhs_f.count("exact") )
-        rhs(1_c) += integrate(_range=elements(mesh), _expr=trans(expr<Dim,1>(rhs_f.at("exact")))*id(w));
-    else
-    {
-        for( auto part: rhs_f )
-            rhs(1_c) += integrate(_range=markedelements(mesh,part.first), _expr=trans(expr<Dim,1>(part.second))*id(w));
-    }
-
-    // in convergence test Neumann condition is given from the displacement and
-    // constitutive law
-    for( auto part: stressn )
-        rhs(2_c) += integrate(_range=markedfaces(mesh,part.first), _expr=trans(id(m))*(expr<Dim,1>(part.second)));
-    for( auto part: displ )
-        rhs(2_c) += integrate(_range=markedfaces(mesh,part.first), _expr=trans(id(m))*(expr<Dim,1>(part.second)));
+    rhs(3_c) += integrate(_range=elements(mesh),
+                          _expr=trans(expr<Dim,1>(f))*idt(m) );
     toc("rhs",true);
 
     // Building the matrix
@@ -282,7 +259,7 @@ int hdg_elasticity( std::map<std::string,std::map<std::string,std::string>>& loc
     }
 
     tic();
-    std::string exportName =  "hdg_elasticity";
+    std::string exportName =  "hdg_stokes";
     std::string sigmaName = "stress";
     std::string sigma_exName = "stress-ex";
     std::string uName = "displacement";
@@ -326,8 +303,6 @@ int main( int argc, char** argv )
         {"stress",{}},
         {"stressn",{}},
         {"f",{}},
-        {"c1",{}},
-        {"c2",{}}};
     Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals  );
 
     for( auto d: locals )
