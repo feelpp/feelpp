@@ -1,5 +1,6 @@
 var NAVTREEINDEX48 =
 {
+"structFeel_1_1tag_1_1type.html#af972b04edb08b6f166ae1e903296535f":[6,1,1,13,221,1],
 "structFeel_1_1tag_1_1update.html":[6,1,1,13,222],
 "structFeel_1_1tag_1_1update.html#a2000f087794f429a1a9f362cf00c4a8b":[6,1,1,13,222,1],
 "structFeel_1_1tag_1_1update.html#a34cef4468b6130120daa97101675c9f0":[6,1,1,13,222,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX48 =
 "structFeel_1_1vf_1_1LambdaExpr_1_1HasTestFunction.html":[6,1,1,14,12,0],
 "structFeel_1_1vf_1_1LambdaExpr_1_1HasTestFunction.html#a658fae8518ac642903cac1513b48ce40":[6,1,1,14,12,0,0],
 "structFeel_1_1vf_1_1LambdaExpr_1_1HasTrialFunction.html":[6,1,1,14,12,1],
-"structFeel_1_1vf_1_1LambdaExpr_1_1HasTrialFunction.html#aea2805cd7ce0b90a4aa8f894852a36c3":[6,1,1,14,12,1,0],
-"structFeel_1_1vf_1_1LambdaExpr_1_1Lambda.html":[6,1,1,14,12,2]
+"structFeel_1_1vf_1_1LambdaExpr_1_1HasTrialFunction.html#aea2805cd7ce0b90a4aa8f894852a36c3":[6,1,1,14,12,1,0]
 };

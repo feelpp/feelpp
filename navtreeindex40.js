@@ -1,5 +1,6 @@
 var NAVTREEINDEX40 =
 {
+"structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html#abcec047a8d1dc1c8a5004eab8e51bea5":[6,1,1,84,8,2,0],
 "structFeel_1_1FunctionSpace_1_1GetComponentBasis.html":[6,1,1,84,9],
 "structFeel_1_1FunctionSpace_1_1GetComponentBasis.html#adbbf7d5d3ba3c0fc054f5e7a86b84b56":[6,1,1,84,9,0],
 "structFeel_1_1FunctionSpace_1_1GetMesh.html":[6,1,1,84,10],
@@ -248,6 +249,5 @@ var NAVTREEINDEX40 =
 "structFeel_1_1Projector_1_1integrate__type.html#a452bcef670431fb39d6ca642a1e735f7":[6,1,1,220,0,5],
 "structFeel_1_1Projector_1_1integrate__type.html#a829399c30248fd54c2de1b8bba0e5cfd":[6,1,1,220,0,3],
 "structFeel_1_1Projector_1_1integrate__type.html#a855028ab495cd4fbb134bc9124066966":[6,1,1,220,0,2],
-"structFeel_1_1Projector_1_1integrate__type.html#a8a7b3e1035198172a8094d2ed367c700":[6,1,1,220,0,7],
-"structFeel_1_1Projector_1_1integrate__type.html#aac1a09315cae837203516ff435d50a0d":[6,1,1,220,0,9]
+"structFeel_1_1Projector_1_1integrate__type.html#a8a7b3e1035198172a8094d2ed367c700":[6,1,1,220,0,7]
 };

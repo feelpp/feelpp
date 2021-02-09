@@ -172,7 +172,7 @@ var group__Toolboxes =
         [ "spaceTranslationalVelocity", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aa2c6e3dcb64a16bd53b59f242cf39483", null ],
         [ "startTimeStep", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a6028712e560556fa2f7473f2f824470a", null ],
         [ "translationalVelocityExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aa0b3204a1cd6b667ea7fd72bad231d6c", null ],
-        [ "updateElasticVelocityFromExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#ae64065e90cb997b22179898408a5a1fb", null ],
+        [ "updateElasticVelocityFromExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a9dffcc58d819d034c4d2b995edad8c9b", null ],
         [ "updateForUse", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a713cf8857b6a49d73afa9ed93bdd0d59", null ],
         [ "updateMatrixPTilde_angular", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aca2cbc648e8248529b9f2a7e8606fd10", null ],
         [ "updateParameterValues", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a14241a406586e59e26a39c32f60808cd", null ],
