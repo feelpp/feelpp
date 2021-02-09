@@ -2924,28 +2924,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateMatrixPTilde_an
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateElasticVelocityFromExpr(  self_type const& fluidToolbox )
-{
-    if ( !this->hasElasticVelocityFromExpr() )
-        return;
-
-    bool meshIsOnRefAtBegin = fluidToolbox.meshALE()->isOnReferenceMesh();
-    if ( !meshIsOnRefAtBegin )
-        fluidToolbox.meshALE()->revertReferenceMesh( false );
-    for ( auto const& [bcName,eve] : M_elasticVelocityExprBC )
-    {
-        auto eveRange = std::get<1>( eve ).empty()? elements(this->mesh())/*bpbc.rangeMarkedFacesOnFluid()*/ : markedelements(this->mesh(),std::get<1>( eve ) );
-        auto eveExpr =  std::get<0>( eve ).template expr<nDim,1>();
-        M_fieldElasticVelocity->on(_range=eveRange,_expr=eveExpr,_close=true ); // TODO crash if use here markedfaces of fluid with partial mesh support
-    }
-    if ( !meshIsOnRefAtBegin )
-        fluidToolbox.meshALE()->revertMovingMesh( false );
-}
-
-
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyArticulation::initLagrangeMultiplier( self_type const& fluidToolbox )
 {
     M_dataMapLagrangeMultiplierTranslationalVelocity =
