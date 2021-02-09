@@ -152,7 +152,7 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
     rhs(1_c) += integrate(_range=elements(mesh),
                           _expr=trans(expr<Dim,1>(f))*idt(v) );
     rhs(3_c) += integrate(_range=markedfaces(mesh, "Neumann"),
-                          _expr=inner(expr<Dim,Dim>(stressn),idt(m)) );
+                          _expr=-inner(expr<Dim,Dim>(stressn),idt(m)) );
     rhs(3_c) += integrate(_range=markedfaces(mesh, "Dirichlet"),
                           _expr=trans(expr<Dim,1>(u_d))*idt(m) );
     toc("rhs",true);
