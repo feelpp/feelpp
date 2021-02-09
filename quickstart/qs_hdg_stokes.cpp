@@ -81,8 +81,8 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
     auto stressn = locals.at("stressn");
+    auto u_d = locals.at("u");
     auto f = locals.at("f");
-    auto displ = locals.at("displ");
 
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
@@ -149,8 +149,12 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
         H.on( _range=elements(face_mesh), _expr=pow(h(),tau_order) );
 
     tic();
-    rhs(3_c) += integrate(_range=elements(mesh),
-                          _expr=trans(expr<Dim,1>(f))*idt(m) );
+    rhs(1_c) += integrate(_range=elements(mesh),
+                          _expr=trans(expr<Dim,1>(f))*idt(v) );
+    rhs(3_c) += integrate(_range=markedfaces(mesh, "Neumann"),
+                          _expr=inner(expr<Dim,Dim>(stressn),idt(m)) );
+    rhs(3_c) += integrate(_range=markedfaces(mesh, "Dirichlet"),
+                          _expr=trans(expr<Dim,1>(u_d))*idt(m) );
     toc("rhs",true);
 
     // Building the matrix
