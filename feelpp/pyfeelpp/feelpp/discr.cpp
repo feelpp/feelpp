@@ -79,7 +79,7 @@ f_minmax( RangeT const& elts, FunctionT const& f )
 }
 
 template<typename SpaceT>
-void defDiscr(py::module &m)
+void defDiscr(py::module &m, std::string const& suffix = "")
 {
     using namespace Feel;
     
@@ -93,17 +93,17 @@ void defDiscr(py::module &m)
     using element_t = typename space_t::element_type;
     std::string pyclass_name;
     int Order = space_t::basis_0_type::nOrder;
-    std::string suffix = std::to_string(mesh_t::nDim)+std::string("D_P") + std::to_string(Order);
-    //std::cout << "suffix discr: " << suffix << std::endl;
+    std::string suffix2 = std::to_string(mesh_t::nDim)+std::string("D_P") + std::to_string(Order) + suffix;
+    //std::cout << "suffix discr: " << suffix2 << std::endl;
     //py::bind_vector<worldscomm_ptr_t>(m, "WorldsComm");
     if ( space_t::is_continuous && space_t::is_scalar )
-        pyclass_name = std::string("Pch_") + suffix;
+        pyclass_name = std::string("Pch_") + suffix2;
     if ( space_t::is_continuous && space_t::is_vectorial )
-        pyclass_name = std::string("Pchv_") + suffix;
+        pyclass_name = std::string("Pchv_") + suffix2;
     if ( !space_t::is_continuous && space_t::is_scalar )
-        pyclass_name = std::string("Pdh_") + suffix;
+        pyclass_name = std::string("Pdh_") + suffix2;
     if ( !space_t::is_continuous && space_t::is_vectorial )
-        pyclass_name = std::string("Pdhv_") + suffix;
+        pyclass_name = std::string("Pdhv_") + suffix2;
     
     py::class_<space_t,std::shared_ptr<space_t>>(m,pyclass_name.c_str())
         .def(py::init<mesh_ptr_t const&,mesh_support_vector_t const&, size_type, periodicity_t, worldscomm_ptr_t const&, std::vector<bool>>(),
@@ -210,39 +210,26 @@ PYBIND11_MODULE(_discr, m )
     pyclass_name = std::string("PeriodicityNoPeriodicity");
     py::class_<Periodicity<NoPeriodicity>>(m,pyclass_name.c_str()).def(py::init<>());
 
-    
-    defDiscr<Pch_type<Mesh<Simplex<1,1,1>,double,0,uint32_type>,1,double,PointSetFekete,0>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<1,1,1>,double,0,uint32_type>,2,double,PointSetFekete,0>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<1,1,1>,double,0,uint32_type>,3,double,PointSetFekete,0>>( m );
+    auto dimt = hana::make_tuple( hana::int_c<1>, hana::int_c<2>, hana::int_c<3>);
+    auto ordert = hana::make_tuple( hana::int_c<1>, hana::int_c<2>, hana::int_c<3>);
+    hana::for_each(hana::cartesian_product(hana::make_tuple(dimt, ordert)),
+                   [&m]( auto const& d )
+                       {
+                           constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
+                           constexpr int _order = std::decay_t<decltype(hana::at_c<1>(d))>::value;
+                           defDiscr<Pch_type<Mesh<Simplex<_dim>>, _order>>( m );
+                           defDiscr<Pdh_type<Mesh<Simplex<_dim>>, _order>>( m );
+                           defDiscr<Pchv_type<Mesh<Simplex<_dim>>, _order>>( m );
+                           defDiscr<Pdhv_type<Mesh<Simplex<_dim>>, _order>>( m );
+                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Scalar, Continuous, PointSetFekete>>>>(m, "_fekete");
+                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Scalar, Discontinuous, PointSetFekete>>>>(m, "_fekete");
+                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Vectorial, Continuous, PointSetFekete>>>>(m, "_fekete");
+                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Vectorial, Discontinuous, PointSetFekete>>>>(m, "_fekete");
+                       });
 
-    defDiscr<FunctionSpace<Mesh<Simplex<2>>, bases<Lagrange<1, Scalar, Continuous, PointSetFekete>>>>(m);
-    // defDiscr<Pch_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,1,double,PointSetFekete,0>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,2,double,PointSetFekete,0>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,3,double,PointSetFekete,0>>( m );
-
-    defDiscr<Pch_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,1,double,PointSetFekete,0>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,2,double,PointSetFekete,0>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,3,double,PointSetFekete,0>>( m );
-    
-    defDiscr<Pdh_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,0,PointSetFekete>>( m );
-    defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,0,PointSetFekete>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,1,PointSetFekete>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,2,PointSetFekete>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,3,PointSetFekete>>( m );
-
-    defDiscr<Pdhv_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,1,PointSetFekete>>( m );
-    defDiscr<Pdhv_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,2,PointSetFekete>>( m );
-    defDiscr<Pdhv_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,3,PointSetFekete>>( m );
-
-    defDiscr<Pdh_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,0,PointSetFekete>>( m );
-    defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,0,PointSetFekete>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,1,PointSetFekete>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,2,PointSetFekete>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,3,PointSetFekete>>( m );
-
-    defDiscr<Pdhv_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,1,PointSetFekete>>( m );
-    defDiscr<Pdhv_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,2,PointSetFekete>>( m );
-    defDiscr<Pdhv_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,3,PointSetFekete>>( m );
-    //defDiscr<Mesh<Simplex<2,1,2>,double,0,uint32_type>,2>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<2>>,0>>( m );
+    defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<2>>,0>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<3>>,0>>( m );
+    defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<3>>,0>>( m );
 }
 
