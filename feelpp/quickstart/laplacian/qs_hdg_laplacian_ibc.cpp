@@ -40,7 +40,7 @@
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include <feel/feelmesh/complement.hpp>
-#include "cg_laplacian.hpp"
+#include <feel/feelpde/cg_laplacian.hpp>
 namespace Feel {
 
 

@@ -209,10 +209,10 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
          << "[Checker] " << this->journalWatcherInstanceName() << "\n";
     auto err = fn( M_solution );
     std::vector<bool> checkSuccess;
-    pt::ptree pt;
+    nl::json pt;
     for( auto const& e : err )
     {
-        pt.put( e.first, e.second );
+        pt.emplace( e.first, e.second );
         //cout << "||u-u_h||_" << e.first << "=" << e.second  << std::endl;
         
         //cout << "||u-u_h||_" << e.first << "=" << e.second  << std::endl;

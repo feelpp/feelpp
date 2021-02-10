@@ -36,7 +36,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_iterSinceRedistanciation(0),
     M_useOrder1AfterRedist( false )
 {
-    this->setFilenameSaveInfo( prefixvm(this->prefix(),"Levelset.info") );
     //-----------------------------------------------------------------------------//
     // Set advection model
     M_advectionToolbox->setModelName( "Advection" );

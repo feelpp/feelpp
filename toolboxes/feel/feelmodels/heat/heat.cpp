@@ -342,28 +342,25 @@ HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
     if ( !this->isUpdatedForUse() )
         return;
-    if ( p.get_child_optional( "Environment" ) )
+    if ( p.contains( "Environment" ) )
         return;
 
-    pt::ptree subPt;
-    super_type::super_model_base_type::updateInformationObject( subPt );
-    p.put_child( "Environment", subPt );
-    subPt.clear();
-    super_type::super_model_meshes_type::updateInformationObject( subPt );
-    p.put_child( "Meshes", subPt );
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
+
+    super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
     // Physics
-    pt::ptree subPt2;
-    subPt.clear();
-    subPt.put( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
+    nl::json subPt;
+    subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
     //subPt.put( "velocity-convection",  std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" ) );
-    p.put_child( "Physics", subPt );
+    p["Physics"] = subPt;
 
     // Boundary Conditions
+#if 0
     subPt.clear();
     subPt2.clear();
     M_bcDirichletMarkerManagement.updateInformationObjectDirichletBC( subPt2 );
@@ -378,104 +375,95 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
     for( const auto& ptIter : subPt2 )
         subPt.put_child( ptIter.first, ptIter.second );
     p.put_child( "Boundary Conditions",subPt );
-
+#endif
     // Materials properties
     if ( this->materialsProperties() )
-    {
-        subPt.clear();
-        this->materialsProperties()->updateInformationObject( subPt );
-        p.put_child( "Materials Properties", subPt );
-    }
+        this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
 
     // FunctionSpace
     subPt.clear();
-    subPt2.clear();
-    M_Xh->updateInformationObject( subPt2 );
-    //subPt.put_child( "FunctionSpace Temperature",  M_Xh->journalSectionName() );
-    subPt.put_child( "Temperature", subPt2 );
-    p.put_child( "Function Spaces",  subPt );
-    //if ( this->fieldVelocityConvectionIsUsedAndOperational() )
-    //    p.put( "FunctionSpace Velocity Convection", M_XhVelocityConvection->journalSectionName() );
+    subPt["Temperature"] = M_Xh->journalSection().to_string();
+    p.emplace( "Function Spaces",  subPt );
     if ( M_stabilizationGLS )
     {
         subPt.clear();
-        subPt.put( "type", M_stabilizationGLSType );
+        subPt.emplace( "type", M_stabilizationGLSType );
         if ( M_stabilizationGLSParameter )
-            subPt.put( "paramter method", M_stabilizationGLSParameter->method() );
-        p.put_child( "Finite element stabilization", subPt );
+            subPt.emplace( "paramter method", M_stabilizationGLSParameter->method() );
+        p["Finite element stabilization"] = subPt;
     }
 
     if ( !this->isStationary() )
     {
         subPt.clear();
-        subPt.put( "initial time", this->timeStepBase()->timeInitial() );
-        subPt.put( "final time", this->timeStepBase()->timeFinal() );
-        subPt.put( "time step", this->timeStepBase()->timeStep() );
-        subPt.put( "type", M_timeStepping );
-        p.put_child( "Time Discretization", subPt );
+        subPt.emplace( "initial time", this->timeStepBase()->timeInitial() );
+        subPt.emplace( "final time", this->timeStepBase()->timeFinal() );
+        subPt.emplace( "time step", this->timeStepBase()->timeStep() );
+        subPt.emplace( "type", M_timeStepping );
+        p["Time Discretization"] = subPt;
     }
 
 
     // Algebraic Solver
     if ( M_algebraicFactory )
     {
-        subPt.clear();
-        M_algebraicFactory->updateInformationObject( subPt );
-        p.put_child( "Algebraic Solver", subPt );
+        M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
     }
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
-tabulate::Table
-HEAT_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+tabulate_informations_ptr_t
+HEAT_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    std::vector<std::pair<std::string,tabulate::Table>> tabInfoSections;
-
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
     if ( jsonInfo.contains("Environment") )
-        tabInfoSections.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
+        tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
     if ( jsonInfo.contains("Physics") )
     {
-        tabulate::Table tabInfoPhysics;
+        Feel::Table tabInfoPhysics;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
-        tabInfoSections.push_back( std::make_pair( "Physics",  tabInfoPhysics ) );
+        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics, tabInfoProp ) );
     }
 
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
-        tabInfoSections.push_back( std::make_pair( "Materials Properties", this->materialsProperties()->tabulateInformation(jsonInfo.at("Materials Properties"), tabInfoProp ) ) );
+        tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
 
-    tabInfoSections.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
+    //tabInfoSections.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
 
     if ( jsonInfo.contains("Meshes") )
-       tabInfoSections.push_back( std::make_pair( "Meshes", super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) ) );
+        tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
 
     if ( jsonInfo.contains("Function Spaces") )
     {
         auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
-        tabulate::Table tabInfoFunctionSpaces;
-        tabInfoFunctionSpaces.add_row({"Temperature"});
-        tabInfoFunctionSpaces.add_row({ TabulateInformationTools::FromJSON::tabulateFunctionSpace( jsonInfoFunctionSpaces.at( "Temperature" ), tabInfoProp ) });
-        tabInfoSections.push_back( std::make_pair( "Function Spaces",  tabInfoFunctionSpaces ) );
+        auto tabInfoFunctionSpaces = TabulateInformationsSections::New( tabInfoProp );
+
+        nl::json::json_pointer jsonPointerSpaceTemperature( jsonInfoFunctionSpaces.at( "Temperature" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerSpaceTemperature ) )
+            tabInfoFunctionSpaces->add( "Temperature", TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( JournalManager::journalData().at( jsonPointerSpaceTemperature ), tabInfoProp ) );
+
+        tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
     }
 
     if ( jsonInfo.contains("Time Discretization") )
     {
-        tabulate::Table tabInfoTimeDiscr;
+        Feel::Table tabInfoTimeDiscr;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoTimeDiscr, jsonInfo.at("Time Discretization"), tabInfoProp );
-        tabInfoSections.push_back( std::make_pair( "Time Discretization",  tabInfoTimeDiscr ) );
+        tabInfo->add( "Time Discretization", TabulateInformations::New( tabInfoTimeDiscr, tabInfoProp ) );
     }
 
     if ( jsonInfo.contains("Finite element stabilization") )
     {
-        tabulate::Table tabInfoStab;
+        Feel::Table tabInfoStab;
         TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoStab, jsonInfo.at("Finite element stabilization"), tabInfoProp );
-        tabInfoSections.push_back( std::make_pair( "Finite element stabilization",  tabInfoStab ) );
+        tabInfo->add( "Finite element stabilization", TabulateInformations::New( tabInfoStab, tabInfoProp ) );
     }
 
     if ( jsonInfo.contains( "Algebraic Solver" ) )
-        tabInfoSections.push_back( std::make_pair( "Algebraic Solver", model_algebraic_factory_type::tabulateInformation( jsonInfo.at("Algebraic Solver"), tabInfoProp ) ) );
+        tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
 
-    return TabulateInformationTools::createSections( tabInfoSections, (boost::format("Toolbox Heat : %1%")%this->keyword()).str() );
+    return tabInfo;
 }
 
 
@@ -484,6 +472,7 @@ std::shared_ptr<std::ostringstream>
 HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+#if 0
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -534,7 +523,7 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n";
-
+#endif
     return _ostr;
 }
 
