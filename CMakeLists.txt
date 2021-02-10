@@ -51,6 +51,11 @@ if ( ${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.13.0 )
   cmake_policy(SET CMP0079 NEW)
 endif()
 
+if (POLICY CMP0077)
+  cmake_policy(SET CMP0077 NEW)
+  set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+endif()
+
 if (POLICY CMP0045)
 # error on non-existent target in get_target_property
 cmake_policy(SET CMP0045 NEW)

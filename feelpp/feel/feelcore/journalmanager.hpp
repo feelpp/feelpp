@@ -26,6 +26,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelevent/events.hpp>
 #include <feel/feelcore/mongocxx.hpp>
+#include <feel/feelcore/json.hpp>
 
 #define FEELPP_DB_JOURNAL_VERSION "0.1.0"
 
@@ -38,7 +39,7 @@ class JournalManager : public Event::SignalHandler
 {
 public:
     // Types alias.
-    using notify_type = pt::ptree;
+    using notify_type = nl::json;
 
     //! Constructor
     //! @{
@@ -92,7 +93,7 @@ public:
             return S_journal_filename;
         }
 
-    static pt::ptree & journalData()
+    static nl::json & journalData()
         {
             return S_journal_ptree;
         }
@@ -145,7 +146,7 @@ public:
 
     //! Save the global property tree into a json file.
     static void
-    journalSave( std::string filename = "" );
+    journalSave( std::string const& filename = "" );
 
     //! Generate a checkpoint
     //! \param save enable intermediate save.
@@ -225,7 +226,7 @@ private:
 
     //! Save the global property tree into a json file.
     static void
-    journalJSONSave( const std::string& filename, pt::ptree const& pt );
+    journalJSONSave( const std::string& filename, nl::json const& pt );
 
     //! Save the json in a mongodb database.
     //! This function read a json file in a bson format. Then this bson entry
@@ -240,7 +241,7 @@ private:
     //! JSON filename.
     static std::string S_journal_filename;
     //! Global property tree.
-    static pt::ptree S_journal_ptree;
+    static nl::json S_journal_ptree;
 
     //! MongoDB specific attribute. These attributes are set via options.
     //! @{

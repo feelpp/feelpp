@@ -1986,19 +1986,11 @@ Environment::generateSummary( std::string fname, std::string stage, bool write )
 
 
 void
-Environment::updateInformationObject( pt::ptree & p ) const
+Environment::updateInformationObject( nl::json & p ) const
 {
-    if ( !p.get_child_optional( "application" ) )
+    if ( !p.contains( "application" ) )
     {
-        p.put( "application.name", Environment::about().appName() );
-        p.put( "run.uuid", Environment::randomUUID() );
-        p.put( "run.directories.app", Environment::appRepository() );
-        p.put( "run.directories.export", Environment::exportsRepository() );
-        p.put( "run.directories.logs", Environment::logsRepository() );
-        p.put( "run.directories.exprs", Environment::exprRepository() );
-        p.put( "run.directories.downloads", Environment::downloadsRepository() );
-        p.put( "run.number_processors", Environment::numberOfProcessors() );
-
+        p["/application/name"_json_pointer] = Environment::about().appName();
 
         std::string commandLineUsed;
         for ( int i = 0; i < S_argc; ++i )
@@ -2007,50 +1999,60 @@ Environment::updateInformationObject( pt::ptree & p ) const
             if (i < S_argc-1 )
                 commandLineUsed += " ";
         }
-        p.put( "run.command-line", commandLineUsed );
-        pt::ptree ptTmp;
+
+        auto ptCfg = nl::json::array({});
         for ( auto const& cfg : S_configFiles )
-            ptTmp.push_back( std::make_pair("", pt::ptree( std::get<0>( cfg ) ) ) );
-        p.put_child( "run.config-files", ptTmp );
+            ptCfg.push_back( std::get<0>( cfg ) );
+
+        p.emplace( "run", nl::json( {
+                    { "uuid", uuids::to_string( Environment::randomUUID() ) },
+                    { "directories", {
+                            { "app", Environment::appRepository() },
+                            { "export", Environment::exportsRepository() },
+                            { "logs", Environment::logsRepository() },
+                            { "exprs", Environment::exprRepository() },
+                            { "downloads", Environment::downloadsRepository() }
+                        }
+                    },
+                    { "command-line", commandLineUsed },
+                    { "config-files", ptCfg },
+                    { "number_of_processors", Environment::numberOfProcessors() }
+                } ) );
 
         // Softwares
-        p.put( "software.boost.version", BOOST_LIB_VERSION );
+        p["/software/boost/version"_json_pointer] = BOOST_LIB_VERSION;
 #if BOOST_VERSION >= 106700
         std::stringstream mpi_version;
         mpi_version << M_env->version().first << "."
                     << M_env->version().second;
-        p.put( "software.mpi.version", mpi_version.str() );
+        p["/software/mpi/version"_json_pointer] = mpi_version.str();
 #else
-        p.put( "software.mpi.version", "unknown" );
+        p["/software/mpi/version"_json_pointer] = "unknown";
 #endif
 #if defined( OMPI_MPI_H )
-        p.put( "software.mpi.library", "openmpi" );
-        p.put( "software.mpi.openmpi.version.major", OMPI_MAJOR_VERSION );
-        p.put( "software.mpi.openmpi.version.minor", OMPI_MINOR_VERSION );
-        p.put( "software.mpi.openmpi.version.release", OMPI_RELEASE_VERSION );
+        p["/software/mpi/library/openmpi"_json_pointer] = nl::json( {
+                { "version", { { "major", OMPI_MAJOR_VERSION }, { "minor", OMPI_MINOR_VERSION }, { "release", OMPI_RELEASE_VERSION } } }
+            } );
 #endif
 #if defined ( FEELPP_HAS_PETSC_H )
-        p.put( "software.petsc.version.major", PETSC_VERSION_MAJOR );
-        p.put( "software.petsc.version.minor", PETSC_VERSION_MINOR );
-        p.put( "software.petsc.version.subminor", PETSC_VERSION_SUBMINOR );
-        p.put( "software.petsc.version.patch", PETSC_VERSION_PATCH );
-        p.put( "software.petsc.version.release", PETSC_VERSION_RELEASE );
-        p.put( "software.petsc.date.release", PETSC_RELEASE_DATE );
-        p.put( "software.petsc.date.version", PETSC_VERSION_DATE );
+        p["/software/petsc"_json_pointer] = nl::json( {
+                { "version", {
+                        { "major", PETSC_VERSION_MAJOR },
+                        { "minor", PETSC_VERSION_MINOR },
+                        { "subminor", PETSC_VERSION_SUBMINOR },
+                        { "patch", PETSC_VERSION_PATCH },
+                        { "release", PETSC_VERSION_RELEASE }
+                    } },
+                { "date", {
+                        { "release", PETSC_RELEASE_DATE },
+                        { "version", PETSC_VERSION_DATE }
+                    } }
+            });
 #endif
     }
+
     if ( S_hwSysInstance )
-    {
-        auto ptHwSysOpt = p.get_child_optional( "hardware" );
-        if ( ptHwSysOpt )
-            S_hwSysInstance->updateInformationObject( *ptHwSysOpt );
-        else
-        {
-            pt::ptree ptHwSys;
-            S_hwSysInstance->updateInformationObject( ptHwSys );
-            p.put_child( "hardware", ptHwSys );
-        }
-    }
+        S_hwSysInstance->updateInformationObject( p["hardware"] );
 }
 
 

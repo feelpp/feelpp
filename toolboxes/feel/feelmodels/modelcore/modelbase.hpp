@@ -40,9 +40,7 @@
 #include <feel/feelmodels/modelcore/log.hpp>
 #include <feel/feelmodels/modelcore/timertool.hpp>
 
-// #include <tabulate/table.hpp>
-// #include <feel/feelcore/json.hpp>
-#include <feel/feelmodels/modelcore/tabulateinformation.hpp>
+#include <feel/feelcore/tabulateinformations.hpp>
 
 namespace Feel
 {
@@ -177,21 +175,18 @@ public :
     bool verboseAllProc() const;
     void log( std::string const& _className,std::string const& _functionName,std::string const& _msg ) const;
     // info
-    void updateInformationObject( pt::ptree & p ) const override;
-    std::vector<tabulate::Table> tabulateInformations() const;
-    virtual tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
-    virtual std::vector<tabulate::Table> tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
+    void updateInformationObject( nl::json & p ) const override;
 
+    tabulate_informations_ptr_t tabulateInformations() const;
+    virtual tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
 
-    std::string filenameSaveInfo() const;
-    void setFilenameSaveInfo(std::string const& s);
     virtual std::shared_ptr<std::ostringstream> getInfo() const;
     void printInfo() const { this->printInfo( this->tabulateInformations() ); }
     void saveInfo() const { this->saveInfo( this->tabulateInformations() ); }
     void printAndSaveInfo() const;
 private :
-    void printInfo( std::vector<tabulate::Table> const& tabInfo ) const;
-    void saveInfo( std::vector<tabulate::Table> const& tabInfo ) const;
+    void printInfo( tabulate_informations_ptr_t const& tabInfo ) const;
+    void saveInfo( tabulate_informations_ptr_t const& tabInfo ) const;
 public :
     // timer
     TimerToolBase & timerTool( std::string const& s ) const;
@@ -227,8 +222,6 @@ private :
     ModelBaseCommandLineOptions M_modelCommandLineOptions;
     // verbose
     bool M_verbose,M_verboseAllProc;
-    // filename for save info
-    std::string M_filenameSaveInfo;
     // timertool register by a name id
     mutable std::map<std::string,std::shared_ptr<TimerToolBase> > M_mapTimerTool;
     bool M_timersActivated;
