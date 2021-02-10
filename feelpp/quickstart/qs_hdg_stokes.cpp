@@ -29,6 +29,7 @@
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelpython/pyexpr.hpp>
+#include <feel/feelvf/vf.hpp>
 namespace Feel {
 
 inline
@@ -46,6 +47,15 @@ makeOptions()
         ( "hface", po::value<int>()->default_value( 0 ), "hface" )
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
+#if FEELPP_DIM==2
+        ( "u", po::value<std::string>()->default_value( "Array([0,0])" ), "velocity is given" )
+        ( "f", po::value<std::string>()->default_value( "Array([0,0])" ), "external volumic load" )
+        ( "stressn", po::value<std::string>()->default_value( "Array([0,0])" ), "external surfacic load" )
+#else
+        ( "u", po::value<std::string>()->default_value( "Array([0,0,0])" ), "velocity is given" )
+        ( "f", po::value<std::string>()->default_value( "Array([0,0,0])" ), "external volumic load" )
+        ( "stressn", po::value<std::string>()->default_value( "Array([0,0,0])" ), "external surfacic load" )
+#endif
         ;
     return testhdivoptions.add( Feel::feel_options() ).add( backend_options("sc"));
 }
@@ -63,6 +73,7 @@ makeAbout()
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Daniele Prada", "developer", "daniele.prada85@gmail.com", "" );
     about.addAuthor( "Lorenzo Sala", "developer", "sala@unistra.fr", "" );
+    about.addAuthor( "Philippe Ricka", "developer", "pricka@math.unistra.fr", "" );
 
     return about;
 
@@ -80,9 +91,10 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
 
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
-    auto stressn = locals.at("stressn");
-    auto u_d = locals.at("u");
-    auto f = locals.at("f");
+    auto mu = locals.at("mu");
+    auto stressn = expr<Dim,1>(locals.at("stressn"));
+    auto u_d = expr<Dim,1>(locals.at("u"));
+    auto f = expr<Dim,1>(locals.at("f"));
 
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
@@ -104,7 +116,7 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
     toc("spaces",true);
 
     cout << "Vh<" << OrderP   << "> : " << Vh->nDof() << std::endl
-         << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
+         << "Wh<" << OrderP   << "> : " << Wh->nDof() << std::endl
          << "Ph<" << OrderP   << "> : " << Ph->nDof() << std::endl
          << "Mh<" << OrderP   << "> : " << Mh->nDof() << std::endl;
 
@@ -124,7 +136,7 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
     auto nDofuhat  = uhat.functionSpace()->nDof();
 
 
-	bool condense = 1;
+	bool condense = 0;
 	double sc_param = 1;
     if( condense )
         sc_param = 0.5;
@@ -150,11 +162,11 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
 
     tic();
     rhs(1_c) += integrate(_range=elements(mesh),
-                          _expr=trans(expr<Dim,1>(f))*idt(v) );
-    rhs(3_c) += integrate(_range=markedfaces(mesh, "Neumann"),
-                          _expr=-inner(expr<Dim,Dim>(stressn),idt(m)) );
+                          _expr=trans(f)*idt(v) );
+    rhs(3_c) -= integrate(_range=markedfaces(mesh, "Neumann"),
+                          _expr=inner(stressn,idt(m)) );
     rhs(3_c) += integrate(_range=markedfaces(mesh, "Dirichlet"),
-                          _expr=trans(expr<Dim,1>(u_d))*idt(m) );
+                          _expr=trans(u_d)*idt(m) );
     toc("rhs",true);
 
     // Building the matrix
@@ -175,11 +187,11 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
     toc("a(0,3)", true);
     tic();
     a( 1_c, 0_c) += integrate(_range=elements(mesh),
-                              _expr=mu*trans(id(delta))*gradt(v)));
+                              _expr=mu*trans(id(delta))*gradt(v));
     toc("a(1,0)", true);
     tic();
     a( 1_c, 2_c) += integrate(_range=elements(mesh),
-                              _expr=-inner(id(p)*eye<3>(),gradt(v)) );
+                              _expr=-inner(id(p)*eye<Dim>(),gradt(v)) );
     toc("a(1,2)", true);
     tic();
     a( 2_c, 1_c) += integrate(_range=elements(mesh),
@@ -187,30 +199,29 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
     toc("a(2,1)", true);
     tic();
     a( 2_c, 3_c) += integrate(_range=internalfaces(mesh),
-                              _expr=leftface(normal(uhat))*leftface(idt(q))-    // does this make sense?
-                                    leftface(normal(uhat))*rightface(idt(q)) ); // dont know if orientation is ok
+                              _expr=normal(uhat)*jumpt(q) );
     a( 2_c, 3_c) += integrate(_range=boundaryfaces(mesh),
                               _expr=normal(uhat)*idt(q) );
     toc("a(2,3)", true);
     tic();
-    a( 3_c, 0_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-mu*(leftfacet(normal(delta))*idt(m)+
-                                         rightfacet(normal(delta)*idt(m))) );
-    a( 3_c, 0_c) += integrate(_range=boundaryfaces(mesh), // including Neumann lhs; will require - sign in rhs according to my formulation
-                              _expr=-mu*trans(normal(delta))*idt(m) );
+    a( 3_c, 0_c) -= integrate(_range=internalfaces(mesh),
+                              _expr=mu*(leftfacet(normal(delta))*id(m)+
+                                         rightfacet(normal(delta)*id(m))) );
+    a( 3_c, 0_c) -= integrate(_range=boundaryfaces(mesh),
+                              _expr=mu*trans(normal(delta))*idt(m) );
     toc("a(3,0)", true);
     tic();
     a( 3_c, 1_c) += integrate(_range=internalfaces(mesh),
                               _expr=-tau_constant*(trans(leftface(id(u)))*idt(m)+
                                                    trans(rightface(id(u)))*idt(m)) );
-    a( 3_c, 1_c) += integrate(_range=boundaryfaces(mesh), // including Neumann lhs; will require - sign in rhs according to my formulation
-                              _expr=-tau_constant*(trans(id(u))*idt(m));
+    a( 3_c, 1_c) += integrate(_range=boundaryfaces(mesh),
+                              _expr=-tau_constant*(trans(id(u))*idt(m)) );
     toc("a(3,1)", true);
     tic();
     a( 3_c, 2_c) += integrate(_range=internalfaces(mesh),
                               _expr=trans(jump(p))*idt(m) );
-    a( 3_c, 2_c) += integrate(_range=boundaryfaces(mesh), // including Neumann lhs; will require - sign in rhs according to my formulation
-                              _expr=trans(p*N()))*idt(m) );
+    a( 3_c, 2_c) += integrate(_range=boundaryfaces(mesh),
+                              _expr=trans(p*N())*idt(m) );
     toc("a(3,2)", true);
     tic();
     a( 3_c, 3_c) += integrate(_range=internalfaces(mesh),                  //
@@ -231,6 +242,7 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
     auto uhatp = U(3_c);
 
     int status = 1;
+#if 0
     if ( displ.count("exact" ) )
     {
         auto displ_exact = displ.at("exact");
@@ -261,23 +273,26 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
         v.on( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) );
         w.on( _range=elements(mesh), _expr=expr<Dim,1>(displ_exact) );
     }
+#endif
 
     tic();
     std::string exportName =  "hdg_stokes";
     std::string sigmaName = "stress";
     std::string sigma_exName = "stress-ex";
-    std::string uName = "displacement";
-    std::string u_exName = "displacement-ex";
+    std::string uName = "u";
+    std::string u_exName = "u-ex";
 
     auto e = exporter( _mesh=mesh, _name=exportName );
     e->setMesh( mesh );
     e->add( sigmaName, sigmap );
     e->add( uName, up );
+#if 0
     if ( displ.count("exact" ) )
     {
         e->add( sigma_exName, v );
         e->add( u_exName, w );
     }
+#endif
     e->save();
 
     toc("export");
@@ -294,25 +309,25 @@ int main( int argc, char** argv )
 
 	Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
-                     _about=about(_name="qs_hdg_elasticity",
+                     _about=about(_name="qs_hdg_stokes",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
     // end::env[]
 
     // Exact solutions
     std::map<std::string,std::map<std::string,std::string>> locals{{"dim",{{"dim",std::to_string(FEELPP_DIM)}}},
-        {"displ", {{ "exact", soption("displ")}} },
-        {"grad_displ",{}},
+        {"u", {{ "exact", soption("u")}} },
+        {"grad_u",{}},
         {"strain",{}},
         {"stress",{}},
         {"stressn",{}},
-        {"f",{}},
+        {"f",{}} };
     Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals  );
 
     for( auto d: locals )
-        cout << d.first << ":" << d.second << std::endl;
+        std::cout << d.first << ":" << d.second << std::endl;
     
-    int status = hdg_elasticity<FEELPP_DIM,2>( locals );
+    int status = hdg_stokes<FEELPP_DIM,2>( locals );
     return !status;
 
 }
