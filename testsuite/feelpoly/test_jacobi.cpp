@@ -124,7 +124,7 @@ public:
             ublas::vector<T> pts( 2 );
             pts[0] = 1.0;
             pts[1] = 1.0;
-            ublas::matrix<T> P ( JacobiBatchEvaluation<N, T>( 0, 0, pts ) );
+            ublas::matrix<T> P ( JacobiBatchEvaluation<T>( N, 0, 0, pts ) );
             BOOST_CHECK( P.size1() == N+1 );
             BOOST_CHECK( P.size2() == 2 );
             value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
@@ -143,7 +143,7 @@ public:
                 ublas::vector<T> pts( 2 );
                 pts[0] = 0.6;
                 pts[1] = 0.6;
-                ublas::matrix<T> dP ( JacobiBatchDerivation<N, T>( 0.0, 0.0, pts ) );
+                ublas::matrix<T> dP ( JacobiBatchDerivation<T>( N, 0.0, 0.0, pts ) );
 
                 if ( Feel::math::abs( dP( N, 0 ) - dp2 ) > Feel::type_traits<T>::epsilon() )
                 {

@@ -1,0 +1,52 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem                  1.0
+PortGroup                   mpi 1.0
+
+name                        netcdf-cxx
+version                     4.2
+revision                    16
+distname                    ${name}-${version}
+maintainers                 {takeshi @tenomoto} openmaintainer
+platforms                   darwin
+categories                  science
+license                     Permissive
+
+description                 NetCDF legacy C++ library
+long_description \
+    NetCDF (network Common Data Form) is a set of software libraries \
+    and machine-independent data formats that support the creation,  \
+    access, and sharing of array-oriented scientific data.
+
+homepage                    http://www.unidata.ucar.edu/software/netcdf/
+
+master_sites                ftp://ftp.unidata.ucar.edu/pub/netcdf/ \
+                            http://www.gfd-dennou.org/arch/netcdf/unidata-mirror/ \
+                            ftp://www.gfd-dennou.org/arch/netcdf/unidata-mirror/
+
+checksums           md5     d32b20c00f144ae6565d9e98d9f6204c \
+                    sha1    bab9b2d873acdddbdbf07ab35481cd0267a3363b \
+                    rmd160  69e9348ced7da8b6ddf08dad4c3a92c4f18d0648
+
+patchfiles              patch-include-libcxx.diff
+
+compilers.choose            cc cpp cxx
+mpi.setup
+
+mpi.enforce_variant         hdf5
+
+
+depends_lib         port:netcdf
+
+# Teach glibtool to pass -stdlib at link time.
+use_autoreconf              yes
+autoreconf.args             -fvi
+
+configure.cppflags-append   -DNDEBUG
+configure.cxxflags-append   -fno-common
+configure.cflags-append     -fno-common
+
+test.run                    yes
+test.target                 check
+
+destroot.destdir            prefix=${destroot}${prefix}

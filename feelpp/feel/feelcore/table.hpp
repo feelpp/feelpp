@@ -143,7 +143,7 @@ public :
 private :
     int M_nRow, M_nCol;
     std::vector<TableImpl::Cell> M_cells;
-    std::unique_ptr<TableImpl::Format> M_format;
+    std::shared_ptr/*unique_ptr*/<TableImpl::Format> M_format;
 };
 
 std::ostream&

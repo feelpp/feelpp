@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE( test_pbdw_offline )
     auto Pset = Dmu->sampling();
     Pset->randomize(N);
 
-    std::vector<sensorbase_ptrtype> sigmas;
+    SensorMap<space_type> sigmas;
     for( int i = 1; i < nbSensors+1; ++i )
     {
         for( int j = 1; j < nbSensors+1; ++j )
@@ -88,9 +88,9 @@ BOOST_AUTO_TEST_CASE( test_pbdw_offline )
             node_t n(2);
             n(0) = i*1./(nbSensors+1);
             n(1) = j*1./(nbSensors+1);
-            auto s = std::make_shared<sensor_type>(Xh, n, r,
-                                                   "sensors_"+std::to_string((i-1)*nbSensors+(j-1)));
-            sigmas.push_back(s);
+            std::string name = "sensors_"+std::to_string((i-1)*nbSensors+(j-1));
+            auto s = std::make_shared<sensor_type>(Xh, n, r,name );
+            sigmas[name] = s;
         }
     }
 
@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE( test_pbdw_offline )
     if( boption("do-ortho") )
         XR->orthonormalize("L2", false, doption("ortho-tol"));
 
-    PBDW pbdw("test_pbdw", XR, sigmas);
+    PBDW<decay_type<decltype(XR)>> pbdw("test_pbdw", XR, sigmas);
     pbdw.offline();
     auto m = pbdw.matrix();
 
@@ -128,8 +128,12 @@ BOOST_AUTO_TEST_CASE( test_pbdw_offline )
     {
         auto phi = solver(mu);
         auto vn = vectorN_type(M);
-        for(int i = 0; i < M; ++i)
-            vn(i) = (*sigmas[i])(phi);
+        int i = 0;
+        for( auto const& [n,s] : sigmas )
+        {
+            vn(i) = (*s)(phi);
+            i++;
+        }
         auto I = pbdw.solution(vn);
         errors.push_back( normL2(_range=elements(mesh),_expr=idv(phi)-idv(I)) );
     }
@@ -159,7 +163,7 @@ BOOST_AUTO_TEST_CASE( test_pbdw_online )
     auto Xh = pbdw.functionSpace();
     auto mesh = Xh->mesh();
 
-    std::vector<sensorbase_ptrtype> sigmas;
+    SensorMap<space_type> sigmas;
     for( int i = 1; i < nbSensors+1; ++i )
     {
         for( int j = 1; j < nbSensors+1; ++j )
@@ -167,9 +171,9 @@ BOOST_AUTO_TEST_CASE( test_pbdw_online )
             node_t n(2);
             n(0) = i*1./(nbSensors+1);
             n(1) = j*1./(nbSensors+1);
-            auto s = std::make_shared<sensor_type>(Xh, n, r,
-                                                   "sensors_"+std::to_string((i-1)*nbSensors+(j-1)));
-            sigmas.push_back(s);
+            std::string name = "sensors_"+std::to_string((i-1)*nbSensors+(j-1));
+            auto s = std::make_shared<sensor_type>(Xh, n, r,name);
+            sigmas[name] = s;
         }
     }
 
@@ -204,8 +208,12 @@ BOOST_AUTO_TEST_CASE( test_pbdw_online )
     {
         auto phi = solver(mu);
         auto vn = vectorN_type(M);
-        for(int i = 0; i < M; ++i)
-            vn(i) = (*sigmas[i])(phi);
+        int i = 0;
+        for( auto const& [n, s] : sigmas )
+        {
+            vn( i ) = ( *s )( phi );
+            i++;
+        }
         auto I = pbdw.solution(vn);
         errors.push_back( normL2(_range=elements(mesh),_expr=idv(phi)-idv(I)) );
     }
