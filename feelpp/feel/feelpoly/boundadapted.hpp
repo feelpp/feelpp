@@ -196,7 +196,7 @@ public:
     typedef typename traits_type::points_type points_type;
     typedef typename traits_type::node_type node_type;
 
-    typedef Principal<Degree, T,StoragePolicy> principal_type;
+    typedef Principal<T,StoragePolicy> principal_type;
     //@}
 
     /** @name Constructors, destructor
@@ -208,7 +208,8 @@ public:
         super( *this ),
         M_refconvex(),
         M_pts( nDim, numVertices ),
-        M_pts_face( reference_convex_type::numVertices )
+        M_pts_face( reference_convex_type::numVertices ),
+        M_pfunc( Degree )
     {
         PointSetEquiSpaced<convex_type,nOrder,value_type> pts;
 
@@ -231,7 +232,8 @@ public:
         super( *this ),
         M_refconvex( d.M_refconvex ),
         M_pts( d.M_pts ),
-        M_pts_face( d.M_pts_face )
+        M_pts_face( d.M_pts_face ),
+        M_pfunc( Degree )
     {}
 
     ~BoundaryAdapted()
@@ -338,13 +340,13 @@ public:
      *
      * \arg __pts is a set of points
      */
-    static matrix_type evaluate( points_type const& __pts )
+    matrix_type evaluate( points_type const& __pts )
     {
         return evaluate( __pts, mpl::int_<nDim>() );
     }
 
     template<typename AE>
-    static vector_matrix_type derivate( ublas::matrix_expression<AE>  const& __pts )
+    vector_matrix_type derivate( ublas::matrix_expression<AE>  const& __pts )
     {
         return derivate( __pts, mpl::int_<nDim>() );
     }
@@ -365,7 +367,7 @@ private:
      *
      */
     matrix_type
-    static evaluate( points_type const& __pts, mpl::int_<1> )
+    evaluate( points_type const& __pts, mpl::int_<1> )
     {
         matrix_type E = M_pfunc.evaluate_1( ublas::row( __pts,0 ) );
         matrix_type D;
@@ -387,7 +389,7 @@ private:
      */
     template<typename AE>
     vector_matrix_type
-    static derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> )
+    derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> )
     {
         FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error( "invalid points" );
 
@@ -413,41 +415,35 @@ private:
      * Evaluation at a set of points of the expansion basis in 2D on
      * the triangle
      */
-    static matrix_type evaluate( points_type const& __pts, mpl::int_<2> );
+    matrix_type evaluate( points_type const& __pts, mpl::int_<2> );
 
     /**
      * derivation at a set of points of the expansion basis in 2D on
      * the triangle
      */
     template<typename AE>
-    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> );
+    vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> );
 
     /**
      * Evaluation at a set of points of the expansion basis in 3D on
      * the tetrahedron
      */
-    static matrix_type evaluate( points_type const& __pts, mpl::int_<3> );
+    matrix_type evaluate( points_type const& __pts, mpl::int_<3> );
 
     /**
      * derivation at a set of points of the expansion basis in 3D on
      * the tetrahedron
      */
     template<typename AE>
-    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> );
+    vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> );
 
 private:
     reference_convex_type M_refconvex;
     points_type M_pts;
     std::vector<points_type> M_pts_face;
-    static principal_type M_pfunc;
+    principal_type M_pfunc;
 
 };
-template<uint16_type Dim,
-         uint16_type Degree,
-         typename T,
-         template<class> class StoragePolicy>
-typename BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::principal_type
-BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::M_pfunc;
 
 template<uint16_type Dim,
          uint16_type Degree,
