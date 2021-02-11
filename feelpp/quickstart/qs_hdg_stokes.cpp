@@ -28,17 +28,20 @@
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
+#include <feel/feelvf/vonmises.hpp>
+#include <feel/feelvf/eig.hpp>
 #include <feel/feelpython/pyexpr.hpp>
-#include <feel/feelvf/vf.hpp>
+#include "nullspace-rigidbody.hpp"
+
 namespace Feel {
 
 inline
 po::options_description
 makeOptions()
 {
-    po::options_description testhdivoptions( "test qs_hdg_stokes options" );
-    testhdivoptions.add_options()
-        ( "pyexpr.filename", po::value<std::string>()->default_value("${top_srcdir}/quickstart/stokes.py"), "python file to evaluate" )
+    po::options_description hdgoptions( "test qs_hdg_stokes options" );
+    hdgoptions.add_options()
+        ( "pyexpr.filename", po::value<std::string>()->default_value("$cfgdir/../python/stokes.py"), "python file to evaluate" )
         ( "hsize", po::value<double>()->default_value( 0.8 ), "mesh size" )
         ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
         ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
@@ -48,16 +51,20 @@ makeOptions()
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
 #if FEELPP_DIM==2
-        ( "u", po::value<std::string>()->default_value( "Array([0,0])" ), "velocity is given" )
+        ( "velocity", po::value<std::string>()->default_value( "Array([0,0])" ), "velocity is given" )
         ( "f", po::value<std::string>()->default_value( "Array([0,0])" ), "external volumic load" )
         ( "stressn", po::value<std::string>()->default_value( "Array([0,0])" ), "external surfacic load" )
 #else
-        ( "u", po::value<std::string>()->default_value( "Array([0,0,0])" ), "velocity is given" )
+        ( "velocity", po::value<std::string>()->default_value( "Array([0,0,0])" ), "velocity is given" )
         ( "f", po::value<std::string>()->default_value( "Array([0,0,0])" ), "external volumic load" )
         ( "stressn", po::value<std::string>()->default_value( "Array([0,0,0])" ), "external surfacic load" )
 #endif
+        ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
+        ( "exact", po::value<bool>()->default_value( true ), "velocity is give and provides the exact solution or an approximation"  )
+        ( "use-near-null-space", po::value<bool>()->default_value( false ), "use near-null-space for AMG"  )
+        ( "use-null-space", po::value<bool>()->default_value( false ), "use null-space for AMG"  )
         ;
-    return testhdivoptions.add( Feel::feel_options() ).add( backend_options("sc"));
+    return hdgoptions;
 }
 
 inline
@@ -67,9 +74,9 @@ makeAbout()
     AboutData about( "qs_hdg_stokes" ,
                      "qs_hdg_stokes" ,
                      "0.1",
-                     "Quickstart for HDG method for Stokes",
+                     "Quickstart for HDG method for stokes",
                      AboutData::License_GPL,
-                     "Copyright (c) 2016-2017 Feel++ Consortium" );
+                     "Copyright (c) 2016-2019 Feel++ Consortium" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Daniele Prada", "developer", "daniele.prada85@gmail.com", "" );
     about.addAuthor( "Lorenzo Sala", "developer", "sala@unistra.fr", "" );
@@ -81,7 +88,7 @@ makeAbout()
 
 
 template<int Dim, int OrderP, int OrderG=1>
-int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals )
+int hdg_stokes( std::map<std::string,std::string>& locals )
 {
 
 	typedef Simplex<Dim,OrderG> convex_type;
@@ -91,11 +98,15 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
 
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
-    auto mu = locals.at("mu");
-    auto stressn = expr<Dim,1>(locals.at("stressn"));
-    auto u_d = expr<Dim,1>(locals.at("u"));
-    auto f = expr<Dim,1>(locals.at("f"));
-
+#if 0
+    auto velocity_exact = expr<Dim,1>( locals.at("velocity") );
+    auto grad_velocity_exact = expr<Dim,1>( locals.at("grad_velocity") );
+    auto delta_exact = expr<Dim,Dim>( locals.at("stress") );
+#else
+    auto stressn = locals.at("stressn");
+    auto rhs_f = locals.at("f");
+    auto velocity = locals.at("velocity");
+#endif
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
     
@@ -104,13 +115,13 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
     toc("mesh",true);
 
     // ****** Hybrid-mixed formulation ******
-    // We treat Vh, Wh, Ph, and Mh separately
+    // We treat Vh, Wh, and Mh separately
     tic();
 
     auto Vh = Pdhms<OrderP>( mesh, true );
     auto Wh = Pdhv<OrderP>( mesh, true );
     auto Ph = Pdh<OrderP>( mesh, true );
-    auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh), _update=0 );
     auto Mh = Pdhv<OrderP>( face_mesh,true );
 
     toc("spaces",true);
@@ -120,32 +131,31 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
          << "Ph<" << OrderP   << "> : " << Ph->nDof() << std::endl
          << "Mh<" << OrderP   << "> : " << Mh->nDof() << std::endl;
 
-    auto delta = Vh->element( "sigma" );
-    auto gamma = Vh->element( "v" );
+    auto delta = Vh->element( "delta" );
+    auto gamma = Vh->element( "gamma" );
     auto u     = Wh->element( "u" );
-    auto v     = Wh->element( "w" );
-    auto p     = Ph->element( "p" );
-    auto q     = Ph->element( "q" );
+    auto v     = Wh->element( "v" );
+    auto p     = Wh->element( "p" );
+    auto q     = Wh->element( "q" );
     auto uhat  = Mh->element( "uhat" );
     auto m     = Mh->element( "m" );
 
     // Number of dofs associated with each space
-    auto nDofsigma = delta.functionSpace()->nDof();
+    auto nDofdelta = delta.functionSpace()->nDof();
     auto nDofu     = u.functionSpace()->nDof();
     auto nDofp     = p.functionSpace()->nDof();
     auto nDofuhat  = uhat.functionSpace()->nDof();
 
-
-	bool condense = 0;
+    solve::strategy strategy = boption("sc.condense")?solve::strategy::static_condensation:solve::strategy::monolithic;
 	double sc_param = 1;
-    if( condense )
+    if( boption("sc.condense") )
         sc_param = 0.5;
 	
 
 	tic();
     auto ps = product( Vh, Wh, Ph, Mh );
-	auto a = blockform2( ps , backend() );
-	auto rhs = blockform1( ps , backend() );
+	auto a = blockform2( ps, strategy , backend() );
+	auto rhs = blockform1( ps, strategy , backend() );
 
 
     // Building the RHS
@@ -163,8 +173,8 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
     tic();
     rhs(1_c) += integrate(_range=elements(mesh),
                           _expr=trans(f)*idt(v) );
-    rhs(3_c) -= integrate(_range=markedfaces(mesh, "Neumann"),
-                          _expr=inner(stressn,idt(m)) );
+    rhs(3_c) += integrate(_range=markedfaces(mesh, "Neumann"),
+                          _expr=(-1)*inner(stressn,idt(m)) );
     rhs(3_c) += integrate(_range=markedfaces(mesh, "Dirichlet"),
                           _expr=trans(u_d)*idt(m) );
     toc("rhs",true);
@@ -199,16 +209,16 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
     toc("a(2,1)", true);
     tic();
     a( 2_c, 3_c) += integrate(_range=internalfaces(mesh),
-                              _expr=normal(uhat)*jumpt(q) );
+                              _expr=normal(uhat)*(leftface(idt(q))+rightface(idt(q))) );
     a( 2_c, 3_c) += integrate(_range=boundaryfaces(mesh),
                               _expr=normal(uhat)*idt(q) );
     toc("a(2,3)", true);
     tic();
-    a( 3_c, 0_c) -= integrate(_range=internalfaces(mesh),
-                              _expr=mu*(leftfacet(normal(delta))*id(m)+
+    a( 3_c, 0_c) += integrate(_range=internalfaces(mesh),
+                              _expr=-mu*(leftfacet(normal(delta))*id(m)+
                                          rightfacet(normal(delta)*id(m))) );
-    a( 3_c, 0_c) -= integrate(_range=boundaryfaces(mesh),
-                              _expr=mu*trans(normal(delta))*idt(m) );
+    a( 3_c, 0_c) += integrate(_range=boundaryfaces(mesh),
+                              _expr=-mu*trans(normal(delta))*idt(m) );
     toc("a(3,0)", true);
     tic();
     a( 3_c, 1_c) += integrate(_range=internalfaces(mesh),
@@ -219,9 +229,9 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
     toc("a(3,1)", true);
     tic();
     a( 3_c, 2_c) += integrate(_range=internalfaces(mesh),
-                              _expr=trans(jump(p))*idt(m) );
+                              _expr=normalt(m)*(rightface(id(p))-leftface(id(p))) );
     a( 3_c, 2_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=trans(p*N())*idt(m) );
+                              _expr=id(p)*normalt(m) );
     toc("a(3,2)", true);
     tic();
     a( 3_c, 3_c) += integrate(_range=internalfaces(mesh),                  //
@@ -230,74 +240,99 @@ int hdg_stokes( std::map<std::string,std::map<std::string,std::string>>& locals 
                               _expr=tau_constant*trans(id(uhat))*idt(m) ); //
 
     tic();
+
+    if ( boption( "use-near-null-space" ) ||  boption( "use-null-space" ) )
+    {
+        auto b = backend( _name="sc" );
+        std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(b,qsNullSpace(Mh,mpl::int_<FEELPP_DIM>())) );
+        if ( boption( "use-near-null-space" ) )
+            b->attachNearNullSpace( myNullSpace );
+        if ( boption( "use-null-space" ) )
+            b->attachNullSpace( myNullSpace );
+    }
+    
     auto U = ps.element();
     auto Ue = ps.element();
-    a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=condense);
+    //a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=boption("sc.condense"));
+    a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
     toc("solve",true);
     cout << "[Hdg] solve done" << std::endl;
 
-    auto sigmap = U(0_c);
+    auto deltap = U(0_c);
     auto up = U(1_c);
     auto pp = U(2_c);
     auto uhatp = U(3_c);
-
-    int status = 1;
-#if 0
-    if ( displ.count("exact" ) )
+    int status_velocity = 1, status_stress = 1;
+    if ( boption( "exact" ) )
     {
-        auto displ_exact = displ.at("exact");
-        auto sigma_exact = locals.at("stress").at("exact");
-        auto grad_displ_exact = locals.at("grad_displ").at("exact");
-        Ue(0_c).on( _range=elements(mesh), _expr=expr<Dim,Dim>( sigma_exact ) );
-        Ue(1_c).on( _range=elements(mesh), _expr=expr<Dim,1>( displ_exact ) );
-
-        auto l2err_sigma = normL2( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) - idv(sigmap) );
+        auto velocity_exact = velocity;
+        auto delta_exact = locals.at("stress");
+        auto grad_velocity_exact = locals.at("grad_velocity");
+        Ue(0_c).on( _range=elements(mesh), _expr=expr<Dim,Dim>( delta_exact ) );
+        Ue(1_c).on( _range=elements(mesh), _expr=expr<Dim,1>( velocity_exact ) );
+        Ue(2_c).on( _range=elements(mesh), _expr=expr<Dim,1>( pressure_exact ) );
+        Ue(3_c).on( _range=faces(mesh), _expr=expr<Dim,1>( velocity_exact ) );
+        
+        auto l2err_delta = normL2( _range=elements(mesh), _expr=expr<Dim,Dim>(delta_exact) - idv(deltap) );
+        Feel::cout << "L2 Error delta: " << l2err_delta << std::endl;
         toc("error");
                     
         // CHECKER
+        auto norms_stress = [&]( std::string const& solution ) ->std::map<std::string,double>
+            {
+                tic();
+                double l2 = normL2( _range=elements(mesh), _expr=expr<Dim,Dim>(delta_exact) - idv(deltap) );
+                toc("L2 stress error norm");
+                
+                return { { "L2", l2 } };
+            };
         // compute l2 and h1 norm of u-u_h where u=solution
-        auto norms_displ = [&]( std::string const& solution ) ->std::map<std::string,double>
+        auto norms_velocity = [&]( std::string const& solution ) ->std::map<std::string,double>
             {
 			tic();
-			double l2 = normL2( _range=elements(mesh), _expr=expr<Dim,1>(displ_exact) - idv(up) );
-			toc("L2 error norm");
+			double l2 = normL2( _range=elements(mesh), _expr=expr<Dim,1>(velocity_exact) - idv(up) );
+			toc("L2 velocity error norm");
 
 			tic();
-			double h1 = normH1(_range=elements(mesh), _expr=idv(up)- expr<Dim,1>(displ_exact), _grad_expr=gradv(up)-expr<Dim,Dim>(grad_displ_exact) );
-			toc("H1 error norm");
+			double h1 = normH1(_range=elements(mesh), _expr=idv(up)- expr<Dim,1>(velocity_exact), _grad_expr=gradv(up)-expr<Dim,Dim>(grad_velocity_exact) );
+			toc("H1 velocity error norm");
 
 			return { { "L2", l2 } , {  "H1", h1 } };
             };
 
-        status = checker(displ_exact).runOnce( norms_displ, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
-        v.on( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) );
-        w.on( _range=elements(mesh), _expr=expr<Dim,1>(displ_exact) );
+        status_velocity = checker("L2/H1 velocity norms",velocity_exact).runOnce( norms_velocity, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
+        status_stress = checker("L2 stress norms",velocity_exact).runOnce( norms_stress, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
+        v.on( _range=elements(mesh), _expr=expr<Dim,Dim>(delta_exact) );
+        w.on( _range=elements(mesh), _expr=expr<Dim,1>(velocity_exact) );
     }
-#endif
 
     tic();
     std::string exportName =  "hdg_stokes";
-    std::string sigmaName = "stress";
-    std::string sigma_exName = "stress-ex";
-    std::string uName = "u";
-    std::string u_exName = "u-ex";
+    std::string deltaName = "stress";
+    std::string delta_exName = "stress-ex";
+    std::string uName = "velocity";
+    std::string u_exName = "velocity-ex";
 
     auto e = exporter( _mesh=mesh, _name=exportName );
     e->setMesh( mesh );
-    e->add( sigmaName, sigmap );
-    e->add( uName, up );
-#if 0
-    if ( displ.count("exact" ) )
+    e->add( deltaName, deltap, "nodal" );
+    e->add( uName, up, "nodal" );
+    std::set<std::string> reps({ "nodal", "element" });
+    e->add( "vonmises", vonmises(idv(deltap)), reps );
+    e->add( "principal_stress", eig(idv(deltap)), reps );
+    e->add( "magnitude_stress", sqrt(inner(idv(deltap))), reps );
+    
+    if ( boption("exact" ) )
     {
-        e->add( sigma_exName, v );
-        e->add( u_exName, w );
+        e->add( delta_exName, v, "nodal" );
+        e->add( u_exName, w, "nodal" );
     }
-#endif
+
     e->save();
 
     toc("export");
 
-    return !status;
+    return status_stress || status_velocity;
 }
 
 } // Feel
@@ -315,19 +350,27 @@ int main( int argc, char** argv )
     // end::env[]
 
     // Exact solutions
-    std::map<std::string,std::map<std::string,std::string>> locals{{"dim",{{"dim",std::to_string(FEELPP_DIM)}}},
-        {"u", {{ "exact", soption("u")}} },
-        {"grad_u",{}},
-        {"strain",{}},
-        {"stress",{}},
-        {"stressn",{}},
-        {"f",{}} };
+    std::map<std::string,std::string> locals{
+        {"dim",std::to_string(FEELPP_DIM)},
+        {"exact",std::to_string(boption("exact"))}, 
+        {"lam1",soption("Mu")},
+        {"lam2",soption("Lambda")},
+        {"velocity", soption("velocity")},
+        {"grad_velocity",""},
+        {"strain",""},
+        {"stress",""},
+        {"stressn",soption("stressn")},
+        {"f",soption("f")},
+        {"c1",""},
+        {"c2",""}};
     Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals  );
 
     for( auto d: locals )
-        std::cout << d.first << ":" << d.second << std::endl;
-    
-    int status = hdg_stokes<FEELPP_DIM,2>( locals );
-    return !status;
+        Feel::cout << d.first << ":" << d.second << std::endl;
+    if ( ioption( "order" ) == 1 )
+        return !hdg_stokes<FEELPP_DIM,1>( locals );
+    if ( ioption( "order" ) == 2 )
+        return !hdg_stokes<FEELPP_DIM,2>( locals );
 
+    return 1;
 }
