@@ -1670,103 +1670,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::stri
 //---------------------------------------------------------------------------------------------------------//
 
 
-namespace FluidToolbox_detail
-{
 
-template <typename MeshType,typename RangeType>
-faces_reference_wrapper_t<MeshType>
-removeBadFace( std::shared_ptr<MeshSupport<MeshType>> const& ms, RangeType const& r )
-{
-    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
-     if ( !ms->isPartialSupport() )
-        return r;
-    for ( auto const& faceWrap : r )
-    {
-        auto const& theface = unwrap_ref( faceWrap );
-        if ( theface.isConnectedTo0() && theface.isConnectedTo1() )
-        {
-            if ( theface.element0().isGhostCell() && !ms->hasElement(theface.element1().id() ) )
-            {
-                //std::cout << "removeBadFace case 0 : " << theface.processId() << " ; " << theface.id() << std::endl;
-                continue;
-            }
-            if ( theface.element1().isGhostCell() && !ms->hasElement(theface.element0().id() ) )
-            {
-                // std::cout << "removeBadFace case 1 : " << theface.processId() << " ; " << theface.id()
-                //           << " other p="<< theface.element1().processId()<< " ;" <<  theface.idInOthersPartitions( theface.element1().processId() ) << std::endl;
-                continue;
-            }
-
-        }
-        myelts->push_back( boost::cref( theface ) );
-    }
-    myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
-}
-}
-
-#if defined( FEELPP_MODELS_HAS_MESHALE )
+//#if defined( FEELPP_MODELS_HAS_MESHALE )
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
 {
-    this->log("FluidMechanics","updateALEmesh", "start");
+    this->updateALEmesh( this->symbolsExpr() );
+}
 
-    auto velocityMeshSupport = this->functionSpaceVelocity()->template meshSupport<0>();
-    std::set<size_type> dofToSync;
-    if ( !M_bcMovingBoundaryImposed.empty() || M_bodySetBC.hasElasticVelocityFromExpr() )
-    {
-        // Warning : evaluate expression on reference mesh (maybe it will better to change the API in order to avoid tjese meshmoves)
-        bool meshIsOnRefAtBegin = this->meshALE()->isOnReferenceMesh();
-        if ( !meshIsOnRefAtBegin )
-            this->meshALE()->revertReferenceMesh( false );
-        for( auto const& d : M_bcMovingBoundaryImposed )
-        {
-            M_meshDisplacementOnInterface->on( _range=markedfaces(this->mesh(),markers(d)),
-                                               _expr=expression(d,this->symbolsExpr()),
-                                               _geomap=this->geomap() );
-        }
-        for ( auto & [bpname,bpbc] : M_bodySetBC )
-        {
-            if ( bpbc.hasElasticVelocityFromExpr() )
-                bpbc.updateElasticVelocityFromExpr(*this);
-        }
-
-        if ( !meshIsOnRefAtBegin )
-            this->meshALE()->revertMovingMesh( false );
-    }
-
-    for ( auto const& [bpname,bpbc] : M_bodySetBC )
-    {
-        //auto rangeMFOF = bpbc.rangeMarkedFacesOnFluid();
-        // temporary fix of interpolation with meshale space
-        auto rangeMFOF = FluidToolbox_detail::removeBadFace( velocityMeshSupport,bpbc.rangeMarkedFacesOnFluid() );
-        if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() && !bpbc.hasElasticVelocity() )
-            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExpr(), rangeMFOF );
-        else if ( bpbc.hasElasticVelocityFromExpr() )
-            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), rangeMFOF );
-        else
-            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields(), rangeMFOF ); // TO FIX : use idv(this->fieldVelocity() require to need a range with partial support mesh info
-            //this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, idv(this->fieldVelocity())/*bpbc.rigidVelocityExprFromFields()*/, rangeMFOF );
-#if 0
-        (*M_meshDisplacementOnInterface)[Component::X].on(_range=bpbc.rangeMarkedFacesOnFluid(),_expr=cst(0.) );
-#endif
-
-        if ( velocityMeshSupport->isPartialSupport() )
-        {
-            auto _thedof = M_meshDisplacementOnInterface->functionSpace()->dofs(rangeMFOF,ComponentType::NO_COMPONENT,true);
-            dofToSync.insert(_thedof.begin(),_thedof.end());
-        }
-    }
-
-    if ( !M_bodySetBC.empty() && velocityMeshSupport->isPartialSupport() )
-        sync( *M_meshDisplacementOnInterface, "=", dofToSync );
-
-
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmeshImpl()
+{
     //-------------------------------------------------------------------//
     // compute ALE map
     //std::vector< mesh_ale_type::ale_map_element_type> polyBoundarySet = { *M_meshDisplacementOnInterface };
@@ -1790,46 +1707,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
             std::dynamic_pointer_cast<op_pcd_type>( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
         myOpPCD->assemble();
     }
-
-#if 0
-    if ( this->algebraicFactory() && !M_bodySetBC.empty() )
-    {
-        this->functionSpaceVelocity()->rebuildDofPoints();
-        // not very nice, we need to update direclty P, not rebuild
-
-        int nBlock = this->nBlockMatrixGraph();
-        BlocksBaseSparseMatrix<double> myblockMat(nBlock,nBlock);
-        for (int i=0;i<nBlock;++i)
-            myblockMat(i,i) = this->backend()->newIdentityMatrix( M_blockVectorSolution(i)->mapPtr(),M_blockVectorSolution(i)->mapPtr() );
-
-        size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
-        for ( auto & [bpname,bpbc] : M_bodySetBC )
-        {
-            // rebuild matrixPTilde_angular
-            bpbc.updateForUse( *this );
-            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.translational-velocity") ) << " start dof index for body-bc.translational-velocity is not present\n";
-            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.angular-velocity") ) << " start dof index for body-bc.angular-velocity is not present\n";
-            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
-            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
-
-            myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc.matrixPTilde_translational();
-            myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bpbc.matrixPTilde_angular();
-
-            auto dofsBody = this->functionSpaceVelocity()->dofs( bpbc.rangeMarkedFacesOnFluid() );
-            auto matFI_Id = myblockMat(startBlockIndexVelocity,startBlockIndexVelocity);
-            for ( auto dofid : dofsBody )
-                matFI_Id->set( dofid,dofid, 0.);
-            matFI_Id->close();
-        }
-
-        auto matP = backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
-        M_algebraicFactory->initSolverPtAP( matP );
-    }
-#endif
-
-    this->log("FluidMechanics","updateALEmesh", "finish");
 }
-#endif
+
+//#endif
 
 //---------------------------------------------------------------------------------------------------------//
 
