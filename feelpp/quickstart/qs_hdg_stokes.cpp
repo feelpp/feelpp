@@ -139,8 +139,8 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     auto gamma = Vh->element( "gamma" );
     auto u     = Wh->element( "u" );
     auto v     = Wh->element( "v" );
-    auto p     = Wh->element( "p" );
-    auto q     = Wh->element( "q" );
+    auto p     = Ph->element( "p" );
+    auto q     = Ph->element( "q" );
     auto uhat  = Mh->element( "uhat" );
     auto m     = Mh->element( "m" );
 
@@ -201,7 +201,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     toc("a(0,3)", true);
     tic();
     a( 1_c, 0_c) += integrate(_range=elements(mesh),
-                              _expr=mu*trans(id(delta))*gradt(v));
+                              _expr=mu*inner(id(delta),gradt(v)));
     toc("a(1,0)", true);
     tic();
     a( 1_c, 2_c) += integrate(_range=elements(mesh),
@@ -209,18 +209,17 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     toc("a(1,2)", true);
     tic();
     a( 2_c, 1_c) += integrate(_range=elements(mesh),
-                              _expr=(-1)*trans(id(u))*gradt(q) );
+                              _expr=(-1)*gradt(q)*id(u) );
     toc("a(2,1)", true);
     tic();
     a( 2_c, 3_c) += integrate(_range=internalfaces(mesh),
-                              _expr=normal(uhat)*(leftface(idt(q))+rightface(idt(q))) );
+                              _expr=inner(jump(id(q)),idt(uhat)) );
     a( 2_c, 3_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=normal(uhat)*idt(q) );
+                              _expr=normalt(uhat)*id(q) );
     toc("a(2,3)", true);
     tic();
     a( 3_c, 0_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-mu*(leftfacet(normal(delta))*id(m)+
-                                         rightfacet(normal(delta)*id(m))) );
+                              _expr=-mu*trans((leftface(normal(delta))+rightface(normal(delta))))*idt(m) );
     a( 3_c, 0_c) += integrate(_range=boundaryfaces(mesh),
                               _expr=-mu*trans(normal(delta))*idt(m) );
     toc("a(3,0)", true);
@@ -233,18 +232,18 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     toc("a(3,1)", true);
     tic();
     a( 3_c, 2_c) += integrate(_range=internalfaces(mesh),
-                              _expr=normalt(m)*(rightface(id(p))-leftface(id(p))) );
+                              _expr=inner(idt(m),jump(id(p))) ); //normalt(m)*(rightface(id(p))-leftface(id(p))) );
     a( 3_c, 2_c) += integrate(_range=boundaryfaces(mesh),
                               _expr=id(p)*normalt(m) );
     toc("a(3,2)", true);
     tic();
-    a( 3_c, 3_c) += integrate(_range=internalfaces(mesh),                  //
-                              _expr=tau_constant*trans(id(uhat))*idt(m) ); // these terms should be counted twice because of the sum on all the elements
-    a( 3_c, 3_c) += integrate(_range=boundaryfaces(mesh),                  // each face apprearing twice
-                              _expr=tau_constant*trans(id(uhat))*idt(m) ); //
+    a( 3_c, 3_c) += integrate(_range=internalfaces(mesh),                  // these terms should be counted twice because of the sum on all the elements
+                              _expr=tau_constant*trans(id(uhat))*idt(m) ); // each face apprearing twice
+    a( 3_c, 3_c) += integrate(_range=boundaryfaces(mesh),                  
+                              _expr=tau_constant*trans(id(uhat))*idt(m) );
 
     tic();
-
+#if 0
     if ( boption( "use-near-null-space" ) ||  boption( "use-null-space" ) )
     {
         auto b = backend( _name="sc" );
@@ -254,7 +253,8 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
         if ( boption( "use-null-space" ) )
             b->attachNullSpace( myNullSpace );
     }
-    
+#endif
+
     auto U = ps.element();
     auto Ue = ps.element();
     //a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=boption("sc.condense"));
@@ -341,7 +341,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
 #if 0
     return status_stress || status_velocity;
 #endif
-    return 0;
+    return 1;
 }
 
 } // Feel
