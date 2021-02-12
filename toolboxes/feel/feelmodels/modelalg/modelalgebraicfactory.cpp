@@ -184,13 +184,14 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         M_explictPartOfSolution = M_backend->newVector( M_R->mapPtr() );
 }
 
-    void ModelAlgebraicFactory::initSolverPtAP( sparse_matrix_ptrtype matP )
+void ModelAlgebraicFactory::initSolverPtAP( sparse_matrix_ptrtype matP, sparse_matrix_ptrtype matQ )
     {
         CHECK ( matP ) << "invalid matP";
         // TODO CHECK compatibility with A
 
         M_useSolverPtAP = true;
         M_solverPtAP_matP = matP;
+        M_solverPtAP_matQ = matQ;
 
         // if already built we assume that the new matP as the same stencil
         if ( !M_solverPtAP_backend )
@@ -637,10 +638,8 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
 
         if ( M_useSolverPtAP )
         {
-
-            // Not sure that is good!
-            M_solverPtAP_matP->multVector( *U, *M_solverPtAP_solution, true );
-            //*M_solverPtAP_solution = *U;
+            M_solverPtAP_matQ->multVector( *U, *M_solverPtAP_solution );
+            //*M_solverPtAP_solution = *U; // need to have the same size/datamap
 
             // PtAP = P^T A P
             M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
@@ -1044,9 +1043,9 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
         if ( M_useSolverPtAP )
         {
             // TODO REMOVE EXPLICIT PART
-            // Not sure that is good!
-            M_solverPtAP_matP->multVector( *U, *M_solverPtAP_solution, true );
-            //*M_solverPtAP_solution = *U; // actually always same size
+            M_solverPtAP_matQ->multVector( *U, *M_solverPtAP_solution );
+            //*M_solverPtAP_solution = *U; // need to have the same size/datamap
+
             solveStat = M_solverPtAP_backend->nlSolve( _jacobian=M_solverPtAP_matPtAP,
                                                        _solution=M_solverPtAP_solution,
                                                        _residual=M_solverPtAP_PtF,
