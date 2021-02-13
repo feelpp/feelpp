@@ -383,7 +383,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
             for ( ; elt_it != elt_en; ++elt_it )
             {
                 auto const& curElt = unwrap_ref( *elt_it );
-                ctx->update( curElt, geopc );
+                ctx->template update<context>( curElt, geopc );
                 expr_evaluator.update( mapgmc( ctx ) );
                 fe->interpolate( expr_evaluator, IhLoc );
 
@@ -461,9 +461,12 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     typedef typename element_type::functionspace_type::mesh_type::gm_type gm_type;
     typedef std::shared_ptr<gm_type> gm_ptrtype;
     //typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
-    typedef typename mpl::if_< mpl::or_<is_hdiv_conforming<fe_type>, is_hcurl_conforming<fe_type> >,
-                               typename gm_type::template Context<context|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL, geoelement_type>,
-                               typename gm_type::template Context<context, geoelement_type> >::type gmc_type;
+    // typedef typename mpl::if_< mpl::or_<is_hdiv_conforming<fe_type>, is_hcurl_conforming<fe_type> >,
+    //                            typename gm_type::template Context<context|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL, geoelement_type>,
+    //                            typename gm_type::template Context<context, geoelement_type> >::type gmc_type;
+    static const size_type gmc_v = is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> ? context|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL : context;
+    using gmc_type = typename gm_type::template Context<geoelement_type>;
+
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
@@ -563,7 +566,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         }
 
         uint16_type __face_id = faceForInit.pos_first();
-        gmc_ptrtype __c( new gmc_type( __gm, faceForInit.element( 0 ), __geopc, __face_id, M_expr.dynamicContext() ) );
+        auto __c = __gm->template context<gmc_v>( faceForInit.element( 0 ), __geopc, __face_id, M_expr.dynamicContext() );
 
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
         t_expr_type expr( M_expr, mapgmc );
@@ -638,7 +641,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                 __face_id = theface.pos_second();
                 faceConnectionId = 1;
             }
-            __c->update( theface.element( faceConnectionId ), __face_id );
+            __c->template update<gmc_v>( theface.element( faceConnectionId ), __face_id );
 
             DVLOG(2) << "FACE_ID = " << theface.id()
                      << " element id= " << ((faceConnectionId==0)? theface.ad_first() : theface.ad_second())
@@ -834,7 +837,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                 //geopc = gm->preCompute( __fe->edgePoints(edgeid_in_element) );
                 ////geopc = gm->preComputeAtEdges( __fe->edgePoints(ptid_in_element) );
                 //ctx->update( elt, edgeid_in_element, geopc );
-                ctx->update( elt, edgeid_in_element );
+                ctx->template update<context>( elt, edgeid_in_element );
                 expr_evaluator.update( mapgmc( ctx ) );
                 __fe->edgeInterpolate( expr_evaluator, IhLoc );
 
@@ -1022,7 +1025,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                 auto const& elt = mesh->element( eid );
                 //geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
                 //ctx->update( elt, ptid_in_element, geopc, mpl::int_<0>() );
-                ctx->update( elt, ptid_in_element );
+                ctx->template update<context>( elt, ptid_in_element );
                 expr_evaluator.update( mapgmc( ctx ) );
                 __fe->vertexInterpolate( expr_evaluator, IhLoc );
 

@@ -928,7 +928,7 @@ private :
     private :
         typedef ElementType element_type;
         typedef typename element_type::gm_type gm_type;
-        typedef typename gm_type::template Context<this_type::context, element_type> gmc_type;
+        typedef typename gm_type::template Context<element_type> gmc_type;
         typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef fusion::map<fusion::pair<Feel::vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
         typedef typename this_type::template tensor<map_gmc_type> eval_expr_type;

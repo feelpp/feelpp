@@ -465,7 +465,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 using shape = typename EvaluateShape<gmc_type::NDim>::type; \
                 typedef typename fe_type::PreCompute pc_type;           \
                 typedef std::shared_ptr<pc_type> pc_ptrtype;          \
-                typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context, gmc_type::subEntityCoDim> ctx_type; \
+                typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,/*gmc_type::*/context, gmc_type::subEntityCoDim> ctx_type; \
                 typedef std::shared_ptr<ctx_type> ctx_ptrtype;        \
                 /*typedef Eigen::Matrix<value_type,shape::M,shape::N> loc_type;*/ \
                 using loc_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<shape::M,shape::N>>; \

@@ -765,12 +765,10 @@ class GeoMap
      * Context for the geometric mapping depend on a node in the
      * reference element
      */
-    template <size_type context_v, typename ElementType, int SubEntityCoDim = 1>
+    template <typename ElementType, int SubEntityCoDim = 1>
     class Context
     {
       public:
-        static const size_type contextv = context_v;
-        static const size_type context = context_v;
         static const int subEntityCoDim = SubEntityCoDim;
         // reference space dimension
         static const uint16_type PDim = ElementType::nDim;
@@ -802,7 +800,7 @@ class GeoMap
 
         typedef typename gm_type::precompute_ptrtype precompute_ptrtype;
 
-        typedef Context<contextv, ElementType, SubEntityCoDim> gmc_type;
+        typedef Context<ElementType, SubEntityCoDim> gmc_type;
         typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
         typedef node_t_type normal_type;
@@ -832,9 +830,11 @@ class GeoMap
         using vector_hessian_type = vector_tensor3_fixed_size_t<NDim,PDim,PDim,value_type>;
 
         Context() = default;
-        
+
+        template <int CTX>
         Context( gm_ptrtype __gm,
                  element_type const& __e,
+                 std::integral_constant<int, CTX> const& statctx,
                  precompute_ptrtype const& __pc = precompute_ptrtype(),
                  uint16_type __f = invalid_uint16_type_value,
                  size_type dynctx = 0 )
@@ -891,38 +891,42 @@ class GeoMap
             {
                 M_gm->gradient( node_t_type(), M_g_linear );
             }
-            updateGradient<>( 0 );
-            if ( M_pc && !this->isOnSubEntity() )
-                update( __e );
 
+            updateGradient<CTX>( 0 );
+            if ( M_pc && !this->isOnSubEntity() )
+                update<CTX>( __e );
         }
 
+        template <int CTX>
         Context( gm_ptrtype __gm,
                  element_type const& __e,
+                 std::integral_constant<int, CTX> const& statctx,
                  std::vector<std::map<permutation_type, precompute_ptrtype> > & __pc,
                  uint16_type __f,
                  size_type dynctx = 0 )
             :
-            Context( __gm, __e, __pc.empty()?precompute_ptrtype{}:__pc[__f][__e.permutation(__f, mpl::int_<subEntityCoDim>() )], __f, dynctx )
+            Context( __gm, __e, statctx, __pc.empty()?precompute_ptrtype{}:__pc[__f][__e.permutation(__f, mpl::int_<subEntityCoDim>() )], __f, dynctx )
             {
                 if ( !__pc.empty() )
                     M_pc_faces =  __pc;
                 if ( M_pc )
-                    update( __e, M_face_id );
+                    update<CTX>( __e, M_face_id );
             }
         
         using using_vectices_t = mpl::int_<0>;
 
         // context for geomap at vertices
+        template <int CTX>
         Context( gm_ptrtype __gm,
                  element_type const& __e,
+                 std::integral_constant<int, CTX> const& statctx,
                  precompute_ptrtype & __pc,
                  uint16_type __f,
                  using_vectices_t )
             :
-            Context( __gm, __e, __pc )
+            Context( __gm, __e, statctx, __pc )
             {
-                update( __e, __f, using_vectices_t() );
+                update<CTX>( __e, __f, using_vectices_t() );
             }
         
         Context( gmc_ptrtype& p )
@@ -965,19 +969,19 @@ class GeoMap
         //!
         //! update geometric only using vertices information
         //!
-        template<size_type CTX=context>
+        template<size_type CTX>
         void update( element_type const& __e, uint16_type __f, using_vectices_t )
         {
             update<CTX>( __e, __f );
         }
 
-        template<size_type CTX=context>
+        template<size_type CTX>
         void update( element_type const& __e, uint16_type __f, precompute_ptrtype pc, using_vectices_t )
         {
             M_pc = pc;
             update<CTX>( __e );
         }
-        template<size_type CTX=context>
+        template<size_type CTX>
         void update( element_type const& __e, uint16_type __f, permutation_type __perm, bool __updateJacobianCtx = true )
         {
             const bool updatePc = false;
@@ -985,9 +989,9 @@ class GeoMap
 #if 1
             M_perm=__perm;
             if ( __updateJacobianCtx )
-                update( __e, M_pc_faces[__f][M_perm], __f, updatePc );
+                this->update<CTX>( __e, M_pc_faces[__f][M_perm], __f, updatePc );
             else
-                this->update<clear_value_v<context,vm::JACOBIAN|vm::MEASURE>>( __e, M_pc_faces[__f][M_perm], __f, updatePc );
+                this->update<clear_value_v<CTX,vm::JACOBIAN|vm::MEASURE>>( __e, M_pc_faces[__f][M_perm], __f, updatePc );
 #else
             //M_element_c = std::shared_ptr<element_type const>(&__e);
             M_element = boost::addressof( __e );
@@ -1051,7 +1055,7 @@ class GeoMap
 #endif
         }
 
-        template<size_type CTX=context>
+        template<size_type CTX>
         void update( element_type const& __e,
                      precompute_ptrtype const& __pc,
                      uint16_type __f = invalid_uint16_type_value,
@@ -1093,7 +1097,7 @@ class GeoMap
             update<CTX>( __e, __f, updatePc );
         }
 
-        template<size_type CTX=context>
+        template<size_type CTX>
         bool resizeGradient()
             {
                 if ( vm::has_jacobian_v<CTX> )
@@ -1107,7 +1111,7 @@ class GeoMap
                 }
                 return false;
             }
-        template<size_type CTX=context>
+        template<size_type CTX>
         void updateGradient( int q )
             {
                 if ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> ||
@@ -1131,7 +1135,7 @@ class GeoMap
          *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^T K )^{-1} \f$
          *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
          */
-        template<size_type CTX=context>
+        template<size_type CTX>
         void update( element_type const& __e, uint16_type __f = invalid_uint16_type_value, bool updatePC = true )
             {
 
@@ -1165,7 +1169,7 @@ class GeoMap
         //!
         //! update geomap data only on face, element has not been changed
         //!
-        template<size_type CTX=context>
+        template<size_type CTX>
         void updateOnFace( uint16_type __f, bool updatePC = true )
             {
                 M_face_id = __f;
@@ -1939,7 +1943,7 @@ class GeoMap
          * @return true if the permutation has been found and the geomap updated,
          * false otherwise.
          */
-        template <typename EltType, typename NeighborGeoType>
+        template <int CTX,typename EltType, typename NeighborGeoType>
         bool updateFromNeighborMatchingFace( EltType const& elt, uint16_type face_in_elt, std::shared_ptr<NeighborGeoType> const& gmc )
             {
                 if ( M_gm->hasPermutationWithNeighborFace( elt.id(), face_in_elt ) == false )
@@ -1950,7 +1954,7 @@ class GeoMap
                           __p < permutation_type( permutation_type::N_PERMUTATIONS ) && !found_permutation; ++__p )
                     {
                         // update only xReal in current geomap
-                        this->update( elt, face_in_elt, __p, false );
+                        this->update<vm::POINT>( elt, face_in_elt, __p, false );
                         
                         bool check = true;
                         for ( uint16_type i = 0; i < gmc->nPoints() && check; ++i )
@@ -1965,7 +1969,7 @@ class GeoMap
                         // if check update full gmc context with the good permutation
                         if ( check )
                         {
-                            this->update( elt, face_in_elt, __p );
+                            this->update<CTX>( elt, face_in_elt, __p );
                             M_gm->setPermutationWithNeighborFace( elt.id(), face_in_elt, __p.value() );
                             found_permutation = true;
                             return found_permutation;
@@ -1973,7 +1977,7 @@ class GeoMap
                     }
                     return found_permutation;
                 }
-                this->update( elt, face_in_elt, permutation_type(M_gm->permutationWithNeighborFace(elt.id(), face_in_elt)) );
+                this->update<CTX>( elt, face_in_elt, permutation_type(M_gm->permutationWithNeighborFace(elt.id(), face_in_elt)) );
                 return true;
             }
 
@@ -1999,7 +2003,7 @@ class GeoMap
             return M_perm;
         }
 
-        template<int CTX = context>
+        template<int CTX>
         void updateMeasures()
             {
                 if ( vm::has_measure<CTX>::value )
@@ -2023,7 +2027,7 @@ class GeoMap
                 }
 
             }
-        template<int CTX=context>
+        template<int CTX>
         void updatePoints()
             {
                 if ( vm::has_point_v<CTX> || ( vm::has_dynamic_v<CTX> &&  hasPOINT( M_dynamic_context ) ) )
@@ -2034,7 +2038,7 @@ class GeoMap
                 }
             }
 
-        template<size_type CTX=context,typename ConvexType = ElementType>
+        template<size_type CTX,typename ConvexType = ElementType>
         void updateJacobian( eigen_matrix_np_type const & K, eigen_matrix_np_type& B, value_type& J,
                              std::enable_if_t<dimension_v<ConvexType> == real_dimension_v<ConvexType>>* = nullptr )
         {
@@ -2049,7 +2053,7 @@ class GeoMap
                 //std::cout << "1.B=" << B << std::endl;
             }
         }
-        template<size_type CTX=context,typename ConvexType = ElementType>
+        template<size_type CTX,typename ConvexType = ElementType>
         void updateJacobian( eigen_matrix_np_type const& K, eigen_matrix_np_type& B, value_type& J,
                              std::enable_if_t<dimension_v<ConvexType> != real_dimension_v<ConvexType>>* = nullptr )
         {
@@ -2109,7 +2113,7 @@ class GeoMap
         //!
         //! update hessian information
         //!
-        template<int CTX=context>
+        template<int CTX>
         void updateHessian( eigen_matrix_np_type const& B )
         {
             if constexpr ( vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX> )
@@ -2126,7 +2130,7 @@ class GeoMap
         //!
         //! update normal in the real element
         //!
-        template<int CTX=context,typename ConvexType = ElementType>
+        template<int CTX,typename ConvexType = ElementType>
         void updateNormals( eigen_matrix_np_type const& B,
                             eigen_vector_n_type& N, eigen_vector_n_type& unitN, value_type& Nnorm )
         {
@@ -2157,7 +2161,7 @@ class GeoMap
             }
         }
 
-        template<int CTX=context>
+        template<int CTX>
         void updateTangents( eigen_matrix_np_type const& K, eigen_vector_n_type const& unitN,
                              eigen_vector_n_type& Ta, eigen_vector_n_type& unitT, value_type& Tnorm,
                              eigen_matrix_nn_type& P )
@@ -2182,7 +2186,7 @@ class GeoMap
         //!
         //! update normal in the real element
         //!
-        template<int CTX=context,typename ConvexType = ElementType>
+        template<int CTX,typename ConvexType = ElementType>
         void updateLocalBasis( eigen_matrix_np_type const& B,
                                eigen_matrix_pp_type& local_basis_ref, eigen_matrix_np_type& local_basis_real )
         {
@@ -2222,7 +2226,7 @@ class GeoMap
         //! update various terms associated to the geometric transformation such
         //! as jacobian, jacobian matrix its inverse or the normals
         //!
-        template<int CTX=context>
+        template<int CTX>
         void updateJKBN() noexcept
             {
                 if constexpr ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_dynamic_v<CTX> )
@@ -2249,7 +2253,7 @@ class GeoMap
                             }
                             M_K[q].noalias() = Pts * GradPhi;
 
-                            updateJacobian( M_K[q], M_B[q], M_J[q] );
+                            updateJacobian<CTX>( M_K[q], M_B[q], M_J[q] );
 #if 0                                                                                                                     
                             //std::cout << "CTX=" << CTX << std::endl;
                             //std::cout << "K[" << q << "]=" << M_K[q] << std::endl;
@@ -2380,53 +2384,50 @@ class GeoMap
     }; // Context
 
     template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
-    std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>
+        std::shared_ptr<Context<ElementType_t, SubEntityCoDim_v>>
     context( geometric_mapping_ptrtype gm, ElementType_t const& e, precompute_ptrtype const& pc, size_type dynctx = 0 )
     {
-        return std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>(
-            new Context<Context_v, ElementType_t, SubEntityCoDim_v>( gm,
-                                                                     e,
-                                                                     pc, invalid_uint16_type_value, dynctx ) );
+        return std::make_shared<Context<ElementType_t, SubEntityCoDim_v>>( gm,
+                                                                           e, std::integral_constant<int, Context_v>{},
+                                                                           pc, invalid_uint16_type_value, dynctx );
     }
 
     template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
-    std::shared_ptr<Context<Context_v, ElementType_t,SubEntityCoDim_v>>
+    std::shared_ptr<Context<ElementType_t,SubEntityCoDim_v>>
     context( ElementType_t const& e, precompute_ptrtype const& pc, size_type dynctx = 0 )
     {
-        return std::make_shared<Context<Context_v, ElementType_t,SubEntityCoDim_v>>(
+        return std::make_shared<Context<ElementType_t,SubEntityCoDim_v>>(
             //super_enable_this::shared_from_this(),
             std::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP>>( this->shared_from_this() ),
-            e,
+            e,  std::integral_constant<int, Context_v>{},
             pc, invalid_uint16_type_value, dynctx );
     }
 
     template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
-    std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>
+    std::shared_ptr<Context<ElementType_t, SubEntityCoDim_v>>
     context( geometric_mapping_ptrtype gm,
              ElementType_t const& e,
              std::vector<std::map<typename ElementType_t::permutation_type, precompute_ptrtype>>& pc,
              uint16_type f,
              size_type dynctx = 0 )
     {
-        return std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>(
-            new Context<Context_v, ElementType_t, SubEntityCoDim_v>( gm,
-                                                                     e,
-                                                                     pc,
-                                                                     f, dynctx ) );
+        return std::make_shared<Context<ElementType_t, SubEntityCoDim_v>>( gm,
+                                                                           e, std::integral_constant<int, Context_v>{},
+                                                                           pc,
+                                                                           f, dynctx );
     }
     template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
-    std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>
+        std::shared_ptr<Context<ElementType_t, SubEntityCoDim_v>>
     context( ElementType_t const& e,
              std::vector<std::map<typename ElementType_t::template PermutationSubEntity<SubEntityCoDim_v>, precompute_ptrtype>>& pc,
              uint16_type f, size_type dynctx = 0 )
     {
-        return std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>(
-            new Context<Context_v, ElementType_t, SubEntityCoDim_v>(
+        return std::make_shared<Context<ElementType_t, SubEntityCoDim_v>>(
                 //super_enable_this::shared_from_this(),
                 std::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP>>( this->shared_from_this() ),
-                e,
+                e, std::integral_constant<int, Context_v>{},
                 pc,
-                f, dynctx ) );
+                f, dynctx );
     }
 
     /**
