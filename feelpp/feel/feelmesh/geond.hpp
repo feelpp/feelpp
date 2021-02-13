@@ -1308,7 +1308,7 @@ void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::updateWithC
         {
             for ( uint16_type f = 0; f < numTopologicalFaces; ++f )
             {
-                ctxf->update( dynamic_cast<typename CtxFaceType::element_type const&>( *this ), f );
+                ctxf->template update</*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN>( dynamic_cast<typename CtxFaceType::element_type const&>( *this ), f );
                 this->setFaceMeasure( f, computeFaceMeasureImpl( thequad,ctxf, f ) );
             }
         }

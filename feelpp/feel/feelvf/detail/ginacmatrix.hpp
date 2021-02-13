@@ -32,37 +32,37 @@ namespace Feel
 namespace vf {
 
 
-
+#if 0
                
 
 
-template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
+template<typename Geo_t/*, typename Basis_i_t, typename Basis_j_t*/>
 struct ExprTensorsFromSymbolsExpr;
 
 
-template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
+template<typename Geo_t/*, typename Basis_i_t, typename Basis_j_t*/>
 struct tensorGen
 {
     using value_type = double;
 
     virtual ~tensorGen() {}
 
-    virtual void update( std::true_type /**/, ExprTensorsFromSymbolsExpr<Geo_t,Basis_i_t,Basis_j_t> & ttse, Geo_t const& geom ) = 0;
+    virtual void update( std::true_type /**/, ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/> & ttse, Geo_t const& geom ) = 0;
     virtual value_type evalq( uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
 
 };
 
 
-template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename ExprType, typename ExprExpandType>
-struct tensorFromExpr : public tensorGen<Geo_t,Basis_i_t,Basis_j_t>
+template<typename Geo_t/*, typename Basis_i_t, typename Basis_j_t*/, typename ExprType, typename ExprExpandType>
+struct tensorFromExpr : public tensorGen<Geo_t/*,Basis_i_t,Basis_j_t*/>
 {
-    using super_type = tensorGen<Geo_t,Basis_i_t,Basis_j_t>;
+    using super_type = tensorGen<Geo_t/*,Basis_i_t,Basis_j_t*/>;
     using value_type = typename super_type::value_type;
     using expr_type = ExprType;
     using expr_expand_type = ExprExpandType;
-    using tensor_type = typename ExprType::template tensor<Geo_t,Basis_i_t,Basis_j_t>;
+    using tensor_type = typename ExprType::template tensor<Geo_t/*,Basis_i_t,Basis_j_t*/>;
 
-    tensorFromExpr( std::true_type /**/, expr_expand_type const& exprExpanded, ExprTensorsFromSymbolsExpr<Geo_t,Basis_i_t,Basis_j_t> & ttse,
+    tensorFromExpr( std::true_type /**/, expr_expand_type const& exprExpanded, ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/> & ttse,
                     expr_type const& expr, Geo_t const& geom/*, const TheArgsType&... theInitArgs*/ )
         :
         M_expr( std::make_shared<expr_type>( expr ) ),
@@ -72,7 +72,7 @@ struct tensorFromExpr : public tensorGen<Geo_t,Basis_i_t,Basis_j_t>
 
     ~tensorFromExpr() override {}
 
-    void update( std::true_type /**/, ExprTensorsFromSymbolsExpr<Geo_t,Basis_i_t,Basis_j_t> & ttse, Geo_t const& geom ) override
+    void update( std::true_type /**/, ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/> & ttse, Geo_t const& geom ) override
         {
             M_tensor.update( std::true_type{}, M_exprExpand, ttse, geom );
         }
@@ -85,13 +85,13 @@ private :
     tensor_type M_tensor;
 };
 
-template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename ExprType>
-struct tensorFromExprClassic : public tensorGen<Geo_t,Basis_i_t,Basis_j_t>
+template<typename Geo_t/*, typename Basis_i_t, typename Basis_j_t*/, typename ExprType>
+struct tensorFromExprClassic : public tensorGen<Geo_t/*,Basis_i_t,Basis_j_t*/>
 {
-    using super_type = tensorGen<Geo_t,Basis_i_t,Basis_j_t>;
+    using super_type = tensorGen<Geo_t/*,Basis_i_t,Basis_j_t*/>;
     using value_type = typename super_type::value_type;
     using expr_type = ExprType;
-    using tensor_type = typename expr_type::template tensor<Geo_t,Basis_i_t,Basis_j_t>;
+    using tensor_type = typename expr_type::template tensor<Geo_t/*,Basis_i_t,Basis_j_t*/>;
 
     tensorFromExprClassic( expr_type const& expr, Geo_t const& geom/*, const TheArgsType&... theInitArgs*/ )
         :
@@ -100,7 +100,7 @@ struct tensorFromExprClassic : public tensorGen<Geo_t,Basis_i_t,Basis_j_t>
 
     ~tensorFromExprClassic() override {}
 
-    void update( std::true_type /**/, ExprTensorsFromSymbolsExpr<Geo_t,Basis_i_t,Basis_j_t> & ttse, Geo_t const& geom ) override
+    void update( std::true_type /**/, ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/> & ttse, Geo_t const& geom ) override
         {
             M_tensor.update( geom );
         }
@@ -112,14 +112,17 @@ private :
 };
 
 
-template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
+template<typename Geo_t/*, typename Basis_i_t, typename Basis_j_t*/>
 struct ExprTensorsFromSymbolsExpr
 {
-    using tensor_type = tensorGen<Geo_t,Basis_i_t,Basis_j_t>;
+    using self_type = ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/>;
+    using tensor_type = tensorGen<Geo_t/*,Basis_i_t,Basis_j_t*/>;
     using tensor_ptrtype = std::shared_ptr<tensor_type>;
     using value_type = typename tensor_type::value_type;
 
     virtual ~ExprTensorsFromSymbolsExpr() {}
+
+    virtual std::shared_ptr<self_type> newObjectPtr() const = 0;
 
     virtual std::map<uint16_type,uint16_type> init( std::vector<std::any> const& evecExpand,
                                                      std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type>>> const& M_t_expr_index,
@@ -148,30 +151,36 @@ protected:
 template<template<class...>class Target>
 struct deferPPP{
     //template<class...Ts>
-    template<class Ts1,class Ts2,class Ts3,class Ts4,class Ts5  >
-    using execute = Target<Ts1,Ts2,Ts3,Ts4>;
+    template<class Ts1/*,class Ts2,class Ts3*/,class Ts4,class Ts5  >
+    using execute = Target<Ts1/*,Ts2,Ts3*/,Ts4>;
 };
 template<template<class...>class Target>
 struct deferQQQ{
     //template<class...Ts>
-    template<class Ts1,class Ts2,class Ts3,class Ts4,class Ts5 >
-    using execute = Target<Ts1,Ts2,Ts3,Ts4,Ts5>;
+    template<class Ts1/*,class Ts2,class Ts3*/,class Ts4,class Ts5 >
+    using execute = Target<Ts1/*,Ts2,Ts3*/,Ts4,Ts5>;
 };
 template< class Prog, class... Ts >
 using runRRR = typename Prog::template execute<Ts...>;
 
 
 
-template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename SymbolsExprType>
-struct ExprTensorsFromSymbolsExprImpl : public ExprTensorsFromSymbolsExpr<Geo_t,Basis_i_t,Basis_j_t>
+template<typename Geo_t/*, typename Basis_i_t, typename Basis_j_t*/, typename SymbolsExprType>
+struct ExprTensorsFromSymbolsExprImpl : public ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/>
 {
-    using super_type =  ExprTensorsFromSymbolsExpr<Geo_t,Basis_i_t,Basis_j_t>;
+    using super_type = ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/>;
+    using self_type = ExprTensorsFromSymbolsExprImpl<Geo_t/*,Basis_i_t,Basis_j_t*/,SymbolsExprType>;
     using symbols_expr_type = SymbolsExprType;
     using value_type = typename super_type::value_type;
 
     ExprTensorsFromSymbolsExprImpl( symbols_expr_type const& se ) : M_se( se ) {}
 
     ~ExprTensorsFromSymbolsExprImpl() override {}
+
+    std::shared_ptr<super_type> newObjectPtr() const override
+        {
+            return std::make_shared<self_type>( M_se );
+        }
 
     std::map<uint16_type,uint16_type>
     init( std::vector<std::any> const& evecExpand,
@@ -191,7 +200,7 @@ struct ExprTensorsFromSymbolsExprImpl : public ExprTensorsFromSymbolsExpr<Geo_t,
 
                     static const bool is_same_expr = std::is_same_v<the_expr_type,the_expr_expand_type>;
                     using choice = typename std::conditional< is_same_expr, deferPPP<tensorFromExprClassic>, deferQQQ< tensorFromExpr>  >::type;
-                    using tensor_from_expr_type = runRRR< choice, Geo_t,Basis_i_t,Basis_j_t,the_expr_type,the_expr_expand_type >;
+                    using tensor_from_expr_type = runRRR< choice, Geo_t/*,Basis_i_t,Basis_j_t*/,the_expr_type,the_expr_expand_type >;
 
                     for (int l=0;l<nSubExpr;++l,++k)
                     {
@@ -256,12 +265,17 @@ private :
 
 
 
-template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
-struct ExprTensorsFromSymbolsExprImplBIDON : public ExprTensorsFromSymbolsExpr<Geo_t,Basis_i_t,Basis_j_t>
+template<typename Geo_t/*, typename Basis_i_t, typename Basis_j_t*/>
+struct ExprTensorsFromSymbolsExprImplBIDON : public ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/>
 {
-    using super_type =  ExprTensorsFromSymbolsExpr<Geo_t,Basis_i_t,Basis_j_t>;
+    using self_type = ExprTensorsFromSymbolsExprImplBIDON<Geo_t/*,Basis_i_t,Basis_j_t*/>;
+    using super_type =  ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/>;
     using value_type = typename super_type::value_type;
 
+    std::shared_ptr<super_type> newObjectPtr() const override
+        {
+            return std::make_shared<self_type>();
+        }
 
     ~ExprTensorsFromSymbolsExprImplBIDON() override {}
 
@@ -281,7 +295,7 @@ struct ExprTensorsFromSymbolsExprImplBIDON : public ExprTensorsFromSymbolsExpr<G
         {}
 };
 
-
+#endif
 /**
  * Handle Ginac matrix expression
  */
@@ -297,7 +311,12 @@ public:
     typedef Feel::vf::GiNaCBase super;
 
     //typedef SymbolsExprType symbols_expression_type;
+#if 0
     using symbols_expression_type = symbols_expression_locked_t<SymbolsExprType>;
+#else
+    using symbols_expression_storage_type = symbols_expression_locked_t<SymbolsExprType>;
+    using symbols_expression_type = typename symbols_expression_storage_type::symbols_expr_type;//symbols_expression_locked_t<typename SymbolsExprType::symbols_expr_type>;
+#endif
     typedef typename symbols_expression_type::tuple_type symbols_expression_tuple_type;
     static const int nSymbolsExpr = std::decay_t<decltype(hana::size(symbols_expression_tuple_type{}))>::value;
 
@@ -602,8 +621,21 @@ public:
     //! expression is polynomial?
     bool isPolynomial() const { return M_isPolynomial; }
 
-    symbols_expression_type const& symbolsExpression() const { return M_expr; }
-    symbols_expression_type & symbolsExpression() { return M_expr; }
+    symbols_expression_type const& symbolsExpression() const
+    {
+        if constexpr ( is_symbols_expression_v<symbols_expression_storage_type> )
+            return M_expr;
+        else // context
+            return M_expr.symbolsExpression();
+    }
+    symbols_expression_type & symbolsExpression()
+    {
+        if constexpr ( is_symbols_expression_v<symbols_expression_storage_type> )
+            return M_expr;
+        else // context
+            return M_expr.symbolsExpression();
+    }
+    symbols_expression_storage_type const& symbolsExpressionStorage() const { return M_expr; }
 
     std::vector<std::any> const& expandSymbolsExpression() const { return M_expandSymbolsExpr; }
     std::vector<std::any> & expandSymbolsExpression() { return M_expandSymbolsExpr; }
@@ -891,7 +923,7 @@ public:
     const std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type> > >  indices() const
     {
         std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type> > > indices_vec;
-        hana::for_each( M_expr.tuple(), [this,&indices_vec]( auto const& evec )
+        hana::for_each( this->symbolsExpression().tuple(), [this,&indices_vec]( auto const& evec )
                         {
                             for ( auto const& e : evec )
                             {
@@ -944,10 +976,10 @@ public:
 #if 1
         template<template<class...>class Target>
         struct defer{
-            //template<class...Ts>
-            template<class Ts1,class Ts2,class Ts3/*,class Ts4*/ >
-            //using execute = Target<Ts1,Ts2,Ts3,Ts4>;
-            using execute = std::shared_ptr<Target<Ts1,Ts2,Ts3>>;
+            template<class...Ts>
+            using execute = std::shared_ptr<Target<Ts...>>;
+            //template<class Ts1,class Ts2,class Ts3/*,class Ts4*/ >
+            //using execute = std::shared_ptr<Target<Ts1,Ts2,Ts3>>;
 
         };
         template<class T>
@@ -966,21 +998,46 @@ public:
         using tuple_tensor_symbols_expr_type = run< choice, Geo_t,Basis_i_t,Basis_j_t,symbols_expression_type >;
 #else
         using choice = typename std::conditional< !SymbolsExprType::is_locked, defer<ExprTensorsFromSymbolsExpr>, sink< mydummyclass >  >::type;
-        using tuple_tensor_symbols_expr_type = run< choice, Geo_t,Basis_i_t,Basis_j_t >;
+        using tuple_tensor_symbols_expr_type = run< choice, Geo_t/*,Basis_i_t,Basis_j_t*/ >;
 #endif
 
         // TODO VINCENT : use ExprTensorsFromSymbolsExprImpl instead of ExprTensorsFromSymbolsExpr
         static
-        auto buildTTSE( symbols_expression_type const& se )
+        auto buildTTSE( this_type const& expr /*symbols_expression_type const& se*/ )
             {
-                if constexpr ( !SymbolsExprType::is_locked )
+                if constexpr ( !SymbolsExprType::is_locked /*&& nSymbolsExpr>0*/ )
                              {
-                                 //TODOOOOOOOOOOO
-                                 //return std::make_shared<ExprTensorsFromSymbolsExprImpl<Geo_t,Basis_i_t,Basis_j_t,symbols_expression_type>>(se);
-                                 return std::make_shared<ExprTensorsFromSymbolsExprImplBIDON<Geo_t,Basis_i_t,Basis_j_t>>();
+                                 //if constexpr (  hana::find( std::decay_t<decltype(se.mapExprTensor())>, hana::type_c<Geo_t> ) !=  hana::nothing )
+                                 //if (  hana::find( se.mapExprTensor(), hana::type_c<Geo_t> ) !=  hana::nothing )
+                                 //std::cout << "bmlml size : " << hana::size( se.mapExprTensor() ).value << std::endl;
+
+                                 if constexpr( is_symbols_expression_v<symbols_expression_storage_type> )
+                                 {
+                                     return std::make_shared<ExprTensorsFromSymbolsExprImpl<Geo_t/*,Basis_i_t,Basis_j_t*/,symbols_expression_type>>( expr.symbolsExpression() );
+                                     //return std::make_shared<ExprTensorsFromSymbolsExprImplBIDON<Geo_t,Basis_i_t,Basis_j_t>>();
+                                 }
+                                 else
+                                 {
+                                     if constexpr ( !decltype(hana::is_nothing( hana::find( expr.symbolsExpressionStorage().mapExprTensor(), hana::type_c<Geo_t> ) ))::value )
+                                                  {
+                                                      //std::cout << "FIND se.mapExprTensor" << std::endl;
+                                                      return hana::at_key( expr.symbolsExpressionStorage().mapExprTensor(), hana::type_c<Geo_t> )->newObjectPtr();
+                                                  }
+                                     else
+                                     {
+                                         //std::cout << "NOT FIND se.mapExprTensor" << std::endl;
+                                         return std::make_shared<ExprTensorsFromSymbolsExprImpl<Geo_t/*,Basis_i_t,Basis_j_t*/,symbols_expression_type>>( expr.symbolsExpression() );
+                                         //return std::make_shared<ExprTensorsFromSymbolsExprImplBIDON<Geo_t/*,Basis_i_t,Basis_j_t*/>>();
+                                     }
+                                 }
+#if 0
+                                 //static_assert( !decltype(hana::is_nothing( findFieldT_opt{} ))::value, "tag not found" );
+                                 if (  hana::find( se.mapExprTensor(), hana::type_c<Geo_t> ) !=  hana::nothing )
+                                     std::cout << "FIND se.mapExprTensor" << std::endl;
+#endif
                              }
                 else
-                    return mydummyclass{ se };
+                    return mydummyclass{ expr.symbolsExpression() };
             }
 
 
@@ -1016,7 +1073,7 @@ public:
             M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type::Zero() ),
             M_t_expr_index( expr.indices() ),
             //M_ttse( expr.symbolsExpression() )
-            M_ttse( buildTTSE( expr.symbolsExpression() ) )
+            M_ttse( buildTTSE( expr/*.symbolsExpression()*/ ) )
             {
                 this->initSubTensor( geom, fev, feu );
             }
@@ -1034,7 +1091,7 @@ public:
             M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type::Zero() ),
             M_t_expr_index( expr.indices() ),
             //M_ttse( expr.symbolsExpression() )
-            M_ttse( buildTTSE( expr.symbolsExpression() ) )
+            M_ttse( buildTTSE( expr/*.symbolsExpression()*/ ) )
             {
                 this->initSubTensor( geom, fev );
             }
@@ -1051,7 +1108,7 @@ public:
             M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type::Zero() ),
             M_t_expr_index( expr.indices() ),
             //M_ttse( expr.symbolsExpression() )
-            M_ttse( buildTTSE( expr.symbolsExpression() ) )
+            M_ttse( buildTTSE( expr/*.symbolsExpression()*/ ) )
             {
                 this->initSubTensor( geom );
             }
@@ -1069,7 +1126,7 @@ public:
             M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type::Zero() ),
             M_t_expr_index( expr.indices() ),
             //M_ttse( expr.symbolsExpression() )
-            M_ttse( buildTTSE( expr.symbolsExpression() ) )
+            M_ttse( buildTTSE( expr/*.symbolsExpression()*/ ) )
             {
                 this->initSubTensor( geom, theInitArgs... );
             }
@@ -1089,7 +1146,7 @@ public:
             M_yConstant( (M_is_constant)? exprExpanded.evaluate() : evaluate_type::Zero() ),
             M_t_expr_index( exprExpanded.indices() ),
             //M_ttse( expr.symbolsExpression() )
-            M_ttse( buildTTSE( expr.symbolsExpression() ) )
+            M_ttse( buildTTSE( expr/*.symbolsExpression()*/ ) )
             {
                 this->initSubTensorBIS2( exprExpanded.expandSymbolsExpression(), ttse, geom );
             }
@@ -1159,7 +1216,7 @@ public:
             }
 
         FEELPP_DONT_INLINE
-        void updateImpl2( std::true_type /**/, std::vector<std::any> const& expandExpr, ExprTensorsFromSymbolsExpr<Geo_t,Basis_i_t,Basis_j_t> & ttse,
+        void updateImpl2( std::true_type /**/, std::vector<std::any> const& expandExpr, ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/> & ttse,
                          Geo_t const& geom )
             {
                 if ( M_is_constant ) return;
@@ -1258,7 +1315,7 @@ public:
             }
 
         FEELPP_DONT_INLINE
-        void initSubTensorBIS2( std::vector<std::any> const& expandExpr, ExprTensorsFromSymbolsExpr<Geo_t,Basis_i_t,Basis_j_t> & ttse, Geo_t const& geom )
+        void initSubTensorBIS2( std::vector<std::any> const& expandExpr, ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/> & ttse, Geo_t const& geom )
             {
                 M_subexprIdToSubtensorId = ttse.init( expandExpr, M_t_expr_index, geom );
             }
@@ -1330,7 +1387,7 @@ private :
 
 
         int nTotalSubExpr = 0;
-        hana::for_each( M_expr.tuple(), [this,&nTotalSubExpr]( auto const& evec ) { nTotalSubExpr += evec.size(); } );
+        hana::for_each( this->symbolsExpression().tuple(), [this,&nTotalSubExpr]( auto const& evec ) { nTotalSubExpr += evec.size(); } );
         M_expandSymbolsExpr.resize( nTotalSubExpr );
         //auto & evecExpand = M_expandSymbolsExpr;
 
@@ -1338,7 +1395,7 @@ private :
         int k2 = 0;
         hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nSymbolsExpr> ), [this,&symbTotalDegree,&symbExprArePolynomials,&k2]( auto seId )
                         {
-                            auto const& evec = hana::at( M_expr.tupleExpr, hana::int_c<seId> );
+                            auto const& evec = hana::at( this->symbolsExpression().tuple(), hana::int_c<seId> );
                             int nSubExpr = evec.size();
                             // auto & evecExpand = hana::at(M_expandSymbolsExpr, hana::int_c<seId> );
                             // evecExpand.resize( nSubExpr );
@@ -1356,7 +1413,7 @@ private :
                                         e.updateFunction()();
 
                                     auto const& theexprBase = e.expr();
-                                    auto theexpr = theexprBase.applySymbolsExpr( M_expr );
+                                    auto theexpr = theexprBase.applySymbolsExpr( this->symbolsExpression() );
                                     M_expandSymbolsExpr[k2] = theexpr;
 
                                     M_context = M_context | Feel::vf::dynamicContext( theexpr );
@@ -1376,7 +1433,7 @@ private :
                                         e.updateFunction()();
 
                                     auto const& theexprBase = e.expr();
-                                    auto theexpr = theexprBase.applySymbolsExpr( M_expr );
+                                    auto theexpr = theexprBase.applySymbolsExpr( this->symbolsExpression() );
                                     M_expandSymbolsExpr[k2] = theexpr;
 
                                     M_context = M_context | Feel::vf::dynamicContext( theexpr );
@@ -1449,7 +1506,7 @@ private :
         int k2 = 0;
         hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nSymbolsExpr> ), [this,&x,&parallel,&worldcomm,&k2]( auto seId )
                         {
-                            auto const& evec = hana::at( M_expr.tupleExpr, hana::int_c<seId> );
+                            auto const& evec = hana::at( this->symbolsExpression().tuple(), hana::int_c<seId> );
                             //auto const& evecExpand = hana::at(M_expandSymbolsExpr, hana::int_c<seId> );
                             int nSubExpr = evec.size();
                             for (int k=0;k<nSubExpr;++k,++k2)
@@ -1463,7 +1520,7 @@ private :
                                         continue;
 
                                     auto const& theexprBase = e.expr();
-                                    auto const& theexpr = std::any_cast<std::decay_t<decltype(theexprBase.applySymbolsExpr( M_expr ))> const&>(M_expandSymbolsExpr[k2]);
+                                    auto const& theexpr = std::any_cast<std::decay_t<decltype(theexprBase.applySymbolsExpr( this->symbolsExpression() ))> const&>(M_expandSymbolsExpr[k2]);
 
                                     x[idx] = theexpr.evaluate( parallel, worldcomm )(0,0);
                                 }
@@ -1473,7 +1530,7 @@ private :
                                         continue;
 
                                     auto const& theexprBase = e.expr();
-                                    auto const& theexpr = std::any_cast<std::decay_t<decltype(theexprBase.applySymbolsExpr( M_expr ))> const&>(M_expandSymbolsExpr[k2]);
+                                    auto const& theexpr = std::any_cast<std::decay_t<decltype(theexprBase.applySymbolsExpr( this->symbolsExpression() ))> const&>(M_expandSymbolsExpr[k2]);
 
                                     for ( auto const& [_suffix,compArray] : e.componentSuffix() )
                                     {
@@ -1619,7 +1676,7 @@ private:
     std::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
     std::string M_filename;
     std::string M_exprDesc;
-    symbols_expression_type M_expr;
+    symbols_expression_storage_type/*symbols_expression_type*/ M_expr;
     //tuple_expand_symbols_expr_type M_expandSymbolsExpr;
     std::vector<std::any> M_expandSymbolsExpr;
     bool M_isPolynomial;

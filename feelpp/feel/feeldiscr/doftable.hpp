@@ -2840,8 +2840,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
         return;
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
-    typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
-    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
 
 #if 0
     auto rangeElements = M.elementsWithProcessId( M.worldComm().localRank() );
@@ -2859,7 +2857,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
     typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( M.gm(), this->fe().points() ) );
-    gm_context_ptrtype __c( new gm_context_type( M.gm(), boost::unwrap_ref( *it_elt ), __geopc ) );
+    auto __c = M.gm()->template context<vm::POINT>( unwrap_ref( *it_elt ), __geopc );
 
     for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
     {
@@ -2881,7 +2879,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
         }
 
 
-        __c->update( elt );
+        __c->template update<vm::POINT>( elt );
 
         for ( auto const& ldof : this->localDof( elt.id() ) )
         {
@@ -2955,8 +2953,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoin
         return;
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
-    typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
-    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
 
     typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
 
@@ -2976,14 +2972,14 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoin
     if ( it_elt == en_elt )
         return;
 
-    gm_context_ptrtype __c( new gm_context_type( gm, *it_elt->template get<0>(), __geopc ) );
+    auto __c = gm->template context<vm::POINT>( *it_elt->template get<0>(), __geopc );
 
     std::vector<bool> dof_done( periodic_dof_points.size() );
     std::fill( dof_done.begin(), dof_done.end(), false );
 
     for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
     {
-        __c->update( *it_elt->template get<0>() );
+        __c->template update<vm::POINT>( *it_elt->template get<0>() );
 
         face_type const& __face = *it_elt->template get<1>();
 

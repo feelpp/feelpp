@@ -1937,7 +1937,8 @@ struct gmcDefStencil
 {
     typedef typename EltType::gm_type::precompute_type pc_type;
     typedef typename EltType::gm_type::precompute_ptrtype pc_ptrtype;
-    typedef typename EltType::gm_type::template Context<vm::POINT, EltType> gmc_type;
+    static const size_type gmc_v = vm::POINT;
+    typedef typename EltType::gm_type::template Context<EltType> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 };
 
@@ -1950,6 +1951,7 @@ struct gmcDefFaceStencil
     typedef typename FaceType2::super2::template Element<FaceType2>::type EltType;
     typedef typename gmcDefStencil<EltType>::pc_type pc_type;
     typedef typename gmcDefStencil<EltType>::pc_ptrtype pc_ptrtype;
+    static const size_type gmc_v = gmcDefStencil<EltType>::gmc_v;
     typedef typename gmcDefStencil<EltType>::gmc_type gmc_type;
     typedef typename gmcDefStencil<EltType>::gmc_ptrtype gmc_ptrtype;
 };
@@ -1964,7 +1966,7 @@ gmcStencil( mpl::size_t<MESH_ELEMENTS> /**/, EltType const& elem, ImType const& 
     typedef typename gmcDefStencil<EltType>::gmc_ptrtype gmc_ptrtype;
 
     pc_ptrtype geopc( new pc_type( elem.gm(), im.points() ) );
-    gmc_ptrtype gmc( new gmc_type( elem.gm(), elem, geopc ) );
+    gmc_ptrtype gmc = elem.gm()->template context<gmcDefStencil<EltType>::gmc_v>( elem, geopc );
     return gmc;
 }
 
@@ -1994,23 +1996,20 @@ gmcStencil( mpl::size_t<MESH_FACES> /**/, FaceType const& theface, ImType const&
     }
 
     uint16_type __face_id_in_elt_0 = theface.pos_first();
-    gmc_ptrtype gmc( new gmc_type( theface.element( 0 ).gm(),
-                                   theface.element( 0 ),
-                                   __geopc,
-                                   __face_id_in_elt_0 ) );
+    gmc_ptrtype gmc = theface.element( 0 ).gm()->template context<gmcDefFaceStencil<FaceType>::gmc_v>( theface.element( 0 ), __geopc, __face_id_in_elt_0 );
     return gmc;
 }
 template<typename EltType>
 void
 gmcUpdateStencil( mpl::size_t<MESH_ELEMENTS> /**/, EltType const& elem, typename gmcDefStencil<EltType>::gmc_ptrtype &gmc )
 {
-    gmc->update( elem );
+    gmc->template update<gmcDefStencil<EltType>::gmc_v>( elem );
 }
 template<typename FaceType>
 void
 gmcUpdateStencil( mpl::size_t<MESH_FACES> /**/, FaceType const& theface, typename gmcDefFaceStencil<FaceType>::gmc_ptrtype &gmc )
 {
-    gmc->update( theface.element( 0 ), theface.pos_first() );
+    gmc->template update<gmcDefFaceStencil<FaceType>::gmc_v>( theface.element( 0 ), theface.pos_first() );
 }
 
 

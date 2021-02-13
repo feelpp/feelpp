@@ -25,11 +25,293 @@
 #define FEELPP_VF_SYMBOLSEXPR_HPP 1
 
 #include <feel/feelcore/tuple_utils.hpp>
+#include <any>
 
 namespace Feel
 {
 namespace vf
 {
+           
+
+
+template<typename Geo_t/*, typename Basis_i_t, typename Basis_j_t*/>
+struct ExprTensorsFromSymbolsExpr;
+
+
+template<typename Geo_t/*, typename Basis_i_t, typename Basis_j_t*/>
+struct tensorGen
+{
+    using value_type = double;
+
+    virtual ~tensorGen() {}
+
+    virtual void update( std::true_type /**/, ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/> & ttse, Geo_t const& geom ) = 0;
+    virtual value_type evalq( uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
+
+};
+
+
+template<typename Geo_t/*, typename Basis_i_t, typename Basis_j_t*/, typename ExprType, typename ExprExpandType>
+struct tensorFromExpr : public tensorGen<Geo_t/*,Basis_i_t,Basis_j_t*/>
+{
+    using super_type = tensorGen<Geo_t/*,Basis_i_t,Basis_j_t*/>;
+    using value_type = typename super_type::value_type;
+    using expr_type = ExprType;
+    using expr_expand_type = ExprExpandType;
+    using tensor_type = typename ExprType::template tensor<Geo_t/*,Basis_i_t,Basis_j_t*/>;
+
+    tensorFromExpr( std::true_type /**/, expr_expand_type const& exprExpanded, ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/> & ttse,
+                    expr_type const& expr, Geo_t const& geom/*, const TheArgsType&... theInitArgs*/ )
+        :
+        M_expr( std::make_shared<expr_type>( expr ) ),
+        M_exprExpand( exprExpanded ),
+        M_tensor( std::true_type{}, exprExpanded, ttse, *M_expr, geom/*, theInitArgs...*/ )
+        {}
+
+    ~tensorFromExpr() override {}
+
+    void update( std::true_type /**/, ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/> & ttse, Geo_t const& geom ) override
+        {
+            M_tensor.update( std::true_type{}, M_exprExpand, ttse, geom );
+        }
+
+    value_type evalq( uint16_type c1, uint16_type c2, uint16_type q ) const override { return M_tensor.evalq(c1,c2,q); }
+
+private :
+    std::shared_ptr<expr_type> M_expr;
+    expr_expand_type const& M_exprExpand;
+    tensor_type M_tensor;
+};
+
+template<typename Geo_t/*, typename Basis_i_t, typename Basis_j_t*/, typename ExprType>
+struct tensorFromExprClassic : public tensorGen<Geo_t/*,Basis_i_t,Basis_j_t*/>
+{
+    using super_type = tensorGen<Geo_t/*,Basis_i_t,Basis_j_t*/>;
+    using value_type = typename super_type::value_type;
+    using expr_type = ExprType;
+    using tensor_type = typename expr_type::template tensor<Geo_t/*,Basis_i_t,Basis_j_t*/>;
+
+    tensorFromExprClassic( expr_type const& expr, Geo_t const& geom/*, const TheArgsType&... theInitArgs*/ )
+        :
+        M_tensor( expr, geom/*, theInitArgs...*/ )
+        {}
+
+    ~tensorFromExprClassic() override {}
+
+    void update( std::true_type /**/, ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/> & ttse, Geo_t const& geom ) override
+        {
+            M_tensor.update( geom );
+        }
+
+    value_type evalq( uint16_type c1, uint16_type c2, uint16_type q ) const override { return M_tensor.evalq(c1,c2,q); }
+
+private :
+    tensor_type M_tensor;
+};
+
+
+template<typename Geo_t/*, typename Basis_i_t, typename Basis_j_t*/>
+struct ExprTensorsFromSymbolsExpr
+{
+    using self_type = ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/>;
+    using tensor_type = tensorGen<Geo_t/*,Basis_i_t,Basis_j_t*/>;
+    using tensor_ptrtype = std::shared_ptr<tensor_type>;
+    using value_type = typename tensor_type::value_type;
+
+    virtual ~ExprTensorsFromSymbolsExpr() {}
+
+    virtual std::shared_ptr<self_type> newObjectPtr() const = 0;
+
+    virtual std::map<uint16_type,uint16_type> init( std::vector<std::any> const& evecExpand,
+                                                     std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type>>> const& M_t_expr_index,
+                                                     Geo_t const& geom ) = 0;
+
+    virtual void update( std::vector<std::any> const& evecExpand,
+                         std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type>>> const& M_t_expr_index,
+                         std::map<uint16_type,uint16_type> const& M_subexprIdToSubtensorId,
+                         std::vector<std::vector<std::pair<uint16_type,value_type>>> & evalSubtensor,
+                         Geo_t const& geom ) = 0;
+
+
+    tensor_type & tensor( uint16_type id )
+        {
+            CHECK( id < M_tensor.size() ) << "invalid id";
+            CHECK( M_tensor[id] ) << "not init";
+            return *M_tensor[id];
+        }
+
+protected:
+    std::vector<tensor_ptrtype> M_tensor;
+
+};
+
+
+template<template<class...>class Target>
+struct deferPPP{
+    //template<class...Ts>
+    template<class Ts1/*,class Ts2,class Ts3*/,class Ts4,class Ts5  >
+    using execute = Target<Ts1/*,Ts2,Ts3*/,Ts4>;
+};
+template<template<class...>class Target>
+struct deferQQQ{
+    //template<class...Ts>
+    template<class Ts1/*,class Ts2,class Ts3*/,class Ts4,class Ts5 >
+    using execute = Target<Ts1/*,Ts2,Ts3*/,Ts4,Ts5>;
+};
+template< class Prog, class... Ts >
+using runRRR = typename Prog::template execute<Ts...>;
+
+
+
+template<typename Geo_t/*, typename Basis_i_t, typename Basis_j_t*/, typename SymbolsExprType>
+struct ExprTensorsFromSymbolsExprImpl : public ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/>
+{
+    using super_type = ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/>;
+    using self_type = ExprTensorsFromSymbolsExprImpl<Geo_t/*,Basis_i_t,Basis_j_t*/,SymbolsExprType>;
+    using symbols_expr_type = SymbolsExprType;
+    using value_type = typename super_type::value_type;
+
+    ExprTensorsFromSymbolsExprImpl( symbols_expr_type const& se ) : M_se( se ) {}
+
+    ~ExprTensorsFromSymbolsExprImpl() override {}
+
+    std::shared_ptr<super_type> newObjectPtr() const override
+        {
+            return std::make_shared<self_type>( M_se );
+        }
+
+    void setSymbolsExpr( symbols_expr_type const& se ) { M_se = se; }
+
+    std::map<uint16_type,uint16_type>
+    init( std::vector<std::any> const& evecExpand,
+          std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type>>> const& M_t_expr_index,
+          Geo_t const& geom ) override
+        {
+
+            std::map<uint16_type,uint16_type> subexprIdToSubtensorId;
+
+            auto & baseObject = *static_cast<super_type*>(this);
+            uint16_type k=0;
+            hana::for_each( M_se.tuple(), [this,&geom,&evecExpand,&M_t_expr_index,&k,&subexprIdToSubtensorId,&baseObject]( auto const& evec ) {
+                    int nSubExpr = evec.size();
+                    using the_expr_type = typename std::decay_t<decltype(evec)>::expr_type;
+                    using the_expr_expand_type = std::decay_t<decltype(evec.front().expr().applySymbolsExpr( M_se ))>;
+                    //using tensor_from_expr_type = tensorFromExpr<Geo_t,Basis_i_t,Basis_j_t,the_expr_type,the_expr_expand_type>;
+
+                    static const bool is_same_expr = std::is_same_v<the_expr_type,the_expr_expand_type>;
+                    using choice = typename std::conditional< is_same_expr, deferPPP<tensorFromExprClassic>, deferQQQ< tensorFromExpr>  >::type;
+                    using tensor_from_expr_type = runRRR< choice, Geo_t/*,Basis_i_t,Basis_j_t*/,the_expr_type,the_expr_expand_type >;
+
+                    for (int l=0;l<nSubExpr;++l,++k)
+                    {
+                        if ( M_t_expr_index[k].empty() )
+                            continue;
+
+                        auto const& e = evec[l];
+                        auto const& theexprBase = e.expr();
+                        auto const& theexpr = std::any_cast<the_expr_expand_type const&>(evecExpand[k]);
+                        typename super_type::tensor_ptrtype tPtr;
+                        if constexpr ( is_same_expr )
+                            tPtr = std::make_shared<tensor_from_expr_type>( theexpr, geom );
+                        else
+                            tPtr = std::make_shared<tensor_from_expr_type>( std::true_type{}, theexpr, baseObject, theexprBase, geom );
+
+                        uint16_type id = this->M_tensor.size();
+                        this->M_tensor.push_back( std::move( tPtr ) );
+                        subexprIdToSubtensorId[k] = id;
+                    }
+                });
+            return subexprIdToSubtensorId;
+        }
+
+    void update( std::vector<std::any> const& evecExpand,
+                 std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type>>> const& M_t_expr_index,
+                 std::map<uint16_type,uint16_type> const& M_subexprIdToSubtensorId,
+                 std::vector<std::vector<std::pair<uint16_type,value_type>>> & evalSubtensor,
+                 Geo_t const& geom ) override
+        {
+            using key_type = key_t<Geo_t>;
+            //using key_type = key_t<Geo_t>;
+            auto M_gmc = fusion::at_key<key_type>( geom ).get();
+
+            auto & baseObject = *static_cast<super_type*>(this);
+            uint16_type k=0;
+            hana::for_each( M_se.tuple(), [this,&geom,&evecExpand,&M_t_expr_index,&M_subexprIdToSubtensorId,&M_gmc,&evalSubtensor,&k,&baseObject]( auto const& evec ) {
+                    int nSubExpr = evec.size();
+                    for (int l=0;l<nSubExpr;++l,++k)
+                    {
+                        if ( M_t_expr_index[k].empty() )
+                            continue;
+
+                        auto itFindId = M_subexprIdToSubtensorId.find( k );
+                        CHECK( itFindId != M_subexprIdToSubtensorId.end() ) << "invalid id";
+                        auto & subTensor = this->tensor( itFindId->second );
+#if 1
+                        subTensor.update( std::true_type{}, baseObject, geom/*, theUpdateArgs...*/ );
+
+                        for ( auto const& [idx,c1,c2] : M_t_expr_index[k] )
+                        {
+                            for(int q = 0; q < M_gmc->nPoints();++q )
+                                evalSubtensor[q].push_back( std::make_pair(idx, subTensor.evalq( c1, c2, q ) ) );
+                        }
+#endif
+                    }
+                });
+
+        }
+private :
+    symbols_expr_type const& M_se;
+};
+
+
+
+template<typename Geo_t/*, typename Basis_i_t, typename Basis_j_t*/>
+struct ExprTensorsFromSymbolsExprImplBIDON : public ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/>
+{
+    using self_type = ExprTensorsFromSymbolsExprImplBIDON<Geo_t/*,Basis_i_t,Basis_j_t*/>;
+    using super_type =  ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/>;
+    using value_type = typename super_type::value_type;
+
+    std::shared_ptr<super_type> newObjectPtr() const override
+        {
+            return std::make_shared<self_type>();
+        }
+
+    ~ExprTensorsFromSymbolsExprImplBIDON() override {}
+
+    std::map<uint16_type,uint16_type>
+    init( std::vector<std::any> const& evecExpand,
+          std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type>>> const& M_t_expr_index,
+          Geo_t const& geom ) override
+        {
+            return std::map<uint16_type,uint16_type>{};
+        }
+
+    void update( std::vector<std::any> const& evecExpand,
+                 std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type>>> const& M_t_expr_index,
+                 std::map<uint16_type,uint16_type> const& M_subexprIdToSubtensorId,
+                 std::vector<std::vector<std::pair<uint16_type,value_type>>> & evalSubtensor,
+                 Geo_t const& geom ) override
+        {}
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+             
 
 struct SymbolExprComponentSuffix : public std::vector< std::tuple<std::string,std::array<uint16_type,2>>>
 {
@@ -235,13 +517,16 @@ SymbolExpr<ExprT>
 symbolExpr( std::vector<std::tuple<std::string,ExprT,SymbolExprComponentSuffix,SymbolExprUpdateFunction>> const& e ) { return SymbolExpr<ExprT>( e ); }
 
 struct SymbolsExprBase {};
+struct SymbolsExprTensorContextBase {};
 
 struct SymbolsExprTag {};
 
 //! store set of SymbolExpr object into a hana::tuple
-template<typename TupleExprType,bool IsLocked = false>
+template<typename TupleExprType,bool IsLocked = false >
 struct SymbolsExpr : public SymbolsExprBase
 {
+    using self_type = SymbolsExpr<TupleExprType,IsLocked>;
+    using symbols_expr_type = self_type;
     using tuple_type = TupleExprType;
     using feelpp_tag = SymbolsExprTag;
     static const bool is_locked = IsLocked;
@@ -261,6 +546,7 @@ struct SymbolsExpr : public SymbolsExprBase
         :
         tupleExpr( tse )
         {}
+
 
     std::map<std::string,std::set<std::string>> names() const
         {
@@ -286,11 +572,6 @@ struct SymbolsExpr : public SymbolsExprBase
     tuple_type const& tuple() const { return tupleExpr; }
     tuple_type & tuple() { return tupleExpr; }
 
-    // template <bool IL = IsLocked>
-    // SymbolsExpr<TupleExprType,IL> const&
-    // lock() const { return *this;
-
-
     template<typename... TheExpr>
     struct Lambda
     {
@@ -314,37 +595,89 @@ struct SymbolsExpr : public SymbolsExprBase
             return typename Lambda<TheExpr...>::type( hana::transform( tupleExpr, [&e...]( auto const& t) { return t.applyLambda(e...); } ) );
         }
 
+    template <bool B>
+    struct ApplyLocking
+    {
+        using type = SymbolsExpr<TupleExprType,B>;
+    };
 
-    tuple_type tupleExpr;
-};
-#if 0
-template <>
-struct SymbolsExpr<hana::tuple<>>
-{
-    using tuple_type = hana::tuple<>;
-    using feelpp_tag = SymbolsExprTag;
-    tuple_type tupleExpr;
+    template <typename MapExprTensorType>
+    struct TensorContext : public SymbolsExprTensorContextBase
+    {
+        using map_expr_tensor_type = MapExprTensorType;
+        using symbols_expr_type = symbols_expr_type;
+        static const bool is_locked = is_locked;
 
-    SymbolsExpr() = default;
-    explicit SymbolsExpr( tuple_type const& tse ) {}
-    explicit SymbolsExpr( tuple_type && tse ) {}
+        template <bool B>
+        struct ApplyLocking
+        {
+            using type = typename symbols_expr_type::ApplyLocking<B>::type::template TensorContext<MapExprTensorType>;
+        };
 
-    std::map<std::string,std::set<std::string>> names() const { return std::map<std::string,std::set<std::string>>{}; }
+        TensorContext() = default;
+        TensorContext( symbols_expr_type const& se, map_expr_tensor_type const& met )
+            :
+            M_se( std::make_shared<symbols_expr_type>( se ) ), M_mapExprTensor( met )
+            {
+                hana::for_each( M_mapExprTensor, [this]( auto& pair )
+                                {
+                                    using Geo_t = typename std::decay_t<decltype(hana::first(pair))>::type;
+                                    if (!hana::second(pair))
+                                    {
+                                        hana::second(pair) = std::make_shared<ExprTensorsFromSymbolsExprImpl<Geo_t/*,Basis_i_t,Basis_j_t*/,symbols_expr_type>>( *M_se );
+                                        //std::cout << "TOTOTOOTOAAAAA"<<std::endl;
+                                    }
+                                    else
+                                    {
+                                        // TODO set M_se inside hana::second(pair) (normally it don't erase
+                                    }
+                                });
+            }
 
-};
+        TensorContext( TensorContext const& ) = default;
+        TensorContext( TensorContext && ) = default;
+        TensorContext& operator=( TensorContext const& ) = default;
+        TensorContext& operator=( TensorContext&& ) = default;
+
+        symbols_expr_type const& symbolsExpression() const { return *M_se; }
+        symbols_expr_type & symbolsExpression() { return *M_se; }
+        map_expr_tensor_type const& mapExprTensor() const { return M_mapExprTensor; }
+
+        tuple_type const& tuple() const { return M_se->tuple(); }
+        tuple_type & tuple() { return M_se->tuple(); }
+
+    private :
+        std::shared_ptr<symbols_expr_type> M_se;
+        map_expr_tensor_type M_mapExprTensor;
+    };
+#if 1
+    template <typename MapExprTensorType>
+    TensorContext<MapExprTensorType> createTensorContext( MapExprTensorType const& met )
+        {
+            return TensorContext<MapExprTensorType>( *this, met );
+        }
 #endif
-template<typename... ExprT>
-struct SymbolsExprTraits
-{
-    static constexpr auto callApply = [](const auto& ...exprs) { return Feel::detail::AdvancedConcatOfTupleContainerType<SymbolsExprTag,SymbolExprTag>::template apply( exprs... ); };
-    using tuple_type = std::decay_t<decltype( hana::unpack( hana::tuple<ExprT...>{},  callApply ) )>;
-    using type = SymbolsExpr<tuple_type>;
+    template <typename MeshType>
+    auto createTensorContext()
+        {
+            using gm_type = typename MeshType::gm_type;
+            using geoelement_type = typename MeshType::element_type;
+            using gmc_type = typename gm_type::template Context<geoelement_type>;
+            using _map_gmc_type = map_gmc_type<gmc_type>;
+            using Geo_t = _map_gmc_type;
+            using etfse_type = ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/>;
+            using etfse_ptrtype = std::shared_ptr<etfse_type>;
+
+            //etfse_ptrtype qgqg = std::make_shared<ExprTensorsFromSymbolsExprImpl<Geo_t/*,Basis_i_t,Basis_j_t*/,symbols_expr_type>>( *this/*thesymbolExpr*/ );
+            auto met = hana::make_map( hana::make_pair(hana::type_c<Geo_t>, etfse_ptrtype{} ) );
+
+            using MapExprTensorType = std::decay_t<decltype(met)>;
+
+            return TensorContext<MapExprTensorType>( *this, met );
+        }
+
+    tuple_type tupleExpr;
 };
-
-template<typename... ExprT>
-using symbols_expression_t = typename SymbolsExprTraits<ExprT...>::type;
-
-using symbols_expression_empty_t = SymbolsExpr<hana::tuple<>>;
 
 template<typename SymbolsExprType>
 using is_symbols_expression = typename std::is_base_of<SymbolsExprBase,SymbolsExprType>::type;
@@ -352,8 +685,58 @@ using is_symbols_expression = typename std::is_base_of<SymbolsExprBase,SymbolsEx
 template<typename SymbolsExprType>
 constexpr bool is_symbols_expression_v = is_symbols_expression<SymbolsExprType>::value;
 
+
 template<typename SymbolsExprType>
-using symbols_expression_locked_t = SymbolsExpr<typename SymbolsExprType::tuple_type,true>;
+using is_symbols_expression_tensor_context = typename std::is_base_of<SymbolsExprTensorContextBase,SymbolsExprType>::type;
+
+template<typename SymbolsExprType>
+constexpr bool is_symbols_expression_tensor_context_v = is_symbols_expression_tensor_context<SymbolsExprType>::value;
+
+
+
+template<typename T1,typename... ExprT>
+struct SymbolsExprTraits
+{
+    static constexpr auto callApply = [](const auto& ...exprs) { return Feel::detail::AdvancedConcatOfTupleContainerType<SymbolsExprTag,SymbolExprTag>::template apply( exprs... ); };
+    using tuple_type = std::decay_t<decltype( hana::unpack( hana::tuple<T1,ExprT...>{},  callApply ) )>;
+    using type = SymbolsExpr<tuple_type>;
+};
+
+
+template<typename T>
+struct SymbolsExprTraits<T>
+{
+    //template<template<class...>class Target>
+    struct deferPPP2{
+        template<class Ts>
+        using execute = Ts;
+    };
+    //template<template<class...>class Target>
+    struct deferQQQ2{
+        //template<class...Ts>
+        template<class Ts>
+        using execute = SymbolsExpr< hana::tuple<Ts> >;
+    };
+    template< class Prog, class... Ts >
+    using runRRR = typename Prog::template execute<Ts...>;
+
+    using choice = typename std::conditional< is_symbols_expression_v<T> || is_symbols_expression_tensor_context_v<T>, deferPPP2/*<T>*/, deferQQQ2/*<T>*/  >::type;
+    using type = runRRR< choice, T >;
+
+    //static constexpr bool is
+    // using type = typename mpl::if_c< is_symbols_expression_v<T>,
+    //                                  T,
+    //                                  SymbolsExpr< hana::tuple<T> > >::type;
+};
+
+template<typename... ExprT>
+using symbols_expression_t = typename SymbolsExprTraits<ExprT...>::type;
+
+using symbols_expression_empty_t = SymbolsExpr<hana::tuple<>>;
+
+
+template<typename SymbolsExprType>
+using symbols_expression_locked_t = typename SymbolsExprType::template ApplyLocking<true>::type; // SymbolsExpr<typename SymbolsExprType::tuple_type,true/*,typename SymbolsExprType::map_expr_tensor_type*/>;
 
 
 //! build a SymbolsExpr object
@@ -363,6 +746,30 @@ symbolsExpr( const ExprT&... exprs )
 {
     return symbols_expression_t<ExprT...>(Feel::detail::AdvancedConcatOfTupleContainerType<SymbolsExprTag,SymbolExprTag>::template apply( exprs... ) );
 }
+#if 0
+template<typename TupleExprType,bool IsLocked/*, typename MapExprTensorType*/>
+SymbolsExpr<TupleExprType,IsLocked/*,MapExprTensorType*/> const&
+symbolsExpr( SymbolsExpr<TupleExprType,IsLocked/*,MapExprTensorType*/> const& se )
+{
+    return se;
+}
+template<typename TupleExprType,bool IsLocked, typename MapExprTensorType>
+//SymbolsExpr<TupleExprType,IsLocked/*,MapExprTensorType*/> const&
+auto const&
+symbolsExpr( typename SymbolsExpr<TupleExprType,IsLocked/*,MapExprTensorType*/>::template TensorContext<MapExprTensorType>  const& se )
+{
+    return se;
+}
+#else
+template<typename T>
+symbols_expression_t<T> const&
+symbolsExpr( T const& se, std::enable_if_t< (is_symbols_expression_v<T> || is_symbols_expression_tensor_context_v<T>) >* = nullptr )
+{
+    return se;
+}
+
+#endif
+
 
 #if 0
 template<typename TupleExprType>
@@ -374,23 +781,39 @@ lock2( SymbolsExpr<TupleExprType> const& se )
 }
 #endif
 
-
-template<typename TupleExprType,bool IsLocked>
-SymbolsExpr<TupleExprType,true/*IsLocked*/> const&
-lock( SymbolsExpr<TupleExprType,IsLocked> const& se,
+#if 0
+template<typename TupleExprType,bool IsLocked/*,typename MapExprTensorType*/>
+SymbolsExpr<TupleExprType,true/*IsLocked*//*,MapExprTensorType*/> const&
+lock( SymbolsExpr<TupleExprType,IsLocked/*,MapExprTensorType*/> const& se,
       std::enable_if_t<IsLocked>* = nullptr )
 {
     return se;
 }
-template<typename TupleExprType,bool IsLocked>
-SymbolsExpr<TupleExprType,true>
-lock( SymbolsExpr<TupleExprType,IsLocked> const& se,
+template<typename TupleExprType,bool IsLocked/*,typename MapExprTensorType*/>
+SymbolsExpr<TupleExprType,true/*,MapExprTensorType*/>
+lock( SymbolsExpr<TupleExprType,IsLocked/*,MapExprTensorType*/> const& se,
       std::enable_if_t<!IsLocked>* = nullptr )
 {
-    return SymbolsExpr<TupleExprType,true>( se.tuple() );
+    return SymbolsExpr<TupleExprType,true/*,MapExprTensorType*/>( se.tuple()/*, se.mapExprTensor()*/ );
+}
+#endif
+
+template <typename T>
+symbols_expression_locked_t<T>
+lock( T const& se, std::enable_if_t< (is_symbols_expression_v<T> || is_symbols_expression_tensor_context_v<T>) && !T::is_locked >* = nullptr )
+{
+    if constexpr( is_symbols_expression_v<T> )
+        return symbols_expression_locked_t<T>( se.tuple() );
+    else
+        return lock( se.symbolsExpression() ).createTensorContext( se.mapExprTensor() );
 }
 
-
+template <typename T>
+symbols_expression_locked_t<T> const&
+lock( T const& se, std::enable_if_t< (is_symbols_expression_v<T> || is_symbols_expression_tensor_context_v<T>) && T::is_locked >* = nullptr )
+{
+    return se;
+}
 // #if 0
 // template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename TupleExprType>
 // auto
