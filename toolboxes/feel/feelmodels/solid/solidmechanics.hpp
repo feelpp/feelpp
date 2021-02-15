@@ -311,8 +311,8 @@ public :
     void solve( bool upVelAcc=true );
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
-    void updateInformationObject( pt::ptree & p ) const override;
-    std::vector<tabulate::Table> tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
 
     bool hasSolidEquation1dReduced() const { return M_solid1dReduced.use_count() > 0; }

@@ -21,9 +21,8 @@ find_dependency( CURL )
 if ( EXISTS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules/swsConfig.cmake )
   find_dependency( sws )
 endif()
-if ( EXISTS ${FEELPP_DIR}/share/feelpp/nlopt/cmake )
-  find_dependency( NLopt )
-endif()
+
+find_dependency( NLopt )
 
 if(NOT TARGET Feelpp::feelpp_contrib)
   include("${FeelppContrib_CMAKE_DIR}/feelpp-contrib-export-targets.cmake")

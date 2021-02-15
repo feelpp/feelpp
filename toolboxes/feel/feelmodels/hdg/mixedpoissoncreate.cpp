@@ -35,9 +35,6 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
                                                this->worldComm(),this->verboseAllProc());
 
 
-    this->setFilenameSaveInfo( prefixvm(this->prefix(),"MixedPoisson.info") );
-
-
     if ( this->prefix().empty())
         M_backend = backend( _rebuild=true);
     else

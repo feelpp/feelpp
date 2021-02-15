@@ -55,3 +55,9 @@
 [submodule "feelpp/contrib/boost/hana"]
 	path = feelpp/contrib/boost/hana
 	url = https://github.com/feelpp/hana.git
+[submodule "feelpp/contrib/eigen"]
+	path = feelpp/contrib/eigen
+	url = https://gitlab.com/feelpp/eigen.git
+[submodule "feelpp/contrib/fmt"]
+	path = feelpp/contrib/fmt
+	url = https://github.com/feelpp/fmt.git

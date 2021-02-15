@@ -58,6 +58,8 @@ main( int argc, char** argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
+    Feel::FeelModels::printToolboxApplication( "thermo-electric" );
+
     int dimension = ioption(_name="case.dimension");
     std::string discretization = soption(_name="case.discretization");
 

@@ -211,16 +211,6 @@ endif()
 
 
 
-# on APPLE enfore the use of macports openmpi version
- if ( APPLE )
-   if ( EXISTS /usr/local/bin/mpic++ )
-     set(MPI_COMPILER /usr/local/bin/mpic++)
-   endif()
-
-#   #  set(MPI_LIBRARY "MPI_LIBRARY-NOTFOUND" )
-   MESSAGE(STATUS "[feelpp] Use mpi compiler ${MPI_COMPILER}")
-
- endif( APPLE )
 FIND_PACKAGE(MPI REQUIRED)
 IF ( MPI_FOUND )
   #SET(CMAKE_REQUIRED_INCLUDES "${MPI_INCLUDE_PATH};${CMAKE_REQUIRED_INCLUDES}")
@@ -582,7 +572,7 @@ endif()
 if ( NOT Boost_ARCHITECTURE )
   set(Boost_ARCHITECTURE "-x64")
 endif()
-set(Boost_ADDITIONAL_VERSIONS "1.61" "1.62" "1.63" "1.64" "1.65" "1.66" "1.67" "1.68" "1.69" "1.70")
+set(Boost_ADDITIONAL_VERSIONS "1.61" "1.62" "1.63" "1.64" "1.65" "1.66" "1.67" "1.68" "1.69" "1.70" "1.71")
 set(BOOST_COMPONENTS_REQUIRED date_time filesystem system program_options unit_test_framework ${FEELPP_BOOST_MPI} regex serialization iostreams ) 
 FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS ${BOOST_COMPONENTS_REQUIRED})
 if(Boost_FOUND)

@@ -125,7 +125,8 @@ public:
         :
         M_refconvex(),
         M_pts( nDim, numVertices ),
-        M_pts_face( numVertices )
+        M_pts_face( numVertices ),
+        M_pfunc( Degree )
     {
         PointSetEquiSpaced<convex_type, nOrder, value_type> pts;
 
@@ -158,7 +159,8 @@ public:
         :
         M_refconvex( d.M_refconvex ),
         M_pts( d.M_pts ),
-        M_pts_face( d.M_pts_face )
+        M_pts_face( d.M_pts_face ),
+        M_pfunc( Degree )
     {
     }
 
@@ -369,7 +371,7 @@ private:
     points_type M_pts;
     std::vector<points_type> M_pts_face;
 
-    Principal<Degree, T, StoragePolicy> M_pfunc;
+    Principal<T, StoragePolicy> M_pfunc;
 
     vector_matrix_type M_D;
 };
