@@ -60,7 +60,7 @@
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 #include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
 
-//#define FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
+#define FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
 
 namespace Feel
 {
@@ -368,6 +368,9 @@ public:
                 if ( M_materialsProperties )
                     M_materialsProperties->setParameterValues( mp );
             }
+        mesh_ptrtype mesh() const { return M_mesh; }
+        mesh_ptrtype meshMod() const& { return M_mesh; }
+        materialsproperties_ptrtype materialPropBody() const {return M_materialsProperties;}
 
         auto modelMeasuresQuantities( std::string const& prefix ) const
             {
@@ -506,9 +509,22 @@ public:
         bool hasElasticVelocity() const { return ( M_fieldElasticVelocity? true : false ); }
 
         bool hasElasticVelocityFromExpr() const { return !M_elasticVelocityExprBC.empty(); }
+        void registerCustomFieldVectorialElastic( std::string const& name )
+        {
+            if ( M_fieldsUserVectorialElastic.find( name ) == M_fieldsUserVectorialElastic.end() )
+                M_fieldsUserVectorialElastic[name];
+        }
+        template <typename ExprT>
+        void updateCustomFieldElastic( std::string const& name, vf::Expr<ExprT> const& e)
+        {
+            if ( M_fieldsUserVectorialElastic.find( name ) == M_fieldsUserVectorialElastic.end() || !M_fieldsUserVectorialElastic[name] )
+                M_fieldsUserVectorialElastic[name] = this->spaceElasticVelocityPtr()->elementPtr();
+            M_fieldsUserVectorialElastic[name]->on(_range=M_rangeMarkedFacesOnFluid,_expr=e );
+        }
 
         element_trace_velocity_ptrtype fieldElasticVelocityPtr() const { return M_fieldElasticVelocity; }
-
+        element_trace_velocity_ptrtype & fieldElasticVelocityPtr() { return M_fieldElasticVelocity; }
+        space_trace_velocity_ptrtype const& spaceElasticVelocityPtr() const {return M_XhElasticVelocity;}
         auto elasticVelocityExpr() const { CHECK( this->hasElasticVelocity() ) << "no elastic velocity"; return idv(M_fieldElasticVelocity); }
 
         template <typename SymbolsExprType>
@@ -577,7 +593,6 @@ public:
         //---------------------------------------------------------------------------//
         // articulation info (only used for build a BodyArticulation)
         std::map<std::string,ModelExpression> const& articulationTranslationalVelocityExpr() const { return M_articulationTranslationalVelocityExpr; }
-
     private :
         std::string M_name;
         ModelMarkers M_markers;
@@ -590,13 +605,13 @@ public:
         bdf_trace_p0c_vectorial_ptrtype M_bdfTranslationalVelocity;
         bdf_trace_angular_velocity_ptrtype M_bdfAngularVelocity;
         sparse_matrix_ptrtype M_matrixPTilde_translational, M_matrixPTilde_angular;
-        ModelExpression M_translationalVelocityExpr, M_angularVelocityExpr;
-
+        ModelExpression M_translationalVelocityExpr, M_angularVelocityExpr;        
         std::shared_ptr<Body> M_body;
         eigen_vector_type<nRealDim> M_massCenterRef;
 
         space_trace_velocity_ptrtype M_XhElasticVelocity;
         element_trace_velocity_ptrtype M_fieldElasticVelocity;
+        std::map<std::string,element_trace_velocity_ptrtype> M_fieldsUserVectorialElastic;
         std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> M_elasticVelocityExprBC;
 
         bool M_gravityForceEnabled;
@@ -1035,6 +1050,20 @@ private :
     void createPostProcessExporters();
 public :
     void init( bool buildModelAlgebraicFactory=true );
+   /* template <typename Ivel_type,typename Ip_type, typename Idisp_type>
+    void init(self_ptrtype const& oldToolbox,
+        Ivel_type I_vel,
+        Ip_type I_press,
+        Idisp_type I_disp,
+        bool buildModelAlgebraicFactory=true); 
+    void init(self_ptrtype const& oldToolbox,
+        I_ptr_t<space_velocity_type,space_velocity_type> I_vel,
+        I_ptr_t<space_pressure_type,space_pressure_type> I_press,
+        I_ptr_t<space_mesh_disp_type,space_mesh_disp_type> I_disp,
+        bool buildModelAlgebraicFactory=true);*/
+    void init(self_ptrtype const& oldToolbox,
+        std::vector<std::string> markersInterpolate,
+        bool buildModelAlgebraicFactory=true);
     void initAlgebraicFactory();
 
     void createFunctionSpacesNormalStress();
@@ -1847,6 +1876,7 @@ public :
     void updateJacobian_Turbulence( DataUpdateJacobian & data ) const;
     template <typename ModelContextType>
     void updateJacobian_Turbulence( DataUpdateJacobian & data, ModelContextType const& mfields ) const;
+    BodySetBoundaryCondition bodySetBC() {return M_bodySetBC;};
 private :
     void updateBoundaryConditionsForUse();
 

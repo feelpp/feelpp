@@ -62,6 +62,8 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelts/tsbase.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
+
 
 namespace Feel
 {
@@ -150,6 +152,36 @@ public:
         }
 
         return b;
+    }
+       //template <typename space_type_domain,typename space_type_image>
+    // interpolates fields from oldBdf according to I_interp
+    //template<typename Interp_type>
+    //interpolate(bdf_ptrtype const& oldBdf,Interp_type const& I_interp)
+    
+    void interpolate(bdf_ptrtype const& oldBdf,std::vector<std::string> markersInterpolate)
+    {
+        // ------------------
+        auto submesh= createSubmesh(oldBdf->functionSpace()->mesh(),markedelements(oldBdf->functionSpace()->mesh(),markersInterpolate));
+        space_ptrtype Space_temp;
+        Space_temp = space_type::New(_mesh=submesh);
+        auto op_1 = opInterpolation( _domainSpace=oldBdf->functionSpace(), _imageSpace=Space_temp ,
+                            _backend=backend(_rebuild=true));
+        auto op_2 = opInterpolation( _domainSpace=Space_temp,//VelSpace_temp, 
+                                        _imageSpace=this->functionSpace(),
+                                        _range=markedelements(this->functionSpace()->mesh(),markersInterpolate),
+                                        _backend=backend(_name="Iv",_rebuild=true));
+        // ------------------
+        for ( auto oldit = oldBdf->M_unknowns.begin(), olden = oldBdf->M_unknowns.end(), 
+        it = this->M_unknowns.begin(), en = this->M_unknowns.end(); 
+        oldit != olden; ++ oldit,++it )
+        {   
+                auto temp=op_1->dualImageSpace()->elementPtr();
+                op_1->apply(unwrap_ptr( *oldit ),unwrap_ptr( *temp ) );
+                op_2->apply(unwrap_ptr( *temp ),unwrap_ptr( *it ) );
+                
+                
+                //I_interp->apply(unwrap_ptr( *oldit ),unwrap_ptr( *it ) );
+        }
     }
 
 
@@ -301,6 +333,7 @@ public:
         return M_alpha[this->timeOrder()-1][i]/math::abs( this->timeStep() );
         //return M_alpha[this->timeOrder()-1][i]/this->timeStep();
     }
+    space_ptrtype const& functionSpace() const {return M_space;}
 
     //! Returns the right hand side \f$ \bar{p} \f$ of the time derivative formula
     element_type const& polyDeriv() const;
@@ -317,7 +350,7 @@ public:
     element_ptrtype const& polyPtr() const { return M_poly; }
 
     //! Return a vector with the last n state vectors
-    unknowns_type const& unknowns() const;
+    unknowns_type & unknowns() ;
 
     //! Return the previous element at previous time i-1
     element_type& unknown( int i );
@@ -709,9 +742,9 @@ Bdf<SpaceType>::restart()
 }
 
 template <typename SpaceType>
-const
+
 typename Bdf<SpaceType>::unknowns_type&
-Bdf<SpaceType>::unknowns() const
+Bdf<SpaceType>::unknowns() 
 {
     return M_unknowns;
 }

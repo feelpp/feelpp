@@ -1662,7 +1662,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 {
     DVLOG(2) << "[interpolate] different meshes\n";
     //std::cout << "OperatorInterpolation::updateNoRelationMesh start " << std::endl;
-
+//std::cout << "OperatorInterpolation::updateNoRelationMesh start 1" << std::endl;
     const size_type proc_id = this->dualImageSpace()->mesh()->worldCommPtr()->localRank();
     const size_type n1_dof_on_proc = this->dualImageSpace()->nLocalDof();
     const size_type firstrow_dof_on_proc = this->dualImageSpace()->dof()->firstDof( proc_id );
@@ -1681,7 +1681,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     auto const* imagedof = this->dualImageSpace()->dof().get();
     auto const* domaindof = this->domainSpace()->dof().get();
     auto const* domainbasis = this->domainSpace()->basis().get();
-
+//std::cout << "OperatorInterpolation::updateNoRelationMesh start 2" << std::endl;
     //-----------------------------------------
     //init the localization tool
     auto locTool = this->domainSpace()->mesh()->tool_localization();
@@ -1695,7 +1695,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //locTool->kdtree()->nbNearNeighbor(3);
     //locTool->kdtree()->nbNearNeighbor(this->domainSpace()->mesh()->numElements());
     //locTool->setExtrapolation(false);
-
+//std::cout << "OperatorInterpolation::updateNoRelationMesh start 3" << std::endl;
     //-----------------------------------------
     // usefull data
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
@@ -1713,6 +1713,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // for each element in range
     auto itListRange = M_listRange.begin();
     auto const enListRange = M_listRange.end();
+    //std::cout << "OperatorInterpolation::updateNoRelationMesh start 4" << std::endl;
     for ( ; itListRange!=enListRange ; ++itListRange)
     {
         //iterator_type it, en;
@@ -1720,15 +1721,19 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         //for ( ; it != en; ++ it )
         for( auto const& theImageEltWrap : *itListRange )
         {
+            //std::cout << "OperatorInterpolation::updateNoRelationMesh start 4.1" << std::endl;
             //auto const& theImageElt = boost::unwrap_ref(*it);
             auto const& theImageElt = boost::unwrap_ref(theImageEltWrap);
             for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
                 {
+                    //std::cout << "OperatorInterpolation::updateNoRelationMesh start 4.2" << std::endl;
                     for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
                         {
-                            const size_type gdof = imagedof->localToGlobal( theImageElt, iloc, comp ).index();
+                            //std::cout << "OperatorInterpolation::updateNoRelationMesh start 4.3" << std::endl;
+                            const auto gdof = imagedof->localToGlobal( theImageElt, iloc, comp ).index();
                             if (!dof_done[gdof])
                                 {
+                                    //std::cout << "OperatorInterpolation::updateNoRelationMesh start 4.3.1" << std::endl;
                                     //------------------------
                                     // get the graph row
                                     const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[gdof];
@@ -1736,6 +1741,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     auto& row = sparsity_graph->row(ig1);
                                     row.template get<0>() = theproc;
                                     row.template get<1>() = gdof;
+                                    //std::cout << "OperatorInterpolation::updateNoRelationMesh start 4.3.2" << std::endl;
                                     //------------------------
                                     // the dof point
                                     ublas::column(ptsReal,0 ) = boost::get<0>(imagedof->dofPoint(gdof));
@@ -1743,6 +1749,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     // localisation process
                                     if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
                                     auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,theImageElt.vertices()/*theImageElt.G()*/,mpl::int_<interpolation_type::isConforming()>());
+                                    //std::cout << "OperatorInterpolation::updateNoRelationMesh start 4.3.3" << std::endl;
                                     for ( bool hasFindPtLocalised : resLocalisation.template get<0>()  )
                                          LOG_IF(ERROR, !hasFindPtLocalised ) << "OperatorInterpolation::updateNoRelationMesh : point localisation fail!\n";
                                     eltIdLocalised = resLocalisation.template get<1>();
@@ -1750,8 +1757,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     // for each localised points
                                     itanal = locTool->result_analysis_begin();
                                     itanal_end = locTool->result_analysis_end();
+                                    //std::cout << "OperatorInterpolation::updateNoRelationMesh start 4.3.4" << std::endl;
                                     for ( ;itanal!=itanal_end;++itanal)
                                         {
+                                            //std::cout << "OperatorInterpolation::updateNoRelationMesh start 4.4" << std::endl;
                                             itL=itanal->second.begin();
                                             ublas::column( ptsRef, 0 ) = boost::get<1>( *itL );
 
@@ -1759,6 +1768,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
                                             for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                                 {
+                                                    //std::cout << "OperatorInterpolation::updateNoRelationMesh start 4.5" << std::endl;
                                                     //get global dof
                                                     size_type j =  domaindof->localToGlobal( itanal->first,jloc,comp ).index();
                                                     value_type v = MlocEval( domain_basis_type::nComponents1*jloc
@@ -1776,7 +1786,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         } // for( ; it != en; ++ it )
     } // for ( ; itListRange!=enListRange ; ++itListRange)
 
-
+//std::cout << "OperatorInterpolation::updateNoRelationMesh start 5" << std::endl;
     //-----------------------------------------
     // compute graph
     sparsity_graph->close(); //sparsity_graph->printPython("mygraphpython.py");
@@ -1785,6 +1795,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     this->matPtr() = this->backend()->newMatrix( this->domainSpace()->dofOnOff(),
                                                  this->dualImageSpace()->dofOn(),
                                                  sparsity_graph );
+//std::cout << "OperatorInterpolation::updateNoRelationMesh start 6" << std::endl;
     //-----------------------------------------
     // assemble matrix
     for (size_type idx_i=0 ; idx_i<this->dualImageSpace()->nLocalDof() ;++idx_i)
