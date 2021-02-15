@@ -99,7 +99,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
 
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
-    auto mu = expr<1,1>(locals.at("mu"));
+    auto mu = expr(locals.at("mu"));
 
 #if 0
     auto velocity_exact = expr<Dim,1>( locals.at("velocity") );
@@ -237,8 +237,8 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
                               _expr=id(p)*normalt(m) );
     toc("a(3,2)", true);
     tic();
-    a( 3_c, 3_c) += integrate(_range=internalfaces(mesh),                  // these terms should be counted twice because of the sum on all the elements
-                              _expr=tau_constant*trans(id(uhat))*idt(m) ); // each face apprearing twice
+    a( 3_c, 3_c) += integrate(_range=internalfaces(mesh),                  
+                              _expr=2*tau_constant*trans(id(uhat))*idt(m) );
     a( 3_c, 3_c) += integrate(_range=boundaryfaces(mesh),                  
                               _expr=tau_constant*trans(id(uhat))*idt(m) );
 
@@ -362,7 +362,7 @@ int main( int argc, char** argv )
     std::map<std::string,std::string> locals{
         {"dim",std::to_string(FEELPP_DIM)},
         {"exact",std::to_string(boption("exact"))}, 
-        {"lmu",soption("mu")},
+        {"mu",soption("mu")},
         {"velocity", soption("velocity")},
         {"grad_velocity",""},
         {"strain",""},
