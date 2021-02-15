@@ -947,7 +947,8 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
             reqs[2 * interf + 1] = out->worldCommPtr()->localComm().irecv( pid, tag_recv, *ghost_in[interf] );
             interf++;
         }
-        mpi::wait_all( reqs.data(), reqs.data() + 2 * neigh_interface.size() );
+        LOG( INFO ) << fmt::format( "done sending ghosts - n requests: {}", reqs.size() );
+        mpi::wait_all( reqs.begin(), reqs.end() );
 #endif        
     }
     return out;
