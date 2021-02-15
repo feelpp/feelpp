@@ -184,13 +184,14 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         M_explictPartOfSolution = M_backend->newVector( M_R->mapPtr() );
 }
 
-    void ModelAlgebraicFactory::initSolverPtAP( sparse_matrix_ptrtype matP )
+void ModelAlgebraicFactory::initSolverPtAP( sparse_matrix_ptrtype matP, sparse_matrix_ptrtype matQ )
     {
         CHECK ( matP ) << "invalid matP";
         // TODO CHECK compatibility with A
 
         M_useSolverPtAP = true;
         M_solverPtAP_matP = matP;
+        M_solverPtAP_matQ = matQ;
 
         // if already built we assume that the new matP as the same stencil
         if ( !M_solverPtAP_backend )
@@ -411,73 +412,78 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    ModelAlgebraicFactory::updateInformationObject( pt::ptree & p ) const
+    ModelAlgebraicFactory::updateInformationObject( nl::json & p ) const
     {
-        pt::ptree subPt;
-        subPt.put( "prefix",this->backend()->prefix() );
-        subPt.put( "type", "BACKEND_PETSC" );
-        p.put_child( "Backend", subPt );
+        if ( p.contains( "Backend" ) )
+            return;
+        nl::json subPt;
+        subPt.emplace( "prefix",this->backend()->prefix() );
+        subPt.emplace( "type", backend_type::enumToKind( this->backend()->type() ) /*"BACKEND_PETSC"*/ );
+        p["Backend"] = subPt;
+
         // KSP
         subPt.clear();
-        subPt.put( "type", this->backend()->kspType() );
-        subPt.put( "rtol", this->backend()->rTolerance() );
-        subPt.put( "dtol", this->backend()->dTolerance() );
-        subPt.put( "atol", this->backend()->aTolerance() );
-        subPt.put( "maxit", this->backend()->maxIterationsKSP() );
-        subPt.put( "reuse-prec", this->backend()->reusePrec() );
+        subPt.emplace( "type", this->backend()->kspType() );
+        subPt.emplace( "rtol", this->backend()->rTolerance() );
+        subPt.emplace( "dtol", this->backend()->dTolerance() );
+        subPt.emplace( "atol", this->backend()->aTolerance() );
+        subPt.emplace( "maxit", this->backend()->maxIterationsKSP() );
+        subPt.emplace( "reuse-prec", this->backend()->reusePrec() );
         if ( this->backend()->reusePrec() )
-            subPt.put( "maxit reuse-prec", this->backend()->maxIterationsKSPReuse() );
-        p.put_child( "KSP", subPt );
+            subPt.emplace( "maxit reuse-prec", this->backend()->maxIterationsKSPReuse() );
+        p["KSP"] = subPt;
 
         //SNES
         subPt.clear();
-        subPt.put( "rtol",this->backend()->rToleranceSNES() );
-        subPt.put( "stol",this->backend()->sToleranceSNES() );
-        subPt.put( "atol",this->backend()->aToleranceSNES() );
-        subPt.put( "maxit", this->backend()->maxIterationsSNES() );
-        subPt.put( "reuse-jac", this->backend()->reuseJac() );
+        subPt.emplace( "rtol",this->backend()->rToleranceSNES() );
+        subPt.emplace( "stol",this->backend()->sToleranceSNES() );
+        subPt.emplace( "atol",this->backend()->aToleranceSNES() );
+        subPt.emplace( "maxit", this->backend()->maxIterationsSNES() );
+        subPt.emplace( "reuse-jac", this->backend()->reuseJac() );
         if ( this->backend()->reuseJac() )
         {
-            subPt.put( "reuse-jac rebuild at first Newton step", this->backend()->reuseJacRebuildAtFirstNewtonStep() );
-            subPt.put( "maxit with reuse", this->backend()->maxIterationsSNESReuse() );
+            subPt.emplace( "reuse-jac rebuild at first Newton step", this->backend()->reuseJacRebuildAtFirstNewtonStep() );
+            subPt.emplace( "maxit with reuse", this->backend()->maxIterationsSNESReuse() );
         }
-        p.put_child( "SNES", subPt );
+        p["SNES"] = subPt;
 
         // KSP in SNES
         subPt.clear();
-        subPt.put( "rtol",this->backend()->rtoleranceKSPinSNES() );
-        subPt.put( "maxit",this->backend()->maxIterationsKSPinSNES() );
-        subPt.put( "reuse-prec", this->backend()->reusePrec() );
+        subPt.emplace( "rtol",this->backend()->rtoleranceKSPinSNES() );
+        subPt.emplace( "maxit",this->backend()->maxIterationsKSPinSNES() );
+        subPt.emplace( "reuse-prec", this->backend()->reusePrec() );
         if ( this->backend()->reusePrec() )
         {
-            subPt.put( "reuse-prec maxit", this->backend()->maxIterationsKSPinSNESReuse() );
-            subPt.put( "reuse-prec rebuild at first Newton step", this->backend()->reusePrecRebuildAtFirstNewtonStep() );
+            subPt.emplace( "reuse-prec maxit", this->backend()->maxIterationsKSPinSNESReuse() );
+            subPt.emplace( "reuse-prec rebuild at first Newton step", this->backend()->reusePrecRebuildAtFirstNewtonStep() );
         }
-        p.put_child( "KSP in SNES", subPt );
+        p["KSP in SNES"] = subPt;
 
         // PC
         subPt.clear();
-        subPt.put( "type", this->backend()->pcType() );
+        subPt.emplace( "type", this->backend()->pcType() );
         if ( this->backend()->pcType() == "lu" )
-            subPt.put( "mat-solver-package", this->backend()->pcFactorMatSolverPackageType() );
-        p.put_child( "PC", subPt );
+            subPt.emplace( "mat-solver-package", this->backend()->pcFactorMatSolverPackageType() );
+        p["PC"] = subPt;
     }
-tabulate::Table
-ModelAlgebraicFactory::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+
+tabulate_informations_ptr_t
+ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
 {
-    tabulate::Table tabInfo;
+    auto tabInfo = TabulateInformationsSections::New();
 
     for ( std::string const& section : std::vector<std::string>({"Backend","KSP","SNES","KSP in SNES", "PC" }) )
         {
-            tabulate::Table tabInfoSection;
-            tabInfoSection.add_row({section});
-            tabulate::Table tabInfoSectionEntries;
+            if ( !jsonInfo.contains( section ) )
+                continue;
+            Feel::Table tabInfoSectionEntries;
             TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoSectionEntries, jsonInfo.at( section ), tabInfoProp );
-            tabInfoSection.add_row({tabInfoSectionEntries});
-            tabInfo.add_row({tabInfoSection});
+            tabInfoSectionEntries.format()
+                .setShowAllBorders( false )
+                .setColumnSeparator(":")
+                .setHasRowSeparator( false );
+            tabInfo->add( section, TabulateInformations::New( tabInfoSectionEntries ) );
         }
-
-    tabInfo.format().hide_border();
 
     return tabInfo;
 }
@@ -632,10 +638,8 @@ ModelAlgebraicFactory::tabulateInformation( nl::json const& jsonInfo, TabulateIn
 
         if ( M_useSolverPtAP )
         {
-
-            // Not sure that is good!
-            M_solverPtAP_matP->multVector( *U, *M_solverPtAP_solution, true );
-            //*M_solverPtAP_solution = *U;
+            M_solverPtAP_matQ->multVector( *U, *M_solverPtAP_solution );
+            //*M_solverPtAP_solution = *U; // need to have the same size/datamap
 
             // PtAP = P^T A P
             M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
@@ -1039,9 +1043,9 @@ ModelAlgebraicFactory::tabulateInformation( nl::json const& jsonInfo, TabulateIn
         if ( M_useSolverPtAP )
         {
             // TODO REMOVE EXPLICIT PART
-            // Not sure that is good!
-            M_solverPtAP_matP->multVector( *U, *M_solverPtAP_solution, true );
-            //*M_solverPtAP_solution = *U; // actually always same size
+            M_solverPtAP_matQ->multVector( *U, *M_solverPtAP_solution );
+            //*M_solverPtAP_solution = *U; // need to have the same size/datamap
+
             solveStat = M_solverPtAP_backend->nlSolve( _jacobian=M_solverPtAP_matPtAP,
                                                        _solution=M_solverPtAP_solution,
                                                        _residual=M_solverPtAP_PtF,

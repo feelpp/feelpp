@@ -77,7 +77,6 @@ PYBIND11_MODULE(_modelcore, m )
         .def("log", &ModelBase::log, "write message to log", py::arg("className"), py::arg("functionName"), py::arg("msg") )
 
         // info
-        .def("filenameSaveInfo", &ModelBase::filenameSaveInfo, "return the filename where model info are saved")
         .def("printInfo", py::overload_cast<>(&ModelBase::printInfo,py::const_), "print model info")
         .def("saveInfo", py::overload_cast<>(&ModelBase::saveInfo,py::const_), "save model info")
         .def("printAndSaveInfo", &ModelBase::printAndSaveInfo, "print and save model info")
