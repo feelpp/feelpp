@@ -1,0 +1,10 @@
+= Spermatozoon
+
+command line
+
+----
+./feelpp_toolbox_swimmer --config-files Spermatozoon_Luca/01_swimmer_fluidrigidA2.cfg pc-pmm-swimmer.cfg
+----
+
+the last file is the preconditioning strategy comprising the fluid and rigid body fields.
+it needs to be tuned
