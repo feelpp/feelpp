@@ -22,11 +22,11 @@ ns=nsyms(dim);
 mu=sympify(locals()['mu']);
 print("mu=",mu);
 
-u=sympify(locals()['p']);
-print("p=",p);
+potential=sympify(locals()['potential']);
+print("p=",potential);
 
-u=sympify(locals()['u']);
-print("u=",u);
+velocity=sympify(locals()['velocity']);
+print("u=",velocity);
 
 if exact:
     # gradient
@@ -40,7 +40,7 @@ if exact:
     # stress
     I=eye(dim);
     print("I=",I);
-    stress=- p * I + 2. * mu *strain;
+    stress=- potential * I + 2. * mu *strain;
     print("stress=",stress);
     
     # surfacic forces
