@@ -46,7 +46,7 @@ makeOptions()
         ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
         ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
         ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
-        ( "mu", po::value<double>()->default_value( 1 ), "viscosity" )
+        ( "mu", po::value<std::string>()->default_value( "1" ), "viscosity" )
         ( "hface", po::value<int>()->default_value( 0 ), "hface" )
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
@@ -55,11 +55,11 @@ makeOptions()
         ( "f", po::value<std::string>()->default_value( "Array([0,0])" ), "external volumic load" )
         ( "stressn", po::value<std::string>()->default_value( "Array([0,0])" ), "external surfacic load" )
 #else
-        ( "u", po::value<std::string>()->default_value( "Array([0,0,0])" ), "velocity is given" )
+        ( "velocity", po::value<std::string>()->default_value( "Array([0,0,0])" ), "velocity is given" )
         ( "f", po::value<std::string>()->default_value( "Array([0,0,0])" ), "external volumic load" )
         ( "stressn", po::value<std::string>()->default_value( "Array([0,0,0])" ), "external surfacic load" )
 #endif
-        ( "p", po::value<std::string>()->default_value( "0" ), "pressure is given" )
+        ( "potential", po::value<std::string>()->default_value( "0" ), "pressure is given" )
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
         ( "exact", po::value<bool>()->default_value( true ), "velocity is give and provides the exact solution or an approximation"  )
         ( "use-near-null-space", po::value<bool>()->default_value( false ), "use near-null-space for AMG"  )
@@ -109,7 +109,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     auto stressn = expr<Dim,1>(locals.at("stressn"));
     auto rhs_f = expr<Dim,1>(locals.at("f"));
     auto velocity = expr<Dim,1>(locals.at("u"));
-    auto pressure = expr(locals.at("p"));
+    auto potential = expr(locals.at("potential"));
 #endif
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
@@ -269,7 +269,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     int status_velocity = 1, status_stress = 1;
     if ( boption( "exact" ) )
     {
-        auto pressure_exact = pressure;
+        auto pressure_exact = potential;
         auto velocity_exact = velocity;
         auto delta_exact = expr<Dim,Dim>(locals.at("stress"));
         auto grad_velocity_exact = expr<Dim,Dim>(locals.at("grad_velocity"));
@@ -363,6 +363,7 @@ int main( int argc, char** argv )
         {"dim",std::to_string(FEELPP_DIM)},
         {"exact",std::to_string(boption("exact"))}, 
         {"mu",soption("mu")},
+        {"potential",soption("potential")},
         {"velocity", soption("velocity")},
         {"grad_velocity",""},
         {"strain",""},
