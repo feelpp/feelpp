@@ -1443,17 +1443,20 @@ public :
     auto modelContext( std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
     auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
     auto modelContext( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorData, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( vectorData, prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
 
     //___________________________________________________________________________________//
@@ -1557,7 +1560,7 @@ public :
 
     template <typename SymbolsExprType = symbols_expression_empty_t>
     auto dynamicViscosityExpr( SymbolsExprType const& se = symbols_expression_empty_t{},
-                               typename std::enable_if_t< is_symbols_expression_v<SymbolsExprType> >* = nullptr ) const
+                               typename std::enable_if_t< is_symbols_expression_v<SymbolsExprType> || is_symbols_expression_tensor_context_v<SymbolsExprType> >* = nullptr ) const
         {
             return this->dynamicViscosityExpr( this->fieldVelocity(), se );
         }
