@@ -759,6 +759,12 @@ using symbols_expression_t = typename SymbolsExprTraits<ExprT...>::type;
 
 using symbols_expression_empty_t = SymbolsExpr<hana::tuple<>>;
 
+//template<typename SymbolsExprType>
+//using is_symbols_expression_empty = typename std::is_same_vbase_of<SymbolsExprBase,SymbolsExprType>::type;
+
+template<typename SymbolsExprType>
+constexpr bool is_symbols_expression_empty_v = std::is_same_v<SymbolsExprType,symbols_expression_empty_t>;
+
 //! build a SymbolsExpr object
 template<typename... ExprT>
 symbols_expression_t<ExprT...>

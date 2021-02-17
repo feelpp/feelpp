@@ -6630,9 +6630,13 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      //
      // some typedefs
      //
+#if 0
      typedef typename boost::remove_reference<typename element_iterator::reference>::type const_t;
      typedef typename boost::unwrap_reference<typename boost::remove_const<const_t>::type>::type the_element_type;
      typedef the_element_type element_type;
+#endif
+     using the_element_type = typename eval::the_element_type;
+
      typedef typename the_element_type::gm_type gm_type;
      typedef std::shared_ptr<gm_type> gm_ptrtype;
      static const size_type gmc_context_elt_v = expression_type::context|vm::JACOBIAN|vm::KB|vm::POINT;
@@ -6686,30 +6690,33 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
 #endif
 
 
-         auto __c = gm->template context<gmc_context_elt_v>( eltInit, __geopc, this->expression().dynamicContext() );
-         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+         auto ctx = gm->template context<gmc_context_elt_v>( eltInit, __geopc, this->expression().dynamicContext() );
+         //auto mapgmc = vf::mapgmc( ctx );
+         //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+         //map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
-         typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
-         eval_expr_type expr( expression(), mapgmc );
-         typedef typename eval_expr_type::shape shape;
+         // typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
+         // eval_expr_type expr( expression(), mapgmc );
+         // typedef typename eval_expr_type::shape shape;
+
+         auto expr_evaluator = this->expression().evaluator( vf::mapgmc(ctx) );
 
          //value_type res1 = 0;
          for ( ; it != en; ++it )
          {
-             auto const& eltCur = boost::unwrap_ref( *it );
-             __c->template update<gmc_context_elt_v>( eltCur );
-             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-             expr.update( mapgmc );
-             const gmc_type& gmc = *__c;
+             auto const& eltCur = unwrap_ref( *it );
+             ctx->template update<gmc_context_elt_v>( eltCur );
+             //map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+             expr_evaluator.update(  vf::mapgmc(ctx) );
+             //const gmc_type& gmc = *__c;
+             //auto const& gmc = *__c;
 
-             M_im.update( gmc );
-
+             M_im.update( *ctx/*gmc*/ );
 
              for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
              {
                  size_type i= P0h->dof()->localToGlobal( eltCur.id(), 0, c1 ).index();
-                 double v = M_im( expr, c1, 0 );
+                 double v = M_im( expr_evaluator, c1, 0 );
                  p0.set( i, v );
              }
          }
