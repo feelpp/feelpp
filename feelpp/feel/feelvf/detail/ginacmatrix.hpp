@@ -473,11 +473,21 @@ public:
     template <typename ExpandSymbolsExprType>
     auto applySymbolsExpr( ExpandSymbolsExprType const& se ) const
     {
-        auto newSymbolExpr = symbolsExpr( this->symbolsExpression(), se );
-        using new_expr_type = GinacMatrix<M,N,Order,std::decay_t<decltype(newSymbolExpr)>>;
-        new_expr_type res( this->expression(), this->symbols(), this->fun(), this->exprDesc(), newSymbolExpr );
-        res.setParameterValues( this->symbolNameToValue() );
-        return res;
+        if constexpr( is_symbols_expression_empty_v<symbols_expression_type> )
+        {
+            using new_expr_type = GinacMatrix<M,N,Order,ExpandSymbolsExprType>;
+            new_expr_type res( this->expression(), this->symbols(), this->fun(), this->exprDesc(), se );
+            res.setParameterValues( this->symbolNameToValue() );
+            return res;
+        }
+        else
+        {
+            auto newSymbolExpr = symbolsExpr( this->symbolsExpression(), se );
+            using new_expr_type = GinacMatrix<M,N,Order,std::decay_t<decltype(newSymbolExpr)>>;
+            new_expr_type res( this->expression(), this->symbols(), this->fun(), this->exprDesc(), newSymbolExpr );
+            res.setParameterValues( this->symbolNameToValue() );
+            return res;
+        }
     }
 
     template <int diffOrder, typename TheSymbolExprType>

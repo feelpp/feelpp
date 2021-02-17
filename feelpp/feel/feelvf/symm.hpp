@@ -222,6 +222,12 @@ public:
             M_tensor_expr( expr.expression(), geom )
         {
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_tensor_expr( std::true_type{}, exprExpanded.expression(), ttse, expr.expression(), geom, theInitArgs... )
+            {}
 
         template<typename IM>
         void init( IM const& im )
@@ -243,6 +249,12 @@ public:
         void update( Geo_t const& geom, uint16_type face )
         {
             M_tensor_expr.update( geom, face );
+        }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+        {
+            M_tensor_expr.update( std::true_type{}, exprExpanded.expression(), ttse, geom, theUpdateArgs... );
         }
 
         value_type
