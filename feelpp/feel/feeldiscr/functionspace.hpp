@@ -4339,7 +4339,7 @@ public:
                     {
                         auto const& meshElt = boost::unwrap_ref( rangeElt );
                         size_type e = meshElt.id();
-                        gmc->update( meshElt );
+                        gmc->template update<vm::JACOBIAN>( meshElt );
                         auto p0_eid = v.functionSpace()->dof()->localDof( e ).first->second.index();
                         for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
                         {
