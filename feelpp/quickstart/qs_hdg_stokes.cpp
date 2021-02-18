@@ -7,7 +7,7 @@
 			 Lorenzo Sala <sala@unistra.fr>
        Date: 2016-02-10
 
-  Copyright (C) 2016 Feel++ Consortium
+  Copyright (C) 2016-present Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -99,7 +99,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
 
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
-    auto mu = expr(locals.at("mu"));
+    auto mu = expr("1");//locals.at("mu"));
 
 #if 0
     auto velocity_exact = expr<Dim,1>( locals.at("velocity") );
