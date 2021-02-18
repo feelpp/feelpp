@@ -220,20 +220,20 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     toc("a(2,3)", true);
     tic();
     a( 3_c, 0_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-mu*trans((leftface(normalt(delta))+rightface(normalt(delta))))*id(m) );
+                              _expr=-mu*trans((leftfacet(normalt(delta))+rightfacet(normalt(delta))))*id(m) );
     a( 3_c, 0_c) += integrate(_range=boundaryfaces(mesh),
                               _expr=-mu*trans(normalt(delta))*id(m) );
     toc("a(3,0)", true);
     tic();
     a( 3_c, 1_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-tau_constant*(trans(leftface(idt(u)))*id(m)+
-                                                   trans(rightface(idt(u)))*id(m)) );
+                              _expr=-tau_constant*(trans(leftfacet(idt(u)))*id(m)+
+                                                   trans(rightfacet(idt(u)))*id(m)) );
     a( 3_c, 1_c) += integrate(_range=boundaryfaces(mesh),
                               _expr=-tau_constant*(trans(idt(u))*id(m)) );
     toc("a(3,1)", true);
     tic();
     a( 3_c, 2_c) += integrate(_range=internalfaces(mesh),
-                              _expr=inner(id(m),jump(idt(p))) ); //normalt(m)*(rightface(id(p))-leftface(id(p))) );
+                              _expr=inner(id(m),jumpt(idt(p))) ); //normalt(m)*(rightface(id(p))-leftface(id(p))) );
     a( 3_c, 2_c) += integrate(_range=boundaryfaces(mesh),
                               _expr=idt(p)*normal(m) );
     toc("a(3,2)", true);
