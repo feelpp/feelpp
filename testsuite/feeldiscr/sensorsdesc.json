@@ -3,6 +3,6 @@
     {
         "type": "gaussian",
         "coord": [0.7,0.5,0.2],
-        "radius": 0.025
+        "radius": 0.04
     }
 }
