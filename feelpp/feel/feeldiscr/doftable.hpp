@@ -1505,8 +1505,8 @@ private:
     void generateDofPoints( ext_elements_t<mesh_type> const& range ) const;
 
 private:
-    void generateDofPoints( mesh_type& M, bool buildMinimalParallel, mpl::bool_<true> ) const;
-    void generateDofPoints( mesh_type& M, bool buildMinimalParallel, mpl::bool_<false> ) const;
+    //void generateDofPoints( mesh_type& M, bool buildMinimalParallel, mpl::bool_<true> ) const;
+    //void generateDofPoints( mesh_type& M, bool buildMinimalParallel, mpl::bool_<false> ) const;
 private:
 
     mesh_type* M_mesh;
@@ -2666,6 +2666,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
     toc( "DofTable::buildBoundaryDofMap", FLAGS_v>1 );
 }    // updateBoundaryDof
 
+#if 0
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel ) const
@@ -2829,9 +2830,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
     DVLOG(2) << "[Dof::generateDofPoints] mortar case, generating dof coordinates done\n";
 
 }
+#endif
+
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel, mpl::bool_<false> ) const
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel/*, mpl::bool_<false>*/ ) const
 {
     if ( M_hasBuiltDofPoints )// !M_dof_points.empty() )
         return;
@@ -2854,10 +2857,23 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
     if ( it_elt == en_elt )
         return;
 
+    auto gm = M.gm();
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
-    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( M.gm(), this->fe().points() ) );
-    auto __c = M.gm()->template context<vm::POINT>( unwrap_ref( *it_elt ), __geopc );
+    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( gm, this->fe().points() ) );
+
+    using gm_context_type = typename gm_type::template Context<element_type>;
+    using gm_context_ptrtype = std::shared_ptr<gm_context_type>;
+    gm_context_ptrtype ctx = gm->template context<vm::POINT>( unwrap_ref( *it_elt ), __geopc );
+    gm_context_ptrtype mctx;
+    if constexpr( is_mortar )
+    {
+        mortar_fe_type mfe;
+        typename gm_type::precompute_ptrtype __mgeopc( new typename gm_type::precompute_type( gm, mfe.points() ) );
+        mctx = gm->template context<vm::POINT>( unwrap_ref( *it_elt ), __mgeopc );
+    }
+
+    gm_context_ptrtype ctxCurrent;
 
     for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
     {
@@ -2878,8 +2894,17 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
                 continue;
         }
 
+        if constexpr( is_mortar )
+        {
+            if ( elt.isOnBoundary() )
+                ctxCurrent = mctx;
+            else
+                ctxCurrent = ctx;
+        }
+        else
+            ctxCurrent = ctx;
 
-        __c->template update<vm::POINT>( elt );
+        mctx->template update<vm::POINT>( elt );
 
         for ( auto const& ldof : this->localDof( elt.id() ) )
         {
@@ -2901,12 +2926,12 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
                 if ( M_dof_points.find( thedof ) == M_dof_points.end() )
                 {
                     uint16_type c1 = this->fe().component( ldofId );
-                    M_dof_points[thedof] = boost::make_tuple( __c->xReal( ldofParentId ), thedof, c1 );
+                    M_dof_points[thedof] = boost::make_tuple( ctxCurrent->xReal( ldofParentId ), thedof, c1 );
                 }
 #if !defined( NDEBUG )
                 else if ( !isP0Continuous<fe_type>::result )
                 {
-                    auto dofpointFromGmc = __c->xReal( ldofParentId );
+                    auto dofpointFromGmc = ctxCurrent->xReal( ldofParentId );
                     auto dofpointStored = M_dof_points[thedof].template get<0>();
                     bool find2=true;
                     for (uint16_type d=0;d< nRealDim;++d)
