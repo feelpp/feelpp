@@ -108,7 +108,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
 #else
     auto stressn = expr<Dim,1>(locals.at("stressn"));
     auto rhs_f = expr<Dim,1>(locals.at("f"));
-    auto velocity = expr<Dim,1>(locals.at("u"));
+    auto velocity = expr<Dim,1>(locals.at("velocity"));
     auto potential = expr(locals.at("potential"));
 #endif
     int proc_rank = Environment::worldComm().globalRank();
