@@ -256,7 +256,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
     // FunctionSpace
     subPt.clear();
     subPt["Velocity"] = this->functionSpaceVelocity()->journalSection().to_string();
-    subPt["Pressure"] = this->functionSpaceVelocity()->journalSection().to_string();
+    subPt["Pressure"] = this->functionSpacePressure()->journalSection().to_string();
     p["Function Spaces"] = subPt;
 
     if ( M_algebraicFactory )
