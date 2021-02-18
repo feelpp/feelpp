@@ -23,6 +23,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#include <fmt/core.h>
 #include <feel/feel.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
 #include <feel/feelalg/vectorblock.hpp>
@@ -372,12 +373,15 @@ int main( int argc, char** argv )
         {"f",soption("f")}};
     Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals  );
 
+
     for( auto d: locals )
-        Feel::cout << d.first << ":" << d.second << std::endl;
+        Feel::cout << fmt::format( " -- symbol {} expression {}\n", d.first, d.second) << std::endl;
+
     if ( ioption( "order" ) == 1 )
         return !hdg_stokes<FEELPP_DIM,1>( locals );
+#if 0        
     if ( ioption( "order" ) == 2 )
         return !hdg_stokes<FEELPP_DIM,2>( locals );
-
+#endif
     return 1;
 }
