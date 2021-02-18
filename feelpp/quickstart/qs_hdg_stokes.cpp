@@ -176,11 +176,11 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
 
     tic();
     rhs(1_c) += integrate(_range=elements(mesh),
-                          _expr=trans(rhs_f)*idt(v) );
+                          _expr=trans(rhs_f)*id(v) );
     rhs(3_c) += integrate(_range=markedfaces(mesh, "Neumann"),
-                          _expr=(-1)*inner(stressn,idt(m)) );
+                          _expr=(-1)*inner(stressn,id(m)) );
     rhs(3_c) += integrate(_range=markedfaces(mesh, "Dirichlet"),
-                          _expr=trans(velocity)*idt(m) );
+                          _expr=trans(velocity)*id(m) );
     toc("rhs",true);
 
     // Building the matrix
