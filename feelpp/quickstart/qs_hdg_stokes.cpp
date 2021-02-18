@@ -201,15 +201,15 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     toc("a(0,3)", true);
     tic();
     a( 1_c, 0_c) += integrate(_range=elements(mesh),
-                              _expr=mu*inner(id(delta),gradt(v)));
+                              _expr=mu*inner(idt(delta),grad(v)));
     toc("a(1,0)", true);
     tic();
     a( 1_c, 2_c) += integrate(_range=elements(mesh),
-                              _expr=(-1)*id(p)*trace(gradt(v)) ); // same as inner(p*Id,grad v)
+                              _expr=(-1)*idt(p)*trace(grad(v)) ); // same as inner(p*Id,grad v)
     toc("a(1,2)", true);
     tic();
     a( 2_c, 1_c) += integrate(_range=elements(mesh),
-                              _expr=(-1)*gradt(q)*id(u) );
+                              _expr=(-1)*grad(q)*idt(u) );
     toc("a(2,1)", true);
     tic();
     a( 2_c, 3_c) += integrate(_range=internalfaces(mesh),
@@ -219,28 +219,28 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     toc("a(2,3)", true);
     tic();
     a( 3_c, 0_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-mu*trans((leftface(normal(delta))+rightface(normal(delta))))*idt(m) );
+                              _expr=-mu*trans((leftface(normalt(delta))+rightface(normalt(delta))))*id(m) );
     a( 3_c, 0_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=-mu*trans(normal(delta))*idt(m) );
+                              _expr=-mu*trans(normalt(delta))*id(m) );
     toc("a(3,0)", true);
     tic();
     a( 3_c, 1_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-tau_constant*(trans(leftface(id(u)))*idt(m)+
-                                                   trans(rightface(id(u)))*idt(m)) );
+                              _expr=-tau_constant*(trans(leftface(idt(u)))*id(m)+
+                                                   trans(rightface(idt(u)))*id(m)) );
     a( 3_c, 1_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=-tau_constant*(trans(id(u))*idt(m)) );
+                              _expr=-tau_constant*(trans(idt(u))*id(m)) );
     toc("a(3,1)", true);
     tic();
     a( 3_c, 2_c) += integrate(_range=internalfaces(mesh),
-                              _expr=inner(idt(m),jump(id(p))) ); //normalt(m)*(rightface(id(p))-leftface(id(p))) );
+                              _expr=inner(id(m),jump(idt(p))) ); //normalt(m)*(rightface(id(p))-leftface(id(p))) );
     a( 3_c, 2_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=id(p)*normalt(m) );
+                              _expr=idt(p)*normal(m) );
     toc("a(3,2)", true);
     tic();
     a( 3_c, 3_c) += integrate(_range=internalfaces(mesh),                  
-                              _expr=2*tau_constant*trans(id(uhat))*idt(m) );
+                              _expr=2*tau_constant*trans(idt(uhat))*id(m) );
     a( 3_c, 3_c) += integrate(_range=boundaryfaces(mesh),                  
-                              _expr=tau_constant*trans(id(uhat))*idt(m) );
+                              _expr=tau_constant*trans(idt(uhat))*id(m) );
 
     tic();
 #if 0
