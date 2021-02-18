@@ -2904,7 +2904,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
         else
             ctxCurrent = ctx;
 
-        mctx->template update<vm::POINT>( elt );
+        ctxCurrent->template update<vm::POINT>( elt );
 
         for ( auto const& ldof : this->localDof( elt.id() ) )
         {
