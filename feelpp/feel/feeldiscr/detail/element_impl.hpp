@@ -1559,8 +1559,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
             ublas::column( pts, i ) = boost::get<1>( *itL );
 
         //update geomap context
-        __geopc->template update<gmc_v>( pts );
-        __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+        __geopc->update( pts );
+        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
         //update precompute of basis functions
         __pc->update( pts );
         __ctx->update( __c, __pc );

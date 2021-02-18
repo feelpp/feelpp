@@ -1381,8 +1381,10 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 auto const& eltTestInit = __form.testSpace()->mesh()->element( idEltTestInit );
 
 
-                gmc_ptrtype __c( new gmc_type( __form.gm(), eltTestInit, __geopc, invalid_uint16_type_value, this->expression().dynamicContext() ) );
-                gmc1_ptrtype __c1( new gmc1_type( __form.gm1(), eltTestInit, __geopc1, invalid_uint16_type_value, this->expression().dynamicContext() ) );
+                gmc_ptrtype __c = __form.gm()->template context<eval::gmc_context_v>( eltTestInit, __geopc, this->expression().dynamicContext() );
+                gmc1_ptrtype __c1 =  __form.gm1()->template context<eval::gmc_context_v>( eltTestInit, __geopc1, this->expression().dynamicContext() );
+                //gmc_ptrtype __c( new gmc_type( __form.gm(), eltTestInit, __geopc, invalid_uint16_type_value, this->expression().dynamicContext() ) );
+                //gmc1_ptrtype __c1( new gmc1_type( __form.gm1(), eltTestInit, __geopc1, invalid_uint16_type_value, this->expression().dynamicContext() ) );
 
 
                 map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
@@ -1447,7 +1449,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     case GeomapStrategyType::GEOMAP_HO:
                     {
                         //ti0.restart();
-                        __c->update( eltTest );
+                        __c->template update<eval::gmc_context_v>( eltTest );
                         //t0+=ti0.elapsed();
 #if 0
                         std::cout << "Element: " << eltCur.id() << "\n"
@@ -1487,7 +1489,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     case GeomapStrategyType::GEOMAP_O1:
                     {
                         //ti0.restart();
-                        __c1->update( eltTest );
+                        __c1->template update<eval::gmc_context_v>( eltTest );
                         //t0+=ti0.elapsed();
 #if 0
                         DLOG(INFO) << "Element: " << eltCur.id() << "\n"
@@ -1529,7 +1531,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         if ( useMortarAssembly )
                         {
                             //ti0.restart();
-                            __c->update( eltTest );
+                            __c->template update<eval::gmc_context_v>( eltTest );
                             //t0+=ti0.elapsed();
 #if 0
                             DLOG(INFO) << "Element: " << eltCur.id() << "\n"
@@ -1559,7 +1561,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         else
                         {
                             //ti0.restart();
-                            __c1->update( eltTest );
+                            __c1->template update<eval::gmc_context_v>( eltTest );
                             //t0+=ti0.elapsed();
 #if 0
                             DLOG(INFO) << "Element: " << eltCur.id() << "\n"
@@ -2305,7 +2307,7 @@ manageRelationDifferentMeshType( std::shared_ptr<SpaceTestType> const& spaceTest
 }
 
 
-template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
+template<size_type gmc_v,typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
 std::shared_ptr<GmcType>
 buildGmcWithRelationDifferentMeshType2( std::shared_ptr<SpaceType> const& /*space*/,typename GmcType::gm_ptrtype const& /*gm*/, ImType const& im,
                                         size_type /*idElt*/ ,std::shared_ptr<GmcExprType> gmcExpr,mpl::int_<0> /**/, mpl::true_ )
@@ -2313,7 +2315,7 @@ buildGmcWithRelationDifferentMeshType2( std::shared_ptr<SpaceType> const& /*spac
     return gmcExpr;
 }
 
-template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
+template<size_type gmc_v,typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
 std::shared_ptr<GmcType>
 buildGmcWithRelationDifferentMeshType2( std::shared_ptr<SpaceType> const& /*space*/,typename GmcType::gm_ptrtype const& /*gm*/, ImType const& im,
                                         size_type /*idElt*/ ,std::shared_ptr<GmcExprType> gmcExpr,mpl::int_<0> /**/, mpl::false_ )
@@ -2322,16 +2324,16 @@ buildGmcWithRelationDifferentMeshType2( std::shared_ptr<SpaceType> const& /*spac
     return std::shared_ptr<GmcType>();
 }
 
-template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
+template<size_type gmc_v,typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
 std::shared_ptr<GmcType>
 buildGmcWithRelationDifferentMeshType2( std::shared_ptr<SpaceType> const& space,typename GmcType::gm_ptrtype const& gm, ImType const& im,
                                         size_type idElt ,std::shared_ptr<GmcExprType> gmcExpr,mpl::int_<0> /**/ )
 {
-    return buildGmcWithRelationDifferentMeshType2<SpaceType,ImType,GmcType,GmcExprType>( space,gm,im, idElt, gmcExpr,
+    return buildGmcWithRelationDifferentMeshType2<gmc_v,SpaceType,ImType,GmcType,GmcExprType>( space,gm,im, idElt, gmcExpr,
                                                                                          mpl::int_<0>(),
                                                                                          mpl::bool_<boost::is_same<GmcType,GmcExprType>::type::value>() );
 }
-template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
+template<size_type gmc_v,typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
 std::shared_ptr<GmcType>
 buildGmcWithRelationDifferentMeshType2( std::shared_ptr<SpaceType> const& space,typename GmcType::gm_ptrtype const& gm, ImType const& im,
                                         size_type idElt,std::shared_ptr<GmcExprType> /**/ ,mpl::int_<1> /**/ )
@@ -2344,10 +2346,10 @@ buildGmcWithRelationDifferentMeshType2( std::shared_ptr<SpaceType> const& space,
     geopc_ptrtype geopc( std::make_shared<geopc_type>( gm, im.points() ) );
     CHECK( space->mesh()->hasElement( idElt ) ) << " mesh doesnt have an element id " << idElt;
     auto const& eltInit = space->mesh()->element( idElt );
-    return std::make_shared<gmc_type>( gm, eltInit, geopc );
+    return gm->template context<gmc_v>( eltInit, geopc );
 }
 
-template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
+template<size_type gmc_ctx_v,size_type gmc_ctx_expr_v,typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
 typename FaceType::size_type
 updateGmcWithRelationDifferentMeshType2( FaceType const& theface, std::shared_ptr<SpaceType> const& /*space*/,
                                          std::shared_ptr<GmcType> /*gmc*/, std::shared_ptr<GmcExprType> /*gmcExpr*/,
@@ -2366,7 +2368,7 @@ updateGmcWithRelationDifferentMeshType21( FaceType const& theface, std::shared_p
     return invalid_v<typename FaceType::size_type>;
 }
 
-template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
+template<size_type gmc_ctx_v,size_type gmc_ctx_expr_v,typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
 typename FaceType::size_type
 updateGmcWithRelationDifferentMeshType2( FaceType const& theface, std::shared_ptr<SpaceType> const& space,
                                          std::shared_ptr<GmcType>& gmc, std::shared_ptr<GmcExprType>& gmcExpr,
@@ -2376,8 +2378,8 @@ updateGmcWithRelationDifferentMeshType2( FaceType const& theface, std::shared_pt
 
     CHECK( space->mesh()->hasElement( idElt ) ) << " mesh doesnt have an element id " << idElt;
     auto const& theelt = space->mesh()->element( idElt );
-    gmc->update(theelt);
-    bool found = gmcExpr->updateFromNeighborMatchingFace( theface.element0(), theface.idInElement0(), gmc );
+    gmc->template update<gmc_ctx_v>(theelt);
+    bool found = gmcExpr->template updateFromNeighborMatchingFace<gmc_ctx_expr_v>( theface.element0(), theface.idInElement0(), gmc );
     CHECK(found) << "the permutation of quad point was not found\n";
     return idElt;
 }
@@ -2413,8 +2415,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename eval::gm_type gm_expr_type;
     typedef typename eval::gm1_type gm1_expr_type;
     static const size_type gmc_context_expr_v = expression_type::context|vm::POINT|vm::JACOBIAN;
-    typedef typename gm_expr_type::template Context</*expression_type::context|vm::POINT|vm::JACOBIAN,*/ typename eval::element_type> gmc_expr_type;
-    typedef typename gm1_expr_type::template Context</*expression_type::context|vm::POINT|vm::JACOBIAN,*/ typename eval::element_type> gmc1_expr_type;
+    typedef typename gm_expr_type::template Context<typename eval::element_type> gmc_expr_type;
+    typedef typename gm1_expr_type::template Context<typename eval::element_type> gmc1_expr_type;
     typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef std::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
@@ -2431,8 +2433,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename FormType::gm1_1_type gm1_formTest_type;
     typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
     static const size_type gmc_context_formTest_v = expression_type::context|vm::POINT|vm::JACOBIAN;
-    typedef typename gm_formTest_type::template Context</*expression_type::context|vm::POINT|vm::JACOBIAN,*/geoelement_formTest_type> gmc_formTest_type;
-    typedef typename gm1_formTest_type::template Context</*expression_type::context|vm::POINT|vm::JACOBIAN,*/geoelement_formTest_type> gmc1_formTest_type;
+    typedef typename gm_formTest_type::template Context<geoelement_formTest_type> gmc_formTest_type;
+    typedef typename gm1_formTest_type::template Context<geoelement_formTest_type> gmc1_formTest_type;
     typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
     typedef std::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
@@ -2447,8 +2449,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename FormType::gm1_2_type gm1_formTrial_type;
     typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
     static const size_type gmc_context_formTrial_v = expression_type::context|vm::POINT|vm::JACOBIAN;
-    typedef typename gm_formTrial_type::template Context</*expression_type::context|vm::POINT|vm::JACOBIAN,*/geoelement_formTrial_type> gmc_formTrial_type;
-    typedef typename gm1_formTrial_type::template Context</*expression_type::context|vm::POINT|vm::JACOBIAN,*/geoelement_formTrial_type> gmc1_formTrial_type;
+    typedef typename gm_formTrial_type::template Context<geoelement_formTrial_type> gmc_formTrial_type;
+    typedef typename gm1_formTrial_type::template Context<geoelement_formTrial_type> gmc1_formTrial_type;
     typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
     typedef std::shared_ptr<gmc1_formTrial_type> gmc1_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
@@ -2630,8 +2632,9 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
     typedef typename eval::gm1_type gm1_expr_type;
-    typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc_expr_type;
-    typedef typename gm1_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc1_expr_type;
+    static const size_type gmc_context_expr_v = expression_type::context|vm::POINT|vm::JACOBIAN;
+    typedef typename gm_expr_type::template Context<typename eval::element_type> gmc_expr_type;
+    typedef typename gm1_expr_type::template Context<typename eval::element_type> gmc1_expr_type;
     typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef std::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
@@ -2647,8 +2650,9 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename FormType::gm_1_type gm_formTest_type;
     typedef typename FormType::gm1_1_type gm1_formTest_type;
     typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
-    typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN,geoelement_formTest_type> gmc_formTest_type;
-    typedef typename gm1_formTest_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN,geoelement_formTest_type> gmc1_formTest_type;
+    static const size_type gmc_context_formTest_v = expression_type::context|vm::POINT|vm::JACOBIAN;
+    typedef typename gm_formTest_type::template Context<geoelement_formTest_type> gmc_formTest_type;
+    typedef typename gm1_formTest_type::template Context<geoelement_formTest_type> gmc1_formTest_type;
     typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
     typedef std::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
@@ -2662,8 +2666,9 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename FormType::gm_2_type gm_formTrial_type;
     typedef typename FormType::gm1_2_type gm1_formTrial_type;
     typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
-    typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN,geoelement_formTrial_type> gmc_formTrial_type;
-    typedef typename gm1_formTrial_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN,geoelement_formTrial_type> gmc1_formTrial_type;
+    static const size_type gmc_context_formTrial_v = expression_type::context|vm::POINT|vm::JACOBIAN;
+    typedef typename gm_formTrial_type::template Context<geoelement_formTrial_type> gmc_formTrial_type;
+    typedef typename gm1_formTrial_type::template Context<geoelement_formTrial_type> gmc1_formTrial_type;
     typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
     typedef std::shared_ptr<gmc1_formTrial_type> gmc1_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
@@ -2747,13 +2752,15 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
             //-----------------------------------------------//
             pc_expr_ptrtype geopcExpr( new pc_expr_type( eltInit.gm(), imRange.points() ) );
             pc1_expr_ptrtype geopc1Expr( new pc1_expr_type( eltInit.gm1(), im1Range.points() ) );
-            gmc_expr_ptrtype gmcExpr( new gmc_expr_type( eltInit.gm(),eltInit, geopcExpr, invalid_uint16_type_value, this->expression().dynamicContext() ) );
-            gmc1_expr_ptrtype gmc1Expr( new gmc1_expr_type( eltInit.gm1(),eltInit, geopc1Expr, invalid_uint16_type_value, this->expression().dynamicContext() ) );
+            gmc_expr_ptrtype gmcExpr = eltInit.gm()->template context<gmc_context_expr_v>( eltInit, geopcExpr, this->expression().dynamicContext() );
+            gmc1_expr_ptrtype gmc1Expr =  eltInit.gm1()->template context<gmc_context_expr_v>( eltInit, geopc1Expr, this->expression().dynamicContext() );
+            //gmc_expr_ptrtype gmcExpr( new gmc_expr_type( eltInit.gm(),eltInit, geopcExpr, invalid_uint16_type_value, this->expression().dynamicContext() ) );
+            //gmc1_expr_ptrtype gmc1Expr( new gmc1_expr_type( eltInit.gm1(),eltInit, geopc1Expr, invalid_uint16_type_value, this->expression().dynamicContext() ) );
             //-----------------------------------------------//
-            auto gmcFormTest = detail::buildGmcWithRelationDifferentMeshType< typename FormType::space_1_type,im_formtest_type,
+            auto gmcFormTest = detail::buildGmcWithRelationDifferentMeshType< gmc_context_formTest_v, typename FormType::space_1_type,im_formtest_type,
                                                                               gmc_formTest_type,gmc_expr_type>( __form.testSpace(), __form.testSpace()->gm(), imTest,
                                                                                                                 idEltTestInit, gmcExpr, mpl::int_<gmTestRangeRelation>() );
-            auto gmcFormTrial = detail::buildGmcWithRelationDifferentMeshType< typename FormType::space_2_type,im_formtrial_type,
+            auto gmcFormTrial = detail::buildGmcWithRelationDifferentMeshType< gmc_context_formTrial_v, typename FormType::space_2_type,im_formtrial_type,
                                                                                gmc_formTrial_type,gmc_expr_type>( __form.trialSpace(), __form.trialSpace()->gm(), imTrial,
                                                                                                                   idEltTrialInit, gmcExpr, mpl::int_<gmTrialRangeRelation>() );
             //-----------------------------------------------//
@@ -2801,11 +2808,11 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                     default:
                     case GeomapStrategyType::GEOMAP_HO:
                     {
-                        gmcExpr->update(eltCur);
-                        detail::updateGmcWithRelationDifferentMeshType<typename FormType::space_1_type,im_formtest_type,
+                        gmcExpr->template update<gmc_context_expr_v>(eltCur);
+                        detail::updateGmcWithRelationDifferentMeshType<gmc_context_formTest_v,typename FormType::space_1_type,im_formtest_type,
                                                                        gmc_formTest_type,gmc_expr_type>(__form.testSpace(), gmcFormTest, gmcExpr,
                                                                                                         idEltTest, mpl::int_<gmTestRangeRelation>() );
-                        detail::updateGmcWithRelationDifferentMeshType<typename FormType::space_2_type,im_formtrial_type,
+                        detail::updateGmcWithRelationDifferentMeshType<gmc_context_formTrial_v,typename FormType::space_2_type,im_formtrial_type,
                                                                        gmc_formTrial_type,gmc_expr_type>(__form.trialSpace(), gmcFormTrial, gmcExpr,
                                                                                                          idEltTrial, mpl::int_<gmTrialRangeRelation>() );
                         if ( ( has_mortar_test && __form.testSpace()->mesh()->element( gmcFormTest->id() ).isOnBoundary() ) ||
@@ -2835,11 +2842,11 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                         if ( ( rangeIsSubMeshFromTest && __form.testSpace()->mesh()->face( idEltTest ).isOnBoundary() ) ||
                              ( rangeIsSubMeshFromTrial && __form.trialSpace()->mesh()->face( idEltTrial ).isOnBoundary() ) )
                         {
-                            gmcExpr->update(eltCur);
-                            detail::updateGmcWithRelationDifferentMeshType<typename FormType::space_1_type,im_formtest_type,
+                            gmcExpr->template update<gmc_context_expr_v>(eltCur);
+                            detail::updateGmcWithRelationDifferentMeshType<gmc_context_formTest_v,typename FormType::space_1_type,im_formtest_type,
                                                                            gmc_formTest_type,gmc_expr_type>(__form.testSpace(), gmcFormTest, gmcExpr,
                                                                                                             idEltTest, mpl::int_<gmTestRangeRelation>() );
-                            detail::updateGmcWithRelationDifferentMeshType<typename FormType::space_2_type,im_formtrial_type,
+                            detail::updateGmcWithRelationDifferentMeshType<gmc_context_formTrial_v,typename FormType::space_2_type,im_formtrial_type,
                                                                            gmc_formTrial_type,gmc_expr_type>(__form.trialSpace(), gmcFormTrial, gmcExpr,
                                                                                                              idEltTrial, mpl::int_<gmTrialRangeRelation>() );
 
@@ -3061,7 +3068,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     using im_range_type = im_t<typename eval::the_element_type, expression_value_type>;
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
-    typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc_expr_type;
+    static const size_type gmc_context_expr_v = expression_type::context|vm::POINT|vm::JACOBIAN;
+    typedef typename gm_expr_type::template Context<typename eval::element_type> gmc_expr_type;
     typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
@@ -3072,7 +3080,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     // test
     typedef typename FormType::gm_1_type gm_formTest_type;
     typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
-    typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN,geoelement_formTest_type> gmc_formTest_type;
+    static const size_type gmc_context_formTest_v = expression_type::context|vm::POINT|vm::JACOBIAN;
+    typedef typename gm_formTest_type::template Context<geoelement_formTest_type> gmc_formTest_type;
     typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
     typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
@@ -3080,7 +3089,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     // trial
     typedef typename FormType::gm_2_type gm_formTrial_type;
     typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
-    typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN,geoelement_formTrial_type> gmc_formTrial_type;
+    static const size_type gmc_context_formTrial_v = expression_type::context|vm::POINT|vm::JACOBIAN;
+    typedef typename gm_formTrial_type::template Context<geoelement_formTrial_type> gmc_formTrial_type;
     typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
@@ -3122,25 +3132,25 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     //-----------------------------------------------//
     im_range_type imRange( M_im.order() );
     pc_expr_ptrtype geopcExpr( new pc_expr_type( eltInit.gm(), imRange.points() ) );
-    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( eltInit.gm(),eltInit, geopcExpr ) );
+    gmc_expr_ptrtype gmcExpr = eltInit.gm()->template context<gmc_context_expr_v>( eltInit, geopcExpr );
     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
     //-----------------------------------------------//
     pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<false>()->points() ) );
     VLOG(2) << "pts non mortar : " << __form.template testFiniteElement<false>()->points();
-    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->beginElement()->second, geopcFormTest ) );
+    gmc_formTest_ptrtype gmcFormTest = __form.gm()->template context<gmc_context_formTest_v>( __form.testSpace()->mesh()->beginElement()->second, geopcFormTest );
     map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
     // mortar
     pc_formTest_ptrtype geopcFormTestMortar( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<FormType::test_space_type::is_mortar>()->points() ) );
     VLOG(2) << "pts mortar : " << __form.template testFiniteElement<true>()->points();
-    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->beginElement()->second, geopcFormTestMortar ) );
+    gmc_formTest_ptrtype gmcFormTestMortar = __form.gm()->template context<gmc_context_formTest_v>(  __form.testSpace()->mesh()->beginElement()->second, geopcFormTestMortar );
     map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
     //-----------------------------------------------//
     pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() ) );
-    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->beginElement()->second, geopcFormTrial ) );
+    gmc_formTrial_ptrtype gmcFormTrial = __form.gmTrial()->template context<gmc_context_formTrial_v>( __form.trialSpace()->mesh()->beginElement()->second, geopcFormTrial );
     map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
     //-----------------------------------------------//
     pc_formTrial_ptrtype geopcFormTrialMortar( new pc_formTrial_type( __form.gmTrial(), __form.template trialFiniteElement<FormType::trial_space_type::is_mortar>()->points() ) );
-    gmc_formTrial_ptrtype gmcFormTrialMortar( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->beginElement()->second, geopcFormTrialMortar ) );
+    gmc_formTrial_ptrtype gmcFormTrialMortar = __form.gmTrial()->template context<gmc_context_formTrial_v>( __form.trialSpace()->mesh()->beginElement()->second, geopcFormTrialMortar );
     map_gmc_formTrial_type mapgmcFormTrialMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrialMortar ) );
 
     focb_ptrtype formc( new form_context_type( __form,
@@ -3205,8 +3215,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                     {
                         geopcFormTestMortar->update( gmcExpr_it->template get<2>() );
                         geopcFormTrial->update( gmcExpr_it->template get<3>() );
-                        gmcFormTestMortar->update( eltTest,geopcFormTestMortar );
-                        gmcFormTrial->update( eltTrial,geopcFormTrial );
+                        gmcFormTestMortar->template update<gmc_context_formTest_v>( eltTest,geopcFormTestMortar );
+                        gmcFormTrial->template update<gmc_context_formTrial_v>( eltTrial,geopcFormTrial );
                         map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
                         map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
                         formcmTest->updateInCaseOfInterpolate( mapgmcFormTestMortar, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->template get<0>() );
@@ -3217,8 +3227,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                     {
                         geopcFormTest->update( gmcExpr_it->template get<2>() );
                         geopcFormTrialMortar->update( gmcExpr_it->template get<3>() );
-                        gmcFormTest->update( eltTest,geopcFormTest );
-                        gmcFormTrialMortar->update( eltTrial,geopcFormTrialMortar );
+                        gmcFormTest->template update<gmc_context_formTest_v>( eltTest,geopcFormTest );
+                        gmcFormTrialMortar->template update<gmc_context_formTrial_v>( eltTrial,geopcFormTrialMortar );
                         map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
                         map_gmc_formTrial_type mapgmcFormTrialMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrialMortar ) );
                         formcmTrial->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrialMortar, mapgmcExpr, gmcExpr_it->template get<0>() );
@@ -3229,8 +3239,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                     {
                         geopcFormTest->update( gmcExpr_it->template get<2>() );
                         geopcFormTrial->update( gmcExpr_it->template get<3>() );
-                        gmcFormTest->update( eltTest,geopcFormTest );
-                        gmcFormTrial->update( eltTrial,geopcFormTrial );
+                        gmcFormTest->template update<gmc_context_formTest_v>( eltTest,geopcFormTest );
+                        gmcFormTrial->template update<gmc_context_formTrial_v>( eltTrial,geopcFormTrial );
                         map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
                         map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
                         formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->template get<0>() );
@@ -4306,8 +4316,9 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
     typedef typename eval::gm1_type gm1_expr_type;
-    typedef typename gm_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_expr_type;
-    typedef typename gm1_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc1_expr_type;
+    static const size_type gmc_context_expr_v = expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT;
+    typedef typename gm_expr_type::template Context<typename eval::element_type> gmc_expr_type;
+    typedef typename gm1_expr_type::template Context<typename eval::element_type> gmc1_expr_type;
     typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef std::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
@@ -4326,8 +4337,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     static const size_type contextTest = mpl::if_< boost::is_same< mpl::int_< gm_expr_type::nDim >,mpl::int_< gm_formTest_type::nDim > >,
                                                    mpl::int_<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT>,
                                                    mpl::int_<expression_type::context|vm::POINT|vm::JACOBIAN> >::type::value;
-    typedef typename gm_formTest_type::template Context<contextTest,geoelement_formTest_type> gmc_formTest_type;
-    typedef typename gm1_formTest_type::template Context<contextTest,geoelement_formTest_type> gmc1_formTest_type;
+    typedef typename gm_formTest_type::template Context<geoelement_formTest_type> gmc_formTest_type;
+    typedef typename gm1_formTest_type::template Context<geoelement_formTest_type> gmc1_formTest_type;
     typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
     typedef std::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
@@ -4344,8 +4355,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     static const size_type contextTrial = mpl::if_< boost::is_same< mpl::int_< gm_expr_type::nDim >,mpl::int_< gm_formTrial_type::nDim > >,
                                                    mpl::int_<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT>,
                                                     mpl::int_<expression_type::context|vm::POINT|vm::JACOBIAN> >::type::value;
-    typedef typename gm_formTrial_type::template Context<contextTrial,geoelement_formTrial_type> gmc_formTrial_type;
-    typedef typename gm1_formTrial_type::template Context<contextTrial,geoelement_formTrial_type> gmc1_formTrial_type;
+    typedef typename gm_formTrial_type::template Context<geoelement_formTrial_type> gmc_formTrial_type;
+    typedef typename gm1_formTrial_type::template Context<geoelement_formTrial_type> gmc1_formTrial_type;
     typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
     typedef std::shared_ptr<gmc1_formTrial_type> gmc1_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
@@ -4470,16 +4481,16 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         //-----------------------------------------------//
         // get the geometric mapping associated with element 0
         uint16_type __face_id_in_elt_0 = faceInit.pos_first();
-        gmc_expr_ptrtype gmcExpr0( new gmc_expr_type( faceInit.element( 0 ).gm(), faceInit.element( 0 ), __geopc, __face_id_in_elt_0, this->expression().dynamicContext() ) );
+        gmc_expr_ptrtype gmcExpr0 = faceInit.element( 0 ).gm()->template context<gmc_context_expr_v>( faceInit.element( 0 ), __geopc, __face_id_in_elt_0, this->expression().dynamicContext() );
         gmc_expr_ptrtype gmcExpr1;
         //gmc1_expr_ptrtype gmc1Expr0( new gmc1_expr_type( faceInit.element( 0 ).gm1(), faceInit.element( 0 ), __geopc1, __face_id_in_elt_0 ) );
 
-        gmc_formTest_ptrtype gmcFormTest = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_1_type,im_formtest_type,
+        gmc_formTest_ptrtype gmcFormTest = detail::buildGmcWithRelationDifferentMeshType2< contextTest,typename FormType::space_1_type,im_formtest_type,
                                                                                            gmc_formTest_type,gmc_expr_type>
             ( __form.testSpace(), __form.testSpace()->gm(), imTest,
               idEltTestInit, gmcExpr0, mpl::int_<gmTestRangeRelation>() );
         gmc_formTest_ptrtype gmcFormTest1;
-        gmc_formTrial_ptrtype gmcFormTrial = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_2_type,im_formtrial_type,
+        gmc_formTrial_ptrtype gmcFormTrial = detail::buildGmcWithRelationDifferentMeshType2< contextTrial,typename FormType::space_2_type,im_formtrial_type,
                                                                                              gmc_formTrial_type,gmc_expr_type>
             ( __form.trialSpace(), __form.trialSpace()->gm(), imTrial,
               idEltTrialInit, gmcExpr0, mpl::int_<gmTrialRangeRelation>() );
@@ -4506,12 +4517,12 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         if ( faceInit.isConnectedTo1() )
         {
             uint16_type __face_id_in_elt_1 = faceInit.pos_second();
-            gmcExpr1 = std::make_shared<gmc_expr_type>( faceInit.element( 1 ).gm(), faceInit.element( 1 ), __geopc, __face_id_in_elt_1 );
-            gmcFormTest1 = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_1_type,im_formtest_type,
+            gmcExpr1 = faceInit.element( 1 ).gm()->template context<gmc_context_expr_v>( faceInit.element( 1 ), __geopc, __face_id_in_elt_1, this->expression().dynamicContext() );
+            gmcFormTest1 = detail::buildGmcWithRelationDifferentMeshType2< contextTest,typename FormType::space_1_type,im_formtest_type,
                                                                            gmc_formTest_type,gmc_expr_type>
                 ( __form.testSpace(), __form.testSpace()->gm(), imTest,
                   idEltTestInit, gmcExpr1, mpl::int_<gmTestRangeRelation>() );
-            gmcFormTrial1 = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_2_type,im_formtrial_type,
+            gmcFormTrial1 = detail::buildGmcWithRelationDifferentMeshType2< contextTrial,typename FormType::space_2_type,im_formtrial_type,
                                                                             gmc_formTrial_type,gmc_expr_type>
                 ( __form.trialSpace(), __form.trialSpace()->gm(), imTrial,
                   idEltTrialInit, gmcExpr1, mpl::int_<gmTrialRangeRelation>() );
@@ -4576,18 +4587,18 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 size_type trial_elt_0 = invalid_v<size_type>;
                 size_type trial_elt_1 = invalid_v<size_type>;
                 // update gmc
-                test_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
+                test_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<contextTest,gmc_context_expr_v,typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
                                                                 gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest, gmcExpr0,
                                                                                                   idEltTest, mpl::int_<gmTestRangeRelation>() );
 
-                test_elt_1 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
+                test_elt_1 = detail::updateGmcWithRelationDifferentMeshType2<contextTest,gmc_context_expr_v,typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
                                                                 gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest1, gmcExpr1,
                                                                                                   idEltTest, mpl::int_<gmTestRangeRelation>() );
 
-                trial_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
+                trial_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<contextTrial,gmc_context_expr_v,typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
                                                                               gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial, gmcExpr0,
                                                                                                                  idEltTrial, mpl::int_<gmTrialRangeRelation>() );
-                trial_elt_1 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
+                trial_elt_1 = detail::updateGmcWithRelationDifferentMeshType2<contextTrial,gmc_context_expr_v,typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
                                                                 gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial1, gmcExpr1,
                                                                                                    idEltTrial, mpl::int_<gmTrialRangeRelation>() );
 
@@ -4620,11 +4631,11 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 }
 
                 // update gmc
-                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
+                detail::updateGmcWithRelationDifferentMeshType2<contextTest,gmc_context_expr_v,typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
                                                                 gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest, gmcExpr0,
                                                                                                  idEltTest, mpl::int_<gmTestRangeRelation>() );
 
-                detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
+                detail::updateGmcWithRelationDifferentMeshType2<contextTrial,gmc_context_expr_v,typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
                                                                 gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial, gmcExpr0,
                                                                                                   idEltTrial, mpl::int_<gmTrialRangeRelation>() );
                 DLOG(INFO) << "elt "  << faceCur.id() << " bdy = " << faceCur.isOnBoundary();
@@ -4660,8 +4671,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef typename eval::gm_type gm_expr_type;
     typedef typename eval::gm1_type gm1_expr_type;
     static const size_type gmc_context_expr_v = expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT;
-    typedef typename gm_expr_type::template Context</*expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT,*/ typename eval::element_type> gmc_expr_type;
-    typedef typename gm1_expr_type::template Context</*expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT,*/ typename eval::element_type> gmc1_expr_type;
+    typedef typename gm_expr_type::template Context<typename eval::element_type> gmc_expr_type;
+    typedef typename gm1_expr_type::template Context<typename eval::element_type> gmc1_expr_type;
     typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef std::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
@@ -4681,8 +4692,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     static const size_type contextTest = mpl::if_< boost::is_same< mpl::int_< gm_expr_type::nDim >,mpl::int_< gm_formTest_type::nDim > >,
                                                    mpl::int_<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT>,
                                                    mpl::int_<expression_type::context|vm::POINT|vm::JACOBIAN> >::type::value;
-    typedef typename gm_formTest_type::template Context</*contextTest,*/geoelement_formTest_type> gmc_formTest_type;
-    typedef typename gm1_formTest_type::template Context</*contextTest,*/geoelement_formTest_type> gmc1_formTest_type;
+    typedef typename gm_formTest_type::template Context<geoelement_formTest_type> gmc_formTest_type;
+    typedef typename gm1_formTest_type::template Context<geoelement_formTest_type> gmc1_formTest_type;
     typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
     typedef std::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
@@ -5598,8 +5609,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
         auto geopc = gm->preCompute( this->im().points() );
         auto geopc1 = gm1->preCompute( this->im2().points() );
         auto const& worldComm = const_cast<MeshBase<>*>( eltInit.mesh() )->worldComm();
-        auto ctx = gm->template context<context|vm::JACOBIAN>( eltInit, geopc );
-        auto ctx1 = gm1->template context<context|vm::JACOBIAN>( eltInit, geopc1 );
+        static const size_type thegmc_context_v = context|vm::JACOBIAN;
+        auto ctx = gm->template context<thegmc_context_v>( eltInit, geopc );
+        auto ctx1 = gm1->template context<thegmc_context_v>( eltInit, geopc1 );
         double x=100,y=101,z=102;
         //auto expr_= expression()(vec(cst_ref(x),cst_ref(y), cst_ref(z)));
         static const int inputDataDim = M;
@@ -5615,7 +5627,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
             default:
             case  GeomapStrategyType::GEOMAP_HO :
             {
-                ctx->update( eltCur );
+                ctx->template update<thegmc_context_v>( eltCur );
                 expr_evaluator.update( mapgmc(ctx) );
                 M_im.update( *ctx );
 
@@ -5639,7 +5651,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
 
             case GeomapStrategyType::GEOMAP_O1:
             {
-                ctx1->update( eltCur );
+                ctx1->template update<thegmc_context_v>( eltCur );
                 expr_evaluator1.update( mapgmc(ctx1) );
                 M_im2.update( *ctx1 );
 
@@ -5668,7 +5680,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                 //DDLOG(INFO) << "geomap opt" << "\n";
                 if ( eltCur.isOnBoundary() )
                 {
-                    ctx->update( eltCur );
+                    ctx->template update<thegmc_context_v>( eltCur );
                     expr_evaluator.update( mapgmc(ctx) );
                     M_im.update( *ctx );
 
@@ -5693,7 +5705,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
 
                 else
                 {
-                    ctx1->update( eltCur );
+                    ctx1->template update<thegmc_context_v>( eltCur );
                     expr_evaluator1.update( mapgmc(ctx1) );
                     M_im2.update( *ctx1 );
 
@@ -6630,23 +6642,11 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      //
      // some typedefs
      //
-#if 0
-     typedef typename boost::remove_reference<typename element_iterator::reference>::type const_t;
-     typedef typename boost::unwrap_reference<typename boost::remove_const<const_t>::type>::type the_element_type;
-     typedef the_element_type element_type;
-#endif
      using the_element_type = typename eval::the_element_type;
 
      typedef typename the_element_type::gm_type gm_type;
      typedef std::shared_ptr<gm_type> gm_ptrtype;
      static const size_type gmc_context_elt_v = expression_type::context|vm::JACOBIAN|vm::KB|vm::POINT;
-     typedef typename gm_type::template Context<the_element_type> gmc_type;
-     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-     //typedef typename eval::gm_type gmc_type;
-     //typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-
-     //typedef typename eval_expr_type::value_type value_type;
-     //typedef typename Im::value_type value_type;
 
      auto p0 = P0h->element( "p0" );
      // set to 0 first
@@ -6672,9 +6672,6 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
          //
          gm_ptrtype gm = eltInit.gm();
          //DDLOG(INFO) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
-         typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm,
-                                                                            this->im().points() ) );
-
 
          //it = this->beginElement();
          // wait for all the guys
@@ -6689,29 +6686,17 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
 #endif
 #endif
 
-
-         auto ctx = gm->template context<gmc_context_elt_v>( eltInit, __geopc, this->expression().dynamicContext() );
-         //auto mapgmc = vf::mapgmc( ctx );
-         //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-         //map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-
-         // typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
-         // eval_expr_type expr( expression(), mapgmc );
-         // typedef typename eval_expr_type::shape shape;
-
+         auto geopc = gm->preCompute( this->im().points() );
+         auto ctx = gm->template context<gmc_context_elt_v>( eltInit, geopc, this->expression().dynamicContext() );
          auto expr_evaluator = this->expression().evaluator( vf::mapgmc(ctx) );
 
-         //value_type res1 = 0;
          for ( ; it != en; ++it )
          {
              auto const& eltCur = unwrap_ref( *it );
              ctx->template update<gmc_context_elt_v>( eltCur );
-             //map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-             expr_evaluator.update(  vf::mapgmc(ctx) );
-             //const gmc_type& gmc = *__c;
-             //auto const& gmc = *__c;
+             expr_evaluator.update( vf::mapgmc(ctx) );
 
-             M_im.update( *ctx/*gmc*/ );
+             M_im.update( *ctx );
 
              for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
              {
@@ -6721,8 +6706,6 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
              }
          }
      }
-     //std::cout << "res=" << res << "\n";
-     //std::cout << "res1=" << res1 << "\n";
      DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
 
      return p0;
