@@ -57,6 +57,8 @@ public:
     using vectorN_type = Eigen::VectorXd;
     using matrixN_type = Eigen::MatrixXd;
     using sensormap_type = SensorMap<space_type>;
+    using sparse_matrix_type = typename Backend<double>::sparse_matrix_type;
+    using sparse_matrix_ptrtype = typename Backend<double>::sparse_matrix_ptrtype;
     static const int nDim = space_type::mesh_type::nDim;
 
     /**
@@ -101,6 +103,7 @@ public:
     std::vector<element_type> const& riesz() const { return M_qs; } /**< Riesz representant */
     reducedspace_ptrtype const& reducedBasis() const { M_XR; } /**< Reduced basis */
     matrixN_type matrix() const { return M_matrix; } /**< Matrix of PBDW */
+    sparse_matrix_ptrtype initRiesz(); /**< Initialize the Riesz representation of the sensors */
     void offline(); /** Do offline phase */
     /**
      * Do online phase
@@ -186,10 +189,9 @@ PBDW<RBSpace>::PBDW(std::string const& name,
 }
 
 template<typename RBSpace>
-void
-PBDW<RBSpace>::offline()
+typename PBDW<RBSpace>::sparse_matrix_ptrtype
+PBDW<RBSpace>::initRiesz()
 {
-    Feel::cout << "offline phase start with M=" << M_M << " and N=" << M_N << std::endl;
     auto u = M_XR->functionSpace()->element();
     M_qs = std::vector<element_type>(M_M, M_XR->functionSpace()->element());
     auto a = form2(_test=M_XR->functionSpace(), _trial=M_XR->functionSpace());
@@ -203,6 +205,16 @@ PBDW<RBSpace>::offline()
         auto f = form1(_test=M_XR->functionSpace(), _vector=sensor->containerPtr());
         a.solve(_solution=M_qs[m++], _rhs=f, _name="pbdw");
     }
+    return am;
+}
+
+template<typename RBSpace>
+void
+PBDW<RBSpace>::offline()
+{
+    Feel::cout << "offline phase start with M=" << M_M << " and N=" << M_N << std::endl;
+    auto u = M_XR->functionSpace()->element();
+    auto am = this->initRiesz();
     M_matrix = matrixN_type::Zero(M_M+M_N, M_M+M_N);
     for(int i = 0; i < M_M; ++i )
     {
@@ -340,6 +352,7 @@ PBDW<RBSpace>::loadDB( std::string const& filename, crb::load l )
                 node_t n(nDim);
                 M_sigmas = sensormap_type(Xh);
                 ia >> M_sigmas;
+                this->initRiesz();
             }
         }
     }

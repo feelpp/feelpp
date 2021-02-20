@@ -67,15 +67,9 @@ public:
         M_name("functionallinear")
     {
     }
-    FsFunctionalLinear( space_ptrtype space ) :
-        super_type( space ),
-        M_backend( backend_type::build( soption( _name="backend" ) ) ), // BACKEND_PETSC is the default backend
-        M_vector( M_backend->newVector( space ) ),
-        M_name( "functionallinear" )
-    {
-    }
 
-    FsFunctionalLinear( space_ptrtype space, backend_ptrtype backend ) :
+    FsFunctionalLinear( space_ptrtype space, backend_ptrtype backend = backend_type::build( soption( _name="backend" ) ) )
+        :
         super_type( space ),
         M_backend( backend ),
         M_vector( M_backend->newVector( space ) ),
@@ -96,11 +90,11 @@ public:
     std::string name() const { return M_name ; }
 
     // apply the functional
-    value_type
+    virtual value_type
     operator()( const element_type& x ) const override
     {
-        M_vector->close();
-        return M_backend->dot( *M_vector, x.container() );
+        DCHECK( M_vector ) << "vector not init";
+        return M_vector->dot( x.container() );
     }
 
     // get the representation vector

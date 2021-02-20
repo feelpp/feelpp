@@ -127,13 +127,7 @@ BOOST_AUTO_TEST_CASE( test_pbdw_offline )
     for( auto const& mu : *Pset )
     {
         auto phi = solver(mu);
-        auto vn = vectorN_type(M);
-        int i = 0;
-        for( auto const& [n,s] : sigmas )
-        {
-            vn(i) = (*s)(phi);
-            i++;
-        }
+        auto vn = pbdw.sensors().apply(phi);
         auto I = pbdw.solution(vn);
         errors.push_back( normL2(_range=elements(mesh),_expr=idv(phi)-idv(I)) );
     }
@@ -207,13 +201,7 @@ BOOST_AUTO_TEST_CASE( test_pbdw_online )
     for( auto const& mu : *Pset )
     {
         auto phi = solver(mu);
-        auto vn = vectorN_type(M);
-        int i = 0;
-        for( auto const& [n, s] : sigmas )
-        {
-            vn( i ) = ( *s )( phi );
-            i++;
-        }
+        auto vn = pbdw.sensors().apply(phi);
         auto I = pbdw.solution(vn);
         errors.push_back( normL2(_range=elements(mesh),_expr=idv(phi)-idv(I)) );
     }

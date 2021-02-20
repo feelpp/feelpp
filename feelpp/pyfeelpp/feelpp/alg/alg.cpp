@@ -18,29 +18,16 @@
 //!
 //! @file
 //! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 15 Jun 2017
-//! @copyright 2017 Feel++ Consortium
+//! @date 25 Jul 2018
+//! @copyright 2018 Feel++ Consortium
 //!
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
-#include <feel/feel.hpp>
-#include <mpi4py/mpi4py.h>
-
-#include <boost/parameter/keyword.hpp>
-#include <boost/parameter/preprocessor.hpp>
-#include <boost/parameter/binding.hpp>
-//#include <boost/parameter/python.hpp>
-#include <boost/mpl/vector.hpp>
-
-#include<feel/feelalg/backend.hpp>
-#include<feel/feelalg/vectorublas.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
-#include <pybind11/stl_bind.h>
+#include <mpi4py/mpi4py.h>
 
 namespace py = pybind11;
-
 using namespace Feel;
 
 class PyVectorDouble : Vector<double,unsigned int>
@@ -106,7 +93,6 @@ class PyVectorDouble : Vector<double,unsigned int>
 class PyMatrixSparseDouble : MatrixSparse<double>
 {
     using super = MatrixSparse<double>;
-    using self_t = PyMatrixSparseDouble;
     using super::super;
     void init ( const size_type m,
                 const size_type n,
@@ -119,16 +105,10 @@ class PyMatrixSparseDouble : MatrixSparse<double>
                 const size_type n,
                 const size_type m_l,
                 const size_type n_l,
-                graph_ptrtype const& graph ) override 
-    {
-        PYBIND11_OVERLOAD_PURE(void, super, init, m, n, m_l, n_l); 
-    }
-    clone_ptrtype clone() const override { PYBIND11_OVERLOAD_PURE( clone_ptrtype, super, clone ); }
-
-    size_type nnz() const override 
-    {
-        PYBIND11_OVERLOAD_PURE(size_type, super, nnz); 
-    }
+                graph_ptrtype const& graph ) override {
+        PYBIND11_OVERLOAD_PURE(void, super, init, m, n, m_l, n_l); }
+    size_type nnz() const override {
+        PYBIND11_OVERLOAD_PURE(size_type, super, nnz); }
     void clear () override {
         PYBIND11_OVERLOAD_PURE(void, super, clear); }
     void zero () override {
@@ -214,57 +194,6 @@ PYBIND11_MODULE(_alg, m )
     py::class_<MatrixPetsc<double>, MatrixSparse<double>, std::shared_ptr<MatrixPetsc<double> > >(m, "MatrixPetscDouble")
         .def(py::init<>())
         ;
-    py::class_<VectorUblas<double>, Vector<double,uint32_type>, std::shared_ptr<VectorUblas<double>>> vublas(m,"VectorUBlas<double,ublas::vector<double>>");
-    vublas.def(py::init<>())
-        .def(py::self + py::self )
-        .def(py::self - py::self)
-        .def(double() + py::self)
-        .def(double() - py::self)
-        .def(py::self + double())
-        .def(py::self - double())
-        .def(py::self * double())
-        .def(double() * py::self)
-        //.def(double() / py::self)
-        .def(py::self += py::self)
-        .def(py::self -= py::self)
-        .def(py::self *= double())
-        .def(-py::self)
-//        .def(py::self /= double())
-//        .def(py::self *= py::self)
-//        .def(py::self /= py::self)
-        ;
-
-   m.def( "backend_options", &Feel::backend_options, py::arg("prefix"), "create a backend options descriptions with prefix" );
 
 }
 
-
-#if 0
-PYBIND11_MODULE(_alg, m )
-{
-    using namespace Feel;
-
-    if (import_mpi4py()<0) return ;
-
-    m.def( "backend_options", &Feel::backend_options, py::arg("prefix"), "create a backend options descriptions with prefix" );
-    py::class_<VectorUblas<double>,std::shared_ptr<VectorUblas<double>>> vublas(m,"VectorUBlas<double,ublas::vector<double>>");
-    vublas.def(py::init<>())
-        .def(py::self + py::self )
-        .def(py::self - py::self)
-        .def(double() + py::self)
-        .def(double() - py::self)
-        .def(py::self + double())
-        .def(py::self - double())
-        .def(py::self * double())
-        .def(double() * py::self)
-        //.def(double() / py::self)
-        .def(py::self += py::self)
-        .def(py::self -= py::self)
-        .def(py::self *= double())
-        .def(-py::self)
-//        .def(py::self /= double())
-//        .def(py::self *= py::self)
-//        .def(py::self /= py::self)
-        ;
-}
-#endif

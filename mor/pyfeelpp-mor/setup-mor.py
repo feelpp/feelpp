@@ -34,11 +34,14 @@ class CMakeBuild(build_ext):
     def build_extension(self, ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = [
+            '-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON',
             '-DCMAKE_CXX_COMPILER=@CMAKE_CXX_COMPILER@',
             '-DCMAKE_C_COMPILER=@CMAKE_C_COMPILER@',
             '-DCMAKE_INSTALL_PREFIX=@CMAKE_INSTALL_PREFIX@',
             '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
-            '-DPYTHON_EXECUTABLE=' + sys.executable]
+            '-DPYTHON_EXECUTABLE=' + sys.executable,
+            '-DFEELPP_DIR=@FEELPP_DIR@',
+            '-DFEELPP_MOR_DIR=@FEELPP_MOR_DIR@']
 
         if @PYFEELPP_SETUP_HAS_PARAVIEW_CMAKE_ARGS@ == 1 :
             cmake_args += @PYFEELPP_SETUP_PARAVIEW_CMAKE_ARGS@
@@ -58,6 +61,8 @@ class CMakeBuild(build_ext):
         env = os.environ.copy()
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(env.get('CXXFLAGS', ''),
                                                               self.distribution.get_version())
+        env['PYTHONPATH'] = '@PYFEELPP_MOR_PYTHONPATH@'
+
         self.build_temp=self.build_temp+"-"+ext.name
         print(self.build_temp)
         if not os.path.exists(self.build_temp):
@@ -74,9 +79,11 @@ setup(
     long_description='',
     package_dir={ 'pyfeelppmor': '@CMAKE_CURRENT_SOURCE_DIR@/pyfeelppmor' },
     packages=['pyfeelppmor.crb',
+              'pyfeelppmor.toolboxmor',
     ],
     install_requires=['pyfeelpp' ],
     ext_modules=[CMakeExtension('_crb','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelppmor/crb'),
+                 CMakeExtension('_toolboxmor','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelppmor/toolboxmor'),
     ],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,

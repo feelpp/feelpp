@@ -528,16 +528,7 @@ template <typename T, typename SizeT>
 typename Backend<T,SizeT>::value_type
 Backend<T,SizeT>::dot( vector_type const& x, vector_type const& y ) const
 {
-    value_type localres = 0;
-
-    for ( size_type i = 0; i < x.localSize(); ++i )
-    {
-        localres += x( i )*y( i );
-    }
-
-    value_type globalres=localres;
-    mpi::all_reduce( this->worldComm().globalComm(), localres, globalres, std::plus<value_type>() );
-    return globalres;
+    return x.dot( y );
 }
 
 template <>
@@ -545,12 +536,12 @@ typename Backend<std::complex<double>>::value_type
 Backend<std::complex<double>>::dot( vector_type const& x, vector_type const& y ) const
 {
     value_type localres = 0;
-    
-    for ( size_type i = 0; i < x.localSize(); ++i )
+
+    for ( size_type i = 0; i < x.map().nLocalDofWithoutGhost(); ++i )
     {
         localres += std::conj(x( i ))*y( i );
     }
-    
+
     value_type globalres=localres;
     mpi::all_reduce( this->worldComm().globalComm(), localres, globalres, std::plus<value_type>() );
     return globalres;
