@@ -343,6 +343,15 @@ struct FluidMecDynamicViscosityBase
     std::shared_ptr<tensor_base_type<Geo_t,Basis_i_t,Basis_j_t> >
     evaluator( tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain, const TheArgsType&... theInitArgs/*Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu*/ ) const;
 
+    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename TheExprExpandedType,typename TupleTensorSymbolsExprType,typename... TheArgsType>
+    std::shared_ptr<tensor_base_type<Geo_t,Basis_i_t,Basis_j_t> >
+    evaluator( std::true_type/**/, tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain,
+               TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, const TheArgsType&... theInitArgs ) const;
+
+    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+    void updateEvaluator( std::true_type /**/, std::shared_ptr<tensor_base_type<Geo_t,Basis_i_t,Basis_j_t> > & tensorToUpdate, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                          Geo_t const& geom, const TheArgsType&... theUpdateArgs );
+
 private :
     expr_type const& M_expr;
 };
@@ -412,6 +421,17 @@ public :
             M_muExprTensor( this->expr().exprDynamicVisocsity().evaluator( geom ) )
             {}
 
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, typename this_type::super_type::template tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain,
+                Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            super_type( geom ),
+            M_expr( expr ),
+            M_muExprTensor( std::true_type{}, exprExpanded.exprDynamicVisocsity(), ttse, expr.exprDynamicVisocsity(), geom, theInitArgs... )
+            {}
+
+
         this_type const& expr() const { return M_expr; }
 
         void update( Geo_t const& geom ) override
@@ -423,6 +443,14 @@ public :
         void update( Geo_t const& geom, uint16_type face ) override
             {
                 M_muExprTensor.update( geom, face );
+                this->updateImpl();
+            }
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                M_muExprTensor.update( std::true_type{}, exprExpanded.exprDynamicVisocsity(), ttse, geom, theUpdateArgs... );
                 this->updateImpl();
             }
 
@@ -596,6 +624,19 @@ public :
             M_muMinExprTensor( this->expr().muMinExpr().evaluator( geom ) ),
             M_muMaxExprTensor( this->expr().muMaxExpr().evaluator( geom ) )
             {}
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, typename this_type::super_type::template tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain,
+                Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            super_type( geom ),
+            M_expr( expr ),
+            M_tensorExprEvaluateVelocityOperators( tensorExprMain.tensorExprEvaluateVelocityOperatorsPtr() ),
+            M_kExprTensor( std::true_type{}, exprExpanded.kExpr(), ttse, expr.kExpr(), geom, theInitArgs... ),
+            M_nExprTensor( std::true_type{}, exprExpanded.nExpr(), ttse, expr.nExpr(), geom, theInitArgs... ),
+            M_muMinExprTensor( std::true_type{}, exprExpanded.muMinExpr(), ttse, expr.muMinExpr(), geom, theInitArgs... ),
+            M_muMaxExprTensor( std::true_type{}, exprExpanded.muMaxExpr(), ttse, expr.muMaxExpr(), geom, theInitArgs... )
+            {}
 
         this_type const& expr() const { return M_expr; }
 
@@ -618,6 +659,19 @@ public :
                 M_muMaxExprTensor.update( geom, face );
                 this->updateImpl();
             }
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                this->setGmc( geom );
+                M_kExprTensor.update( std::true_type{}, exprExpanded.kExpr(), ttse, geom, theUpdateArgs... );
+                M_nExprTensor.update( std::true_type{}, exprExpanded.nExpr(), ttse, geom, theUpdateArgs... );
+                M_muMinExprTensor.update( std::true_type{}, exprExpanded.muMinExpr(), ttse, geom, theUpdateArgs... );
+                M_muMaxExprTensor.update( std::true_type{}, exprExpanded.muMaxExpr(), ttse, geom, theUpdateArgs... );
+                this->updateImpl();
+            }
+
 
         void updateImpl()
             {
@@ -878,6 +932,19 @@ public :
             M_lambdaExprTensor( this->expr().lambdaExpr().evaluator( geom ) ),
             M_nExprTensor( this->expr().nExpr().evaluator( geom ) )
             {}
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, typename this_type::super_type::template tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain,
+                Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            super_type( geom ),
+            M_expr( expr ),
+            M_tensorExprEvaluateVelocityOperators( tensorExprMain.tensorExprEvaluateVelocityOperatorsPtr() ),
+            M_mu0ExprTensor( std::true_type{}, exprExpanded.mu0Expr(), ttse, expr.mu0Expr(), geom, theInitArgs... ),
+            M_muInfExprTensor( std::true_type{}, exprExpanded.muInfExpr(), ttse, expr.muInfExpr(), geom, theInitArgs... ),
+            M_lambdaExprTensor( std::true_type{}, exprExpanded.lambdaExpr(), ttse, expr.lambdaExpr(), geom, theInitArgs... ),
+            M_nExprTensor( std::true_type{}, exprExpanded.nExpr(), ttse, expr.nExpr(), geom, theInitArgs... )
+            {}
 
         this_type const& expr() const { return M_expr; }
 
@@ -898,6 +965,18 @@ public :
                 M_muInfExprTensor.update( geom, face );
                 M_lambdaExprTensor.update( geom, face );
                 M_nExprTensor.update( geom, face );
+                this->updateImpl();
+            }
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                this->setGmc( geom );
+                M_mu0ExprTensor.update( std::true_type{}, exprExpanded.mu0Expr(), ttse, geom, theUpdateArgs... );
+                M_muInfExprTensor.update( std::true_type{}, exprExpanded.muInfExpr(), ttse, geom, theUpdateArgs... );
+                M_lambdaExprTensor.update( std::true_type{}, exprExpanded.lambdaExpr(), ttse, geom, theUpdateArgs... );
+                M_nExprTensor.update( std::true_type{}, exprExpanded.nExpr(), ttse, geom, theUpdateArgs... );
                 this->updateImpl();
             }
 
@@ -1141,6 +1220,20 @@ public :
             M_nExprTensor( this->expr().nExpr().evaluator( geom ) ),
             M_aExprTensor( this->expr().aExpr().evaluator( geom ) )
             {}
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, typename this_type::super_type::template tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain,
+                Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            super_type( geom ),
+            M_expr( expr ),
+            M_tensorExprEvaluateVelocityOperators( tensorExprMain.tensorExprEvaluateVelocityOperatorsPtr() ),
+            M_mu0ExprTensor( std::true_type{}, exprExpanded.mu0Expr(), ttse, expr.mu0Expr(), geom, theInitArgs... ),
+            M_muInfExprTensor( std::true_type{}, exprExpanded.muInfExpr(), ttse, expr.muInfExpr(), geom, theInitArgs... ),
+            M_lambdaExprTensor( std::true_type{}, exprExpanded.lambdaExpr(), ttse, expr.lambdaExpr(), geom, theInitArgs... ),
+            M_nExprTensor( std::true_type{}, exprExpanded.nExpr(), ttse, expr.nExpr(), geom, theInitArgs... ),
+            M_aExprTensor( std::true_type{}, exprExpanded.aExpr(), ttse, expr.aExpr(), geom, theInitArgs... )
+            {}
 
         this_type const& expr() const { return M_expr; }
 
@@ -1163,6 +1256,19 @@ public :
                 M_lambdaExprTensor.update( geom, face );
                 M_nExprTensor.update( geom, face );
                 M_aExprTensor.update( geom, face );
+                this->updateImpl();
+            }
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                this->setGmc( geom );
+                M_mu0ExprTensor.update( std::true_type{}, exprExpanded.mu0Expr(), ttse, geom, theUpdateArgs... );
+                M_muInfExprTensor.update( std::true_type{}, exprExpanded.muInfExpr(), ttse, geom, theUpdateArgs... );
+                M_lambdaExprTensor.update( std::true_type{}, exprExpanded.lambdaExpr(), ttse, geom, theUpdateArgs... );
+                M_nExprTensor.update( std::true_type{}, exprExpanded.nExpr(), ttse, geom, theUpdateArgs... );
+                M_aExprTensor.update( std::true_type{}, exprExpanded.aExpr(), ttse, geom, theUpdateArgs... );
                 this->updateImpl();
             }
 
@@ -1342,6 +1448,74 @@ FluidMecDynamicViscosityBase<ExprType>::evaluator( tensor_main_type<Geo_t,Basis_
     return std::shared_ptr<tensor_base_type<Geo_t,Basis_i_t,Basis_j_t> >{};
 }
 
+template< typename ExprType>
+template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename TheExprExpandedType,typename TupleTensorSymbolsExprType,typename... TheArgsType>
+std::shared_ptr<typename FluidMecDynamicViscosityBase<ExprType>::template tensor_base_type<Geo_t,Basis_i_t,Basis_j_t> >
+FluidMecDynamicViscosityBase<ExprType>::evaluator( std::true_type/**/, tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain,
+                                                   TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, const TheArgsType&... theInitArgs ) const
+{
+    using expr_expanded_type = typename TheExprExpandedType::expr_type;
+
+    auto const& dynamicViscosity = this->expr().dynamicViscosity();
+    if ( dynamicViscosity.isNewtonianLaw() )
+        return std::make_shared< typename FluidMecDynamicViscosityNewtonian<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( std::true_type{},
+                                                                                                                                     static_cast<FluidMecDynamicViscosityNewtonian<expr_expanded_type> const&>(exprExpanded) ,
+                                                                                                                                     ttse,
+                                                                                                                                     static_cast<FluidMecDynamicViscosityNewtonian<expr_type> const&>(*this),
+                                                                                                                                     tensorExprMain, theInitArgs... );
+    else if ( dynamicViscosity.isPowerLaw() )
+        return std::make_shared< typename FluidMecDynamicViscosityPowerLaw<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( std::true_type{},
+                                                                                                                                    static_cast<FluidMecDynamicViscosityPowerLaw<expr_expanded_type> const&>(exprExpanded) ,
+                                                                                                                                    ttse,
+                                                                                                                                    static_cast<FluidMecDynamicViscosityPowerLaw<expr_type> const&>(*this),
+                                                                                                                                    tensorExprMain, theInitArgs... );
+    else if ( dynamicViscosity.isCarreauLaw() )
+        return std::make_shared< typename FluidMecDynamicViscosityCarreau<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( std::true_type{},
+                                                                                                                                   static_cast<FluidMecDynamicViscosityCarreau<expr_expanded_type> const&>(exprExpanded) ,
+                                                                                                                                   ttse,
+                                                                                                                                   static_cast<FluidMecDynamicViscosityCarreau<expr_type> const&>(*this),
+                                                                                                                                   tensorExprMain, theInitArgs... );
+    else if ( dynamicViscosity.isCarreauYasudaLaw() )
+        return std::make_shared< typename FluidMecDynamicViscosityCarreauYasuda<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( std::true_type{},
+                                                                                                                                         static_cast<FluidMecDynamicViscosityCarreauYasuda<expr_expanded_type> const&>(exprExpanded) ,
+                                                                                                                                         ttse,
+                                                                                                                                         static_cast<FluidMecDynamicViscosityCarreauYasuda<expr_type> const&>(*this),
+                                                                                                                                         tensorExprMain, theInitArgs... );
+    else
+        CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosity.lawName() <<"\n";
+    return std::shared_ptr<tensor_base_type<Geo_t,Basis_i_t,Basis_j_t> >{};
+}
+
+
+template< typename ExprType>
+template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+void
+FluidMecDynamicViscosityBase<ExprType>::updateEvaluator( std::true_type /**/, std::shared_ptr<tensor_base_type<Geo_t,Basis_i_t,Basis_j_t> > & tensorToUpdate, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                                                         Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+{
+    using expr_expanded_type = typename TheExprExpandedType::expr_type;
+    auto const& dynamicViscosity = this->expr().dynamicViscosity();
+    if ( dynamicViscosity.isNewtonianLaw() )
+        std::static_pointer_cast<typename FluidMecDynamicViscosityNewtonian<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( tensorToUpdate )->update( std::true_type{},
+                                                                                                                                                               static_cast<FluidMecDynamicViscosityNewtonian<expr_expanded_type> const&>(exprExpanded),
+                                                                                                                                                               ttse, geom, theUpdateArgs... );
+    else if ( dynamicViscosity.isPowerLaw() )
+        std::static_pointer_cast<typename FluidMecDynamicViscosityPowerLaw<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( tensorToUpdate )->update( std::true_type{},
+                                                                                                                                                               static_cast<FluidMecDynamicViscosityPowerLaw<expr_expanded_type> const&>(exprExpanded),
+                                                                                                                                                               ttse, geom, theUpdateArgs... );
+    else if ( dynamicViscosity.isCarreauLaw() )
+        std::static_pointer_cast<typename FluidMecDynamicViscosityCarreau<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( tensorToUpdate )->update( std::true_type{},
+                                                                                                                                                             static_cast<FluidMecDynamicViscosityCarreau<expr_expanded_type> const&>(exprExpanded),
+                                                                                                                                                             ttse, geom, theUpdateArgs... );
+
+    else if ( dynamicViscosity.isCarreauYasudaLaw() )
+        std::static_pointer_cast<typename FluidMecDynamicViscosityCarreauYasuda<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( tensorToUpdate )->update( std::true_type{},
+                                                                                                                                                                   static_cast<FluidMecDynamicViscosityCarreauYasuda<expr_expanded_type> const&>(exprExpanded),
+                                                                                                                                                                   ttse, geom, theUpdateArgs... );
+    else
+        CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosity.lawName() <<"\n";
+}
+
 
 template<typename ExprEvaluateFieldOperatorsType, typename FiniteElementVelocityType, typename ModelPhysicFluidType, typename SymbolsExprType, typename SpecificExprType>
 class FluidMecDynamicViscosityImpl : public Feel::vf::ExprDynamicBase
@@ -1504,35 +1678,57 @@ public:
         };
 
         tensor( this_type const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+            :
+            M_expr( expr )
         {
             this->initTensor( expr, true, geom, fev, feu );
         }
         tensor( this_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
+            :
+            M_expr( expr )
         {
             this->initTensor( expr, true, geom, fev );
         }
         tensor( this_type const& expr, Geo_t const& geom )
+            :
+            M_expr( expr )
         {
             this->initTensor( expr, true, geom );
         }
         tensor( this_type const& expr, std::shared_ptr<tensor_expr_evaluate_velocity_opertors_type> tensorExprEvaluateVelocityOperators,  Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+            :
+            M_expr( expr )
         {
             CHECK( tensorExprEvaluateVelocityOperators ) << "tensorExprEvaluateVelocityOperators not init";
             M_tensorExprEvaluateVelocityOperators = tensorExprEvaluateVelocityOperators;
             this->initTensor( expr, false, geom, fev, feu );
         }
         tensor( this_type const& expr, std::shared_ptr<tensor_expr_evaluate_velocity_opertors_type> tensorExprEvaluateVelocityOperators, Geo_t const& geom, Basis_i_t const& fev )
+            :
+            M_expr( expr )
         {
             CHECK( tensorExprEvaluateVelocityOperators ) << "tensorExprEvaluateVelocityOperators not init";
             M_tensorExprEvaluateVelocityOperators = tensorExprEvaluateVelocityOperators;
             this->initTensor( expr, false, geom, fev );
         }
         tensor( this_type const& expr, std::shared_ptr<tensor_expr_evaluate_velocity_opertors_type> tensorExprEvaluateVelocityOperators, Geo_t const& geom )
+            :
+            M_expr( expr )
         {
             CHECK( tensorExprEvaluateVelocityOperators ) << "tensorExprEvaluateVelocityOperators not init";
             M_tensorExprEvaluateVelocityOperators = tensorExprEvaluateVelocityOperators;
             this->initTensor( expr, false, geom );
         }
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_expr( expr )
+            {
+                this->initTensor( std::true_type{}, true, exprExpanded, ttse, expr, geom, theInitArgs... );
+            }
+
 
         std::shared_ptr<tensor_expr_evaluate_velocity_opertors_type> tensorExprEvaluateVelocityOperatorsPtr() const { return M_tensorExprEvaluateVelocityOperators; }
         tensor_expr_evaluate_velocity_opertors_type const& tensorExprEvaluateVelocityOperators() const { return *M_tensorExprEvaluateVelocityOperators; }
@@ -1560,6 +1756,22 @@ public:
                 M_tensorExprEvaluateVelocityOperators->update( geom, face );
             M_tensorbase->update( geom, face );
         }
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                this->update( std::true_type{}, true, exprExpanded, ttse, geom, theUpdateArgs... );
+            }
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, bool upEvaluateVelocityOperators, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                if ( upEvaluateVelocityOperators )
+                    M_tensorExprEvaluateVelocityOperators->update( geom, theUpdateArgs... );
+                M_expr.exprDynamicViscosityBase()->template updateEvaluator<Geo_t, Basis_i_t, Basis_j_t>( std::true_type{}, M_tensorbase, *(exprExpanded.exprDynamicViscosityBase()), ttse,  geom, theUpdateArgs...);
+            }
 
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
@@ -1600,7 +1812,17 @@ public:
                     M_tensorExprEvaluateVelocityOperators = std::make_shared<tensor_expr_evaluate_velocity_opertors_type>( *(expr.exprEvaluateVelocityOperatorsPtr()), theInitArgs... );
                 M_tensorbase = expr.exprDynamicViscosityBase()->template evaluator<Geo_t, Basis_i_t, Basis_j_t>( *this, theInitArgs... );
             }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void initTensor( std::true_type /**/, bool initEvaluateVelocityOperators, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                         this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            {
+                if ( initEvaluateVelocityOperators )
+                    M_tensorExprEvaluateVelocityOperators = std::make_shared<tensor_expr_evaluate_velocity_opertors_type>( *(expr.exprEvaluateVelocityOperatorsPtr()), geom, theInitArgs... );
+                M_tensorbase = expr.exprDynamicViscosityBase()->template evaluator<Geo_t, Basis_i_t, Basis_j_t>( std::true_type{}, *this, *(exprExpanded.exprDynamicViscosityBase()), ttse, geom, theInitArgs... );
+            }
+
     private:
+        this_type const& M_expr;
         tensorbase_ptrtype M_tensorbase;
         std::shared_ptr<tensor_expr_evaluate_velocity_opertors_type> M_tensorExprEvaluateVelocityOperators;
     };

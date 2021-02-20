@@ -424,12 +424,12 @@ struct PrecomputeDomainBasisFunction
         expression_type::context|vm::JACOBIAN|vm::KB :
         expression_type::context;
     static const size_type context = ( DomainSpaceType::nDim == ImageSpaceType::nDim )? context2 : context2|vm::POINT;
-    typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
+    typedef typename gm_type::template Context<geoelement_type> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
     // fe context
-    typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type,gmc_type::context> fecontext_type;
+    typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
     typedef std::shared_ptr<fecontext_type> fecontext_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_fec_type;
 
@@ -460,11 +460,11 @@ struct PrecomputeDomainBasisFunction
              !is_hdiv_conforming_v<typename ImageSpaceType::fe_type> && !is_hcurl_conforming_v<typename ImageSpaceType::fe_type> )
         {
             if constexpr ( DomainSpaceType::nDim != ImageSpaceType::nDim )
-                 M_gmc->update( elt );
+                  M_gmc->template update<context>( elt );
         }
         else
         {
-            M_gmc->update( elt );
+            M_gmc->template update<context>( elt );
             M_fec->update( M_gmc );
             //t_expr_type texpr( M_expr, mapgmc( M_gmc), mapfec( M_fec ) );
             M_tensorExpr->update( mapgmc( M_gmc), mapfec( M_fec ) );
@@ -578,10 +578,10 @@ private :
           auto geopc = gm->preCompute( gm, refPts );
           auto fepc = M_XhDomain->fe()->preCompute( M_XhDomain->fe(), refPts /*gmc->xRefs()*/ );
 
-          gmc_ptrtype gmc( new gmc_type( gm, elt, geopc ) );
+          gmc_ptrtype gmc = gm->template context<context>( elt, geopc );
           fecontext_ptrtype fec( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
 
-          M_gmc.reset( new gmc_type( gm, elt, geopc ) );
+          M_gmc = gm->template context<context>( elt, geopc );
           M_fec.reset( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
 
           map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( M_gmc ) );
@@ -607,10 +607,10 @@ private :
           auto geopc = gm->preCompute( gm, refPts );
           auto fepc = M_XhDomain->fe()->preCompute( M_XhDomain->fe(), refPts /*gmc->xRefs()*/ );
 
-          gmc_ptrtype gmc( new gmc_type( gm, elt, geopc ) );
+          gmc_ptrtype gmc = gm->template context<context>( elt, geopc );
           fecontext_ptrtype fec( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
 
-          M_gmc.reset( new gmc_type( gm, elt, geopc ) );
+          M_gmc = gm->template context<context>( elt, geopc );
           M_fec.reset( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
 
           map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( M_gmc ) );
@@ -980,10 +980,12 @@ public:
     typedef typename image_mesh_type::element_iterator image_mesh_element_iterator;
 
     // geometric mapping context
-    typedef typename image_mesh_type::gm_type image_gm_type;
-    typedef typename image_mesh_type::gm_ptrtype image_gm_ptrtype;
-    typedef typename image_mesh_type::template gmc<vm::POINT>::type image_gmc_type;
-    typedef typename image_mesh_type::template gmc<vm::POINT>::ptrtype image_gmc_ptrtype;
+    // typedef typename image_mesh_type::gm_type image_gm_type;
+    // typedef typename image_mesh_type::gm_ptrtype image_gm_ptrtype;
+    // using image_gmc_type = typename image_gm_type::template Context<typename image_mesh_type::element_type>;
+    // using image_gmc_ptrtype = std::shared_ptr<image_gmc_type>;
+    // typedef typename image_mesh_type::template gmc<vm::POINT>::type image_gmc_type;
+    // typedef typename image_mesh_type::template gmc<vm::POINT>::ptrtype image_gmc_ptrtype;
 
     // dof
     typedef typename dual_image_space_type::dof_type dof_type;

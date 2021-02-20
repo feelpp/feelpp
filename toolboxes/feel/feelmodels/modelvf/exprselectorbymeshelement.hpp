@@ -78,6 +78,7 @@ public :
     using mapping_tag_type = typename mapping_type::tag_type;
 
     using tuple_vector_expr_type = TupleVectorExprType;
+    static const int nExpr = std::decay_t<decltype(hana::size(tuple_vector_expr_type{}))>::value;
 
     using first_expression_type = typename std::decay_t<decltype(hana::at_c<0>( tuple_vector_expr_type{} ))>::value_type::second_type;
 
@@ -269,6 +270,23 @@ public :
                     _tensor_type * res2 = nullptr;
                     return std::make_pair(res,res2);
                 }
+            template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename T, typename... TheArgsType>
+            constexpr auto operator()(std::true_type, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                                      T const& t, Geo_t const& geom, const TheArgsType&... theInitArgs ) const
+                {
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    std::map<uint16_type,_tensor_type> res;
+                    int k=0;
+                    for ( auto const&  [name,theexpr]  : t )
+                    {
+                        CHECK( name == exprExpanded[k].first ) << "incompatible name";
+                        res.emplace( M_mapping.nameToTag( name ), _tensor_type( std::true_type{}, exprExpanded[k++].second, ttse, theexpr, geom, theInitArgs... ) );
+                    }
+
+                    _tensor_type * res2 = nullptr;
+                    return std::make_pair(res,res2);
+                }
+
 
             mapping_type const& M_mapping;
         };
@@ -303,6 +321,19 @@ public :
             M_mapping( expr.mapping() ),
             M_tupleTensorExprs( hana::transform( expr.tupleExpressions(), [this,&geom](auto const& t) { return TransformExprToTensor{M_mapping}(t,geom); } ) )
             {}
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_mapping( exprExpanded.mapping() ),
+            M_tupleTensorExprs( hana::transform( hana::unpack( hana::make_range( hana::int_c<0>, hana::int_c<nExpr> ), hana::make_tuple ), [this,&exprExpanded,&ttse,&expr,&geom,&theInitArgs...](auto eId )
+                                                 {
+                                                     return TransformExprToTensor{M_mapping}(std::true_type{},hana::at( exprExpanded.tupleExpressions(), hana::int_c<eId> ), ttse,
+                                                                                             hana::at( expr.tupleExpressions(), hana::int_c<eId> ), geom, theInitArgs...);
+                                                 } ) )
+            {}
+
+
 
         template<typename IM>
         void init( IM const& im )
@@ -345,6 +376,24 @@ public :
                                     e.second->update( geom, face );
                             });
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+        {
+            mapping_tag_type tag = this->selectSubTensor( geom );
+            hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nExpr> ), [this,&tag,&exprExpanded,&ttse,&geom,&theUpdateArgs...]( auto eId )
+                            {
+                                auto & subtensorPtr = hana::at( M_tupleTensorExprs, hana::int_c<eId> ).second;
+                                if ( subtensorPtr )
+                                {
+                                    auto const& exprExpandedCurrent = hana::at( exprExpanded.tupleExpressions(), hana::int_c<eId> );
+                                    auto itFindExpr = std::find_if( exprExpandedCurrent.begin(), exprExpandedCurrent.end(), [this,&tag]( auto const& ee ) { return M_mapping.nameToTag( ee.first ) == tag; } );
+                                    CHECK( itFindExpr != exprExpandedCurrent.end() ) << "expr from tag not find : " << tag;
+                                    subtensorPtr->update( std::true_type{}, itFindExpr->second, ttse, geom, theUpdateArgs... );
+                                }
+                            } );
+        }
+
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -383,7 +432,7 @@ public :
         }
 
     private :
-        void selectSubTensor( Geo_t const& geom )
+        mapping_tag_type selectSubTensor( Geo_t const& geom )
             {
                 // first, reset all current tensors
                 hana::for_each( M_tupleTensorExprs, []( auto & e ) { e.second = nullptr; } );
@@ -401,6 +450,7 @@ public :
                                             e.second = &itFindTensorExpr->second;
                                     });
                 }
+                return tag;
             }
     private :
         mapping_type const& M_mapping;
