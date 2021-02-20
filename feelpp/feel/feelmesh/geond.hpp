@@ -784,11 +784,12 @@ class GeoND
                 ctxPtsOnRefFaces[f][__p.value()] = baryOnRefFace;
         }
         auto pcf = gm1->preComputeOnFaces( gm1, ctxPtsOnRefFaces );
-        auto ctx = gm1->template context</*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN>( *this, pcf, 0 );
+        static const size_type gmc_context_v = /*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN;
+        auto ctx = gm1->template context<gmc_context_v>( *this, pcf, 0 );
         em_matrix_col_type<value_type> ns( _normals.data().begin(), _normals.size1(), _normals.size2() );
         for ( uint16_type f = 0; f < numTopologicalFaces; ++f )
         {
-            ctx->update( *this, f );
+            ctx->template update<gmc_context_v>( *this, f );
             ns.col( f ) = ctx->unitNormal( 0 );
             //ublas::column( _normals, f ) = ctx->unitNormal( 0 );
         }
@@ -813,8 +814,9 @@ class GeoND
         matrix_node_type baryOnFace( nRealDim, 1 );
         ublas::column( baryOnFace, 0 ) = gm1->referenceConvex().faceBarycenter( f );
         auto pcf = gm1->preComputeOnFaces( gm1, baryOnFace );
-        auto ctx = gm1->template context</*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN>( *this, pcf, f );
-        ctx->update( *this, f );
+        static const size_type gmc_context_v =/*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN;
+        auto ctx = gm1->template context<gmc_context_v>( *this, pcf, f );
+        ctx->template update<gmc_context_v>( *this, f );
 
         node_type n( nRealDim );
         em_node_type<value_type> en( n.data().begin(), n.size() );
@@ -1308,7 +1310,7 @@ void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::updateWithC
         {
             for ( uint16_type f = 0; f < numTopologicalFaces; ++f )
             {
-                ctxf->update( dynamic_cast<typename CtxFaceType::element_type const&>( *this ), f );
+                ctxf->template update</*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN>( dynamic_cast<typename CtxFaceType::element_type const&>( *this ), f );
                 this->setFaceMeasure( f, computeFaceMeasureImpl( thequad,ctxf, f ) );
             }
         }

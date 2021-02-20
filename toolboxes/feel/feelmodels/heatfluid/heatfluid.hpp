@@ -203,7 +203,8 @@ public :
     auto modelContext( std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
     auto modelContext( vector_ptrtype sol, size_type startBlockSpaceIndexHeat, size_type startBlockSpaceIndexFluid, std::string const& prefix = "" ) const
         {
@@ -212,7 +213,7 @@ public :
     auto modelContext( vector_ptrtype solHeat, size_type startBlockSpaceIndexHeat, vector_ptrtype solFluid, size_type startBlockSpaceIndexFluid, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( solHeat, startBlockSpaceIndexHeat, solFluid, startBlockSpaceIndexFluid, prefix );
-            auto se = this->symbolsExpr( mfields );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
             auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( startBlockSpaceIndexHeat, startBlockSpaceIndexFluid ) );
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
         }
@@ -234,7 +235,7 @@ public :
                                          std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( vectorDataHeat, vectorDataFluid, prefix );
-            auto se = this->symbolsExpr( mfields );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
     auto modelContext( vector_ptrtype sol, heat_model_ptrtype const& heatModel, fluid_model_ptrtype const& fluidModel, std::string const& prefix = "" ) const

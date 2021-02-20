@@ -257,9 +257,11 @@ public :
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::element_type>, mpl::identity<mpl::void_> >::type::type geoelement_type;
     typedef std::shared_ptr<gm_type> gm_ptrtype;
     typedef std::shared_ptr<gm1_type> gm1_ptrtype;
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT, geoelement_type> >,
+    static const size_type pts_gmc_context_v = vm::POINT;
+    static const size_type gmc_context_v = vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context</*vm::POINT,*/ geoelement_type> >,
                               mpl::identity<mpl::void_> >::type::type pts_gmc_type;
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> >,
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context</*vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB,*/ geoelement_type> >,
                               mpl::identity<mpl::void_> >::type::type gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_ptrtype>, mpl::identity<mpl::void_> >::type::type geopc_ptrtype;
@@ -987,7 +989,8 @@ public :
                             M_meshForRbContext->addElement( meshEltCtx, false );
                         }
                         auto const& meshEltCtxRegister = M_meshForRbContext->element( meshEltCtx.id() );
-                        typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_meshForRbContext->gm(),meshEltCtxRegister ) );
+                        //typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_meshForRbContext->gm(),meshEltCtxRegister ) );
+                        typename super::geometric_mapping_context_ptrtype gmContext = M_meshForRbContext->gm()->template context<0>( meshEltCtxRegister, typename super::geometric_mapping_context_type::precompute_ptrtype{} );
                         ar & boost::serialization::make_nvp( "gmContext", *gmContext );
                         this->setGmContext( gmContext );
                     }
@@ -996,7 +999,8 @@ public :
                         // std::cout << "has mesh in rbspace\n";
                         CHECK ( M_rbspace->mesh()->hasElement( meshEltCtx.id() ) ) << "fails because mesh doesnt have the element reloaded for gmc";
                         auto const& meshEltCtxRegister = M_rbspace->mesh()->element( meshEltCtx.id() );
-                        typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_rbspace->mesh()->gm(),meshEltCtxRegister ) );
+                        //typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_rbspace->mesh()->gm(),meshEltCtxRegister ) );
+                        typename super::geometric_mapping_context_ptrtype gmContext = M_rbspace->mesh()->gm()->template context<0>( meshEltCtxRegister, typename super::geometric_mapping_context_type::precompute_ptrtype{} );
                         ar & boost::serialization::make_nvp( "gmContext", *gmContext );
                         this->setGmContext( gmContext );
                     }
@@ -1401,8 +1405,10 @@ public :
          * geometry typedef
          */
         typedef typename mesh_type::element_type geoelement_type;
-        typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> gmc_type;
-        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+        //typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> gmc_type;
+        //typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+        using gmc_type = typename rbspace_type::gmc_type;
+        using gmc_ptrtype = typename rbspace_type::gmc_ptrtype;
         typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
         typedef typename gm_type::precompute_type geopc_type;
 
@@ -1797,11 +1803,11 @@ public :
         ptsInContext( Context_t const & context, mpl::int_<1> ) const
             {
                 //new context for evaluate the points
-                typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
-                typedef std::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
+                // typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
+                // typedef std::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
 
-                gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(),  context.pc() ) );
-
+                // gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(),  context.pc() ) );
+                auto  __c_interp = context.geometricMapping()->template context<vm::POINT>( context.element_c(),  context.pc() );
                 return __c_interp->xReal();
             }
 
@@ -1814,6 +1820,7 @@ public :
         matrix_node_type
         ptsInContext( Context_t const & context,  mpl::int_<2> ) const
             {
+#if 0
                 //new context for the interpolation
                 typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
                 typedef std::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
@@ -1823,6 +1830,9 @@ public :
 
                 std::vector<std::map<permutation_type, precompute_ptrtype> > __geo_pcfaces = context.pcFaces();
                 gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(), __geo_pcfaces , context.faceId() ) );
+#endif
+                auto __geo_pcfaces = context.pcFaces();
+                auto __c_interp = context.geometricMapping()->template context<vm::POINT>( context.element_c(), __geo_pcfaces , context.faceId() );
 
                 return __c_interp->xReal();
             }
