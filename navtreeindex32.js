@@ -1,6 +1,5 @@
 var NAVTREEINDEX32 =
 {
-"classnlohmann_1_1basic__json.html#a642213bf5f206f13d2447098b737bee7":[6,1,2,17,92],
 "classnlohmann_1_1basic__json.html#a642afd9d8886e0dedfc0d5cee2baf57f":[6,1,2,17,243],
 "classnlohmann_1_1basic__json.html#a668e4c2ad9808218a25879700f4aef2b":[6,1,2,17,169],
 "classnlohmann_1_1basic__json.html#a68927a008d0685b9b85662150cccc5a1":[6,1,2,17,80],
@@ -249,5 +248,6 @@ var NAVTREEINDEX32 =
 "classnlohmann_1_1detail_1_1iteration__proxy__value.html#a1fc63b88a585fa39942007aab69a74e6":[6,1,2,0,71,10],
 "classnlohmann_1_1detail_1_1iteration__proxy__value.html#a44c64feee85b8e7164a05310e6418a4b":[6,1,2,0,71,8],
 "classnlohmann_1_1detail_1_1iteration__proxy__value.html#a459dd8961b80b2089d8161c9aa466581":[6,1,2,0,71,12],
-"classnlohmann_1_1detail_1_1iteration__proxy__value.html#a5bc7d3133daab5ec4797f3132e093af8":[6,1,2,0,71,9]
+"classnlohmann_1_1detail_1_1iteration__proxy__value.html#a5bc7d3133daab5ec4797f3132e093af8":[6,1,2,0,71,9],
+"classnlohmann_1_1detail_1_1iteration__proxy__value.html#a5e90a5810cc1bb6c1000eabbfdfe7b9e":[6,1,2,0,71,11]
 };

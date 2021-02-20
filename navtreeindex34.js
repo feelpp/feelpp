@@ -1,6 +1,5 @@
 var NAVTREEINDEX34 =
 {
-"clean_8hpp.html":[6,2,0,0,3,0,0],
 "commobject_8hpp.html":[6,2,0,0,0,8],
 "constants_8hpp.html":[6,2,0,0,0,9],
 "constants_8hpp.html#a1b536b029fc70b7e8519bbe9717c0eec":[6,2,0,0,0,9,2],
@@ -249,5 +248,6 @@ var NAVTREEINDEX34 =
 "feeltypes_8hpp.html#a33cad1849779384dc3e64e2f3f8689bc":[6,2,0,0,0,21,23],
 "feeltypes_8hpp.html#a422bdf5e2ca1e9311a1f3ce426dcfafb":[6,2,0,0,0,21,8],
 "feeltypes_8hpp.html#a445a5f0e2a34c9d97d69a3c2d1957907":[6,2,0,0,0,21,11],
-"feeltypes_8hpp.html#a4b975776624528b35464b71fd1a6603a":[6,2,0,0,0,21,28]
+"feeltypes_8hpp.html#a4b975776624528b35464b71fd1a6603a":[6,2,0,0,0,21,28],
+"feeltypes_8hpp.html#a5137d5a00a3a883290b5742501e7b5a8":[6,2,0,0,0,21,2]
 };

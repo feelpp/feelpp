@@ -1,6 +1,5 @@
 var NAVTREEINDEX37 =
 {
-"linearform_8hpp.html#ad4a59195d00415d9e309cfe6bd139267":[6,2,0,0,3,32,2],
 "linearformcontext_8hpp.html":[6,2,0,0,3,33],
 "lineordering_8hpp.html":[6,2,0,0,2,15],
 "localization_8hpp.html":[6,2,0,0,1,22],
@@ -249,5 +248,6 @@ var NAVTREEINDEX37 =
 "points_8hpp.html":[6,2,0,0,2,24],
 "pointset_8hpp.html":[6,2,0,0,2,25],
 "policy_8hpp.html":[6,2,0,0,0,30],
-"pow_8hpp.html":[6,2,0,0,3,47]
+"pow_8hpp.html":[6,2,0,0,3,47],
+"pow_8hpp.html#ga00218e2f351eaf8e36042f5475764cb2":[6,2,0,0,3,47,6]
 };

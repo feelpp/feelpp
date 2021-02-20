@@ -1,6 +1,5 @@
 var NAVTREEINDEX44 =
 {
-"structFeel_1_1is__2d__real.html":[6,1,1,121],
 "structFeel_1_1is__3d.html":[6,1,1,122],
 "structFeel_1_1is__3d__real.html":[6,1,1,123],
 "structFeel_1_1is__convex.html":[6,1,1,124],
@@ -249,5 +248,6 @@ var NAVTREEINDEX44 =
 "structFeel_1_1tag_1_1ddmethod.html#ae258d4019c61a4a80c3c1e61f4aff86a":[6,1,1,13,33,2],
 "structFeel_1_1tag_1_1dependencies.html":[6,1,1,13,34],
 "structFeel_1_1tag_1_1dependencies.html#a733e3039060f9787918857e5add33601":[6,1,1,13,34,0],
-"structFeel_1_1tag_1_1dependencies.html#a7361a447ab23ab9cd666d6dd29e6b749":[6,1,1,13,34,1]
+"structFeel_1_1tag_1_1dependencies.html#a7361a447ab23ab9cd666d6dd29e6b749":[6,1,1,13,34,1],
+"structFeel_1_1tag_1_1dependencies.html#a73ad8c0baa0a7eab26ae2a509f042c70":[6,1,1,13,34,2]
 };
