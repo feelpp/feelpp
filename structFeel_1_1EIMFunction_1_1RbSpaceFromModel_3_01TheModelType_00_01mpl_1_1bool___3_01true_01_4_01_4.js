@@ -1,4 +1,0 @@
-var structFeel_1_1EIMFunction_1_1RbSpaceFromModel_3_01TheModelType_00_01mpl_1_1bool___3_01true_01_4_01_4 =
-[
-    [ "type", "structFeel_1_1EIMFunction_1_1RbSpaceFromModel_3_01TheModelType_00_01mpl_1_1bool___3_01true_01_4_01_4.html#a69361fab728c3d1e381699f80323817d", null ]
-];

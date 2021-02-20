@@ -146,15 +146,15 @@ Typedefs</h2></td></tr>
 <tr class="memitem:aa7bf8665e540e17a6de41daf8dab4492"><td class="memItemLeft" align="right" valign="top"><a id="aa7bf8665e540e17a6de41daf8dab4492"></a>
 typedef <a class="el" href="classFeel_1_1vf_1_1GiNaCBase.html">Feel::vf::GiNaCBase</a>&#160;</td><td class="memItemRight" valign="bottom"><b>super</b></td></tr>
 <tr class="separator:aa7bf8665e540e17a6de41daf8dab4492"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4aea19270f6c1aa3d76d8353256bacd1"><td class="memItemLeft" align="right" valign="top"><a id="a4aea19270f6c1aa3d76d8353256bacd1"></a>
-typedef SymbolsExprType&#160;</td><td class="memItemRight" valign="bottom"><b>symbols_expression_type</b></td></tr>
-<tr class="separator:a4aea19270f6c1aa3d76d8353256bacd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e7ff0d18ce336a7cb4c2ec75adec0c2"><td class="memItemLeft" align="right" valign="top"><a id="a8e7ff0d18ce336a7cb4c2ec75adec0c2"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>symbols_expression_storage_type</b> = SymbolsExprType</td></tr>
+<tr class="separator:a8e7ff0d18ce336a7cb4c2ec75adec0c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0ba22bde25479b8ab8b5831a0bd55538"><td class="memItemLeft" align="right" valign="top"><a id="a0ba22bde25479b8ab8b5831a0bd55538"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>symbols_expression_type</b> = typename symbols_expression_storage_type::symbols_expr_type</td></tr>
+<tr class="separator:a0ba22bde25479b8ab8b5831a0bd55538"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa652bcdba3f23effe5f8fefd0fbebc6a"><td class="memItemLeft" align="right" valign="top"><a id="aa652bcdba3f23effe5f8fefd0fbebc6a"></a>
 typedef symbols_expression_type::tuple_type&#160;</td><td class="memItemRight" valign="bottom"><b>symbols_expression_tuple_type</b></td></tr>
 <tr class="separator:aa652bcdba3f23effe5f8fefd0fbebc6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1611e11324fa3613ea5580700485fdaa"><td class="memItemLeft" align="right" valign="top"><a id="a1611e11324fa3613ea5580700485fdaa"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_expand_symbols_expr_type</b> = std::decay_t&lt; decltype(hana::transform(symbols_expression_tuple_type{}, <a class="el" href="structFeel_1_1vf_1_1GinacMatrix_1_1TransformSymbolsExprTupleToAny.html">TransformSymbolsExprTupleToAny</a>{})) &gt;</td></tr>
-<tr class="separator:a1611e11324fa3613ea5580700485fdaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa182bd1bc24964d674d4752333dfacc5"><td class="memItemLeft" align="right" valign="top"><a id="aa182bd1bc24964d674d4752333dfacc5"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>test_basis</b> = std::nullptr_t</td></tr>
 <tr class="separator:aa182bd1bc24964d674d4752333dfacc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -204,15 +204,18 @@ Constructors, destructor</h2></td></tr>
 <tr class="memitem:af838a564bc48f43baccb4f1411a989f5"><td class="memItemLeft" align="right" valign="top"><a id="af838a564bc48f43baccb4f1411a989f5"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>GinacMatrix</b> (value_type value)</td></tr>
 <tr class="separator:af838a564bc48f43baccb4f1411a989f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af01f95811e1be40b560fec5903a44f74"><td class="memItemLeft" align="right" valign="top"><a id="af01f95811e1be40b560fec5903a44f74"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>GinacMatrix</b> (GiNaC::matrix const &amp;fun, std::vector&lt; GiNaC::symbol &gt; const &amp;syms, std::string const &amp;exprDesc, std::string filename=&quot;&quot;, <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;world=<a class="el" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">Environment::worldComm</a>(), std::string const &amp;dirLibExpr=<a class="el" href="classFeel_1_1Environment.html#a532f0caaaa996a0e99ca0a364a176e6c">Environment::exprRepository</a>(), symbols_expression_type const &amp;expr=symbols_expression_type())</td></tr>
-<tr class="separator:af01f95811e1be40b560fec5903a44f74"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a22e0e22688f402a4c3b43ca721f93cb5"><td class="memItemLeft" align="right" valign="top"><a id="a22e0e22688f402a4c3b43ca721f93cb5"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>GinacMatrix</b> (GiNaC::ex const &amp;fun, std::vector&lt; GiNaC::symbol &gt; const &amp;syms, std::string const &amp;exprDesc, std::string filename=&quot;&quot;, <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;world=<a class="el" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">Environment::worldComm</a>(), std::string const &amp;dirLibExpr=<a class="el" href="classFeel_1_1Environment.html#a532f0caaaa996a0e99ca0a364a176e6c">Environment::exprRepository</a>(), symbols_expression_type const &amp;expr=symbols_expression_type())</td></tr>
-<tr class="separator:a22e0e22688f402a4c3b43ca721f93cb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4a4393cc80b7a90a69d56c4c3fcb15a1"><td class="memItemLeft" align="right" valign="top"><a id="a4a4393cc80b7a90a69d56c4c3fcb15a1"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>GinacMatrix</b> (GiNaC::ex const &amp;fun, std::vector&lt; GiNaC::symbol &gt; const &amp;syms, GiNaC::FUNCP_CUBA const &amp;cfun, std::string const &amp;exprDesc, symbols_expression_type const &amp;expr)</td></tr>
-<tr class="separator:a4a4393cc80b7a90a69d56c4c3fcb15a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a572c01927a7d283d90057c33266a228d"><td class="memTemplParams" colspan="2"><a id="a572c01927a7d283d90057c33266a228d"></a>
+template&lt;typename SymbolsExpressionArgType  = symbols_expression_type&gt; </td></tr>
+<tr class="memitem:a572c01927a7d283d90057c33266a228d"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>GinacMatrix</b> (GiNaC::matrix const &amp;fun, std::vector&lt; GiNaC::symbol &gt; const &amp;syms, std::string const &amp;exprDesc, std::string filename=&quot;&quot;, <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;world=<a class="el" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">Environment::worldComm</a>(), std::string const &amp;dirLibExpr=<a class="el" href="classFeel_1_1Environment.html#a532f0caaaa996a0e99ca0a364a176e6c">Environment::exprRepository</a>(), SymbolsExpressionArgType const &amp;expr=SymbolsExpressionArgType())</td></tr>
+<tr class="separator:a572c01927a7d283d90057c33266a228d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3a2da0f13d7f7845a8848c3c1d9f148"><td class="memTemplParams" colspan="2"><a id="ae3a2da0f13d7f7845a8848c3c1d9f148"></a>
+template&lt;typename SymbolsExpressionArgType  = symbols_expression_type&gt; </td></tr>
+<tr class="memitem:ae3a2da0f13d7f7845a8848c3c1d9f148"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>GinacMatrix</b> (GiNaC::ex const &amp;fun, std::vector&lt; GiNaC::symbol &gt; const &amp;syms, std::string const &amp;exprDesc, std::string filename=&quot;&quot;, <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;world=<a class="el" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">Environment::worldComm</a>(), std::string const &amp;dirLibExpr=<a class="el" href="classFeel_1_1Environment.html#a532f0caaaa996a0e99ca0a364a176e6c">Environment::exprRepository</a>(), SymbolsExpressionArgType const &amp;expr=SymbolsExpressionArgType())</td></tr>
+<tr class="separator:ae3a2da0f13d7f7845a8848c3c1d9f148"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a29065333b89bcbd688672f13fb329cb6"><td class="memTemplParams" colspan="2"><a id="a29065333b89bcbd688672f13fb329cb6"></a>
+template&lt;typename SymbolsExpressionArgType &gt; </td></tr>
+<tr class="memitem:a29065333b89bcbd688672f13fb329cb6"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>GinacMatrix</b> (GiNaC::ex const &amp;fun, std::vector&lt; GiNaC::symbol &gt; const &amp;syms, GiNaC::FUNCP_CUBA const &amp;cfun, std::string const &amp;exprDesc, SymbolsExpressionArgType const &amp;expr)</td></tr>
+<tr class="separator:a29065333b89bcbd688672f13fb329cb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afe81ae3ba05fbe4d0fcb7814e7e46759"><td class="memItemLeft" align="right" valign="top"><a id="afe81ae3ba05fbe4d0fcb7814e7e46759"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>GinacMatrix</b> (<a class="el" href="classFeel_1_1vf_1_1GinacMatrix.html">GinacMatrix</a> &amp;&amp;fun)=default</td></tr>
 <tr class="separator:afe81ae3ba05fbe4d0fcb7814e7e46759"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -245,12 +248,15 @@ symbols_expression_type const  &amp;&#160;</td><td class="memItemRight" valign="
 <tr class="memitem:a2a3a2bee6093264c7125be2c11fc8500"><td class="memItemLeft" align="right" valign="top"><a id="a2a3a2bee6093264c7125be2c11fc8500"></a>
 symbols_expression_type &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>symbolsExpression</b> ()</td></tr>
 <tr class="separator:a2a3a2bee6093264c7125be2c11fc8500"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeef0e3dedd89c7d82d6cb1bcbc05843b"><td class="memItemLeft" align="right" valign="top"><a id="aeef0e3dedd89c7d82d6cb1bcbc05843b"></a>
-tuple_expand_symbols_expr_type const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>expandSymbolsExpression</b> () const</td></tr>
-<tr class="separator:aeef0e3dedd89c7d82d6cb1bcbc05843b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a727b980acb4e6648b792743202f264b5"><td class="memItemLeft" align="right" valign="top"><a id="a727b980acb4e6648b792743202f264b5"></a>
-tuple_expand_symbols_expr_type &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>expandSymbolsExpression</b> ()</td></tr>
-<tr class="separator:a727b980acb4e6648b792743202f264b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2cb012f347a81c615d59fecc9c4feb54"><td class="memItemLeft" align="right" valign="top"><a id="a2cb012f347a81c615d59fecc9c4feb54"></a>
+symbols_expression_storage_type const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>symbolsExpressionStorage</b> () const</td></tr>
+<tr class="separator:a2cb012f347a81c615d59fecc9c4feb54"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15d052a3175b0c8cdc5a1c70339b4f43"><td class="memItemLeft" align="right" valign="top"><a id="a15d052a3175b0c8cdc5a1c70339b4f43"></a>
+std::vector&lt; std::any &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>expandSymbolsExpression</b> () const</td></tr>
+<tr class="separator:a15d052a3175b0c8cdc5a1c70339b4f43"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab43a5bafa404215cfb7e7788becf8f51"><td class="memItemLeft" align="right" valign="top"><a id="ab43a5bafa404215cfb7e7788becf8f51"></a>
+std::vector&lt; std::any &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>expandSymbolsExpression</b> ()</td></tr>
+<tr class="separator:ab43a5bafa404215cfb7e7788becf8f51"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aba7630f64690d174a4ca25532453ba41"><td class="memItemLeft" align="right" valign="top"><a id="aba7630f64690d174a4ca25532453ba41"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setParameterValues</b> (std::map&lt; std::string, value_type &gt; const &amp;mp) override</td></tr>
 <tr class="separator:aba7630f64690d174a4ca25532453ba41"><td class="memSeparator" colspan="2">&#160;</td></tr>

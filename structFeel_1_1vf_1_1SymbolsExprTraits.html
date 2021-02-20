@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: Feel::vf::SymbolsExprTraits&lt; ExprT &gt; Struct Template Reference</title>
+<title>Feel++: Feel::vf::SymbolsExprTraits&lt; T1, ExprT &gt; Struct Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -106,24 +106,24 @@ $(document).ready(function(){initNavTree('structFeel_1_1vf_1_1SymbolsExprTraits.
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="structFeel_1_1vf_1_1SymbolsExprTraits-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">Feel::vf::SymbolsExprTraits&lt; ExprT &gt; Struct Template Reference</div>  </div>
+<div class="title">Feel::vf::SymbolsExprTraits&lt; T1, ExprT &gt; Struct Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a689130d839c555562c899d8d2dbe8c89"><td class="memItemLeft" align="right" valign="top"><a id="a689130d839c555562c899d8d2dbe8c89"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_type</b> = std::decay_t&lt; decltype(hana::unpack(hana::tuple&lt; ExprT... &gt;{}, callApply))&gt;</td></tr>
-<tr class="separator:a689130d839c555562c899d8d2dbe8c89"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5d57589aab4611152a2c606fb9aeb55a"><td class="memItemLeft" align="right" valign="top"><a id="a5d57589aab4611152a2c606fb9aeb55a"></a>
+<tr class="memitem:ade50ca2599a80d8919a5babec75b9f88"><td class="memItemLeft" align="right" valign="top"><a id="ade50ca2599a80d8919a5babec75b9f88"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_type</b> = std::decay_t&lt; decltype(hana::unpack(hana::tuple&lt; T1, ExprT... &gt;{}, callApply))&gt;</td></tr>
+<tr class="separator:ade50ca2599a80d8919a5babec75b9f88"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a45a60803195f27e4429d1b66988aafce"><td class="memItemLeft" align="right" valign="top"><a id="a45a60803195f27e4429d1b66988aafce"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>type</b> = <a class="el" href="structFeel_1_1vf_1_1SymbolsExpr.html">SymbolsExpr</a>&lt; tuple_type &gt;</td></tr>
-<tr class="separator:a5d57589aab4611152a2c606fb9aeb55a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a45a60803195f27e4429d1b66988aafce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:a92ce142060b452cace1795169a4408bc"><td class="memItemLeft" align="right" valign="top"><a id="a92ce142060b452cace1795169a4408bc"></a>
+<tr class="memitem:abc70cce0560e7e30d546cab3040f488f"><td class="memItemLeft" align="right" valign="top"><a id="abc70cce0560e7e30d546cab3040f488f"></a>
 static constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><b>callApply</b> = [](const auto&amp; ...exprs) { return <a class="el" href="structFeel_1_1detail_1_1AdvancedConcatOfTupleContainerType.html">Feel::detail::AdvancedConcatOfTupleContainerType</a>&lt;<a class="el" href="structFeel_1_1vf_1_1SymbolsExprTag.html">SymbolsExprTag</a>,<a class="el" href="structFeel_1_1vf_1_1SymbolExprTag.html">SymbolExprTag</a>&gt;::template apply( exprs... ); }</td></tr>
-<tr class="separator:a92ce142060b452cace1795169a4408bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:abc70cce0560e7e30d546cab3040f488f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

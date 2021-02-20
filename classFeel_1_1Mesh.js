@@ -1,6 +1,5 @@
 var classFeel_1_1Mesh =
 [
-    [ "gmc", "structFeel_1_1Mesh_1_1gmc.html", "structFeel_1_1Mesh_1_1gmc" ],
     [ "Inverse", "structFeel_1_1Mesh_1_1Inverse.html", "structFeel_1_1Mesh_1_1Inverse" ],
     [ "parent_mesh", "structFeel_1_1Mesh_1_1parent__mesh.html", "structFeel_1_1Mesh_1_1parent__mesh" ],
     [ "trace_mesh", "structFeel_1_1Mesh_1_1trace__mesh.html", "structFeel_1_1Mesh_1_1trace__mesh" ],
@@ -159,8 +158,6 @@ var classFeel_1_1Mesh =
     [ "gm1_type", "classFeel_1_1Mesh.html#aa49fb95484a2c5b60fd36db59afde5dc", null ],
     [ "gm_ptrtype", "classFeel_1_1Mesh.html#a68eaf27336d12bd1e382820df543e46d", null ],
     [ "gm_type", "classFeel_1_1Mesh.html#a4c15b59c4cf2dc5f3d33a298e32ac2ed", null ],
-    [ "gmc_ptrtype", "classFeel_1_1Mesh.html#a302024789f268e5f4743e23261217780", null ],
-    [ "gmc_type", "classFeel_1_1Mesh.html#a58a097c37af9118fac12007b1049d0c1", null ],
     [ "index_type", "classFeel_1_1Mesh.html#abb9b6a79ec82d98dd8b69cf0148e216f", null ],
     [ "mesh_ptrtype", "classFeel_1_1Mesh.html#aa8668d3bd09ac742707ffd70456b5ac9", null ],
     [ "mesh_type", "classFeel_1_1Mesh.html#abdff5bd23d2a1433aad6283ecf1c70bd", null ],

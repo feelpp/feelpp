@@ -1,8 +1,5 @@
 var NAVTREEINDEX39 =
 {
-"structFeel_1_1FeelModels_1_1DynamicViscosityCarreauYasudaLaw.html#afd05d2cb021a450efb5d2d84fcc5515e":[6,1,1,4,3,5],
-"structFeel_1_1FeelModels_1_1DynamicViscosityPowerLaw.html":[6,1,1,4,5],
-"structFeel_1_1FeelModels_1_1DynamicViscosityPowerLaw.html#a15716d1a744a1d3e0bdfd864518d5bbb":[6,1,1,4,5,12],
 "structFeel_1_1FeelModels_1_1DynamicViscosityPowerLaw.html#a2dd25102c243711f44358e7b6d6e9567":[6,1,1,4,5,4],
 "structFeel_1_1FeelModels_1_1DynamicViscosityPowerLaw.html#a43aea42d7f0a37aead7bf71c3e25748d":[6,1,1,4,5,1],
 "structFeel_1_1FeelModels_1_1DynamicViscosityPowerLaw.html#a46106bdc8839b2c98e025ab3855ad6e1":[6,1,1,4,5,0],
@@ -33,11 +30,11 @@ var NAVTREEINDEX39 =
 "structFeel_1_1FeelModels_1_1Electric_1_1FieldTag.html":[5,11,0,0],
 "structFeel_1_1FeelModels_1_1Electric_1_1FieldTag.html#a7c0324a40c4b7e4266ed11bed1e6c8df":[5,11,0,0,0],
 "structFeel_1_1FeelModels_1_1ExprTraits.html":[6,1,1,4,8],
-"structFeel_1_1FeelModels_1_1ExprTraits.html#a2717a008efc7d0ee882f9b91d67da44d":[6,1,1,4,8,4],
 "structFeel_1_1FeelModels_1_1ExprTraits.html#a3a571f2b78d4cc9328ba990fece41373":[6,1,1,4,8,1],
 "structFeel_1_1FeelModels_1_1ExprTraits.html#a49d982b28b55da1a6b460ee264e3a3fd":[6,1,1,4,8,3],
 "structFeel_1_1FeelModels_1_1ExprTraits.html#a6d47d8ad613af9c3ae1536fe3739cac3":[6,1,1,4,8,5],
 "structFeel_1_1FeelModels_1_1ExprTraits.html#a7c753166ebcde63daf06b82ef0147590":[6,1,1,4,8,0],
+"structFeel_1_1FeelModels_1_1ExprTraits.html#aacb0db9458a0baf28cedf02ebf8c8bc3":[6,1,1,4,8,4],
 "structFeel_1_1FeelModels_1_1ExprTraits.html#abbc5346e70622d35a8a9f09c7ff3fd72":[6,1,1,4,8,6],
 "structFeel_1_1FeelModels_1_1ExprTraits.html#acccb2158b1aff41aec1c6163a66a991c":[6,1,1,4,8,2],
 "structFeel_1_1FeelModels_1_1ExprTraitsFromContext.html":[6,1,1,4,9],
@@ -240,14 +237,17 @@ var NAVTREEINDEX39 =
 "structFeel_1_1FunctionSpace_1_1ChangeToMeshPtr.html#adcaa0d3ab1f9a6e32f7d5292e26b9b26":[6,1,1,84,6,0],
 "structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer.html":[6,1,1,84,8,0],
 "structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer.html#a12441ce5dc50e665cc9bb95c5b851184":[6,1,1,84,8,0,0],
-"structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer.html#aebeec6e024d855a96ce9879f612cfc6aaa96dee3c57fc7ea6677d0d5074f78a0c":[6,1,1,84,8,0,1],
+"structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer.html#aebeec6e024d855a96ce9879f612cfc6aab34f0507fecae4ac8514ee93af75ca6f":[6,1,1,84,8,0,1],
 "structFeel_1_1FunctionSpace_1_1Element_1_1ChangeElement.html":[6,1,1,84,8,1],
 "structFeel_1_1FunctionSpace_1_1Element_1_1ChangeElement.html#a1c4bceac6fbb62367906fe75d3f71754":[6,1,1,84,8,1,2],
 "structFeel_1_1FunctionSpace_1_1Element_1_1ChangeElement.html#a5271765c0e390ab3918efa15ae091514":[6,1,1,84,8,1,4],
 "structFeel_1_1FunctionSpace_1_1Element_1_1ChangeElement.html#a7ff679d19fd7c54c22dd3076048ec5bb":[6,1,1,84,8,1,0],
 "structFeel_1_1FunctionSpace_1_1Element_1_1ChangeElement.html#a86e747805366b3d156bc2106539fd436":[6,1,1,84,8,1,3],
 "structFeel_1_1FunctionSpace_1_1Element_1_1ChangeElement.html#abe18a946979f998a4d5a3eb015058a87":[6,1,1,84,8,1,1],
-"structFeel_1_1FunctionSpace_1_1Element_1_1ChangeElement.html#abfab8e1e34a94355ea482ee149202650a8ab028d84d4c8b9368bcd0aa2660bd59":[6,1,1,84,8,1,5],
+"structFeel_1_1FunctionSpace_1_1Element_1_1ChangeElement.html#abfab8e1e34a94355ea482ee149202650acfe2089f0bacae6f3454829e07ab1cdc":[6,1,1,84,8,1,5],
 "structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html":[6,1,1,84,8,2],
-"structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html#ab48d25e3214e7ae9a8ffd2466128d77b":[6,1,1,84,8,2,1]
+"structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html#ab48d25e3214e7ae9a8ffd2466128d77b":[6,1,1,84,8,2,1],
+"structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html#abcec047a8d1dc1c8a5004eab8e51bea5":[6,1,1,84,8,2,0],
+"structFeel_1_1FunctionSpace_1_1GetComponentBasis.html":[6,1,1,84,9],
+"structFeel_1_1FunctionSpace_1_1GetComponentBasis.html#adbbf7d5d3ba3c0fc054f5e7a86b84b56":[6,1,1,84,9,0]
 };

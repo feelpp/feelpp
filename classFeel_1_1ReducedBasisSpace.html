@@ -214,9 +214,9 @@ typedef mpl::if_&lt; mpl::greater&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 0 &
 <tr class="memitem:a20e806b794a7a735fef330dcce2b864d"><td class="memItemLeft" align="right" valign="top"><a id="a20e806b794a7a735fef330dcce2b864d"></a>
 typedef std::shared_ptr&lt; gmc_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_ptrtype</b></td></tr>
 <tr class="separator:a20e806b794a7a735fef330dcce2b864d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa5d65b702098273550d8251b8ac6dddb"><td class="memItemLeft" align="right" valign="top"><a id="aa5d65b702098273550d8251b8ac6dddb"></a>
-typedef mpl::if_&lt; mpl::greater&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 0 &gt; &gt;, mpl::identity&lt; typename gm_type::template <a class="el" href="classFeel_1_1meta_1_1Context.html">Context</a>&lt; vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type &gt; &gt;, mpl::identity&lt; mpl::void_ &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_type</b></td></tr>
-<tr class="separator:aa5d65b702098273550d8251b8ac6dddb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a50cb69a562be70ab6de333a9843c3e"><td class="memItemLeft" align="right" valign="top"><a id="a5a50cb69a562be70ab6de333a9843c3e"></a>
+typedef mpl::if_&lt; mpl::greater&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 0 &gt; &gt;, mpl::identity&lt; typename gm_type::template <a class="el" href="classFeel_1_1meta_1_1Context.html">Context</a>&lt; geoelement_type &gt; &gt;, mpl::identity&lt; mpl::void_ &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_type</b></td></tr>
+<tr class="separator:a5a50cb69a562be70ab6de333a9843c3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad045f68c4225d330a0603d83837bad74"><td class="memItemLeft" align="right" valign="top"><a id="ad045f68c4225d330a0603d83837bad74"></a>
 typedef std::shared_ptr&lt; mesh_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_ptrtype</b></td></tr>
 <tr class="separator:ad045f68c4225d330a0603d83837bad74"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -226,9 +226,9 @@ typedef super::mesh_type&#160;</td><td class="memItemRight" valign="bottom"><b>m
 <tr class="memitem:af36beb4095e672d39d3c81f8a02d35a0"><td class="memItemLeft" align="right" valign="top"><a id="af36beb4095e672d39d3c81f8a02d35a0"></a>
 typedef functionspace_type::meshes_list&#160;</td><td class="memItemRight" valign="bottom"><b>meshes_list</b></td></tr>
 <tr class="separator:af36beb4095e672d39d3c81f8a02d35a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a23072d0b5338b70981516eb3c34404ae"><td class="memItemLeft" align="right" valign="top"><a id="a23072d0b5338b70981516eb3c34404ae"></a>
-typedef mpl::if_&lt; mpl::greater&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 0 &gt; &gt;, mpl::identity&lt; typename gm_type::template <a class="el" href="classFeel_1_1meta_1_1Context.html">Context</a>&lt; vm::POINT, geoelement_type &gt; &gt;, mpl::identity&lt; mpl::void_ &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>pts_gmc_type</b></td></tr>
-<tr class="separator:a23072d0b5338b70981516eb3c34404ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a547c76bccc5634fad61a05b6f7f7dc91"><td class="memItemLeft" align="right" valign="top"><a id="a547c76bccc5634fad61a05b6f7f7dc91"></a>
+typedef mpl::if_&lt; mpl::greater&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 0 &gt; &gt;, mpl::identity&lt; typename gm_type::template <a class="el" href="classFeel_1_1meta_1_1Context.html">Context</a>&lt; geoelement_type &gt; &gt;, mpl::identity&lt; mpl::void_ &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>pts_gmc_type</b></td></tr>
+<tr class="separator:a547c76bccc5634fad61a05b6f7f7dc91"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a964b6bc36360bf4d4af0845f5e29e5a1"><td class="memItemLeft" align="right" valign="top"><a id="a964b6bc36360bf4d4af0845f5e29e5a1"></a>
 typedef mpl::range_c&lt; <a class="el" href="classint.html">int</a>, 0, fespace_type::nSpaces &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>rangeRbSpaceType</b></td></tr>
 <tr class="separator:a964b6bc36360bf4d4af0845f5e29e5a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -431,6 +431,9 @@ static this_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>NewImp
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
+<tr class="memitem:abd1c19d1713324eeb6db31d8dcd54c97"><td class="memItemLeft" align="right" valign="top"><a id="abd1c19d1713324eeb6db31d8dcd54c97"></a>
+static const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_context_v</b> = vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB</td></tr>
+<tr class="separator:abd1c19d1713324eeb6db31d8dcd54c97"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a62fde424c02b5d726a556df69563a7fe"><td class="memItemLeft" align="right" valign="top"><a id="a62fde424c02b5d726a556df69563a7fe"></a>
 static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_composite</b> = super::is_composite</td></tr>
 <tr class="separator:a62fde424c02b5d726a556df69563a7fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -447,6 +450,9 @@ static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>n
 <tr class="memitem:ab4e3bd3362db7321eda7106fc5b99285"><td class="memItemLeft" align="right" valign="top"><a id="ab4e3bd3362db7321eda7106fc5b99285"></a>
 static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nSpaces</b> = super::nSpaces</td></tr>
 <tr class="separator:ab4e3bd3362db7321eda7106fc5b99285"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b532b7f8937177e15e4c90ed941cac3"><td class="memItemLeft" align="right" valign="top"><a id="a9b532b7f8937177e15e4c90ed941cac3"></a>
+static const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>pts_gmc_context_v</b> = vm::POINT</td></tr>
+<tr class="separator:a9b532b7f8937177e15e4c90ed941cac3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a33f778e030a95f59766c571bc0f0bf98"></a>

@@ -1,4 +1,0 @@
-var structboost_1_1geometry_1_1traits_1_1tag_3_01Feel_1_1detail_1_1geometry_1_1ringWrapper_3_01Matrid274991c12fff49bcb8481b5f3206161 =
-[
-    [ "type", "structboost_1_1geometry_1_1traits_1_1tag_3_01Feel_1_1detail_1_1geometry_1_1ringWrapper_3_01Matrid274991c12fff49bcb8481b5f3206161.html#a02389ea6ea6285eedf04fe1d31b649ae", null ]
-];

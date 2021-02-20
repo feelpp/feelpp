@@ -1,7 +1,6 @@
 var mesh_8hpp =
 [
     [ "Mesh", "classFeel_1_1Mesh.html", "classFeel_1_1Mesh" ],
-    [ "gmc", "structFeel_1_1Mesh_1_1gmc.html", "structFeel_1_1Mesh_1_1gmc" ],
     [ "Inverse", "structFeel_1_1Mesh_1_1Inverse.html", "structFeel_1_1Mesh_1_1Inverse" ],
     [ "parent_mesh", "structFeel_1_1Mesh_1_1parent__mesh.html", "structFeel_1_1Mesh_1_1parent__mesh" ],
     [ "trace_mesh", "structFeel_1_1Mesh_1_1trace__mesh.html", "structFeel_1_1Mesh_1_1trace__mesh" ],

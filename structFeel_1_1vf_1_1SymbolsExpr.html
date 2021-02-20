@@ -105,7 +105,6 @@ $(document).ready(function(){initNavTree('structFeel_1_1vf_1_1SymbolsExpr.html',
 <a href="#nested-classes">Instances and minimal complete definitions</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="structFeel_1_1vf_1_1SymbolsExpr-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">Feel::vf::SymbolsExpr&lt; TupleExprType &gt; Struct Template Reference</div>  </div>
@@ -132,12 +131,20 @@ struct Feel::vf::SymbolsExpr&lt; TupleExprType &gt;</h3>
 Instances and minimal complete definitions</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1SymbolsExpr_1_1Lambda.html">Lambda</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1SymbolsExpr_1_1TensorContext.html">TensorContext</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a3782b65fd6b55da784e42c6c4ab1e284"><td class="memItemLeft" align="right" valign="top"><a id="a3782b65fd6b55da784e42c6c4ab1e284"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>feelpp_tag</b> = <a class="el" href="structFeel_1_1vf_1_1SymbolsExprTag.html">SymbolsExprTag</a></td></tr>
 <tr class="separator:a3782b65fd6b55da784e42c6c4ab1e284"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3f490f251748f8e46aa098f83dc4213"><td class="memItemLeft" align="right" valign="top"><a id="ad3f490f251748f8e46aa098f83dc4213"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>self_type</b> = <a class="el" href="structFeel_1_1vf_1_1SymbolsExpr.html">SymbolsExpr</a>&lt; TupleExprType &gt;</td></tr>
+<tr class="separator:ad3f490f251748f8e46aa098f83dc4213"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a056b01d775159f1fafcdf590e5525951"><td class="memItemLeft" align="right" valign="top"><a id="a056b01d775159f1fafcdf590e5525951"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>symbols_expr_type</b> = <a class="el" href="structFeel_1_1vf_1_1SymbolsExpr.html">self_type</a></td></tr>
+<tr class="separator:a056b01d775159f1fafcdf590e5525951"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06266e9647bdadbff925ccc31cc723bf"><td class="memItemLeft" align="right" valign="top"><a id="a06266e9647bdadbff925ccc31cc723bf"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_type</b> = TupleExprType</td></tr>
 <tr class="separator:a06266e9647bdadbff925ccc31cc723bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -148,6 +155,10 @@ Public Member Functions</h2></td></tr>
 template&lt;typename... TheExpr&gt; </td></tr>
 <tr class="memitem:ad2550c0169406db4c2bb1acb2d3d62d1"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="structFeel_1_1vf_1_1SymbolsExpr_1_1Lambda.html">Lambda</a>&lt; TheExpr... &gt;::type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>applyLambda</b> (TheExpr... e) const</td></tr>
 <tr class="separator:ad2550c0169406db4c2bb1acb2d3d62d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0cf0d1c0b5503390660ff52cd49c3573"><td class="memTemplParams" colspan="2"><a id="a0cf0d1c0b5503390660ff52cd49c3573"></a>
+template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:a0cf0d1c0b5503390660ff52cd49c3573"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>createTensorContext</b> () const</td></tr>
+<tr class="separator:a0cf0d1c0b5503390660ff52cd49c3573"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3155c7d62806cc9385b638cb611f739"><td class="memItemLeft" align="right" valign="top"><a id="af3155c7d62806cc9385b638cb611f739"></a>
 std::map&lt; std::string, std::set&lt; std::string &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>names</b> () const</td></tr>
 <tr class="separator:af3155c7d62806cc9385b638cb611f739"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -175,12 +186,6 @@ tuple_type &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>tuple</b>
 <tr class="memitem:a21a3013b05bc05e9911c03cb3e84041f"><td class="memItemLeft" align="right" valign="top"><a id="a21a3013b05bc05e9911c03cb3e84041f"></a>
 tuple_type const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>tuple</b> () const</td></tr>
 <tr class="separator:a21a3013b05bc05e9911c03cb3e84041f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
-Public Attributes</h2></td></tr>
-<tr class="memitem:ae9651e39fd0327a6592b8238b500ab02"><td class="memItemLeft" align="right" valign="top"><a id="ae9651e39fd0327a6592b8238b500ab02"></a>
-tuple_type&#160;</td><td class="memItemRight" valign="bottom"><b>tupleExpr</b></td></tr>
-<tr class="separator:ae9651e39fd0327a6592b8238b500ab02"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

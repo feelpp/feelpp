@@ -1,4 +1,0 @@
-var structboost_1_1geometry_1_1traits_1_1coordinate__type_3_01Feel_1_1detail_1_1geometry_1_1pointWrac1bc25a36fe2036663169b1a5037a1c2 =
-[
-    [ "type", "structboost_1_1geometry_1_1traits_1_1coordinate__type_3_01Feel_1_1detail_1_1geometry_1_1pointWrac1bc25a36fe2036663169b1a5037a1c2.html#a0a0e3c8c37d240997f0227ca9dd0954e", null ]
-];

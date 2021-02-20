@@ -390,12 +390,12 @@ typedef std::shared_ptr&lt; gm_type &gt;&#160;</td><td class="memItemRight" vali
 <tr class="memitem:a329fd61d41b32a49131d84df1e6c81c1"><td class="memItemLeft" align="right" valign="top"><a id="a329fd61d41b32a49131d84df1e6c81c1"></a>
 typedef std::shared_ptr&lt; gm1_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>gm1_ptrtype</b></td></tr>
 <tr class="separator:a329fd61d41b32a49131d84df1e6c81c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acff5790d0eb0cd71e5085d29f1d8e84f"><td class="memItemLeft" align="right" valign="top"><a id="acff5790d0eb0cd71e5085d29f1d8e84f"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>pts_gmc_type</b> = typename gm_type::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Context.html">Context</a>&lt; vm::POINT, geoelement_type &gt;</td></tr>
-<tr class="separator:acff5790d0eb0cd71e5085d29f1d8e84f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e7915f1e0db9d86c5d97398a0368adb"><td class="memItemLeft" align="right" valign="top"><a id="a6e7915f1e0db9d86c5d97398a0368adb"></a>
-typedef mpl::if_&lt; mpl::greater&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 0 &gt; &gt;, mpl::identity&lt; typename gm_type::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Context.html">Context</a>&lt; vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type &gt; &gt;, mpl::identity&lt; mpl::void_ &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_type</b></td></tr>
-<tr class="separator:a6e7915f1e0db9d86c5d97398a0368adb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad41835057d4a678cdf8378be34be959f"><td class="memItemLeft" align="right" valign="top"><a id="ad41835057d4a678cdf8378be34be959f"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>pts_gmc_type</b> = typename gm_type::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Context.html">Context</a>&lt; geoelement_type &gt;</td></tr>
+<tr class="separator:ad41835057d4a678cdf8378be34be959f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bfe4b4fbf397fcfa7b9f202b10118d9"><td class="memItemLeft" align="right" valign="top"><a id="a9bfe4b4fbf397fcfa7b9f202b10118d9"></a>
+typedef mpl::if_&lt; mpl::greater&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 0 &gt; &gt;, mpl::identity&lt; typename gm_type::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Context.html">Context</a>&lt; geoelement_type &gt; &gt;, mpl::identity&lt; mpl::void_ &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_type</b></td></tr>
+<tr class="separator:a9bfe4b4fbf397fcfa7b9f202b10118d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab7d169e80e3c240288d1887264144636"><td class="memItemLeft" align="right" valign="top"><a id="ab7d169e80e3c240288d1887264144636"></a>
 typedef std::shared_ptr&lt; gmc_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_ptrtype</b></td></tr>
 <tr class="separator:ab7d169e80e3c240288d1887264144636"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1974,6 +1974,8 @@ template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parame
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the mesh associated with the approximation </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1FunctionSpace.html#a79ab3bb7910174c73d4e9ee6be0243ba">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::updateInformationObject()</a>.</p>
 
 </div>
 </div>

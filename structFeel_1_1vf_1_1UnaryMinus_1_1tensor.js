@@ -11,6 +11,7 @@ var structFeel_1_1vf_1_1UnaryMinus_1_1tensor =
     [ "update", "structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html#a48e2608b0ca225be35a133543521afaf", null ],
     [ "update", "structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html#a8f145f59dcba7a87ef1b59c4031eb656", null ],
     [ "update", "structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html#ae57d88e2cb14da31e3c7c17ba8d59896", null ],
+    [ "update", "structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html#a55f769dacb820547b217c76069e04502", null ],
     [ "updateContext", "structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html#ae9fa7038905ba8e7935f679d1815bbb6", null ],
     [ "M_t_expr", "structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html#aa0d98ee906fe37bd0afe109e0e2add0b", null ],
     [ "shape", "structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html#a473afd82cdecb5338909a6a99b143999", null ],
@@ -18,5 +19,6 @@ var structFeel_1_1vf_1_1UnaryMinus_1_1tensor =
     [ "value_type", "structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html#a71975244246ab207ede625a6f84f2c45", null ],
     [ "tensor", "structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html#a6ddf2ee43047428ad23fc5943f9d2429", null ],
     [ "tensor", "structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html#a7e61c6be3cbb3782d06c15e0dc554927", null ],
-    [ "tensor", "structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html#a05ce5336be9a535183aeeb1099d75d96", null ]
+    [ "tensor", "structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html#a05ce5336be9a535183aeeb1099d75d96", null ],
+    [ "tensor", "structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html#a33fc309e1d1272017bdba59e2e5cd7aa", null ]
 ];

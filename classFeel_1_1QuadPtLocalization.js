@@ -34,7 +34,7 @@ var classFeel_1_1QuadPtLocalization =
     [ "GeoShape", "classFeel_1_1QuadPtLocalization.html#a0fae5b42140b352ae612ecf1fcad49ac", null ],
     [ "gm_type", "classFeel_1_1QuadPtLocalization.html#a6cbe94c9ec1972ac10871e19fc132921", null ],
     [ "gmc_ptrtype", "classFeel_1_1QuadPtLocalization.html#a57c6ce0eb7c101a65b2131382291d847", null ],
-    [ "gmc_type", "classFeel_1_1QuadPtLocalization.html#ada6613c77d24d7e82387b4dd12a85291", null ],
+    [ "gmc_type", "classFeel_1_1QuadPtLocalization.html#abcd399ce4bdbb892a53b3f1ec4e89d29", null ],
     [ "im_face_type", "classFeel_1_1QuadPtLocalization.html#ae929b76d53bbb1eda4820a38edf63dfa", null ],
     [ "im_type", "classFeel_1_1QuadPtLocalization.html#adb4d18d92b4d6adf96efd8cfbf2f6529", null ],
     [ "index_type", "classFeel_1_1QuadPtLocalization.html#a1ba17a7fb070765cbe9fbd86cf6bd058", null ],

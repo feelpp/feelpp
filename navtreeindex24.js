@@ -1,9 +1,5 @@
 var NAVTREEINDEX24 =
 {
-"classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a1d6c726171cd7e5e4a12445b289cfa09":[6,1,1,224,1,15],
-"classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a2630c017839994bbb5848d328bde824b":[6,1,1,224,1,22],
-"classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a3b86647ffbe25f6962beffde26c7ecb5":[6,1,1,224,1,17],
-"classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a4236194360670b926a109bf5ecdf81a2":[6,1,1,224,1,3],
 "classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a493bdd0825cf1449b73d07a275cdcc3d":[6,1,1,224,1,4],
 "classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a49fb8bb7b56dde15054d5bef718b76e4":[6,1,1,224,1,21],
 "classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a52c79b38650f7f3d9aa77fcd80c33914":[6,1,1,224,1,2],
@@ -57,6 +53,7 @@ var NAVTREEINDEX24 =
 "classFeel_1_1ReducedBasisSpace_1_1ContextRBSet.html#af760b0f1b59ded497188006d08355e4c":[6,1,1,224,2,6],
 "classFeel_1_1ReducedBasisSpace_1_1ContextRBSet.html#af8f88ba08868953c71547a73e686aac9":[6,1,1,224,2,21],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html":[6,1,1,224,3],
+"classFeel_1_1ReducedBasisSpace_1_1Element.html#a02c7656954fce2b3aaff79234f87431e":[6,1,1,224,3,72],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#a05a90bac3449223716169bc3630f95f2":[6,1,1,224,3,31],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#a05b12d53136bcad377e3b66a4cac8650":[6,1,1,224,3,87],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#a0630a8db2c36982b8dcef7f015143061":[6,1,1,224,3,67],
@@ -67,6 +64,7 @@ var NAVTREEINDEX24 =
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#a1fee9b986cd0711bc9c4dc191785dfe9":[6,1,1,224,3,26],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#a20a4c4678fcdf73165096a6a04441684":[6,1,1,224,3,0],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#a22d590e85c4746b800233d8c4fdc9d29":[6,1,1,224,3,70],
+"classFeel_1_1ReducedBasisSpace_1_1Element.html#a2388768980219c131eee3e32474fd5e9":[6,1,1,224,3,73],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#a249b25fe7bf7571b0779c384319aaad5":[6,1,1,224,3,75],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#a302f0bba9e16cd8cf0ed38397fc8a4cc":[6,1,1,224,3,76],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#a30645ad1fb3d8911a2c01cec2241637d":[6,1,1,224,3,55],
@@ -78,7 +76,6 @@ var NAVTREEINDEX24 =
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#a3ba86bad99769f7e2f3ff04324ae1c5e":[6,1,1,224,3,64],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#a3ea55ee505de601255c3556602fddd39":[6,1,1,224,3,74],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#a43067e2dfec8739a6c7a0182de4f9294":[6,1,1,224,3,22],
-"classFeel_1_1ReducedBasisSpace_1_1Element.html#a444e99417a49bc263eb88ee38ea3f3f8":[6,1,1,224,3,73],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#a45350a6016fb88203f80ef8c6789bea7":[6,1,1,224,3,7],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#a45f3539c2351a2c393f75ffac3931c5e":[6,1,1,224,3,20],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#a4691cfa1288617213a9488cd9bce74c7":[6,1,1,224,3,86],
@@ -125,7 +122,6 @@ var NAVTREEINDEX24 =
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#ad07d3daa50252d412dc71cefe4d7b864":[6,1,1,224,3,45],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#ad0e4c5c484b6d1ef3dd2ef2b8a460eea":[6,1,1,224,3,30],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#ad89e778a44e003f6cda713baa0c607a0":[6,1,1,224,3,41],
-"classFeel_1_1ReducedBasisSpace_1_1Element.html#adae23e83b8eace444173a4b098874da6":[6,1,1,224,3,72],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#adaee16fff1156c6cbc504a94e901deb7":[6,1,1,224,3,85],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#adcb0cb0c8d074d415c7a6beeaf11f901":[6,1,1,224,3,29],
 "classFeel_1_1ReducedBasisSpace_1_1Element.html#ae358f92add1395558e19824f23942f08":[6,1,1,224,3,62],
@@ -249,5 +245,9 @@ var NAVTREEINDEX24 =
 "classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a14dcb5b5b195b9c5bdfa440790d7abbd":[6,1,1,227,71],
 "classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a1752f025a169b010d3ebe0c16f3182b6":[6,1,1,227,29],
 "classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a1caadfe2912f25ab544bb43cf06a1eb2":[6,1,1,227,66],
-"classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a2042b05d7ea61d8b5f267d3ac96c673d":[6,1,1,227,17]
+"classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a2042b05d7ea61d8b5f267d3ac96c673d":[6,1,1,227,17],
+"classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a20e615291f5bfeeba9d72351aef167e5":[6,1,1,227,33],
+"classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a20fc100836fa69e7528cd4406989ba74":[6,1,1,227,8],
+"classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a2d575f4da490a71c8a1fb7bda7e21bd5":[6,1,1,227,63],
+"classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a2e6407ec942716fccce36dafbce4731b":[6,1,1,227,43]
 };
