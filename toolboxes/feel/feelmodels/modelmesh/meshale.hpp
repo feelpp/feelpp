@@ -6,6 +6,7 @@
  Date: 2011-07-17
 
  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+ Copyright (C) 2011-present Feel++ Consortium
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -33,20 +34,18 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 //#include <feel/feelvf/vf.hpp>
+#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmesh/meshmover.hpp>
 #include <feel/feelts/bdf.hpp>
-#include <feel/feelfilters/exporter.hpp>
 
 #include <feel/feelvf/expr.hpp>
-#include <feel/feelvf/projectors.hpp>
-#include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/geometricdata.hpp>
-
+#include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/projectors.hpp>
 
 #include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feelmodels/modelmesh/ale.hpp>
-
 
 #include <feel/feelmodels/modelmesh/dofrelationshipmap.hpp>
 
@@ -55,11 +54,11 @@ namespace Feel
 namespace FeelModels
 {
 
-template< class Convex >
+template <class Convex>
 class MeshALE : public ModelBase
 {
 
-public :
+  public:
     typedef ModelBase super_type;
     using size_type = uint32_type;
     typedef Backend<double> backend_type;
@@ -69,18 +68,18 @@ public :
      * Moving mesh typedefs
      */
     typedef Convex convex_type;
-    typedef Mesh< convex_type > mesh_type;
+    typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*
      * Reference mesh typedefs
      */
-    typedef typename mesh_type::P1_mesh_type  mesh_ref_type;
+    typedef typename mesh_type::P1_mesh_type mesh_ref_type;
     typedef std::shared_ptr<mesh_ref_type> mesh_ref_ptrtype;
     typedef typename mesh_ref_type::shape_type convex_ref_type;
 
-    typedef ALE< convex_ref_type, mesh_type::nOrder > ale_map_type;
-    typedef std::shared_ptr< ale_map_type > ale_map_ptrtype;
+    typedef ALE<convex_ref_type, mesh_type::nOrder> ale_map_type;
+    typedef std::shared_ptr<ale_map_type> ale_map_ptrtype;
 
     typedef typename ale_map_type::ale_map_functionspace_type ale_map_functionspace_ref_type;
     typedef std::shared_ptr<ale_map_functionspace_ref_type> ale_map_functionspace_ref_ptrtype;
@@ -94,40 +93,37 @@ public :
     typedef typename ale_map_functionspace_type::element_type ale_map_element_type;
     typedef std::shared_ptr<ale_map_element_type> ale_map_element_ptrtype;
 
-
-    typedef Bdf< ale_map_functionspace_ref_type > bdf_ale_displacement_ref_type;
+    typedef Bdf<ale_map_functionspace_ref_type> bdf_ale_displacement_ref_type;
     typedef std::shared_ptr<bdf_ale_displacement_ref_type> bdf_ale_displacement_ref_ptrtype;
 
-    typedef Bdf< ale_map_functionspace_type > bdf_ale_displacement_type;
+    typedef Bdf<ale_map_functionspace_type> bdf_ale_displacement_type;
     typedef std::shared_ptr<bdf_ale_displacement_type> bdf_ale_displacement_ptrtype;
 
-    typedef Exporter<mesh_type,mesh_type::nOrder> exporter_type;
+    typedef Exporter<mesh_type, mesh_type::nOrder> exporter_type;
     typedef std::shared_ptr<exporter_type> exporter_ptrtype;
 
-    typedef Exporter<mesh_ref_type,mesh_ref_type::nOrder> exporter_ref_type;
+    typedef Exporter<mesh_ref_type, mesh_ref_type::nOrder> exporter_ref_type;
     typedef std::shared_ptr<exporter_ref_type> exporter_ref_ptrtype;
 
-    typedef DofRelationshipMap<ale_map_functionspace_ref_type,ale_map_functionspace_type > DofRelationshipMap_type;
+    typedef DofRelationshipMap<ale_map_functionspace_ref_type, ale_map_functionspace_type> DofRelationshipMap_type;
     typedef std::shared_ptr<DofRelationshipMap_type> DofRelationshipMap_ptrtype;
 
-
     MeshALE( mesh_ptrtype mesh_moving,
-             std::string const& prefix="",
+             std::string const& prefix = "",
              worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     void init();
-template< typename self_type >
-    void init(self_type const& oldToolbox);
+    template <typename self_type>
+    void init( self_type const& oldToolbox );
     std::shared_ptr<std::ostringstream> getInfo() const;
-
 
     void addBoundaryFlags( std::string const& bctype, std::string const& marker );
     void addBoundaryFlags( std::string const& bctype, std::vector<std::string> const& markers )
-        {
-            for ( std::string const& marker : markers )
-                this->addBoundaryFlags( bctype,marker );
-        }
+    {
+        for ( std::string const& marker : markers )
+            this->addBoundaryFlags( bctype, marker );
+    }
 
     /**
      * \return the reference mesh
@@ -138,26 +134,27 @@ template< typename self_type >
      * \return the moving mesh
      */
     mesh_ptrtype movingMesh() const { return M_movingMesh; }
-mesh_ptrtype movingMeshModify() & { return M_movingMesh; }
+    mesh_ptrtype movingMeshModify() & { return M_movingMesh; }
     /**
      * \return true is reverted on reference mesh, else false
      */
     bool isOnReferenceMesh() const { return M_isOnReferenceMesh; }
     bool isOnMovingMesh() const { return M_isOnMovingMesh; }
-     void switchReferenceMovingMesh() { 
-        if(M_isOnMovingMesh) 
+    void switchReferenceMovingMesh()
+    {
+        if ( M_isOnMovingMesh )
         {
-            M_isOnReferenceMesh=true;
-            M_isOnMovingMesh=false;
+            M_isOnReferenceMesh = true;
+            M_isOnMovingMesh = false;
             return;
         }
-        if(M_isOnReferenceMesh)
+        if ( M_isOnReferenceMesh )
         {
-            M_isOnReferenceMesh=false;
-            M_isOnMovingMesh=true;
+            M_isOnReferenceMesh = false;
+            M_isOnMovingMesh = true;
             return;
         }
-     }
+    }
     /**
      * \return the functionspace
      */
@@ -223,13 +220,12 @@ mesh_ptrtype movingMeshModify() & { return M_movingMesh; }
      */
     DofRelationshipMap_ptrtype dofRelationShipMap() const { return M_drm; }
 
-
     /**
      * \Compute ale map and move the mesh
      */
-    template< typename elem_type >
+    template <typename elem_type>
     void update( std::vector<elem_type> const& polyDisplacementSet );
-    template< typename elem_type >
+    template <typename elem_type>
     void update( elem_type const& polyDisplacementSet );
 
     /**
@@ -250,41 +246,39 @@ mesh_ptrtype movingMeshModify() & { return M_movingMesh; }
     /**
      * \Export
      */
-    void exportResults(double time=0);
+    void exportResults( double time = 0 );
 
     void updateMetricMeshAdaptation( Expr<GinacExVF<2>> const& e )
-        {
-            M_aleFactory->updateMetricMeshAdaptation( e );
-        }
-    template < typename ExprT >
+    {
+        M_aleFactory->updateMetricMeshAdaptation( e );
+    }
+    template <typename ExprT>
     void updateMetricMeshAdaptation( Expr<ExprT> const& e )
-        {
-            M_aleFactory->updateMetricMeshAdaptation( e );
-        }
+    {
+        M_aleFactory->updateMetricMeshAdaptation( e );
+    }
 
-    template < typename FieldDispType, typename ExprT, typename RangeType >
-    void updateDisplacementFieldFromVelocity( FieldDispType & d, Expr<ExprT> const& v, RangeType const& range ) const
-        {
-            unwrap_ptr(d).on(_range=range,
-                             _expr= (v + idv(M_bdf_ale_identity->polyDeriv()))/M_bdf_ale_identity->polyDerivCoefficient(0) - idv(this->identityALE()) + idv( this->displacement() ) );
-        }
-
+    template <typename FieldDispType, typename ExprT, typename RangeType>
+    void updateDisplacementFieldFromVelocity( FieldDispType& d, Expr<ExprT> const& v, RangeType const& range ) const
+    {
+        unwrap_ptr( d ).on( _range = range,
+                            _expr = ( v + idv( M_bdf_ale_identity->polyDeriv() ) ) / M_bdf_ale_identity->polyDerivCoefficient( 0 ) - idv( this->identityALE() ) + idv( this->displacement() ) );
+    }
 
     // make the new mesh the new reference for the fields -> disp=0 on it
     void remeshingRevertBDF( bdf_ale_displacement_ptrtype const& old_meshALE_bdf_velocity, bdf_ale_displacement_ref_ptrtype const& old_meshALE_bdf_displacement_ref,
-    bdf_ale_displacement_ptrtype const& old_meshALE_bdf_identity)
+                             bdf_ale_displacement_ptrtype const& old_meshALE_bdf_identity )
     {
-        for ( int  i = old_meshALE_bdf_displacement_ref->timeOrder()+1;i >= 0; --i )
+        for ( int i = old_meshALE_bdf_displacement_ref->timeOrder() + 1; i >= 0; --i )
         //for ( int  i = 0;i < old_meshALE_bdf_displacement_ref->timeOrder();++i )
         {
-            old_meshALE_bdf_displacement_ref->unknown(i).printMatlab("bdf_disp_ref_"+std::to_string(i)+".m");
+            old_meshALE_bdf_displacement_ref->unknown( i ).printMatlab( "bdf_disp_ref_" + std::to_string( i ) + ".m" );
             auto temp = old_meshALE_bdf_displacement_ref->functionSpace()->elementPtr();
             temp->zero();
-            temp->add(1.0,old_meshALE_bdf_displacement_ref->unknown(i));
-            temp->add(-1.0,old_meshALE_bdf_displacement_ref->unknown(0));
-            old_meshALE_bdf_displacement_ref->setUnknown(i,*temp);
-            old_meshALE_bdf_displacement_ref->unknown(i).printMatlab("bdf_disp_ref_"+std::to_string(i)+"_apres_soustraction.m");
-
+            temp->add( 1.0, old_meshALE_bdf_displacement_ref->unknown( i ) );
+            temp->add( -1.0, old_meshALE_bdf_displacement_ref->unknown( 0 ) );
+            old_meshALE_bdf_displacement_ref->setUnknown( i, *temp );
+            old_meshALE_bdf_displacement_ref->unknown( i ).printMatlab( "bdf_disp_ref_" + std::to_string( i ) + "_apres_soustraction.m" );
         }
 #if 0
         for ( int  i = old_meshALE_bdf_velocity->timeOrder()+1;i >= 0; --i )
@@ -312,7 +306,7 @@ mesh_ptrtype movingMeshModify() & { return M_movingMesh; }
             old_meshALE_bdf_velocity->unknown(i).printMatlab("bdf_identity_"+std::to_string(i)+"_apres_soustraction.m");
             
         }
-        
+
 #endif
 #if 0        
         //M_bdf_ale_displacement_ref = unwrap_ptr(old_meshALE_bdf_displacement_ref).deepCopy();
@@ -385,15 +379,13 @@ mesh_ptrtype movingMeshModify() & { return M_movingMesh; }
             unwrap_ptr(*itdisp).add(-1.0,unwrap_ptr(*endisp));*/
 #endif
     }
-private :
 
+  private:
     void updateIdentityMap();
     void initTimeStep();
     void updateImpl();
 
-private :
-
-
+  private:
     //backend_ptrtype M_backend;
 
     MeshMover<mesh_type> M_mesh_mover;
@@ -419,17 +411,19 @@ private :
     std::shared_ptr<ale_map_element_ref_type> M_map_ref;
     std::shared_ptr<ale_map_element_type> M_meshVelocity;
     std::shared_ptr<ale_map_element_type> M_fieldTmp;
-public:
+
+  public:
     bdf_ale_displacement_ref_ptrtype displacementRefBDF() { return M_bdf_ale_displacement_ref; }
     bdf_ale_displacement_ref_ptrtype const& displacementRefBDF() const { return M_bdf_ale_displacement_ref; }
     bdf_ale_displacement_ptrtype aleIdentityBDF() { return M_bdf_ale_identity; }
     bdf_ale_displacement_ptrtype const& aleIdentityBDF() const { return M_bdf_ale_identity; }
     bdf_ale_displacement_ptrtype aleVelocityBDF() { return M_bdf_ale_velocity; }
     bdf_ale_displacement_ptrtype const& aleVelocityBDF() const { return M_bdf_ale_velocity; }
-    exporter_ptrtype &exporterALE() {return M_exporter;};
-    exporter_ref_ptrtype & exporterRef() {return M_exporter_ref;};
-    mesh_ref_ptrtype & modifyReferenceMesh() { return M_referenceMesh; }
-private:
+    exporter_ptrtype& exporterALE() { return M_exporter; };
+    exporter_ref_ptrtype& exporterRef() { return M_exporter_ref; };
+    mesh_ref_ptrtype& modifyReferenceMesh() { return M_referenceMesh; }
+
+  private:
     bdf_ale_displacement_ref_ptrtype M_bdf_ale_displacement_ref;
     bdf_ale_displacement_ptrtype M_bdf_ale_identity;
     bdf_ale_displacement_ptrtype M_bdf_ale_velocity;
@@ -447,113 +441,101 @@ private:
 
 //------------------------------------------------------------------------------------------------//
 
-
-template< class Convex >
-template< typename self_ptrtype >
-void
-MeshALE<Convex>::init(self_ptrtype const& oldToolbox)
+template <class Convex>
+template <typename self_ptrtype>
+void MeshALE<Convex>::init( self_ptrtype const& oldToolbox )
 {
-    std::ofstream outfile,outfile2,outfile3,outfile4;
-    outfile.open("/ssd/berti/phd/points_old.txt", std::ios_base::out);
-    outfile2.open("/ssd/berti/phd/points_new.txt", std::ios_base::out);
-    outfile3.open("/ssd/berti/phd/points_old2.txt", std::ios_base::out);
-    outfile4.open("/ssd/berti/phd/points_new2.txt", std::ios_base::out);
-    if(outfile.is_open() )
+    std::ofstream outfile, outfile2, outfile3, outfile4;
+    outfile.open( "/ssd/berti/phd/points_old.txt", std::ios_base::out );
+    outfile2.open( "/ssd/berti/phd/points_new.txt", std::ios_base::out );
+    outfile3.open( "/ssd/berti/phd/points_old2.txt", std::ios_base::out );
+    outfile4.open( "/ssd/berti/phd/points_new2.txt", std::ios_base::out );
+    if ( outfile.is_open() )
     {
         std::cout << "the file outfile is open" << std::endl;
     }
     else
     {
-        std::cout << "outfile not open" <<std::endl;
+        std::cout << "outfile not open" << std::endl;
     }
 
-    this->remeshingRevertBDF(oldToolbox->aleVelocityBDF(),oldToolbox->displacementRefBDF(),
-                                        oldToolbox->aleIdentityBDF());
+    this->remeshingRevertBDF( oldToolbox->aleVelocityBDF(), oldToolbox->displacementRefBDF(),
+                              oldToolbox->aleIdentityBDF() );
     /*auto I_disp = opInterpolation( _domainSpace=oldToolbox->functionSpace() , 
                                 _imageSpace=this->functionSpace() ,
                                 _backend=backend(_rebuild=true));*/
-    this->displacementRefBDF()->interpolate(oldToolbox->displacementRefBDF(),{"Fluid"}); 
-    this->aleIdentityBDF()->interpolate(oldToolbox->aleIdentityBDF(),{"Fluid"});
-    this->aleVelocityBDF()->interpolate(oldToolbox->aleVelocityBDF(),{"Fluid"});
+    this->displacementRefBDF()->interpolate( oldToolbox->displacementRefBDF(), { "Fluid" } );
+    this->aleIdentityBDF()->interpolate( oldToolbox->aleIdentityBDF(), { "Fluid" } );
+    this->aleVelocityBDF()->interpolate( oldToolbox->aleVelocityBDF(), { "Fluid" } );
 
     this->init();
-    
+
     this->M_exporter = oldToolbox->M_exporter;
     this->M_exporter_ref = oldToolbox->M_exporter_ref;
-    this->M_exporter->step( oldToolbox->displacementRefBDF()->time() )->setMesh(this->movingMesh());
-    this->M_exporter_ref->step( oldToolbox->displacementRefBDF()->time() )->setMesh(this->referenceMesh());
-    auto points_old = points(oldToolbox->referenceMesh());
-    auto points_new = points(this->referenceMesh());
-    for(auto const& e_old:points_old)
+    this->M_exporter->step( oldToolbox->displacementRefBDF()->time() )->setMesh( this->movingMesh() );
+    this->M_exporter_ref->step( oldToolbox->displacementRefBDF()->time() )->setMesh( this->referenceMesh() );
+    auto points_old = points( oldToolbox->referenceMesh() );
+    auto points_new = points( this->referenceMesh() );
+    for ( auto const& e_old : points_old )
     {
         auto const& elt_old = unwrap_ref( e_old );
         std::cout << elt_old << std::endl;
-        outfile << elt_old <<")\n";
+        outfile << elt_old << ")\n";
     }
-    for(auto const& e_new:points_new)
+    for ( auto const& e_new : points_new )
     {
         auto const& elt_new = unwrap_ref( e_new );
-        std::cout  << elt_new << std::endl;
-        outfile2 << elt_new<<")\n";
+        std::cout << elt_new << std::endl;
+        outfile2 << elt_new << ")\n";
     }
-    meshMove(oldToolbox->modifyReferenceMesh(),oldToolbox->displacementRefBDF()->unknown(0));
-    points_old = points(oldToolbox->referenceMesh());
-    points_new = points(this->referenceMesh());
-    for(auto const& e_old:points_old)
+    meshMove( oldToolbox->modifyReferenceMesh(), oldToolbox->displacementRefBDF()->unknown( 0 ) );
+    points_old = points( oldToolbox->referenceMesh() );
+    points_new = points( this->referenceMesh() );
+    for ( auto const& e_old : points_old )
     {
         auto const& elt_old = unwrap_ref( e_old );
         std::cout << elt_old << std::endl;
-        outfile3 << elt_old <<")\n";
+        outfile3 << elt_old << ")\n";
     }
-    for(auto const& e_new:points_new)
+    for ( auto const& e_new : points_new )
     {
         auto const& elt_new = unwrap_ref( e_new );
-        std::cout  << elt_new << std::endl;
-        outfile4 << elt_new <<")\n";
+        std::cout << elt_new << std::endl;
+        outfile4 << elt_new << ")\n";
     }
     outfile.close();
     outfile2.close();
     outfile3.close();
     outfile4.close();
-    
-    
 }
-    
-    
 
-
-template< class Convex >
-template< typename elem_type >
-void
-MeshALE<Convex>::update( std::vector<elem_type> const& polyDisplacementSet )
+template <class Convex>
+template <typename elem_type>
+void MeshALE<Convex>::update( std::vector<elem_type> const& polyDisplacementSet )
 {
     CHECK( polyDisplacementSet.size() == 1 ) << "invalid size";
     this->update( polyDisplacementSet[0] );
 }
-template< class Convex >
-template< typename elem_type >
-void
-MeshALE<Convex>::update( elem_type const& polyDisplacementSet )
+template <class Convex>
+template <typename elem_type>
+void MeshALE<Convex>::update( elem_type const& polyDisplacementSet )
 {
-    this->log(prefixvm(this->prefix(),"MeshALE"),"update", "start");
+    this->log( prefixvm( this->prefix(), "MeshALE" ), "update", "start" );
 
     CHECK( this->isOnMovingMesh() ) << "meshALE must be on moving mesh\n";
 
-    M_displacementOnMovingBoundary_HO_ref->on(_range=markedfaces(M_movingMesh,this->aleFactory()->flagSet("moving")),
-        _expr=vf::idv(polyDisplacementSet) );
+    M_displacementOnMovingBoundary_HO_ref->on( _range = markedfaces( M_movingMesh, this->aleFactory()->flagSet( "moving" ) ),
+                                               _expr = vf::idv( polyDisplacementSet ) );
     sync( *M_displacementOnMovingBoundary_HO_ref, "=", M_dofsMultiProcessOnMovingBoundary_HO );
 
     this->updateImpl();
 
-    this->log(prefixvm(this->prefix(),"MeshALE"),"update", "finish");
+    this->log( prefixvm( this->prefix(), "MeshALE" ), "update", "finish" );
 }
 
 //------------------------------------------------------------------------------------------------//
 
-
-
-
-template<typename Args>
+template <typename Args>
 struct compute_meshale_return
 {
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::mesh>::type>::type::element_type mesh_type;
@@ -563,25 +545,26 @@ struct compute_meshale_return
     typedef std::shared_ptr<type> ptrtype;
 };
 
+// clang-format off
 BOOST_PARAMETER_FUNCTION(
-    ( typename compute_meshale_return<Args>::ptrtype ), // 1. return type
-    meshale,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
+    ( typename compute_meshale_return<Args>::ptrtype ),                                                                                                                             // 1. return type
+    meshale,                                                                                                                                                                        // 2. name of the function template
+    tag,                                                                                                                                                                            // 3. namespace of tag types
     ( required
-      ( mesh,    *( boost::is_convertible<mpl::_,std::shared_ptr<MeshBase<>> > ) )
-      ) // required
+        ( mesh, *(boost::is_convertible<mpl::_, std::shared_ptr<MeshBase<>>>) ) 
+    ) // required                                                                                             
     ( optional
-      ( prefix,            (std::string), std::string("") )
-      ( worldcomm,         (worldcomm_ptr_t), mesh->worldCommPtr() )
-      ( directory,         (ModelBaseRepository),  ModelBaseRepository() )
-      ) // optionnal
-                         )
+        ( prefix, ( std::string ), std::string( "" ) )
+        ( worldcomm, ( worldcomm_ptr_t ), mesh->worldCommPtr() )
+        ( directory, ( ModelBaseRepository ), ModelBaseRepository() ) 
+    ) // optionnal
+)
+// clang-format on
 {
     typedef typename compute_meshale_return<Args>::ptrtype meshale_ptrtype;
     typedef typename compute_meshale_return<Args>::type meshale_type;
-    return meshale_ptrtype( new meshale_type(mesh,prefix,worldcomm,directory) );
+    return meshale_ptrtype( new meshale_type( mesh, prefix, worldcomm, directory ) );
 }
-
 
 } // namespace FeelModels
 } // namespace Feel
