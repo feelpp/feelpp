@@ -1430,7 +1430,7 @@ public:
         typedef typename reference_element_type::value_type value_type;
 
         typedef ElementType geometric_element_type;
-        typedef typename Geo_t::template Context<context_g, ElementType,SubEntityCoDim> geometric_mapping_context_type;
+        typedef typename Geo_t::template Context<ElementType,SubEntityCoDim> geometric_mapping_context_type;
         typedef std::shared_ptr<geometric_mapping_context_type> geometric_mapping_context_ptrtype;
 
         typedef typename node<value_type>::type node_type;

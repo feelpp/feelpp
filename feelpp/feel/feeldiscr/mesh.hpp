@@ -228,17 +228,8 @@ class Mesh
     typedef typename element_type::gm1_type gm1_type;
     typedef std::shared_ptr<gm1_type> gm1_ptrtype;
 
-    template <size_type ContextID>
-    struct gmc
-    {
-        typedef typename gm_type::template Context<ContextID, element_type> type;
-        typedef std::shared_ptr<type> ptrtype;
-    };
-
-    template <size_type ContextID>
-    using gmc_type = typename gmc<ContextID>::type;
-    template <size_type ContextID>
-    using gmc_ptrtype = typename gmc<ContextID>::ptrtype;
+    // using gmc_type = typename gm_type::template Context<element_type>;
+    // using gmc_ptrtype = std::shared_ptr<gmc_type>;
 
     typedef Mesh<shape_type, T, Tag, IndexT> self_type;
     typedef self_type mesh_type;

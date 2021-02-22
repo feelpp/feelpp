@@ -18,7 +18,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinear_Turbulence( DataUpdateLinear & 
     if ( data.hasVectorInfo( prefixvm(this->prefix(), "current-solution") ) && this->worldComm().isMasterRank() ) std::cout <<" updateLinear_Turbulence has fluid current-solution" << std::endl;;
     auto solFluid = data.hasVectorInfo( prefixvm(this->prefix(), "current-solution") )? data.vectorInfo( prefixvm(this->prefix(), "current-solution") ) : this->blockVectorSolution().vectorMonolithic();
     auto mfields_fluid = this->modelFields( this->blockVectorSolution().vectorMonolithic(), 0 ).exclude( mfields_turbulence );
-    auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) );
+    auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) ).template createTensorContext<mesh_type>();
     auto mctx = Feel::FeelModels::modelContext( std::move(mfields_turbulence), std::move( se ) );
 
     std::optional<std::decay_t<decltype(mfields_fluid)>> mfieldsPrevious_fluid;
@@ -28,7 +28,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinear_Turbulence( DataUpdateLinear & 
         auto mfieldsPrevious_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>( previousSol );
         CHECK( M_usePreviousSolution && M_vectorPreviousSolution ) << "M_vectorPreviousSolution not init";
         mfieldsPrevious_fluid.emplace( this->modelFields( M_vectorPreviousSolution, 0 ).exclude( mfieldsPrevious_turbulence ) );
-        auto sePrevious = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfieldsPrevious_turbulence ), this->symbolsExpr( *mfieldsPrevious_fluid ) );
+        auto sePrevious = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfieldsPrevious_turbulence ), this->symbolsExpr( *mfieldsPrevious_fluid ) ).template createTensorContext<mesh_type>();
         auto mctxPrevious = Feel::FeelModels::modelContext( std::move(mfieldsPrevious_turbulence), std::move( sePrevious ) );
         mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
     }
@@ -45,7 +45,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearDofElimination_Turbulence( DataU
 #ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
     auto mfields_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>();
     auto mfields_fluid = this->modelFields().exclude( mfields_turbulence ); ;
-    auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) );
+    auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) ).template createTensorContext<mesh_type>();
     auto mctx = Feel::FeelModels::modelContext( std::move(mfields_turbulence), std::move( se ) );
     M_turbulenceModelType->template updateLinearPDEDofElimination<FilterBasisUnknownTurbulenceModel>( data, mctx );
 #endif
@@ -59,7 +59,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess_Turbulence( DataNew
     vector_ptrtype& U = data.initialGuess();
     auto mfields_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>( U );
     auto mfields_fluid = this->modelFields().exclude( mfields_turbulence ); ;
-    auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) );
+    auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) ).template createTensorContext<mesh_type>();
     auto mctx = Feel::FeelModels::modelContext( std::move(mfields_turbulence), std::move( se ) );
     M_turbulenceModelType->template updateNewtonInitialGuess<FilterBasisUnknownTurbulenceModel>( data, mctx );
 #endif
@@ -73,7 +73,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual_Turbulence( DataUpdateResidua
     const vector_ptrtype& sol = data.currentSolution();
     auto mfields_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>( sol );
     auto mfields_fluid = this->modelFields( this->blockVectorSolution().vectorMonolithic(), 0 ).exclude( mfields_turbulence ); ;
-    auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) );
+    auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) ).template createTensorContext<mesh_type>();
     auto mctx = Feel::FeelModels::modelContext( std::move(mfields_turbulence), std::move( se ) );
 
     std::optional<std::decay_t<decltype(mfields_fluid)>> mfieldsPrevious_fluid;
@@ -83,7 +83,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual_Turbulence( DataUpdateResidua
         auto mfieldsPrevious_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>( previousSol );
         CHECK( M_usePreviousSolution && M_vectorPreviousSolution ) << "M_vectorPreviousSolution not init";
         mfieldsPrevious_fluid.emplace( this->modelFields( M_vectorPreviousSolution, 0 ).exclude( mfieldsPrevious_turbulence ) );
-        auto sePrevious = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfieldsPrevious_turbulence ), this->symbolsExpr( *mfieldsPrevious_fluid ) );
+        auto sePrevious = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfieldsPrevious_turbulence ), this->symbolsExpr( *mfieldsPrevious_fluid ) ).template createTensorContext<mesh_type>();
         auto mctxPrevious = Feel::FeelModels::modelContext( std::move(mfieldsPrevious_turbulence), std::move( sePrevious ) );
         mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
     }
@@ -100,7 +100,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian_Turbulence( DataUpdateJacobia
     const vector_ptrtype& sol = data.currentSolution();
     auto mfields_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>( sol );
     auto mfields_fluid = this->modelFields().exclude( mfields_turbulence ); ;
-    auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) );
+    auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) ).template createTensorContext<mesh_type>();
     auto mctx = Feel::FeelModels::modelContext( std::move(mfields_turbulence), std::move( se ) );
     M_turbulenceModelType->template updateJacobian<FilterBasisUnknownTurbulenceModel>( data, mctx );
 #endif
