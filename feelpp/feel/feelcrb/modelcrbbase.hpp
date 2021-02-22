@@ -6,7 +6,8 @@
  Date: 2013-02-22
 
  Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
-
+ Copyright (C) 2011-present Feel++ Consortium
+ 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
@@ -29,7 +30,6 @@
 #ifndef ModelCrbBase_H
 #define ModelCrbBase_H 1
 
-//#include <feel/feel.hpp>
 #include <feel/feelcrb/crbmodeldb.hpp>
 #include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/deim.hpp>

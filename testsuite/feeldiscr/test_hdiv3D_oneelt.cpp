@@ -40,7 +40,11 @@
 
 #include <feel/feelcore/testsuite.hpp>
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelalg/dh.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
 
 /**

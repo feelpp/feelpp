@@ -6,7 +6,7 @@
             Daniele Prada <daniele.prada85@gmail.com>
  Date: 16 March 2016
  
- Copyright (C) 2015 Feel++ Consortium
+ Copyright (C) 2015-present Feel++ Consortium
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,13 @@
 
 #include <functional>
 #include <tuple>
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelts/newmark.hpp>
 #include <feel/feelmodels/modelproperties.hpp>

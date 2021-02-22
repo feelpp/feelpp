@@ -39,9 +39,16 @@
 //#define BOOST_TEST_NO_MAIN
 
 #include <feel/feelcore/testsuite.hpp>
-#include <feel/feel.hpp>
+
+#include <feel/feelcore/testsuite.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feelvf/print.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelpoly/nedelec.hpp>
+
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used

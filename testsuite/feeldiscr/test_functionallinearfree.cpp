@@ -31,10 +31,11 @@
 
 #include <fstream>
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/fsfunctionallinearfree.hpp>
 #include <feel/feeldiscr/fsfunctionallinearcomposite.hpp>
-
+#include <feel/feelvf/vf.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
