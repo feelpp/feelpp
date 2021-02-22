@@ -163,7 +163,7 @@ public:
         // fe velocity context
         typedef typename fe_type::PreCompute pc_type;
         typedef std::shared_ptr<pc_type> pc_ptrtype;
-        typedef typename fe_type::template Context<context_velocity, fe_type, gm_type,geoelement_type,gmc_type::context> ctx_type;
+        typedef typename fe_type::template Context<context_velocity, fe_type, gm_type,geoelement_type/*,gmc_type::context*/> ctx_type;
         typedef std::shared_ptr<ctx_type> ctx_ptrtype;
 
 

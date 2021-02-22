@@ -20,7 +20,7 @@ po::options_description makeOptions()
     options.add_options()
         ("nb-sensors", po::value<int>()->default_value(5), "nb of sensors in x direction")
         ("radius", po::value<double>()->default_value(0.2), "radius of sensors")
-        ("trainset-size", po::value<int>()->default_value(9), "number of parameter in the trainset")
+        ("trainset-size", po::value<int>()->default_value(8), "number of parameter in the trainset")
         ;
     options.add(geim_options());
 
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE( test_eim_offline )
     }
     double max = *max_element(errors.begin(), errors.end());
     BOOST_TEST_MESSAGE("offline maximum error ="<< max);
-    BOOST_CHECK_SMALL( max , 1e-5 );
+    BOOST_CHECK_SMALL( max , 1e-4 );
 }
 
 BOOST_AUTO_TEST_CASE( test_eim_online )
@@ -209,6 +209,6 @@ BOOST_AUTO_TEST_CASE( test_eim_online )
     }
     double max = *max_element(errors.begin(), errors.end());
     BOOST_TEST_MESSAGE("online maximum error ="<< max);
-    BOOST_CHECK_SMALL( max , 1e-5 );
+    BOOST_CHECK_SMALL( max , 1e-4 );
 }
 BOOST_AUTO_TEST_SUITE_END()
