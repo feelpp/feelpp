@@ -59,14 +59,14 @@ struct tensorSolidMecPressureFormulationMultiplierBase : public tensorBase<Geo_t
     typedef typename expr_type::fe_disp_type::PreCompute pc_disp_type;
     typedef std::shared_ptr<pc_disp_type> pc_disp_ptrtype;
     typedef typename expr_type::fe_disp_type::template Context<expr_type::context_disp, typename expr_type::fe_disp_type,
-                                                               gm_type,geoelement_type,gmc_type::context> ctx_disp_type;
+                                                               gm_type,geoelement_type> ctx_disp_type;
     typedef std::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
 
     // fe pressure context
     typedef typename expr_type::fe_pressure_type::PreCompute pc_pressure_type;
     typedef std::shared_ptr<pc_pressure_type> pc_pressure_ptrtype;
     typedef typename expr_type::fe_pressure_type::template Context<expr_type::context_pressure, typename expr_type::fe_pressure_type,
-                                                                   gm_type,geoelement_type,gmc_type::context> ctx_pressure_type;
+                                                                   gm_type,geoelement_type> ctx_pressure_type;
     typedef std::shared_ptr<ctx_pressure_type> ctx_pressure_ptrtype;
 
     tensorSolidMecPressureFormulationMultiplierBase( expr_type const& expr,
@@ -836,7 +836,7 @@ struct tensorSolidMecPressureFormulationConstraintBase : public tensorBase<Geo_t
     typedef typename expr_type::fe_disp_type::PreCompute pc_disp_type;
     typedef std::shared_ptr<pc_disp_type> pc_disp_ptrtype;
     typedef typename expr_type::fe_disp_type::template Context<expr_type::context_disp, typename expr_type::fe_disp_type,
-                                                               gm_type,geoelement_type,gmc_type::context> ctx_disp_type;
+                                                               gm_type,geoelement_type> ctx_disp_type;
     typedef std::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
 
     tensorSolidMecPressureFormulationConstraintBase( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )

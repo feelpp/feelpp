@@ -22,7 +22,6 @@
 #
 #
 
-INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_SOURCE_DIR} )
 if ( FEELPP_HAS_FMILIB )
     feelpp_add_application( fmu SRCS fmu.cpp INCLUDE_IN_ALL PROJECT fmi  INSTALL MAN fmu )
     feelpp_add_testcase( fmus PREFIX fmu CATEGORY fmi ) 

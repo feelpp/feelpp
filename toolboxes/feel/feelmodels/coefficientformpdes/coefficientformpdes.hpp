@@ -364,25 +364,41 @@ public :
     template <typename ModelFieldsType>
     auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
         {
+#if 0
             return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ) );
+#else
+            return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ).template createTensorContext<mesh_type>() );
+#endif
         }
     auto modelContext( std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( prefix );
+#if 0
             auto se = this->symbolsExpr( mfields );
+#else
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+#endif
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
    auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+#if 0
             auto se = this->symbolsExpr( mfields );
+#else
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+#endif
             auto tse =  this->trialSymbolsExpr( mfields, trialSelectorModelFields( rowStartInVector ) );
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
         }
    auto modelContextNoTrialSymbolsExpr( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+#if 0
             auto se = this->symbolsExpr( mfields );
+#else
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+#endif
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
 
