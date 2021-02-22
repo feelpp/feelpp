@@ -5,7 +5,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
-
+#include <feel/feelfilters/unitsquare.hpp>
 using namespace Feel;
 using namespace Feel::vf;
 
