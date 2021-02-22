@@ -37,10 +37,13 @@
 #define BOOST_TEST_MODULE H_div approximation
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
-#include <boost/mpl/pair.hpp>
 #include <feel/feelcore/testsuite.hpp>
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelalg/dh.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
 
 namespace Feel

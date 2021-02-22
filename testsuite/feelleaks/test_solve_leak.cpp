@@ -31,7 +31,10 @@
 
 #include <feel/feelcore/testsuite.hpp>
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelvf/vf.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
 #if defined(FEELPP_HAS_GPERFTOOLS)
 #include <gperftools/heap-checker.h>

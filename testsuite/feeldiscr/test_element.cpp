@@ -35,8 +35,10 @@
 // give a name to the testsuite
 #define BOOST_TEST_MODULE element testsuite
 #include <feel/feelcore/testsuite.hpp>
-#include <feel/feel.hpp>
-
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelfilters/unitsquare.hpp>
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 

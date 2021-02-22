@@ -25,7 +25,9 @@
 #include <feel/feelcore/testsuite.hpp>
 
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/print.hpp>
 #include <feel/feelvf/convolve.hpp>
 

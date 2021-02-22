@@ -27,8 +27,12 @@
    \date 2013-07-15
  */
 #include <sstream>
-#include <boost/timer.hpp>
-#include <feel/feel.hpp>
+
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/unithypercube.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelvf/vf.hpp>
 
 int main( int argc, char** argv)
 {

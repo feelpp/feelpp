@@ -5,7 +5,7 @@
    Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date     : Tue Feb 25 11:58:30 2014
 
-   Copyright (C) 2014 Feel++ Consortium
+   Copyright (C) 2014-present Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,11 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 // tag::global[]
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelvf/vf.hpp>
 
 int main(int argc, char**argv )
 {
