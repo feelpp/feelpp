@@ -110,7 +110,7 @@ struct test_mesh_filters
             typedef Feel::detail::mesh_type::gm_type gm_type;
             typedef gm_type::precompute_ptrtype geopc_ptrtype;
             typedef gm_type::precompute_type geopc_type;
-            typedef gm_type::Context<vm::POINT, Feel::detail::mesh_type::element_type> gmc_type;
+            typedef gm_type::Context</*vm::POINT,*/ Feel::detail::mesh_type::element_type> gmc_type;
             typedef std::shared_ptr<gmc_type> gmc_ptrtype;
             BOOST_TEST_MESSAGE( "test_mesh_filters check elements" );
             //
@@ -130,7 +130,8 @@ struct test_mesh_filters
                 // check that the geometric transformation from
                 // the current gives back the vertices of the
                 // element
-                gmc_ptrtype __c( new gmc_type( __gm, elt, __geopc ) );
+                //gmc_ptrtype __c( new gmc_type( __gm, elt, __geopc ) );
+                gmc_ptrtype __c = __gm->template context<vm::POINT>( elt, __geopc );
 
                 FEELPP_ASSERT( ublas::norm_frobenius( __c->xReal() - elt.G() ) < 1e-15 )( elt.id() )( __c->xReal() )( elt.G() ).error( "invalid element" );
                 FEELPP_ASSERT( elt.marker().value() == 3 )( elt.id() )( elt.marker().value() ).error( "invalid element marker" );

@@ -465,7 +465,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 using shape = typename EvaluateShape<gmc_type::NDim>::type; \
                 typedef typename fe_type::PreCompute pc_type;           \
                 typedef std::shared_ptr<pc_type> pc_ptrtype;          \
-                typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context, gmc_type::subEntityCoDim> ctx_type; \
+                typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,/*gmc_type::*/context, gmc_type::subEntityCoDim> ctx_type; \
                 typedef std::shared_ptr<ctx_type> ctx_ptrtype;        \
                 /*typedef Eigen::Matrix<value_type,shape::M,shape::N> loc_type;*/ \
                 using loc_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<shape::M,shape::N>>; \
@@ -491,7 +491,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     static const bool value = false;                    \
                 };                                                      \
                                                                         \
-                static const bool isSameGeo = boost::is_same<typename gmc_type::element_type,geoelement_type>::value; \
+                static const bool isSameGeo = std::is_same_v<typename gmc_type::element_type,geoelement_type>; \
                                                                         \
                 tensor( tensor const& t )                               \
                     :                                                   \
@@ -593,6 +593,13 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                             /*update( geom ); */                        \
                             BOOST_MPL_ASSERT_MSG( VF_OP_TYPE_IS_VALUE( T ), INVALID_CALL_TO_CONSTRUCTOR, ()); \
                         }                                               \
+                template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
+                    tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
+                            this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs ) \
+                    :                                                   \
+                    tensor( expr, geom, theInitArgs... )                \
+                {}                                                      \
+                                                                        \
                 template<typename IM>                                   \
                     void init( IM const& im )                           \
                 {                                                       \
@@ -618,54 +625,36 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                         \
                 void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) \
                 {                                                       \
-                    update( geom, fev, feu, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
-                }                                                       \
-                void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu , mpl::bool_<true> ) \
-                {                                                       \
-                    update( geom, mpl::bool_<true>() );                 \
-                }                                                       \
-                void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu , mpl::bool_<false> ) \
-                {                                                       \
-                    if (M_same_mesh)                                    \
-                        updateInCaseOfInterpolate( geom, fev, feu, mpl::bool_<false>() ); \
-                    else                                                \
-                        updateInCaseOfInterpolate( geom, fev, feu, mpl::bool_<true>() ); \
-                }                                                       \
-                void updateInCaseOfInterpolate( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu , mpl::bool_<false> ) \
-                {                                                       \
-                    /*nothing : always same context*/                   \
-                }                                                       \
-                void updateInCaseOfInterpolate( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu , mpl::bool_<true> ) \
-                {   /*with interp*/                                     \
-                    VF_OP_SWITCH( VF_OP_TYPE_IS_TEST( T ),              \
+                    if constexpr ( VF_OP_TYPE_IS_VALUE( T ) )           \
+                    {                                                       \
+                        update( geom );                                     \
+                    }                                                       \
+                    else                                                    \
+                    {                                                       \
+                        if (!M_same_mesh)                                   \
+                        {   /*with interp*/                                 \
+                            VF_OP_SWITCH( VF_OP_TYPE_IS_TEST( T ),          \
                                   M_fec =fusion::at_key<basis_context_key_type>( fev ).get() , \
                                   VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), \
                                                            M_fec = fusion::at_key<basis_context_key_type>( feu ).get() ) ) ; \
-                }                                                       \
+                        }                                                   \
+                    }                                                       \
+                }                                                           \
                 void update( Geo_t const& geom, Basis_i_t const& fev )  \
                 {                                                       \
-                    update( geom, fev, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
-                }                                                       \
-                void update( Geo_t const& geom, Basis_i_t const& fev, mpl::bool_<true> ) \
-                {                                                       \
-                    update( geom, mpl::bool_<true>() );                 \
-                }                                                       \
-                void update( Geo_t const& geom, Basis_i_t const& fev , mpl::bool_<false>) \
-                {                                                       \
-                    if (M_same_mesh)                                    \
-                        updateInCaseOfInterpolate( geom, fev, mpl::bool_<false>() ); \
-                    else                                                \
-                        updateInCaseOfInterpolate( geom, fev, mpl::bool_<true>() ); \
-                }                                                       \
-                void updateInCaseOfInterpolate( Geo_t const& geom, Basis_i_t const& fev, mpl::bool_<false> ) \
-                {                                                       \
-                    /*no interp*/                                       \
-                }                                                       \
-                void updateInCaseOfInterpolate( Geo_t const& geom, Basis_i_t const& fev,  mpl::bool_<true> ) \
-                {   /*with interp*/                                     \
-                    VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TEST( T ),   \
-                                             M_fec = fusion::at_key<basis_context_key_type>( fev ).get() ) ; \
-                }                                                       \
+                    if constexpr ( VF_OP_TYPE_IS_VALUE( T ) ) \
+                    {                                                       \
+                        update( geom );                                     \
+                    }                                                       \
+                    else                                                    \
+                    {                                                       \
+                        if (!M_same_mesh)                                   \
+                        {   /*with interp*/                                 \
+                            VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TEST( T ),   \
+                                    M_fec = fusion::at_key<basis_context_key_type>( fev ).get() ) ; \
+                        }                                                   \
+                    }                                                       \
+                }                                                           \
                 template <typename ... CTX>                             \
                     void updateContext( CTX const& ... ctx )            \
                 {                                                       \
@@ -735,6 +724,12 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     Feel::detail::ignore_unused_variable_warning(geom); \
                 }                                                       \
                                                                         \
+                template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
+                    void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
+                                 Geo_t const& geom, const TheArgsType&... theUpdateArgs ) \
+                {                                                       \
+                    this->update( geom,theUpdateArgs... );              \
+                }                                                       \
                 ret_type                                                \
                     evalijq( uint16_type i,                             \
                              uint16_type VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), j ), \

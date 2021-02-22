@@ -1,6 +1,0 @@
-tetrahedron-oneelt-cst --config-file ${CMAKE_CURRENT_SOURCE_DIR}/laplacian/tetrahedron/tetrahedron.cfg --gmsh.hsize=4 --k=-1 --solution.p=1 --solution.u={0,0} --solution.sympy.p=1
-tetrahedron-oneelt-linear --config-file ${CMAKE_CURRENT_SOURCE_DIR}/laplacian/tetrahedron/tetrahedron.cfg --gmsh.hsize=4 --solution.p=x+y:x:y  --solution.u={1,1,0} --solution.sympy.p=x+y
-tetrahedron-oneelt-quadratic --config-file ${CMAKE_CURRENT_SOURCE_DIR}/laplacian/tetrahedron/tetrahedron.cfg --gmsh.hsize=4 --solution.p=x^2+y^2+z^2:x:y:z   --solution.u={2*x,2*y,2*z}:x:y:z --solution.sympy.p=x*x+y*y+z*z  --functions.f=6
-tetrahedron-cst --config-file ${CMAKE_CURRENT_SOURCE_DIR}/laplacian/tetrahedron/tetrahedron.cfg   --k=-1 --solution.p=1 --solution.u={0,0} --solution.sympy.p=1
-tetrahedron-linear --config-file ${CMAKE_CURRENT_SOURCE_DIR}/laplacian/tetrahedron/tetrahedron.cfg  --solution.p=x+y:x:y  --solution.u={1,1,0} --solution.sympy.p=x+y
-tetrahedron-quadratic --config-file ${CMAKE_CURRENT_SOURCE_DIR}/laplacian/tetrahedron/tetrahedron.cfg   --solution.p=x^2+y^2+z^2:x:y:z   --solution.u={2*x,2*y,2*z}:x:y:z --solution.sympy.p=x*x+y*y+z*z  --functions.f=6

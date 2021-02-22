@@ -110,6 +110,14 @@ public :
             M_expr( expr ),
             M_value( 0 )
         {}
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            tensor( expr,geom,theInitArgs... )
+            {}
+
         template <typename IM>
         void init( IM const& im ) {}
 
@@ -201,6 +209,12 @@ public :
         {
             this->update( geom );
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                this->update( geom, theUpdateArgs... );
+            }
 
         value_type
         evalij( uint16_type i, uint16_type j ) const

@@ -374,17 +374,6 @@ public:
               sparse_matrix_ptrtype const& P,
               sparse_matrix_ptrtype& C ) const override;
 
-    template <class Vector>
-    static value_type dot( const vector_type& f,
-                           const Vector& x )
-    {
-        value_type result( 0 );
-
-        // petsc dot here
-
-        return result;
-    }
-
     /**
      * @return the linear solver (const version)
      */
