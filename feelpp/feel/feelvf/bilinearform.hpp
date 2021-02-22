@@ -397,7 +397,7 @@ public:
                                   mpl::identity<typename space_2_type::mortar_fe_type>,
                                   mpl::identity<typename space_2_type::fe_type> >::type::type trial_fe_type;
         typedef std::shared_ptr<trial_fe_type> trial_fe_ptrtype;
-        typedef typename trial_fe_type::template Context< trial_geometric_mapping_context_type::context,
+        typedef typename trial_fe_type::template Context< expression_type::context, //CHECK VINCENT // trial_geometric_mapping_context_type::context,
                 trial_fe_type,
                 trial_geometric_mapping_type,
                 mesh_element_2_type> trial_fecontext_type;
@@ -414,7 +414,7 @@ public:
                                   mpl::identity<typename space_1_type::mortar_fe_type>,
                                   mpl::identity<typename space_1_type::fe_type> >::type::type test_fe_type;
         typedef std::shared_ptr<test_fe_type> test_fe_ptrtype;
-        typedef typename test_fe_type::template Context< test_geometric_mapping_context_type::context,
+        typedef typename test_fe_type::template Context< expression_type::context,//CHECK VINCENT //test_geometric_mapping_context_type::context,
                 test_fe_type,
                 test_geometric_mapping_type,
                 mesh_element_1_type> test_fecontext_type;

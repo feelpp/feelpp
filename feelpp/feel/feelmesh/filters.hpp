@@ -299,7 +299,7 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
             auto const& elt = unwrap_ref( *it );
             if ( elt.processId() != pid )
                 continue;
-            ctx->update( elt );
+            ctx->template update<context>( elt );
             expr_evaluator.update( vf::mapgmc( ctx ) );
             bool addElt = true;
             for ( uint16_type q=0;q<ctx->nPoints();++q )

@@ -289,6 +289,14 @@ sign( T const& x )
                     {                                                   \
                         /*update( geom );*/                             \
                     }                                                   \
+            template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
+                tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
+                        this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs ) \
+                :                                                       \
+                M_expr( std::true_type{}, exprExpanded.expression(), ttse, expr.expression(), geom, theInitArgs... ), \
+                M_gmc( vf::detail::ExtractGm<Geo_t>::get( geom ) )      \
+            {}                                                          \
+                                                                        \
             template<typename IM>                                       \
                 void init( IM const& im )                               \
             {                                                           \
@@ -314,6 +322,12 @@ sign( T const& x )
                 void updateContext( CTX const& ... ctx )                \
             {                                                           \
                 M_expr.updateContext( ctx... );                         \
+            }                                                           \
+            template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
+                void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
+                             Geo_t const& geom, const TheArgsType&... theUpdateArgs ) \
+            {                                                           \
+                M_expr.update( std::true_type{}, exprExpanded.expression(), ttse, geom, theUpdateArgs...); \
             }                                                           \
                                                                         \
                 value_type                                              \
@@ -543,6 +557,15 @@ sign( T const& x )
                     {                                                   \
                         update( geom );                                 \
                     }                                                   \
+            template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
+                tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
+                        this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs ) \
+                :                                                       \
+                M_expr1( std::true_type{}, exprExpanded.expression1(), ttse, expr.expression1(), geom, theInitArgs... ), \
+                M_expr2( std::true_type{}, exprExpanded.expression2(), ttse, expr.expression2(), geom, theInitArgs... ), \
+                M_gmc( vf::detail::ExtractGm<Geo_t>::get( geom ) )      \
+                {}                                                      \
+                                                                        \
             template<typename IM>                                       \
                 void init( IM const& im )                               \
             {                                                           \
@@ -572,6 +595,13 @@ sign( T const& x )
             {                                                           \
                 M_expr1.updateContext( ctx... );                        \
                 M_expr2.updateContext( ctx... );                        \
+            }                                                           \
+            template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
+                void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
+                             Geo_t const& geom, const TheArgsType&... theUpdateArgs ) \
+            {                                                           \
+                M_expr1.update( std::true_type{}, exprExpanded.expression1(), ttse, geom, theUpdateArgs...); \
+                M_expr2.update( std::true_type{}, exprExpanded.expression2(), ttse, geom, theUpdateArgs...); \
             }                                                           \
                                                                         \
                 value_type                                              \
