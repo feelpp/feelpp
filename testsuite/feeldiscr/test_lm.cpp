@@ -3,7 +3,7 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelpoly/im.hpp>
 #include <feel/feelalg/backend.hpp>
-#include <feel/feelalg/pch.hpp>
+#include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
 
 using namespace Feel;
