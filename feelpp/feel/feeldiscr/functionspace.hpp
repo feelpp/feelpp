@@ -3158,17 +3158,20 @@ public:
         }
 
         template <typename ... CTX>
-        decltype(auto) //basis_context_ptrtype
+        basis_context_ptrtype
         selectContext( CTX const& ... ctx ) const
             {
-                typedef boost::fusion::vector<CTX...> my_vector_ctx_type;
-                typedef typename boost::fusion::result_of::distance<typename boost::fusion::result_of::begin<my_vector_ctx_type>::type,
-                                                                    typename boost::fusion::result_of::find<my_vector_ctx_type,basis_context_ptrtype>::type>::type pos_ctx_type;
-                static const int myNumberOfCtx = boost::mpl::size<my_vector_ctx_type>::type::value;
-                // CHECK( pos_ctx_type::value < myNumberOfCtx ) << "no compatible context : "<< pos_ctx_type::value << " and " << myNumberOfCtx;
-                static const int ctxPosition = (pos_ctx_type::value >= myNumberOfCtx)?0 : pos_ctx_type::value;
-                my_vector_ctx_type ctxvec( ctx... );
-                return boost::fusion::at_c<ctxPosition>( ctxvec );
+                basis_context_ptrtype res;
+                auto allCtx = hana::make_tuple( ctx... );
+                hana::for_each( allCtx, [this,&res]( auto const& e )
+                                {
+                                    if constexpr ( std::is_same_v<std::decay_t<decltype(e)>,basis_context_ptrtype> )
+                                    {
+                                        // Maybe TODO : differentiate context between several spaces/meshes
+                                        res = e;
+                                    }
+                                } );
+                return res;
             }
 
         //! Interpolation at a set of points
