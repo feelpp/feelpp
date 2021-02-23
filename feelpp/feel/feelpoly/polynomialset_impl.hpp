@@ -275,7 +275,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
         const uint16_type Q = do_optimization_p2?1:M_npoints;//__gmc->nPoints();//M_grad.size2();
         const uint16_type I = nDof; //M_ref_ele->nbDof();
         hess_type L;
-        Eigen::array<int, 3> tensorHessShapeAfterContract{{nRealDim, 1, nRealDim}};
+        //Eigen::array<int, 3> tensorHessShapeAfterContract{{nRealDim, 1, nRealDim}};
+        Eigen::array<int, 3> tensorHessShapeAfterContract{{1, nRealDim, nRealDim}};
         Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(1, 1)}};
         Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(0, 1)}};
         Eigen::array<dimpair_t, 1> dimsh = {{dimpair_t(0, 0)}};
@@ -306,8 +307,9 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
                 }
                 else
                 {
+                    // hess = (hess_phi * B^T)*B
                     auto H1 = __pc->hessian(i,q).contract(B,dims1);
-                    M_hessian[i][q] = H1.contract( B, dims2 );
+                    M_hessian[i][q].reshape( tensorHessShapeAfterContract ) = H1.contract( B, dims2 );
                 }
 
                 if ( vm::has_laplacian<context>::value  )
