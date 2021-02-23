@@ -24,6 +24,7 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
 

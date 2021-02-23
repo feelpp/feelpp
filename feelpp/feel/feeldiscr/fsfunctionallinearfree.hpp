@@ -31,7 +31,7 @@
 #define __FSFUNCTIONALLINEARFREE_H 1
 
 #include <feel/feelalg/backend.hpp>
-#include <feel/feeldiscr/fsfunctional.hpp>
+#include <feel/feeldiscr/fsfunctionallinear.hpp>
 #include <feel/feelvf/vf.hpp>
 
 namespace Feel

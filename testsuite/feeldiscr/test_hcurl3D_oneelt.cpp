@@ -44,8 +44,10 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feeldiscr/projector.hpp>
 #include <feel/feelvf/print.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpoly/nedelec.hpp>
 
 /**

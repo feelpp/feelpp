@@ -27,8 +27,10 @@
    \date 2006-11-23
  */
 #include <memory>
+#include <iostream>
 
 #include <boost/smart_ptr/make_shared.hpp>
+#include <feel/feelcore/feel.hpp>
 
 #if defined( FEELPP_HAS_GPERFTOOLS )
 #include <gperftools/heap-checker.h>
