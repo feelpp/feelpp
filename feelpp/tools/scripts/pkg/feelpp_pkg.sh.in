@@ -27,9 +27,9 @@ COMPONENT=${COMPONENT:-feelpp}
 #fi
 echo "Building $FLAVOR/$DIST packages for channel $CHANNEL Feel++ component $COMPONENT"
 
-PBUILDER_RESULTS=/var/lib/buildkite-agent/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
+#PBUILDER_RESULTS=/var/lib/buildkite-agent/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
 # local debug build
-# PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
+PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
 
 echo "--- start from clean slate"
 if [ -d build-$DIST ]; then rm -rf build-$DIST; fi
