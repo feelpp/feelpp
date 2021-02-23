@@ -8,7 +8,7 @@
 
   Copyright (C) 2011 UJF
   Copyright (C) 2011 CNRS
-
+  
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -29,19 +29,21 @@
    \author Cecile Daversin <cecile.daversin@lncmi.cnrs.fr>
    \date 2014-01-29
  */
-#define USE_BOOST_TEST 1
-
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
-// give a name to the testsuite
 #define BOOST_TEST_MODULE H_div approximation
-// disable the main function creation, use our own
-//#define BOOST_TEST_NO_MAIN
-#include <boost/mpl/pair.hpp>
 #include <feel/feelcore/testsuite.hpp>
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/application.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/dh.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feeldiscr/projector.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/vf.hpp>
 
 namespace Feel
 {
