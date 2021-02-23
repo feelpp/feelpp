@@ -2,6 +2,8 @@
 //!
 //! This file is part of the Feel++ library
 //!
+//! Copyright (C) 2017-present Feel++ Consortium
+//! 
 //! This library is free software; you can redistribute it and/or
 //! modify it under the terms of the GNU Lesser General Public
 //! License as published by the Free Software Foundation; either
@@ -24,7 +26,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <feel/feel.hpp>
 
 #include<feel/feelcore/environment.hpp>
 #include<feel/feelcore/remotedata.hpp>

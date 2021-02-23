@@ -2,6 +2,8 @@
 //!
 //! This file is part of the Feel++ library
 //!
+//! Copyright (C) 2017-present Feel++ Consortium
+//! 
 //! This library is free software; you can redistribute it and/or
 //! modify it under the terms of the GNU Lesser General Public
 //! License as published by the Free Software Foundation; either
@@ -19,24 +21,23 @@
 //! @file
 //! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! @date 15 Jun 2017
-//! @copyright 2017 Feel++ Consortium
+//! @copyright 2017 Feel++ Consortiumq
 //!
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/pybind11_json.hpp>
+#include <feel/feelcore/repository.hpp>
+#include <mpi4py/mpi4py.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 
-#include <feel/feel.hpp>
-#include <mpi4py/mpi4py.h>
-
+#include <boost/parameter/binding.hpp>
 #include <boost/parameter/keyword.hpp>
 #include <boost/parameter/preprocessor.hpp>
-#include <boost/parameter/binding.hpp>
 //#include <boost/parameter/python.hpp>
 #include <boost/mpl/vector.hpp>
 
-#include <feel/feelcore/environment.hpp>
-#include <feel/feelcore/pybind11_json.hpp>
-#include <feel/feelcore/repository.hpp>
-#include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
 
