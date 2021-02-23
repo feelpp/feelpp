@@ -3,7 +3,8 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelalg/backend.hpp>
-
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelvf/vf.hpp>
 #if !defined( MESH_DIM )
 #define MESH_DIM 2
 #endif

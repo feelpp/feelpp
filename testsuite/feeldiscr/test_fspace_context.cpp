@@ -33,6 +33,10 @@
 #include <fstream>
 
 #include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <Eigen/Core>
 #include <Eigen/LU>

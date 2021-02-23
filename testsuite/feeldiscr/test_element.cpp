@@ -36,10 +36,11 @@
 #define BOOST_TEST_MODULE element testsuite
 #include <feel/feelcore/testsuite.hpp>
 #include <feel/feelcore/environment.hpp>
+
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
-
+#include <feel/feelvf/vf.hpp>
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( element )

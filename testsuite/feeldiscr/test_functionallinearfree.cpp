@@ -5,7 +5,7 @@
   Author(s): Stephane Veys <stephane.veys@imag.fr>
        Date: 2013-04-29
 
-  Copyright (C) 2013-2016 Feel++ Consortium
+  Copyright (C) 2013-present Feel++ Consortium
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/fsfunctionallinearfree.hpp>
 #include <feel/feeldiscr/fsfunctionallinearcomposite.hpp>
+#include <feel/feelfilters/unithypercube.hpp>
 #include <feel/feelvf/vf.hpp>
 
 /** use Feel namespace */

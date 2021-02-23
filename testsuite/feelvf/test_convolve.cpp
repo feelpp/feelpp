@@ -27,6 +27,8 @@
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feelfilters/domain.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/print.hpp>
 #include <feel/feelvf/convolve.hpp>

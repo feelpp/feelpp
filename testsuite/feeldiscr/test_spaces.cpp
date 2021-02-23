@@ -6,7 +6,7 @@
        Date: 2013-07-15
 
   Copyright (C) 2013 Université de Strasbourg
-
+  
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -31,6 +31,7 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/unithypercube.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelvf/vf.hpp>
 
