@@ -6,6 +6,7 @@
        Date: 2013-03-14
 
   Copyright (C) 2008-2010 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-present Feel++ Consortium
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -31,7 +32,12 @@
 
 #include <fstream>
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <Eigen/Dense>

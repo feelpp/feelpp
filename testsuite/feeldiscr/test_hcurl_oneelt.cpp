@@ -8,7 +8,7 @@
 
   Copyright (C) 2011 UJF
   Copyright (C) 2011 CNRS
-
+copy
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -39,9 +39,18 @@
 //#define BOOST_TEST_NO_MAIN
 
 #include <feel/feelcore/testsuite.hpp>
-#include <feel/feel.hpp>
+
+#include <feel/feelcore/testsuite.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feeldiscr/projector.hpp>
+#include <feel/feelvf/print.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpoly/nedelec.hpp>
+
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used

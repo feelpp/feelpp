@@ -6,6 +6,7 @@
 Date: 2007-12-19
 
 Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
+Copyright (C) 2011-present Feel++ Consortium
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -36,7 +37,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 //#define BOOST_TEST_NO_MAIN
 
 #include <feel/feelcore/testsuite.hpp>
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feelpoly/nedelec.hpp>
 #include <feel/feelvf/print.hpp>
 
