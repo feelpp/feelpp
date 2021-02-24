@@ -1504,43 +1504,44 @@ public:
         {
             std::iota( M_dofs.begin(), M_dofs.end(), 0 );
             const int ntdof = this->nDofs();
-            if ( vm::has_normal_component_v<context> )
+            if ( vm::has_normal_component_v<context> || ( vm::has_dynamic_v<context> && hasNORMAL_COMPONENT( this->dynamicContext() ) ) )
             {
                 M_normal_component.resize( boost::extents[ntdof][M_npoints] );
                 id_type i_n;
                 i_n.setConstant( 0. );
                 std::fill( M_normal_component.data(), M_normal_component.data()+M_normal_component.num_elements(), i_n );
             }
-            if ( vm::has_trace_v<context> )
+            if ( vm::has_trace_v<context> || ( vm::has_dynamic_v<context> && hasTRACE( this->dynamicContext() ) ) )
             {
                 M_trace.resize( boost::extents[ntdof][M_npoints] );
                 std::fill( M_trace.data(), M_trace.data()+M_trace.num_elements(), 0. );
             }
-                    
+
 
             //LOG(INFO) << " Polynomial derivatives optimized for P1: " << do_optimization_p1;
-            if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
+            if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value ||
+                 ( vm::has_dynamic_v<context> && ( hasGRAD( this->dynamicContext() ) || hasFIRST_DERIVATIVE( this->dynamicContext() ) ) ) )
             {
                 //const int ntdof = nDof*nComponents1;
-                
+
                 if ( do_optimization_p1 )
                     M_grad.resize( boost::extents[ntdof][1] );
                 else
                     M_grad.resize( boost::extents[ntdof][M_npoints] );
 
-                if ( vm::has_first_derivative_normal<context>::value )
+                if ( vm::has_first_derivative_normal<context>::value || ( vm::has_dynamic_v<context> && hasFIRST_DERIVATIVE_NORMAL( this->dynamicContext() ) ) )
                 {
                     M_dn.resize( boost::extents[ntdof][M_npoints] );
                 }
 
-                if ( vm::has_symm<context>::value )
+                if ( vm::has_symm<context>::value || ( vm::has_dynamic_v<context> && hasSYMM( this->dynamicContext() ) ) )
                 {
                     if ( do_optimization_p1 )
                         M_symm_grad.resize( boost::extents[ntdof][1] );
                     else
                         M_symm_grad.resize( boost::extents[ntdof][M_npoints] );
                 }
-                if ( vm::has_div<context>::value )
+                if ( vm::has_div<context>::value || ( vm::has_dynamic_v<context> && hasDIV( this->dynamicContext() ) ) )
                 {
                     if ( do_optimization_p1 )
                         M_div.resize( boost::extents[ntdof][1] );
@@ -1548,7 +1549,7 @@ public:
                         M_div.resize( boost::extents[ntdof][M_npoints] );
                 }
 
-                if ( vm::has_curl<context>::value )
+                if ( vm::has_curl<context>::value || ( vm::has_dynamic_v<context> && hasCURL( this->dynamicContext() ) ) )
                 {
                     if ( do_optimization_p1 )
                         M_curl.resize( boost::extents[ntdof][1] );
@@ -1556,11 +1557,12 @@ public:
                         M_curl.resize( boost::extents[ntdof][M_npoints] );
                 }
 
-                if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
+                if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value ||
+                     ( vm::has_dynamic_v<context> && ( hasHESSIAN( this->dynamicContext() || hasSECOND_DERIVATIVE( this->dynamicContext() ) ) ) ) )
                 {
                     M_hessian.resize( boost::extents[ntdof][M_npoints] );
                 }
-                if ( vm::has_laplacian<context>::value )
+                if ( vm::has_laplacian<context>::value || ( vm::has_dynamic_v<context> && hasLAPLACIAN( this->dynamicContext() ) ) )
                 {
                     M_hessian.resize( boost::extents[ntdof][M_npoints] );
                     M_laplacian.resize( boost::extents[ntdof][M_npoints] );
@@ -1688,6 +1690,10 @@ public:
         {
             return M_gmc->id();
         }
+
+        //! @return the dynamic context associated
+        size_type dynamicContext() const { return M_gmc->dynamicContext()/* M_dynamic_context*/; }
+
 
         /**
          * @return the number of basis functions
