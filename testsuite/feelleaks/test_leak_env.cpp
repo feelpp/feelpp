@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-11-23
  */
-#include <feel/feel.hpp>
 
+#include <feel/feelcore/environment.hpp>
 #if defined(FEELPP_HAS_GPERFTOOLS)
 #include <gperftools/heap-checker.h>
 #endif /* FEELPP_HAS_GPERFTOOLS */

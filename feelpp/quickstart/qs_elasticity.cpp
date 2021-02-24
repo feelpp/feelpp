@@ -1,6 +1,10 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4*/
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feelvf/vf.hpp>
 #include "nullspace-rigidbody.hpp"
 
 

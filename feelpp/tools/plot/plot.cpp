@@ -22,8 +22,8 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <map>
-
-#include <feel/feel.hpp>
+#include <vector>
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <matplot/matplot.h>
 

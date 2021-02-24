@@ -15,9 +15,9 @@ if [ "$BUILDKITE_BRANCH" = "master" -o  "$BRANCH" = "master" ]; then
     CHANNEL=stable
 fi 
 DIST=${DIST:-focal}
-if [ "$DIST" = "bionic" -o "$DIST" = "eoan" -o "$DIST" = "focal"  -o "$DIST" = "groovy"  ]; then
+if [ "$DIST" = "bionic" -o "$DIST" = "eoan" -o "$DIST" = "focal"  -o "$DIST" = "groovy"  -o "$DIST" = "hirsute"  ]; then
    FLAVOR=ubuntu
-elif [ "$DIST" = "buster" ]; then
+elif [ "$DIST" = "buster" -o "$DIST" = "bullseye" -o "$DIST" = "sid" ]; then
     FLAVOR=debian
 fi
 COMPONENT=${COMPONENT:-feelpp}
@@ -27,10 +27,13 @@ COMPONENT=${COMPONENT:-feelpp}
 #fi
 echo "Building $FLAVOR/$DIST packages for channel $CHANNEL Feel++ component $COMPONENT"
 
-PBUILDER_RESULTS=/var/lib/buildkite-agent/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
+#PBUILDER_RESULTS=/var/lib/buildkite-agent/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
 # local debug build
-# PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
-
+PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
+if [ ! -f $HOME/pbuilder/${DIST}_base.tgz ]; then
+    echo "--- creating distribution $DIST"
+    pbuilder-dist $DIST create
+fi
 echo "--- start from clean slate"
 if [ -d build-$DIST ]; then rm -rf build-$DIST; fi
 

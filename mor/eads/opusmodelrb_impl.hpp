@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-12-10
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -29,7 +29,10 @@
 #ifndef OPUSMODELRB_IMPL_HPP
 #define OPUSMODELRB_IMPL_HPP_ 1
 
-#include <feel/feel.hpp>
+
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/QR>

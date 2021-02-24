@@ -275,8 +275,8 @@ public:
     BOOST_PARAMETER_CONSTRUCTOR(
         Environment, ( Environment ), tag,
         ( required
-          ( argc,* )
-          ( argv,* ) )
+          ( argc,( int ) )
+          ( argv,( char** ) ) )
         ( optional
           ( desc,* )
           ( desc_lib,* )

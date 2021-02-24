@@ -1,7 +1,7 @@
 #define BOOST_TEST_MODULE test_element_component
 #include <feel/feelcore/testsuite.hpp>
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
