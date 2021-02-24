@@ -113,7 +113,7 @@ The following tables present the Continuous Integration status of the packaging 
 
 .Build status for each component for the latest channel Ubuntu non-LTS and Debian testing/unstable diztributions
 |===
-| Component | Debian/Sid(unstable) | Ubuntu/Groovy(20.10)) | Ubuntu/Hirsute Hippo(21.04)
+| Component | Debian/Sid(unstable) | Ubuntu/Groovy(20.10) | Ubuntu/Hirsute Hippo(21.04)
 
 | feelpp
 | image:https://badge.buildkite.com/368edd7805ed486da3c0f4498610120516f3a1a12dd975b34e.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-sid"]
