@@ -20,6 +20,8 @@ ifdef::env-github[]
 :note-caption: :paperclip:
 :tip-caption: :bulb:
 :warning-caption: :warning:
+:!toc-title:
+:badges:
 endif::[]
 ifdef::env-github,env-browser[:outfilesuffix: .adoc]
 // URIs:
