@@ -23,7 +23,7 @@ fi
 
 if [ "$DIST" = "bionic" ]; then
   mkdir -p ${HOME}/.pbuilder-hooks-bionic-feelpp/
-  cat > ${HOME}/.pbuilder-hooks-bionic-feelpp/D10addppa < EOF
+  cat > ${HOME}/.pbuilder-hooks-bionic-feelpp/D10addppa << EOF
 #!/bin/sh
 
 apt-get update
