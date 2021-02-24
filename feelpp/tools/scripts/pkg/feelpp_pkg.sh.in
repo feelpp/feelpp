@@ -20,6 +20,26 @@ if [ "$DIST" = "bionic" -o "$DIST" = "eoan" -o "$DIST" = "focal"  -o "$DIST" = "
 elif [ "$DIST" = "buster" -o "$DIST" = "bullseye" -o "$DIST" = "sid" ]; then
     FLAVOR=debian
 fi
+
+if [ "$DIST" = "bionic" ]
+  mkdir -p ${HOME}/.pbuilder-hooks-bionic-feelpp/
+  cat > ${HOME}/.pbuilder-hooks-bionic-feelpp/D10addppa < EOF
+#!/bin/sh
+
+apt-get update
+apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
+
+echo "deb https://apt.kitware.com/ubuntu/ bionic main" >> /etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu bionic universe"  >> /etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu bionic-updates main" >> /etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu bionic-updates universe" >> /etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu bionic-backports main" >> /etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu bionic-security main" >> /etc/apt/sources.list
+wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc  | apt-key add -
+apt-get update
+EOF
+    export HOOKDIR="${HOME}/.pbuilder-hooks-bionic-feelpp/"
+fi
 COMPONENT=${COMPONENT:-feelpp}
 #OTHERMIRROR=
 #if [ "$COMPONENT" = "feelpp-toolboxes" ]; then
