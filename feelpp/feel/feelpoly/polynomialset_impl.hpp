@@ -33,17 +33,18 @@ resizeAndSet( rank_t<0> )
     Eigen::Tensor<value_type,3> i_grad( 1, nRealDim, 1 );
     std::fill( M_grad.data(), M_grad.data()+M_grad.num_elements(), i_grad.constant(0.) );
 
-    if ( vm::has_first_derivative_normal<context>::value )
+    if ( vm::has_first_derivative_normal<context>::value || ( vm::has_dynamic_v<context> && hasFIRST_DERIVATIVE_NORMAL( this->dynamicContext() ) ) )
     {
         Eigen::Tensor<value_type,2> i_dn( 1,1 );
         std::fill( M_dn.data(), M_dn.data()+M_dn.num_elements(), i_dn.constant(0.) );
     }
 
-    if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
+    if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value ||
+         ( vm::has_dynamic_v<context> && ( hasHESSIAN( this->dynamicContext() ) || hasSECOND_DERIVATIVE( this->dynamicContext() ) || hasLAPLACIAN( this->dynamicContext() ) ) ) )
     {
         Eigen::Tensor<value_type,3> i_hessian( nRealDim, nRealDim, 1 );
         std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), i_hessian.constant(0.) );
-        if ( vm::has_laplacian<context>::value )
+        if ( vm::has_laplacian<context>::value || ( vm::has_dynamic_v<context> && hasLAPLACIAN( this->dynamicContext() ) ) )
         {
             Eigen::Tensor<value_type,2> i_lap( 1, 1 );
             std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), i_lap.constant(0.) );
@@ -61,34 +62,37 @@ resizeAndSet( rank_t<1> )
     Eigen::Tensor<value_type,3> i_grad( nComponents1, nRealDim, 1 );
     std::fill( M_grad.data(), M_grad.data()+M_grad.num_elements(), i_grad.constant(0.) );
 
-    if ( vm::has_symm<context>::value )
+    if ( vm::has_symm<context>::value || ( vm::has_dynamic_v<context> && hasSYMM( this->dynamicContext() ) ) )
     {
         Eigen::Tensor<value_type,2> i_symm( nComponents1, nRealDim );
         std::fill( M_symm_grad.data(), M_symm_grad.data()+M_symm_grad.num_elements(), i_symm.constant(0.) );
     }
-    if ( vm::has_first_derivative_normal<context>::value )
+    if ( vm::has_first_derivative_normal<context>::value || ( vm::has_dynamic_v<context> && hasFIRST_DERIVATIVE_NORMAL( this->dynamicContext() ) ) )
     {
         Eigen::Tensor<value_type,2> i_dn( nComponents1,1 );
         std::fill( M_dn.data(), M_dn.data()+M_dn.num_elements(), i_dn.constant(0.) );
     }
 
-    if ( vm::has_div<context>::value )
+    if ( vm::has_div<context>::value || ( vm::has_dynamic_v<context> && hasDIV( this->dynamicContext() ) ) )
     {
         Eigen::Tensor<value_type,2> i_div( 1, 1 );
         std::fill( M_div.data(), M_div.data()+M_div.num_elements(), i_div.constant(0.) );
     }
 
-    if ( vm::has_curl<context>::value )
+    if ( vm::has_curl<context>::value || ( vm::has_dynamic_v<context> && hasCURL( this->dynamicContext() ) ) )
     {
         Eigen::Tensor<value_type,2> i_curl( (nComponents1==3)?nComponents1:1, 1 );
         std::fill( M_curl.data(), M_curl.data()+M_curl.num_elements(), i_curl.constant(0.) );
     }
 
-    if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
+    if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value ||
+         ( vm::has_dynamic_v<context> && ( hasHESSIAN( this->dynamicContext() ) || hasSECOND_DERIVATIVE( this->dynamicContext() ) || hasLAPLACIAN( this->dynamicContext() ) ) )
+         )
     {
         Eigen::Tensor<value_type,3> i_hessian( nComponents1, nRealDim, nRealDim );
         std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), i_hessian.constant(0.) );
-        if ( vm::has_laplacian<context>::value || vm::has_second_derivative<context>::value  )
+        if ( vm::has_laplacian<context>::value || vm::has_second_derivative<context>::value ||
+             ( vm::has_dynamic_v<context> && ( hasSECOND_DERIVATIVE( this->dynamicContext() ) || hasLAPLACIAN( this->dynamicContext() ) ) ) )
         {
             Eigen::Tensor<value_type,2> i_lap( nComponents1, 1 );
             std::fill( M_laplacian.data(), M_laplacian.data()+M_laplacian.num_elements(), i_lap.constant(0.) );
@@ -106,13 +110,13 @@ resizeAndSet( rank_t<2> )
     Eigen::Tensor<value_type,3> i_grad( nComponents1, nComponents2, nRealDim );
     std::fill( M_grad.data(), M_grad.data()+M_grad.num_elements(), i_grad.constant(0.) );
 
-    if ( vm::has_first_derivative_normal<context>::value )
+    if ( vm::has_first_derivative_normal<context>::value || ( vm::has_dynamic_v<context> && hasFIRST_DERIVATIVE_NORMAL( this->dynamicContext() ) ) )
     {
         Eigen::Tensor<value_type,2> i_dn( nComponents1, nComponents2 );
         std::fill( M_dn.data(), M_dn.data()+M_dn.num_elements(), i_dn.constant(0.) );
     }
 
-    if ( vm::has_div<context>::value )
+    if ( vm::has_div<context>::value || ( vm::has_dynamic_v<context> && hasDIV( this->dynamicContext() ) ) )
     {
         Eigen::Tensor<value_type,2> i_div( nComponents1, 1 );
         std::fill( M_div.data(), M_div.data()+M_div.num_elements(), i_div.constant(0.) );
@@ -213,7 +217,10 @@ PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,co
 update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
 {
     if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  ||
-         vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
+         vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value ||
+         ( vm::has_dynamic_v<context> && ( hasGRAD( this->dynamicContext() ) || hasFIRST_DERIVATIVE( this->dynamicContext() ) ||
+                                           hasHESSIAN( this->dynamicContext() ) || hasSECOND_DERIVATIVE( this->dynamicContext() ) || hasLAPLACIAN( this->dynamicContext() ) ) )
+         )
     {
         geometric_mapping_context_type* thegmc = __gmc.get();
         tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type> B( thegmc->B( 0 ).data(), gmc_type::NDim, gmc_type::PDim );
@@ -244,7 +251,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
         }
 #if 1
         // we need the normal derivative
-        if ( vm::has_first_derivative_normal<context>::value )
+        if ( vm::has_first_derivative_normal<context>::value || ( vm::has_dynamic_v<context> && hasFIRST_DERIVATIVE( this->dynamicContext() ) ) )
         {
             // const uint16_type I = M_ref_ele->nbDof()*nComponents;
             // const uint16_type Q = nPoints();
@@ -267,7 +274,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
         }
 #endif
     } // grad
-    if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
+    if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value ||
+         ( vm::has_dynamic_v<context> && ( hasHESSIAN( this->dynamicContext() ) || hasSECOND_DERIVATIVE( this->dynamicContext() ) || hasLAPLACIAN( this->dynamicContext() ) ) ) )
     {
         geometric_mapping_context_type* thegmc = __gmc.get();
         precompute_type* __pc = M_pc.get().get();
@@ -312,7 +320,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
                     M_hessian[i][q].reshape( tensorHessShapeAfterContract ) = H1.contract( B, dims2 );
                 }
 
-                if ( vm::has_laplacian<context>::value  )
+                if ( vm::has_laplacian<context>::value || ( vm::has_dynamic_v<context> && hasLAPLACIAN( this->dynamicContext() ) ) )
                 {
 #if 0
                     M_laplacian[i][q] = M_hessian[i][q].trace(tracedims);
@@ -392,7 +400,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
             }
     }
 
-    if constexpr ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value )
+    if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value ||
+         ( vm::has_dynamic_v<context> && ( hasGRAD( this->dynamicContext() ) || hasFIRST_DERIVATIVE( this->dynamicContext() ) ) ) )
     {
         const uint16_type Q = do_optimization_p1?1:M_npoints;//__gmc->nPoints();//M_grad.size2();
         const uint16_type I = M_grad.shape()[0];
@@ -430,14 +439,14 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                 }
                 
 
-                if constexpr ( vm::has_symm<context>::value )
+                if ( vm::has_symm<context>::value || ( vm::has_dynamic_v<context> && hasSYMM( this->dynamicContext() ) ) )
                 {
                     em_fixed_size_matrix_t<nComponents1,NDim,value_type> sg( M_symm_grad[i][q].data() );
                     em_fixed_size_cmatrix_t<nComponents1,NDim,value_type> g( M_grad[i][q].data() );
                     sg = (g+g.transpose())/2;
                 }
                 // update divergence if needed
-                if constexpr ( vm::has_div<context>::value )
+                if ( vm::has_div<context>::value || ( vm::has_dynamic_v<context> && hasDIV( this->dynamicContext() ) ) )
                 {
                     M_div[i][q].setZero();
                     if constexpr ( is_hdiv_conforming )
@@ -457,7 +466,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                 }
 
                 // update curl if needed
-                if constexpr ( vm::has_curl<context>::value )
+                if ( vm::has_curl<context>::value || ( vm::has_dynamic_v<context> && hasCURL( this->dynamicContext() ) ) )
                 {
                     if constexpr ( NDim == 2 )
                     {
@@ -476,7 +485,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
             }
         }
         // we need the normal derivative
-        if constexpr ( vm::has_first_derivative_normal<context>::value )
+        if ( vm::has_first_derivative_normal<context>::value || ( vm::has_dynamic_v<context> && hasFIRST_DERIVATIVE_NORMAL( this->dynamicContext() ) ) )
         {
             // const uint16_type I = nDof*nComponents1;
             // const uint16_type Q = nPoints();
@@ -499,7 +508,9 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                 }
         }
     }
-    if constexpr ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
+    if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value ||
+         ( vm::has_dynamic_v<context> && ( hasHESSIAN( this->dynamicContext() ) || hasSECOND_DERIVATIVE( this->dynamicContext() ) || hasLAPLACIAN( this->dynamicContext() ) ) )
+         )
     {
         geometric_mapping_context_type* thegmc = __gmc.get();
         precompute_type* __pc = M_pc.get().get();
@@ -517,7 +528,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                 Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 1)}};
                 Eigen::array<dimpair_t, 1> dimsh = {{dimpair_t(0, 1)}};
 
-                if ( Geo_t::nOrder > 1 || !convex_type::is_simplex )
+                if constexpr ( Geo_t::nOrder > 1 || !convex_type::is_simplex )
                 {
                     // gmc hessian NxPxP
                     // pc hessian PxP
@@ -540,15 +551,16 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                     //M_hessian[i][q] = (B.contract( H1, dims2)).shuffle( myperm );
                 }
 
-                
                 //M_hessian[i][q] = B.contract( H1, dims2);
-
-                M_laplacian[i][q].setZero();
-                for ( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
+                if ( vm::has_laplacian<context>::value || ( vm::has_dynamic_v<context> && hasLAPLACIAN( this->dynamicContext() ) ) )
                 {
-                    for ( uint16_type c2 = 0; c2 < nRealDim; ++c2 )
-                        M_laplacian[i][q](c1,0) += M_hessian[i][q](c1,c2,c2);
-                } // c1 component of vector field
+                    M_laplacian[i][q].setZero();
+                    for ( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
+                    {
+                       for ( uint16_type c2 = 0; c2 < nRealDim; ++c2 )
+                           M_laplacian[i][q](c1,0) += M_hessian[i][q](c1,c2,c2);
+                    } // c1 component of vector field
+                }
             } // i
         } //q
     }
@@ -564,7 +576,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
     const uint16_type I = M_grad.shape()[0];
     geometric_mapping_context_type* thegmc = __gmc.get();
 
-    if constexpr ( vm::has_normal_component_v<context>)
+    if ( vm::has_normal_component_v<context> || ( vm::has_dynamic_v<context> && hasNORMAL_COMPONENT( this->dynamicContext() ) ) )
     {
         const uint16_type Q = M_npoints;//do_optimization_p1?1:M_npoints;
         const uint16_type I = M_normal_component.shape()[0];
@@ -580,7 +592,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
                         M_normal_component[i][q]( c1,0 ) +=  M_phi[i][q]( c1, c ) * N( c );
             }
     }
-    if constexpr ( vm::has_trace_v<context>)
+    if ( vm::has_trace_v<context> || ( vm::has_dynamic_v<context> && hasTRACE( this->dynamicContext() ) ) )
     {
         const uint16_type Q = M_npoints;//do_optimization_p1?1:M_npoints;
         const uint16_type I = M_trace.shape()[0];
@@ -593,7 +605,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
                 M_trace[i][q]=res();
             }
     }
-    if constexpr ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
+    if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value ||
+                        ( vm::has_dynamic_v<context> && ( hasGRAD( this->dynamicContext() ) || hasFIRST_DERIVATIVE( this->dynamicContext() ) ) ) )
     {
 
         typedef typename boost::multi_array<value_type,4>::index_range range;
@@ -623,7 +636,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
         } // i
 #if 0
         // we need the normal derivative
-        if ( vm::has_first_derivative_normal<context>::value )
+        if ( vm::has_first_derivative_normal<context>::value  || ( vm::has_dynamic_v<context> && FIRST_DERIVATIVE_NORMAL( this->dynamicContext() ) ) )
         {
             const uint16_type I = nDof*nComponents1;
             const uint16_type Q = nPoints();
