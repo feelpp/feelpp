@@ -27,7 +27,11 @@
 #include <feel/feelcore/testsuite.hpp>
 #endif
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/unithypercube.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelvf/vf.hpp>
 
 using namespace Feel;
 
