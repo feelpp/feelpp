@@ -146,13 +146,13 @@ The following tables present the Continuous Integration status of the packaging 
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | 
 | 
-|
+
 
 | feelpp-mor
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 |
 |
-|
+
 |===
 
 

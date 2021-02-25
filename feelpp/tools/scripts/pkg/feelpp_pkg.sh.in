@@ -67,7 +67,16 @@ wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc  | apt-key add
 apt-get update
 EOF
 fi
+if [ "$DIST" = "buster" ]; then
+echo "--- fixes for pbuilder $DIST"
+    pbuilder-dist $DIST login --save-after-login << EOF
+apt-get update
+apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
 
+echo "deb http://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
+apt-get update
+EOF
+fi
 # pbuilder-dist $DIST update
 if [ "$COMPONENT" = "feelpp-toolboxes" -o "$COMPONENT" = "feelpp-mor" ]; then
     echo "--- add bintray key for $COMPONENT"
