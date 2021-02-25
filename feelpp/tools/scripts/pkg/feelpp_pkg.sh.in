@@ -21,25 +21,8 @@ elif [ "$DIST" = "buster" -o "$DIST" = "bullseye" -o "$DIST" = "sid" ]; then
     FLAVOR=debian
 fi
 
-if [ "$DIST" = "bionic" ]; then
-  mkdir -p ${HOME}/.pbuilder-hooks-bionic-feelpp/
-  cat > ${HOME}/.pbuilder-hooks-bionic-feelpp/D10addppa << EOF
-#!/bin/sh
 
-apt-get update
-apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
 
-echo "deb https://apt.kitware.com/ubuntu/ bionic main" >> /etc/apt/sources.list
-echo "deb http://archive.ubuntu.com/ubuntu bionic universe"  >> /etc/apt/sources.list
-echo "deb http://archive.ubuntu.com/ubuntu bionic-updates main" >> /etc/apt/sources.list
-echo "deb http://archive.ubuntu.com/ubuntu bionic-updates universe" >> /etc/apt/sources.list
-echo "deb http://archive.ubuntu.com/ubuntu bionic-backports main" >> /etc/apt/sources.list
-echo "deb http://archive.ubuntu.com/ubuntu bionic-security main" >> /etc/apt/sources.list
-wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc  | apt-key add -
-apt-get update
-EOF
-    export HOOKDIR="${HOME}/.pbuilder-hooks-bionic-feelpp/"
-fi
 COMPONENT=${COMPONENT:-feelpp}
 #OTHERMIRROR=
 #if [ "$COMPONENT" = "feelpp-toolboxes" ]; then
@@ -66,10 +49,28 @@ else
     echo "no files in ${PBUILDER_RESULTS}/";
 fi
 
-echo "--- update base for pbuilder $DIST"
+echo "--- update for pbuilder $DIST"
 pbuilder-dist $DIST update
+if [ "$DIST" = "bionic" ]; then
+echo "--- fixes for pbuilder $DIST"
+    pbuilder-dist $DIST login --save-after-login << EOF
+apt-get update
+apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
+
+echo "deb https://apt.kitware.com/ubuntu/ bionic main" >> /etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu bionic universe"  >> /etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu bionic-updates main" >> /etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu bionic-updates universe" >> /etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu bionic-backports main" >> /etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu bionic-security main" >> /etc/apt/sources.list
+wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc  | apt-key add -
+apt-get update
+EOF
+fi
+
+# pbuilder-dist $DIST update
 if [ "$COMPONENT" = "feelpp-toolboxes" -o "$COMPONENT" = "feelpp-mor" ]; then
-    echo "--- add bintray key"
+    echo "--- add bintray key for $COMPONENT"
     export DIST
     export CHANNEL
     export FLAVOR
