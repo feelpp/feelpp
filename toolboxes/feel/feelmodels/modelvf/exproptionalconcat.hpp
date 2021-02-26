@@ -49,7 +49,7 @@ public :
 
     using first_expression_type = typename std::decay_t<decltype(hana::at_c<0>( tuple_expr_type{} ))>;
 
-    static const size_type context = vm::DYNAMIC;
+    static const size_type context = vm::DYNAMIC|vm::DYNAMIC_BASIS_FUNCTION;
     static const bool is_terminal = false;
 
     template<typename Func>
