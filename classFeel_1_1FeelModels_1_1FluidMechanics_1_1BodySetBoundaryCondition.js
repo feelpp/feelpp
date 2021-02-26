@@ -16,6 +16,8 @@ var classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition =
     [ "startTimeStep", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a7a9b2123ae17819074cb3d05179f5d98", null ],
     [ "updateAlgebraicFactoryForUse", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a90001ef2447a205572b99be6de804f00", null ],
     [ "updateForUse", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a1c3956d5a64297045ecf9e2b655036f4", null ],
+    [ "updateInformationObject", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a863bf297944793ceceb8ee82005379e2", null ],
     [ "updateParameterValues", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a93d3918d9aa16ff7f71f8da14585f39a", null ],
+    [ "updateTabulateInformations", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#ad445d0bdc020b52d518f2ecff61d53c9", null ],
     [ "updateTimeStep", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a594a59fed00b1f10149f8275283bc626", null ]
 ];

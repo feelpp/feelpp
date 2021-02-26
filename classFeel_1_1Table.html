@@ -122,10 +122,17 @@ Public Member Functions</h2></td></tr>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#a3617e0dfe4e8f0fe7e6e223cb82699d5">add_row</a> (std::initializer_list&lt; variant_value_type &gt; const &amp;rowValues)</td></tr>
 <tr class="memdesc:a3617e0dfe4e8f0fe7e6e223cb82699d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">add row in table <br /></td></tr>
 <tr class="separator:a3617e0dfe4e8f0fe7e6e223cb82699d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55757608c81c454ae4d2bc83b9123f05"><td class="memTemplParams" colspan="2"><a id="a55757608c81c454ae4d2bc83b9123f05"></a>
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a55757608c81c454ae4d2bc83b9123f05"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>add_row</b> (T const &amp;rowValues, std::enable_if_t&lt; is_iterable_v&lt; T &gt; &gt; *=nullptr)</td></tr>
+<tr class="separator:a55757608c81c454ae4d2bc83b9123f05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa03178b17e1e3f10e7e81264783c2752"><td class="memItemLeft" align="right" valign="top"><a id="aa03178b17e1e3f10e7e81264783c2752"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#aa03178b17e1e3f10e7e81264783c2752">exportAsciiDoc</a> (std::ostream &amp;o) const</td></tr>
 <tr class="memdesc:aa03178b17e1e3f10e7e81264783c2752"><td class="mdescLeft">&#160;</td><td class="mdescRight">export into stream \o the asciidoc representation of the table <br /></td></tr>
 <tr class="separator:aa03178b17e1e3f10e7e81264783c2752"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b7293d38a031780ad23b3f1344c4437"><td class="memItemLeft" align="right" valign="top"><a id="a0b7293d38a031780ad23b3f1344c4437"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>exportAsciiDocImpl</b> (std::ostream &amp;o, std::string const &amp;tableSeparator=&quot;|&quot;, <a class="el" href="classint.html">int</a> nestedTableLevel=0) const</td></tr>
+<tr class="separator:a0b7293d38a031780ad23b3f1344c4437"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a633aa9f099c6e613539513ecb44530d2"><td class="memItemLeft" align="right" valign="top"><a id="a633aa9f099c6e613539513ecb44530d2"></a>
 <a class="el" href="structFeel_1_1TableImpl_1_1Format.html">TableImpl::Format</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#a633aa9f099c6e613539513ecb44530d2">format</a> ()</td></tr>
 <tr class="memdesc:a633aa9f099c6e613539513ecb44530d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">get table format <br /></td></tr>

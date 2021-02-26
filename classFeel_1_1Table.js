@@ -1,7 +1,9 @@
 var classFeel_1_1Table =
 [
     [ "add_row", "classFeel_1_1Table.html#a3617e0dfe4e8f0fe7e6e223cb82699d5", null ],
+    [ "add_row", "classFeel_1_1Table.html#a55757608c81c454ae4d2bc83b9123f05", null ],
     [ "exportAsciiDoc", "classFeel_1_1Table.html#aa03178b17e1e3f10e7e81264783c2752", null ],
+    [ "exportAsciiDocImpl", "classFeel_1_1Table.html#a0b7293d38a031780ad23b3f1344c4437", null ],
     [ "format", "classFeel_1_1Table.html#a633aa9f099c6e613539513ecb44530d2", null ],
     [ "format", "classFeel_1_1Table.html#a85473fa27c2de2c23cec0cc62285fe10", null ],
     [ "nCol", "classFeel_1_1Table.html#a097b00868ba51420ca0c401adae061ae", null ],

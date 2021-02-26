@@ -171,9 +171,11 @@ var group__Toolboxes =
         [ "spaceAngularVelocity", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#ad2608eaea79bc4e3d4b169bdd0ff7859", null ],
         [ "spaceTranslationalVelocity", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aa2c6e3dcb64a16bd53b59f242cf39483", null ],
         [ "startTimeStep", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a6028712e560556fa2f7473f2f824470a", null ],
+        [ "tabulateInformations", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#ad71688352909e2461ba085be66790e46", null ],
         [ "translationalVelocityExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aa0b3204a1cd6b667ea7fd72bad231d6c", null ],
         [ "updateElasticVelocityFromExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a9dffcc58d819d034c4d2b995edad8c9b", null ],
         [ "updateForUse", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a713cf8857b6a49d73afa9ed93bdd0d59", null ],
+        [ "updateInformationObject", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a6661879bf1768a40f8d8d48ffc021840", null ],
         [ "updateMatrixPTilde_angular", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aca2cbc648e8248529b9f2a7e8606fd10", null ],
         [ "updateParameterValues", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a14241a406586e59e26a39c32f60808cd", null ],
         [ "updateTimeStep", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#abbabbd37bc809639d7f9bd379c2c1d58", null ],
@@ -205,7 +207,9 @@ var group__Toolboxes =
         [ "startTimeStep", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a7a9b2123ae17819074cb3d05179f5d98", null ],
         [ "updateAlgebraicFactoryForUse", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a90001ef2447a205572b99be6de804f00", null ],
         [ "updateForUse", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a1c3956d5a64297045ecf9e2b655036f4", null ],
+        [ "updateInformationObject", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a863bf297944793ceceb8ee82005379e2", null ],
         [ "updateParameterValues", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a93d3918d9aa16ff7f71f8da14585f39a", null ],
+        [ "updateTabulateInformations", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#ad445d0bdc020b52d518f2ecff61d53c9", null ],
         [ "updateTimeStep", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a594a59fed00b1f10149f8275283bc626", null ]
       ] ],
       [ "FieldTag", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1FieldTag.html", [

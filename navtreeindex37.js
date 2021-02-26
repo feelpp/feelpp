@@ -1,5 +1,13 @@
 var NAVTREEINDEX37 =
 {
+"lambda_8hpp.html#ade1564a87907c3bf425ab4018a62b32aabdd62fb26908e47789afe6ef11154563":[6,2,0,0,3,31,19],
+"lambda_8hpp.html#ade1564a87907c3bf425ab4018a62b32aac9dbda7ca6ad071df0fe8f19ebf1e8c8":[6,2,0,0,3,31,14],
+"lambda_8hpp.html#ade1564a87907c3bf425ab4018a62b32aafbed3825b6260c94d39208cae6f18805":[6,2,0,0,3,31,16],
+"lambda_8hpp.html#af0de9be1416a63dfcd78e7a535dac3f0":[6,2,0,0,3,31,13],
+"linearform_8hpp.html":[6,2,0,0,3,32],
+"linearform_8hpp.html#a6e6d5b52fe05c721d3fc64af64bc818c":[6,2,0,0,3,32,1],
+"linearform_8hpp.html#ad37d9e382554de2b0edff9411b3c0b51":[6,2,0,0,3,32,3],
+"linearform_8hpp.html#ad4a59195d00415d9e309cfe6bd139267":[6,2,0,0,3,32,2],
 "linearformcontext_8hpp.html":[6,2,0,0,3,33],
 "lineordering_8hpp.html":[6,2,0,0,2,15],
 "localization_8hpp.html":[6,2,0,0,1,22],
@@ -241,13 +249,5 @@ var NAVTREEINDEX37 =
 "pdhv_8hpp.html#a10d96b998ac35401f2ea2889cec73daa":[6,2,0,0,1,49,1],
 "pdhv_8hpp.html#a2e00b39d5ac8f6cdbd13d4dd8aae7e46":[6,2,0,0,1,49,2],
 "pdhv_8hpp.html#a5d53e007359fef05231e645b10a77141":[6,2,0,0,1,49,4],
-"pdhv_8hpp.html#a8eb3edbb481ca16373558e18bc2b7fb5":[6,2,0,0,1,49,3],
-"pdhv_8hpp.html#ab682d6426dbe98f887955488c293e65c":[6,2,0,0,1,49,6],
-"pdhv_8hpp.html#ae7af58fd90da17489daace913d3ccb99":[6,2,0,0,1,49,5],
-"periodic_8hpp.html":[6,2,0,0,1,50],
-"points_8hpp.html":[6,2,0,0,2,24],
-"pointset_8hpp.html":[6,2,0,0,2,25],
-"policy_8hpp.html":[6,2,0,0,0,30],
-"pow_8hpp.html":[6,2,0,0,3,47],
-"pow_8hpp.html#ga00218e2f351eaf8e36042f5475764cb2":[6,2,0,0,3,47,6]
+"pdhv_8hpp.html#a8eb3edbb481ca16373558e18bc2b7fb5":[6,2,0,0,1,49,3]
 };

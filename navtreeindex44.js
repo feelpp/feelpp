@@ -1,5 +1,13 @@
 var NAVTREEINDEX44 =
 {
+"structFeel_1_1domain__value__type.html":[6,1,1,64],
+"structFeel_1_1expansion__type.html":[6,1,1,73],
+"structFeel_1_1is__0d.html":[6,1,1,120],
+"structFeel_1_1is__0d__real.html":[6,1,1,121],
+"structFeel_1_1is__1d.html":[6,1,1,122],
+"structFeel_1_1is__1d__real.html":[6,1,1,123],
+"structFeel_1_1is__2d.html":[6,1,1,124],
+"structFeel_1_1is__2d__real.html":[6,1,1,125],
 "structFeel_1_1is__3d.html":[6,1,1,126],
 "structFeel_1_1is__3d__real.html":[6,1,1,127],
 "structFeel_1_1is__convex.html":[6,1,1,128],
@@ -241,13 +249,5 @@ var NAVTREEINDEX44 =
 "structFeel_1_1tag_1_1currentElt.html":[6,1,1,13,32],
 "structFeel_1_1tag_1_1currentElt.html#a633192e87f2d5bd1aa423b435074a5dc":[6,1,1,13,32,2],
 "structFeel_1_1tag_1_1currentElt.html#a85dbdad9a37850a1b61652eaf50793fe":[6,1,1,13,32,0],
-"structFeel_1_1tag_1_1currentElt.html#a90461faf6fefac9cb2028df50ccaffaa":[6,1,1,13,32,1],
-"structFeel_1_1tag_1_1ddmethod.html":[6,1,1,13,33],
-"structFeel_1_1tag_1_1ddmethod.html#a1bcb6564b0853b225cf904d39c8ace57":[6,1,1,13,33,0],
-"structFeel_1_1tag_1_1ddmethod.html#ad19be35a0ec8c264639d4f29c306dafd":[6,1,1,13,33,1],
-"structFeel_1_1tag_1_1ddmethod.html#ae258d4019c61a4a80c3c1e61f4aff86a":[6,1,1,13,33,2],
-"structFeel_1_1tag_1_1dependencies.html":[6,1,1,13,34],
-"structFeel_1_1tag_1_1dependencies.html#a733e3039060f9787918857e5add33601":[6,1,1,13,34,0],
-"structFeel_1_1tag_1_1dependencies.html#a7361a447ab23ab9cd666d6dd29e6b749":[6,1,1,13,34,1],
-"structFeel_1_1tag_1_1dependencies.html#a73ad8c0baa0a7eab26ae2a509f042c70":[6,1,1,13,34,2]
+"structFeel_1_1tag_1_1currentElt.html#a90461faf6fefac9cb2028df50ccaffaa":[6,1,1,13,32,1]
 };

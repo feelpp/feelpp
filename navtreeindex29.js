@@ -1,5 +1,13 @@
 var NAVTREEINDEX29 =
 {
+"classFeel_1_1mpfr_1_1MpfrClass.html#a558563767ce538bec5eba611956d9385":[6,1,1,8,1,91],
+"classFeel_1_1mpfr_1_1MpfrClass.html#a562aabfe0c8fc2aeb2e2ab333ddffb4e":[6,1,1,8,1,151],
+"classFeel_1_1mpfr_1_1MpfrClass.html#a565ae73ee2811f5e7cb3c3cb9706273e":[6,1,1,8,1,113],
+"classFeel_1_1mpfr_1_1MpfrClass.html#a58afb464a834f126548e0f830c79685f":[6,1,1,8,1,155],
+"classFeel_1_1mpfr_1_1MpfrClass.html#a5992c1ea467894fbba7e15d7f8297308":[6,1,1,8,1,14],
+"classFeel_1_1mpfr_1_1MpfrClass.html#a5c21d524fdbaecef2de52f05bed7cd35":[6,1,1,8,1,161],
+"classFeel_1_1mpfr_1_1MpfrClass.html#a5d8f3ffaaac2ea6ee2c07c0815a8110b":[6,1,1,8,1,126],
+"classFeel_1_1mpfr_1_1MpfrClass.html#a5dd94263e17ecf0083c2fccfba807bba":[6,1,1,8,1,43],
 "classFeel_1_1mpfr_1_1MpfrClass.html#a5ee10da4b342f9cebd262fea08f8c0c5":[6,1,1,8,1,41],
 "classFeel_1_1mpfr_1_1MpfrClass.html#a5f0dcf53d80f031b00f3d77217d4e3e1":[6,1,1,8,1,99],
 "classFeel_1_1mpfr_1_1MpfrClass.html#a5f167517eb881d2f2317682ae056c8b3":[6,1,1,8,1,51],
@@ -241,13 +249,5 @@ var NAVTREEINDEX29 =
 "classFeel_1_1vf_1_1GiNaCBase.html#ac0f0a05ead02031b83638676864764f8":[6,1,1,14,13,1],
 "classFeel_1_1vf_1_1GiNaCBase.html#ac63bf27366636a40827b2e2530a1da0d":[6,1,1,14,13,24],
 "classFeel_1_1vf_1_1GiNaCBase.html#ad5b456fc5538e12712919d7fa654edcc":[6,1,1,14,13,26],
-"classFeel_1_1vf_1_1GiNaCBase.html#af6c90e4970d7f8354ca14aaa7a3277a3":[6,1,1,14,13,4],
-"classFeel_1_1vf_1_1GinacMatrix.html":[6,1,1,14,14],
-"classFeel_1_1vf_1_1GinacMatrix.html#a0a513ba24f633e23bdea7dc6f0a9bd05":[6,1,1,14,14,34],
-"classFeel_1_1vf_1_1GinacMatrix.html#a0ba22bde25479b8ab8b5831a0bd55538":[6,1,1,14,14,44],
-"classFeel_1_1vf_1_1GinacMatrix.html#a15d052a3175b0c8cdc5a1c70339b4f43":[6,1,1,14,14,12],
-"classFeel_1_1vf_1_1GinacMatrix.html#a17734f993f290e80861a8c3480f8e840":[6,1,1,14,14,39],
-"classFeel_1_1vf_1_1GinacMatrix.html#a17ca2ce65ab7bcfad90173e14f6860af":[6,1,1,14,14,46],
-"classFeel_1_1vf_1_1GinacMatrix.html#a20214fc99c8cd183d84f6120bc69ca95":[6,1,1,14,14,40],
-"classFeel_1_1vf_1_1GinacMatrix.html#a26a9cfa894f002fa99b022beee679f31":[6,1,1,14,14,48]
+"classFeel_1_1vf_1_1GiNaCBase.html#af6c90e4970d7f8354ca14aaa7a3277a3":[6,1,1,14,13,4]
 };
