@@ -651,14 +651,16 @@ updateHessian( geometric_mapping_context_type* thegmc, rank_t<1> )
     const uint16_type Q = do_optimization_p2?1:M_npoints;
     const uint16_type I = M_hessian.shape()[0];
 
+    Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(2, 1)}};
+    Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 1)}};
+    Eigen::array<dimpair_t, 1> dimsh = {{dimpair_t(0, 1)}};
+    Eigen::array<ptrdiff_t, 3> myshuffle = { 2,0,1 };
+
     for ( uint16_type i = 0; i < I; ++i )
     {
         for ( uint16_type q = 0; q < Q; ++q )
         {
             tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type> B ( thegmc->B( q ).data(),gmc_type::NDim, gmc_type::PDim );
-            Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(2, 1)}};
-            Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 1)}};
-            Eigen::array<dimpair_t, 1> dimsh = {{dimpair_t(0, 1)}};
 
             if constexpr ( !geometric_mapping_context_type::is_linear )//Geo_t::nOrder > 1 || !convex_type::is_simplex )
             {
@@ -667,7 +669,8 @@ updateHessian( geometric_mapping_context_type* thegmc, rank_t<1> )
                 // grad N
                 // B NxP
                 // hessian: N x N
-                tensor3_fixed_size_t<nComponents1,PDim,PDim,value_type> H0 = thegmc->hessian(q).contract( M_grad[i][q].chip(0,2), dimsh );
+                //tensor3_fixed_size_t<nComponents1,PDim,PDim,value_type> H0 = thegmc->hessian(q).contract( M_grad[i][q].chip(0,2), dimsh );
+                tensor3_fixed_size_t<nComponents1,PDim,PDim,value_type> H0 = thegmc->hessian(q).contract( M_grad[i][q].chip(0,2), dimsh ).shuffle( myshuffle );
                 //std::cout << "H0=" << H0 << std::endl;
                 tensor3_fixed_size_t<nComponents1,PDim,PDim,value_type> H00 = __pc->hessian(i,q);
                 //std::cout << "H00=" << H00 << std::endl;
