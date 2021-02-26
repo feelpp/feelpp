@@ -26,7 +26,10 @@
 #ifndef FEELPP_BIOTSAVART_HPP
 #define FEELPP_BIOTSAVART_HPP
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/crbmodel.hpp>

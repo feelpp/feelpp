@@ -21,12 +21,9 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-/**
-   \file laplacian.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2006-11-23
- */
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/mesh.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
 
 #if defined(FEELPP_HAS_GPERFTOOLS)
