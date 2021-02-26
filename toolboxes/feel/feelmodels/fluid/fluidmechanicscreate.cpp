@@ -2886,6 +2886,74 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateInformationObject( nl::json & p ) const
+{
+    p["mesh"] = M_mesh->journalSection().to_string();
+    p["face markers on fluid mesh"] = M_markers;
+    p["gravity force enabled"] = M_gravityForceEnabled;
+    if ( this->hasTranslationalVelocityExpr() )
+        p["translational velocity expr"] = M_translationalVelocityExpr.exprToString();
+    if ( this->hasAngularVelocityExpr() )
+        p["angular velocity expr"] =  M_angularVelocityExpr.exprToString();
+    p["has elastic velocity"] = this->hasElasticVelocity();
+    if ( this->hasElasticVelocityFromExpr() )
+    {
+        // TODO
+    }
+
+    nl::json subPt;
+    subPt["Translational Velocity"] = this->spaceTranslationalVelocity()->journalSection().to_string();
+    subPt["Angular Velocity"] = this->spaceAngularVelocity()->journalSection().to_string();
+    p["Function Spaces"] = subPt;
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+tabulate_informations_ptr_t
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::map<std::string,uint16_type> & jsonPtrFunctionSpacesToLevel ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+
+    Feel::Table tabInfoOthers;
+    TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
+
+    if ( jsonInfo.contains( "face markers on fluid mesh" ) )
+        tabInfoOthers.add_row({ "face markers on fluid mesh", TabulateInformationTools::FromJSON::createTableFromArray( jsonInfo.at( "face markers on fluid mesh" ), true ) });
+
+    tabInfoOthers.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+    tabInfo->add( "", TabulateInformations::New( tabInfoOthers,tabInfoProp ) );
+
+    Feel::Table tabInfoAdvanced;
+    if ( jsonInfo.contains("Function Spaces") )
+    {
+        auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
+        Feel::Table tabInfoFunctionSpaces;
+        for ( std::string const& spaceName : std::vector<std::string>({"Translational Velocity","Angular Velocity"}) )
+        {
+            std::string jsonPtrStr = jsonInfoFunctionSpaces.at( spaceName ).template get<std::string>();
+            nl::json::json_pointer jsonPointerSpace( jsonPtrStr );
+            if ( JournalManager::journalData().contains( jsonPointerSpace ) )
+            {
+                tabInfoFunctionSpaces.add_row( {spaceName, jsonPtrStr } );
+
+                uint16_type levelFunctionSpace = tabInfoProp.verboseLevel()+1;
+                auto itFindJsonPtr = jsonPtrFunctionSpacesToLevel.find( jsonPtrStr );
+                if ( itFindJsonPtr != jsonPtrFunctionSpacesToLevel.end() )
+                    levelFunctionSpace = std::min( itFindJsonPtr->second, levelFunctionSpace );
+                jsonPtrFunctionSpacesToLevel[jsonPtrStr] = levelFunctionSpace;
+            }
+        }
+        tabInfoAdvanced.add_row({"Function Spaces",tabInfoFunctionSpaces});
+    };
+    tabInfo->add( "", TabulateInformations::New( tabInfoAdvanced,tabInfoProp.newByIncreasingVerboseLevel() ) );
+
+    return tabInfo;
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateMatrixPTilde_angular( self_type const& fluidToolbox, sparse_matrix_ptrtype & mat, size_type startBlockIndexVelocity, size_type startBlockIndexAngularVelocity ) const
 {
     auto XhV = fluidToolbox.functionSpaceVelocity();

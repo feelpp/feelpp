@@ -274,6 +274,28 @@ void addAllKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, Tabula
     addKeyToValues(table,jsonInfo,tabInfoProp,keys );
 }
 
+Feel::Table createTableFromArray( nl::json const& jsonInfo, bool applyDefaultFormat )
+{
+    Feel::Table tabInfo;
+    if ( !jsonInfo.is_array() )
+        return tabInfo;
+
+    for ( auto const& el : jsonInfo.items() )
+    {
+        auto const& arrayVal = el.value();
+        if ( arrayVal.is_string() )
+            tabInfo.add_row( jsonInfo.get<std::vector<std::string>>() );
+        break;
+    }
+
+    if ( applyDefaultFormat )
+        tabInfo.format()
+            .setShowAllBorders( false )
+            .setColumnSeparator(",")
+            .setHasRowSeparator( false );
+    return tabInfo;
+}
+
 tabulate_informations_ptr_t
 tabulateInformationsFunctionSpace( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
 {
