@@ -36,10 +36,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 //#define BOOST_TEST_NO_MAIN
 
 #include <feel/feelcore/testsuite.hpp>
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/print.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
-
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
 namespace Feel
 {
 /**
