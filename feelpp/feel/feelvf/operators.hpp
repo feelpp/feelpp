@@ -141,8 +141,8 @@ Eigen::Map<const Eigen::Matrix<ValueType,ShapeM*ShapeP,ShapeN>>  convertEigenMat
        ( OpCurlX, curlx, curlx, 1, 1, 0, vm::CURL|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
        ( OpCurlY, curly, curly, 1, 1, 1, vm::CURL|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
        ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
-       ( OpHess , hess , hess,  0, 0, 0, vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2,1 ), \
-       ( OpLap  , laplacian, laplacian,  0, 0, 0, vm::KB|vm::LAPLACIAN|vm::FIRST_DERIVATIVE , RankSame,false,-2,1 ), \
+       ( OpHess , hess , hess,  0, 0, 0, vm::KB|vm::HESSIAN|vm::SECOND_DERIVATIVE , RankUp2,false,-2,1 ), \
+       ( OpLap  , laplacian, laplacian,  0, 0, 0, vm::KB|vm::LAPLACIAN|vm::SECOND_DERIVATIVE , RankSame,false,-2,1 ), \
        ( OpTrace  , trace, trace,  0, 0, 0, vm::TRACE , Rank0,false,0,1 ) \
                                                                         ) \
    ) \

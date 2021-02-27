@@ -1157,8 +1157,37 @@ class GeoMap
                 DCHECK( M_G.size2() == M_gm->nbPoints()  ) << "Invalid number of points got " << M_G.size2() << " expected: " << M_gm->nbPoints();
                 DCHECK( M_pc ) << "invalid precompute data structure";
 
-                updateMeasures<CTX>();
-                updatePoints<CTX>();
+                if constexpr ( vm::has_measure_v<CTX> )
+                {
+                    this->updateMeasures();
+                }
+                else if constexpr ( vm::has_dynamic_v<CTX> )
+                {
+                    if ( hasMEASURE( M_dynamic_context ) )
+                        this->updateMeasures();
+                }
+
+                if constexpr ( vm::has_measure_v<CTX> || vm::has_tangent_v<CTX> )
+                {
+                    if ( this->isOnFace() )
+                        this->updateFaceMeasures();
+                }
+                else if constexpr ( vm::has_dynamic_v<CTX> )
+                {
+                    if ( this->isOnFace() && ( hasMEASURE( M_dynamic_context ) || hasTANGENT( M_dynamic_context ) ) )
+                        this->updateFaceMeasures();
+                }
+
+                if constexpr ( vm::has_point_v<CTX> )
+                {
+                    this->updatePoints();
+                }
+                else if constexpr ( vm::has_dynamic_v<CTX> )
+                {
+                    if ( hasPOINT( M_dynamic_context ) )
+                        this->updatePoints();
+                }
+
                 updateJKBN<CTX>();
             }
         void setElement( element_type const& __e )
@@ -1179,7 +1208,17 @@ class GeoMap
                     //M_perm = __e.permutation( M_face_id );
                     M_pc = M_pc_faces[__f][M_perm];
                 }
-                updatePoints<CTX>();
+
+                if constexpr ( vm::has_point_v<CTX> )
+                {
+                    this->updatePoints();
+                }
+                else if constexpr ( vm::has_dynamic_v<CTX> )
+                {
+                    if ( hasPOINT( M_dynamic_context ) )
+                        this->updatePoints();
+                }
+
                 updateJKBN<CTX>();
                 
             }
@@ -1260,7 +1299,11 @@ class GeoMap
         //!
         uint16_type nComputedPoints() const
         {
-            return is_linear_polynomial_v<gm_type>?1:M_npoints;
+            //return is_linear_polynomial_v<gm_type>?1:M_npoints;
+            if constexpr ( is_linear_polynomial_v<gm_type> )
+                return 1;
+            else
+                return M_npoints;
         }
         
         /**
@@ -2003,39 +2046,28 @@ class GeoMap
             return M_perm;
         }
 
-        template<int CTX>
-        void updateMeasures()
+        FEELPP_STRONG_INLINE
+        void updateMeasures() noexcept
             {
-                if ( vm::has_measure<CTX>::value )
-                {
-                    M_h = M_element->h();
-                    M_h_min = M_element->hMin();
-                    M_meas = M_element->measure();
-                    if ( this->isOnFace() )
-                    {
-                        M_measface = M_element->faceMeasure( M_face_id );
-                        M_h_face = M_element->hFace( M_face_id );
-                        //M_h_edge = M_element->hEdge( M_face_id );
-                    }
-                }
-                if ( vm::has_tangent<CTX>::value && ( NDim == 2 ) )
-                {
-                    if ( this->isOnFace() )
-                    {
-                        M_h_face = M_element->hFace( M_face_id );
-                    }
-                }
-
+                M_h = M_element->h();
+                M_h_min = M_element->hMin();
+                M_meas = M_element->measure();
             }
-        template<int CTX>
-        void updatePoints()
+
+        FEELPP_STRONG_INLINE
+        void updateFaceMeasures() noexcept
             {
-                if ( vm::has_point_v<CTX> || ( vm::has_dynamic_v<CTX> &&  hasPOINT( M_dynamic_context ) ) )
-                {
-                    em_matrix_col_type<value_type> Xreal( M_xrealq.data().begin(), M_xrealq.size1(), M_xrealq.size2() );
-                    em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
-                    Xreal.noalias() = Pts * M_pc->phiEigen();
-                }
+                M_measface = M_element->faceMeasure( M_face_id );
+                M_h_face = M_element->hFace( M_face_id );
+            }
+
+
+        FEELPP_STRONG_INLINE
+        void updatePoints() noexcept
+            {
+                em_matrix_col_type<value_type> Xreal( M_xrealq.data().begin(), M_xrealq.size1(), M_xrealq.size2() );
+                em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
+                Xreal.noalias() = Pts * M_pc->phiEigen();
             }
 
         template<size_type CTX,typename ConvexType = ElementType>
@@ -2072,7 +2104,7 @@ class GeoMap
                 //std::cout << "2.B=" << B << std::endl;
             }
         }
-
+#if 0
         /**
          * update Jacobian data : linear case
          */
@@ -2110,6 +2142,7 @@ class GeoMap
                 }
             }
         }
+#endif
         //!
         //! update hessian information
         //!
@@ -2170,7 +2203,7 @@ class GeoMap
             {
                 if ( M_face_id == invalid_uint16_type_value )
                     return;//throw std::logic_error( "tangent computation defined only on faces" );
-                if ( NDim == 2 )
+                if constexpr ( NDim == 2 )
                 {
                     // t = |\hat{e}|*o_K*(K*t_ref)/|e| where o_K is the sign(e*x_K(\hat{e}))
                     Ta.noalias() = K * M_gm->referenceConvex().tangent( M_face_id );
@@ -2254,21 +2287,33 @@ class GeoMap
                             M_K[q].noalias() = Pts * GradPhi;
 
                             updateJacobian<CTX>( M_K[q], M_B[q], M_J[q] );
-#if 0                                                                                                                     
+#if 0
                             //std::cout << "CTX=" << CTX << std::endl;
                             //std::cout << "K[" << q << "]=" << M_K[q] << std::endl;
                             //std::cout << "B[" << q << "]=" << M_B[q] << std::endl;
                             //std::cout << "J[" << q << "]=" << M_J[q] << std::endl;
                             //if ( 0 && is_linear )
                                 //M_gm->updateCache( M_id, M_K[q], M_B[q], M_J[q] );
-#endif                                                    
+#endif
                         }
-                        if constexpr ( vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX> )
+
+                        if constexpr ( !gmc_type::is_linear )
                         {
-                            //M_h.resize( { NDim, NDim } );
-                            M_gm->hessianBasisAtPoint( q, M_hessian_basis_at_pt, M_pc.get() );
-                            M_hessian[q] = TPts.contract(M_hessian_basis_at_pt,dims);
-                            //std::cout << "M_hessian[" << q << "]=" << M_hessian[q] << std::endl;
+                            if constexpr ( vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX> )
+                            {
+                                //M_h.resize( { NDim, NDim } );
+                                M_gm->hessianBasisAtPoint( q, M_hessian_basis_at_pt, M_pc.get() );
+                                M_hessian[q] = TPts.contract(M_hessian_basis_at_pt,dims);
+                                //std::cout << "M_hessian[" << q << "]=" << M_hessian[q] << std::endl;
+                            }
+                            else if constexpr ( vm::has_dynamic_v<CTX> )
+                            {
+                                if ( hasSECOND_DERIVATIVE( M_dynamic_context ) )
+                                {
+                                    M_gm->hessianBasisAtPoint( q, M_hessian_basis_at_pt, M_pc.get() );
+                                    M_hessian[q] = TPts.contract(M_hessian_basis_at_pt,dims);
+                                }
+                            }
                         }
 
                         updateHessian<CTX>( M_B[q] );
