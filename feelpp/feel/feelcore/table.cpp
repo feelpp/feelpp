@@ -112,18 +112,6 @@ Table::Table( Table const& t )
     M_format( new TableImpl::Format{t.format()} )
 {}
 
-void
-Table::add_row( std::initializer_list<variant_value_type> const& rowValues )
-{
-    if ( M_nRow > 0 && rowValues.size() != M_nCol )
-        return;
-
-    this->resize( M_nRow+1, rowValues.size() );
-    int j = 0, i= M_nRow-1;
-    for ( auto const& rowValue : rowValues )
-        this->operator()(i,j++) = TableImpl::Cell(rowValue);
-}
-
 std::vector<Printer::OutputText>
 Table::toOutputText( TableImpl::Format const& format ) const
 {
@@ -131,6 +119,9 @@ Table::toOutputText( TableImpl::Format const& format ) const
 
     int nRow = this->nRow();
     int nCol = this->nCol();
+    if ( nRow*nCol == 0 )
+        return std::vector<Printer::OutputText>{};
+
     std::vector<std::vector<Printer::OutputText>> allOutputStringByLine(nRow*nCol);
     std::vector<TableImpl::Cell::Format> allNewFormat(nRow*nCol);
     for (int i=0;i<nRow;++i)
@@ -248,8 +239,10 @@ Table::toOutputText( TableImpl::Format const& format ) const
 
 
 void
-Table::exportAsciiDoc( std::ostream &o ) const
+Table::exportAsciiDocImpl( std::ostream &o, std::string const& tableSeparator, int nestedTableLevel ) const
 {
+    if ( this->nRow()*this->nCol() == 0 )
+        return;
     o<< "\n";
     o << "[cols=\"";
     if ( this->format().firstColumnIsHeader() )
@@ -265,7 +258,7 @@ Table::exportAsciiDoc( std::ostream &o ) const
     if ( this->format().firstRowIsHeader() )
         o << ",options=\"header\"";
     o << "]" << "\n";
-    o << "|===" << "\n";
+    o << tableSeparator << "===" << "\n";
 
     for (int i=0;i<this->nRow();++i)
     {
@@ -273,13 +266,13 @@ Table::exportAsciiDoc( std::ostream &o ) const
         {
             auto const& cell = this->operator()(i,j);
             auto format = cell.format().newFromParent( this->format() );
-
-            TableImpl::updateOutputStreamOfCellUsingAsciiDoc(o,cell,format);
+            TableImpl::updateOutputStreamOfCellUsingAsciiDoc(o,cell,format,tableSeparator,nestedTableLevel);
             o << "\n";
         }
-        o << "\n";
+        if ( i < (this->nRow()-1) )
+            o << "\n";
     }
-    o << "|===" << "\n";
+    o << tableSeparator << "===" << "\n";
 }
 
 std::ostream&
@@ -500,7 +493,7 @@ Cell::toOutputText( Format const& format, bool enableWidthMax ) const
 #endif
 }
 
-void updateOutputStreamOfCellUsingAsciiDoc( std::ostream &o, Cell const& c, Cell::Format const& format )
+void updateOutputStreamOfCellUsingAsciiDoc( std::ostream &o, Cell const& c, Cell::Format const& format, std::string const& tableSeparator, int nestedTableLevel )
 {
     switch ( format.fontAlign() )
     {
@@ -515,10 +508,18 @@ void updateOutputStreamOfCellUsingAsciiDoc( std::ostream &o, Cell const& c, Cell
         break;
     }
 
-    o << "|";
-    for ( auto const& ot : c.toOutputText( format, false ) )
-        for ( auto const& [s,p] : ot.data() )
-            o << s;
+    if ( c.template is_a<Feel::Table>() && nestedTableLevel == 0 )
+    {
+        o << "a" << tableSeparator;
+        c.template value<Feel::Table>().exportAsciiDocImpl( o, "!", nestedTableLevel+1 );
+    }
+    else
+    {
+        o << tableSeparator;
+        for ( auto const& ot : c.toOutputText( format, false ) )
+            for ( auto const& [s,p] : ot.data() )
+                o << s;
+    }
 }
 
 
