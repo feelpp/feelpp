@@ -33,6 +33,7 @@
 #include <numeric>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/traits.hpp>
 
 namespace Feel
 {
@@ -123,7 +124,11 @@ public :
     TableImpl::Cell & operator()(int i,int j) { return M_cells[i*M_nCol+j]; }
 
     //! add row in table
-    void add_row( std::initializer_list<variant_value_type> const& rowValues );
+    void add_row( std::initializer_list<variant_value_type> const& rowValues ) { this->add_row<std::initializer_list<variant_value_type>>( rowValues ); }
+
+    template <typename T>
+    void
+    add_row( T const& rowValues, std::enable_if_t< is_iterable_v<T> >* = nullptr );
 
     //! get table format
     TableImpl::Format& format() { return *M_format; }
@@ -138,7 +143,11 @@ public :
     std::vector<Printer::OutputText> toOutputText( TableImpl::Format const& format ) const;
 
     //! export into stream \o the asciidoc representation of the table
-    void exportAsciiDoc( std::ostream &o ) const;
+    void exportAsciiDoc( std::ostream &o ) const { this->exportAsciiDocImpl( o ); }
+
+    //friend void updateOutputStreamOfCellUsingAsciiDoc( std::ostream &o, TableImpl::Cell const& c, TableImpl::Cell::Format const& format, std::string const& tableSeparator, int nestedTableLevel = 0 );
+    //private :
+    void exportAsciiDocImpl( std::ostream &o, std::string const& tableSeparator = "|", int nestedTableLevel = 0 ) const;
 
 private :
     int M_nRow, M_nCol;
@@ -213,6 +222,17 @@ public:
 
     Format& format() { return M_format; }
     Format const& format() const { return M_format; }
+
+    template <typename T>
+    bool is_a() const { return std::holds_alternative<T>( this->M_value ); }
+
+    template <typename T>
+    T const& value() const
+        {
+            if ( !this->is_a<T>() )
+                CHECK(false) << "value type of cell is not compatible";
+            return std::get<T>( this->M_value );
+        }
 
     std::vector<Printer::OutputText> toOutputText( Format const& format, bool enableWidthMax = true ) const;
 
@@ -290,8 +310,27 @@ private :
     bool M_firstColumnIsHeader = false;
 };
 
-void updateOutputStreamOfCellUsingAsciiDoc( std::ostream &o, Cell const& c, Cell::Format const& format );
+void updateOutputStreamOfCellUsingAsciiDoc( std::ostream &o, Cell const& c, Cell::Format const& format, std::string const& tableSeparator, int nestedTableLevel = 0 );
+
 
 } // namespace TableImpl
+
+
+template <typename T>
+void
+Table::add_row( T const& rowValues, std::enable_if_t< is_iterable_v<T> >* )
+{
+    size_t containerSize = std::distance( rowValues.begin(), rowValues.end() ); // rowValues.size()
+    //size_t containerSize = std::distance( std::begin(rowValues), std::end( rowValues ) ); // rowValues.size()
+    if ( M_nRow > 0 && containerSize != M_nCol )
+        return;
+
+    this->resize( M_nRow+1, containerSize );
+    int j = 0, i= M_nRow-1;
+    for ( auto const& rowValue : rowValues )
+        this->operator()(i,j++) = TableImpl::Cell(rowValue);
+}
+
+
 
 } // namespace Feel
