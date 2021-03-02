@@ -33,28 +33,28 @@ namespace Feel
 {
 namespace vf
 {
-template<typename PrintExprT>
-class PrintExpr: public ExprDynamicBase
+template <typename PrintExprT>
+class PrintExpr : public ExprDynamicBase
 {
-public:
+  public:
     using super = ExprDynamicBase;
     static const size_type context = PrintExprT::context;
     static const bool is_terminal = false;
 
-    template<typename Func>
+    template <typename Func>
     struct HasTestFunction
     {
         static const bool result = PrintExprT::template HasTestFunction<Func>::result;
     };
-    template<typename Func>
+    template <typename Func>
     struct HasTrialFunction
     {
         static const bool result = PrintExprT::template HasTrialFunction<Func>::result;
     };
 
-    template<typename Func>
+    template <typename Func>
     static const bool has_test_basis = PrintExprT::template has_test_basis<Func>;
-    template<typename Func>
+    template <typename Func>
     static const bool has_trial_basis = PrintExprT::template has_trial_basis<Func>;
     using test_basis = typename PrintExprT::test_basis;
     using trial_basis = typename PrintExprT::trial_basis;
@@ -74,15 +74,16 @@ public:
      */
     //@{
 
-    explicit PrintExpr( expression_type const & __expr,
-                        std::string const & __tag )
-        :
-        super( Feel::vf::dynamicContext( __expr ) ),
-        M_expr( __expr ),
-        M_tag( __tag )
-    {}
+    explicit PrintExpr( expression_type const& __expr,
+                        std::string const& __tag )
+        : super( Feel::vf::dynamicContext( __expr ) ),
+          M_expr( __expr ),
+          M_tag( __tag )
+    {
+    }
     ~PrintExpr()
-    {}
+    {
+    }
 
     //@}
 
@@ -93,16 +94,44 @@ public:
     bool isPolynomial() const { return M_expr.isPolynomial(); }
 
     //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
-        {
-            return M_expr.evaluate(p,worldcomm);
-        }
+    evaluate_type evaluate( bool p, worldcomm_ptr_t const& worldcomm ) const
+    {
+        return M_expr.evaluate( p, worldcomm );
+    }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+    {
+        auto newExpr = M_expr.applySymbolsExpr( se );
+        using new_expr_type = std::decay_t<decltype( newExpr )>;
+        return PrintExpr<new_expr_type>( newExpr, M_tag );
+    }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+    {
+        return M_expr.hasSymbolDependency( symb, se );
+    }
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string, std::set<std::string>>& res, TheSymbolExprType const& se ) const
+    {
+        M_expr.dependentSymbols( symb, res, se );
+    }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+    {
+        auto theDiffExpr = M_expr.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
+        using new_expr_type = std::decay_t<decltype( theDiffExpr )>;
+        return PrintExpr<new_expr_type>( theDiffExpr );
+    }
 
     /** @name Operator overloads
      */
     //@{
 
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
+    template <typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
@@ -110,7 +139,8 @@ public:
 
         typedef typename tensor_expr_type::shape shape;
 
-        template <class Args> struct sig
+        template <class Args>
+        struct sig
         {
             typedef value_type type;
         };
@@ -121,25 +151,24 @@ public:
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            :
-            M_tensor_expr( expr.expression(), geom, fev, feu ),
-            M_tag( expr.tag() )
-        {}
+            : M_tensor_expr( expr.expression(), geom, fev, feu ),
+              M_tag( expr.tag() )
+        {
+        }
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
-            :
-            M_tensor_expr( expr.expression(), geom, fev ),
-            M_tag( expr.tag() )
-        {}
-
-        tensor( this_type const& expr, Geo_t const& geom )
-            :
-            M_tensor_expr( expr.expression(), geom ),
-            M_tag( expr.tag() )
+            : M_tensor_expr( expr.expression(), geom, fev ),
+              M_tag( expr.tag() )
         {
         }
-        template<typename IM>
+
+        tensor( this_type const& expr, Geo_t const& geom )
+            : M_tensor_expr( expr.expression(), geom ),
+              M_tag( expr.tag() )
+        {
+        }
+        template <typename IM>
         void init( IM const& im )
         {
             M_tensor_expr.init( im );
@@ -161,50 +190,46 @@ public:
             M_tensor_expr.update( geom, face );
         }
 
-
         value_type
         evalij( uint16_type i, uint16_type j ) const
         {
             return M_tensor_expr.evalij( i, j );
         }
 
-
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            value_type res= M_tensor_expr.evalijq( i, j, c1, c2, q );
+            value_type res = M_tensor_expr.evalijq( i, j, c1, c2, q );
             std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
-            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG( INFO ) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
-        template<int PatternContext>
+        template <int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
-            value_type res= M_tensor_expr.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() );
+            value_type res = M_tensor_expr.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() );
             std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
-            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG( INFO ) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
-
-
 
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            value_type res= M_tensor_expr.evaliq( i, c1, c2, q );
-            std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evaliq( " << i  << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
-            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evaliq( " << i  << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            value_type res = M_tensor_expr.evaliq( i, c1, c2, q );
+            std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evaliq( " << i << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG( INFO ) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evaliq( " << i << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
 
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            value_type res= M_tensor_expr.evalq( c1, c2, q );
+            value_type res = M_tensor_expr.evalq( c1, c2, q );
             std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evalq( " << c1 << "," << c2 << "," << q << ")=" << res << "\n";
-            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evalq( " << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG( INFO ) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evalq( " << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
 
@@ -266,23 +291,23 @@ public:
      */
     //@{
 
-    template<typename Elem1, typename Elem2, typename FormType>
+    template <typename Elem1, typename Elem2, typename FormType>
     void assemble( std::shared_ptr<Elem1> const& __u,
                    std::shared_ptr<Elem2> const& __v,
                    FormType& __f ) const
     {
-        DVLOG(2) << "calling assemble(u,v)\n";
+        DVLOG( 2 ) << "calling assemble(u,v)\n";
         M_expr.assemble( __u, __v, __f );
-        DVLOG(2) << "calling assemble(u,v) done\n";
+        DVLOG( 2 ) << "calling assemble(u,v) done\n";
     }
 
-    template<typename Elem1, typename FormType>
+    template <typename Elem1, typename FormType>
     void assemble( std::shared_ptr<Elem1> const& __v,
                    FormType& __f ) const
     {
-        DVLOG(2) << "calling assemble(v)\n";
+        DVLOG( 2 ) << "calling assemble(v)\n";
         M_expr.assemble( __v, __f );
-        DVLOG(2) << "calling assemble(v) done\n";
+        DVLOG( 2 ) << "calling assemble(v) done\n";
     }
 #if 0
     //__typeof__( M_expr.evaluate() )
@@ -293,14 +318,11 @@ public:
     }
 #endif
 
-
     //@}
 
-protected:
-
-private:
-
-    mutable expression_type  M_expr;
+  protected:
+  private:
+    mutable expression_type M_expr;
     const std::string M_tag;
 };
 
@@ -321,15 +343,14 @@ private:
 
    \return the expression that was printed.
  */
-template<typename ExprT>
-inline
-Expr< PrintExpr<ExprT> >
-print( ExprT v, std::string t="" )
+template <typename ExprT>
+inline Expr<PrintExpr<ExprT>>
+print( ExprT v, std::string t = "" )
 {
     typedef PrintExpr<ExprT> print_t;
-    return Expr< print_t >(  print_t( v, t ) );
+    return Expr<print_t>( print_t( v, t ) );
 }
 
-}
-}
+} // namespace vf
+} // namespace Feel
 #endif /* FEELPP_VF_PRINT_HPP */
