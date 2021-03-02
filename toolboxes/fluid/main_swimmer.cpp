@@ -47,7 +47,7 @@ bool mesh_quality( type_mesh const& mesh, type_tolerance tolerance, quality_fiel
     return toRemesh;
 }
 template <typename typemesh, typename typealemesh>
-typemesh const rem( typemesh const& mesh, typealemesh const& alemesh )
+typemesh const rem( typemesh const& mesh, typealemesh const& alemesh, typemesh parent = {} )
 {
     bool first_material = true;
     //auto mats = rangeMeshElementsByMaterial();
@@ -68,7 +68,7 @@ typemesh const rem( typemesh const& mesh, typealemesh const& alemesh )
     std::cout << "mesh marker swimmer" << mesh->markerName( "Swimmer" ) << std::endl;
     std::cout << "alemesh moving" << alemesh->aleFactory()->flagSet( "moving" ) << std::endl;
     //auto r = remesher( submesh, mesh->markerName( "Swimmer" ), alemesh->aleFactory()->flagSet( "moving" ) );
-    auto r = remesher( submesh, std::vector<int>{}, alemesh->aleFactory()->flagSet( "moving" ) );
+    auto r = remesher( submesh, std::vector<int>{}, alemesh->aleFactory()->flagSet( "moving" ), parent );
 
     r.setMetric( metric );
     auto new_mesh_remeshed = r.execute();
@@ -272,7 +272,7 @@ int runApplicationFluid()
                 delta_CM = delta_CM_init;
                 std::cout << "Need to remesh now!  \n";
                 //bool toRemesh = mesh_quality(FM->meshALE()->movingMesh(),tolerance,quality_field);
-                auto new_mesh = rem( FM->meshALE()->movingMesh(), FM->meshALE() );
+                auto new_mesh = rem( FM->meshALE()->movingMesh(), FM->meshALE(), FM_ref->mesh() );
                 new_mesh->saveHDF5( "new_mesh.json" );
                 auto u = FM->fieldVelocity();
                 u.saveHDF5( "new_initialCondition.json" );
@@ -395,17 +395,10 @@ int runApplicationFluid()
             Feel::cout << " is MoveDomain " << FM->isMoveDomain() << std::endl;
             FM->setApplyMovingMeshBeforeSolve( false );
 
-            auto e = expr( "{udxt_0,udxt_1}:udxt_0:udxt_1", FM->symbolsExpr() );
-#if 0            
-            
+            auto e = expr<nDim,1>( expr<nDim,1>("{udxt_0,udxt_1}:udxt_0:udxt_1"), FM->symbolsExpr() );
             auto ud = Xh_ref_swimmer->element( e );
-
             auto se = Feel::vf::symbolsExpr( FM->symbolsExpr(), symbolExpr( "ud", idv( ud ) ) );
-#else
-            F
 
-            auto se = Feel::vf::symbolsExpr( FM->symbolsExpr(), symbolExpr( "ud", idv( ud ) ) );
-#endif
             FM->updateALEmesh( se );
             FM->solve();
             FM->exportResults();
