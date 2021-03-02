@@ -557,7 +557,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
             {
                 if ( M_parent_mesh )
                 {
-                    int id_in_parent_mesh = M_parent_mesh->subMeshToMesh( face.id() );
+                    int id_in_parent_mesh = M_mesh->subMeshToMesh( face.id() );
                     M_smd->bm.insert( typename smd_type::bm_type::value_type( k, id_in_parent_mesh ) );
                 }
                 else
