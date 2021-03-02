@@ -261,6 +261,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
 
     if ( M_algebraicFactory )
         M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
+
+    if ( !M_bodySetBC.empty() )
+        M_bodySetBC.updateInformationObject( p["Boundary Conditions"] );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -290,17 +293,37 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
         tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
 
     // Function Spaces
+    auto tabInfoFunctionSpaces = TabulateInformationsSections::New( tabInfoProp );
+    tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
     if ( jsonInfo.contains("Function Spaces") )
     {
         auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
-        auto tabInfoFunctionSpaces = TabulateInformationsSections::New( tabInfoProp );
         for ( std::string const& spaceName : std::vector<std::string>({"Velocity","Pressure"}) )
         {
             nl::json::json_pointer jsonPointerSpace( jsonInfoFunctionSpaces.at( spaceName ).template get<std::string>() );
             if ( JournalManager::journalData().contains( jsonPointerSpace ) )
                 tabInfoFunctionSpaces->add( spaceName, TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( JournalManager::journalData().at( jsonPointerSpace ), tabInfoProp ) );
         }
-        tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
+    }
+
+    std::map<std::string,uint16_type> jsonPtrFunctionSpacesToLevel;
+    if ( jsonInfo.contains("Boundary Conditions") )
+    {
+        auto const& jsonInfoBoundaryConditions = jsonInfo.at("Boundary Conditions");
+        auto tabInfoBoundaryConditions = TabulateInformationsSections::New( tabInfoProp );
+
+        if ( !M_bodySetBC.empty() )
+            M_bodySetBC.updateTabulateInformations( tabInfoBoundaryConditions, jsonInfoBoundaryConditions, tabInfoProp, jsonPtrFunctionSpacesToLevel );
+        //tabInfoBoundaryConditions->add( "Body Set Boundary Condition", M_bodySetBC.tabulateInformations( jsonInfoBoundaryConditions, tabInfoProp ) );
+
+        tabInfo->add( "Boundary Conditions", tabInfoBoundaryConditions );
+    }
+
+    for ( auto const& [jsonPtrStr,level] :jsonPtrFunctionSpacesToLevel )
+    {
+        nl::json::json_pointer jsonPointerSpace( jsonPtrStr );
+        if ( JournalManager::journalData().contains( jsonPointerSpace ) )
+            tabInfoFunctionSpaces->add( /*spaceName*/ jsonPtrStr, TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( JournalManager::journalData().at( jsonPointerSpace ), TabulateInformationProperties(level) ) );
     }
 
     // Algebraic Solver

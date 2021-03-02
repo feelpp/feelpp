@@ -29,7 +29,9 @@
 #include <feel/feelfilters/exporter.hpp>
 #endif
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/mesh.hpp>
+#include <feel/feeldiscr/makemesh.hpp>
 
 using namespace Feel;
 

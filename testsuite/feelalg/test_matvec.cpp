@@ -29,7 +29,9 @@
    \date 2013-12-06
  */
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feelvf/vf.hpp>
 using namespace Feel;
 
 int main( int argc, char* argv[] )

@@ -418,6 +418,9 @@ public:
         void init( self_type const& fluidToolbox );
         void updateForUse( self_type const& fluidToolbox );
 
+        void updateInformationObject( nl::json & p ) const;
+        tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp,
+                                                          std::map<std::string,uint16_type> & jsonPtrFunctionSpacesToLevel ) const;
 
         void initTimeStep( self_type const& fluidToolbox, int bdfOrder, int nConsecutiveSave, std::string const& myFileFormat )
             {
@@ -763,6 +766,22 @@ public:
     class BodySetBoundaryCondition : public std::map<std::string,BodyBoundaryCondition>
     {
     public:
+        void updateInformationObject( nl::json & p ) const
+            {
+                for ( auto & [name,bpbc] : *this )
+                    bpbc.updateInformationObject( p["Body"][name] );
+            }
+        void updateTabulateInformations( tabulate_informations_sections_ptr_t & tabInfo, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::map<std::string,uint16_type> & jsonPtrFunctionSpacesToLevel ) const
+            {
+                if ( jsonInfo.contains("Body") )
+                {
+                    auto const& jsonInfoBBC = jsonInfo.at("Body");
+                    auto tabInfoBBC = TabulateInformationsSections::New( tabInfoProp );
+                    for ( auto & [name,bpbc] : *this )
+                        tabInfoBBC->add( name, bpbc.tabulateInformations(jsonInfoBBC.at(name), tabInfoProp, jsonPtrFunctionSpacesToLevel ) );
+                    tabInfo->add( "Body", tabInfoBBC );
+                }
+            }
         void initTimeStep( self_type const& fluidToolbox, int bdfOrder, int nConsecutiveSave, std::string const& myFileFormat )
             {
                 for ( auto & [name,bpbc] : *this )
