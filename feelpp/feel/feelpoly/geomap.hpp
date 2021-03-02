@@ -847,27 +847,32 @@ class GeoMap
               //M_xref( PDim ),
               //M_xreal( NDim ),
               //M_x0( NDim ),
-              M_J( nComputedPoints() ),
+              //M_J( nComputedPoints() ),
+#if 0
               M_G( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ),
+#else
+              M_G( NDim, gm_type::nNodes ),
+#endif
               //M_ref_normals( M_gm->referenceConvex().normals() ),
-              M_normals( nComputedPoints() ),
-              M_unit_normals( nComputedPoints() ),
-              M_normal_norms( nComputedPoints() ),
-              M_tangents( nComputedPoints() ),
-              M_unit_tangents( nComputedPoints() ),
-              M_tangent_norms( nComputedPoints() ),
-              M_local_basis_real( nComputedPoints() ),
-              M_local_basis_ref( nComputedPoints() ),
+
+              //M_normals( nComputedPoints() ),
+              //M_unit_normals( nComputedPoints() ),
+              //M_normal_norms( nComputedPoints() ),
+              //M_tangents( nComputedPoints() ),
+              //M_unit_tangents( nComputedPoints() ),
+              //M_tangent_norms( nComputedPoints() ),
+              //M_local_basis_real( nComputedPoints() ),
+              //M_local_basis_ref( nComputedPoints() ),
               M_xrealq( NDim, nPoints() ),
-              M_g_linear( M_G.size2(), PDim ),
-              M_g( M_G.size2(), PDim ),
-              M_hessian_basis_at_pt( M_G.size2(), PDim, PDim ),
-              M_K( nComputedPoints() ),
+              //M_g_linear( M_G.cols(), PDim ),
+              M_g( M_G.cols(), PDim ),
+              M_hessian_basis_at_pt( M_G.cols(), PDim, PDim ),
+              //M_K( nComputedPoints() ),
               M_CS(),
               M_CSi(),
-              M_B( nComputedPoints() ),
-              M_hessian( nComputedPoints() ),
-              M_Ptangent( nComputedPoints() ),
+              //M_B( nComputedPoints() ),
+              //M_hessian( nComputedPoints() ),
+              //M_Ptangent( nComputedPoints() ),
               M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
               M_id( __e.id() ),
               M_e_markers( __e.markers() ),
@@ -886,11 +891,14 @@ class GeoMap
         {
             if ( this->isOnSubEntity() )
                 M_f_markers = entityMarkers<SubEntityCoDim>( __e, __f );
+#if 0
             if ( is_linear )
             {
                 M_gm->gradient( node_t_type(), M_g_linear );
             }
+#endif
 
+            resizeJKBN<CTX,true>(); // TODO use SubEntityCoDim
             //updateGradient<CTX>( 0 );
             if ( M_pc && !this->isOnSubEntity() )
                 update<CTX>( __e );
@@ -985,73 +993,13 @@ class GeoMap
         {
             const bool updatePc = false;
 
-#if 1
             M_perm=__perm;
             if ( __updateJacobianCtx )
                 this->update<CTX>( __e, M_pc_faces[__f][M_perm], __f, updatePc );
             else
                 this->update<clear_value_v<CTX,vm::JACOBIAN|vm::MEASURE>>( __e, M_pc_faces[__f][M_perm], __f, updatePc );
-#else
-            //M_element_c = std::shared_ptr<element_type const>(&__e);
-            M_element = boost::addressof( __e );
-            M_face_id = __f;
-
-            M_perm = __perm;
-
-            M_pc = M_pc_faces[__f][M_perm];
-            //M_G = __e.G();
-            M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
-            M_id = __e.id();
-            M_e_markers = __e.markers();
-            if ( this->isOnSubEntity() )
-                M_f_markers = entityMarkers<subEntityCoDim>( __e, __f );
-
-            FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )
-            ( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
-            FEELPP_ASSERT( M_pc )
-                .error( "invalid precompute data structure" );
-
-            if ( vm::has_measure<context>::value )
-            {
-                M_h = __e.h();
-                M_h_min = __e.hMin();
-                M_meas = __e.measure();
-                if ( subEntityCoDim == 1 )
-                {
-                    M_measface = __e.faceMeasure( M_face_id );
-                    M_h_face = __e.hFace( M_face_id );
-                }
-                //M_h_edge = __e.hEdge( M_face_id );
-            }
-            else if ( vm::has_tangent<context>::value && ( NDim == 2 ) )
-            {
-                if ( subEntityCoDim == 1 )
-                    M_h_face = __e.hFace( M_face_id );
-            }
-
-            if ( vm::has_point_v<context> || ( vm::has_dynamic_v<context> && vm::hasPOINT( M_dynamic_context ) ) )
-            {
-
-                //ublas::axpy_prod( M_G, pc->phi(), M_xrealq, true );
-                std::fill( M_xrealq.data().begin(), M_xrealq.data().end(), value_type( 0 ) );
-                const uint16_type size1 = M_G.size1();
-                const uint16_type size3 = M_G.size2();
-                const uint16_type size2 = M_pc->nPoints();
-
-                for ( uint16_type i = 0; i < size1; ++i )
-                    for ( uint16_type j = 0; j < size2; ++j )
-                    {
-                        for ( uint16_type k = 0; k < size3; ++k )
-                            M_xrealq( i, j ) += M_G( i, k ) * M_pc->phi()[k][j]( 0, 0 );
-                    }
-            }
-
-            if ( vm::has_jacobian<context>::value && __updateJacobianCtx )
-            {
-                update( __e, M_pc_faces[__f][M_perm], __f, updatePc );
-            }
-#endif
         }
+
 
         template<size_type CTX>
         void update( element_type const& __e,
@@ -1061,53 +1009,67 @@ class GeoMap
         {
             M_pc = __pc;
 
-            if ( M_npoints != M_pc->nPoints() )
+            if constexpr ( !is_linear_polynomial_v<gm_type> )
             {
-                M_npoints = M_pc.get()->nPoints();
-
-                if ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> )
+                if ( M_npoints != M_pc->nPoints() )
                 {
-                    M_K.resize( nComputedPoints() );
-                    M_B.resize( nComputedPoints() );
-                    M_J.resize( nComputedPoints() );
-                    if ( vm::has_hessian<CTX>::value || vm::has_laplacian<CTX>::value )
-                    {
-                        M_hessian.resize( nComputedPoints() );
-                    }
-                    if ( vm::has_tangent<CTX>::value )
-                        M_Ptangent.resize( nComputedPoints() );
-                }
-                M_xrealq.resize( NDim, nPoints() );
-                if ( vm::has_normal_v<CTX> )
-                {
-                    M_normals.resize( nComputedPoints() );
-                    M_unit_normals.resize( nComputedPoints() );
-                    M_normal_norms.resize( nComputedPoints() );
-                }
-
-                if ( is_linear )
-                {
-                    M_gm->gradient( node_t_type(), M_g_linear );
+                    M_npoints = M_pc.get()->nPoints();
+                    if ( this->isOnFace() )
+                        resizeJKBN<CTX,true>();
+                    else
+                        resizeJKBN<CTX,false>();
                 }
             }
+
+            // if ( M_npoints != M_pc->nPoints() )
+            // {
+            //     M_npoints = M_pc.get()->nPoints();
+
+            //     if ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> )
+            //     {
+            //         M_K.resize( nComputedPoints() );
+            //         M_B.resize( nComputedPoints() );
+            //         M_J.resize( nComputedPoints() );
+            //         if ( vm::has_hessian<CTX>::value || vm::has_laplacian<CTX>::value )
+            //         {
+            //             M_hessian.resize( nComputedPoints() );
+            //         }
+            //         if ( vm::has_tangent<CTX>::value )
+            //             M_Ptangent.resize( nComputedPoints() );
+            //     }
+            //     M_xrealq.resize( NDim, nPoints() );
+            //     if ( vm::has_normal_v<CTX> )
+            //     {
+            //         M_normals.resize( nComputedPoints() );
+            //         M_unit_normals.resize( nComputedPoints() );
+            //         M_normal_norms.resize( nComputedPoints() );
+            //     }
+
+            //     if ( is_linear )
+            //     {
+            //         M_gm->gradient( node_t_type(), M_g_linear );
+            //     }
+            // }
 
             update<CTX>( __e, __f, updatePc );
         }
 
+#if 0
         template<size_type CTX>
         bool resizeGradient()
             {
                 if ( vm::has_jacobian_v<CTX> )
                 {
-                    const bool _resized = M_G.size2() != M_g.size1();
+                    const bool _resized = M_G.cols() != M_g.size1();
                     if ( _resized )
                     {
-                        M_g.resize( M_G.size2(), PDim );
+                        M_g.resize( M_G.cols(), PDim );
                     }
                     return _resized;
                 }
                 return false;
             }
+#endif
         //template<size_type CTX>
         void updateGradient( int q )
             {
@@ -1131,7 +1093,21 @@ class GeoMap
         template<size_type CTX>
         void update( element_type const& __e, uint16_type __f = invalid_uint16_type_value, bool updatePC = true )
             {
+#if 0
                 M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
+#else
+                if constexpr ( !is_reference_convex_v<element_type> )
+                {
+                    if constexpr ( gm_type::nNodes == element_type::numVertices )
+                        __e.updateVertices( M_G );
+                    else
+                        __e.updateG( M_G );
+                }
+                else
+                {
+                    M_G = em_cmatrix_col_type<value_type>( ( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ).data().begin(), M_G.rows(), M_G.cols() );
+                }
+#endif
                 M_element = boost::addressof( __e );
                 M_id = __e.id();
                 M_e_markers = __e.markers();
@@ -1147,7 +1123,7 @@ class GeoMap
                     }
                 }
 
-                DCHECK( M_G.size2() == M_gm->nbPoints()  ) << "Invalid number of points got " << M_G.size2() << " expected: " << M_gm->nbPoints();
+                DCHECK( M_G.cols() == M_gm->nbPoints()  ) << "Invalid number of points got " << M_G.cols() << " expected: " << M_gm->nbPoints();
                 DCHECK( M_pc ) << "invalid precompute data structure";
 
                 if constexpr ( vm::has_point_v<CTX> )
@@ -1355,7 +1331,8 @@ class GeoMap
          * \return the matrix associated with the geometric nodes
          */
         //matrix_node_t_type const& G() const { return M_G; }
-        matrix_type const& G() const
+        //matrix_type const& G() const
+        eigen_matrix_nx_type const& G() const
         {
             return M_G;
         }
@@ -1520,34 +1497,47 @@ class GeoMap
         /**
          \return the barycenter of the geometric nodes
          */
+        eigen_vector_type<NDim,value_type> barycenterReal() const
+            {
+                int nPts = M_G.cols();
+                return (1./nPts)*M_G*eigen_vector_type<Eigen::Dynamic,value_type>::Ones( nPts );
+            }
+#if 0
         node_t_type barycenterReal() const
         {
-            node_t_type __barycenter( M_G.size1() );
+            node_t_type __barycenter( M_G.rows() );
             __barycenter.clear();
-
+#if 0
             for ( uint16_type __c = 0; __c < M_G.size2(); ++__c )
             {
                 __barycenter += ublas::column( M_G, __c );
             }
-
-            __barycenter /= M_G.size2();
+#else
+            CHECK( false ) << "TODO";
+#endif
+            __barycenter /= M_G.cols();
             return __barycenter;
         }
-
+#endif
         /**
          * tell whether the point is on the surface of the convex
          * @return true if the point is on the surface, false otherwise
          */
         bool isOnConvexSurface() const
         {
-            if ( trans == fem::LINEAR )
+            if constexpr ( trans == fem::LINEAR )
             {
+#if 0
                 // x -x0 - K(0)\bar{x}
                 return std::abs( ublas::norm_2( xReal() - ublas::column( M_G, 0 ) -
                                                 ublas::prod( M_K, xRef() ) ) ) < 1e-10;
+#else
+                CHECK( false ) << "TODO";
+                return false;
+#endif
             }
-
-            return false;
+            else
+                return false;
         }
 
         node_t_type const& refNormal( int /*q*/ ) const
@@ -1825,7 +1815,12 @@ class GeoMap
          */
         value_type radiusEstimate() const
             {
+#if 0
             return M_gm->radiusEstimate( M_G );
+#else
+            CHECK( false ) << "TODO";
+            return value_type(0);
+#endif
         }
 
         /**
@@ -2060,8 +2055,8 @@ class GeoMap
         void updatePoints() noexcept
             {
                 em_matrix_col_type<value_type> Xreal( M_xrealq.data().begin(), M_xrealq.size1(), M_xrealq.size2() );
-                em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
-                Xreal.noalias() = Pts * M_pc->phiEigen();
+                //em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
+                Xreal.noalias() = /*Pts*/ M_G * M_pc->phiEigen();
             }
 
         template<typename ConvexType = ElementType>
@@ -2234,6 +2229,150 @@ class GeoMap
         }
 
 
+        template<size_type CTX,bool IsOnFace>
+        void resizeJKBN()
+            {
+                if constexpr ( !vm::has_dynamic_v<CTX> )
+                {
+                    if constexpr ( !IsOnFace )
+                    {
+                        if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX>) )
+                            return;
+                    }
+                    else
+                    {
+                        if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> ) )
+                            return;
+                    }
+                }
+
+                static const bool hasStaticB = IsOnFace? vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> :  vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX>;
+                bool hasJ = vm::has_jacobian_v<CTX>;
+                bool hasLocalBasis = IsOnFace && vm::has_local_basis_v<CTX>;
+                bool hasTangent = IsOnFace && vm::has_tangent_v<CTX>;
+                bool hasNormal = IsOnFace && (vm::has_normal_v<CTX> || vm::has_tangent_v<CTX>);
+                bool hasB = hasStaticB;//vm::has_normal_v<CTX> || vm::has_tangent_v<CTX>;
+                bool hasSecondDerivative = vm::has_second_derivative_v<CTX>;
+                if constexpr ( vm::has_dynamic_v<CTX> )
+                {
+                    if constexpr ( !vm::has_jacobian_v<CTX> )
+                        hasJ = hasJACOBIAN( M_dynamic_context );
+                    if constexpr ( !vm::has_second_derivative_v<CTX> )
+                        hasSecondDerivative = hasSECOND_DERIVATIVE( M_dynamic_context );
+                    if constexpr ( IsOnFace )
+                    {
+                        hasLocalBasis = hasLOCAL_BASIS( M_dynamic_context );
+                        hasTangent = hasTANGENT( M_dynamic_context );
+                        hasNormal = hasTangent || hasNORMAL( M_dynamic_context );
+                        if constexpr ( !hasStaticB )
+                             hasB = hasNormal || hasKB( M_dynamic_context );
+                    }
+                    else
+                    {
+                        if constexpr ( !hasStaticB )
+                             hasB =  hasKB( M_dynamic_context );
+                    }
+
+                    if constexpr ( !(vm::has_jacobian_v<CTX> || hasStaticB) )
+                           if ( !(hasJ || hasB) )
+                               return;
+                }
+
+                const uint16_type _nComputedPoints = nComputedPoints();
+
+                // K
+                M_K.resize( _nComputedPoints );
+
+                // jacobian
+                if constexpr ( vm::has_jacobian_v<CTX> )
+                {
+                    M_J.resize( _nComputedPoints );
+                }
+                else if constexpr ( vm::has_dynamic_v<CTX> )
+                {
+                    if ( hasJ )
+                        M_J.resize( _nComputedPoints );
+                }
+
+                // B
+                if constexpr ( hasStaticB )
+                {
+                    M_B.resize( _nComputedPoints );
+                }
+                else if constexpr ( vm::has_dynamic_v<CTX> )
+                {
+                    if ( hasB )
+                        M_B.resize( _nComputedPoints );
+                }
+
+                // second derivative
+                if constexpr ( !gmc_type::is_linear )
+                {
+                    if constexpr ( vm::has_second_derivative_v<CTX> /*|| vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX>*/ )
+                    {
+                        M_hessian.resize( _nComputedPoints );
+                    }
+                    else if constexpr ( vm::has_dynamic_v<CTX> )
+                    {
+                        if ( hasSecondDerivative )
+                            M_hessian.resize( _nComputedPoints );
+                    }
+                }
+
+                if constexpr ( IsOnFace )
+                {
+                    // normal
+                    if constexpr ( vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> )
+                    {
+                        M_normals.resize( _nComputedPoints );
+                        M_unit_normals.resize( _nComputedPoints );
+                        M_normal_norms.resize( _nComputedPoints );
+                    }
+                    else if constexpr ( vm::has_dynamic_v<CTX> )
+                    {
+                        if ( hasNormal )
+                        {
+                            M_normals.resize( _nComputedPoints );
+                            M_unit_normals.resize( _nComputedPoints );
+                            M_normal_norms.resize( _nComputedPoints );
+                        }
+                    }
+                    // tangent
+                    if constexpr ( vm::has_tangent_v<CTX> )
+                    {
+                        M_tangents.resize( _nComputedPoints );
+                        M_unit_tangents.resize( _nComputedPoints );
+                        M_tangent_norms.resize( _nComputedPoints );
+                        M_Ptangent.resize( _nComputedPoints );
+                    }
+                    else if constexpr ( vm::has_dynamic_v<CTX> )
+                    {
+                        if ( hasTangent )
+                        {
+                            M_tangents.resize( _nComputedPoints );
+                            M_unit_tangents.resize( _nComputedPoints );
+                            M_tangent_norms.resize( _nComputedPoints );
+                            M_Ptangent.resize( _nComputedPoints );
+                        }
+                    }
+                    // local basis
+                    if constexpr ( vm::has_local_basis_v<CTX> )
+                    {
+                        M_local_basis_ref.resize( _nComputedPoints );
+                        M_local_basis_real.resize( _nComputedPoints );
+                    }
+                    else if constexpr ( vm::has_dynamic_v<CTX> )
+                    {
+                        if ( hasLocalBasis )
+                        {
+                            M_local_basis_ref.resize( _nComputedPoints );
+                            M_local_basis_real.resize( _nComputedPoints );
+                        }
+                    }
+                }
+
+            }
+
 
 
         template<int CTX,bool IsOnFace>
@@ -2285,13 +2424,13 @@ class GeoMap
                                return;
                 }
 
-                em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
+                //em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
 
-                bool _gradient_needs_update = resizeGradient<CTX>();
+                //bool _gradient_needs_update = resizeGradient<CTX>();
                 em_matrix_col_type<value_type> GradPhi( M_g.data().begin(),
-                                                        M_G.size2(), PDim );
+                                                        M_G.cols(), PDim );
 
-                tensor_map_t<2,value_type> TPts( M_G.data().begin(), M_G.size1(), M_G.size2() );
+                tensor_map_t<2,value_type> TPts( M_G.data()/*.begin()*/, M_G.rows(), M_G.cols() );
                 Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
 
                 //if constexpr ( is_linear_polynomial_v<gm_type> )
@@ -2303,7 +2442,7 @@ class GeoMap
 
                     auto & K = M_K[q];
 
-                    K.noalias() = Pts * GradPhi;
+                    K.noalias() = /*Pts*/ M_G* GradPhi;
 
                     if constexpr ( dimension_v<ElementType> != real_dimension_v<ElementType> )
                     {
@@ -2480,7 +2619,7 @@ class GeoMap
             ar& BOOST_SERIALIZATION_NVP( M_unit_tangents );
             ar& BOOST_SERIALIZATION_NVP( M_tangent_norms );
             ar& BOOST_SERIALIZATION_NVP( M_xrealq );
-            ar& BOOST_SERIALIZATION_NVP( M_g_linear );
+            //ar& BOOST_SERIALIZATION_NVP( M_g_linear );
             ar& BOOST_SERIALIZATION_NVP( M_g );
             ar& BOOST_SERIALIZATION_NVP( M_K );
             ar& BOOST_SERIALIZATION_NVP( M_CS );
@@ -2516,7 +2655,8 @@ class GeoMap
 
         std::vector<value_type> M_J;
 
-        matrix_type M_G;
+        //matrix_type M_G;
+        eigen_matrix_nx_type M_G;
         //vector_eigen_vector_p_type M_ref_normals;
         vector_eigen_vector_n_type M_normals, M_unit_normals;
         std::vector<value_type> M_normal_norms;
@@ -2527,7 +2667,7 @@ class GeoMap
 
         matrix_type M_xrealq;
 
-        matrix_type M_g_linear;
+        //matrix_type M_g_linear;
         matrix_type M_g;
         hessian_basis_type M_hessian_basis_at_pt;
         
