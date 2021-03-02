@@ -5,6 +5,7 @@
 #include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feells/disttoentityrange.hpp>
 #include <feel/feelmesh/remesh.hpp>
+#include <feel/feelvf/print.hpp>
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 #include <feel/options.hpp>
 namespace Feel
@@ -397,7 +398,7 @@ int runApplicationFluid()
 
             auto e = expr<nDim,1>( expr<nDim,1>("{udxt_0,udxt_1}:udxt_0:udxt_1"), FM->symbolsExpr() );
             auto ud = Xh_ref_swimmer->element( e );
-            auto se = Feel::vf::symbolsExpr( FM->symbolsExpr(), symbolExpr( "ud", idv( ud ) ) );
+            auto se = Feel::vf::symbolsExpr( FM->symbolsExpr(), symbolExpr( "ud", print( idv( ud ), "ud=" ) ) );
 
             FM->updateALEmesh( se );
             FM->solve();
