@@ -31,6 +31,7 @@
 #include <parmmg/libparmmg.h>
 #include <variant>
 #include <feel/feelmesh/concatenate.hpp>
+#include <feel/feelmesh/submeshdata.hpp>
 
 namespace Feel
 {
@@ -78,13 +79,16 @@ class Remesh
     using mesh_ptrtype = std::shared_ptr<MeshType>;
     using mesh_ptr_t = mesh_ptrtype;
     using scalar_metric_t = typename Pch_type<mesh_t, 1>::element_type;
+    typedef SubMeshData<index_type> smd_type;
+    typedef std::shared_ptr<smd_type> smd_ptrtype;
     Remesh()
         : Remesh( nullptr )
     {
     }
     Remesh( std::shared_ptr<MeshType> const& mesh,
             boost::any const& required_element_markers,
-            boost::any const& required_facet_markers );
+            boost::any const& required_facet_markers,
+            std::shared_ptr<MeshType> const& parent = nullptr );
 
     ~Remesh()
     {
@@ -174,7 +178,7 @@ class Remesh
     comm_t getCommunicatorAPI();
 
   private:
-    std::shared_ptr<MeshType> M_mesh;
+    std::shared_ptr<MeshType> M_mesh, M_parent_mesh;
     RemeshMode M_mode = RemeshMode::PARMMG;
     mmg_mesh_t M_mmg_mesh;
     MMG5_pSol M_mmg_sol;
@@ -186,28 +190,37 @@ class Remesh
     boost::any M_required_element_markers;
     boost::any M_required_facet_markers;
     std::mutex mutex_;
+    // sub mesh data
+    smd_ptrtype M_smd;
 };
 
 template <typename MeshType>
 Remesh<MeshType> remesher( std::shared_ptr<MeshType> const& m,
                            boost::any required_element_markers = std::vector<int>{},
-                           boost::any required_facet_markers = std::vector<int>{} )
+                           boost::any required_facet_markers = std::vector<int>{},
+                           std::shared_ptr<MeshType> const& parent = {} )
 {
-    return Remesh<MeshType>{ m, required_element_markers, required_facet_markers };
+    return Remesh<MeshType>{ m, required_element_markers, required_facet_markers, parent };
 }
 
 template <typename MeshType>
 Remesh<MeshType>::Remesh( std::shared_ptr<MeshType> const& mesh,
                           boost::any const& required_element_markers,
-                          boost::any const& required_facet_markers )
+                          boost::any const& required_facet_markers,
+                          std::shared_ptr<MeshType> const& parent )
     : M_mesh( mesh ),
+      M_parent_mesh( parent ),
       M_mode( RemeshMode::MMG ),
       M_mmg_mesh(),
       M_mmg_sol( nullptr ),
       M_mmg_met( nullptr ),
       M_required_element_markers( required_element_markers ),
-      M_required_facet_markers( required_facet_markers )
+      M_required_facet_markers( required_facet_markers ),
+      M_smd( new smd_type( M_parent_mesh?M_parent_mesh:M_mesh ) )
 {
+    if ( M_parent_mesh && M_parent_mesh->isParentMeshOf( M_mesh ) == false )
+        throw std::logic_error( "invalid parent mesh" );
+
     if ( mesh->worldCommPtr()->localSize() == 1 && M_mode == RemeshMode::MMG)
     {
         MMG5_pMesh m = nullptr;
@@ -499,9 +512,11 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
         auto required_facet_ids = m_in->markersId( M_required_facet_markers );
 
         k = 1;
+        bool required = false;
         for ( auto const& wface : m_in->faces() )
         {
             auto const& [key, face] = boost::unwrap_ref( wface );
+            required = required_facet_ids.count( face.markerOr( 0 ).value() );
             if constexpr ( dimension_v<MeshType> == 3 )
             {
 
@@ -514,7 +529,8 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                     using namespace std::string_literals;
                     throw std::logic_error( "Error in MMG3D_Set_triangle "s + std::to_string( face.id() ) + " " + std::to_string( face.markerOr( 0 ).value() ) );
                 }
-                if ( required_facet_ids.count( face.markerOr( 0 ).value() ) &&
+                
+                if ( required &&
                      MMG3D_Set_requiredTriangle( std::get<MMG5_pMesh>( M_mmg_mesh ), k ) != 1 )
                 {
                     throw std::logic_error( "Error in MMG2D_Set_requiredTriangle" );
@@ -532,13 +548,23 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                     using namespace std::string_literals;
                     throw std::logic_error( "Error in MMG2D_Set_edge "s + std::to_string( face.id() ) + " " + std::to_string( face.markerOr( 0 ).value() ) );
                 }
-                if ( required_facet_ids.count( face.markerOr( 0 ).value() ) &&
-                     MMG2D_Set_requiredEdge( std::get<MMG5_pMesh>( M_mmg_mesh ), k ) != 1 )
+                if ( required && MMG2D_Set_requiredEdge( std::get<MMG5_pMesh>( M_mmg_mesh ), k ) != 1 )
                 {
                     throw std::logic_error( "Error in MMG2D_Set_requiredEdge" );
                 }
             }
-
+            if ( required )
+            {
+                if ( M_parent_mesh )
+                {
+                    int id_in_parent_mesh = M_parent_mesh->subMeshToMesh( face.id() );
+                    M_smd->bm.insert( typename smd_type::bm_type::value_type( k, id_in_parent_mesh ) );
+                }
+                else
+                {
+                    M_smd->bm.insert( typename smd_type::bm_type::value_type( k, face.id() ) );
+                }
+            }
             // update facet index
             k++;
         }
@@ -629,6 +655,16 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                                           face.id(), face.point( 0 ).id(), face.point( 1 ).id(), face.point( 2 ).id(),
                                           k, pt_id[face.point( 0 ).id()],pt_id[face.point( 1 ).id()],pt_id[face.point( 2 ).id()] );
                 face_id[face.id()] = std::make_pair( k, s );
+                if ( M_parent_mesh )
+                {
+                    int id_in_parent_mesh = M_parent_mesh->subMeshToMesh( face.id() );
+                    M_smd->bm.insert( typename smd_type::bm_type::value_type( k, id_in_parent_mesh ) );
+                }
+                else
+                {
+                    M_smd->bm.insert( typename smd_type::bm_type::value_type( k, face.id() ) );
+                }
+
                 k++;
             }
         }
@@ -951,6 +987,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
         mpi::wait_all( reqs.begin(), reqs.end() );
 #endif        
     }
+    out->setSubMeshData( M_smd );
     return out;
 }
 
