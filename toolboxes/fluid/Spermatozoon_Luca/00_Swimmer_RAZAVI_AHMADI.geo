@@ -1,9 +1,9 @@
 // Gmsh project created on Mon Feb 11 15:40:16 2019
 // Channel with 7.5 micrometer height
-Point(1) = {-10, 0, 0, 1.0};
-Point(2) = {85, 0, 0, 1.0};
-Point(3) = {85, 15, 0, 1.0};
-Point(4) = {-10, 15, 0, 1.0};
+Point(1) = {-20, 0, 0, 1.0};
+Point(2) = {105, 0, 0, 1.0};
+Point(3) = {105, 15, 0, 1.0};
+Point(4) = {-20, 15, 0, 1.0};
 // Channel with 15 micrometer height
 //Point(1) = {-10, -7.5, 0, 1.0};
 //Point(2) = {85, -7.5, 0, 1.0};

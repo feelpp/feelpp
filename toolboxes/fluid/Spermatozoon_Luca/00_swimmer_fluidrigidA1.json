@@ -3,7 +3,7 @@
     "ShortName":"RA swimmer",
     "Models":
     {
-	    "equations":"Stokes"
+	    "equations":"Navier-Stokes"
     },
     "Parameters":
     {
@@ -16,7 +16,8 @@
         "head_junct":"20",
         "tail_L":"50",
         "A_max":"2",
-        "offset":"0"
+        "offset":"0",
+        "udxt":"{(1-exp(-t))*A_max^2*(x-head_junct)^2/(tail_L^2)*(pi^2/lambda)/period*cos(4*pi*(t/period-(x+offset)/lambda)),(1-exp(-t))*A_max*(x-head_junct)/tail_L*2*pi/period*cos(2*pi*(t/period-(x+offset)/lambda))}:x:t:lambda:period:pi:tail_L:head_junct:A_max:offset",
     },
     "Materials":
     {
@@ -76,14 +77,14 @@
                     {
                         "names":"MySolid"
                     },
-                    "translational-velocity":"{0,0}",
+                    //"translational-velocity":"{0,0}",
                     "elastic-velocity":
                     {
                         "onTail":
                         {
                             //"expr":"{(1-exp(-t))*A_max^2*(x-head_junct)^2/(tail_L^2)*(pi^2/lambda)/period*cos(4*pi*(t/period-(x+offset)/lambda)),(1-exp(-t))*A_max*(x-head_junct)/tail_L*2*pi/period*cos(2*pi*(t/period-(x+offset)/lambda))}:x:t:lambda:period:pi:tail_L:head_junct:A_max:offset",// t*(x-head_junct)^2/tail_L^2*(pi/lambda)*1/4*sin(4*pi*(t/period-x/lambda)), t*(x-head_junct)/tail_L*sin(2*pi*(t/period-x/lambda))}:t:x:period:lambda:head_junct:tail_L",
 
-                            "expr":"{(1-exp(-t))*A_max^2*(bdrydisp_X-head_junct)^2/(tail_L^2)*(pi^2/lambda)/period*cos(4*pi*(t/period-(bdrydisp_X+offset)/lambda)),(1-exp(-t))*A_max*(bdrydisp_X-head_junct)/tail_L*2*pi/period*cos(2*pi*(t/period-(bdrydisp_X+offset)/lambda))}:x:t:lambda:period:pi:tail_L:head_junct:A_max:offset:bdrydisp_X:bdrydisp_Y:bdrydisp_Z",// t*(x-head_junct)^2/tail_L^2*(pi/lambda)*1/4*sin(4*pi*(t/period-x/lambda)), t*(x-head_junct)/tail_L*sin(2*pi*(t/period-x/lambda))}:t:x:period:lambda:head_junct:tail_L",
+                            "expr":"{ud_0,ud_1}:ud_0:ud_1",
                             "markers":"Tail"
                         }
                 //"Head":{"expr":"{dx,dy}:dx:dy"},
