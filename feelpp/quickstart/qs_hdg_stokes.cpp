@@ -76,7 +76,7 @@ makeAbout()
     AboutData about( "qs_hdg_stokes" ,
                      "qs_hdg_stokes" ,
                      "0.1",
-                     "Quickstart for HDG method for stokes",
+                     "Quickstart for HDG method for Stokes problem",
                      AboutData::License_GPL,
                      "Copyright (c) 2016-2019 Feel++ Consortium" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
@@ -242,7 +242,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
                               _expr=2*tau_constant*trans(idt(uhat))*id(m) );
     a( 3_c, 3_c) += integrate(_range=boundaryfaces(mesh),                  
                               _expr=tau_constant*trans(idt(uhat))*id(m) );
-
+toc("a(3,3)", true);
     tic();
 #if 0
     if ( boption( "use-near-null-space" ) ||  boption( "use-null-space" ) )
@@ -280,7 +280,10 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
         Ue(3_c).on( _range=faces(mesh), _expr=velocity_exact );
         
         auto l2err_delta = normL2( _range=elements(mesh), _expr=delta_exact - idv(deltap) );
+        auto l2err_vel = normL2( _range=elements(mesh), _expr=velocity_exact - idv(up) );
+        auto l2vel = normL2( _range=elements(mesh), _expr=velocity_exact );
         Feel::cout << "L2 Error delta: " << l2err_delta << std::endl;
+        Feel::cout << "L2 relative error velocity: " << l2err_vel/l2vel << std::endl;
         toc("error");
                     
         // CHECKER
@@ -308,7 +311,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
 #if 0
         status_velocity = checker("L2/H1 velocity norms",velocity_exact).runOnce( norms_velocity, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
         status_stress = checker("L2 stress norms",velocity_exact).runOnce( norms_stress, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-#endif
+#endif        
         delta.on( _range=elements(mesh), _expr=delta_exact );
         u.on( _range=elements(mesh), _expr=velocity_exact );
         p.on( _range=elements(mesh), _expr=pressure_exact );
@@ -383,5 +386,5 @@ int main( int argc, char** argv )
     if ( ioption( "order" ) == 2 )
         return !hdg_stokes<FEELPP_DIM,2>( locals );
 #endif
-    return 1;
+    return 0;
 }
