@@ -673,15 +673,17 @@ private :
             };
 
             using gmc_type = typename gm_type::template Context<geoelement_type>;
-            using Geo1_t = map_gmc_type<gmc_type>;
-            using Geo2_t = map2_gmc_type<gmc_type>;
+            using Geo_element_t = map_gmc_type<gmc_type>;
+            using Geo_face_t = map_gmc_type<typename gm_type::template Context<geoelement_type,1>>;
+            using Geo_face2_t = map2_gmc_type<typename gm_type::template Context<geoelement_type,1>>;
 
             if constexpr ( geoelement_type::nDim == 3 )
             {
                 using Geo_point_t = map_gmc_type<typename gm_type::template Context<geoelement_type,3>>;
                 using Geo_edge_t = map_gmc_type<typename gm_type::template Context<geoelement_type,2>>;
-                auto met = hana::make_map( hana::make_pair(hana::type_c<Geo1_t>, buildExprTensor( hana::type_c<Geo1_t> ) ),
-                                           hana::make_pair(hana::type_c<Geo2_t>, buildExprTensor( hana::type_c<Geo2_t> ) ),
+                auto met = hana::make_map( hana::make_pair(hana::type_c<Geo_element_t>, buildExprTensor( hana::type_c<Geo_element_t> ) ),
+                                           hana::make_pair(hana::type_c<Geo_face_t>, buildExprTensor( hana::type_c<Geo_face_t> ) ),
+                                           hana::make_pair(hana::type_c<Geo_face2_t>, buildExprTensor( hana::type_c<Geo_face2_t> ) ),
                                            hana::make_pair(hana::type_c<Geo_edge_t>, buildExprTensor( hana::type_c<Geo_edge_t> ) ),
                                            hana::make_pair(hana::type_c<Geo_point_t>, buildExprTensor( hana::type_c<Geo_point_t> ) )
                                            );
@@ -690,16 +692,18 @@ private :
             else if constexpr ( geoelement_type::nDim == 2 )
             {
                 using Geo_point_t = map_gmc_type<typename gm_type::template Context<geoelement_type,2>>;
-                auto met = hana::make_map( hana::make_pair(hana::type_c<Geo1_t>, buildExprTensor( hana::type_c<Geo1_t> ) ),
-                                           hana::make_pair(hana::type_c<Geo2_t>, buildExprTensor( hana::type_c<Geo2_t> ) ),
+                auto met = hana::make_map( hana::make_pair(hana::type_c<Geo_element_t>, buildExprTensor( hana::type_c<Geo_element_t> ) ),
+                                           hana::make_pair(hana::type_c<Geo_face_t>, buildExprTensor( hana::type_c<Geo_face_t> ) ),
+                                           hana::make_pair(hana::type_c<Geo_face2_t>, buildExprTensor( hana::type_c<Geo_face2_t> ) ),
                                            hana::make_pair(hana::type_c<Geo_point_t>, buildExprTensor( hana::type_c<Geo_point_t> ) )
                                            );
                 return met;
             }
             else
             {
-                auto met = hana::make_map( hana::make_pair(hana::type_c<Geo1_t>, buildExprTensor( hana::type_c<Geo1_t> ) ),
-                                           hana::make_pair(hana::type_c<Geo2_t>, buildExprTensor( hana::type_c<Geo2_t> ) )
+                auto met = hana::make_map( hana::make_pair(hana::type_c<Geo_element_t>, buildExprTensor( hana::type_c<Geo_element_t> ) ),
+                                           hana::make_pair(hana::type_c<Geo_face_t>, buildExprTensor( hana::type_c<Geo_face_t> ) ),
+                                           hana::make_pair(hana::type_c<Geo_face2_t>, buildExprTensor( hana::type_c<Geo_face2_t> ) )
                                            );
                 return met;
             }

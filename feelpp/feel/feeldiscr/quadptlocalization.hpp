@@ -51,6 +51,8 @@ public :
 
     static const Feel::size_type iDim = boost::tuples::template element<0, IteratorRange>::type::value;
 
+    static const int coDimFromRange = iDim == MESH_FACES? 1 : 0;
+
     //static const size_type context = Expr::context|vm::POINT;
     static const Feel::size_type context = mpl::if_< boost::is_same< mpl::int_<iDim>, mpl::int_<MESH_FACES> >,
                                                mpl::int_<Expr::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT>,
@@ -75,8 +77,21 @@ public :
     using index_type = typename geoelement_type::index_type;
     using size_type = typename geoelement_type::size_type;
 
-    typedef typename gm_type::template Context<geoelement_type> gmc_type;
+
+    template <int SubEntityCoDim >
+    struct TheGmc
+    {
+        using type = typename gm_type::template Context<geoelement_type,SubEntityCoDim>;
+        using ptrtype = std::shared_ptr<type>;
+    };
+    using gmc_type = typename TheGmc<0>::type;
+    using gmc_face_type = typename TheGmc<1>::type;
+
+    using gmc_range_ptrtype = typename TheGmc<coDimFromRange>::ptrtype;
+    //typedef typename gm_type::template Context<geoelement_type> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+    //typedef typename gm_type::template Context<geoelement_type,1> gmc_face_type;
+    typedef std::shared_ptr<gmc_face_type> gmc_face_ptrtype;
     typedef typename gm_type::precompute_type pc_type;
     typedef typename gm_type::precompute_ptrtype pc_ptrtype;
 #if 0
@@ -270,9 +285,9 @@ public :
 
     //--------------------------------------------------------------------------------------//
 
-    gmc_ptrtype gmcForThisElt( size_type theIdElt,
-                               std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
-                               mpl::int_<MESH_FACES> )
+    gmc_face_ptrtype gmcForThisElt( size_type theIdElt,
+                                    std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                                    mpl::int_<MESH_FACES> )
     {
 #if 1
         element_iterator_type elt_it=this->beginElement(), elt_en=this->beginElement();
@@ -322,13 +337,13 @@ public :
                                                  newquadPtsRef ) );
             }
         }
-        gmc_ptrtype gmc = faceCur.element( 0 ).gm()->template context<context>( faceCur.element( 0 ), __geopc, __face_id_in_elt_0 );
+        gmc_face_ptrtype gmc = faceCur.element( 0 ).gm()->template context<context>( faceCur.element( 0 ), __geopc, __face_id_in_elt_0 );
         return gmc;
     }
 
     //--------------------------------------------------------------------------------------//
 
-    std::vector< boost::tuple< std::vector<boost::tuple<size_type,size_type> >,gmc_ptrtype,matrix_node_type > >
+    std::vector< boost::tuple< std::vector<boost::tuple<size_type,size_type> >, gmc_range_ptrtype, matrix_node_type > >
     getUsableDataInFormContext( std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
                                 matrix_node_type const & ptsRefTest )
     {
@@ -346,7 +361,7 @@ public :
         auto nEltInContext = mapEltId.size();
 
         // the vector result
-        std::vector< boost::tuple< std::vector<boost::tuple<size_type,size_type> >, gmc_ptrtype, matrix_node_type > > vec_res( nEltInContext );
+        std::vector< boost::tuple< std::vector<boost::tuple<size_type,size_type> >, gmc_range_ptrtype, matrix_node_type > > vec_res( nEltInContext );
 
         auto map_it = mapEltId.begin();
         auto map_en = mapEltId.end();
@@ -378,7 +393,7 @@ public :
 
     //--------------------------------------------------------------------------------------//
 
-    std::vector< boost::tuple< std::vector<boost::tuple<size_type,size_type> >,gmc_ptrtype,matrix_node_type, matrix_node_type > >
+    std::vector< boost::tuple< std::vector<boost::tuple<size_type,size_type> >,gmc_range_ptrtype,matrix_node_type, matrix_node_type > >
     getUsableDataInFormContext( std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
                                 matrix_node_type const & ptsRefTest,
                                 matrix_node_type const & ptsRefTrial )
@@ -397,7 +412,7 @@ public :
         auto nEltInContext = mapEltId.size();
 
         // the vector result
-        std::vector< boost::tuple< std::vector<boost::tuple<size_type,size_type> >, gmc_ptrtype, matrix_node_type, matrix_node_type > > vec_res( nEltInContext );
+        std::vector< boost::tuple< std::vector<boost::tuple<size_type,size_type> >, gmc_range_ptrtype, matrix_node_type, matrix_node_type > > vec_res( nEltInContext );
 
         auto map_it = mapEltId.begin();
         auto map_en = mapEltId.end();
@@ -463,7 +478,7 @@ public :
 
         uint16_type __face_id_in_elt_0 = faceInit.pos_first();
 
-        gmc_ptrtype gmc = faceInit.element( 0 ).gm()->template context<context>( faceInit.element( 0 ),__geopc,__face_id_in_elt_0 );
+        gmc_face_ptrtype gmc = faceInit.element( 0 ).gm()->template context<context>( faceInit.element( 0 ),__geopc,__face_id_in_elt_0 );
 
         auto meshTestLocalization = meshTest->tool_localization();
         meshTestLocalization->updateForUse();
@@ -611,7 +626,7 @@ public :
 
         uint16_type __face_id_in_elt_0 = faceInit.pos_first();
 
-        gmc_ptrtype gmc = faceInit.element( 0 ).gm()->template context<context>( faceInit.element( 0 ),__geopc,__face_id_in_elt_0 );
+        gmc_face_ptrtype gmc = faceInit.element( 0 ).gm()->template context<context>( faceInit.element( 0 ),__geopc,__face_id_in_elt_0 );
 
 
         auto meshTrialLocalization = meshTrial->tool_localization();
