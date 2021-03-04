@@ -840,40 +840,15 @@ class GeoMap
                  uint16_type __f = invalid_uint16_type_value,
                  size_type dynctx = 0 )
             : M_gm( __gm ),
-              M_element( boost::addressof( __e ) ),
+              M_element( nullptr ),
               M_pc( __pc ),
               M_pc_faces(),
               M_npoints( ( M_pc ) ? M_pc->nPoints() : 0 ),
-
-              //M_xref( PDim ),
-              //M_xreal( NDim ),
-              //M_x0( NDim ),
-              //M_J( nComputedPoints() ),
-#if 0
-              M_G( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ),
-#else
               M_G( NDim, gm_type::nNodes ),
-#endif
-              //M_ref_normals( M_gm->referenceConvex().normals() ),
-
-              //M_normals( nComputedPoints() ),
-              //M_unit_normals( nComputedPoints() ),
-              //M_normal_norms( nComputedPoints() ),
-              //M_tangents( nComputedPoints() ),
-              //M_unit_tangents( nComputedPoints() ),
-              //M_tangent_norms( nComputedPoints() ),
-              //M_local_basis_real( nComputedPoints() ),
-              //M_local_basis_ref( nComputedPoints() ),
-              M_xrealq( NDim, nPoints() ),
-              //M_g_linear( M_G.cols(), PDim ),
               M_g( M_G.cols(), PDim ),
               M_hessian_basis_at_pt( M_G.cols(), PDim, PDim ),
-              //M_K( nComputedPoints() ),
               M_CS(),
               M_CSi(),
-              //M_B( nComputedPoints() ),
-              //M_hessian( nComputedPoints() ),
-              //M_Ptangent( nComputedPoints() ),
               M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
               M_id( __e.id() ),
               M_e_markers( __e.markers() ),
@@ -888,29 +863,18 @@ class GeoMap
               M_meas( 0 ),
               M_measface( 0 ),
               M_perm(),
-              M_dynamic_context( dynctx )
+              M_dynamic_context( dynctx ),
+              M_context_updated( 0 )
         {
-            // if constexpr ( subEntityCoDim > 0 )
-            // {
-            //     if ( this->isOnSubEntity() )
-            //         M_f_markers = entityMarkers<SubEntityCoDim>( __e, __f );
-            // }
-#if 0
-            if ( is_linear )
-            {
-                M_gm->gradient( node_t_type(), M_g_linear );
-            }
-#endif
-
-            resizeJKBN<CTX>();
-            //updateGradient<CTX>( 0 );
-            // if ( M_pc && !this->isOnSubEntity() )
-            //     update<CTX>( __e );
+            this->setElement( __e );
 
             if constexpr ( subEntityCoDim == 0 )
             {
                 if ( M_pc )
+                {
+                    resize<CTX,true>();
                     update<CTX>( __e );
+                }
             }
         }
 
@@ -927,9 +891,12 @@ class GeoMap
                 if ( !__pc.empty() )
                     M_pc_faces =  __pc;
                 if ( M_pc )
+                {
+                    resize<CTX,true>();
                     update<CTX>( __e, M_face_id );
+                }
             }
-        
+
         using using_vectices_t = mpl::int_<0>;
 
         // context for geomap at vertices
@@ -943,9 +910,10 @@ class GeoMap
             :
             Context( __gm, __e, statctx, __pc )
             {
+                resize<CTX,true>();
                 update<CTX>( __e, __f, using_vectices_t() );
             }
-        
+
         Context( gmc_ptrtype& p )
             :
             Context( *p )
@@ -953,7 +921,7 @@ class GeoMap
 
         Context( Context const& ) = default;
         Context( Context && ) = default;
-        
+
         /**
          * clone the context
          */
@@ -1019,13 +987,10 @@ class GeoMap
         {
             M_pc = __pc;
 
-            if constexpr ( !is_linear_polynomial_v<gm_type> )
+            if ( M_npoints != M_pc->nPoints() )
             {
-                if ( M_npoints != M_pc->nPoints() )
-                {
-                    M_npoints = M_pc.get()->nPoints();
-                    resizeJKBN<CTX>();
-                }
+                M_npoints = M_pc.get()->nPoints();
+                resize<CTX>();
             }
 
             update<CTX>( __e, __f, updatePc );
@@ -1047,13 +1012,11 @@ class GeoMap
                 return false;
             }
 #endif
-        //template<size_type CTX>
+
+        FEELPP_STRONG_INLINE
         void updateGradient( int q )
             {
-                    //if ( !is_linear )
-                    M_gm->gradient( q, M_g, M_pc.get() );
-                        //else 
-                        //M_gm->gradient( 0, M_g, M_pc.get() );
+                M_gm->gradient( q, M_g, M_pc.get() );
             }
         /**
          * update information on this context
@@ -1070,30 +1033,12 @@ class GeoMap
         template<size_type CTX>
         void update( element_type const& __e, uint16_type __f = invalid_uint16_type_value, bool updatePC = true )
             {
-#if 0
-                M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
-#else
-                if constexpr ( !is_reference_convex_v<element_type> )
-                {
-                    if constexpr ( gm_type::nNodes == element_type::numVertices )
-                        __e.updateVertices( M_G );
-                    else
-                        __e.updateG( M_G );
-                }
-                else
-                {
-                    if constexpr( std::is_same_v<value_type,typename element_type::value_type> )
-                        M_G = em_cmatrix_col_type<value_type>( ( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ).data().begin(), M_G.rows(), M_G.cols() );
-                    else
-                        M_G = em_cmatrix_col_type<typename element_type::value_type>( ( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ).data().begin(), M_G.rows(), M_G.cols() ).template cast<value_type>();
-                }
-#endif
-                M_element = boost::addressof( __e );
-                M_id = __e.id();
-                M_e_markers = __e.markers();
+                this->setElement( __e );
                 if constexpr ( subEntityCoDim > 0 )
                 {
                     M_face_id = __f;
+                    // if ( M_face_id == invalid_v<uint16_type> )
+                    //     return;
                     CHECK( M_face_id != invalid_v<uint16_type> ) << "sub entity id not defined";
                     //if ( this->isOnSubEntity() )
                     {
@@ -1141,11 +1086,37 @@ class GeoMap
                 }
 
                 updateJKBN<CTX>();
+                M_context_updated = CTX | M_dynamic_context;
             }
         void setElement( element_type const& __e )
             {
-                M_element = boost::addressof( __e );
-                M_id = __e.id();
+                //M_element = std::addressof( __e );
+                //M_id = __e.id();
+                element_type const* newElement = std::addressof( __e );
+                bool isSameElt = newElement == M_element; // ( dynamic_cast<void const*>( newElement ) == dynamic_cast<void const*>( M_element ) )
+                if ( !isSameElt )
+                {
+                    M_context_updated = 0;
+                    M_element = std::addressof( __e );
+                    if constexpr ( !is_reference_convex_v<element_type> )
+                    {
+                        if constexpr ( gm_type::nNodes == element_type::numVertices )
+                            __e.updateVertices( M_G );
+                        else
+                            __e.updateG( M_G );
+                    }
+                    else
+                    {
+                        if constexpr( std::is_same_v<value_type,typename element_type::value_type> )
+                            M_G = em_cmatrix_col_type<value_type>( ( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ).data().begin(), M_G.rows(), M_G.cols() );
+                        else
+                            M_G = em_cmatrix_col_type<typename element_type::value_type>( ( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ).data().begin(), M_G.rows(), M_G.cols() ).template cast<value_type>();
+                    }
+
+                    M_id = __e.id();
+                    M_e_markers = __e.markers();
+                }
+
             }
         //!
         //! update geomap data only on face, element has not been changed
@@ -1154,6 +1125,8 @@ class GeoMap
         void updateOnFace( uint16_type __f, bool updatePC = true,
                            std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr )
             {
+                this->update( *M_element, __f, updatePC );
+#if 0
                 M_face_id = __f;
                 CHECK( M_face_id != invalid_v<uint16_type> ) << "sub entity id not defined";
                 if ( /*this->isOnSubEntity() &&*/ updatePC )
@@ -1185,6 +1158,8 @@ class GeoMap
                 }
 
                 updateJKBN<CTX>();
+                M_context_updated = CTX | M_dynamic_context;
+#endif
             }
 
         ~Context()
@@ -1497,23 +1472,6 @@ class GeoMap
                 int nPts = M_G.cols();
                 return (1./nPts)*M_G*eigen_vector_type<Eigen::Dynamic,value_type>::Ones( nPts );
             }
-#if 0
-        node_t_type barycenterReal() const
-        {
-            node_t_type __barycenter( M_G.rows() );
-            __barycenter.clear();
-#if 0
-            for ( uint16_type __c = 0; __c < M_G.size2(); ++__c )
-            {
-                __barycenter += ublas::column( M_G, __c );
-            }
-#else
-            CHECK( false ) << "TODO";
-#endif
-            __barycenter /= M_G.cols();
-            return __barycenter;
-        }
-#endif
         /**
          * tell whether the point is on the surface of the convex
          * @return true if the point is on the surface, false otherwise
@@ -2224,6 +2182,21 @@ class GeoMap
         }
 
 
+        template<size_type CTX,bool ForceResizeJKBN=false>
+        void resize()
+        {
+            if constexpr ( vm::has_point_v<CTX> )
+            {
+                M_xrealq.resize( NDim, nPoints() );
+            }
+            else if constexpr ( vm::has_dynamic_v<CTX> )
+            {
+                if ( hasPOINT( M_dynamic_context ) )
+                    M_xrealq.resize( NDim, nPoints() );
+            }
+            if constexpr ( !is_linear_polynomial_v<gm_type> || ForceResizeJKBN )
+                 resizeJKBN<CTX>();
+        }
         template<size_type CTX>
         void resizeJKBN()
             {
@@ -2609,6 +2582,31 @@ class GeoMap
         template <class Archive>
         void serialize( Archive& ar, const unsigned int version )
         {
+            if constexpr ( subEntityCoDim == 0 )
+            {
+                ar& BOOST_SERIALIZATION_NVP( M_dynamic_context );
+                ar& BOOST_SERIALIZATION_NVP( M_context_updated );
+                if constexpr ( Archive::is_saving::value )
+                {
+                    ar & boost::serialization::make_nvp( "xRefs", this->xRefs() );
+                }
+                else if constexpr ( Archive::is_loading::value )
+                {
+                    size_type saveDynamicContext = M_dynamic_context;
+                    matrix_node_t_type _xRefs;
+                    ar & boost::serialization::make_nvp( "xRefs", _xRefs );
+                    M_pc = M_gm->preCompute( _xRefs );
+                    M_dynamic_context = M_context_updated;
+                    M_context_updated = 0;
+                    M_npoints = M_pc->nPoints();
+                    resize<vm::DYNAMIC,true>();
+                    update<vm::DYNAMIC>( this->element()/*, __f, updatePc*/ );
+                    M_dynamic_context = saveDynamicContext;
+                }
+            }
+            else // TODO apply same procedure as above
+            {
+
             ar& BOOST_SERIALIZATION_NVP( M_npoints );
             ar& BOOST_SERIALIZATION_NVP( M_J );
             ar& BOOST_SERIALIZATION_NVP( M_G );
@@ -2641,6 +2639,7 @@ class GeoMap
             ar& BOOST_SERIALIZATION_NVP( M_meas );
             ar& BOOST_SERIALIZATION_NVP( M_measface );
             ar& BOOST_SERIALIZATION_NVP( M_perm );
+            }
         }
 
       private:
@@ -2700,6 +2699,7 @@ class GeoMap
         permutation_type M_perm;
 
         size_type M_dynamic_context;
+        size_type M_context_updated;
 
     }; // Context
 
