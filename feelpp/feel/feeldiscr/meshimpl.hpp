@@ -466,9 +466,9 @@ void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
     {
         auto const& eltInit = iv->second;
         std::shared_ptr<typename gm_type::template Context<element_type>> ctx;
-        std::shared_ptr<typename gm_type::template Context<element_type>> ctxf;
+        std::shared_ptr<typename gm_type::template Context<element_type,1>> ctxf;
         std::shared_ptr<typename gm1_type::template Context<element_type>> ctx1;
-        std::shared_ptr<typename gm1_type::template Context<element_type>> ctxf1;
+        std::shared_ptr<typename gm1_type::template Context<element_type,1>> ctxf1;
         if ( pc )
             ctx = M_gm->template context<vm::JACOBIAN>( eltInit, pc );
         if ( !pcf.empty() )

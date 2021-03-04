@@ -1384,7 +1384,7 @@ public:
         return __geopc;
     }
 
-    template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g = context_v, int SubEntityCoDim = 1>
+    template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g = context_v, int SubEntityCoDim = 0>
     class Context
     {
     public:
