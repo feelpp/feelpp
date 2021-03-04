@@ -765,11 +765,12 @@ class GeoMap
      * Context for the geometric mapping depend on a node in the
      * reference element
      */
-    template <typename ElementType, int SubEntityCoDim = 1>
+    template <typename ElementType, int SubEntityCoDim = 0>
     class Context
     {
       public:
         static const int subEntityCoDim = SubEntityCoDim;
+        static const int subEntityCoDimFix = SubEntityCoDim > 0 ? SubEntityCoDim : 1;
         // reference space dimension
         static const uint16_type PDim = ElementType::nDim;
         // real space dimension
@@ -812,7 +813,7 @@ class GeoMap
 
         typedef ElementType element_type;
         //typedef typename element_type::permutation_type permutation_type;
-        typedef typename element_type::template PermutationSubEntity<SubEntityCoDim> permutation_type;
+        typedef typename element_type::template PermutationSubEntity<subEntityCoDimFix> permutation_type;
 
         using eigen_matrix_nx_type = eigen_matrix_type<NDim,Eigen::Dynamic,value_type>;
         using eigen_matrix_xn_type = eigen_matrix_type<Eigen::Dynamic,NDim,value_type>;
@@ -889,8 +890,11 @@ class GeoMap
               M_perm(),
               M_dynamic_context( dynctx )
         {
-            if ( this->isOnSubEntity() )
-                M_f_markers = entityMarkers<SubEntityCoDim>( __e, __f );
+            // if constexpr ( subEntityCoDim > 0 )
+            // {
+            //     if ( this->isOnSubEntity() )
+            //         M_f_markers = entityMarkers<SubEntityCoDim>( __e, __f );
+            // }
 #if 0
             if ( is_linear )
             {
@@ -898,10 +902,16 @@ class GeoMap
             }
 #endif
 
-            resizeJKBN<CTX,true>(); // TODO use SubEntityCoDim
+            resizeJKBN<CTX>();
             //updateGradient<CTX>( 0 );
-            if ( M_pc && !this->isOnSubEntity() )
-                update<CTX>( __e );
+            // if ( M_pc && !this->isOnSubEntity() )
+            //     update<CTX>( __e );
+
+            if constexpr ( subEntityCoDim == 0 )
+            {
+                if ( M_pc )
+                    update<CTX>( __e );
+            }
         }
 
         template <int CTX>
@@ -912,7 +922,7 @@ class GeoMap
                  uint16_type __f,
                  size_type dynctx = 0 )
             :
-            Context( __gm, __e, statctx, __pc.empty()?precompute_ptrtype{}:__pc[__f][__e.permutation(__f, mpl::int_<subEntityCoDim>() )], __f, dynctx )
+            Context( __gm, __e, statctx, __pc.empty()?precompute_ptrtype{}:__pc[__f][__e.permutation(__f, mpl::int_<subEntityCoDimFix>() )], __f, dynctx )
             {
                 if ( !__pc.empty() )
                     M_pc_faces =  __pc;
@@ -1014,42 +1024,9 @@ class GeoMap
                 if ( M_npoints != M_pc->nPoints() )
                 {
                     M_npoints = M_pc.get()->nPoints();
-                    if ( this->isOnFace() )
-                        resizeJKBN<CTX,true>();
-                    else
-                        resizeJKBN<CTX,false>();
+                    resizeJKBN<CTX>();
                 }
             }
-
-            // if ( M_npoints != M_pc->nPoints() )
-            // {
-            //     M_npoints = M_pc.get()->nPoints();
-
-            //     if ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> )
-            //     {
-            //         M_K.resize( nComputedPoints() );
-            //         M_B.resize( nComputedPoints() );
-            //         M_J.resize( nComputedPoints() );
-            //         if ( vm::has_hessian<CTX>::value || vm::has_laplacian<CTX>::value )
-            //         {
-            //             M_hessian.resize( nComputedPoints() );
-            //         }
-            //         if ( vm::has_tangent<CTX>::value )
-            //             M_Ptangent.resize( nComputedPoints() );
-            //     }
-            //     M_xrealq.resize( NDim, nPoints() );
-            //     if ( vm::has_normal_v<CTX> )
-            //     {
-            //         M_normals.resize( nComputedPoints() );
-            //         M_unit_normals.resize( nComputedPoints() );
-            //         M_normal_norms.resize( nComputedPoints() );
-            //     }
-
-            //     if ( is_linear )
-            //     {
-            //         M_gm->gradient( node_t_type(), M_g_linear );
-            //     }
-            // }
 
             update<CTX>( __e, __f, updatePc );
         }
@@ -1105,21 +1082,28 @@ class GeoMap
                 }
                 else
                 {
-                    M_G = em_cmatrix_col_type<value_type>( ( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ).data().begin(), M_G.rows(), M_G.cols() );
+                    if constexpr( std::is_same_v<value_type,typename element_type::value_type> )
+                        M_G = em_cmatrix_col_type<value_type>( ( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ).data().begin(), M_G.rows(), M_G.cols() );
+                    else
+                        M_G = em_cmatrix_col_type<typename element_type::value_type>( ( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ).data().begin(), M_G.rows(), M_G.cols() ).template cast<value_type>();
                 }
 #endif
                 M_element = boost::addressof( __e );
                 M_id = __e.id();
                 M_e_markers = __e.markers();
-                M_face_id = __f;
-                if ( this->isOnSubEntity() )
+                if constexpr ( subEntityCoDim > 0 )
                 {
-                    M_f_markers = entityMarkers<subEntityCoDim>( __e, __f );
-                    if ( updatePC )
+                    M_face_id = __f;
+                    CHECK( M_face_id != invalid_v<uint16_type> ) << "sub entity id not defined";
+                    //if ( this->isOnSubEntity() )
                     {
-                        M_perm = __e.permutation( M_face_id, mpl::int_<subEntityCoDim>() );
-                        //M_perm = __e.permutation( M_face_id );
-                        M_pc = M_pc_faces[__f][M_perm];
+                        M_f_markers = entityMarkers<subEntityCoDim>( __e, __f );
+                        if ( updatePC )
+                        {
+                            M_perm = __e.permutation( M_face_id, mpl::int_<subEntityCoDim>() );
+                            //M_perm = __e.permutation( M_face_id );
+                            M_pc = M_pc_faces[__f][M_perm];
+                        }
                     }
                 }
 
@@ -1145,7 +1129,7 @@ class GeoMap
                         this->updateMeasures();
                 }
 
-                if ( this->isOnFace() )
+                if constexpr ( subEntityCoDim == 1 )//this->isOnFace()
                 {
                     if constexpr ( vm::has_measure_v<CTX> || vm::has_tangent_v<CTX> )
                         this->updateFaceMeasures();
@@ -1154,11 +1138,9 @@ class GeoMap
                         if ( hasMEASURE( M_dynamic_context ) || hasTANGENT( M_dynamic_context ) )
                             this->updateFaceMeasures();
                     }
-
-                    updateJKBN<CTX,true>();
                 }
-                else
-                    updateJKBN<CTX,false>();
+
+                updateJKBN<CTX>();
             }
         void setElement( element_type const& __e )
             {
@@ -1168,11 +1150,13 @@ class GeoMap
         //!
         //! update geomap data only on face, element has not been changed
         //!
-        template<size_type CTX>
-        void updateOnFace( uint16_type __f, bool updatePC = true )
+        template<size_type CTX,int TheSubEntityCoDim = SubEntityCoDim >
+        void updateOnFace( uint16_type __f, bool updatePC = true,
+                           std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr )
             {
                 M_face_id = __f;
-                if ( this->isOnSubEntity() && updatePC )
+                CHECK( M_face_id != invalid_v<uint16_type> ) << "sub entity id not defined";
+                if ( /*this->isOnSubEntity() &&*/ updatePC )
                 {
                     M_perm = M_element->permutation( M_face_id, mpl::int_<subEntityCoDim>() );
                     //M_perm = __e.permutation( M_face_id );
@@ -1189,8 +1173,18 @@ class GeoMap
                         this->updatePoints();
                 }
 
-                updateJKBN<CTX,true>();
-                
+                if constexpr ( subEntityCoDim == 1 )//this->isOnFace()
+                {
+                    if constexpr ( vm::has_measure_v<CTX> || vm::has_tangent_v<CTX> )
+                        this->updateFaceMeasures();
+                    else if constexpr ( vm::has_dynamic_v<CTX> )
+                    {
+                        if ( hasMEASURE( M_dynamic_context ) || hasTANGENT( M_dynamic_context ) )
+                            this->updateFaceMeasures();
+                    }
+                }
+
+                updateJKBN<CTX>();
             }
 
         ~Context()
@@ -1250,7 +1244,8 @@ class GeoMap
         //!
         bool isOnSubEntity() const
             {
-                return subEntityCoDim > 1 || ( (subEntityCoDim == 1) && (M_face_id != invalid_uint16_type_value) );
+                return (subEntityCoDim > 0) && (M_face_id != invalid_uint16_type_value);
+                //return subEntityCoDim > 1 || ( (subEntityCoDim == 1) && (M_face_id != invalid_uint16_type_value) );
             }
         
         //!
@@ -2229,36 +2224,39 @@ class GeoMap
         }
 
 
-        template<size_type CTX,bool IsOnFace>
+        template<size_type CTX>
         void resizeJKBN()
             {
+                static const bool IsOnFace = subEntityCoDim == 1;
                 if constexpr ( !vm::has_dynamic_v<CTX> )
                 {
                     if constexpr ( !IsOnFace )
                     {
-                        if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX>) )
+                        if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> ) )
                             return;
                     }
                     else
                     {
-                        if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> ) )
+                        if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> ) )
                             return;
                     }
                 }
 
-                static const bool hasStaticB = IsOnFace? vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> :  vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX>;
+                static const bool hasStaticB = IsOnFace?
+                    vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> :
+                    vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>;
                 bool hasJ = vm::has_jacobian_v<CTX>;
                 bool hasLocalBasis = IsOnFace && vm::has_local_basis_v<CTX>;
                 bool hasTangent = IsOnFace && vm::has_tangent_v<CTX>;
                 bool hasNormal = IsOnFace && (vm::has_normal_v<CTX> || vm::has_tangent_v<CTX>);
                 bool hasB = hasStaticB;//vm::has_normal_v<CTX> || vm::has_tangent_v<CTX>;
-                bool hasSecondDerivative = vm::has_second_derivative_v<CTX>;
+                bool hasSecondDerivative = vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>;
                 if constexpr ( vm::has_dynamic_v<CTX> )
                 {
                     if constexpr ( !vm::has_jacobian_v<CTX> )
                         hasJ = hasJACOBIAN( M_dynamic_context );
-                    if constexpr ( !vm::has_second_derivative_v<CTX> )
-                        hasSecondDerivative = hasSECOND_DERIVATIVE( M_dynamic_context );
+                    if constexpr ( !vm::has_second_derivative_v<CTX> && !vm::has_hessian_v<CTX> )
+                        hasSecondDerivative = hasSECOND_DERIVATIVE( M_dynamic_context ) || hasHESSIAN( M_dynamic_context );
                     if constexpr ( IsOnFace )
                     {
                         hasLocalBasis = hasLOCAL_BASIS( M_dynamic_context );
@@ -2308,7 +2306,7 @@ class GeoMap
                 // second derivative
                 if constexpr ( !gmc_type::is_linear )
                 {
-                    if constexpr ( vm::has_second_derivative_v<CTX> /*|| vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX>*/ )
+                    if constexpr ( vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> /*|| vm::has_laplacian_v<CTX>*/ )
                     {
                         M_hessian.resize( _nComputedPoints );
                     }
@@ -2375,36 +2373,39 @@ class GeoMap
 
 
 
-        template<int CTX,bool IsOnFace>
+        template<int CTX>
         void updateJKBN() noexcept
             {
+                static const bool IsOnFace = subEntityCoDim == 1;
                 if constexpr ( !vm::has_dynamic_v<CTX> )
                 {
                     if constexpr ( !IsOnFace )
                     {
-                        if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX>) )
+                        if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>) )
                             return;
                     }
                     else
                     {
-                        if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> ) )
+                        if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> ) )
                             return;
                     }
                 }
 
-                static const bool hasStaticB = IsOnFace? vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> :  vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX>;
+                static const bool hasStaticB = IsOnFace?
+                    vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> :
+                    vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>;
                 bool hasJ = vm::has_jacobian_v<CTX>;
                 bool hasLocalBasis = IsOnFace && vm::has_local_basis_v<CTX>;
                 bool hasTangent = IsOnFace && vm::has_tangent_v<CTX>;
                 bool hasNormal = IsOnFace && (vm::has_normal_v<CTX> || vm::has_tangent_v<CTX>);
                 bool hasB = hasStaticB;//vm::has_normal_v<CTX> || vm::has_tangent_v<CTX>;
-                bool hasSecondDerivative = vm::has_second_derivative_v<CTX>;
+                bool hasSecondDerivative = vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>;
                 if constexpr ( vm::has_dynamic_v<CTX> )
                 {
                     if constexpr ( !vm::has_jacobian_v<CTX> )
                         hasJ = hasJACOBIAN( M_dynamic_context );
-                    if constexpr ( !vm::has_second_derivative_v<CTX> )
-                        hasSecondDerivative = hasSECOND_DERIVATIVE( M_dynamic_context );
+                    if constexpr ( !vm::has_second_derivative_v<CTX> && !vm::has_hessian_v<CTX> )
+                        hasSecondDerivative = hasSECOND_DERIVATIVE( M_dynamic_context ) || hasHESSIAN( M_dynamic_context );
                     if constexpr ( IsOnFace )
                     {
                         hasLocalBasis = hasLOCAL_BASIS( M_dynamic_context );
@@ -2475,7 +2476,7 @@ class GeoMap
                     // second derivative
                     if constexpr ( !gmc_type::is_linear )
                     {
-                        if constexpr ( vm::has_second_derivative_v<CTX> /*|| vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX>*/ )
+                        if constexpr ( vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> /*|| vm::has_laplacian_v<CTX>*/ )
                         {
                             //M_h.resize( { NDim, NDim } );
                             M_gm->hessianBasisAtPoint( q, M_hessian_basis_at_pt, M_pc.get() );
@@ -2702,7 +2703,7 @@ class GeoMap
 
     }; // Context
 
-    template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
+    template <size_type Context_v, int SubEntityCoDim_v = 0, typename ElementType_t>
         std::shared_ptr<Context<ElementType_t, SubEntityCoDim_v>>
     context( geometric_mapping_ptrtype gm, ElementType_t const& e, precompute_ptrtype const& pc, size_type dynctx = 0 )
     {
@@ -2711,7 +2712,7 @@ class GeoMap
                                                                            pc, invalid_uint16_type_value, dynctx );
     }
 
-    template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
+    template <size_type Context_v, int SubEntityCoDim_v = 0, typename ElementType_t>
     std::shared_ptr<Context<ElementType_t,SubEntityCoDim_v>>
     context( ElementType_t const& e, precompute_ptrtype const& pc, size_type dynctx = 0 )
     {
