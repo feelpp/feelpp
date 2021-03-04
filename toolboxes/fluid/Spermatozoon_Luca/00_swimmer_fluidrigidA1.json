@@ -15,9 +15,12 @@
         "lambda":"20", // micrometers
         "head_junct":"20",
         "tail_L":"50",
-        "A_max":"2",
+        "A_max":"4",
         "offset":"0",
-        "udxt":"{(1-exp(-t))*A_max^2*(x-head_junct)^2/(tail_L^2)*(pi^2/lambda)/period*cos(4*pi*(t/period-(x+offset)/lambda)),(1-exp(-t))*A_max*(x-head_junct)/tail_L*2*pi/period*cos(2*pi*(t/period-(x+offset)/lambda))}:x:t:lambda:period:pi:tail_L:head_junct:A_max:offset",
+        "udxt_0":"(1-exp(-t))*A_max^2*(x-head_junct)^2/(tail_L^2)*(pi^2/lambda)/period*cos(4*pi*(t/period-(x+offset)/lambda)):x:t:lambda:period:pi:tail_L:head_junct:A_max:offset",
+        "udxt_1":"(1-exp(-t))*A_max*(x-head_junct)/tail_L*2*pi/period*cos(2*pi*(t/period-(x+offset)/lambda)):x:t:lambda:period:pi:tail_L:head_junct:A_max:offset"
+        //"udxt":"{(1-exp(-t))*A_max^2*(x-head_junct)^2/(tail_L^2)*(pi^2/lambda)/period*cos(4*pi*(t/period-(x+offset)/lambda)),(1-exp(-t))*A_max*(x-head_junct)/tail_L*2*pi/period*cos(2*pi*(t/period-(x+offset)/lambda))}:x:t:lambda:period:pi:tail_L:head_junct:A_max:offset"
+
     },
     "Materials":
     {

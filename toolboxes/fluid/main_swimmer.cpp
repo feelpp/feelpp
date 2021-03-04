@@ -312,8 +312,6 @@ int runApplicationFluid()
                 auto p_new = FM_after_remeshing->fieldPressure();
                 std::cout << "OK before VelOpinterp" << std::endl;
 
-                auto const* imagedof = FM_after_remeshing->functionSpaceVelocity()->dof().get();
-                auto const* domaindof = FM->functionSpaceVelocity()->dof().get();
 #if 0
                 auto submesh_fluid = createSubmesh(FM->mesh(),markedelements(FM->mesh(),"Fluid"));
 
@@ -396,10 +394,14 @@ int runApplicationFluid()
             Feel::cout << " is MoveDomain " << FM->isMoveDomain() << std::endl;
             FM->setApplyMovingMeshBeforeSolve( false );
 
-            auto e = expr<nDim,1>( expr<nDim,1>("{udxt_0,udxt_1}:udxt_0:udxt_1"), FM->symbolsExpr() );
-            auto ud = Xh_ref_swimmer->element( e );
-            auto se = Feel::vf::symbolsExpr( FM->symbolsExpr(), symbolExpr( "ud", print( idv( ud ), "ud=" ) ) );
-
+            auto expr_swimming = expr(expr<nDim,1>("{udxt_0,udxt_1}:udxt_0:udxt_1"),FM->symbolsExpr());
+            expr_swimming.setParameterValues( FM->modelProperties().parameters().toParameterValues() );
+            auto ud = Xh_ref_swimmer->element( expr_swimming );
+            auto integral_1 = integrate(_range=elements(Xh_ref_swimmer->mesh()),_expr=expr_swimming).evaluate();
+            auto integral_2 = integrate(_range=elements(Xh_ref_swimmer->mesh()),_expr=idv(ud)).evaluate();
+            std::cout << "Integral1 "  << integral_1 << " Integral2 " << integral_2 << std::endl;            
+            auto se = Feel::vf::symbolsExpr( FM->symbolsExpr(), symbolExpr( "ud", print( idv( ud ), "ud=" ),SymbolExprComponentSuffix( nDim,1 ) ) );
+            
             FM->updateALEmesh( se );
             FM->solve();
             FM->exportResults();
