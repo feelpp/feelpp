@@ -830,6 +830,8 @@ class GeoMap
         using hessian_type = tensor3_fixed_size_t<NDim,PDim,PDim,value_type>;
         using vector_hessian_type = vector_tensor3_fixed_size_t<NDim,PDim,PDim,value_type>;
 
+        static constexpr bool is_on_face = subEntityCoDim == 1;
+
         Context() = default;
 
         template <int CTX>
