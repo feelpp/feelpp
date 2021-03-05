@@ -1471,6 +1471,7 @@ public:
         using dx_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents2,1>>;
         using dy_type = dx_type;
         using dz_type = dx_type;
+        using normal_component_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<(rank==2)? nComponents1:1,1>>;
 #endif
         typedef geometric_mapping_context_type gmc_type;
         typedef Eigen::Matrix<value_type,Eigen::Dynamic, Eigen::Dynamic> matrix_eigen_type;
@@ -2206,7 +2207,7 @@ public:
         typename precompute_type::grad_type const* M_gradphi;
 #endif
         boost::multi_array<hess_type,2> M_hessphi;
-        boost::multi_array<id_type,2> M_normal_component;
+        boost::multi_array<normal_component_type,2> M_normal_component;
         boost::multi_array<value_type,2> M_trace;
         boost::multi_array<dn_type,2> M_dn;
         boost::multi_array<grad_type,2> M_grad;

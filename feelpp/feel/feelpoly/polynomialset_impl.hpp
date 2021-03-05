@@ -156,21 +156,30 @@ update( geometric_mapping_context_ptrtype const& __gmc,
         int npoints_secondderivative = do_optimization_p2? 1 : M_npoints;
 
         // normal component
-        if constexpr ( vm::has_normal_component_v<context> )
+        if constexpr ( rank >=1 )
         {
-            M_normal_component.resize( boost::extents[ntdof][M_npoints] );
-            int n_components = (rank==2)?nComponents1:1;
-            Eigen::Tensor<value_type,2> i_n( n_components,1 );
-            std::fill( M_normal_component.data(), M_normal_component.data()+M_normal_component.num_elements(), i_n.constant(0.) );
-        }
-        else if constexpr( vm::has_dynamic_basis_function_v<context> )
-        {
-            if ( hasNORMAL_COMPONENT( this->dynamicContext() ) )
+            if constexpr ( vm::has_normal_component_v<context> )
             {
                 M_normal_component.resize( boost::extents[ntdof][M_npoints] );
-                int n_components = (rank==2)?nComponents1:1;
-                Eigen::Tensor<value_type,2> i_n( n_components,1 );
-                std::fill( M_normal_component.data(), M_normal_component.data()+M_normal_component.num_elements(), i_n.constant(0.) );
+            }
+            else if constexpr( vm::has_dynamic_basis_function_v<context> )
+            {
+                if ( hasNORMAL_COMPONENT( this->dynamicContext() ) )
+                    M_normal_component.resize( boost::extents[ntdof][M_npoints] );
+            }
+        }
+
+        // trace
+        if constexpr ( rank == 2 )
+        {
+            if constexpr ( vm::has_trace_v<context> )
+            {
+                M_trace.resize( boost::extents[ntdof][M_npoints] );
+            }
+            else if constexpr ( vm::has_dynamic_basis_function_v<context> )
+            {
+                if ( hasTRACE( this->dynamicContext() ) )
+                    M_trace.resize( boost::extents[ntdof][M_npoints] );
             }
         }
 
