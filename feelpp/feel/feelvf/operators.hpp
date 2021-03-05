@@ -893,7 +893,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                       \
                 void updateCtxIfSameGeom(Geo_t const& geom, mpl::bool_<true> )    \
                 {                                                       \
-                    if ( gmc_type::subEntityCoDim > 1 || fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value ) /*face case*/ \
+                    if constexpr ( gmc_type::subEntityCoDim > 0 )       \
                         M_pc->update(fusion::at_key<key_type>( geom )->pc()->nodes() ); \
                     M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&) M_pc ); \
                 }                                                       \
