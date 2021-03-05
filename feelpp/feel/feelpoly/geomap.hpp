@@ -819,7 +819,7 @@ class GeoMap
         using eigen_matrix_xn_type = eigen_matrix_type<Eigen::Dynamic,NDim,value_type>;
         using eigen_matrix_px_type = eigen_matrix_type<PDim,Eigen::Dynamic,value_type>;
         using eigen_matrix_xp_type = eigen_matrix_type<Eigen::Dynamic,PDim,value_type>;
-        
+
         using eigen_matrix_nn_type = eigen_matrix_type<NDim,NDim,value_type>;
         using vector_eigen_matrix_pp_type = vector_eigen_matrix_type<PDim,PDim,value_type>;
         using vector_eigen_matrix_nn_type = vector_eigen_matrix_type<NDim,NDim,value_type>;
@@ -897,23 +897,6 @@ class GeoMap
                 }
             }
 
-        using using_vectices_t = mpl::int_<0>;
-
-        // context for geomap at vertices
-        template <int CTX>
-        Context( gm_ptrtype __gm,
-                 element_type const& __e,
-                 std::integral_constant<int, CTX> const& statctx,
-                 precompute_ptrtype & __pc,
-                 uint16_type __f,
-                 using_vectices_t )
-            :
-            Context( __gm, __e, statctx, __pc )
-            {
-                resize<CTX,true>();
-                update<CTX>( __e, __f, using_vectices_t() );
-            }
-
         Context( gmc_ptrtype& p )
             :
             Context( *p )
@@ -930,7 +913,46 @@ class GeoMap
             return std::make_shared<gmc_type>( *this );
         }
 
-       /**
+        /**
+         * update information on this context
+         *
+         *  - update the coordinate of the real points
+         *  - update the pseudo-inverse of the gradient of the transformation
+         *
+         *  compute \f$ K(x_{\mathrm{ref}}) = G \nabla_{\mathrm{ref}} \phi(x_{\mathrm{ref}}) \f$
+         *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
+         *
+         *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^T K )^{-1} \f$
+         *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
+         */
+
+        template<size_type CTX,int TheSubEntityCoDim = SubEntityCoDim>
+        void update( element_type const& __e,
+                     std::enable_if_t< TheSubEntityCoDim == 0 >* = nullptr )
+            {
+                this->setElement( __e );
+                this->updateImpl<CTX>();
+            }
+
+        template<size_type CTX,int TheSubEntityCoDim = SubEntityCoDim>
+        void update( element_type const& __e, uint16_type __f,
+                     std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr)
+            {
+                this->setElement( __e );
+                this->setSubEntity( __f );
+                this->updateImpl<CTX>();
+            }
+
+        template<size_type CTX,int TheSubEntityCoDim = SubEntityCoDim>
+        void update( element_type const& __e, uint16_type __f, permutation_type __perm,
+                     std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr)
+            {
+                this->setElement( __e );
+                this->setSubEntity( __f,__perm );
+                this->updateImpl<CTX>();
+            }
+
+        /**
         * update information on this context
         *
         *  - update the coordinate of the real points
@@ -942,42 +964,6 @@ class GeoMap
         *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^T K )^{-1} \f$
         *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
         */
-#if 0
-        void update( element_type const& __e, uint16_type __f )
-        {
-            //M_face_id = __f;
-            //M_perm = __e.permutation( M_face_id, mpl::int_<subEntityCoDim>() );
-            //M_pc = M_pc_faces[__f][M_perm];
-            update<context>( __e, __f, true /*updatePc*/);
-        }
-#endif        
-        //!
-        //! update geometric only using vertices information
-        //!
-        template<size_type CTX>
-        void update( element_type const& __e, uint16_type __f, using_vectices_t )
-        {
-            update<CTX>( __e, __f );
-        }
-
-        template<size_type CTX>
-        void update( element_type const& __e, uint16_type __f, precompute_ptrtype pc, using_vectices_t )
-        {
-            M_pc = pc;
-            update<CTX>( __e );
-        }
-        template<size_type CTX>
-        void update( element_type const& __e, uint16_type __f, permutation_type __perm, bool __updateJacobianCtx = true )
-        {
-            const bool updatePc = false;
-
-            M_perm=__perm;
-            if ( __updateJacobianCtx )
-                this->update<CTX>( __e, M_pc_faces[__f][M_perm], __f, updatePc );
-            else
-                this->update<clear_value_v<CTX,vm::JACOBIAN|vm::MEASURE>>( __e, M_pc_faces[__f][M_perm], __f, updatePc );
-        }
-
 
         template<size_type CTX>
         void update( element_type const& __e,
@@ -993,105 +979,16 @@ class GeoMap
                 resize<CTX>();
             }
 
-            update<CTX>( __e, __f, updatePc );
+            if constexpr ( subEntityCoDim > 0 )
+                update<CTX>( __e, __f/*, updatePc*/ );
+            else
+                update<CTX>( __e );
         }
 
-#if 0
-        template<size_type CTX>
-        bool resizeGradient()
-            {
-                if ( vm::has_jacobian_v<CTX> )
-                {
-                    const bool _resized = M_G.cols() != M_g.size1();
-                    if ( _resized )
-                    {
-                        M_g.resize( M_G.cols(), PDim );
-                    }
-                    return _resized;
-                }
-                return false;
-            }
-#endif
 
         FEELPP_STRONG_INLINE
-        void updateGradient( int q )
-            {
-                M_gm->gradient( q, M_g, M_pc.get() );
-            }
-        /**
-         * update information on this context
-         *
-         *  - update the coordinate of the real points
-         *  - update the pseudo-inverse of the gradient of the transformation
-         *
-         *  compute \f$ K(x_{\mathrm{ref}}) = G \nabla_{\mathrm{ref}} \phi(x_{\mathrm{ref}}) \f$
-         *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
-         *
-         *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^T K )^{-1} \f$
-         *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
-         */
-        template<size_type CTX>
-        void update( element_type const& __e, uint16_type __f = invalid_uint16_type_value, bool updatePC = true )
-            {
-                this->setElement( __e );
-                if constexpr ( subEntityCoDim > 0 )
-                {
-                    M_face_id = __f;
-                    // if ( M_face_id == invalid_v<uint16_type> )
-                    //     return;
-                    CHECK( M_face_id != invalid_v<uint16_type> ) << "sub entity id not defined";
-                    //if ( this->isOnSubEntity() )
-                    {
-                        M_f_markers = entityMarkers<subEntityCoDim>( __e, __f );
-                        if ( updatePC )
-                        {
-                            M_perm = __e.permutation( M_face_id, mpl::int_<subEntityCoDim>() );
-                            //M_perm = __e.permutation( M_face_id );
-                            M_pc = M_pc_faces[__f][M_perm];
-                        }
-                    }
-                }
-
-                DCHECK( M_G.cols() == M_gm->nbPoints()  ) << "Invalid number of points got " << M_G.cols() << " expected: " << M_gm->nbPoints();
-                DCHECK( M_pc ) << "invalid precompute data structure";
-
-                if constexpr ( vm::has_point_v<CTX> )
-                {
-                    this->updatePoints();
-                }
-                else if constexpr ( vm::has_dynamic_v<CTX> )
-                {
-                    if ( hasPOINT( M_dynamic_context ) )
-                        this->updatePoints();
-                }
-                if constexpr ( vm::has_measure_v<CTX> )
-                {
-                    this->updateMeasures();
-                }
-                else if constexpr ( vm::has_dynamic_v<CTX> )
-                {
-                    if ( hasMEASURE( M_dynamic_context ) )
-                        this->updateMeasures();
-                }
-
-                if constexpr ( subEntityCoDim == 1 )//this->isOnFace()
-                {
-                    if constexpr ( vm::has_measure_v<CTX> || vm::has_tangent_v<CTX> )
-                        this->updateFaceMeasures();
-                    else if constexpr ( vm::has_dynamic_v<CTX> )
-                    {
-                        if ( hasMEASURE( M_dynamic_context ) || hasTANGENT( M_dynamic_context ) )
-                            this->updateFaceMeasures();
-                    }
-                }
-
-                updateJKBN<CTX>();
-                M_context_updated = CTX | M_dynamic_context;
-            }
         void setElement( element_type const& __e )
             {
-                //M_element = std::addressof( __e );
-                //M_id = __e.id();
                 element_type const* newElement = std::addressof( __e );
                 bool isSameElt = newElement == M_element; // ( dynamic_cast<void const*>( newElement ) == dynamic_cast<void const*>( M_element ) )
                 if ( !isSameElt )
@@ -1118,48 +1015,26 @@ class GeoMap
                 }
 
             }
-        //!
-        //! update geomap data only on face, element has not been changed
-        //!
-        template<size_type CTX,int TheSubEntityCoDim = SubEntityCoDim >
-        void updateOnFace( uint16_type __f, bool updatePC = true,
+
+        template<int TheSubEntityCoDim = SubEntityCoDim >
+        void setSubEntity( uint16_type __f,
                            std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr )
             {
-                this->update( *M_element, __f, updatePC );
-#if 0
                 M_face_id = __f;
                 CHECK( M_face_id != invalid_v<uint16_type> ) << "sub entity id not defined";
-                if ( /*this->isOnSubEntity() &&*/ updatePC )
-                {
-                    M_perm = M_element->permutation( M_face_id, mpl::int_<subEntityCoDim>() );
-                    //M_perm = __e.permutation( M_face_id );
-                    M_pc = M_pc_faces[__f][M_perm];
-                }
-
-                if constexpr ( vm::has_point_v<CTX> )
-                {
-                    this->updatePoints();
-                }
-                else if constexpr ( vm::has_dynamic_v<CTX> )
-                {
-                    if ( hasPOINT( M_dynamic_context ) )
-                        this->updatePoints();
-                }
-
-                if constexpr ( subEntityCoDim == 1 )//this->isOnFace()
-                {
-                    if constexpr ( vm::has_measure_v<CTX> || vm::has_tangent_v<CTX> )
-                        this->updateFaceMeasures();
-                    else if constexpr ( vm::has_dynamic_v<CTX> )
-                    {
-                        if ( hasMEASURE( M_dynamic_context ) || hasTANGENT( M_dynamic_context ) )
-                            this->updateFaceMeasures();
-                    }
-                }
-
-                updateJKBN<CTX>();
-                M_context_updated = CTX | M_dynamic_context;
-#endif
+                M_perm = this->element().permutation( M_face_id, mpl::int_<subEntityCoDim>() );
+                M_pc = M_pc_faces[__f][M_perm];
+                M_f_markers = entityMarkers<subEntityCoDim>( this->element(), __f );
+            }
+        template<int TheSubEntityCoDim = SubEntityCoDim >
+        void setSubEntity( uint16_type __f, permutation_type __perm,
+                           std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr )
+            {
+                M_face_id = __f;
+                CHECK( M_face_id != invalid_v<uint16_type> ) << "sub entity id not defined";
+                M_perm = __perm;
+                M_pc = M_pc_faces[__f][M_perm];
+                M_f_markers = entityMarkers<subEntityCoDim>( this->element(), __f );
             }
 
         ~Context()
@@ -1169,7 +1044,7 @@ class GeoMap
         /** @name Accessors
          */
         //@{
-        
+
         /**
          \return the geometric mapping associated with the context
          */
@@ -1177,7 +1052,7 @@ class GeoMap
             {
                 return M_gm;
             }
-        
+
         /**
          \return the dimension of the space of the real element
          */
@@ -1185,7 +1060,7 @@ class GeoMap
             {
                 return NDim;
             }
-        
+
         /**
          \return the dimension of the space of the reference element
          */
@@ -1201,7 +1076,7 @@ class GeoMap
             {
             return *M_element;
             }
-        
+
         element_type const& element_c() const
             {
                 return *M_element;
@@ -1222,7 +1097,7 @@ class GeoMap
                 return (subEntityCoDim > 0) && (M_face_id != invalid_uint16_type_value);
                 //return subEntityCoDim > 1 || ( (subEntityCoDim == 1) && (M_face_id != invalid_uint16_type_value) );
             }
-        
+
         //!
         //! @return the number of points to transfer from reference to real element
         //!
@@ -1230,7 +1105,7 @@ class GeoMap
             {
                 return M_npoints;
             }
-        
+
         //!
         //! in the case of linear transformation, the jacobian is constant and
         //! we don't have to compute the information at all points, only at one
@@ -1245,7 +1120,7 @@ class GeoMap
             else
                 return M_npoints;
         }
-        
+
         /**
          * \return the set of points in the reference convex
          */
@@ -1354,7 +1229,7 @@ class GeoMap
             {
                 return M_local_basis_real[q].col(0);
             }
-        
+
         template<typename GeoMapT=gm_type>
         value_type const& localBasis( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
             {
@@ -1928,42 +1803,50 @@ class GeoMap
          * @return true if the permutation has been found and the geomap updated,
          * false otherwise.
          */
-        template <int CTX,typename EltType, typename NeighborGeoType>
-        bool updateFromNeighborMatchingFace( EltType const& elt, uint16_type face_in_elt, std::shared_ptr<NeighborGeoType> const& gmc )
+        template <int CTX,typename EltType, typename NeighborGeoType,int TheSubEntityCoDim = SubEntityCoDim>
+        bool updateFromNeighborMatchingFace( EltType const& elt, uint16_type face_in_elt, std::shared_ptr<NeighborGeoType> const& gmc,
+                                             std::enable_if_t< TheSubEntityCoDim == 1 >* = nullptr )
             {
                 if ( M_gm->hasPermutationWithNeighborFace( elt.id(), face_in_elt ) == false )
                 {
-                    auto gmcptr = gmc.get();
-                    bool found_permutation = false;
-                    for ( permutation_type __p( permutation_type::IDENTITY );
-                          __p < permutation_type( permutation_type::N_PERMUTATIONS ) && !found_permutation; ++__p )
-                    {
-                        // update only xReal in current geomap
-                        this->update<vm::POINT>( elt, face_in_elt, __p, false );
-                        
-                        bool check = true;
-                        for ( uint16_type i = 0; i < gmc->nPoints() && check; ++i )
-                        {
-                            
-                            for ( uint16_type d = 0; (d < NDim); ++d )
-                            {
-                                
-                                check = check && ( std::abs( gmcptr->xReal( i )[d] - this->xReal( i )[d] ) < 1e-8 );
-                            }
-                        }
-                        // if check update full gmc context with the good permutation
-                        if ( check )
-                        {
-                            this->update<CTX>( elt, face_in_elt, __p );
-                            M_gm->setPermutationWithNeighborFace( elt.id(), face_in_elt, __p.value() );
-                            found_permutation = true;
-                            return found_permutation;
-                        }
-                    }
+                    auto [found_permutation,perm] = this->updateFromMatchingNodes<CTX>(elt, face_in_elt, gmc );
+                    if ( found_permutation )
+                        M_gm->setPermutationWithNeighborFace( elt.id(), face_in_elt, perm.value() );
                     return found_permutation;
                 }
                 this->update<CTX>( elt, face_in_elt, permutation_type(M_gm->permutationWithNeighborFace(elt.id(), face_in_elt)) );
                 return true;
+            }
+
+        template <int CTX,typename EltType, typename MatchingGmcType,int TheSubEntityCoDim = SubEntityCoDim>
+        std::pair<bool,permutation_type> updateFromMatchingNodes( EltType const& elt, uint16_type subentity_in_elt, std::shared_ptr<MatchingGmcType> const& gmc,
+                                                                  std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr )
+            {
+                this->setElement( elt );
+                auto gmcptr = gmc.get();
+                for ( permutation_type __p( permutation_type::IDENTITY );
+                      __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+                {
+                    // update only xReal in current geomap
+                    this->setSubEntity( subentity_in_elt,__p );
+                    this->updatePoints();
+
+                    bool check = true;
+                    for ( uint16_type i = 0; i < gmc->nPoints() && check; ++i )
+                    {
+                        for ( uint16_type d = 0; (d < NDim); ++d )
+                        {
+                            check = check && ( std::abs( gmcptr->xReal( i )[d] - this->xReal( i )[d] ) < 1e-8 );
+                        }
+                    }
+                    // if check update full gmc context with the good permutation
+                    if ( check )
+                    {
+                        this->update<CTX>( elt, subentity_in_elt, __p );
+                        return std::make_pair(true, __p);
+                    }
+                }
+                return std::make_pair(false,permutation_type( permutation_type::IDENTITY ));
             }
 
         //@}
@@ -1988,6 +1871,52 @@ class GeoMap
             return M_perm;
         }
 
+        template<size_type CTX>
+        void updateImpl()
+            {
+                DCHECK( M_G.cols() == M_gm->nbPoints()  ) << "Invalid number of points got " << M_G.cols() << " expected: " << M_gm->nbPoints();
+                DCHECK( M_pc ) << "invalid precompute data structure";
+
+                if constexpr ( vm::has_point_v<CTX> )
+                {
+                    this->updatePoints();
+                }
+                else if constexpr ( vm::has_dynamic_v<CTX> )
+                {
+                    if ( hasPOINT( M_dynamic_context ) )
+                        this->updatePoints();
+                }
+                if constexpr ( vm::has_measure_v<CTX> )
+                {
+                    this->updateMeasures();
+                }
+                else if constexpr ( vm::has_dynamic_v<CTX> )
+                {
+                    if ( hasMEASURE( M_dynamic_context ) )
+                        this->updateMeasures();
+                }
+
+                if constexpr ( subEntityCoDim == 1 )//this->isOnFace()
+                {
+                    if constexpr ( vm::has_measure_v<CTX> || vm::has_tangent_v<CTX> )
+                        this->updateFaceMeasures();
+                    else if constexpr ( vm::has_dynamic_v<CTX> )
+                    {
+                        if ( hasMEASURE( M_dynamic_context ) || hasTANGENT( M_dynamic_context ) )
+                            this->updateFaceMeasures();
+                    }
+                }
+
+                updateJKBN<CTX>();
+                M_context_updated = CTX | M_dynamic_context;
+            }
+
+        FEELPP_STRONG_INLINE
+        void updateGradient( int q ) noexcept
+            {
+                M_gm->gradient( q, M_g, M_pc.get() );
+            }
+
         FEELPP_STRONG_INLINE
         void updateMeasures() noexcept
             {
@@ -2009,7 +1938,7 @@ class GeoMap
             {
                 em_matrix_col_type<value_type> Xreal( M_xrealq.data().begin(), M_xrealq.size1(), M_xrealq.size2() );
                 //em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
-                Xreal.noalias() = /*Pts*/ M_G * M_pc->phiEigen();
+                Xreal.noalias() = M_G * M_pc->phiEigen();
             }
 
         template<typename ConvexType = ElementType>
@@ -2044,45 +1973,6 @@ class GeoMap
             B.noalias() = K*M_CS;
             //std::cout << "2.B=" << B << std::endl;
         }
-#if 0
-        /**
-         * update Jacobian data : linear case
-         */
-        void updateJKBN( mpl::bool_<true> )
-        {
-            if ( !M_gm->isCached() ||
-                 ( M_gm->isCached() && M_gm->cached( M_id ) == false ) )
-            {
-                updateJKBN( mpl::true_(), mpl::bool_<NDim == PDim>() );
-                if ( M_gm->isCached() )
-                {
-                    // cache J, K and B
-                    M_gm->addJ( M_id, M_J );
-                    //if ( vm::has_kb<context>::value )
-                    {
-                        M_gm->addK( M_id, M_K );
-                        M_gm->addB( M_id, M_B );
-                    }
-                    M_gm->setCached( M_id, true );
-
-                    //LOG(INFO) << "(add to cache) J[" << M_id << "]=" <<  M_J << "\n";
-                    //LOG(INFO) << "(add to cache) B[" << M_id << "]=" <<  M_B << "\n";
-                }
-            }
-
-            else
-            {
-                M_J = M_gm->J( M_id );
-                //LOG(INFO) << "(use cache) J[" << M_id << "]=" <<  M_J << "\n";
-                //if ( vm::has_kb<context>::value )
-                {
-                    M_K = M_gm->K( M_id );
-                    M_B = M_gm->B( M_id );
-                    //LOG(INFO) << "(use cache) B[" << M_id << "]=" <<  M_B << "\n";
-                }
-            }
-        }
-#endif
         //!
         //! update hessian information
         //!
@@ -2108,11 +1998,6 @@ class GeoMap
         void updateNormals( eigen_matrix_np_type const& B,
                             eigen_vector_n_type& N, eigen_vector_n_type& unitN, value_type& Nnorm ) noexcept
         {
-#if 0
-            if ( !this->isOnFace() )
-                return; //throw std::logic_error( "normal computation defined only on faces" );
-            //if ( M_gm->hasUnitNormalAtFace( M_id, M_face_id ) == false )
-#endif
             N.noalias() = B * M_gm->referenceConvex().normal( M_face_id );
             Nnorm = N.norm();
             unitN = N/Nnorm;
@@ -2127,10 +2012,6 @@ class GeoMap
                              eigen_vector_n_type& Ta, eigen_vector_n_type& unitT, value_type& Tnorm,
                              eigen_matrix_nn_type& P ) noexcept
         {
-#if 0
-            if ( M_face_id == invalid_uint16_type_value )
-                return;//throw std::logic_error( "tangent computation defined only on faces" );
-#endif
             if constexpr ( NDim == 2 )
             {
                 // t = |\hat{e}|*o_K*(K*t_ref)/|e| where o_K is the sign(e*x_K(\hat{e}))
@@ -2503,80 +2384,6 @@ class GeoMap
                 }
             }
 
-#if 0
-        //!
-        //! update various terms associated to the geometric transformation such
-        //! as jacobian, jacobian matrix its inverse or the normals
-        //!
-        template<int CTX>
-        void updateJKBN() noexcept
-            {
-                if constexpr ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_dynamic_v<CTX> )
-                {
-                    Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
-                    em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
-                    tensor_map_t<2,value_type> TPts( M_G.data().begin(), M_G.size1(), M_G.size2() );
-                    bool _gradient_needs_update = resizeGradient<CTX>();
-                    em_matrix_col_type<value_type> GradPhi( M_g.data().begin(),
-                                                            M_G.size2(), PDim );
-
-                    for ( int q = 0; q < nComputedPoints(); ++q )
-                    {
-                        if ( 0 ) //is_linear && M_gm->cache( M_id, M_K[q], M_B[q], M_J[q] ) )
-                        {
-                        }
-                        else
-                        {
-                            if constexpr(!gmc_type::is_linear)
-                            {
-                                updateGradient<CTX>( q );
-                                new (&GradPhi) em_matrix_col_type<value_type>(M_g.data().begin(),
-                                                                              M_G.size2(), PDim );
-                            }
-                            M_K[q].noalias() = Pts * GradPhi;
-
-                            updateJacobian<CTX>( M_K[q], M_B[q], M_J[q] );
-#if 0
-                            //std::cout << "CTX=" << CTX << std::endl;
-                            //std::cout << "K[" << q << "]=" << M_K[q] << std::endl;
-                            //std::cout << "B[" << q << "]=" << M_B[q] << std::endl;
-                            //std::cout << "J[" << q << "]=" << M_J[q] << std::endl;
-                            //if ( 0 && is_linear )
-                                //M_gm->updateCache( M_id, M_K[q], M_B[q], M_J[q] );
-#endif
-                        }
-
-                        if constexpr ( !gmc_type::is_linear )
-                        {
-                            if constexpr ( vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX> )
-                            {
-                                //M_h.resize( { NDim, NDim } );
-                                M_gm->hessianBasisAtPoint( q, M_hessian_basis_at_pt, M_pc.get() );
-                                M_hessian[q] = TPts.contract(M_hessian_basis_at_pt,dims);
-                                //std::cout << "M_hessian[" << q << "]=" << M_hessian[q] << std::endl;
-                            }
-                            else if constexpr ( vm::has_dynamic_v<CTX> )
-                            {
-                                if ( hasSECOND_DERIVATIVE( M_dynamic_context ) )
-                                {
-                                    M_gm->hessianBasisAtPoint( q, M_hessian_basis_at_pt, M_pc.get() );
-                                    M_hessian[q] = TPts.contract(M_hessian_basis_at_pt,dims);
-                                }
-                            }
-                        }
-
-                        updateHessian<CTX>( M_B[q] );
-                        updateNormals<CTX>( M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
-                        updateTangents<CTX>( M_K[q], M_unit_normals[q], M_tangents[q], M_unit_tangents[q], M_tangent_norms[q], M_Ptangent[q] );
-                        updateLocalBasis<CTX>(  M_B[q], M_local_basis_ref[q], M_local_basis_real[q] );
-                    }
-
-                }
-                else if constexpr ( vm::has_normal_v<CTX> )
-                    for ( int q = 0; q < nComputedPoints(); ++q )
-                        updateNormals<CTX>( M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
-            }
-#endif
         friend class boost::serialization::access;
 
         template <class Archive>
