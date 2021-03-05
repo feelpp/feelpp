@@ -454,6 +454,30 @@ template<typename Poly, template<uint16_type> class PolySetType>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
 PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+updateNormalComponent( geometric_mapping_context_type* thegmc, rank_t<1> )
+{
+    const uint16_type Q = M_npoints;
+    const uint16_type I = M_normal_component.shape()[0];
+    tensor_map_fixed_size_matrix_t<gmc_type::NDim,1,value_type> N ( thegmc->unitNormal( 0 ).data(),gmc_type::NDim,1 );
+
+    for ( uint16_type i = 0; i < I; ++i )
+        for ( uint16_type q = 0; q < Q; ++q )
+        {
+            if constexpr(!gmc_type::is_linear)
+                            new (&N) tensor_map_fixed_size_matrix_t<gmc_type::NDim, 1,value_type>(thegmc->unitNormal( q ).data(), gmc_type::NDim, 1 );
+            auto &r = M_normal_component[i][q](0,0);
+            r= 0;
+            auto* p = M_phi[i][q].data();
+            auto* n = N.data();
+            for( int c = 0; c < gmc_type::NDim; ++c )
+                r += *(p+c)*(*(n+c));
+        }
+}
+
+template<typename Poly, template<uint16_type> class PolySetType>
+template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
+void
+PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateGrad( geometric_mapping_context_type* thegmc, rank_t<1> )
 {
     const uint16_type Q = do_optimization_p1?1:M_npoints;
@@ -766,25 +790,18 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
         }
     }
 
-    if constexpr ( vm::has_normal_component_v<context>)
-    {
-        const uint16_type Q = M_npoints;//do_optimization_p1?1:M_npoints;
-        const uint16_type I = M_normal_component.shape()[0];
-        Eigen::array<dimpair_t, 1> dims = {{dimpair_t(0, 0)}};
-        tensor_map_fixed_size_matrix_t<gmc_type::NDim,1,value_type> N ( thegmc->unitNormal( 0 ).data(),gmc_type::NDim,1 );
 
-        for ( uint16_type i = 0; i < I; ++i )
-            for ( uint16_type q = 0; q < Q; ++q )
-            {
-                if constexpr(!gmc_type::is_linear)
-                    new (&N) tensor_map_fixed_size_matrix_t<gmc_type::NDim, 1,value_type>(thegmc->unitNormal( q ).data(), gmc_type::NDim, 1 );
-                auto &r = M_normal_component[i][q](0,0);
-                r= 0;
-                auto* p = M_phi[i][q].data();
-                auto* n = N.data();
-                for( int c = 0; c < gmc_type::NDim; ++c )
-                    r += *(p+c)*(*(n+c));
-            }
+    if constexpr ( gmc_type::is_on_face )
+    {
+        if constexpr ( vm::has_normal_component_v<context> )
+        {
+            this->updateNormalComponent( thegmc, rank_t<1>{} );
+        }
+        else if constexpr ( vm::has_dynamic_basis_function_v<context> )
+        {
+            if ( hasNORMAL_COMPONENT( this->dynamicContext() ) )
+                this->updateNormalComponent( thegmc, rank_t<1>{} );
+        }
     }
 
     if constexpr ( vm::has_grad_v<context> || vm::has_first_derivative_v<context> ||
@@ -846,8 +863,6 @@ updateNormalComponent( geometric_mapping_context_type* thegmc, rank_t<2> )
 {
     const uint16_type Q = M_npoints;
     const uint16_type I = M_normal_component.shape()[0];
-    Eigen::array<dimpair_t, 1> dims = {{dimpair_t(0, 0)}};
-    const int ndim = thegmc->N();
     for ( uint16_type i = 0; i < I; ++i )
         for ( uint16_type q = 0; q < Q; ++q )
         {
@@ -943,14 +958,17 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
 {
     geometric_mapping_context_type* thegmc = __gmc.get();
 
-    if constexpr ( vm::has_normal_component_v<context> )
+    if constexpr ( gmc_type::is_on_face )
     {
-        this->updateNormalComponent( thegmc, rank_t<2>{} );
-    }
-    else if constexpr ( vm::has_dynamic_basis_function_v<context> )
-    {
-        if ( hasNORMAL_COMPONENT( this->dynamicContext() ) )
+        if constexpr ( vm::has_normal_component_v<context> )
+        {
             this->updateNormalComponent( thegmc, rank_t<2>{} );
+        }
+        else if constexpr ( vm::has_dynamic_basis_function_v<context> )
+        {
+            if ( hasNORMAL_COMPONENT( this->dynamicContext() ) )
+                this->updateNormalComponent( thegmc, rank_t<2>{} );
+        }
     }
 
     if constexpr ( vm::has_trace_v<context> )

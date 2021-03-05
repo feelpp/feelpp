@@ -2174,6 +2174,7 @@ public:
         FEELPP_STRONG_INLINE void updateHessian( geometric_mapping_context_type* thegmc, rank_t<0> );
         FEELPP_STRONG_INLINE void updateLaplacian( geometric_mapping_context_type* thegmc, rank_t<0> );
 
+        FEELPP_STRONG_INLINE void updateNormalComponent( geometric_mapping_context_type* thegmc, rank_t<1> );
         FEELPP_STRONG_INLINE void updateGrad( geometric_mapping_context_type* thegmc, rank_t<1> );
         FEELPP_STRONG_INLINE void updateSymm( geometric_mapping_context_type* thegmc, rank_t<1> );
         FEELPP_STRONG_INLINE void updateDiv( geometric_mapping_context_type* thegmc, rank_t<1> );
