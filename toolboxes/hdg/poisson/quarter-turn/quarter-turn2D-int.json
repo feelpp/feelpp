@@ -1,13 +1,27 @@
 {
     "Name": "HDG-Mixed-Poisson ",
     "ShortName":"MP",
-    "Models":{"equations":"hdg"},
+    "Models":
+    {
+        "equations":"hdg",
+        "p_expr":"2*dif/Pi*atan2(y,x):x:y:z:dif",
+        "u_expr":"{2*dif*sigma/Pi*y/(x*x+y*y),-2*dif*sigma/Pi*x/(x*x+y*y)}:x:y:z:dif:sigma"
+    },
+    "Parameters":
+    {
+        "dif":0.03125,
+        "sigma":58e3,
+        "k":0.38,
+        "h":0.08,
+        "Tw":293
+    },
     "Materials":
     {
         "omega":
         {
             "name":"copper",
-            "cond":"-1"
+            "cond":"58e3",
+            "k":58e3
             // "alpha":"3.35e-3",
             // "T0":"293",
             // "sigma0":"50",
@@ -24,7 +38,7 @@
             {
                 "top":
                 {
-                    "expr":"2.2064"
+                    "expr":"-799"
                 }
             }
         },
@@ -52,7 +66,24 @@
                     "expr":"0"
                 }
             }
-        }
+        },
+	    "Exact solution":
+	    {
+	        "p_exact":
+	        {
+		        "omega":
+		        {
+		            "expr":"2*dif/Pi*atan2(y,x):x:y:z:dif"
+		        }
+	        },
+            "u_exact":
+            {
+                "omega":
+                {
+                    "expr":"{2*dif*sigma/Pi*y/(x*x+y*y),-2*dif*sigma/Pi*x/(x*x+y*y)}:x:y:z:dif:sigma"
+                }
+            }
+	    }
     },
     "PostProcess":
     {
