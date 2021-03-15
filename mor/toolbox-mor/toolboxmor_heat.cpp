@@ -24,18 +24,16 @@ void writeErrors(fs::ofstream& out, std::vector<std::vector<double> > const& err
     }
 }
 
-int main( int argc, char** argv)
+template<int Dim, int Order>
+int runSimulation()
 {
-    po::options_description opt("options");
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=opt.add(makeToolboxMorOptions())
-                     .add(toolboxes_options("heat")) );
-
-    using heat_tb_type = FeelModels::Heat<Simplex<2>, Lagrange<1, Scalar, Continuous, PointSetFekete> >;
+    using convex_type = Simplex<Dim>;
+    using base_type = Lagrange<Order, Scalar, Continuous, PointSetFekete>;
+    using heat_tb_type = FeelModels::Heat<convex_type, base_type>;
     using heat_tb_ptrtype = std::shared_ptr<heat_tb_type>;
     using space_type = typename heat_tb_type::space_temperature_type;
 
-    using rb_model_type = ToolboxMor<2>;
+    using rb_model_type = ToolboxMor<space_type>;
     using rb_model_ptrtype = std::shared_ptr<rb_model_type>;
     using crb_model_type = CRBModel<rb_model_type>;
     using crb_model_ptrtype = std::shared_ptr<crb_model_type>;
@@ -44,8 +42,8 @@ int main( int argc, char** argv)
     using wn_type = typename crb_type::wn_type;
     using vectorN_type = Eigen::VectorXd;
     using export_vector_wn_type = typename crb_type::export_vector_wn_type;
-    using mesh_type = rb_model_type::mesh_type;
-    using mesh_ptrtype = rb_model_type::mesh_ptrtype;
+    using mesh_type = typename rb_model_type::mesh_type;
+    using mesh_ptrtype = typename rb_model_type::mesh_ptrtype;
     using parameter_type = typename rb_model_type::parameter_type;
     using sampling_type = typename crb_type::sampling_type;
     using sampling_ptrtype = std::shared_ptr<sampling_type>;
@@ -211,4 +209,46 @@ int main( int argc, char** argv)
     e->save();
 
     return 0;
+}
+
+int main( int argc, char** argv)
+{
+    po::options_description opt("options");
+    opt.add_options()
+        ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
+        ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
+        ( "toolboxmor.sampling-size", po::value<int>()->default_value(10), "size of the sampling" )
+        ;
+
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=opt.add(makeToolboxMorOptions())
+                     .add(toolboxes_options("heat")) );
+
+    int dimension = ioption(_name="case.dimension");
+    std::string discretization = soption(_name="case.discretization");
+
+    auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
+#if FEELPP_INSTANTIATION_ORDER_MAX >= 3
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> )// ,
+                                             // hana::make_tuple("P2", hana::int_c<2> ),
+                                             // hana::make_tuple("P3", hana::int_c<3> )
+                                             );
+#elif FEELPP_INSTANTIATION_ORDER_MAX >= 2
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> )// ,
+                                             // hana::make_tuple("P2", hana::int_c<2> )
+                                             );
+#else
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
+#endif
+    int status = 0;
+    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)),
+                    [&discretization,&dimension,&status]( auto const& d )
+                        {
+                            constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
+                            std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
+                            constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
+                            if ( dimension == _dim && discretization == _discretization )
+                                status = runSimulation<_dim,_torder>();
+                        } );
+    return status;
 }
