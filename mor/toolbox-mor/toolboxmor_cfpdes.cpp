@@ -126,83 +126,82 @@ int runSimulation(std::shared_ptr<FeelModels::coefficient_form_PDEs_t<ConvexType
     crb->offline();
     toc("offline");
 
-    // int N = crb->dimension();
-    // int timeSteps = 1;
-    // std::vector<vectorN_type> uNs(timeSteps, vectorN_type(N)), uNolds(timeSteps, vectorN_type(N));
-    // std::vector<double> outputs(timeSteps, 0);
+    int N = crb->dimension();
+    int timeSteps = 1;
+    std::vector<vectorN_type> uNs(timeSteps, vectorN_type(N)), uNolds(timeSteps, vectorN_type(N));
+    std::vector<double> outputs(timeSteps, 0);
 
-    // sampling_ptrtype sampling( new sampling_type( crbModel->parameterSpace() ) );
-    // int size = ioption("toolboxmor.sampling-size");
-    // sampling->clear();
-    // sampling->randomize( size, true );
+    sampling_ptrtype sampling( new sampling_type( crbModel->parameterSpace() ) );
+    int size = ioption("toolboxmor.sampling-size");
+    sampling->clear();
+    sampling->randomize( size, true );
 
-    // std::vector<std::vector<double> > errs(N, std::vector<double>(size));
-    // std::vector<std::vector<double> > errsRel(N, std::vector<double>(size));
-    // auto Xh = model->functionSpace();
-    // auto mesh = Xh->mesh();
-    // auto rangeT = elements(mesh);//Xh->dof()->meshSupport()->rangeElements();
-    // auto TFE = Xh->element();
-    // auto TRB = Xh->element();
+    std::vector<std::vector<double> > errs(N, std::vector<double>(size));
+    std::vector<std::vector<double> > errsRel(N, std::vector<double>(size));
+    auto Xh = model->functionSpace();
+    auto mesh = Xh->mesh();
+    auto rangeU = elements(mesh);//Xh->dof()->meshSupport()->rangeElements();
+    auto UFE = Xh->element();
+    auto URB = Xh->element();
 
-    // int j = 0;
-    // for( auto const& mu : *sampling )
-    // {
-    //     for( int i = 0; i < mu.size(); ++i )
-    //         cfpdes->addParameterInModelProperties(mu.parameterName(i), mu(i));
-    //     cfpdes->updateParameterValues();
-    //     // heatBox->updateFieldVelocityConvection();
-    //     cfpdes->solve();
-    //     TFE = heatBox->fieldTemperature();
-    //     auto normT = normL2( rangeT, idv(TFE) );
-    //     for(int n = 0; n < N; ++n)
-    //     {
-    //         crb->fixedPointPrimal(n+1, mu, uNs, uNolds, outputs);
-    //         vectorN_type uN = uNs[0];
-    //         TRB = crb->expansion( uN, n+1 );
-    //         errs[n][j] = normL2( rangeT, idv(TRB)-idv(TFE) );
-    //         errsRel[n][j] = errs[n][j]/normT;
-    //     }
-    //     ++j;
-    // }
+    int j = 0;
+    for( auto const& mu : *sampling )
+    {
+        for( int i = 0; i < mu.size(); ++i )
+            cfpdes->addParameterInModelProperties(mu.parameterName(i), mu(i));
+        cfpdes->updateParameterValues();
+        cfpdes->solve();
+        UFE = cfpde->fieldUnknown();
+        auto normU = normL2( rangeU, idv(UFE) );
+        for(int n = 0; n < N; ++n)
+        {
+            crb->fixedPointPrimal(n+1, mu, uNs, uNolds, outputs);
+            vectorN_type uN = uNs[0];
+            URB = crb->expansion( uN, n+1 );
+            errs[n][j] = normL2( rangeU, idv(URB)-idv(UFE) );
+            errsRel[n][j] = errs[n][j]/normU;
+        }
+        ++j;
+    }
 
-    // std::vector<double> min(N), max(N), mean(N), stdev(N);
-    // for(int n = 0; n < N; ++n)
-    // {
-    //     min[n] = *std::min_element(errsRel[n].begin(), errsRel[n].end());
-    //     max[n] = *std::max_element(errsRel[n].begin(), errsRel[n].end());
-    //     double s = std::accumulate(errsRel[n].begin(), errsRel[n].end(), 0.0);
-    //     mean[n] = s/size;
-    //     double accum = std::accumulate(errsRel[n].begin(), errsRel[n].end(), 0.0,
-    //                                    [s,size](double a, double b) {
-    //                                        return a + (b-s/size)*(b-s/size);
-    //                                    });
-    //     stdev[n] = accum/size;
-    // }
+    std::vector<double> min(N), max(N), mean(N), stdev(N);
+    for(int n = 0; n < N; ++n)
+    {
+        min[n] = *std::min_element(errsRel[n].begin(), errsRel[n].end());
+        max[n] = *std::max_element(errsRel[n].begin(), errsRel[n].end());
+        double s = std::accumulate(errsRel[n].begin(), errsRel[n].end(), 0.0);
+        mean[n] = s/size;
+        double accum = std::accumulate(errsRel[n].begin(), errsRel[n].end(), 0.0,
+                                       [s,size](double a, double b) {
+                                           return a + (b-s/size)*(b-s/size);
+                                       });
+        stdev[n] = accum/size;
+    }
 
-    // fs::ofstream cvgErr( "err.dat" );
-    // fs::ofstream cvgErrR( "errR.dat" );
-    // fs::ofstream cvgStat( "stat.dat" );
-    // writeErrors(cvgErr, errs);
-    // writeErrors(cvgErrR, errsRel);
-    // if( cvgStat && Environment::isMasterRank() )
-    // {
-    //     cvgStat << std::setw(5) << "N" << std::setw(25) << "min" << std::setw(25) << "max"
-    //             << std::setw(25) << "mean" << std::setw(25) << "stdev" << std::endl;
-    //     for(int n = 0; n < N; ++n)
-    //         cvgStat << std::setw(5) << n+1 << std::setw(25) << min[n] << std::setw(25) << max[n]
-    //                 << std::setw(25) << mean[n] << std::setw(25) << stdev[n] << std::endl;
-    //     cvgStat.close();
-    // }
-    // Feel::cout << std::setw(5) << "N" << std::setw(25) << "min" << std::setw(25) << "max"
-    //            << std::setw(25) << "mean" << std::setw(25) << "stdev" << std::endl;
-    // for(int n = 0; n < N; ++n)
-    //     Feel::cout << std::setw(5) << n+1 << std::setw(25) << min[n] << std::setw(25) << max[n]
-    //                << std::setw(25) << mean[n] << std::setw(25) << stdev[n] << std::endl;
+    fs::ofstream cvgErr( "err.dat" );
+    fs::ofstream cvgErrR( "errR.dat" );
+    fs::ofstream cvgStat( "stat.dat" );
+    writeErrors(cvgErr, errs);
+    writeErrors(cvgErrR, errsRel);
+    if( cvgStat && Environment::isMasterRank() )
+    {
+        cvgStat << std::setw(5) << "N" << std::setw(25) << "min" << std::setw(25) << "max"
+                << std::setw(25) << "mean" << std::setw(25) << "stdev" << std::endl;
+        for(int n = 0; n < N; ++n)
+            cvgStat << std::setw(5) << n+1 << std::setw(25) << min[n] << std::setw(25) << max[n]
+                    << std::setw(25) << mean[n] << std::setw(25) << stdev[n] << std::endl;
+        cvgStat.close();
+    }
+    Feel::cout << std::setw(5) << "N" << std::setw(25) << "min" << std::setw(25) << "max"
+               << std::setw(25) << "mean" << std::setw(25) << "stdev" << std::endl;
+    for(int n = 0; n < N; ++n)
+        Feel::cout << std::setw(5) << n+1 << std::setw(25) << min[n] << std::setw(25) << max[n]
+                   << std::setw(25) << mean[n] << std::setw(25) << stdev[n] << std::endl;
 
-    // auto e = exporter(mesh);
-    // e->add("TFE", TFE);
-    // e->add("TRB", TRB);
-    // e->save();
+    auto e = exporter(mesh);
+    e->add("UFE", UFE);
+    e->add("URB", URB);
+    e->save();
 
     return 0;
 }
@@ -212,6 +211,7 @@ int main( int argc, char** argv)
     po::options_description opt("options");
     opt.add_options()
         ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
+        ( "toolboxmor.sampling-size", po::value<int>()->default_value(10), "size of the sampling" )
         ;
     Environment env( _argc=argc, _argv=argv,
                      _desc=opt.add(makeToolboxMorOptions())

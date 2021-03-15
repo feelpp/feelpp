@@ -92,7 +92,7 @@
     },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
             "Dirichlet":
             {
