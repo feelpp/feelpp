@@ -101,5 +101,12 @@
                 }
             }
         }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["temperature"]
+        }
     }
 }

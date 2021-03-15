@@ -61,8 +61,7 @@
             "k":"3e-2",
             "Cp":"2e6",
             "rho":"1",
-            "heat_c":"materials_PCB_k:materials_PCB_k",
-            "heat_beta":"{0,-materials_PCB_Cp*materials_PCB_rho*vinconv*(x-0.008)*(x-0.054)*(x>0.008)}:x:materials_PCB_Cp:materials_PCB_rho:vinconv"
+            "heat_c":"materials_PCB_k:materials_PCB_k"
         },
         "AIR":
         {
@@ -78,8 +77,8 @@
             "k":"k_1:k_1",
             "Cp":"1.4e6",
             "rho":"1",
-            "heat_c":"materials_IC1_k:materials_IC1_k",
-            "heat_beta":"{0,-materials_IC1_Cp*materials_IC1_rho*vinconv*(x-0.008)*(x-0.054)*(x>0.008)}:x:materials_IC1_Cp:materials_IC1_rho:vinconv"
+            "heat_c":"k_1:k_1",
+            "heat_f":"q_1:q_1"
 
         },
         "IC2":
@@ -87,25 +86,14 @@
             "k":"k_2:k_2",
             "Cp":"1.4e6",
             "rho":"1",
-            "heat_c":"materials_IC2_k:materials_IC2_k",
-            "heat_beta":"{0,-materials_IC2_Cp*materials_IC2_rho*vinconv*(x-0.008)*(x-0.054)*(x>0.008)}:x:materials_IC2_Cp:materials_IC2_rho:vinconv"
+            "heat_c":"k_2:k_2",
+            "heat_f":"q_2:q_2"
         }
     },
     "BoundaryConditions":
     {
         "temperature":
         {
-            "VolumicForces":
-            {
-                "IC1":
-                {
-                    "expr":"q_1:q_1"
-                },
-                "IC2":
-                {
-                    "expr":"q_2:q_2"
-                }
-            },
             "Dirichlet":
             {
                 "dirichlet":
@@ -119,8 +107,19 @@
                 "Gamma_2":
                 {
                     "expr1":"hcoeff:hcoeff",// h coeff
-                    "expr2":"300"// temperature exterior
+                    "expr2":"300*hcoeff:hcoeff"// temperature exterior
                 }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "heat":
+        {
+            "Exports":
+            {
+                "fields":"all"//["temperature","pid"]
             }
         }
     }
