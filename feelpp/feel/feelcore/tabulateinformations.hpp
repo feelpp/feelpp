@@ -180,6 +180,8 @@ private:
 };
 
 //! types
+using tabulate_informations_table_t = TabulateInformationsTable;
+using tabulate_informations_table_ptr_t = std::shared_ptr<tabulate_informations_table_t>;
 using tabulate_informations_sections_t = TabulateInformationsSections;
 using tabulate_informations_sections_ptr_t = std::shared_ptr<tabulate_informations_sections_t>;
 
@@ -220,6 +222,10 @@ Feel::Table createTableFromArray( nl::json const& jsonInfo, bool applyDefaultFor
 
 tabulate_informations_ptr_t
 tabulateInformationsFunctionSpace( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+
+tabulate_informations_ptr_t
+tabulateInformationsSymbolsExpr( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, bool addNameExpr = false );
+
 
 } // namespace FromJSON
 
