@@ -392,10 +392,10 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     typedef typename geoelement_type::gm1_type gm1_type;
     typedef std::shared_ptr<gm1_type> gm1_ptrtype;
 
-    typedef typename gm_type::template Context<geoelement_type> gmc_type;
+    typedef typename gm_type::template Context<geoelement_type,1> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-    typedef typename gm1_type::template Context<geoelement_type> gmc1_type;
+    typedef typename gm1_type::template Context<geoelement_type,1> gmc1_type;
     typedef std::shared_ptr<gmc1_type> gmc1_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
 
