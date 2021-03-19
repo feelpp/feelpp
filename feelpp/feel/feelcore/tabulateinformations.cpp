@@ -345,6 +345,60 @@ tabulateInformationsFunctionSpace( nl::json const& jsonInfo, TabulateInformation
     return tabInfo;
 }
 
+tabulate_informations_ptr_t
+tabulateInformationsSymbolsExpr( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, bool addNameExpr )
+{
+    Feel::Table tabInfo;
+    if ( !jsonInfo.is_array() )
+        return TabulateInformations::New( tabInfo, tabInfoProp );
+
+    for ( auto const& el : jsonInfo.items() )
+    {
+        auto const& jse = el.value();
+        if ( !jse.contains( "symbol" ) )
+            continue;
+
+        std::string name = jse.value<std::string>( "name", "" );
+        std::string expr = jse.value( "expr", "" );
+        if ( tabInfo.nRow() == 0 )
+        {
+            if ( addNameExpr )
+                tabInfo.add_row({"Name","Expression","Symbol","Shape","Components"});
+            else
+                tabInfo.add_row({"Symbol","Shape","Components"});
+            tabInfo.format().setFirstRowIsHeader( true );
+        }
+
+        if ( jse.contains( "components" ) )
+        {
+            auto const& jcomps = jse.at( "components" );
+            Feel::Table tabInfoComp;
+            tabInfoComp.add_row({"Symbol","Indices"});
+            tabInfoComp.format().setFirstRowIsHeader( true );
+            for ( auto const& el2 : jcomps.items() )
+            {
+                auto const& jsec = el2.value();
+                auto const& idx = jsec.at("indices");
+                std::string idxStr = std::to_string( idx[0].get<int>() ) + "," + std::to_string( idx[1].get<int>() );
+                tabInfoComp.add_row({ jsec.at("symbol").get<std::string>(), idxStr });
+            }
+            if ( addNameExpr )
+                tabInfo.add_row({ name, expr, jse.at("symbol").get<std::string>(), jse.at("shape").get<std::string>(), tabInfoComp });
+            else
+                tabInfo.add_row({ jse.at("symbol").get<std::string>(), jse.at("shape").get<std::string>(), tabInfoComp });
+        }
+        else
+        {
+            if ( addNameExpr )
+                tabInfo.add_row({ name, expr, jse.at("symbol").get<std::string>(), jse.at("shape").get<std::string>(), "" });
+            else
+                tabInfo.add_row({ jse.at("symbol").get<std::string>(), jse.at("shape").get<std::string>(), "" });
+        }
+    }
+    return TabulateInformations::New( tabInfo, tabInfoProp );
+}
+
+
 } // namespace FromJSON
 
 } // namespace TabulateInformationTools
