@@ -185,6 +185,10 @@ using em_matrix_row_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dyna
 template<typename T = double>
 using em_matrix_col_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>>;
 
+//! Eigen type to map matrix_node<>::type
+template<typename T = double>
+using em_cmatrix_col_type = Eigen::Map<const Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>>;
+
 //! Eigen type to map node_type
 template<typename T = double>
 using em_node_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,1>>;

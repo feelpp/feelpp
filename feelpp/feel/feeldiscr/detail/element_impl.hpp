@@ -2448,32 +2448,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                                         mpl::int_<ExprType::context|vm::POINT> >::type::value;
 
 
-    typedef typename gm_type::template Context<geoelement_type> gmc_type;
-    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-    typedef typename gm1_type::template Context<geoelement_type> gmc1_type;
-    typedef std::shared_ptr<gmc1_type> gmc1_ptrtype;
-    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
-
-
     // dof
     typedef typename element_type::functionspace_type::dof_type dof_type;
-
-    // basis
-    typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
-    typedef std::shared_ptr<fecontext_type> fecontext_ptrtype;
-    typedef typename fe_type::template Context< context, fe_type, gm1_type, geoelement_type> fecontext1_type;
-    typedef std::shared_ptr<fecontext1_type> fecontext1_ptrtype;
-    //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
-
-    // expression
-    //typedef typename expression_type::template tensor<map_gmc_type,fecontext_type> t_expr_type;
-    //typedef decltype( basis_type::isomorphism( M_expr ) ) the_expression_type;
-    typedef expression_type the_expression_type;
-    typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
-    typedef typename iso_expression_type::template tensor<map_gmc_type> t_expr_type;
-    typedef typename iso_expression_type::template tensor<map_gmc1_type> t_expr1_type;
-    typedef typename t_expr_type::shape shape;
 
     //
     // start
@@ -2490,9 +2466,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     if ( __face_it == __face_en )
         return;
 
-    gm_ptrtype __gm( new gm_type );
-    gm1_ptrtype __gm1( new gm1_type );
-
+    auto __gm = this->functionSpace()->gm();
+    auto __gm1 = this->functionSpace()->gm1();
 
 
     //
@@ -2526,10 +2501,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     auto __c = __gm->template context<context>( firstFace.element( 0 ), __geopc, __face_id, ex.dynamicContext() );
     auto __c1 = __gm1->template context<context>( firstFace.element( 0 ), __geopc1, __face_id, ex.dynamicContext() );
 
-    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-    t_expr_type expr( ex, mapgmc );
-    map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
-    t_expr1_type expr1( ex, mapgmc1 );
+    auto expr_evaluator = ex.evaluator( vf::mapgmc(__c) );
+    auto expr1_evaluator = ex.evaluator( vf::mapgmc(__c1) );
 
 
     bool hasMeshSupportPartial = __dof->hasMeshSupport() && __dof->meshSupport()->isPartialSupport();
@@ -2599,10 +2572,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << "  ref pts=" << __c->xRefs() << "\n";
             DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << __c->xReal() << "\n";
 
-            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-
-            expr.update( mapgmc );
-            __fe->faceInterpolate( expr, IhLoc );
+            expr_evaluator.update( vf::mapgmc( __c ) );
+            __fe->faceInterpolate( expr_evaluator, IhLoc );
         }
         break;
 
@@ -2612,10 +2583,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << "  ref pts=" << __c1->xRefs() << "\n";
             DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << __c1->xReal() << "\n";
 
-            map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
-
-            expr1.update( mapgmc1 );
-            __fe->faceInterpolate( expr1, IhLoc );
+            expr1_evaluator.update( vf::mapgmc( __c1 ) );
+            __fe->faceInterpolate( expr1_evaluator, IhLoc );
         }
         break;
         }
