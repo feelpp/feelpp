@@ -393,13 +393,24 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p )
 
     super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
+    // Materials properties
+    if ( this->materialsProperties() )
+        this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
+
+    this->modelFields().updateInformationObject( p["Fields"] );
+
     if ( M_algebraicFactory )
         M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
+
+    if ( this->hasModelProperties() )
+        this->modelProperties().parameters().updateInformationObject( p["Parameters"] );
 
     nl::json subPt;
     for (auto & cfpde : M_coefficientFormPDEs )
         subPt[cfpde->keyword()] = cfpde->journalSection().to_string();
     p.emplace( "Coefficient Form PDE", subPt );
+
+    //this->symbolsExpr().updateInformationObject( p["Symbols Expression"] );
 }
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
@@ -410,8 +421,20 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& j
     if ( jsonInfo.contains("Environment") )
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
+    if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
+        tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Fields") )
+        tabInfo->add( "Fields", TabulateInformationTools::FromJSON::tabulateInformationsModelFields( jsonInfo.at("Fields"), tabInfoProp.newByIncreasingVerboseLevel() ) );
+
+    if ( jsonInfo.contains("Parameters") )
+        tabInfo->add( "Parameters", TabulateInformationTools::FromJSON::tabulateInformationsSymbolsExpr( jsonInfo.at("Parameters"), tabInfoProp, true ) );
+
     if ( jsonInfo.contains( "Algebraic Solver" ) )
         tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
+
+    //if ( jsonInfo.contains( "Symbols Expression" ) )
+    //tabInfo->add( "Symbols Expression", TabulateInformationTools::FromJSON::tabulateInformationsSymbolsExpr( jsonInfo.at("Symbols Expression"), tabInfoProp/*.newByIncreasingVerboseLevel()*/ ) );
 
     if ( jsonInfo.contains("Coefficient Form PDE") )
     {

@@ -168,9 +168,8 @@ public:
     template <typename TheUnknownFieldType>
     auto modelFields( TheUnknownFieldType const& field_u, std::string const& prefix = "" ) const
         {
-            //return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::unknown(this), prefix, this->unknownName(), field_u, this->unknownSymbol(), this->keyword() ) );
-            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::unknown(this), prefix, this->unknownName(), field_u, this->unknownSymbol(), this->keyword() ),
-                                                  modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::unknown_previous(this), prefix, this->unknownName()+"_previous", this->fieldUnknownPtr(), this->unknownSymbol() + "_previous", this->keyword() ) );
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::unknown(this), prefix, this->unknownName(), field_u, this->unknownSymbol(), this->keyword() ),
+                                                  modelField<FieldCtx::FULL>( FieldTag::unknown_previous(this), prefix, this->unknownName()+"_previous", this->fieldUnknownPtr(), this->unknownSymbol() + "_previous", this->keyword() ) );
         }
 
     auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
