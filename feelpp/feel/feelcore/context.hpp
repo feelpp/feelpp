@@ -53,6 +53,19 @@ using clear_value = mpl::size_t<Contextv & ( ~Value )>;
 template<size_type Contextv, size_type Value>
 constexpr size_type clear_value_v = clear_value<Contextv,Value>::value;
 
+template<size_type Contextv, size_type Value1, size_type... Values>
+struct clear_values{
+    using type = typename clear_values< clear_value_v<Contextv,Value1>, Values...>::type;
+};
+template<size_type Contextv, size_type Value1>
+struct clear_values<Contextv,Value1> {
+    using type = clear_value<Contextv,Value1>;
+};
+
+template<size_type Contextv, size_type... Values>
+constexpr size_type clear_values_v = clear_values<Contextv,Values...>::type::value;
+
+
 template<size_type Contextv>
 inline bool hasValue( size_type c ) { return (c & Contextv) != 0; }
 
