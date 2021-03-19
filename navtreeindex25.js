@@ -1,5 +1,11 @@
 var NAVTREEINDEX25 =
 {
+"classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a82c16d6908d444c1687887f5eb32f53a":[6,1,1,232,43],
+"classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a83f9a5e89fb2d0362f75ef6c28bfb5e0":[6,1,1,232,83],
+"classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a85e2d874ac34061775615beb7f0420a5":[6,1,1,232,74],
+"classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a883a3a834c67c2a5a364ac4ab7af6c0d":[6,1,1,232,15],
+"classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a8c1bd06ec252826f83e538ef2e78c902":[6,1,1,232,33],
+"classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a8ca780b6d6057aa057197593fc2cb085":[6,1,1,232,9],
 "classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a8eb75900e81e248fa6491064c505d842":[6,1,1,232,84],
 "classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a93a4d76a133241b136c9e56c260ab44a":[6,1,1,232,66],
 "classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a94bd1f816d1be113943197bfe6dd2bfc":[6,1,1,232,79],
@@ -243,11 +249,5 @@ var NAVTREEINDEX25 =
 "classFeel_1_1SensorBase.html#af56a7c8cc650a674da348d72b39a64b0":[6,1,1,247,8],
 "classFeel_1_1SensorBase.html#aff48a54fd95da5acdf31dedc5248bb7d":[6,1,1,247,16],
 "classFeel_1_1SensorGaussian.html":[6,1,1,248],
-"classFeel_1_1SensorGaussian.html#a07ea85a6b1fc5ffb1bcb6aa8dc727e7f":[6,1,1,248,5],
-"classFeel_1_1SensorGaussian.html#a23e5b4275f7a2c1cd84bd8e4295b0dfc":[6,1,1,248,2],
-"classFeel_1_1SensorGaussian.html#a30b582e566aa3d44d23d8b62a9bb1968":[6,1,1,248,6],
-"classFeel_1_1SensorGaussian.html#a5214ad79e1c7f95eadb7cf75fe821901":[6,1,1,248,11],
-"classFeel_1_1SensorGaussian.html#a6e7d9e2ce9602787f88b725f2e5e02bc":[6,1,1,248,12],
-"classFeel_1_1SensorGaussian.html#a74e4d48d2b3a2bd5a5331edf503175e0":[6,1,1,248,1],
-"classFeel_1_1SensorGaussian.html#a7b4ec3fdb68a09d1d8abffdfb34a23aa":[6,1,1,248,7]
+"classFeel_1_1SensorGaussian.html#a07ea85a6b1fc5ffb1bcb6aa8dc727e7f":[6,1,1,248,5]
 };

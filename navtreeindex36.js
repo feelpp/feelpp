@@ -1,5 +1,11 @@
 var NAVTREEINDEX36 =
 {
+"functions_func_j.html":[6,0,1,10],
+"functions_func_k.html":[6,0,1,11],
+"functions_func_l.html":[6,0,1,12],
+"functions_func_m.html":[6,0,1,13],
+"functions_func_n.html":[6,0,1,14],
+"functions_func_o.html":[6,0,1,15],
 "functions_func_p.html":[6,0,1,16],
 "functions_func_q.html":[6,0,1,17],
 "functions_func_r.html":[6,0,1,18],
@@ -221,8 +227,8 @@ var NAVTREEINDEX36 =
 "group__DSEL-Variational-Formulation.html#ga35acf84111e373ba117a5a221645d9bc":[5,4,0],
 "group__DSEL-Variational-Formulation.html#ga37d597bbc558c92bcebda2b1831e1b3d":[5,4,4],
 "group__DSEL-Variational-Formulation.html#ga7b9221db5c7afed153789f616a1c6328":[5,4,2],
-"group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e":[6,2,0,0,3,60,0],
 "group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e":[5,4,5],
+"group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e":[6,2,0,0,3,60,0],
 "group__Discretization.html":[5,2],
 "group__Filters.html":[5,3],
 "group__FreeFunction.html":[5,13],
@@ -243,11 +249,5 @@ var NAVTREEINDEX36 =
 "group__Traits.html#ga3c450360de7016792661f7b22d1c8805":[5,12,21],
 "group__Traits.html#ga469004fabfb04cc82b16409cbe1874f6":[5,12,20],
 "group__Traits.html#ga4d50181c65d94cfa6520d07dc40206df":[5,12,14],
-"group__Traits.html#ga752cd9f96c58a347bac755eee478bf09":[5,12,12],
-"group__Traits.html#ga7c12a3ffde0181ea0ef2e4bb4cb686e8":[5,12,11],
-"group__Traits.html#ga8834f2140b5f2f5f6a7cd15d7b56e104":[5,12,10],
-"group__Traits.html#ga90536bec69f2b3d99bbb96f64ca1eb7f":[5,12,16],
-"group__Traits.html#ga9f6edf1a63e867a9e9e9b6d2e12d0fa4":[5,12,8],
-"group__Traits.html#gaa0890ffe8d4236f488e086c81562c49d":[5,12,3],
-"group__Traits.html#gaa9ff86cd1f9759d28a737936036e5fb6":[5,12,18]
+"group__Traits.html#ga752cd9f96c58a347bac755eee478bf09":[5,12,12]
 };

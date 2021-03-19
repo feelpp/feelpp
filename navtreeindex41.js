@@ -1,5 +1,11 @@
 var NAVTREEINDEX41 =
 {
+"structFeel_1_1Mesh_1_1Inverse.html#ad8ce3ef0c90b9454ec389dbb6f890e28":[6,1,1,173,0,2],
+"structFeel_1_1Mesh_1_1Inverse.html#adaa3326d6597dff88cdc4c4c2b2f5a80":[6,1,1,173,0,9],
+"structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce.html":[6,1,1,173,4],
+"structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce.html#a3d90405dc2175a2f0edb0cdc88830887":[6,1,1,173,4,0],
+"structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce.html#a797401805296c1042e71fc12430c5a5f":[6,1,1,173,4,1],
+"structFeel_1_1Mesh_1_1parent__mesh.html":[6,1,1,173,1],
 "structFeel_1_1Mesh_1_1parent__mesh.html#a1a1cb26c710838b8e4b2e8788f60f5d5":[6,1,1,173,1,0],
 "structFeel_1_1Mesh_1_1parent__mesh.html#a4bf67cd5703a4b81c17faac97b927733":[6,1,1,173,1,2],
 "structFeel_1_1Mesh_1_1parent__mesh.html#a4f99a4ca77f3ef2c53fc744c2eeb5eb9":[6,1,1,173,1,3],
@@ -94,6 +100,9 @@ var NAVTREEINDEX41 =
 "structFeel_1_1Projector_1_1integrate__type.html#aca48655dc6a99980982d3dedea6b33b8":[6,1,1,226,0,0],
 "structFeel_1_1Projector_1_1integrate__type.html#ae193f9dca61bd23a0de76a4f1bbc8e8f":[6,1,1,226,0,4],
 "structFeel_1_1Projector_1_1integrate__type.html#afb3cac1853381bf723251df077cd012c":[6,1,1,226,0,1],
+"structFeel_1_1QuadPtLocalization_1_1TheGmc.html":[6,1,1,228,2],
+"structFeel_1_1QuadPtLocalization_1_1TheGmc.html#a10307837e8bf9b317b960435314aa7bb":[6,1,1,228,2,1],
+"structFeel_1_1QuadPtLocalization_1_1TheGmc.html#ab732885374785ebcc5771e451ef4437c":[6,1,1,228,2,0],
 "structFeel_1_1QuadPtLocalization_1_1bilinearformContext.html":[6,1,1,228,0],
 "structFeel_1_1QuadPtLocalization_1_1bilinearformContext.html#a07fc086c7857be79d9ad6537a47307b8":[6,1,1,228,0,7],
 "structFeel_1_1QuadPtLocalization_1_1bilinearformContext.html#a0cd2e975ef976ec60faa189287accbf8":[6,1,1,228,0,6],
@@ -240,14 +249,5 @@ var NAVTREEINDEX41 =
 "structFeel_1_1Stencil_1_1rangeExtendedIteratorType.html#af33b128fbc63e0a7e78299d5baa3ac4c":[6,1,1,257,0,7],
 "structFeel_1_1Stencil_1_1rangeiteratorType.html":[6,1,1,257,1],
 "structFeel_1_1Stencil_1_1rangeiteratorType.html#a1b24422b65a62c7903ccb09adbf43c11":[6,1,1,257,1,7],
-"structFeel_1_1Stencil_1_1rangeiteratorType.html#a26ac534761c0978396ae435b5e80cf44":[6,1,1,257,1,0],
-"structFeel_1_1Stencil_1_1rangeiteratorType.html#a4226cc6309d680bdac8fa8225200d925":[6,1,1,257,1,4],
-"structFeel_1_1Stencil_1_1rangeiteratorType.html#a719293bc873cc519a6654cfa1beb6d97":[6,1,1,257,1,2],
-"structFeel_1_1Stencil_1_1rangeiteratorType.html#a9ced68fed35e020dbc42cee6e1deed4b":[6,1,1,257,1,5],
-"structFeel_1_1Stencil_1_1rangeiteratorType.html#aa69f1e1c81c99af95738d3bfb4997036":[6,1,1,257,1,6],
-"structFeel_1_1Stencil_1_1rangeiteratorType.html#ab0208aac84b94301fdfe923ef3b2b3ff":[6,1,1,257,1,1],
-"structFeel_1_1Stencil_1_1rangeiteratorType.html#ae4848555575b38006664f002da97a916":[6,1,1,257,1,3],
-"structFeel_1_1SubFaceOfBase.html":[6,1,1,270],
-"structFeel_1_1SubFaceOfNone_1_1Element.html":[6,1,1,271,0],
-"structFeel_1_1SubFaceOfNone_1_1Element.html#a2c07f3e5da5aa2643349259798582dd3":[6,1,1,271,0,0]
+"structFeel_1_1Stencil_1_1rangeiteratorType.html#a26ac534761c0978396ae435b5e80cf44":[6,1,1,257,1,0]
 };

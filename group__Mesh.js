@@ -327,6 +327,8 @@ var group__Mesh =
       [ "showMe", "classFeel_1_1GeoND.html#a6c6ee1e20f40491441913d0574ff914f", null ],
       [ "swapPoints", "classFeel_1_1GeoND.html#a50b04a3f9bc000e7d55ca6eeacf6e5fd", null ],
       [ "update", "classFeel_1_1GeoND.html#adeff8a05509d939f437418686f27cb38", null ],
+      [ "updateG", "classFeel_1_1GeoND.html#a98969a3cecb0879d9b8be11e38bcd1e0", null ],
+      [ "updateVertices", "classFeel_1_1GeoND.html#a7243938877695f057a4bc2bcc6c2d315", null ],
       [ "updateWithCtx", "classFeel_1_1GeoND.html#ac95a2bef0f36cbe9fb19a1c329e27679", null ],
       [ "updateWithCtx1", "classFeel_1_1GeoND.html#a4aa04c3fae161e818c3f0976c684a2c4", null ],
       [ "vertices", "classFeel_1_1GeoND.html#aa350af4a5f5d91d7c5b716c3506bb2fa", null ],

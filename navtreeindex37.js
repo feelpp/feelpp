@@ -1,5 +1,11 @@
 var NAVTREEINDEX37 =
 {
+"group__Traits.html#ga7c12a3ffde0181ea0ef2e4bb4cb686e8":[5,12,11],
+"group__Traits.html#ga8834f2140b5f2f5f6a7cd15d7b56e104":[5,12,10],
+"group__Traits.html#ga90536bec69f2b3d99bbb96f64ca1eb7f":[5,12,16],
+"group__Traits.html#ga9f6edf1a63e867a9e9e9b6d2e12d0fa4":[5,12,8],
+"group__Traits.html#gaa0890ffe8d4236f488e086c81562c49d":[5,12,3],
+"group__Traits.html#gaa9ff86cd1f9759d28a737936036e5fb6":[5,12,18],
 "group__Traits.html#gaaed46165ccfb4bc35eb78bfe25f89459":[5,12,17],
 "group__Traits.html#gab7be68dfa9321c6050614248a0ebe556":[5,12,19],
 "group__Traits.html#gacdd864e3800acd6fb8b0294800a0168c":[5,12,9],
@@ -243,11 +249,5 @@ var NAVTREEINDEX37 =
 "operatorlinear_8hpp.html":[6,2,0,0,1,38],
 "operatorlinear_8hpp.html#a1bfc32f17859e3555b3ce31476efaef6":[6,2,0,0,1,38,3],
 "operatorlinearfree_8hpp.html":[6,2,0,0,1,39],
-"operatorlinearfree_8hpp.html#a797b7be558c28dc43bdf66d0e1534f28":[6,2,0,0,1,39,2],
-"operators2_8hpp.html":[6,2,0,0,3,45],
-"operators2_8hpp.html#a23a1f0874abf1bd8f698fadf37b62a37":[6,2,0,0,3,45,0],
-"operators3_8hpp.html":[6,2,0,0,3,46],
-"operators_8hpp.html":[6,2,0,0,3,44],
-"operators_8hpp.html#a01485ffacb7cef6b2ae80ad2d143d8c9":[6,2,0,0,3,44,6],
-"operators_8hpp.html#a495b51ce442d9e6afad9ab60d64e9c5b":[6,2,0,0,3,44,5]
+"operatorlinearfree_8hpp.html#a797b7be558c28dc43bdf66d0e1534f28":[6,2,0,0,1,39,2]
 };

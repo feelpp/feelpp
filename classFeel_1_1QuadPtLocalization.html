@@ -118,6 +118,8 @@ Instances and minimal complete definitions</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1QuadPtLocalization_1_1linearformContext.html">linearformContext</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1QuadPtLocalization_1_1TheGmc.html">TheGmc</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -136,12 +138,21 @@ typedef boost::unwrap_reference&lt; typename element_iterator_type::value_type &
 <tr class="memitem:a6cbe94c9ec1972ac10871e19fc132921"><td class="memItemLeft" align="right" valign="top"><a id="a6cbe94c9ec1972ac10871e19fc132921"></a>
 typedef geoelement_type::gm_type&#160;</td><td class="memItemRight" valign="bottom"><b>gm_type</b></td></tr>
 <tr class="separator:a6cbe94c9ec1972ac10871e19fc132921"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4f7269e52affb410864033942443b97d"><td class="memItemLeft" align="right" valign="top"><a id="a4f7269e52affb410864033942443b97d"></a>
+typedef std::shared_ptr&lt; gmc_face_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_face_ptrtype</b></td></tr>
+<tr class="separator:a4f7269e52affb410864033942443b97d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaca1a171b470336a48363c2e613e96c4"><td class="memItemLeft" align="right" valign="top"><a id="aaca1a171b470336a48363c2e613e96c4"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_face_type</b> = typename <a class="el" href="structFeel_1_1QuadPtLocalization_1_1TheGmc.html">TheGmc</a>&lt; 1 &gt;::type</td></tr>
+<tr class="separator:aaca1a171b470336a48363c2e613e96c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57c6ce0eb7c101a65b2131382291d847"><td class="memItemLeft" align="right" valign="top"><a id="a57c6ce0eb7c101a65b2131382291d847"></a>
 typedef std::shared_ptr&lt; gmc_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_ptrtype</b></td></tr>
 <tr class="separator:a57c6ce0eb7c101a65b2131382291d847"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abcd399ce4bdbb892a53b3f1ec4e89d29"><td class="memItemLeft" align="right" valign="top"><a id="abcd399ce4bdbb892a53b3f1ec4e89d29"></a>
-typedef gm_type::template <a class="el" href="classFeel_1_1meta_1_1Context.html">Context</a>&lt; geoelement_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_type</b></td></tr>
-<tr class="separator:abcd399ce4bdbb892a53b3f1ec4e89d29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f57ceb900060cfab702b378c5265d9d"><td class="memItemLeft" align="right" valign="top"><a id="a2f57ceb900060cfab702b378c5265d9d"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_range_ptrtype</b> = typename <a class="el" href="structFeel_1_1QuadPtLocalization_1_1TheGmc.html">TheGmc</a>&lt; coDimFromRange &gt;::ptrtype</td></tr>
+<tr class="separator:a2f57ceb900060cfab702b378c5265d9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17a0d2c1e27ac917f0ebba22eb512e8e"><td class="memItemLeft" align="right" valign="top"><a id="a17a0d2c1e27ac917f0ebba22eb512e8e"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_type</b> = typename <a class="el" href="structFeel_1_1QuadPtLocalization_1_1TheGmc.html">TheGmc</a>&lt; 0 &gt;::type</td></tr>
+<tr class="separator:a17a0d2c1e27ac917f0ebba22eb512e8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae929b76d53bbb1eda4820a38edf63dfa"><td class="memItemLeft" align="right" valign="top"><a id="ae929b76d53bbb1eda4820a38edf63dfa"></a>
 typedef im_type::face_quadrature_type&#160;</td><td class="memItemRight" valign="bottom"><b>im_face_type</b></td></tr>
 <tr class="separator:ae929b76d53bbb1eda4820a38edf63dfa"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -220,18 +231,18 @@ template&lt;typename FE1 , typename FE2 , typename ElemContType &gt; </td></tr>
 template&lt;typename FE , typename VectorType , typename ElemContType &gt; </td></tr>
 <tr class="memitem:a927c0618c9e28d7a47c83c858e39d818"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="structFeel_1_1QuadPtLocalization_1_1linearformContext.html">linearformContext</a>&lt; FE, VectorType, ElemContType &gt;::return_type const  &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>getPrecompute</b> (vf::detail::LinearForm&lt; FE, VectorType, ElemContType &gt; const &amp;__form) const</td></tr>
 <tr class="separator:a927c0618c9e28d7a47c83c858e39d818"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a11d2ca875b11f43bd78cd4d0e6e0cedf"><td class="memItemLeft" align="right" valign="top"><a id="a11d2ca875b11f43bd78cd4d0e6e0cedf"></a>
-std::vector&lt; boost::tuple&lt; std::vector&lt; boost::tuple&lt; size_type, size_type &gt; &gt;, gmc_ptrtype, matrix_node_type &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getUsableDataInFormContext</b> (std::vector&lt; boost::tuple&lt; size_type, size_type &gt; &gt; const &amp;indexLocalToQuad, matrix_node_type const &amp;ptsRefTest)</td></tr>
-<tr class="separator:a11d2ca875b11f43bd78cd4d0e6e0cedf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa8fdd883cdd0a296666306862a857c0e"><td class="memItemLeft" align="right" valign="top"><a id="aa8fdd883cdd0a296666306862a857c0e"></a>
-std::vector&lt; boost::tuple&lt; std::vector&lt; boost::tuple&lt; size_type, size_type &gt; &gt;, gmc_ptrtype, matrix_node_type, matrix_node_type &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getUsableDataInFormContext</b> (std::vector&lt; boost::tuple&lt; size_type, size_type &gt; &gt; const &amp;indexLocalToQuad, matrix_node_type const &amp;ptsRefTest, matrix_node_type const &amp;ptsRefTrial)</td></tr>
-<tr class="separator:aa8fdd883cdd0a296666306862a857c0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac67b53ac0a085454c1467ccaec9b6020"><td class="memItemLeft" align="right" valign="top"><a id="ac67b53ac0a085454c1467ccaec9b6020"></a>
+std::vector&lt; boost::tuple&lt; std::vector&lt; boost::tuple&lt; size_type, size_type &gt; &gt;, gmc_range_ptrtype, matrix_node_type &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getUsableDataInFormContext</b> (std::vector&lt; boost::tuple&lt; size_type, size_type &gt; &gt; const &amp;indexLocalToQuad, matrix_node_type const &amp;ptsRefTest)</td></tr>
+<tr class="separator:ac67b53ac0a085454c1467ccaec9b6020"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8120e882416c3dc3c8528d5a150a5d4"><td class="memItemLeft" align="right" valign="top"><a id="ac8120e882416c3dc3c8528d5a150a5d4"></a>
+std::vector&lt; boost::tuple&lt; std::vector&lt; boost::tuple&lt; size_type, size_type &gt; &gt;, gmc_range_ptrtype, matrix_node_type, matrix_node_type &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getUsableDataInFormContext</b> (std::vector&lt; boost::tuple&lt; size_type, size_type &gt; &gt; const &amp;indexLocalToQuad, matrix_node_type const &amp;ptsRefTest, matrix_node_type const &amp;ptsRefTrial)</td></tr>
+<tr class="separator:ac8120e882416c3dc3c8528d5a150a5d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a968d74c382aa812e1e8b11b387f1eb04"><td class="memItemLeft" align="right" valign="top"><a id="a968d74c382aa812e1e8b11b387f1eb04"></a>
 gmc_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>gmcForThisElt</b> (size_type theIdElt, std::vector&lt; boost::tuple&lt; size_type, size_type &gt; &gt; const &amp;indexLocalToQuad, mpl::int_&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt;)</td></tr>
 <tr class="separator:a968d74c382aa812e1e8b11b387f1eb04"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a62ebf2d530c6a55407dec9e7f6172dd9"><td class="memItemLeft" align="right" valign="top"><a id="a62ebf2d530c6a55407dec9e7f6172dd9"></a>
-gmc_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>gmcForThisElt</b> (size_type theIdElt, std::vector&lt; boost::tuple&lt; size_type, size_type &gt; &gt; const &amp;indexLocalToQuad, mpl::int_&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt;)</td></tr>
-<tr class="separator:a62ebf2d530c6a55407dec9e7f6172dd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3c1400728bdc87914151b8a51d40eb2"><td class="memItemLeft" align="right" valign="top"><a id="ab3c1400728bdc87914151b8a51d40eb2"></a>
+gmc_face_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>gmcForThisElt</b> (size_type theIdElt, std::vector&lt; boost::tuple&lt; size_type, size_type &gt; &gt; const &amp;indexLocalToQuad, mpl::int_&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt;)</td></tr>
+<tr class="separator:ab3c1400728bdc87914151b8a51d40eb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac3b9e2ffde2aff99239150032c81eead"><td class="memItemLeft" align="right" valign="top"><a id="ac3b9e2ffde2aff99239150032c81eead"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasPrecompute</b> () const</td></tr>
 <tr class="separator:ac3b9e2ffde2aff99239150032c81eead"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -304,6 +315,9 @@ template&lt;typename Mesh1Type , typename Mesh2Type &gt; </td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
+<tr class="memitem:a11e7360c91e3a6ef08248d41f6428471"><td class="memItemLeft" align="right" valign="top"><a id="a11e7360c91e3a6ef08248d41f6428471"></a>
+static const <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>coDimFromRange</b> = iDim == <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a>? 1 : 0</td></tr>
+<tr class="separator:a11e7360c91e3a6ef08248d41f6428471"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6baae0d3d1f84745ac033e70d62b092d"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">Feel::size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>context</b></td></tr>
 <tr class="separator:a6baae0d3d1f84745ac033e70d62b092d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e620fb64f6766940125ca4c571e8467"><td class="memItemLeft" align="right" valign="top"><a id="a8e620fb64f6766940125ca4c571e8467"></a>
