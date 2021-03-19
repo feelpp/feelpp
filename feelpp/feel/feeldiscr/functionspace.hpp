@@ -6320,7 +6320,7 @@ void FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( nl::json& p ) c
         else if ( is_tensor2symm )
             shape = "tensor2symm";
         p.emplace( "basis", nl::json( { { "name", basisName() },
-                                        { "order", basisOrder() },
+                                        { "order", basisOrder().front() },
                                         { "shape", shape },
                                         { "is_continuous", is_continuous },
                                         { "nComponents", nComponents },
