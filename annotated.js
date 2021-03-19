@@ -49,7 +49,6 @@ var annotated =
     [ "periodic_base", "classFeel_1_1detail_1_1periodic__base.html", null ],
     [ "ExprDynamicBase", "classFeel_1_1vf_1_1ExprDynamicBase.html", null ],
     [ "fmem", "structfmem.html", "structfmem" ],
-    [ "ModelBase", "classModelBase.html", null ],
     [ "mpfr_group_t", "structmpfr__group__t.html", "structmpfr__group__t" ],
     [ "mpfr_save_expo_t", "structmpfr__save__expo__t.html", "structmpfr__save__expo__t" ],
     [ "mpfr_size_limb_t", "unionmpfr__size__limb__t.html", "unionmpfr__size__limb__t" ],

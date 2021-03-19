@@ -9,6 +9,7 @@ var structFeel_1_1vf_1_1SymbolsExpr =
     [ "operator=", "structFeel_1_1vf_1_1SymbolsExpr.html#a417d03289c158aff33e22318e479679c", null ],
     [ "tuple", "structFeel_1_1vf_1_1SymbolsExpr.html#a253eed7a2f6a4e94c059dc56b26a616d", null ],
     [ "tuple", "structFeel_1_1vf_1_1SymbolsExpr.html#a21a3013b05bc05e9911c03cb3e84041f", null ],
+    [ "updateInformationObject", "structFeel_1_1vf_1_1SymbolsExpr.html#a1bd021547115a870a5940d89cffbdcf7", null ],
     [ "feelpp_tag", "structFeel_1_1vf_1_1SymbolsExpr.html#a3782b65fd6b55da784e42c6c4ab1e284", null ],
     [ "self_type", "structFeel_1_1vf_1_1SymbolsExpr.html#ad3f490f251748f8e46aa098f83dc4213", null ],
     [ "symbols_expr_type", "structFeel_1_1vf_1_1SymbolsExpr.html#a056b01d775159f1fafcdf590e5525951", null ],

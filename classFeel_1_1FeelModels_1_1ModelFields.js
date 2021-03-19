@@ -7,6 +7,7 @@ var classFeel_1_1FeelModels_1_1ModelFields =
     [ "trialSymbolsExpr", "classFeel_1_1FeelModels_1_1ModelFields.html#af82360c173bd633e3f8b1dee1150eaca", null ],
     [ "tuple", "classFeel_1_1FeelModels_1_1ModelFields.html#a17978c63f01e5e5dcddd685b3ff75fdf", null ],
     [ "tuple", "classFeel_1_1FeelModels_1_1ModelFields.html#a6ef6eab42cbc2b21cb3dc4e240295d45", null ],
+    [ "updateInformationObject", "classFeel_1_1FeelModels_1_1ModelFields.html#a258a20e0ce4dde723d6d38a28672b508", null ],
     [ "feelpp_tag", "classFeel_1_1FeelModels_1_1ModelFields.html#a4255231b6df1ad5990da981090f42275", null ],
     [ "self_type", "classFeel_1_1FeelModels_1_1ModelFields.html#af43549ae56281965260baa4c7f4dbffe", null ],
     [ "tuple_type", "classFeel_1_1FeelModels_1_1ModelFields.html#a2cb2d8df7cb65cbf5b6ed449229021b7", null ],

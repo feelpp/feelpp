@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['quad_5forder_5ftype_5062',['quad_order_type',['../namespaceFeel.html#ab5c8580ef17780030985306d08f00eef',1,'Feel']]]
+  ['quad_5forder_5ftype_5077',['quad_order_type',['../namespaceFeel.html#ab5c8580ef17780030985306d08f00eef',1,'Feel']]]
 ];

@@ -104,6 +104,7 @@ $(document).ready(function(){initNavTree('structFeel_1_1FeelModels_1_1ModelField
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="structFeel_1_1FeelModels_1_1ModelField1-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">Feel::FeelModels::ModelField1&lt; ModelFieldTagType, FieldType &gt; Struct Template Reference</div>  </div>
@@ -115,6 +116,9 @@ Public Types</h2></td></tr>
 <tr class="memitem:aedb32004b36688c184ccb2dab1c3318c"><td class="memItemLeft" align="right" valign="top"><a id="aedb32004b36688c184ccb2dab1c3318c"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>field_type</b> = FieldType</td></tr>
 <tr class="separator:aedb32004b36688c184ccb2dab1c3318c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21d51bc7f06417180ab61ef1756b5f95"><td class="memItemLeft" align="right" valign="top"><a id="a21d51bc7f06417180ab61ef1756b5f95"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>functionspace_type</b> = typename Feel::remove_shared_ptr_type&lt; FieldType &gt;::functionspace_type</td></tr>
+<tr class="separator:a21d51bc7f06417180ab61ef1756b5f95"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05c5d7a8aa0049f20b30b5a6b9c2421a"><td class="memItemLeft" align="right" valign="top"><a id="a05c5d7a8aa0049f20b30b5a6b9c2421a"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>self_type</b> = <a class="el" href="structFeel_1_1FeelModels_1_1ModelField1.html">ModelField1</a>&lt; ModelFieldTagType, FieldType &gt;</td></tr>
 <tr class="separator:a05c5d7a8aa0049f20b30b5a6b9c2421a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -157,12 +161,52 @@ std::string const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>p
 <tr class="memitem:ae52bd848b1c6be2c1824ca660f047b7d"><td class="memItemLeft" align="right" valign="top"><a id="ae52bd848b1c6be2c1824ca660f047b7d"></a>
 std::string const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>symbol</b> () const</td></tr>
 <tr class="separator:ae52bd848b1c6be2c1824ca660f047b7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab216138dd9724b4265a1d608064b53fa"><td class="memTemplParams" colspan="2"><a id="ab216138dd9724b4265a1d608064b53fa"></a>
+template&lt;size_type Ctx&gt; </td></tr>
+<tr class="memitem:ab216138dd9724b4265a1d608064b53fa"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>symbolExpr1</b> (std::enable_if_t&lt; Ctx==FieldCtx::CURL &gt; *=nullptr) const</td></tr>
+<tr class="separator:ab216138dd9724b4265a1d608064b53fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8462a4dceb87e9c719b931b74dffa932"><td class="memTemplParams" colspan="2"><a id="a8462a4dceb87e9c719b931b74dffa932"></a>
+template&lt;size_type Ctx&gt; </td></tr>
+<tr class="memitem:a8462a4dceb87e9c719b931b74dffa932"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>symbolExpr1</b> (std::enable_if_t&lt; Ctx==FieldCtx::CURL_MAGNITUDE &gt; *=nullptr) const</td></tr>
+<tr class="separator:a8462a4dceb87e9c719b931b74dffa932"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a272637b56e4358fde0cbb25df02163b6"><td class="memTemplParams" colspan="2"><a id="a272637b56e4358fde0cbb25df02163b6"></a>
+template&lt;size_type Ctx&gt; </td></tr>
+<tr class="memitem:a272637b56e4358fde0cbb25df02163b6"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>symbolExpr1</b> (std::enable_if_t&lt; Ctx==FieldCtx::GRAD &gt; *=nullptr) const</td></tr>
+<tr class="separator:a272637b56e4358fde0cbb25df02163b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7b738bc3b48e9517be0bb17eb0efe0fb"><td class="memTemplParams" colspan="2"><a id="a7b738bc3b48e9517be0bb17eb0efe0fb"></a>
+template&lt;size_type Ctx&gt; </td></tr>
+<tr class="memitem:a7b738bc3b48e9517be0bb17eb0efe0fb"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>symbolExpr1</b> (std::enable_if_t&lt; Ctx==FieldCtx::GRAD_NORMAL &gt; *=nullptr) const</td></tr>
+<tr class="separator:a7b738bc3b48e9517be0bb17eb0efe0fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa1b94fc711fe5e467969903950cf2ec2"><td class="memTemplParams" colspan="2"><a id="aa1b94fc711fe5e467969903950cf2ec2"></a>
+template&lt;size_type Ctx&gt; </td></tr>
+<tr class="memitem:aa1b94fc711fe5e467969903950cf2ec2"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>symbolExpr1</b> (std::enable_if_t&lt; Ctx==FieldCtx::ID &gt; *=nullptr) const</td></tr>
+<tr class="separator:aa1b94fc711fe5e467969903950cf2ec2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21505f8ca9efb42f05db5bc2fcb12226"><td class="memTemplParams" colspan="2"><a id="a21505f8ca9efb42f05db5bc2fcb12226"></a>
+template&lt;size_type Ctx&gt; </td></tr>
+<tr class="memitem:a21505f8ca9efb42f05db5bc2fcb12226"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>symbolExpr1</b> (std::enable_if_t&lt; Ctx==FieldCtx::MAGNITUDE &gt; *=nullptr) const</td></tr>
+<tr class="separator:a21505f8ca9efb42f05db5bc2fcb12226"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2fc09dc463ae5c93dd203bbb139785ca"><td class="memItemLeft" align="right" valign="top"><a id="a2fc09dc463ae5c93dd203bbb139785ca"></a>
 tag_type const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>tag</b> () const</td></tr>
 <tr class="separator:a2fc09dc463ae5c93dd203bbb139785ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39485058521ba251288e82c66347aa88"><td class="memItemLeft" align="right" valign="top"><a id="a39485058521ba251288e82c66347aa88"></a>
 SymbolExprUpdateFunction&#160;</td><td class="memItemRight" valign="bottom"><b>updateFunctionSymbolExpr</b> () const</td></tr>
 <tr class="separator:a39485058521ba251288e82c66347aa88"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb2e64b961a42d228b012e516cec645c"><td class="memTemplParams" colspan="2"><a id="acb2e64b961a42d228b012e516cec645c"></a>
+template&lt;size_type Ctx&gt; </td></tr>
+<tr class="memitem:acb2e64b961a42d228b012e516cec645c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateInformationObject</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> &amp;p) const</td></tr>
+<tr class="separator:acb2e64b961a42d228b012e516cec645c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
+Static Public Attributes</h2></td></tr>
+<tr class="memitem:a465bbd1bf14f5c1c5720644e007bbf67"><td class="memItemLeft" align="right" valign="top"><a id="a465bbd1bf14f5c1c5720644e007bbf67"></a>
+static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nComponents1</b> = Feel::remove_shared_ptr_type&lt;FieldType&gt;::nComponents1</td></tr>
+<tr class="separator:a465bbd1bf14f5c1c5720644e007bbf67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abcc31415ff09dfe8b341ce2a9e022120"><td class="memItemLeft" align="right" valign="top"><a id="abcc31415ff09dfe8b341ce2a9e022120"></a>
+static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nComponents2</b> = Feel::remove_shared_ptr_type&lt;FieldType&gt;::nComponents2</td></tr>
+<tr class="separator:abcc31415ff09dfe8b341ce2a9e022120"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad0c501fd9ed271668951edfd9bc2a934"><td class="memItemLeft" align="right" valign="top"><a id="ad0c501fd9ed271668951edfd9bc2a934"></a>
+static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nRealDim</b> = Feel::remove_shared_ptr_type&lt;FieldType&gt;::nRealDim</td></tr>
+<tr class="separator:ad0c501fd9ed271668951edfd9bc2a934"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

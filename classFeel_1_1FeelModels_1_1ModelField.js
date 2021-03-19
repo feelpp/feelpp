@@ -4,6 +4,7 @@ var classFeel_1_1FeelModels_1_1ModelField =
     [ "operator=", "classFeel_1_1FeelModels_1_1ModelField.html#a87c970470bbcc4d3ec46a4f2f793187d", null ],
     [ "symbolsExpr", "classFeel_1_1FeelModels_1_1ModelField.html#a0f6959243a993baf2a13eeee90c3e0c8", null ],
     [ "trialSymbolsExpr", "classFeel_1_1FeelModels_1_1ModelField.html#a15c7b0e49017f1cf6bc6cb6546b1d38b", null ],
+    [ "updateInformationObject", "classFeel_1_1FeelModels_1_1ModelField.html#a58021495c9a7810915e70a59f85526ac", null ],
     [ "feelpp_tag", "classFeel_1_1FeelModels_1_1ModelField.html#a37a76f192bd3225caee577ffefeded8a", null ],
     [ "field_type", "classFeel_1_1FeelModels_1_1ModelField.html#aa3b634c3c4f166003a0a3d4236c40d05", null ],
     [ "tag_type", "classFeel_1_1FeelModels_1_1ModelField.html#aca72bbae6b932340e5978de1c7abcb03", null ],
