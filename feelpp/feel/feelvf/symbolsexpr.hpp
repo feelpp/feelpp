@@ -24,8 +24,11 @@
 #ifndef FEELPP_VF_SYMBOLSEXPR_HPP
 #define FEELPP_VF_SYMBOLSEXPR_HPP 1
 
-#include <feel/feelcore/tuple_utils.hpp>
 #include <any>
+#include <feel/feelcore/tuple_utils.hpp>
+#include <feel/feelcore/json.hpp>
+#include <feel/feelvf/detail/gmc.hpp>
+
 
 namespace Feel
 {
@@ -312,11 +315,16 @@ struct ExprTensorsFromSymbolsExprDummyImpl : public ExprTensorsFromSymbolsExpr<G
 
 struct SymbolExprComponentSuffix : public std::vector< std::tuple<std::string,std::array<uint16_type,2>>>
 {
-    SymbolExprComponentSuffix() = default;
+    SymbolExprComponentSuffix() : M_nComp1(0), M_nComp2(0) {}
     SymbolExprComponentSuffix( SymbolExprComponentSuffix const& ) = default;
     SymbolExprComponentSuffix( SymbolExprComponentSuffix && ) = default;
+    SymbolExprComponentSuffix& operator=( SymbolExprComponentSuffix const& ) = default;
+    SymbolExprComponentSuffix& operator=( SymbolExprComponentSuffix&& ) = default;
 
     SymbolExprComponentSuffix( uint16_type nComp1, uint16_type nComp2, bool useXYZ = false )
+        :
+        M_nComp1( nComp1 ),
+        M_nComp2( nComp2 )
     {
         if ( nComp1 > 1 && nComp2 > 1 )
         {
@@ -337,6 +345,9 @@ struct SymbolExprComponentSuffix : public std::vector< std::tuple<std::string,st
         if ( !this->empty() )
             this->shrink_to_fit();
     }
+
+    uint16_type nComp1() const { return M_nComp1; }
+    uint16_type nComp2() const { return M_nComp2; }
 
     void print() const
     {
@@ -370,7 +381,13 @@ struct SymbolExprComponentSuffix : public std::vector< std::tuple<std::string,st
             return (boost::format("%1%")%c1).str();
         }
     }
+  private :
+   uint16_type M_nComp1, M_nComp2;
 };
+
+//! return informations about a symbol in json format
+nl::json symbolExprInformations( std::string const& symbol, std::string const& expr, SymbolExprComponentSuffix const& symbolSuffix, std::string const& name = "" );
+
 
 using SymbolExprUpdateFunction = std::function<void()>;
 
@@ -380,10 +397,12 @@ template <typename ExprT>
 struct SymbolExpr1
 {
     using expr_type = ExprT;
-    SymbolExpr1( std::string const& s, ExprT const& e, SymbolExprComponentSuffix const& secs = SymbolExprComponentSuffix(), SymbolExprUpdateFunction const& seuf = SymbolExprUpdateFunction{} )
+
+    template <typename TheExprType>
+    SymbolExpr1( std::string const& s, TheExprType && e, SymbolExprComponentSuffix const& secs = SymbolExprComponentSuffix(), SymbolExprUpdateFunction const& seuf = SymbolExprUpdateFunction{} )
         :
         M_symbol( s ),
-        M_expr( e ),
+        M_expr( std::forward<TheExprType>( e ) ),
         M_secs( secs ),
         M_seuf( seuf )
         {}
@@ -563,6 +582,19 @@ struct SymbolsExpr : public SymbolsExprBase
                                 }
                             });
             return res;
+        }
+
+    void updateInformationObject( nl::json & p ) const
+        {
+            nl::json::array_t ja;
+            hana::for_each( this->tuple(), [&ja]( auto const& e )
+                            {
+                                for ( auto const& se : e )
+                                {
+                                    ja.push_back( symbolExprInformations( se.symbol(), "", se.componentSuffix() ) );
+                                }
+                            });
+            p = ja;
         }
 
     tuple_type const& tuple() const { return M_tupleExpr; }
