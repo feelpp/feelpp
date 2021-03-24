@@ -154,9 +154,9 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     solve::strategy strategy = boption("sc.condense")?solve::strategy::static_condensation:solve::strategy::monolithic;
 	double sc_param = 1;
     if( boption("sc.condense") )
+    {
         sc_param = 0.5;
-	
-
+    }
 	tic();
     auto ps = product( Vh, Wh, Ph, Mh );
 	auto a = blockform2( ps, strategy , backend() );
@@ -191,23 +191,43 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     toc("a(0,0)", true);
 
     tic();
-    a( 0_c, 1_c ) += integrate(_range=elements(mesh),_expr=(-2*trans(idt(u))*div(gamma)));
+    a( 0_c, 1_c ) += integrate(_range=elements(mesh),_expr=(trans(idt(u))*div(gamma)));
     toc("a(0,1)", true);
     tic();
     a( 0_c, 3_c) += integrate(_range=internalfaces(mesh),
-                              _expr=2*(trans(idt(uhat))*leftface(normal(gamma))+
+                              _expr=-(trans(idt(uhat))*leftface(normal(gamma))+
                                       trans(idt(uhat))*rightface(normal(gamma))) );
     a( 0_c, 3_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=2*trans(idt(uhat))*(normal(gamma)));
+                              _expr=-trans(idt(uhat))*(normal(gamma)));
     toc("a(0,3)", true);
     tic();
     a( 1_c, 0_c) += integrate(_range=elements(mesh),
                               _expr=mu*inner(idt(delta),grad(v)));
+    a( 1_c, 0_c) += integrate(_range=boundaryfaces(mesh),
+                              _expr=-trans(id(v))*(normalt(gamma)));                 
     toc("a(1,0)", true);
+
+    a( 1_c, 1_c) += integrate(_range=boundaryfaces(mesh),
+                              _expr=mu*tau_constant*trans(id(v))*(idt(v)));
+
     tic();
     a( 1_c, 2_c) += integrate(_range=elements(mesh),
-                              _expr=(-1)*idt(p)*trace(grad(v)) ); // same as inner(p*Id,grad v)
+                              _expr=(-1)*idt(p)*div(v) ); // same as inner(p*Id,grad v)
+                                          
     toc("a(1,2)", true);
+    tic();
+    a( 1_c, 2_c) += integrate(_range=internalfaces(mesh),
+                              _expr=inner(jumpt(idt(q)),id(v)) );
+    a( 1_c, 2_c) += integrate(_range=boundaryfaces(mesh),
+                              _expr=normal(v)*idt(q) );
+    toc("a(1,2)", true);
+    tic();
+    a( 1_c, 3_c) += integrate(_range=internalfaces(mesh),
+                              _expr=-mu*tau_constant*(trans(leftface(id(u)))*idt(m)+
+                                                   trans(rightface(id(u)))*idt(m)) );
+    a( 1_c, 3_c) += integrate(_range=boundaryfaces(mesh),
+                              _expr=-mu*tau_constant*(trans(id(u))*idt(m)) );
+    toc("a(1,3)", true);
     tic();
     a( 2_c, 1_c) += integrate(_range=elements(mesh),
                               _expr=(-1)*grad(q)*idt(u) );
@@ -221,28 +241,28 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     tic();
     a( 3_c, 0_c) += integrate(_range=internalfaces(mesh),
                               _expr=-mu*trans((leftfacet(normalt(delta))+rightfacet(normalt(delta))))*id(m) );
-    a( 3_c, 0_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=-mu*trans(normalt(delta))*id(m) );
+    a( 3_c, 0_c ) += integrate( _range = markedfaces( mesh, "Neumann" ),
+                                _expr = -mu * trans( normalt( delta ) ) * id( m ) );
     toc("a(3,0)", true);
     tic();
     a( 3_c, 1_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-tau_constant*(trans(leftfacet(idt(u)))*id(m)+
+                              _expr=mu*tau_constant*(trans(leftfacet(idt(u)))*id(m)+
                                                    trans(rightfacet(idt(u)))*id(m)) );
-    a( 3_c, 1_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=-tau_constant*(trans(idt(u))*id(m)) );
+    a( 3_c, 1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
+                              _expr=mu*tau_constant*(trans(idt(u))*id(m)) );
     toc("a(3,1)", true);
     tic();
     a( 3_c, 2_c) += integrate(_range=internalfaces(mesh),
                               _expr=inner(id(m),jumpt(idt(p))) ); //normalt(m)*(rightface(id(p))-leftface(id(p))) );
-    a( 3_c, 2_c) += integrate(_range=boundaryfaces(mesh),
+    a( 3_c, 2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                               _expr=idt(p)*normal(m) );
     toc("a(3,2)", true);
     tic();
     a( 3_c, 3_c) += integrate(_range=internalfaces(mesh),                  
-                              _expr=2*tau_constant*trans(idt(uhat))*id(m) );
-    a( 3_c, 3_c) += integrate(_range=boundaryfaces(mesh),                  
-                              _expr=tau_constant*trans(idt(uhat))*id(m) );
-toc("a(3,3)", true);
+                              _expr=-mu*tau_constant*trans(idt(uhat))*id(m) );
+    a( 3_c, 3_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),                  
+                              _expr=trans(idt(uhat))*id(m) );
+    toc("a(3,3)", true);
     tic();
 #if 0
     if ( boption( "use-near-null-space" ) ||  boption( "use-null-space" ) )
@@ -267,6 +287,12 @@ toc("a(3,3)", true);
     auto up = U(1_c);
     auto pp = U(2_c);
     auto uhatp = U(3_c);
+    if ( Environment::isSequential() )
+    {
+        up.printMatlab("u");
+        pp.printMatlab("p");
+        uhat.printMatlab("uhat");
+    }
     int status_velocity = 1, status_stress = 1;
     if ( boption( "exact" ) )
     {
@@ -282,8 +308,11 @@ toc("a(3,3)", true);
         auto l2err_delta = normL2( _range=elements(mesh), _expr=delta_exact - idv(deltap) );
         auto l2err_vel = normL2( _range=elements(mesh), _expr=velocity_exact - idv(up) );
         auto l2vel = normL2( _range=elements(mesh), _expr=velocity_exact );
-        Feel::cout << "L2 Error delta: " << l2err_delta << std::endl;
-        Feel::cout << "L2 relative error velocity: " << l2err_vel/l2vel << std::endl;
+        Feel::cout << fmt::format( "L2 Error stress: {} ", l2err_delta ) << std::endl;
+        Feel::cout << fmt::format( "L2 Error velocity: {} ", l2err_vel ) << std::endl;
+        Feel::cout << fmt::format( "L2  velocity: {} ", l2vel ) << std::endl;
+        if ( std::abs(l2vel) > 1e-10 )
+            Feel::cout << "L2 relative error velocity: " << l2err_vel/l2vel << std::endl;
         toc("error");
                     
         // CHECKER

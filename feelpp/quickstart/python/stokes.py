@@ -34,13 +34,14 @@ if exact:
     print("grad(velocity)=",grad_velocity);
     
     # strain
-    strain =0.5 * ( grad_velocity+transpose(grad_velocity) );
+    strain = grad_velocity #0.5 * ( grad_velocity+transpose(grad_velocity) );
     print("strain=",strain);
     
     # stress
     I=eye(dim);
     print("I=",I);
-    stress=- potential * I + 2. * mu *strain;
+    #stress=- potential * I + 2. * mu *strain;
+    stress = - potential * I + mu * strain
     print("stress=",stress);
     
     # surfacic forces
