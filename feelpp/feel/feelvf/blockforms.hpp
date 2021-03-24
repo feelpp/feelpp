@@ -424,7 +424,8 @@ public :
                                                                              _post=post
                                                                              );
             toc("blockform.monolithic",FLAGS_v>0);
-
+            M_matrix->getSparseMatrix()->printMatlab("A");
+            rhs.vectorPtr()->getVector()->printMatlab("b");
             solution.localize(U);
             return r1;
         }
