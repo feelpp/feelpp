@@ -152,13 +152,13 @@ class GeoMap
         geomap_elements_t;
 
   public:
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nRealDim = super::nRealDim;
-    static const uint16_type nDof = super::nDof;
-    static const uint16_type nOrder = Order;
-    static const uint16_type nNodes = super::nNodes;
-    static const fem::transformation_type trans = super::trans;
-    static const bool is_linear = ( trans == fem::LINEAR );
+    static constexpr uint16_type nDim = super::nDim;
+    static constexpr uint16_type nRealDim = super::nRealDim;
+    static constexpr uint16_type nDof = super::nDof;
+    static constexpr uint16_type nOrder = Order;
+    static constexpr uint16_type nNodes = super::nNodes;
+    static constexpr fem::transformation_type trans = super::trans;
+    static constexpr bool is_linear = ( trans == fem::LINEAR );
     
     typedef typename super::value_type value_type;
 
@@ -774,7 +774,7 @@ class GeoMap
         // reference space dimension
         static const uint16_type PDim = ElementType::nDim;
         // real space dimension
-        static const uint16_type NDim = ElementType::nRealDim;
+        static constexpr uint16_type NDim = ElementType::nRealDim;
         static const uint16_type nDim = NDim;
         // type of transformation (linear or not)
         static const fem::transformation_type trans = geometric_mapping_type::trans;
