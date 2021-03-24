@@ -304,6 +304,13 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
         Ue(1_c).on( _range=elements(mesh), _expr=velocity_exact );
         Ue(2_c).on( _range=elements(mesh), _expr=pressure_exact );
         Ue(3_c).on( _range=faces(mesh), _expr=velocity_exact );
+        if ( Environment::isSequential() )
+        {
+            //Ue(0_c).printMatlab("se");
+            Ue(1_c).printMatlab("ue");
+            Ue(2_c).printMatlab("pe");
+            Ue(3_c).printMatlab("uhate");
+        }
         
         auto l2err_delta = normL2( _range=elements(mesh), _expr=delta_exact - idv(deltap) );
         auto l2err_vel = normL2( _range=elements(mesh), _expr=velocity_exact - idv(up) );
