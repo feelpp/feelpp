@@ -991,7 +991,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
         {
             auto const& coeff_f = this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() );
 
-            bool sourceDependOnUnknown = coeff_f.hasSymbolDependency( trialSymbolNames );
+            bool sourceDependOnUnknown = coeff_f.hasSymbolDependency( trialSymbolNames, se );
 
             auto coeff_f_expr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
                                                [&coeff_f,&se] { return expr( coeff_f.expr(), se ); },
