@@ -1015,9 +1015,7 @@ public:
             {
                 if ( M_is_constant ) return;
 
-                //static_assert( !SymbolsExprType::is_locked || nSymbolsExpr == 0 );
-
-                if constexpr ( nSymbolsExpr > 0 )// !SymbolsExprType::is_locked )
+                if constexpr ( nSymbolsExpr > 0 )
                 {
                     this->initSubTensorBIS2( M_expr.expandSymbolsExpression(), *M_ttse, geom );
                 }
@@ -1026,6 +1024,8 @@ public:
         FEELPP_DONT_INLINE
         void initSubTensorBIS2( std::vector<std::any> const& expandExpr, ExprTensorsFromSymbolsExpr<Geo_t/*,Basis_i_t,Basis_j_t*/> & ttse, Geo_t const& geom )
             {
+                if ( M_is_constant )
+                    return;
                 M_subexprIdToSubtensorId = ttse.init( expandExpr, M_t_expr_index, geom );
             }
 
@@ -1033,10 +1033,9 @@ public:
         //FEELPP_DONT_INLINE
         void updateImpl( Geo_t const& geom, const TheArgsType&... theUpdateArgs )
             {
-                //if ( M_is_zero ) return;
                 if ( M_is_constant ) return;
 
-                //if constexpr ( nSymbolsExpr > 0 )// !SymbolsExprType::is_locked )
+                //if constexpr ( nSymbolsExpr > 0 )
                 {
                      this->updateImpl2( std::true_type{}, M_expr.expandSymbolsExpression(), *M_ttse, geom );
                 }
@@ -1371,7 +1370,7 @@ private :
 
                                                                  auto currentDiffExpr = theexpr.template diff<diffOrder>( diffVariable,world,dirLibExpr,newse );
                                                                  std::string currentDiffSymbName = (boost::format( "diff_%1%_%2%_%3%" )%currentSymbName %diffVariable %diffOrder ).str();
-                                                                 seDiffExpr.add( currentDiffSymbName, currentDiffExpr, e.componentSuffix() );
+                                                                 seDiffExpr.add( currentDiffSymbName, std::move(currentDiffExpr), e.componentSuffix() );
                                                              }
                                                          }
                                                          return seDiffExpr;
