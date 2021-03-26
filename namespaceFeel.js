@@ -463,6 +463,7 @@ var namespaceFeel =
       [ "Cst", "classFeel_1_1vf_1_1Cst.html", "classFeel_1_1vf_1_1Cst" ],
       [ "CstBase", "classFeel_1_1vf_1_1CstBase.html", null ],
       [ "EvaluateDataByMeshEntity", "classFeel_1_1vf_1_1EvaluateDataByMeshEntity.html", "classFeel_1_1vf_1_1EvaluateDataByMeshEntity" ],
+      [ "ExprOptionalConcat", "classFeel_1_1vf_1_1ExprOptionalConcat.html", "classFeel_1_1vf_1_1ExprOptionalConcat" ],
       [ "ExprTensorsFromSymbolsExpr", "structFeel_1_1vf_1_1ExprTensorsFromSymbolsExpr.html", "structFeel_1_1vf_1_1ExprTensorsFromSymbolsExpr" ],
       [ "ExprTensorsFromSymbolsExprDummyImpl", "structFeel_1_1vf_1_1ExprTensorsFromSymbolsExprDummyImpl.html", "structFeel_1_1vf_1_1ExprTensorsFromSymbolsExprDummyImpl" ],
       [ "ExprTensorsFromSymbolsExprImpl", "structFeel_1_1vf_1_1ExprTensorsFromSymbolsExprImpl.html", "structFeel_1_1vf_1_1ExprTensorsFromSymbolsExprImpl" ],
