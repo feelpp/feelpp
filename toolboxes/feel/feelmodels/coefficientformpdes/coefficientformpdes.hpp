@@ -341,14 +341,38 @@ public :
     // symbols expressions
     //___________________________________________________________________________________//
 
+    template <typename ModelFieldsType,typename FilterBasisUnknownType = FilterBasisUnknownAll>
+    auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
+        {
+            return hana::fold_left( tuple_type_unknown_basis_filtered<FilterBasisUnknownType>, symbols_expression_empty_t{}, [this,&mfields]( auto state, auto const& e )
+                                    {
+                                        using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+
+                                        using se_cur_type = std::decay_t<decltype( std::shared_ptr<coefficient_form_pde_type>{}->symbolsExprToolbox( mfields ) )>;
+                                        auto seCur = se_cur_type{};
+                                        for (auto const& cfpdeBase : M_coefficientFormPDEs )
+                                        {
+                                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                                continue;
+
+                                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+
+                                            seCur = Feel::vf::symbolsExpr( seCur, cfpde->symbolsExprToolbox( mfields ) );
+                                        }
+                                        return Feel::vf::symbolsExpr( seCur, state );
+                                    });
+        }
+
     template <typename ModelFieldsType>
     auto symbolsExpr( ModelFieldsType const& mfields ) const
         {
+            auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
             auto seMeshes = this->symbolsExprMeshes();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
-            return Feel::vf::symbolsExpr( seParam,seMeshes,seMat,seFields );
+            return Feel::vf::symbolsExpr( seToolbox,seParam,seMeshes,seMat,seFields );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
@@ -357,6 +381,7 @@ public :
         {
             return mfields.trialSymbolsExpr( tsmf );
         }
+
     //___________________________________________________________________________________//
     // model context helper
     //___________________________________________________________________________________//
