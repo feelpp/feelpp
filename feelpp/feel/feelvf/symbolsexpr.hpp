@@ -473,9 +473,10 @@ struct SymbolExpr : public std::vector<SymbolExpr1<ExprT>>
     SymbolExpr( super_type const& e ) : super_type( e ) {}
 
 
-    void add( std::string const& s, ExprT const& e, SymbolExprComponentSuffix const& secs = SymbolExprComponentSuffix(), SymbolExprUpdateFunction const& seuf = SymbolExprUpdateFunction{} )
+    template <typename TheExprType>
+    void add( std::string const& s, TheExprType && e, SymbolExprComponentSuffix const& secs = SymbolExprComponentSuffix(), SymbolExprUpdateFunction const& seuf = SymbolExprUpdateFunction{} )
     {
-        this->push_back( symbolexpr1_type( s,e,secs,seuf ) );
+        this->push_back( symbolexpr1_type( s,std::forward<TheExprType>( e ),secs,seuf ) );
     }
 
     template<typename... TheExpr>
