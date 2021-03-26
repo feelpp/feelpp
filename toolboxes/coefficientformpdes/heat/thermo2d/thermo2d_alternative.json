@@ -33,8 +33,8 @@
             "rho":"1.205", //[ kg/(m^3) ]
             "heat_c":"k:k",
             //"heat_d":"rho*Cp:rho:Cp",
-            "heat_f":"-rho*Cp*(heat_dT_dt_lhs-heat_dT_dt_rhs):rho:Cp:heat_dT_dt_rhs:heat_dT_dt_lhs",
-            //"heat_f":"-rho*Cp*heat_dT_dt:rho:Cp:heat_dT_dt",
+            //"heat_f":"-rho*Cp*(heat_dT_dt_lhs-heat_dT_dt_rhs):rho:Cp:heat_dT_dt_rhs:heat_dT_dt_lhs",
+            "heat_f":"-rho*Cp*heat_dT_dt:rho:Cp:heat_dT_dt",
 
             "heat_beta":"{rho*Cp*velocity_convection_0,rho*Cp*velocity_convection_1}:rho:Cp:velocity_convection_0:velocity_convection_1"
         },
@@ -47,8 +47,8 @@
             "rho":"2",
             "heat_c":"{k_00,k_01,k_10,k_11}:k_00:k_01:k_10:k_11",
             //"heat_d":"rho*Cp:rho:Cp",
-            "heat_f":"-rho*Cp*(heat_dT_dt_lhs-heat_dT_dt_rhs):rho:Cp:heat_dT_dt_rhs:heat_dT_dt_lhs",
-            //"heat_f":"-rho*Cp*heat_dT_dt:rho:Cp:heat_dT_dt",
+            //"heat_f":"-rho*Cp*(heat_dT_dt_lhs-heat_dT_dt_rhs):rho:Cp:heat_dT_dt_rhs:heat_dT_dt_lhs",
+            "heat_f":"-rho*Cp*heat_dT_dt:rho:Cp:heat_dT_dt",
 
             "heat_beta":"{rho*Cp*velocity_convection_0,rho*Cp*velocity_convection_1}:rho:Cp:velocity_convection_0:velocity_convection_1"
         }
