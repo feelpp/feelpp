@@ -1,5 +1,6 @@
 var NAVTREEINDEX32 =
 {
+"classnlohmann_1_1basic__json.html#a0a691c29eb7c4acd91ccb498a79cd3ee":[6,1,2,17,143],
 "classnlohmann_1_1basic__json.html#a0c42bdda2432e4027f4b63ef20ae74e6":[6,1,2,17,91],
 "classnlohmann_1_1basic__json.html#a0d3deaa73b3644b4da3f8ef3172cd8d2":[6,1,2,17,142],
 "classnlohmann_1_1basic__json.html#a0fb91e28968b370c61a9a9fbcbef36a8":[6,1,2,17,82],
@@ -248,6 +249,5 @@ var NAVTREEINDEX32 =
 "classnlohmann_1_1byte__container__with__subtype.html#aa1653b01b420607b359a3e8815b516c2":[6,1,2,18,4],
 "classnlohmann_1_1byte__container__with__subtype.html#ac267e4fe960124976452bb46d7fe6792":[6,1,2,18,10],
 "classnlohmann_1_1byte__container__with__subtype.html#ac3ca9d09e55342f9588404e1dc2222f0":[6,1,2,18,5],
-"classnlohmann_1_1byte__container__with__subtype.html#aee67fde9d3d571a07d5bb35df21c0555":[6,1,2,18,3],
-"classnlohmann_1_1detail_1_1binary__reader.html":[6,1,2,0,1]
+"classnlohmann_1_1byte__container__with__subtype.html#aee67fde9d3d571a07d5bb35df21c0555":[6,1,2,18,3]
 };

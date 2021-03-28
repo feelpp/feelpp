@@ -1,5 +1,6 @@
 var NAVTREEINDEX20 =
 {
+"classFeel_1_1MeshAdaptation.html#a9b274a8907fb64f5c1fdd2655f9ce5e9":[6,1,1,179,20],
 "classFeel_1_1MeshAdaptation.html#aaaef62b0e8fad8cfee54146da6af81b7":[6,1,1,179,11],
 "classFeel_1_1MeshAdaptation.html#aabf9c5e50a5095d1e5ae45762dfb86b2":[6,1,1,179,38],
 "classFeel_1_1MeshAdaptation.html#aac82b9e4ca4cd6068ec50ff1a75b0d2c":[6,1,1,179,2],
@@ -248,6 +249,5 @@ var NAVTREEINDEX20 =
 "classFeel_1_1MongoConfig.html#a89aff66b5e4ad2ca2755754036934522":[6,1,1,191,6],
 "classFeel_1_1MongoConfig.html#ab5d69e955725debd97babb0f83710d2a":[6,1,1,191,4],
 "classFeel_1_1MongoConfig.html#ac76630255401203f88ea26764a0da83a":[6,1,1,191,7],
-"classFeel_1_1MongoConfig.html#ad432ff144c38804a38e532a3ae2f47c8":[6,1,1,191,0],
-"classFeel_1_1MongoConfig.html#af64fedfe3d198d11dea272f749ba6ba6":[6,1,1,191,3]
+"classFeel_1_1MongoConfig.html#ad432ff144c38804a38e532a3ae2f47c8":[6,1,1,191,0]
 };

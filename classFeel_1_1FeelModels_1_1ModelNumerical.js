@@ -17,6 +17,7 @@ var classFeel_1_1FeelModels_1_1ModelNumerical =
     [ "exporterPath", "classFeel_1_1FeelModels_1_1ModelNumerical.html#a88279fcc18c51637b6e3be0da22f0e89", null ],
     [ "geomap", "classFeel_1_1FeelModels_1_1ModelNumerical.html#a3c3a27f96b9aa30f0f2f83144fc41764", null ],
     [ "hasModelProperties", "classFeel_1_1FeelModels_1_1ModelNumerical.html#a8d6ff9990c0c70275dd3c0b071a06db8", null ],
+    [ "hasPostProcessExportsExpr", "classFeel_1_1FeelModels_1_1ModelNumerical.html#a071a4b5c23eccac3ded50b779c8346ed", null ],
     [ "hasPostProcessExportsField", "classFeel_1_1FeelModels_1_1ModelNumerical.html#ae250ff3ef5eb071fd439d18112acb8a7", null ],
     [ "hasPostProcessExportsField", "classFeel_1_1FeelModels_1_1ModelNumerical.html#a832a0424d7b73d71835e303ea6efe685", null ],
     [ "initPostProcess", "classFeel_1_1FeelModels_1_1ModelNumerical.html#a2c9345c993b70b53abf1995cec9437cf", null ],

@@ -1,5 +1,6 @@
 var NAVTREEINDEX40 =
 {
+"structFeel_1_1FeelModels_1_1ModelFieldTag.html#a91d44a1d2eab967b70be36fe3701c4d2":[6,1,1,4,35,0],
 "structFeel_1_1FeelModels_1_1ModelFieldTag.html#a95dda115b6cab30c54d92b2a1c64dcc4":[6,1,1,4,35,4],
 "structFeel_1_1FeelModels_1_1ModelFieldTag.html#aa176be8c8267aa4907bf77828556e935":[6,1,1,4,35,5],
 "structFeel_1_1FeelModels_1_1ModelFieldsFeelppTag.html":[6,1,1,4,32],
@@ -248,6 +249,5 @@ var NAVTREEINDEX40 =
 "structFeel_1_1MeshTraits.html#a20ace478f3b83d1a94f7427883c7c9be":[6,1,1,189,19],
 "structFeel_1_1MeshTraits.html#a3b2fb7832361ae52d2a4ca44e6473295":[6,1,1,189,29],
 "structFeel_1_1MeshTraits.html#a3deeaffd8cc7b6ce78ee8ece9f8c7325":[6,1,1,189,25],
-"structFeel_1_1MeshTraits.html#a496e46b289d67e8a04a629514ed225e4":[6,1,1,189,7],
-"structFeel_1_1MeshTraits.html#a49dbf75e7c11f6286f39337449fcd872":[6,1,1,189,15]
+"structFeel_1_1MeshTraits.html#a496e46b289d67e8a04a629514ed225e4":[6,1,1,189,7]
 };

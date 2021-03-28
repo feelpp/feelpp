@@ -1,5 +1,6 @@
 var NAVTREEINDEX37 =
 {
+"group__Core.html#gad8f8196f0b8ff9495dd4119eda223772":[5,0,13],
 "group__Core.html#gae90df41f69fcb79f06345d1acd0d6d6f":[5,0,16],
 "group__Core.html#gafdf3582bcb29eaf28321e1f5c48bfa36":[5,0,20],
 "group__DSEL-Variational-Formulation.html":[5,4],
@@ -248,6 +249,5 @@ var NAVTREEINDEX37 =
 "operatorinterpolation_8hpp.html#a258ff41aef83acee92440e8f8830fab4":[6,2,0,0,1,37,38],
 "operatorinterpolation_8hpp.html#a2c2b1e39b1a3ddffc15fcb4f2279a9ec":[6,2,0,0,1,37,31],
 "operatorinterpolation_8hpp.html#a368ad1cd592c8f1217d12954e889530c":[6,2,0,0,1,37,17],
-"operatorinterpolation_8hpp.html#a599c9b920ef0f8a8188a3960e94748ff":[6,2,0,0,1,37,32],
-"operatorinterpolation_8hpp.html#a6545314bc083711995d6e66a970e540f":[6,2,0,0,1,37,34]
+"operatorinterpolation_8hpp.html#a599c9b920ef0f8a8188a3960e94748ff":[6,2,0,0,1,37,32]
 };

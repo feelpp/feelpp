@@ -1,5 +1,6 @@
 var NAVTREEINDEX25 =
 {
+"classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a81bb7d2880e6161da3caf8ac39f55dc6":[6,1,1,232,89],
 "classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a82c16d6908d444c1687887f5eb32f53a":[6,1,1,232,43],
 "classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a83f9a5e89fb2d0362f75ef6c28bfb5e0":[6,1,1,232,83],
 "classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a85e2d874ac34061775615beb7f0420a5":[6,1,1,232,74],
@@ -248,6 +249,5 @@ var NAVTREEINDEX25 =
 "classFeel_1_1SensorBase.html#ae60d613a2774baf9818865be7e82fcbb":[6,1,1,247,2],
 "classFeel_1_1SensorBase.html#af56a7c8cc650a674da348d72b39a64b0":[6,1,1,247,8],
 "classFeel_1_1SensorBase.html#aff48a54fd95da5acdf31dedc5248bb7d":[6,1,1,247,16],
-"classFeel_1_1SensorGaussian.html":[6,1,1,248],
-"classFeel_1_1SensorGaussian.html#a07ea85a6b1fc5ffb1bcb6aa8dc727e7f":[6,1,1,248,5]
+"classFeel_1_1SensorGaussian.html":[6,1,1,248]
 };
