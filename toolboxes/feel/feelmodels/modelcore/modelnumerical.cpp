@@ -181,6 +181,23 @@ ModelNumerical::initPostProcess()
         M_postProcessSaveFieldsFormat = "default";
 }
 
+bool
+ModelNumerical::hasPostProcessExportsExpr( std::string const& exportTag ) const
+{
+    if ( this->hasModelProperties() )
+    {
+        for ( auto const& [_name,_expr,_markers,_rep,_tag] : this->modelProperties().postProcess().exports( this->keyword() ).expressions() )
+        {
+            if ( !_tag.empty() && _tag.find( exportTag ) == _tag.end() )
+                continue;
+            if ( _tag.empty() && exportTag != "" )
+                continue;
+            return true;
+        }
+    }
+    return false;
+}
+
 std::set<std::string>
 ModelNumerical::postProcessExportsFields( std::string const& tag, std::set<std::string> const& ifields, std::string const& prefix ) const
 {
