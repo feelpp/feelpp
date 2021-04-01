@@ -563,6 +563,10 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateParameterValues()
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->materialsProperties()->updateParameterValues( paramValues );
 
+    this->updateParameterValues_postProcess( paramValues, prefixvm("postprocess",this->keyword(),"_" ) );
+    for (auto const& cfpdeBase : M_coefficientFormPDEs )
+        cfpdeBase->updateParameterValues_postProcess( paramValues, prefixvm("postprocess",cfpdeBase->keyword(),"_" ) );
+
     this->setParameterValues( paramValues );
 }
 
@@ -619,12 +623,13 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 bool
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::checkResults() const
 {
+    auto se = this->symbolsExpr();
     // several calls (not do in on line) to be sure that all check have been run
-    bool checkValue = super_type::checkResults();
+    bool checkValue = super_type::checkResults( se );
     std::vector<bool> checkCFPDE;
     checkCFPDE.reserve(M_coefficientFormPDEs.size());
     for (auto & cfpdeBase : M_coefficientFormPDEs )
-        checkCFPDE.push_back( cfpdeBase->checkResults() );
+        checkCFPDE.push_back( cfpdeBase->checkResults( se ) );
     checkValue = checkValue && (std::find(std::begin(checkCFPDE), std::end(checkCFPDE), false) == std::end(checkCFPDE));
     return checkValue;
 }
