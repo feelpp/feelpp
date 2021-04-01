@@ -78,10 +78,8 @@ makeAbout()
                      "0.1",
                      "Quickstart for HDG method for Stokes problem",
                      AboutData::License_GPL,
-                     "Copyright (c) 2016-2019 Feel++ Consortium" );
+                     "Copyright (c) 2021 Feel++ Consortium" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    about.addAuthor( "Daniele Prada", "developer", "daniele.prada85@gmail.com", "" );
-    about.addAuthor( "Lorenzo Sala", "developer", "sala@unistra.fr", "" );
     about.addAuthor( "Philippe Ricka", "developer", "pricka@math.unistra.fr", "" );
 
     return about;
