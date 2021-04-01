@@ -113,9 +113,88 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "use-model-name":1,
+        "cfpdes":
         {
-            "fields":["temperature"]
+            "Exports":
+            {
+                "fields":["heat.temperature"],
+                "expr":
+                {
+                    "heat_dT_dt":"heat_dT_dt:heat_dT_dt"
+                }
+            },
+            "Measures":
+            {
+                "Statistics":
+                {
+                    "dT_dt_v1":
+                    {
+                        "type":"integrate",
+                        "expr":"heat_dT_dt:heat_dT_dt"
+                        //"markers":"Omega1"
+                    },
+                    "dT_dt_v2":
+                    {
+                        "type":"integrate",
+                        "expr":"heat_dT_dt_lhs-heat_dT_dt_rhs:heat_dT_dt_lhs:heat_dT_dt_rhs"
+                        //"markers":"Omega1"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                // TODO
+                // "Expressions":
+                // {
+                //     "toto":
+                //     {
+                //         "expr":"",
+                //         "target_value":"",
+                //         "tolerance":1e-1
+                //     }
+                // },
+                "Measures":
+                {
+                    "Statistics_dT_dt_v1_integrate":
+                    {
+                        "value":"postprocess_cfpdes_measures_Statistics_dT_dt_v2_integrate:postprocess_cfpdes_measures_Statistics_dT_dt_v2_integrate",
+                        "tolerance":1e-5
+                    }
+                }
+            }
+        },
+        "heat":
+        {
+            "Measures":
+            {
+                "Statistics":
+                {
+                    "dT_dt_v1":
+                    {
+                        "type":"integrate",
+                        "expr":"heat_dT_dt:heat_dT_dt"
+                        //"markers":"Omega1"
+                    },
+                    "dT_dt_v2":
+                    {
+                        "type":"integrate",
+                        "expr":"heat_dT_dt_lhs-heat_dT_dt_rhs:heat_dT_dt_lhs:heat_dT_dt_rhs"
+                        //"markers":"Omega1"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Statistics_dT_dt_v1_integrate":
+                    {
+                        "value":"postprocess_cfpdes_measures_Statistics_dT_dt_v2_integrate:postprocess_cfpdes_measures_Statistics_dT_dt_v2_integrate",
+                        "tolerance":1e-5
+                    }
+                }
+            }
         }
     }
 
