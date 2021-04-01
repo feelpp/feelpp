@@ -253,8 +253,16 @@ class ModelNumerical : virtual public ModelBase,
         ModelMeasuresEvaluatorContext const& postProcessMeasuresEvaluatorContext() const { return M_postProcessMeasuresEvaluatorContext; }
         ModelMeasuresEvaluatorContext & postProcessMeasuresEvaluatorContext() { return M_postProcessMeasuresEvaluatorContext; }
 
-        virtual bool checkResults() const;
+        virtual
+        void updateParameterValues_postProcess( std::map<std::string,double> & mp, std::string const& prefix_symbol ) const
+            {
+                M_postProcessMeasuresIO.updateParameterValues( mp, prefixvm(prefix_symbol,"measures","_") );
+            }
 
+
+        virtual bool checkResults() const { return checkResults( symbols_expression_empty_t{} ); }
+        template <typename SymbolsExprType>
+        bool checkResults( SymbolsExprType const& se ) const;
     protected :
 
         void setPostProcessExportsAllFieldsAvailable( std::set<std::string> const& ifields ) { this->setPostProcessExportsAllFieldsAvailable( "", ifields ); }
@@ -745,6 +753,50 @@ ModelNumerical::executePostProcessSave( std::set<std::string> const& fieldsNames
                     });
 }
 
+template <typename SymbolsExprType>
+bool
+ModelNumerical::checkResults( SymbolsExprType const& se ) const
+{
+    if ( !M_useChecker )
+        return true;
+
+    std::string const& modelKeyword = this->keyword();
+
+    bool hasChecker = !this->modelProperties().postProcess().checkersMeasure( modelKeyword ).empty();
+    if ( !hasChecker )
+        return true;
+
+    bool resultsAreOk = true;
+    bool isMasterRank = this->worldComm().isMasterRank();
+
+    Feel::Table tableCheckerMeasures;
+    tableCheckerMeasures.add_row( {"check","name","measure","reference","error","tolerance"} );
+    tableCheckerMeasures.format().setFirstRowIsHeader( true );
+
+    for ( auto const& checkerMeasure : this->modelProperties().postProcess().checkersMeasure( modelKeyword ) )
+    {
+        std::string measureName = checkerMeasure.name();
+        if ( !M_postProcessMeasuresIO.hasMeasure( measureName ) )
+        {
+            LOG(WARNING) << "checker : ignore check of " << measureName << " because this measure was not computed";
+            continue;
+        }
+
+        double valueMeasured = M_postProcessMeasuresIO.measure( measureName );
+        auto [checkIsOk, diffVal] = checkerMeasure.run( valueMeasured, se );
+        std::string checkStr = checkIsOk? "[success]" : "[failure]";
+        tableCheckerMeasures.add_row( {checkStr,measureName,valueMeasured,checkerMeasure.value(),diffVal,checkerMeasure.tolerance()} );
+        tableCheckerMeasures( tableCheckerMeasures.nRow()-1,0).format().setFontColor( checkIsOk ? Font::Color::green :Font::Color::red );
+
+        resultsAreOk = resultsAreOk && checkIsOk;
+    }
+    auto tabInfoChecker = TabulateInformationsSections::New();
+    tabInfoChecker->add( (boost::format("Checkers : %1%")%modelKeyword).str(), TabulateInformations::New( tableCheckerMeasures ) );
+    if ( tableCheckerMeasures.nRow() > 1 && isMasterRank )
+        std::cout << *tabInfoChecker << std::endl;
+    return resultsAreOk;
+
+}
 
 
 } // namespace FeelModels
