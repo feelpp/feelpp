@@ -1,5 +1,8 @@
 var NAVTREEINDEX26 =
 {
+"classFeel_1_1SensorBase.html#af56a7c8cc650a674da348d72b39a64b0":[6,1,1,247,8],
+"classFeel_1_1SensorBase.html#aff48a54fd95da5acdf31dedc5248bb7d":[6,1,1,247,16],
+"classFeel_1_1SensorGaussian.html":[6,1,1,248],
 "classFeel_1_1SensorGaussian.html#a07ea85a6b1fc5ffb1bcb6aa8dc727e7f":[6,1,1,248,5],
 "classFeel_1_1SensorGaussian.html#a23e5b4275f7a2c1cd84bd8e4295b0dfc":[6,1,1,248,2],
 "classFeel_1_1SensorGaussian.html#a30b582e566aa3d44d23d8b62a9bb1968":[6,1,1,248,6],
@@ -246,8 +249,5 @@ var NAVTREEINDEX26 =
 "classFeel_1_1SubFaceOf.html#a877ae68088a997d7b5d59488b01f4b41":[6,1,1,269,21],
 "classFeel_1_1SubFaceOf.html#a88c2f21fbffa02d177bfb35655fee05c":[6,1,1,269,12],
 "classFeel_1_1SubFaceOf.html#a894fc6298b30299cd08216569fc45d12":[6,1,1,269,27],
-"classFeel_1_1SubFaceOf.html#a8a1d0da9d317458865b08704f8725048":[6,1,1,269,46],
-"classFeel_1_1SubFaceOf.html#a8bd1535e495c4009af4fcaeb2582f642":[6,1,1,269,42],
-"classFeel_1_1SubFaceOf.html#a8e374a3347b363403e72203337b69770":[6,1,1,269,8],
-"classFeel_1_1SubFaceOf.html#a9811e878c1c52a3fc62091653cfc5042":[6,1,1,269,22]
+"classFeel_1_1SubFaceOf.html#a8a1d0da9d317458865b08704f8725048":[6,1,1,269,46]
 };

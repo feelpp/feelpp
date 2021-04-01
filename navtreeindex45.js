@@ -1,5 +1,8 @@
 var NAVTREEINDEX45 =
 {
+"structFeel_1_1strip__comments__tokens.html":[6,1,1,267],
+"structFeel_1_1strip__comments__tokens.html#a2739ceaec0d31ca965ea0acade4e6461":[6,1,1,267,3],
+"structFeel_1_1strip__comments__tokens.html#a7a95de4865c97fa61f3cd9fd5a4de0ba":[6,1,1,267,1],
 "structFeel_1_1strip__comments__tokens.html#a9622d6046b6c95c71d1bc25792029532":[6,1,1,267,2],
 "structFeel_1_1strip__comments__tokens.html#ae3e0442e55aec7dfb127e8b2fc71548a":[6,1,1,267,0],
 "structFeel_1_1tag_1_1about.html":[6,1,1,13,0],
@@ -246,8 +249,5 @@ var NAVTREEINDEX45 =
 "structFeel_1_1tag_1_1freq.html#a13fb90f88a159ea7a01f37c32eae1a50":[6,1,1,13,60,2],
 "structFeel_1_1tag_1_1freq.html#a7ebc076fb55440962c26b7420bcd211a":[6,1,1,13,60,0],
 "structFeel_1_1tag_1_1freq.html#ae45eb2711eaad75ee90d6194c18e82e6":[6,1,1,13,60,1],
-"structFeel_1_1tag_1_1funcs.html":[6,1,1,13,61],
-"structFeel_1_1tag_1_1funcs.html#a12dec5d2f0b3a689a63e8e774ad42727":[6,1,1,13,61,2],
-"structFeel_1_1tag_1_1funcs.html#a3f8353db1af1d070cc2575f3ff25385f":[6,1,1,13,61,0],
-"structFeel_1_1tag_1_1funcs.html#ab349eb84cd74928043df9de6a91d3d73":[6,1,1,13,61,1]
+"structFeel_1_1tag_1_1funcs.html":[6,1,1,13,61]
 };

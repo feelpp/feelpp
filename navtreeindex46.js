@@ -1,5 +1,8 @@
 var NAVTREEINDEX46 =
 {
+"structFeel_1_1tag_1_1funcs.html#a12dec5d2f0b3a689a63e8e774ad42727":[6,1,1,13,61,2],
+"structFeel_1_1tag_1_1funcs.html#a3f8353db1af1d070cc2575f3ff25385f":[6,1,1,13,61,0],
+"structFeel_1_1tag_1_1funcs.html#ab349eb84cd74928043df9de6a91d3d73":[6,1,1,13,61,1],
 "structFeel_1_1tag_1_1geo.html":[6,1,1,13,62],
 "structFeel_1_1tag_1_1geo.html#a5a35c7e724f00bdbeacc8cb0d1ade7d3":[6,1,1,13,62,1],
 "structFeel_1_1tag_1_1geo.html#a71837458b96b7b74e831b1742d87b9b0":[6,1,1,13,62,2],
@@ -246,8 +249,5 @@ var NAVTREEINDEX46 =
 "structFeel_1_1tag_1_1newElt.html#af67beb4f9acc33e689999c623fc9ffcf":[6,1,1,13,122,0],
 "structFeel_1_1tag_1_1null__space.html":[6,1,1,13,123],
 "structFeel_1_1tag_1_1null__space.html#a033194bf988934fafe4bec4bf708f08c":[6,1,1,13,123,1],
-"structFeel_1_1tag_1_1null__space.html#aab685b85fc85fd800b49899859ab10ca":[6,1,1,13,123,2],
-"structFeel_1_1tag_1_1null__space.html#affcb31b83d1ec8b4f212b6f602d4f59d":[6,1,1,13,123,0],
-"structFeel_1_1tag_1_1nx.html":[6,1,1,13,124],
-"structFeel_1_1tag_1_1nx.html#a200bf6f9845ed16d84219b76b72adb13":[6,1,1,13,124,2]
+"structFeel_1_1tag_1_1null__space.html#aab685b85fc85fd800b49899859ab10ca":[6,1,1,13,123,2]
 };

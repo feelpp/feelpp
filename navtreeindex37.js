@@ -1,5 +1,8 @@
 var NAVTREEINDEX37 =
 {
+"group__Core.html#gaa90565f9cd5f52a52eeea0e4b7858b87":[5,0,24],
+"group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8":[5,0,22],
+"group__Core.html#gaae0f4355cdf5c3eece015092baefd653":[5,0,21],
 "group__Core.html#gad8f8196f0b8ff9495dd4119eda223772":[5,0,13],
 "group__Core.html#gae90df41f69fcb79f06345d1acd0d6d6f":[5,0,16],
 "group__Core.html#gafdf3582bcb29eaf28321e1f5c48bfa36":[5,0,20],
@@ -56,8 +59,8 @@ var NAVTREEINDEX37 =
 "hypercube_8cpp.html":[6,2,0,0,2,10],
 "hypercube_8hpp.html":[6,2,0,0,2,11],
 "hypercubeordering_8hpp.html":[6,2,0,0,2,12],
-"index.html":[],
 "index.html":[0],
+"index.html":[],
 "index.html#Objectives":[0,1],
 "index.html#autotoc_md28":[0,2],
 "index.html#tutorial-compilers":[0,2,0],
@@ -246,8 +249,5 @@ var NAVTREEINDEX37 =
 "operatorinterpolation_8hpp.html#a19b501421c239732866557cacfa83a66":[6,2,0,0,1,37,42],
 "operatorinterpolation_8hpp.html#a1d81c802c8ab9f81a2db5e5f2decbe75":[6,2,0,0,1,37,41],
 "operatorinterpolation_8hpp.html#a22cfbc031d9ffc6ab6f7db54a972cc10":[6,2,0,0,1,37,37],
-"operatorinterpolation_8hpp.html#a258ff41aef83acee92440e8f8830fab4":[6,2,0,0,1,37,38],
-"operatorinterpolation_8hpp.html#a2c2b1e39b1a3ddffc15fcb4f2279a9ec":[6,2,0,0,1,37,31],
-"operatorinterpolation_8hpp.html#a368ad1cd592c8f1217d12954e889530c":[6,2,0,0,1,37,17],
-"operatorinterpolation_8hpp.html#a599c9b920ef0f8a8188a3960e94748ff":[6,2,0,0,1,37,32]
+"operatorinterpolation_8hpp.html#a258ff41aef83acee92440e8f8830fab4":[6,2,0,0,1,37,38]
 };

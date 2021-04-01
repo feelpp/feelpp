@@ -17,6 +17,7 @@ var classFeel_1_1FeelModels_1_1ModelMeasuresIO =
     [ "setParameter", "classFeel_1_1FeelModels_1_1ModelMeasuresIO.html#a946ed8350fd10a70f224a5a0b5d91e22", null ],
     [ "setPathFile", "classFeel_1_1FeelModels_1_1ModelMeasuresIO.html#a30ba68cfb7882c1357b1d519c0f46a51", null ],
     [ "start", "classFeel_1_1FeelModels_1_1ModelMeasuresIO.html#a6e75c255473d404299ea027edc2a79ae", null ],
+    [ "updateParameterValues", "classFeel_1_1FeelModels_1_1ModelMeasuresIO.html#a3ece2f2cdcbcc0e8ae1d6148f8686873", null ],
     [ "ModelMeasuresIO", "classFeel_1_1FeelModels_1_1ModelMeasuresIO.html#a76276569d763c9103e472be022e9e328", null ],
     [ "ModelMeasuresIO", "classFeel_1_1FeelModels_1_1ModelMeasuresIO.html#aa04cc8de7b94b3298a8321abdb7ca679", null ]
 ];
