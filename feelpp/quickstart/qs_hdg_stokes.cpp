@@ -239,7 +239,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     a( 2_c, 3_c) += integrate(_range=internalfaces(mesh),
                               _expr=inner(jump(id(q)),idt(uhat)) );
     a( 2_c, 3_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=normalt(uhat)*id(q) );
+                              _expr=id(q)*normalt(uhat) );
     toc("a(2,3)", true);
     tic();
     a( 3_c, 0_c) += integrate(_range=internalfaces(mesh),
@@ -259,12 +259,14 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     toc("a(3,1)", true);
     tic();
     a( 3_c, 2_c) += integrate(_range=internalfaces(mesh),
-                              _expr=inner(id(m),jumpt(idt(p))) ); //normalt(m)*(rightface(id(p))-leftface(id(p))) );
+                              _expr=inner(id(m),jumpt(idt(p))) );
     a( 3_c, 2_c) += integrate(_range=boundaryfaces(mesh),
                               _expr=idt(p)*normal(m) );
     toc("a(3,2)", true);
     tic();
     a( 3_c, 3_c) += integrate(_range=internalfaces(mesh),                  
+                              _expr=-mu*tau_constant*trans(idt(uhat))*id(m) );
+    a( 3_c, 3_c) += integrate(_range=boundaryfaces(mesh),                  
                               _expr=-mu*tau_constant*trans(idt(uhat))*id(m) );
     a( 3_c, 3_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),                  
                               _expr=trans(idt(uhat))*id(m) );
