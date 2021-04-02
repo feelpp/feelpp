@@ -661,18 +661,18 @@ void VectorPetsc<T>::printMatlab ( const std::string name, bool renumber ) const
      * if a filename was provided.
      */
     if ( name != "NULL" )
-    {
+    {   
         ierr = PetscViewerASCIIOpen( this->comm(),
                                      name.c_str(),
                                      &petsc_viewer );
         CHKERRABORT( this->comm(),ierr );
 
-#if PETSC_VERSION_LESS_THAN(3,7,0)
-        ierr = PetscViewerSetFormat ( petsc_viewer,
-                                      PETSC_VIEWER_ASCII_MATLAB );
+#if PETSC_VERSION_LESS_THAN( 3, 7, 0 )
+        ierr = PetscViewerSetFormat( petsc_viewer,
+                                     PETSC_VIEWER_ASCII_MATLAB );
 #else
-        ierr = PetscViewerPushFormat ( petsc_viewer,
-                                      PETSC_VIEWER_BINARY_MATLAB );
+        ierr = PetscViewerPushFormat( petsc_viewer,
+                                      PETSC_VIEWER_ASCII_MATLAB );
 #endif
         CHKERRABORT( this->comm(),ierr );
 
