@@ -238,7 +238,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     a( 2_c, 3_c) += integrate(_range=internalfaces(mesh),
                               _expr=inner(jump(id(q)),idt(uhat)) );
     a( 2_c, 3_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=(trans(idt(uhat))*N())*id(q) );
+                              _expr=id(q)*(trans(idt(uhat))*N()) );
     toc("a(2,3)", true);
     tic();
     a( 3_c, 0_c) += integrate(_range=internalfaces(mesh),
@@ -322,12 +322,14 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
         
         auto l2err_delta = normL2( _range=elements(mesh), _expr=delta_exact - idv(deltap) );
         auto l2err_vel = normL2( _range=elements(mesh), _expr=velocity_exact - idv(up) );
+        auto l2err_pres = normL2( _range = elements( mesh ), _expr = pressure_exact - idv( pp ) );
         auto l2vel = normL2( _range=elements(mesh), _expr=velocity_exact );
-        Feel::cout << fmt::format( "L2 Error stress: {} ", l2err_delta ) << std::endl;
-        Feel::cout << fmt::format( "L2 Error velocity: {} ", l2err_vel ) << std::endl;
-        Feel::cout << fmt::format( "L2 velocity: {} ", l2vel ) << std::endl;
+        Feel::cout << fmt::format( "{:<30}: {}", "L2 Error stress", l2err_delta ) << std::endl;
+        Feel::cout << fmt::format( "{:<30}: {}", "L2 Error velocity", l2err_vel ) << std::endl;
+        Feel::cout << fmt::format( "{:<30}: {}", "L2 velocity", l2vel ) << std::endl;
         if ( std::abs(l2vel) > 1e-10 )
-            Feel::cout << "L2 relative error velocity: " << l2err_vel/l2vel << std::endl;
+            Feel::cout << fmt::format( "{:<30}: {}", "L2 relative error velocity", l2err_vel/l2vel ) << std::endl;
+        Feel::cout << fmt::format( "{:<30}: {}", "L2 pressure", l2err_pres ) << std::endl;
         toc("error");
                     
         // CHECKER
