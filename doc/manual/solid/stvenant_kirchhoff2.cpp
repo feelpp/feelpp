@@ -22,7 +22,16 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#if 0
 #include <feel/feel.hpp>
+#else
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feelfilters/geotool.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/vf.hpp>
+#include <feel/feelts/newmark.hpp>
+#endif
 
 inline
 Feel::po::options_description

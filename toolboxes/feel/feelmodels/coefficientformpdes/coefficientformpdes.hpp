@@ -341,14 +341,38 @@ public :
     // symbols expressions
     //___________________________________________________________________________________//
 
+    template <typename ModelFieldsType,typename FilterBasisUnknownType = FilterBasisUnknownAll>
+    auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
+        {
+            return hana::fold_left( tuple_type_unknown_basis_filtered<FilterBasisUnknownType>, symbols_expression_empty_t{}, [this,&mfields]( auto state, auto const& e )
+                                    {
+                                        using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+
+                                        using se_cur_type = std::decay_t<decltype( std::shared_ptr<coefficient_form_pde_type>{}->symbolsExprToolbox( mfields ) )>;
+                                        auto seCur = se_cur_type{};
+                                        for (auto const& cfpdeBase : M_coefficientFormPDEs )
+                                        {
+                                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                                continue;
+
+                                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+
+                                            seCur = Feel::vf::symbolsExpr( seCur, cfpde->symbolsExprToolbox( mfields ) );
+                                        }
+                                        return Feel::vf::symbolsExpr( seCur, state );
+                                    });
+        }
+
     template <typename ModelFieldsType>
     auto symbolsExpr( ModelFieldsType const& mfields ) const
         {
+            auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
             auto seMeshes = this->symbolsExprMeshes();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
-            return Feel::vf::symbolsExpr( seParam,seMeshes,seMat,seFields );
+            return Feel::vf::symbolsExpr( seToolbox,seParam,seMeshes,seMat,seFields );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
@@ -357,6 +381,7 @@ public :
         {
             return mfields.trialSymbolsExpr( tsmf );
         }
+
     //___________________________________________________________________________________//
     // model context helper
     //___________________________________________________________________________________//
@@ -364,25 +389,41 @@ public :
     template <typename ModelFieldsType>
     auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
         {
+#if 0
             return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ) );
+#else
+            return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ).template createTensorContext<mesh_type>() );
+#endif
         }
     auto modelContext( std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( prefix );
+#if 0
             auto se = this->symbolsExpr( mfields );
+#else
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+#endif
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
    auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+#if 0
             auto se = this->symbolsExpr( mfields );
+#else
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+#endif
             auto tse =  this->trialSymbolsExpr( mfields, trialSelectorModelFields( rowStartInVector ) );
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
         }
    auto modelContextNoTrialSymbolsExpr( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+#if 0
             auto se = this->symbolsExpr( mfields );
+#else
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+#endif
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
 
@@ -510,8 +551,6 @@ CoefficientFormPDEs<ConvexType,BasisUnknownType...>::exportResults( double time,
     this->log("CoefficientFormPDEs","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    //std::cout << "holalla \n "<< symbolsExpr.names() << std::endl; 
-
     hana::for_each( tuple_type_unknown_basis, [this,&time,&mfields,&symbolsExpr]( auto const& e )
                     {
                         for ( auto const& cfpdeBase : M_coefficientFormPDEs )
@@ -531,6 +570,8 @@ CoefficientFormPDEs<ConvexType,BasisUnknownType...>::exportResults( double time,
     this->executePostProcessMeasures( time, mfields, symbolsExpr );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_coefficientFormPDEs.front()->timeStepBase()->iteration(), mfields );
 
+    this->updateParameterValues();
+
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
     {
@@ -547,13 +588,16 @@ void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
 {
     bool hasMeasure = false;
-#if 0
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+
+    if ( M_coefficientFormPDEs.empty() )
+        return;
+    auto defaultRangeMeshElements = M_coefficientFormPDEs.front()->rangeMeshElements(); // TODO compute intersection
+    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), defaultRangeMeshElements/*M_rangeMeshElements*/, symbolsExpr, mfields );
+    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), defaultRangeMeshElements/*M_rangeMeshElements*/, symbolsExpr, mfields );
     //bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
     if ( hasMeasureNorm || hasMeasureStatistics /*|| hasMeasurePoint*/ )
         hasMeasure = true;
-#endif
+
     if ( hasMeasure )
     {
         if ( !this->isStationary() )

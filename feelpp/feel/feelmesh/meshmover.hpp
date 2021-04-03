@@ -154,7 +154,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
     typedef typename mesh_type::element_type element_type;
     typedef typename mesh_type::face_type face_type;
-    typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
+    typedef typename gm_type::template Context<element_type> gm_context_type;
     typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
 
     typedef typename DisplType::functionspace_type::fe_type fe_type;
@@ -185,10 +185,10 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     typedef typename DisplType::pc_type pc_type;
     typedef std::shared_ptr<pc_type> pc_ptrtype;
     pc_ptrtype __pc( new pc_type( u.functionSpace()->fe(), gm->points() ) );
-    gm_context_ptrtype __c( new gm_context_type( gm, *it_elt, __geopc ) );
+    gm_context_ptrtype __c = gm->template context<vm::POINT>( unwrap_ref( *it_elt ), __geopc );
 
     typedef typename mesh_type::element_type geoelement_type;
-    typedef typename fe_type::template Context<0, fe_type, gm_type, geoelement_type,gm_context_type::context> fectx_type;
+    typedef typename fe_type::template Context<0, fe_type, gm_type, geoelement_type,vm::POINT> fectx_type;
     typedef std::shared_ptr<fectx_type> fectx_ptrtype;
     fectx_ptrtype __ctx( new fectx_type( u.functionSpace()->fe(),
                                          __c,
@@ -206,9 +206,9 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     std::vector< ublas::vector<value_type> > dataEltToSend( nptsperelem, ublas::vector<value_type>( fe_type::nComponents ) );
     for ( ; it_elt != en_elt; ++it_elt )
     {
-        element_type const& curElt = *it_elt;
+        element_type const& curElt = unwrap_ref( *it_elt );
         auto & eltModified = imesh->elementIterator( curElt )->second;
-        __c->update( *it_elt );
+        __c->template update<vm::POINT>( *it_elt );
         __ctx->update( __c );
         std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m.constant(0.) );
         u.id( *__ctx, uvalues );

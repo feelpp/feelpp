@@ -92,7 +92,7 @@ public:
         // fe disp context
         typedef typename fe_disp_type::PreCompute pc_disp_type;
         typedef std::shared_ptr<pc_disp_type> pc_disp_ptrtype;
-        typedef typename fe_disp_type::template Context<context_disp, fe_disp_type,gm_type,geoelement_type,gmc_type::context> ctx_disp_type;
+        typedef typename fe_disp_type::template Context<context_disp, fe_disp_type,gm_type,geoelement_type,0, gmc_type::subEntityCoDim> ctx_disp_type;
         typedef std::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
 
         tensor( expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )

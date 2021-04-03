@@ -7,7 +7,7 @@
 
    Copyright (C) 2004 EPFL
    Copyright (C) 2006-2012 Universite Joseph Fourier (Grenoble I)
-   Copyright (C) 2011-2016 Feel++ Consortium
+   Copyright (C) 2011-2021 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -1911,8 +1911,9 @@ public:
     typedef std::shared_ptr<gm1_type> gm1_ptrtype;
     //typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT, geoelement_type> >,
     //mpl::identity<mpl::void_> >::type::type pts_gmc_type;
-    using pts_gmc_type = typename gm_type::template Context<vm::POINT, geoelement_type>;
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> >,
+
+    using pts_gmc_type = typename gm_type::template Context</*vm::POINT,*/ geoelement_type>;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context</*vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB,*/ geoelement_type> >,
                               mpl::identity<mpl::void_> >::type::type gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_ptrtype>, mpl::identity<mpl::void_> >::type::type geopc_ptrtype;
@@ -2087,7 +2088,7 @@ public:
                 DVLOG(2) << "build precompute data structure for geometric mapping\n";
 
                 // build geometric mapping
-                auto gmc = M_Xh->mesh()->gm()->template context<basis_context_type::gmc_type::context>( M_Xh->mesh()->element( eid ), gmpc );
+                auto gmc = M_Xh->mesh()->gm()->template context<basis_context_value/*basis_context_type::gmc_type::context*/>( M_Xh->mesh()->element( eid ), gmpc );
                 DVLOG(2) << "build geometric mapping context\n";
                 // compute finite element context
                 auto ctx = basis_context_ptrtype( new basis_context_type( M_Xh->basis(), gmc, basispc ) );
@@ -2314,16 +2315,18 @@ public:
         typedef typename mesh_type::element_type geoelement_type;
         typedef typename functionspace_type::gm_type gm_type;
         typedef std::shared_ptr<gm_type> gm_ptrtype;
-        typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> gmc_type;
+        typedef typename gm_type::template Context</*vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB,*/ geoelement_type> gmc_type;
         typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
         typedef typename gm_type::precompute_type geopc_type;
 
         static constexpr size_type DefaultCTX = (is_hdiv_conforming?vm::POINT|vm::JACOBIAN:(is_hcurl_conforming?vm::POINT|vm::KB:vm::POINT));
+#if 0
         template <size_type CTX=DefaultCTX>
         using gmc_t = typename gm_type::template Context<CTX, geoelement_type>;
         template <size_type CTX=DefaultCTX>
         using gmc_ptr_t = std::shared_ptr<gmc_t<CTX>>;
+#endif
         
         using fe_type = typename functionspace_type::fe_type;
         template <size_type FECTX=DefaultCTX, size_type GEOCTX=DefaultCTX>
@@ -3155,17 +3158,20 @@ public:
         }
 
         template <typename ... CTX>
-        decltype(auto) //basis_context_ptrtype
+        basis_context_ptrtype
         selectContext( CTX const& ... ctx ) const
             {
-                typedef boost::fusion::vector<CTX...> my_vector_ctx_type;
-                typedef typename boost::fusion::result_of::distance<typename boost::fusion::result_of::begin<my_vector_ctx_type>::type,
-                                                                    typename boost::fusion::result_of::find<my_vector_ctx_type,basis_context_ptrtype>::type>::type pos_ctx_type;
-                static const int myNumberOfCtx = boost::mpl::size<my_vector_ctx_type>::type::value;
-                // CHECK( pos_ctx_type::value < myNumberOfCtx ) << "no compatible context : "<< pos_ctx_type::value << " and " << myNumberOfCtx;
-                static const int ctxPosition = (pos_ctx_type::value >= myNumberOfCtx)?0 : pos_ctx_type::value;
-                my_vector_ctx_type ctxvec( ctx... );
-                return boost::fusion::at_c<ctxPosition>( ctxvec );
+                basis_context_ptrtype res;
+                auto allCtx = hana::make_tuple( ctx... );
+                hana::for_each( allCtx, [this,&res]( auto const& e )
+                                {
+                                    if constexpr ( std::is_same_v<std::decay_t<decltype(e)>,basis_context_ptrtype> )
+                                    {
+                                        // Maybe TODO : differentiate context between several spaces/meshes
+                                        res = e;
+                                    }
+                                } );
+                return res;
             }
 
         //! Interpolation at a set of points
@@ -3327,10 +3333,11 @@ public:
         ptsInContext( Context_t const & context, mpl::int_<1> ) const
         {
             //new context for evaluate the points
-            typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
-            typedef std::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
+            // typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
+            // typedef std::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
 
-            gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(),  context.pc() ) );
+            // gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(),  context.pc() ) );
+            auto __c_interp = context.geometricMapping()->template context<vm::POINT>( context.element_c(),  context.pc() );
 
             return __c_interp->xReal();
         }
@@ -3344,6 +3351,7 @@ public:
         matrix_node_type
         ptsInContext( Context_t const & context,  mpl::int_<2> ) const
         {
+#if 0
             //new context for the interpolation
             typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type, Context_t::subEntityCoDim> gmc_interp_type;
             typedef std::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
@@ -3357,6 +3365,9 @@ public:
             //std::vector<std::map<permutation_type, precompute_ptrtype> > __geo_pcfaces = context.pcFaces();
             auto __geo_pcfaces = context.pcFaces();
             gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(), __geo_pcfaces , context.faceId() ) );
+#endif
+            auto __geo_pcfaces = context.pcFaces();
+            auto __c_interp = context.geometricMapping()->template context<vm::POINT>( context.element_c(), __geo_pcfaces , context.faceId() );
 
             return __c_interp->xReal();
         }
@@ -3369,7 +3380,8 @@ public:
         {
             gm_ptrtype __gm = functionSpace()->gm();
             geopc_ptrtype __geopc( new geopc_type( __gm, elt.G() ) );
-            return gmc_ptrtype( new gmc_type( __gm, elt, __geopc ) );
+            //return gmc_ptrtype( new gmc_type( __gm, elt, __geopc ) );
+            return __gm->template context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB>( elt, __geopc );
         }
         /**
          * \return a precomputation of the basis functions
@@ -4330,7 +4342,7 @@ public:
                     {
                         auto const& meshElt = boost::unwrap_ref( rangeElt );
                         size_type e = meshElt.id();
-                        gmc->update( meshElt );
+                        gmc->template update<vm::JACOBIAN>( meshElt );
                         auto p0_eid = v.functionSpace()->dof()->localDof( e ).first->second.index();
                         for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
                         {
@@ -4798,8 +4810,8 @@ public:
     ptsInContext( Context_t const & context,  mpl::int_<2> ) const
     {
         //new context for the interpolation
-        typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
-        typedef std::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
+        //typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
+        //typedef std::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
 
         typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::permutation_type permutation_type;
         typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::precompute_ptrtype precompute_ptrtype;
@@ -4808,7 +4820,8 @@ public:
         //gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(),context.pcFaces(), context.faceId()) );
         //good with this
         std::vector<std::map<permutation_type, precompute_ptrtype> > __geo_pcfaces = context.pcFaces();
-        gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(), __geo_pcfaces , context.faceId() ) );
+        //gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(), __geo_pcfaces , context.faceId() ) );
+        auto __c_interp = context.geometricMapping()->template context<Context_t::context|vm::POINT>( context.element_c(), __geo_pcfaces , context.faceId() );
 
         return __c_interp->xReal();
     }
@@ -5550,7 +5563,7 @@ public:
     /**
      * rebuild dof points after a mesh mover for example
      */
-    void rebuildDofPoints() { rebuildDofPoints(mpl::bool_<is_composite>()); }
+    void rebuildDofPoints();
 
     //! return the index of dof defined on a range
     template <typename RangeType>
@@ -5614,9 +5627,6 @@ private:
 
     template<typename FSpaceHead>
     FEELPP_NO_EXPORT void initHead( FSpaceHead& fspacehead );
-
-    FEELPP_NO_EXPORT void rebuildDofPoints( mpl::bool_<false> );
-    FEELPP_NO_EXPORT void rebuildDofPoints( mpl::bool_<true> );
 
     template <typename RangeType>
     void dofs( RangeType const& rangeElt, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
@@ -5870,10 +5880,7 @@ private:
     };
 public :
     //! update informations for the current object
-    void updateInformationObject( nl::json & p ) const override { this->updateInformationObject( p, mpl::bool_<is_composite>() ); }
-private :
-    void updateInformationObject( nl::json & p, mpl::true_ ) const;
-    void updateInformationObject( nl::json & p, mpl::false_ ) const;
+    void updateInformationObject( nl::json & p ) const override;
 
 protected:
 
@@ -6001,6 +6008,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
         DVLOG(2) << "calling init(<space>) end\n";
         VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
+
+#if !defined( __INTEL_COMPILER )
+        if ( boption( "connect" ) )
+            M_mesh->addObserver( *this );
+#endif
     }
     else if constexpr ( is_composite )
     { 
@@ -6016,11 +6028,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
         this->initList();
     }
-#if !defined( __INTEL_COMPILER )
-    if ( boption( "connect" ) )
-        M_mesh->addObserver( *this );
-#endif
-
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -6134,18 +6141,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::buildComponentSpace() const
         VLOG(2) << " - component space :: nb dof per component: " << M_comp_space->nDofPerComponent() << "\n";
     }
 }
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-void
-FunctionSpace<A0, A1, A2, A3, A4>::rebuildDofPoints( mpl::bool_<false> )
+template <typename A0, typename A1, typename A2, typename A3, typename A4>
+void FunctionSpace<A0, A1, A2, A3, A4>::rebuildDofPoints()
 {
-    M_dof->rebuildDofPoints( *M_mesh );
-}
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-void
-FunctionSpace<A0, A1, A2, A3, A4>::rebuildDofPoints( mpl::bool_<true> )
-{
-    fusion::for_each( M_functionspaces, Feel::detail::rebuildDofPointsTool() );
+    if constexpr ( !is_composite )
+    {
+        M_dof->rebuildDofPoints( *M_mesh );
+    }
+    else
+    {
+        fusion::for_each( M_functionspaces, Feel::detail::rebuildDofPointsTool() );
+    }
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -6280,90 +6286,86 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
     return false;
 }
 
-
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-void
-FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( nl::json & p, mpl::false_ ) const
-{
-    if ( p.contains( "nSpace" ) )
-        return;
-
-    p["nSpace"] = functionspace_type::nSpaces;
-    if ( this->mesh() )
-        p["mesh"] = this->mesh()->journalSection().to_string();
-
-    std::string shape;
-    if ( is_scalar )
-        shape = "scalar";
-    else if ( is_vectorial )
-        shape = "vectorial";
-    else if ( is_tensor2 )
-        shape = "tensor2";
-    else if ( is_tensor2symm )
-        shape = "tensor2symm";
-    p.emplace( "basis", nl::json( {
-                { "name", basisName() },
-                { "order", basisOrder() },
-                { "shape", shape },
-                { "is_continuous", is_continuous },
-                { "nComponents", nComponents },
-                { "nComponents1", nComponents1 },
-                { "nComponents2", nComponents2 },
-                { "nLocalDof", fe_type::nLocalDof }
-            }) );
-    if ( is_tensor2symm )
-        p["/basis/nRealComponents"_json_pointer] = nRealComponents;
-
-    nl::json subPt;
-    subPt["nDof"] = this->nDof();
-    rank_type nProc = this->worldComm().localSize();
-    if ( nProc > 1 )
-    {
-        nl::json::array_t subPt1, subPt2, subPt3;
-        for ( rank_type p=0;p<nProc;++p )
-        {
-            subPt1.push_back( this->dof()->nLocalDofWithGhost( p ) );
-            subPt2.push_back( this->dof()->nLocalDofWithoutGhost( p ) );
-            subPt3.push_back( this->dof()->nLocalGhosts( p ) );
-        }
-        subPt.emplace( "nLocalDofWithGhost", subPt1 );
-        subPt.emplace( "nLocalDofWithoutGhost", subPt2 );
-        subPt.emplace( "nLocalGhost", subPt3 );
-        subPt.emplace( "extended-doftable", this->dof()->buildDofTableMPIExtended() );
-    }
-    p.emplace( "doftable", std::move(subPt) );
-}
-
-template<typename SpaceType>
+template <typename SpaceType>
 struct UpdateInformationObject
 {
-    UpdateInformationObject( SpaceType const& space, nl::json & p ) : M_space( space ), M_p( p ) {}
-    template<typename T>
+    UpdateInformationObject( SpaceType const& space, nl::json& p )
+        : M_space( space ), M_p( p ) {}
+    template <typename T>
     void operator()( T const& t ) const
-        {
-            std::string jsname = boost::fusion::at_c<T::value>( M_space.functionSpaces() )->journalSection().to_string();
-            M_p.push_back( jsname );
-        }
+    {
+        std::string jsname = boost::fusion::at_c<T::value>( M_space.functionSpaces() )->journalSection().to_string();
+        M_p.push_back( jsname );
+    }
     SpaceType const& M_space;
-    nl::json & M_p;
+    nl::json& M_p;
 };
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-void
-FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( nl::json & p, mpl::true_ ) const
+template <typename A0, typename A1, typename A2, typename A3, typename A4>
+void FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( nl::json& p ) const 
 {
-    if ( p.contains( "nSpace" ) )
-        return;
+    if constexpr ( !is_composite )
+    {
+        if ( p.contains( "nSpace" ) )
+            return;
 
-    auto subPt = nl::json::array({});;
-    mpl::range_c<int,0,functionspace_type::nSpaces> keySpaces;
-    boost::fusion::for_each( keySpaces, UpdateInformationObject<functionspace_type>( *this, subPt ) );
-    p.emplace( "nSpace", functionspace_type::nSpaces );
-    p.emplace( "nDof", this->nDof());
-    p.emplace( "subfunctionspaces", subPt );
+        p["nSpace"] = functionspace_type::nSpaces;
+        if ( this->mesh() )
+            p["mesh"] = this->mesh()->journalSection().to_string();
+
+        std::string shape;
+        if ( is_scalar )
+            shape = "scalar";
+        else if ( is_vectorial )
+            shape = "vectorial";
+        else if ( is_tensor2 )
+            shape = "tensor2";
+        else if ( is_tensor2symm )
+            shape = "tensor2symm";
+        p.emplace( "basis", nl::json( { { "name", basisName() },
+                                        { "order", basisOrder().front() },
+                                        { "shape", shape },
+                                        { "is_continuous", is_continuous },
+                                        { "nComponents", nComponents },
+                                        { "nComponents1", nComponents1 },
+                                        { "nComponents2", nComponents2 },
+                                        { "nLocalDof", fe_type::nLocalDof } } ) );
+        if ( is_tensor2symm )
+            p["/basis/nRealComponents"_json_pointer] = nRealComponents;
+
+        nl::json subPt;
+        subPt["nDof"] = this->nDof();
+        rank_type nProc = this->worldComm().localSize();
+        if ( nProc > 1 )
+        {
+            nl::json::array_t subPt1, subPt2, subPt3;
+            for ( rank_type p = 0; p < nProc; ++p )
+            {
+                subPt1.push_back( this->dof()->nLocalDofWithGhost( p ) );
+                subPt2.push_back( this->dof()->nLocalDofWithoutGhost( p ) );
+                subPt3.push_back( this->dof()->nLocalGhosts( p ) );
+            }
+            subPt.emplace( "nLocalDofWithGhost", subPt1 );
+            subPt.emplace( "nLocalDofWithoutGhost", subPt2 );
+            subPt.emplace( "nLocalGhost", subPt3 );
+            subPt.emplace( "extended-doftable", this->dof()->buildDofTableMPIExtended() );
+        }
+        p.emplace( "doftable", std::move( subPt ) );
+    }
+    else // composite case
+    {
+        if ( p.contains( "nSpace" ) )
+            return;
+
+        auto subPt = nl::json::array( {} );
+        ;
+        mpl::range_c<int, 0, functionspace_type::nSpaces> keySpaces;
+        boost::fusion::for_each( keySpaces, UpdateInformationObject<functionspace_type>( *this, subPt ) );
+        p.emplace( "nSpace", functionspace_type::nSpaces );
+        p.emplace( "nDof", this->nDof() );
+        p.emplace( "subfunctionspaces", subPt );
+    }
 }
-
 template<typename T,int M,int N>
 std::ostream&
 operator<<( std::ostream& os, Feel::detail::ID<T,M,N> const& id )

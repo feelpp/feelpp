@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-11-15
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,10 @@
 #include <iomanip>
 #include <boost/foreach.hpp>
 
-#include <feel/feel.hpp>
+
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 //#include <feel/options.hpp>
 //#include <feel/feelalg/backend.hpp>
 //#include <feel/feelalg/solvereigen.hpp>

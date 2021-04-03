@@ -144,6 +144,37 @@ BOOST_AUTO_TEST_CASE( test3 )
     BOOST_CHECK_SMALL( error_diff_e3b_y, 1e-10 );
     BOOST_CHECK_SMALL( error_diff_e3b_z, 1e-10 );
     BOOST_CHECK_SMALL( error_grad_e3b, 1e-10 );
+
+    auto g1 = idv(u);
+    auto g2 = Px();
+    auto g_base = expr( "3*g2^2:g2" ) - g1;
+    auto g_se = symbolsExpr( symbolExpr( "g2", g2 ) );
+    auto g = g_base.applySymbolsExpr( g_se );
+    auto diff_g_g2 = g.diff<1>( "g2" );
+    auto diff_g_g2_exact = 6*Px();
+    double error_diff_g_g2 = normL2(_range=elements(mesh),_expr= diff_g_g2 - diff_g_g2_exact );
+    BOOST_CHECK_SMALL( error_diff_g_g2, 1e-10 );
+
+#if 0
+    auto diff_g_g2_bis = expr( expr("diff_g_g2:diff_g_g2"),  symbolExpr("diff_g_g2",diff_g_g2) );
+#else
+    auto diff_g_g2_symbolic = expr("diff_g_g2:diff_g_g2");
+    auto diff_g_g2_inter = exprOptionalConcat<std::decay_t<decltype(diff_g_g2_symbolic)>>();
+    diff_g_g2_inter.expression().add( diff_g_g2_symbolic );
+    //auto diff_g_g2_bis = expr( expr("diff_g_g2:diff_g_g2"),  symbolExpr("diff_g_g2",diff_g_g2_tmp) );
+    auto diff_g_g2_bis = expr( expr("diff_g_g2_inter:diff_g_g2_inter"), symbolExpr("diff_g_g2_inter",diff_g_g2_inter),  symbolExpr("diff_g_g2",diff_g_g2_exact) );
+#endif
+    double error_diff_g_g2_bis = normL2(_range=elements(mesh),_expr= diff_g_g2_bis - diff_g_g2_exact );
+    BOOST_CHECK_SMALL( error_diff_g_g2_bis, 1e-10 );
+
+    auto h1 = Py();
+    auto h_se = symbolsExpr( symbolExpr( "h1", h1 ) );
+    auto h_base = expr( "5*h1^3:h1" )*diff_g_g2;
+    auto h = h_base.applySymbolsExpr( h_se );
+    auto diff_h_h1 = h.diff<1>( "h1" );
+    auto diff_h_h1_exact = 15*pow(h1,2)*diff_g_g2_exact;
+    double error_diff_h_h1 = normL2(_range=elements(mesh),_expr= diff_h_h1 - diff_h_h1_exact );
+    BOOST_CHECK_SMALL( error_diff_h_h1, 1e-10 );
 }
 
 
