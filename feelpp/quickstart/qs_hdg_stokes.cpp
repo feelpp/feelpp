@@ -238,7 +238,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     a( 2_c, 3_c) += integrate(_range=internalfaces(mesh),
                               _expr=inner(jump(id(q)),idt(uhat)) );
     a( 2_c, 3_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=print((trans(idt(uhat))*N())*id(q),"uhat.n * q") );
+                              _expr=(trans(idt(uhat))*N())*id(q) );
     toc("a(2,3)", true);
     tic();
     a( 3_c, 0_c) += integrate(_range=internalfaces(mesh),
@@ -264,7 +264,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     toc("a(3,2)", true);
     tic();
     a( 3_c, 3_c) += integrate(_range=internalfaces(mesh),                  
-                              _expr=-mu*tau_constant*trans(idt(uhat))*id(m) );
+                              _expr=-sc_param*mu*tau_constant*trans(idt(uhat))*id(m) );
     a( 3_c, 3_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),                  
                               _expr=trans(idt(uhat))*id(m) );
     a( 3_c, 3_c ) += integrate( _range = markedfaces( mesh, "Neumann" ),
@@ -426,7 +426,7 @@ int main( int argc, char** argv )
 
     if ( ioption( "order" ) == 1 )
         return !hdg_stokes<FEELPP_DIM,1>( locals );
-#if 0        
+#if 1        
     if ( ioption( "order" ) == 2 )
         return !hdg_stokes<FEELPP_DIM,2>( locals );
 #endif
