@@ -48,6 +48,16 @@ namespace Feel
 BOOST_PARAMETER_NAME( keyword )
 BOOST_PARAMETER_NAME( repository )
 
+namespace TabulateInformationTools
+{
+namespace FromJSON
+{
+tabulate_informations_ptr_t
+tabulateInformationsModelFields( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+}
+}
+
+
 namespace FeelModels
 {
 

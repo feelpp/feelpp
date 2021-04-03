@@ -1,6 +1,10 @@
 // -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:set fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-#include <feel/feel.hpp>
-
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelvf/vf.hpp>
 #if !defined( MESH_DIM )
 #define MESH_DIM 2
 #endif

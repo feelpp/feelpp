@@ -6,7 +6,8 @@
        Date: 2007-12-23
 
   Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
-
+  Copyright (C) 2011-present Feel++ Consortium
+  
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -528,16 +529,7 @@ template <typename T, typename SizeT>
 typename Backend<T,SizeT>::value_type
 Backend<T,SizeT>::dot( vector_type const& x, vector_type const& y ) const
 {
-    value_type localres = 0;
-
-    for ( size_type i = 0; i < x.localSize(); ++i )
-    {
-        localres += x( i )*y( i );
-    }
-
-    value_type globalres=localres;
-    mpi::all_reduce( this->worldComm().globalComm(), localres, globalres, std::plus<value_type>() );
-    return globalres;
+    return x.dot( y );
 }
 
 template <>
@@ -545,12 +537,12 @@ typename Backend<std::complex<double>>::value_type
 Backend<std::complex<double>>::dot( vector_type const& x, vector_type const& y ) const
 {
     value_type localres = 0;
-    
-    for ( size_type i = 0; i < x.localSize(); ++i )
+
+    for ( size_type i = 0; i < x.map().nLocalDofWithoutGhost(); ++i )
     {
         localres += std::conj(x( i ))*y( i );
     }
-    
+
     value_type globalres=localres;
     mpi::all_reduce( this->worldComm().globalComm(), localres, globalres, std::plus<value_type>() );
     return globalres;

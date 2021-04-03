@@ -393,13 +393,19 @@ ModelPostprocessCheckerMeasure::setup( std::string const& name, ModelIndexes con
 
     M_valueExpr.setExpr( "value", M_p, this->worldComm(), M_directoryLibExpr, indexes );
     CHECK( M_valueExpr.hasExprScalar() ) << "require value entry and the value should be a scalar expression";
-    M_value = M_valueExpr.exprScalar().evaluate()(0,0);
+    //M_value = M_valueExpr.exprScalar().evaluate()(0,0);
 
     if ( auto itTol = M_p.get_optional<double>("tolerance") )
         M_tolerance = *itTol;
 }
 std::tuple<bool,double>
 ModelPostprocessCheckerMeasure::run( double val ) const
+{
+    M_value = M_valueExpr.exprScalar().evaluate()(0,0);
+    return this->runImpl( val );
+}
+std::tuple<bool,double>
+ModelPostprocessCheckerMeasure::runImpl( double val ) const
 {
     if ( std::abs(val) < 1e-10 || std::abs(M_value) < 1e-10 )
     {
@@ -418,7 +424,7 @@ void
 ModelPostprocessCheckerMeasure::setParameterValues( std::map<std::string,double> const& mp )
 {
     M_valueExpr.setParameterValues( mp );
-    M_value = M_valueExpr.exprScalar().evaluate()(0,0);
+    //M_value = M_valueExpr.exprScalar().evaluate()(0,0);
 }
 
 ModelPostprocess::ModelPostprocess( worldcomm_ptr_t const& world )

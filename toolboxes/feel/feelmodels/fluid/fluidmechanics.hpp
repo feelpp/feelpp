@@ -415,6 +415,9 @@ public:
         void init( self_type const& fluidToolbox );
         void updateForUse( self_type const& fluidToolbox );
 
+        void updateInformationObject( nl::json & p ) const;
+        tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp,
+                                                          std::map<std::string,uint16_type> & jsonPtrFunctionSpacesToLevel ) const;
 
         void initTimeStep( self_type const& fluidToolbox, int bdfOrder, int nConsecutiveSave, std::string const& myFileFormat )
             {
@@ -511,7 +514,8 @@ public:
 
         auto elasticVelocityExpr() const { CHECK( this->hasElasticVelocity() ) << "no elastic velocity"; return idv(M_fieldElasticVelocity); }
 
-        void updateElasticVelocityFromExpr( self_type const& fluidToolbox );
+        template <typename SymbolsExprType>
+        void updateElasticVelocityFromExpr( self_type const& fluidToolbox, SymbolsExprType const& se );
 
         //---------------------------------------------------------------------------//
         // gravity
@@ -747,6 +751,22 @@ public:
     class BodySetBoundaryCondition : public std::map<std::string,BodyBoundaryCondition>
     {
     public:
+        void updateInformationObject( nl::json & p ) const
+            {
+                for ( auto & [name,bpbc] : *this )
+                    bpbc.updateInformationObject( p["Body"][name] );
+            }
+        void updateTabulateInformations( tabulate_informations_sections_ptr_t & tabInfo, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::map<std::string,uint16_type> & jsonPtrFunctionSpacesToLevel ) const
+            {
+                if ( jsonInfo.contains("Body") )
+                {
+                    auto const& jsonInfoBBC = jsonInfo.at("Body");
+                    auto tabInfoBBC = TabulateInformationsSections::New( tabInfoProp );
+                    for ( auto & [name,bpbc] : *this )
+                        tabInfoBBC->add( name, bpbc.tabulateInformations(jsonInfoBBC.at(name), tabInfoProp, jsonPtrFunctionSpacesToLevel ) );
+                    tabInfo->add( "Body", tabInfoBBC );
+                }
+            }
         void initTimeStep( self_type const& fluidToolbox, int bdfOrder, int nConsecutiveSave, std::string const& myFileFormat )
             {
                 for ( auto & [name,bpbc] : *this )
@@ -1442,17 +1462,20 @@ public :
     auto modelContext( std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
     auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
     auto modelContext( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorData, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( vectorData, prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
 
     //___________________________________________________________________________________//
@@ -1556,7 +1579,7 @@ public :
 
     template <typename SymbolsExprType = symbols_expression_empty_t>
     auto dynamicViscosityExpr( SymbolsExprType const& se = symbols_expression_empty_t{},
-                               typename std::enable_if_t< is_symbols_expression_v<SymbolsExprType> >* = nullptr ) const
+                               typename std::enable_if_t< is_symbols_expression_v<SymbolsExprType> || is_symbols_expression_tensor_context_v<SymbolsExprType> >* = nullptr ) const
         {
             return this->dynamicViscosityExpr( this->fieldVelocity(), se );
         }
@@ -1723,8 +1746,12 @@ public :
     template <typename element_mecasol_ptrtype>
     void updateStructureDisplacement(element_mecasol_ptrtype const & structSol);
 
-    //void updateStructureDisplacementBis( typename mesh_ale_type::ale_map_element_ptrtype disp );
     void updateALEmesh();
+    template <typename SymbolsExprType>
+    void updateALEmesh( SymbolsExprType const& se );
+private:
+    void updateALEmeshImpl();
+public:
 
     template <typename element_vel_mecasol_ptrtype>
     void updateStructureVelocity(element_vel_mecasol_ptrtype velstruct);
@@ -2063,6 +2090,107 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInitialCon
         M_turbulenceModelType->updateInitialConditions( se );
 }
 
+
+namespace FluidToolbox_detail
+{
+
+template <typename MeshType,typename RangeType>
+faces_reference_wrapper_t<MeshType>
+removeBadFace( std::shared_ptr<MeshSupport<MeshType>> const& ms, RangeType const& r )
+{
+    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
+     if ( !ms->isPartialSupport() )
+        return r;
+    for ( auto const& faceWrap : r )
+    {
+        auto const& theface = unwrap_ref( faceWrap );
+        if ( theface.isConnectedTo0() && theface.isConnectedTo1() )
+        {
+            if ( theface.element0().isGhostCell() && !ms->hasElement(theface.element1().id() ) )
+            {
+                //std::cout << "removeBadFace case 0 : " << theface.processId() << " ; " << theface.id() << std::endl;
+                continue;
+            }
+            if ( theface.element1().isGhostCell() && !ms->hasElement(theface.element0().id() ) )
+            {
+                // std::cout << "removeBadFace case 1 : " << theface.processId() << " ; " << theface.id()
+                //           << " other p="<< theface.element1().processId()<< " ;" <<  theface.idInOthersPartitions( theface.element1().processId() ) << std::endl;
+                continue;
+            }
+
+        }
+        myelts->push_back( boost::cref( theface ) );
+    }
+    myelts->shrink_to_fit();
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                              myelts->begin(),
+                              myelts->end(),
+                              myelts );
+}
+}
+
+template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
+template <typename SymbolsExprType>
+void
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( SymbolsExprType const& se )
+{
+    this->log("FluidMechanics","updateALEmesh", "start");
+
+    auto velocityMeshSupport = this->functionSpaceVelocity()->template meshSupport<0>();
+    std::set<size_type> dofToSync;
+    if ( !M_bcMovingBoundaryImposed.empty() || M_bodySetBC.hasElasticVelocityFromExpr() )
+    {
+        // Warning : evaluate expression on reference mesh (maybe it will better to change the API in order to avoid tjese meshmoves)
+        bool meshIsOnRefAtBegin = this->meshALE()->isOnReferenceMesh();
+        if ( !meshIsOnRefAtBegin )
+            this->meshALE()->revertReferenceMesh( false );
+        for( auto const& d : M_bcMovingBoundaryImposed )
+        {
+            M_meshDisplacementOnInterface->on( _range=markedfaces(this->mesh(),markers(d)),
+                                               _expr=expression(d,se),
+                                               _geomap=this->geomap() );
+        }
+        for ( auto & [bpname,bpbc] : M_bodySetBC )
+        {
+            if ( bpbc.hasElasticVelocityFromExpr() )
+                bpbc.updateElasticVelocityFromExpr(*this,se );
+        }
+
+        if ( !meshIsOnRefAtBegin )
+            this->meshALE()->revertMovingMesh( false );
+    }
+
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        //auto rangeMFOF = bpbc.rangeMarkedFacesOnFluid();
+        // temporary fix of interpolation with meshale space
+        auto rangeMFOF = FluidToolbox_detail::removeBadFace( velocityMeshSupport,bpbc.rangeMarkedFacesOnFluid() );
+        if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() && !bpbc.hasElasticVelocity() )
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExpr(), rangeMFOF );
+        else if ( bpbc.hasElasticVelocityFromExpr() )
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), rangeMFOF );
+        else
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields(), rangeMFOF ); // TO FIX : use idv(this->fieldVelocity() require to need a range with partial support mesh info
+            //this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, idv(this->fieldVelocity())/*bpbc.rigidVelocityExprFromFields()*/, rangeMFOF );
+#if 0
+        (*M_meshDisplacementOnInterface)[Component::X].on(_range=bpbc.rangeMarkedFacesOnFluid(),_expr=cst(0.) );
+#endif
+
+        if ( velocityMeshSupport->isPartialSupport() )
+        {
+            auto _thedof = M_meshDisplacementOnInterface->functionSpace()->dofs(rangeMFOF,ComponentType::NO_COMPONENT,true);
+            dofToSync.insert(_thedof.begin(),_thedof.end());
+        }
+    }
+
+    if ( !M_bodySetBC.empty() && velocityMeshSupport->isPartialSupport() )
+        sync( *M_meshDisplacementOnInterface, "=", dofToSync );
+
+    this->updateALEmeshImpl();
+    this->log("FluidMechanics","updateALEmesh", "finish");
+}
+
+
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template <typename ModelFieldsType, typename SymbolsExprType, typename ExportsExprType>
 void
@@ -2173,6 +2301,30 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::computeForce( ra
     return integrate(_range=rangeFaces,
                      _expr= sigmaExpr*N(),
                      _geomap=this->geomap() ).evaluate();
+}
+
+
+
+
+template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
+template <typename SymbolsExprType>
+void
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::BodyBoundaryCondition::updateElasticVelocityFromExpr( self_type const& fluidToolbox, SymbolsExprType const& se )
+{
+    if ( !this->hasElasticVelocityFromExpr() )
+        return;
+
+    bool meshIsOnRefAtBegin = fluidToolbox.meshALE()->isOnReferenceMesh();
+    if ( !meshIsOnRefAtBegin )
+        fluidToolbox.meshALE()->revertReferenceMesh( false );
+    for ( auto const& [bcName,eve] : M_elasticVelocityExprBC )
+    {
+        auto eveRange = std::get<1>( eve ).empty()? elements(this->mesh())/*bpbc.rangeMarkedFacesOnFluid()*/ : markedelements(this->mesh(),std::get<1>( eve ) );
+        auto eveExpr = expr( std::get<0>( eve ).template expr<nDim,1>(), se );
+        M_fieldElasticVelocity->on(_range=eveRange,_expr=eveExpr,_close=true ); // TODO crash if use here markedfaces of fluid with partial mesh support
+    }
+    if ( !meshIsOnRefAtBegin )
+        fluidToolbox.meshALE()->revertMovingMesh( false );
 }
 
 

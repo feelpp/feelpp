@@ -4,8 +4,8 @@
 #ifndef FEELPP_TOOLBOXES_MODELCORE_DIFFSYMBOLICEXPR_H
 #define FEELPP_TOOLBOXES_MODELCORE_DIFFSYMBOLICEXPR_H 1
 
+#include <feel/feelvf/exproptionalconcat.hpp>
 #include <feel/feelmodels/modelcore/trialssymbolsexpr.hpp>
-#include <feel/feelmodels/modelvf/exproptionalconcat.hpp>
 
 namespace Feel
 {

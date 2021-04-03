@@ -30,7 +30,7 @@ public:
     // fe phi context
     typedef typename fe_phi_type::PreCompute pc_phi_type;
     typedef std::shared_ptr<pc_phi_type> pc_phi_ptrtype;
-    typedef typename fe_phi_type::template Context<expr_type::context_phi, fe_phi_type, gm_type,geoelement_type,gmc_type::context> ctx_phi_type;
+    typedef typename fe_phi_type::template Context<expr_type::context_phi, fe_phi_type, gm_type,geoelement_type,0, gmc_type::subEntityCoDim> ctx_phi_type;
     typedef std::shared_ptr<ctx_phi_type> ctx_phi_ptrtype;
 
     typedef typename matrix_node<value_type>::type matrix_node_type;

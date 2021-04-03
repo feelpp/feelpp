@@ -383,7 +383,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
             for ( ; elt_it != elt_en; ++elt_it )
             {
                 auto const& curElt = unwrap_ref( *elt_it );
-                ctx->update( curElt, geopc );
+                ctx->template update<context>( curElt, geopc );
                 expr_evaluator.update( mapgmc( ctx ) );
                 fe->interpolate( expr_evaluator, IhLoc );
 
@@ -460,27 +460,12 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     // geometric mapping context
     typedef typename element_type::functionspace_type::mesh_type::gm_type gm_type;
     typedef std::shared_ptr<gm_type> gm_ptrtype;
-    //typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
-    typedef typename mpl::if_< mpl::or_<is_hdiv_conforming<fe_type>, is_hcurl_conforming<fe_type> >,
-                               typename gm_type::template Context<context|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL, geoelement_type>,
-                               typename gm_type::template Context<context, geoelement_type> >::type gmc_type;
-    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    static const size_type gmc_v = is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> ? context|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL : context;
 
     static const uint16_type nDim = geoshape_type::nDim;
 
     // dof
     typedef typename element_type::functionspace_type::dof_type dof_type;
-
-    // basis
-    typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
-    typedef std::shared_ptr<fecontext_type> fecontext_ptrtype;
-    //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
-
-    // expression
-    //typedef typename expression_type::template tensor<map_gmc_type,fecontext_type> t_expr_type;
-    typedef typename expression_type::template tensor<map_gmc_type> t_expr_type;
-    typedef typename t_expr_type::shape shape;
 
     if (  M_on_strategy.test( ContextOn::PENALISATION ) )
     {
@@ -538,8 +523,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
 
         fe_type const* __fe = M_u.functionSpace()->fe().get();
 
-        gm_ptrtype __gm( new gm_type );
-
+        auto __gm = faceForInit.element( 0 ).gm();
 
         //
         // Precompute some data in the reference element for
@@ -563,10 +547,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         }
 
         uint16_type __face_id = faceForInit.pos_first();
-        gmc_ptrtype __c( new gmc_type( __gm, faceForInit.element( 0 ), __geopc, __face_id, M_expr.dynamicContext() ) );
+        auto ctx = __gm->template context<gmc_v>( faceForInit.element( 0 ), __geopc, __face_id, M_expr.dynamicContext() );
 
-        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-        t_expr_type expr( M_expr, mapgmc );
+        auto expr_evaluator = M_expr.evaluator( vf::mapgmc(ctx) );
 
         DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
                   << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
@@ -638,18 +621,16 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                 __face_id = theface.pos_second();
                 faceConnectionId = 1;
             }
-            __c->update( theface.element( faceConnectionId ), __face_id );
+            ctx->template update<gmc_v>( theface.element( faceConnectionId ), __face_id );
 
             DVLOG(2) << "FACE_ID = " << theface.id()
                      << " element id= " << ((faceConnectionId==0)? theface.ad_first() : theface.ad_second())
                      << " pos in elt= " << ((faceConnectionId==0)? theface.pos_first() : theface.pos_second());
             DVLOG(2) << "FACE_ID = " << theface.id() << " face pts=" << theface.G() << "\n";
-            DVLOG(2) << "FACE_ID = " << theface.id() << "  ref pts=" << __c->xRefs() << "\n";
-            DVLOG(2) << "FACE_ID = " << theface.id() << " real pts=" << __c->xReal() << "\n";
+            DVLOG(2) << "FACE_ID = " << theface.id() << "  ref pts=" << ctx->xRefs() << "\n";
+            DVLOG(2) << "FACE_ID = " << theface.id() << " real pts=" << ctx->xReal() << "\n";
 
-            //map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-            //t_expr_type expr( M_expr, mapgmc );
-            expr.update( mapgmc );
+            expr_evaluator.update( mapgmc( ctx ) );
 
 #if 0
             std::pair<index_type,index_type> range_dof( std::make_pair( M_u.start(),
@@ -658,7 +639,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
             DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
 #endif
             //use interpolant
-            __fe->faceInterpolate( expr, IhLoc );
+            __fe->faceInterpolate( expr_evaluator, IhLoc );
 
             for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
@@ -834,7 +815,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                 //geopc = gm->preCompute( __fe->edgePoints(edgeid_in_element) );
                 ////geopc = gm->preComputeAtEdges( __fe->edgePoints(ptid_in_element) );
                 //ctx->update( elt, edgeid_in_element, geopc );
-                ctx->update( elt, edgeid_in_element );
+                ctx->template update<context>( elt, edgeid_in_element );
                 expr_evaluator.update( mapgmc( ctx ) );
                 __fe->edgeInterpolate( expr_evaluator, IhLoc );
 
@@ -1022,7 +1003,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                 auto const& elt = mesh->element( eid );
                 //geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
                 //ctx->update( elt, ptid_in_element, geopc, mpl::int_<0>() );
-                ctx->update( elt, ptid_in_element );
+                ctx->template update<context>( elt, ptid_in_element );
                 expr_evaluator.update( mapgmc( ctx ) );
                 __fe->vertexInterpolate( expr_evaluator, IhLoc );
 

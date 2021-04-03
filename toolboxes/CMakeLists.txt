@@ -22,7 +22,7 @@
 #
 #
 
-cmake_minimum_required(VERSION 3.7.2)
+cmake_minimum_required(VERSION 3.13)
 
 project(toolboxes)
 set(PROJECT_SHORTNAME "toolbox")
@@ -61,8 +61,9 @@ if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
   set(FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW 1)
 endif()
 
-option(FEELPP_TOOLBOXES_ENABLE "Enable/Disable Heat" ON)
+option(FEELPP_TOOLBOXES_ENABLE "Enable/Disable Toolboxes" ON)
 option(FEELPP_TOOLBOXES_ENABLE_HEAT "Enable/Disable Heat" ON)
+option(FEELPP_TOOLBOXES_ENABLE_CFPDE "Enable/Disable CFPDE" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_ELECTRIC "Enable/Disable Electric" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC "Enable/Disable ThermoElectric" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS "Enable/Disable FluidMechanics" ${FEELPP_TOOLBOXES_ENABLE})
@@ -89,15 +90,17 @@ add_subdirectory(cmake)
 add_subdirectory( feel/feelmodels )
 add_subdirectory( pyfeelpp-toolboxes )
 
-add_subdirectory( coefficientformpdes )
+if ( FEELPP_TOOLBOXES_ENABLE_CFPDE )
+  add_subdirectory( coefficientformpdes )
+endif()
 
-if ( FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
+if ( FEELPP_TOOLBOXES_ENABLE_CFPDE AND FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
   add_subdirectory( fluid )
 endif()
 if ( FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS )
   add_subdirectory( solid )
 endif()
-if ( FEELPP_TOOLBOXES_ENABLE_FSI )
+if ( FEELPP_TOOLBOXES_ENABLE_CFPDE AND FEELPP_TOOLBOXES_ENABLE_FSI )
   add_subdirectory( fsi )
 endif()
 if ( FEELPP_TOOLBOXES_ENABLE_HDG AND ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" ) )

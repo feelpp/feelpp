@@ -198,6 +198,13 @@ public:
             M_constant( expr.value_ref() )
         {
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                expression_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            tensor( expr, geom, theInitArgs... )
+            {}
+
         template<typename IM>
         void init( IM const& /*im*/ )
         {
@@ -218,6 +225,11 @@ public:
         void updateContext( CTX const& ... ctx )
         {
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {}
+
 
         constexpr value_type
         evalij( uint16_type /*i*/, uint16_type /*j*/ ) const

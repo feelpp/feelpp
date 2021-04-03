@@ -214,14 +214,14 @@ private :
         // fe displacement context
         typedef typename fe_displacement_type::PreCompute pc_displacement_type;
         typedef std::shared_ptr<pc_displacement_type> pc_displacement_ptrtype;
-        typedef typename fe_displacement_type::template Context<expr_type::context_displacement, fe_displacement_type, gm_type,geoelement_type,gmc_type::context> ctx_displacement_type;
+        typedef typename fe_displacement_type::template Context<expr_type::context_displacement, fe_displacement_type, gm_type,geoelement_type, 0, gmc_type::subEntityCoDim> ctx_displacement_type;
         typedef std::shared_ptr<ctx_displacement_type> ctx_displacement_ptrtype;
         typedef typename expr_type::value_type value_type;
         // fe pressure context
         typedef typename expr_type::fe_pressure_type::PreCompute pc_pressure_type;
         typedef std::shared_ptr<pc_pressure_type> pc_pressure_ptrtype;
         typedef typename expr_type::fe_pressure_type::template Context<expr_type::context_pressure, typename expr_type::fe_pressure_type,
-                                                                       gm_type,geoelement_type,gmc_type::context> ctx_pressure_type;
+                                                                       gm_type,geoelement_type,0, gmc_type::subEntityCoDim> ctx_pressure_type;
         typedef std::shared_ptr<ctx_pressure_type> ctx_pressure_ptrtype;
 
         typedef typename super_type::shape_type shape;

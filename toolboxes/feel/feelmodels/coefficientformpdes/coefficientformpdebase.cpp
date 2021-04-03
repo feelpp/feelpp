@@ -109,7 +109,7 @@ CoefficientFormPDEBase<ConvexType>::initBasePostProcess()
     this->setPostProcessSaveAllFieldsAvailable( { this->unknownName() } );
     super_type::initPostProcess();
 
-    if ( !this->postProcessExportsFields().empty() )
+    if ( !this->postProcessExportsFields().empty() || this->hasPostProcessExportsExpr() )
     {
         std::string geoExportType="static";//change_coords_only, change, static
         M_exporter = exporter( _mesh=this->mesh(),

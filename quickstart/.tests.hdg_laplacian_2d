@@ -1,6 +1,0 @@
-triangle-oneelt-1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/laplacian/triangle/triangle.cfg --checker.tolerance.exact=1e-11 --k=-1 --gmsh.hsize=4 --solution.sympy.p=1 --solution.p=1 --solution.u={0,0}
-triangle-oneelt-x+y --config-file ${CMAKE_CURRENT_SOURCE_DIR}/laplacian/triangle/triangle.cfg  --checker.tolerance.exact=1e-11 --k=-1 --gmsh.hsize=4 --solution.sympy.p=x+y --solution.p=x+y:x:y --solution.u={1,1}
-triangle-oneelt-x*x+y*y --config-file ${CMAKE_CURRENT_SOURCE_DIR}/laplacian/triangle/triangle.cfg  --checker.tolerance.exact=1e-11 --k=-1 --gmsh.hsize=4 --solution.sympy.p=x*x+y*y --solution.p=x*x+y*y:x:y --solution.u={2*x,2*y}:x:y   --functions.f=4
-triangle-1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/laplacian/triangle/triangle.cfg   --checker.tolerance.exact=1e-11 --k=-1 --solution.sympy.p=1 --solution.p=1 --solution.u={0,0}  
-triangle-x+y --config-file ${CMAKE_CURRENT_SOURCE_DIR}/laplacian/triangle/triangle.cfg   --checker.tolerance.exact=1e-11 --k=-1 --solution.sympy.p=x+y --solution.p=x+y:x:y --solution.u={1,1} 
-triangle-x^2+y^2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/laplacian/triangle/triangle.cfg   --checker.tolerance.exact=1e-11 --k=-1   --solution.sympy.p=x*x+y*y --solution.p=x*x+y*y:x:y --solution.u={2*x,2*y}:x:y   --functions.f=4

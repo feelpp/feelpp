@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 23 Feb 2015
 #
-#  Copyright (C) 2015 Feel++ Consortium
+#  Copyright (C) 2015-present Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -59,14 +59,18 @@ endif()
 if ( FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS )
   add_subdirectory(solid)
 endif()
+if ( FEELPP_TOOLBOXES_ENABLE_CFPDE )
+  add_subdirectory(coefficientformpdes)
+else()
+  set(FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS OFF)
+  set(FEELPP_TOOLBOXES_ENABLE_FSI OFF)
+endif()
 if ( FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
   add_subdirectory(fluid)
 endif()
 if ( FEELPP_TOOLBOXES_ENABLE_FSI )
   add_subdirectory(fsi)
 endif()
-
-add_subdirectory(coefficientformpdes)
 
 if ( FEELPP_TOOLBOXES_ENABLE_ADVECTION )
   add_subdirectory(advection)
