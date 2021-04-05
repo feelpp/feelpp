@@ -424,8 +424,11 @@ public :
                                                                              _post=post
                                                                              );
             toc("blockform.monolithic",FLAGS_v>0);
-            M_matrix->getSparseMatrix()->printMatlab("A.m");
-            rhs.vectorPtr()->getVector()->printMatlab("b.m");
+            if ( Environment::isSequential() && boption("exporter.matlab") )
+            {
+                M_matrix->getSparseMatrix()->printMatlab("A.m");
+                rhs.vectorPtr()->getVector()->printMatlab("b.m");
+            } 
             solution.localize(U);
             return r1;
         }
