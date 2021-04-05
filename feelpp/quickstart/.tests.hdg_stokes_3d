@@ -1,0 +1,10 @@
+tetrahedron-oneelt-{1,1,1} --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/tetrahedron/tetrahedron.cfg --gmsh.hsize=4 --velocity=Array([1,1,1]) --potential=1
+tetrahedron-oneelt-{x,y,-2*z} --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/tetrahedron/tetrahedron.cfg --gmsh.hsize=4 --velocity=Array([x,y,-2*z]) --potential=x+y+z
+
+tetrahedron-{1,1,1} --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/tetrahedron/tetrahedron.cfg --gmsh.hsize=0.2 --velocity=Array([1,1,1]) --potential=1
+tetrahedron-{x,y,-2*z} --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/tetrahedron/tetrahedron.cfg --gmsh.hsize=0.2 --velocity=Array([x,y,-2*z]) --potential=x+y+z
+
+
+# Ethier-Steinmann
+ethiersteinmann-nosc --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/ethiersteinmann/ethiersteinmann.cfg  --directory=qs_stokes/ethiersteinmann --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=0.2 
+ethiersteinmann-nosc-o2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/ethiersteinmann/ethiersteinmann.cfg  --directory=qs_stokes/ethiersteinmann --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=0.2 --order=2
