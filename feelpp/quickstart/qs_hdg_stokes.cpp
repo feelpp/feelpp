@@ -24,16 +24,22 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <fmt/core.h>
-#include <feel/feel.hpp>
-#include <feel/feelpoly/raviartthomas.hpp>
+#include <feel/feelcore/environment.hpp>
+//#include <feel/feelpoly/raviartthomas.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feeldiscr/pdhm.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feeldiscr/product.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelvf/vonmises.hpp>
 #include <feel/feelvf/print.hpp>
 #include <feel/feelvf/eig.hpp>
+#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpython/pyexpr.hpp>
-#include "nullspace-rigidbody.hpp"
 
 namespace Feel {
 
@@ -63,6 +69,7 @@ makeOptions()
 #endif
         ( "potential", po::value<std::string>()->default_value( "0" ), "pressure is given" )
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
+        ( "quad", po::value<int>()->default_value( 4 ), "quadrature order for rhs and norms"  )
         ( "exact", po::value<bool>()->default_value( true ), "velocity is give and provides the exact solution or an approximation"  )
         ( "use-near-null-space", po::value<bool>()->default_value( false ), "use near-null-space for AMG"  )
         ( "use-null-space", po::value<bool>()->default_value( false ), "use null-space for AMG"  )
@@ -88,7 +95,8 @@ makeAbout()
 }
 
 
-template<int Dim, int OrderP, int OrderG=1>
+
+template<int Dim, int OrderP, int OrderG = 1>
 int hdg_stokes( std::map<std::string,std::string>& locals )
 {
 
@@ -125,15 +133,17 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     auto Vh = Pdhms<OrderP>( mesh, true );
     auto Wh = Pdhv<OrderP>( mesh, true );
     auto Ph = Pdh<OrderP>( mesh, true );
+    auto Phm = Pch<0>( mesh, true );
     auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh), _update=0 );
     auto Mh = Pdhv<OrderP>( face_mesh,true );
 
     toc("spaces",true);
 
-    cout << "Vh<" << OrderP   << "> : " << Vh->nDof() << std::endl
-         << "Wh<" << OrderP   << "> : " << Wh->nDof() << std::endl
-         << "Ph<" << OrderP   << "> : " << Ph->nDof() << std::endl
-         << "Mh<" << OrderP   << "> : " << Mh->nDof() << std::endl;
+    cout << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
+         << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
+         << "Ph<" << OrderP << "> : " << Ph->nDof() << std::endl
+         << "Phm<" << OrderP << "> : " << Phm->nDof() << std::endl
+         << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
 
     auto delta = Vh->element( "delta" );
     auto gamma = Vh->element( "gamma" );
@@ -141,6 +151,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     auto v     = Wh->element( "v" );
     auto p     = Ph->element( "p" );
     auto q     = Ph->element( "q" );
+    auto qm    = Phm->element( "qm" );
     auto uhat  = Mh->element( "uhat" );
     auto m     = Mh->element( "m" );
 
@@ -157,7 +168,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
         sc_param = 0.5;
     }
 	tic();
-    auto ps = product( Vh, Wh, Ph, Mh );
+    auto ps = product( Vh, Wh, Ph, Mh, Phm );
 	auto a = blockform2( ps, strategy , backend() );
 	auto rhs = blockform1( ps, strategy , backend() );
 
@@ -174,13 +185,16 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     else
         H.on( _range=elements(face_mesh), _expr=pow(h(),tau_order) );
 
+    bool bc_only_dirichlet = ( nelements(markedfaces(mesh, "Dirichlet")) == nelements(boundaryfaces(mesh)) );
     tic();
-    rhs(1_c) += integrate(_range=elements(mesh),
-                          _expr=trans(rhs_f)*id(v) );
-    rhs(3_c) += integrate(_range=markedfaces(mesh, "Neumann"),
+    rhs( 1_c ) += integrate( _range = elements( mesh ), _quad = ioption( "quad" ),
+                             _expr = trans( rhs_f ) * id( v ) );
+    rhs(3_c) += integrate(_range=markedfaces(mesh, "Neumann"),_quad=ioption("quad"),
                           _expr= (-1)*inner(stressn,id(m)) );
-    rhs(3_c) += integrate(_range=markedfaces(mesh, "Dirichlet"),
+    rhs(3_c) += integrate(_range=markedfaces(mesh, "Dirichlet"),_quad=ioption("quad"),
                           _expr=trans(velocity)*id(m) );
+    rhs( 4_c ) += integrate( _range = elements(mesh),
+                             _expr = 0 * id( qm ) );
     toc("rhs",true);
 
     // Building the matrix
@@ -190,23 +204,23 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     toc("a(0,0)", true);
 
     tic();
-    a( 0_c, 1_c ) += integrate(_range=elements(mesh),_expr=2*(trans(idt(u))*div(gamma)) );
+    a( 0_c, 1_c ) += integrate(_range=elements(mesh),_expr=(trans(idt(u))*div(gamma)) );
     toc("a(0,1)", true);
     tic();
     a( 0_c, 3_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-2*(trans(idt(uhat))*leftface(normal(gamma))+
-                                      trans(idt(uhat))*rightface(normal(gamma))) );
+                              _expr=-(trans(idt(uhat))*leftface((id(gamma)*N()))+
+                                      trans(idt(uhat))*rightface((id(gamma)*N())) ));
     a( 0_c, 3_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=-2*trans(idt(uhat))*normal(gamma) );
+                              _expr=-trans(idt(uhat))*(id(gamma)*N()) );
     toc("a(0,3)", true);
     tic();
     a( 1_c, 0_c) += integrate(_range=elements(mesh),
-                              _expr=mu*inner(idt(delta),grad(v)));
+                              _expr=2*mu*inner(idt(delta),grad(v)));
     a( 1_c, 0_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-mu*(trans(leftface(id(v)))*leftfacet(normalt(delta))+
-                                         trans(rightface(id(v)))*rightfacet(normalt(delta))) );
+                              _expr=-2*mu*(trans(leftface(id(v)))*leftfacet((idt(delta)*N()))+
+                                         trans(rightface(id(v)))*rightfacet((idt(delta)*N())) ));
     a( 1_c, 0_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=-mu*trans(id(v))*(normalt(delta)) );                 
+                              _expr=-2*mu*trans(id(v))*(idt(delta)*N()) );                 
     toc("a(1,0)", true);
 
     a( 1_c, 1_c) += integrate(_range=boundaryfaces(mesh),
@@ -239,15 +253,27 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
                               _expr=inner(jump(id(q)),idt(uhat)) );
     a( 2_c, 3_c) += integrate(_range=boundaryfaces(mesh),
                               _expr=id(q)*(trans(idt(uhat))*N()) );
+    if ( bc_only_dirichlet )
+    {
+        a( 2_c, 4_c) += integrate(_range=elements(mesh),
+                                  _expr=idt(qm)*id(q) );       
+        a( 4_c, 2_c) += integrate(_range=elements(mesh),
+                                  _expr=id(qm)*idt(q) ); 
+    }
+    else
+    {
+        a( 4_c, 4_c) += integrate(_range=elements(mesh),
+                              _expr=id(qm)*idt(qm) );
+    } 
     toc("a(2,3)", true);
     tic();
     a( 3_c, 0_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-mu*(trans(id(m))*leftfacet(normalt(delta))+
-                                         trans(id(m))*rightfacet(normalt(delta))) );
+                              _expr=-2*mu*(trans(id(m))*leftfacet(idt(delta)*N())+
+                                         trans(id(m))*rightfacet(idt(delta)*N())) );
 //    a( 3_c, 0_c) += integrate(_range=boundaryfaces(mesh),
-//                              _expr=-mu*trans(id(m))*normalt(delta));
+//                              _expr=-mu*trans(id(m))*idt(delta)*N());
     a( 3_c, 0_c ) += integrate(_range = markedfaces( mesh, "Neumann" ),
-                               _expr = -mu * trans(id(m))*normalt(delta) );
+                               _expr = -2*mu * trans(id(m))*(idt(delta)*N() ));
     toc("a(3,0)", true);
     tic();
     a( 3_c, 1_c) += integrate(_range=internalfaces(mesh),
@@ -260,7 +286,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     a( 3_c, 2_c) += integrate(_range=internalfaces(mesh),
                               _expr=inner(id(m),jumpt(idt(p))) ); //normalt(m)*(rightface(id(p))-leftface(id(p))) );
     a( 3_c, 2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                              _expr=idt(p)*normal(m) );
+                              _expr=idt(p)*trans(id(m))*N() );
     toc("a(3,2)", true);
     tic();
     a( 3_c, 3_c) += integrate(_range=internalfaces(mesh),                  
@@ -294,7 +320,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     auto up = U(1_c);
     auto pp = U(2_c);
     auto uhatp = U(3_c);
-    if ( Environment::isSequential() )
+    if ( Environment::isSequential() && boption("exporter.matlab") )
     {
         deltap.printMatlab("s");
         up.printMatlab("u");
@@ -306,13 +332,13 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     {
         auto pressure_exact = potential;
         auto velocity_exact = velocity;
-        auto delta_exact = expr<Dim,Dim>(locals.at("stress"));
+        auto delta_exact = expr<Dim,Dim>(locals.at("strain"));
         auto grad_velocity_exact = expr<Dim,Dim>(locals.at("grad_velocity"));
         Ue(0_c).on( _range=elements(mesh), _expr=delta_exact );
         Ue(1_c).on( _range=elements(mesh), _expr=velocity_exact );
         Ue(2_c).on( _range=elements(mesh), _expr=pressure_exact );
         Ue(3_c).on( _range=faces(mesh), _expr=velocity_exact );
-        if ( Environment::isSequential() )
+        if ( Environment::isSequential() && boption("exporter.matlab") )
         {
             Ue(0_c).printMatlab("se");
             Ue(1_c).printMatlab("ue");
@@ -320,16 +346,20 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
             Ue(3_c).printMatlab("uhate");
         }
         
-        auto l2err_delta = normL2( _range=elements(mesh), _expr=delta_exact - idv(deltap) );
-        auto l2err_vel = normL2( _range=elements(mesh), _expr=velocity_exact - idv(up) );
-        auto l2err_pres = normL2( _range = elements( mesh ), _expr = pressure_exact - idv( pp ) );
-        auto l2vel = normL2( _range=elements(mesh), _expr=velocity_exact );
-        Feel::cout << fmt::format( "{:<30}: {}", "L2 Error stress", l2err_delta ) << std::endl;
-        Feel::cout << fmt::format( "{:<30}: {}", "L2 Error velocity", l2err_vel ) << std::endl;
-        Feel::cout << fmt::format( "{:<30}: {}", "L2 velocity", l2vel ) << std::endl;
+        auto l2err_delta = normL2( _range=elements(mesh), _expr=delta_exact - idv(deltap),_quad=ioption("quad") );
+        auto l2err_vel = normL2( _range=elements(mesh), _expr=velocity_exact - idv(up),_quad=ioption("quad") );
+        auto mean_pe = mean( _range = elements( mesh ), _expr = pressure_exact,_quad=ioption("quad") )(0,0);
+        auto mean_p = mean( _range = elements( mesh ), _expr = idv(pp) )(0,0);
+        auto l2err_pres = normL2( _range = elements( mesh ), _expr = ( pressure_exact-(bc_only_dirichlet*mean_pe)) - idv( pp ),_quad=ioption("quad") );
+        auto l2vel = normL2( _range = elements( mesh ), _expr = velocity_exact, _quad = ioption( "quad" ) );
+        Feel::cout << fmt::format( "{:<30}: {: .4e}", "L2 Error strain", l2err_delta ) << std::endl;
+        Feel::cout << fmt::format( "{:<30}: {: .4e}", "L2 Error velocity", l2err_vel ) << std::endl;
+        Feel::cout << fmt::format( "{:<30}: {: .4e}", "L2 velocity", l2vel ) << std::endl;
         if ( std::abs(l2vel) > 1e-10 )
-            Feel::cout << fmt::format( "{:<30}: {}", "L2 relative error velocity", l2err_vel/l2vel ) << std::endl;
-        Feel::cout << fmt::format( "{:<30}: {}", "L2 pressure", l2err_pres ) << std::endl;
+            Feel::cout << fmt::format( "{:<30}: {: .4e}", "L2 relative error velocity", l2err_vel/l2vel ) << std::endl;
+        Feel::cout << fmt::format( "{:<30}: {: .4e}", "mean pressure exact", mean_pe ) << std::endl;
+        Feel::cout << fmt::format( "{:<30}: {: .4e}", "mean pressure", mean_p ) << std::endl;
+        Feel::cout << fmt::format( "{:<30}: {: .4e}", "L2 error pressure", l2err_pres ) << std::endl;
         toc("error");
                     
         // CHECKER
@@ -369,11 +399,14 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     std::string delta_exName = "stress-ex";
     std::string uName = "velocity";
     std::string u_exName = "velocity-ex";
-
+    std::string pName = "pressure";
+    std::string p_exName = "pressure-ex";
     auto e = exporter( _mesh=mesh, _name=exportName );
     e->setMesh( mesh );
+    e->addRegions();
     e->add( deltaName, deltap, "nodal" );
     e->add( uName, up, "nodal" );
+    e->add( uName, pp, "nodal" );
     std::set<std::string> reps({ "nodal", "element" });
     e->add( "vonmises", vonmises(idv(deltap)), reps );
     e->add( "principal_stress", eig(idv(deltap)), reps );
@@ -383,6 +416,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     {
         e->add( delta_exName, delta, "nodal" );
         e->add( u_exName, u, "nodal" );
+        e->add( p_exName, p, "nodal" );
     }
 
     e->save();

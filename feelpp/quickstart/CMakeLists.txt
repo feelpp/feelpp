@@ -43,6 +43,10 @@ if ( NOT TARGET quickstart )
   add_custom_target(quickstart)
 endif()
 
+if ( NOT TARGET hdg_stokes )
+  add_custom_target(hdg_stokes)
+endif()
+
 add_subdirectory( python )
 add_subdirectory( laplacian )
 
@@ -65,6 +69,7 @@ feelpp_add_application( hdg_stokes_3d SRCS qs_hdg_stokes.cpp INCLUDE_IN_ALL DEFS
 feelpp_add_testcase( stokes PREFIX qs CATEGORY quickstart )
 add_dependencies(quickstart ${QS_STOKES_2D} ${QS_STOKES_3D} ${QS_HDG_STOKES_2D} ${QS_HDG_STOKES_3D} )
 add_dependencies(check ${QS_STOKES_2D} ${QS_STOKES_3D} ${QS_HDG_STOKES_2D} ${QS_HDG_STOKES_3D})
+add_dependencies(hdg_stokes ${QS_HDG_STOKES_2D} ${QS_HDG_STOKES_3D})
 
 #
 # Linear elasticity
