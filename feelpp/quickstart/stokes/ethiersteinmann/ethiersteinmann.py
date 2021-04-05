@@ -27,21 +27,13 @@ else:
     mu=0.1    
 print("mu=",mu);
 
-Re = symbols('Re')
-print("Re=",Re)
-Lambdav = (Re)/(2)-sqrt((Re*Re)/(4)+4*math.pi*math.pi)
-print("-- Lambda={} value:{}".format(Lambdav,Lambdav.subs(Re,1/mu)))
-L = symbols('L')
-potential = exp(2*L*x)/2 #sympify(locals()['potential'])
-print("-- p=",potential)
-Lv=Lambdav.subs(Re, 1/mu)
-potential=potential.subs(L,Lv )
-print('potential=',potential)
-# sympify(locals()['velocity'])
-velocity = Array([(1-exp(L*x)*cos(2*pi*y)).subs(L, Lv), ((L)/(2*pi)*exp(L*x)*sin(2*pi*y)).subs(L, Lv)])
-print("-- u=",velocity)
+potential = - (pi/4)*(pi/4)*0.5 * ( exp(2*(pi/4)*x) + exp(2*(pi/4)*y) + exp(2*(pi/4)*z) + 2*sin((pi/4)*x+(pi/2)*y)*cos((pi/4)*z+(pi/2)*x)*exp((pi/4)*(y+z)) + 2*sin((pi/4)*y+(pi/2)*z)*cos((pi/4)*x+(pi/2)*y)*exp((pi/4)*(z+x)) + 2*sin((pi/4)*z+(pi/2)*x)*cos((pi/4)*y+(pi/2)*z)*exp((pi/4)*(x+y)))
 
-print('shape:',velocity.shape)
+print("-- p=",potential)
+velocity = Array([-(pi/4)*(exp((pi/4)*x)*sin((pi/4)*y+(pi/2)*z)+exp((pi/4)*z)*cos((pi/4)*x+(pi/2)*y)),
+                  -(pi/4)*(exp((pi/4)*y)*sin((pi/4)*z+(pi/2)*x)+exp((pi/4)*x)*cos((pi/4)*y+(pi/2)*z)),
+                  -(pi/4)*(exp((pi/4)*z)*sin((pi/4)*x+(pi/2)*y)+exp((pi/4)*y)*cos((pi/4)*z+(pi/2)*x))])
+print("-- u=",velocity)
 
 if exact:
     # gradient
