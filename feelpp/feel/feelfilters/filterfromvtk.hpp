@@ -102,7 +102,7 @@ public:
     {}
 #endif /* FEELPP_HAS_VTK */
 
-    ~FilterFromVtk()
+    ~FilterFromVtk() override
     {
 #if defined(FEELPP_HAS_VTK)
         M_vtkmesh->Delete();
@@ -122,7 +122,7 @@ public:
      */
     //@{
 
-    void visit( mesh_type* mesh )
+    void visit( mesh_type* mesh ) override
     {
         visit( mesh, mpl::int_<nDim>() );
     }
@@ -194,7 +194,7 @@ public:
     {}
 #endif /* FEELPP_HAS_VTK */
 
-    ~FilterFromVtk3D()
+    ~FilterFromVtk3D() override
     {
 #if defined(FEELPP_HAS_VTK)
         M_vtkmesh->Delete();
@@ -214,7 +214,7 @@ public:
      */
     //@{
 
-    void visit( mesh_type* mesh )
+    void visit( mesh_type* mesh ) override
     {
         visit( mesh, mpl::int_<nDim>() );
     }

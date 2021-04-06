@@ -5,16 +5,18 @@
     "Description":"Fluid flow around a cylinder",
     "Parameters":
     {
+        "Te": 293.1,
         "Um":
         {
-            "type":"variable",
+            "type":"value",
             "value":0.3,
             "min":1e-4,
-            "max":10
+            "max":10,
+            "description":"Um desc"
         },
         "H":
         {
-            "type":"constant",
+            "type":"expression",
             "value":0.41
         }
     },

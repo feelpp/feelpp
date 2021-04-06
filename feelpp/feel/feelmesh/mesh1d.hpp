@@ -146,9 +146,9 @@ class Mesh1D
     /**
      * default constructor
      */
-    explicit Mesh1D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    explicit Mesh1D( std::string const& name = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         : super_visitable(),
-          super( 1, nRealDim, worldComm ),
+          super( name, 1, nRealDim, worldComm ),
           super_elements( worldComm ),
           super_points( worldComm )
     {
@@ -164,7 +164,7 @@ class Mesh1D
     }
 
     //! destructor
-    ~Mesh1D()
+    ~Mesh1D() override
     {
     }
 
@@ -385,7 +385,7 @@ class Mesh1D
     
     
 
-    virtual void setWorldComm( worldcomm_ptr_t const& _worldComm ) override
+    void setWorldComm( worldcomm_ptr_t const& _worldComm ) override
     {
         MeshBase<IndexT>::setWorldComm( _worldComm );
         this->setWorldCommElements( _worldComm );
@@ -396,7 +396,7 @@ class Mesh1D
      * clear out all data from the mesh, \p isEmpty() should return
      * \p true after a \p clear()
      */
-    virtual void clear() override
+    void clear() override
         {
             super::clear();
             super_elements::clear();

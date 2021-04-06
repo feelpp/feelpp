@@ -31,7 +31,7 @@
 #define __FSFUNCTIONALLINEARFREE_H 1
 
 #include <feel/feelalg/backend.hpp>
-#include <feel/feeldiscr/fsfunctional.hpp>
+#include <feel/feeldiscr/fsfunctionallinear.hpp>
 #include <feel/feelvf/vf.hpp>
 
 namespace Feel
@@ -76,7 +76,7 @@ public:
         M_expr( expr )
     {}
 
-    virtual ~FsFunctionalLinearFree() {}
+    ~FsFunctionalLinearFree() override {}
 
     //return the expression
     expr_type expr()
@@ -85,8 +85,8 @@ public:
     }
 
     // apply the functional
-    virtual value_type
-    operator()( const element_type& x ) const
+    value_type
+    operator()( const element_type& x ) const override
     {
         auto vector = M_backend->newVector( this->space() );
         form1( _test=this->space(),_vector=vector) = M_expr;
@@ -96,7 +96,7 @@ public:
     }
 
     //fill a vector to have the container
-    virtual void containerPtr( vector_ptrtype & vector_to_fill )
+    void containerPtr( vector_ptrtype & vector_to_fill ) override
     {
         auto vector = M_backend->newVector( this->space() );
         form1( _test=this->space(),_vector=vector) = M_expr;
@@ -105,7 +105,7 @@ public:
     }
 
     //fill a vector to have the container
-    virtual void container( vector_type & vector_to_fill )
+    void container( vector_type & vector_to_fill ) override
     {
         auto vector = M_backend->newVector( this->space() );
         form1( _test=this->space(),_vector=vector) = M_expr;

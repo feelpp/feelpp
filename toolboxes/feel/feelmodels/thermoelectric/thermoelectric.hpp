@@ -80,9 +80,11 @@ public:
                     worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                     std::string const& subPrefix = "",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ThermoElectricMesh.path"); }
+
     std::shared_ptr<std::ostringstream> getInfo() const override;
-    void updateInformationObject( pt::ptree & p ) override;
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
 
 private :
     void loadParameterFromOptionsVm();
@@ -103,8 +105,8 @@ public :
 
     //___________________________________________________________________________________//
 
-    mesh_ptrtype const& mesh() const { return M_mesh; }
-    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
     //elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     heat_model_ptrtype const& heatModel() const { return M_heatModel; }
@@ -168,12 +170,13 @@ public :
     auto modelContext( std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
     auto modelContext( vector_ptrtype sol, size_type startBlockSpaceIndexHeat, size_type startBlockSpaceIndexElectric, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, startBlockSpaceIndexHeat, startBlockSpaceIndexElectric, prefix );
-            auto se = this->symbolsExpr( mfields );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
             auto tse =  this->trialSymbolsExpr( mfields, trialSelectorModelFields( startBlockSpaceIndexHeat, startBlockSpaceIndexElectric ) );
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
         }
@@ -231,10 +234,6 @@ public :
 private :
     heat_model_ptrtype M_heatModel;
     electric_model_ptrtype M_electricModel;
-
-    bool M_hasBuildFromMesh, M_isUpdatedForUse;
-
-    mesh_ptrtype M_mesh;
 
     // physical parameter
     std::string M_modelName;

@@ -58,9 +58,9 @@ struct FactoryDefaultError
             M_ex = this->getEx( id );
 
         }
-        ~Exception() throw()
+        ~Exception() throw() override
         {}
-        const char* what() const throw ()
+        const char* what() const throw () override
         {
             return M_ex.c_str();
         }

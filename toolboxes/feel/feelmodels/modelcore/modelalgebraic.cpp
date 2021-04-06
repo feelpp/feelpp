@@ -180,14 +180,6 @@ ModelAlgebraic::updateLinearPDE( DataUpdateLinear & data ) const
 void
 ModelAlgebraic::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
 {}
-void
-ModelAlgebraic::updatePicard( DataUpdateLinear & data ) const
-{}
-double
-ModelAlgebraic::updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const
-{
-    return 0.;
-}
 
 
 void

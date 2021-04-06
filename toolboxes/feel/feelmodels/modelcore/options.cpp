@@ -115,6 +115,8 @@ coefficientformpde_options(std::string const& prefix)
         (prefixvm(prefix,"stabilization.gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
         (prefixvm(prefix,"stabilization.gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
 
+        (prefixvm(prefix,"stabilization.do-assembly-with-grad-diffusion-coeff").c_str(), Feel::po::value<bool>()->default_value( true ), "apply stabilization method")
+
         (prefixvm(prefix,"stabilization.gls.shock-capturing").c_str(), Feel::po::value<bool>()->default_value( false ), "apply shock capturing in gls stabilization method")
         (prefixvm(prefix,"stabilization.gls.shock-capturing.quad").c_str(), Feel::po::value<int>()->default_value( -1 ), "apply shock capturing in gls stabilization method")
         ;
@@ -158,7 +160,7 @@ densityviscosity_options(std::string const& prefix)
         (prefixvm(prefix,"viscosity.infinite_shear").c_str(), Feel::po::value< double >()->default_value( 0.00345 ), "parameter mu_inf for generalized Newtonian [ Pa.s ] ")
         (prefixvm(prefix,"viscosity.min").c_str(), Feel::po::value< double >()->default_value( 0.00345 ), "min viscosity with power law [ Pa.s ]  ")
         (prefixvm(prefix,"viscosity.max").c_str(), Feel::po::value< double >()->default_value( 0.056 ), "max viscosity with power law [ Pa.s ] ")
-        (prefixvm(prefix,"hematocrit").c_str(), Feel::po::value< double >()->default_value( 40 ), "hematocrit : RBC volume fraction (Vrbc/Vtotal) [ percentage ] ")
+        // (prefixvm(prefix,"hematocrit").c_str(), Feel::po::value< double >()->default_value( 40 ), "hematocrit : RBC volume fraction (Vrbc/Vtotal) [ percentage ] ")
         (prefixvm(prefix,"power_law.n").c_str(), Feel::po::value< double >()->default_value( 0.6 ), "parameter n in power_law ")
         (prefixvm(prefix,"power_law.k").c_str(), Feel::po::value< double >()->default_value( 0.035 ), "parameter k in power_law [ Pa.s^n ] ")
         (prefixvm(prefix,"carreau_law.lambda").c_str(), Feel::po::value< double >()->default_value( 3.313 ), "parameter lambda in carreau_law [ s ] ")
@@ -166,13 +168,13 @@ densityviscosity_options(std::string const& prefix)
         (prefixvm(prefix,"carreau-yasuda_law.lambda").c_str(), Feel::po::value< double >()->default_value( 1.902 ), "parameter lambda in carreau-yasuda_law [ s ] ")
         (prefixvm(prefix,"carreau-yasuda_law.n").c_str(), Feel::po::value< double >()->default_value( 0.22 ), "parameter n in carreau-yasuda_law ")
         (prefixvm(prefix,"carreau-yasuda_law.a").c_str(), Feel::po::value< double >()->default_value( 1.25 ), "parameter a in carreau-yasuda_law ")
-        (prefixvm(prefix,"walburn-schneck_law.C1").c_str(), Feel::po::value< double >()->default_value( 0.00797 ), "parameter C1 in walburn-schneck_law ")
-        (prefixvm(prefix,"walburn-schneck_law.C2").c_str(), Feel::po::value< double >()->default_value( 0.0608 ), "parameter C2 in walburn-schneck_law ")
-        (prefixvm(prefix,"walburn-schneck_law.C3").c_str(), Feel::po::value< double >()->default_value( 0.00499 ), "parameter C3 in walburn-schneck_law ")
-        (prefixvm(prefix,"walburn-schneck_law.C4").c_str(), Feel::po::value< double >()->default_value( 14.585 ), "parameter C4 in walburn-schneck_law [l/g] ")
-        (prefixvm(prefix,"TPMA").c_str(), Feel::po::value< double >()->default_value( 25.9 ), "parameter TPMA (Total Proteins Minus Albumin) [ g/l ] ")
+        // (prefixvm(prefix,"walburn-schneck_law.C1").c_str(), Feel::po::value< double >()->default_value( 0.00797 ), "parameter C1 in walburn-schneck_law ")
+        // (prefixvm(prefix,"walburn-schneck_law.C2").c_str(), Feel::po::value< double >()->default_value( 0.0608 ), "parameter C2 in walburn-schneck_law ")
+        // (prefixvm(prefix,"walburn-schneck_law.C3").c_str(), Feel::po::value< double >()->default_value( 0.00499 ), "parameter C3 in walburn-schneck_law ")
+        // (prefixvm(prefix,"walburn-schneck_law.C4").c_str(), Feel::po::value< double >()->default_value( 14.585 ), "parameter C4 in walburn-schneck_law [l/g] ")
+        // (prefixvm(prefix,"TPMA").c_str(), Feel::po::value< double >()->default_value( 25.9 ), "parameter TPMA (Total Proteins Minus Albumin) [ g/l ] ")
         ;
-    
+
     return densityviscosityOptions;
 }
 
@@ -182,10 +184,12 @@ fluidMechanics_options(std::string const& prefix)
     Feel::po::options_description fluidOptions("Fluid Mechanics options");
     fluidOptions.add_options()
         (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >(), "fluid model : Navier-Stokes,Stokes")
-        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "fluid solver")
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "fluid solver")
 
         (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
         (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+
+        (prefixvm(prefix,"use-semi-implicit-time-scheme").c_str(), Feel::po::value<bool>()->default_value( false ), "use-semi-implicit-time-scheme")
 
         ( prefixvm(prefix,"start-by-solve-newtonian").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-newtonian")
         ( prefixvm(prefix,"start-by-solve-stokes-stationary").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-stokes-stationary")
@@ -207,7 +211,7 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"stabilisation-cip-pressure-gamma").c_str(), Feel::po::value<double>()->default_value( 1.0 ), "use stabilisation method")
         (prefixvm(prefix,"stabilisation-cip-divergence").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
         (prefixvm(prefix,"stabilisation-cip-divergence-gamma").c_str(), Feel::po::value<double>()->default_value( 1.0 ), "use stabilisation method")
-        (prefixvm(prefix,"stabilisation-divergence").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
+        // (prefixvm(prefix,"stabilisation-divergence").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
         (prefixvm(prefix,"stabilisation-div-div").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
         (prefixvm(prefix,"stabilisation-div-div-beta").c_str(), Feel::po::value< double >()->default_value( 1.0 ), "parameter beta in div-div stab ")
         (prefixvm(prefix,"marked-zones.markedfaces").c_str(), po::value<std::vector<std::string> >()->multitoken(), "marked-zone.markedfaces" )
@@ -216,7 +220,7 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"marked-zones.internal-faces").c_str(), po::value<bool>()->default_value(false), "marked-zone.internal-faces" )
         (prefixvm(prefix,"define-pressure-cst").c_str(), Feel::po::value<bool>()->default_value( false ), "maybe need to define the pressure constant if only dirichlet bc")
         (prefixvm(prefix,"define-pressure-cst.markers").c_str(), po::value<std::vector<std::string> >()->multitoken(), "zone to applied pressure cst : marker1:marker2,marker3 -> pressure cst in marker1:marker2 and another pressure cst in marker3" )
-        (prefixvm(prefix,"define-pressure-cst.method").c_str(), Feel::po::value<std::string>()->default_value( "lagrange-multiplier"), " lagrange-multiplier or penalisation or algebraic")
+        (prefixvm(prefix,"define-pressure-cst.method").c_str(), Feel::po::value<std::string>()->default_value( "algebraic"), " lagrange-multiplier or penalisation or algebraic")
         (prefixvm(prefix,"define-pressure-cst.penalisation-beta").c_str(), Feel::po::value< double >()->default_value( -10e-10 ), "parameter beta in cstpressure penalisation ")
         (prefixvm(prefix,"stabilisation-convection-energy").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
         (prefixvm(prefix,"dirichletbc.type").c_str(), Feel::po::value<std::string>()->default_value( "elimination" ), "elimination, nitsche, lm")
@@ -252,7 +256,14 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"use-gravity-force").c_str(), Feel::po::value<bool>()->default_value(false), "use-gravity-force")
         (prefixvm(prefix,"gravity-force").c_str(), Feel::po::value<std::string>(), "gravity-force : (default is {0,-9.80665} or {0,0,-9.80665}")
 
+        (prefixvm(prefix,"distance-to-wall.enabled").c_str(), Feel::po::value<bool>()->default_value(false), "enable distance-to-wall computation")
+        (prefixvm(prefix,"distance-to-wall.markers").c_str(), po::value<std::vector<std::string> >()->multitoken(), "markers used for compute distance-to-wall" )
+
+        (prefixvm(prefix,"use-semi-implicit-turbulence-coupling").c_str(), Feel::po::value<bool>()->default_value( false ), "use-semi-implicit-turbulence-coupling")
+
         (prefixvm(prefix,"pcd.apply-homogeneous-dirichlet-in-newton").c_str(), Feel::po::value<bool>()->default_value(false), "use-gravity-force")
+
+        (prefixvm(prefix,"body.articulation.method").c_str(), Feel::po::value<std::string>()->default_value("lm"), "lm or p-matrix")
         ;
 
     fluidOptions
@@ -263,13 +274,8 @@ fluidMechanics_options(std::string const& prefix)
         .add( backend_options( prefixvm(prefix,"fluidinlet") ) )
         .add( densityviscosity_options( prefix ) )
         .add( pcd_options( prefix ) )
+        .add( coefficientformpdes_options( prefixvm(prefix,"turbulence") ) )
         ;
-
-
-    fluidOptions.add_options()
-        (prefixvm(prefix,"use-thermodyn").c_str(), Feel::po::value<bool>()->default_value( false ), "coupling with energy equation")
-        (prefixvm(prefix,"Boussinesq.ref-temperature").c_str(), Feel::po::value<double>()->default_value( 300. ), "Boussinesq ref-temperature T0");
-    fluidOptions.add( heat_options( prefixvm(prefix,"heat") ) );
 
     return fluidOptions;
 }
@@ -352,7 +358,6 @@ fluidStructInteraction_options( std::string const& prefix )
         (prefixvm(prefix,"coupling-robin-neumann-generalized.use-operator-constant").c_str(), Feel::po::value<double>(),"use-operator-constant")
         (prefixvm(prefix,"coupling-robin-neumann-generalized.use-operator-proportional-to-identity").c_str(), Feel::po::value<bool>()->default_value( false ),"use-operator-proportional-to-identity")
         (prefixvm(prefix,"coupling-robin-neumann-generalized.use-aitken").c_str(), Feel::po::value<bool>()->default_value( false ), "use-aitken")
-        (prefixvm(prefix,"coupling-robin-neumann-generalized.use-precompute-bc").c_str(), Feel::po::value<bool>()->default_value( true ),"use-precompute-bc")
         (prefixvm(prefix,"coupling-robin-neumann-generalized.strategy-time-step-compatibility").c_str(), Feel::po::value<std::string>()->default_value( "default" ),"strategy-time-step-compatibility")
 
         (prefixvm(prefix,"transfert-velocity-F2S.use-extrapolation").c_str(), Feel::po::value<bool>()->default_value( true ), "transfert-velocity-F2S.use-extrapolation")

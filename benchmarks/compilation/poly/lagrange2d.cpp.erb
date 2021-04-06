@@ -1,0 +1,12 @@
+#include <feel/feelpoly/lagrange.hpp>
+
+int main( int argc, char** argv )
+{
+    using namespace Feel;
+#if defined(METABENCH)
+    auto L1 = fem::Lagrange<2,2,<%= n %>,Scalar>();
+    auto L2 = fem::Lagrange<2,2,<%= n %>,Scalar>();
+    auto L3 = fem::Lagrange<2,2,<%= n %>,Scalar>();
+#endif
+
+}

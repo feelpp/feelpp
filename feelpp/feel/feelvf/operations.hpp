@@ -36,7 +36,7 @@
 # include <qd/qd.h>
 #endif
 /// \cond detail
-
+# include <complex>
 # include <boost/preprocessor/comparison/less.hpp>
 # include <boost/preprocessor/comparison/equal.hpp>
 # include <boost/preprocessor/logical/and.hpp>
@@ -50,7 +50,7 @@
 # include <boost/preprocessor/facilities/empty.hpp>
 # include <boost/preprocessor/punctuation/comma.hpp>
 # include <boost/preprocessor/facilities/identity.hpp>
-
+# include <feel/feelvf/pow.hpp>
 
 # /* Information about C operators */
 #
@@ -459,7 +459,7 @@
         template <typename SymbolsExprType>                             \
             auto applySymbolsExpr( SymbolsExprType const& se ) const    \
         {                                                               \
-            return  M_left.applySymbolsExpr( se ) VF_OP_SYMBOL( O ) M_right.applySymbolsExpr( se ); \
+            return M_left.applySymbolsExpr( se ) VF_OP_SYMBOL( O ) M_right.applySymbolsExpr( se ); \
         }                                                               \
                                                                         \
         template <typename TheSymbolExprType>                           \
@@ -484,7 +484,7 @@
             if constexpr( is_op_mul )                                   \
                             return ldiff*M_right + M_left*rdiff;        \
             else if constexpr( is_op_div )                              \
-                                 return (ldiff*M_right - M_left*rdiff)/pow(M_right,2.0); \
+                                 return (ldiff*M_right - M_left*rdiff)/pow(M_right,2); \
             else if constexpr( is_op_add || is_op_sub )                 \
                                  return ldiff VF_OP_SYMBOL( O ) rdiff;  \
             else { CHECK(false ) << "TODO or not possible";return *this; } \
@@ -532,6 +532,14 @@
                 M_right( expr.right(), geom )                          \
                     {                                                   \
                     }                                                   \
+            template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename ExprT, typename... TheArgsType> \
+                tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
+                        ExprT const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs ) \
+                :                                                       \
+                M_left( std::true_type{}, exprExpanded.left(), ttse, expr.left(), geom, theInitArgs... ), \
+                M_right( std::true_type{}, exprExpanded.right(), ttse, expr.right(), geom, theInitArgs... ) \
+                {}                                                      \
+                                                                        \
             template<typename IM>                                       \
                 void init( IM const& im )                               \
             {                                                           \
@@ -572,7 +580,13 @@
                 M_left.updateContext( ctx... );                        \
                 M_right.updateContext( ctx... );                        \
             }                                                           \
-                                                                        \
+            template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
+                void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
+                             Geo_t const& geom, const TheArgsType&... theUpdateArgs ) \
+            {                                                           \
+                M_left.update( std::true_type{}, exprExpanded.left(), ttse, geom, theUpdateArgs... ); \
+                M_right.update( std::true_type{}, exprExpanded.right(), ttse, geom, theUpdateArgs... ); \
+            }                                                           \
                                                                         \
             value_type                                                  \
                 evalij( uint16_type i, uint16_type j ) const noexcept   \

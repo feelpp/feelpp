@@ -2,6 +2,7 @@
  */
 
 #include <feel/feelmodels/coefficientformpdes/coefficientformpdes.hpp>
+#include <feel/feelmodels/coefficientformpdes/coefficientformpdes_registered_type.hpp>
 
 template <int nDim,int nOrderGeo>
 int
@@ -9,10 +10,7 @@ runApplicationCoefficientFormPDEs()
 {
     using namespace Feel;
 
-    typedef FeelModels::CoefficientFormPDEs< Simplex<nDim,nOrderGeo>,
-                                             Lagrange<1,Scalar,Continuous,PointSetFekete>,
-                                             Lagrange<2,Scalar,Continuous,PointSetFekete>,
-                                             Lagrange<1,Vectorial,Continuous,PointSetFekete> > model_type;
+    using model_type = FeelModels::coefficient_form_PDEs_t< Simplex<nDim,nOrderGeo> >;
 
     std::shared_ptr<model_type> cfpdes( new model_type("cfpdes") );
     cfpdes->init();
@@ -60,6 +58,8 @@ main(int argc, char**argv )
                      _about=about(_name="toolboxes_cfpdes",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
+
+    Feel::FeelModels::printToolboxApplication( "cfpdes" );
 
     int dimension = ioption(_name="case.dimension");
     //std::string discretization = soption(_name="case.discretization");

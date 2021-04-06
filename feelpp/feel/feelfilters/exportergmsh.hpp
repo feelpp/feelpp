@@ -95,7 +95,7 @@ public :
     
     ExporterGmsh( ExporterGmsh const & __ex );
 
-    ~ExporterGmsh();
+    ~ExporterGmsh() override;
 
     //@}
 

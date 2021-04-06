@@ -27,6 +27,7 @@ set(SRC
   feelio.cpp
   application.cpp
   environment.cpp
+  repository.cpp
   simget.cpp
   xmlparser.hpp
   about.cpp
@@ -41,6 +42,9 @@ set(SRC
   remotedata.cpp
   journalmanager.cpp
   journalwatcher.cpp
+  table.cpp
+  tabulateinformations.cpp
+  terminalproperties.cpp
   )
 if(FEELPP_HAS_MONGOCXX)
     set( SRC mongocxx.cpp ${SRC} )

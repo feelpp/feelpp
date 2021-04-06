@@ -159,7 +159,7 @@ class Mesh3D
     /**
      * default constructor
      */
-    explicit Mesh3D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit Mesh3D( std::string const& name = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     Mesh3D( Mesh3D const& m ) = default;
     Mesh3D( Mesh3D&& m ) = default;
@@ -167,7 +167,7 @@ class Mesh3D
     /**
      * destructor
      */
-    ~Mesh3D();
+    ~Mesh3D() override;
 
     //@}
 
@@ -292,7 +292,7 @@ class Mesh3D
     /** @name  Methods
      */
     //@{
-    virtual void setWorldComm( worldcomm_ptr_t const& _worldComm ) override
+    void setWorldComm( worldcomm_ptr_t const& _worldComm ) override
     {
         MeshBase<IndexT>::setWorldComm( _worldComm );
         this->setWorldCommElements( _worldComm );
@@ -305,7 +305,7 @@ class Mesh3D
      * clear out all data from the mesh, \p isEmpty() should return
      * \p true after a \p clear()
      */
-    virtual void clear() override;
+    void clear() override;
 
     FEELPP_DEFINE_VISITABLE();
 
@@ -370,9 +370,9 @@ class Mesh3D
 };
 
 template <typename GEOSHAPE, typename T, typename IndexT>
-Mesh3D<GEOSHAPE, T, IndexT>::Mesh3D( worldcomm_ptr_t const& worldComm )
+Mesh3D<GEOSHAPE, T, IndexT>::Mesh3D( std::string const& name, worldcomm_ptr_t const& worldComm )
     : super_visitable(),
-      super( 3, nRealDim, worldComm ),
+      super( name, 3, nRealDim, worldComm ),
       super_elements( worldComm ),
       super_points( worldComm ),
       super_faces( worldComm ),

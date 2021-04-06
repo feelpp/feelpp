@@ -180,14 +180,14 @@ install(TARGETS feelpp_ginac EXPORT feelpp-contrib-export-targets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Libs
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Libs
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Libs)
-install(FILES ${ginaclib_public_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/feelpp/ginac" COMPONENT Devel)
+install(FILES ${ginaclib_public_headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ginac" COMPONENT Devel)
 
 ## Feel++ modification
 ## Those headers will be installed twice, Needed for custom installations to properly work and not breaking codes for now
 set(ginaclib_public_parser_headers
       parser/parser.h
       parser/parse_context.h)
-install(FILES ${ginaclib_public_parser_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/feelpp/ginac/parser" COMPONENT Devel)
+install(FILES ${ginaclib_public_parser_headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ginac/parser" COMPONENT Devel)
 ## End Feel++ modification
 
 if ( PYTHONINTERP_FOUND )

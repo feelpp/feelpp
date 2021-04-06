@@ -108,23 +108,23 @@ public:
     {
         this->M_backend = BackendType::BACKEND_PETSC;
     }
-    ~BackendPetsc();
-    void clear();
+    ~BackendPetsc() override;
+    void clear() override;
 
 
     /**
      * convert a vector into a backend pointer vector
      */
-    vector_ptrtype toBackendVectorPtr( vector_type const& v  );
+    vector_ptrtype toBackendVectorPtr( vector_type const& v  ) override;
 
     /**
      * convert a pointer vector into a backend pointer vector
      */
-    vector_ptrtype toBackendVectorPtr( vector_ptrtype const& v  );
+    vector_ptrtype toBackendVectorPtr( vector_ptrtype const& v  ) override;
 
 
     sparse_matrix_ptrtype
-    newMatrix()
+    newMatrix() override
     {
         sparse_matrix_ptrtype mat;
         if ( this->comm().globalSize()>1 )
@@ -181,7 +181,7 @@ public:
                const size_type n_l,
                const size_type nnz=30,
                const size_type noz=10,
-               size_type matrix_properties = NON_HERMITIAN )
+               size_type matrix_properties = NON_HERMITIAN ) override
     {
         sparse_matrix_ptrtype mat;
 
@@ -199,7 +199,7 @@ public:
     newMatrix( datamap_ptrtype const& domainmap,
                datamap_ptrtype const& imagemap,
                size_type matrix_properties = NON_HERMITIAN,
-               bool init = true )
+               bool init = true ) override
     {
         sparse_matrix_ptrtype mat;
 
@@ -225,7 +225,7 @@ public:
                const size_type m_l,
                const size_type n_l,
                graph_ptrtype const & graph,
-               size_type matrix_properties = NON_HERMITIAN )
+               size_type matrix_properties = NON_HERMITIAN ) override
     {
         sparse_matrix_ptrtype mat;
         auto const& mapGraphRow = graph->mapRowPtr();
@@ -247,7 +247,7 @@ public:
 
    sparse_matrix_ptrtype
    newZeroMatrix( datamap_ptrtype const& domainmap,
-                  datamap_ptrtype const& imagemap )
+                  datamap_ptrtype const& imagemap ) override
     {
         graph_ptrtype sparsity_graph( new graph_type( imagemap, domainmap ) );
         sparsity_graph->zero();
@@ -270,7 +270,7 @@ public:
     newZeroMatrix( const size_type m,
                    const size_type n,
                    const size_type m_l,
-                   const size_type n_l )
+                   const size_type n_l ) override
     {
         graph_ptrtype sparsity_graph( new graph_type( 0,0,m_l-1,0,n_l-1 ) );
         sparsity_graph->zero();
@@ -289,9 +289,9 @@ public:
         return mat;
     }
 
-    sparse_matrix_ptrtype newIdentityMatrix( datamap_ptrtype const& domainmap, datamap_ptrtype const& imagemap )
+    sparse_matrix_ptrtype newIdentityMatrix( datamap_ptrtype const& domainmap, datamap_ptrtype const& imagemap ) override
     {
-        graph_ptrtype sparsity_graph( new graph_type( imagemap,imagemap ) );
+        graph_ptrtype sparsity_graph( new graph_type( imagemap,domainmap ) );
         sparsity_graph->addMissingZeroEntriesDiagonal();
         sparsity_graph->close();
         sparse_matrix_ptrtype mat = this->newMatrix(0,0,0,0,sparsity_graph);
@@ -310,14 +310,14 @@ public:
             return vector_ptrtype( new petsc_vector_type( space->dof() ) );
     }
 
-    vector_ptrtype newVector( datamap_ptrtype const& dm )
+    vector_ptrtype newVector( datamap_ptrtype const& dm ) override
     {
         if ( this->comm().globalSize()>1 ) return vector_ptrtype( new petscMPI_vector_type( dm ) );
 
         else return vector_ptrtype( new petsc_vector_type( dm ) );
     }
 
-    vector_ptrtype newVector( const size_type n, const size_type n_local )
+    vector_ptrtype newVector( const size_type n, const size_type n_local ) override
     {
         return vector_ptrtype( new petsc_vector_type( n, n_local, this->worldCommPtr() ) );
     }
@@ -340,17 +340,17 @@ public:
      */
     void prod( sparse_matrix_type const& A,
                vector_type const& x,
-               vector_type& b, bool transpose ) const;
+               vector_type& b, bool transpose ) const override;
 
     /**
      * get the matrix \c M whose diagonal is \c -v
      */
-    int diag( vector_type const& v, sparse_matrix_type& M ) const;
+    int diag( vector_type const& v, sparse_matrix_type& M ) const override;
 
     /**
      * @return the vector \c v with diagonal of \c M
      */
-    int diag( sparse_matrix_type const& M, vector_type& v ) const;
+    int diag( sparse_matrix_type const& M, vector_type& v ) const override;
 
     solve_return_type solve( sparse_matrix_type const& A,
                              vector_type& x,
@@ -359,31 +359,20 @@ public:
     solve_return_type solve( sparse_matrix_ptrtype const& A,
                              sparse_matrix_ptrtype const& B,
                              vector_ptrtype& x,
-                             vector_ptrtype const& b );
+                             vector_ptrtype const& b ) override;
 
     /**
      * assemble \f$C=P^T A P\f$
      */
     int PtAP( sparse_matrix_ptrtype const& A,
               sparse_matrix_ptrtype const& P,
-              sparse_matrix_ptrtype& C ) const;
+              sparse_matrix_ptrtype& C ) const override;
     /**
      * assemble \f$C=P A P^T\f$
      */
     int PAPt( sparse_matrix_ptrtype const& A,
               sparse_matrix_ptrtype const& P,
-              sparse_matrix_ptrtype& C ) const;
-
-    template <class Vector>
-    static value_type dot( const vector_type& f,
-                           const Vector& x )
-    {
-        value_type result( 0 );
-
-        // petsc dot here
-
-        return result;
-    }
+              sparse_matrix_ptrtype& C ) const override;
 
     /**
      * @return the linear solver (const version)

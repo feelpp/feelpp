@@ -23,12 +23,12 @@
 #
 IF ( FEELPP_ENABLE_INSTANTIATION_MODE )
   SET( FEELDISCR_INST_SRCS mesh1.cpp mesh2.cpp mesh3.cpp ) #partitioner.cpp ) #ale.cpp meshhighorder.cpp )
-endif()
-
+ENDIF()
+message(STATUS "FEELDISCR_INST_SRCS: ${FEELDISCR_INST_SRCS}")
 
 
 SET( SRC
-  mesh.cpp meshstructured.cpp stencil.cpp oseendata.cpp ${FEELDISCR_INST_SRCS}
+  mesh.cpp meshstructured.cpp stencil.cpp oseendata.cpp pch.cpp ${FEELDISCR_INST_SRCS}
   )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp detail/*.hpp)

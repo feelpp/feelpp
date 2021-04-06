@@ -30,12 +30,6 @@
 #include <feel/feelmodels/thermoelectric/thermoelectric.hpp>
 
 #include <feel/feelvf/vf.hpp>
-/*#include <feel/feelvf/form.hpp>
-#include <feel/feelvf/on.hpp>
-#include <feel/feelvf/operators.hpp>
- #include <feel/feelvf/operations.hpp>*/
-
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/modelcore/utils.hpp>
 
 namespace Feel
@@ -95,8 +89,11 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("ThermoElectric","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
-    CHECK( M_mesh ) << "mesh generation fail";
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
+    CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("createMesh");
     this->log("ThermoElectric","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
@@ -183,13 +180,13 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // physical properties
     if ( !M_materialsProperties )
     {
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().materials().setParameterValues( paramValues );
+        //auto paramValues = this->modelProperties().parameters().toParameterValues();
+        //this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
-    if ( !M_mesh )
+    if ( !this->mesh() )
         this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
@@ -346,25 +343,31 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
     if ( !this->isUpdatedForUse() )
         return;
-    if ( p.get_child_optional( "Prefix" ) )
+    if ( p.contains( "Environment" ) )
         return;
 
-    p.put( "Prefix", this->prefix() );
-    p.put( "Root Repository", this->rootRepository() );
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
 
-    p.put( "toolbox-heat", M_heatModel->journalSectionName() );
-    p.put( "toolbox-electric", M_electricModel->journalSectionName() );
+    super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
+
+    // p.put( "toolbox-heat", M_heatModel->journalSectionName() );
+    // p.put( "toolbox-electric", M_electricModel->journalSectionName() );
+
+    // Materials properties
+    if ( this->materialsProperties() )
+        this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
 
     // Numerical Solver
-    pt::ptree subPt;
-    subPt.put( "solver", M_solverName );
-    p.put_child( "Numerical Solver", subPt );
+    nl::json subPt;
+    subPt.emplace( "solver", M_solverName );
+    p["Numerical Solver"] = subPt;
 
     // Exporter
+#if 0
     if ( M_exporter )
     {
         subPt.clear();
@@ -376,14 +379,64 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
         subPt.put_child( "fields", subPt2 );
         p.put_child( "Exporter", subPt );
     }
+#endif
 
     // Algebraic Solver
     if ( M_algebraicFactoryMonolithic )
+        M_algebraicFactoryMonolithic->updateInformationObject( p["Algebraic Solver"] );
+
+    p["Toolbox Heat"] = M_heatModel->journalSection().to_string();
+    p["Toolbox Electric"] = M_electricModel->journalSection().to_string();
+}
+
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+tabulate_informations_ptr_t
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Environment") )
+        tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
+
+    if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
+        tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Meshes") )
+        tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
+
+    // Numerical Solver
+    if ( jsonInfo.contains( "Numerical Solver" ) )
     {
-        subPt.clear();
-        M_algebraicFactoryMonolithic->updateInformationObject( subPt );
-        p.put_child( "Algebraic Solver", subPt );
+        Feel::Table tabInfoNumSolver;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoNumSolver, jsonInfo.at("Numerical Solver"), tabInfoProp );
+        tabInfo->add( "Numerical Solver",  TabulateInformations::New( tabInfoNumSolver, tabInfoProp ) );
     }
+
+    if ( jsonInfo.contains( "Algebraic Solver" ) )
+        tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
+
+    // generate sub toolboxes info
+    if ( M_heatModel && jsonInfo.contains( "Toolbox Heat" ) )
+    {
+        nl::json::json_pointer jsonPointerHeat( jsonInfo.at( "Toolbox Heat" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerHeat ) )
+        {
+            auto tabInfos_heat = M_heatModel->tabulateInformations( JournalManager::journalData().at( jsonPointerHeat ), tabInfoProp );
+            TabulateInformationsSections::cast( tabInfos_heat )->erase( "Materials Properties" );
+            tabInfo->add( "Toolbox Heat", tabInfos_heat );
+        }
+    }
+    if ( M_electricModel && jsonInfo.contains( "Toolbox Electric" ) )
+    {
+        nl::json::json_pointer jsonPointerElectric( jsonInfo.at( "Toolbox Electric" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerElectric ) )
+        {
+            auto tabInfos_electric = M_electricModel->tabulateInformations( JournalManager::journalData().at( jsonPointerElectric ), tabInfoProp );
+            TabulateInformationsSections::cast( tabInfos_electric )->erase( "Materials Properties" );
+            tabInfo->add( "Toolbox Electric", tabInfos_electric );
+        }
+    }
+
+    return tabInfo;
 }
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -391,6 +444,7 @@ std::shared_ptr<std::ostringstream>
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+#if 0
     *_ostr << M_heatModel->getInfo()->str();
     *_ostr << M_electricModel->getInfo()->str();
 
@@ -427,7 +481,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n";
-
+#endif
     return _ostr;
 }
 

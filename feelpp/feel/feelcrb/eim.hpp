@@ -1335,7 +1335,7 @@ public:
         {
             M_fspace = fspace;
         }
-    virtual ~EIMFunctionBase()
+    ~EIMFunctionBase() override
         {}
     std::string const& modelName() const { return M_modelname; }
     void setModelName( std::string const& name ) { M_modelname = name; }

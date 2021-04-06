@@ -94,7 +94,7 @@ public:
 
     BilinearFormBase( BilinearFormBase const& __vf );
     BilinearFormBase( BilinearFormBase && __vf ) = default;
-    virtual ~BilinearFormBase()
+    ~BilinearFormBase() override
         {
             //toc(M_name, FLAGS_v > 0 );
         }
@@ -544,6 +544,10 @@ BilinearFormBase<T>::BilinearFormBase( std::string name,
     if ( !Xh->worldComm().isActive() ) return;
 
     if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=Xh, _trial=Yh );
+    auto dmTest = M_matrix->mapRowPtr();
+    auto dmTrial = M_matrix->mapColPtr();
+    this->setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_row_startInMatrix ) );
+    this->setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_col_startInMatrix ) );
 }
 
 

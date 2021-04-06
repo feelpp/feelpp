@@ -93,6 +93,10 @@ ModelAlgebraicFactory::init( model_ptrtype const& model, backend_ptrtype const& 
     M_model = model;
     this->setFunctionLinearAssembly(  boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateLinearPDE,
                                                    boost::ref( *model ), _1 ) );
+    this->setFunctionLinearDofElimination( boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateLinearPDEDofElimination,
+                                                        boost::ref( *model ), _1 ) );
+    this->setFunctionNewtonInitialGuess( boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateNewtonInitialGuess,
+                                                      boost::ref( *model ), _1 ) );
     this->setFunctionJacobianAssembly(  boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateJacobian,
                                                      boost::ref( *model ), _1 ) );
     this->setFunctionResidualAssembly(  boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateResidual,
@@ -176,24 +180,25 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
 
 void ModelAlgebraicFactory::initExplictPartOfSolution()
 {
-    M_explictPartOfSolution = M_backend->newVector( M_R->mapPtr() );
+    if ( !M_explictPartOfSolution )
+        M_explictPartOfSolution = M_backend->newVector( M_R->mapPtr() );
 }
 
-    void ModelAlgebraicFactory::initSolverPtAP( sparse_matrix_ptrtype matP )
+void ModelAlgebraicFactory::initSolverPtAP( sparse_matrix_ptrtype matP, sparse_matrix_ptrtype matQ )
     {
         CHECK ( matP ) << "invalid matP";
         // TODO CHECK compatibility with A
 
         M_useSolverPtAP = true;
         M_solverPtAP_matP = matP;
+        M_solverPtAP_matQ = matQ;
 
         // if already built we assume that the new matP as the same stencil
         if ( !M_solverPtAP_backend )
         {
             M_solverPtAP_backend = backend_type::build( soption( _name="backend" ), this->model()->prefix(), this->model()->worldCommPtr() );
 
-
-            M_solverPtAP_matPtAP = M_solverPtAP_backend->newZeroMatrix( M_solverPtAP_matP->mapColPtr(), M_solverPtAP_matP->mapRowPtr() );
+            M_solverPtAP_matPtAP = M_solverPtAP_backend->newZeroMatrix( M_solverPtAP_matP->mapColPtr(), M_solverPtAP_matP->mapColPtr() );
             M_solverPtAP_matPtAP->clear();
             M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
 
@@ -201,7 +206,7 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
 
 
             M_solverPtAP_solution = M_solverPtAP_backend->newVector( M_solverPtAP_matPtAP->mapColPtr() );
-            M_solverPtAP_PtF = M_solverPtAP_backend->newVector( M_solverPtAP_matPtAP->mapRowPtr() );
+            M_solverPtAP_PtF = M_solverPtAP_backend->newVector( M_solverPtAP_matP->mapColPtr() );
 
             M_solverPtAP_Psolution = M_solverPtAP_backend->newVector( M_solverPtAP_matP->mapRowPtr() );
 
@@ -407,57 +412,82 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    ModelAlgebraicFactory::updateInformationObject( pt::ptree & p )
+    ModelAlgebraicFactory::updateInformationObject( nl::json & p ) const
     {
-        pt::ptree subPt;
-        subPt.put( "prefix",this->backend()->prefix() );
-        subPt.put( "type", "BACKEND_PETSC" );
-        p.put_child( "Backend", subPt );
+        if ( p.contains( "Backend" ) )
+            return;
+        nl::json subPt;
+        subPt.emplace( "prefix",this->backend()->prefix() );
+        subPt.emplace( "type", backend_type::enumToKind( this->backend()->type() ) /*"BACKEND_PETSC"*/ );
+        p["Backend"] = subPt;
+
         // KSP
         subPt.clear();
-        subPt.put( "type", this->backend()->kspType() );
-        subPt.put( "rtol", this->backend()->rTolerance() );
-        subPt.put( "dtol", this->backend()->dTolerance() );
-        subPt.put( "atol", this->backend()->aTolerance() );
-        subPt.put( "maxit", this->backend()->maxIterationsKSP() );
-        subPt.put( "reuse-prec", this->backend()->reusePrec() );
+        subPt.emplace( "type", this->backend()->kspType() );
+        subPt.emplace( "rtol", this->backend()->rTolerance() );
+        subPt.emplace( "dtol", this->backend()->dTolerance() );
+        subPt.emplace( "atol", this->backend()->aTolerance() );
+        subPt.emplace( "maxit", this->backend()->maxIterationsKSP() );
+        subPt.emplace( "reuse-prec", this->backend()->reusePrec() );
         if ( this->backend()->reusePrec() )
-            subPt.put( "maxit reuse-prec", this->backend()->maxIterationsKSPReuse() );
-        p.put_child( "KSP", subPt );
+            subPt.emplace( "maxit reuse-prec", this->backend()->maxIterationsKSPReuse() );
+        p["KSP"] = subPt;
 
         //SNES
         subPt.clear();
-        subPt.put( "rtol",this->backend()->rToleranceSNES() );
-        subPt.put( "stol",this->backend()->sToleranceSNES() );
-        subPt.put( "atol",this->backend()->aToleranceSNES() );
-        subPt.put( "maxit", this->backend()->maxIterationsSNES() );
-        subPt.put( "reuse-jac", this->backend()->reuseJac() );
+        subPt.emplace( "rtol",this->backend()->rToleranceSNES() );
+        subPt.emplace( "stol",this->backend()->sToleranceSNES() );
+        subPt.emplace( "atol",this->backend()->aToleranceSNES() );
+        subPt.emplace( "maxit", this->backend()->maxIterationsSNES() );
+        subPt.emplace( "reuse-jac", this->backend()->reuseJac() );
         if ( this->backend()->reuseJac() )
         {
-            subPt.put( "reuse-jac rebuild at first Newton step", this->backend()->reuseJacRebuildAtFirstNewtonStep() );
-            subPt.put( "maxit with reuse", this->backend()->maxIterationsSNESReuse() );
+            subPt.emplace( "reuse-jac rebuild at first Newton step", this->backend()->reuseJacRebuildAtFirstNewtonStep() );
+            subPt.emplace( "maxit with reuse", this->backend()->maxIterationsSNESReuse() );
         }
-        p.put_child( "SNES", subPt );
+        p["SNES"] = subPt;
 
         // KSP in SNES
         subPt.clear();
-        subPt.put( "rtol",this->backend()->rtoleranceKSPinSNES() );
-        subPt.put( "maxit",this->backend()->maxIterationsKSPinSNES() );
-        subPt.put( "reuse-prec", this->backend()->reusePrec() );
+        subPt.emplace( "rtol",this->backend()->rtoleranceKSPinSNES() );
+        subPt.emplace( "maxit",this->backend()->maxIterationsKSPinSNES() );
+        subPt.emplace( "reuse-prec", this->backend()->reusePrec() );
         if ( this->backend()->reusePrec() )
         {
-            subPt.put( "reuse-prec maxit", this->backend()->maxIterationsKSPinSNESReuse() );
-            subPt.put( "reuse-prec rebuild at first Newton step", this->backend()->reusePrecRebuildAtFirstNewtonStep() );
+            subPt.emplace( "reuse-prec maxit", this->backend()->maxIterationsKSPinSNESReuse() );
+            subPt.emplace( "reuse-prec rebuild at first Newton step", this->backend()->reusePrecRebuildAtFirstNewtonStep() );
         }
-        p.put_child( "KSP in SNES", subPt );
+        p["KSP in SNES"] = subPt;
 
         // PC
         subPt.clear();
-        subPt.put( "type", this->backend()->pcType() );
+        subPt.emplace( "type", this->backend()->pcType() );
         if ( this->backend()->pcType() == "lu" )
-            subPt.put( "mat-solver-package", this->backend()->pcFactorMatSolverPackageType() );
-        p.put_child( "PC", subPt );
+            subPt.emplace( "mat-solver-package", this->backend()->pcFactorMatSolverPackageType() );
+        p["PC"] = subPt;
     }
+
+tabulate_informations_ptr_t
+ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    auto tabInfo = TabulateInformationsSections::New();
+
+    for ( std::string const& section : std::vector<std::string>({"Backend","KSP","SNES","KSP in SNES", "PC" }) )
+        {
+            if ( !jsonInfo.contains( section ) )
+                continue;
+            Feel::Table tabInfoSectionEntries;
+            TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoSectionEntries, jsonInfo.at( section ), tabInfoProp );
+            tabInfoSectionEntries.format()
+                .setShowAllBorders( false )
+                .setColumnSeparator(":")
+                .setHasRowSeparator( false );
+            tabInfo->add( section, TabulateInformations::New( tabInfoSectionEntries ) );
+        }
+
+    return tabInfo;
+}
+
 
     std::shared_ptr<std::ostringstream>
     ModelAlgebraicFactory::getInfo() const
@@ -596,7 +626,6 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             if ( !std::get<2>( av.second ) && std::get<3>( av.second ) )
                 M_R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
 
-
         if ( M_explictPartOfSolution )
         {
             M_explictPartOfSolution->scale( -1. );
@@ -609,7 +638,9 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
 
         if ( M_useSolverPtAP )
         {
-            *M_solverPtAP_solution = *U;
+            M_solverPtAP_matQ->multVector( *U, *M_solverPtAP_solution );
+            //*M_solverPtAP_solution = *U; // need to have the same size/datamap
+
             // PtAP = P^T A P
             M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
             // PtF = P^T F
@@ -617,7 +648,7 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
 
             ModelAlgebraic::DataUpdateLinear dataLinearPtAP(M_solverPtAP_solution,M_solverPtAP_matPtAP,M_solverPtAP_PtF,false);
             // dof elimination
-            this->model()->updateLinearPDEDofElimination( dataLinearPtAP );
+            M_functionLinearDofElimination( dataLinearPtAP );
             for ( auto const& func : M_addFunctionLinearDofElimination )
                 func.second( dataLinearPtAP );
             // others dof eliminations (not need an expression)
@@ -636,7 +667,7 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         else
         {
             // dof elimination
-            this->model()->updateLinearPDEDofElimination( dataLinearNonCst );
+            M_functionLinearDofElimination( dataLinearNonCst );
             for ( auto const& func : M_addFunctionLinearDofElimination )
                 func.second( dataLinearNonCst );
 
@@ -914,7 +945,7 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         //---------------------------------------------------------------------//
         model->timerTool("Solve").start();
         ModelAlgebraic::DataNewtonInitialGuess dataInitialGuess( U );
-        model->updateNewtonInitialGuess( dataInitialGuess );
+        M_functionNewtonInitialGuess( dataInitialGuess );
         for ( auto const& func : M_addFunctionNewtonInitialGuess )
             func.second( dataInitialGuess );
 
@@ -934,8 +965,10 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         model->timerTool("Solve").elapsed("algebraic-newton-initial-guess");
         model->timerTool("Solve").restart();
 
+#if 0
         if ( M_explictPartOfSolution )
             M_solverPtAP_solution->add( -1.0, M_explictPartOfSolution );
+#endif
 
         //---------------------------------------------------------------------//
         if (model->useCstMatrix())
@@ -1009,7 +1042,10 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         typename backend_type::nl_solve_return_type solveStat;
         if ( M_useSolverPtAP )
         {
-            *M_solverPtAP_solution = *U; // actually always same size
+            // TODO REMOVE EXPLICIT PART
+            M_solverPtAP_matQ->multVector( *U, *M_solverPtAP_solution );
+            //*M_solverPtAP_solution = *U; // need to have the same size/datamap
+
             solveStat = M_solverPtAP_backend->nlSolve( _jacobian=M_solverPtAP_matPtAP,
                                                        _solution=M_solverPtAP_solution,
                                                        _residual=M_solverPtAP_PtF,
@@ -1063,6 +1099,49 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
     }
 
     //---------------------------------------------------------------------------------------------------------------//
+
+
+    void
+    ModelAlgebraicFactory::applyAssemblyLinear(const vector_ptrtype& U, sparse_matrix_ptrtype& lhs, vector_ptrtype& rhs, std::vector<std::string> const& infos, bool applyDofElimination ) const
+    {
+        ModelAlgebraic::DataUpdateLinear dataLinear(U,lhs,rhs,true);
+        dataLinear.copyInfos( this->dataInfos() );
+        for ( std::string const& info : infos )
+            dataLinear.addInfo( info );
+        this->applyAssemblyLinear( dataLinear, applyDofElimination );
+    }
+    void
+    ModelAlgebraicFactory::applyAssemblyLinear( ModelAlgebraic::DataUpdateLinear & dataLinear, bool applyDofElimination ) const
+    {
+        // cst part
+        dataLinear.setBuildCstPart( true );
+        M_functionLinearAssembly( dataLinear );
+        for ( auto const& func : M_addFunctionLinearAssembly )
+            func.second( dataLinear );
+
+        // non cst part
+        dataLinear.setBuildCstPart( false );
+        M_functionLinearAssembly( dataLinear );
+        for ( auto const& func : M_addFunctionLinearAssembly )
+            func.second( dataLinear );
+
+        // add maybe vector to rhs
+        for ( auto const& av : M_addVectorLinearRhsAssembly )
+            if ( /*std::get<2>( av.second ) &&*/ std::get<3>( av.second ) )
+                dataLinear.rhs()->add( std::get<1>( av.second ), std::get<0>( av.second ) );
+
+        // dof elimination
+        if ( applyDofElimination )
+        {
+            M_functionLinearDofElimination( dataLinear );
+            for ( auto const& func : M_addFunctionLinearDofElimination )
+                func.second( dataLinear );
+        }
+
+        // post-assembly
+        for ( auto const& func : M_addFunctionLinearPostAssembly )
+            func.second( dataLinear );
+    }
 
     void
     ModelAlgebraicFactory::evaluateResidual(const vector_ptrtype& U, vector_ptrtype& R, std::vector<std::string> const& infos, bool applyDofElimination ) const
@@ -1160,9 +1239,12 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         bool useConvergenceAlgebraic = true;
 
         auto dataLinear = std::make_shared<ModelAlgebraic::DataUpdateLinear>(U,M_J,M_R,false);
+        dataLinear->copyInfos( this->dataInfos() );
         std::shared_ptr<ModelAlgebraic::DataUpdateLinear> dataLinearPtAP;
         if ( M_useSolverPtAP )
             dataLinearPtAP = std::make_shared<ModelAlgebraic::DataUpdateLinear>(M_solverPtAP_solution,M_solverPtAP_matPtAP,M_solverPtAP_PtF,true);
+
+        this->updatePicardIteration( 0, U );
 
         // assembling cst part
         if ( !M_hasBuildLinearSystemCst ||
@@ -1174,6 +1256,7 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             M_CstJ->zero();
             M_CstR->zero();
             ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true);
+            dataLinearCst.copyInfos( this->dataInfos() );
             M_functionLinearAssembly( dataLinearCst );
             M_hasBuildLinearSystemCst = true;
 
@@ -1199,6 +1282,9 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         int cptIteration=0;
         for ( ; cptIteration < fixPointMaxIt ; ++cptIteration )
         {
+            if ( cptIteration > 0 )
+                this->updatePicardIteration( cptIteration, U );
+
             if ( !useConvergenceAlgebraic )
             {
                 *Uold = *U;
@@ -1248,7 +1334,9 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             }
 
             // dof elimination
-            this->model()->updateLinearPDEDofElimination( *dataDofElimination );
+            M_functionLinearDofElimination( *dataDofElimination );
+            for ( auto const& func : M_addFunctionLinearDofElimination )
+                func.second( *dataDofElimination );
 
             // others dof eliminations (not need an expression)
             if ( M_useSolverPtAP && M_solverPtAP_dofEliminationIds )
@@ -1356,22 +1444,6 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
                                       this->model()->worldComm(),this->model()->verboseSolverTimerAllProc());
 
 
-#if 0
-            if ( !useConvergenceAlgebraic )
-            {
-                convergenceRate = this->model()->updatePicardConvergence( U,Uold );
-                if (this->model()->verboseSolverTimer())
-                    Feel::FeelModels::Log( this->model()->prefix()+".ModelAlgebraicFactory","AlgoPicard",
-                                           (boost::format("fix point convergence : %1%")%convergenceRate ).str(),
-                                           this->model()->worldComm(),this->model()->verboseSolverTimerAllProc() );
-
-                if ( convergenceRate < rtol )
-                {
-                    hasConverged = true;
-                    break;
-                }
-            }
-#endif
             if ( useConvergenceAlgebraic )
             {
                 Uold->add( -1., U );
@@ -1461,7 +1533,11 @@ ModelAlgebraicFactory::updateNewtonIteration( int step, vector_ptrtype residual,
     }
 }
 
-
+void
+ModelAlgebraicFactory::updatePicardIteration( int step, vector_ptrtype sol )
+{
+    this->model()->updatePicardIteration( step, sol );
+}
 
 
 void

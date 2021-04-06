@@ -189,7 +189,7 @@ class BoundaryConditions
     BoundaryConditions( BoundaryConditions && b ) = default;
     BoundaryConditions& operator=( BoundaryConditions const& bc ) = default;
     BoundaryConditions& operator=( BoundaryConditions && bc ) = default;
-    ~BoundaryConditions() = default;
+    ~BoundaryConditions() override = default;
     
     /**
      * @return prefix 

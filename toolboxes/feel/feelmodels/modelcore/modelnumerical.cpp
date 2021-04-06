@@ -41,8 +41,8 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
                                 ModelBaseRepository const& modelRep,
                                 ModelBaseCommandLineOptions const& modelCmdLineOpt )
         :
-        super_type( _theprefix, keyword, _worldComm, subPrefix, modelRep, modelCmdLineOpt ),
         ModelBase( _theprefix, keyword, _worldComm, subPrefix, modelRep, modelCmdLineOpt ),
+        super_type( _theprefix, keyword, _worldComm, subPrefix, modelRep, modelCmdLineOpt ),
         M_isStationary( boption(_name="ts.steady") ),
         M_doRestart( boption(_name="ts.restart") ),
         M_restartPath( soption(_name="ts.restart.path") ),
@@ -67,28 +67,6 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         if ( M_timeInitial + M_timeStep == M_timeFinal)
             M_isStationary=true;
         //-----------------------------------------------------------------------//
-        if ( this->clovm().count( prefixvm(this->prefix(),"mesh.filename").c_str() ) )
-        {
-            std::string meshfile = Environment::expand( soption(_prefix=this->prefix(),_name="mesh.filename",_vm=this->clovm()) );
-            RemoteData rdTool( meshfile, this->worldCommPtr() );
-            if ( rdTool.canDownload() )
-            {
-                auto dowloadedData = rdTool.download( (fs::path(Environment::downloadsRepository())/fs::path(this->prefix())/fs::path("meshes")).string() );
-                CHECK( dowloadedData.size() > 0 ) << "no data download";
-                meshfile = dowloadedData[0];
-                if ( dowloadedData.size() == 2 )
-                {
-                    if ( fs::path( dowloadedData[0] ).extension() == ".h5" && fs::path( dowloadedData[1] ).extension() == ".json" )
-                        meshfile = dowloadedData[1];
-                }
-            }
-
-            if ( fs::path( meshfile ).extension() == ".geo" )
-                M_geoFile = meshfile;
-            else
-                M_meshFile = meshfile;
-        }
-        //-----------------------------------------------------------------------//
         if (soption(_prefix=this->prefix(),_name="geomap",_vm=this->clovm())=="opt")
             M_geomap=GeomapStrategyType::GEOMAP_OPT;
         else
@@ -96,8 +74,26 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         //-----------------------------------------------------------------------//
         std::string modelPropFilename = Environment::expand( soption( _name="filename",_prefix=this->prefix(),_vm=this->clovm()) );
         if ( !modelPropFilename.empty() )
-            M_modelProps = std::make_shared<ModelProperties>( modelPropFilename, this->repository().expr(), this->worldCommPtr(), this->prefix() );
+        {
+            this->setModelProperties( modelPropFilename );
+            if ( auto ptMeshes = M_modelProps->pTree().get_child_optional("Meshes"))
+                super_model_meshes_type::setup( *ptMeshes );
+        }
     }
+
+   void
+   ModelNumerical::setModelProperties( std::string const& filename )
+   {
+        M_modelProps = std::make_shared<ModelProperties>( filename, this->repository().expr(),
+                                                          this->worldCommPtr(), this->prefix() );
+   }
+
+   void
+   ModelNumerical::setModelProperties( nl::json const& json )
+   {
+        M_modelProps = std::make_shared<ModelProperties>( json, this->repository().expr(),
+                                                          this->worldCommPtr(), this->prefix() );
+   }
 
    void
    ModelNumerical::addParameterInModelProperties( std::string const& symbolName,double value)
@@ -121,74 +117,8 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         M_timeCurrent=t;
         if ( M_modelProps )
             this->addParameterInModelProperties( "t", M_timeCurrent );
+        super_model_meshes_type::updateTime( t );
     }
-
-
-
-    void
-    ModelNumerical::saveMeshFile( std::string const& fileSavePath, std::string const& meshPath ) const
-    {
-        std::string meshPathUsed = (meshPath.empty())? this->meshFile() : meshPath;
-        if (this->verbose()) FeelModels::Log(this->prefix()+".ModelNumerical","saveMeshFile",
-                                             "fileSavePath :"+ fileSavePath + "\nwrite :\n" + meshPathUsed,
-                                             this->worldComm(),this->verboseAllProc());
-
-        if ( this->worldComm().isMasterRank() )
-        {
-            fs::path thedir = fs::path( fileSavePath ).parent_path();
-            if ( !fs::exists(thedir))
-                fs::create_directories(thedir);
-
-            std::ofstream file(fileSavePath.c_str(), std::ios::out);
-            file << meshPathUsed;
-            file.close();
-        }
-    }
-
-bool
-ModelNumerical::checkResults() const
-{
-    if ( !M_useChecker )
-        return true;
-
-    std::string const& modelKeyword = this->keyword();
-
-    bool hasChecker = !this->modelProperties().postProcess().checkersMeasure( modelKeyword ).empty();
-    if ( !hasChecker )
-        return true;
-
-    bool resultsAreOk = true;
-    bool isMasterRank = this->worldComm().isMasterRank();
-    if ( isMasterRank )
-        std::cout << "||==============================================||\n"
-                  << "||---------------> Checkers : " << modelKeyword << "\n"
-                  << "||==============================================||" << std::endl;
-
-    for ( auto const& checkerMeasure : this->modelProperties().postProcess().checkersMeasure( modelKeyword ) )
-    {
-        std::string measureName = checkerMeasure.name();
-        if ( !M_postProcessMeasuresIO.hasMeasure( measureName ) )
-        {
-            LOG(WARNING) << "checker : ignore check of " << measureName << " because this measure was not computed";
-            continue;
-        }
-
-        double valueMeasured = M_postProcessMeasuresIO.measure( measureName );
-        auto [checkIsOk, diffVal] = checkerMeasure.run( valueMeasured );
-        if ( isMasterRank )
-        {
-            std::cout << " - ";
-            if ( checkIsOk )
-                std::cout << tc::green << "[success]";
-            else
-                std::cout << tc::red << "[failure]";
-            std::cout << tc::reset << " check measure " << measureName <<  " : measure=" << valueMeasured << " , reference=" << checkerMeasure.value() << " , error=" << diffVal << " [tolerance=" << checkerMeasure.tolerance() << "]" << std::endl;
-        }
-        resultsAreOk = resultsAreOk && checkIsOk;
-    }
-    return resultsAreOk;
-}
-
 
 void
 ModelNumerical::initPostProcess()
@@ -200,9 +130,27 @@ ModelNumerical::initPostProcess()
 
         M_postProcessSaveFields = this->postProcessSaveFields( this->modelProperties().postProcess().save( this->keyword() ).fieldsNames() );
         M_postProcessSaveFieldsFormat = this->modelProperties().postProcess().save( this->keyword() ).fieldsFormat();
+        M_postProcessMeasuresQuantitiesNames = this->postProcessMeasuresQuantitiesNames( this->modelProperties().postProcess().measuresQuantities( this->keyword() ).quantities() );
     }
     if ( M_postProcessSaveFieldsFormat.empty() )
         M_postProcessSaveFieldsFormat = "default";
+}
+
+bool
+ModelNumerical::hasPostProcessExportsExpr( std::string const& exportTag ) const
+{
+    if ( this->hasModelProperties() )
+    {
+        for ( auto const& [_name,_expr,_markers,_rep,_tag] : this->modelProperties().postProcess().exports( this->keyword() ).expressions() )
+        {
+            if ( !_tag.empty() && _tag.find( exportTag ) == _tag.end() )
+                continue;
+            if ( _tag.empty() && exportTag != "" )
+                continue;
+            return true;
+        }
+    }
+    return false;
 }
 
 std::set<std::string>
@@ -239,6 +187,19 @@ ModelNumerical::postProcessSaveFields( std::set<std::string> const& ifields, std
     return res;
 }
 
+
+std::set<std::string>
+ModelNumerical::postProcessMeasuresQuantitiesNames( std::set<std::string> const& inames ) const
+{
+    std::set<std::string> res;
+    for ( auto const& o : inames )
+    {
+        for ( auto const& nameAvailable : M_postProcessMeasuresQuantitiesAllNamesAvailable )
+            if ( o == nameAvailable || o == "all" )
+                res.insert( nameAvailable );
+    }
+    return res;
+}
 
 } // namespace FeelModels
 

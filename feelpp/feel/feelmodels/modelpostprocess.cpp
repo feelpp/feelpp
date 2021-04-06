@@ -142,21 +142,53 @@ ModelPostprocessExports::setParameterValues( std::map<std::string,double> const&
 void
 ModelPostprocessQuantities::setup( pt::ptree const& p )
 {
-    if ( auto fields = p.get_child_optional("quantities") )
+    if ( p.empty() ) // value case
+        M_quantities.insert( p.get_value<std::string>() );
+    else // array case
     {
-        if ( fields->empty() ) // value case
-            M_quantities.insert( fields->get_value<std::string>() );
-        else // array case
+        for ( auto const& item : p )
         {
-            for ( auto const& item : *fields )
+            if ( item.first.empty() ) // array case
             {
-                CHECK( item.first.empty() ) << "should be an array, not a subtree";
+                //CHECK( item.first.empty() ) << "should be an array, not a subtree";
                 std::string const& fieldName = item.second.template get_value<std::string>();
                 M_quantities.insert( fieldName );
-                LOG(INFO) << "add to postprocess quantity  " << fieldName;
+            }
+            else if( item.first == "names" )
+            {
+                // markers : { name = mark }
+                if( item.second.empty() )
+                    M_quantities.insert( item.second.template get_value<std::string>() );
+                else
+                {
+                    // markers : { name = [mark1, mark2] }
+                    for( auto const& item2 : item.second )
+                        M_quantities.insert( item2.second.template get_value<std::string>() );
+                }
+            }
+            else if( item.first == "expr" )
+            {
+                for ( auto const& item2 : item.second )
+                {
+                    std::string exprName = item2.first;
+                    CHECK( !exprName.empty() ) << "expr name is empty or expr is an array";
+                    ModelExpression modelexpr;
+                    modelexpr.setExpr( exprName, item.second , this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+                    CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
+                    M_exprs.emplace( std::make_pair( exprName, std::move(modelexpr) ) );
+                }
             }
         }
     }
+
+    //LOG(INFO) << "add to postprocess quantity  " << fieldName;
+}
+
+void
+ModelPostprocessQuantities::setParameterValues( std::map<std::string,double> const& mp )
+{
+    for ( auto & [_name,_expr] : M_exprs )
+        _expr.setParameterValues( mp );
 }
 
 void
@@ -361,13 +393,19 @@ ModelPostprocessCheckerMeasure::setup( std::string const& name, ModelIndexes con
 
     M_valueExpr.setExpr( "value", M_p, this->worldComm(), M_directoryLibExpr, indexes );
     CHECK( M_valueExpr.hasExprScalar() ) << "require value entry and the value should be a scalar expression";
-    M_value = M_valueExpr.exprScalar().evaluate()(0,0);
+    //M_value = M_valueExpr.exprScalar().evaluate()(0,0);
 
     if ( auto itTol = M_p.get_optional<double>("tolerance") )
         M_tolerance = *itTol;
 }
 std::tuple<bool,double>
 ModelPostprocessCheckerMeasure::run( double val ) const
+{
+    M_value = M_valueExpr.exprScalar().evaluate()(0,0);
+    return this->runImpl( val );
+}
+std::tuple<bool,double>
+ModelPostprocessCheckerMeasure::runImpl( double val ) const
 {
     if ( std::abs(val) < 1e-10 || std::abs(M_value) < 1e-10 )
     {
@@ -386,7 +424,7 @@ void
 ModelPostprocessCheckerMeasure::setParameterValues( std::map<std::string,double> const& mp )
 {
     M_valueExpr.setParameterValues( mp );
-    M_value = M_valueExpr.exprScalar().evaluate()(0,0);
+    //M_value = M_valueExpr.exprScalar().evaluate()(0,0);
 }
 
 ModelPostprocess::ModelPostprocess( worldcomm_ptr_t const& world )
@@ -460,10 +498,16 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
 
     if ( auto measures = p.get_child_optional("Measures") )
     {
-        ModelPostprocessQuantities ppquantities;
-        ppquantities.setup( *measures );
-        if( !ppquantities.quantities().empty() )
-            M_measuresQuantities[name] = ppquantities;
+        for ( std::string const& quantitiesSectionName : { "Quantities", "quantities" } )
+            if ( auto quantities = measures->get_child_optional( quantitiesSectionName ) )
+            {
+                ModelPostprocessQuantities ppquantities( this->worldCommPtr() );
+                ppquantities.setDirectoryLibExpr( M_directoryLibExpr );
+                ppquantities.setup( *quantities );
+                if( !ppquantities.quantities().empty() || !ppquantities.expressions().empty() )
+                    M_measuresQuantities[name] = ppquantities;
+                break;
+            }
 
         auto evalPoints = measures->get_child_optional("Points");
         if ( evalPoints )
@@ -573,6 +617,9 @@ ModelPostprocess::setParameterValues( std::map<std::string,double> const& mp )
     for( auto & p : M_measuresStatistics )
         for( auto & p2 : p.second )
             p2.setParameterValues( mp );
+
+    for (auto & [name,p] : M_measuresQuantities )
+        p.setParameterValues( mp );
 
     for( auto & p : M_checkersMeasure )
         for( auto & p2 : p.second )

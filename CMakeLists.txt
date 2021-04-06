@@ -21,34 +21,24 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required (VERSION 3.7.2)
-if ( ${CMAKE_VERSION} VERSION_GREATER 2.8.12 )
+cmake_minimum_required (VERSION 3.13.0)
+
+if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
   message(STATUS "[feelpp] use new policy CMP0022" )
   cmake_policy(SET CMP0022 NEW)
-endif()
-if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
 	message(STATUS "[feelpp] use NEW policy CMP0038" )
 	cmake_policy(SET CMP0038 NEW)
 	message(STATUS "[feelpp] use NEW policy CMP0042" )
 	cmake_policy(SET CMP0042 NEW)
-    # if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 AND ${CMAKE_MINOR_VERSION} GREATER 3 )
-    #   message(STATUS "[feelpp] use OLD policy CMP0064" )
-    #   cmake_policy(SET CMP0064 OLD)
-    # endif()
-	#message(STATUS "[feelpp] use NEW policy CMP0046" )
-	#cmake_policy(SET CMP0046 NEW)
 endif()
-# CMake 3.5.2 warns about this policy introduced in 3.1
-# Use the old behavior for now to suppress warnings
-# for more info : cmake --help-policy CMP0053
-if ( ${CMAKE_VERSION} VERSION_GREATER 3.1 AND ${CMAKE_VERSION} VERSION_LESS 3.6 )
-    message(STATUS "[feelpp] use old policy CMP0053" )
-    cmake_policy(SET CMP0053 OLD)
-endif()
-
 if ( ${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.13.0 )
   message(STATUS "[feelpp] use new policy CMP0079" )
   cmake_policy(SET CMP0079 NEW)
+endif()
+
+if (POLICY CMP0077)
+  cmake_policy(SET CMP0077 NEW)
+  set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 endif()
 
 if (POLICY CMP0045)
@@ -81,9 +71,12 @@ string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type_tolower)
 if(     NOT cmake_build_type_tolower STREQUAL "debug"
     AND NOT cmake_build_type_tolower STREQUAL "release"
     AND NOT cmake_build_type_tolower STREQUAL "minsizerel"
+    AND NOT cmake_build_type_tolower STREQUAL "asan"
+    AND NOT cmake_build_type_tolower STREQUAL "coverage"
+    AND NOT cmake_build_type_tolower STREQUAL "debugfull"
     AND NOT cmake_build_type_tolower STREQUAL "none"
     AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo")
-  message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are None, Debug, Release, MinSizeRel, RelWithDebInfo (case-insensitive).")
+  message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are None, Debug, Release, MinSizeRel, RelWithDebInfo (case-insensitive), Asan, Coverage, DebugFull.")
 endif()
 
 

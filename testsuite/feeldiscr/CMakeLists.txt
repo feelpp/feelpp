@@ -78,6 +78,7 @@ if ( FEELPP_HAS_SLEPC )
 endif()
 
 feelpp_add_test( twolaplaciansdistributed )
+feelpp_add_test( masterworker_laplacian )
 
 feelpp_add_test( markerhdf5_2D SRCS test_markerhdf5 DEFS CHECKH5_DIM=2 GEO markerhdf5_2D.geo)
 feelpp_add_test( markerhdf5_3D SRCS test_markerhdf5 DEFS CHECKH5_DIM=3 GEO markerhdf5_3D.geo)
@@ -98,5 +99,8 @@ feelpp_add_test( on_dofs SRCS test_on_dofs GEO square_mmarked.geo CFG test_on_do
 #! not functional yet
 # feelpp_add_test( element0D )
 
-feelpp_add_test( operatorlagrangep1 CLI "--pc-type=gamg --gmsh.hsize=0.25" )
+if ( FEELPP_HAS_VTK )
+  feelpp_add_test( operatorlagrangep1 CLI "--pc-type=gamg --gmsh.hsize=0.25" )  
+endif()
 
+feelpp_add_test( sensors CFG sensors.cfg GEO sensorsdesc.json )

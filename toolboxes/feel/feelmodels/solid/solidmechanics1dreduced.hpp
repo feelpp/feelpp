@@ -84,14 +84,17 @@ public :
 
     void init();
 
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
     // physical parameters
     materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { CHECK( !this->isUpdatedForUse() ) << "setMaterialsProperties can be called only before called isUpdatedForUse";  M_materialsProperties = mp; }
 
     // mesh
-    mesh_ptrtype const& mesh() const { return M_mesh; }
-    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
 
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
     BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
@@ -200,7 +203,6 @@ private :
     materialsproperties_ptrtype M_materialsProperties;
 
     // mesh
-    mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
     // function space

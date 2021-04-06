@@ -41,14 +41,14 @@ class ExprOptionalConcat : public Feel::vf::ExprDynamicBase
             }
     };
 
-    struct GetContextExpr
-    {
-        template <typename R,typename T>
-        constexpr auto operator()(R /*const&*/ r, T const& t) const
-            {
-                return hana::integral_constant<size_type, r.value | std::decay_t<decltype(t)>::context >{};
-            }
-    };
+     struct TransformOptionalExprInverse
+     {
+         template <typename T>
+         typename std::decay_t<T>::value_type operator()( T && t) const
+             {
+                 return t.front();
+             }
+     };
 public :
     using this_type = ExprOptionalConcat<TupleExprType>;
 
@@ -58,11 +58,7 @@ public :
 
     using first_expression_type = typename std::decay_t<decltype(hana::at_c<0>( tuple_expr_type{} ))>;
 
-    //static const size_type context = vm::DYNAMIC;  // NOT WORKS WITH POLYNOMIALSET
-    static const size_type context = std::decay_t<decltype( hana::fold( tuple_expr_type{},
-                                                                        hana::integral_constant<size_type, 0>{},
-                                                                        GetContextExpr{}
-                                                                        ) )>::value;
+    static const size_type context = vm::DYNAMIC|vm::DYNAMIC_BASIS_FUNCTION;
     static const bool is_terminal = false;
 
     template<typename Func>
@@ -102,6 +98,12 @@ public :
     ExprOptionalConcat() = default;
     ExprOptionalConcat( ExprOptionalConcat const& ) = default;
     ExprOptionalConcat( ExprOptionalConcat && ) = default;
+
+    template <typename TheArgTupleExprType>
+    ExprOptionalConcat( std::true_type, TheArgTupleExprType && t )
+        :
+        M_exprs( std::forward<TheArgTupleExprType>( t ) )
+        {}
 
     //! polynomial order
     uint16_type polynomialOrder() const
@@ -192,13 +194,39 @@ public :
                                     e2.updateParameterValues( pv );
                             });
         }
-#if 0
+
     template <typename SymbolsExprType>
     auto applySymbolsExpr( SymbolsExprType const& se ) const
         {
-            // TODO
+            auto newTuple = hana::transform( M_exprs, [&se]( auto const& e ) {
+                    using _new_expr_type = std::decay_t<decltype(e.front().applySymbolsExpr(se))>;
+                    std::vector<_new_expr_type> curentRes;
+                    curentRes.reserve(e.size());
+                    for ( auto & e2 : e )
+                        curentRes.push_back( e2.applySymbolsExpr(se) );
+                    return curentRes;
+                });
+
+            using new_tuple_optional_expr_type = std::decay_t<decltype( hana::transform( newTuple, TransformOptionalExprInverse{} ) )>;
+            return ExprOptionalConcat<new_tuple_optional_expr_type>( std::true_type{},std::move( newTuple ) );
         }
-#endif
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+        {
+            auto newTuple = hana::transform( M_exprs, [&diffVariable,&world,&dirLibExpr,&se]( auto const& e ) {
+                    using _new_expr_type = std::decay_t<decltype(e.front().template diff<diffOrder>(diffVariable,world,dirLibExpr,se))>;
+                    std::vector<_new_expr_type> curentRes;
+                    curentRes.reserve(e.size());
+                    for ( auto & e2 : e )
+                        curentRes.push_back( e2.template diff<diffOrder>(diffVariable,world,dirLibExpr,se) );
+                    return curentRes;
+                });
+            using new_tuple_optional_expr_type = std::decay_t<decltype( hana::transform( newTuple, TransformOptionalExprInverse{} ) )>;
+            return ExprOptionalConcat<new_tuple_optional_expr_type>( std::true_type{},std::move( newTuple ) );
+        }
+
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {

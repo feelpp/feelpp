@@ -3,7 +3,7 @@
 
 #include <feel/feelmodels/coefficientformpdes/coefficientformpdes.hpp>
 
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
+//#include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/modelcore/utils.hpp>
 
 namespace Feel
@@ -65,7 +65,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     this->initMaterialProperties();
 
-    if ( !this->M_mesh )
+    if ( !this->mesh() )
         this->initMesh();
 
     for ( auto & cfpdeBase : M_coefficientFormPDEs )
@@ -101,12 +101,15 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->updateTime( M_coefficientFormPDEs.front()->currentTime() );
     }
 
+    // update constant parameters into
+    this->updateParameterValues();
+
+    // update initial conditions
+    this->updateInitialConditions( this->symbolsExpr() );
 
     // post-process
     this->initPostProcess();
 
-    // update constant parameters into
-    this->updateParameterValues();
 
     // backend
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr(), this->clovm() );
@@ -146,9 +149,17 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("CoefficientFormPDEs","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    std::string fileNameMeshPath = prefixvm(this->prefix(),"mesh.path");
-    createMeshModel<mesh_type>(*this,M_mesh,fileNameMeshPath);
-    CHECK( M_mesh ) << "mesh generation fail";
+    // std::string fileNameMeshPath = prefixvm(this->prefix(),"mesh.path");
+    // createMeshModel<mesh_type>(*this,M_mesh,fileNameMeshPath);
+    // CHECK( M_mesh ) << "mesh generation fail";
+
+    if ( this->doRestart() )
+         super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    //super_type::super_model_meshes_type::setMesh( this->keyword(), M_mesh );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
+    CHECK( this->mesh() ) << "mesh generation fail";
+
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
     this->log("CoefficientFormPDEs","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
@@ -164,8 +175,6 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initMaterialProperties()
 
     if ( !M_materialsProperties )
     {
-        // auto paramValues = this->modelProperties().parameters().toParameterValues();
-        // this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
@@ -195,7 +204,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
-    if ( !this->postProcessExportsFields().empty() )
+    if ( !this->postProcessExportsFields().empty() || this->hasPostProcessExportsExpr() )
     {
         std::string geoExportType="static";//change_coords_only, change, static
         M_exporter = exporter( _mesh=this->mesh(),
@@ -370,16 +379,80 @@ std::shared_ptr<std::ostringstream>
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-    for (auto const& cfpde  : M_coefficientFormPDEs )
-        *_ostr << cfpde->getInfo()->str();
     return _ostr;
 }
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
-COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
-    // TODO
+    if ( p.contains( "Environment" ) )
+        return;
+
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
+
+    super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
+
+    // Materials properties
+    if ( this->materialsProperties() )
+        this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
+
+    this->modelFields().updateInformationObject( p["Fields"] );
+
+    if ( M_algebraicFactory )
+        M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
+
+    if ( this->hasModelProperties() )
+        this->modelProperties().parameters().updateInformationObject( p["Parameters"] );
+
+    nl::json subPt;
+    for (auto & cfpde : M_coefficientFormPDEs )
+        subPt[cfpde->keyword()] = cfpde->journalSection().to_string();
+    p.emplace( "Coefficient Form PDE", subPt );
+
+    //this->symbolsExpr().updateInformationObject( p["Symbols Expression"] );
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+tabulate_informations_ptr_t
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Environment") )
+        tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
+
+    if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
+        tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Fields") )
+        tabInfo->add( "Fields", TabulateInformationTools::FromJSON::tabulateInformationsModelFields( jsonInfo.at("Fields"), tabInfoProp.newByIncreasingVerboseLevel() ) );
+
+    if ( jsonInfo.contains("Parameters") )
+        tabInfo->add( "Parameters", TabulateInformationTools::FromJSON::tabulateInformationsSymbolsExpr( jsonInfo.at("Parameters"), tabInfoProp, true ) );
+
+    if ( jsonInfo.contains( "Algebraic Solver" ) )
+        tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
+
+    //if ( jsonInfo.contains( "Symbols Expression" ) )
+    //tabInfo->add( "Symbols Expression", TabulateInformationTools::FromJSON::tabulateInformationsSymbolsExpr( jsonInfo.at("Symbols Expression"), tabInfoProp/*.newByIncreasingVerboseLevel()*/ ) );
+
+    if ( jsonInfo.contains("Coefficient Form PDE") )
+    {
+        auto const& jsonInfo_cfpde = jsonInfo.at("Coefficient Form PDE");
+        for (auto & cfpde : M_coefficientFormPDEs )
+        {
+            if ( jsonInfo_cfpde.contains(cfpde->keyword()) )
+            {
+                nl::json::json_pointer jsonPointerCFPDE( jsonInfo_cfpde.at( cfpde->keyword() ).template get<std::string>() );
+                if ( JournalManager::journalData().contains( jsonPointerCFPDE ) )
+                {
+                    auto tabInfos_cfpde = cfpde->tabulateInformations(  JournalManager::journalData().at( jsonPointerCFPDE ), tabInfoProp );
+                    tabInfo->add( (boost::format("Toolbox Coefficient Form PDE : %1%")%cfpde->keyword()).str(), tabInfos_cfpde );
+                }
+            }
+        }
+    }
+    return tabInfo;
 }
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
@@ -490,6 +563,10 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateParameterValues()
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->materialsProperties()->updateParameterValues( paramValues );
 
+    this->updateParameterValues_postProcess( paramValues, prefixvm("postprocess",this->keyword(),"_" ) );
+    for (auto const& cfpdeBase : M_coefficientFormPDEs )
+        cfpdeBase->updateParameterValues_postProcess( paramValues, prefixvm("postprocess",cfpdeBase->keyword(),"_" ) );
+
     this->setParameterValues( paramValues );
 }
 
@@ -505,6 +582,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::strin
         //std::cout << "JJJ paramValues : " << paramValues << std::endl;
         this->modelProperties().parameters().setParameterValues( paramValues );
         this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
     }
 
@@ -545,12 +623,13 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 bool
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::checkResults() const
 {
+    auto se = this->symbolsExpr();
     // several calls (not do in on line) to be sure that all check have been run
-    bool checkValue = super_type::checkResults();
+    bool checkValue = super_type::checkResults( se );
     std::vector<bool> checkCFPDE;
     checkCFPDE.reserve(M_coefficientFormPDEs.size());
     for (auto & cfpdeBase : M_coefficientFormPDEs )
-        checkCFPDE.push_back( cfpdeBase->checkResults() );
+        checkCFPDE.push_back( cfpdeBase->checkResults( se ) );
     checkValue = checkValue && (std::find(std::begin(checkCFPDE), std::end(checkCFPDE), false) == std::end(checkCFPDE));
     return checkValue;
 }

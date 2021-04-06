@@ -276,7 +276,7 @@ private:
     //! @{
 
     //! update information
-    void updateInformationObject( pt::ptree & p ) override
+    void updateInformationObject( nl::json & p ) const override
     {
         using namespace boost::accumulators;
         using namespace std::string_literals;
@@ -297,13 +297,14 @@ private:
             sortTotal[tot] = T.second;
 
             const std::string& prefix = T.second.instance_name;
-            p.put( prefix + ".message", T.second.msg );
-            p.put( prefix + ".count", boost::accumulators::count(acc) );
-            p.put( prefix + ".total", boost::accumulators::sum(acc) );
-            p.put( prefix + ".max", boost::accumulators::max(acc) );
-            p.put( prefix + ".min", boost::accumulators::min(acc) );
-            p.put( prefix + ".mean", boost::accumulators::mean(acc) );
-            p.put( prefix + ".std_dev", std::sqrt( boost::accumulators::variance(acc) ) );
+            auto & jData = p[prefix];
+            jData[ "message" ] = T.second.msg;
+            jData[ "count" ] = boost::accumulators::count(acc);
+            jData[ "total" ] = boost::accumulators::sum(acc);
+            jData[ "max" ] = boost::accumulators::max(acc);
+            jData[ "min"] = boost::accumulators::min(acc);
+            jData[ "mean" ] = boost::accumulators::mean(acc);
+            jData[ "std_dev" ] = std::sqrt( boost::accumulators::variance(acc) );
         }
 
         for( auto const& T: sortTotal )
@@ -316,13 +317,14 @@ private:
             for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
 
             const std::string& prefix = T.second.instance_name;
-            p.put( prefix + ".message", T.second.msg );
-            p.put( prefix + ".count", boost::accumulators::count(acc) );
-            p.put( prefix + ".total", boost::accumulators::sum(acc) );
-            p.put( prefix + ".max", boost::accumulators::max(acc) );
-            p.put( prefix + ".min", boost::accumulators::min(acc) );
-            p.put( prefix + ".mean", boost::accumulators::mean(acc) );
-            p.put( prefix + ".std_dev", std::sqrt( boost::accumulators::variance(acc) ) );
+            auto & jData = p[prefix];
+            jData[ "message" ] = T.second.msg;
+            jData[ "count" ] = boost::accumulators::count(acc);
+            jData[ "total" ] = boost::accumulators::sum(acc);
+            jData[ "max" ] = boost::accumulators::max(acc);
+            jData[ "min" ] = boost::accumulators::min(acc);
+            jData[ "mean" ] = boost::accumulators::mean(acc);
+            jData[ "std_dev" ] = std::sqrt( boost::accumulators::variance(acc) );
         }
     }
 

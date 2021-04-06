@@ -776,6 +776,20 @@ void runTest6()
     BOOST_CHECK_CLOSE( evalIntegrateVectorial2(1,0), evalIntegrateVectorial2_check(1,0), 1e-12 );
 }
 
+template <typename ElementType>
+struct MyUpdateFunctor
+{
+    MyUpdateFunctor( ElementType & u ) : M_u( u ), M_t( 0 ) {}
+
+    void setValue( double t ) { M_t = t; }
+
+    void update() { M_u.setConstant( M_t ); }
+
+private :
+    ElementType & M_u;
+    double M_t;
+};
+
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( inner_suite )
 BOOST_AUTO_TEST_CASE( test_0 )
@@ -835,5 +849,115 @@ BOOST_AUTO_TEST_CASE( test_8 )
     auto a1 = a1l( cst(3.),cst(5.) );
     BOOST_CHECK_CLOSE( a1.evaluate()(0,0), 16, 1e-12 );
 }
+BOOST_AUTO_TEST_CASE( test_symbolsexpr_update_function )
+{
+    using mesh_t = Mesh<Simplex<2, 1>>;
+    auto mesh = loadMesh( _mesh = new mesh_t );
+    auto Vh = Pch<1>( mesh );
+    auto u = Vh->element();
+    auto v = Vh->element();
 
+    double t=0;
+    auto up_lambda = [&u,&t]() {
+        u.setConstant( t );
+    };
+
+    using element_type = std::decay_t<decltype(v)>;
+    MyUpdateFunctor<element_type> up_functor( v );
+
+    auto se = symbolsExpr( symbolExpr( "k", cst(3.) ),
+                           symbolExpr( "u", idv(u),SymbolExprComponentSuffix(1,1), up_lambda ),
+                           symbolExpr( "v", idv(v),SymbolExprComponentSuffix(1,1), std::bind( &MyUpdateFunctor<element_type>::update, &up_functor ) )
+                           );
+
+    for ( ; t<1 ; t+=0.1 )
+    {
+        double int_exact = integrate(_range=elements(mesh),_expr=cst(t) ).evaluate()(0,0);
+        double int_u = integrate(_range=elements(mesh),_expr=expr(expr("u:u"),se) ).evaluate()(0,0);
+        BOOST_CHECK_CLOSE( int_u,int_exact, 1e-10 );
+
+        up_functor.setValue( t );
+        double int_v = integrate(_range=elements(mesh),_expr=expr(expr("v:v"),se) ).evaluate()(0,0);
+        BOOST_CHECK_CLOSE( int_v,int_exact, 1e-10 );
+    }
+}
+
+BOOST_AUTO_TEST_CASE( test_mod )
+{
+    auto se = symbolsExpr( symbolExpr( "u", _e1 ), symbolExpr( "v", _e2 ) );
+    auto a1b = expr("mod(u,v):u:v");
+    a1b.setParameterValues( { { "u", 2 }, { "v", 1 }} );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "u", 3 }, { "v", 6 }} );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 3, 1e-12 );
+    a1b.setParameterValues( { { "u", 6.1 }, { "v", 3 }} );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.1, 1e-12 );
+}
+BOOST_AUTO_TEST_CASE( test_step1 )
+{
+    auto se = symbolsExpr( symbolExpr( "u", _e1 ), symbolExpr( "v", _e2 ) );
+    auto a1b = expr("step1(u,v):u:v");
+    a1b.setParameterValues( { { "u", 0 }, { "v", 0.5 }} );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "u", 1 }, { "v", 0.5 }} );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "u", 0.49999 }, { "v", 0.5 }} );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "u", 0.5 }, { "v", 0.5 }} );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+}
+BOOST_AUTO_TEST_CASE( test_rectangle )
+{
+    auto se = symbolsExpr( symbolExpr( "u", _e1 ), symbolExpr( "v", _e2 ) );
+    auto a1b = expr("rectangle(t,1,2):t");
+    a1b.setParameterValues( { { "t", 0 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 1.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 3} } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+}
+BOOST_AUTO_TEST_CASE( test_triangle )
+{
+    auto a1b = expr("triangle(t,1,2):t");
+    a1b.setParameterValues( { { "t", -2 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 3 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 0.5 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 1.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0, 1e-12 );
+    a1b.setParameterValues( { { "t", 2 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 1.75 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.5, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.25 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.5, 1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( test_mapabcd )
+{
+    auto a1b = expr("mapabcd(t,1,2,-1,1):t");
+    a1b.setParameterValues( { { "t", -2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), -1, 1e-12 );
+    a1b.setParameterValues( { { "t", 3 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), -1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.5 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.25 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), -0.5, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.75 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.5, 1e-12 );
+}
 BOOST_AUTO_TEST_SUITE_END()

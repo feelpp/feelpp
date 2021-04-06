@@ -45,7 +45,10 @@ namespace Feel
 {
 namespace FeelModels
 {
-
+/** 
+ * Toolbox Electric 
+ * @ingroup Toolboxes
+ */
 template< typename ConvexType, typename BasisPotentialType>
 class Electric : public ModelNumerical,
                  public ModelPhysics<ConvexType::nDim>,
@@ -103,11 +106,13 @@ public:
               worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
               std::string const& subPrefix = "",
               ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ElectricMesh.path"); }
-    std::shared_ptr<std::ostringstream> getInfo() const override;
-    void updateInformationObject( pt::ptree & p ) override;
 
-    mesh_ptrtype const& mesh() const { return M_mesh; }
+    std::shared_ptr<std::ostringstream> getInfo() const override;
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_electricpotential_ptrtype const& spaceElectricPotential() const { return M_XhElectricPotential; }
@@ -132,7 +137,6 @@ private :
     void initPostProcess() override;
 
 public :
-    void setMesh(mesh_ptrtype const& mesh) { M_mesh = mesh; }
     // update for use
     void init( bool buildModelAlgebraicFactory = true );
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
@@ -277,17 +281,19 @@ public :
     template <typename ModelFieldsType>
     auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            return Feel::FeelModels::modelContext( mfields, std::move( se ) );
         }
     auto modelContext( std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
     auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
-            auto se = this->symbolsExpr( mfields );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
             auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( rowStartInVector ) );
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
         }
@@ -358,9 +364,6 @@ public :
 
 private :
 
-    bool M_hasBuildFromMesh, M_isUpdatedForUse;
-
-    mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
     space_electricpotential_ptrtype M_XhElectricPotential;

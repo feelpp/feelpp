@@ -83,6 +83,9 @@ ModelParameters::setup()
             std::string type = "expression";
             if( boost::optional<std::string> n = f.get_optional<std::string>("type") )
                 type = *n;
+            std::string desc = "";
+            if( boost::optional<std::string> n = f.get_optional<std::string>("description") )
+                desc = *n;
             if ( type == "expression" || type == "value" )
             {
                 double val = 0.;
@@ -94,7 +97,7 @@ ModelParameters::setup()
                     max = *d;
 
                 modelexpr.setExpr( "value", f, this->worldComm(), M_directoryLibExpr );
-                this->operator[](t) = ModelParameter( t, modelexpr, min, max );
+                this->operator[](t) = ModelParameter( t, modelexpr, min, max, desc );
             }
             else if ( type == "fit" )
             {
@@ -123,7 +126,7 @@ ModelParameters::setup()
                     ordinate = *d;
 
                 std::shared_ptr<Interpolator> interpolator = Interpolator::New( /*interpType*/interpolatorEnumType, filename, abscissa, ordinate, this->worldComm() );
-                this->operator[](t) = ModelParameter( name, interpolator,  modelexpr );
+                this->operator[](t) = ModelParameter( name, interpolator,  modelexpr, desc );
             }
         }
     }
@@ -193,6 +196,30 @@ ModelParameters::toParameterValues() const
     return pv;
 }
 
+void
+ModelParameter::updateInformationObject( std::string const& symbol, nl::json::array_t & ja ) const
+{
+    if ( this->type() == "expression" )
+    {
+        auto [exprStr,compInfo] = M_expr.exprInformations();
+        ja.push_back( symbolExprInformations( symbol, exprStr, compInfo, this->name() ) );
+    }
+    else if ( this->type() == "fit" )
+    {
+        auto compInfo = SymbolExprComponentSuffix( 1, 1 );
+        ja.push_back( symbolExprInformations( symbol, "fit(.)", compInfo, this->name() ) );
+    }
+}
 
+void
+ModelParameters::updateInformationObject( nl::json & p ) const
+{
+    nl::json::array_t ja;
+
+    for( auto const& [symbName, mparam] : *this )
+        mparam.updateInformationObject( symbName,ja );
+
+    p = ja;
+}
 
 }

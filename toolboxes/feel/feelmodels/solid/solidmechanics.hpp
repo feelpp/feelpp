@@ -60,7 +60,10 @@ namespace Feel
 {
 namespace FeelModels
 {
-
+/** 
+ * Solid Mechanics Toolbox
+ * \ingroup Toolboxes
+ */
 template< typename ConvexType, typename BasisDisplacementType >
 class SolidMechanics : public ModelNumerical,
                        public ModelPhysics<ConvexType::nDim>,
@@ -308,6 +311,9 @@ public :
     void solve( bool upVelAcc=true );
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
 
     bool hasSolidEquation1dReduced() const { return M_solid1dReduced.use_count() > 0; }
     bool hasSolidEquationStandard() const { return !this->hasSolidEquation1dReduced(); } // TOOD
@@ -479,8 +485,8 @@ public :
     // standart model
     //-----------------------------------------------------------------------------------//
 
-    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
-    mesh_ptrtype const& mesh() const { return M_mesh; }
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_displacement_ptrtype const& functionSpace() const { return this->functionSpaceDisplacement(); }
@@ -613,17 +619,19 @@ public :
     template <typename ModelFieldsType>
     auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            return Feel::FeelModels::modelContext( mfields, std::move( se ) );
         }
     auto modelContext( std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
     auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
-            auto se = this->symbolsExpr( mfields );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
             auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( rowStartInVector ) );
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
         }
@@ -750,7 +758,6 @@ private :
     // standard model
     //-------------------------------------------//
     // mesh
-    mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
     MeshMover<mesh_type> M_meshMover;
     MeshMover<typename mesh_type::trace_mesh_type> M_meshMoverTrace;

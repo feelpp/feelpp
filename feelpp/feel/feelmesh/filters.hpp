@@ -34,12 +34,7 @@
 #include <utility>
 #include <unordered_set>
 #include <any>
-#if BOOST_VERSION >= 105600
 #include <boost/phoenix/stl/algorithm/detail/is_std_list.hpp>
-#else
-#include <boost/spirit/home/phoenix/stl/algorithm/detail/is_std_list.hpp>
-#endif
-
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/rank.hpp>
 #include <feel/feelcore/enums.hpp>
@@ -87,8 +82,12 @@ using idelements_t = elements_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
 using ext_elements_t = elements_reference_wrapper_t<MeshType>;
+template <typename MeshType>
+using range_element_t = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
+template <typename MeshType>
+using range_element_ptr_t = typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype;
 
-template<typename MeshType>
+template <typename MeshType>
 using boundaryelements_t = elements_reference_wrapper_t<MeshType>;
 template<typename MeshType>
 using internalelements_t = elements_reference_wrapper_t<MeshType>;
@@ -300,7 +299,7 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
             auto const& elt = unwrap_ref( *it );
             if ( elt.processId() != pid )
                 continue;
-            ctx->update( elt );
+            ctx->template update<context>( elt );
             expr_evaluator.update( vf::mapgmc( ctx ) );
             bool addElt = true;
             for ( uint16_type q=0;q<ctx->nPoints();++q )
@@ -1578,33 +1577,57 @@ idelements( MeshType const& imesh, std::vector<T> const& l )
 
 
 //! \return a pair of iterators to iterate over a range of elements 'rangeElt' which
-//!  touch the range of faces rangeFace by a point/edge/faces (with respect to type arg)
-template<typename MeshType>
+//!  touch the range of faces or edges \rangeEntity by a point/edge/faces (with respect to type arg)
+template<typename MeshType,typename EntityRangeType>
 elements_pid_t<MeshType>
-elements( MeshType const& mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, faces_reference_wrapper_t<MeshType> const& rangeFace, ElementsType type = ElementsType::MESH_POINTS )
+elements( MeshType const& mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, EntityRangeType const& rangeEntity, ElementsType type = ElementsType::MESH_POINTS )
 {
     std::unordered_set<size_type> entityIds;
-    for( auto const& faceWrap : rangeFace )
+    if constexpr ( std::is_same_v<EntityRangeType,faces_reference_wrapper_t<MeshType> > )
     {
-        auto const& face = unwrap_ref( faceWrap );
-        if ( type == ElementsType::MESH_POINTS )
+        for( auto const& faceWrap : rangeEntity )
         {
-            for ( uint16_type p=0;p<face.nVertices();++p )
-                entityIds.insert( face.point(p).id() );
+            auto const& face = unwrap_ref( faceWrap );
+            if ( type == ElementsType::MESH_POINTS )
+            {
+                for ( uint16_type p=0;p<face.nVertices();++p )
+                    entityIds.insert( face.point(p).id() );
+            }
+            else if ( type == ElementsType::MESH_EDGES && is_3d<MeshType>::value )
+            {
+                for ( uint16_type p=0;p<face.nEdges();++p )
+                    entityIds.insert( face.edge(p).id() );
+            }
+            else if ( type == ElementsType::MESH_FACES || ( is_2d<MeshType>::value && type == ElementsType::MESH_EDGES ) )
+            {
+                entityIds.insert( face.id() );
+            }
+            else
+                CHECK( false ) << "invalid type " << type;
         }
-        else if ( type == ElementsType::MESH_EDGES && is_3d<MeshType>::value )
-        {
-            for ( uint16_type p=0;p<face.nEdges();++p )
-                entityIds.insert( face.edge(p).id() );
-        }
-        else if ( type == ElementsType::MESH_FACES || ( is_2d<MeshType>::value && type == ElementsType::MESH_EDGES ) )
-        {
-            entityIds.insert( face.id() );
-        }
-        else
-            CHECK( false ) << "invalid type " << type;
     }
-
+    else if constexpr ( std::is_same_v<EntityRangeType,edges_reference_wrapper_t<MeshType> > )
+        {
+            for( auto const& edgeWrap : rangeEntity )
+            {
+                auto const& edge = unwrap_ref( edgeWrap );
+                if ( type == ElementsType::MESH_POINTS )
+                {
+                    for ( uint16_type p=0;p<edge.nVertices();++p )
+                        entityIds.insert( edge.point(p).id() );
+                }
+                else if ( type == ElementsType::MESH_EDGES )
+                {
+                    entityIds.insert( edge.id() );
+                }
+                else
+                    CHECK( false ) << "invalid type :" << type << " (should be MESH_POINTS or MESH_EDGES)";
+            }
+        }
+    else
+    {
+        CHECK( false ) << "invalid range";
+    }
 
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
 
@@ -1657,12 +1680,12 @@ elements( MeshType const& mesh, elements_reference_wrapper_t<MeshType> const& ra
 }
 
 //! \return a pair of iterators to iterate over all elements (not ghost) which
-//!  touch the range of faces rangeFace by a point/edge/faces (with respect to type arg)
-template<typename MeshType>
+//!  touch the range of faces or edges rangeEntity by a point/edge/faces (with respect to type arg)
+template<typename MeshType,typename EntityRangeType>
 elements_pid_t<MeshType>
-elements( MeshType const& mesh, faces_reference_wrapper_t<MeshType> const& rangeFace, ElementsType type = ElementsType::MESH_POINTS )
+elements( MeshType const& mesh, EntityRangeType const& rangeEntity, ElementsType type = ElementsType::MESH_POINTS )
 {
-    return elements( mesh, elements(mesh), rangeFace, type );
+    return elements( mesh, elements(mesh), rangeEntity, type );
 }
 
 

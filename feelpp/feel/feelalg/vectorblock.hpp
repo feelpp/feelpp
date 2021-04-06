@@ -110,7 +110,7 @@ public :
         {
             for( int i = 0; i < ps.numberOfSpaces(); ++i )
             {
-                cout << "creating dyn vector block (" << i  << ")\n";
+                VLOG(3) << "[BlocksBaseVector] creating dyn vector block (" << i  << ")\n";
                 (*this)(i,0) = ps[i]->elementPtr();
             }
 
@@ -277,7 +277,7 @@ public:
     VectorBlockBase( VectorBlockBase const & vb ) = default;
     VectorBlockBase( VectorBlockBase && vb ) = default;
 
-    ~VectorBlockBase()
+    ~VectorBlockBase() override
     {}
 
     //@}
@@ -293,10 +293,10 @@ public:
     VectorBlockBase& operator=( VectorBlockBase && vb ) = default;
 
     Vector<T>& operator= ( const Vector<value_type> &V ) override { return M_vec->operator=( V ); }
-    virtual T& operator() ( const size_type i ) override { return M_vec->operator()( i ); }
-    virtual T operator() ( const size_type i ) const override { return M_vec->operator()( i ); }
-    virtual Vector<T> & operator += ( const Vector<value_type> &V ) override { return M_vec->operator+=( V ); }
-    virtual Vector<T> & operator -= ( const Vector<value_type> &V ) override { return M_vec->operator-=( V ); }
+    T& operator() ( const size_type i ) override { return M_vec->operator()( i ); }
+    T operator() ( const size_type i ) const override { return M_vec->operator()( i ); }
+    Vector<T> & operator += ( const Vector<value_type> &V ) override { return M_vec->operator+=( V ); }
+    Vector<T> & operator -= ( const Vector<value_type> &V ) override { return M_vec->operator-=( V ); }
     //@}
 
     /** @name Accessors
@@ -310,20 +310,20 @@ public:
      */
     //@{
 
-    virtual void set ( const size_type i, const value_type& value ) override { M_vec->set( i, value ); }
-    virtual void setVector ( int* i, int n, value_type* v ) override { M_vec->setVector( i, n, v ); }
-    virtual void add ( const size_type i, const value_type& value ) override { M_vec->add( i, value ); }
-    virtual void add ( const value_type& s ) override { M_vec->add( s ); }
-    virtual void add ( const Vector<value_type>& V ) override { M_vec->add( V ); }
-    virtual void add ( const value_type& a, const Vector<value_type>& v ) override { M_vec->add( a, v ); }
-    virtual void addVector ( const std::vector<T>& v, const std::vector<size_type>& dof_indices ) override { M_vec->addVector( v, dof_indices ); }
-    virtual void addVector ( const Vector<T>& V_in, const MatrixSparse<T>& A_in ) override { M_vec->addVector( V_in, A_in ); }
-    virtual void addVector ( const Vector<T>& V, const std::vector<size_type>& dof_indices ) override { M_vec->addVector( V, dof_indices ); }
+    void set ( const size_type i, const value_type& value ) override { M_vec->set( i, value ); }
+    void setVector ( int* i, int n, value_type* v ) override { M_vec->setVector( i, n, v ); }
+    void add ( const size_type i, const value_type& value ) override { M_vec->add( i, value ); }
+    void add ( const value_type& s ) override { M_vec->add( s ); }
+    void add ( const Vector<value_type>& V ) override { M_vec->add( V ); }
+    void add ( const value_type& a, const Vector<value_type>& v ) override { M_vec->add( a, v ); }
+    void addVector ( const std::vector<T>& v, const std::vector<size_type>& dof_indices ) override { M_vec->addVector( v, dof_indices ); }
+    void addVector ( const Vector<T>& V_in, const MatrixSparse<T>& A_in ) override { M_vec->addVector( V_in, A_in ); }
+    void addVector ( const Vector<T>& V, const std::vector<size_type>& dof_indices ) override { M_vec->addVector( V, dof_indices ); }
 
-    virtual void insert ( const std::vector<T>& v, const std::vector<size_type>& dof_indices ) override { M_vec->insert( v, dof_indices ); }
-    virtual void insert ( const Vector<T>& V, const std::vector<size_type>& dof_indices ) override { M_vec->insert( V, dof_indices ); }
-    virtual void insert ( const ublas::vector<T>& V, const std::vector<size_type>& dof_indices ) override { M_vec->insert( V, dof_indices ); }
-    virtual void scale ( const T factor ) override { M_vec->scale( factor ); }
+    void insert ( const std::vector<T>& v, const std::vector<size_type>& dof_indices ) override { M_vec->insert( v, dof_indices ); }
+    void insert ( const Vector<T>& V, const std::vector<size_type>& dof_indices ) override { M_vec->insert( V, dof_indices ); }
+    void insert ( const ublas::vector<T>& V, const std::vector<size_type>& dof_indices ) override { M_vec->insert( V, dof_indices ); }
+    void scale ( const T factor ) override { M_vec->scale( factor ); }
     //@}
 
     /** @name  Methods
@@ -335,41 +335,41 @@ public:
     //!
     //! add local vector to global vector
     //!
-    virtual void addVector ( int* rows, int nrows, value_type* data, size_type K, size_type K2 ) override;
+    void addVector ( int* rows, int nrows, value_type* data, size_type K, size_type K2 ) override;
 
     //!
     //! close the block vector
     //!
-    virtual void close() override { M_vec->close(); }
+    void close() override { M_vec->close(); }
 
     //!
     //! zero out the vector
     //!
-    virtual void zero() override { M_vec->zero(); }
+    void zero() override { M_vec->zero(); }
 
-    virtual void zero ( size_type start,  size_type stop ) override { return M_vec->zero( start, stop ); }
+    void zero ( size_type start,  size_type stop ) override { return M_vec->zero( start, stop ); }
 
-    virtual void setConstant( value_type v ) override { return M_vec->setConstant( v ); }
+    void setConstant( value_type v ) override { return M_vec->setConstant( v ); }
 
-    virtual clone_ptrtype clone () const override
+    clone_ptrtype clone () const override
         {
             clone_ptrtype v = std::make_shared<VectorBlockBase<value_type>>( *this );
             return v;
         } 
-    virtual void printMatlab( const std::string name="NULL", bool renumber = false ) const override
+    void printMatlab( const std::string name="NULL", bool renumber = false ) const override
         {
             M_vec->printMatlab( name, renumber );
         }
-    virtual value_type sum() const override { return M_vec->sum(); }
+    value_type sum() const override { return M_vec->sum(); }
 
-    virtual real_type min () const override { return M_vec->min(); }
-    virtual real_type max () const override { return M_vec->max(); }
+    real_type min () const override { return M_vec->min(); }
+    real_type max () const override { return M_vec->max(); }
 
-    virtual real_type l1Norm () const override { return M_vec->l1Norm(); }
-    virtual real_type l2Norm () const override { return M_vec->l2Norm(); }
-    virtual real_type linftyNorm () const override { return M_vec->linftyNorm(); }
+    real_type l1Norm () const override { return M_vec->l1Norm(); }
+    real_type l2Norm () const override { return M_vec->l2Norm(); }
+    real_type linftyNorm () const override { return M_vec->linftyNorm(); }
 
-    virtual value_type dot( Vector<T> const& v ) const override { return M_vec->dot( v ); }
+    value_type dot( Vector<T> const& v ) const override { return M_vec->dot( v ); }
     //@}
 
 
@@ -501,12 +501,12 @@ blockVector( PS && ps, backend_ptrtype b = backend(),
                                   [&] (auto&& x) {
                                       for( int i = 0; i < x->numberOfSpaces(); ++i, ++n  )
                                       {
-                                          cout << "creating dyn vector block (" << n  << ")\n";
+                                          VLOG(3) << "[blockVector] creating dyn vector block (" << n  << ")\n";
                                           g(n,0) = b->newVector( (*x)[i] );
                                       }
                                   },
                                   [&] (auto&& x){
-                                      cout << "creating vector block (" << n  << ")\n";
+                                      VLOG(3) << "[blockVector] creating vector block (" << n  << ")\n";
                                       g(n++,0) = b->newVector( x );
                                   })(e);
                     });
@@ -538,7 +538,7 @@ blockElement( PS && ps, backend_ptrtype b = backend(),
     int n = 0;
     hana::for_each( ps.tupleSpaces(), [&]( auto const& e )
                     {
-                        cout << "creating vector element (" << n  << ")\n";
+                        VLOG(3) << "[blockElement] creating vector element (" << n  << ")\n";
                         g(n,0) = e->elementPtr();
                         ++n;
                     });

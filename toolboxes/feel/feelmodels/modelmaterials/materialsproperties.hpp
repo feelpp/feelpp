@@ -41,6 +41,9 @@ public :
 
     void add( std::string const& propName, ModelExpression const& expr )
         {
+            auto itFind = this->find( propName );
+            if ( itFind != this->end() )
+                this->erase( itFind );
             this->emplace(propName, MaterialProperty(propName, expr) );
         }
 
@@ -67,6 +70,8 @@ public :
 
     std::set<std::string> markers() const { return M_markers; }
     void setMarkers( std::set<std::string> const& m ) { M_markers = m; }
+
+    std::string const& materialName() const { return M_materialName; }
 
 private :
     std::string M_materialName;
@@ -309,7 +314,19 @@ public :
         }
 
 
-
+    //! return the physics that are used in the material \matName from \physicsCollection
+    std::map<std::string,typename modelphysics_type::model_physic_ptrtype> physicsFromMaterial( std::string const& matName, std::map<std::string,typename modelphysics_type::model_physic_ptrtype> const& physicsCollection ) const
+        {
+            std::map<std::string,typename modelphysics_type::model_physic_ptrtype> res;
+            for ( auto const& [physicName,physicData] : physicsCollection )
+            {
+                auto const& matNames = this->physicToMaterials( physicName );
+                if ( matNames.find( matName ) == matNames.end() )
+                    continue;
+                res[physicName] = physicData;
+            }
+            return res;
+        }
 
 
     void addProperty( MaterialProperties & matProperties, std::string const& propName, ModelExpression const& propExpr, bool onlyInPhysicDescription = false )
@@ -362,6 +379,14 @@ public :
 
     MaterialProperties const&
     materialProperties( std::string const& matName ) const
+        {
+            auto itFindMatProp = M_materialNameToProperties.find( matName );
+            CHECK( itFindMatProp != M_materialNameToProperties.end() ) << "material name not registered : " << matName;
+            return itFindMatProp->second;
+        }
+
+    MaterialProperties &
+    materialProperties( std::string const& matName )
         {
             auto itFindMatProp = M_materialNameToProperties.find( matName );
             CHECK( itFindMatProp != M_materialNameToProperties.end() ) << "material name not registered : " << matName;
@@ -626,19 +651,102 @@ public :
             return ostr;
         }
 
-    void updateInformationObject( pt::ptree & p )
+    void updateInformationObject( nl::json & p ) const
         {
-            p.put( "number of materials", this->numberOfMaterials() );
+            std::string prefix_symbol = "materials_";
+            int nMat = this->numberOfMaterials();
+            p.emplace( "number of materials", nMat );
+
+            std::map<std::string,std::string> propertyNamesToSymbol;
+            auto & jByMat = p["by_material"];
             for ( auto const& [matName,matProps] : M_materialNameToProperties )
             {
-                pt::ptree matPt;
+                nl::json::array_t jaOnMat;
                 for ( auto const& [propName,matProp] : matProps )
                 {
-                    matPt.put( propName, matProp.exprToString() );
+                    //p[matName].emplace( propName, matProp.exprToString() );
+                    if ( !matProp.hasAtLeastOneExpr() )
+                        continue;
+
+                    auto itFindPropDesc = M_materialPropertyDescription.find( propName );
+                    if ( itFindPropDesc == M_materialPropertyDescription.end() )
+                        continue;
+                    std::string const& symbolProp = std::get<0>( itFindPropDesc->second );
+                    std::string symbolPrefixMatProp = (boost::format("%1%%2%_%3%")%prefix_symbol %matName %symbolProp).str();
+                    auto [exprStr,compInfo] =  matProp.exprInformations();
+                    jaOnMat.push_back( symbolExprInformations( symbolPrefixMatProp, exprStr, compInfo, propName ) );
+
+                    if ( nMat>1 )
+                        propertyNamesToSymbol[propName] = symbolProp; // need for define multi-material symbols
                 }
-                p.add_child( matName, matPt );
+                jByMat.emplace( matName, jaOnMat );
             }
+
+
+            // multi-material symbols (same shape)
+            nl::json::array_t jaMultiMat;
+            hana::for_each( ModelExpression::expr_shapes, [this,&prefix_symbol,&jaMultiMat,&propertyNamesToSymbol](auto const& e_ij) {
+                    constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                    constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+
+                    std::vector<typename std::map<std::string,std::string>::iterator> propItOfMultiMatSameShape;
+                    for ( auto it = propertyNamesToSymbol.begin(), en = propertyNamesToSymbol.end(); it != en; ++it )
+                    {
+                        auto const& [propName,propSymbol] = *it;
+                        if ( this->materialPropertyHasSameExprShapeInAllMaterials<ni,nj>( propName ) )
+                        {
+                            std::string symbolGlobalMatProp = (boost::format("%1%%2%")% prefix_symbol %propSymbol).str();
+                            auto compInfo =  SymbolExprComponentSuffix( ni,nj );
+                            jaMultiMat.push_back( symbolExprInformations( symbolGlobalMatProp, "concat(...)", compInfo, propName ) );
+                            propItOfMultiMatSameShape.push_back( it );
+                        }
+                    }
+                    for ( auto const& it : propItOfMultiMatSameShape )
+                        propertyNamesToSymbol.erase( it );
+                });
+
+            // multi-material symbols (get symbols heat_k_xx, heat_k_xy,... if a prop is scalar in one mat and matrix in another mat)
+            for ( auto const& [propName,propSymbol] : propertyNamesToSymbol )
+            {
+                if ( this->materialPropertyIsScalarOrMatrixInAllMaterials<nDim>( propName ) )
+                {
+                    std::string symbolGlobalMatProp = (boost::format("%1%%2%")% prefix_symbol %propSymbol).str();
+                    auto compInfo =  SymbolExprComponentSuffix( nDim,nDim );
+                    jaMultiMat.push_back( symbolExprInformations( symbolGlobalMatProp, "concat(...)", compInfo, propName ) );
+                }
+            }
+
+            if ( !jaMultiMat.empty() )
+                p["multi-material"] = jaMultiMat;
         }
+
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+        {
+            auto tabInfo = TabulateInformationsSections::New();
+
+            Feel::Table tabInfoOthers;
+            TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
+            tabInfoOthers.format()
+                .setShowAllBorders( false )
+                .setColumnSeparator(":")
+                .setHasRowSeparator( false );
+            tabInfo->add( "", TabulateInformations::New( tabInfoOthers ) );
+
+            if ( jsonInfo.contains("by_material") )
+            {
+                for ( auto const& el : jsonInfo.at("by_material").items() )
+                {
+                    std::string const& matName = el.key();
+                    tabInfo->add( "Material : "+matName, TabulateInformationTools::FromJSON::tabulateInformationsSymbolsExpr( el.value(),tabInfoProp,true) );
+                }
+            }
+
+            if ( jsonInfo.contains( "multi-material") )
+                tabInfo->add( "Multi-Materials", TabulateInformationTools::FromJSON::tabulateInformationsSymbolsExpr( jsonInfo.at("multi-material"),tabInfoProp.newByIncreasingVerboseLevel(),true) );
+
+            return tabInfo;
+        }
+
 
     void setParameterValues( std::map<std::string,double> const& mp )
         {
@@ -761,30 +869,32 @@ public :
                 });
 
             // generate symbol heat_k(_xx,_xy,...) if the all property k has same shape
-            std::map<std::string,std::string> propertyNamesToSymbol2;
-            auto tupleSymbolExprsOnAllMaterials = hana::transform( ModelExpression::expr_shapes, [this,&prefix_symbol/*,&nMat*/,&propertyNamesToSymbol,&propertyNamesToSymbol2](auto const& e_ij) {
+            auto tupleSymbolExprsOnAllMaterials = hana::transform( ModelExpression::expr_shapes, [this,&prefix_symbol,&propertyNamesToSymbol](auto const& e_ij) {
                     constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
                     constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
                     using _expr_type =  std::decay_t< decltype( this->materialPropertyExpr<ni,nj>( "" ) ) >;
                     symbol_expression_t<_expr_type> se;
-                    for ( auto const& [propName,propSymbol] : propertyNamesToSymbol )
+                    std::vector<typename std::map<std::string,std::string>::iterator> propItOfMultiMatSameShape;
+                    for ( auto it = propertyNamesToSymbol.begin(), en = propertyNamesToSymbol.end(); it != en; ++it )
                     {
+                        auto const& [propName,propSymbol] = *it;
                         if ( this->materialPropertyHasSameExprShapeInAllMaterials<ni,nj>( propName ) )
                         {
                             std::string symbolGlobalMatProp = (boost::format("%1%%2%")% prefix_symbol %propSymbol).str();
                             auto globalMatPropExpr = this->materialPropertyExpr<ni,nj>( propName );
                             se.add( symbolGlobalMatProp, globalMatPropExpr, SymbolExprComponentSuffix( ni,nj ) );
+                            propItOfMultiMatSameShape.push_back( it );
                         }
-                        else
-                            propertyNamesToSymbol2[propName] = propSymbol;
                     }
+                    for ( auto const& it : propItOfMultiMatSameShape )
+                        propertyNamesToSymbol.erase( it );
                     return se;
                 });
 
             // generate symbols heat_k_xx, heat_k_xy,... if a prop is scalar in one mat and matrix in another mat
             typedef decltype( this->materialPropertyExprScalarOrMatrix<nDim>( "" ) ) _expr_scalar_or_matrix_selector_type;
             symbol_expression_t<_expr_scalar_or_matrix_selector_type> seScalarOrMatrixSelector;
-            for ( auto const& [propName,propSymbol] : propertyNamesToSymbol2 )
+            for ( auto const& [propName,propSymbol] : propertyNamesToSymbol )
             {
                 if ( this->materialPropertyIsScalarOrMatrixInAllMaterials<nDim>( propName ) )
                 {

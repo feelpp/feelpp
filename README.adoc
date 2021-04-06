@@ -20,6 +20,8 @@ ifdef::env-github[]
 :note-caption: :paperclip:
 :tip-caption: :bulb:
 :warning-caption: :warning:
+:!toc-title:
+:badges:
 endif::[]
 ifdef::env-github,env-browser[:outfilesuffix: .adoc]
 // URIs:
@@ -41,10 +43,13 @@ ifdef::env-github,env-browser[:outfilesuffix: .adoc]
 :uri-gist: https://gist.github.com
 :uri-freesoftware: https://www.gnu.org/philosophy/free-sw.html
 
-
+ifdef::badges[]
 image:https://github-basic-badges.herokuapp.com/release/feelpp/feelpp.svg[link=https://github.com/feelpp/feelpp/releases/latest]
 image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 image:https://api.codacy.com/project/badge/Grade/ee741577e2454024a18d44603be62a6d[link="https://www.codacy.com/app/prudhomm/feelpp?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=feelpp/feelpp&amp;utm_campaign=Badge_Grade"]
+endif::[]
+
+toc::[]
 
 link:http://www.feelpp.org[{feelpp}] is a {cpp} library for continuous or discontinuous Galerkin methods including finite element method(FEM), spectral element methods(SEM), reduced basis methods, discontinuous galerkin methods (DG and HDG) in 1D 2D and 3D and in parallel. Checkout <<what-is-feel>>, {feelpp} <<features>> and some <<examples>>.
 
@@ -74,57 +79,82 @@ Each commit in the main development branch triggers a new full build with more t
 Instructions are available for http://docs.feelpp.org/user/0.107/install/containers/[docker] and http://docs.feelpp.org/user/0.107/install/distributions/[debian and ubuntu packages].
 
 WARNING: Providing Debian and ubuntu packages for `feelpp-toolboxes` and `feelpp-mor` is a work in progress.
-They are currently available only via docker.
 
 [[cipkg]]
+=== Packaging health 
+
+{feelpp} supports Docker, Debian and Ubuntu packaging.
+
 The following tables present the Continuous Integration status of the packaging of {feelpp}.
 
-
-.Build status for each component for the stable channel
+.Build status for each component for the latest channel of Long Term Support distribution
 |===
-| Component | Docker | Debian/Buster | Ubuntu/Eoan | Ubuntu/Focal
-
-| feelpp
-| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
-| image:https://badge.buildkite.com/8b8635a2a63929d7d2087b5169d8d6e4e1e3d5417ee83d0754.svg?branch=master[https://buildkite.com/feelpp/pkg-feelpp]
-| image:https://badge.buildkite.com/663cf620a1e2d9c420c64e41998a9ba4d2023772872f88a893.svg?branch=master[https://buildkite.com/feelpp/pkg-feelpp-eoan]
-| image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg?branch=master[https://buildkite.com/feelpp/pkg-feelpp-focal]
-
-| feelpp-toolboxes
-| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
-| 
-| 
-|
-
-| feelpp-mor
-| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
-|
-|
-|
-|===
-
-.Build status for each component for the latest channel
-|===
-| Component | Docker | Debian/Buster | Ubuntu/Eoan | Ubuntu/Focal
+| Component | Docker | Debian/Buster(10.8) | Ubuntu/Bionic(18.04 LTS) | Ubuntu/Focal(20.04 LTS)
 
 | feelpp
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/8b8635a2a63929d7d2087b5169d8d6e4e1e3d5417ee83d0754.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp]
-| image:https://badge.buildkite.com/663cf620a1e2d9c420c64e41998a9ba4d2023772872f88a893.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-eoan]
+| image:https://badge.buildkite.com/62d58af01a599314b4ecf5751cedc062d386fbb636d0039b32.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-bionic]
 | image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-focal]
 
 | feelpp-toolboxes
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/90ee47c7b5c62a516f7ef0911058f7a41626ccd752147119f0.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-toolboxes-buster"]
-| image:https://badge.buildkite.com/bb9c483c95e71e919d159e93d8c3803127c18cbcedbde8a4bb.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-toolboxes-eoan"]
+| image:https://badge.buildkite.com/62d58af01a599314b4ecf5751cedc062d386fbb636d0039b32.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-toolboxes-bionic"]
 | image:https://badge.buildkite.com/c9763aa25f307c5d404c9354780d4d0eca94d0c0c6343b5cc2.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-toolboxes-focal"]
 
 | feelpp-mor
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 |
 |
-|
+| image:https://badge.buildkite.com/67c2155af0d97f29f825af63b112cfa79db0da6f5b12cbea69.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-mor-focal"]
 |===
+
+
+.Build status for each component for the latest channel Ubuntu non-LTS and Debian testing/unstable diztributions
+|===
+| Component | Debian/Sid(unstable) | Ubuntu/Groovy(20.10) | Ubuntu/Hirsute Hippo(21.04)
+
+| feelpp
+| image:https://badge.buildkite.com/368edd7805ed486da3c0f4498610120516f3a1a12dd975b34e.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-sid"]
+| image:https://badge.buildkite.com/354837a786c31536c7fd2d5f60192f790c88d17e3c6b767b5f.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-groovy"]
+| image:https://badge.buildkite.com/c8e5435a675ee5415a1ed80c660da19d9117738997295cbc85.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-hirsute"]
+
+| feelpp-toolboxes
+| 
+| 
+| 
+
+| feelpp-mor
+| 
+|
+|
+
+|===
+
+
+.Build status for each component for the stable channel
+|===
+| Component | Docker | Debian/Buster | Ubuntu/Focal  
+
+| feelpp
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+| image:https://badge.buildkite.com/8b8635a2a63929d7d2087b5169d8d6e4e1e3d5417ee83d0754.svg?branch=master[https://buildkite.com/feelpp/pkg-feelpp]
+| image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg?branch=master[https://buildkite.com/feelpp/pkg-feelpp-focal]
+
+| feelpp-toolboxes
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+| 
+| 
+
+
+| feelpp-mor
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+|
+|
+
+|===
+
 
 
 == {feelpp} Documentation
@@ -161,10 +191,6 @@ The essence of a feature branch is that it exists as long as the feature is in d
 |  Ubuntu Focal/20.04 clang-9
 |  image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 |  image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
-
-|  Ubuntu Disco/19.04 clang-9
-| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=master[https://buildkite.com/feelpp/feelpp-ubuntu-disco-19-dot-04-clang9]
-| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=develop[https://buildkite.com/feelpp/feelpp-ubuntu-disco-19-dot-04-clang9]
 
 |  Debian Buster/10 clang-7
 |image:https://badge.buildkite.com/3828dcf05f226bd39dfe7dc4da7effb6c1e84af2fa7eab4d0c.svg?branch=master[https://buildkite.com/feelpp/feelpp-debian-buster-10-clang-7]
@@ -203,7 +229,7 @@ Some basic installation procedure are available in the link:INSTALL.md[INSTALL] 
 
 In the spirit of {uri-freesoftware}[free software], _everyone_ is encouraged to help improve this project.
 If you discover errors or omissions in the source code, documentation, or website content, please don't hesitate to submit an issue or open a pull request with a fix.
- New contributors are always welcome!
+New contributors are always welcome!
 
 Here are some ways *you* can contribute:
 

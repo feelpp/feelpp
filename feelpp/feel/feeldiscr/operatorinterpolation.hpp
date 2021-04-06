@@ -363,6 +363,39 @@ makeExprInterpolation( ExprType const& expr, C&& c, Args&&... args )
 }
 
 
+template <typename T=double>
+struct OperatorInterpolationMatrixSetup
+{
+    using sparse_matrix_type = MatrixSparse<T>;
+    using sparse_matrix_ptrtype = std::shared_ptr<sparse_matrix_type>;
+
+    OperatorInterpolationMatrixSetup( sparse_matrix_ptrtype m = sparse_matrix_ptrtype{}, Feel::MatrixStructure c = Feel::DIFFERENT_NONZERO_PATTERN,
+                                      size_type indexBlockRow = 0, size_type indexBlockCol = 0 )
+        :
+        M_matrix( m ),
+        M_indexBlockSpaceRow( indexBlockRow ),
+        M_indexBlockSpaceCol( indexBlockCol ),
+        M_context( c )
+        {}
+
+    OperatorInterpolationMatrixSetup( OperatorInterpolationMatrixSetup const& ) = default;
+    OperatorInterpolationMatrixSetup( OperatorInterpolationMatrixSetup && ) = default;
+
+    OperatorInterpolationMatrixSetup& operator=( OperatorInterpolationMatrixSetup const& ) = default;
+    OperatorInterpolationMatrixSetup& operator=( OperatorInterpolationMatrixSetup && ) = default;
+
+    sparse_matrix_ptrtype matrix() const { return M_matrix; }
+    size_type indexBlockSpaceRow() const { return M_indexBlockSpaceRow; }
+    size_type indexBlockSpaceCol() const { return M_indexBlockSpaceCol; }
+
+    bool hasContext( Feel::MatrixStructure c ) const { return (M_context == c); }
+
+    void setMatrix( sparse_matrix_ptrtype m ) { M_matrix = m;; }
+private :
+    sparse_matrix_ptrtype M_matrix;
+    size_type M_indexBlockSpaceRow, M_indexBlockSpaceCol;
+    Feel::MatrixStructure M_context;
+};
 //-----------------------------------------------------------------------------------------------------------------//
 //-----------------------------------------------------------------------------------------------------------------//
 //-----------------------------------------------------------------------------------------------------------------//
@@ -391,12 +424,12 @@ struct PrecomputeDomainBasisFunction
         expression_type::context|vm::JACOBIAN|vm::KB :
         expression_type::context;
     static const size_type context = ( DomainSpaceType::nDim == ImageSpaceType::nDim )? context2 : context2|vm::POINT;
-    typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
+    typedef typename gm_type::template Context<geoelement_type> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
     // fe context
-    typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type,gmc_type::context> fecontext_type;
+    typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
     typedef std::shared_ptr<fecontext_type> fecontext_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_fec_type;
 
@@ -427,11 +460,11 @@ struct PrecomputeDomainBasisFunction
              !is_hdiv_conforming_v<typename ImageSpaceType::fe_type> && !is_hcurl_conforming_v<typename ImageSpaceType::fe_type> )
         {
             if constexpr ( DomainSpaceType::nDim != ImageSpaceType::nDim )
-                 M_gmc->update( elt );
+                  M_gmc->template update<context>( elt );
         }
         else
         {
-            M_gmc->update( elt );
+            M_gmc->template update<context>( elt );
             M_fec->update( M_gmc );
             //t_expr_type texpr( M_expr, mapgmc( M_gmc), mapfec( M_fec ) );
             M_tensorExpr->update( mapgmc( M_gmc), mapfec( M_fec ) );
@@ -545,10 +578,10 @@ private :
           auto geopc = gm->preCompute( gm, refPts );
           auto fepc = M_XhDomain->fe()->preCompute( M_XhDomain->fe(), refPts /*gmc->xRefs()*/ );
 
-          gmc_ptrtype gmc( new gmc_type( gm, elt, geopc ) );
+          gmc_ptrtype gmc = gm->template context<context>( elt, geopc );
           fecontext_ptrtype fec( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
 
-          M_gmc.reset( new gmc_type( gm, elt, geopc ) );
+          M_gmc = gm->template context<context>( elt, geopc );
           M_fec.reset( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
 
           map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( M_gmc ) );
@@ -574,10 +607,10 @@ private :
           auto geopc = gm->preCompute( gm, refPts );
           auto fepc = M_XhDomain->fe()->preCompute( M_XhDomain->fe(), refPts /*gmc->xRefs()*/ );
 
-          gmc_ptrtype gmc( new gmc_type( gm, elt, geopc ) );
+          gmc_ptrtype gmc = gm->template context<context>( elt, geopc );
           fecontext_ptrtype fec( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
 
-          M_gmc.reset( new gmc_type( gm, elt, geopc ) );
+          M_gmc = gm->template context<context>( elt, geopc );
           M_fec.reset( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
 
           map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( M_gmc ) );
@@ -947,10 +980,12 @@ public:
     typedef typename image_mesh_type::element_iterator image_mesh_element_iterator;
 
     // geometric mapping context
-    typedef typename image_mesh_type::gm_type image_gm_type;
-    typedef typename image_mesh_type::gm_ptrtype image_gm_ptrtype;
-    typedef typename image_mesh_type::template gmc<vm::POINT>::type image_gmc_type;
-    typedef typename image_mesh_type::template gmc<vm::POINT>::ptrtype image_gmc_ptrtype;
+    // typedef typename image_mesh_type::gm_type image_gm_type;
+    // typedef typename image_mesh_type::gm_ptrtype image_gm_ptrtype;
+    // using image_gmc_type = typename image_gm_type::template Context<typename image_mesh_type::element_type>;
+    // using image_gmc_ptrtype = std::shared_ptr<image_gmc_type>;
+    // typedef typename image_mesh_type::template gmc<vm::POINT>::type image_gmc_type;
+    // typedef typename image_mesh_type::template gmc<vm::POINT>::ptrtype image_gmc_ptrtype;
 
     // dof
     typedef typename dual_image_space_type::dof_type dof_type;
@@ -980,6 +1015,7 @@ public:
     // node type
     typedef typename matrix_node<typename image_mesh_type::value_type>::type matrix_node_type;
 
+    using matrix_setup_type = OperatorInterpolationMatrixSetup<typename super::matrix_type::value_type>;
 
     //@}
 
@@ -1001,21 +1037,24 @@ public:
                            dual_image_space_ptrtype const& imagespace,
                            backend_ptrtype const& backend,
                            InterpType const& interptype,
-                           bool ddmethod=false);
+                           bool ddmethod=false,
+                           matrix_setup_type const& matSetup = matrix_setup_type{} );
 
     OperatorInterpolation( domain_space_ptrtype const& domainspace,
                            dual_image_space_ptrtype const& imagespace,
                            IteratorRange const& r,
                            backend_ptrtype const& backend,
                            InterpType const& interptype,
-                           bool ddmethod=false);
+                           bool ddmethod=false,
+                           matrix_setup_type const& matSetup = matrix_setup_type{} );
 
     OperatorInterpolation( domain_space_ptrtype const& domainspace,
                            dual_image_space_ptrtype const& imagespace,
                            std::list<IteratorRange> const& r,
                            backend_ptrtype const& backend,
                            InterpType const& interptype,
-                           bool ddmethod=false);
+                           bool ddmethod=false,
+                           matrix_setup_type const& matSetup = matrix_setup_type{} );
 
 
     /**
@@ -1023,7 +1062,7 @@ public:
      */
     OperatorInterpolation( OperatorInterpolation const& oi ) = default;
     OperatorInterpolation( OperatorInterpolation && oi ) = default;
-    ~OperatorInterpolation() = default;
+    ~OperatorInterpolation() override = default;
 
     //@}
 
@@ -1143,6 +1182,7 @@ private:
     std::list<range_iterator> M_listRange;
     worldcomm_ptr_t M_WorldCommFusion;
     InterpType M_interptype;
+    matrix_setup_type M_matrixSetup;
 };
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
@@ -1151,14 +1191,16 @@ OperatorInterpolation( domain_space_ptrtype const& domainspace,
                        dual_image_space_ptrtype const& imagespace,
                        backend_ptrtype const& backend,
                        InterpType const& interptype,
-                       bool ddmethod )
+                       bool ddmethod,
+                       matrix_setup_type const& matSetup )
     :
     super( domainspace, imagespace, backend, false ),
     M_listRange(),
     M_WorldCommFusion( (ddmethod || ( this->domainSpace()->worldCommPtr() == this->dualImageSpace()->worldCommPtr() ) ) ?
                        this->domainSpace()->worldCommPtr() :
                        this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
-    M_interptype(interptype)
+    M_interptype(interptype),
+    M_matrixSetup( matSetup )
 {
     M_listRange.push_back( elements( imagespace->mesh() ) );
     update();
@@ -1172,14 +1214,16 @@ OperatorInterpolation( domain_space_ptrtype const& domainspace,
                        IteratorRange const& r,
                        backend_ptrtype const& backend,
                        InterpType const& interptype,
-                       bool ddmethod )
+                       bool ddmethod,
+                       matrix_setup_type const& matSetup )
     :
     super( domainspace, imagespace, backend, false ),
     M_listRange(),
     M_WorldCommFusion( (ddmethod || ( this->domainSpace()->worldCommPtr() == this->dualImageSpace()->worldCommPtr() ) ) ?
                        this->domainSpace()->worldCommPtr() :
                        this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
-    M_interptype(interptype)
+    M_interptype(interptype),
+    M_matrixSetup( matSetup )
 {
     M_listRange.push_back( r );
     update();
@@ -1192,14 +1236,16 @@ OperatorInterpolation( domain_space_ptrtype const& domainspace,
                        std::list<IteratorRange> const& r,
                        backend_ptrtype const& backend,
                        InterpType const& interptype,
-                       bool ddmethod )
+                       bool ddmethod,
+                       matrix_setup_type const& matSetup )
     :
     super( domainspace, imagespace, backend, false ),
     M_listRange( r ),
     M_WorldCommFusion( (ddmethod || ( this->domainSpace()->worldCommPtr() == this->dualImageSpace()->worldCommPtr() ) ) ?
                        this->domainSpace()->worldCommPtr() :
                        this->domainSpace()->worldCommPtr()+this->dualImageSpace()->worldCommPtr() ),
-    M_interptype(interptype)
+    M_interptype(interptype),
+    M_matrixSetup( matSetup )
 {
     update();
 }
@@ -1428,7 +1474,30 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     auto const& imagedof = this->dualImageSpace()->dof();
     auto const& domaindof = this->domainSpace()->dof();
 
-    auto sparsity_graph = std::make_shared<graph_type>( this->dualImageSpace()->dof(), this->domainSpace()->dof() );
+    bool needToUpdateGraph = true;
+    bool needToCopyMatrix = false;
+    std::shared_ptr<graph_type> sparsity_graph;
+    if ( M_matrixSetup.matrix() && M_matrixSetup.matrix()->hasGraph() &&
+         ( M_matrixSetup.hasContext( Feel::SAME_NONZERO_PATTERN ) || M_matrixSetup.hasContext( Feel::SUBSET_NONZERO_PATTERN ) ) )
+    {
+        sparsity_graph = M_matrixSetup.matrix()->graph();
+        if ( M_matrixSetup.hasContext( Feel::SAME_NONZERO_PATTERN ) )
+            needToUpdateGraph = false;
+        else
+        {
+            sparsity_graph->unlock();
+            needToCopyMatrix = true;
+        }
+    }
+    else
+    {
+        auto dmRow = M_matrixSetup.matrix()?  M_matrixSetup.matrix()->mapRowPtr() : this->dualImageSpace()->mapPtr();
+        auto dmCol = M_matrixSetup.matrix()?  M_matrixSetup.matrix()->mapColPtr() : this->domainSpace()->mapPtr();
+        sparsity_graph = std::make_shared<graph_type>( dmRow, dmCol );
+    }
+
+    auto const& dofIdToContainerIdRow = sparsity_graph->mapRowPtr()->dofIdToContainerId( M_matrixSetup.indexBlockSpaceRow() );
+    auto const& dofIdToContainerIdCol = sparsity_graph->mapColPtr()->dofIdToContainerId( M_matrixSetup.indexBlockSpaceCol() );
 
     // Local assembly: compute matrix by evaluating
     // the domain space basis function at the dual image space
@@ -1458,22 +1527,30 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     // we perfom 2 pass : first build matrix graph, second assembly matrix
     enum OpToApplyEnum { BUILD_GRAPH, ASSEMBLY_MATRIX };
-    std::vector<OpToApplyEnum> opToApplySet = { OpToApplyEnum::BUILD_GRAPH, OpToApplyEnum::ASSEMBLY_MATRIX };
+    std::vector<OpToApplyEnum> opToApplySet;
+    if ( needToUpdateGraph )
+        opToApplySet.push_back( OpToApplyEnum::BUILD_GRAPH );
+    opToApplySet.push_back( OpToApplyEnum::ASSEMBLY_MATRIX );
     for ( OpToApplyEnum opToApply : opToApplySet )
     {
         std::vector<std::set<uint16_type> > dof_done( this->dualImageSpace()->nLocalDof(), std::set<uint16_type>() );
 
         if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
         {
-            // compute graph
-            sparsity_graph->close();
             // create matrix
-            VLOG(1) << "Building interpolation matrix ( " << this->domainSpace()->dofOnOff()->nDof() << "," << this->domainSpace()->dofOnOff()->nLocalDof()
-                    << "," << this->dualImageSpace()->dofOn()->nDof() << ", " << this->dualImageSpace()->dofOn()->nLocalDof() << ")";
-            google::FlushLogFiles(google::INFO);
-            this->matPtr() = this->backend()->newMatrix( this->domainSpace()->dofOnOff(),
-                                                         this->dualImageSpace()->dofOn(),
-                                                         sparsity_graph  );
+            if ( needToUpdateGraph )
+            {
+                VLOG(1) << "Building interpolation matrix ( " << this->domainSpace()->dofOnOff()->nDof() << "," << this->domainSpace()->dofOnOff()->nLocalDof()
+                        << "," << this->dualImageSpace()->dofOn()->nDof() << ", " << this->dualImageSpace()->dofOn()->nLocalDof() << ")";
+                google::FlushLogFiles(google::INFO);
+                CHECK( !needToCopyMatrix ) << "TODO : copy matrix from setup";
+                M_matrixSetup.setMatrix( this->backend()->newMatrix( sparsity_graph->mapColPtr(), sparsity_graph->mapRowPtr(),
+                                                                     sparsity_graph ) );
+                 // this->matPtr() = this->backend()->newMatrix( this->domainSpace()->dofOnOff(),
+                 //                                              this->dualImageSpace()->dofOn(),
+                 //                                              sparsity_graph  );
+            }
+            this->setMatrix( M_matrixSetup.matrix() );
         }
 
         for ( auto& itListRange : M_listRange )
@@ -1549,7 +1626,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                         {
                                             const value_type val = s(jloc)*IhLoc( cdomain*domain_basis_type::nLocalDof+jloc,
                                                                                   ilocprime );
+#if 0
                                             this->matPtr()->set( i,j,val );
+#else
+                                            this->matPtr()->set( dofIdToContainerIdRow[i], dofIdToContainerIdCol[j], val );
+#endif
                                         }
                                     }
                                 }
@@ -1563,6 +1644,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
             } // for ( ; it != en; ++ it )
         } // for ( ; itListRange!=enListRange ; ++itListRange)
+
+        if ( opToApply == OpToApplyEnum::BUILD_GRAPH )
+        {
+            // compute graph
+            sparsity_graph->close();
+        }
     } // opToApply
 
 }
@@ -1947,7 +2034,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
    boost::mpi::timer mytimer;
    this->worldCommFusion().globalComm().barrier();
    if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
-       std::cout << " start while " << std::endl;
+       LOG(INFO) << " start while " << std::endl;
 
    size_type nbLocalisationFail=1;
    while(!FinishMPIsearch)
@@ -1961,7 +2048,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            //std::cout <<  "proc " << this->worldCommFusion().globalRank() <<  " pointsSearched.size() " << pointsSearched.size() << std::endl;
            double t1 = mytimer.elapsed();
            if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
-               std::cout << "finish-step1 in " << (boost::format("%1%") % t1).str() << std::endl;
+               LOG(INFO) << "finish-step1 in " << (boost::format("%1%") % t1).str() << std::endl;
            //this->worldCommFusion().globalComm().barrier();
            mytimer.restart();
 
@@ -1979,7 +2066,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            //std::cout <<  "proc " << this->worldCommFusion().globalRank() <<  " memory_localisationFail.size() " << memory_localisationFail.size() << std::endl;
            double t2 = mytimer.elapsed();
            if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
-               std::cout << "finish-step2 in " << (boost::format("%1%") % t2).str() << std::endl;
+               LOG(INFO) << "finish-step2 in " << (boost::format("%1%") % t2).str() << std::endl;
            //this->worldCommFusion().globalComm().barrier();
            mytimer.restart();
 
@@ -2010,11 +2097,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
            double t3 = mytimer.elapsed();
            if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
-               std::cout << "finish-step3 in " << (boost::format("%1%") % t3).str() << std::endl;
+               LOG(INFO) << "finish-step3 in " << (boost::format("%1%") % t3).str() << std::endl;
            mytimer.restart();
 
            if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
-               std::cout << " it " << counterMPIsearch << "  nbLocalisationFail " << nbLocalisationFail << std::endl;
+               LOG(INFO) << " it " << counterMPIsearch << "  nbLocalisationFail " << nbLocalisationFail << std::endl;
 
            //std::cout <<  "proc " << this->worldCommFusion().globalRank()
            //          << " et " <<nbLocalisationFail << std::endl;
@@ -2026,7 +2113,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
    if ( doExtrapolationAtStart && nbLocalisationFail>0 )
        {
-           std::cout << " Start Extrapolation" << std::endl;
+           LOG(INFO) << " Start Extrapolation" << std::endl;
            std::vector<std::set<size_type> > dof_searchWithProcExtrap(this->dualImageSpace()->nLocalDof());
            //locTool->setExtrapolation(true);
            uint16_type nMPIsearchExtrap=5;
@@ -3646,9 +3733,10 @@ opInterpPtr( std::shared_ptr<DomainSpaceType> const& domainspace,
              IteratorRange const& r,
              typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,typename Feel::detail::opinterprangetype<IteratorRange>::type,InterpType>::backend_ptrtype const& backend,
              InterpType const& interptype,
-             bool ddmethod )
+             bool ddmethod,
+             OperatorInterpolationMatrixSetup<typename DomainSpaceType::value_type> const& matSetup = OperatorInterpolationMatrixSetup<typename DomainSpaceType::value_type>{} )
 {
-    typedef OperatorInterpolation<DomainSpaceType, 
+    typedef OperatorInterpolation<DomainSpaceType,
                                   ImageSpaceType,
                                   typename Feel::detail::opinterprangetype<IteratorRange>::type,
                                   InterpType> operatorinterpolation_type;
@@ -3658,7 +3746,8 @@ opInterpPtr( std::shared_ptr<DomainSpaceType> const& domainspace,
                                                                r,
                                                                backend,
                                                                interptype,
-                                                               ddmethod );
+                                                             ddmethod,
+                                                             matSetup );
 
     return opI;
 }
@@ -3702,6 +3791,7 @@ BOOST_PARAMETER_FUNCTION(
       ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
       ( type,           *, InterpolationNonConforming()  )
       ( ddmethod,  (bool),  false )
+      ( matrix,         *, typename compute_opInterpolation_return<Args>::type::matrix_setup_type{} )
     ) // optional
 )
 {
@@ -3709,7 +3799,7 @@ BOOST_PARAMETER_FUNCTION(
     Feel::detail::ignore_unused_variable_warning( args );
 #endif
     std::decay_t<decltype(type)> t( type );
-    return opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod );
+    return opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod,matrix );
 
 } // opInterpolation
 

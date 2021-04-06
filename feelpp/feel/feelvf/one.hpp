@@ -162,7 +162,7 @@ public:
             {
                 if constexpr ( CType == -1 )
                     M_one = vector_type::Ones();
-                else if constexpr ( CType >= 0 )
+                else if constexpr ( CType >= 0 && CType < gmc_type::nDim )
                     M_one(CType) = 1;
                 else if constexpr ( CType == -3 )
                 {
@@ -175,6 +175,12 @@ public:
                         M_one( 2 ) = 1;
                 }
             }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                expression_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            tensor( expr, geom, theInitArgs... )
+            {}
         template<typename IM>
         void init( IM const& /*im*/ )
         {
@@ -191,6 +197,11 @@ public:
         void update( Geo_t const& /*geom*/, uint16_type /*face*/ )
         {
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {}
+
         template<typename ... CTX>
         void updateContext( CTX const& ... ctx )
         {

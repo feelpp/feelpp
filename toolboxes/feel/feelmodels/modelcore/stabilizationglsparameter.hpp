@@ -104,6 +104,20 @@ StabilizationGLSParameter<MeshType,OrderPoly>::init()
             this->M_hSizeValues[id] = elt.h();
         else if ( this->M_hSizeMethod == "meas" )
             this->M_hSizeValues[id] = math::pow(elt.measure(),1./mesh_t::nDim);
+        else if ( this->M_hSizeMethod == "barycenter" )
+        {
+            //CHECK( is_triangle<mesh_t::element_type> ) << "only implement for triange";
+            auto b = elt.barycenter();
+            double s = 0;
+            for ( int k=0; k<elt.numVertices; k++ )
+            {
+                auto const& c = elt.point(k).node();
+                s += math::pow(c[0]-b[0],2) + math::pow(c[1]-b[1],2);
+            }
+            this->M_hSizeValues[id] = 4*elt.measure()/math::sqrt( 3*s );
+        }
+        else
+            this->M_hSizeValues[id] = 0.;
     }
 
     // Stabilization : computation of lambdaK

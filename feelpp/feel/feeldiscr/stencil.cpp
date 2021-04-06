@@ -6,6 +6,7 @@
        Date: 2012-04-07
 
   Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2021 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -40,7 +41,7 @@ stencilManagerGarbageCollect()
 
     std::list<StencilManagerImpl::key_type> eltToDelete;
 
-    BOOST_FOREACH( StencilManagerImpl::value_type & entry, StencilManager::instance() )
+    for( auto& entry: StencilManager::instance() )
     {
         auto fspace1 = entry.first.get<0>().lock();
         auto fspace2 = entry.first.get<1>().lock();
@@ -124,10 +125,10 @@ stencilManagerPrint()
     std::cout << "********************************************************************************\n";
 }
 
-stencilRangeMap0Type
+StencilRangeMap0Type
 stencilRangeMap( )
 {
-    return stencilRangeMap0Type();
+    return StencilRangeMap0Type();
 }
 
 }

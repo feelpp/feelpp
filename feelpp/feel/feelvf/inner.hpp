@@ -329,6 +329,13 @@ class Product : public ExprDynamicBase
               M_r_tensor_expr( expr.right(), geom )
         {
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_l_tensor_expr( std::true_type{}, exprExpanded.left(), ttse, expr.left(), geom, theInitArgs... ),
+            M_r_tensor_expr( std::true_type{}, exprExpanded.right(), ttse, expr.right(), geom, theInitArgs... )
+            {}
 
         template <typename IM>
         void init( IM const& im )
@@ -367,6 +374,14 @@ class Product : public ExprDynamicBase
             M_l_tensor_expr.updateContext( ctx... );
             if constexpr ( !IsSame )
                 M_r_tensor_expr.updateContext( ctx... );
+        }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+        {
+            M_l_tensor_expr.update( std::true_type{}, exprExpanded.left(), ttse, geom, theUpdateArgs... );
+            if constexpr ( !IsSame )
+                M_r_tensor_expr.update( std::true_type{}, exprExpanded.right(), ttse, geom, theUpdateArgs... );
         }
 
         value_type

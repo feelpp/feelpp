@@ -100,7 +100,7 @@ public:
 
     MatrixEigenSparse( MatrixEigenSparse const & m );
 
-    ~MatrixEigenSparse();
+    ~MatrixEigenSparse() override;
 
 
     //@}
@@ -109,18 +109,19 @@ public:
      */
     //@{
 
-    MatrixEigenSparse<T> & operator = ( MatrixSparse<value_type> const& M )
+    MatrixEigenSparse<T> & operator = ( MatrixSparse<value_type> const& M ) override
     {
         return *this;
     }
 
 
-    value_type  operator()( size_type i, size_type j ) const
+    value_type  operator()( size_type i, size_type j ) const override
     {
         //return M_mat.row(i).col(j);
         return 0.;
     }
-
+    using clone_ptrtype = typename super::clone_ptrtype;
+    clone_ptrtype clone() const override { return std::make_shared<MatrixEigenSparse<T>>( *this ); }
     //@}
 
     /** @name Accessors
@@ -131,7 +132,7 @@ public:
      * @returns \p m, the row-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    size_type size1 () const
+    size_type size1 () const override
     {
         return M_mat.rows();
     }
@@ -140,7 +141,7 @@ public:
      * @returns \p n, the column-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    size_type size2 () const
+    size_type size2 () const override
     {
         return M_mat.cols();
     }
@@ -148,7 +149,7 @@ public:
     /**
      * \return the number of non-zeros entries in the matrix
      */
-    size_type nnz() const
+    size_type nnz() const override
     {
         return M_mat.nonZeros();
     }
@@ -157,7 +158,7 @@ public:
      * return row_start, the index of the first
      * matrix row stored on this processor
      */
-    size_type rowStart () const
+    size_type rowStart () const override
     {
         return 0;
     }
@@ -166,7 +167,7 @@ public:
      * return row_stop, the index of the last
      * matrix row (+1) stored on this processor
      */
-    size_type rowStop () const
+    size_type rowStop () const override
     {
         return 0;
     }
@@ -174,7 +175,7 @@ public:
     /**
      * \return true if matrix is initialized/usable, false otherwise
      */
-    bool isInitialized() const
+    bool isInitialized() const override
     {
         return M_is_initialized;
     }
@@ -183,7 +184,7 @@ public:
      * \c close the eigen matrix, that will copy the content of write
      * optimized matrix into a read optimized matrix
      */
-    void close () const;
+    void close () const override;
 
 
     /**
@@ -228,7 +229,7 @@ public:
                 const size_type m_l,
                 const size_type n_l,
                 const size_type nnz=30,
-                const size_type noz=10 );
+                const size_type noz=10 ) override;
 
     /**
      * Initialize using sparsity structure computed by \p dof_map.
@@ -237,7 +238,7 @@ public:
                 const size_type n,
                 const size_type m_l,
                 const size_type n_l,
-                graph_ptrtype const& graph );
+                graph_ptrtype const& graph ) override;
 
     /**
      * Release all memory and return
@@ -245,7 +246,7 @@ public:
      * having called the default
      * constructor.
      */
-    void clear ()
+    void clear () override
     {
         //eigen::resize( M_mat, 0, 0 );
         M_mat.setZero();
@@ -255,12 +256,12 @@ public:
      * Set all entries to 0. This method retains
      * sparsity structure.
      */
-    void zero ()
+    void zero () override
     {
         M_mat.setZero();
     }
 
-    void zero ( size_type start1, size_type stop1, size_type start2, size_type stop2 )
+    void zero ( size_type start1, size_type stop1, size_type start2, size_type stop2 ) override
     {
     }
 
@@ -274,7 +275,7 @@ public:
      */
     void add ( const size_type i,
                const size_type j,
-               const value_type& value )
+               const value_type& value ) override
     {
         M_tripletList.push_back(triplet(i, j, value) );
     }
@@ -289,7 +290,7 @@ public:
       */
     void set ( const size_type i,
                const size_type j,
-               const value_type& value )
+               const value_type& value ) override
     {
         M_tripletList.push_back(triplet(i, j, value));
     }
@@ -301,7 +302,7 @@ public:
      * matrix to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL" ) const;
+    void printMatlab( const std::string name="NULL" ) const override;
 
 
 
@@ -310,14 +311,14 @@ public:
     /**
      * Copies the diagonal part of the matrix into \p dest.
      */
-    void diagonal ( Vector<T>& dest ) const;
+    void diagonal ( Vector<T>& dest ) const override;
 
     /**
      * \return \f$ v^T M u \f$
      */
     real_type
     energy( Vector<value_type> const& __v,
-            Vector<value_type> const& __u, bool transpose = false ) const;
+            Vector<value_type> const& __u, bool transpose = false ) const override;
 
     /**
      * eliminates row without change pattern, and put 1 on the diagonal
@@ -326,7 +327,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal ) override;
 
     void init() {}
 
@@ -338,20 +339,20 @@ public:
      */
     void addMatrix( const ublas::matrix<T, ublas::row_major>&,
                     const std::vector<size_type>&,
-                    const std::vector<size_type>& ) {}
+                    const std::vector<size_type>& ) override {}
 
     /**
      * Same, but assumes the row and column maps are the same.
      * Thus the matrix \p dm must be square.
      */
-    void addMatrix( const boost::numeric::ublas::matrix<T, ublas::row_major>&, const std::vector<size_type>& ) {}
+    void addMatrix( const boost::numeric::ublas::matrix<T, ublas::row_major>&, const std::vector<size_type>& ) override {}
 
     /**
      * Add a Sparse matrix \p _X, scaled with \p _a, to \p this,
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix( value_type v, MatrixSparse<value_type> const& _m, Feel::MatrixStructure matStruc = Feel::SAME_NONZERO_PATTERN );
+    void addMatrix( value_type v, MatrixSparse<value_type> const& _m, Feel::MatrixStructure matStruc = Feel::SAME_NONZERO_PATTERN ) override;
 
     /**
      * Add the full matrix to the
@@ -363,9 +364,9 @@ public:
                      int* cols, int ncols,
                      value_type* data,
                      size_type K = 0,
-                     size_type K2 = invalid_v<size_type>);
+                     size_type K2 = invalid_v<size_type>) override;
 
-    void scale( const T a );
+    void scale( const T a ) override;
 
     /**
      * Returns the transpose of a matrix
@@ -373,7 +374,7 @@ public:
      * \param M the matrix to transpose
      * \param Mt the matrix transposed
      */
-    void transpose( MatrixSparse<value_type>& Mt, size_type options ) const;
+    void transpose( MatrixSparse<value_type>& Mt, size_type options ) const override;
 
     /**
      * Return the l1-norm of the matrix, that is
@@ -382,7 +383,7 @@ public:
      * This is the natural matrix norm that is compatible to the
      * l1-norm for vectors, i.e.  \f$|Mv|_1\leq |M|_1 |v|_1\f$.
      */
-    real_type l1Norm() const
+    real_type l1Norm() const override
     {
         return real_type( 0 );
     }
@@ -397,7 +398,7 @@ public:
      * compatible to the linfty-norm of vectors, i.e.
      * \f$|Mv|_\infty \leq |M|_\infty |v|_\infty\f$.
      */
-    real_type linftyNorm() const
+    real_type linftyNorm() const override
     {
         return real_type( 0 );
     }
@@ -405,7 +406,7 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat( std::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
+    void updateBlockMat( std::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j ) override;
 
     //@}
 

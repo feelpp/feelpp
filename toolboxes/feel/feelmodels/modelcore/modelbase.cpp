@@ -31,7 +31,96 @@
 
 namespace Feel {
 
+namespace TabulateInformationTools
+{
+namespace FromJSON
+{
+tabulate_informations_ptr_t
+tabulateInformationsModelFields( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    for ( auto const& el : jsonInfo.items() )
+    {
+        std::string const& fieldName = el.key();
+        auto tabInfoField = TabulateInformationsSections::New( tabInfoProp );
+
+        Feel::Table tabInfoBasic;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoBasic, el.value(), tabInfoProp );
+        tabInfoBasic.format()
+            .setShowAllBorders( false )
+            .setColumnSeparator(":")
+            .setHasRowSeparator( false );
+        tabInfoField->add( "", TabulateInformations::New( tabInfoBasic,tabInfoProp ) );
+        if ( el.value().contains( "SymbolsExpr" ) )
+        {
+            auto const& jSE = el.value().at( "SymbolsExpr" );
+            tabInfoField->add( "", TabulateInformationTools::FromJSON::tabulateInformationsSymbolsExpr( jSE,tabInfoProp.newByIncreasingVerboseLevel(),true) );
+        }
+        tabInfo->add( fieldName, tabInfoField );
+    }
+    return tabInfo;
+}
+
+} // namespace FromJSON
+} // namespace TabulateInformationTools
+
+
+
 namespace FeelModels {
+
+
+void printToolboxApplication( std::string const& toolboxName, worldcomm_t const& worldComm )
+{
+    return;
+    std::vector<std::string> all_lines;
+    all_lines.push_back("███████╗███████╗███████╗██╗       ██╗         ██╗           ████████╗ ██████╗  ██████╗ ██╗     ██████╗  ██████╗ ██╗  ██╗███████╗███████╗");
+    all_lines.push_back("██╔════╝██╔════╝██╔════╝██║       ██║         ██║           ╚══██╔══╝██╔═══██╗██╔═══██╗██║     ██╔══██╗██╔═══██╗╚██╗██╔╝██╔════╝██╔════╝");
+    all_lines.push_back("█████╗  █████╗  █████╗  ██║   ██████████╗ ██████████╗          ██║   ██║   ██║██║   ██║██║     ██████╔╝██║   ██║ ╚███╔╝ █████╗  ███████╗");
+    all_lines.push_back("██╔══╝  ██╔══╝  ██╔══╝  ██║   ╚═══██╔═══╝ ╚═══██╔═══╝  █████╗  ██║   ██║   ██║██║   ██║██║     ██╔══██╗██║   ██║ ██╔██╗ ██╔══╝  ╚════██║");
+    all_lines.push_back("██║     ███████╗███████╗███████╗  ██║         ██║      ╚════╝  ██║   ╚██████╔╝╚██████╔╝███████╗██████╔╝╚██████╔╝██╔╝ ██╗███████╗███████║");
+    all_lines.push_back("╚═╝     ╚══════╝╚══════╝╚══════╝  ╚═╝         ╚═╝              ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝");
+
+    std::vector<std::string> all_lines_app;
+    if ( toolboxName == "cfpdes" )
+    {
+        all_lines_app.push_back(" ██████╗ ██████╗ ███████╗███████╗███████╗██╗ ██████╗██╗███████╗███╗   ██╗████████╗    ███████╗ ██████╗ ██████╗ ███╗   ███╗    ██████╗ ██████╗ ███████╗███████╗");
+        all_lines_app.push_back("██╔════╝██╔═══██╗██╔════╝██╔════╝██╔════╝██║██╔════╝██║██╔════╝████╗  ██║╚══██╔══╝    ██╔════╝██╔═══██╗██╔══██╗████╗ ████║    ██╔══██╗██╔══██╗██╔════╝██╔════╝");
+        all_lines_app.push_back("██║     ██║   ██║█████╗  █████╗  █████╗  ██║██║     ██║█████╗  ██╔██╗ ██║   ██║       █████╗  ██║   ██║██████╔╝██╔████╔██║    ██████╔╝██║  ██║█████╗  ███████╗");
+        all_lines_app.push_back("██║     ██║   ██║██╔══╝  ██╔══╝  ██╔══╝  ██║██║     ██║██╔══╝  ██║╚██╗██║   ██║       ██╔══╝  ██║   ██║██╔══██╗██║╚██╔╝██║    ██╔═══╝ ██║  ██║██╔══╝  ╚════██║");
+        all_lines_app.push_back("╚██████╗╚██████╔╝███████╗██║     ██║     ██║╚██████╗██║███████╗██║ ╚████║   ██║       ██║     ╚██████╔╝██║  ██║██║ ╚═╝ ██║    ██║     ██████╔╝███████╗███████║");
+        all_lines_app.push_back(" ╚═════╝ ╚═════╝ ╚══════╝╚═╝     ╚═╝     ╚═╝ ╚═════╝╚═╝╚══════╝╚═╝  ╚═══╝   ╚═╝       ╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝    ╚═╝     ╚═════╝ ╚══════╝╚══════╝");
+    }
+    else if ( toolboxName == "heat" )
+    {
+        all_lines_app.push_back("██╗  ██╗███████╗ █████╗ ████████╗");
+        all_lines_app.push_back("██║  ██║██╔════╝██╔══██╗╚══██╔══╝");
+        all_lines_app.push_back("███████║█████╗  ███████║   ██║   ");
+        all_lines_app.push_back("██╔══██║██╔══╝  ██╔══██║   ██║   ");
+        all_lines_app.push_back("██║  ██║███████╗██║  ██║   ██║   ");
+        all_lines_app.push_back("╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝   ╚═╝   ");
+    }
+
+    tabulate::Table tabInfo;
+    // the a\b added is for fix the FontAlign::center, not very nice but work if we hide the left/right borders
+    for ( int k=0;k<all_lines.size();++k )
+        tabInfo.add_row({ "a\b" +all_lines[k] + "a\b" });
+    for ( int k=0;k<all_lines_app.size();++k )
+        tabInfo.add_row({ "a\b" +all_lines_app[k] +"a\b" });
+    tabInfo.format()
+        .hide_border()
+        .multi_byte_characters(true)
+        //.hide_border_top()
+        .font_color(tabulate::Color::green/*red*/)
+        .font_align(tabulate::FontAlign::center)
+        //.font_background_color(tabulate::Color::green)
+        ;
+
+    if ( worldComm.isMasterRank() )
+        std::cout << tabInfo << std::endl;
+    worldComm.barrier();
+}
+
+
 
 namespace ToolboxesDetail
 {
@@ -298,7 +387,6 @@ ModelBase::ModelBase( std::string const& prefix, std::string const& keyword,
     M_modelRepository( modelRep ),
     M_verbose( boption(_name="verbose",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_verboseAllProc( boption(_name="verbose_allproc",_prefix=this->prefix(),_vm=this->clovm()) ),
-    M_filenameSaveInfo( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"toolbox-info.txt")) ),
     M_timersActivated( boption(_name="timers.activated",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_timersSaveFileMasterRank( boption(_name="timers.save-master-rank",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_timersSaveFileMax( boption(_name="timers.save-max",_prefix=this->prefix(),_vm=this->clovm()) ),
@@ -375,16 +463,58 @@ ModelBase::log( std::string const& _className,std::string const& _functionName,s
 }
 
 // info
-std::string
-ModelBase::filenameSaveInfo() const
-{
-    return M_filenameSaveInfo;
-}
+
 void
-ModelBase::setFilenameSaveInfo( std::string const& s )
+ModelBase::updateInformationObject( nl::json & p ) const
 {
-    M_filenameSaveInfo = s;
+    if ( p.contains( "prefix" ) )
+        return;
+    p.emplace( "prefix", this->prefix() );
+    p.emplace( "keyword", this->keyword() );
+    p.emplace( "root repository", this->rootRepository() );
+    p.emplace( "expr repository", this->repository().expr() );
+    p.emplace( "number of processus", this->worldComm().localSize() );
 }
+
+tabulate_informations_ptr_t
+ModelBase::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    Feel::Table tabInfo;
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "prefix","keyword","root repository","expr eepository", "number of processus" } );
+    //TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfo, jsonInfo, tabInfoProp ); // bad ordering due to boost properties
+    tabInfo.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+    return TabulateInformations::New( tabInfo, tabInfoProp );
+}
+
+tabulate_informations_ptr_t
+ModelBase::tabulateInformations() const
+{
+    Environment::journalCheckpoint();
+#if 0
+    pt::ptree pt;
+    this->updateInformationObject( pt );
+    std::ostringstream pt_ostr;
+    write_json( pt_ostr, pt );
+    std::istringstream pt_istream( pt_ostr.str() );
+    nl::json jsonInfo;
+    pt_istream >> jsonInfo;
+#else
+    nl::json jsonInfo;
+    this->updateInformationObject( jsonInfo );
+#endif
+
+    auto tabInfo = this->tabulateInformations( jsonInfo, TabulateInformationProperties{} );
+
+    auto tabRes = TabulateInformationsSections::New();
+    std::string title = (boost::format("Toolbox : %1%")%this->keyword()).str();
+    tabRes->add( title, tabInfo );
+
+    return tabRes;
+}
+
 std::shared_ptr<std::ostringstream>
 ModelBase::getInfo() const
 {
@@ -392,33 +522,42 @@ ModelBase::getInfo() const
     return _ostr;
 }
 void
-ModelBase::printInfo() const
+ModelBase::printInfo( tabulate_informations_ptr_t const& tabInfos ) const
 {
-    if ( this->verboseAllProc() )
+    if ( this->worldComm().isMasterRank() )
+    {
         std::cout << this->getInfo()->str();
-    else if (this->worldComm().isMasterRank() )
-        std::cout << this->getInfo()->str();
+        std::cout << *tabInfos << std::endl;
+    }
 }
 void
-ModelBase::saveInfo() const
+ModelBase::saveInfo( tabulate_informations_ptr_t const& tabInfos ) const
 {
-    Environment::journalCheckpoint();
-
-    fs::path thepath = fs::path(this->rootRepository())/fs::path(this->filenameSaveInfo());
-    if (this->worldComm().isMasterRank() )
+    std::string filename_ascii = prefixvm(this->keyword(),"informations.txt");
+    std::string filename_adoc = prefixvm(this->keyword(),"informations.adoc");
+    std::string filepath_ascii = (fs::path(this->rootRepository())/filename_ascii).string();
+    std::string filepath_adoc = (fs::path(this->rootRepository())/filename_adoc).string();
+    if ( this->worldComm().isMasterRank() )
     {
-        std::ofstream file( thepath.string().c_str(), std::ios::out);
-        file << this->getInfo()->str();
-        file.close();
+        std::ofstream file_ascii( filepath_ascii, std::ios::out);
+        file_ascii << this->getInfo()->str();
+        file_ascii.close();
+
+        std::ofstream file_adoc( filepath_adoc, std::ios::out);
+        file_adoc << ":sectnums:" << "\n";
+        file_adoc << tabInfos->exporterAsciiDoc() << "\n";
+        file_adoc.close();
     }
 
-    this->upload( thepath.string() );
+    this->upload( filepath_ascii );
+    this->upload( filepath_adoc );
 }
 void
 ModelBase::printAndSaveInfo() const
 {
-    this->printInfo();
-    this->saveInfo();
+    auto tabInfo = this->tabulateInformations();
+    this->printInfo( tabInfo );
+    this->saveInfo( tabInfo );
 }
 
 // timer

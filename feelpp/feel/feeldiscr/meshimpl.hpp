@@ -139,8 +139,7 @@ void print( MeshT* m )
 // Constructor.
 template <typename Shape, typename T, int Tag, typename IndexT>
 Mesh<Shape, T, Tag, IndexT>::Mesh( std::string const& name, worldcomm_ptr_t const& worldComm, std::string const& props )
-    : super( worldComm ),
-      super2( "Mesh", name ),
+    : super( name, worldComm ),
       M_numGlobalElements( 0 ),
       M_gm( new gm_type ),
       M_gm1( Feel::meshdetail::initGm1<type>( M_gm, mpl::bool_<nOrder == 1>() ) ),
@@ -466,10 +465,10 @@ void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
     if ( iv != en )
     {
         auto const& eltInit = iv->second;
-        std::shared_ptr<typename gm_type::template Context<vm::JACOBIAN, element_type>> ctx;
-        std::shared_ptr<typename gm_type::template Context</*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN, element_type>> ctxf;
-        std::shared_ptr<typename gm1_type::template Context<vm::JACOBIAN, element_type>> ctx1;
-        std::shared_ptr<typename gm1_type::template Context</*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN, element_type>> ctxf1;
+        std::shared_ptr<typename gm_type::template Context<element_type>> ctx;
+        std::shared_ptr<typename gm_type::template Context<element_type,1>> ctxf;
+        std::shared_ptr<typename gm1_type::template Context<element_type>> ctx1;
+        std::shared_ptr<typename gm1_type::template Context<element_type,1>> ctxf1;
         if ( pc )
             ctx = M_gm->template context<vm::JACOBIAN>( eltInit, pc );
         if ( !pcf.empty() )
@@ -485,13 +484,12 @@ void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
 
             if ( meshIsStraightened && !elt.isOnBoundary() )
             {
-
-                ctx1->update( elt );
+                ctx1->template update<vm::JACOBIAN>( elt );
                 elt.updateWithCtx( thequad1, ctx1, ctxf1 );
             }
             else
             {
-                ctx->update( elt );
+                ctx->template update<vm::JACOBIAN>( elt );
                 elt.updateWithCtx( thequad, ctx, ctxf );
             }
             // only compute meas for active element (no ghost)
@@ -3270,8 +3268,6 @@ void Mesh<Shape, T, Tag, IndexT>::Inverse::distribute( bool extrapolation )
     if ( nActifElt == 0 ) return;
 
     typedef typename self_type::element_type element_type;
-    typedef typename gm_type::template Context<vm::JACOBIAN | vm::KB | vm::POINT, element_type> gmc_type;
-    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     BoundingBox<> bb;
 
     typename gm_type::reference_convex_type refelem;
@@ -3286,16 +3282,15 @@ void Mesh<Shape, T, Tag, IndexT>::Inverse::distribute( bool extrapolation )
     M_pts_cvx.clear();
 
     KDTree::points_type boxpts;
-    gmc_ptrtype __c( new gmc_type( M_mesh->gm(),
-                                   boost::unwrap_ref( *el_it ),
-                                   __geopc ) );
+
+    auto __c = M_mesh->gm()->template context<vm::JACOBIAN | vm::KB | vm::POINT>( unwrap_ref( *el_it ),__geopc );
     VLOG( 2 ) << "[Mesh::Inverse] distribute mesh points ion kdtree\n";
 
     for ( ; el_it != el_en; ++el_it )
     {
         auto const& elt = boost::unwrap_ref( *el_it );
         // get geometric transformation
-        __c->update( elt );
+        __c->template update<vm::JACOBIAN | vm::KB | vm::POINT>( elt );
         gic_type gic( M_mesh->gm(), elt );
 
         // create bounding box
