@@ -291,9 +291,10 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::interfaceRectangularFunction( element_levelset
         ;
 
     return vf::project( 
-            this->functionSpace(), 
-            this->rangeMeshElements(),
-            R_expr
+            _space=this->functionSpace(), 
+            _range=this->rangeMeshElements(),
+            _expr=R_expr,
+            _geomap=this->geomap()
             );
 }
 

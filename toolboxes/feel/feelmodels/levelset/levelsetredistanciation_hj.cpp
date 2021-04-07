@@ -120,9 +120,9 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) co
         //auto phi_sign = idv(phi_redist) / vf::max( vf::sqrt(gradv(phi_redist)*trans(gradv(phi_redist))), 0.92 );
         auto phi_sign = idv(phi_redist) / vf::sqrt( trans(idv(gradPhiReinit))*idv(gradPhiReinit) );
         auto H_redist = vf::project(
-                space,
-                elements(mesh),
-                vf::abs(
+                _space=space,
+                _range=elements(mesh),
+                _expr=vf::abs(
                     ( phi_sign < -M_thicknessHeaviside )*vf::constant(0.0)
                     +
                     ( phi_sign >= -M_thicknessHeaviside && phi_sign <= M_thicknessHeaviside )*

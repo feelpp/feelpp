@@ -347,7 +347,10 @@ LevelSetRedistanciationFM<FunctionSpaceType>::runFastMarching( element_type cons
         }
         else
         {
-            phi_FM = vf::project( this->functionSpaceFM(), elements(this->mesh()), idv(phi) );
+            phi_FM = vf::project( 
+                    _space=this->functionSpaceFM(), 
+                    _range=elements(this->mesh()), 
+                    _expr=idv(phi) );
         }
         
         // Retrieve P1 space elements corresponding to rangeInitialElts
@@ -371,7 +374,10 @@ LevelSetRedistanciationFM<FunctionSpaceType>::runFastMarching( element_type cons
         }
         else
         {
-            phi_redist = vf::project( this->functionSpace(), elements(this->mesh()), idv(phi_FM) );
+            phi_redist = vf::project( 
+                    _space=this->functionSpace(), 
+                    _range=elements(this->mesh()), 
+                    _expr=idv(phi_FM) );
         }
 
         return phi_redist;
