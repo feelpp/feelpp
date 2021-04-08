@@ -394,13 +394,20 @@ int runApplicationFluid()
             Feel::cout << " is MoveDomain " << FM->isMoveDomain() << std::endl;
             FM->setApplyMovingMeshBeforeSolve( false );
 
-            auto expr_swimming = expr(expr<nDim,1>("{udxt_0,udxt_1}:udxt_0:udxt_1"),FM->symbolsExpr());
+            auto expr_swimming_f = [&FM](){
+                if constexpr ( nDim == 2 )
+                    return expr(expr<nDim,1>("{udxt_0,udxt_1}:udxt_0:udxt_1"),FM->symbolsExpr());
+                else
+                    return expr(expr<nDim,1>("{udxt_0,udxt_1,udxt_2}:udxt_0:udxt_1:udxt_2"),FM->symbolsExpr());
+
+            };
+            auto expr_swimming =  expr_swimming_f();
             expr_swimming.setParameterValues( FM->modelProperties().parameters().toParameterValues() );
             auto ud = Xh_ref_swimmer->element( expr_swimming );
             auto integral_1 = integrate(_range=elements(Xh_ref_swimmer->mesh()),_expr=expr_swimming).evaluate();
             auto integral_2 = integrate(_range=elements(Xh_ref_swimmer->mesh()),_expr=idv(ud)).evaluate();
             std::cout << "Integral1 "  << integral_1 << " Integral2 " << integral_2 << std::endl;            
-            auto se = Feel::vf::symbolsExpr( FM->symbolsExpr(), symbolExpr( "ud", print( idv( ud ), "ud=" ),SymbolExprComponentSuffix( nDim,1 ) ) );
+            auto se = Feel::vf::symbolsExpr( FM->symbolsExpr(), symbolExpr( "ud", idv( ud ),SymbolExprComponentSuffix( nDim,1 ) ) );
             
             FM->updateALEmesh( se );
             FM->solve();
