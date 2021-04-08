@@ -60,7 +60,7 @@
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 #include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
 
-#define FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
+//#define FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
 
 namespace Feel
 {
@@ -512,6 +512,7 @@ public:
         bool hasElasticVelocity() const { return ( M_fieldElasticVelocity? true : false ); }
 
         bool hasElasticVelocityFromExpr() const { return !M_elasticVelocityExprBC.empty(); }
+        bool hasElasticVelocityHighOrder() const {return (M_fieldElasticVelocity? true : false );}
         void registerCustomFieldVectorialElastic( std::string const& name )
         {
             if ( M_fieldsUserVectorialElastic.find( name ) == M_fieldsUserVectorialElastic.end() )
@@ -529,7 +530,8 @@ public:
         element_trace_velocity_ptrtype & fieldElasticVelocityPtr() { return M_fieldElasticVelocity; }
         space_trace_velocity_ptrtype const& spaceElasticVelocityPtr() const {return M_XhElasticVelocity;}
         auto elasticVelocityExpr() const { CHECK( this->hasElasticVelocity() ) << "no elastic velocity"; return idv(M_fieldElasticVelocity); }
-
+        // LUCA
+        std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> const& exprElasticVelocity() const {return M_elasticVelocityExprBC;}
         template <typename SymbolsExprType>
         void updateElasticVelocityFromExpr( self_type const& fluidToolbox, SymbolsExprType const& se );
 
@@ -2190,7 +2192,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
             this->meshALE()->revertMovingMesh( false );
     }
 
-    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    for ( auto [bpname,bpbc] : M_bodySetBC )
     {
         //auto rangeMFOF = bpbc.rangeMarkedFacesOnFluid();
         // temporary fix of interpolation with meshale space
@@ -2198,7 +2200,51 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
         if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() && !bpbc.hasElasticVelocity() )
             this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExpr(), rangeMFOF );
         else if ( bpbc.hasElasticVelocityFromExpr() )
-            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), rangeMFOF );
+            {
+                // LUCA
+            if(bpbc.hasElasticVelocityHighOrder())
+            {
+                bpbc.updateElasticVelocityFromExpr(*this,se );
+                double t0 = this->time();
+                //this->updateParameterValues();
+                //this->setParameterValues(this->modelProperties().parameters().toParameterValues());
+                auto ev_n = bpbc.spaceElasticVelocityPtr()->element();
+                ev_n = *bpbc.fieldElasticVelocityPtr();
+                auto RK_elastic_velocity_n = idv(ev_n);
+                //auto RK_elastic_velocity_n = bpbc.elasticVelocityExpr();
+                double thalf = this->time()+this->timeStep()*0.5;
+                //this->updateTime(thalf);
+                //this->updateParameterValues();
+                //this->setParameterValues(this->modelProperties().parameters().toParameterValues());
+                M_bodySetBC.setParameterValues({{"t",thalf}});
+                bpbc.updateElasticVelocityFromExpr(*this,se );
+                auto n_plusonehalf = bpbc.spaceElasticVelocityPtr()->element();
+                n_plusonehalf = *bpbc.fieldElasticVelocityPtr();
+                auto RK_elastic_velocity_n_onehalf = idv(n_plusonehalf);
+                //auto RK_elastic_velocity_n_onehalf = bpbc.elasticVelocityExpr();
+                double tnp1 = this->time()+this->timeStep();
+                //this->updateTime(tnp1);
+                //this->updateParameterValues();
+                //this->setParameterValues(this->modelProperties().parameters().toParameterValues());
+                M_bodySetBC.setParameterValues({{"t",tnp1}});
+                bpbc.updateElasticVelocityFromExpr(*this,se );
+                auto n_plusone = bpbc.spaceElasticVelocityPtr()->element();
+                n_plusone = *bpbc.fieldElasticVelocityPtr();
+                auto RK_elastic_velocity_n_plusone = idv(n_plusone);//bpbc.elasticVelocityExpr();
+                auto difference1 = integrate(_range=elements(bpbc.spaceElasticVelocityPtr()->mesh()), _expr =inner(RK_elastic_velocity_n-RK_elastic_velocity_n_onehalf,RK_elastic_velocity_n-RK_elastic_velocity_n_onehalf)).evaluate()(0,0);
+                auto difference2 = integrate(_range=elements(bpbc.spaceElasticVelocityPtr()->mesh()), _expr =inner(RK_elastic_velocity_n_plusone-RK_elastic_velocity_n_onehalf,RK_elastic_velocity_n_plusone-RK_elastic_velocity_n_onehalf)).evaluate()(0,0);
+                std::cout << "difference1 " << difference1 << " difference2 " << difference2<< std::endl;
+                this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + 1.0/6.0*(RK_elastic_velocity_n+4.0*RK_elastic_velocity_n_onehalf+RK_elastic_velocity_n_plusone), rangeMFOF );
+                //this->updateTime(t0);
+                //this->updateParameterValues();
+                //this->setParameterValues(this->modelProperties().parameters().toParameterValues());
+                M_bodySetBC.setParameterValues({{"t",t0}});
+                bpbc.updateElasticVelocityFromExpr(*this,se );
+                *bpbc.fieldElasticVelocityPtr() = ev_n;
+            }
+            else
+                this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), rangeMFOF );
+            }
         else
             this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields(), rangeMFOF ); // TO FIX : use idv(this->fieldVelocity() require to need a range with partial support mesh info
             //this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, idv(this->fieldVelocity())/*bpbc.rigidVelocityExprFromFields()*/, rangeMFOF );
