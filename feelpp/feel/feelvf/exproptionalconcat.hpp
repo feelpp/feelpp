@@ -54,6 +54,8 @@ public :
 
     using tuple_expr_type = TupleExprType;
 
+    static constexpr int nExpr = std::decay_t<decltype(hana::size(tuple_expr_type{}))>::value;
+
     using tuple_optional_expr_type =  std::decay_t<decltype( hana::transform( tuple_expr_type{}, TransformOptionalExpr{} ) )>;
 
     using first_expression_type = typename std::decay_t<decltype(hana::at_c<0>( tuple_expr_type{} ))>;
@@ -211,6 +213,34 @@ public :
             return ExprOptionalConcat<new_tuple_optional_expr_type>( std::true_type{},std::move( newTuple ) );
         }
 
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            bool res = false;
+            hana::for_each( M_exprs, [&res,&symb,&se]( auto const& e )
+                            {
+                                if ( res )
+                                    return;
+                                for ( auto const& e2 : e )
+                                {
+                                    res = e2.hasSymbolDependency(symb,se);
+                                    if ( res )
+                                        break;
+                                }
+                            });
+            return res;
+        }
+
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+        {
+            hana::for_each( M_exprs, [&symb,&res,&se]( auto const& e )
+                            {
+                                for ( auto const& e2 : e )
+                                    e2.dependentSymbols(symb,res,se);
+                            });
+        }
+
     template <int diffOrder, typename TheSymbolExprType>
     auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
                TheSymbolExprType const& se ) const
@@ -273,6 +303,19 @@ public :
                         res.push_back( _tensor_type( e,geom ) );
                     return res;
                 }
+            template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename T, typename... TheArgsType>
+            constexpr auto operator()(std::true_type, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                                      T const& t, Geo_t const& geom, const TheArgsType&... theInitArgs ) const
+                {
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    std::vector<_tensor_type> res;
+                    res.reserve( t.size() );
+                    int k=0;
+                    for ( auto const& e : t )
+                        res.push_back( _tensor_type( std::true_type{}, exprExpanded[k++], ttse, e, geom, theInitArgs... ) );
+                    return res;
+                }
+
         };
 
         using tuple_tensor_expr_type = std::decay_t<decltype( hana::transform( tuple_optional_expr_type{}, TransformExprToTensor{} ) ) >;
@@ -302,7 +345,16 @@ public :
             :
             M_tupleTensorExprs( hana::transform( expr.tupleExpressions(), [this,&geom](auto const& t) { return TransformExprToTensor{}(t,geom); } ) )
             {}
-
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_tupleTensorExprs( hana::transform( hana::unpack( hana::make_range( hana::int_c<0>, hana::int_c<nExpr> ), hana::make_tuple ), [this,&exprExpanded,&ttse,&expr,&geom,&theInitArgs...](auto eId )
+                                                 {
+                                                     return TransformExprToTensor{}(std::true_type{},hana::at( exprExpanded.tupleExpressions(), hana::int_c<eId> ), ttse,
+                                                                                    hana::at( expr.tupleExpressions(), hana::int_c<eId> ), geom, theInitArgs...);
+                                                 } ) )
+            {}
         template<typename IM>
         void init( IM const& im )
         {
@@ -340,6 +392,19 @@ public :
                                     e2.update( geom, face );
                             });
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+        {
+            hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nExpr> ), [this,&exprExpanded,&ttse,&geom,&theUpdateArgs...]( auto eId )
+                            {
+                                    auto const& subExprExpanded = hana::at( exprExpanded.tupleExpressions(), hana::int_c<eId> );
+                                    int k=0;
+                                    for ( auto & e2 :  hana::at( M_tupleTensorExprs, hana::int_c<eId> ) )
+                                        e2.update( std::true_type{}, subExprExpanded[k++], ttse, geom, theUpdateArgs... );
+                            } );
+        }
+
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const

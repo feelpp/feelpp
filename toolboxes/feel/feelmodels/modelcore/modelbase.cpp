@@ -71,6 +71,7 @@ namespace FeelModels {
 
 void printToolboxApplication( std::string const& toolboxName, worldcomm_t const& worldComm )
 {
+    return;
     std::vector<std::string> all_lines;
     all_lines.push_back("███████╗███████╗███████╗██╗       ██╗         ██╗           ████████╗ ██████╗  ██████╗ ██╗     ██████╗  ██████╗ ██╗  ██╗███████╗███████╗");
     all_lines.push_back("██╔════╝██╔════╝██╔════╝██║       ██║         ██║           ╚══██╔══╝██╔═══██╗██╔═══██╗██║     ██╔══██╗██╔═══██╗╚██╗██╔╝██╔════╝██╔════╝");
