@@ -1,3 +1,4 @@
+
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
 
  This file is part of the Feel++ library
@@ -52,7 +53,7 @@ doExport()
                           reps.insert( *it );
                       return std::tuple{ fields[0], fields[1], reps };
                   };
-    
+
     for( auto const& sexpr : vsoption( _name="scalar_expr" ) )
     {
         auto const& [strname,strexpr, reps ] = getfns( sexpr );
@@ -62,7 +63,7 @@ doExport()
     {
         auto const& [strname,strexpr, reps ] = getfns( sexpr );
         ex->add( strname, expr<3,1>( strexpr ), reps );
-    } 
+    }
     ex->add( "P", P(), "nodal" );
     ex->add( "facesmarker", semarker(), faces(mesh), "nodal" );
     if constexpr ( dimension_v<mesh_t> > 2 )
@@ -74,7 +75,13 @@ doExport()
     hana::for_each( exprs,
                     [&](const auto& x) { ex->add( hana::first(x), hana::second(x), "element" ); } );
 
-    
+//    if ( boption( "get_h" ) )
+//    {
+        auto [havg, hmin, hmax] = hMeasures( mesh );
+        Feel::cout << "h_avg = " << havg << std::endl;
+        Feel::cout << "h_min = " << hmin << std::endl;
+        Feel::cout << "h_max = " << hmax << std::endl;
+//    }
     ex->save();
 
 }
@@ -90,6 +97,7 @@ int main( int argc, char** argv )
         ( "order", po::value<int>()->default_value( 1 ), "mesh geometric order" )
         ( "scalar_expr", po::value<std::vector<std::string>>()->default_value( {"g|sin(x):x|nodal|element"} ), "list of scalar expressions with name and representations" )
         ( "vectorial_expr", po::value<std::vector<std::string>>()->default_value( {"gv|{sin(2*pi*x),sin(2*pi*x),sin(2*pi*x)}:x|nodal|element"} ), "list of vectorial  expressions with name and representations" )
+        ( "get_h", po::value<bool>()->default_value( false ), "calculate characteristic size fo the mesh")
 
         ;
     Environment env( _argc=argc, _argv=argv,
