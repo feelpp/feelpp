@@ -1,0 +1,99 @@
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
+
+#ifndef FEELPP_TOOLBOXES_MODELCORE_CACHEDMODELFIELDS_H
+#define FEELPP_TOOLBOXES_MODELCORE_CACHEDMODELFIELDS_H 1
+
+#include <memory>
+#include <functional>
+#include <type_traits>
+
+namespace Feel
+{
+namespace FeelModels
+{
+
+template <typename FieldType>
+struct CachedModelField
+{
+    typedef CachedModelField<FieldType> self_type;
+
+    typedef FieldType field_type;
+    typedef std::shared_ptr<field_type> field_ptrtype;
+    typedef typename field_type::functionspace_type functionspace_type;
+    typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
+
+    using update_function_type = std::function<field_type()>;
+
+    template<typename UpdateFunctionType>
+    CachedModelField( UpdateFunctionType f ) :
+        M_updateFunction( f ),
+        M_doUpdateField( true )
+    {}
+    template<typename UpdateFunctionType>
+    CachedModelField( field_ptrtype const& fieldPtr, UpdateFunctionType f ) :
+        M_fieldPtr( fieldPtr ),
+        M_updateFunction( f ),
+        M_doUpdateField( true )
+    {}
+
+    CachedModelField( CachedModelField const& ) = default;
+    CachedModelField( CachedModelField && ) = default;
+
+    field_ptrtype fieldPtr( bool update = true ) const 
+    {
+        if( update )
+            const_cast<self_type*>(this)->update();
+        return M_fieldPtr;
+    }
+    field_type const& field( bool update = true ) const 
+    {
+        if( update )
+            const_cast<self_type*>(this)->update();
+        return *M_fieldPtr;
+    }
+
+    void setDoUpdate( bool doUpdate ) { M_doUpdateField = doUpdate; }
+
+    void update()
+    {
+        if( M_doUpdateField )
+        {
+            if( M_fieldPtr ) // if field ptr is not empty, we update the pointed value
+                *M_fieldPtr = M_updateFunction();
+            else // otherwise we reset the pointer
+                M_fieldPtr.reset( new field_type( M_updateFunction() ) );
+        }
+
+        M_doUpdateField = false;
+    }
+
+private:
+    field_ptrtype M_fieldPtr;
+    update_function_type M_updateFunction;
+    bool M_doUpdateField {true};
+};
+
+template<typename T>
+struct is_cached_model_field : std::false_type {};
+
+template<typename T>
+struct is_cached_model_field<CachedModelField<T>> : std::true_type {};
+
+template<typename T>
+inline constexpr bool is_cached_model_field_v = is_cached_model_field<T>::value;
+
+template<typename T>
+struct raw_field_type : Feel::remove_shared_ptr<T> {};
+
+template<typename T>
+struct raw_field_type<CachedModelField<T>> : Feel::remove_shared_ptr<T> {};
+
+template<typename T>
+using raw_field_t = typename raw_field_type<T>::type;
+
+
+} // namespace FeelModels
+} // namespace Feel
+
+#endif
