@@ -21,6 +21,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <cmath>
+#include <cstdlib>
 #include <algorithm>
 #include "parse_context.h"
 #include "power.h"
@@ -33,6 +34,33 @@
 
 namespace GiNaC
 {
+DECLARE_FUNCTION_1P(rand);
+static ex rand_eval(const ex & x) 
+{ 
+	if (is_exactly_a<numeric>(x))
+	{
+		return rand( ex_to<numeric>( x ) );
+	}
+	
+	return rand(x).hold();
+}
+
+                                                                                
+static void rand_print_latex(const ex & arg1, const print_context & c)
+{
+    c.s << "{"; arg1.print(c); c.s << "|}";
+}
+                                                                                
+static void rand_print_csrc_float(const ex & arg1, const print_context & c)
+{
+    c.s << "std::rand()/(RAND_MAX + 1u)";
+}
+REGISTER_FUNCTION(rand, eval_func( rand_eval).
+                       evalf_func( rand_eval).
+                       print_func<print_latex>( rand_print_latex).
+                       print_func<print_csrc_float>( rand_print_csrc_float).
+                       print_func<print_csrc_double>( rand_print_csrc_float));
+
 DECLARE_FUNCTION_2P(mod);
 static ex mod_eval(const ex & x, const ex& y ) 
 { 
