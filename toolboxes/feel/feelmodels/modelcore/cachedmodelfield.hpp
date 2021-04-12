@@ -14,9 +14,55 @@ namespace FeelModels
 {
 
 template <typename FieldType>
-struct CachedModelField
+struct ReturnValueUpdatePolicy
 {
-    typedef CachedModelField<FieldType> self_type;
+    typedef FieldType field_type;
+    typedef std::shared_ptr<field_type> field_ptrtype;
+    using update_function_type = std::function<field_type()>;
+
+    template<typename UpdateFunctionType>
+    ReturnValueUpdatePolicy( UpdateFunctionType f ) :
+        M_updateFunction( f )
+    {}
+
+    void update( field_ptrtype & fieldPtr )
+    {
+        if( fieldPtr ) // if field ptr is not empty, we update the pointed value
+            *fieldPtr = M_updateFunction();
+        else // otherwise we reset the pointer
+            fieldPtr.reset( new field_type( M_updateFunction() ) );
+    }
+
+protected:
+    update_function_type M_updateFunction;
+};
+
+template <typename FieldType>
+struct InplaceUpdatePolicy
+{
+    typedef FieldType field_type;
+    typedef std::shared_ptr<field_type> field_ptrtype;
+    using update_function_type = std::function<void(field_ptrtype &)>;
+
+    template<typename UpdateFunctionType>
+    InplaceUpdatePolicy( UpdateFunctionType f ) :
+        M_updateFunction( f )
+    {}
+
+    void update( field_ptrtype & fieldPtr )
+    {
+        M_updateFunction( fieldPtr );
+    }
+
+protected:
+    update_function_type M_updateFunction;
+};
+
+template <typename FieldType, template<typename> class UpdatePolicy = ReturnValueUpdatePolicy>
+struct CachedModelField : UpdatePolicy<FieldType>
+{
+    typedef CachedModelField<FieldType, UpdatePolicy> self_type;
+    typedef UpdatePolicy<FieldType> update_policy;
 
     typedef FieldType field_type;
     typedef std::shared_ptr<field_type> field_ptrtype;
@@ -27,13 +73,13 @@ struct CachedModelField
 
     template<typename UpdateFunctionType>
     CachedModelField( UpdateFunctionType f ) :
-        M_updateFunction( f ),
+        update_policy( f ),
         M_doUpdateField( true )
     {}
     template<typename UpdateFunctionType>
     CachedModelField( field_ptrtype const& fieldPtr, UpdateFunctionType f ) :
+        update_policy( f ),
         M_fieldPtr( fieldPtr ),
-        M_updateFunction( f ),
         M_doUpdateField( true )
     {}
 
@@ -59,10 +105,7 @@ struct CachedModelField
     {
         if( M_doUpdateField )
         {
-            if( M_fieldPtr ) // if field ptr is not empty, we update the pointed value
-                *M_fieldPtr = M_updateFunction();
-            else // otherwise we reset the pointer
-                M_fieldPtr.reset( new field_type( M_updateFunction() ) );
+            update_policy::update( M_fieldPtr );
         }
 
         M_doUpdateField = false;
