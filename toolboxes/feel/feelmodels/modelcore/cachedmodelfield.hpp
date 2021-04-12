@@ -120,8 +120,8 @@ private:
 template<typename T>
 struct is_cached_model_field : std::false_type {};
 
-template<typename T>
-struct is_cached_model_field<CachedModelField<T>> : std::true_type {};
+template<typename T, template<typename> class U>
+struct is_cached_model_field<CachedModelField<T,U>> : std::true_type {};
 
 template<typename T>
 inline constexpr bool is_cached_model_field_v = is_cached_model_field<T>::value;
@@ -129,8 +129,8 @@ inline constexpr bool is_cached_model_field_v = is_cached_model_field<T>::value;
 template<typename T>
 struct raw_field_type : Feel::remove_shared_ptr<T> {};
 
-template<typename T>
-struct raw_field_type<CachedModelField<T>> : Feel::remove_shared_ptr<T> {};
+template<typename T, template<typename> class U>
+struct raw_field_type<CachedModelField<T,U>> : Feel::remove_shared_ptr<T> {};
 
 template<typename T>
 using raw_field_t = typename raw_field_type<T>::type;
