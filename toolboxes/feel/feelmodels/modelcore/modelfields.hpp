@@ -15,6 +15,7 @@
 #include <feel/feelvf/inner.hpp>
 
 #include <feel/feelmodels/modelcore/trialssymbolsexpr.hpp>
+#include <feel/feelmodels/modelcore/cachedmodelfield.hpp>
 
 namespace Feel
 {
@@ -56,6 +57,7 @@ private :
     toolbox_type const* M_toolbox;
 };
 
+
 template <typename ModelFieldTagType,typename FieldType>
 struct ModelField1
 {
@@ -64,10 +66,11 @@ struct ModelField1
     using field_type = FieldType;
     using update_function_type = std::function<field_type const&()>;
 
-    static constexpr uint16_type nComponents1 = Feel::remove_shared_ptr_type<FieldType>::nComponents1;
-    static constexpr uint16_type nComponents2 = Feel::remove_shared_ptr_type<FieldType>::nComponents2;
-    static constexpr uint16_type nRealDim = Feel::remove_shared_ptr_type<FieldType>::nRealDim;
-    using functionspace_type = typename Feel::remove_shared_ptr_type<FieldType>::functionspace_type;
+    using raw_field_type = raw_field_t<field_type>;
+    static constexpr uint16_type nComponents1 = raw_field_type::nComponents1;
+    static constexpr uint16_type nComponents2 = raw_field_type::nComponents2;
+    static constexpr uint16_type nRealDim = raw_field_type::nRealDim;
+    using functionspace_type = typename raw_field_type::functionspace_type;
 
     ModelField1( tag_type const& thetag, std::string const& prefix, std::string const& name, field_type const& u, std::string const& symbol, std::string const& prefix_symbol, update_function_type const& updateFunction )
         :
@@ -86,23 +89,43 @@ struct ModelField1
     tag_type const& tag() const { return M_tag; }
     std::string const& name() const { return M_name; }
     std::string const& prefix() const { return M_prefix; }
-    field_type const& field() const { return M_field; }
+    auto field() const 
+    {
+        if constexpr ( is_cached_model_field_v<field_type> ) // M_field is a CachedModelField
+            return M_field.fieldPtr( false ); // we return the field ptr (not updated)
+        else
+            return M_field; // otherwise we return directly the field
+    }
     std::string const& symbol() const { return M_symbol; }
     std::string const& prefixSymbol() const { return M_prefixSymbol; }
     SymbolExprUpdateFunction updateFunctionSymbolExpr() const
     {
-        if ( M_updateFunction )
+        if constexpr ( is_cached_model_field_v<field_type> ) // M_field is a CachedModelField
+        {
             return std::bind( &self_type::applyUpdateFunction, this );
+        }
         else
-            return SymbolExprUpdateFunction{};
+        {
+            if ( M_updateFunction )
+                return std::bind( &self_type::applyUpdateFunction, this );
+            else
+                return SymbolExprUpdateFunction{};
+        }
     }
 
     std::string nameWithPrefix() const { return prefixvm( M_prefix,M_name ); }
 
     void applyUpdateFunction() const
     {
-        if ( M_updateFunction )
-            const_cast<self_type*>(this)->M_field = M_updateFunction();
+        if constexpr ( is_cached_model_field_v<field_type> ) // M_field is a CachedModelField
+        {
+            const_cast<self_type*>(this)->M_field.update();
+        }
+        else
+        {
+            if ( M_updateFunction )
+                const_cast<self_type*>(this)->M_field = M_updateFunction();
+        }
     }
 
 
@@ -204,10 +227,11 @@ private :
 template <size_type Ctx,typename ModelFieldTagType,typename FieldType>
 class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
 {
-    static constexpr uint16_type nComponents1 = Feel::remove_shared_ptr_type<FieldType>::nComponents1;
-    static constexpr uint16_type nComponents2 = Feel::remove_shared_ptr_type<FieldType>::nComponents2;
-    static constexpr uint16_type nRealDim = Feel::remove_shared_ptr_type<FieldType>::nRealDim;
-    using functionspace_type = typename Feel::remove_shared_ptr_type<FieldType>::functionspace_type;
+    using raw_field_type = raw_field_t<FieldType>;
+    static constexpr uint16_type nComponents1 = raw_field_type::nComponents1;
+    static constexpr uint16_type nComponents2 = raw_field_type::nComponents2;
+    static constexpr uint16_type nRealDim = raw_field_type::nRealDim;
+    using functionspace_type = typename raw_field_type::functionspace_type;
 
     using model_field1_type = ModelField1<ModelFieldTagType,FieldType>;
 
