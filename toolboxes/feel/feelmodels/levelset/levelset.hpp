@@ -300,8 +300,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Levelset
-    element_levelset_ptrtype & phi() { return this->phiPtr(); }
-    element_levelset_ptrtype const& phi() const { return this->phiPtr(); }
+    element_levelset_ptrtype phi() const { return this->phiPtr(); }
     element_stretch_ptrtype const& stretch() const;
     element_backwardcharacteristics_ptrtype const& backwardCharacteristics() const;
 

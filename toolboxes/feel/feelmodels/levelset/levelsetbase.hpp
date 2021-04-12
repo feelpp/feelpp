@@ -147,6 +147,13 @@ public:
 
     static_assert( space_levelset_type::is_scalar, "LevelSetBase function basis must be scalar" );
 
+    //--------------------------------------------------------------------//
+    // Cached fields
+    using cached_scalar_field_type = CachedModelField<element_scalar_type, InplaceUpdatePolicy>;
+    using cached_vectorial_field_type = CachedModelField<element_vectorial_type, InplaceUpdatePolicy>;
+
+    //--------------------------------------------------------------------//
+    // Mesh adaptation
 #if defined (MESH_ADAPTATION_LS)
     typedef MeshAdaptation<Dim, Order, 1, periodicity_type > mesh_adaptation_type;
     typedef std::shared_ptr< mesh_adaptation_type > mesh_adaptation_ptrtype;
@@ -297,39 +304,31 @@ public:
 
     //--------------------------------------------------------------------//
     // Levelset
-    element_levelset_ptrtype & phiPtr() { return M_phi; }
-    element_levelset_ptrtype const& phiPtr() const { return M_phi; }
+    element_levelset_ptrtype phiPtr() const { return M_phi; }
     element_levelset_type & phiElt() { return *M_phi; }
     element_levelset_type const& phiElt() const { return *M_phi; }
     void setPhi( element_levelset_type const& phi, bool reinit = true ) { *M_phi = phi; M_hasRedistanciated = reinit; }
     void setPhi( element_levelset_ptrtype const& phi, bool reinit = true ) { this->setPhi( *phi, reinit ); }
-    //element_levelset_ptrtype const& phinl() const { return M_phinl; }
-    element_levelset_PN_ptrtype const& phiPN() const;
-    element_vectorial_ptrtype const& gradPhi( bool update ) const;
-    element_vectorial_ptrtype const& gradPhi() const { return this->gradPhi( M_doUpdateGradPhi ); }
-    element_levelset_ptrtype const& modGradPhi( bool update ) const;
-    element_levelset_ptrtype const& modGradPhi() const { return this->modGradPhi( M_doUpdateModGradPhi ); }
-    element_levelset_ptrtype const& distance( bool update ) const;
-    element_levelset_ptrtype const& distance() const { return this->distance( M_doUpdateDistance ); }
 
-    element_levelset_ptrtype const& heaviside( bool update ) const;
-    element_levelset_ptrtype const& heaviside() const { return this->heaviside( M_doUpdateHeaviside ); }
-    element_levelset_ptrtype const& H() const { return this->heaviside(); }
+    element_vectorial_ptrtype gradPhi() const { return M_levelsetGradPhi.fieldPtr(); }
+    element_levelset_ptrtype modGradPhi() const { return M_levelsetModGradPhi.fieldPtr(); }
+
+    element_vectorial_ptrtype normal() const { return M_levelsetNormal.fieldPtr(); }
+    element_vectorial_ptrtype N() const { return this->normal(); }
+    element_levelset_ptrtype curvature() const { return M_levelsetCurvature.fieldPtr(); }
+    element_levelset_ptrtype K() const { return this->curvature(); }
+
+    element_levelset_ptrtype dirac() const { return M_dirac.fieldPtr(); }
+    element_levelset_ptrtype D() const { return this->dirac(); }
     levelset_delta_expr_type diracExpr() const;
-    element_levelset_ptrtype const& dirac( bool update ) const;
-    element_levelset_ptrtype const& dirac() const { return this->dirac( M_doUpdateDirac ); }
-    element_levelset_ptrtype const& D() const { return this->dirac(); }
+    element_levelset_ptrtype heaviside() const { return M_heaviside.fieldPtr(); }
+    element_levelset_ptrtype H() const { return this->heaviside(); }
 
-    element_vectorial_ptrtype const& normal( bool update ) const;
-    element_vectorial_ptrtype const& normal() const { return this->normal( M_doUpdateNormal ); }
-    element_vectorial_ptrtype const& N() const { return this->normal(); }
-    element_levelset_ptrtype const& curvature( bool update ) const;
-    element_levelset_ptrtype const& curvature() const { return this->curvature( M_doUpdateCurvature ); }
-    element_levelset_ptrtype const& K() const { return this->curvature(); }
-    element_vectorial_ptrtype const& distanceNormal( bool update ) const;
-    element_vectorial_ptrtype const& distanceNormal() const { return this->distanceNormal( M_doUpdateDistanceNormal ); }
-    element_levelset_ptrtype const& distanceCurvature( bool update ) const;
-    element_levelset_ptrtype const& distanceCurvature() const { return this->distanceCurvature( M_doUpdateDistanceCurvature ); }
+    element_levelset_ptrtype distance() const { return M_distance.fieldPtr(); }
+    element_vectorial_ptrtype distanceNormal() const { return M_distanceNormal.fieldPtr(); }
+    element_levelset_ptrtype distanceCurvature() const { return M_distanceCurvature.fieldPtr(); }
+
+    element_levelset_PN_ptrtype const& phiPN() const;
 
     virtual void updateInterfaceQuantities();
 
@@ -376,7 +375,19 @@ public:
 
     auto modelFields( std::string const& prefix = "" ) const
     {
-        return this->modelFields( this->phiPtr(), prefix );
+        // Cached model fields are optimized in this specific case where phi is the current levelset value
+        return Feel::FeelModels::modelFields( 
+                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::levelset_scalar(this), prefix, "phi", this->phiPtr(), "phi", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "dirac", M_dirac, "dirac", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "heaviside", M_heaviside, "heaviside", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "normal", M_levelsetNormal, "normal", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "curvature", M_levelsetCurvature, "curvature", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "gradphi", M_levelsetGradPhi, "gradphi", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "modgradphi", M_levelsetModGradPhi, "modgradphi", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "distance", M_distance, "distance", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "distance-normal", M_distanceNormal, "distance-normal", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "distance-curvature", M_distanceCurvature, "distance-curvature", this->keyword() )
+                );
     }
 #if 0
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
@@ -388,19 +399,20 @@ public:
     template <typename PhiFieldType>
     auto modelFields( PhiFieldType const& field_phi, std::string const& prefix = "" ) const
     {
+        // TODO: dont use current cached field but create new ones
         typedef element_levelset_ptrtype const& (self_type::*scalar_fc_type)() const;
         typedef element_vectorial_ptrtype const& (self_type::*vec_fc_type)() const;
         return Feel::FeelModels::modelFields( 
                 modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::levelset_scalar(this), prefix, "phi", field_phi, "phi", this->keyword() ),
-                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "dirac", this->dirac(false), "dirac", this->keyword(), std::bind<scalar_fc_type>( &self_type::dirac, this ) ),
-                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "heaviside", this->heaviside(false), "heaviside", this->keyword(), std::bind<scalar_fc_type>( &self_type::heaviside, this ) ),
-                modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "normal", this->normal(false), "normal", this->keyword(), std::bind<vec_fc_type>( &self_type::normal, this ) ),
-                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "curvature", this->curvature(false), "curvature", this->keyword(), std::bind<scalar_fc_type>( &self_type::curvature, this ) ),
-                modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "gradphi", this->gradPhi(false), "gradphi", this->keyword(), std::bind<vec_fc_type>( &self_type::gradPhi, this ) ),
-                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "modgradphi", this->modGradPhi(false), "modgradphi", this->keyword(), std::bind<scalar_fc_type>( &self_type::modGradPhi, this ) ),
-                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "distance", this->distance(false), "distance", this->keyword(), std::bind<scalar_fc_type>( &self_type::distance, this ) ),
-                modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "distance-normal", this->distanceNormal(false), "distance-normal", this->keyword(), std::bind<vec_fc_type>( &self_type::distanceNormal, this ) ),
-                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "distance-curvature", this->distanceCurvature(false), "distance-curvature", this->keyword(), std::bind<scalar_fc_type>( &self_type::distanceCurvature, this ) )
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "dirac", M_dirac, "dirac", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "heaviside", M_heaviside, "heaviside", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "normal", M_levelsetNormal, "normal", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "curvature", M_levelsetCurvature, "curvature", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "gradphi", M_levelsetGradPhi, "gradphi", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "modgradphi", M_levelsetModGradPhi, "modgradphi", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "distance", M_distance, "distance", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "distance-normal", M_distanceNormal, "distance-normal", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "distance-curvature", M_distanceCurvature, "distance-curvature", this->keyword() )
                 );
     }
     //___________________________________________________________________________________//
@@ -648,19 +660,19 @@ protected:
     void initPostProcessExportsAndMeasures();
     //--------------------------------------------------------------------//
     // Levelset data update functions
-    void updateGradPhi() const;
-    void updateModGradPhi() const;
-    void updateDirac() const;
-    void updateHeaviside() const;
+    void updateGradPhi( element_vectorial_ptrtype & gradPhi ) const;
+    void updateModGradPhi( element_scalar_ptrtype & modGradPhi ) const;
 
-    void updateNormal() const;
-    void updateCurvature() const;
+    void updateNormal( element_vectorial_ptrtype & N ) const;
+    void updateCurvature( element_scalar_ptrtype & K ) const;
+    void updateDirac( element_scalar_ptrtype & D ) const;
+    void updateHeaviside( element_scalar_ptrtype & H ) const;
+
+    void updateDistance( element_scalar_ptrtype & dist ) const;
+    void updateDistanceNormal( element_vectorial_ptrtype & distN ) const;
+    void updateDistanceCurvature( element_scalar_ptrtype & distK ) const;
 
     void updatePhiPN();
-
-    void updateDistance() const;
-    void updateDistanceNormal() const;
-    void updateDistanceCurvature() const;
 
     void updateMarkerDirac();
     void markerHeavisideImpl( element_markers_ptrtype const& marker, bool invert, double cut );
@@ -699,22 +711,32 @@ private:
 
 protected:
     //--------------------------------------------------------------------//
+    // Levelset data
+    cached_vectorial_field_type M_levelsetGradPhi;
+    cached_scalar_field_type M_levelsetModGradPhi;
+    // Normal, curvature
+    cached_vectorial_field_type M_levelsetNormal;
+    cached_scalar_field_type M_levelsetCurvature;
+    // Dirac, heaviside
+    cached_scalar_field_type M_dirac;
+    cached_scalar_field_type M_heaviside;
+    // Distance function
+    cached_scalar_field_type M_distance;
+    cached_vectorial_field_type M_distanceNormal;
+    cached_scalar_field_type M_distanceCurvature;
+
+    mutable element_levelset_PN_ptrtype M_levelsetPhiPN;
+
+    mutable range_elements_type M_interfaceElements;
+    mutable range_faces_type M_interfaceFaces;
+    //--------------------------------------------------------------------//
     // Interface quantities update flags
-    mutable bool M_doUpdateDirac;
-    mutable bool M_doUpdateHeaviside;
     mutable bool M_doUpdateInterfaceElements;
     mutable bool M_doUpdateRangeDiracElements;
     mutable bool M_doUpdateInterfaceFaces;
     mutable bool M_doUpdateSmootherInterface;
     mutable bool M_doUpdateSmootherInterfaceVectorial;
-    mutable bool M_doUpdateNormal;
-    mutable bool M_doUpdateCurvature;
-    mutable bool M_doUpdateGradPhi;
-    mutable bool M_doUpdateModGradPhi;
     mutable bool M_doUpdatePhiPN;
-    mutable bool M_doUpdateDistance;
-    mutable bool M_doUpdateDistanceNormal;
-    mutable bool M_doUpdateDistanceCurvature;
     mutable bool M_doUpdateMarkers;
 
     //--------------------------------------------------------------------//
@@ -780,23 +802,6 @@ private:
     projector_levelset_vectorial_ptrtype M_projectorSMVectorial;
     mutable projector_levelset_ptrtype M_smootherInterface;
     mutable projector_levelset_vectorial_ptrtype M_smootherInterfaceVectorial;
-    //--------------------------------------------------------------------//
-    // Levelset data
-    mutable element_levelset_PN_ptrtype M_levelsetPhiPN;
-    mutable element_vectorial_ptrtype M_levelsetGradPhi;
-    mutable element_levelset_ptrtype M_levelsetModGradPhi;
-    mutable element_levelset_ptrtype M_heaviside;
-    mutable element_levelset_ptrtype M_dirac;
-    mutable element_levelset_ptrtype M_distance;
-
-    mutable range_elements_type M_interfaceElements;
-    mutable range_faces_type M_interfaceFaces;
-    //--------------------------------------------------------------------//
-    // Normal, curvature
-    mutable element_vectorial_ptrtype M_levelsetNormal;
-    mutable element_levelset_ptrtype M_levelsetCurvature;
-    mutable element_vectorial_ptrtype M_distanceNormal;
-    mutable element_levelset_ptrtype M_distanceCurvature;
 
     //--------------------------------------------------------------------//
     // Derivation methods
