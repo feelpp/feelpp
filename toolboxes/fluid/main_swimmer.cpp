@@ -385,6 +385,7 @@ int runApplicationFluid()
                     if ( bpbc.name() == "Swimmer" )
                     {
                         Disp.on( _range = elements( bpbc.mesh() ), _expr = Px() );
+                        bpbc.selectHighOrderSchemeElasticVelocity(true);
                     }
                 }
             }
@@ -394,20 +395,36 @@ int runApplicationFluid()
             Feel::cout << " is MoveDomain " << FM->isMoveDomain() << std::endl;
             FM->setApplyMovingMeshBeforeSolve( false );
 
-            auto expr_swimming_f = [&FM](){
+            auto expr_swimming_f = [&FM](double t){
                 if constexpr ( nDim == 2 )
-                    return expr(expr<nDim,1>("{udxt_0,udxt_1}:udxt_0:udxt_1"),FM->symbolsExpr());
+                {
+                    auto ud = expr(expr<nDim,1>("{udxt_0,udxt_1}:udxt_0:udxt_1"),FM->symbolsExpr());
+                    ud.setParameterValues({{"t",t}});
+                    return ud;
+                }
                 else
-                    return expr(expr<nDim,1>("{udxt_0,udxt_1,udxt_2}:udxt_0:udxt_1:udxt_2"),FM->symbolsExpr());
+                {
+                    auto ud = expr(expr<nDim,1>("{udxt_0,udxt_1,udxt_2}:udxt_0:udxt_1:udxt_2"),FM->symbolsExpr());
+                    ud.setParameterValues({{"t",t}});
+                    return ud;
+                }
 
             };
-            auto expr_swimming =  expr_swimming_f();
-            expr_swimming.setParameterValues( FM->modelProperties().parameters().toParameterValues() );
-            auto ud = Xh_ref_swimmer->element( expr_swimming );
-            auto integral_1 = integrate(_range=elements(Xh_ref_swimmer->mesh()),_expr=expr_swimming).evaluate();
+            auto expr_swimming_tnp1 =  expr_swimming_f(FM->time());
+            auto expr_swimming_tnp05 =  expr_swimming_f(FM->time()-0.5*FM->timeStep());
+            auto expr_swimming_tn =  expr_swimming_f(FM->time()-FM->timeStep());
+            expr_swimming_tnp1.setParameterValues( FM->modelProperties().parameters().toParameterValues() );
+            expr_swimming_tnp05.setParameterValues( FM->modelProperties().parameters().toParameterValues() );
+            expr_swimming_tn.setParameterValues( FM->modelProperties().parameters().toParameterValues() );
+            auto ud = Xh_ref_swimmer->element( expr_swimming_tnp1 );
+            auto integ_ud = Xh_ref_swimmer->element( 1.0/6.0*(expr_swimming_tn+4.0*expr_swimming_tnp05+expr_swimming_tnp1) );
+            auto integral_1 = integrate(_range=elements(Xh_ref_swimmer->mesh()),_expr=expr_swimming_tnp1).evaluate();
             auto integral_2 = integrate(_range=elements(Xh_ref_swimmer->mesh()),_expr=idv(ud)).evaluate();
-            std::cout << "Integral1 "  << integral_1 << " Integral2 " << integral_2 << std::endl;            
-            auto se = Feel::vf::symbolsExpr( FM->symbolsExpr(), symbolExpr( "ud", idv( ud ),SymbolExprComponentSuffix( nDim,1 ) ) );
+            auto integral_3 = integrate(_range=elements(Xh_ref_swimmer->mesh()),_expr=idv(integ_ud)).evaluate();
+            std::cout << "Integral1 "  << integral_1 << " Integral2 " << integral_2 <<" Integral3 " << integral_3 << std::endl;            
+            auto se = Feel::vf::symbolsExpr( FM->symbolsExpr(), 
+                                             symbolExpr( "ud", idv( ud ),SymbolExprComponentSuffix( nDim,1 ) ),
+                                             symbolExpr( "integ_ud", idv( integ_ud ),SymbolExprComponentSuffix( nDim,1 ) )  );
             
             FM->updateALEmesh( se );
             FM->solve();

@@ -512,7 +512,8 @@ public:
         bool hasElasticVelocity() const { return ( M_fieldElasticVelocity? true : false ); }
 
         bool hasElasticVelocityFromExpr() const { return !M_elasticVelocityExprBC.empty(); }
-        bool hasElasticVelocityHighOrder() const {return (M_fieldElasticVelocity? true : false );}
+        void selectHighOrderSchemeElasticVelocity(bool highOrderScheme) {M_elasticVelocityHighOrderScheme=highOrderScheme;}
+        bool hasElasticVelocityHighOrder() const {return M_elasticVelocityHighOrderScheme;}
         void registerCustomFieldVectorialElastic( std::string const& name )
         {
             if ( M_fieldsUserVectorialElastic.find( name ) == M_fieldsUserVectorialElastic.end() )
@@ -618,7 +619,7 @@ public:
         element_trace_velocity_ptrtype M_fieldElasticVelocity;
         std::map<std::string,element_trace_velocity_ptrtype> M_fieldsUserVectorialElastic;
         std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> M_elasticVelocityExprBC;
-
+        bool M_elasticVelocityHighOrderScheme=false;
         bool M_gravityForceEnabled;
         //double M_massOfFluid;
         eigen_vector_type<nRealDim> M_gravityForceWithMass;
@@ -2202,7 +2203,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
         else if ( bpbc.hasElasticVelocityFromExpr() )
             {
                 // LUCA
-            if(bpbc.hasElasticVelocityHighOrder())
+            /*if(bpbc.hasElasticVelocityHighOrder())
             {
                 bpbc.updateElasticVelocityFromExpr(*this,se );
                 double t0 = this->time();
@@ -2242,8 +2243,24 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
                 bpbc.updateElasticVelocityFromExpr(*this,se );
                 *bpbc.fieldElasticVelocityPtr() = ev_n;
             }
-            else
-                this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), rangeMFOF );
+            else*/
+                //this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), rangeMFOF );
+#if 0                
+                hana::for_each(se.tuple(),[&,this](auto const& e)
+                {
+                    for(auto const& e1:e)
+                    {
+                        if (e1.symbol()=="integ_ud")
+                        {
+                            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + e1.expr(), rangeMFOF );
+                        }
+                    }   
+                });
+#else
+             this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + expr(expr<nDim,1>("{integ_ud_0,integ_ud_1}:integ_ud_0:integ_ud_1"),se), rangeMFOF );  
+#endif
+
+                //this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), rangeMFOF );
             }
         else
             this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields(), rangeMFOF ); // TO FIX : use idv(this->fieldVelocity() require to need a range with partial support mesh info
