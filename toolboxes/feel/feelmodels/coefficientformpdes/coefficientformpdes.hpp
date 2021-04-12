@@ -551,8 +551,6 @@ CoefficientFormPDEs<ConvexType,BasisUnknownType...>::exportResults( double time,
     this->log("CoefficientFormPDEs","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    //std::cout << "holalla \n "<< symbolsExpr.names() << std::endl; 
-
     hana::for_each( tuple_type_unknown_basis, [this,&time,&mfields,&symbolsExpr]( auto const& e )
                     {
                         for ( auto const& cfpdeBase : M_coefficientFormPDEs )
@@ -572,6 +570,8 @@ CoefficientFormPDEs<ConvexType,BasisUnknownType...>::exportResults( double time,
     this->executePostProcessMeasures( time, mfields, symbolsExpr );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_coefficientFormPDEs.front()->timeStepBase()->iteration(), mfields );
 
+    this->updateParameterValues();
+
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
     {
@@ -588,13 +588,16 @@ void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
 {
     bool hasMeasure = false;
-#if 0
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+
+    if ( M_coefficientFormPDEs.empty() )
+        return;
+    auto defaultRangeMeshElements = M_coefficientFormPDEs.front()->rangeMeshElements(); // TODO compute intersection
+    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), defaultRangeMeshElements/*M_rangeMeshElements*/, symbolsExpr, mfields );
+    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), defaultRangeMeshElements/*M_rangeMeshElements*/, symbolsExpr, mfields );
     //bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
     if ( hasMeasureNorm || hasMeasureStatistics /*|| hasMeasurePoint*/ )
         hasMeasure = true;
-#endif
+
     if ( hasMeasure )
     {
         if ( !this->isStationary() )
