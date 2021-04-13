@@ -37,15 +37,9 @@
 #include <feel/feelmodels/advection/advection.hpp>
 
 #include <feel/feelmodels/levelset/levelsetbase.hpp>
-#include <feel/feelmodels/levelset/levelsetspacemanager.hpp>
-#include <feel/feelmodels/levelset/levelsettoolmanager.hpp>
-#include <feel/feelmodels/levelset/levelsetredistanciation_fm.hpp>
-#include <feel/feelmodels/levelset/levelsetredistanciation_hj.hpp>
 #include <feel/feelmodels/levelset/levelsetparticleinjector.hpp>
 
 #include <feel/feelfilters/straightenmesh.hpp>
-
-#include <feel/feelmodels/modelcore/modelbase.hpp>
 
 #include <boost/parameter/preprocessor.hpp>
 
@@ -79,15 +73,15 @@ public:
     typedef LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityType, BasisPnType> self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
 
-    static const uint16_type Order = BasisType::nOrder;
+    static constexpr uint16_type Order = BasisType::nOrder;
     typedef double value_type;
 
     //--------------------------------------------------------------------//
     // Mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static constexpr uint16_type nDim = convex_type::nDim;
+    static constexpr uint16_type nOrderGeo = convex_type::nOrder;
+    static constexpr uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type mymesh_type;
@@ -138,6 +132,15 @@ public:
     typedef typename space_tensor2symm_type::element_type element_tensor2symm_type;
     typedef std::shared_ptr< element_tensor2symm_type > element_tensor2symm_ptrtype;
 
+    static_assert( space_levelset_type::is_scalar, "LevelSetBase function basis must be scalar" );
+
+    //--------------------------------------------------------------------//
+    // Cached fields
+    using cached_scalar_field_type = CachedModelField<element_scalar_type, InplaceUpdatePolicy>;
+    using cached_vectorial_field_type = CachedModelField<element_vectorial_type, InplaceUpdatePolicy>;
+
+    //--------------------------------------------------------------------//
+    // Mesh adaptation
 #if defined (MESH_ADAPTATION_LS)
     typedef MeshAdaptation<Dim, Order, 1, periodicity_type > mesh_adaptation_type;
     typedef std::shared_ptr< mesh_adaptation_type > mesh_adaptation_ptrtype;
@@ -149,7 +152,6 @@ public:
     // Advection toolbox
     typedef AdvDiffReac< space_levelset_type, FunctionSpaceAdvectionVelocityType > advection_toolbox_type;
     typedef std::shared_ptr<advection_toolbox_type> advection_toolbox_ptrtype;
-    static_assert( advection_toolbox_type::is_scalar, "LevelSet function basis must be scalar" );
 
     typedef typename advection_toolbox_type::space_advection_velocity_type space_advection_velocity_type;
     typedef typename advection_toolbox_type::space_advection_velocity_ptrtype space_advection_velocity_ptrtype;
