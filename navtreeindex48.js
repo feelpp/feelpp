@@ -1,5 +1,8 @@
 var NAVTREEINDEX48 =
 {
+"structFeel_1_1tag_1_1sampling.html#a2099e225f05263d527898fec71d284fd":[6,1,1,13,185,0],
+"structFeel_1_1tag_1_1sampling.html#a9c76ee47ba71ac5a030c68e4418fe454":[6,1,1,13,185,1],
+"structFeel_1_1tag_1_1save.html":[6,1,1,13,186],
 "structFeel_1_1tag_1_1save.html#a4e5d11e4a5897fcf395da9a603e7b254":[6,1,1,13,186,1],
 "structFeel_1_1tag_1_1save.html#a6b0e68941940fa3db5869302c517c462":[6,1,1,13,186,0],
 "structFeel_1_1tag_1_1save.html#afebce8a64ec4eb34fa86535bc3865b3f":[6,1,1,13,186,2],
@@ -246,8 +249,5 @@ var NAVTREEINDEX48 =
 "structFeel_1_1vf_1_1BlocksBase.html#a3ef6c7153dd496d1349edbcfb5a72a60":[6,1,1,14,4,13],
 "structFeel_1_1vf_1_1BlocksBase.html#a688e88d4888889b59152260df797b28b":[6,1,1,14,4,6],
 "structFeel_1_1vf_1_1BlocksBase.html#a78ae30429a325a2cdadd6ec5e174eb3b":[6,1,1,14,4,4],
-"structFeel_1_1vf_1_1BlocksBase.html#a86937a4ed401f0283a72ab0b5387dede":[6,1,1,14,4,12],
-"structFeel_1_1vf_1_1BlocksBase.html#a88fe20ba8dc83e61138b09b7ec0d8c20":[6,1,1,14,4,14],
-"structFeel_1_1vf_1_1BlocksBase.html#a8a6f20618508133a97292ce251072c5e":[6,1,1,14,4,5],
-"structFeel_1_1vf_1_1BlocksBase.html#a8af2b9961dc51a53749c9435a14f2338":[6,1,1,14,4,2]
+"structFeel_1_1vf_1_1BlocksBase.html#a86937a4ed401f0283a72ab0b5387dede":[6,1,1,14,4,12]
 };

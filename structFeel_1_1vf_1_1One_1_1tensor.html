@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: Feel::vf::One&lt; CType &gt;::tensor&lt; Geo_t, Basis_i_t, Basis_j_t &gt; Struct Template Reference</title>
+<title>Feel++: Feel::vf::One&lt; CType, Dim &gt;::tensor&lt; Geo_t, Basis_i_t, Basis_j_t &gt; Struct Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -108,7 +108,7 @@ $(document).ready(function(){initNavTree('structFeel_1_1vf_1_1One_1_1tensor.html
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="structFeel_1_1vf_1_1One_1_1tensor-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">Feel::vf::One&lt; CType &gt;::tensor&lt; Geo_t, Basis_i_t, Basis_j_t &gt; Struct Template Reference</div>  </div>
+<div class="title">Feel::vf::One&lt; CType, Dim &gt;::tensor&lt; Geo_t, Basis_i_t, Basis_j_t &gt; Struct Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
@@ -119,101 +119,92 @@ Instances and minimal complete definitions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:afd7f3af3b44665435d7808c472dff567"><td class="memItemLeft" align="right" valign="top"><a id="afd7f3af3b44665435d7808c472dff567"></a>
+<tr class="memitem:a08f20960ccbd4c1aea5efdd0608ec85f"><td class="memItemLeft" align="right" valign="top"><a id="a08f20960ccbd4c1aea5efdd0608ec85f"></a>
 typedef <a class="el" href="classFeel_1_1vf_1_1One.html">this_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>expression_type</b></td></tr>
-<tr class="separator:afd7f3af3b44665435d7808c472dff567"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac8cd6bdf98de62c9564bf122a03060a9"><td class="memItemLeft" align="right" valign="top"><a id="ac8cd6bdf98de62c9564bf122a03060a9"></a>
-typedef fusion::result_of::value_at_key&lt; Geo_t, key_type &gt;::type::element_type *&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_ptrtype</b></td></tr>
-<tr class="separator:ac8cd6bdf98de62c9564bf122a03060a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae716c9430a362d0bbcc6a5a740c5cdb2"><td class="memItemLeft" align="right" valign="top"><a id="ae716c9430a362d0bbcc6a5a740c5cdb2"></a>
-typedef fusion::result_of::value_at_key&lt; Geo_t, key_type &gt;::type::element_type&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_type</b></td></tr>
-<tr class="separator:ae716c9430a362d0bbcc6a5a740c5cdb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5dddce1be1f6e194bacf6b1efcbd669f"><td class="memItemLeft" align="right" valign="top"><a id="a5dddce1be1f6e194bacf6b1efcbd669f"></a>
+<tr class="separator:a08f20960ccbd4c1aea5efdd0608ec85f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac9deda1d3328fac2203fc50f592a504a"><td class="memItemLeft" align="right" valign="top"><a id="ac9deda1d3328fac2203fc50f592a504a"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_type</b> = gmc_t&lt; Geo_t &gt;</td></tr>
+<tr class="separator:ac9deda1d3328fac2203fc50f592a504a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87617577e996a64497a16d14863618e5"><td class="memItemLeft" align="right" valign="top"><a id="a87617577e996a64497a16d14863618e5"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>key_type</b> = key_t&lt; Geo_t &gt;</td></tr>
-<tr class="separator:a5dddce1be1f6e194bacf6b1efcbd669f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3440ade5d1c4809fb0c6c9034819db5c"><td class="memItemLeft" align="right" valign="top"><a id="a3440ade5d1c4809fb0c6c9034819db5c"></a>
-typedef Shape&lt; gmc_type::nDim, Vectorial, false, false &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>shape</b></td></tr>
-<tr class="separator:a3440ade5d1c4809fb0c6c9034819db5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac0fd3cad51dc68c4ff42684d39c2a501"><td class="memItemLeft" align="right" valign="top"><a id="ac0fd3cad51dc68c4ff42684d39c2a501"></a>
+<tr class="separator:a87617577e996a64497a16d14863618e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa7e178ba3cea48919e1436e3efd1d87b"><td class="memItemLeft" align="right" valign="top"><a id="aa7e178ba3cea48919e1436e3efd1d87b"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>shape</b> = ShapeGeneric&lt; gmc_type::nDim, nComponents, 1 &gt;</td></tr>
+<tr class="separator:aa7e178ba3cea48919e1436e3efd1d87b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a406da3db0fc5a34f0050946b801c9bb2"><td class="memItemLeft" align="right" valign="top"><a id="a406da3db0fc5a34f0050946b801c9bb2"></a>
 typedef expression_type::value_type&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
-<tr class="separator:ac0fd3cad51dc68c4ff42684d39c2a501"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5dabb39ec48b54122800de9b4798f26c"><td class="memItemLeft" align="right" valign="top"><a id="a5dabb39ec48b54122800de9b4798f26c"></a>
+<tr class="separator:a406da3db0fc5a34f0050946b801c9bb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a657edabce959aff50522af5b5989ed7c"><td class="memItemLeft" align="right" valign="top"><a id="a657edabce959aff50522af5b5989ed7c"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>vector_type</b> = Eigen::Matrix&lt; value_type, nComponents, 1 &gt;</td></tr>
-<tr class="separator:a5dabb39ec48b54122800de9b4798f26c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a657edabce959aff50522af5b5989ed7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aa21cd5c64c0b42799fecfe9e0a63fd29"><td class="memItemLeft" align="right" valign="top"><a id="aa21cd5c64c0b42799fecfe9e0a63fd29"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_MPL_ASSERT_MSG</b> (theshape, INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_1,(mpl::int_&lt; shape::M &gt;, mpl::int_&lt; shape::N &gt;))</td></tr>
-<tr class="separator:aa21cd5c64c0b42799fecfe9e0a63fd29"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e043203a530a38cf5f01cf3bd3df4d1"><td class="memItemLeft" align="right" valign="top"><a id="a1e043203a530a38cf5f01cf3bd3df4d1"></a>
+<tr class="memitem:a16001f0db8e5458456f34ba8e142dfb1"><td class="memItemLeft" align="right" valign="top"><a id="a16001f0db8e5458456f34ba8e142dfb1"></a>
 FEELPP_STRONG_INLINE Eigen::Map&lt; const vector_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>evalijq</b> (uint16_type i, uint16_type j, uint16_type) const</td></tr>
-<tr class="separator:a1e043203a530a38cf5f01cf3bd3df4d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad0b5001440dc272a8b5878f993514f5b"><td class="memItemLeft" align="right" valign="top"><a id="ad0b5001440dc272a8b5878f993514f5b"></a>
+<tr class="separator:a16001f0db8e5458456f34ba8e142dfb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a876246af7e18ed3c962798113ab6df13"><td class="memItemLeft" align="right" valign="top"><a id="a876246af7e18ed3c962798113ab6df13"></a>
 FEELPP_STRONG_INLINE value_type&#160;</td><td class="memItemRight" valign="bottom"><b>evalijq</b> (uint16_type, uint16_type, uint16_type c1, uint16_type c2, uint16_type q) const</td></tr>
-<tr class="separator:ad0b5001440dc272a8b5878f993514f5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac1de5736afcd21b02896593baeb287d5"><td class="memTemplParams" colspan="2"><a id="ac1de5736afcd21b02896593baeb287d5"></a>
+<tr class="separator:a876246af7e18ed3c962798113ab6df13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad99090ed5896407df42428cfbba85bb2"><td class="memTemplParams" colspan="2"><a id="ad99090ed5896407df42428cfbba85bb2"></a>
 template&lt;int PatternContext&gt; </td></tr>
-<tr class="memitem:ac1de5736afcd21b02896593baeb287d5"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_STRONG_INLINE value_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>evalijq</b> (uint16_type, uint16_type, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_&lt; PatternContext &gt;) const</td></tr>
-<tr class="separator:ac1de5736afcd21b02896593baeb287d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afa0cacf3bb82cbd3ed1b892512844bfd"><td class="memItemLeft" align="right" valign="top"><a id="afa0cacf3bb82cbd3ed1b892512844bfd"></a>
+<tr class="memitem:ad99090ed5896407df42428cfbba85bb2"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_STRONG_INLINE value_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>evalijq</b> (uint16_type, uint16_type, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_&lt; PatternContext &gt;) const</td></tr>
+<tr class="separator:ad99090ed5896407df42428cfbba85bb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a01b907617d2858ca23b3c99c9d4ebcb1"><td class="memItemLeft" align="right" valign="top"><a id="a01b907617d2858ca23b3c99c9d4ebcb1"></a>
 FEELPP_STRONG_INLINE Eigen::Map&lt; const vector_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>evaliq</b> (uint16_type i, uint16_type) const</td></tr>
-<tr class="separator:afa0cacf3bb82cbd3ed1b892512844bfd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5625024ec3402f7e4d04ac5430357e68"><td class="memItemLeft" align="right" valign="top"><a id="a5625024ec3402f7e4d04ac5430357e68"></a>
+<tr class="separator:a01b907617d2858ca23b3c99c9d4ebcb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb6067bab74702b459e202072eaa2161"><td class="memItemLeft" align="right" valign="top"><a id="acb6067bab74702b459e202072eaa2161"></a>
 FEELPP_STRONG_INLINE value_type&#160;</td><td class="memItemRight" valign="bottom"><b>evaliq</b> (uint16_type, uint16_type c1, uint16_type c2, uint16_type q) const</td></tr>
-<tr class="separator:a5625024ec3402f7e4d04ac5430357e68"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a79cbe9e7855956fd05c87227d239345c"><td class="memItemLeft" align="right" valign="top"><a id="a79cbe9e7855956fd05c87227d239345c"></a>
+<tr class="separator:acb6067bab74702b459e202072eaa2161"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68dc12d1b8b684859ad0d67f5247b8d6"><td class="memItemLeft" align="right" valign="top"><a id="a68dc12d1b8b684859ad0d67f5247b8d6"></a>
 FEELPP_STRONG_INLINE value_type&#160;</td><td class="memItemRight" valign="bottom"><b>evalq</b> (uint16_type c1, uint16_type, uint16_type) const</td></tr>
-<tr class="separator:a79cbe9e7855956fd05c87227d239345c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae746076a62e19c5a55ae1adf00b91dd3"><td class="memItemLeft" align="right" valign="top"><a id="ae746076a62e19c5a55ae1adf00b91dd3"></a>
+<tr class="separator:a68dc12d1b8b684859ad0d67f5247b8d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab08b27c684411dab9bb6e36d49299981"><td class="memItemLeft" align="right" valign="top"><a id="ab08b27c684411dab9bb6e36d49299981"></a>
 FEELPP_STRONG_INLINE Eigen::Map&lt; const vector_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>evalq</b> (uint16_type) const</td></tr>
-<tr class="separator:ae746076a62e19c5a55ae1adf00b91dd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a39c16628ae86659b71477b492187cceb"><td class="memTemplParams" colspan="2"><a id="a39c16628ae86659b71477b492187cceb"></a>
+<tr class="separator:ab08b27c684411dab9bb6e36d49299981"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54f9582f19b4964b33a86e92eea7d788"><td class="memTemplParams" colspan="2"><a id="a54f9582f19b4964b33a86e92eea7d788"></a>
 template&lt;typename IM &gt; </td></tr>
-<tr class="memitem:a39c16628ae86659b71477b492187cceb"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>init</b> (IM const &amp;)</td></tr>
-<tr class="separator:a39c16628ae86659b71477b492187cceb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a229881dd603e5f4dc3c0e85c42f9003b"><td class="memItemLeft" align="right" valign="top"><a id="a229881dd603e5f4dc3c0e85c42f9003b"></a>
+<tr class="memitem:a54f9582f19b4964b33a86e92eea7d788"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>init</b> (IM const &amp;)</td></tr>
+<tr class="separator:a54f9582f19b4964b33a86e92eea7d788"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad1b50b205dfd90601807aaae93e8d99e"><td class="memItemLeft" align="right" valign="top"><a id="ad1b50b205dfd90601807aaae93e8d99e"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>tensor</b> (<a class="el" href="classFeel_1_1vf_1_1One.html">expression_type</a> const &amp;expr, Geo_t const &amp;)</td></tr>
-<tr class="separator:a229881dd603e5f4dc3c0e85c42f9003b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acd46194d0c832e7af8403a256f431c04"><td class="memItemLeft" align="right" valign="top"><a id="acd46194d0c832e7af8403a256f431c04"></a>
+<tr class="separator:ad1b50b205dfd90601807aaae93e8d99e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d258e449c9bb17d6e68b1abe4d0a031"><td class="memItemLeft" align="right" valign="top"><a id="a3d258e449c9bb17d6e68b1abe4d0a031"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>tensor</b> (<a class="el" href="classFeel_1_1vf_1_1One.html">expression_type</a> const &amp;expr, Geo_t const &amp;geom, Basis_i_t const &amp;)</td></tr>
-<tr class="separator:acd46194d0c832e7af8403a256f431c04"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad8cf1aa6709a9959e9c4713e803e82d"><td class="memItemLeft" align="right" valign="top"><a id="aad8cf1aa6709a9959e9c4713e803e82d"></a>
+<tr class="separator:a3d258e449c9bb17d6e68b1abe4d0a031"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a190dadeb9fe9d8ee5530af4094838a89"><td class="memItemLeft" align="right" valign="top"><a id="a190dadeb9fe9d8ee5530af4094838a89"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>tensor</b> (<a class="el" href="classFeel_1_1vf_1_1One.html">expression_type</a> const &amp;expr, Geo_t const &amp;geom, Basis_i_t const &amp;, Basis_j_t const &amp;)</td></tr>
-<tr class="separator:aad8cf1aa6709a9959e9c4713e803e82d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a190232fba83f3186a91d7a428446d236"><td class="memTemplParams" colspan="2"><a id="a190232fba83f3186a91d7a428446d236"></a>
+<tr class="separator:a190dadeb9fe9d8ee5530af4094838a89"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac380ee1ee4372633661afae1f4ca1d1e"><td class="memTemplParams" colspan="2"><a id="ac380ee1ee4372633661afae1f4ca1d1e"></a>
 template&lt;typename TheExprExpandedType , typename TupleTensorSymbolsExprType , typename... TheArgsType&gt; </td></tr>
-<tr class="memitem:a190232fba83f3186a91d7a428446d236"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>tensor</b> (std::true_type, TheExprExpandedType const &amp;exprExpanded, TupleTensorSymbolsExprType &amp;ttse, <a class="el" href="classFeel_1_1vf_1_1One.html">expression_type</a> const &amp;expr, Geo_t const &amp;geom, const TheArgsType &amp;... theInitArgs)</td></tr>
-<tr class="separator:a190232fba83f3186a91d7a428446d236"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a911cf884f55a6d379ced6a5ecb1630a2"><td class="memItemLeft" align="right" valign="top"><a id="a911cf884f55a6d379ced6a5ecb1630a2"></a>
+<tr class="memitem:ac380ee1ee4372633661afae1f4ca1d1e"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>tensor</b> (std::true_type, TheExprExpandedType const &amp;exprExpanded, TupleTensorSymbolsExprType &amp;ttse, <a class="el" href="classFeel_1_1vf_1_1One.html">expression_type</a> const &amp;expr, Geo_t const &amp;geom, const TheArgsType &amp;... theInitArgs)</td></tr>
+<tr class="separator:ac380ee1ee4372633661afae1f4ca1d1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa29f426cc2fc766fd7d25dac68a7385"><td class="memItemLeft" align="right" valign="top"><a id="afa29f426cc2fc766fd7d25dac68a7385"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>update</b> (Geo_t const &amp;)</td></tr>
-<tr class="separator:a911cf884f55a6d379ced6a5ecb1630a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a800848f30dbd6ae021ad7caa2df2ea89"><td class="memItemLeft" align="right" valign="top"><a id="a800848f30dbd6ae021ad7caa2df2ea89"></a>
+<tr class="separator:afa29f426cc2fc766fd7d25dac68a7385"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c22b7f4375d9bb851b70873384a8e1b"><td class="memItemLeft" align="right" valign="top"><a id="a3c22b7f4375d9bb851b70873384a8e1b"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>update</b> (Geo_t const &amp;, Basis_i_t const &amp;)</td></tr>
-<tr class="separator:a800848f30dbd6ae021ad7caa2df2ea89"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a11384051f6b2443a4be08e69f23fcac9"><td class="memItemLeft" align="right" valign="top"><a id="a11384051f6b2443a4be08e69f23fcac9"></a>
+<tr class="separator:a3c22b7f4375d9bb851b70873384a8e1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae334aceb0c795673c09347727923b891"><td class="memItemLeft" align="right" valign="top"><a id="ae334aceb0c795673c09347727923b891"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>update</b> (Geo_t const &amp;, Basis_i_t const &amp;, Basis_j_t const &amp;)</td></tr>
-<tr class="separator:a11384051f6b2443a4be08e69f23fcac9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9e9b3b95fc6ad7d15609731db1e87647"><td class="memItemLeft" align="right" valign="top"><a id="a9e9b3b95fc6ad7d15609731db1e87647"></a>
+<tr class="separator:ae334aceb0c795673c09347727923b891"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac77df6b5dbb25f72ddc3b9eb9180e515"><td class="memItemLeft" align="right" valign="top"><a id="ac77df6b5dbb25f72ddc3b9eb9180e515"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>update</b> (Geo_t const &amp;, uint16_type)</td></tr>
-<tr class="separator:a9e9b3b95fc6ad7d15609731db1e87647"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a32b0437ccf4ad2687b1494e0a525c2f1"><td class="memTemplParams" colspan="2"><a id="a32b0437ccf4ad2687b1494e0a525c2f1"></a>
+<tr class="separator:ac77df6b5dbb25f72ddc3b9eb9180e515"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d72e8e57958241ac05d1452b0920371"><td class="memTemplParams" colspan="2"><a id="a7d72e8e57958241ac05d1452b0920371"></a>
 template&lt;typename TheExprExpandedType , typename TupleTensorSymbolsExprType , typename... TheArgsType&gt; </td></tr>
-<tr class="memitem:a32b0437ccf4ad2687b1494e0a525c2f1"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>update</b> (std::true_type, TheExprExpandedType const &amp;exprExpanded, TupleTensorSymbolsExprType &amp;ttse, Geo_t const &amp;geom, const TheArgsType &amp;... theUpdateArgs)</td></tr>
-<tr class="separator:a32b0437ccf4ad2687b1494e0a525c2f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ba2f3ad14e4358ddcf5fea92a1b811d"><td class="memTemplParams" colspan="2"><a id="a6ba2f3ad14e4358ddcf5fea92a1b811d"></a>
+<tr class="memitem:a7d72e8e57958241ac05d1452b0920371"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>update</b> (std::true_type, TheExprExpandedType const &amp;exprExpanded, TupleTensorSymbolsExprType &amp;ttse, Geo_t const &amp;geom, const TheArgsType &amp;... theUpdateArgs)</td></tr>
+<tr class="separator:a7d72e8e57958241ac05d1452b0920371"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5a6a2886db801399bcf9f6a50af06e1"><td class="memTemplParams" colspan="2"><a id="ac5a6a2886db801399bcf9f6a50af06e1"></a>
 template&lt;typename ... CTX&gt; </td></tr>
-<tr class="memitem:a6ba2f3ad14e4358ddcf5fea92a1b811d"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateContext</b> (CTX const &amp;... ctx)</td></tr>
-<tr class="separator:a6ba2f3ad14e4358ddcf5fea92a1b811d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5a6a2886db801399bcf9f6a50af06e1"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateContext</b> (CTX const &amp;... ctx)</td></tr>
+<tr class="separator:ac5a6a2886db801399bcf9f6a50af06e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:a15940ddaffaba08fda1a8c9a77ec7b63"><td class="memItemLeft" align="right" valign="top"><a id="a15940ddaffaba08fda1a8c9a77ec7b63"></a>
-static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nComponents</b> = gmc_type::nDim</td></tr>
-<tr class="separator:a15940ddaffaba08fda1a8c9a77ec7b63"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a829d26cb409469cbc70739f05b48603b"><td class="memItemLeft" align="right" valign="top"><a id="a829d26cb409469cbc70739f05b48603b"></a>
-static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>theshape</b> = ( shape::M == gmc_type::nDim &amp;&amp; shape::N == 1 )</td></tr>
-<tr class="separator:a829d26cb409469cbc70739f05b48603b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af5e553ed57c6d95aae0616d4ac4d545f"><td class="memItemLeft" align="right" valign="top"><a id="af5e553ed57c6d95aae0616d4ac4d545f"></a>
+static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nComponents</b> = Dim&lt;0? gmc_type::nDim : Dim</td></tr>
+<tr class="separator:af5e553ed57c6d95aae0616d4ac4d545f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

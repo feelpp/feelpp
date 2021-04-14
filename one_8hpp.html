@@ -112,18 +112,18 @@ $(document).ready(function(){initNavTree('one_8hpp.html',''); initResizable(); }
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1vf_1_1One.html">Feel::vf::One&lt; CType &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1vf_1_1One.html">Feel::vf::One&lt; CType, Dim &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">CType = -3 : dynamic case, the one compoent(s) is given in argument CType = -2 : (0 0 0) CType = -1 : (1 1 1) CType = 0 : (1 0 0) CType = 1 : (0 1 0) CType = 2 : (0 0 1)  <a href="classFeel_1_1vf_1_1One.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1One_1_1HasTestFunction.html">Feel::vf::One&lt; CType &gt;::HasTestFunction&lt; Func &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1One_1_1HasTestFunction.html">Feel::vf::One&lt; CType, Dim &gt;::HasTestFunction&lt; Func &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1One_1_1HasTrialFunction.html">Feel::vf::One&lt; CType &gt;::HasTrialFunction&lt; Func &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1One_1_1HasTrialFunction.html">Feel::vf::One&lt; CType, Dim &gt;::HasTrialFunction&lt; Func &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1One_1_1Lambda.html">Feel::vf::One&lt; CType &gt;::Lambda&lt; TheExpr &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1One_1_1Lambda.html">Feel::vf::One&lt; CType, Dim &gt;::Lambda&lt; TheExpr &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1One_1_1tensor.html">Feel::vf::One&lt; CType &gt;::tensor&lt; Geo_t, Basis_i_t, Basis_j_t &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1One_1_1tensor.html">Feel::vf::One&lt; CType, Dim &gt;::tensor&lt; Geo_t, Basis_i_t, Basis_j_t &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1One_1_1tensor_1_1is__zero.html">Feel::vf::One&lt; CType &gt;::tensor&lt; Geo_t, Basis_i_t, Basis_j_t &gt;::is_zero</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1One_1_1tensor_1_1is__zero.html">Feel::vf::One&lt; CType, Dim &gt;::tensor&lt; Geo_t, Basis_i_t, Basis_j_t &gt;::is_zero</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
@@ -140,12 +140,24 @@ Expr&lt; One&lt;-1 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom">
 <tr class="memitem:a8acd2a8cd692e5e9caf855110000f00b"><td class="memItemLeft" align="right" valign="top"><a id="a8acd2a8cd692e5e9caf855110000f00b"></a>
 Expr&lt; One&lt;-3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::vf::one</b> (ComponentType c)</td></tr>
 <tr class="separator:a8acd2a8cd692e5e9caf855110000f00b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8068636bfc672d6cef9b28856c05af3"><td class="memTemplParams" colspan="2"><a id="ab8068636bfc672d6cef9b28856c05af3"></a>
+template&lt;int Dim&gt; </td></tr>
+<tr class="memitem:ab8068636bfc672d6cef9b28856c05af3"><td class="memTemplItemLeft" align="right" valign="top">Expr&lt; One&lt;-3, Dim &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::vf::one</b> (<a class="el" href="classint.html">int</a> c)</td></tr>
+<tr class="separator:ab8068636bfc672d6cef9b28856c05af3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a22d7bd2cf1647ec597c300788fe6db41"><td class="memItemLeft" align="right" valign="top"><a id="a22d7bd2cf1647ec597c300788fe6db41"></a>
 Expr&lt; One&lt;-3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::vf::one</b> (std::initializer_list&lt; ComponentType &gt; const &amp;c)</td></tr>
 <tr class="separator:a22d7bd2cf1647ec597c300788fe6db41"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab90b80aba48d68bd5654551335c8ad08"><td class="memItemLeft" align="right" valign="top"><a id="ab90b80aba48d68bd5654551335c8ad08"></a>
-Expr&lt; One&lt;-3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::vf::one</b> (std::set&lt; ComponentType &gt; const &amp;c)</td></tr>
-<tr class="separator:ab90b80aba48d68bd5654551335c8ad08"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc6f2fee190617944fed724116365793"><td class="memTemplParams" colspan="2"><a id="acc6f2fee190617944fed724116365793"></a>
+template&lt;int Dim&gt; </td></tr>
+<tr class="memitem:acc6f2fee190617944fed724116365793"><td class="memTemplItemLeft" align="right" valign="top">Expr&lt; One&lt;-3, Dim &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::vf::one</b> (std::initializer_list&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;c)</td></tr>
+<tr class="separator:acc6f2fee190617944fed724116365793"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac7ecee3e1eeee8a767a42b3364635990"><td class="memItemLeft" align="right" valign="top"><a id="ac7ecee3e1eeee8a767a42b3364635990"></a>
+Expr&lt; One&lt;-3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::vf::one</b> (std::set&lt; ComponentType &gt; const &amp;cs)</td></tr>
+<tr class="separator:ac7ecee3e1eeee8a767a42b3364635990"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1dfa1ee35101261278821f36cd4e7ac5"><td class="memTemplParams" colspan="2"><a id="a1dfa1ee35101261278821f36cd4e7ac5"></a>
+template&lt;int Dim&gt; </td></tr>
+<tr class="memitem:a1dfa1ee35101261278821f36cd4e7ac5"><td class="memTemplItemLeft" align="right" valign="top">Expr&lt; One&lt;-3, Dim &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::vf::one</b> (std::set&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;c)</td></tr>
+<tr class="separator:a1dfa1ee35101261278821f36cd4e7ac5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ac378a3cd28f5aa843fc05f13ab1c85"><td class="memItemLeft" align="right" valign="top"><a id="a4ac378a3cd28f5aa843fc05f13ab1c85"></a>
 Expr&lt; One&lt; 0 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::vf::oneX</b> ()</td></tr>
 <tr class="separator:a4ac378a3cd28f5aa843fc05f13ab1c85"><td class="memSeparator" colspan="2">&#160;</td></tr>

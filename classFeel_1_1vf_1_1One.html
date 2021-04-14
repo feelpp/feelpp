@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: Feel::vf::One&lt; CType &gt; Class Template Reference</title>
+<title>Feel++: Feel::vf::One&lt; CType, Dim &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -108,14 +108,15 @@ $(document).ready(function(){initNavTree('classFeel_1_1vf_1_1One.html',''); init
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="classFeel_1_1vf_1_1One-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">Feel::vf::One&lt; CType &gt; Class Template Reference</div>  </div>
+<div class="title">Feel::vf::One&lt; CType, Dim &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><h3>template&lt;int CType&gt;<br />
-class Feel::vf::One&lt; CType &gt;</h3>
+<div class="textblock"><h3>template&lt;int CType, int Dim = -1&gt;<br />
+class Feel::vf::One&lt; CType, Dim &gt;</h3>
 
 <p>CType = -3 : dynamic case, the one compoent(s) is given in argument CType = -2 : (0 0 0) CType = -1 : (1 1 1) CType = 0 : (1 0 0) CType = 1 : (0 1 0) CType = 2 : (0 0 1) </p>
+<p>if Dim = -1 then Dim evaluated by gmc </p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Instances and minimal complete definitions</h2></td></tr>
@@ -130,70 +131,70 @@ Instances and minimal complete definitions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a42fc5200742a7709324a072382869926"><td class="memItemLeft" align="right" valign="top"><a id="a42fc5200742a7709324a072382869926"></a>
+<tr class="memitem:a51841f980155cf710151f9c9e906e378"><td class="memItemLeft" align="right" valign="top"><a id="a51841f980155cf710151f9c9e906e378"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>test_basis</b> = std::nullptr_t</td></tr>
-<tr class="separator:a42fc5200742a7709324a072382869926"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4407050c27c9fa63bb649f1c3dea0e79"><td class="memItemLeft" align="right" valign="top"><a id="a4407050c27c9fa63bb649f1c3dea0e79"></a>
-typedef <a class="el" href="classFeel_1_1vf_1_1One.html">One</a>&lt; CType &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>this_type</b></td></tr>
-<tr class="separator:a4407050c27c9fa63bb649f1c3dea0e79"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5d15bd618b9d1652772f3fe119d3ea1f"><td class="memItemLeft" align="right" valign="top"><a id="a5d15bd618b9d1652772f3fe119d3ea1f"></a>
+<tr class="separator:a51841f980155cf710151f9c9e906e378"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af171705b0ca747b756b40a1744304de0"><td class="memItemLeft" align="right" valign="top"><a id="af171705b0ca747b756b40a1744304de0"></a>
+typedef <a class="el" href="classFeel_1_1vf_1_1One.html">One</a>&lt; CType, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>this_type</b></td></tr>
+<tr class="separator:af171705b0ca747b756b40a1744304de0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1b15afa80986680a37f0c26eed2b9143"><td class="memItemLeft" align="right" valign="top"><a id="a1b15afa80986680a37f0c26eed2b9143"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>trial_basis</b> = std::nullptr_t</td></tr>
-<tr class="separator:a5d15bd618b9d1652772f3fe119d3ea1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acdea3594f4185295be2fccfc4edb9f3a"><td class="memItemLeft" align="right" valign="top"><a id="acdea3594f4185295be2fccfc4edb9f3a"></a>
+<tr class="separator:a1b15afa80986680a37f0c26eed2b9143"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9eeebfa3a704edf87d57e30581fcfc8"><td class="memItemLeft" align="right" valign="top"><a id="ae9eeebfa3a704edf87d57e30581fcfc8"></a>
 typedef double&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
-<tr class="separator:acdea3594f4185295be2fccfc4edb9f3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:ae9eeebfa3a704edf87d57e30581fcfc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a08493edbff31847b6759f5dadd60a804"><td class="memTemplParams" colspan="2"><a id="a08493edbff31847b6759f5dadd60a804"></a>
+<tr class="memitem:a1a8f84a1f0a5687f69003d4048a96203"><td class="memTemplParams" colspan="2"><a id="a1a8f84a1f0a5687f69003d4048a96203"></a>
 template&lt;typename SymbolsExprType &gt; </td></tr>
-<tr class="memitem:a08493edbff31847b6759f5dadd60a804"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1vf_1_1One.html">this_type</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>applySymbolsExpr</b> (SymbolsExprType const &amp;se) const</td></tr>
-<tr class="separator:a08493edbff31847b6759f5dadd60a804"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a11e0f7039487f4b4c1a2c9d72bd797aa"><td class="memTemplParams" colspan="2"><a id="a11e0f7039487f4b4c1a2c9d72bd797aa"></a>
+<tr class="memitem:a1a8f84a1f0a5687f69003d4048a96203"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1vf_1_1One.html">this_type</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>applySymbolsExpr</b> (SymbolsExprType const &amp;se) const</td></tr>
+<tr class="separator:a1a8f84a1f0a5687f69003d4048a96203"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0f376e3115525f8d97d82f65323eb61e"><td class="memTemplParams" colspan="2"><a id="a0f376e3115525f8d97d82f65323eb61e"></a>
 template&lt;int diffOrder, typename TheSymbolExprType &gt; </td></tr>
-<tr class="memitem:a11e0f7039487f4b4c1a2c9d72bd797aa"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>diff</b> (std::string const &amp;diffVariable, <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;world, std::string const &amp;dirLibExpr, TheSymbolExprType const &amp;se) const</td></tr>
-<tr class="separator:a11e0f7039487f4b4c1a2c9d72bd797aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a78c9a4fbf97e02aaad4f452302d75867"><td class="memItemLeft" align="right" valign="top"><a id="a78c9a4fbf97e02aaad4f452302d75867"></a>
-constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1vf_1_1One.html#a78c9a4fbf97e02aaad4f452302d75867">isPolynomial</a> () const</td></tr>
-<tr class="memdesc:a78c9a4fbf97e02aaad4f452302d75867"><td class="mdescLeft">&#160;</td><td class="mdescRight">expression is polynomial? <br /></td></tr>
-<tr class="separator:a78c9a4fbf97e02aaad4f452302d75867"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae2167bf1539f72b1a2fe155f006ab503"><td class="memItemLeft" align="right" valign="top"><a id="ae2167bf1539f72b1a2fe155f006ab503"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>One</b> (ComponentType c)</td></tr>
-<tr class="separator:ae2167bf1539f72b1a2fe155f006ab503"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae969d3ded6e17baf2cb05a29619cc6b1"><td class="memItemLeft" align="right" valign="top"><a id="ae969d3ded6e17baf2cb05a29619cc6b1"></a>
+<tr class="memitem:a0f376e3115525f8d97d82f65323eb61e"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>diff</b> (std::string const &amp;diffVariable, <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;world, std::string const &amp;dirLibExpr, TheSymbolExprType const &amp;se) const</td></tr>
+<tr class="separator:a0f376e3115525f8d97d82f65323eb61e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2f257a05aff74d957cbeac58863a4fc"><td class="memItemLeft" align="right" valign="top"><a id="ac2f257a05aff74d957cbeac58863a4fc"></a>
+constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1vf_1_1One.html#ac2f257a05aff74d957cbeac58863a4fc">isPolynomial</a> () const</td></tr>
+<tr class="memdesc:ac2f257a05aff74d957cbeac58863a4fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">expression is polynomial? <br /></td></tr>
+<tr class="separator:ac2f257a05aff74d957cbeac58863a4fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa214e4ea2f9ed79b17f88b076aad7df6"><td class="memItemLeft" align="right" valign="top"><a id="aa214e4ea2f9ed79b17f88b076aad7df6"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>One</b> (<a class="el" href="classint.html">int</a> c)</td></tr>
+<tr class="separator:aa214e4ea2f9ed79b17f88b076aad7df6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbfb2a28d90ce58571230366113d8b50"><td class="memItemLeft" align="right" valign="top"><a id="adbfb2a28d90ce58571230366113d8b50"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>One</b> (<a class="el" href="classFeel_1_1vf_1_1One.html">One</a> const &amp;)=default</td></tr>
-<tr class="separator:ae969d3ded6e17baf2cb05a29619cc6b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7ccd0a572988d1b94a806f528f2c44de"><td class="memItemLeft" align="right" valign="top"><a id="a7ccd0a572988d1b94a806f528f2c44de"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>One</b> (std::set&lt; ComponentType &gt; const &amp;c)</td></tr>
-<tr class="separator:a7ccd0a572988d1b94a806f528f2c44de"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2e7e58ad8f89c121ab85223c81bea7a1"><td class="memItemLeft" align="right" valign="top"><a id="a2e7e58ad8f89c121ab85223c81bea7a1"></a>
-std::set&lt; ComponentType &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>oneComponentsDynamic</b> () const</td></tr>
-<tr class="separator:a2e7e58ad8f89c121ab85223c81bea7a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac71f7e8c2106a457bc26410590ebd13c"><td class="memTemplParams" colspan="2"><a id="ac71f7e8c2106a457bc26410590ebd13c"></a>
+<tr class="separator:adbfb2a28d90ce58571230366113d8b50"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0987420630981b4bd48d04453ac2a31d"><td class="memItemLeft" align="right" valign="top"><a id="a0987420630981b4bd48d04453ac2a31d"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>One</b> (std::set&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;c)</td></tr>
+<tr class="separator:a0987420630981b4bd48d04453ac2a31d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11d6c4fe9405535a089cc04b0e7b1c72"><td class="memItemLeft" align="right" valign="top"><a id="a11d6c4fe9405535a089cc04b0e7b1c72"></a>
+std::set&lt; <a class="el" href="classint.html">int</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>oneComponentsDynamic</b> () const</td></tr>
+<tr class="separator:a11d6c4fe9405535a089cc04b0e7b1c72"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aded83c353f33a919ed991b94603741a8"><td class="memTemplParams" colspan="2"><a id="aded83c353f33a919ed991b94603741a8"></a>
 template&lt;typename... TheExpr&gt; </td></tr>
-<tr class="memitem:ac71f7e8c2106a457bc26410590ebd13c"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="structFeel_1_1vf_1_1One_1_1Lambda.html">Lambda</a>&lt; TheExpr... &gt;::type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>operator()</b> (TheExpr... e)</td></tr>
-<tr class="separator:ac71f7e8c2106a457bc26410590ebd13c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a46c6d922d7046bf9bc244162758bd1c4"><td class="memItemLeft" align="right" valign="top"><a id="a46c6d922d7046bf9bc244162758bd1c4"></a>
-constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1vf_1_1One.html#a46c6d922d7046bf9bc244162758bd1c4">polynomialOrder</a> () const</td></tr>
-<tr class="memdesc:a46c6d922d7046bf9bc244162758bd1c4"><td class="mdescLeft">&#160;</td><td class="mdescRight">polynomial order <br /></td></tr>
-<tr class="separator:a46c6d922d7046bf9bc244162758bd1c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aded83c353f33a919ed991b94603741a8"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="structFeel_1_1vf_1_1One_1_1Lambda.html">Lambda</a>&lt; TheExpr... &gt;::type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>operator()</b> (TheExpr... e)</td></tr>
+<tr class="separator:aded83c353f33a919ed991b94603741a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a035fdd63c5072f2d40e59de95ce8851a"><td class="memItemLeft" align="right" valign="top"><a id="a035fdd63c5072f2d40e59de95ce8851a"></a>
+constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1vf_1_1One.html#a035fdd63c5072f2d40e59de95ce8851a">polynomialOrder</a> () const</td></tr>
+<tr class="memdesc:a035fdd63c5072f2d40e59de95ce8851a"><td class="mdescLeft">&#160;</td><td class="mdescRight">polynomial order <br /></td></tr>
+<tr class="separator:a035fdd63c5072f2d40e59de95ce8851a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:aa5cf9f685d38d47dbb32b8faad843276"><td class="memItemLeft" align="right" valign="top"><a id="aa5cf9f685d38d47dbb32b8faad843276"></a>
+<tr class="memitem:ace2618e8eb11b4702d70904e336214ec"><td class="memItemLeft" align="right" valign="top"><a id="ace2618e8eb11b4702d70904e336214ec"></a>
 static const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>context</b> = 0</td></tr>
-<tr class="separator:aa5cf9f685d38d47dbb32b8faad843276"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad6c0658f136a224e410c331d99abd51d"><td class="memTemplParams" colspan="2"><a id="ad6c0658f136a224e410c331d99abd51d"></a>
+<tr class="separator:ace2618e8eb11b4702d70904e336214ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade6a758f798ef5c0b7ff1026994f2f09"><td class="memTemplParams" colspan="2"><a id="ade6a758f798ef5c0b7ff1026994f2f09"></a>
 template&lt;typename Func &gt; </td></tr>
-<tr class="memitem:ad6c0658f136a224e410c331d99abd51d"><td class="memTemplItemLeft" align="right" valign="top">static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>has_test_basis</b> = false</td></tr>
-<tr class="separator:ad6c0658f136a224e410c331d99abd51d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abcaea86e8a977967db2f7008cb52fbad"><td class="memTemplParams" colspan="2"><a id="abcaea86e8a977967db2f7008cb52fbad"></a>
+<tr class="memitem:ade6a758f798ef5c0b7ff1026994f2f09"><td class="memTemplItemLeft" align="right" valign="top">static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>has_test_basis</b> = false</td></tr>
+<tr class="separator:ade6a758f798ef5c0b7ff1026994f2f09"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb446deab15e27d3318d206f43291c5f"><td class="memTemplParams" colspan="2"><a id="aeb446deab15e27d3318d206f43291c5f"></a>
 template&lt;typename Func &gt; </td></tr>
-<tr class="memitem:abcaea86e8a977967db2f7008cb52fbad"><td class="memTemplItemLeft" align="right" valign="top">static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>has_trial_basis</b> = false</td></tr>
-<tr class="separator:abcaea86e8a977967db2f7008cb52fbad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa1d3683cdf247837f08ea3cc947ca3af"><td class="memItemLeft" align="right" valign="top"><a id="aa1d3683cdf247837f08ea3cc947ca3af"></a>
+<tr class="memitem:aeb446deab15e27d3318d206f43291c5f"><td class="memTemplItemLeft" align="right" valign="top">static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>has_trial_basis</b> = false</td></tr>
+<tr class="separator:aeb446deab15e27d3318d206f43291c5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6010773a1d23129f0b93266163c1cc3d"><td class="memItemLeft" align="right" valign="top"><a id="a6010773a1d23129f0b93266163c1cc3d"></a>
 static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_terminal</b> = true</td></tr>
-<tr class="separator:aa1d3683cdf247837f08ea3cc947ca3af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a6010773a1d23129f0b93266163c1cc3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

@@ -1,5 +1,8 @@
 var NAVTREEINDEX42 =
 {
+"structFeel_1_1RemoteData_1_1ItemInfo.html#a8a9ef4095f161c2637ccd1eb7263f45f":[6,1,1,241,5,4],
+"structFeel_1_1RemoteData_1_1ItemInfo.html#aad548ef0e6d66226e8a2f52d84435f6a":[6,1,1,241,5,2],
+"structFeel_1_1RemoteData_1_1ItemInfo.html#acba87afde039b317a53cad7a25e12479":[6,1,1,241,5,6],
 "structFeel_1_1Repository_1_1Config.html":[6,1,1,246,0],
 "structFeel_1_1Repository_1_1Config.html#a07e437d2b72d59220e9f97f9dc8179ae":[6,1,1,246,0,0],
 "structFeel_1_1Repository_1_1Config.html#a1032550c9224ed86c74d70387f06ddb8":[6,1,1,246,0,4],
@@ -246,8 +249,5 @@ var NAVTREEINDEX42 =
 "structFeel_1_1detail_1_1DD.html#ac98d07dd8f7b70e16ccb9a01abf56b9c":[6,1,1,1,23,1],
 "structFeel_1_1detail_1_1DD.html#adc9127b83d1c6c485509ee59672593b9":[6,1,1,1,23,11],
 "structFeel_1_1detail_1_1DD.html#ae2058646d01cc3e09bea97e7f014a332":[6,1,1,1,23,5],
-"structFeel_1_1detail_1_1DD.html#ae45cfb218d8fd3579f4fe4b5c8e44087":[6,1,1,1,23,9],
-"structFeel_1_1detail_1_1DD_1_1result.html":[6,1,1,1,23,0],
-"structFeel_1_1detail_1_1DD_1_1result.html#a29dcd6a9684de500b535d2d3f1bfbced":[6,1,1,1,23,0,0],
-"structFeel_1_1detail_1_1D_1_1result.html":[6,1,1,1,22,0]
+"structFeel_1_1detail_1_1DD.html#ae45cfb218d8fd3579f4fe4b5c8e44087":[6,1,1,1,23,9]
 };
