@@ -150,7 +150,7 @@ int cg_laplacian_app()
     }
 
     // cgLaplacian may not solve the problem, hence u is std::optional
-    auto opt_u = cgLaplacian( Vh, std::tuple{k,f,g,un,r_1,r_2} );
+    auto opt_u = cgLaplacian( Vh, std::tuple{k,f,g,un,r_1,r_2}, ioption("quad-order") );
 
     // tag::export[]
     tic();
@@ -164,12 +164,8 @@ int cg_laplacian_app()
     e->add( "k", k );
     e->add( "f", f );
     e->add( "g", g );
-    if ( support( Vh )->hasAnyMarker( {"Robin"} ) )
-    {
-        auto rangeFacesRobin = markedfaces( support( Vh ), "Robin" );
-        e->add( "r_1", r_1, rangeFacesRobin );
-        e->add( "r_2", r_2, rangeFacesRobin );
-    }
+    e->add( "r_1", r_1 );
+    e->add( "r_2", r_2 );
     if ( thechecker.check() )
     {
         e->add( "solution", p_exact );
@@ -199,7 +195,8 @@ int main( int argc, char** argv )
         ( "un", po::value<std::string>()->default_value( "" ), "Neumann boundary condition" )
         ( "r_1", po::value<std::string>()->default_value( "1" ), "Robin left hand side coefficient" )
         ( "r_2", po::value<std::string>()->default_value( "" ), "Robin right hand side  coefficient" )
-        ( "pyexpr.filename", po::value<std::string>()->default_value( "$cfgdir/../python/laplacian.py" ), "python filename to execute" );
+        ( "pyexpr.filename", po::value<std::string>()->default_value( "$cfgdir/../python/laplacian.py" ), "python filename to execute" )
+        ( "quad-order", po::value<int>()->default_value( 5 ), "quadrature order" );
     laplacianoptions.add( case_options( FEELPP_DIM, "P1" ) );
     laplacianoptions.add_options()( "marker.name", po::value<std::string>(), "marker on which to solve problem" );
     laplacianoptions.add_options()( "marker.levelset", po::value<std::string>(), "marker on which to solve problem" );

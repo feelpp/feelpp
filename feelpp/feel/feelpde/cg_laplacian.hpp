@@ -41,17 +41,24 @@ namespace Feel {
  */
 template<typename SpaceType, typename DataT, typename = std::enable_if_t<is_functionspace_v<SpaceType>>>
 auto
-cgLaplacianDirichlet( std::shared_ptr<SpaceType> const& Vh, DataT && data  )
+cgLaplacianDirichlet( std::shared_ptr<SpaceType> const& Vh, DataT && data, int quadOrder = SpaceType::nOrder + 2 )
 {
     auto [k,f,g] = data;
     // tag::v[]
     auto u = Vh->element();
     auto v = Vh->element( g, "g" );
+
+    Feel::cout << "========================================" << std::endl;
+    Feel::cout << "Information about the space :" << std::endl;
+    Feel::cout << "     global number of degree of freedom : " << Vh->nDof() << std::endl;
+    Feel::cout << "     local number of dof : " << Vh->nLocalDof() << std::endl;
+    Feel::cout << "========================================" << std::endl;
     // end::v[]
 
     // tag::forms[]
     auto l = form1( _test = Vh );
     l = integrate( _range = elements( support( Vh ) ),
+                   _quad = quadOrder,
                    _expr = f * id( v ) );
 
     auto a = form2( _trial = Vh, _test = Vh );
@@ -69,7 +76,7 @@ cgLaplacianDirichlet( std::shared_ptr<SpaceType> const& Vh, DataT && data  )
 
 template<typename SpaceType, typename DataT, typename = std::enable_if_t<is_functionspace_v<SpaceType>>>
 auto
-cgLaplacian( std::shared_ptr<SpaceType> const& Vh, DataT && data  )
+cgLaplacian( std::shared_ptr<SpaceType> const& Vh, DataT && data, int quadOrder = SpaceType::nOrder + 2 )
 {
     auto [k,f,g,un,r_1,r_2] = data;
     tic();
@@ -78,12 +85,19 @@ cgLaplacian( std::shared_ptr<SpaceType> const& Vh, DataT && data  )
     auto v = Vh->element( g, "g" );
     // end::v[]
     toc( "Vh elements" );
+
+    Feel::cout << "========================================" << std::endl;
+    Feel::cout << "Information about the space :" << std::endl;
+    Feel::cout << "     global number of degree of freedom : " << Vh->nDof() << std::endl;
+    Feel::cout << "     local number of dof : " << Vh->nLocalDof() << std::endl;
+    Feel::cout << "========================================" << std::endl;
     // end::mesh_space[]
 
     // tag::forms[]
     tic();
     auto l = form1( _test = Vh );
     l = integrate( _range = elements( support( Vh ) ),
+                   _quad = quadOrder,
                    _expr = f * id( v ) );
     l += integrate( _range = markedfaces( support( Vh ), "Robin" ), _expr = -r_2 * id( v ) );
     l += integrate( _range = markedfaces( support( Vh ), "Neumann" ), _expr = -un * id( v ) );
