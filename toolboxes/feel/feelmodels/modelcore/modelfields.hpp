@@ -568,7 +568,7 @@ public :
         }
 
     template <typename TagType>
-    auto const&
+    auto
     field( TagType const& thetag, std::string const& name ) const
         {
             // found the field type related to TagType
@@ -669,7 +669,7 @@ private :
         }
 
     template <typename FieldType,typename TagType,int Index>
-    auto const&
+    auto
     fieldImpl( TagType const& thetag, std::string const& name, const FieldType * dummyRet ) const
         {
             if constexpr ( Index < nModelField )

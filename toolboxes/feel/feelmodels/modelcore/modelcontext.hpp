@@ -39,7 +39,7 @@ struct ModelContext
 
 
     template <typename TagType>
-    auto const&
+    auto
     field( TagType const& thetag,std::string const& name ) const
         {
             return M_modelFields.field( thetag, name );
