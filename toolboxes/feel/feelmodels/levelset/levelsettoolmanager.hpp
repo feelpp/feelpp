@@ -119,13 +119,13 @@ public:
             std::string const& prefix
             );
 
-    void createProjectorL2Default();
-    void createProjectorSMDefault();
-    void createProjectorL2Tensor2Symm();
-    void createProjectorL2IsoPN();
-    void createProjectorSMIsoPN();
+    void initProjectorL2Default();
+    void initProjectorSMDefault();
+    void initProjectorL2Tensor2Symm();
+    void initProjectorL2IsoPN();
+    void initProjectorSMIsoPN();
 
-    void createCurvatureDiffusion();
+    void initCurvatureDiffusion();
 
     levelset_space_manager_ptrtype const& functionSpaceManager() const { return M_spaceManager; }
 
@@ -216,7 +216,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::LevelSetToolManager(
 
 LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorL2Default()
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::initProjectorL2Default()
 {
     if( !M_projectorL2Scalar )
     {
@@ -250,7 +250,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorL2Default()
 
 LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorSMDefault()
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::initProjectorSMDefault()
 {
     if( !M_projectorSMScalar )
     {
@@ -286,7 +286,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorSMDefault()
 
 LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorL2Tensor2Symm()
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::initProjectorL2Tensor2Symm()
 {
     if( !M_projectorL2Tensor2Symm )
     {
@@ -306,7 +306,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorL2Tensor2Symm()
 
 LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorL2IsoPN()
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::initProjectorL2IsoPN()
 {
     if( !M_projectorL2ScalarIsoPN )
     {
@@ -340,7 +340,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorL2IsoPN()
 
 LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorSMIsoPN()
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::initProjectorSMIsoPN()
 {
     if( !M_projectorSMScalarIsoPN )
     {
@@ -376,7 +376,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createProjectorSMIsoPN()
 
 LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createCurvatureDiffusion()
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::initCurvatureDiffusion()
 {
     if( !M_curvatureDiffusion )
     {

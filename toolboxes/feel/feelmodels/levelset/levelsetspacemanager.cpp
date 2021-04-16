@@ -67,7 +67,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::setPeriodicity( periodicity_type const
 
 LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceDefault()
+LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::initFunctionSpaceDefault()
 {
     if( !M_spaceVectorial )
     {
@@ -79,6 +79,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceDefault()
     }
     if( !M_spaceScalar )
     {
+#if 0
         if( M_buildExtendedDofTable )
         {
             std::vector<bool> extendedDT( 1, M_buildExtendedDofTable );
@@ -93,6 +94,14 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceDefault()
         {
             M_spaceScalar = M_spaceVectorial->compSpace();
         }
+#endif
+        std::vector<bool> extendedDT( 1, M_buildExtendedDofTable );
+        M_spaceScalar = space_scalar_type::New( 
+                _mesh=this->mesh(), 
+                _worldscomm=this->worldsComm(),
+                _extended_doftable=extendedDT,
+                _periodicity=this->periodicity()
+                );
     }
     if( !M_spaceMarkers )
     {
@@ -109,7 +118,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceDefault()
 
 LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
+LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::initFunctionSpaceIsoPN()
 {
     if( !M_spaceScalarPN )
     {
@@ -145,6 +154,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
     }
     if( !M_spaceScalarIsoPN )
     {
+#if 0
         if( M_buildExtendedDofTable )
         {
             std::vector<bool> extendedDT( 1, M_buildExtendedDofTable );
@@ -159,6 +169,14 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
         {
             M_spaceScalarIsoPN = M_spaceVectorialIsoPN->compSpace();
         }
+#endif
+        std::vector<bool> extendedDT( 1, M_buildExtendedDofTable );
+        M_spaceScalarIsoPN = space_scalar_type::New(
+                _mesh=this->meshIsoPN(),
+                _worldscomm=this->worldsComm(),
+                _extended_doftable=extendedDT,
+                _periodicity=this->periodicity()
+                );
     }
     if( !M_spaceMarkersIsoPN )
     {
@@ -208,7 +226,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
 
 LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceHovisu()
+LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::initFunctionSpaceHovisu()
 {
     CHECK( M_spaceScalar ) << "M_spaceScalar must be built to build Hovisu function spaces\n";
     CHECK( M_spaceVectorial ) << "M_spaceVectorial must be built to build Hovisu function spaces\n";
@@ -260,7 +278,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceHovisu()
 
 LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceTensor2Symm()
+LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::initFunctionSpaceTensor2Symm()
 {
     if( !M_spaceTensor2Symm )
     {

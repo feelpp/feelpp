@@ -71,10 +71,10 @@ public:
     //--------------------------------------------------------------------//
     // Default scalar and vectorial spaces
     typedef BasisType basis_scalar_type;
-    //typedef FunctionSpace< mesh_type, bases<basis_scalar_type>, Periodicity<periodicity_type> > space_scalar_type;
-    //typedef std::shared_ptr<space_scalar_type> space_scalar_ptrtype;
-    //typedef typename space_scalar_type::element_type element_scalar_type;
-    //typedef std::shared_ptr<element_scalar_type> element_scalar_ptrtype;
+    typedef FunctionSpace< mesh_type, bases<basis_scalar_type>/*, Periodicity<periodicity_type>*/ > space_scalar_type;
+    typedef std::shared_ptr<space_scalar_type> space_scalar_ptrtype;
+    typedef typename space_scalar_type::element_type element_scalar_type;
+    typedef std::shared_ptr<element_scalar_type> element_scalar_ptrtype;
 
     typedef typename detail::ChangeBasisPolySet<Vectorial, basis_scalar_type>::type basis_vectorial_type;
     typedef FunctionSpace<mesh_type, bases<basis_vectorial_type>/*, Periodicity<periodicity_type>*/ > space_vectorial_type;
@@ -82,10 +82,12 @@ public:
     typedef typename space_vectorial_type::element_type element_vectorial_type;
     typedef std::shared_ptr<element_vectorial_type> element_vectorial_ptrtype;
 
+#if 0
     typedef typename space_vectorial_type::component_functionspace_type space_scalar_type;
     typedef std::shared_ptr<space_scalar_type> space_scalar_ptrtype;
     typedef typename space_scalar_type::element_type element_scalar_type;
     typedef std::shared_ptr<element_scalar_type> element_scalar_ptrtype;
+#endif
 
     typedef typename space_scalar_type::value_type value_type;
 
@@ -201,15 +203,15 @@ public:
     periodicity_type const& periodicity() const { return M_periodicity; }
 
     // Default minimal function spaces
-    void createFunctionSpaceDefault();
+    void initFunctionSpaceDefault();
     // Iso PN minimal function spaces
-    void createFunctionSpaceIsoPN();
+    void initFunctionSpaceIsoPN();
 
     // Hovisu function spaces
-    void createFunctionSpaceHovisu();
+    void initFunctionSpaceHovisu();
     
     // Tensor2Symm function space
-    void createFunctionSpaceTensor2Symm();
+    void initFunctionSpaceTensor2Symm();
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
     mesh_ptrtype const& meshIsoPN() const { return M_meshIsoPN; }
