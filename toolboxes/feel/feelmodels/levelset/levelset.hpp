@@ -283,10 +283,13 @@ public:
     //--------------------------------------------------------------------//
     // Initialization
     void init();
-    void initInitialValues();
     void initPostProcess() override;
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
+
+    //--------------------------------------------------------------------//
+    // Initial condition
+    void updateInitialConditions();
 
     //--------------------------------------------------------------------//
     // Advection data
@@ -464,10 +467,10 @@ private:
     void loadParametersFromOptionsVm();
     void initBoundaryConditions();
 
-    void createFunctionSpaces();
-    void createInterfaceQuantities();
-    void createTools();
-    void createExporters();
+    void initFunctionSpaces();
+    void initInterfaceQuantities();
+    void initTools();
+    void initExporters();
 
     //--------------------------------------------------------------------//
     element_levelset_ptrtype const& phiPreviousTimeStepPtr() const { return this->timeStepBDF()->unknowns()[1]; }

@@ -85,18 +85,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     super_type::init();
 
     // Function spaces
-    this->createFunctionSpaces();
+    this->initFunctionSpaces();
     // Tools
-    this->createInterfaceQuantities();
-    this->createTools();
-    // Advection toolbox
-#if 0
-    M_advectionToolbox->setFunctionSpace( this->functionSpace() );
-    M_advectionToolbox->setFunctionSpaceAdvectionVelocity( this->functionSpaceAdvectionVelocity() );
-#endif
+    this->initInterfaceQuantities();
+    this->initTools();
 
     // Init advection toolbox
-    M_advectionToolbox->setMesh( this->mesh() );
+    M_advectionToolbox->setSpaceUnknown( this->functionSpace() );
     M_advectionToolbox->init();
     // Set transient coefficient d=1
     for( std::string const& matName : M_advectionToolbox->materialsProperties()->physicToMaterials( M_advectionToolbox->physicDefault() ) )
@@ -106,27 +101,26 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
         firstTimeDerivativeCoefficientExpr.setExpr( "1", this->worldComm(), this->repository().expr() );
         M_advectionToolbox->materialsProperties()->addProperty( matProp, M_advectionToolbox->firstTimeDerivativeCoefficientName(), firstTimeDerivativeCoefficientExpr, true );
     }
+
+    if ( !this->isStationary() )
+    {
+        this->setTimeInitial( M_advectionToolbox->timeInitial() );
+        this->updateTime( M_advectionToolbox->currentTime() );
+    }
+
     // Set advection initial value
     if( !this->doRestart() )
     {
         // Set other initial values
-        this->initInitialValues();
+        this->updateInitialConditions();
     }
     // Init boundary conditions
     this->initBoundaryConditions();
-#if 0
-    M_advectionToolbox->setDoExport( this->M_doExportAdvection );
-#endif
 
-    this->updateTime( M_advectionToolbox->currentTime() );
-    if (this->doRestart())
-    {
-        this->setTimeInitial( M_advectionToolbox->timeInitial() );
-    }
-    // We create the exporters only after having set the correct initial time
+    // We init the exporters only after having set the correct initial time
     // to prevent restart mishmash
-    this->createPostProcessExporters();
-    this->createPostProcessMeasures();
+    this->initPostProcessExporters();
+    this->initPostProcessMeasures();
 
     // Init iterSinceRedistanciation
     if( this->doRestart() )
@@ -167,15 +161,22 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::initInitialValues()
+LEVELSET_CLASS_TEMPLATE_TYPE::updateInitialConditions()
 {
-    this->log("LevelSet", "initInitialValues", "start");
+    this->log("LevelSet", "updateInitialConditions", "start");
 
-#if 0
-    this->M_advectionToolbox->setInitialValue( this->phiPtr() );
-#endif
-    M_advectionToolbox->timeStepBdfUnknown()->unknown(0) = *(this->phiPtr());
-    M_advectionToolbox->updateInitialConditions( Feel::vf::symbolsExpr( symbolExpr( "initialPhi", idv(this->phiPtr()) ) ) );
+    if( !this->doRestart() )
+    {
+        if( this->initialValue() )
+        {
+            // We need to hack the InitialCondition mechanism since it does not allow for proper management
+            if( !this->isStationary() )
+            {
+                for( auto const& unknown : M_advectionToolbox->timeStepBdfUnknown()->unknowns() )
+                    *unknown = *(this->initialValue());
+            }
+        }
+    }
 
     if( M_useGradientAugmented )
     {
@@ -215,7 +216,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initInitialValues()
         }
     }
 
-    this->log("LevelSet", "initInitialValues", "finish");
+    this->log("LevelSet", "updateInitialConditions", "finish");
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -223,26 +224,26 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     super_type::initPostProcessExportsAndMeasures();
-    // Do not call the createPostProcess* functions here, this is done after time initial
+    // Do not call the initPostProcess* functions here, this is done after time initial
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
+LEVELSET_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 {
     if( !M_spaceAdvectionVelocity )
         M_spaceAdvectionVelocity = space_advection_velocity_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
 
     if( M_useCauchyAugmented )
     {
-        this->functionSpaceManager()->createFunctionSpaceTensor2Symm();
+        this->functionSpaceManager()->initFunctionSpaceTensor2Symm();
         M_spaceTensor2Symm = this->functionSpaceManager()->functionSpaceTensor2Symm();
     }
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
+LEVELSET_CLASS_TEMPLATE_TYPE::initInterfaceQuantities()
 {
     if( M_useGradientAugmented )
     {
@@ -300,11 +301,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::createTools()
+LEVELSET_CLASS_TEMPLATE_TYPE::initTools()
 {
     if( M_useCauchyAugmented )
     {
-        this->toolManager()->createProjectorL2Tensor2Symm();
+        this->toolManager()->initProjectorL2Tensor2Symm();
         M_projectorL2Tensor2Symm = this->toolManager()->projectorL2Tensor2Symm();
     }
 }

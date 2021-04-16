@@ -82,9 +82,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::New(
 //----------------------------------------------------------------------------//
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::createMesh()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::initMesh()
 {
-    this->log("LevelSetBase","createMesh","start");
+    this->log("LevelSetBase","initMesh","start");
     this->timerTool("Constructor").start();
 
     if ( this->doRestart() )
@@ -93,8 +93,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createMesh()
 
     CHECK( this->mesh() ) << "mesh generation fail";
 
-    double tElapsed = this->timerTool("Constructor").stop("create");
-    this->log("LevelSetBase","createMesh", (boost::format("finish in %1% s") %tElapsed).str() );
+    double tElapsed = this->timerTool("Constructor").stop("init");
+    this->log("LevelSetBase","initMesh", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -109,7 +109,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::init()
         if( !this->mesh() )
         {
             // Create mesh
-            this->createMesh();
+            this->initMesh();
         }
         M_spaceManager = std::make_shared<levelset_space_manager_type>( this->mesh() );
     }
@@ -122,11 +122,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::init()
         M_toolManager = std::make_shared<levelset_tool_manager_type>( M_spaceManager, this->prefix() );
     // Function spaces
     this->functionSpaceManager()->setBuildExtendedDofTable( this->buildExtendedDofSpace() );
-    this->createFunctionSpaces();
+    this->initFunctionSpaces();
     // Tools
-    this->createInterfaceQuantities();
-    this->createTools();
-    this->createRedistanciation();
+    this->initInterfaceQuantities();
+    this->initTools();
+    this->initRedistanciation();
 
     // Initial value
     //if( !this->doRestart() )
@@ -438,24 +438,24 @@ void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     this->initPostProcessExportsAndMeasures();
-    this->createPostProcessExporters();
-    this->createPostProcessMeasures();
+    this->initPostProcessExporters();
+    this->initPostProcessMeasures();
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 {
     if( M_useSpaceIsoPN )
     {
-        this->functionSpaceManager()->createFunctionSpaceIsoPN();
+        this->functionSpaceManager()->initFunctionSpaceIsoPN();
         M_spaceLevelset = this->functionSpaceManager()->functionSpaceScalarIsoPN();
         M_spaceVectorial = this->functionSpaceManager()->functionSpaceVectorialIsoPN();
         M_spaceMarkers = this->functionSpaceManager()->functionSpaceMarkersIsoPN();
     }
     else
     {
-        this->functionSpaceManager()->createFunctionSpaceDefault();
+        this->functionSpaceManager()->initFunctionSpaceDefault();
         M_spaceLevelset = this->functionSpaceManager()->functionSpaceScalar();
         M_spaceVectorial = this->functionSpaceManager()->functionSpaceVectorial();
         M_spaceMarkers = this->functionSpaceManager()->functionSpaceMarkers();
@@ -466,7 +466,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::initInterfaceQuantities()
 {
     if( Environment::vm().count( prefixvm(this->prefix(),"thickness-interface").c_str() ) )
         M_thicknessInterface = doption(prefixvm(this->prefix(),"thickness-interface"));
@@ -491,7 +491,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::createRedistanciation()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::initRedistanciation()
 {
     switch( M_redistanciationMethod )
     { 
@@ -501,13 +501,13 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createRedistanciation()
         case LevelSetDistanceMethod::FASTMARCHING :
         {
             if( !M_redistanciationFM )
-                this->createRedistanciationFM();
+                this->initRedistanciationFM();
         }
         break;
         case LevelSetDistanceMethod::HAMILTONJACOBI :
         {
             if( !M_redistanciationHJ )
-                this->createRedistanciationHJ();
+                this->initRedistanciationHJ();
             
             double thickness_heaviside;
             if( Environment::vm( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "redist-hj")).defaulted() )
@@ -531,7 +531,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createRedistanciation()
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::createRedistanciationFM()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::initRedistanciationFM()
 {
     M_redistanciationFM.reset( 
             new LevelSetRedistanciationFM<space_levelset_type>( 
@@ -544,7 +544,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createRedistanciationFM()
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::createRedistanciationHJ()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::initRedistanciationHJ()
 {
     M_redistanciationHJ.reset( 
             new LevelSetRedistanciationHJ<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "redist-hj") ) 
@@ -553,38 +553,38 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createRedistanciationHJ()
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::createTools()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::initTools()
 {
     if( M_useSpaceIsoPN )
     {
-        this->toolManager()->createProjectorL2IsoPN();
+        this->toolManager()->initProjectorL2IsoPN();
         M_projectorL2Scalar = this->toolManager()->projectorL2ScalarIsoPN();
         M_projectorL2Vectorial = this->toolManager()->projectorL2VectorialIsoPN();
 
-        this->toolManager()->createProjectorSMIsoPN();
+        this->toolManager()->initProjectorSMIsoPN();
         M_projectorSMScalar = this->toolManager()->projectorSMScalarIsoPN();
         M_projectorSMVectorial = this->toolManager()->projectorSMVectorialIsoPN();
     }
     else
     {
-        this->toolManager()->createProjectorL2Default();
+        this->toolManager()->initProjectorL2Default();
         M_projectorL2Scalar = this->toolManager()->projectorL2Scalar();
         M_projectorL2Vectorial = this->toolManager()->projectorL2Vectorial();
 
-        this->toolManager()->createProjectorSMDefault();
+        this->toolManager()->initProjectorSMDefault();
         M_projectorSMScalar = this->toolManager()->projectorSMScalar();
         M_projectorSMVectorial = this->toolManager()->projectorSMVectorial();
     }
 
     if( this->useCurvatureDiffusion() )
     {
-        this->toolManager()->createCurvatureDiffusion();
+        this->toolManager()->initCurvatureDiffusion();
     }
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcessExporters()
 {
     if ( !this->postProcessExportsFields().empty() )
     {
@@ -604,7 +604,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::createPostProcessMeasures()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcessMeasures()
 {
     // Start measures export
     if ( !this->isStationary() )
@@ -1712,7 +1712,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::redistanciationFM( bool buildOnTheFly ) const
 {
     if( !M_redistanciationFM && buildOnTheFly )
     {
-        const_cast<self_type*>(this)->createRedistanciationFM();
+        const_cast<self_type*>(this)->initRedistanciationFM();
     }
 
     return M_redistanciationFM;
@@ -1724,7 +1724,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::redistanciationHJ( bool buildOnTheFly ) const
 {
     if( !M_redistanciationHJ && buildOnTheFly )
     {
-        const_cast<self_type*>(this)->createRedistanciationHJ();
+        const_cast<self_type*>(this)->initRedistanciationHJ();
     }
 
     return M_redistanciationHJ;

@@ -260,7 +260,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Initialization
-    void createMesh();
+    void initMesh();
     void init();
     void initLevelsetValue();
     void initUserFunctions();
@@ -690,18 +690,18 @@ protected:
     element_levelset_type interfaceRectangularFunction( element_levelset_type const& p ) const;
     //--------------------------------------------------------------------//
     // Export
-    void createPostProcessExporters();
-    void createPostProcessMeasures();
+    void initPostProcessExporters();
+    void initPostProcessMeasures();
 
 private:
     void loadParametersFromOptionsVm();
 
-    void createFunctionSpaces();
-    void createInterfaceQuantities();
-    void createRedistanciation();
-    void createRedistanciationFM();
-    void createRedistanciationHJ();
-    void createTools();
+    void initFunctionSpaces();
+    void initInterfaceQuantities();
+    void initRedistanciation();
+    void initRedistanciationFM();
+    void initRedistanciationHJ();
+    void initTools();
 
     //--------------------------------------------------------------------//
     void addShape( 
