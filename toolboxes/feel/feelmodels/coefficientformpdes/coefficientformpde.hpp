@@ -90,6 +90,8 @@ public:
     space_unknown_ptrtype const& spaceUnknown() const { return M_Xh; }
     element_unknown_ptrtype const& fieldUnknownPtr() const { return M_fieldUnknown; }
     element_unknown_type const& fieldUnknown() const { return *M_fieldUnknown; }
+
+    void setSpaceUnknown( space_unknown_ptrtype const& space ) { M_Xh = space; this->setMesh( M_Xh->mesh() ); }
     //___________________________________________________________________________________//
 #if 0
     // boundary condition + body forces

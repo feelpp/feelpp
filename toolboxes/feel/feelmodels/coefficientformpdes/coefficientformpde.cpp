@@ -101,17 +101,24 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->log("CoefficientFormPDE","initFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
-    auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
-    // functionspace
-    if ( mom->isDefinedOnWholeMesh( this->physic() ) )
+    if( !M_Xh )
     {
-        this->M_rangeMeshElements = elements(this->mesh());
-        M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+        auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
+        // functionspace
+        if ( mom->isDefinedOnWholeMesh( this->physic() ) )
+        {
+            this->M_rangeMeshElements = elements(this->mesh());
+            M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+        }
+        else
+        {
+            this->M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physic() ));
+            M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=this->M_rangeMeshElements );
+        }
     }
     else
     {
-        this->M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physic() ));
-        M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=this->M_rangeMeshElements );
+        this->M_rangeMeshElements = elements( support( M_Xh ) );
     }
 
     M_fieldUnknown.reset( new element_unknown_type( M_Xh,this->unknownName() ) );
