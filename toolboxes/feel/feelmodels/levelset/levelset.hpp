@@ -34,7 +34,10 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/projector.hpp>
 
+#if 0
 #include <feel/feelmodels/advection/advection.hpp>
+#endif
+#include <feel/feelmodels/coefficientformpdes/coefficientformpde.hpp>
 
 #include <feel/feelmodels/levelset/levelsetbase.hpp>
 #include <feel/feelmodels/levelset/levelsetparticleinjector.hpp>
@@ -150,8 +153,12 @@ public:
     typedef Expr< LevelsetDeltaExpr<element_levelset_type> > levelset_delta_expr_type;
     //--------------------------------------------------------------------//
     // Advection toolbox
+#if 1
     typedef AdvDiffReac< space_levelset_type, FunctionSpaceAdvectionVelocityType > advection_toolbox_type;
     typedef std::shared_ptr<advection_toolbox_type> advection_toolbox_ptrtype;
+#endif
+    typedef CoefficientFormPDE<ConvexType, BasisType> cfpde_toolbox_type;
+    typedef std::shared_ptr<cfpde_toolbox_type> cfpde_toolbox_ptrtype;
 
     typedef typename advection_toolbox_type::space_advection_velocity_type space_advection_velocity_type;
     typedef typename advection_toolbox_type::space_advection_velocity_ptrtype space_advection_velocity_ptrtype;
@@ -283,15 +290,23 @@ public:
 
     //--------------------------------------------------------------------//
     // Advection data
-    typename advection_toolbox_type::bdf_ptrtype timeStepBDF() { return M_advectionToolbox->timeStepBDF(); }
-    typename advection_toolbox_type::bdf_ptrtype /*const&*/ timeStepBDF() const { return M_advectionToolbox->timeStepBDF(); }
-    std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
-    std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
+    typename cfpde_toolbox_type::bdf_unknown_ptrtype /*const&*/ timeStepBDF() const { return M_advectionToolbox->timeStepBdfUnknown(); }
+    std::shared_ptr<TSBase> timeStepBase() { return M_advectionToolbox->timeStepBase(); }
+    std::shared_ptr<TSBase> timeStepBase() const { return M_advectionToolbox->timeStepBase(); }
     template<typename ExprT>
-    void
-    updateAdvectionVelocity(vf::Expr<ExprT> const& v_expr) { M_advectionToolbox->updateAdvectionVelocity( v_expr ); }
-    void updateAdvectionVelocity( element_advection_velocity_ptrtype const& velocity ) { return M_advectionToolbox->updateAdvectionVelocity( velocity ); }
-    void updateAdvectionVelocity( element_advection_velocity_type const& velocity ) { return M_advectionToolbox->updateAdvectionVelocity( velocity ); }
+    void updateAdvectionVelocity(vf::Expr<ExprT> const& v_expr) 
+    { 
+        //M_advectionToolbox->updateAdvectionVelocity( v_expr );
+        ModelExpression velocityExpr;
+        velocityExpr.setExprVectorial2( v_expr );
+        for( std::string const& matName : M_advectionToolbox->materialsProperties()->physicToMaterials( M_advectionToolbox->physicDefault() ) )
+        {
+            M_advectionToolbox->materialsProperties()->materialProperty( matName )->add( "levelset_beta", velocityExpr );
+        }
+        //M_advectionToolbox->materialsProperties()
+    }
+    void updateAdvectionVelocity( element_advection_velocity_ptrtype const& velocity ) { /*return M_advectionToolbox->updateAdvectionVelocity( velocity );*/ }
+    void updateAdvectionVelocity( element_advection_velocity_type const& velocity ) { /*return M_advectionToolbox->updateAdvectionVelocity( velocity );*/ }
     //--------------------------------------------------------------------//
     // Spaces
     space_advection_velocity_ptrtype const& functionSpaceAdvectionVelocity() const { return M_spaceAdvectionVelocity; }
@@ -345,6 +360,7 @@ public:
     void advect( element_advection_velocity_type const& velocity );
     void solve();
 
+    void startTimeStep();
     void updateTimeStep();
 
     //--------------------------------------------------------------------//
@@ -430,7 +446,8 @@ public:
     Eigen::Matrix<value_type, nDim, 1> velocityCOM() const { 
         return integrate( 
             _range=this->rangeMeshElements(), 
-            _expr=idv(M_advectionToolbox->fieldAdvectionVelocity()) * (1.-idv(this->H()))
+            //_expr=idv(M_advectionToolbox->fieldAdvectionVelocity()) * (1.-idv(this->H()))
+            _expr=vec( cst(0), cst(0) ) * (1.-idv(this->H()))
             ).evaluate() / this->volume();
     }
 
@@ -468,7 +485,10 @@ protected:
 private:
     //--------------------------------------------------------------------//
     // Advection toolbox
+#if 0
     advection_toolbox_ptrtype M_advectionToolbox;
+#endif
+    cfpde_toolbox_ptrtype M_advectionToolbox;
     bool M_doExportAdvection;
     //--------------------------------------------------------------------//
     // Spaces

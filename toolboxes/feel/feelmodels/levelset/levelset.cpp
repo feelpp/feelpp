@@ -29,7 +29,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
 :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     ModelBase( prefix, keyword, worldComm, subPrefix, modelRep ),
-    M_advectionToolbox( new advection_toolbox_type( prefix, keyword, worldComm, subPrefix, modelRep ) ),
+    M_advectionToolbox( new cfpde_toolbox_type( 
+                typename FeelModels::ModelGenericPDE<nDim>::infos_type( "levelset_phi", "phi", "phi", "Pch1" ),
+                prefix, keyword, worldComm, subPrefix, modelRep ) ),
     M_doUpdateCauchyGreenTensor(true),
     M_doUpdateCauchyGreenInvariant1(true),
     M_doUpdateCauchyGreenInvariant2(true),
@@ -38,7 +40,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
 {
     //-----------------------------------------------------------------------------//
     // Set advection model
+#if 0
     M_advectionToolbox->setModelName( "Advection" );
+#endif
     //-----------------------------------------------------------------------------//
     // Load parameters
     this->loadParametersFromOptionsVm();
@@ -73,8 +77,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     this->log("LevelSet", "init", "start");
 
     // Build extended dof table if CIP stabilisation
+#if 0
     if( this->M_advectionToolbox->stabilizationMethod() == AdvectionStabMethod::CIP )
         this->setBuildExtendedDofSpace( true );
+#endif
     // Init LevelSetBase
     super_type::init();
 
@@ -84,9 +90,22 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     this->createInterfaceQuantities();
     this->createTools();
     // Advection toolbox
+#if 0
     M_advectionToolbox->setFunctionSpace( this->functionSpace() );
     M_advectionToolbox->setFunctionSpaceAdvectionVelocity( this->functionSpaceAdvectionVelocity() );
+#endif
 
+    // Init advection toolbox
+    M_advectionToolbox->setMesh( this->mesh() );
+    M_advectionToolbox->init();
+    // Set transient coefficient d=1
+    for( std::string const& matName : M_advectionToolbox->materialsProperties()->physicToMaterials( M_advectionToolbox->physicDefault() ) )
+    {
+        auto & matProp = M_advectionToolbox->materialsProperties()->materialProperties( matName );
+        ModelExpression firstTimeDerivativeCoefficientExpr;
+        firstTimeDerivativeCoefficientExpr.setExpr( "1", this->worldComm(), this->repository().expr() );
+        M_advectionToolbox->materialsProperties()->addProperty( matProp, M_advectionToolbox->firstTimeDerivativeCoefficientName(), firstTimeDerivativeCoefficientExpr, true );
+    }
     // Set advection initial value
     if( !this->doRestart() )
     {
@@ -95,9 +114,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     }
     // Init boundary conditions
     this->initBoundaryConditions();
-    // Init advection toolbox
-    M_advectionToolbox->init();
+#if 0
     M_advectionToolbox->setDoExport( this->M_doExportAdvection );
+#endif
 
     this->updateTime( M_advectionToolbox->currentTime() );
     if (this->doRestart())
@@ -152,7 +171,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initInitialValues()
 {
     this->log("LevelSet", "initInitialValues", "start");
 
+#if 0
     this->M_advectionToolbox->setInitialValue( this->phiPtr() );
+#endif
+    M_advectionToolbox->timeStepBdfUnknown()->unknown(0) = *(this->phiPtr());
+    M_advectionToolbox->updateInitialConditions( Feel::vf::symbolsExpr( symbolExpr( "initialPhi", idv(this->phiPtr()) ) ) );
 
     if( M_useGradientAugmented )
     {
@@ -440,6 +463,7 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(
         sparse_matrix_ptrtype& A, vector_ptrtype& F ) const 
 {
+#if 0
     if( this->M_bcMarkersInflow.empty() ) return;
 
     this->log("LevelSet","updateBCStrongDirichletLinearPDE","start" );
@@ -464,7 +488,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(
     }
 
     this->log("LevelSet","updateBCStrongDirichletLinearPDE","finish" );
-
+#endif
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -489,16 +513,19 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
     this->log("LevelSet", "solve", "start");
     this->timerTool("Solve").start();
 
+#if 0
     if( this->M_useExtensionVelocity )
     {
         auto uExt = this->extensionVelocity( idv(M_advectionToolbox->fieldAdvectionVelocity()) );
         this->updateAdvectionVelocity( uExt );
     }
+#endif
 
     // Solve phi
     M_advectionToolbox->solve();
-    this->setPhi( M_advectionToolbox->fieldSolutionPtr(), false );
+    this->setPhi( M_advectionToolbox->fieldUnknownPtr(), false );
 
+#if 0
     if( M_useGradientAugmented )
     {
         // Solve modGradPhi
@@ -545,6 +572,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
         M_backwardCharacteristicsAdvection->updateAdvectionVelocity( idv(u) );
         M_backwardCharacteristicsAdvection->solve();
     }
+#endif
 
     // Update interface-related quantities
     this->updateInterfaceQuantities();
@@ -597,6 +625,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
+LEVELSET_CLASS_TEMPLATE_TYPE::startTimeStep()
+{
+    M_advectionToolbox->startTimeStep();
+    this->updateTime( M_advectionToolbox->time() );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
     double current_time = this->timeStepBDF()->time();
@@ -611,7 +647,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->saveCurrent();
 
     // Up advection field in case phi has been changed
-    M_advectionToolbox->fieldSolution() = this->phiElt();
+    *(M_advectionToolbox->fieldUnknownPtr()) = this->phiElt();
     // Update time step
     M_advectionToolbox->updateTimeStep();
     if( M_useGradientAugmented )
