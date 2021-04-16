@@ -89,7 +89,7 @@ struct ModelField1
     tag_type const& tag() const { return M_tag; }
     std::string const& name() const { return M_name; }
     std::string const& prefix() const { return M_prefix; }
-    auto field() const 
+    auto const& field() const 
     {
         if constexpr ( is_cached_model_field_v<field_type> ) // M_field is a CachedModelField
             return M_field.fieldPtr( false ); // we return the field ptr (not updated)
@@ -568,7 +568,7 @@ public :
         }
 
     template <typename TagType>
-    auto
+    auto const&
     field( TagType const& thetag, std::string const& name ) const
         {
             // found the field type related to TagType
@@ -669,7 +669,7 @@ private :
         }
 
     template <typename FieldType,typename TagType,int Index>
-    auto
+    auto const&
     fieldImpl( TagType const& thetag, std::string const& name, const FieldType * dummyRet ) const
         {
             if constexpr ( Index < nModelField )

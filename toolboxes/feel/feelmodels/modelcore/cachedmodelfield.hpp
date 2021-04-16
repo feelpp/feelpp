@@ -86,7 +86,7 @@ struct CachedModelField : UpdatePolicy<FieldType>
     CachedModelField( CachedModelField const& ) = default;
     CachedModelField( CachedModelField && ) = default;
 
-    field_ptrtype fieldPtr( bool update = true ) const 
+    field_ptrtype const& fieldPtr( bool update = true ) const 
     {
         if( update )
             const_cast<self_type*>(this)->update();
