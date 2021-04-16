@@ -75,6 +75,11 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->M_blockVectorSolution.resize( 1 );
     this->M_blockVectorSolution(0) = this->fieldUnknownPtr();
 
+    // solver type
+    M_solverName = soption(_prefix=this->prefix(),_name="solver",_vm=this->clovm());
+    if ( M_solverName == "automatic" )
+        this->updateAutomaticSolverSelection();
+
     // algebraic solver
     if ( buildModelAlgebraicFactory )
         this->initAlgebraicFactory();
@@ -235,6 +240,26 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
     this->M_blockVectorSolution.buildVector( this->backend() );
 
     this->M_algebraicFactory.reset( new typename super_type::model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+}
+
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateAutomaticSolverSelection()
+{
+    auto mfields = this->modelFields();
+    auto se = this->symbolsExpr( mfields );
+    auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( 0/*rowStartInVector*/ ) );
+    auto trialSymbolNames = tse.names();
+    bool isLinear = true;
+
+    if ( this->hasSymbolDependencyInCoefficients( trialSymbolNames, se ) 
+            || this->hasSymbolDependencyInBoundaryConditions( trialSymbolNames, se ) 
+            || ( this->applyStabilization() && this->stabilizationGLS_applyShockCapturing() ) )
+    {
+        isLinear = false;
+    }
+
+    M_solverName = ( isLinear )? "Linear" : "Newton";
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
@@ -446,20 +471,68 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::solve()
 {
-    // TODO
+    this->log("CoefficientFormPDE","solve", "start");
+    this->timerTool("Solve").start();
+
+    this->setStartBlockSpaceIndex( 0 );
+
+    this->M_blockVectorSolution.updateVectorFromSubVectors();
+
+    this->M_algebraicFactory->solve( M_solverName, this->M_blockVectorSolution.vectorMonolithic() );
+
+    this->M_blockVectorSolution.localize();
+
+    double tElapsed = this->timerTool("Solve").stop("solve");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("Solve").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("Solve").save();
+    }
+    this->log("CoefficientFormPDE","solve", (boost::format("finish in %1% s")%tElapsed).str() );
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
-COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::exportResults( double time )
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
-#if 0
-    auto mfields = this->modelFields();
-    auto se = this->symbolsExpr( mfields );
-    this->exportResults( time, mfields, se, this->exprPostProcessExports( se ) );
-#endif
+    const vector_ptrtype& XVec = data.currentSolution();
+    auto mctx = this->modelContext( XVec, this->rowStartInVector() );
+    if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
+    {
+        auto previousSol = data.vectorInfo( "time-stepping.previous-solution");
+        auto mctxPrevious = this->modelContextNoTrialSymbolsExpr( previousSol, this->rowStartInVector() );
+        mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
+    }
+    this->updateLinearPDE( data, mctx );
 }
 
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
+{
+    const vector_ptrtype& XVec = data.currentSolution();
+    auto mctx = this->modelContext( XVec, this->rowStartInVector() );
+    this->updateLinearPDEDofElimination( data, mctx );
+}
+
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
+{
+    vector_ptrtype& U = data.initialGuess();
+    auto mctx = this->modelContext( U, this->rowStartInVector() );
+    this->updateNewtonInitialGuess( data, mctx );
+}
+
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
+{
+    const vector_ptrtype& XVec = data.currentSolution();
+    auto mctx = this->modelContext( XVec, this->rowStartInVector() );
+    this->updateJacobian( data, mctx );
+}
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -476,6 +549,21 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( ModelAlgeb
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
+{
+    const vector_ptrtype& XVec = data.currentSolution();
+    auto mctx = this->modelContext( XVec, this->rowStartInVector() );
+    if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
+    {
+        auto previousSol = data.vectorInfo( "time-stepping.previous-solution");
+        auto mctxPrevious = this->modelContextNoTrialSymbolsExpr( previousSol, this->rowStartInVector() );
+        mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
+    }
+    this->updateResidual( data, mctx );
+}
+
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( ModelAlgebraic::DataUpdateResidual & data ) const
 {
     if ( !M_bcDirichletMarkerManagement.hasMarkerDirichletBCelimination() ) return;
@@ -487,6 +575,16 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( ModelAlgeb
     this->log("CoefficientFormPDE","updateResidualDofElimination","finish" );
 }
 
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::exportResults( double time )
+{
+#if 0
+    auto mfields = this->modelFields();
+    auto se = this->symbolsExpr( mfields );
+    this->exportResults( time, mfields, se, this->exprPostProcessExports( se ) );
+#endif
+}
 
 } // namespace Feel
 } // namespace FeelModels

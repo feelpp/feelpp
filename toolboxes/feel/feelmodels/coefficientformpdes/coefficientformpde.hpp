@@ -53,6 +53,11 @@ public:
     // measure tools for points evaluation
     typedef MeasurePointsEvaluation<space_unknown_type> measure_points_evaluation_type;
     typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
+    // algebraic data
+    using ModelAlgebraic::DataUpdateLinear;
+    using ModelAlgebraic::DataNewtonInitialGuess;
+    using ModelAlgebraic::DataUpdateJacobian;
+    using ModelAlgebraic::DataUpdateResidual;
 
 
     CoefficientFormPDE( typename super_type::super2_type::infos_type const& infosPDE,
@@ -115,6 +120,7 @@ public:
     void init( bool buildModelAlgebraicFactory=true );
     void initAlgebraicFactory();
 
+    void updateAutomaticSolverSelection();
 
     template <typename SymbolsExprType>
     bool hasSymbolDependencyInBoundaryConditions( std::set<std::string> const& symbs, SymbolsExprType const& se ) const;
@@ -183,78 +189,84 @@ public:
 
     template <typename ModelFieldsType>
     auto symbolsExpr( ModelFieldsType const& mfields ) const
-        {
-            auto seToolbox = this->symbolsExprToolbox( mfields );
-            auto seParam = this->symbolsExprParameter();
-            auto seMat = this->materialsProperties()->symbolsExpr();
-            auto seFields = mfields.symbolsExpr(); // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dn_T
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
-        }
+    {
+        auto seToolbox = this->symbolsExprToolbox( mfields );
+        auto seParam = this->symbolsExprParameter();
+        auto seMat = this->materialsProperties()->symbolsExpr();
+        auto seFields = mfields.symbolsExpr(); // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dn_T
+        return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+    }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
     template <typename ModelFieldsType>
     auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
+    {
+        using _expr_first_time_derivative_rhs_type = std::decay_t<decltype(idv(M_bdfUnknown->polyDeriv()))>;
+        symbol_expression_t<_expr_first_time_derivative_rhs_type> se_firstTimeDerivative_rhs;
+        using _expr_first_time_derivative_lhs_type = std::decay_t<decltype( expr<space_unknown_type::nComponents1,space_unknown_type::nComponents2>( "" )*cst(1.) )>;
+        symbol_expression_t<_expr_first_time_derivative_lhs_type> se_firstTimeDerivative_lhs;
+
+        using _expr_first_time_derivative_type = std::decay_t<decltype( _expr_first_time_derivative_lhs_type{} - _expr_first_time_derivative_rhs_type{} )>;
+        symbol_expression_t<_expr_first_time_derivative_type> se_firstTimeDerivative;
+
+        if ( M_bdfUnknown )
         {
-            using _expr_first_time_derivative_rhs_type = std::decay_t<decltype(idv(M_bdfUnknown->polyDeriv()))>;
-            symbol_expression_t<_expr_first_time_derivative_rhs_type> se_firstTimeDerivative_rhs;
-            using _expr_first_time_derivative_lhs_type = std::decay_t<decltype( expr<space_unknown_type::nComponents1,space_unknown_type::nComponents2>( "" )*cst(1.) )>;
-            symbol_expression_t<_expr_first_time_derivative_lhs_type> se_firstTimeDerivative_lhs;
+            SymbolExprComponentSuffix secs( space_unknown_type::nComponents1,space_unknown_type::nComponents2 );
 
-            using _expr_first_time_derivative_type = std::decay_t<decltype( _expr_first_time_derivative_lhs_type{} - _expr_first_time_derivative_rhs_type{} )>;
-            symbol_expression_t<_expr_first_time_derivative_type> se_firstTimeDerivative;
+            // first time derivative : rhs expression
+            auto exprFirstTimeDerivative_rhs = idv(M_bdfUnknown->polyDeriv());
 
-            if ( M_bdfUnknown )
+            // first time derivative : lhs expression
+            std::string symbolEvalUnknown = prefixvm( this->keyword(), this->unknownSymbol(), "_" );
+            std::string symbolicExprFirstTimeDerivative_lhs = (boost::format("%1%:%1%")%symbolEvalUnknown).str();
+            if ( space_unknown_type::nComponents1 == 1 && space_unknown_type::nComponents2 == 1 )
+                symbolicExprFirstTimeDerivative_lhs = (boost::format("%1%:%1%")%symbolEvalUnknown).str();
+            else
             {
-                SymbolExprComponentSuffix secs( space_unknown_type::nComponents1,space_unknown_type::nComponents2 );
-
-                // first time derivative : rhs expression
-                auto exprFirstTimeDerivative_rhs = idv(M_bdfUnknown->polyDeriv());
-
-                // first time derivative : lhs expression
-                std::string symbolEvalUnknown = prefixvm( this->keyword(), this->unknownSymbol(), "_" );
-                std::string symbolicExprFirstTimeDerivative_lhs = (boost::format("%1%:%1%")%symbolEvalUnknown).str();
-                if ( space_unknown_type::nComponents1 == 1 && space_unknown_type::nComponents2 == 1 )
-                    symbolicExprFirstTimeDerivative_lhs = (boost::format("%1%:%1%")%symbolEvalUnknown).str();
-                else
+                // TODO : move this part in SymbolExprComponentSuffix
+                std::vector<std::string> vecOfCompSuffix( secs.nComp1()*secs.nComp2() );
+                for ( auto const& [_suffix,compArray] : secs )
                 {
-                    // TODO : move this part in SymbolExprComponentSuffix
-                    std::vector<std::string> vecOfCompSuffix( secs.nComp1()*secs.nComp2() );
-                    for ( auto const& [_suffix,compArray] : secs )
-                    {
-                        uint16_type c1 = compArray[0];
-                        uint16_type c2 = compArray[1];
-                        vecOfCompSuffix[c1*secs.nComp2()+c2] = _suffix;
-                    }
-                    symbolicExprFirstTimeDerivative_lhs = "{";
-                    for ( int k=0;k<vecOfCompSuffix.size();++k )
-                    {
-                        if ( k>0 )
-                            symbolicExprFirstTimeDerivative_lhs += ",";
-                        symbolicExprFirstTimeDerivative_lhs += symbolEvalUnknown + vecOfCompSuffix[k];
-                    }
-                    symbolicExprFirstTimeDerivative_lhs += "}";
-                    for ( int k=0;k<vecOfCompSuffix.size();++k )
-                        symbolicExprFirstTimeDerivative_lhs += ":" + symbolEvalUnknown + vecOfCompSuffix[k];
+                    uint16_type c1 = compArray[0];
+                    uint16_type c2 = compArray[1];
+                    vecOfCompSuffix[c1*secs.nComp2()+c2] = _suffix;
                 }
-                //std::cout << "symbolicExprFirstTimeDerivative_lhs = " << symbolicExprFirstTimeDerivative_lhs << std::endl;
-                auto exprFirstTimeDerivative_lhs = expr<space_unknown_type::nComponents1,space_unknown_type::nComponents2>( symbolicExprFirstTimeDerivative_lhs, "", this->worldComm(), this->repository().expr() )*cst(M_bdfUnknown->polyDerivCoefficient(0));
-
-                // first time derivative : rhs-lhs expression
-                auto exprFirstTimeDerivative = exprFirstTimeDerivative_lhs - exprFirstTimeDerivative_rhs;
-
-                //<eqname>_d<unknown>_dt_rhs (example:  heat_dT_dt_rhs)
-                std::string symbolFirstTimeDerivative_rhs = prefixvm( this->keyword(), (boost::format("d%1%_dt_rhs")%this->unknownSymbol()).str(), "_");
-                se_firstTimeDerivative_rhs.add( symbolFirstTimeDerivative_rhs, std::move(exprFirstTimeDerivative_rhs), secs );
-                //<eqname>_d<unknown>_dt_lhs (example:  heat_dT_dt_lhs)
-                std::string symbolFirstTimeDerivative_lhs = prefixvm( this->keyword(), (boost::format("d%1%_dt_lhs")%this->unknownSymbol()).str(), "_");
-                se_firstTimeDerivative_lhs.add( symbolFirstTimeDerivative_lhs, std::move(exprFirstTimeDerivative_lhs), secs );
-                //<eqname>_d<unknown>_dt (example:  heat_dT_dt)
-                std::string symbolFirstTimeDerivative = prefixvm( this->keyword(), (boost::format("d%1%_dt")%this->unknownSymbol()).str(), "_");
-                se_firstTimeDerivative.add( symbolFirstTimeDerivative,std::move(exprFirstTimeDerivative),secs );
+                symbolicExprFirstTimeDerivative_lhs = "{";
+                for ( int k=0;k<vecOfCompSuffix.size();++k )
+                {
+                    if ( k>0 )
+                        symbolicExprFirstTimeDerivative_lhs += ",";
+                    symbolicExprFirstTimeDerivative_lhs += symbolEvalUnknown + vecOfCompSuffix[k];
+                }
+                symbolicExprFirstTimeDerivative_lhs += "}";
+                for ( int k=0;k<vecOfCompSuffix.size();++k )
+                    symbolicExprFirstTimeDerivative_lhs += ":" + symbolEvalUnknown + vecOfCompSuffix[k];
             }
+            //std::cout << "symbolicExprFirstTimeDerivative_lhs = " << symbolicExprFirstTimeDerivative_lhs << std::endl;
+            auto exprFirstTimeDerivative_lhs = expr<space_unknown_type::nComponents1,space_unknown_type::nComponents2>( symbolicExprFirstTimeDerivative_lhs, "", this->worldComm(), this->repository().expr() )*cst(M_bdfUnknown->polyDerivCoefficient(0));
 
-            return Feel::vf::symbolsExpr( se_firstTimeDerivative_rhs,se_firstTimeDerivative_lhs,se_firstTimeDerivative );
+            // first time derivative : rhs-lhs expression
+            auto exprFirstTimeDerivative = exprFirstTimeDerivative_lhs - exprFirstTimeDerivative_rhs;
+
+            //<eqname>_d<unknown>_dt_rhs (example:  heat_dT_dt_rhs)
+            std::string symbolFirstTimeDerivative_rhs = prefixvm( this->keyword(), (boost::format("d%1%_dt_rhs")%this->unknownSymbol()).str(), "_");
+            se_firstTimeDerivative_rhs.add( symbolFirstTimeDerivative_rhs, std::move(exprFirstTimeDerivative_rhs), secs );
+            //<eqname>_d<unknown>_dt_lhs (example:  heat_dT_dt_lhs)
+            std::string symbolFirstTimeDerivative_lhs = prefixvm( this->keyword(), (boost::format("d%1%_dt_lhs")%this->unknownSymbol()).str(), "_");
+            se_firstTimeDerivative_lhs.add( symbolFirstTimeDerivative_lhs, std::move(exprFirstTimeDerivative_lhs), secs );
+            //<eqname>_d<unknown>_dt (example:  heat_dT_dt)
+            std::string symbolFirstTimeDerivative = prefixvm( this->keyword(), (boost::format("d%1%_dt")%this->unknownSymbol()).str(), "_");
+            se_firstTimeDerivative.add( symbolFirstTimeDerivative,std::move(exprFirstTimeDerivative),secs );
         }
+
+        return Feel::vf::symbolsExpr( se_firstTimeDerivative_rhs,se_firstTimeDerivative_lhs,se_firstTimeDerivative );
+    }
+
+    template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
+    auto trialSymbolsExpr( ModelFieldsType const& mfields, TrialSelectorModelFieldsType const& tsmf ) const
+    {
+        return mfields.trialSymbolsExpr( tsmf );
+    }
 
     void updateParameterValues();
     void setParameterValues( std::map<std::string,double> const& paramValues ) override;
@@ -262,25 +274,74 @@ public:
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
 
     //___________________________________________________________________________________//
+    // model context
+    //___________________________________________________________________________________//
+    template <typename ModelFieldsType>
+    auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+    {
+#if 0
+        return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ) );
+#else
+        return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ).template createTensorContext<mesh_type>() );
+#endif
+    }
+    auto modelContext( std::string const& prefix = "" ) const
+    {
+        auto mfields = this->modelFields( prefix );
+#if 0
+        auto se = this->symbolsExpr( mfields );
+#else
+        auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+#endif
+        return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
+    }
+   auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+   {
+       auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+#if 0
+       auto se = this->symbolsExpr( mfields );
+#else
+       auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+#endif
+       auto tse =  this->trialSymbolsExpr( mfields, trialSelectorModelFields( rowStartInVector ) );
+       return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
+   }
+   auto modelContextNoTrialSymbolsExpr( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+   {
+       auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+#if 0
+       auto se = this->symbolsExpr( mfields );
+#else
+       auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+#endif
+       return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
+   }
+
+    //___________________________________________________________________________________//
     // apply assembly and solver
     //___________________________________________________________________________________//
 
     void solve();
 
+    void updateLinearPDE( DataUpdateLinear & data ) const override;
     template <typename ModelContextType>
     void updateLinearPDE( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx ) const;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
     template <typename ModelContextType>
     void updateLinearPDEDofElimination( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType,typename RangeType>
     void updateLinearPDEStabilizationGLS( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const;
 
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
     template <typename ModelContextType>
     void updateNewtonInitialGuess( ModelAlgebraic::DataNewtonInitialGuess & data, ModelContextType const& mctx ) const;
+    void updateJacobian( DataUpdateJacobian & data ) const override;
     template <typename ModelContextType>
     void updateJacobian( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType,typename RangeType>
     void updateJacobianStabilizationGLS( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const;
     void updateJacobianDofElimination( ModelAlgebraic::DataUpdateJacobian & data ) const override;
+    void updateResidual( DataUpdateResidual & data ) const override;
     template <typename ModelContextType>
     void updateResidual( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType,typename RangeType>
@@ -295,13 +356,14 @@ private :
     void initPostProcess() override;
 
 private :
-
-
     space_unknown_ptrtype M_Xh;
     element_unknown_ptrtype M_fieldUnknown;
 
     // time discretisation
     bdf_unknown_ptrtype M_bdfUnknown;
+
+    // solver
+    std::string M_solverName;
 
     // boundary conditions
     using map_field_dirichlet = typename mpl::if_c<unknown_is_scalar,  map_scalar_field<2>,  map_vector_field<nDim,1,2> >::type;

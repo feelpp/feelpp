@@ -106,6 +106,7 @@ coefficientformpde_options(std::string const& prefix)
 {
     Feel::po::options_description cfpdeOptions("coefficient-form-pde options");
     cfpdeOptions.add_options()
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "numeric solver : automatic, Newton, Picard")
         (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
         (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
 
@@ -447,7 +448,7 @@ advection_options(std::string const& prefix)
     Feel::po::options_description advectionOptions("Advection options");
     advectionOptions.add_options()
         (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >(), "advection model : Advection, Advection-Diffusion, Advection-Diffusion-Reaction")
-        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "advection solver")
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "advection solver")
         (prefixvm(prefix,"D").c_str(), Feel::po::value<double>()->default_value( 0 ), "diffusion coefficient [ m^2.s^-1 ]")
         (prefixvm(prefix,"R").c_str(), Feel::po::value<double>()->default_value( 0 ), "reaction coefficient [ s^-1 ]")
         (prefixvm(prefix,"advection-velocity").c_str(), Feel::po::value<std::string>(), "math expression")
