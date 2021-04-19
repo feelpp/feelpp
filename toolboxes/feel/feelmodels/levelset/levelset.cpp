@@ -30,7 +30,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     ModelBase( prefix, keyword, worldComm, subPrefix, modelRep ),
     M_advectionToolbox( new cfpde_toolbox_type( 
-                typename FeelModels::ModelGenericPDE<nDim>::infos_type( "levelset_phi", "phi", "phi", "Pch1" ),
+                typename FeelModels::ModelGenericPDE<nDim>::infos_type( "levelset_phi", "phi", "phi", (boost::format("Pch%1%")%Order).str() ),
                 prefix, keyword, worldComm, subPrefix, modelRep ) ),
     M_doUpdateCauchyGreenTensor(true),
     M_doUpdateCauchyGreenInvariant1(true),
@@ -149,11 +149,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     {
         this->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
         if( M_useGradientAugmented )
-            M_modGradPhiAdvection->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
+            M_modGradPhiAdvection->timeStepBdfUnknown()->setTimeOrder( M_iterSinceRedistanciation + 1 );
         if( M_useStretchAugmented )
-            M_stretchAdvection->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
+            M_stretchAdvection->timeStepBdfUnknown()->setTimeOrder( M_iterSinceRedistanciation + 1 );
         if( M_useCauchyAugmented )
-            M_backwardCharacteristicsAdvection->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
+            M_backwardCharacteristicsAdvection->timeStepBdfUnknown()->setTimeOrder( M_iterSinceRedistanciation + 1 );
     }
 
     this->log("LevelSet", "init", "finish");
@@ -183,37 +183,42 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInitialConditions()
         // Initialize modGradPhi
         if( this->redistInitialValue() )
         {
-            M_modGradPhiAdvection->fieldSolutionPtr()->setConstant(1.);
+            for( auto const& unknown : M_modGradPhiAdvection->timeStepBdfUnknown()->unknowns() )
+                unknown->setConstant(1.);
         }
         else
         {
-            *(M_modGradPhiAdvection->fieldSolutionPtr()) = this->modGrad( this->phiElt() );
+            *(M_modGradPhiAdvection->fieldUnknownPtr()) = this->modGrad( this->phiElt() );
+            for( auto const& unknown : M_modGradPhiAdvection->timeStepBdfUnknown()->unknowns() )
+                *unknown = M_modGradPhiAdvection->fieldUnknown();
         }
     }
     if( M_useStretchAugmented )
     {
         // Initialize stretch modGradPhi
-        M_stretchAdvection->fieldSolutionPtr()->setConstant(1.);
+        M_stretchAdvection->fieldUnknownPtr()->setConstant(1.);
+        for( auto const& unknown : M_stretchAdvection->timeStepBdfUnknown()->unknowns() )
+            unknown->setConstant(1.);
     }
     if( M_useCauchyAugmented )
     {
         // Initialize backward characteristics
         if( M_hasInitialBackwardCharacteristics )
         {
-            *(M_backwardCharacteristicsAdvection->fieldSolutionPtr()) = vf::project(
-                    _space=M_backwardCharacteristicsAdvection->functionSpace(),
-                    _range=elements(M_backwardCharacteristicsAdvection->mesh()),
+            M_backwardCharacteristicsAdvection->fieldUnknownPtr()->on(
+                    _range=M_backwardCharacteristicsAdvection->rangeMeshElements(),
                     _expr=M_initialBackwardCharacteristics
                     );
         }
         else
         {
-            *(M_backwardCharacteristicsAdvection->fieldSolutionPtr()) = vf::project(
-                    _space=M_backwardCharacteristicsAdvection->functionSpace(),
-                    _range=elements(M_backwardCharacteristicsAdvection->mesh()),
+            M_backwardCharacteristicsAdvection->fieldUnknownPtr()->on(
+                    _range=M_backwardCharacteristicsAdvection->rangeMeshElements(),
                     _expr=vf::P()
                     );
         }
+        for( auto const& unknown : M_backwardCharacteristicsAdvection->timeStepBdfUnknown()->unknowns() )
+            *unknown = M_backwardCharacteristicsAdvection->fieldUnknown();
     }
 
     this->log("LevelSet", "updateInitialConditions", "finish");
@@ -232,7 +237,7 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 {
     if( !M_spaceAdvectionVelocity )
-        M_spaceAdvectionVelocity = space_advection_velocity_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+        M_spaceAdvectionVelocity = space_vectorial_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
 
     if( M_useCauchyAugmented )
     {
@@ -247,47 +252,45 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initInterfaceQuantities()
 {
     if( M_useGradientAugmented )
     {
-        M_modGradPhiAdvection = modgradphi_advection_type::New(
-                prefixvm(this->prefix(), "modgradphi-advection"),
-                "modgradphi-advection",
-                this->worldCommPtr()
-                );
+        M_modGradPhiAdvection.reset( new modgradphi_advection_type( 
+                    typename FeelModels::ModelGenericPDE<nDim>::infos_type( prefixvm( this->keyword(), "modgradphi", "_" ), "modgradphi", "modgradphi", (boost::format("Pch%1%")%Order).str() ),
+                    this->prefix(), this->keyword(), this->worldCommPtr(), this->subPrefix(), this->rootRepository() ) );
+#if 0
         M_modGradPhiAdvection->setModelName( "Advection-Reaction" );
-        M_modGradPhiAdvection->setFunctionSpace( this->functionSpace() );
         M_modGradPhiAdvection->setTimeOrder( this->timeOrder() );
+#endif
+        M_modGradPhiAdvection->setSpaceUnknown( this->functionSpace() );
         M_modGradPhiAdvection->init();
-        M_modGradPhiAdvection->setDoExport( boption( _name="do_export_modgradphi-advection", _prefix=this->prefix() ) );
     }
     if( M_useStretchAugmented )
     {
-        M_stretchAdvection = stretch_advection_type::New(
-                prefixvm(this->prefix(), "stretch-advection"),
-                "stretch-advection",
-                this->worldCommPtr()
-                );
+        M_stretchAdvection.reset( new stretch_advection_type( 
+                    typename FeelModels::ModelGenericPDE<nDim>::infos_type( prefixvm( this->keyword(), "stretch", "_" ), "stretch", "stretch", (boost::format("Pch%1%")%Order).str() ),
+                    this->prefix(), this->keyword(), this->worldCommPtr(), this->subPrefix(), this->rootRepository() ) );
+#if 0
         M_stretchAdvection->setModelName( "Advection-Reaction" );
-        M_stretchAdvection->setFunctionSpace( this->functionSpace() );
         M_stretchAdvection->setTimeOrder( this->timeOrder() );
+#endif
+        M_stretchAdvection->setSpaceUnknown( this->functionSpace() );
         M_stretchAdvection->init();
-        M_stretchAdvection->setDoExport( boption( _name="do_export_stretch-advection", _prefix=this->prefix() ) );
     }
     if( M_useCauchyAugmented )
     {
-        M_backwardCharacteristicsAdvection = backwardcharacteristics_advection_type::New(
-                prefixvm(this->prefix(), "backward-characteristics-advection"),
-                "backward-characteristics-advection",
-                this->worldCommPtr()
-                );
+        M_backwardCharacteristicsAdvection.reset( new backwardcharacteristics_advection_type( 
+                    typename FeelModels::ModelGenericPDE<nDim>::infos_type( prefixvm( this->keyword(), "backward_characteristics", "_" ), "backward_characteristics", "backward_characteristics", (boost::format("Pchv%1%")%Order).str() ),
+                    this->prefix(), this->keyword(), this->worldCommPtr(), this->subPrefix(), this->rootRepository() ) );
+#if 0
         M_backwardCharacteristicsAdvection->setModelName( "Advection" );
-        M_backwardCharacteristicsAdvection->setFunctionSpace( this->functionSpaceVectorial() );
         M_backwardCharacteristicsAdvection->setTimeOrder( this->timeOrder() );
+#endif
+        M_backwardCharacteristicsAdvection->setSpaceUnknown( this->functionSpaceVectorial() );
         M_backwardCharacteristicsAdvection->init();
-        M_backwardCharacteristicsAdvection->setDoExport( boption( _name="do_export_backward-characteristics-advection", _prefix=this->prefix() ) );
 
         M_leftCauchyGreenTensor.reset( new element_tensor2symm_type(this->functionSpaceTensor2Symm(), "LeftCauchyGreenTensor") );
         M_cauchyGreenInvariant1.reset( new element_cauchygreen_invariant_type(this->functionSpace(), "CauchyGreenI1(TrC)") );
         M_cauchyGreenInvariant2.reset( new element_cauchygreen_invariant_type(this->functionSpace(), "CauchyGreenI2(TrCofC)") );
     }
+#if 0
     for( std::string const& bcMarker: this->M_bcMarkersInflow )
     {
         if( M_useGradientAugmented )
@@ -297,6 +300,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initInterfaceQuantities()
         if( M_useCauchyAugmented )
             M_backwardCharacteristicsAdvection->addMarkerInflowBC( bcMarker );
     }
+#endif
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -315,11 +319,11 @@ typename LEVELSET_CLASS_TEMPLATE_TYPE::element_stretch_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::stretch() const
 {
     if( !M_levelsetStretch )
-        M_levelsetStretch.reset( new element_stretch_type(this->M_stretchAdvection->functionSpace(), "Stretch") );
+        M_levelsetStretch.reset( new element_stretch_type(this->M_stretchAdvection->spaceUnknown(), "Stretch") );
 
     if( M_useStretchAugmented )
     {
-        *M_levelsetStretch = *(M_stretchAdvection->fieldSolutionPtr());
+        *M_levelsetStretch = *(M_stretchAdvection->fieldUnknownPtr());
     }
     else
     {
@@ -337,7 +341,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::backwardCharacteristics() const
 {
     if( M_useCauchyAugmented )
     {
-        return M_backwardCharacteristicsAdvection->fieldSolutionPtr();
+        return M_backwardCharacteristicsAdvection->fieldUnknownPtr();
     }
     else
     {
@@ -494,21 +498,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::advect( element_advection_velocity_ptrtype const& velocity )
-{
-    this->advect( *velocity );
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::advect( element_advection_velocity_type const& velocity )
-{
-    this->updateAdvectionVelocity( velocity );
-    this->solve();
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
 LEVELSET_CLASS_TEMPLATE_TYPE::solve()
 {
     this->log("LevelSet", "solve", "start");
@@ -529,8 +518,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
 #if 0
     if( M_useGradientAugmented )
     {
+        // Update modGraPhi advection and reaction coefficients
+        for( std::string const& matName : M_modGradPhiAdvection->materialsProperties()->physicToMaterials( M_modGradPhiAdvection->physicDefault() ) )
+        {
+            auto const& advectionVelocityExpr = M_advectionToolbox->materialsProperties()->materialProperty( matName, //TODO );
+        }
         // Solve modGradPhi
-        //auto modGradPhi = M_modGradPhiAdvection->fieldSolutionPtr();
         auto u = M_advectionToolbox->fieldAdvectionVelocityPtr();
         auto NxN = idv(this->N()) * trans(idv(this->N()));
         auto Du = sym( gradv(u) );
@@ -664,11 +657,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
     {
         this->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
         if( M_useGradientAugmented )
-            M_modGradPhiAdvection->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
+            M_modGradPhiAdvection->timeStepBdfUnknown()->setTimeOrder( M_iterSinceRedistanciation + 1 );
         if( M_useStretchAugmented )
-            M_stretchAdvection->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
+            M_stretchAdvection->timeStepBdfUnknown()->setTimeOrder( M_iterSinceRedistanciation + 1 );
         if( M_useCauchyAugmented )
-            M_backwardCharacteristicsAdvection->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
+            M_backwardCharacteristicsAdvection->timeStepBdfUnknown()->setTimeOrder( M_iterSinceRedistanciation + 1 );
     }
 }
 
@@ -697,7 +690,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::leftCauchyGreenTensorExpr() const
 {
     CHECK( this->M_useCauchyAugmented ) << this->prefix()+".use-cauchy-augmented option must be true to use Cauchy-Green tensor";
 
-    auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
+    auto Y = M_backwardCharacteristicsAdvection->fieldUnknownPtr();
     auto const& N = this->N();
 
     return Feel::FeelModels::leftCauchyGreenTensorExpr( *Y, *N );
@@ -845,18 +838,20 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistanciate()
 
     if( M_useGradientAugmented && M_reinitGradientAugmented )
     {
-        auto sol = M_modGradPhiAdvection->fieldSolutionPtr();
-        sol->setConstant(1.);
+        CHECK( false ) << "TODO: ensure correct BDF restart";
+        //auto sol = M_modGradPhiAdvection->fieldSolutionPtr();
+        //sol->setConstant(1.);
     }
     if( M_useStretchAugmented && M_reinitStretchAugmented )
     {
-        auto R = this->interfaceRectangularFunction();
-        auto sol = M_stretchAdvection->fieldSolutionPtr();
-        *sol = vf::project(
-                _space=M_stretchAdvection->functionSpace(),
-                _range=elements(M_stretchAdvection->mesh()),
-                _expr = 1. + (idv(sol)-1.)*idv(R)
-                );
+        CHECK( false ) << "TODO: ensure correct BDF restart";
+        //auto R = this->interfaceRectangularFunction();
+        //auto sol = M_stretchAdvection->fieldSolutionPtr();
+        //*sol = vf::project(
+                //_space=M_stretchAdvection->functionSpace(),
+                //_range=elements(M_stretchAdvection->mesh()),
+                //_expr = 1. + (idv(sol)-1.)*idv(R)
+                //);
     }
 
     double timeElapsed = this->timerTool("Redist").stop();

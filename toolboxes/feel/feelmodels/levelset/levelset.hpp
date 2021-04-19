@@ -65,15 +65,14 @@ enum LevelSetTimeDiscretization {BDF2, /*CN,*/ EU, CN_CONSERVATIVE};
 
 template<
     typename ConvexType, typename BasisType, typename PeriodicityType = NoPeriodicity, 
-    typename FunctionSpaceAdvectionVelocityType = FunctionSpace< Mesh<ConvexType>, bases<typename detail::ChangeBasisPolySet<Vectorial,BasisType>::type>/*, Periodicity<PeriodicityType>*/ >,
     typename BasisPnType = BasisType
     >
 class LevelSet : public LevelSetBase<ConvexType, BasisType, PeriodicityType, BasisPnType>,
-                 public std::enable_shared_from_this< LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityType, BasisPnType> >
+                 public std::enable_shared_from_this< LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType> >
 {
     typedef LevelSetBase<ConvexType, BasisType, PeriodicityType, BasisPnType> super_type;
 public:
-    typedef LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityType, BasisPnType> self_type;
+    typedef LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType> self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
 
     static constexpr uint16_type Order = BasisType::nOrder;
@@ -153,17 +152,15 @@ public:
     typedef Expr< LevelsetDeltaExpr<element_levelset_type> > levelset_delta_expr_type;
     //--------------------------------------------------------------------//
     // Advection toolbox
-#if 1
-    typedef AdvDiffReac< space_levelset_type, FunctionSpaceAdvectionVelocityType > advection_toolbox_type;
-    typedef std::shared_ptr<advection_toolbox_type> advection_toolbox_ptrtype;
-#endif
-    typedef CoefficientFormPDE<ConvexType, BasisType> cfpde_toolbox_type;
+    typedef CoefficientFormPDE<convex_type, basis_scalar_type> cfpde_toolbox_type;
     typedef std::shared_ptr<cfpde_toolbox_type> cfpde_toolbox_ptrtype;
 
+#if 0
     typedef typename advection_toolbox_type::space_advection_velocity_type space_advection_velocity_type;
     typedef typename advection_toolbox_type::space_advection_velocity_ptrtype space_advection_velocity_ptrtype;
     typedef typename advection_toolbox_type::element_advection_velocity_type element_advection_velocity_type;
     typedef typename advection_toolbox_type::element_advection_velocity_ptrtype element_advection_velocity_ptrtype;
+#endif
 
     //--------------------------------------------------------------------//
     // Range types
@@ -227,23 +224,21 @@ public:
 
     //--------------------------------------------------------------------//
     // ModGradPhi advection
-    typedef basis_levelset_type basis_modgradphi_advection_type;
-    typedef AdvDiffReac< space_levelset_type, space_advection_velocity_type > modgradphi_advection_type;
+    typedef CoefficientFormPDE<convex_type, basis_scalar_type> modgradphi_advection_type;
     typedef std::shared_ptr<modgradphi_advection_type> modgradphi_advection_ptrtype;
     // Stretch advection
-    typedef basis_levelset_type basis_stretch_advection_type;
-    typedef AdvDiffReac< space_levelset_type, space_advection_velocity_type > stretch_advection_type;
+    typedef CoefficientFormPDE<convex_type, basis_scalar_type> stretch_advection_type;
     typedef std::shared_ptr<stretch_advection_type> stretch_advection_ptrtype;
 
     //--------------------------------------------------------------------//
     // Backward characteristics advection
     typedef basis_vectorial_type basis_backwardcharacteristics_advection_type;
-    typedef AdvDiffReac< space_vectorial_type, space_advection_velocity_type > backwardcharacteristics_advection_type;
+    typedef CoefficientFormPDE<convex_type, basis_vectorial_type> backwardcharacteristics_advection_type;
     typedef std::shared_ptr<backwardcharacteristics_advection_type> backwardcharacteristics_advection_ptrtype;
-    typedef typename backwardcharacteristics_advection_type::element_advection_type element_backwardcharacteristics_type;
+    typedef typename backwardcharacteristics_advection_type::element_unknown_type element_backwardcharacteristics_type;
     typedef std::shared_ptr<element_backwardcharacteristics_type> element_backwardcharacteristics_ptrtype;
     // Cauchy-Green tensor invariants types
-    typedef element_levelset_type element_cauchygreen_invariant_type;
+    typedef element_scalar_type element_cauchygreen_invariant_type;
     typedef std::shared_ptr<element_cauchygreen_invariant_type> element_cauchygreen_invariant_ptrtype;
 
     //--------------------------------------------------------------------//
@@ -301,19 +296,23 @@ public:
     { 
         //M_advectionToolbox->updateAdvectionVelocity( v_expr );
         ModelExpression velocityExpr;
-        velocityExpr.setExprVectorial2( v_expr );
+        if constexpr ( nDim == 2 )
+            velocityExpr.setExprVectorial2( v_expr );
+        else if constexpr ( nDim == 3 )
+            velocityExpr.setExprVectorial3( v_expr );
+
         for( std::string const& matName : M_advectionToolbox->materialsProperties()->physicToMaterials( M_advectionToolbox->physicDefault() ) )
         {
             M_advectionToolbox->materialsProperties()->materialProperty( matName )->add( "levelset_beta", velocityExpr );
         }
         //M_advectionToolbox->materialsProperties()
     }
-    void updateAdvectionVelocity( element_advection_velocity_ptrtype const& velocity ) { /*return M_advectionToolbox->updateAdvectionVelocity( velocity );*/ }
-    void updateAdvectionVelocity( element_advection_velocity_type const& velocity ) { /*return M_advectionToolbox->updateAdvectionVelocity( velocity );*/ }
+    //void updateAdvectionVelocity( element_advection_velocity_ptrtype const& velocity ) { [>return M_advectionToolbox->updateAdvectionVelocity( velocity );<] }
+    //void updateAdvectionVelocity( element_advection_velocity_type const& velocity ) { [>return M_advectionToolbox->updateAdvectionVelocity( velocity );<] }
     //--------------------------------------------------------------------//
     // Spaces
-    space_advection_velocity_ptrtype const& functionSpaceAdvectionVelocity() const { return M_spaceAdvectionVelocity; }
-    void setFunctionSpaceAdvectionVelocity( space_advection_velocity_ptrtype const& space ) { M_spaceAdvectionVelocity = space; }
+    space_vectorial_ptrtype const& functionSpaceAdvectionVelocity() const { return M_spaceAdvectionVelocity; }
+    void setFunctionSpaceAdvectionVelocity( space_vectorial_ptrtype const& space ) { M_spaceAdvectionVelocity = space; }
     space_tensor2symm_ptrtype const& functionSpaceTensor2Symm() const { return M_spaceTensor2Symm; }
 
     //std::string fileNameMeshPath() const override { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
@@ -357,10 +356,6 @@ public:
     void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const {}
     void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
 
-    template<typename ExprT>
-    void advect(vf::Expr<ExprT> const& velocity);
-    void advect( element_advection_velocity_ptrtype const& velocity );
-    void advect( element_advection_velocity_type const& velocity );
     void solve();
 
     void startTimeStep();
@@ -369,7 +364,7 @@ public:
     //--------------------------------------------------------------------//
     // Extension velocity
     template<typename ExprT>
-    element_advection_velocity_type extensionVelocity( vf::Expr<ExprT> const& u ) const;
+    element_vectorial_type extensionVelocity( vf::Expr<ExprT> const& u ) const;
 
     //--------------------------------------------------------------------//
     // Symbols expressions
@@ -410,7 +405,7 @@ public:
         std::map<std::string, element_vectorial_ptrtype> fields;
         if( M_useCauchyAugmented )
         {
-            fields[prefixvm( prefix, "backwardcharacteristics" )] = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
+            fields[prefixvm( prefix, "backwardcharacteristics" )] = M_backwardCharacteristicsAdvection->fieldUnknownPtr();
         }
         return fields;
     }
@@ -495,7 +490,7 @@ private:
     bool M_doExportAdvection;
     //--------------------------------------------------------------------//
     // Spaces
-    space_advection_velocity_ptrtype M_spaceAdvectionVelocity;
+    space_vectorial_ptrtype M_spaceAdvectionVelocity;
     space_tensor2symm_ptrtype M_spaceTensor2Symm;
 
     //--------------------------------------------------------------------//
@@ -580,29 +575,19 @@ private:
 
 #ifndef LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 #define LEVELSET_CLASS_TEMPLATE_DECLARATIONS \
-    template< typename ConvexType, typename BasisType, typename PeriodicityType, typename FunctionSpaceAdvectionVelocityType, typename BasisPnType > \
+    template< typename ConvexType, typename BasisType, typename PeriodicityType, typename BasisPnType > \
         /**/
 #endif
 #ifndef LEVELSET_CLASS_TEMPLATE_TYPE
 #define LEVELSET_CLASS_TEMPLATE_TYPE \
-    LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityType, BasisPnType> \
+    LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType> \
         /**/
 #endif
-//----------------------------------------------------------------------------//
-// Advection
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-template<typename ExprT>
-void 
-LEVELSET_CLASS_TEMPLATE_TYPE::advect(vf::Expr<ExprT> const& velocity)
-{
-    this->updateAdvectionVelocity(velocity);
-    this->solve();
-}
 //----------------------------------------------------------------------------//
 // Extension velocity
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 template<typename ExprT>
-typename LEVELSET_CLASS_TEMPLATE_TYPE::element_advection_velocity_type
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_vectorial_type
 LEVELSET_CLASS_TEMPLATE_TYPE::extensionVelocity( vf::Expr<ExprT> const& u) const
 {
     this->log("LevelSet", "extensionVelocity", "start");
