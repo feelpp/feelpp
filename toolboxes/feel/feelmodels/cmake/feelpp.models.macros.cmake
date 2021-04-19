@@ -380,6 +380,55 @@ endmacro( genLibFSI )
 #############################################################################
 #############################################################################
 
+macro( genLibCoefficientFormPDE )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;UNKNOWN_BASIS_TYPE;UNKNOWN_BASIS_TAG;GEO_ORDER"
+    ""
+    ${ARGN}
+    )
+
+    if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_UNKNOWN_BASIS_TYPE OR FEELMODELS_APP_UNKNOWN_BASIS_TAG OR  FEELMODELS_APP_GEO_ORDER ) )
+        message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR  FEELMODELS_APP_UNKNOWN_BASIS_TYPE OR FEELMODELS_APP_UNKNOWN_BASIS_TAG OR  FEELMODELS_APP_GEO_ORDER")
+    endif()
+
+  set(COEFFICIENTFORMPDE_DIM ${FEELMODELS_APP_DIM})
+  set(COEFFICIENTFORMPDE_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+  set(COEFFICIENTFORMPDE_GEOSHAPE Simplex<${COEFFICIENTFORMPDE_DIM},${COEFFICIENTFORMPDE_ORDERGEO},${COEFFICIENTFORMPDE_DIM}>)
+  set(COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE ${FEELMODELS_APP_UNKNOWN_BASIS_TYPE})
+  set(COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG ${FEELMODELS_APP_UNKNOWN_BASIS_TAG})
+
+  set(COEFFICIENTFORMPDE_LIB_VARIANTS ${COEFFICIENTFORMPDE_DIM}d${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG}G${COEFFICIENTFORMPDE_ORDERGEO})
+  set(COEFFICIENTFORMPDE_LIB_NAME feelpp_toolbox_coefficientformpde_${COEFFICIENTFORMPDE_LIB_VARIANTS})
+
+  if ( NOT TARGET ${COEFFICIENTFORMPDE_LIB_NAME} )
+      # configure the lib
+      set(COEFFICIENTFORMPDE_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/coefficientformpdes/pde_${COEFFICIENTFORMPDE_LIB_VARIANTS})
+      set(COEFFICIENTFORMPDE_CODEGEN_FILES_TO_COPY
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpde_inst.cpp
+          )
+      set(COEFFICIENTFORMPDE_CODEGEN_SOURCES
+          ${COEFFICIENTFORMPDE_LIB_DIR}/coefficientformpde_inst.cpp
+          )
+      set(COEFFICIENTFORMPDE_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdebase  ) 
+      # generate the lib target
+      genLibBase(
+          LIB_NAME ${COEFFICIENTFORMPDE_LIB_NAME}
+          LIB_DIR ${COEFFICIENTFORMPDE_LIB_DIR}
+          LIB_DEPENDS ${COEFFICIENTFORMPDE_LIB_DEPENDS}
+          FILES_TO_COPY ${COEFFICIENTFORMPDE_CODEGEN_FILES_TO_COPY}
+          FILES_SOURCES ${COEFFICIENTFORMPDE_CODEGEN_SOURCES}
+          CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdeconfig.h.in
+          )
+  endif()
+
+endmacro(genLibCoefficientFormPDE)
+
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+
 macro( genLibCoefficientFormPDEs )
   PARSE_ARGUMENTS(FEELMODELS_APP
     "DIM;UNKNOWN_BASIS_TYPE;UNKNOWN_BASIS_TAG;GEO_ORDER"
@@ -394,9 +443,11 @@ macro( genLibCoefficientFormPDEs )
   set(COEFFICIENTFORMPDES_DIM ${FEELMODELS_APP_DIM})
   set(COEFFICIENTFORMPDES_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
   set(COEFFICIENTFORMPDES_GEOSHAPE Simplex<${COEFFICIENTFORMPDES_DIM},${COEFFICIENTFORMPDES_ORDERGEO},${COEFFICIENTFORMPDES_DIM}>)
+  set(COEFFICIENTFORMPDES_UNKNOWN_BASIS_TYPE ${FEELMODELS_APP_UNKNOWN_BASIS_TYPE})
+  set(COEFFICIENTFORMPDES_UNKNOWN_BASIS_TAG ${FEELMODELS_APP_UNKNOWN_BASIS_TAG})
 
-  list(LENGTH FEELMODELS_APP_UNKNOWN_BASIS_TYPE count)
-  list(LENGTH FEELMODELS_APP_UNKNOWN_BASIS_TAG count2)
+  list(LENGTH COEFFICIENTFORMPDES_UNKNOWN_BASIS_TYPE count)
+  list(LENGTH COEFFICIENTFORMPDES_UNKNOWN_BASIS_TAG count2)
   if ( NOT (count EQUAL count2) )
     message( FATAL_ERROR "UNKNOWN_BASIS_TYPE and UNKNOWN_BASIS_TAG should be same size" )
   endif()
@@ -404,8 +455,8 @@ macro( genLibCoefficientFormPDEs )
   unset( COEFFICIENTFORMPDES_LIB_DEPENDS )
   math(EXPR count "${count}-1")
   foreach(i RANGE ${count})
-    list(GET FEELMODELS_APP_UNKNOWN_BASIS_TYPE ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE)
-    list(GET FEELMODELS_APP_UNKNOWN_BASIS_TAG ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG)
+    list(GET COEFFICIENTFORMPDES_UNKNOWN_BASIS_TYPE ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE)
+    list(GET COEFFICIENTFORMPDES_UNKNOWN_BASIS_TAG ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG)
 
     if ( i EQUAL 0 )
       set( COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE "${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE}")
@@ -414,31 +465,36 @@ macro( genLibCoefficientFormPDEs )
       set( COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE "${COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE} , ${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE}")
       set( COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TAG "${COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TAG} , \"${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG}\"")
     endif()
-    set(COEFFICIENTFORMPDE_LIB_VARIANTS ${COEFFICIENTFORMPDES_DIM}d${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG}G${COEFFICIENTFORMPDES_ORDERGEO} )
-    set(COEFFICIENTFORMPDE_LIB_NAME feelpp_toolbox_coefficientformpde_${COEFFICIENTFORMPDE_LIB_VARIANTS})
+    #set(COEFFICIENTFORMPDE_LIB_VARIANTS ${COEFFICIENTFORMPDES_DIM}d${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG}G${COEFFICIENTFORMPDES_ORDERGEO} )
+    #set(COEFFICIENTFORMPDE_LIB_NAME feelpp_toolbox_coefficientformpde_${COEFFICIENTFORMPDE_LIB_VARIANTS})
 
+    #if ( NOT TARGET ${COEFFICIENTFORMPDE_LIB_NAME} )
+      ## configure the lib
+      #set(COEFFICIENTFORMPDE_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/coefficientformpdes/pde_${COEFFICIENTFORMPDE_LIB_VARIANTS})
+      #set(COEFFICIENTFORMPDE_CODEGEN_FILES_TO_COPY
+        #${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpde_inst.cpp
+        #)
+      #set(COEFFICIENTFORMPDE_CODEGEN_SOURCES
+        #${COEFFICIENTFORMPDE_LIB_DIR}/coefficientformpde_inst.cpp
+        #)
+      #set(COEFFICIENTFORMPDE_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdebase  ) 
+      ## generate the lib target
+      #genLibBase(
+        #LIB_NAME ${COEFFICIENTFORMPDE_LIB_NAME}
+        #LIB_DIR ${COEFFICIENTFORMPDE_LIB_DIR}
+        #LIB_DEPENDS ${COEFFICIENTFORMPDE_LIB_DEPENDS}
+        #FILES_TO_COPY ${COEFFICIENTFORMPDE_CODEGEN_FILES_TO_COPY}
+        #FILES_SOURCES ${COEFFICIENTFORMPDE_CODEGEN_SOURCES}
+        #CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdeconfig.h.in
+        #)
+    #endif()
+    genLibCoefficientFormPDE(
+        DIM                     ${COEFFICIENTFORMPDES_DIM}
+        UNKNOWN_BASIS_TYPE      ${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE}
+        UNKNOWN_BASIS_TAG       ${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG}
+        GEO_ORDER               ${COEFFICIENTFORMPDES_ORDERGEO}
+        )
     set(COEFFICIENTFORMPDES_LIB_DEPENDS ${COEFFICIENTFORMPDES_LIB_DEPENDS} ${COEFFICIENTFORMPDE_LIB_NAME})
-
-    if ( NOT TARGET ${COEFFICIENTFORMPDE_LIB_NAME} )
-      # configure the lib
-      set(COEFFICIENTFORMPDE_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/coefficientformpdes/pde_${COEFFICIENTFORMPDE_LIB_VARIANTS})
-      set(COEFFICIENTFORMPDE_CODEGEN_FILES_TO_COPY
-        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpde_inst.cpp
-        )
-      set(COEFFICIENTFORMPDE_CODEGEN_SOURCES
-        ${COEFFICIENTFORMPDE_LIB_DIR}/coefficientformpde_inst.cpp
-        )
-      set(COEFFICIENTFORMPDE_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdebase  ) 
-      # generate the lib target
-      genLibBase(
-        LIB_NAME ${COEFFICIENTFORMPDE_LIB_NAME}
-        LIB_DIR ${COEFFICIENTFORMPDE_LIB_DIR}
-        LIB_DEPENDS ${COEFFICIENTFORMPDE_LIB_DEPENDS}
-        FILES_TO_COPY ${COEFFICIENTFORMPDE_CODEGEN_FILES_TO_COPY}
-        FILES_SOURCES ${COEFFICIENTFORMPDE_CODEGEN_SOURCES}
-        CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdeconfig.h.in
-        )
-    endif()
   endforeach()
 
   set(COEFFICIENTFORMPDES_LIB_VARIANTS ${COEFFICIENTFORMPDES_DIM}dG${COEFFICIENTFORMPDES_ORDERGEO} )
@@ -459,8 +515,8 @@ macro( genLibCoefficientFormPDEs )
 
     # specialisation
     foreach(i RANGE ${count})
-      list(GET FEELMODELS_APP_UNKNOWN_BASIS_TYPE ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE)
-      list(GET FEELMODELS_APP_UNKNOWN_BASIS_TAG ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG)
+      list(GET COEFFICIENTFORMPDES_UNKNOWN_BASIS_TYPE ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE)
+      list(GET COEFFICIENTFORMPDES_UNKNOWN_BASIS_TAG ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG)
 
       set( COEFFICIENTFORMPDES_UNKNOWN_BASIS_SPECIALISATION ${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE} )
       set( COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR  ${COEFFICIENTFORMPDES_LIB_DIR}/${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG} )
@@ -704,9 +760,12 @@ macro( genLibLevelsetBase )
   endif()
 endmacro(genLibLevelsetBase)
 
+#############################################################################
+#############################################################################
+#############################################################################
 macro( genLibLevelset )
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;LEVELSET_ORDER;LEVELSET_PN_ORDER;GEO_ORDER;VELOCITY_ORDER"
+    "DIM;LEVELSET_ORDER;LEVELSET_PN_ORDER;GEO_ORDER"
     ""
     ${ARGN}
     )
@@ -720,40 +779,61 @@ macro( genLibLevelset )
   set(LEVELSET_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
   #######################################################
   if(FEELMODELS_APP_LEVELSET_PN_ORDER)
-  set(LEVELSET_PN_ORDERPOLY ${FEELMODELS_APP_LEVELSET_PN_ORDER})
+      set(LEVELSET_PN_ORDERPOLY ${FEELMODELS_APP_LEVELSET_PN_ORDER})
   else()
-  set(LEVELSET_PN_ORDERPOLY ${FEELMODELS_APP_LEVELSET_ORDER})
+      set(LEVELSET_PN_ORDERPOLY ${FEELMODELS_APP_LEVELSET_ORDER})
   endif()
   #######################################################
-  if(FEELMODELS_APP_VELOCITY_ORDER)
-  set(LEVELSET_VELOCITY_ORDER ${FEELMODELS_APP_VELOCITY_ORDER})
-  else()
-  set(LEVELSET_VELOCITY_ORDER ${FEELMODELS_APP_LEVELSET_ORDER})
-  endif()
-  #######################################################
-
-  set(LEVELSET_LIB_VARIANTS ${LEVELSET_DIM}dP${LEVELSET_ORDERPOLY}P${LEVELSET_VELOCITY_ORDER}G${LEVELSET_ORDERGEO} )
+  # set levelset lib name
+  set(LEVELSET_LIB_VARIANTS ${LEVELSET_DIM}dP${LEVELSET_ORDERPOLY}G${LEVELSET_ORDERGEO} )
   set(LEVELSET_LIB_NAME feelpp_toolbox_levelset_lib_${LEVELSET_LIB_VARIANTS})
 
+  unset(LEVELSET_LIB_DEPENDS)
+  #######################################################
+  # generate levelsetbase target
   genLibLevelsetBase(
       DIM               ${FEELMODELS_APP_DIM}
       LEVELSET_ORDER    ${FEELMODELS_APP_LEVELSET_ORDER}
       LEVELSET_PN_ORDER ${FEELMODELS_APP_LEVELSET_PN_ORDER}
       GEO_ORDER         ${FEELMODELS_APP_GEO_ORDER}
       )
+  set(LEVELSET_LIB_DEPENDS ${LEVELSET_LIB_DEPENDS} ${LEVELSETBASE_LIB_NAME})
+  #######################################################
+  # generate coefficientformpde targets (scalar+vectorial) (dependency of levelset lib)
+  set( SCALAR_UNKNOWN_BASIS_TYPE Lagrange<${LEVELSET_ORDERPOLY},Scalar,Continuous,PointSetFekete> )
+  set( SCALAR_UNKNOWN_BASIS_TAG Pch${LEVELSET_ORDERPOLY} )
+  genLibCoefficientFormPDE(
+      DIM                       ${FEELMODELS_APP_DIM}
+      UNKNOWN_BASIS_TYPE        ${SCALAR_UNKNOWN_BASIS_TYPE}
+      UNKNOWN_BASIS_TAG         ${SCALAR_UNKNOWN_BASIS_TAG}
+      GEO_ORDER                 ${LEVELSET_ORDERGEO}
+      )
+  set(LEVELSET_LIB_DEPENDS ${LEVELSET_LIB_DEPENDS} ${COEFFICIENTFORMPDE_LIB_NAME})
 
+  set( VECTORIAL_UNKNOWN_BASIS_TYPE Lagrange<${LEVELSET_ORDERPOLY},Vectorial,Continuous,PointSetFekete> )
+  set( VECTORIAL_UNKNOWN_BASIS_TAG Pchv${LEVELSET_ORDERPOLY} )
+  genLibCoefficientFormPDE(
+      DIM                       ${FEELMODELS_APP_DIM}
+      UNKNOWN_BASIS_TYPE        ${VECTORIAL_UNKNOWN_BASIS_TYPE}
+      UNKNOWN_BASIS_TAG         ${VECTORIAL_UNKNOWN_BASIS_TAG}
+      GEO_ORDER                 ${LEVELSET_ORDERGEO}
+      )
+  set(LEVELSET_LIB_DEPENDS ${LEVELSET_LIB_DEPENDS} ${COEFFICIENTFORMPDE_LIB_NAME})
+
+  #######################################################
+  # generate levelset target
   if ( NOT TARGET ${LEVELSET_LIB_NAME} )
       # configure the lib
       set(LEVELSET_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/levelset/${LEVELSET_LIB_VARIANTS})
       set(LEVELSET_CODEGEN_FILES_TO_COPY
           ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelset_inst.cpp
-          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetadvection_inst.cpp
+          #${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetadvection_inst.cpp
           ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/parameter_map.cpp )
       set(LEVELSET_CODEGEN_SOURCES
           ${LEVELSET_LIB_DIR}/levelset_inst.cpp
-          ${LEVELSET_LIB_DIR}/levelsetadvection_inst.cpp
+          #${LEVELSET_LIB_DIR}/levelsetadvection_inst.cpp
           ${LEVELSET_LIB_DIR}/parameter_map.cpp )
-      set(LEVELSET_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${LEVELSETBASE_LIB_NAME} )
+      #set(LEVELSET_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${LEVELSETBASE_LIB_NAME} feelpp_toolbox_coefficientformpde_2dPch1G1 )
       # generate the lib target
       genLibBase(
           LIB_NAME ${LEVELSET_LIB_NAME}
@@ -764,6 +844,7 @@ macro( genLibLevelset )
           CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetconfig.h.in
           )
   endif()
+
 endmacro(genLibLevelset)
 #############################################################################
 #############################################################################
@@ -798,7 +879,7 @@ macro(genLibMultiFluid)
     LEVELSET_ORDER ${FEELMODELS_APP_LEVELSET_ORDER}
     LEVELSET_PN_ORDER ${FEELMODELS_APP_LEVELSET_PN_ORDER}
     GEO_ORDER ${FEELMODELS_APP_GEO_ORDER}
-    VELOCITY_ORDER ${FEELMODELS_APP_FLUID_U_ORDER}
+    #VELOCITY_ORDER ${FEELMODELS_APP_FLUID_U_ORDER}
     #ADVECTION_DIFFUSION_REACTION_ORDER ${FEELMODELS_APP_LEVELSET_DIFFUSION_REACTION_ORDER}
     #ADVECTION_DIFFUSION_REACTION_CONTINUITY ${FEELMODELS_APP_LEVELSET_DIFFUSION_REACTION_CONTINUITY}
     )

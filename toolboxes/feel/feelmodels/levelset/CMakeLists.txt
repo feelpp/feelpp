@@ -10,7 +10,6 @@ foreach(_DIM 2 3)
       genLibLevelset(
           DIM     ${_DIM}
           LEVELSET_ORDER ${_PHI_ORDER}
-          VELOCITY_ORDER ${_PHI_ORDER}
           LEVELSET_PN_ORDER ${FEELPP_MODELS_LEVELSET_PN_ORDER}
           GEO_ORDER 1 
           )
