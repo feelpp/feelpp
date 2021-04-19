@@ -37,17 +37,6 @@ extern template class LevelSetBase<
     LEVELSET_BASISPN_TYPE
         >;
 
-// Scalar advection
-extern template class AdvDiffReac<
-    typename LEVELSETSPACEMANAGER_CLASS_TYPE::space_scalar_type,
-    LEVELSET_FUNCTIONSPACEADVECTIONVELOCITY_TYPE
-    >;
-// Vectorial advection
-extern template class AdvDiffReac<
-    typename LEVELSETSPACEMANAGER_CLASS_TYPE::space_vectorial_type,
-    LEVELSET_FUNCTIONSPACEADVECTIONVELOCITY_TYPE
-    >;
-
 // Explicit instantiation
 LEVELSET_CLASS_INSTANTIATION
 
