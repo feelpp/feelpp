@@ -278,7 +278,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
             auto therange = markedpoints(mesh,listMarkedPointsCompDisp );
             auto dofsToAdd = XhDisp->dofs( therange, comp );
             XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("displacement",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
+            this->dofEliminationIdsAll("displacement",MESH_POINTS).insert( dofsToAdd.begin(), dofsToAdd.end() );
             auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
             this->dofEliminationIdsMultiProcess("displacement",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
