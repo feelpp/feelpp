@@ -42,6 +42,7 @@ endforeach()
 #   endforeach()
 #endforeach()
 
+feelpp_add_application( lamina-cribrosa-model_3DP1 SRCS lc_main_model.cpp  LINK_LIBRARIES feelpp_modelcore DEFS FEELPP_DIM=3 FEELPP_ORDER=1 )
 
 feelpp_add_application( mixed-stokes SRCS mixedstokes.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=1)
 
