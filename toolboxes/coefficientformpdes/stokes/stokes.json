@@ -8,7 +8,7 @@
                 "name":"momentum",
                 "unknown":
                 {
-                    "basis":"Pchv1",
+                    "basis":"Pchv2",
                     "name":"velocity",
                     "symbol":"u"
                 }
