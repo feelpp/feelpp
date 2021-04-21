@@ -107,6 +107,47 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
             }
         }
 
+        // conservative flux source
+        if ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
+        {
+            auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
+            if constexpr ( unknown_is_scalar )
+            {
+                auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim,1>(), se );
+                bool build_conservativeFluxSourceTerm = coeff_gamma_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+                if ( build_conservativeFluxSourceTerm )
+                {
+                    linearForm +=
+                        integrate( _range=range,
+                                    _expr= timeSteppingScaling*inner(trans(coeff_gamma_expr),grad(v)),
+                                    _geomap=this->geomap() );
+                }
+            } 
+            else if ( coeff_gamma.template hasExpr<nDim,nDim>() )
+            {
+                auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim,nDim>(), se );
+                if constexpr ( unknown_is_vectorial )
+                {
+                    bool build_conservativeFluxSourceTerm = coeff_gamma_expr.expression().isNumericExpression() ? buildCstPart : buildNonCstPart;
+                    if ( build_conservativeFluxSourceTerm )
+                    {
+                        linearForm +=
+                            integrate( _range=range,
+                                        _expr= timeSteppingScaling*inner(coeff_gamma_expr,grad(v)),
+                                        _geomap=this->geomap() );
+                    }
+                }
+                else
+                {
+                    LOG( WARNING ) << "invalid expression type for gamma coefficient: the unknown is vectorial, the gamma expression must be a matrix expression";
+                }
+            }
+            else
+            {
+                LOG( WARNING ) << "invalid expression type for gamma coefficient, check the expression";
+            }
+        }
+
         if constexpr ( unknown_is_scalar )
         {
             // conservative flux convection
@@ -124,20 +165,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
                 }
             }
 
-            // conservative flux source
-            if ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
-            {
-                auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
-                auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim,1>(), se );
-                bool build_conservativeFluxSourceTerm = coeff_gamma_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
-                if ( build_conservativeFluxSourceTerm )
-                {
-                    linearForm +=
-                        integrate( _range=range,
-                                   _expr= timeSteppingScaling*inner(trans(coeff_gamma_expr),grad(v)),
-                                   _geomap=this->geomap() );
-                }
-            }
+            
         }
 
         // Reaction
@@ -596,7 +624,58 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                 }
             }
         }
+        if ( buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
+        {
+            auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
+            bool coeffConservativeFluxSourceDependOnUnknown = coeff_gamma.hasSymbolDependency( trialSymbolNames, se );
+            if ( coeffConservativeFluxSourceDependOnUnknown )
+            {
+                if constexpr ( unknown_is_scalar )
+                {
+                    auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim, 1>(), se );
+                    hana::for_each( tse.map(), [this, &coeff_gamma_expr, &v, &J, &range, &Xh, &timeSteppingScaling]( auto const& e ) {
+                        for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second( e ).blockSpaceIndex() )
+                        {
+                            auto trialXh = trialSpacePair.first;
+                            auto trialBlockIndex = trialSpacePair.second;
+                            auto coeff_gamma_diff_expr = diffSymbolicExpr( coeff_gamma_expr, hana::second( e ), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+                            if ( !coeff_gamma_diff_expr.expression().hasExpr() )
+                                continue;
 
+                            form2( _test = Xh, _trial = trialXh, _matrix = J,
+                                   _pattern = size_type( Pattern::COUPLED ),
+                                   _rowstart = this->rowStartInMatrix(),
+                                   _colstart = trialBlockIndex ) +=
+                                integrate( _range = range,
+                                           _expr = -timeSteppingScaling * inner( trans( coeff_gamma_diff_expr ), grad( v ) ),
+                                           _geomap = this->geomap() );
+                        }
+                    } );
+                }
+                else if constexpr( unknown_is_vectorial )
+                {
+                    auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim, nDim>(), se );
+                    hana::for_each( tse.map(), [this, &coeff_gamma_expr, &v, &J, &range, &Xh, &timeSteppingScaling]( auto const& e ) {
+                        for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second( e ).blockSpaceIndex() )
+                        {
+                            auto trialXh = trialSpacePair.first;
+                            auto trialBlockIndex = trialSpacePair.second;
+                            auto coeff_gamma_diff_expr = diffSymbolicExpr( coeff_gamma_expr, hana::second( e ), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+                            if ( !coeff_gamma_diff_expr.expression().hasExpr() )
+                                continue;
+
+                            form2( _test = Xh, _trial = trialXh, _matrix = J,
+                                   _pattern = size_type( Pattern::COUPLED ),
+                                   _rowstart = this->rowStartInMatrix(),
+                                   _colstart = trialBlockIndex ) +=
+                                integrate( _range = range,
+                                           _expr = -timeSteppingScaling * inner( coeff_gamma_diff_expr, grad( v ) ),
+                                           _geomap = this->geomap() );
+                        }
+                    } );
+                }
+            }
+        }
         if constexpr ( unknown_is_scalar )
         {
             // conservative flux convection
@@ -638,34 +717,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
             }
 
             // conservative flux source
-            if ( buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
-            {
-                auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
-                bool coeffConservativeFluxSourceDependOnUnknown = coeff_gamma.hasSymbolDependency( trialSymbolNames, se );
-                if ( coeffConservativeFluxSourceDependOnUnknown )
-                {
-                    auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim,1>(), se );
-                    hana::for_each( tse.map(), [this,&coeff_gamma_expr,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
-                    {
-                        for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
-                        {
-                            auto trialXh = trialSpacePair.first;
-                            auto trialBlockIndex = trialSpacePair.second;
-                            auto coeff_gamma_diff_expr = diffSymbolicExpr( coeff_gamma_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
-                            if ( !coeff_gamma_diff_expr.expression().hasExpr() )
-                                continue;
-
-                            form2( _test=Xh,_trial=trialXh,_matrix=J,
-                                   _pattern=size_type(Pattern::COUPLED),
-                                   _rowstart=this->rowStartInMatrix(),
-                                   _colstart=trialBlockIndex ) +=
-                                integrate( _range=range,
-                                           _expr= -timeSteppingScaling*inner(trans(coeff_gamma_diff_expr),grad(v)),
-                                           _geomap=this->geomap() );
-                        }
-                    });
-                }
-            }
+            
         }
 
 
@@ -948,7 +1000,37 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
                 }
             }
         }
+        // conservative flux source
+        if ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
+        {
+            auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
+            if constexpr ( unknown_is_scalar )
+            {
+                auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim, 1>(), se );
+                bool build_conservativeFluxSourceTerm = coeff_gamma_expr.expression().isNumericExpression() ? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+                if ( build_conservativeFluxSourceTerm )
+                {
+                    linearForm +=
+                        integrate( _range = range,
+                                   _expr = -timeSteppingScaling * inner( trans( coeff_gamma_expr ), grad( v ) ),
+                                   _geomap = this->geomap() );
+                }
+            }
+            else if constexpr ( unknown_is_vectorial )
+            {
+                auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim, nDim>(), se );
+                bool build_conservativeFluxSourceTerm = coeff_gamma_expr.expression().isNumericExpression() ? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+                if ( build_conservativeFluxSourceTerm )
+                {
+                    linearForm +=
+                        integrate( _range = range,
+                                   _expr = -timeSteppingScaling * inner( coeff_gamma_expr, grad( v ) ),
+                                   _geomap = this->geomap() );
+                }
+            } 
 
+
+        }
         if constexpr ( unknown_is_scalar )
         {
             // conservative flux convection
@@ -966,20 +1048,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
                 }
             }
 
-            // conservative flux source
-            if ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
-            {
-                auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
-                auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim,1>(), se );
-                bool build_conservativeFluxSourceTerm = coeff_gamma_expr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
-                if ( build_conservativeFluxSourceTerm )
-                {
-                    linearForm +=
-                        integrate( _range=range,
-                                   _expr= -timeSteppingScaling*inner(trans(coeff_gamma_expr),grad(v)),
-                                   _geomap=this->geomap() );
-                }
-            }
+            
         }
 
 
