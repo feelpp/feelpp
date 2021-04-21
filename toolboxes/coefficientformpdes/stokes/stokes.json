@@ -8,7 +8,7 @@
                 "name":"momentum",
                 "unknown":
                 {
-                    "basis":"Pchv2",
+                    "basis":"Pchv1",
                     "name":"velocity",
                     "symbol":"u"
                 }
@@ -43,11 +43,11 @@
                 "wall":
                 {
                     "markers":["Left","Bottom","Right"],
-                    "expr":"0"
+                    "expr":"{0,0}"
                 },
                 "lid": {
                     "markers": ["Top"],
-                    "expr": "1"
+                    "expr": "{1,0}"
                 }
             }
         }
