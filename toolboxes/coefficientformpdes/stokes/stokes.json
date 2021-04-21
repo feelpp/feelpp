@@ -43,11 +43,11 @@
                 "wall":
                 {
                     "markers":["Left","Bottom","Right"],
-                    "expr":"0"
+                    "expr":"{0,0}"
                 },
                 "lid": {
                     "markers": ["Top"],
-                    "expr": "1"
+                    "expr": "{1,0}"
                 }
             }
         }
