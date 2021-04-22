@@ -37,11 +37,6 @@ namespace GiNaC
 DECLARE_FUNCTION_2P(rand);
 static ex rand_eval(const ex & a,const ex & b) 
 {
-    if ( is_exactly_a<numeric>( a ) && is_exactly_a<numeric>( b ) )
-    {
-        return rand( ex_to<numeric>( a ), ex_to<numeric>( b ) );
-        }
-	
 	return rand(a,b).hold();
 }
 
@@ -67,11 +62,6 @@ REGISTER_FUNCTION(rand, eval_func( rand_eval).
 DECLARE_FUNCTION_2P( uniform );
 static ex uniform_eval( const ex& a, const ex& b )
 {
-    if ( is_exactly_a<numeric>( a ) && is_exactly_a<numeric>( b ) )
-    {
-        return uniform( ex_to<numeric>( a ),ex_to<numeric>(b) );
-    }
-
     return uniform( a,b ).hold();
 }
 
@@ -95,14 +85,37 @@ REGISTER_FUNCTION( uniform, eval_func( uniform_eval ).
 						 print_func<print_latex>( uniform_print_latex ).
 						 print_func<print_csrc_float>( uniform_print_csrc_float ).
 						 print_func<print_csrc_double>( uniform_print_csrc_float ) );
+
+DECLARE_FUNCTION_2P( loguniform );
+static ex loguniform_eval( const ex& a, const ex& b )
+{
+    return loguniform( a,b ).hold();
+}
+
+static void loguniform_print_latex( const ex& arg1, const ex& arg2, const print_context& c )
+{
+    c.s << "{";
+    arg1.print( c );
+    c.s << "|}";
+}
+
+static void loguniform_print_csrc_float( const ex& arg1, const ex& arg2, const print_context& c )
+{
+    c.s << "[](){ auto [dis, gen] = uniformDistribution( std::log(";
+    arg1.print( c );
+    c.s << "),std::log(";
+    arg2.print( c );
+    c.s << ")); return exp(dis(gen)); }()";
+}
+REGISTER_FUNCTION( loguniform, eval_func( loguniform_eval ).
+                         evalf_func( loguniform_eval ).
+						 print_func<print_latex>( loguniform_print_latex ).
+						 print_func<print_csrc_float>( loguniform_print_csrc_float ).
+						 print_func<print_csrc_double>( loguniform_print_csrc_float ) );
+
 DECLARE_FUNCTION_2P( normal );
 static ex normal_eval( const ex& a, const ex& b )
 {
-    if ( is_exactly_a<numeric>( a ) && is_exactly_a<numeric>( b ) )
-    {
-        return normal( ex_to<numeric>( a ),ex_to<numeric>(b) );
-    }
-
     return normal( a,b ).hold();
 }
 
@@ -130,11 +143,6 @@ REGISTER_FUNCTION( normal, eval_func( normal_eval ).
 DECLARE_FUNCTION_2P( lognormal );
 static ex lognormal_eval( const ex& a, const ex& b )
 {
-    if ( is_exactly_a<numeric>( a ) && is_exactly_a<numeric>( b ) )
-    {
-        return lognormal( ex_to<numeric>( a ),ex_to<numeric>(b) );
-    }
-
     return lognormal( a,b ).hold();
 }
 

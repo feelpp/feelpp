@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <random>
+#include <iostream>
 #define Pi M_PI
 #define pi M_PI
 
