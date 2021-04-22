@@ -122,17 +122,20 @@ private:
 
 public:
 
-    LaminaCribrosa() : super_type() {  }
+	LaminaCribrosa( std::string const& prefix = "hdg.poisson",
+                    worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+                    std::string const& subPrefix = "",
+                    ModelBaseRepository const& modelRep = ModelBaseRepository() )
+		: super_type( prefix, MixedPoissonPhysics::None, worldComm, subPrefix, modelRep ),
+          ModelBase( prefix, worldComm, subPrefix, modelRep )
+        {}
+    LaminaCribrosa( self_type const& LC ) = default;
 
-	LaminaCribrosa( std::string const& prefix, WorldComm const& worldComm,
-				 std::string const& subPrefix, std::string const& rootRepository )
-		: super_type( prefix, worldComm, subPrefix, rootRepository ) { }
 
-
-    static self_ptrtype New( std::string const& prefix = "mixedpoisson",
-                             WorldComm const& worldComm = Environment::worldComm(),
+    static self_ptrtype New( std::string const& prefix = "hdg.poisson",
+                             worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
-                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
 
     virtual void assembleCstPart();
@@ -173,10 +176,11 @@ public:
 template<int Dim, int Order, int G_Order, int E_Order>
 typename LaminaCribrosa<Dim,Order, G_Order, E_Order>::self_ptrtype
 LaminaCribrosa<Dim,Order,G_Order, E_Order>::New( std::string const& prefix,
-                                         WorldComm const& worldComm, std::string const& subPrefix,
-                                         std::string const& rootRepository )
+                                                 worldcomm_ptr_t const& worldComm,
+                                                 std::string const& subPrefix,
+                                                 ModelBaseRepository const& modelRep )
 {
-    return std::make_shared<self_type> ( prefix,worldComm,subPrefix,rootRepository );
+    return std::make_shared<self_type>( prefix, worldComm, subPrefix, modelRep );
 }
 
 
@@ -366,12 +370,15 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::initSpaces(){
 	if(M_0dCondition)
 	{
 		Feel::cout << "Number of 0d: " << M_0dCondition << std::endl;
+        solve::strategy s = this->M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
     	auto ibcSpaces = std::make_shared<ProductSpace<Ch_ptr_t,true> >( this->integralCondition() + M_0dCondition, this->M_Ch);
     	this->M_ps = std::make_shared<product2_space_type>(product2(ibcSpaces,this->M_Vh,this->M_Wh,this->M_Mh));
 
-	    this->M_A_cst = this->M_backend->newBlockMatrix(_block=csrGraphBlocks(*(this->M_ps)));
-    	this->M_A = this->M_backend->newBlockMatrix(_block=csrGraphBlocks(*(this->M_ps)));
-    	this->M_F = this->M_backend->newBlockVector(_block=blockVector(*(this->M_ps)), _copy_values=false);
+        this->M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*this->M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *this->M_backend );
+#ifndef USE_SAME_MAT
+        this->M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*this->M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *this->M_backend );
+#endif
+        this->M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*this->M_ps), *this->M_backend, false);
 	}
 
     // Init for second step
@@ -497,10 +504,10 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::assemble0d( int i )
     bbf ( 3_c, 0_c, j, 0) += integrate( _range=markedfaces(this->mesh(),marker), _expr= -trans(idt(u))*N()*id(nu) );
 
     // - <tau p, mu3>_Gamma_I
-    bbf ( 3_c, 1_c, j, 1) += integrate( _range=markedfaces(this->mesh(),marker), _expr= -tau_constant*( pow(idv(H),this->tau_order())*idt(p) )*id(nu) );
+    bbf ( 3_c, 1_c, j, 1) += integrate( _range=markedfaces(this->mesh(),marker), _expr= -tau_constant*idt(p)*id(nu) );
 
     // + <tau u_I, mu3>_Gamma_I
-    bbf ( 3_c, 3_c, j, j-1) += integrate( _range=markedfaces(this->mesh(),marker), _expr= tau_constant * (pow(idv(H),this->tau_order())*idt(uI)*id(nu)) );
+    bbf ( 3_c, 3_c, j, j-1) += integrate( _range=markedfaces(this->mesh(),marker), _expr= tau_constant*idt(uI)*id(nu) );
 
 	for( auto const& pairMat : this->modelProperties().materials() )
     {
@@ -570,72 +577,67 @@ LaminaCribrosa<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_pt
     this->log("LaminaCribrosa","exportResults", "start");
 
     // Export computed solutions
-    auto postProcess = this->modelProperties().postProcess();
-    auto itField = postProcess.find( "Fields");
-    if ( itField != postProcess.end() )
+    for ( auto const& field : this->modelProperties().postProcess().exports().fields() )
     {
-        for ( auto const& field : (*itField).second )
+        if ( field == "state variable" )
         {
-            if ( field == "state variable" )
-	    	{
-				this->exporterMP()->step( time )->add(prefixvm(this->prefix(), "Pi_1"), M_statevar_solution[0] );
-				this->exporterMP()->step( time )->add(prefixvm(this->prefix(), "Pi_2"), M_statevar_solution[1] );
-				this->exporterMP()->step( time )->add(prefixvm(this->prefix(), "Pi_3"), M_statevar_solution[2] );
+            this->exporterMP()->step( time )->add(prefixvm(this->prefix(), "Pi_1"), M_statevar_solution[0] );
+            this->exporterMP()->step( time )->add(prefixvm(this->prefix(), "Pi_2"), M_statevar_solution[1] );
+            this->exporterMP()->step( time )->add(prefixvm(this->prefix(), "Pi_3"), M_statevar_solution[2] );
 
-                auto itField = this->modelProperties().boundaryConditions().find( "CircuitModel");
-    			if ( itField != this->modelProperties().boundaryConditions().end() )
-    			{
-        			auto mapField = (*itField).second;
-        			auto itType = mapField.find( "Pi1_exact" );
-        			if ( itType != mapField.end() )
-        			{
-            			for ( auto const& exAtMarker : (*itType).second )
-            			{
-				           	auto exprP1_exact =  expr(exAtMarker.expression());
-							exprP1_exact.setParameterValues( { {"t", this->time() } } );
-							auto P1_exact = exprP1_exact.evaluate();
-							double mean_ex = std::abs(P1_exact);
-							if (mean_ex < 1e-10)
-								 mean_ex = 1;
-	    					Feel::cout << "||P1-P1_ex|=\t" << std::abs(P1_exact - M_statevar_solution[0])/mean_ex << std::endl;
-		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P1_error"),  std::abs(P1_exact - M_statevar_solution[0])/mean_ex );
-						}
-					}
+            auto itField = this->modelProperties().boundaryConditions().find( "CircuitModel");
+            if ( itField != this->modelProperties().boundaryConditions().end() )
+            {
+                auto mapField = (*itField).second;
+                auto itType = mapField.find( "Pi1_exact" );
+                if ( itType != mapField.end() )
+                {
+                    for ( auto const& exAtMarker : (*itType).second )
+                    {
+                        auto exprP1_exact =  expr(exAtMarker.expression());
+                        exprP1_exact.setParameterValues( { {"t", this->time() } } );
+                        auto P1_exact = exprP1_exact.evaluate()(0,0);
+                        double mean_ex = std::abs(P1_exact);
+                        if (mean_ex < 1e-10)
+                            mean_ex = 1;
+                        Feel::cout << "||P1-P1_ex|=\t" << std::abs(P1_exact - M_statevar_solution[0])/mean_ex << std::endl;
+                        this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P1_error"),  std::abs(P1_exact - M_statevar_solution[0])/mean_ex );
+                    }
+                }
 
-        			itType = mapField.find( "Pi2_exact" );
-        			if ( itType != mapField.end() )
-        			{
-            			for ( auto const& exAtMarker : (*itType).second )
-            			{
-				           	auto exprP2_exact =  expr(exAtMarker.expression());
-							exprP2_exact.setParameterValues( { {"t", this->time() } } );
-							auto P2_exact = exprP2_exact.evaluate();
-							double mean_ex = std::abs(P2_exact);
-							if (mean_ex < 1e-10)
-								 mean_ex = 1;
-	    					Feel::cout << "||P2-P2_ex|=\t" << std::abs(P2_exact - M_statevar_solution[1])/mean_ex << std::endl;
-		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P2_error"),  std::abs(P2_exact - M_statevar_solution[1])/mean_ex );
-						}
-					}
+                itType = mapField.find( "Pi2_exact" );
+                if ( itType != mapField.end() )
+                {
+                    for ( auto const& exAtMarker : (*itType).second )
+                    {
+                        auto exprP2_exact =  expr(exAtMarker.expression());
+                        exprP2_exact.setParameterValues( { {"t", this->time() } } );
+                        auto P2_exact = exprP2_exact.evaluate()(0,0);
+                        double mean_ex = std::abs(P2_exact);
+                        if (mean_ex < 1e-10)
+                            mean_ex = 1;
+                        Feel::cout << "||P2-P2_ex|=\t" << std::abs(P2_exact - M_statevar_solution[1])/mean_ex << std::endl;
+                        this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P2_error"),  std::abs(P2_exact - M_statevar_solution[1])/mean_ex );
+                    }
+                }
 
-					itType = mapField.find( "Pi3_exact" );
-        			if ( itType != mapField.end() )
-        			{
-            			for ( auto const& exAtMarker : (*itType).second )
-            			{
-				           	auto exprP3_exact =  expr(exAtMarker.expression());
-							exprP3_exact.setParameterValues( { {"t", this->time() } } );
-							auto P3_exact = exprP3_exact.evaluate();
-							double mean_ex = std::abs(P3_exact);
-							if (mean_ex < 1e-10)
-								 mean_ex = 1;
-	    					Feel::cout << "||P3-P3_ex|=\t" << std::abs(P3_exact - M_statevar_solution[2])/mean_ex << std::endl;
-		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P3_error"),  std::abs(P3_exact - M_statevar_solution[2])/mean_ex );
-						}
-					}
-		   			Feel::cout << "---------------------------" << std::endl;
-          		}
-	    	}
+                itType = mapField.find( "Pi3_exact" );
+                if ( itType != mapField.end() )
+                {
+                    for ( auto const& exAtMarker : (*itType).second )
+                    {
+                        auto exprP3_exact =  expr(exAtMarker.expression());
+                        exprP3_exact.setParameterValues( { {"t", this->time() } } );
+                        auto P3_exact = exprP3_exact.evaluate()(0,0);
+                        double mean_ex = std::abs(P3_exact);
+                        if (mean_ex < 1e-10)
+                            mean_ex = 1;
+                        Feel::cout << "||P3-P3_ex|=\t" << std::abs(P3_exact - M_statevar_solution[2])/mean_ex << std::endl;
+                        this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P3_error"),  std::abs(P3_exact - M_statevar_solution[2])/mean_ex );
+                    }
+                }
+                Feel::cout << "---------------------------" << std::endl;
+            }
         }
     }
     this->log("LaminaCribrosa","exportResults", "finish");
@@ -693,7 +695,7 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::odeForceTermEvaluation( double tim
             {
 				auto exprPiout = expr(exAtMarker.expression());
                 exprPiout.setParameterValues( { {"t", time } } );
-				Piout = exprPiout.evaluate();
+				Piout = exprPiout.evaluate()(0,0);
 				// Piout = mean( _range = markedfaces(this->mesh(),exAtMarker.marker()), _expr = exprPiout )(0,0);
 			}
 		}
@@ -762,7 +764,7 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::second_step()
 		/*
        	auto help = expr("2*t:t");
         help.setParameterValues( { {"t", this->time() } } );
-		M_statevar_solution[0] = help.evaluate();
+		M_statevar_solution[0] = help.evaluate()(0,0);
 		*/
 
 		// Update the initial solution for Pi1 (for step 1)
