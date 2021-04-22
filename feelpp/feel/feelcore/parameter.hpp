@@ -130,6 +130,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( transform )
     BOOST_PARAMETER_NAME( value_on_diagonal )
     BOOST_PARAMETER_NAME( condense )
+    BOOST_PARAMETER_NAME( condenser )
     BOOST_PARAMETER_NAME( local )
 // parameter for exporter
     BOOST_PARAMETER_NAME( geo )
