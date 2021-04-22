@@ -312,7 +312,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     auto U = ps.element();
     auto Ue = ps.element();
     //a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=boption("sc.condense"));
-    a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
+    a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"), _condenser=condenser_stokes() );
     toc("solve",true);
     cout << "[Hdg] solve done" << std::endl;
 
