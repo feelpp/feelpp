@@ -50,7 +50,7 @@
             "Expression": {
                 "myic": {
                     "markers": "Omega",
-                    "expr": "0.63 + 0.02*(0.5-rand(1))"
+                    "expr": "0.63 + 0.02*(0.5-uniform(0,1))"
                 }
             }
         },
