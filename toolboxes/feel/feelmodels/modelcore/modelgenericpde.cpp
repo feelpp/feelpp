@@ -77,14 +77,19 @@ ModelGenericPDE<Dim>::setupGenericPDE()
     mphysic->addMaterialPropertyDescription( this->reactionCoefficientName(), this->reactionCoefficientName(), { scalarShape } );
     mphysic->addMaterialPropertyDescription( this->firstTimeDerivativeCoefficientName(), this->firstTimeDerivativeCoefficientName(), { scalarShape } );
     mphysic->addMaterialPropertyDescription( this->secondTimeDerivativeCoefficientName(), this->secondTimeDerivativeCoefficientName(), { scalarShape } );
+
+    mphysic->addMaterialPropertyDescription( this->conservativeFluxConvectionCoefficientName(), this->conservativeFluxConvectionCoefficientName(), { vectorialShape } );
+
     if ( unknownShape == "scalar" )
     {
         mphysic->addMaterialPropertyDescription( this->sourceCoefficientName(), this->sourceCoefficientName(), { scalarShape } );
-        mphysic->addMaterialPropertyDescription( this->conservativeFluxConvectionCoefficientName(), this->conservativeFluxConvectionCoefficientName(), { vectorialShape } );
         mphysic->addMaterialPropertyDescription( this->conservativeFluxSourceCoefficientName(), this->conservativeFluxSourceCoefficientName(), { vectorialShape } );
     }
     else if ( unknownShape == "vectorial" )
+    {
         mphysic->addMaterialPropertyDescription( this->sourceCoefficientName(), this->sourceCoefficientName(), { vectorialShape } );
+        mphysic->addMaterialPropertyDescription( this->conservativeFluxSourceCoefficientName(), this->conservativeFluxSourceCoefficientName(), { matrixShape } );
+    }
 
     this->M_physics.emplace( mphysic->name(), mphysic );
 }
