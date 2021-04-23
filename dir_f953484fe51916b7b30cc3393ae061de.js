@@ -60,6 +60,7 @@ var dir_f953484fe51916b7b30cc3393ae061de =
       [ "components", "structFeel_1_1tag_1_1components.html", "structFeel_1_1tag_1_1components" ],
       [ "compute_pde_coefficients", "structFeel_1_1tag_1_1compute__pde__coefficients.html", "structFeel_1_1tag_1_1compute__pde__coefficients" ],
       [ "condense", "structFeel_1_1tag_1_1condense.html", "structFeel_1_1tag_1_1condense" ],
+      [ "condenser", "structFeel_1_1tag_1_1condenser.html", "structFeel_1_1tag_1_1condenser" ],
       [ "config", "structFeel_1_1tag_1_1config.html", "structFeel_1_1tag_1_1config" ],
       [ "constant_null_space", "structFeel_1_1tag_1_1constant__null__space.html", "structFeel_1_1tag_1_1constant__null__space" ],
       [ "context", "structFeel_1_1tag_1_1context.html", "structFeel_1_1tag_1_1context" ],

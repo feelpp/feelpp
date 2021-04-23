@@ -1,5 +1,6 @@
 var NAVTREEINDEX43 =
 {
+"structFeel_1_1detail_1_1DD.html#ae45cfb218d8fd3579f4fe4b5c8e44087":[6,1,1,1,23,9],
 "structFeel_1_1detail_1_1DD_1_1result.html":[6,1,1,1,23,0],
 "structFeel_1_1detail_1_1DD_1_1result.html#a29dcd6a9684de500b535d2d3f1bfbced":[6,1,1,1,23,0,0],
 "structFeel_1_1detail_1_1D_1_1result.html":[6,1,1,1,22,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX43 =
 "structFeel_1_1detail_1_1compute__opLinearFree__return.html#aab27fc3f8f9f37d09cdb4922bdaf564e":[6,1,1,1,12,1],
 "structFeel_1_1detail_1_1compute__stencil__type.html":[6,1,1,1,13],
 "structFeel_1_1detail_1_1compute__stencil__type.html#a3add70cee91fb4b970973668e54a5f5e":[6,1,1,1,13,3],
-"structFeel_1_1detail_1_1compute__stencil__type.html#a520b4f14bd9363ce9fe91082ba2455fb":[6,1,1,1,13,5],
-"structFeel_1_1detail_1_1compute__stencil__type.html#a779fdd3fc829589163c6ca8038d76ae1":[6,1,1,1,13,4]
+"structFeel_1_1detail_1_1compute__stencil__type.html#a520b4f14bd9363ce9fe91082ba2455fb":[6,1,1,1,13,5]
 };

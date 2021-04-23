@@ -1,5 +1,6 @@
 var NAVTREEINDEX13 =
 {
+"classFeel_1_1FunctionSpace.html#ad1784d49d78ac0535e7117d4f3ad054b":[6,1,1,90,89],
 "classFeel_1_1FunctionSpace.html#ad1c47293d20b79c2f83640b15a0da7c7":[6,1,1,90,146],
 "classFeel_1_1FunctionSpace.html#ad2a81211f5a4a325ceb048bdc3d5ad6e":[6,1,1,90,91],
 "classFeel_1_1FunctionSpace.html#ad3d1aca71d612b113e93fec10832e400":[6,1,1,90,191],
@@ -248,6 +249,5 @@ var NAVTREEINDEX13 =
 "classFeel_1_1FunctionSpace_1_1Element.html#a92a8f8de90c09544b9830d9d98476f47":[6,1,1,90,8,187],
 "classFeel_1_1FunctionSpace_1_1Element.html#a930c1e6c1b3048c2534c19a1b5151efb":[6,1,1,90,8,147],
 "classFeel_1_1FunctionSpace_1_1Element.html#a94b6c66b14915f5b7a61fffd17204a01":[6,1,1,90,8,257],
-"classFeel_1_1FunctionSpace_1_1Element.html#a974e4eac6e71f37f9b51b3affb0d3ade":[6,1,1,90,8,27],
-"classFeel_1_1FunctionSpace_1_1Element.html#a9765a310c1ea0a273c82c642d9ba7591":[6,1,1,90,8,184]
+"classFeel_1_1FunctionSpace_1_1Element.html#a974e4eac6e71f37f9b51b3affb0d3ade":[6,1,1,90,8,27]
 };

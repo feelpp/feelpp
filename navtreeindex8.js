@@ -1,5 +1,6 @@
 var NAVTREEINDEX8 =
 {
+"classFeel_1_1FeelModels_1_1ModelAlgebraic.html#ac04f883b4c6f356fc47635cd2931c12e":[6,1,1,4,22,15],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic.html#ac3ca7f9f2501a0040f09ee9ac991dd9b":[6,1,1,4,22,48],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic.html#ac6b0a5fff8a8a693c96233fe38fcb484":[6,1,1,4,22,69],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic.html#ac752db53724cb6795cea58bdbac50651":[6,1,1,4,22,83],
@@ -248,6 +249,5 @@ var NAVTREEINDEX8 =
 "classFeel_1_1FeelModels_1_1ModelMeasuresFlowRate.html#ad9029dc1d0e742943a9fe05c67bb1958":[6,1,1,4,39,1],
 "classFeel_1_1FeelModels_1_1ModelMeasuresForces.html":[6,1,1,4,40],
 "classFeel_1_1FeelModels_1_1ModelMeasuresForces.html#a09618af72ddbb3ea8ffa19fbc87a4e33":[6,1,1,4,40,6],
-"classFeel_1_1FeelModels_1_1ModelMeasuresForces.html#a1f554ddebdeb9096d7e825773db6d827":[6,1,1,4,40,0],
-"classFeel_1_1FeelModels_1_1ModelMeasuresForces.html#a3d9ade78f1bef7c749ef341efe7b5615":[6,1,1,4,40,8]
+"classFeel_1_1FeelModels_1_1ModelMeasuresForces.html#a1f554ddebdeb9096d7e825773db6d827":[6,1,1,4,40,0]
 };

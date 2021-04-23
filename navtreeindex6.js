@@ -1,5 +1,6 @@
 var NAVTREEINDEX6 =
 {
+"classFeel_1_1FeelModels_1_1FluidMechanics.html#a995ee1ee6d36dd9bb0efdd3de882a89f":[5,11,1,344],
 "classFeel_1_1FeelModels_1_1FluidMechanics.html#a9af2afb96af954741901e87ef0c22e54":[5,11,1,102],
 "classFeel_1_1FeelModels_1_1FluidMechanics.html#a9c1d2cd8068299dfc4a67229b27e1834":[5,11,1,25],
 "classFeel_1_1FeelModels_1_1FluidMechanics.html#a9c483589b8b5a97ef46cc56d9931b082":[5,11,1,91],
@@ -248,6 +249,5 @@ var NAVTREEINDEX6 =
 "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a9dffcc58d819d034c4d2b995edad8c9b":[5,11,1,2,39],
 "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aa003b48fab512a7579a5bea4433dd32b":[5,11,1,2,10],
 "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aa0511313e33368f37d87fdb130f687a2":[5,11,1,2,8],
-"classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aa0b3204a1cd6b667ea7fd72bad231d6c":[5,11,1,2,38],
-"classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aa218c4b9bab95e0fb1fb556883f98fc0":[5,11,1,2,13]
+"classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aa0b3204a1cd6b667ea7fd72bad231d6c":[5,11,1,2,38]
 };

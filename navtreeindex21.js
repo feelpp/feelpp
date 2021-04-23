@@ -1,5 +1,6 @@
 var NAVTREEINDEX21 =
 {
+"classFeel_1_1MongoConfig.html#a89aff66b5e4ad2ca2755754036934522":[6,1,1,191,6],
 "classFeel_1_1MongoConfig.html#ab5d69e955725debd97babb0f83710d2a":[6,1,1,191,4],
 "classFeel_1_1MongoConfig.html#ac76630255401203f88ea26764a0da83a":[6,1,1,191,7],
 "classFeel_1_1MongoConfig.html#ad432ff144c38804a38e532a3ae2f47c8":[6,1,1,191,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX21 =
 "classFeel_1_1OperatorLinearFree.html#a52ac9cc67ad17dcae825ee13e35d67cb":[6,1,1,203,17],
 "classFeel_1_1OperatorLinearFree.html#a5a726fff9b2e389f5712eba48c3b423c":[6,1,1,203,11],
 "classFeel_1_1OperatorLinearFree.html#a5eefe31e1ab62347dec309fc97b44c98":[6,1,1,203,1],
-"classFeel_1_1OperatorLinearFree.html#a6d3320bc7fab2c838f7fd0c3a37af497":[6,1,1,203,16],
-"classFeel_1_1OperatorLinearFree.html#a7138a9b6449c2aa3549347d81a07c2d3":[6,1,1,203,13]
+"classFeel_1_1OperatorLinearFree.html#a6d3320bc7fab2c838f7fd0c3a37af497":[6,1,1,203,16]
 };

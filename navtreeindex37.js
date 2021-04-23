@@ -1,5 +1,6 @@
 var NAVTREEINDEX37 =
 {
+"group__Core.html#ga91537995a7deb5c79fede37e41c29018":[5,0,18],
 "group__Core.html#gaa90565f9cd5f52a52eeea0e4b7858b87":[5,0,24],
 "group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8":[5,0,22],
 "group__Core.html#gaae0f4355cdf5c3eece015092baefd653":[5,0,21],
@@ -59,8 +60,8 @@ var NAVTREEINDEX37 =
 "hypercube_8cpp.html":[6,2,0,0,2,10],
 "hypercube_8hpp.html":[6,2,0,0,2,11],
 "hypercubeordering_8hpp.html":[6,2,0,0,2,12],
-"index.html":[0],
 "index.html":[],
+"index.html":[0],
 "index.html#Objectives":[0,1],
 "index.html#autotoc_md28":[0,2],
 "index.html#tutorial-compilers":[0,2,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX37 =
 "operator_8hpp.html":[6,2,0,0,1,36],
 "operatorinterpolation_8hpp.html":[6,2,0,0,1,37],
 "operatorinterpolation_8hpp.html#a07ba931f2adadf4c69a4bee779829f11":[6,2,0,0,1,37,27],
-"operatorinterpolation_8hpp.html#a08abda789343aad664f020fc8d5b671a":[6,2,0,0,1,37,35],
-"operatorinterpolation_8hpp.html#a19b501421c239732866557cacfa83a66":[6,2,0,0,1,37,42]
+"operatorinterpolation_8hpp.html#a08abda789343aad664f020fc8d5b671a":[6,2,0,0,1,37,35]
 };

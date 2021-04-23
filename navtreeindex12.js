@@ -1,5 +1,6 @@
 var NAVTREEINDEX12 =
 {
+"classFeel_1_1FsFunctionalLinear.html#a696eb72bd3c14e50b29b45ccc061c982":[6,1,1,87,10],
 "classFeel_1_1FsFunctionalLinear.html#a6d415a5ba0f2102504f62031873ca5da":[6,1,1,87,15],
 "classFeel_1_1FsFunctionalLinear.html#a75c2c121688320e171962b00823f4b03":[6,1,1,87,19],
 "classFeel_1_1FsFunctionalLinear.html#a80953220a6110fc2b2ee473a7d658860":[6,1,1,87,5],
@@ -248,6 +249,5 @@ var NAVTREEINDEX12 =
 "classFeel_1_1FunctionSpace.html#acb66e89ac82c0bd7fef624a98c798c55":[6,1,1,90,218],
 "classFeel_1_1FunctionSpace.html#acc33790849af02a25b3ef2aa20fcf885":[6,1,1,90,36],
 "classFeel_1_1FunctionSpace.html#acc424e4bfbfec3482c35977a479ccb93":[6,1,1,90,127],
-"classFeel_1_1FunctionSpace.html#acff671e287b24d81293e8f410eae0485":[6,1,1,90,179],
-"classFeel_1_1FunctionSpace.html#ad1784d49d78ac0535e7117d4f3ad054b":[6,1,1,90,89]
+"classFeel_1_1FunctionSpace.html#acff671e287b24d81293e8f410eae0485":[6,1,1,90,179]
 };

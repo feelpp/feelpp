@@ -1,5 +1,6 @@
 var NAVTREEINDEX26 =
 {
+"classFeel_1_1SensorBase.html#ae60d613a2774baf9818865be7e82fcbb":[6,1,1,247,2],
 "classFeel_1_1SensorBase.html#af56a7c8cc650a674da348d72b39a64b0":[6,1,1,247,8],
 "classFeel_1_1SensorBase.html#aff48a54fd95da5acdf31dedc5248bb7d":[6,1,1,247,16],
 "classFeel_1_1SensorGaussian.html":[6,1,1,248],
@@ -248,6 +249,5 @@ var NAVTREEINDEX26 =
 "classFeel_1_1SubFaceOf.html#a85d43c4326fea74e326fa0d4996c062e":[6,1,1,269,28],
 "classFeel_1_1SubFaceOf.html#a877ae68088a997d7b5d59488b01f4b41":[6,1,1,269,21],
 "classFeel_1_1SubFaceOf.html#a88c2f21fbffa02d177bfb35655fee05c":[6,1,1,269,12],
-"classFeel_1_1SubFaceOf.html#a894fc6298b30299cd08216569fc45d12":[6,1,1,269,27],
-"classFeel_1_1SubFaceOf.html#a8a1d0da9d317458865b08704f8725048":[6,1,1,269,46]
+"classFeel_1_1SubFaceOf.html#a894fc6298b30299cd08216569fc45d12":[6,1,1,269,27]
 };

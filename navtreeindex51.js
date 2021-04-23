@@ -1,5 +1,10 @@
 var NAVTREEINDEX51 =
 {
+"structFeel_1_1vf_1_1SymbolsExprTraits_3_01T_01_4_1_1DeferToSymbolsExpr.html":[6,1,1,14,38,1],
+"structFeel_1_1vf_1_1SymbolsExprTraits_3_01T_01_4_1_1DeferToSymbolsExpr.html#a3b0af7898699575f9f4a1928f64f84e9":[6,1,1,14,38,1,0],
+"structFeel_1_1vf_1_1SymbolsExpr_1_1Lambda.html":[6,1,1,14,33,0],
+"structFeel_1_1vf_1_1SymbolsExpr_1_1Lambda.html#aa2435ab9add24366492d8d7336d462a1":[6,1,1,14,33,0,2],
+"structFeel_1_1vf_1_1SymbolsExpr_1_1Lambda.html#ac379643ede1a45d6277d9b0152ceeb1b":[6,1,1,14,33,0,1],
 "structFeel_1_1vf_1_1SymbolsExpr_1_1Lambda_1_1TransformLambdaExpr.html":[6,1,1,14,33,0,0],
 "structFeel_1_1vf_1_1SymbolsExpr_1_1Lambda_1_1TransformLambdaExpr.html#a7571736526ea01dfff8f633ad9696f33":[6,1,1,14,33,0,0,0],
 "structFeel_1_1vf_1_1SymbolsExpr_1_1TensorContext.html":[6,1,1,14,33,1],
@@ -244,10 +249,5 @@ var NAVTREEINDEX51 =
 "structnlohmann_1_1adl__serializer_3_01py_1_1dict_01_4.html#ae60a8d200a5bebfef70e888b1dc28cc1":[6,1,2,9,1],
 "structnlohmann_1_1adl__serializer_3_01py_1_1float___01_4.html":[6,1,2,10],
 "structnlohmann_1_1adl__serializer_3_01py_1_1float___01_4.html#a8a033203c8c5903d0712f88be39b21e4":[6,1,2,10,0],
-"structnlohmann_1_1adl__serializer_3_01py_1_1float___01_4.html#ad0995603cdbfb0fd841d43fe3960eb1c":[6,1,2,10,1],
-"structnlohmann_1_1adl__serializer_3_01py_1_1handle_01_4.html":[6,1,2,11],
-"structnlohmann_1_1adl__serializer_3_01py_1_1handle_01_4.html#ad8e08c4654d9366b23fb260aa2925f1b":[6,1,2,11,0],
-"structnlohmann_1_1adl__serializer_3_01py_1_1int___01_4.html":[6,1,2,12],
-"structnlohmann_1_1adl__serializer_3_01py_1_1int___01_4.html#ae17c68b28dd96ac16365ea6bb29dab4b":[6,1,2,12,1],
-"structnlohmann_1_1adl__serializer_3_01py_1_1int___01_4.html#af1423464aa049e28ce5616faca2c2774":[6,1,2,12,0]
+"structnlohmann_1_1adl__serializer_3_01py_1_1float___01_4.html#ad0995603cdbfb0fd841d43fe3960eb1c":[6,1,2,10,1]
 };

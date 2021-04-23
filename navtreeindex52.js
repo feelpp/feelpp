@@ -1,5 +1,10 @@
 var NAVTREEINDEX52 =
 {
+"structnlohmann_1_1adl__serializer_3_01py_1_1handle_01_4.html":[6,1,2,11],
+"structnlohmann_1_1adl__serializer_3_01py_1_1handle_01_4.html#ad8e08c4654d9366b23fb260aa2925f1b":[6,1,2,11,0],
+"structnlohmann_1_1adl__serializer_3_01py_1_1int___01_4.html":[6,1,2,12],
+"structnlohmann_1_1adl__serializer_3_01py_1_1int___01_4.html#ae17c68b28dd96ac16365ea6bb29dab4b":[6,1,2,12,1],
+"structnlohmann_1_1adl__serializer_3_01py_1_1int___01_4.html#af1423464aa049e28ce5616faca2c2774":[6,1,2,12,0],
 "structnlohmann_1_1adl__serializer_3_01py_1_1list_01_4.html":[6,1,2,13],
 "structnlohmann_1_1adl__serializer_3_01py_1_1list_01_4.html#a0594ba7e8ddde191a7675e007fd3ef58":[6,1,2,13,0],
 "structnlohmann_1_1adl__serializer_3_01py_1_1list_01_4.html#a8a7e9a03c507c03ee68ffe1d4dce8b9d":[6,1,2,13,1],
@@ -244,10 +249,5 @@ var NAVTREEINDEX52 =
 "structpybind11_1_1detail_1_1type__caster_3_01nl_1_1json_01_4.html#a097251aabb5d0e95a8193bddaf33ddf9":[6,1,3,0,0,2],
 "structpybind11_1_1detail_1_1type__caster_3_01nl_1_1json_01_4.html#a8a875f2de555104342e3a8a2c964a43e":[6,1,3,0,0,1],
 "structpybind11_1_1detail_1_1type__caster_3_01nl_1_1json_01_4.html#ad4a2e0db6cd32e21f51faf44d0fc6f1f":[6,1,3,0,0,0],
-"structstd_1_1hash_3_01nlohmann_1_1json_01_4.html":[6,1,4,0],
-"structstd_1_1hash_3_01nlohmann_1_1json_01_4.html#aec1567d1fa47dbe5b77954dce3a55b64":[6,1,4,0,0],
-"structstd_1_1hash_3_01std_1_1tuple_3_01TT_8_8_8_01_4_01_4.html":[6,1,4,1],
-"structstd_1_1hash_3_01std_1_1tuple_3_01TT_8_8_8_01_4_01_4.html#afdf58525bd44e80be2af8355db0eba2e":[6,1,4,1,0],
-"structstd_1_1less_3_1_1nlohmann_1_1detail_1_1value__t_01_4.html":[6,1,4,2],
-"structstd_1_1less_3_1_1nlohmann_1_1detail_1_1value__t_01_4.html#a10d3fea50edf7b15ead8f4ceeb006000":[6,1,4,2,0]
+"structstd_1_1hash_3_01nlohmann_1_1json_01_4.html":[6,1,4,0]
 };

@@ -1,5 +1,6 @@
 var NAVTREEINDEX17 =
 {
+"classFeel_1_1Hypercube.html#a16cb9a4565e9f251655893e9fae4ee1a":[6,1,1,110,29],
 "classFeel_1_1Hypercube.html#a16dbb03ef025eee7a10e7bad24493a45":[6,1,1,110,13],
 "classFeel_1_1Hypercube.html#a17485fa540bea9522cf69e60c2d09f2a":[6,1,1,110,15],
 "classFeel_1_1Hypercube.html#a1b66254d52c86068bb782d4cddbb9364":[6,1,1,110,34],
@@ -248,6 +249,5 @@ var NAVTREEINDEX17 =
 "classFeel_1_1Localization.html#aa6c7656e026298b1c5d44f110bae3f32":[6,1,1,171,56],
 "classFeel_1_1Localization.html#aaa2003759b19bc79bcaaadeb578f6726":[6,1,1,171,46],
 "classFeel_1_1Localization.html#aaa82890cce8fc97987040882fe3b4fd7":[6,1,1,171,59],
-"classFeel_1_1Localization.html#aafef1239ed75a332ed02496c1d8cf4d1":[6,1,1,171,1],
-"classFeel_1_1Localization.html#acb42130a77f8f4e6d89a51f4011f02f8":[6,1,1,171,13]
+"classFeel_1_1Localization.html#aafef1239ed75a332ed02496c1d8cf4d1":[6,1,1,171,1]
 };
