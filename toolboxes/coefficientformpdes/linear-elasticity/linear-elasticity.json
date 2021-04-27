@@ -1,0 +1,61 @@
+{
+    "Name": "Elasticity",
+    "ShortName": "Elasticity",
+    "Models":
+    {
+        "equations":[
+            {
+                "name":"equation1",
+                "unknown":
+                {
+                    "basis":"Pchv1",
+                    "name":"eta",
+                    "symbol":"eta"
+                }
+            }
+        ]
+    },
+    "Parameters": {
+        "E": 1e6,
+        "nu": 0.3,
+        "mu": "E/(2*(1+nu)):E:nu",
+        "lambda":"E*nu/((1+nu)*(1-2*nu)):E:nu",
+        "eta1":"equation1_eta_0:equation1_eta_0",
+        "eta2":"equation1_eta_1:equation1_eta_1"
+    },
+    "Materials":
+    {
+        "mymat1":
+        {
+            "markers":"Omega",
+            "equation1_c": "mu:mu",
+            "equation1_gamma":"{-lambda*(equation1_div_eta) - mu*equation1_grad_eta_00,-mu*equation1_grad_eta_10,-mu*equation1_grad_eta_01,-lambda*(equation1_div_eta) - mu*equation1_grad_eta_11}:lambda:mu:equation1_div_eta:equation1_grad_eta_00:equation1_grad_eta_01:equation1_grad_eta_10:equation1_grad_eta_11",
+            "equation1_f": "{0.,-9.81}"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "equation1":
+        {
+            "Dirichlet":
+            {
+                "mybc":
+                {
+                    "markers":"Dirichlet",
+                    "expr":"{0.,0.}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["all"]
+            }
+        }
+    }
+}
