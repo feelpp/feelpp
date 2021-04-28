@@ -30,7 +30,7 @@
         {
             "markers":"Omega",
             "momentum_c":"1", // diffusion
-            "momentum_gamma":"{-mass_p,0,0,-mass_p}:mass_p", // diffusion
+            "momentum_gamma":"{mass_p,0,0,mass_p}:mass_p", // diffusion
             "mass_gamma":"{momentum_u_0,momentum_u_1}:momentum_u_0:momentum_u_1" // div u 
         }
     },
