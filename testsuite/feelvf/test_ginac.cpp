@@ -34,8 +34,13 @@
 #include <string>
 #include <list>
 
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics/mean.hpp>
+#include <boost/accumulators/statistics/moment.hpp>
+#include <boost/accumulators/statistics/stats.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/foreach.hpp>
+
 
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
@@ -960,4 +965,33 @@ BOOST_AUTO_TEST_CASE( test_mapabcd )
     a1b.setParameterValues( { { "t", 1.75 } } );
     BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.5, 1e-12 );
 }
+template <typename T>
+std::pair<double,double> moments( T e )
+{
+    using namespace boost::accumulators;
+    accumulator_set<double, stats<boost::accumulators::tag::mean, boost::accumulators::tag::moment<2>>> acc;
+    for( int i = 0; i < 200000; ++i )
+        acc(e.evaluate()( 0, 0 ));
+    return std::pair{ boost::accumulators::mean( acc ), boost::accumulators::moment<2>( acc ) };
+}
+BOOST_AUTO_TEST_CASE( test_rand )
+{
+    auto a1b = expr( "rand(1,2)" );auto r = moments( a1b );
+    BOOST_CHECK_CLOSE( r.first, 1.5, 1e-1 );
+    a1b = expr( "uniform(2,3)" );r = moments( a1b );
+    BOOST_CHECK_CLOSE( r.first, 2.5, 1e-1 );
+    a1b = expr( "normal(1,2)" );r = moments( a1b );
+    BOOST_CHECK_CLOSE( r.first, 1, 1e-1 );
+    a1b = expr( "lognormal(1,2)" );r = moments( a1b );
+    BOOST_CHECK_CLOSE( r.first, std::exp(1), 1e-1 );
+}
+BOOST_AUTO_TEST_CASE( test_print )
+{
+    auto a1b = expr( "print(rand(1,2))" );auto r = moments( a1b );
+    BOOST_CHECK_CLOSE( r.first, 1.5, 1e-3 );
+    a1b = expr( "print(mapabcd(t,1,2,-1,1)):t" );
+    a1b.setParameterValues( { { "t", -2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()( 0, 0 ), -1, 1e-12 );
+}
+
 BOOST_AUTO_TEST_SUITE_END()
