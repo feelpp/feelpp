@@ -987,7 +987,12 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
         mpi::wait_all( reqs.begin(), reqs.end() );
 #endif        
     }
-    out->setSubMeshData( M_smd );
+    // check if the bimap is empty. If so, there is no submesh link between meshes
+    if(!M_smd->bm.empty())
+    {
+        out->setSubMeshData( M_smd );
+    }
+    else{}
     return out;
 }
 
