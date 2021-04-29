@@ -29,7 +29,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 if ( FEELPP_HAS_OMC AND FEELPP_HAS_FMILIB )
-  feelpp_add_fmu( test3d0d_nonlinearR CLASS test3d0d_nonlinearR SRCS test3d0d_nonlinearR/test3d0d_nonlinearR.mo  test3d0d_nonlinearR/nonlinearResistor.mo  test3d0d_nonlinearR/voltage_nonlinearTest3d0d.mo )
+  add_subdirectory( coupledpoisson )
 endif()
 
 feelpp_add_application( hdg_poisson
@@ -80,6 +80,6 @@ feelpp_add_application( hdg_coupledpoisson
 endif()
 
 
-foreach( _testcase IN ITEMS "poisson" "elasticity" "thermoelectric"  )
+foreach( _testcase IN ITEMS "poisson" "elasticity" "thermoelectric" "coupledpoisson" )
   feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_hdg CATEGORY toolboxes/hdg)
 endforeach()
