@@ -33,6 +33,32 @@
 
 namespace GiNaC
 {
+DECLARE_FUNCTION_1P(print);
+static ex print_eval(const ex & x) 
+{ 
+	return print(x).hold();
+}
+static ex print_evalf(const ex & x) 
+{ 
+	return print(x).hold();	
+}
+                                                                                
+static void print_print_latex(const ex & arg1, const print_context & c)
+{
+    c.s << "{"; arg1.print(c); c.s << "|}";
+}
+                                                                                
+static void print_print_csrc_float(const ex & arg1, const print_context & c)
+{
+    c.s << "print(\""; arg1.print(c); c.s << "\","; arg1.print(c);c.s << ")";
+}
+REGISTER_FUNCTION(print, eval_func( print_eval).
+                       evalf_func( print_evalf).
+                       print_func<print_latex>( print_print_latex).
+                       print_func<print_csrc_float>( print_print_csrc_float).
+                       print_func<print_csrc_double>( print_print_csrc_float));
+
+
 DECLARE_FUNCTION_2P(mod);
 static ex mod_eval(const ex & x, const ex& y ) 
 { 

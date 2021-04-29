@@ -13,8 +13,16 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cmath>
+#include <string>
+#include <fmt/core.h>
 #define Pi M_PI
 #define pi M_PI
+
+double print( std::string const& s, double x )
+{
+    fmt::print("{}: {}\n", s, x);
+    return  x;
+}
 #else
 
 extern double sin(double x);
