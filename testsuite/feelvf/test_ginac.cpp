@@ -981,7 +981,7 @@ BOOST_AUTO_TEST_CASE( test_rand )
     a1b = expr( "uniform(2,3)" );r = moments( a1b );
     BOOST_CHECK_CLOSE( r.first, 2.5, 1e-1 );
     a1b = expr( "normal(1,2)" );r = moments( a1b );
-    BOOST_CHECK_CLOSE( r.first, 1, 1e-1 );
+    BOOST_CHECK_CLOSE( r.first, 1, 5e-1 );
 }
 BOOST_AUTO_TEST_CASE( test_print )
 {
