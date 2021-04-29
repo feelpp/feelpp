@@ -49,8 +49,8 @@ int main(int argc, char *argv[])
     Feel::Environment env( _argc=argc,
                            _argv=argv,
                            _about=makeAbout(),
-                           _desc=FeelModels::makeMixedPoissonOptions("mixedpoisson"),             
-                           _desc_lib=FeelModels::makeMixedPoissonLibOptions("mixedpoisson").add(feel_options())
+                           _desc=FeelModels::makeMixedPoissonOptions("", "mixedpoisson"),             
+                           _desc_lib=FeelModels::makeMixedPoissonLibOptions("", "mixedpoisson").add(feel_options())
     					   );
 
     typedef FeelModels::LaminaCribrosa<FEELPP_DIM,FEELPP_ORDER, FEELPP_G_ORDER> lc_type;
