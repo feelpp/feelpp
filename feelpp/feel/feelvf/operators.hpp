@@ -47,6 +47,9 @@
 # include <boost/preprocessor/facilities/identity.hpp>
 # include <boost/preprocessor/stringize.hpp>
 
+#include <feel/feelvf/exproptionalconcat.hpp>
+#include <feel/feelvf/one.hpp>
+
 namespace Feel
 {
 struct ContextGeometricBase;
@@ -141,8 +144,8 @@ Eigen::Map<const Eigen::Matrix<ValueType,ShapeM*ShapeP,ShapeN>>  convertEigenMat
        ( OpCurlX, curlx, curlx, 1, 1, 0, vm::CURL|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
        ( OpCurlY, curly, curly, 1, 1, 1, vm::CURL|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
        ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
-       ( OpHess , hess , hess,  0, 0, 0, vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2,1 ), \
-       ( OpLap  , laplacian, laplacian,  0, 0, 0, vm::KB|vm::LAPLACIAN|vm::FIRST_DERIVATIVE , RankSame,false,-2,1 ), \
+       ( OpHess , hess , hess,  0, 0, 0, vm::KB|vm::HESSIAN|vm::SECOND_DERIVATIVE , RankUp2,false,-2,1 ), \
+       ( OpLap  , laplacian, laplacian,  0, 0, 0, vm::KB|vm::LAPLACIAN|vm::SECOND_DERIVATIVE , RankSame,false,-2,1 ), \
        ( OpTrace  , trace, trace,  0, 0, 0, vm::TRACE , Rank0,false,0,1 ) \
                                                                         ) \
    ) \
@@ -414,13 +417,26 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             {                                                           \
                 if constexpr ( std::is_same_v< this_type, OpId<element_type, VF_OP_TYPE_OBJECT(T)> > ) \
                     {                                                   \
-                        CHECK( diffVariable == "x" || diffVariable == "y" || diffVariable == "z" ) << "cannot diff with symbol " << diffVariable; \
                         std::map<std::string,int> compNameToIndex = { {"x",0},{"y",1},{"z",2} }; \
                         if constexpr ( fe_type::nComponents == 1 )      \
-                            return Feel::vf::expr( OpGrad<element_type, VF_OP_TYPE_OBJECT(T)>( this->e(), this->useInterpWithConfLoc() ) )(0,compNameToIndex[diffVariable]); \
+                        {                                               \
+                            using diff_expr_type = std::decay_t<decltype( Feel::vf::expr( OpGrad<element_type, VF_OP_TYPE_OBJECT(T)>( this->e(), this->useInterpWithConfLoc() ) )(0,0) )>; \
+                            auto res = exprOptionalConcat<diff_expr_type>(); \
+                            if ( diffVariable == "x" || diffVariable == "y" || diffVariable == "z" ) \
+                                res.expression().add( Feel::vf::expr( OpGrad<element_type, VF_OP_TYPE_OBJECT(T)>( this->e(), this->useInterpWithConfLoc() ) )(0,compNameToIndex[diffVariable]) ); \
+                            return res;                                 \
+                        }                                               \
+                        else if constexpr ( fe_type::is_vectorial )     \
+                            {                                           \
+                                using diff_expr_type = std::decay_t<decltype( Feel::vf::expr( OpGrad<element_type, VF_OP_TYPE_OBJECT(T)>( this->e(), this->useInterpWithConfLoc() ) )*Feel::vf::one<functionspace_type::nRealDim>(0) )>; \
+                                auto res = exprOptionalConcat<diff_expr_type>(); \
+                                if ( diffVariable == "x" || diffVariable == "y" || diffVariable == "z" ) \
+                                    res.expression().add( Feel::vf::expr( OpGrad<element_type, VF_OP_TYPE_OBJECT(T)>( this->e(), this->useInterpWithConfLoc() ) )*Feel::vf::one<functionspace_type::nRealDim>(compNameToIndex[diffVariable]) ); \
+                                return res;                             \
+                            }                                           \
                         else                                            \
                         {                                               \
-                            CHECK( false ) << "TODO";                   \
+                            CHECK( false ) << "TODO tensorial case";    \
                             return *this;                               \
                         }                                               \
                     }                                                   \
@@ -893,7 +909,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                       \
                 void updateCtxIfSameGeom(Geo_t const& geom, mpl::bool_<true> )    \
                 {                                                       \
-                    if ( gmc_type::subEntityCoDim > 1 || fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value ) /*face case*/ \
+                    if constexpr ( gmc_type::subEntityCoDim > 0 )       \
                         M_pc->update(fusion::at_key<key_type>( geom )->pc()->nodes() ); \
                     M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&) M_pc ); \
                 }                                                       \

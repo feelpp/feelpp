@@ -458,7 +458,7 @@ public :
             thespace->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
             this->dofEliminationIdsAll(spaceName,et).insert( dofsToAdd.begin(), dofsToAdd.end() );
             auto dofsMultiProcessToAdd = thespace->dofs( therange, c1, true );
-            this->dofEliminationIdsMultiProcess(spaceName,MESH_ELEMENTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+            this->dofEliminationIdsMultiProcess(spaceName,et).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
 private :
     // verbose

@@ -86,6 +86,9 @@ public :
     std::string const& pathFile() const { return M_pathFile; }
     //! set path of file where measures are stored
     void setPathFile( std::string const& s ) { M_pathFile = s; }
+
+    //! update measures values into the mapping of values \mp
+    void updateParameterValues( std::map<std::string,double> & mp, std::string const& prefix_symbol ) const;
 private :
     void writeHeader();
 private :

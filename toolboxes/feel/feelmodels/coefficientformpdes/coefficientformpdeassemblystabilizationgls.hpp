@@ -6,10 +6,11 @@
 
 #include <feel/feelmodels/coefficientformpdes/coefficientformpde.hpp>
 
+#include <feel/feelvf/exproptionalconcat.hpp>
+
 #include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 
-#include <feel/feelmodels/modelvf/exproptionalconcat.hpp>
 #include <feel/feelmodels/modelvf/shockcapturing.hpp>
 
 namespace Feel

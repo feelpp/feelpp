@@ -292,6 +292,22 @@ public :
         return res;
     }
 
+    std::tuple<std::string,SymbolExprComponentSuffix> exprInformations() const
+    {
+        std::string exprStr;
+        SymbolExprComponentSuffix comps;
+        hana::for_each( expr_shapes, [this,&exprStr,&comps]( auto const& e_ij )
+                        {
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )  // we guess that we have only one expression
+                            {
+                                exprStr = str( this->expr<ni,nj>().expression() );
+                                comps = SymbolExprComponentSuffix( ni,nj );
+                            }
+                        });
+        return std::make_tuple( std::move(exprStr), std::move(comps) );
+    }
 
     template <typename TheSymbolExprType = symbols_expression_empty_t>
     bool hasSymbolDependency( std::set<std::string> const& symbolsStr, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const

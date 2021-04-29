@@ -35,6 +35,7 @@
 #include <boost/hana/integral_constant.hpp>
 #include <boost/hana/length.hpp>
 
+#include <feel/feelalg/condenser.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/feelio.hpp>
 #include <feel/feeldiscr/traits.hpp>

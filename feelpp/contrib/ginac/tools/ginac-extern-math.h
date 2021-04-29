@@ -13,16 +13,44 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cmath>
+
 #include <string>
 #include <fmt/core.h>
+
+#include <iostream>
+#include <random>
+
 #define Pi M_PI
 #define pi M_PI
 
-double print( std::string const& s, double x )
+inline double print( std::string const& s, double x )
 {
     fmt::print("{}: {}\n", s, x);
     return  x;
 }
+
+inline std::pair<std::uniform_real_distribution<>, std::mt19937&> uniformDistribution( double a, double b )
+{
+    static std::random_device rd;
+    static std::mt19937 gen( rd() );
+    std::uniform_real_distribution<> dis( a, b );
+    return std::pair<std::uniform_real_distribution<>&, std::mt19937&>{ dis, gen };
+}
+inline std::pair<std::normal_distribution<>, std::mt19937&> normalDistribution( double m, double s )
+{
+    static std::random_device rd;
+    static std::mt19937 gen( rd() );
+    std::normal_distribution<> dis{ m, s };
+    return std::pair<std::normal_distribution<>&, std::mt19937&>{ dis, gen };
+}
+inline std::pair<std::lognormal_distribution<>, std::mt19937&> lognormalDistribution( double m, double s )
+{
+    static std::random_device rd;
+    static std::mt19937 gen( rd() );
+    std::lognormal_distribution<> dis{ m, s };
+    return std::pair<std::lognormal_distribution<>&, std::mt19937&>{ dis, gen };
+}
+
 #else
 
 extern double sin(double x);

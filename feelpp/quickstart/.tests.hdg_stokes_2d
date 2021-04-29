@@ -1,0 +1,22 @@
+# triangle
+# NOSC ONEELT
+triangle-nosc-oneelt-1-dir --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle.cfg  --directory=qs_stokes/triangle --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=4 --velocity=Array([1,1]) --potential=1 --solution.u={1,1}
+triangle-nosc-oneelt-linear-dir --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle.cfg  --directory=qs_stokes/triangle  --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=4 --velocity=Array([x,-y]) --potential=x+y --solution.u={x,-y}:x:y
+triangle-nosc-oneelt-quadratic-dir --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle.cfg  --directory=qs_stokes/triangle  --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=4 --velocity=Array([y*y,x*x]) --potential=x*y --order=2
+
+triangle-nosc-oneelt-1-dn --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle-dn.cfg  --directory=qs_stokes/triangle-dn --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=4 --velocity=Array([1,1]) --potential=1 --solution.u={1,1}
+triangle-nosc-oneelt-linear-dn --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle-dn.cfg  --directory=qs_stokes/triangle-dn  --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=4 --velocity=Array([x,-y]) --potential=x+y --solution.u={x,-y}:x:y
+triangle-nosc-oneelt-quadratic-dn --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle-dn.cfg  --directory=qs_stokes/triangle-dn  --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=4 --velocity=Array([y*y,x*x]) --potential=x*y --order=2
+
+# NOSC
+triangle-nosc-1-dir --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle.cfg  --directory=qs_stokes/triangle --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=0.1 --velocity=Array([1,1]) --potential=1 --solution.u={1,1}
+triangle-nosc-linear-dir --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle.cfg  --directory=qs_stokes/triangle  --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=0.1 --velocity=Array([x,-y]) --potential=x+y --solution.u={x,-y}:x:y
+triangle-nosc-quadratic-dir --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle.cfg  --directory=qs_stokes/triangle  --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=0.1 --velocity=Array([y*y,x*x]) --potential=x*y --order=2
+
+triangle-nosc-1-dn --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle-dn.cfg  --directory=qs_stokes/triangle-dn --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=0.1 --velocity=Array([1,1]) --potential=1 --solution.u={1,1}
+triangle-nosc-linear-dn --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle-dn.cfg  --directory=qs_stokes/triangle-dn  --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=0.1 --velocity=Array([x,-y]) --potential=x+y --solution.u={x,-y}:x:y
+triangle-nosc-quadratic-dn --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle-dn.cfg  --directory=qs_stokes/triangle-dn  --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=0.1 --velocity=Array([y*y,x*x]) --potential=x*y --order=2
+
+# Kovasznay
+kovasznay-nosc --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/kovasznay/kovasznay.cfg  --directory=qs_stokes/kovasznay --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=0.1 
+kovasznay-nosc-o2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/kovasznay/kovasznay.cfg  --directory=qs_stokes/kovasznay --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=0.1 --order=2

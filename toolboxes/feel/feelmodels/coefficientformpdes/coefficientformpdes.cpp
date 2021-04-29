@@ -204,7 +204,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
-    if ( !this->postProcessExportsFields().empty() )
+    if ( !this->postProcessExportsFields().empty() || this->hasPostProcessExportsExpr() )
     {
         std::string geoExportType="static";//change_coords_only, change, static
         M_exporter = exporter( _mesh=this->mesh(),
@@ -393,13 +393,24 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p )
 
     super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
+    // Materials properties
+    if ( this->materialsProperties() )
+        this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
+
+    this->modelFields().updateInformationObject( p["Fields"] );
+
     if ( M_algebraicFactory )
         M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
+
+    if ( this->hasModelProperties() )
+        this->modelProperties().parameters().updateInformationObject( p["Parameters"] );
 
     nl::json subPt;
     for (auto & cfpde : M_coefficientFormPDEs )
         subPt[cfpde->keyword()] = cfpde->journalSection().to_string();
     p.emplace( "Coefficient Form PDE", subPt );
+
+    //this->symbolsExpr().updateInformationObject( p["Symbols Expression"] );
 }
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
@@ -410,8 +421,20 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& j
     if ( jsonInfo.contains("Environment") )
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
+    if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
+        tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Fields") )
+        tabInfo->add( "Fields", TabulateInformationTools::FromJSON::tabulateInformationsModelFields( jsonInfo.at("Fields"), tabInfoProp.newByIncreasingVerboseLevel() ) );
+
+    if ( jsonInfo.contains("Parameters") )
+        tabInfo->add( "Parameters", TabulateInformationTools::FromJSON::tabulateInformationsSymbolsExpr( jsonInfo.at("Parameters"), tabInfoProp, true ) );
+
     if ( jsonInfo.contains( "Algebraic Solver" ) )
         tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
+
+    //if ( jsonInfo.contains( "Symbols Expression" ) )
+    //tabInfo->add( "Symbols Expression", TabulateInformationTools::FromJSON::tabulateInformationsSymbolsExpr( jsonInfo.at("Symbols Expression"), tabInfoProp/*.newByIncreasingVerboseLevel()*/ ) );
 
     if ( jsonInfo.contains("Coefficient Form PDE") )
     {
@@ -540,6 +563,10 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateParameterValues()
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->materialsProperties()->updateParameterValues( paramValues );
 
+    this->updateParameterValues_postProcess( paramValues, prefixvm("postprocess",this->keyword(),"_" ) );
+    for (auto const& cfpdeBase : M_coefficientFormPDEs )
+        cfpdeBase->updateParameterValues_postProcess( paramValues, prefixvm("postprocess",cfpdeBase->keyword(),"_" ) );
+
     this->setParameterValues( paramValues );
 }
 
@@ -596,12 +623,13 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 bool
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::checkResults() const
 {
+    auto se = this->symbolsExpr();
     // several calls (not do in on line) to be sure that all check have been run
-    bool checkValue = super_type::checkResults();
+    bool checkValue = super_type::checkResults( se );
     std::vector<bool> checkCFPDE;
     checkCFPDE.reserve(M_coefficientFormPDEs.size());
     for (auto & cfpdeBase : M_coefficientFormPDEs )
-        checkCFPDE.push_back( cfpdeBase->checkResults() );
+        checkCFPDE.push_back( cfpdeBase->checkResults( se ) );
     checkValue = checkValue && (std::find(std::begin(checkCFPDE), std::end(checkCFPDE), false) == std::end(checkCFPDE));
     return checkValue;
 }

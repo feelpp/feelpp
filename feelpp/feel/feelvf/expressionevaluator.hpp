@@ -128,7 +128,7 @@ void
 ExpressionEvaluator<RangeType, ExprT>::update(element_type const& eltWrap)
 {
     auto const& elt = unwrap_ref( eltWrap );
-    M_ctx->template update<vm::POINT | vm::JACOBIAN | expr_type::context>( elt, invalid_uint16_type_value, true );
+    M_ctx->template update<vm::POINT | vm::JACOBIAN | expr_type::context>( elt );
     M_evaluator->update( vf::mapgmc( M_ctx ) );
 }
 
