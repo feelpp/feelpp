@@ -454,9 +454,11 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
         }
         auto required_element_ids = m_in->markersId( M_required_element_markers );
         k = 1;
+        bool required = false;
         for ( auto const& welt : m_in->elements() )
         {
             auto const& [key, elt] = boost::unwrap_ref( welt );
+            required = required_element_ids.count( elt.markerOr( 0 ).value() );
             if constexpr ( dimension_v<MeshType> == 3 )
             {
                 if ( MMG3D_Set_tetrahedron( std::get<MMG5_pMesh>( M_mmg_mesh ),
@@ -506,13 +508,25 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                     throw std::logic_error( "Error in MMG2D_Set_requiredTriangle" );
                 }
             }
+            if ( required )
+            {
+                if ( M_parent_mesh )
+                {
+                    int id_in_parent_mesh = M_mesh->subMeshToMesh( elt.id() );
+                    M_smd->bm.insert( typename smd_type::bm_type::value_type( k, id_in_parent_mesh ) );
+                }
+                else
+                {
+                    M_smd->bm.insert( typename smd_type::bm_type::value_type( k, elt.id() ) );
+                }
+            }
             k++;
         }
 
         auto required_facet_ids = m_in->markersId( M_required_facet_markers );
 
         k = 1;
-        bool required = false;
+        required = false;
         for ( auto const& wface : m_in->faces() )
         {
             auto const& [key, face] = boost::unwrap_ref( wface );
@@ -780,12 +794,13 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
 
                 using element_type = typename mesh_t::element_type;
                 element_type newElem;
+                newElem.setId( k );
                 newElem.setMarker( lab );
                 newElem.setProcessIdInPartition( 0 );
                 newElem.setProcessId( 0 );
                 for ( int i = 0; i < 4; i++ )
                     newElem.setPoint( i, out->point( iv[i] ) );
-                out->addElement( newElem, true );
+                out->addElement( newElem, false );
             }
         }
         for ( int k = 1; k <= nTriangles; k++ )
@@ -821,12 +836,13 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 }
                 using element_type = typename mesh_t::element_type;
                 element_type newElem;
+                newElem.setId( k );
                 newElem.setMarker( lab );
                 newElem.setProcessIdInPartition( 0 );
                 newElem.setProcessId( 0 );
                 for ( int i = 0; i < 3; i++ )
                     newElem.setPoint( i, out->point( iv[i] ) );
-                out->addElement( newElem, true );
+                out->addElement( newElem, false );
             }
         }
         for ( int k = 1; k <= nEdges; k++ )
