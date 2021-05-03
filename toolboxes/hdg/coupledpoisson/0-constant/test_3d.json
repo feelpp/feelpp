@@ -7,7 +7,7 @@
         "omega":
         {
             "name":"copper",
-            "cond":"-1",
+            "cond":"1",
             "k":"1"
         }
     },
@@ -31,9 +31,17 @@
             },
             "Dirichlet":
             {
+                // "top":
+                // {
+                //     "expr":"x:x"
+                // },
+                // "lateral":
+                // {
+                //     "expr":"x:x"
+                // },
                 "bottom":
                 {
-                    "expr":"0"
+                    "expr":"x:x"
                 }
             },
             "Neumann":
