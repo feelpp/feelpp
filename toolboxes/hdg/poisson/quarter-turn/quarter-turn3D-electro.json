@@ -32,16 +32,16 @@
     },
     "BoundaryConditions":
     {
-        "flux":
-        {
-            "Integral":
-            {
-                "V0":
-                {
-                    "expr":-800
-                }
-            }
-        },
+        // "flux":
+        // {
+        //     "Integral":
+        //     {
+        //         "V0":
+        //         {
+        //             "expr":-800
+        //         }
+        //     }
+        // },
         "potential":
         {
             "SourceTerm":
@@ -50,10 +50,10 @@
             },
             "Dirichlet":
             {
-                // "V0":
-                // {
-                //     "expr":"dif:dif"
-                // },
+                "V0":
+                {
+                    "expr":"dif:dif"
+                },
                 "V1":
                 {
                     "expr":"0"

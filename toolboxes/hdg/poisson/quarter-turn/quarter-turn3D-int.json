@@ -26,14 +26,18 @@
             },
             "Dirichlet":
             {
-                "in":
+                "V0":
                 {
                     "expr":"0"
                 }
             },
             "Neumann":
             {
-                "R":
+                "Rint":
+                {
+                    "expr":"0"
+                },
+                "Rext":
                 {
                     "expr":"0"
                 },
@@ -51,7 +55,7 @@
         {
             "Integral":
             {
-                "out":
+                "V1":
                 {
                     "expr":"3333"
                 }
