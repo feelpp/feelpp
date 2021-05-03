@@ -31,11 +31,11 @@ install(TARGETS feelpp_toolbox_coefficientformpdebase EXPORT feelpp-toolboxes-ta
 set( _UNKNOWN_BASIS_TYPE_LIST
   #"Lagrange<0,Scalar,Continuous,PointSetFekete>"
   "Lagrange<1,Scalar,Continuous,PointSetFekete>" "Lagrange<2,Scalar,Continuous,PointSetFekete>"
-  "Lagrange<1,Vectorial,Continuous,PointSetFekete>" )
+  "Lagrange<1,Vectorial,Continuous,PointSetFekete>" "Lagrange<2,Vectorial,Continuous,PointSetFekete>" )
 set( _UNKNOWN_BASIS_TAG_LIST
   #"Pch0"
   "Pch1" "Pch2"
-  "Pchv1" )
+  "Pchv1" "Pchv2")
 
 unset( FEELPP_TOOLBOX_COEFFICIENTFORMPDES_REGISTER_ALL_ENTRIES_CLASS_TYPE )
 # geo order 1

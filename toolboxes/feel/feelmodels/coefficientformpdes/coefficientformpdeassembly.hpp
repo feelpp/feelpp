@@ -107,6 +107,34 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
             }
         }
 
+        // conservative flux source
+        if ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
+        {
+            auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
+            auto getexpr = [&]( auto const& c ) {
+                if constexpr ( unknown_is_scalar )
+                {
+                    auto coeff_gamma_expr = expr( c.template expr<nDim, 1>(), se );
+                    return std::pair{
+                        trans( coeff_gamma_expr ), coeff_gamma_expr.expression().isNumericExpression()};
+                }
+                else if constexpr ( unknown_is_vectorial )
+                {
+                    auto coeff_gamma_expr = expr( c.template expr<nDim, nDim>(), se );
+                    return std::pair{ coeff_gamma_expr, coeff_gamma_expr.expression().isNumericExpression() };
+                }
+            };
+            auto [coeff_gamma_expr,is_numeric] = getexpr( coeff_gamma );
+            bool build_conservativeFluxSourceTerm = is_numeric? buildCstPart : buildNonCstPart;
+            if ( build_conservativeFluxSourceTerm )
+            {
+                linearForm +=
+                    integrate( _range=range,
+                                _expr= timeSteppingScaling*inner(coeff_gamma_expr,grad(v)),
+                                _geomap=this->geomap() );
+            }
+        }
+
         if constexpr ( unknown_is_scalar )
         {
             // conservative flux convection
@@ -124,20 +152,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
                 }
             }
 
-            // conservative flux source
-            if ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
-            {
-                auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
-                auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim,1>(), se );
-                bool build_conservativeFluxSourceTerm = coeff_gamma_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
-                if ( build_conservativeFluxSourceTerm )
-                {
-                    linearForm +=
-                        integrate( _range=range,
-                                   _expr= timeSteppingScaling*inner(trans(coeff_gamma_expr),grad(v)),
-                                   _geomap=this->geomap() );
-                }
-            }
+            
         }
 
         // Reaction
@@ -252,6 +267,133 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
               "finish in "+(boost::format("%1% s") % timeElapsed).str() );
 
 }
+
+namespace detail
+{
+
+// TODO : create struct for DistributeMarker
+template <ElementsType ET>
+constexpr int indexInDistributeMarker()
+{
+    if constexpr ( ET == MESH_FACES )
+        return 0;
+    else if constexpr ( ET == MESH_EDGES )
+        return 1;
+    else if constexpr ( ET == MESH_POINTS )
+        return 2;
+    else //if constexpr ( ET == MESH_ELEMENTS )
+        return 3;
+}
+
+template <ElementsType ET, typename MeshType, typename MarkerType>
+auto rangeOfMarkedEntity( MeshType const& mesh, MarkerType const& markers )
+{
+    if constexpr ( ET == MESH_FACES )
+        return markedfaces(mesh,markers );
+    else if constexpr ( ET == MESH_EDGES )
+        return markededges(mesh,markers );
+    else if constexpr ( ET == MESH_POINTS )
+        return markedpoints(mesh,markers );
+    else //if constexpr ( ET == MESH_ELEMENTS )
+        return markedelements(mesh,markers );
+}
+
+template <ElementsType ET, typename BfType, typename MeshType, typename EltType, typename SymbolsExprType, typename BcType, typename BcCompType>
+void
+applyDofEliminationLinear( BfType& bilinearForm, vector_ptrtype& F, MeshType const& mesh, EltType const& u, SymbolsExprType const& se,
+                           std::map<ComponentType, std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > > const& M_meshMarkersDofEliminationUnknown,
+                           BcType const& M_bcDirichlet, BcCompType const& M_bcDirichletComponents )
+{
+    static const bool unknown_is_vectorial = EltType::functionspace_type::is_vectorial;
+    static const int indexDistrib = indexInDistributeMarker<ET>();
+    for ( auto const& [comp,mapMarkerBCToEntitiesMeshMarker] : M_meshMarkersDofEliminationUnknown )
+    {
+        if ( comp == ComponentType::NO_COMPONENT )
+        {
+            for( auto const& d : M_bcDirichlet )
+            {
+                auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
+                if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
+                    continue;
+                auto const& listMarkedEntities = std::get</*0*/indexDistrib >( itFindMarker->second );
+                if ( listMarkedEntities.empty() )
+                    continue;
+                auto theExpr = expression(d,se);
+                bilinearForm +=
+                    on( _range=rangeOfMarkedEntity<ET>(mesh,listMarkedEntities),
+                        _element=u,_rhs=F,_expr=theExpr );
+            }
+        }
+        else if constexpr ( unknown_is_vectorial )
+        {
+            auto itFindComp = M_bcDirichletComponents.find( comp );
+            if ( itFindComp == M_bcDirichletComponents.end() )
+                continue;
+            for( auto const& d : itFindComp->second )
+            {
+                auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
+                if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
+                    continue;
+                auto const& listMarkedEntities = std::get</*0*/indexDistrib>( itFindMarker->second );
+                if ( listMarkedEntities.empty() )
+                    continue;
+                auto theExpr = expression(d,se);
+                bilinearForm +=
+                    on( _range=rangeOfMarkedEntity<ET>(mesh, listMarkedEntities),
+                        _element=u.comp( comp ),_rhs=F,_expr=theExpr );
+            }
+        }
+    }
+}
+
+template <ElementsType ET, typename MeshType, typename EltType, typename SymbolsExprType, typename BcType, typename BcCompType>
+void
+applyNewtonInitialGuess( MeshType const& mesh, EltType & u, SymbolsExprType const& se,
+                         std::map<ComponentType, std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > > const& M_meshMarkersDofEliminationUnknown,
+                         BcType const& M_bcDirichlet, BcCompType const& M_bcDirichletComponents )
+{
+    static const bool unknown_is_vectorial = EltType::functionspace_type::is_vectorial;
+    static const int indexDistrib = indexInDistributeMarker<ET>();
+    for ( auto const& [comp,mapMarkerBCToEntitiesMeshMarker] : M_meshMarkersDofEliminationUnknown )
+    {
+        if ( comp == ComponentType::NO_COMPONENT )
+        {
+            for( auto const& d : M_bcDirichlet )
+            {
+                auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
+                if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
+                    continue;
+                auto const& listMarkedEntities = std::get</*0*/indexDistrib>( itFindMarker->second );
+                if ( listMarkedEntities.empty() )
+                    continue;
+                auto theExpr = expression(d,se);
+                u.on(_range=rangeOfMarkedEntity<ET>(mesh, listMarkedEntities),
+                     _expr=theExpr );
+            }
+        }
+        else if constexpr ( unknown_is_vectorial )
+        {
+            auto itFindComp = M_bcDirichletComponents.find( comp );
+            if ( itFindComp == M_bcDirichletComponents.end() )
+                continue;
+            for( auto const& d : itFindComp->second )
+            {
+                auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
+                if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
+                    continue;
+                auto const& listMarkedEntities = std::get</*0*/indexDistrib>( itFindMarker->second );
+                if ( listMarkedEntities.empty() )
+                    continue;
+                auto theExpr = expression(d,se);
+                u.comp( comp ).on(_range=rangeOfMarkedEntity<ET>(mesh, listMarkedEntities),
+                                  _expr=theExpr );
+            }
+        }
+    }
+}
+
+} // namespace detail
+
 template< typename ConvexType, typename BasisUnknownType>
 template <typename ModelContextType>
 void
@@ -274,56 +416,12 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEDofElimination( 
                                _rowstart=this->rowStartInMatrix(),
                                _colstart=this->colStartInMatrix() );
 
-    // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
-    std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > mapMarkerBCToEntitiesMeshMarker;
-    for( auto const& d : M_bcDirichlet )
-    {
-        mapMarkerBCToEntitiesMeshMarker[name(d)] =
-            detail::distributeMarkerListOnSubEntity(mesh,M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) );
-    }
 
-    for( auto const& d : M_bcDirichlet )
-    {
-        auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
-        if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
-            continue;
-        auto const& listMarkedFaces = std::get<0>( itFindMarker->second );
-        if ( listMarkedFaces.empty() )
-            continue;
-        auto theExpr = expression(d,se);
-        bilinearForm +=
-            on( _range=markedfaces(mesh, listMarkedFaces ),
-                _element=u,_rhs=F,_expr=theExpr );
-    }
+    Feel::FeelModels::detail::applyDofEliminationLinear<MESH_ELEMENTS>( bilinearForm, F, mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
+    Feel::FeelModels::detail::applyDofEliminationLinear<MESH_FACES>( bilinearForm, F, mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
     if constexpr ( nDim == 3 )
-    {
-        for( auto const& d : M_bcDirichlet )
-        {
-            auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
-            if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
-                continue;
-            auto const& listMarkedEdges = std::get<1>( itFindMarker->second );
-            if ( listMarkedEdges.empty() )
-                continue;
-            auto theExpr = expression(d,se);
-            bilinearForm +=
-                on( _range=markededges(mesh, listMarkedEdges ),
-                    _element=u,_rhs=F,_expr=theExpr );
-        }
-    }
-    for( auto const& d : M_bcDirichlet )
-    {
-        auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
-        if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
-            continue;
-        auto const& listMarkedPoints = std::get<2>( itFindMarker->second );
-        if ( listMarkedPoints.empty() )
-            continue;
-        auto theExpr = expression(d,se);
-        bilinearForm +=
-            on( _range=markedpoints(mesh, listMarkedPoints ),
-                _element=u,_rhs=F,_expr=theExpr );
-    }
+         Feel::FeelModels::detail::applyDofEliminationLinear<MESH_EDGES>( bilinearForm, F, mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
+    Feel::FeelModels::detail::applyDofEliminationLinear<MESH_POINTS>( bilinearForm, F, mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
 
     this->log("CoefficientFormPDE","updateLinearPDEDofElimination","finish" );
 }
@@ -344,53 +442,11 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateNewtonInitialGuess( Model
     auto u = this->spaceUnknown()->element( U, this->rowStartInVector()+startBlockIndexUnknown );
     auto const& se = mctx.symbolsExpr();
 
-    // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
-    std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > mapMarkerBCToEntitiesMeshMarker;
-    for( auto const& d : M_bcDirichlet )
-    {
-        mapMarkerBCToEntitiesMeshMarker[name(d)] =
-            detail::distributeMarkerListOnSubEntity(mesh,M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) );
-    }
-
-    for( auto const& d : M_bcDirichlet )
-    {
-        auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
-        if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
-            continue;
-        auto const& listMarkedFaces = std::get<0>( itFindMarker->second );
-        if ( listMarkedFaces.empty() )
-            continue;
-        auto theExpr = expression(d,se);
-        u.on(_range=markedfaces(mesh, listMarkedFaces ),
-             _expr=theExpr );
-    }
+    Feel::FeelModels::detail::applyNewtonInitialGuess<MESH_ELEMENTS>( mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
+    Feel::FeelModels::detail::applyNewtonInitialGuess<MESH_FACES>( mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
     if constexpr ( nDim == 3 )
-    {
-        for( auto const& d : M_bcDirichlet )
-        {
-            auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
-            if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
-                continue;
-            auto const& listMarkedEdges = std::get<1>( itFindMarker->second );
-            if ( listMarkedEdges.empty() )
-                continue;
-            auto theExpr = expression(d,se);
-            u.on(_range=markededges(mesh, listMarkedEdges ),
-                 _expr=theExpr );
-        }
-    }
-    for( auto const& d : M_bcDirichlet )
-    {
-        auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
-        if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
-            continue;
-        auto const& listMarkedPoints = std::get<2>( itFindMarker->second );
-        if ( listMarkedPoints.empty() )
-            continue;
-        auto theExpr = expression(d,se);
-        u.on(_range=markedpoints(mesh, listMarkedPoints ),
-             _expr=theExpr );
-    }
+        Feel::FeelModels::detail::applyNewtonInitialGuess<MESH_EDGES>( mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
+    Feel::FeelModels::detail::applyNewtonInitialGuess<MESH_POINTS>( mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
 
     // update info for synchronization
     this->updateDofEliminationIds( this->unknownName(), data );
@@ -555,7 +611,45 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                 }
             }
         }
+        if ( buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
+        {
+            auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
+            bool coeffConservativeFluxSourceDependOnUnknown = coeff_gamma.hasSymbolDependency( trialSymbolNames, se );
+            if ( coeffConservativeFluxSourceDependOnUnknown )
+            {
+                auto getexpr = [&]( auto const& c ) {
+                    if constexpr ( unknown_is_scalar )
+                    {
+                        auto coeff_gamma_expr = expr( c.template expr<nDim, 1>(), se );
+                        return trans( coeff_gamma_expr );
+                    }
+                    else if constexpr ( unknown_is_vectorial )
+                    {
+                        auto coeff_gamma_expr = expr( c.template expr<nDim, nDim>(), se );
+                        return coeff_gamma_expr;
+                    }
+                };
+                auto coeff_gamma_expr = getexpr( coeff_gamma );
+                hana::for_each( tse.map(), [this, &coeff_gamma_expr, &v, &J, &range, &Xh, &timeSteppingScaling]( auto const& e ) {
+                    for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second( e ).blockSpaceIndex() )
+                    {
+                        auto trialXh = trialSpacePair.first;
+                        auto trialBlockIndex = trialSpacePair.second;
+                        auto coeff_gamma_diff_expr = diffSymbolicExpr( coeff_gamma_expr, hana::second( e ), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+                        if ( !coeff_gamma_diff_expr.expression().hasExpr() )
+                            continue;
 
+                        form2( _test = Xh, _trial = trialXh, _matrix = J,
+                                _pattern = size_type( Pattern::COUPLED ),
+                                _rowstart = this->rowStartInMatrix(),
+                                _colstart = trialBlockIndex ) +=
+                            integrate( _range = range,
+                                        _expr = -timeSteppingScaling * inner( coeff_gamma_diff_expr, grad( v ) ),
+                                        _geomap = this->geomap() );
+                    }
+                } );
+            }
+        }
         if constexpr ( unknown_is_scalar )
         {
             // conservative flux convection
@@ -597,34 +691,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
             }
 
             // conservative flux source
-            if ( buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
-            {
-                auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
-                bool coeffConservativeFluxSourceDependOnUnknown = coeff_gamma.hasSymbolDependency( trialSymbolNames, se );
-                if ( coeffConservativeFluxSourceDependOnUnknown )
-                {
-                    auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim,1>(), se );
-                    hana::for_each( tse.map(), [this,&coeff_gamma_expr,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
-                    {
-                        for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
-                        {
-                            auto trialXh = trialSpacePair.first;
-                            auto trialBlockIndex = trialSpacePair.second;
-                            auto coeff_gamma_diff_expr = diffSymbolicExpr( coeff_gamma_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
-                            if ( !coeff_gamma_diff_expr.expression().hasExpr() )
-                                continue;
-
-                            form2( _test=Xh,_trial=trialXh,_matrix=J,
-                                   _pattern=size_type(Pattern::COUPLED),
-                                   _rowstart=this->rowStartInMatrix(),
-                                   _colstart=trialBlockIndex ) +=
-                                integrate( _range=range,
-                                           _expr= -timeSteppingScaling*inner(trans(coeff_gamma_diff_expr),grad(v)),
-                                           _geomap=this->geomap() );
-                        }
-                    });
-                }
-            }
+            
         }
 
 
@@ -907,7 +974,60 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
                 }
             }
         }
+        // conservative flux source
+        if ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
+        {
+            auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
+            auto getexpr = [&]( auto const& c ){ 
+                if constexpr ( unknown_is_scalar )
+                {
+                    auto coeff_gamma_expr = expr( c.template expr<nDim, 1>(), se );
+                    return std::pair{
+                        trans( coeff_gamma_expr ), coeff_gamma_expr.expression().isNumericExpression()};
+                }
+                else if constexpr ( unknown_is_vectorial )
+                {
+                    auto coeff_gamma_expr = expr( c.template expr<nDim, nDim>(), se );
+                    return std::pair{ coeff_gamma_expr, coeff_gamma_expr.expression().isNumericExpression() };
+                }
+            };
+            auto [coeff_gamma_expr,is_numeric] = getexpr( coeff_gamma );
+            bool build_conservativeFluxSourceTerm =  is_numeric ? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+            if ( build_conservativeFluxSourceTerm )
+            {
+                linearForm +=
+                    integrate( _range = range,
+                               _expr = -timeSteppingScaling * inner( coeff_gamma_expr, grad( v ) ),
+                               _geomap = this->geomap() );
+            }
+#if 0            
+            if constexpr ( unknown_is_scalar )
+            {
+                auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim, 1>(), se );
+                bool build_conservativeFluxSourceTerm = coeff_gamma_expr.expression().isNumericExpression() ? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+                if ( build_conservativeFluxSourceTerm )
+                {
+                    linearForm +=
+                        integrate( _range = range,
+                                   _expr = -timeSteppingScaling * inner( trans( coeff_gamma_expr ), grad( v ) ),
+                                   _geomap = this->geomap() );
+                }
+            }
+            else if constexpr ( unknown_is_vectorial )
+            {
+                auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim, nDim>(), se );
+                bool build_conservativeFluxSourceTerm = coeff_gamma_expr.expression().isNumericExpression() ? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+                if ( build_conservativeFluxSourceTerm )
+                {
+                    linearForm +=
+                        integrate( _range = range,
+                                   _expr = -timeSteppingScaling * inner( coeff_gamma_expr, grad( v ) ),
+                                   _geomap = this->geomap() );
+                }
+            } 
+#endif
 
+        }
         if constexpr ( unknown_is_scalar )
         {
             // conservative flux convection
@@ -925,20 +1045,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
                 }
             }
 
-            // conservative flux source
-            if ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
-            {
-                auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
-                auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim,1>(), se );
-                bool build_conservativeFluxSourceTerm = coeff_gamma_expr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
-                if ( build_conservativeFluxSourceTerm )
-                {
-                    linearForm +=
-                        integrate( _range=range,
-                                   _expr= -timeSteppingScaling*inner(trans(coeff_gamma_expr),grad(v)),
-                                   _geomap=this->geomap() );
-                }
-            }
+            
         }
 
 
