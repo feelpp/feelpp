@@ -7,7 +7,7 @@
         "omega":
         {
             "filename":"$cfgdir/omega.json",
-            "markers":"thermo-electric"
+            "physics":["heat","electric"]
         }
     },
     "BoundaryConditions":
