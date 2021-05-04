@@ -61,6 +61,13 @@
 				{
 					"expr":"-3*x*(10-t):x:t"
 				}
+	    	},
+	    	"u_exact":
+	    	{
+				"omega":
+				{
+					"expr":"{3*(10-t),0}:x:t"
+				}
 	    	}
 		}
     },
@@ -69,7 +76,43 @@
 		"Exports":
 		{
         	"fields":["potential","flux"]
-		}
+		},
+        "Measures":
+        {
+            "Norm":
+            {
+                "potential_error":
+                {
+                    "type":"L2-error",
+                    "field":"potential",
+                    "solution":"-3*x*(10-0.5):x:t",
+                    "markers":"omega"
+                },
+                "flux_error":
+                {
+                    "type":"L2-error",
+                    "field":"flux",
+                    "solution":"{3*(10-0.5),0}:x:t",
+                    "markers":"omega"
+                }
+            }
+        },
+        "Checkers":
+        {
+            "Measures":
+            {
+                "Norm_potential_error_L2-error":
+                {
+                    "value":0,
+                    "tolerance":1
+                },
+                "Norm_flux_error_L2-error":
+                {
+                    "value":0,
+                    "tolerance":2
+                }
+            }
+        }
     }
 }
 

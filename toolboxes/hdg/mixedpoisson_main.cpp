@@ -19,7 +19,7 @@ makeAbout()
 }
 
 template<int nDim, int OrderT, int GOrder = 1>
-void
+int
 runApplicationMixedPoisson( std::string  const& prefix )
 {
     using namespace Feel;
@@ -97,7 +97,7 @@ runApplicationMixedPoisson( std::string  const& prefix )
     }
 
     // MP->computeError();
-
+    return !MP->checkResults();
 }
 
 int main(int argc, char *argv[])
@@ -142,16 +142,17 @@ int main(int argc, char *argv[])
                                              hana::make_tuple("P1G2", hana::int_c<1>, hana::int_c<2> ) );
 #endif
 
+    int status = 1;
     hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)),
-                    [&discretization,&dimension]( auto const& d )
+                    [&discretization,&dimension,&status]( auto const& d )
                         {
                             constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
                             std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
                             constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
                             constexpr int _gorder = std::decay_t<decltype(hana::at_c<2>( hana::at_c<1>(d) ))>::value;
                             if ( dimension == _dim && discretization == _discretization )
-                                runApplicationMixedPoisson<_dim,_torder,_gorder>( "" );
+                                status = runApplicationMixedPoisson<_dim,_torder,_gorder>( "" );
                         } );
 
-    return 0;
+    return status;
 }

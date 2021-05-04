@@ -35,7 +35,8 @@ endif()
 feelpp_add_application( hdg_poisson
   SRCS mixedpoisson_main.cpp
   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
-  INSTALL MAN hdg_poisson )
+  INSTALL MAN hdg_poisson
+  TESTS )
 
 feelpp_add_application( hdg_cvg_poisson
   SRCS cvg_mixedpoisson.cpp
