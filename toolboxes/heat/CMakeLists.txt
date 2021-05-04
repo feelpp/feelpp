@@ -8,6 +8,6 @@ feelpp_add_application( heat SRCS main_ht.cpp
   MAN heat
   )
 
-foreach( _testcase IN ITEMS "thermo2d" "Building" )
+foreach( _testcase IN ITEMS "thermo2d" "Building" "h-convergence")
   feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_heat CATEGORY toolboxes/heat)
 endforeach()
