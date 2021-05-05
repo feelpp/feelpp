@@ -489,7 +489,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                                         pt_id[elt.point( 0 ).id()],
                                         pt_id[elt.point( 1 ).id()],
                                         pt_id[elt.point( 2 ).id()],
-                                        elt.markerOr( 0 ).value(), id_elt ) != 1 )
+                                        id_elt, id_elt ) != 1 )
                 {
                     throw std::logic_error( "Error in MMGS_Set_triangle" );
                 }
@@ -505,7 +505,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                                          pt_id[elt.point( 0 ).id()],
                                          pt_id[elt.point( 1 ).id()],
                                          pt_id[elt.point( 2 ).id()],
-                                         elt.markerOr( 0 ).value(), id_elt ) != 1 )
+                                         id_elt, id_elt ) != 1 )
                 {
                     throw std::logic_error( "Error in MMG2D_Set_triangle" );
                 }
@@ -872,12 +872,17 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 using element_type = typename mesh_t::element_type;
                 element_type newElem;
                 newElem.setId( k );
-                newElem.setMarker( lab );
+                newElem.setMarker( M_id2tag[lab].first );
                 newElem.setProcessIdInPartition( 0 );
                 newElem.setProcessId( 0 );
                 for ( int i = 0; i < 3; i++ )
                     newElem.setPoint( i, out->point( iv[i] ) );
                 out->addElement( newElem, false );
+                if ( required )
+                {
+                    M_smd->bm.insert( typename smd_type::bm_type::value_type( k, M_id2tag[lab].second ) );
+                    //std::cout << fmt::format( "[mmg->feelpp] required elt  {} tag,id: {}", id_elt, M_id2tag[lab] ) << std::endl;
+                }
             }
         }
         for ( int k = 1; k <= nEdges; k++ )
