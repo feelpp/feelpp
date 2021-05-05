@@ -192,6 +192,7 @@ class Remesh
     std::mutex mutex_;
     // sub mesh data
     smd_ptrtype M_smd;
+    std::map<int,std::pair<int,int>> M_id2tag;
 };
 
 template <typename MeshType>
@@ -453,12 +454,18 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
             }
         }
         auto required_element_ids = m_in->markersId( M_required_element_markers );
+        int req_elts = nelements(markedelements(m_in,M_required_element_markers ));
+        
+        int next_free_req = 1;
+        int next_free_nreq = req_elts+1;
         k = 1;
         bool required = false;
         for ( auto const& welt : m_in->elements() )
         {
             auto const& [key, elt] = boost::unwrap_ref( welt );
             required = required_element_ids.count( elt.markerOr( 0 ).value() );
+            int& id_elt = required?next_free_req:next_free_nreq;
+            M_id2tag[id_elt].first=elt.markerOr( 0 ).value();
             if constexpr ( dimension_v<MeshType> == 3 )
             {
                 if ( MMG3D_Set_tetrahedron( std::get<MMG5_pMesh>( M_mmg_mesh ),
@@ -466,12 +473,12 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                                             pt_id[elt.point( 1 ).id()],
                                             pt_id[elt.point( 2 ).id()],
                                             pt_id[elt.point( 3 ).id()],
-                                            elt.markerOr( 0 ).value(), k ) != 1 )
+                                            id_elt, id_elt ) != 1 )
                 {
                     throw std::logic_error( "Error in MMG3D_Set_tetrahedron" );
                 }
                 if ( required_element_ids.count( elt.markerOr( 0 ).value() ) &&
-                     MMG3D_Set_requiredTetrahedron( std::get<MMG5_pMesh>( M_mmg_mesh ), k ) != 1 )
+                     MMG3D_Set_requiredTetrahedron( std::get<MMG5_pMesh>( M_mmg_mesh ), id_elt ) != 1 )
                 {
                     throw std::logic_error( "Error in MMG3D_Set_requiredTetrahedron" );
                 }
@@ -482,12 +489,12 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                                         pt_id[elt.point( 0 ).id()],
                                         pt_id[elt.point( 1 ).id()],
                                         pt_id[elt.point( 2 ).id()],
-                                        elt.markerOr( 0 ).value(), k ) != 1 )
+                                        elt.markerOr( 0 ).value(), id_elt ) != 1 )
                 {
                     throw std::logic_error( "Error in MMGS_Set_triangle" );
                 }
                 if ( required_element_ids.count( elt.markerOr( 0 ).value() ) &&
-                     MMGS_Set_requiredTriangle( std::get<MMG5_pMesh>( M_mmg_mesh ), k ) != 1 )
+                     MMGS_Set_requiredTriangle( std::get<MMG5_pMesh>( M_mmg_mesh ), id_elt ) != 1 )
                 {
                     throw std::logic_error( "Error in MMGS_Set_requiredTriangle" );
                 }
@@ -498,12 +505,12 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                                          pt_id[elt.point( 0 ).id()],
                                          pt_id[elt.point( 1 ).id()],
                                          pt_id[elt.point( 2 ).id()],
-                                         elt.markerOr( 0 ).value(), k ) != 1 )
+                                         elt.markerOr( 0 ).value(), id_elt ) != 1 )
                 {
                     throw std::logic_error( "Error in MMG2D_Set_triangle" );
                 }
                 if ( required_element_ids.count( elt.markerOr( 0 ).value() ) &&
-                     MMG2D_Set_requiredTriangle( std::get<MMG5_pMesh>( M_mmg_mesh ), k ) != 1 )
+                     MMG2D_Set_requiredTriangle( std::get<MMG5_pMesh>( M_mmg_mesh ), id_elt ) != 1 )
                 {
                     throw std::logic_error( "Error in MMG2D_Set_requiredTriangle" );
                 }
@@ -512,25 +519,31 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
             {
                 if ( M_parent_mesh )
                 {
-                    int id_in_parent_mesh = M_mesh->subMeshToMesh( elt.id() );
-                    M_smd->bm.insert( typename smd_type::bm_type::value_type( k, id_in_parent_mesh ) );
+                    // id_in_parent_mesh
+                    M_id2tag[id_elt].second= M_mesh->subMeshToMesh( elt.id() );
                 }
                 else
                 {
-                    M_smd->bm.insert( typename smd_type::bm_type::value_type( k, elt.id() ) );
+                    M_id2tag[id_elt].second=elt.id();
                 }
+
+                //std::cout << fmt::format( "[feelpp->mmg] added required element {}, key:{}, tag: {}", id_elt, key, elt.markerOr( 0 ).value() ) << std::endl;
             }
-            k++;
+            k++;id_elt++;
         }
 
         auto required_facet_ids = m_in->markersId( M_required_facet_markers );
+        int f_req_elts = nelements( markedfaces( m_in, M_required_facet_markers ) );
 
+        int f_next_free_req = 1;
+        int f_next_free_nreq = f_req_elts + 1;
         k = 1;
         required = false;
         for ( auto const& wface : m_in->faces() )
         {
             auto const& [key, face] = boost::unwrap_ref( wface );
             required = required_facet_ids.count( face.markerOr( 0 ).value() );
+            int& id_elt = required ? f_next_free_req : f_next_free_nreq;
             if constexpr ( dimension_v<MeshType> == 3 )
             {
 
@@ -538,18 +551,18 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                                          pt_id[face.point( 0 ).id()],
                                          pt_id[face.point( 1 ).id()],
                                          pt_id[face.point( 2 ).id()],
-                                         face.markerOr( 0 ).value(), k ) != 1 )
+                                         face.markerOr( 0 ).value(), id_elt ) != 1 )
                 {
                     using namespace std::string_literals;
                     throw std::logic_error( "Error in MMG3D_Set_triangle "s + std::to_string( face.id() ) + " " + std::to_string( face.markerOr( 0 ).value() ) );
                 }
                 
                 if ( required &&
-                     MMG3D_Set_requiredTriangle( std::get<MMG5_pMesh>( M_mmg_mesh ), k ) != 1 )
+                     MMG3D_Set_requiredTriangle( std::get<MMG5_pMesh>( M_mmg_mesh ), id_elt ) != 1 )
                 {
                     throw std::logic_error( "Error in MMG2D_Set_requiredTriangle" );
                 }
-                face_id[face.id()] = std::pair{ k, k };
+                face_id[face.id()] = std::pair{ id_elt, id_elt };
             }
             else if constexpr ( dimension_v<MeshType> == 2 )
             {
@@ -557,30 +570,35 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                 if ( MMG2D_Set_edge( std::get<MMG5_pMesh>( M_mmg_mesh ),
                                      pt_id[face.point( 0 ).id()],
                                      pt_id[face.point( 1 ).id()],
-                                     face.markerOr( 0 ).value(), k ) != 1 )
+                                     face.markerOr( 0 ).value(), id_elt ) != 1 )
                 {
                     using namespace std::string_literals;
                     throw std::logic_error( "Error in MMG2D_Set_edge "s + std::to_string( face.id() ) + " " + std::to_string( face.markerOr( 0 ).value() ) );
                 }
-                if ( required && MMG2D_Set_requiredEdge( std::get<MMG5_pMesh>( M_mmg_mesh ), k ) != 1 )
+                if ( required && MMG2D_Set_requiredEdge( std::get<MMG5_pMesh>( M_mmg_mesh ), id_elt ) != 1 )
                 {
                     throw std::logic_error( "Error in MMG2D_Set_requiredEdge" );
                 }
             }
+#if 0
             if ( required )
             {
+                 auto key = std::tuple { pt_id[face.point( 0 ).id()], pt_id[face.point( 1 ).id()], pt_id[face.point( 2 ).id()] };
                 if ( M_parent_mesh )
                 {
                     int id_in_parent_mesh = M_mesh->subMeshToMesh( face.id() );
-                    M_smd->bm.insert( typename smd_type::bm_type::value_type( k, id_in_parent_mesh ) );
+                    M_smd->bm.insert( typename smd_type::bm_type::value_type( id_elt, id_in_parent_mesh ) );
                 }
                 else
                 {
-                    M_smd->bm.insert( typename smd_type::bm_type::value_type( k, face.id() ) );
+                    M_smd->bm.insert( typename smd_type::bm_type::value_type( id_elt, face.id() ) );
                 }
+                std::cout << fmt::format( "[feelpp->mmg] added required facet {}, key:{}, tag: {}", id_elt, key, face.markerOr( 0 ).value() ) << std::endl;
+
             }
+#endif            
             // update facet index
-            k++;
+            k++;id_elt++;
         }
     }
     else if ( std::holds_alternative<PMMG_pParMesh>( M_mmg_mesh ) )
@@ -770,7 +788,8 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                     ier = MMG5_STRONGFAILURE;
                 }
             }
-            using point_type = typename mesh_t::point_type;
+            using point_type = typename mesh_t
+            ::point_type;
             point_type pt( k, n );
             pt.setProcessIdInPartition( 0 );
             pt.setProcessId( 0 );
@@ -780,6 +799,10 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
 
         if constexpr ( dimension_v<MeshType> == 3 )
         {
+            int req_elts = nelements( markedelements( M_mesh, M_required_element_markers ) );
+            std::cout << fmt::format( "[mmg->feelpp] number of required elements: {}, tag", req_elts ) << std::endl;
+            int next_free_req = 1;
+            int next_free_nreq = req_elts + 1;
             for ( int k = 1; k <= nTetrahedra; k++ )
             {
                 int iv[4], lab;
@@ -791,18 +814,28 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                     std::cout << "Unable to get mesh tetra " << k << std::endl;
                     ier = MMG5_STRONGFAILURE;
                 }
-
+                int& id_elt = required ? next_free_req : next_free_nreq;
                 using element_type = typename mesh_t::element_type;
                 element_type newElem;
-                newElem.setId( k );
-                newElem.setMarker( lab );
+                newElem.setId( id_elt );
+                newElem.setMarker( M_id2tag[lab].first );
                 newElem.setProcessIdInPartition( 0 );
                 newElem.setProcessId( 0 );
                 for ( int i = 0; i < 4; i++ )
                     newElem.setPoint( i, out->point( iv[i] ) );
                 out->addElement( newElem, false );
+                if ( required )
+                {
+                    M_smd->bm.insert( typename smd_type::bm_type::value_type( id_elt, M_id2tag[lab].second ) );
+                    //std::cout << fmt::format( "[mmg->feelpp] required elt  {} tag,id: {}", id_elt, M_id2tag[lab] ) << std::endl;
+                }
+                ++id_elt;
             }
         }
+        int f_req_elts = nelements( markedfaces( M_mesh, M_required_facet_markers ) );
+        std::cout << fmt::format( "[mmg->feelpp] number of required facets: {}, tag", f_req_elts ) << std::endl;
+        int f_next_free_req = 1;
+        int f_next_free_nreq = f_req_elts + 1;
         for ( int k = 1; k <= nTriangles; k++ )
         {
             int iv[3], lab;
@@ -817,13 +850,15 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 }
                 using face_type = typename mesh_t::face_type;
                 face_type newElem;
-                newElem.setId( k );
+                int& id_elt = required ? f_next_free_req : f_next_free_nreq;
+                newElem.setId( id_elt );
                 newElem.setMarker( lab );
                 newElem.setProcessIdInPartition( 0 );
                 newElem.setProcessId( 0 );
                 for ( int i = 0; i < 3; i++ )
                     newElem.setPoint( i, out->point( iv[i] ) );
                 out->addFace( newElem );
+                id_elt++;                    
             }
             if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 2 )
             {
