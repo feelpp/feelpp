@@ -1,0 +1,12 @@
+= Three Sphere Swimmer
+
+== Citation
+
+This testcase is part of the publication
+https://hal.archives-ouvertes.fr/view/index/docid/3026951[Luca Berti, Vincent Chabannes, Laetitia Giraldi, Christophe Prud'Homme. Modeling and finite element simulation of multi-sphere swimmers. 2020.]
+
+== Command Line
+
+----
+mpirun -np 4 /usr/bin/feelpp_toolbox_fluid --config-files three_sphere.cfg three_sphere_pc.cfg
+----
