@@ -172,17 +172,18 @@ class EnsembleTools:
                  dim: int):
         self.ensemble = None
         self.size = 2*dim+1
+        self.dim = dim
         self.factor = factor
         self.weights = self.set_weights(main_weight, dim)
         self.state_cov = self.set_state_cov(1)
         self.obs_cov = self.set_state_cov(1)
 
     def set_weights(self, value: float, dim: int):
-        return [value] + (self.size-1)*[(1-value)/(2*dim)]
+        return [value] + (self.size-1)*[(1-value)/(2*self.dim)]
 
     def set_state_cov(self, value):
         if isnumber(value):
-            self.state_cov = value * np.eye(dim)
+            self.state_cov = value * np.eye(self.dim)
         else:
             self.state_cov = value
 
@@ -275,7 +276,7 @@ class Filter:
     
         self.gain = weighted_sum(S_xy, weights = self.tools.weights) \
                @ np.linalg.inv(weighted_sum(S_yy, weights = self.tools.weights) \
-                               + sci.sqrtm(self.tools.obs_cov))
+                               + sci.linalg.sqrtm(self.tools.obs_cov))
 
     def analyze(self, x_f, x_dag, y_dag):
         """ Computes the analysis formula using most recent data 
@@ -302,8 +303,8 @@ class Filter:
 
         self.tools.set_state_cov(np.outer(self.get_last_state().get_values(),
                                           self.get_last_state().get_values()))
-        self.tools.set_obs_cov(np.outer(self.real_observations[self.ts],
-                                        self.real_observations[self.ts]))
+        self.tools.set_obs_cov(np.outer(self.real_observations[self.ts].get_values(),
+                                        self.real_observations[self.ts].get_values()))
 
         self.tools.produce_ensemble(self.get_last_state())
         for guess in self.tools.ensemble:
