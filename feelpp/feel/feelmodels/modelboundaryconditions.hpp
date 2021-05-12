@@ -88,6 +88,8 @@ class FEELPP_EXPORT ModelBoundaryCondition : public CommObject
     template<int M=1, int N=1>
     auto expr2() { return M_modelExpr2.expr<M,N>(); }
 
+    void setParameterValues( std::map<std::string,double> const& mp );
+
 private:
     pt::ptree M_pt;
     std::string M_name;
@@ -126,12 +128,18 @@ class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::m
     explicit ModelBoundaryConditions( worldcomm_ptr_t const& world = Environment::worldCommPtr() );
     virtual ~ModelBoundaryConditions() = default;
     void setPTree( pt::ptree const& p );
+    void setParameterValues( std::map<std::string,double> const& mp );
     // flatten the boundary condition map so that we can easily iterate in a one level loop
     std::map<ModelBoundaryId,ModelBoundaryCondition> flatten() const;
-private:
+    std::map<std::string,std::map<std::string,ModelBoundaryCondition> > const& byField( std::string const& field ) const;
+    std::map<std::string,ModelBoundaryCondition> const& byFieldType( std::string const& field, std::string const& type ) const;
+
+  private:
     void setup();
 
     pt::ptree M_pt;
+    std::map<std::string,std::map<std::string,ModelBoundaryCondition> > M_emptyField;
+    std::map<std::string,ModelBoundaryCondition> M_emptyFieldType;
 };
 
 }
