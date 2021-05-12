@@ -7,13 +7,13 @@
 #define MIXEDPOISSON_ORDERPOLY @MIXEDPOISSON_ORDERPOLY@
 
 #define MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS \
-    template<int Dim, int Order, int G_Order, int E_Order> \
+    template<typename ConvexType, int Order, int E_Order>    \
         /**/
 #define MIXEDPOISSON_CLASS_TEMPLATE_TYPE \
-    MixedPoisson<Dim, Order, G_Order, E_Order> \
+    MixedPoisson<ConvexType, Order, E_Order> \
         /**/
 #define MIXEDPOISSON_CLASS_TYPE \
-    MixedPoisson< MIXEDPOISSON_DIM,MIXEDPOISSON_ORDERPOLY,MIXEDPOISSON_ORDERGEO> \
+    MixedPoisson< Simplex<MIXEDPOISSON_DIM,MIXEDPOISSON_ORDERGEO,MIXEDPOISSON_DIM>,MIXEDPOISSON_ORDERPOLY> \
     /**/
 #define MIXEDPOISSON_CLASS_INSTANTIATION \
     template class MIXEDPOISSON_CLASS_TYPE ;  \
