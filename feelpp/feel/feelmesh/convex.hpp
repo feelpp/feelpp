@@ -106,5 +106,10 @@ protected:
 private:
 
 };
+
+template<typename Convex>
+struct ReduceDim {
+};
+
 } // Feel
 #endif /* __Convex_H */
