@@ -597,8 +597,21 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::solve()
     this->M_up = U( 0_c );
     this->M_pp = U( 1_c );
 
+    Feel::cout << "--------------------------------" << std::endl;
+    Feel::cout << "After step 1 :" << std::endl;
+
+    auto u_exa = vec(cst(-1.0),cst(0.0),cst(0.0));
+    auto p_exa = Px();
+    Feel::cout << "  Norm up : " << normL2( _range = elements(this->mesh()), _expr = idv(this->M_up)-u_exa ) << std::endl;
+    Feel::cout << "  Norm pp : " << normL2( _range = elements(this->mesh()), _expr = idv(this->M_pp)-p_exa ) << std::endl;
+
     for ( int i = 0; i < this->integralCondition(); i++ )
+    {
         this->M_mup[i] = U( 3_c, i );
+        Feel::cout << "  Norm mup : " << normL2( _range = elements(this->mesh()), _expr = idv(this->M_mup[i])-3 ) << std::endl;
+                                                                                        // (H + L^2 = 3 in the model)
+    }
+    Feel::cout << "--------------------------------" << std::endl;
 
     for ( int i = 0; i < M_0dCondition; i++ )
     {
@@ -653,6 +666,14 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::run( op_interp_ptrtype I
                    << std::endl;
         return;
     }
+
+    // export initial solution
+    Feel::cout << "Exporting initial solution" << std::endl;
+    this->setMatricesAndVectorToZero();
+    this->assembleAll();
+    this->exportResults( this->mesh(), Idh_poi, Idhv_poi );
+    Feel::cout << "Exporting initial solution done" << std::endl;
+
 
     for ( ; !this->timeStepBase()->isFinished(); this->updateTimeStep() )
     {
