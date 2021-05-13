@@ -34,7 +34,7 @@
     {
         "potential":
         {
-            "SourceTerm":
+            "VolumicForces":
             {
                 "": {"expr":"0"}
             },

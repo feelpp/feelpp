@@ -192,6 +192,7 @@ public:
 protected:
     // mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+    faces_reference_wrapper_t<mesh_type> M_gammaMinusIntegral;
 
     space_flux_ptrtype M_Vh; // flux
     space_potential_ptrtype M_Wh; // potential
@@ -202,10 +203,17 @@ protected:
     element_flux_ptrtype M_up; // flux solution
     element_potential_ptrtype M_pp; // potential solution
     element_postpotential_ptrtype M_ppp; // postprocess potential solution
+    element_trace_ptrtype M_phat;
     element_traceibc_vector_type M_mup; // potential solution on the integral boundary conditions
 
     // physical parameter
     materialsproperties_ptrtype M_materialsProperties;
+    MixedPoissonPhysics M_physic;
+    std::map<std::string,std::string> M_physicMap;
+    std::string M_potentialKey;
+    std::string M_fluxKey;
+    std::string M_conductivityKey;
+    std::string M_nlConductivityKey;
 
     // boundary conditions
     map_scalar_field<2> M_bcDirichlet;
@@ -219,10 +227,10 @@ protected:
     MarkerManagementIntegralBC M_bcIntegralMarkerManagement;
 
     backend_ptrtype M_backend;
-    condensed_matrix_ptr_t<value_type> M_A_cst;
-#ifndef USE_SAME_MAT
+//     condensed_matrix_ptr_t<value_type> M_A_cst;
+// #ifndef USE_SAME_MAT
     condensed_matrix_ptr_t<value_type> M_A;
-#endif
+// #endif
     condensed_vector_ptr_t<value_type> M_F;
     condensed_matrix_ptr_t<value_type> M_App;
     condensed_vector_ptr_t<value_type> M_Fpp;
@@ -231,13 +239,6 @@ protected:
 
     // // time discretization
     // bdf_ptrtype M_bdf_mixedpoisson;
-
-    MixedPoissonPhysics M_physic;
-    std::map<std::string,std::string> M_physicMap;
-    std::string M_potentialKey;
-    std::string M_fluxKey;
-    std::string M_conductivityKey;
-    std::string M_nlConductivityKey;
 
     int M_tauOrder;
     double M_tauCst;
@@ -300,7 +301,11 @@ public:
     element_postpotential_ptrtype const& fieldPostPotentialPtr() const { return M_ppp; }
     element_postpotential_type const& fieldPostPotential() const { return *M_ppp; }
     space_trace_ptrtype const& spaceTrace() const { return M_Mh; }
+    element_trace_ptrtype const& fieldTracePtr() const { return M_phat; }
+    element_trace_type const& fieldTrace() const { return *M_phat; }
     space_traceibc_ptrtype const& spaceTraceIbc() const { return M_Ch; }
+    product2_space_ptrtype const& spaceProductPtr() const { return M_ps; }
+    product2_space_type const& spaceProduct() const { return *M_ps; }
 
     // integral_boundary_list_type integralBoundaryList() const { return M_IBCList; }
     int integralCondition() const { return M_integralCondition; }
@@ -401,6 +406,9 @@ public:
 
     void solve();
 
+    void updateLinearPDE( DataUpdateHDG& data ) const;
+    template <typename ModelContextType>
+    void updateLinearPDE( DataUpdateHDG & data, ModelContextType const& mfields ) const;
 #if 0
     // // time step scheme
     // virtual void createTimeDiscretization() ;
@@ -760,5 +768,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assemblePostProcessRhs(Expr<ExprT> e
 } // Namespace FeelModels
 
 } // Namespace Feel
+
+#include <feel/feelmodels/hdg/mixedpoissonassembly.hpp>
 
 #endif
