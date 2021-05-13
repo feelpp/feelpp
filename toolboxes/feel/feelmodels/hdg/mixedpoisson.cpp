@@ -142,12 +142,18 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                                                     auto const& e = unwrap_ref( ewrap );
                                                     return ( e.hasMarker() && ibcMeshMarkers.count(e.marker().value()) );
                                                 });
+    M_gammaMinusIntegral = complement(boundaryfaces(support(M_Wh)),
+                                      [ibcMeshMarkers]( auto const& ewrap ) {
+                                          auto const& e = unwrap_ref( ewrap );
+                                          return ( e.hasMarker() && ibcMeshMarkers.count(e.marker().value()) );
+                                      });
     auto face_mesh = createSubmesh( _mesh=this->mesh(), _range=complement_integral_faces, _update=0 );
     M_Mh = space_trace_type::New( _mesh=face_mesh, _extended_doftable=true, _worldscomm=this->worldsComm() );
     auto ibc_mesh = createSubmesh( _mesh=this->mesh(), _range=markedfaces(this->mesh(), ibcMarkers), _update=0 );
     M_Ch = space_traceibc_type::New( _mesh=ibc_mesh, _extended_doftable=true, _worldscomm=this->worldsComm() );
     auto ibcSpaces = std::make_shared<ProductSpace<space_traceibc_ptrtype, true> >( M_bcIntegralMarkerManagement.markerIntegralBC().size(), M_Ch);
     M_ps = std::make_shared<product2_space_type>(ibcSpaces, M_Vh, M_Wh, M_Mh);
+    M_phat.reset( new element_trace_type(M_Mh, "phat") );
     M_mup = element_traceibc_vector_type(M_bcIntegralMarkerManagement.markerIntegralBC().size(),
                                          std::make_shared<element_traceibc_type>(M_Ch, "mup"));
 
@@ -163,6 +169,17 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
 
+    solve::strategy s = M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
+    solve::strategy spp = solve::strategy::local;
+    auto pps = product( M_Whp );
+
+//     M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend );
+// #ifndef USE_SAME_MAT
+    M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend );
+// #endif
+    M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);
+    M_App = makeSharedMatrixCondensed<value_type>(spp,  csrGraphBlocks(pps, (spp>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), backend(), true );
+    M_Fpp = makeSharedVectorCondensed<value_type>(solve::strategy::local, blockVector(pps), backend(), false);
     // size_type currentStartIndex = 0;// velocity and pressure before
     // this->setStartSubBlockSpaceIndex( "potential-electric", currentStartIndex );
 
@@ -467,7 +484,19 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve() {
-    
+    M_A->zero();
+    M_F->zero();
+    DataUpdateHDG dataHDGCst(M_A, M_F, true);
+    this->updateLinearPDE(dataHDGCst);
+    auto bbf = blockform2( *M_ps, M_A);
+    auto blf = blockform1( *M_ps, M_F);
+    auto U = M_ps->element();
+
+    bbf.solve(_solution=U, _rhs=blf, _condense=M_useSC, _name=this->prefix());
+
+    M_up = std::make_shared<element_flux_type>( U(0_c) );
+    M_pp = std::make_shared<element_potential_type>( U(1_c));
+
 }
 
 } // namespace FeelModels
