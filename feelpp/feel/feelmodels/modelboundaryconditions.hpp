@@ -52,6 +52,7 @@ class FEELPP_EXPORT ModelBoundaryCondition : public CommObject
     std::string const& name() const { return M_name; }
     std::string const& marker() const { return *M_markers.begin(); }
     std::set<std::string> const& markers() const { return M_markers; }
+    bool emptyMarkers() const { return M_markers.empty(); }
     std::string const& material() const { return M_material; }
     std::string const& expression() const { return M_expr1; }
     std::string const& expression1() const { return M_expr1; }
@@ -82,11 +83,11 @@ class FEELPP_EXPORT ModelBoundaryCondition : public CommObject
     bool isExpression2Matrix() const { return M_modelExpr2.isMatrix(); }
 
     template<int M=1, int N=1>
-    auto expr() { return M_modelExpr1.expr<M,N>(); }
+    auto expr() const { return M_modelExpr1.expr<M,N>(); }
     template<int M=1, int N=1>
-    auto expr1() { return M_modelExpr1.expr<M,N>(); }
+    auto expr1() const { return M_modelExpr1.expr<M,N>(); }
     template<int M=1, int N=1>
-    auto expr2() { return M_modelExpr2.expr<M,N>(); }
+    auto expr2() const { return M_modelExpr2.expr<M,N>(); }
 
     void setParameterValues( std::map<std::string,double> const& mp );
 
