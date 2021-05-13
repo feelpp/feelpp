@@ -42,6 +42,7 @@ class FEELPP_EXPORT ModelMarkers : public std::set<std::string>
     ModelMarkers& operator=( ModelMarkers const& ) = default;
     ModelMarkers& operator=( ModelMarkers&& ) = default;
     void setPTree( pt::ptree const& p, ModelIndexes const& indexes = ModelIndexes() );
+    bool empty() const;
 };
 
 }
