@@ -20,7 +20,7 @@
     {
         "potential":
         {
-	        "SourceTerm":
+	        "VolumicForces":
 	        {
 		        "Omega":
 		        {

@@ -143,16 +143,6 @@
                     "value":7.9980410297979074e+02,
                     "tolerance":1e-1
                 },
-                "Statistics_Intensity0_integrate_1":
-                {
-                    "value":-1.2114711823724064e-01,
-                    "tolerance":1e-1
-                },
-                "Statistics_Intensity1_integrate_0":
-                {
-                    "value":1.1954814928181956e-01,
-                    "tolerance":1e-1
-                },
                 "Statistics_Intensity1_integrate_1":
                 {
                     "value":-7.9980410056333255e+02,
@@ -165,13 +155,13 @@
                 },
                 "Points_V0_potential":
                 {
-                    "value":3.1256783010645731e-02,
+                    "value":3.125e-02,
                     "tolerance":1e-1
                 },
                 "Points_V1_potential":
                 {
-                    "value":6.1011953469842531e-06,
-                    "tolerance":1e-1
+                    "value":0,
+                    "tolerance":1e-4
                 },
                 "Norm_potential_error_L2-error":
                 {
