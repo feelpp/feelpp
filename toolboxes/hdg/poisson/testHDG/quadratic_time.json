@@ -7,7 +7,21 @@
         "omega":
         {
             "name":"simulation_domain",
-            "k":"1"
+            "cond":"1"
+        }
+    },
+    "InitialConditions":
+    {
+        "potential":
+        {
+            "Expression":
+            {
+                "myic1":
+                {
+                    "markers":"omega",
+					"expr":"-3*x*(10-t*t):x:t"
+                }
+            }
         }
     },
     "BoundaryConditions":

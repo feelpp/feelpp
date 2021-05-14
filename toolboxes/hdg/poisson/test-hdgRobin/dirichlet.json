@@ -13,7 +13,7 @@
         {
             "name":"porousmedium",
             // "k":"-K:K" !!! not working in journal
-            "k": "-1"
+            "cond": "-1"
         }
     },
     "BoundaryConditions":

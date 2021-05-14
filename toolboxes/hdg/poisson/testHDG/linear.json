@@ -7,20 +7,27 @@
         "omega":
         {
             "name":"simulation_domain",
-            "k":"1"
+            "cond":"1"
+        }
+    },
+    "InitialConditions":
+    {
+        "potential":
+        {
+            "Expression":
+            {
+                "myic1":
+                {
+                    "markers":"omega",
+					"expr":"-3*x*(10-t):x:t"
+                }
+            }
         }
     },
     "BoundaryConditions":
     {
         "potential":
         {
-			"InitialSolution":
-			{
-				"omega":
-				{
-					"expr":"-3*x*(10-t):x:t"
-				}
-			},
             "VolumicForces":
             {
                 "omega":
@@ -52,24 +59,7 @@
                     "expr":"3*(10-t):t"
                 }
             }
-        },
-		"Exact solution":
-		{
-	    	"p_exact":
-	    	{
-				"omega":
-				{
-					"expr":"-3*x*(10-t):x:t"
-				}
-	    	},
-	    	"u_exact":
-	    	{
-				"omega":
-				{
-					"expr":"{3*(10-t),0}:x:t"
-				}
-	    	}
-		}
+        }
     },
     "PostProcess":
     {
