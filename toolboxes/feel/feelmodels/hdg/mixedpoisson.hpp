@@ -52,7 +52,7 @@
 // #include <feel/feeldiscr/operatorinterpolation.hpp>
 // #include <feel/feelvf/vf.hpp>
 // #include <feel/feelfilters/exporter.hpp>
-// #include <feel/feelts/bdf.hpp>
+#include <feel/feelts/bdf.hpp>
 // #include <feel/feelmodels/modelcore/options.hpp>
 // #include <feel/feelmodels/modelproperties.hpp>
 // #include <feel/feelmodels/modelcore/modelnumerical.hpp>
@@ -86,8 +86,12 @@ makeMixedPoissonOptions( std::string const&  _prefix = "", std::string const&  _
         ( prefixvm( prefix, "use-sc" ).c_str(), po::value<bool>()->default_value( true ), "use static condensation" )
         ( prefixvm( prefix, "error-quadrature").c_str(), po::value<int>()->default_value(10), "quadrature to compute errors" )
         ( prefixvm( prefix, "set-zero-by-init").c_str(), po::value<bool>()->default_value(true), "reinit matrix and vector when setting to zero" )
+        ( prefixvm( prefix, "time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
+        ( prefixvm( prefix, "time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
         ;
     mpOptions.add( modelnumerical_options( prefix ) );
+    mpOptions.add( bdf_options( prefix ) );
+    mpOptions.add( ts_options( prefix ) );
     mpOptions.add( backend_options( prefix + ".sc" ) );
     return mpOptions;
 }
@@ -181,6 +185,10 @@ public:
     typedef MeasurePointsEvaluation<space_potential_type, space_flux_type> measure_points_evaluation_type;
     typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
+    // time scheme
+    using bdf_potential_type = Bdf<space_potential_type>;
+    using bdf_potential_ptrtype = std::shared_ptr<bdf_potential_type>;
+
     // using integral_boundary_list_type = std::vector<ExpressionStringAtMarker>;
 
     struct FieldTag
@@ -236,9 +244,11 @@ protected:
     condensed_vector_ptr_t<value_type> M_Fpp;
     vector_ptrtype M_U;
 
-
-    // // time discretization
-    // bdf_ptrtype M_bdf_mixedpoisson;
+    // time discretisation
+    std::string M_timeStepping;
+    bdf_potential_ptrtype M_bdfPotential;
+    double M_timeStepThetaValue;
+    vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
     int M_tauOrder;
     double M_tauCst;
@@ -335,8 +345,9 @@ public:
 private :
     void loadParameterFromOptionsVm();
     void initMesh();
-    void initInitialConditions();
     void initBoundaryConditions();
+    void initFunctionSpaces();
+    void initTimeStep();
     void initPostProcess() override;
 
 public:
@@ -365,23 +376,7 @@ public:
         }
 
     template <typename ModelFieldsType, typename SymbolsExpr>
-    void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
-        {
-            bool hasMeasure = false;
-            bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-            bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-            bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
-            if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
-                hasMeasure = true;
-
-            if ( hasMeasure )
-            {
-                if ( !this->isStationary() )
-                    this->postProcessMeasuresIO().setMeasure( "time", time );
-                this->postProcessMeasuresIO().exportMeasures();
-                this->upload( this->postProcessMeasuresIO().pathFile() );
-            }
-        }
+    void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr );
 
     //___________________________________________________________________________________//
     // model context helper
@@ -410,63 +405,6 @@ public:
     template <typename ModelContextType>
     void updateLinearPDE( DataUpdateHDG & data, ModelContextType const& mfields ) const;
 #if 0
-    // // time step scheme
-    // virtual void createTimeDiscretization() ;
-    // bdf_ptrtype timeStepBDF() { return M_bdf_mixedpoisson; }
-    // bdf_ptrtype const& timeStepBDF() const { return M_bdf_mixedpoisson; }
-    // std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
-    // std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
-    // virtual void updateTimeStepBDF();
-    // virtual void initTimeStep();
-    // void updateTimeStep() { this->updateTimeStepBDF(); }
-
-    // Exporter
-    virtual void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr )
-        {
-            this->exportResults (this->currentTime(), mesh );
-            M_exporter -> save();
-        }
-    void exportResults ( double Time, mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  ) ;
-    exporter_ptrtype M_exporter;
-    exporter_ptrtype exporterMP() { return M_exporter; }
-
-    void init( mesh_ptrtype mesh = nullptr, mesh_ptrtype meshVisu = nullptr);
-
-    virtual void initModel();
-    virtual void initSpaces();
-    virtual void initExporter( mesh_ptrtype meshVisu = nullptr );
-    virtual void initMatricesAndVector();
-    virtual void assembleAll();
-    virtual void assembleCstPart();
-    virtual void assembleNonCstPart();
-    void copyCstPart();
-    void setMatricesAndVectorToZero();
-
-    void assembleRHS();
-    template<typename ExprT> void updateConductivityTerm( Expr<ExprT> expr, std::string marker = "");
-    void updateConductivityTerm( bool isNL = false);
-
-    template<typename ExprT> void assembleFluxRHS( Expr<ExprT> expr, std::string marker);
-    template<typename ExprT> void assemblePotentialRHS( Expr<ExprT> expr, std::string marker);
-
-    void assembleBoundaryCond();
-    void assembleRhsBoundaryCond();
-    void assembleDirichlet( std::string marker);
-    void assembleNeumann( std::string marker);
-    template<typename ExprT> void assembleRhsDirichlet( Expr<ExprT> expr, std::string marker);
-    template<typename ExprT> void assembleRhsNeumann( Expr<ExprT> expr, std::string marker);
-    template<typename ExprT> void assembleRhsInterfaceCondition( Expr<ExprT> expr, std::string marker);
-    // u.n + g1.p = g2
-    template<typename ExprT1, typename ExprT2> void assembleRobin( Expr<ExprT1> const& expr1, Expr<ExprT2> const& expr2, std::string const& marker, bool update_only = false );
-
-    void assembleIBC(int i, std::string marker = "");
-    virtual void assembleRhsIBC(int i, std::string marker = "", double intjn = 0);
-
-    virtual void solve();
-
-    void assemblePostProcessCstPart();
-    void assemblePostProcessNonCstPart( bool isNL = false );
-    template<typename ExprT> void assemblePostProcessRhs( Expr<ExprT> expr, std::string marker = "");
     void solvePostProcess();
     virtual void postProcess( bool isNL = false );
 #endif
@@ -525,6 +463,18 @@ public:
             return Feel::vf::symbolsExpr( symbolExpr( currentDensitySymbs ) );
         }
 #endif
+
+    // time step scheme
+    std::string const& timeStepping() const { return M_timeStepping; }
+    bdf_potential_ptrtype const& timeStepBdfPotential() const { return M_bdfPotential; }
+    std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfPotential(); }
+    std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBdfPotential(); }
+    void startTimeStep();
+    void updateTimeStep();
+
+    template <typename SymbolsExprType>
+    void updateInitialConditions( SymbolsExprType const& se );
+    //___________________________________________________________________________________//
 };
 
 template< typename ConvexType, int Order, int E_Order>
@@ -549,211 +499,56 @@ MixedPoisson<ConvexType,Order, E_Order>::exportResults( double time, ModelFields
     this->log("MixedPoisson","exportResults", "finish");
 }
 
+template< typename ConvexType, int Order, int E_Order>
+template <typename ModelFieldsType, typename SymbolsExpr>
+void
+MixedPoisson<ConvexType,Order, E_Order>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
+{
+    bool hasMeasure = false;
+    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
+    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
+        hasMeasure = true;
+
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
+    }
+}
+
+template< typename ConvexType, int Order, int E_Order>
+template <typename SymbolsExprType>
+void
+MixedPoisson<ConvexType,Order, E_Order>::updateInitialConditions( SymbolsExprType const& se )
+{
+    if ( !this->doRestart() )
+    {
+        std::vector<element_potential_ptrtype> icPotentialFields;
+        if ( this->isStationary() )
+            icPotentialFields = { this->fieldPotentialPtr() };
+        else
+            icPotentialFields = M_bdfPotential->unknowns();
+
+        super_type::updateInitialConditions( M_potentialKey, M_rangeMeshElements, se, icPotentialFields );
+
+        if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.potential").c_str() ) )
+        {
+            auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.potential"),
+                                "",this->worldComm(),this->repository().expr() );
+            icPotentialFields[0]->on(_range=M_rangeMeshElements,_expr=myexpr);
+            for ( int k=1;k<icPotentialFields.size();++k )
+                *icPotentialFields[k] = *icPotentialFields[0];
+        }
+
+        if ( !this->isStationary() )
+            *this->fieldPotentialPtr() = M_bdfPotential->unknown(0);
+    }
+}
 #if 0
-template<int Dim, int Order, int G_Order, int E_Order>
-template<typename ExprT>
-void
-MixedPoisson<Dim, Order, G_Order, E_Order>::updateConductivityTerm(Expr<ExprT> expr, std::string marker)
-{
-    auto u = M_Vh->element( "u" );
-    auto v = M_Vh->element( "v" );
-    auto p = M_Wh->element( "p" );
-    auto w = M_Wh->element( "w" );
-
-#ifdef USE_SAME_MAT
-    auto bbf = blockform2( *M_ps, M_A_cst);
-#else
-    auto bbf = blockform2( *M_ps, M_A);
-#endif
-
-    if ( marker.empty() )
-        bbf(0_c,0_c) += integrate( _range=elements(support(M_Wh)), _expr=inner(idt(u),id(v))/expr);
-    else
-        bbf(0_c,0_c) += integrate( _range=markedelements(M_mesh, marker), _expr=inner(idt(u),id(v))/expr);
-
-    // (1/delta_t p, w)_Omega  [only if it is not stationary]
-    if ( !this->isStationary() ) {
-        bbf( 1_c, 1_c ) += integrate(_range=elements(support(M_Wh)),
-                                     _expr = -(this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
-    }
-
-}
-
-template<int Dim, int Order, int G_Order, int E_Order>
-template<typename ExprT>
-void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleFluxRHS( Expr<ExprT> expr, std::string marker)
-{
-    tic();
-    auto blf = blockform1( *M_ps, M_F );
-    auto v = M_Vh->element();
-
-    if ( marker.empty() )
-        blf(0_c) += integrate( _range=elements(support(M_Wh)),
-                              _expr=inner(expr,id(v)) );
-    else
-        blf(0_c) += integrate( _range=markedelements(M_mesh,marker),
-                              _expr=inner(expr,id(v)) );
-    toc("assembleFluxRhs", this->verbose() || FLAGS_v > 0);
-}
-
-template<int Dim, int Order, int G_Order, int E_Order>
-template<typename ExprT>
-void MixedPoisson<Dim, Order, G_Order, E_Order>::assemblePotentialRHS( Expr<ExprT> expr, std::string marker)
-{
-    tic();
-    auto blf = blockform1( *M_ps, M_F );
-    auto w = M_Wh->element();
-
-    if ( marker.empty() )
-    {
-        blf(1_c) += integrate( _range=elements(support(M_Wh)),
-                              _expr=inner(expr,id(w)) );
-    }
-    else
-    {
-        blf(1_c) += integrate( _range=markedelements(M_mesh,marker),
-                              _expr=inner(expr,id(w)) );
-    }
-    toc("assemblePotentialRhs", this->verbose() || FLAGS_v > 0);
-}
-
-template<int Dim, int Order, int G_Order, int E_Order>
-template<typename ExprT>
-void
-MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsDirichlet( Expr<ExprT> expr, std::string marker)
-{
-    tic();
-    auto blf = blockform1( *M_ps, M_F );
-    auto l = M_Mh->element( "lambda" );
-
-    // <g_D, mu>_Gamma_D
-    blf(2_c) += integrate(_range=markedfaces(support(M_Wh),marker),
-                          _expr=id(l)*expr);
-    toc("assembleRhsDirichlet", this->verbose() || FLAGS_v > 0);
-}
-
-template<int Dim, int Order, int G_Order, int E_Order>
-template<typename ExprT>
-void
-MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsNeumann( Expr<ExprT> expr, std::string marker)
-{
-    tic();
-    auto blf = blockform1( *M_ps, M_F );
-    auto l = M_Mh->element( "lambda" );
-
-    // <g_N,mu>_Gamma_N
-    blf(2_c) += integrate( _range=markedfaces(support(M_Wh), marker),
-                          _expr=id(l)*expr);
-    toc("assembleRhsNeumann", this->verbose() || FLAGS_v > 0);
-}
-
-template<int Dim, int Order, int G_Order, int E_Order>
-template<typename ExprT>
-void
-MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsInterfaceCondition( Expr<ExprT> expr, std::string marker)
-{
-    tic();
-    auto blf = blockform1( *M_ps, M_F );
-    auto l = M_Mh->element( "lambda" );
-
-    // <g_interface,mu>_Gamma_N
-    blf(2_c) += integrate( _range=markedelements(M_Mh->mesh(), marker),
-                          _expr=id(l)*expr);
-    toc("assembleRhsInterface", this->verbose() || FLAGS_v > 0);
-}
-
-/*
- template<int Dim, int Order, int G_Order, int E_Order>
- template<typename ExprT>
- void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsRobin( Expr<ExprT> expr1, Expr<ExprT> expr2, std::string marker)
- {
- #ifdef USE_SAME_MAT
- auto bbf = blockform2( *M_ps, M_A_cst);
- #else
- auto bbf = blockform2( *M_ps, M_A);
- #endif
- auto blf = blockform1( *M_ps, M_F );
- auto u = M_Vh->element( "u" );
- auto p = M_Wh->element( "p" );
- auto phat = M_Mh->element( "phat" );
- auto l = M_Mh->element( "lambda" );
- auto H = M_M0h->element( "H" );
- if ( ioption(prefixvm(prefix(), "hface") ) == 0 )
- H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
- else if ( ioption(prefixvm(prefix(), "hface") ) == 1 )
- H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
- else if ( ioption(prefixvm(prefix(), "hface") ) == 2 )
- H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
- else
- H.on( _range=elements(M_M0h->mesh()), _expr=h() );
- // stabilisation parameter
- auto tau_constant = cst(doption(prefixvm(prefix(), "tau_constant")));
-
- // <j.n,mu>_Gamma_R
- bbf( 2_c, 0_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
- _expr=( id(l)*(trans(idt(u))*N()) ));
- // <tau p, mu>_Gamma_R
- bbf( 2_c, 1_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
- _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
- // <-tau phat, mu>_Gamma_R
- bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
- _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
- // <g_R^1 phat, mu>_Gamma_R
- bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
- _expr=expr1*idt(phat) * id(l) );
- // <g_R^2,mu>_Gamma_R
- blf(2_c) += integrate( _range=markedfaces(support(M_Wh), marker),
- _expr=id(l)*expr2);
- }
- */
-
-template<int Dim, int Order, int G_Order, int E_Order>
-template<typename ExprT1, typename ExprT2>
-void
-MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT1> const& expr1, Expr<ExprT2> const& expr2, std::string const& marker, bool update_only )
-{
-    tic();
-    auto bbf = blockform2( *M_ps, M_A_cst);
-
-    auto blf = blockform1( *M_ps, M_F );
-    auto u = M_Vh->element( "u" );
-    auto p = M_Wh->element( "p" );
-    auto phat = M_Mh->element( "phat" );
-    auto l = M_Mh->element( "lambda" );
-    // auto H = M_M0h->element( "H" );
-    // if ( ioption(prefixvm(prefix(), "hface") ) == 0 )
-    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
-    // else if ( ioption(prefixvm(prefix(), "hface") ) == 1 )
-    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
-    // else if ( ioption(prefixvm(prefix(), "hface") ) == 2 )
-    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
-    // else
-    //     H.on( _range=elements(M_M0h->mesh()), _expr=h() );
-    // stabilisation parameter
-    auto tau_constant = cst(M_tauCst);
-
-    if ( !update_only )
-    {
-        // <j.n,mu>_Gamma_R
-        bbf( 2_c, 0_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
-                                     _expr=id(l)*normalt(u) );
-        // <tau p, mu>_Gamma_R
-        bbf( 2_c, 1_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
-                                     _expr=tau_constant * id(l) * idt(p)  );
-        // <-tau phat, mu>_Gamma_R
-        bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
-                                     _expr=-tau_constant * idt(phat) * id(l) );
-    }
-    // <g_R^1 phat, mu>_Gamma_R
-    bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
-                                 _expr=expr1*idt(phat) * id(l) );
-    // <g_R^2,mu>_Gamma_R
-    blf(2_c) += integrate( _range=markedfaces(support(M_Wh), marker),
-                           _expr=id(l)*expr2);
-    toc("assembleRobin", this->verbose() || FLAGS_v > 0);
-}
-
-
 template<int Dim, int Order, int G_Order, int E_Order>
 template<typename ExprT>
 void

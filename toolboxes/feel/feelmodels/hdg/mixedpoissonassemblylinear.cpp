@@ -44,7 +44,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateHDG & data ) const
                                    rightfacet( idt(p))*rightface(id(p) )));
     bbf( 1_c, 1_c ) += integrate(_range=boundaryfaces(support(M_Wh)),
                                  _expr=tau_constant * id(p)*idt(p));
-
+    if( !this->isStationary() )
+    {
+        // (1/delta_t p, w)_Omega  [only if it is not stationary]
+        auto coeff = this->timeStepBdfPotential()->polyDerivCoefficient(0);
+        bbf( 1_c, 1_c) += integrate(_range=elements(support(M_Wh)),
+                                    _expr=coeff*inner(idt(p), id(p)) );
+    }
 
     // <-tau phat, w>_Gamma\Gamma_I
     bbf( 1_c, 2_c ) += integrate(_range=internalfaces(support(M_Wh)),

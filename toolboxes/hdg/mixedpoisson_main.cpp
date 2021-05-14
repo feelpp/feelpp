@@ -15,24 +15,24 @@ runToolboxSimulation( std::shared_ptr<ToolboxType> toolbox )
         toolbox->solve();
         toolbox->exportResults();
     }
-    // else
-    // {
-    //     if ( !toolbox->doRestart() )
-    //         toolbox->exportResults(toolbox->timeInitial());
+    else
+    {
+        if ( !toolbox->doRestart() )
+            toolbox->exportResults(toolbox->timeInitial());
 
-    //     for ( toolbox->startTimeStep() ; !toolbox->timeStepBase()->isFinished(); toolbox->updateTimeStep() )
-    //     {
-    //         if (toolbox->worldComm().isMasterRank())
-    //         {
-    //             std::cout << "============================================================\n";
-    //             std::cout << "time simulation: " << toolbox->time() << "s \n";
-    //             std::cout << "============================================================\n";
-    //         }
+        for ( toolbox->startTimeStep() ; !toolbox->timeStepBase()->isFinished(); toolbox->updateTimeStep() )
+        {
+            if (toolbox->worldComm().isMasterRank())
+            {
+                std::cout << "============================================================\n";
+                std::cout << "time simulation: " << toolbox->time() << "s \n";
+                std::cout << "============================================================\n";
+            }
 
-    //         toolbox->solve();
-    //         toolbox->exportResults();
-    //     }
-    // }
+            toolbox->solve();
+            toolbox->exportResults();
+        }
+    }
     return !toolbox->checkResults();
 }
 
