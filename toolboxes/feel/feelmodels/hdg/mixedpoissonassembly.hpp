@@ -23,6 +23,7 @@ MixedPoisson<ConvexType, Dim, E_Order>::updateLinearPDE( DataUpdateHDG & data, M
     auto u = this->fieldFlux();
     auto p = this->fieldPotential();
     auto phat = this->fieldTrace();
+    auto l = this->M_Ch->element();
     auto tau_constant = cst(M_tauCst);
 
     auto const& symbolsExpr = mctx.symbolsExpr();
@@ -38,6 +39,7 @@ MixedPoisson<ConvexType, Dim, E_Order>::updateLinearPDE( DataUpdateHDG & data, M
         }
     }
 
+    blf(1_c) += integrate(_range=M_rangeMeshElements, _expr=cst(0.)); // needed for static condensation
     for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "VolumicForces") )
     {
         auto range = bc.emptyMarkers() ? elements(support(M_Wh)) : markedelements(support(M_Wh), bc.markers());
@@ -86,7 +88,37 @@ MixedPoisson<ConvexType, Dim, E_Order>::updateLinearPDE( DataUpdateHDG & data, M
         blf(2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
                               _expr=inner(id(phat),g2));
     }
+    int i = 0;
+    for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_fluxKey, "Integral") )
+    {
+        // <lambda, v.n>_Gamma_I
+        bbf( 0_c, 3_c, 0, i ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+                                            _expr= idt(l) * normal(u) );
 
+        // -<lambda, tau w>_Gamma_I
+        bbf( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+                                            _expr=-tau_constant*inner(idt(l), id(p)) );
+
+        // <j.n, m>_Gamma_I
+        bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+                                            _expr=normalt(u) * id(l) );
+
+        // <tau p, m>_Gamma_I
+        bbf( 3_c, 1_c, i, 1 ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+                                            _expr=tau_constant*inner(idt(p), id(l)) );
+
+        // -<lambda2, m>_Gamma_I
+        bbf( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+                                            _expr=-tau_constant*inner(id(l), idt(l)) );
+
+        auto g = expr(bc.expr(), symbolsExpr);
+        double meas = integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+                                 _expr=cst(1.)).evaluate()(0,0);
+        Feel::cout << "Ibc " << i << " of measeure " << meas << std::endl;
+        blf(3_c, i) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+                                  _expr=inner(g,id(l))/meas);
+        i++;
+    }
 }
 
 } // namespace FeelModels

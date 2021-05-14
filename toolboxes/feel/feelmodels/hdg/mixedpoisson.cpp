@@ -260,7 +260,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR, name, bc.markers() );
     for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Robin") )
         M_bcRobinMarkerManagement.addMarkerRobinBC(name, bc.markers() );
-    for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Integral") )
+    for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_fluxKey, "Integral") )
         M_bcIntegralMarkerManagement.addMarkerIntegralBC(name, bc.markers() );
     // this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( std::string(M_potentialKey), "Dirichlet" );
     // this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( M_potentialKey, "Neumann" );
