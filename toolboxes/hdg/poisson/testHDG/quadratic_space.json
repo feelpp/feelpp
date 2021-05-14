@@ -21,7 +21,7 @@
 					"expr":"-3*x*x*(10-t):x:t"
 				}
 			},
-            "SourceTerm":
+            "VolumicForces":
             {
                 "omega":
                 {

@@ -44,7 +44,7 @@
         },
         "potential":
         {
-            "SourceTerm":
+            "VolumicForces":
             {
                 "": {"expr":"0"}
             },
@@ -185,8 +185,8 @@
                 },
                 "Points_V1_potential":
                 {
-                    "value":4.2548539363050999e-06,
-                    "tolerance":1e-1
+                    "value":0,
+                    "tolerance":1e-4
                 },
                 "Norm_potential_error_L2-error":
                 {

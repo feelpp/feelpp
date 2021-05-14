@@ -21,7 +21,7 @@
 					"expr":"0.25"
 				}
 			},
-            "SourceTerm":
+            "VolumicForces":
             {
                 "Lamina":
                 {
