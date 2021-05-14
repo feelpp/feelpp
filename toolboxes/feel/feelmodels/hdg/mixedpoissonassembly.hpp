@@ -39,7 +39,14 @@ MixedPoisson<ConvexType, Dim, E_Order>::updateLinearPDE( DataUpdateHDG & data, M
         }
     }
 
-    blf(1_c) += integrate(_range=M_rangeMeshElements, _expr=cst(0.)); // needed for static condensation
+    if( !this->isStationary() )
+    {
+        auto polyDeriv = this->timeStepBdfPotential()->polyDeriv();
+        blf(1_c) += integrate(_range=M_rangeMeshElements, _expr=inner(id(p), idv(polyDeriv)) );
+    }
+
+    // needed for static condensation
+    blf(1_c) += integrate(_range=M_rangeMeshElements, _expr=cst(0.));
     for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "VolumicForces") )
     {
         auto range = bc.emptyMarkers() ? elements(support(M_Wh)) : markedelements(support(M_Wh), bc.markers());
@@ -114,7 +121,6 @@ MixedPoisson<ConvexType, Dim, E_Order>::updateLinearPDE( DataUpdateHDG & data, M
         auto g = expr(bc.expr(), symbolsExpr);
         double meas = integrate( _range=markedfaces(support(M_Wh), bc.markers()),
                                  _expr=cst(1.)).evaluate()(0,0);
-        Feel::cout << "Ibc " << i << " of measeure " << meas << std::endl;
         blf(3_c, i) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
                                   _expr=inner(g,id(l))/meas);
         i++;
