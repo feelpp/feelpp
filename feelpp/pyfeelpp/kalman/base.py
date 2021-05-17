@@ -19,8 +19,10 @@ def tic(message = ''):
 
 def toc(message = ''):
     """ Equivalent to toc in cpp """
+    if not VERBOSE and message is not '':
+        print(message + ' {} seconds'.format(time.time() - seconds, '1.2'))
     if VERBOSE:
-        print(message + str(time.time() - seconds) + ' seconds')
+        print(message + ' {} seconds'.format(time.time() - seconds))
 
 def isempty(liste: list) -> bool:
     return not bool(len(liste))
@@ -54,6 +56,11 @@ def displacements(partition):
 """ Here starts the implementation of the filter """
 
 def magnitude_order(array):
+    """ Returns the order of magnitude of a number or a vector.
+
+    For the vector the L2 norm is used.
+    """
+
     return 10**np.floor(np.log10(np.linalg.norm(array)))
 
 def weighted_sum(element_list, weights = None):
@@ -62,9 +69,9 @@ def weighted_sum(element_list, weights = None):
     elif type(weights) is list and len(weights) != len(element_list):
         raise ValueError('There must be the same number of states and weights')
     if type(element_list[0]) is State:
-        result = State(element_list[0].get_dim())
+        result = State(dim = element_list[0].get_dim())
         for state, weight in zip(element_list,weights):
-            result += state * weight
+            result += weight * state
     else:
         result = 0
         for element, weight in zip(element_list,weights):
@@ -78,19 +85,20 @@ class State:
     This class is used for States and for Observations since only their
     respective dimention may differ.
     """
-    def __init__(self, input):
+    def __init__(self, input = None, dim = 1):
         self._values = None
         self._dim = None
-        if type(input) is int:
-            self.set_dim(input)
-        else:
+        if input is not None:
             self.set_values(input)
-
+        else:
+            self.set_dim(dim)
+        
     def set_values(self, values):
         """ Sets array as the state and computes the dimension """
-        if type(values) is not np.ndarray and type(values) is not list:
-            raise TypeError('state must be 1D np.array or list')
+        if type(values) is not np.ndarray and type(values) is not list and not isnumber(values):
+            raise TypeError('state description must be 1D numpy.array or list or number')
         self._values = np.array(values)
+        self._values.shape = (max(self._values.shape),)
         self._dim = len(self._values)
 
     def set_dim(self, integer: int):
@@ -127,6 +135,7 @@ class State:
             self._values += other
         else:
             raise TypeError('invalid increment')
+        self._values.shape = (max(self._values.shape),)
         return self
 
     def __mul__(self, factor: float):
@@ -174,36 +183,59 @@ class EnsembleTools:
         self.obs_cov = self.set_state_cov(1)
 
     def set_weights(self, value: float, dim: int):
+        """ Computes the weights associated with the stencil size 
+        and given central weight.
+        """
+
         return [value] + (self.size-1)*[(1-value)/(2*self.dim)]
 
     def set_state_cov(self, value):
+        """ Sets the state covariance. 
+
+        If a number is provided, the resulting matrix is number*Id.
+        Else a square matrix of appropriate size is required.
+        """
+
         if isnumber(value):
             self.state_cov = value * np.eye(self.dim)
         else:
             self.state_cov = value
 
     def set_obs_cov(self, value):
+        """ Sets the observation covariance. 
+
+        If a number is provided, the resulting matrix is number*Id.
+        Else a square matrix of appropriate size is required.
+        """
+
         if isnumber(value):
             self.obs_cov = value * np.eye(dim)
         else:
             self.obs_cov = value
 
     def produce_ensemble(self, state: State):
+        """ Computes the stencil of sigma-points 
+        using the matrix square root method.
+
+        Only UKF fashion is implemented.
+        """
+
         self.ensemble = [state]
         shift_matrix = np.sqrt(self.factor) * sci.linalg.sqrtm(self.state_cov)
-        signs = [0] + state.get_dim()*[1] + state.get_dim()*[-1]
+        #signs = [0] + state.get_dim()*[1] + state.get_dim()*[-1]
         for column in range(len(shift_matrix)):
             self.ensemble.append(state + State(shift_matrix[:,column]))
             self.ensemble.append(state - State(shift_matrix[:,column]))
 
 class Filter:
     """ A Filter object is the data of:
-    . estimated State
-    . observed State
+    . a list of estimated State
+    . a list of observed State
+    . some parameters
 
     The ensemble size is:
-    . 1 for simple Kalman filter
-    . any for ensemble Kalman filter
+    . 1 for simple Kalman filter (not implemented)
+    . any for ensemble Kalman filter (not implemented)
     . 2*dim+1 for unscented Kalman filter (default)
 
     forecast_state and forecast_obs are functions mapping a state 
@@ -216,16 +248,16 @@ class Filter:
                  forecast_state = lambda x : x, 
                  forecast_obs = lambda x : x):
 
-        self.estimate_states = [State(dim)]
-        self.estimate_observations = []
+        self.forecast_state = forecast_state
+        self.forecast_obs = forecast_obs
+        self.estimate_states = [State(dim = dim)]
+        self.estimate_observations = [self.forecast_obs(self.get_last_state())]
         self.real_observations = None
         self.gain = None
         self.ts = 0
         self.tools = EnsembleTools(factor = dim/(1-main_weight), 
                                    main_weight = main_weight,
                                    dim = dim)
-        self.forecast_state = forecast_state
-        self.forecast_obs = forecast_obs
 
     def set_state(self, state: State):
         if type(state) is State:
@@ -234,12 +266,14 @@ class Filter:
             self.estimate_states.append(State(state))
 
     def load_real_observations(self, list):
+        tic()
         self.real_observations = []
         for state in list:
             if type(state) is State:
                 self.real_observations.append(state)
             else:
-                self.real_observations.append(State(state))
+                self.real_observations.append(State(input = state))
+        toc('Observations loaded in')
 
     def set_forecast_function(self, function):
         self.forecast_state = function
@@ -260,7 +294,7 @@ class Filter:
         self.ts += 1
 
     def compute_gain(self, x_f, x_dag, y_dag):
-        """ Computes the transposed gain """
+        """ Computes the gain (transposed for easier further computation) """
         S_xy = []
         S_yy = []
         for x, y in zip(x_dag, y_dag):
@@ -290,6 +324,7 @@ class Filter:
         to compute the analyzed (i.e. best knowledge) state
         """
 
+        tic()
         if self.real_observations is None:
             raise ValueError('Obervation data missing')
         
@@ -306,14 +341,18 @@ class Filter:
             sigma_point = self.forecast_state(guess)
             ensemble_state.append(sigma_point)
             ensemble_obs.append(self.forecast_obs(sigma_point))
+            print(sigma_point.get_values())
 
-        forecast_state = weighted_sum(ensemble_state,
+        forecast_state = weighted_sum(element_list = ensemble_state,
                                       weights = self.tools.weights)
-        self.estimate_observations.append(weighted_sum(ensemble_obs,
-                                          weights = self.tools.weights))
+        self.estimate_observations.append(weighted_sum(element_list = ensemble_obs,
+                                                       weights = self.tools.weights))
 
         self.analyze(forecast_state, ensemble_state, ensemble_obs)
         self.step_ts()
+
+        del sigma_point, ensemble_state, ensemble_obs, forecast_state
+        toc('Step {} achieved in'.format(self.get_ts()))
 
     def filter(self, initial_guess, data):
         pass
@@ -321,7 +360,7 @@ class Filter:
     def __str__(self):
         message = "Filter at time step {}\n".format(self.get_ts()) \
             + "    State dimension = {}\n".format(self.get_last_state().get_dim())
-        if self.observations is None:
+        if self.real_observations is None:
             message += "    no observations"
         else:
             message += "    Obs   dimension = {}".format(self.get_last_obs().get_dim())
