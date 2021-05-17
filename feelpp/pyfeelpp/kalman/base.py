@@ -32,16 +32,11 @@ def balancedpartition(nb_data,nb_procs):
     """ For parallelization purpose using MPI
     
     Computes the distribution of data among the processors 
-    as evenly as possible
+    as uniformly as possible
     """
-    tic()
-    partition = [] #np.zeros(nb_procs, dtype=np.int8)
-    for i in range(nb_procs):
-        nb_partitions = int(round(nb_data/(nb_procs-i)))
-        partition.append(nb_partitions)
-        nb_data -= nb_partitions
-    toc()
-    return partition
+    if nb_data % nb_procs == 0:
+        return nb_procs*[nb_data//nb_procs]
+    return (nb_procs-1)*[nb_data//(nb_procs-1)] + [nb_data%(nb_procs-1)]
 
 def displacements(partition):
     """ For parallelization purpose using MPI
@@ -49,9 +44,9 @@ def displacements(partition):
     Computes the index shift accordingly to the distribution in argument
     """
     tic()
-    shift = []
+    shift = [0]
     for i in range(1,len(partition)):
-        shift.append(displacement[i-1] + partition[i-1])
+        shift.append(shift[i-1] + partition[i-1])
     toc()
     return shift
 
