@@ -488,11 +488,12 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::assemble0d( int i )
     bbf( 3_c, 3_c, i, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -idt( uI ) * id( nu ) / Rbuffer / meas );
 
     // 1/(R |Gamma_I|) <Y,mu2>_Gamma_I
-    bbf( 3_c, 3_c, i, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = cst(0.) * idt( yy ) * id( nu ) / Rbuffer / meas );
+    bbf( 3_c, 3_c, i, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = cst(1.) * idt( yy ) * id( nu ) / Rbuffer / meas );
 
     // Part on the 0d line
 
-#if 0
+#if 1
+    // for the coupling : flux through IBC face
     // <j.n, m>_Gamma_I
     bbf( 3_c, 0_c, j, 0 ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( trans( idt( u ) ) * N() ) * id( nu ) );
 
@@ -552,8 +553,8 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhs0d( int i )
     // Feel::cout << "Value measure on 0d: " << meas << std::endl;
 
     // -< C/|Gamma_I| Yold/dt, mu3>
-    blf( 3_c, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( -Cbuffer * idv( bdf_poly ) + cst(3.) ) * id( nu ) / meas );
-    blf( 3_c, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -1/Rbuffer * cst(3.) * id( nu ) / meas );
+    blf( 3_c, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( -Cbuffer * idv( bdf_poly ) ) * id( nu ) / meas );
+    // blf( 3_c, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -1/Rbuffer * cst(3.) * id( nu ) / meas );
 
     double tElapsed = this->timerTool( "Constructor" ).stop( "assembleRhs0d" );
     this->log( "CoupledMixedPoisson", "assembleRhs0d", ( boost::format( "finish in %1% s" ) % tElapsed ).str() );
