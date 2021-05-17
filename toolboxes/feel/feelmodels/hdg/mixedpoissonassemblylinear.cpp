@@ -25,7 +25,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateHDG & data ) const
     auto sc_param = M_useSC ? 0.5 : 1.0;
 
     // -(p,div(v))_Omega
-    bbf( 0_c, 1_c ) += integrate(_range=elements(support(M_Wh)),_expr=-(idt(p)*div(u)));
+    bbf( 0_c, 1_c ) += integrate(_range=elements(support(M_Wh)), _expr=-inner(idt(p),div(u)) );
 
     // <phat,v.n>_Gamma\Gamma_I
     bbf( 0_c, 2_c ) += integrate(_range=internalfaces(support(M_Wh)),
