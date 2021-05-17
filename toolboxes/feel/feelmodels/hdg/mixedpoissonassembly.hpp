@@ -103,7 +103,7 @@ MixedPoisson<ConvexType, Dim, E_Order>::updateLinearPDE( DataUpdateHDG & data, M
                                             _expr= idt(l) * normal(u) );
 
         // -<lambda, tau w>_Gamma_I
-        bbf( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+        bbf( 1_c, 3_c, 0, i ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
                                             _expr=-tau_constant*inner(idt(l), id(p)) );
 
         // <j.n, m>_Gamma_I
@@ -111,7 +111,7 @@ MixedPoisson<ConvexType, Dim, E_Order>::updateLinearPDE( DataUpdateHDG & data, M
                                             _expr=normalt(u) * id(l) );
 
         // <tau p, m>_Gamma_I
-        bbf( 3_c, 1_c, i, 1 ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+        bbf( 3_c, 1_c, i, 0 ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
                                             _expr=tau_constant*inner(idt(p), id(l)) );
 
         // -<lambda2, m>_Gamma_I
