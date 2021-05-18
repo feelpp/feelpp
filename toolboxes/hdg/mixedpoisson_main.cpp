@@ -13,6 +13,8 @@ runToolboxSimulation( std::shared_ptr<ToolboxType> toolbox )
     if ( toolbox->isStationary() )
     {
         toolbox->solve();
+        if( boption("use-postprocess") )
+            toolbox->solvePostProcess();
         toolbox->exportResults();
     }
     else
@@ -56,6 +58,7 @@ int main(int argc, char *argv[])
         ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
         ("case.mode", Feel::po::value<std::string>()->default_value( "simulation" ), "mode : simulation, h-convergence")
         ("case.mode.h-convergence.hsize", po::value<std::vector<double> >()->multitoken(), "mesh hsize used in h-convergence" )
+        ("use-postprocess", po::value<bool>()->default_value(false), "post process potential" )
         ;
     Feel::Environment env( _argc=argc, _argv=argv,
                            _desc=mpoptions,

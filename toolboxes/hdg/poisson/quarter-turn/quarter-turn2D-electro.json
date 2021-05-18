@@ -80,7 +80,7 @@
     {
         "Exports":
         {
-            "fields":["potential","flux"]
+            "fields":["potential","flux","postpotential"]
         },
         "Measures":
         {

@@ -58,7 +58,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
       M_useSC(boption( prefixvm(this->prefix(), "use-sc")) ),
       M_useUserIBC(false),
       M_quadError(ioption(prefixvm(this->prefix(), "error-quadrature")) ),
-      M_setZeroByInit(boption(prefixvm(this->prefix(), "set-zero-by-init")) )
+      M_setZeroByInit(boption(prefixvm(this->prefix(), "set-zero-by-init")) ),
+      M_postMatrixInit(false)
 {
     this->log("MixedPoisson","constructor", "start" );
 
@@ -133,31 +134,12 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
 
     solve::strategy s = M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
-    solve::strategy spp = solve::strategy::local;
     auto pps = product( M_Whp );
 
-//     M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend );
-// #ifndef USE_SAME_MAT
     M_A = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend, (s>=solve::strategy::static_condensation)?false:true );
-// #endif
     M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);
-    M_App = makeSharedMatrixCondensed<value_type>(spp,  csrGraphBlocks(pps, (spp>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), backend(), true );
+    M_App = makeSharedMatrixCondensed<value_type>(solve::strategy::local,  csrGraphBlocks(pps, Pattern::ZERO), backend(), false );
     M_Fpp = makeSharedVectorCondensed<value_type>(solve::strategy::local, blockVector(pps), backend(), false);
-    // size_type currentStartIndex = 0;// velocity and pressure before
-    // this->setStartSubBlockSpaceIndex( "potential-electric", currentStartIndex );
-
-    // // vector solution
-    // int nBlock = this->nBlockMatrixGraph();
-    // M_blockVectorSolution.resize( nBlock );
-    // int indexBlock=0;
-    // M_blockVectorSolution(indexBlock) = this->fieldPotentialPtr();
-
-    // // init petsc vector associated to the block
-    // M_blockVectorSolution.buildVector( this->backend() );
-
-    // // algebraic solver
-    // if ( buildModelAlgebraicFactory )
-    //     this->initAlgebraicFactory();
 
     this->setIsUpdatedForUse( true );
 
@@ -178,6 +160,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
         M_Vh = space_flux_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm() );
         M_Wh = space_potential_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm() );
         M_Whp = space_postpotential_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm() );
+        M_P0dh = space_p0dh_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm() );
     }
     else
     {
@@ -185,6 +168,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
         M_Vh = space_flux_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
         M_Wh = space_potential_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
         M_Whp = space_postpotential_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
+        M_P0dh = space_p0dh_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
     M_up = std::make_shared<element_flux_type>(M_Vh, M_physicMap["fluxSymbol"]);
     M_pp = std::make_shared<element_potential_type>(M_Wh, M_physicMap["potentialSymbol"]);
@@ -214,15 +198,17 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
                                       });
     auto face_mesh = createSubmesh( _mesh=this->mesh(), _range=complement_integral_faces, _update=0 );
     M_Mh = space_trace_type::New( _mesh=face_mesh, _extended_doftable=true, _worldscomm=this->worldsComm() );
+    M_phat = std::make_shared<element_trace_type>(M_Mh, "phat");
+
     auto ibc_mesh = createSubmesh( _mesh=this->mesh(), _range=markedfaces(this->mesh(), ibcMarkers), _update=0 );
     M_Ch = space_traceibc_type::New( _mesh=ibc_mesh, _extended_doftable=true, _worldscomm=this->worldsComm() );
+    M_mup = element_traceibc_vector_type(M_bcIntegralMarkerManagement.markerIntegralBC().size(),
+                                         std::make_shared<element_traceibc_type>(M_Ch, "mup"));
+
     auto ibcSpaces = std::make_shared<ProductSpace<space_traceibc_ptrtype, true> >( M_bcIntegralMarkerManagement.markerIntegralBC().size(), M_Ch);
     std::vector<std::string> props(M_bcIntegralMarkerManagement.markerIntegralBC().size(), "Ibc");
     ibcSpaces->setProperties( props );
     M_ps = std::make_shared<product2_space_type>(ibcSpaces, M_Vh, M_Wh, M_Mh);
-    M_phat = std::make_shared<element_trace_type>(M_Mh, "phat");
-    M_mup = element_traceibc_vector_type(M_bcIntegralMarkerManagement.markerIntegralBC().size(),
-                                         std::make_shared<element_traceibc_type>(M_Ch, "mup"));
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
@@ -305,7 +291,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("MixedPoisson","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    this->setPostProcessExportsAllFieldsAvailable( {M_potentialKey, M_fluxKey} );
+    this->setPostProcessExportsAllFieldsAvailable( {M_potentialKey, M_fluxKey, "post"+M_potentialKey} );
     this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
@@ -327,8 +313,9 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     // point measures
     auto fieldNamesWithSpacePotential = std::make_pair( std::set<std::string>({M_potentialKey}), this->spacePotential() );
+    auto fieldNamesWithSpacePostPotential = std::make_pair( std::set<std::string>({"post"+M_potentialKey}), this->spacePostPotential() );
     auto fieldNamesWithSpaceFlux = std::make_pair( std::set<std::string>({M_fluxKey}), this->spaceFlux() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpacePotential, fieldNamesWithSpaceFlux );
+    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpacePotential, fieldNamesWithSpacePostPotential, fieldNamesWithSpaceFlux );
     M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
     for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
     {
@@ -524,11 +511,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve() {
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve()
+{
     M_A->zero();
     M_F->zero();
     DataUpdateHDG dataHDGCst(M_A, M_F, true);
     this->updateLinearPDE(dataHDGCst);
+
     auto bbf = blockform2( *M_ps, M_A);
     auto blf = blockform1( *M_ps, M_F);
     auto U = M_ps->element();
@@ -538,6 +527,27 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve() {
     M_up = std::make_shared<element_flux_type>( U(0_c) );
     M_pp = std::make_shared<element_potential_type>( U(1_c));
 
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+void
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solvePostProcess()
+{
+    Feel::cout << "solving post process" << std::endl;;
+    DataUpdateHDG dataHDGPost(M_App, M_Fpp, !M_postMatrixInit);
+    this->updatePostPDE(dataHDGPost);
+
+    auto pps = product( M_Whp );
+    auto bbf = blockform2( pps, M_App );
+    auto blf = blockform1( pps, M_Fpp );
+    auto PP = pps.element();
+    bbf.solve( _solution=PP, _rhs=blf, _name="sc.post", _local=true);
+
+    M_ppp = std::make_shared<element_postpotential_type>( PP(0_c) );
+    M_ppp->plusAssign(M_ppp->ewiseMean(M_P0dh), -1);
+    M_ppp->plusAssign(M_pp->ewiseMean(M_P0dh), 1);
+    // M_ppp -= M_ppp->ewiseMean(M_P0dh);
+    // M_ppp += M_pp->ewiseMean(M_P0dh);
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS

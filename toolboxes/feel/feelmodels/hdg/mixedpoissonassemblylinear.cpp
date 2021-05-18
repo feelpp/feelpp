@@ -78,5 +78,12 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateHDG & data ) const
     this->updateLinearPDE( data, this->modelContext() );
 }
 
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+void
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updatePostPDE( DataUpdateHDG & data ) const
+{
+    this->updatePostPDE( data, this->modelContext() );
+}
+
 }
 }
