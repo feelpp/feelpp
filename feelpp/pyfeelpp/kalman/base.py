@@ -1,3 +1,9 @@
+"""
+Perspectives:
+ . parallelization using MPI
+ . riddance of used observations using pop method 
+"""
+
 import numpy as np
 import scipy as sci
 import scipy.linalg
@@ -97,7 +103,7 @@ class State:
         """ Sets array as the state and computes the dimension """
         if type(values) is not np.ndarray and type(values) is not list and not isnumber(values):
             raise TypeError('state description must be 1D numpy.array or list or number')
-        self._values = np.array(values)
+        self._values = np.array([values])
         self._values.shape = (max(self._values.shape),)
         self._dim = len(self._values)
 
@@ -179,8 +185,9 @@ class EnsembleTools:
         self.dim = dim
         self.factor = factor
         self.weights = self.set_weights(main_weight, dim)
-        self.state_cov = self.set_state_cov(1)
-        self.obs_cov = self.set_state_cov(1)
+        self.covariances = {'state': None, 'observation': None}
+        self.set_covariance(1, 'state')
+        self.set_covariance(1, 'observation')
 
     def set_weights(self, value: float, dim: int):
         """ Computes the weights associated with the stencil size 
@@ -189,17 +196,20 @@ class EnsembleTools:
 
         return [value] + (self.size-1)*[(1-value)/(2*self.dim)]
 
-    def set_state_cov(self, value):
-        """ Sets the state covariance. 
+    def set_covariance(self, value, type: str):
+        """ Sets the state or observation covariance. 
 
         If a number is provided, the resulting matrix is number*Id.
         Else a square matrix of appropriate size is required.
+        Zero is not allowed since it would mean maximal confidence.
         """
-
-        if isnumber(value):
-            self.state_cov = value * np.eye(self.dim)
-        else:
-            self.state_cov = value
+        if type not in ['state', 'observation']:
+            raise ValueError('Covariance type is either \'state\' or \'observation\'')
+        if np.linalg.norm(value) != 0:
+            if isnumber(value):
+                self.covariances[type] = value * np.eye(self.dim)
+            else:
+                self.covariances[type] = value
 
     def set_obs_cov(self, value):
         """ Sets the observation covariance. 
@@ -209,7 +219,7 @@ class EnsembleTools:
         """
 
         if isnumber(value):
-            self.obs_cov = value * np.eye(dim)
+            self.obs_cov = value * np.eye(self.dim)
         else:
             self.obs_cov = value
 
@@ -221,8 +231,8 @@ class EnsembleTools:
         """
 
         self.ensemble = [state]
-        shift_matrix = np.sqrt(self.factor) * sci.linalg.sqrtm(self.state_cov)
-        #signs = [0] + state.get_dim()*[1] + state.get_dim()*[-1]
+        shift_matrix = np.sqrt(self.factor) * sci.linalg.sqrtm(self.covariances['state'])
+        print(self.covariances['state'])
         for column in range(len(shift_matrix)):
             self.ensemble.append(state + State(shift_matrix[:,column]))
             self.ensemble.append(state - State(shift_matrix[:,column]))
@@ -255,6 +265,7 @@ class Filter:
         self.real_observations = None
         self.gain = None
         self.ts = 0
+        self.max_ts = None
         self.tools = EnsembleTools(factor = dim/(1-main_weight), 
                                    main_weight = main_weight,
                                    dim = dim)
@@ -273,6 +284,7 @@ class Filter:
                 self.real_observations.append(state)
             else:
                 self.real_observations.append(State(input = state))
+        self.max_ts = len(self.real_observations)
         toc('Observations loaded in')
 
     def set_forecast_function(self, function):
@@ -292,6 +304,9 @@ class Filter:
 
     def step_ts(self):
         self.ts += 1
+        if self.max_ts is not None:
+            if self.ts == self.max_ts:
+                print('Last time step is reached.')
 
     def compute_gain(self, x_f, x_dag, y_dag):
         """ Computes the gain (transposed for easier further computation) """
@@ -305,7 +320,9 @@ class Filter:
     
         self.gain = weighted_sum(S_xy, weights = self.tools.weights) \
                @ np.linalg.inv(weighted_sum(S_yy, weights = self.tools.weights) \
-                               + sci.linalg.sqrtm(self.tools.obs_cov))
+                               + sci.linalg.sqrtm(self.tools.covariances['observation']))
+
+        del S_xy, S_yy
 
     def analyze(self, x_f, x_dag, y_dag):
         """ Computes the analysis formula using most recent data 
@@ -327,21 +344,26 @@ class Filter:
         tic()
         if self.real_observations is None:
             raise ValueError('Obervation data missing')
+        if self.ts == self.max_ts:
+            raise RecursionError('Last time step reached')
         
         ensemble_state = []
         ensemble_obs = []
 
-        self.tools.set_state_cov(np.outer(self.get_last_state().get_values(),
-                                          self.get_last_state().get_values()))
-        self.tools.set_obs_cov(np.outer(self.real_observations[self.ts].get_values(),
-                                        self.real_observations[self.ts].get_values()))
+        self.tools.set_covariance(np.outer(self.get_last_state().get_values(),
+                                           self.get_last_state().get_values()),
+                                  type = 'state')
+        self.tools.set_covariance(np.outer(self.real_observations[self.ts].get_values(),
+                                           self.real_observations[self.ts].get_values()),
+                                  type = 'observation')
 
         self.tools.produce_ensemble(self.get_last_state())
         for guess in self.tools.ensemble:
             sigma_point = self.forecast_state(guess)
             ensemble_state.append(sigma_point)
             ensemble_obs.append(self.forecast_obs(sigma_point))
-            print(sigma_point.get_values())
+            #print(sigma_point.get_values())
+            print(guess.get_values())
 
         forecast_state = weighted_sum(element_list = ensemble_state,
                                       weights = self.tools.weights)
