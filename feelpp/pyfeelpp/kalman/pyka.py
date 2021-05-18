@@ -186,8 +186,8 @@ class EnsembleTools:
         self.factor = factor
         self.weights = self.set_weights(main_weight, dim)
         self.covariances = {'state': None, 'observation': None}
-        self.set_covariance(1, 'state')
-        self.set_covariance(1, 'observation')
+        for type in ['state', 'observation', 'cross', 'measure']:
+            self.set_covariance(1, type)
 
     def set_weights(self, value: float, dim: int):
         """ Computes the weights associated with the stencil size 
@@ -203,25 +203,13 @@ class EnsembleTools:
         Else a square matrix of appropriate size is required.
         Zero is not allowed since it would mean maximal confidence.
         """
-        if type not in ['state', 'observation']:
-            raise ValueError('Covariance type is either \'state\' or \'observation\'')
+        if type not in ['state', 'observation', 'cross', 'measure']:
+            raise ValueError('Covariance type is either \'state\', \'observation\', \'cross\' or \'measure\'')
         if np.linalg.norm(value) != 0:
             if isnumber(value):
                 self.covariances[type] = value * np.eye(self.dim)
             else:
                 self.covariances[type] = value
-
-    def set_obs_cov(self, value):
-        """ Sets the observation covariance. 
-
-        If a number is provided, the resulting matrix is number*Id.
-        Else a square matrix of appropriate size is required.
-        """
-
-        if isnumber(value):
-            self.obs_cov = value * np.eye(self.dim)
-        else:
-            self.obs_cov = value
 
     def produce_ensemble(self, state: State):
         """ Computes the stencil of sigma-points 
@@ -317,10 +305,11 @@ class Filter:
                                @ np.mat(y.get_values() - self.get_last_obs().get_values()))
             S_yy.append(np.mat(y.get_values() - self.get_last_obs().get_values()).T \
                         @ np.mat(y.get_values() - self.get_last_obs().get_values()))
-    
-        self.gain = weighted_sum(S_xy, weights = self.tools.weights) \
-               @ np.linalg.inv(weighted_sum(S_yy, weights = self.tools.weights) \
-                               + sci.linalg.sqrtm(self.tools.covariances['observation']))
+        self.tools.set_covariance(weighted_sum(S_xy, weights = self.tools.weights), 'cross')
+        self.tools.set_covariance(weighted_sum(S_yy, weights = self.tools.weights), 'observation')
+        self.gain = self.tools.covariances['cross'] \
+                    @ np.linalg.inv(self.tools.covariances['observation'] \
+                                    + self.tools.covariances['measure'])
 
         del S_xy, S_yy
 
