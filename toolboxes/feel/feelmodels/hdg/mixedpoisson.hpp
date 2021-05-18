@@ -32,7 +32,6 @@
 
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/exporter.hpp>
-//#include <feel/feelvf/vf.hpp>
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/modelphysics.hpp>
@@ -40,30 +39,15 @@
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
-// #include <feel/feelcore/environment.hpp>
-// #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
-// #include <feel/feeldiscr/functionspace.hpp>
-// #include <feel/feeldiscr/operatorinterpolation.hpp>
-// #include <feel/feelvf/vf.hpp>
-// #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelts/bdf.hpp>
-// #include <feel/feelmodels/modelcore/options.hpp>
-// #include <feel/feelmodels/modelproperties.hpp>
-// #include <feel/feelmodels/modelcore/modelnumerical.hpp>
-// #include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
-// #include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
-// #include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
-// #include <boost/hana/tuple.hpp>
 
 #include <feel/feelmodels/hdg/enums.hpp>
-
-#define USE_SAME_MAT 1
 
 namespace Feel
 {
@@ -79,13 +63,7 @@ makeMixedPoissonOptions( std::string const&  _prefix = "", std::string const&  _
     po::options_description mpOptions( "Mixed Poisson HDG options" );
     mpOptions.add_options()( "gmsh.submesh", po::value<std::string>()->default_value( "" ), "submesh extraction" )
         ( prefixvm( prefix, "tau_constant" ).c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
-        ( prefixvm( prefix, "tau_order" ).c_str(), po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges" ) // -1, 0, 1 ==> h^-1, h^0, h^1
-        ( prefixvm( prefix, "hface" ).c_str(), po::value<int>()->default_value( 0 ), "hface" )
-        ( prefixvm( prefix, "conductivity_json" ).c_str(), po::value<std::string>()->default_value( "cond" ), "key for conductivity in json" )
-        ( prefixvm( prefix, "conductivityNL_json" ).c_str(), po::value<std::string>()->default_value( "condNL" ), "key for non linear conductivity in json (depends on potential p)" )
         ( prefixvm( prefix, "use-sc" ).c_str(), po::value<bool>()->default_value( true ), "use static condensation" )
-        ( prefixvm( prefix, "error-quadrature").c_str(), po::value<int>()->default_value(10), "quadrature to compute errors" )
-        ( prefixvm( prefix, "set-zero-by-init").c_str(), po::value<bool>()->default_value(true), "reinit matrix and vector when setting to zero" )
         ( prefixvm( prefix, "time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
         ( prefixvm( prefix, "time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
         ;
@@ -202,7 +180,6 @@ public:
     };
 
 protected:
-    // mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
     faces_reference_wrapper_t<mesh_type> M_gammaMinusIntegral;
 
@@ -225,25 +202,15 @@ protected:
     std::map<std::string,std::string> M_physicMap;
     std::string M_potentialKey;
     std::string M_fluxKey;
-    std::string M_conductivityKey;
-    std::string M_nlConductivityKey;
 
     // boundary conditions
-    map_scalar_field<2> M_bcDirichlet;
-    map_scalar_field<2> M_bcNeumann;
-    map_scalar_fields<2> M_bcRobin;
-    map_scalar_fields<2> M_bcIntegral;
-    map_scalar_field<2> M_volumicForcesProperties;
     MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
     MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
     MarkerManagementRobinBC M_bcRobinMarkerManagement;
     MarkerManagementIntegralBC M_bcIntegralMarkerManagement;
 
     backend_ptrtype M_backend;
-//     condensed_matrix_ptr_t<value_type> M_A_cst;
-// #ifndef USE_SAME_MAT
     condensed_matrix_ptr_t<value_type> M_A;
-// #endif
     condensed_vector_ptr_t<value_type> M_F;
     condensed_matrix_ptr_t<value_type> M_App;
     condensed_vector_ptr_t<value_type> M_Fpp;
@@ -255,23 +222,14 @@ protected:
     double M_timeStepThetaValue;
     vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
-    int M_tauOrder;
     double M_tauCst;
-    int M_hFace;
     bool M_useSC;
 
-    int M_integralCondition;
-    int M_useUserIBC;
-    // integral_boundary_list_type M_IBCList;
-
-    bool M_isPicard;
-    // std::map<std::string,value_type> M_paramValues;
+    // bool M_isPicard;
 
     export_ptrtype M_exporter;
     measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 
-    int M_quadError;
-    bool M_setZeroByInit;
     mutable bool M_postMatrixInit;
 public:
 
@@ -323,10 +281,6 @@ public:
     product2_space_ptrtype const& spaceProductPtr() const { return M_ps; }
     product2_space_type const& spaceProduct() const { return *M_ps; }
 
-    // integral_boundary_list_type integralBoundaryList() const { return M_IBCList; }
-    int integralCondition() const { return M_integralCondition; }
-    // void setIBCList(std::vector<std::string> markersIbc);
-
     materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
@@ -335,16 +289,8 @@ public:
     product2_space_ptrtype getPS() const { return M_ps; }
     condensed_vector_ptr_t<value_type> getF() { return M_F; }
 
-    int tauOrder() const { return M_tauOrder; }
-    void setTauOrder(int order) { M_tauOrder = order; }
     double tauCst() const { return M_tauCst; }
     void setTauCst(double cst) { M_tauCst = cst; }
-    int hFace() const { return M_hFace; }
-    void setHFace(int h) { M_hFace = h; }
-    std::string conductivityKey() const { return M_conductivityKey; }
-    void setConductivityKey(std::string key) { M_conductivityKey = key; }
-    std::string nlConductivityKey() const { return M_nlConductivityKey; }
-    void setNlConductivityKey(std::string key) { M_nlConductivityKey = key; }
     bool useSC() const { return M_useSC; }
     void setUseSC(bool sc) { M_useSC = sc; }
 
@@ -414,7 +360,6 @@ public:
     void updatePostPDE( DataUpdateHDG& data ) const;
     template <typename ModelContextType>
     void updatePostPDE( DataUpdateHDG & data, ModelContextType const& mfields ) const;
-    // virtual void postProcess( bool isNL = false );
 
     //___________________________________________________________________________________//
     // export expressions
@@ -433,9 +378,9 @@ public:
     auto modelFields( std::string const& prefix = "" ) const
         {
             return Feel::FeelModels::modelFields(
-                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::potential(this), prefix, MixedPoissonPhysicsMap[M_physic]["potentialK"], this->fieldPotential(), MixedPoissonPhysicsMap[M_physic]["potentialSymbol"], this->keyword() ),
-                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::postpotential(this), prefix, "post"+MixedPoissonPhysicsMap[M_physic]["potentialK"], this->fieldPostPotential(), MixedPoissonPhysicsMap[M_physic]["potentialSymbol"]+"pp", this->keyword() ),
-                modelField<FieldCtx::ID>( FieldTag::flux(this), prefix, MixedPoissonPhysicsMap[M_physic]["fluxK"], this->fieldFlux(), MixedPoissonPhysicsMap[M_physic]["fluxSymbol"], this->keyword() )
+                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::potential(this), prefix, M_physicMap.at("potentialK"), this->fieldPotential(), M_physicMap.at("potentialSymbol"), this->keyword() ),
+                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::postpotential(this), prefix, "post"+M_physicMap.at("potentialK"), this->fieldPostPotential(), M_physicMap.at("potentialSymbol")+"pp", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::flux(this), prefix, M_physicMap.at("fluxK"), this->fieldFlux(), M_physicMap.at("fluxSymbol"), this->keyword() )
                                                  );
         }
 
@@ -457,7 +402,7 @@ public:
     template <typename ModelFieldsType>
     auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
         {
-            auto const& v = mfields.field( FieldTag::potential(this), MixedPoissonPhysicsMap[M_physic]["potentialK"] );
+            auto const& v = mfields.field( FieldTag::potential(this), M_physicMap.at("potentialK") );
 
             // generate symbol electric_matName_current_density
             typedef decltype( this->currentDensityExpr(v,"") ) _expr_currentdensity_type;
@@ -557,18 +502,7 @@ MixedPoisson<ConvexType,Order, E_Order>::updateInitialConditions( SymbolsExprTyp
             *this->fieldPotentialPtr() = M_bdfPotential->unknown(0);
     }
 }
-#if 0
-template<int Dim, int Order, int G_Order, int E_Order>
-template<typename ExprT>
-void
-MixedPoisson<Dim, Order, G_Order, E_Order>::assemblePostProcessRhs(Expr<ExprT> expr, std::string marker)
-{
-    auto pps = product( M_Whp );
-    auto ell = blockform1( pps, M_Fpp);
-    ell(0_c) += integrate( _range=markedelements(support(M_Wh),marker),
-                          _expr=-grad(M_ppp)*idv(M_up)/expr);
-}
-#endif
+
 } // Namespace FeelModels
 
 } // Namespace Feel
