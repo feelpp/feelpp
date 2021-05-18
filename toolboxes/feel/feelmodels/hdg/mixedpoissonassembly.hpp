@@ -125,6 +125,12 @@ MixedPoisson<ConvexType, Dim, E_Order>::updateLinearPDE( DataUpdateHDG & data, M
                                   _expr=inner(g,id(l))/meas);
         i++;
     }
+    for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_fluxKey, "Interface") )
+    {
+        auto g = expr(bc.expr(), symbolsExpr);
+        blf(2_c) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+                               _expr=inner(id(phat),g) );
+    }
 }
 
 } // namespace FeelModels
