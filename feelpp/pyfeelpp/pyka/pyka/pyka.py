@@ -164,6 +164,9 @@ class State:
     def __matmul__(self, matrix):
         return State(np.array(matrix @ self.get_values()))
 
+    def __eq__(self, other):
+        return np.array_equal(self.get_values(), other.get_values()) and self.get_dim() == other.get_dim()
+
     def __str__(self):
         return "State of dimension {}".format(self.get_dim())
 
@@ -241,22 +244,23 @@ class Filter:
     """
 
     def __init__(self, 
-                 dim: int = 1, 
+                 dimension: int = 1, 
                  main_weight: float = 0.5,
+                 initial_state: State = None,
                  forecast_state = lambda x : x, 
                  forecast_obs = lambda x : x):
 
         self.forecast_state = forecast_state
         self.forecast_obs = forecast_obs
-        self.estimate_states = [State(dim = dim)]
+        self.estimate_states = [State(input = initial_state)] if initial_state is not None else [State(dim = dimension)]
         self.estimate_observations = [self.forecast_obs(self.get_last_state())]
         self.real_observations = None
         self.gain = None
         self.ts = 0
         self.max_ts = None
-        self.tools = EnsembleTools(factor = dim/(1-main_weight), 
+        self.tools = EnsembleTools(factor = dimension/(1-main_weight), 
                                    main_weight = main_weight,
-                                   dim = dim)
+                                   dim = dimension)
 
     def set_state(self, state: State):
         if type(state) is State:
