@@ -50,15 +50,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
       M_physicMap(MixedPoissonPhysicsMap[physic]),
       M_potentialKey(MixedPoissonPhysicsMap[physic]["potentialK"]),
       M_fluxKey(MixedPoissonPhysicsMap[physic]["fluxK"]),
-      M_tauOrder(ioption( prefixvm(this->prefix(), "tau_order") )),
       M_tauCst(doption( prefixvm(this->prefix(), "tau_constant") )),
-      M_hFace(ioption( prefixvm(this->prefix(), "hface") )),
-      M_conductivityKey(soption( prefixvm(this->prefix(), "conductivity_json")) ),
-      M_nlConductivityKey(soption( prefixvm(this->prefix(),"conductivityNL_json")) ),
       M_useSC(boption( prefixvm(this->prefix(), "use-sc")) ),
-      M_useUserIBC(false),
-      M_quadError(ioption(prefixvm(this->prefix(), "error-quadrature")) ),
-      M_setZeroByInit(boption(prefixvm(this->prefix(), "set-zero-by-init")) ),
       M_postMatrixInit(false)
 {
     this->log("MixedPoisson","constructor", "start" );
