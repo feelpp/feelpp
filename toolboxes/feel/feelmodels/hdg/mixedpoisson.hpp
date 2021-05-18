@@ -166,6 +166,9 @@ public:
     using element_traceibc_type = typename space_traceibc_type::element_type;
     using element_traceibc_ptrtype = typename space_traceibc_type::element_ptrtype;
     using element_traceibc_vector_type = std::vector<element_traceibc_ptrtype>;
+    // P0dh
+    using space_p0dh_type = Pdh_type<mesh_type,0>;
+    using space_p0dh_ptrtype = Pdh_ptrtype<mesh_type,0>;
 
     using product2_space_type = ProductSpaces2<space_traceibc_ptrtype,
                                                space_flux_ptrtype,
@@ -182,7 +185,7 @@ public:
     typedef std::shared_ptr<export_type> export_ptrtype;
 
     // measure tools for points evaluation
-    typedef MeasurePointsEvaluation<space_potential_type, space_flux_type> measure_points_evaluation_type;
+    typedef MeasurePointsEvaluation<space_potential_type, space_postpotential_type, space_flux_type> measure_points_evaluation_type;
     typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     // time scheme
@@ -194,7 +197,8 @@ public:
     struct FieldTag
     {
         static auto potential( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
-        static auto flux( self_type const* t ) { return ModelFieldTag<self_type,1>( t ); }
+        static auto postpotential( self_type const* t ) { return ModelFieldTag<self_type,1>( t ); }
+        static auto flux( self_type const* t ) { return ModelFieldTag<self_type,2>( t ); }
     };
 
 protected:
@@ -207,6 +211,7 @@ protected:
     space_postpotential_ptrtype M_Whp; // postprocess potential
     space_trace_ptrtype M_Mh; // potential trace
     space_traceibc_ptrtype M_Ch; // Lagrange multiplier
+    space_p0dh_ptrtype M_P0dh;
     product2_space_ptrtype M_ps;
     element_flux_ptrtype M_up; // flux solution
     element_potential_ptrtype M_pp; // potential solution
@@ -267,6 +272,7 @@ protected:
 
     int M_quadError;
     bool M_setZeroByInit;
+    mutable bool M_postMatrixInit;
 public:
 
     BOOST_PARAMETER_MEMBER_FUNCTION(
@@ -400,14 +406,16 @@ public:
     //___________________________________________________________________________________//
 
     void solve();
-
     void updateLinearPDE( DataUpdateHDG& data ) const;
     template <typename ModelContextType>
     void updateLinearPDE( DataUpdateHDG & data, ModelContextType const& mfields ) const;
-#if 0
+
     void solvePostProcess();
-    virtual void postProcess( bool isNL = false );
-#endif
+    void updatePostPDE( DataUpdateHDG& data ) const;
+    template <typename ModelContextType>
+    void updatePostPDE( DataUpdateHDG & data, ModelContextType const& mfields ) const;
+    // virtual void postProcess( bool isNL = false );
+
     //___________________________________________________________________________________//
     // export expressions
     //___________________________________________________________________________________//
@@ -426,6 +434,7 @@ public:
         {
             return Feel::FeelModels::modelFields(
                 modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::potential(this), prefix, MixedPoissonPhysicsMap[M_physic]["potentialK"], this->fieldPotential(), MixedPoissonPhysicsMap[M_physic]["potentialSymbol"], this->keyword() ),
+                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::postpotential(this), prefix, "post"+MixedPoissonPhysicsMap[M_physic]["potentialK"], this->fieldPostPotential(), MixedPoissonPhysicsMap[M_physic]["potentialSymbol"]+"pp", this->keyword() ),
                 modelField<FieldCtx::ID>( FieldTag::flux(this), prefix, MixedPoissonPhysicsMap[M_physic]["fluxK"], this->fieldFlux(), MixedPoissonPhysicsMap[M_physic]["fluxSymbol"], this->keyword() )
                                                  );
         }

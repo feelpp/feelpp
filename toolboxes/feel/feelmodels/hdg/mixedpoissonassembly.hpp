@@ -133,6 +133,42 @@ MixedPoisson<ConvexType, Dim, E_Order>::updateLinearPDE( DataUpdateHDG & data, M
     }
 }
 
+template< typename ConvexType, int Dim, int E_Order>
+template< typename ModelConvexType>
+void
+MixedPoisson<ConvexType, Dim, E_Order>::updatePostPDE( DataUpdateHDG & data, ModelConvexType const& mctx ) const
+{
+    condensed_matrix_ptr_t<value_type>& A = data.matrix();
+    condensed_vector_ptr_t<value_type>& F = data.rhs();
+    bool buildCstPart = data.buildCstPart();
+    auto mesh = this->mesh();
+    auto ps = product(M_Whp);
+    auto bbf = blockform2( ps, A );
+    auto blf = blockform1( ps, F );
+    auto pp = this->fieldPostPotential();
+    auto u = this->fieldFlux();
+
+    auto const& symbolsExpr = mctx.symbolsExpr();
+
+    if( buildCstPart )
+    {
+        bbf(0_c, 0_c) = integrate( _range=elements(support(M_Wh)),
+                                   _expr=inner(gradt(pp), grad(pp)) );
+        M_postMatrixInit = true;
+    }
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    {
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+        {
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            auto const& condExpr = this->materialsProperties()->materialProperty( matName, this->M_physicMap.at("condK"));
+            auto cond = expr( condExpr.expr(), symbolsExpr);
+            blf(0_c) = integrate(_range=range, _expr=-grad(pp)*idv(u)/cond );
+        }
+    }
+
+}
+
 } // namespace FeelModels
 
 } // namespace Feel
