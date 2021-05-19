@@ -328,12 +328,46 @@ class Mesh2D
             {
                 if ( !elt.hasFace( j ) )
                     continue;
+                auto const& face = elt.face( j );
+
+                // if on boundary don't do anything
+                if ( face.isOnBoundary() || !face.isConnectedTo1() )
+                    continue;
+
+                bool applyOnFirstConnection = false;
+                if ( face.isInterProcessDomain() )
+                {
+                    if ( face.partition1() < face.partition2() )
+                    {
+                        if ( face.proc_first() == face.partition2() )
+                            applyOnFirstConnection = true;
+                    }
+                    else
+                    {
+                        if ( face.proc_first() == face.partition1() )
+                            applyOnFirstConnection = true;
+                    }
+                }
+
+                if ( applyOnFirstConnection )
+                {
+                    if ( face.ad_first() == elt.id() )
+                        elt.setEdgePermutation( face.pos_first(), edge_permutation_type( edge_permutation_type::REVERSE_PERMUTATION ) );
+                }
+                else
+                {
+                    if ( face.ad_second() == elt.id() )
+                        elt.setEdgePermutation( face.pos_second(), edge_permutation_type( edge_permutation_type::REVERSE_PERMUTATION ) );
+                }
+
+#if 0
                 if ( elt.face( j ).isConnectedTo1() &&
                      elt.face( j ).ad_second() == elt.id() )
                 {
                     elt.setEdgePermutation( elt.face( j ).pos_second(),
                                             edge_permutation_type( edge_permutation_type::REVERSE_PERMUTATION ) );
                 }
+#endif
             }
         }
     }
