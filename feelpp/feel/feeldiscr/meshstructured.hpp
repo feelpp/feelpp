@@ -32,6 +32,11 @@ namespace Feel
 template <typename T>
 using holo3_image = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
+namespace detail
+{
+class PolygonMeshStructured;
+}
+
 
 //! Structured mesh class
 //!
@@ -61,16 +66,14 @@ class MeshStructured : public Mesh<Hypercube<2>>
     //!
     //!
     //!
-    //MeshStructured( int nx, int ny, double pixelsize, WorldComm const& );
+    MeshStructured( int nx, int ny, double pixelsize, worldcomm_ptr_t const& wc = Environment::worldCommPtr() )
+        :
+        MeshStructured( nx, ny, pixelsize, std::nullopt, std::nullopt, wc )
+    {}
     MeshStructured( int nx, int ny, double pixelsize,
                     std::optional<holo3_image<float>> const& cx, std::optional<holo3_image<float>> const& cy,
                     worldcomm_ptr_t const& = Environment::worldCommPtr(), bool withCoord = false, std::string pathPoly = "", bool withPoly = false );
     //MeshStructured( int nx, int ny,holo3_image<float> cx,holo3_image<float> cy, WorldComm const& );
-
-    void updateGhostCellInfoByUsingNonBlockingComm(
-        std::unordered_map<int, int> const& idStructuredMeshToFeelMesh,
-        std::unordered_map<int, boost::tuple<int, rank_type>> const& mapGhostElt,
-        std::vector<int> const& nbMsgToRecv );
 
     /*
      * Create an element
@@ -82,8 +85,19 @@ class MeshStructured : public Mesh<Hypercube<2>>
         element_type e;
         return e;
     }
-
   private:
+
+    // TO CHECK : maybe inline these methods
+    void addStructuredPoint( size_type i, size_type j, rank_type partId, bool isGhost,
+                             bool withPoly, bool withCoord, std::shared_ptr<Feel::detail::PolygonMeshStructured> const& polygonTool );
+    std::pair<size_type,size_type> addStructuredElement( size_type i, size_type j, rank_type processId, rank_type partId,
+                                                         std::vector<rank_type> const& neighborPartitionIds,
+                                                         bool withPoly, bool withCoord, std::shared_ptr<Feel::detail::PolygonMeshStructured> const& polygonTool );
+   void updateGhostCellInfoByUsingNonBlockingComm(
+        std::unordered_map<size_type, size_type> const& idStructuredMeshToFeelMesh,
+        std::unordered_map<size_type, boost::tuple<size_type, rank_type>> const& mapGhostElt );
+
+   private:
     size_type M_nx;                         // Global X number of elements
     size_type M_ny;                         // Global Y number of elements
     std::optional<holo3_image<float>> M_cx; // X-coordinates for nodes
