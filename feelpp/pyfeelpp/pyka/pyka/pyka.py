@@ -9,7 +9,7 @@ import scipy as sci
 import scipy.linalg
 import time
 
-VERBOSE = True
+VERBOSE = not True
 seconds = time.time()
 
 """ This part contains basic functions not intrinsically related
@@ -187,12 +187,12 @@ class EnsembleTools:
         self.size = 2*dim+1
         self.dim = dim
         self.factor = factor
-        self.weights = self.set_weights(main_weight, dim)
+        self.weights = self.set_weights(main_weight)
         self.covariances = {'state': None, 'observation': None}
         for type in ['state', 'observation', 'cross', 'measure']:
             self.set_covariance(1, type)
 
-    def set_weights(self, value: float, dim: int):
+    def set_weights(self, value: float):
         """ Computes the weights associated with the stencil size 
         and given central weight.
         """
@@ -252,8 +252,7 @@ class Filter:
 
         self.forecast_state = forecast_state
         self.forecast_obs = forecast_obs
-        self.estimate_states = [State(input = initial_state)] if initial_state is not None else [State(dim = dimension)]
-        self.estimate_observations = [self.forecast_obs(self.get_last_state())]
+        
         self.real_observations = None
         self.gain = None
         self.ts = 0
@@ -261,12 +260,21 @@ class Filter:
         self.tools = EnsembleTools(factor = dimension/(1-main_weight), 
                                    main_weight = main_weight,
                                    dim = dimension)
+        self.analyzed_states = []
+        if initial_state is not None:
+            self.set_state(initial_state)
+        else:
+            self.set_state(State(dim = dimension))
+        self.estimate_observations = [self.forecast_obs(self.get_last_state())]
 
     def set_state(self, state: State):
         if type(state) is State:
-            self.estimate_states.append(state)
+            self.analyzed_states.append(state)
         else:
-            self.estimate_states.append(State(state))
+            self.analyzed_states.append(State(state))
+        self.tools = EnsembleTools(factor = self.get_last_state().get_dim()/(1-self.tools.weights[0]),
+                                   main_weight = self.tools.weights[0],
+                                   dim = self.get_last_state().get_dim())
 
     def load_real_observations(self, list):
         tic()
@@ -286,7 +294,7 @@ class Filter:
         self.forecast_obs = function
         
     def get_last_state(self) -> State:
-        return self.estimate_states[-1]
+        return self.analyzed_states[-1]
 
     def get_last_obs(self) -> State:
         return self.estimate_observations[-1]
@@ -327,7 +335,7 @@ class Filter:
         """
 
         self.compute_gain(x_f, x_dag, y_dag)
-        self.estimate_states.append(x_f + ((self.real_observations[self.ts] - self.get_last_obs()) \
+        self.analyzed_states.append(x_f + ((self.real_observations[self.ts] - self.get_last_obs()) \
                                             @ self.gain))
 
     def forecast(self):
@@ -353,20 +361,37 @@ class Filter:
         self.tools.set_covariance(np.outer(self.real_observations[self.ts].get_values(),
                                            self.real_observations[self.ts].get_values()),
                                   type = 'observation')
-
+        #toc('covariances ok')
+        #tic()
         self.tools.produce_ensemble(self.get_last_state())
+        #toc('ensemble ok')
+        #tic()
         for guess in self.tools.ensemble:
             sigma_point = self.forecast_state(guess)
             ensemble_state.append(sigma_point)
             ensemble_obs.append(self.forecast_obs(sigma_point))
+        #toc('transformation ok')
+        #tic()
 
         forecast_state = weighted_sum(element_list = ensemble_state,
                                       weights = self.tools.weights)
+        #toc('forecast state')
+        #tic()
         self.estimate_observations.append(weighted_sum(element_list = ensemble_obs,
                                                        weights = self.tools.weights))
-
+        #toc('expected observations')
+        #tic()
         self.analyze(forecast_state, ensemble_state, ensemble_obs)
+        #toc('analyzed')
         self.step_ts()
+
+        print(forecast_state.get_values())
+        print('\n')
+        print([s.get_values() for s in ensemble_state])
+        print('\n')
+        print([s.get_values() for s in ensemble_obs])
+        print('\n')
+        print('\n')
 
         del sigma_point, ensemble_state, ensemble_obs, forecast_state
         toc('Step {} achieved in'.format(self.get_ts()))
@@ -380,8 +405,18 @@ class Filter:
         self.load_real_observations(data)
         while self.ts < self.max_ts:
             self.forecast()
-            if VERBOSE:
-                print(self.get_last_state().get_values())
+
+    def extract_analysed_states(self, components = 'all'):
+        """ Extracts analyzed states trajectories.
+
+        The argument \"component\" is either \"all\" or a list of indices.
+        """
+
+        output = []
+        indices = range(self.tools.dim) if components == "all" else components
+        for state in self.analyzed_states:
+            output.append(state.get_values()[indices].reshape((len(indices),)))
+        return np.array(output).squeeze()
 
     def __str__(self):
         message = "Filter at time step {}\n".format(self.get_ts()) \
