@@ -72,62 +72,62 @@ private :
     std::vector<polygon_type> M_list_poly;
 };
 
-template <int Dim>
+template <int Dim, typename IndexT>
 class PartitioningMeshStructured
 {
 public:
     static const int nDim = Dim;
 
-    PartitioningMeshStructured(size_type nx, size_type ny, worldcomm_ptr_t const& wc)
+    using index_type = IndexT;
+
+    PartitioningMeshStructured(std::vector<index_type> const& nGlobalPtByAxis, rank_type nPartition ,rank_type partId )
         :
-        M_nGlobalPtByAxis( nDim, 0 )
+        M_nGlobalPtByAxis( nGlobalPtByAxis )
         {
-            rank_type nProc = wc->localSize();
-            rank_type partId = wc->localRank();
+            CHECK( M_nGlobalPtByAxis.size() == nDim ) << "invalid dim";
 
-            M_nGlobalPtByAxis[0] = nx;
-            M_nGlobalPtByAxis[1] = ny;
-
-            M_nLocalPtByAxis.resize( nProc, std::vector<size_type>(nDim,0) );
-            M_startPtIdByAxis.resize( nProc, std::vector<size_type>(nDim,0) );
-            M_nLocalPtByAxisWithGhost.resize( nProc, std::vector<size_type>(nDim,0) );
-            M_startPtIdByAxisWithGhost.resize( nProc, std::vector<size_type>(nDim,0) );
+            M_nLocalPtByAxis.resize( nPartition, std::vector<index_type>(nDim,0) );
+            M_startPtIdByAxis.resize( nPartition, std::vector<index_type>(nDim,0) );
+            M_nLocalPtByAxisWithGhost.resize( nPartition, std::vector<index_type>(nDim,0) );
+            M_startPtIdByAxisWithGhost.resize( nPartition, std::vector<index_type>(nDim,0) );
 
 
             std::string partitioningType = "striped";
             int partitioningStripedAxis = 0;
 
+            rank_type nPartNonEmpty = std::min( M_nGlobalPtByAxis[partitioningStripedAxis]-1, (index_type)nPartition );
+            bool currentPartIsEmpty = partId >= nPartNonEmpty;
 
             for ( int a=0;a<nDim;++a )
             {
                 if ( a == partitioningStripedAxis )
                 {
-                    size_type nTotalPointsByCol = M_nGlobalPtByAxis[a] + ( nProc - 1 );
-                    size_type nPtByColByProc = ( M_nGlobalPtByAxis[a] + ( nProc - 1 ) ) / nProc;
-                    if ( nTotalPointsByCol <= nPtByColByProc * ( nProc - 1 ) )
+                    index_type nTotalPointsByCol = M_nGlobalPtByAxis[a] + ( nPartNonEmpty - 1 );
+                    index_type nPtByColByProc = ( M_nGlobalPtByAxis[a] + ( nPartNonEmpty - 1 ) ) / nPartNonEmpty;
+                    if ( nTotalPointsByCol <= nPtByColByProc * ( nPartNonEmpty - 1 ) )
                         --nPtByColByProc;
-                    for ( rank_type p = 0 ; p<nProc ; ++p )
+                    for ( rank_type p = 0 ; p<nPartNonEmpty ; ++p )
                         M_nLocalPtByAxis[p][a] = nPtByColByProc;
-                    if ( nPtByColByProc * nProc < nTotalPointsByCol )
+                    if ( nPtByColByProc * nPartNonEmpty < nTotalPointsByCol )
                     {
-                        size_type nPointToDistribute = nTotalPointsByCol - nPtByColByProc * nProc;
-                        for ( size_type k = 0; k < nPointToDistribute; ++k )
+                        index_type nPointToDistribute = nTotalPointsByCol - nPtByColByProc * nPartNonEmpty;
+                        for ( index_type k = 0; k < nPointToDistribute; ++k )
                         {
-                            if ( k < nProc )
-                                ++M_nLocalPtByAxis[nProc - 1 - k][a];
+                            if ( k < nPartNonEmpty )
+                                ++M_nLocalPtByAxis[nPartNonEmpty - 1 - k][a];
                         }
                     }
 
-                    for ( rank_type p = 1 ; p<nProc ; ++p )
+                    for ( rank_type p = 1 ; p<nPartNonEmpty ; ++p )
                     {
                         M_startPtIdByAxis[p][a] = M_nLocalPtByAxis[p-1][a] > 0? M_startPtIdByAxis[p-1][a] + (M_nLocalPtByAxis[p-1][a] -1 ) : M_startPtIdByAxis[p-1][a];
                         M_startPtIdByAxisWithGhost[p][a] = M_startPtIdByAxis[p][a] - 1;
                     }
 
-                    for ( rank_type p = 0 ; p<nProc; ++p )
+                    for ( rank_type p = 0 ; p<nPartNonEmpty; ++p )
                     {
                         M_nLocalPtByAxisWithGhost[p][a] = M_nLocalPtByAxis[p][a];
-                        if ( p < (nProc-1) )
+                        if ( p < (nPartNonEmpty-1) )
                             ++M_nLocalPtByAxisWithGhost[p][a];
                         if ( p > 0 )
                             ++M_nLocalPtByAxisWithGhost[p][a];
@@ -135,7 +135,7 @@ public:
                 }
                 else
                 {
-                    for ( rank_type p = 0 ; p<nProc ; ++p )
+                    for ( rank_type p = 0 ; p<nPartNonEmpty ; ++p )
                     {
                         //startPtIdByAxis[p][a] = 0;
                         M_nLocalPtByAxis[p][a] = M_nGlobalPtByAxis[a];
@@ -145,10 +145,10 @@ public:
             }
 
             // ghost elements
-            if ( partId > 0 )
+            if ( partId > 0 && !currentPartIsEmpty )
             {
-                std::vector<size_type> startEltGhost( nDim, 0 );
-                std::vector<size_type> endEltGhost( nDim, 0 );
+                std::vector<index_type> startEltGhost( nDim, 0 );
+                std::vector<index_type> endEltGhost( nDim, 0 );
                 for ( int a=0;a<nDim;++a )
                 {
                     if ( a == partitioningStripedAxis )
@@ -164,10 +164,10 @@ public:
                 }
                 M_eltGhosts.emplace( std::make_pair( partId-1, std::make_tuple( std::move(startEltGhost),std::move(endEltGhost) ) ) );
             }
-            if ( partId < (nProc-1) )
+            if ( partId < (nPartNonEmpty-1) && !currentPartIsEmpty )
             {
-                std::vector<size_type> startEltGhost( nDim, 0 );
-                std::vector<size_type> endEltGhost( nDim, 0 );
+                std::vector<index_type> startEltGhost( nDim, 0 );
+                std::vector<index_type> endEltGhost( nDim, 0 );
                 for ( int a=0;a<nDim;++a )
                 {
                     if ( a == partitioningStripedAxis )
@@ -195,30 +195,31 @@ public:
                 ( j >= (M_startPtIdByAxis[partId][1]+M_nLocalPtByAxis[partId][1]) );
         }
 
-    std::vector<size_type> const& nLocalPtByAxis(rank_type p) const { return M_nLocalPtByAxis.at( p ); }
-    std::vector<size_type> const& startPtIdByAxis(rank_type p) const { return M_startPtIdByAxis.at( p ); }
-    std::vector<size_type> const& nLocalPtByAxisWithGhost(rank_type p) const { return M_nLocalPtByAxisWithGhost.at( p ); }
-    std::vector<size_type> const& startPtIdByAxisWithGhost(rank_type p) const { return M_startPtIdByAxisWithGhost.at( p ); }
+    std::vector<index_type> const& nLocalPtByAxis(rank_type p) const { return M_nLocalPtByAxis.at( p ); }
+    std::vector<index_type> const& startPtIdByAxis(rank_type p) const { return M_startPtIdByAxis.at( p ); }
+    std::vector<index_type> const& nLocalPtByAxisWithGhost(rank_type p) const { return M_nLocalPtByAxisWithGhost.at( p ); }
+    std::vector<index_type> const& startPtIdByAxisWithGhost(rank_type p) const { return M_startPtIdByAxisWithGhost.at( p ); }
 
-    std::map<rank_type,std::tuple<std::vector<size_type>,std::vector<size_type>>> const& eltGhost() const { return M_eltGhosts; }
+    std::map<rank_type,std::tuple<std::vector<index_type>,std::vector<index_type>>> const& eltGhost() const { return M_eltGhosts; }
 private:
-    std::vector<size_type> M_nGlobalPtByAxis;
-    std::vector<std::vector<size_type>> M_nLocalPtByAxis;
-    std::vector<std::vector<size_type>> M_startPtIdByAxis;
-    std::vector<std::vector<size_type>> M_nLocalPtByAxisWithGhost;
-    std::vector<std::vector<size_type>> M_startPtIdByAxisWithGhost;
+    std::vector<index_type> M_nGlobalPtByAxis;
+    std::vector<std::vector<index_type>> M_nLocalPtByAxis;
+    std::vector<std::vector<index_type>> M_startPtIdByAxis;
+    std::vector<std::vector<index_type>> M_nLocalPtByAxisWithGhost;
+    std::vector<std::vector<index_type>> M_startPtIdByAxisWithGhost;
 
-    std::map<rank_type,std::tuple<std::vector<size_type>,std::vector<size_type>>> M_eltGhosts;
+    std::map<rank_type,std::tuple<std::vector<index_type>,std::vector<index_type>>> M_eltGhosts;
 
 };
 } // namespace detail
 
-MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
-                                std::optional<holo3_image<float>> const& cx,
-                                std::optional<holo3_image<float>> const& cy,
-                                worldcomm_ptr_t const& wc,
-                                bool withCoord,
-                                std::string pathPoly, bool withPoly )
+template <typename GeoShape, typename T, typename IndexT>
+MeshStructured<GeoShape,T,IndexT>::MeshStructured( int nx, int ny, double pixelsize,
+                                                   std::optional<holo3_image<float>> const& cx,
+                                                   std::optional<holo3_image<float>> const& cy,
+                                                   worldcomm_ptr_t const& wc,
+                                                   bool withCoord,
+                                                   std::string pathPoly, bool withPoly )
     : super( wc ),
       M_nx( nx ),
       M_ny( ny ),
@@ -248,21 +249,19 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
         polygonTool = std::make_shared<Feel::detail::PolygonMeshStructured>( pathPoly, M_pixelsize );
     bool inPoly = false;
 
-    Feel::detail::PartitioningMeshStructured<nDim> partitionTool(M_nx, M_ny, wc);
+    std::vector<index_type> M_nGlobalPtByAxis;
+    M_nGlobalPtByAxis = { M_nx, M_ny };
+
+    Feel::detail::PartitioningMeshStructured<nDim,index_type> partitionTool(M_nGlobalPtByAxis, nProc, partId);
     auto const& startPtIdByAxisOnProc = partitionTool.startPtIdByAxis(partId);
     auto const& nLocalPtByAxisOnProc = partitionTool.nLocalPtByAxis(partId);
     auto const& startPtIdByAxisWithGhostOnProc = partitionTool.startPtIdByAxisWithGhost(partId);
     auto const& nLocalPtByAxisWithGhostOnProc = partitionTool.nLocalPtByAxisWithGhost(partId);
 
-
     // points
-    //for ( int j = 0; j < M_ny; ++j )
-    for ( int j = startPtIdByAxisWithGhostOnProc[1]; j < (startPtIdByAxisWithGhostOnProc[1] + nLocalPtByAxisWithGhostOnProc[1]); ++j )
-    //for ( int j = startPtIdByAxisOnProc[1]; j < (startPtIdByAxisOnProc[1] + nLocalPtByAxisOnProc[1]); ++j )
+    for ( int i = startPtIdByAxisWithGhostOnProc[0]; i < (startPtIdByAxisWithGhostOnProc[0] + nLocalPtByAxisWithGhostOnProc[0]); ++i )
     {
-        //for ( int i = startColPtId[partId]; i < startColPtId[partId] + nPtByCol[partId]; ++i )
-        for ( int i = startPtIdByAxisWithGhostOnProc[0]; i < (startPtIdByAxisWithGhostOnProc[0] + nLocalPtByAxisWithGhostOnProc[0]); ++i )
-        //for ( int i = startPtIdByAxisOnProc[0]; i < (startPtIdByAxisOnProc[0] + nLocalPtByAxisOnProc[0]); ++i )
+        for ( int j = startPtIdByAxisWithGhostOnProc[1]; j < (startPtIdByAxisWithGhostOnProc[1] + nLocalPtByAxisWithGhostOnProc[1]); ++j )
         {
             bool currentPtIsGhost = partitionTool.pointIsGhost( partId, i, j );
             this->addStructuredPoint( i,j, partId, currentPtIsGhost, withPoly, withCoord, polygonTool );
@@ -304,9 +303,9 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
     this->updateGhostCellInfoByUsingNonBlockingComm( idStructuredMeshToFeelMesh, mapGhostElt );
 }
 
-//template<typename MeshType>
+template <typename GeoShape, typename T, typename IndexT>
 void
-MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::unordered_map<size_type, size_type> const& idStructuredMeshToFeelMesh,
+MeshStructured<GeoShape,T,IndexT>::updateGhostCellInfoByUsingNonBlockingComm( std::unordered_map<size_type, size_type> const& idStructuredMeshToFeelMesh,
                                                            std::unordered_map<size_type, boost::tuple<size_type, rank_type>> const& mapGhostElt )
 {
     DVLOG( 1 ) << "updateGhostCellInfoNonBlockingComm : start on rank " << this->worldComm().localRank() << "\n";
@@ -447,9 +446,10 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::unordered_map<si
 }
 
 
+template <typename GeoShape, typename T, typename IndexT>
 void
-MeshStructured::addStructuredPoint( size_type i, size_type j, rank_type partId, bool isGhost,
-                                    bool withPoly, bool withCoord, std::shared_ptr<Feel::detail::PolygonMeshStructured> const& polygonTool )
+MeshStructured<GeoShape,T,IndexT>::addStructuredPoint( size_type i, size_type j, rank_type partId, bool isGhost,
+                                                       bool withPoly, bool withCoord, std::shared_ptr<Feel::detail::PolygonMeshStructured> const& polygonTool )
 {
     bool inPoly = false;
     int ptid = (M_ny)*i + j;
@@ -482,11 +482,11 @@ MeshStructured::addStructuredPoint( size_type i, size_type j, rank_type partId, 
     }
 }
 
-
-std::pair<typename MeshStructured::size_type,typename MeshStructured::size_type>
-MeshStructured::addStructuredElement( size_type i, size_type j, rank_type processId, rank_type partId,
-                                      std::vector<rank_type> const& neighborPartitionIds,
-                                      bool withPoly, bool withCoord, std::shared_ptr<Feel::detail::PolygonMeshStructured> const& polygonTool )
+template <typename GeoShape, typename T, typename IndexT>
+std::pair<typename MeshStructured<GeoShape,T,IndexT>::size_type,typename MeshStructured<GeoShape,T,IndexT>::size_type>
+MeshStructured<GeoShape,T,IndexT>::addStructuredElement( size_type i, size_type j, rank_type processId, rank_type partId,
+                                                         std::vector<rank_type> const& neighborPartitionIds,
+                                                         bool withPoly, bool withCoord, std::shared_ptr<Feel::detail::PolygonMeshStructured> const& polygonTool )
 {
     using poly_point_type = Feel::detail::PolygonMeshStructured::poly_point_type;
     bool inPoly = false;
@@ -540,11 +540,13 @@ MeshStructured::addStructuredElement( size_type i, size_type j, rank_type proces
             e.setNeighborPartitionIds( neighborPartitionIds );
 
         auto [eit,inserted] = this->addElement( e, true ); // e.id() is defined by Feel++
-        //idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eit->second.id() ) );
         return std::make_pair( eid, eit->second.id() );
     }
     return std::make_pair( invalid_v<size_type>, invalid_v<size_type> );
-
 }
+
+
+
+template class MeshStructured<Hypercube<2>>;
 
 } // namespace Feel
