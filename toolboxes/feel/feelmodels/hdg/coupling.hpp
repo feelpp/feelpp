@@ -55,7 +55,10 @@ makeCoupledMixedPoissonOptions( std::string const& _prefix = "", std::string con
         ( prefixvm( prefix, "set-zero-by-init" ).c_str(), po::value<bool>()->default_value( true ), "reinit matrix and vector when setting to zero" )
         ( prefixvm( "coupling", "Cbuffer_name" ).c_str(), po::value<std::string>()->default_value( "" ), "Name of the C buffer in the circuit" )
         ( prefixvm( "coupling", "var_buffer" ).c_str(), po::value<std::string>()->default_value( "" ), "Name of the buffer variable in the circuit" )
-        ( prefixvm( "coupling", "Rbuffer_name" ).c_str(), po::value<std::string>()->default_value( "" ), "Name of the R buffer in the circuit" );
+        ( prefixvm( "coupling", "Rbuffer_name" ).c_str(), po::value<std::string>()->default_value( "" ), "Name of the R buffer in the circuit" )
+        ( prefixvm( "coupling", "mode" ).c_str(), po::value<int>()->default_value( 0 ), "0 if coupled, 1 if uncoupled" )
+        ( prefixvm( "coupling", "QI" ).c_str(), po::value<std::string>()->default_value( "1*0.5*2*pi*cos(2*pi*t):t" ), "exact solution of the ODE" )
+        ( prefixvm( "coupling", "Pi1" ).c_str(), po::value<std::string>()->default_value( "10+0.5*sin(2*pi*t)+0.5*2*pi*cos(2*pi*t):t" ), "exact solution of the ODE" );
     cmpOptions.add( modelnumerical_options( prefix ) );
     cmpOptions.add( backend_options( prefix + ".sc" ) );
     return cmpOptions;
@@ -488,28 +491,23 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::assemble0d( int i )
     bbf( 3_c, 3_c, i, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -idt( uI ) * id( nu ) / Rbuffer / meas );
 
     // 1/(R |Gamma_I|) <Y,mu2>_Gamma_I
-    bbf( 3_c, 3_c, i, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = cst(1.) * idt( yy ) * id( nu ) / Rbuffer / meas );
+    if ( ioption("coupling.mode") == 0 )    // if the couple is enabled
+    {
+        bbf( 3_c, 3_c, i, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = idt( yy ) * id( nu ) / Rbuffer / meas );
 
-    // Part on the 0d line
+        // Part on the 0d line
 
-#if 1
-    // for the coupling : flux through IBC face
-    // <j.n, m>_Gamma_I
-    bbf( 3_c, 0_c, j, 0 ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( trans( idt( u ) ) * N() ) * id( nu ) );
+        // for the coupling : flux through IBC face
+        // <j.n, m>_Gamma_I
+        bbf( 3_c, 0_c, j, 0 ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( trans( idt( u ) ) * N() ) * id( nu ) );
 
-    // <tau p, m>_Gamma_I
-    bbf( 3_c, 1_c, j, 1 ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = tau_constant * idt( p ) * id( nu ) * ( pow( idv( H ), this->tauOrder() ) ) );
+        // <tau p, m>_Gamma_I
+        bbf( 3_c, 1_c, j, 1 ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = tau_constant * idt( p ) * id( nu ) * ( pow( idv( H ), this->tauOrder() ) ) );
 
-    // -<tau lambda2, m>_Gamma_I
-    bbf( 3_c, 3_c, j, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -tau_constant * id( nu ) * idt( uI ) * ( pow( idv( H ), this->tauOrder() ) ) );
-#else
-    // 1/(R |Gamma_I|) <u_I, mu2>_Gamma_I
-    // bbf( 3_c, 3_c, j, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = idt( uI ) * id( nu ) / Rbuffer / meas );
+        // -<tau lambda2, m>_Gamma_I
+        bbf( 3_c, 3_c, j, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -tau_constant * id( nu ) * idt( uI ) * ( pow( idv( H ), this->tauOrder() ) ) );
+    }
 
-    // -1/(R |Gamma_I|) <Y,mu2>_Gamma_I
-    // bbf( 3_c, 3_c, j, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -idt( yy ) * id( nu ) / Rbuffer / meas );
-    // bbf( 3_c, 3_c, j, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = idt( yy ) * id( nu ) / meas );
-#endif
 
     // -< C/|Gamma_I| Y/dt, mu3>_Gamma_I
     bbf( 3_c, 3_c, j, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -Cbuffer * M_bdf_buffer[i]->polyDerivCoefficient( 0 ) * idt( yy ) * id( nu ) / meas );
@@ -553,8 +551,20 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhs0d( int i )
     // Feel::cout << "Value measure on 0d: " << meas << std::endl;
 
     // -< C/|Gamma_I| Yold/dt, mu3>
-    blf( 3_c, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( -Cbuffer * idv( bdf_poly ) ) * id( nu ) / meas );
-    // blf( 3_c, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -1/Rbuffer * cst(3.) * id( nu ) / meas );
+    switch (ioption("coupling.mode"))
+    {
+        case 0:         // coupled system
+            blf( 3_c, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( -Cbuffer * idv( bdf_poly ) ) * id( nu ) / meas );
+            break;
+        case 1:         // uncoupled system
+            auto QI = expr(soption("coupling.QI"));
+            blf( 3_c, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( -Cbuffer * idv( bdf_poly ) + QI ) * id( nu ) / meas );
+            blf( 3_c, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -1/Rbuffer * QI * id( nu ) / meas );
+            break;
+        default:
+            Feel::cout << "Unknonwn coupling.mode (" << ioption("coupling.mode") << ")" << std::endl;
+            break;
+    }
 
     double tElapsed = this->timerTool( "Constructor" ).stop( "assembleRhs0d" );
     this->log( "CoupledMixedPoisson", "assembleRhs0d", ( boost::format( "finish in %1% s" ) % tElapsed ).str() );
@@ -623,7 +633,12 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::solve()
     for ( int i = 0; i < M_0dCondition; i++ )
     {
         M_Y[i] = U( 3_c, i + 1 );
-        Feel::cout << "PI_1(t) = " << this->M_Y[i](0) << std::endl;
+        Feel::cout << "Pi_1(t) = " << this->M_Y[i](0) << std::endl;
+        // if ( ioption("coupling.mode") == 1)
+        // {
+        //     auto Pi1 = expr(soption("coupling.Pi1"));
+        //     Feel::cout << "Error on Pi1  = " << Pi1.at(this->currentTime()) - this->M_Y[i](0);
+        // }
         this->second_step( this->currentTime() + this->timeStep(), i );
     }
 }
@@ -676,11 +691,10 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::run( op_interp_ptrtype I
         return;
     }
     Feel::cout << "So it begins : " << this->time() << std::endl;
-    Feel::cout << "So it begins : " << this->timeInitial() << std::endl;
 
     // export initial solution
     Feel::cout << "Exporting initial solution" << std::endl;
-    this->exportResults( this->mesh(), Idh_poi, Idhv_poi );
+    this->exportResults( this->timeInitial(), this->mesh(), Idh_poi, Idhv_poi );
     Feel::cout << "Exporting initial solution done" << std::endl;
 
 
