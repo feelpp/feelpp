@@ -1071,17 +1071,29 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                     Feel::cout << "---------------------------" << std::endl;
                     if( Environment::isMasterRank() )
                     {
-                        std::ofstream file ( this->prefix()+"measures.csv" );
+                        boost::format fmter("%1% %|14t|");
+                        if (time == M_bdf_mixedpoisson->timeInitial())
+                        {
+                            std::ofstream file ( this->prefix()+".measures.csv", std::ios::out );
+                            if (file)
+                            {
+                                file << fmter % "t";
+                                file << fmter % "p_error_L2";
+                                file << fmter % "p_error_rel_L2";
+                                file << fmter % "u_error_L2";
+                                file << fmter % "u_error_rel_L2";
+                                file << std::endl;
+                            }
+                            file.close();
+                        }
+                        std::ofstream file ( this->prefix()+".measures.csv", std::ios::out|std::ios::app );
+                        Feel::cout << this->time() << " = " << time << " - " << M_bdf_mixedpoisson->timeInitial() << std::endl;
                         if( file )
                         {
                             double p_err_rel = l2err_p/l2norm_pex;
                             double u_err_rel = l2err_u/l2norm_uex;
-                            boost::format fmter("%1% %|14t|");
-                            file << fmter % "p_error_L2";
-                            file << fmter % "p_error_rel_L2";
-                            file << fmter % "u_error_L2";
-                            file << fmter % "u_error_rel_L2";
-                            file << std::endl;
+
+                            file << fmter % time;
                             file << fmter % l2err_p;
                             file << fmter % p_err_rel;
                             file << fmter % l2err_u;
