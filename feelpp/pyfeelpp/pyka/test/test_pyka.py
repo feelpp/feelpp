@@ -46,5 +46,5 @@ class TestFilter():
 
     def test_simple_filter(self):
         f = Filter()
-        f.filter(initial_guess = 0, data = 30*[1])
-        print(np.array_equal(f.get_last_state().get_values(), np.array([1])))
+        f.filter(initial_guess = 0, data = 100*[1])
+        assert f.get_last_state() == State(input = [1.])
