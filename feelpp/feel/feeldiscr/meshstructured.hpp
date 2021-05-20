@@ -47,15 +47,25 @@ class PolygonMeshStructured;
 //! TODO add code example here
 //! \endcode
 //!
-class MeshStructured : public Mesh<Hypercube<2>>
+
+struct MeshStructuredBase {};
+
+template <typename GeoShape, typename T = double, typename IndexT = uint32_type>
+class MeshStructured : public Mesh<GeoShape,T,0,IndexT>,
+                       public MeshStructuredBase
 {
 
   public:
-    using super = Mesh<Hypercube<2, 1, 2>>;
-    using point_type = super::point_type;
-    using element_type = super::element_type;
-    using face_type = super::face_type;
-    using node_type = super::node_type;
+    using super = Mesh<GeoShape,T,0,IndexT>;
+
+    using index_type = typename super::index_type;
+    using size_type = typename super::size_type;
+    using point_type = typename super::point_type;
+    using element_type = typename super::element_type;
+    using face_type = typename super::face_type;
+    using node_type = typename super::node_type;
+
+    static constexpr uint16_type nDim = super::nDim;
 
     MeshStructured( worldcomm_ptr_t const& wc  = Environment::worldCommPtr() ): super( wc ) { this->setStructureProperty( "00010" ); }
     MeshStructured( MeshStructured const& ) = delete;
@@ -129,7 +139,7 @@ class MeshStructured : public Mesh<Hypercube<2>>
  * @tparam MeshT mesh type
  */
 template<typename MeshT>
-struct is_mesh_structured : std::conditional<std::is_base_of_v<MeshStructured, MeshT>, std::true_type, std::false_type>::type {};
+struct is_mesh_structured : std::conditional<std::is_base_of_v<MeshStructuredBase, MeshT>, std::true_type, std::false_type>::type {};
 
 /**
  * @brief boolean to detect a @p MeshStructured mesh
