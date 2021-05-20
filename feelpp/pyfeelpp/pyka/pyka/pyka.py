@@ -223,7 +223,7 @@ class EnsembleTools:
 
         self.ensemble = [state]
         shift_matrix = np.sqrt(self.factor) * sci.linalg.sqrtm(self.covariances['state'])
-        print(self.covariances['state'])
+
         for column in range(len(shift_matrix)):
             self.ensemble.append(state + State(shift_matrix[:,column]))
             self.ensemble.append(state - State(shift_matrix[:,column]))
@@ -277,7 +277,7 @@ class Filter:
             else:
                 self.real_observations.append(State(input = state))
         self.max_ts = len(self.real_observations)
-        toc('Observations loaded in')
+        toc('{} observations loaded in'.format(self.max_ts))
 
     def set_forecast_function(self, function):
         self.forecast_state = function
@@ -298,17 +298,21 @@ class Filter:
         self.ts += 1
         if self.max_ts is not None:
             if self.ts == self.max_ts:
-                print('Last time step is reached.')
+                print('/!\\ Last time step is reached.')
 
     def compute_gain(self, x_f, x_dag, y_dag):
         """ Computes the gain (transposed for easier further computation) """
         S_xy = []
         S_yy = []
         for x, y in zip(x_dag, y_dag):
-            S_xy.append(np.mat(x.get_values() - x_f.get_values()).T \
-                               @ np.mat(y.get_values() - self.get_last_obs().get_values()))
-            S_yy.append(np.mat(y.get_values() - self.get_last_obs().get_values()).T \
-                        @ np.mat(y.get_values() - self.get_last_obs().get_values()))
+            #S_xy.append(np.mat(x.get_values() - x_f.get_values()).T \
+            #                   @ np.mat(y.get_values() - self.get_last_obs().get_values()))
+            #S_yy.append(np.mat(y.get_values() - self.get_last_obs().get_values()).T \
+            #            @ np.mat(y.get_values() - self.get_last_obs().get_values()))
+            S_xy.append(np.outer(x.get_values() - x_f.get_values(),
+                                 y.get_values() - self.get_last_obs().get_values()))
+            S_yy.append(np.outer(y.get_values() - self.get_last_obs().get_values(),
+                                 y.get_values() - self.get_last_obs().get_values()))
         self.tools.set_covariance(weighted_sum(S_xy, weights = self.tools.weights), 'cross')
         self.tools.set_covariance(weighted_sum(S_yy, weights = self.tools.weights), 'observation')
         self.gain = self.tools.covariances['cross'] \
@@ -337,8 +341,8 @@ class Filter:
         tic()
         if self.real_observations is None:
             raise ValueError('Obervation data missing')
-        if self.ts == self.max_ts:
-            raise RecursionError('Last time step reached')
+        if self.ts >= self.max_ts:
+            raise RecursionError('Last time step exceeded')
         
         ensemble_state = []
         ensemble_obs = []
@@ -355,8 +359,6 @@ class Filter:
             sigma_point = self.forecast_state(guess)
             ensemble_state.append(sigma_point)
             ensemble_obs.append(self.forecast_obs(sigma_point))
-            #print(sigma_point.get_values())
-            print(guess.get_values())
 
         forecast_state = weighted_sum(element_list = ensemble_state,
                                       weights = self.tools.weights)
@@ -369,8 +371,17 @@ class Filter:
         del sigma_point, ensemble_state, ensemble_obs, forecast_state
         toc('Step {} achieved in'.format(self.get_ts()))
 
-    def filter(self, initial_guess, data):
-        pass
+    def filter(self, initial_guess = None, data = None):
+        if initial_guess is None:
+            raise ValueError('Please provide an initial state')
+        if data is None:
+            raise ValueError('Please provide data')
+        self.__init__(initial_state = initial_guess)
+        self.load_real_observations(data)
+        while self.ts < self.max_ts:
+            self.forecast()
+            if VERBOSE:
+                print(self.get_last_state().get_values())
 
     def __str__(self):
         message = "Filter at time step {}\n".format(self.get_ts()) \

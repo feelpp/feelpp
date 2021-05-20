@@ -9,6 +9,7 @@ class TestState:
         s = State(input = [1,2,3,4,5])
         assert s.get_dim() == 5
         assert np.array_equal(s.get_values(), np.array([1,2,3,4,5]))
+        assert str(s) == "State of dimension 5"
 
     def test_set_dim(self):
         s = State(dim = 3)
@@ -34,4 +35,16 @@ class TestFilter():
         f = Filter(initial_state = [1,1,1])
         assert f.get_last_state().get_dim() == 3
         assert np.array_equal(f.get_last_state().get_values(), np.array([1,1,1]))
-        
+        assert str(f) == "Filter at time step 0\n    State dimension = 3\n    no observations"
+
+    def test_load_data(self):
+        f = Filter()
+        data = [np.array([1,2,3]),np.array([2,3,4]),np.array([3,4,5]),np.array([4,5,6]),np.array([5,6,7])]
+        f.load_real_observations(data)
+        assert f.real_observations[0] == State(input = [1,2,3])
+        assert f.max_ts == 5
+
+    def test_simple_filter(self):
+        f = Filter()
+        f.filter(initial_guess = 0, data = 30*[1])
+        print(np.array_equal(f.get_last_state().get_values(), np.array([1])))
