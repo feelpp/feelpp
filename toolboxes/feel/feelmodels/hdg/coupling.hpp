@@ -58,7 +58,7 @@ makeCoupledMixedPoissonOptions( std::string const& _prefix = "", std::string con
         ( prefixvm( "coupling", "Rbuffer_name" ).c_str(), po::value<std::string>()->default_value( "" ), "Name of the R buffer in the circuit" )
         ( prefixvm( "coupling", "mode" ).c_str(), po::value<int>()->default_value( 0 ), "0 if coupled, 1 if uncoupled" )
         ( prefixvm( "coupling", "QI" ).c_str(), po::value<std::string>()->default_value( "1*0.5*2*pi*cos(2*pi*t):t" ), "exact solution of the ODE" )
-        ( prefixvm( "coupling", "Pi1" ).c_str(), po::value<std::string>()->default_value( "10+0.5*sin(2*pi*t)+0.5*2*pi*cos(2*pi*t):t" ), "exact solution of the ODE" );
+        ( prefixvm( "coupling", "Pi1" ).c_str(), po::value<std::string>()->default_value( "10+0.5*sin(2*pi*t)+(1-2)*0.5*2*pi*cos(2*pi*t):t" ), "exact solution of the ODE" );
     cmpOptions.add( modelnumerical_options( prefix ) );
     cmpOptions.add( backend_options( prefix + ".sc" ) );
     return cmpOptions;
@@ -491,7 +491,7 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::assemble0d( int i )
     bbf( 3_c, 3_c, i, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -idt( uI ) * id( nu ) / Rbuffer / meas );
 
     // 1/(R |Gamma_I|) <Y,mu2>_Gamma_I
-    if ( ioption("coupling.mode") == 0 )    // if the couple is enabled
+    if ( ioption("coupling.mode") == 0 )    // if the coupling is enabled
     {
         bbf( 3_c, 3_c, i, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = idt( yy ) * id( nu ) / Rbuffer / meas );
 
@@ -551,15 +551,19 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhs0d( int i )
     // Feel::cout << "Value measure on 0d: " << meas << std::endl;
 
     // -< C/|Gamma_I| Yold/dt, mu3>
+    std::cout << "Time is " << this->time() << std::endl;
+    auto QI = expr( soption("coupling.QI") ); 
+    auto Pi1 = expr( soption("coupling.Pi1") ); 
     switch (ioption("coupling.mode"))
     {
         case 0:         // coupled system
+            Feel::cout << "solving the coupled equations" << std::endl,
             blf( 3_c, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( -Cbuffer * idv( bdf_poly ) ) * id( nu ) / meas );
             break;
         case 1:         // uncoupled system
-            auto QI = expr(soption("coupling.QI"));
-            blf( 3_c, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( -Cbuffer * idv( bdf_poly ) + QI ) * id( nu ) / meas );
-            blf( 3_c, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -1/Rbuffer * QI * id( nu ) / meas );
+            Feel::cout << "solving the UNcoupled equations" << std::endl;
+            blf( 3_c, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( -Cbuffer * idv( bdf_poly ) - QI ) * id( nu ) / meas );
+            blf( 3_c, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -1/Rbuffer * Pi1 * id( nu ) / meas );
             break;
         default:
             Feel::cout << "Unknonwn coupling.mode (" << ioption("coupling.mode") << ")" << std::endl;
@@ -634,11 +638,13 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::solve()
     {
         M_Y[i] = U( 3_c, i + 1 );
         Feel::cout << "Pi_1(t) = " << this->M_Y[i](0) << std::endl;
-        // if ( ioption("coupling.mode") == 1)
-        // {
-        //     auto Pi1 = expr(soption("coupling.Pi1"));
-        //     Feel::cout << "Error on Pi1  = " << Pi1.at(this->currentTime()) - this->M_Y[i](0);
-        // }
+        if ( ioption("coupling.mode") == 1)
+        {
+            auto Pi1_pre = expr(soption("coupling.Pi1"));
+            auto Pi1 = expr( Pi1_pre, symbolExpr( "t", cst(this->time()) ));
+            Feel::cout << "Pi1 = " << Pi1.evaluate()(0,0) << std::endl;
+            Feel::cout << "Error on Pi1 = " << std::abs( Pi1.evaluate()(0,0) - this->M_Y[i](0) ) << std::endl;
+        }
         this->second_step( this->currentTime() + this->timeStep(), i );
     }
 }
