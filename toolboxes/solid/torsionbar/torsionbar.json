@@ -76,7 +76,7 @@
     {
         "Exports":
         {
-            "fields":["displacement","pressure","pid","Von-Mises"]
+            "fields":["displacement","pressure","pid","von-mises-criterion","tresca-criterion","principal-stresses"]
         },
         "Measures":
         {
