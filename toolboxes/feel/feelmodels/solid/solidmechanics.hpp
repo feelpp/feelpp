@@ -39,6 +39,7 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/vonmises.hpp>
 #include <feel/feelvf/eig.hpp>
+#include <feel/feelvf/tresca.hpp>
 
 #include <feel/feelts/bdf.hpp>
 #include <feel/feelts/newmark.hpp>
@@ -422,8 +423,10 @@ public :
         {
             using _expr_firstPiolaKirchhof_type = std::decay_t<decltype(Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(this->fieldDisplacement(),M_fieldPressure,*std::shared_ptr<ModelPhysicSolid<nDim>>{}, this->materialsProperties()->materialProperties(""),se))>;
             using _expr_vonmises_type = std::decay_t<decltype( vonmises(_expr_firstPiolaKirchhof_type{}) )>;
+            using _expr_tresca_type = std::decay_t<decltype( tresca(_expr_firstPiolaKirchhof_type{}) )>;
             using _expr_princial_stress_type = std::decay_t<decltype( eig(_expr_firstPiolaKirchhof_type{}) )>;
             std::map<std::string,std::vector<std::tuple< _expr_vonmises_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVonMisses;
+            std::map<std::string,std::vector<std::tuple< _expr_tresca_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprTresca;
             std::map<std::string,std::vector<std::tuple< _expr_princial_stress_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprPrincipalStress;
             if ( this->hasSolidEquationStandard() )
             {
@@ -439,16 +442,18 @@ public :
 
                         auto fpk = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,M_fieldPressure,*physicSolidData,matProperties,se);
                         auto vonmisesExpr = vonmises( fpk );
-                        mapExprVonMisses[prefixvm(prefix,"von-mises-criterions")].push_back( std::make_tuple( vonmisesExpr, range, "element" ) );
+                        mapExprVonMisses[prefixvm(prefix,"von-mises-criterion")].push_back( std::make_tuple( vonmisesExpr, range, "element" ) );
+
+                        auto trescaExpr = tresca( fpk );
+                        mapExprTresca[prefixvm(prefix,"tresca-criterion")].push_back( std::make_tuple( trescaExpr, range, "element" ) );
 
                         auto principalStressExpr = eig( fpk );
-                        mapExprPrincipalStress[prefixvm(prefix,"princial-stress")].push_back( std::make_tuple( principalStressExpr, range, "element" ) );
+                        mapExprPrincipalStress[prefixvm(prefix,"principal-stresses")].push_back( std::make_tuple( principalStressExpr, range, "element" ) );
                     }
                 }
             }
 
-            return hana::make_tuple( mapExprVonMisses,mapExprPrincipalStress );
-
+            return hana::make_tuple( mapExprVonMisses,mapExprTresca,mapExprPrincipalStress );
         }
     template <typename SymbExprType>
     auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const

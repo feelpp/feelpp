@@ -1036,7 +1036,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("SolidMechanics","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    std::set<std::string> fieldsAvailable = { "displacement", "von-mises-criterions", "tresca-criterions", "princial-stress" };
+    std::set<std::string> fieldsAvailable = { "displacement", "von-mises-criterion", "tresca-criterion", "principal-stresses" };
     if ( !this->isStationary() )
         fieldsAvailable.insert( "velocity" );
     if ( this->hasDisplacementPressureFormulation() )
