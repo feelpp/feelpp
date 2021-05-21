@@ -573,7 +573,7 @@ public :
     auto modelFields( DisplacementFieldType const& field_s, VelocityFieldType const& field_v, PressureFieldType const& field_p, std::string const& prefix = "" ) const
         {
             //auto mfield_disp = modelField<FieldCtx::ID|FieldCtx::MAGNITUDE,element_displacement_ptrtype>( FieldTag::displacement(this) );
-            auto mfield_disp = modelField<FieldCtx::ID|FieldCtx::MAGNITUDE,DisplacementFieldType>( FieldTag::displacement(this) );
+            auto mfield_disp = modelField<FieldCtx::FULL,DisplacementFieldType>( FieldTag::displacement(this) );
             mfield_disp.add( FieldTag::displacement(this), prefix,"displacement", field_s, "s", this->keyword() );
             if constexpr ( std::is_same_v<DisplacementFieldType,VelocityFieldType> )
                 mfield_disp.add( FieldTag::displacement(this), prefix,"velocity", field_v, "v", this->keyword() );
