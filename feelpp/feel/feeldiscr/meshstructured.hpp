@@ -32,12 +32,6 @@ namespace Feel
 template <typename T>
 using holo3_image = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
-namespace detail
-{
-class PolygonMeshStructured;
-}
-
-
 //! Structured mesh class
 //!
 //! A structured mesh is such that points and elements can
@@ -82,9 +76,9 @@ class MeshStructured : public Mesh<GeoShape,T,0,IndexT>,
     {}
     MeshStructured( int nx, int ny, double pixelsize,
                     std::optional<holo3_image<float>> const& cx, std::optional<holo3_image<float>> const& cy,
-                    worldcomm_ptr_t const& = Environment::worldCommPtr(), bool withCoord = false, std::string pathPoly = "", bool withPoly = false );
+                    worldcomm_ptr_t const& = Environment::worldCommPtr(), bool withCoord = false );
     //MeshStructured( int nx, int ny,holo3_image<float> cx,holo3_image<float> cy, WorldComm const& );
-
+#if 0
     /*
      * Create an element
      * g_i = global x index
@@ -95,14 +89,14 @@ class MeshStructured : public Mesh<GeoShape,T,0,IndexT>,
         element_type e;
         return e;
     }
+#endif
   private:
 
     // TO CHECK : maybe inline these methods
-    void addStructuredPoint( size_type i, size_type j, rank_type partId, bool isGhost,
-                             bool withPoly, bool withCoord, std::shared_ptr<Feel::detail::PolygonMeshStructured> const& polygonTool );
+    void addStructuredPoint( size_type i, size_type j, rank_type partId, bool isGhost, bool withCoord );
     std::pair<size_type,size_type> addStructuredElement( size_type i, size_type j, rank_type processId, rank_type partId,
                                                          std::vector<rank_type> const& neighborPartitionIds,
-                                                         bool withPoly, bool withCoord, std::shared_ptr<Feel::detail::PolygonMeshStructured> const& polygonTool );
+                                                         bool withCoord );
    void updateGhostCellInfoByUsingNonBlockingComm(
         std::unordered_map<size_type, size_type> const& idStructuredMeshToFeelMesh,
         std::unordered_map<size_type, boost::tuple<size_type, rank_type>> const& mapGhostElt );
@@ -112,25 +106,11 @@ class MeshStructured : public Mesh<GeoShape,T,0,IndexT>,
     size_type M_ny;                         // Global Y number of elements
     std::optional<holo3_image<float>> M_cx; // X-coordinates for nodes
     std::optional<holo3_image<float>> M_cy; // Y-coordinates for nodes
-    int M_l_nx;                             // local X number of elements (ghost excluded!)
-    int M_l_ny;                             // local Y number of elements
-    int M_s_x;                              // local first x index (0 for first element)
-    int M_s_y;                              // local first y index (0 for first element)
+    // int M_l_nx;                             // local X number of elements (ghost excluded!)
+    // int M_l_ny;                             // local Y number of elements
+    // int M_s_x;                              // local first x index (0 for first element)
+    // int M_s_y;                              // local first y index (0 for first element)
     double M_pixelsize;
-    // std::map<int,boost::tuple<int,rank_type> > mapGhostElt;
-    // std::vector<rank_type> ghosts;
-    // std::map<int,int> __idGmshToFeel;
-#if 0
-    int localToGlobal( int ii, int jj, int rank )
-    {
-        return ii * M_ny + ( jj + ( rank * M_ny / this->worldComm().godSize() ) );
-    }
-    int globalToLocal( int i, int j, int rank )
-    {
-        int LM_ny = ( M_ny / this->worldComm().godSize() ) * ( rank + 1 ) - ( M_ny / this->worldComm().godSize() ) * rank;
-        return i * LM_ny + j - rank * M_ny / this->worldComm().godSize();
-    }
-#endif    
 };
 
 /**

@@ -21,11 +21,10 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#include <feel/feelconfig.h>
-
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point_xy.hpp>
-#include <boost/geometry/geometries/polygon.hpp>
+// #include <feel/feelconfig.h>
+// #include <boost/geometry.hpp>
+// #include <boost/geometry/geometries/point_xy.hpp>
+// #include <boost/geometry/geometries/polygon.hpp>
 #include <feel/feeldiscr/meshstructured.hpp>
 
 namespace Feel
@@ -33,6 +32,7 @@ namespace Feel
 
 namespace detail
 {
+#if 0
 class PolygonMeshStructured
 {
 public :
@@ -71,6 +71,7 @@ public :
 private :
     std::vector<polygon_type> M_list_poly;
 };
+#endif
 
 template <int Dim, typename IndexT>
 class PartitioningMeshStructured
@@ -218,8 +219,7 @@ MeshStructured<GeoShape,T,IndexT>::MeshStructured( int nx, int ny, double pixels
                                                    std::optional<holo3_image<float>> const& cx,
                                                    std::optional<holo3_image<float>> const& cy,
                                                    worldcomm_ptr_t const& wc,
-                                                   bool withCoord,
-                                                   std::string pathPoly, bool withPoly )
+                                                   bool withCoord )
     : super( wc ),
       M_nx( nx ),
       M_ny( ny ),
@@ -244,10 +244,10 @@ MeshStructured<GeoShape,T,IndexT>::MeshStructured( int nx, int ny, double pixels
     node_type coords( 2 );
 
 
-    std::shared_ptr<Feel::detail::PolygonMeshStructured> polygonTool;
-    if ( withPoly )
-        polygonTool = std::make_shared<Feel::detail::PolygonMeshStructured>( pathPoly, M_pixelsize );
-    bool inPoly = false;
+    // std::shared_ptr<Feel::detail::PolygonMeshStructured> polygonTool;
+    // if ( withPoly )
+    //     polygonTool = std::make_shared<Feel::detail::PolygonMeshStructured>( pathPoly, M_pixelsize );
+    // bool inPoly = false;
 
     std::vector<index_type> M_nGlobalPtByAxis;
     M_nGlobalPtByAxis = { M_nx, M_ny };
@@ -264,7 +264,7 @@ MeshStructured<GeoShape,T,IndexT>::MeshStructured( int nx, int ny, double pixels
         for ( int j = startPtIdByAxisWithGhostOnProc[1]; j < (startPtIdByAxisWithGhostOnProc[1] + nLocalPtByAxisWithGhostOnProc[1]); ++j )
         {
             bool currentPtIsGhost = partitionTool.pointIsGhost( partId, i, j );
-            this->addStructuredPoint( i,j, partId, currentPtIsGhost, withPoly, withCoord, polygonTool );
+            this->addStructuredPoint( i,j, partId, currentPtIsGhost, withCoord );
         }
     }
 
@@ -277,7 +277,7 @@ MeshStructured<GeoShape,T,IndexT>::MeshStructured( int nx, int ny, double pixels
     {
         for ( int j = startPtIdByAxisOnProc[1]; j < endEltIdByAxisOnProc[1]; ++j )
         {
-            auto [eid,eidFeel] = this->addStructuredElement(i,j,partId,partId,{},withPoly,withCoord,polygonTool );
+            auto [eid,eidFeel] = this->addStructuredElement(i,j,partId,partId,{},withCoord );
             idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eidFeel ) );
         }
     }
@@ -293,7 +293,7 @@ MeshStructured<GeoShape,T,IndexT>::MeshStructured( int nx, int ny, double pixels
         {
             for ( size_type j = start_j; j < end_j; ++j )
             {
-                auto [eid,eidFeel] = this->addStructuredElement(i,j,partId,partIdGhost,{},withPoly,withCoord,polygonTool );
+                auto [eid,eidFeel] = this->addStructuredElement(i,j,partId,partIdGhost,{},withCoord );
                 idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eidFeel ) );
                 mapGhostElt.insert( std::make_pair( eid, boost::make_tuple( eidFeel, partIdGhost ) ) );
             }
@@ -449,9 +449,8 @@ MeshStructured<GeoShape,T,IndexT>::updateGhostCellInfoByUsingNonBlockingComm( st
 template <typename GeoShape, typename T, typename IndexT>
 void
 MeshStructured<GeoShape,T,IndexT>::addStructuredPoint( size_type i, size_type j, rank_type partId, bool isGhost,
-                                                       bool withPoly, bool withCoord, std::shared_ptr<Feel::detail::PolygonMeshStructured> const& polygonTool )
+                                                       bool withCoord )
 {
-    bool inPoly = false;
     int ptid = (M_ny)*i + j;
     node_type coords( 2 );
     if ( withCoord && M_cx && M_cy )
@@ -464,85 +463,39 @@ MeshStructured<GeoShape,T,IndexT>::addStructuredPoint( size_type i, size_type j,
         coords[0] = M_pixelsize * i;
         coords[1] = M_pixelsize *(M_ny - 1 - j);
     }
-    if ( withPoly )
-    {
-        typename Feel::detail::PolygonMeshStructured::poly_point_type p( coords[0], coords[1] );
-        for ( auto const& poly : polygonTool->polygons() )
-        {
-            inPoly = inPoly || boost::geometry::within( p, poly );
-        }
-    }
-    if ( ( !withPoly ) || ( !inPoly ) )
-    {
-        point_type pt( ptid, coords );
-        if ( !isGhost )
-            pt.setProcessId( partId );
-        pt.setProcessIdInPartition( partId );
-        this->addPoint( pt );
-    }
+
+    point_type pt( ptid, coords );
+    if ( !isGhost )
+        pt.setProcessId( partId );
+    pt.setProcessIdInPartition( partId );
+    this->addPoint( pt );
 }
 
 template <typename GeoShape, typename T, typename IndexT>
 std::pair<typename MeshStructured<GeoShape,T,IndexT>::size_type,typename MeshStructured<GeoShape,T,IndexT>::size_type>
 MeshStructured<GeoShape,T,IndexT>::addStructuredElement( size_type i, size_type j, rank_type processId, rank_type partId,
                                                          std::vector<rank_type> const& neighborPartitionIds,
-                                                         bool withPoly, bool withCoord, std::shared_ptr<Feel::detail::PolygonMeshStructured> const& polygonTool )
+                                                         bool withCoord )
 {
-    using poly_point_type = Feel::detail::PolygonMeshStructured::poly_point_type;
-    bool inPoly = false;
-    if ( withPoly )
-    {
-        poly_point_type p1;
-        poly_point_type p2;
-        poly_point_type p3;
-        poly_point_type p4;
-        if ( withCoord && M_cx && M_cy )
-        {
-            p1 = poly_point_type( (*M_cy)( j, i + 1 ), (*M_cx)( j, i + 1 ) );
-            p2 = poly_point_type( (*M_cy)( j + 1, i + 1 ), (*M_cx)( j + 1, i + 1 ) );
-            p3 = poly_point_type( (*M_cy)( j + 1, i ), (*M_cx)( j + 1, i ) );
-            p4 = poly_point_type( (*M_cy)( j, i ), (*M_cx)( j, i ) );
-        }
-        else
-        {
-            p1 = poly_point_type( M_pixelsize * j, M_pixelsize * ( i + 1 ) );
-            p2 = poly_point_type( M_pixelsize * ( j + 1 ), M_pixelsize * ( i + 1 ) );
-            p3 = poly_point_type( M_pixelsize * ( j + 1 ), M_pixelsize * i );
-            p4 = poly_point_type( M_pixelsize * j, M_pixelsize * i );
-        }
+    size_type eid = ( M_ny - 1 ) * i + j; // StructuredMesh Id
+    element_type e;
+    e.setMarker( 1, 1 );
+    e.setProcessIdInPartition( processId );
+    e.setProcessId( partId );
 
-        for ( auto const& poly : polygonTool->polygons() )
-        {
-            bool testInPoly1 = boost::geometry::within( p1, poly );
-            bool testInPoly2 = boost::geometry::within( p2, poly );
-            bool testInPoly3 = boost::geometry::within( p3, poly );
-            bool testInPoly4 = boost::geometry::within( p4, poly );
-            inPoly = ( inPoly ) || ( testInPoly1 ) || ( testInPoly2 ) || ( testInPoly3 ) || ( testInPoly4 );
-        }
-    }
-    if ( ( !withPoly ) || ( !inPoly ) )
-    {
-        size_type eid = ( M_ny - 1 ) * i + j; // StructuredMesh Id
-        element_type e;
-        e.setMarker( 1, 1 );
-        e.setProcessIdInPartition( processId );
-        e.setProcessId( partId );
+    std::vector<size_type> ptid = {( M_ny ) * ( i + 1 ) + j,     // 0
+                                   ( M_ny ) * ( i + 1 ) + j + 1, // 1
+                                   (M_ny)*i + j + 1,             // 2
+                                   (M_ny)*i + j};                // 3
 
-        std::vector<size_type> ptid = {( M_ny ) * ( i + 1 ) + j,     // 0
-                                       ( M_ny ) * ( i + 1 ) + j + 1, // 1
-                                       (M_ny)*i + j + 1,             // 2
-                                       (M_ny)*i + j};                // 3
+    for ( uint16_type k = 0; k < 4; ++k )
+        e.setPoint( k, this->point( ptid[k] ) );
 
-        for ( uint16_type k = 0; k < 4; ++k )
-            e.setPoint( k, this->point( ptid[k] ) );
+    if ( neighborPartitionIds.empty() )
+        e.setNeighborPartitionIds( neighborPartitionIds );
 
-        if ( neighborPartitionIds.empty() )
-            e.setNeighborPartitionIds( neighborPartitionIds );
-
-        auto [eit,inserted] = this->addElement( e, true ); // e.id() is defined by Feel++
-        return std::make_pair( eid, eit->second.id() );
-    }
-    return std::make_pair( invalid_v<size_type>, invalid_v<size_type> );
+    auto [eit,inserted] = this->addElement( e, true ); // e.id() is defined by Feel++
+    return std::make_pair( eid, eit->second.id() );
 }
 
 
