@@ -132,6 +132,9 @@ class State:
         """ Getter for dimension """
         return self._dim
 
+    def round(self, order: int = 0):
+        return State(self.get_values().round(order))
+        
     def __add__(self, other):
         if type(other) is State:
             return State(self.get_values() + other.get_values())
@@ -172,9 +175,6 @@ class State:
 
     def __eq__(self, other):
         return np.array_equal(self.get_values(), other.get_values()) and self.get_dim() == other.get_dim()
-
-    def __round__(self, order: int = 0):
-        return np.array([round(val, order) for val in self.get_values()])
 
     def __str__(self):
         return "State of dimension {}".format(self.get_dim())
@@ -261,7 +261,7 @@ class Filter:
         self.forecast_state = forecast_state
         self.forecast_obs = forecast_obs
         
-        self.real_observations = None
+        self.real_observations = []
         self.gain = None
         self.ts = 0
         self.max_ts = None
@@ -284,7 +284,7 @@ class Filter:
                                    main_weight = self.tools.weights[0],
                                    dim = self.get_last_state().get_dim())
 
-    def load_real_observations(self, list):
+    def load_measurements(self, list):
         tic()
         self.real_observations = []
         for state in list:
@@ -400,7 +400,8 @@ class Filter:
         if initial_guess is not None:
             self.__init__(initial_state = initial_guess)
         if data is not None:
-            self.load_real_observations(data)
+            self.load_measurements(data)
+
         while self.ts < self.max_ts:
             self.forecast()
 
@@ -419,7 +420,7 @@ class Filter:
     def __str__(self):
         message = "Filter at time step {}\n".format(self.get_ts()) \
             + "    State dimension = {}\n".format(self.get_last_state().get_dim())
-        if self.real_observations is None:
+        if isempty(self.real_observations):
             message += "    no observations"
         else:
             message += "    Obs   dimension = {}".format(self.get_last_obs().get_dim())

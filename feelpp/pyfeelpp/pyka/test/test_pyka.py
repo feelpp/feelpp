@@ -40,11 +40,21 @@ class TestFilter():
     def test_load_data(self):
         f = Filter()
         data = [np.array([1,2,3]),np.array([2,3,4]),np.array([3,4,5]),np.array([4,5,6]),np.array([5,6,7])]
-        f.load_real_observations(data)
+        f.load_measurements(data)
         assert f.real_observations[0] == State(input = [1,2,3])
         assert f.max_ts == 5
 
     def test_simple_filter(self):
-        f = Filter()
-        f.filter(initial_guess = 0, data = 100*[1])
-        assert f.get_last_state() == State(input = [1.])
+        f = Filter(initial_state = 0)
+        f.load_measurements(100*[1])
+        f.filter()
+        assert f.get_last_state().round(10) == State(input = [1.]).round(10)
+
+    def test_multiple_filter(self):
+        dim = 1 + np.random.randint(100)
+        start = np.random.random(dim)
+        goal = np.random.random(dim)
+        f = Filter(initial_state = start)
+        f.load_measurements(100*[goal])
+        f.filter()
+        assert f.get_last_state().round(10) == State(input = goal).round(10)
