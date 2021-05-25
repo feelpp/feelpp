@@ -101,7 +101,10 @@ class State:
         self._values = None
         self._dim = None
         if input is not None:
-            self.set_values(input)
+            if type(input) is State:
+                self = input
+            else:
+                self.set_values(input)
         else:
             self.set_dim(dim)
         
@@ -134,7 +137,7 @@ class State:
 
     def round(self, order: int = 0):
         return State(self.get_values().round(order))
-        
+
     def __add__(self, other):
         if type(other) is State:
             return State(self.get_values() + other.get_values())
@@ -175,6 +178,9 @@ class State:
 
     def __eq__(self, other):
         return np.array_equal(self.get_values(), other.get_values()) and self.get_dim() == other.get_dim()
+
+    def __getitem__(self, key):
+        return self.get_values()[key]
 
     def __str__(self):
         return "State of dimension {}".format(self.get_dim())
