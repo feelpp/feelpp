@@ -69,6 +69,12 @@ def magnitude_order(array):
 
     return 10**np.floor(np.log10(np.linalg.norm(array)))
 
+def dispersion_matrix(array, optional_array = None):
+    if optional_array is None:
+        return np.outer(array,array)
+    else:
+        return np.outer(array, optional_array)
+
 def weighted_sum(element_list, weights = None):
     if weights is None:
         weights = np.ones(len(element_list))/len(element_list)
@@ -167,6 +173,9 @@ class State:
     def __eq__(self, other):
         return np.array_equal(self.get_values(), other.get_values()) and self.get_dim() == other.get_dim()
 
+    def __round__(self, order: int = 0):
+        return np.array([round(val, order) for val in self.get_values()])
+
     def __str__(self):
         return "State of dimension {}".format(self.get_dim())
 
@@ -223,7 +232,6 @@ class EnsembleTools:
 
         self.ensemble = [state]
         shift_matrix = np.sqrt(self.factor) * sci.linalg.sqrtm(self.covariances['state'])
-
         for column in range(len(shift_matrix)):
             self.ensemble.append(state + State(shift_matrix[:,column]))
             self.ensemble.append(state - State(shift_matrix[:,column]))
@@ -304,30 +312,28 @@ class Filter:
 
     def step_ts(self):
         self.ts += 1
-        if self.max_ts is not None:
-            if self.ts == self.max_ts:
-                print('/!\\ Last time step is reached.')
 
     def compute_gain(self, x_f, x_dag, y_dag):
         """ Computes the gain (transposed for easier further computation) """
-        S_xy = []
-        S_yy = []
-        for x, y in zip(x_dag, y_dag):
-            #S_xy.append(np.mat(x.get_values() - x_f.get_values()).T \
-            #                   @ np.mat(y.get_values() - self.get_last_obs().get_values()))
-            #S_yy.append(np.mat(y.get_values() - self.get_last_obs().get_values()).T \
-            #            @ np.mat(y.get_values() - self.get_last_obs().get_values()))
-            S_xy.append(np.outer(x.get_values() - x_f.get_values(),
-                                 y.get_values() - self.get_last_obs().get_values()))
-            S_yy.append(np.outer(y.get_values() - self.get_last_obs().get_values(),
-                                 y.get_values() - self.get_last_obs().get_values()))
-        self.tools.set_covariance(weighted_sum(S_xy, weights = self.tools.weights), 'cross')
-        self.tools.set_covariance(weighted_sum(S_yy, weights = self.tools.weights), 'observation')
+
+        self.tools.set_covariance(
+            weighted_sum(
+                element_list = [dispersion_matrix(x.get_values()-x_f.get_values(), y.get_values() - self.get_last_obs().get_values()) for x,y in zip(x_dag, y_dag)],
+                weights = self.tools.weights
+                ),
+            'cross'
+            )
+        self.tools.set_covariance(
+            weighted_sum(
+                element_list = [dispersion_matrix(y.get_values() - self.get_last_obs().get_values()) for y in y_dag],
+                weights = self.tools.weights
+                ),
+            'observation'
+            )
+
         self.gain = self.tools.covariances['cross'] \
                     @ np.linalg.inv(self.tools.covariances['observation'] \
                                     + self.tools.covariances['measure'])
-
-        del S_xy, S_yy
 
     def analyze(self, x_f, x_dag, y_dag):
         """ Computes the analysis formula using most recent data 
@@ -355,54 +361,46 @@ class Filter:
         ensemble_state = []
         ensemble_obs = []
 
-        self.tools.set_covariance(np.outer(self.get_last_state().get_values(),
-                                           self.get_last_state().get_values()),
-                                  type = 'state')
-        self.tools.set_covariance(np.outer(self.real_observations[self.ts].get_values(),
-                                           self.real_observations[self.ts].get_values()),
-                                  type = 'observation')
-        #toc('covariances ok')
-        #tic()
         self.tools.produce_ensemble(self.get_last_state())
-        #toc('ensemble ok')
-        #tic()
         for guess in self.tools.ensemble:
             sigma_point = self.forecast_state(guess)
             ensemble_state.append(sigma_point)
             ensemble_obs.append(self.forecast_obs(sigma_point))
-        #toc('transformation ok')
-        #tic()
+        self.tools.ensemble = ensemble_state
 
-        forecast_state = weighted_sum(element_list = ensemble_state,
-                                      weights = self.tools.weights)
-        #toc('forecast state')
-        #tic()
-        self.estimate_observations.append(weighted_sum(element_list = ensemble_obs,
-                                                       weights = self.tools.weights))
-        #toc('expected observations')
-        #tic()
+        forecast_state = weighted_sum(
+            element_list = ensemble_state,
+            weights = self.tools.weights
+            )
+        self.estimate_observations.append(
+            weighted_sum(
+                element_list = ensemble_obs,
+                weights = self.tools.weights
+                )
+            )
+        self.tools.set_covariance(
+            weighted_sum(
+                element_list = [dispersion_matrix(s.get_values() - self.get_last_state().get_values()) for s in self.tools.ensemble],
+                weights = self.tools.weights
+                ),
+                type = 'state'
+        )
+
         self.analyze(forecast_state, ensemble_state, ensemble_obs)
-        #toc('analyzed')
         self.step_ts()
-
-        print(forecast_state.get_values())
-        print('\n')
-        print([s.get_values() for s in ensemble_state])
-        print('\n')
-        print([s.get_values() for s in ensemble_obs])
-        print('\n')
-        print('\n')
 
         del sigma_point, ensemble_state, ensemble_obs, forecast_state
         toc('Step {} achieved in'.format(self.get_ts()))
 
     def filter(self, initial_guess = None, data = None):
-        if initial_guess is None:
+        if isempty(self.analyzed_states) and initial_guess is None:
             raise ValueError('Please provide an initial state')
-        if data is None:
+        if isempty(self.real_observations) and data is None:
             raise ValueError('Please provide data')
-        self.__init__(initial_state = initial_guess)
-        self.load_real_observations(data)
+        if initial_guess is not None:
+            self.__init__(initial_state = initial_guess)
+        if data is not None:
+            self.load_real_observations(data)
         while self.ts < self.max_ts:
             self.forecast()
 
