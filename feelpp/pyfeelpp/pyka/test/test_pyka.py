@@ -44,13 +44,13 @@ class TestFilter():
         assert f.real_observations[0] == State(input = [1,2,3])
         assert f.max_ts == 5
 
-    def test_simple_filter(self):
+    def test_simple_dircet_filter(self):
         f = Filter(initial_state = 0)
         f.load_measurements(100*[1])
         f.filter()
         assert f.get_last_state().round(10) == State(input = [1.]).round(10)
 
-    def test_multiple_filter(self):
+    def test_multiple_direct_filter(self):
         dim = 1 + np.random.randint(100)
         start = np.random.random(dim)
         goal = np.random.random(dim)
@@ -58,3 +58,17 @@ class TestFilter():
         f.load_measurements(100*[goal])
         f.filter()
         assert f.get_last_state().round(10) == State(input = goal).round(10)
+
+    def test_sum_diff(self):
+        forecast_obs = lambda tva : State(np.array([tva[0]+tva[1], tva[0]-tva[1]])) # tva: Two-Valued Array
+        forecast_state = lambda tva : tva + State(input=np.random.random(2) - 0.5)
+        f = Filter(
+            initial_state = [0,0],
+            forecast_obs = forecast_obs,
+            forecast_state = forecast_state,
+        )
+        f.load_measurements(50*[[2,0]])
+        f.tools.set_covariance(0.01, 'measure')
+        f.filter()
+        print(f.get_last_state().round(3).get_values())
+        assert f.get_last_state().round(1) == State([1,1])
