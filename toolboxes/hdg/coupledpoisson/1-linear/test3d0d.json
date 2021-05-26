@@ -8,9 +8,9 @@
         {
             "name":"simulation_domain",
             "k":"1",
-            "top-buffer":"Pi_1.phi",
-            "Cbuffer_name":"Cbuffer",
-            "Rbuffer_name":"Rbuffer"
+            "top-buffer":"Pi_1.phi"
+            // "Cbuffer_name":"Cbuffer",
+            // "Rbuffer_name":"Rbuffer"
         }
     },
     "BoundaryConditions":
@@ -21,28 +21,28 @@
 			{
 				"omega":
 				{
-					"expr":"10+Pi*exp(2-x)*cos(2*Pi*t)+0.5*sin(2*Pi*t):x:t"
+					"expr":"10+pi*exp(2-x)*cos(2*pi*t)+0.5*sin(2*pi*t):x:t"
 				}
 			},
             "SourceTerm":
             {
                 "omega":
                 {
-					"expr":"-2*Pi*Pi*exp(2-x)*sin(2*Pi*t)+(Pi-Pi*exp(2-x))*cos(2*Pi*t):x:y:z:t"
+					"expr":"-2*pi*pi*exp(2-x)*sin(2*pi*t)+(pi-pi*exp(2-x))*cos(2*pi*t):x:y:z:t"
                 }
             },
             "Dirichlet":
             {
                 "bottom":
 				{
-					"expr":"10+Pi*exp(2-x)*cos(2*Pi*t)+0.5*sin(2*Pi*t):x:t"
+					"expr":"10+pi*exp(2-x)*cos(2*pi*t)+0.5*sin(2*pi*t):x:t"
 				}
             },
 			"Neumann_exact":
 			{
                 "lateral":
 				{
-					"expr":"10+Pi*exp(2-x)*cos(2*Pi*t)+0.5*sin(2*Pi*t):x:t"
+					"expr":"10+pi*exp(2-x)*cos(2*pi*t)+0.5*sin(2*pi*t):x:t"
 				}	
 			}
         },
@@ -62,7 +62,7 @@
             {
                 "top-buffer":
                 {
-					"expr":"10-Pi*cos(2*Pi*t)+0.5*sin(2*Pi*t):t"
+					"expr":"10-pi*cos(2*pi*t)+0.5*sin(2*pi*t):t"
                 }
             }
         },
@@ -72,9 +72,16 @@
 	    	{
 				"omega":
 				{
-					"expr":"10+Pi*exp(2-x)*cos(2*Pi*t)+0.5*sin(2*Pi*t):x:t"
+					"expr":"10+pi*exp(2-x)*cos(2*pi*t)+0.5*sin(2*pi*t):x:t"
 				}
-	    	}
+	    	},
+            "u_exact":
+            {
+                "omega":
+                {
+                    "expr":"{pi*exp(2-x)*cos(2*pi*t),0,0}:x:t"
+                }
+            }
 		}
     },
     "PostProcess":

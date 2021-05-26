@@ -1087,7 +1087,6 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                             file.close();
                         }
                         std::ofstream file ( this->prefix()+".measures.csv", std::ios::out|std::ios::app );
-                        Feel::cout << this->time() << " = " << time << " - " << M_bdf_mixedpoisson->timeInitial() << std::endl;
                         if( file )
                         {
                             double p_err_rel = l2err_p/l2norm_pex;

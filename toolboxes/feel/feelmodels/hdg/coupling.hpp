@@ -56,7 +56,7 @@ makeCoupledMixedPoissonOptions( std::string const& _prefix = "", std::string con
         ( prefixvm( "coupling", "Cbuffer_name" ).c_str(), po::value<std::string>()->default_value( "" ), "Name of the C buffer in the circuit" )
         ( prefixvm( "coupling", "var_buffer" ).c_str(), po::value<std::string>()->default_value( "" ), "Name of the buffer variable in the circuit" )
         ( prefixvm( "coupling", "Rbuffer_name" ).c_str(), po::value<std::string>()->default_value( "" ), "Name of the R buffer in the circuit" )
-        ( prefixvm( "coupling", "mode" ).c_str(), po::value<int>()->default_value( 0 ), "0 if coupled, 1 if uncoupled" )
+        ( prefixvm( "coupling", "mode" ).c_str(), po::value<int>()->default_value( 1 ), "0 if uncoupled, 1 or 2 if uncoupled (see documentation)" )
         ( prefixvm( "coupling", "QI" ).c_str(), po::value<std::string>()->default_value( "1*0.5*2*pi*cos(2*pi*t):t" ), "exact solution of the ODE" )
         ( prefixvm( "coupling", "Pi1" ).c_str(), po::value<std::string>()->default_value( "10+0.5*sin(2*pi*t)+(1-2)*0.5*2*pi*cos(2*pi*t):t" ), "exact solution of the ODE" );
     cmpOptions.add( modelnumerical_options( prefix ) );
@@ -446,12 +446,12 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::assemble0d( int i )
 
     auto bbf = blockform2( *( this->getPS() ), this->M_A_cst );
 
-    auto u = this->fluxSpace()->element( "u" );
-    auto p = this->potentialSpace()->element( "p" );
-    auto w = this->potentialSpace()->element( "w" );
-    auto nu = this->constantSpace()->element( "nu" );
-    auto uI = this->constantSpace()->element( "uI" );
-    auto yy = this->constantSpace()->element( "yy" );
+    auto u = this->fluxSpace()->element( "u" );         // j    (flux)
+    auto p = this->potentialSpace()->element( "p" );    // p    (potential)
+    auto w = this->potentialSpace()->element( "w" );    // w    (test function)
+    auto nu = this->constantSpace()->element( "nu" );   // mu   (test function)
+    auto uI = this->constantSpace()->element( "uI" );   // U_I  (for the coupling)
+    auto yy = this->constantSpace()->element( "yy" );   // Y    (solution of the ODE)
 
     auto H = this->traceSpaceOrder0()->element( "H" );
     if ( ioption( prefixvm( this->prefix(), "hface" ) ) == 0 )
@@ -480,37 +480,63 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::assemble0d( int i )
     Rbuffer_str += ".R";
 
     double Cbuffer = M_circuit->getValue<double>( Cbuffer_str );
-    ;
     double Rbuffer = M_circuit->getValue<double>( Rbuffer_str );
 
     Feel::cout << "Resistance of the buffer " << Rbuffer_str << ": " << Rbuffer << std::endl;
     Feel::cout << "Capacitance of the buffer " << Cbuffer_str << ": " << Cbuffer << std::endl;
+    
+    // <j.n, mu2>_GammaI
+    bbf( 3_c, 0_c, i, 0 ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( trans( idt( u ) ) * N() ) * id( nu ) );
 
-    // Part on the IBC line
-    // -1/(R |Gamma_I|) <u_I, mu2>_Gamma_I
+    // <tau p, mu2>_Gamma_I
+    bbf( 3_c, 1_c, i, 1 ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = tau_constant * idt( p ) * id( nu ) * ( pow( idv( H ), this->tauOrder() ) ) );
+
+    // -<tau uI, mu2>_Gamma_I
+    bbf( 3_c, 3_c, i, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -tau_constant * id( nu ) * idt( uI ) * ( pow( idv( H ), this->tauOrder() ) ) );
+
+    // -1/(|GammaI|Rb) <uI, mu2>_GammaI
     bbf( 3_c, 3_c, i, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -idt( uI ) * id( nu ) / Rbuffer / meas );
 
-    // 1/(R |Gamma_I|) <Y,mu2>_Gamma_I
-    if ( ioption("coupling.mode") == 0 )    // if the coupling is enabled
+    // < C/|Gamma_I| Y/dt, mu3>_Gamma_I
+    bbf( 3_c, 3_c, j, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = Cbuffer * M_bdf_buffer[i]->polyDerivCoefficient( 0 ) * idt( yy ) * id( nu ) / meas );
+
+    switch ( ioption("coupling.mode"))
     {
-        bbf( 3_c, 3_c, i, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = idt( yy ) * id( nu ) / Rbuffer / meas );
+        case 0:     // coupling disabled
+            // the terms are added in the right hand side
+            break;
 
-        // Part on the 0d line
+        case 1:     // coupling enabled, Q_I = int_GammaI j.n
+            // 1/(R|GammaI|) <Y,mu2>_Gamma_I
+            bbf( 3_c, 3_c, i, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = idt( yy ) * id( nu ) / Rbuffer / meas );
 
-        // for the coupling : flux through IBC face
-        // <j.n, m>_Gamma_I
-        bbf( 3_c, 0_c, j, 0 ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( trans( idt( u ) ) * N() ) * id( nu ) );
+            // -<j.n, mu3>_Gamma_I
+            bbf( 3_c, 0_c, j, 0 ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -( trans( idt( u ) ) * N() ) * id( nu ) );
 
-        // <tau p, m>_Gamma_I
-        bbf( 3_c, 1_c, j, 1 ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = tau_constant * idt( p ) * id( nu ) * ( pow( idv( H ), this->tauOrder() ) ) );
+            // -<tau p, mu3>_Gamma_I
+            bbf( 3_c, 1_c, j, 1 ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -tau_constant * idt( p ) * id( nu ) * ( pow( idv( H ), this->tauOrder() ) ) );
 
-        // -<tau lambda2, m>_Gamma_I
-        bbf( 3_c, 3_c, j, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -tau_constant * id( nu ) * idt( uI ) * ( pow( idv( H ), this->tauOrder() ) ) );
+            // <tau uI, mu3>_Gamma_I
+            bbf( 3_c, 3_c, j, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = tau_constant * id( nu ) * idt( uI ) * ( pow( idv( H ), this->tauOrder() ) ) );
+            break;
+
+        case 2:     // coupling enabled, Q_I = (uI-Y)/Rbuffer
+            // 1/(R|GammaI|) <Y,mu2>_Gamma_I
+            bbf( 3_c, 3_c, i, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = idt( yy ) * id( nu ) / Rbuffer / meas );
+
+            // -<1/(R|GammaI|) <uI, mu3>_GammaI
+            bbf( 3_c, 3_c, j, i) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -1 / Rbuffer * idt( uI ) * id( nu ) / meas );
+
+            // 1/(R|GammaI|) <Y/Dt, mu3>_GammaI
+            bbf( 3_c, 3_c, j, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = 1/Rbuffer * M_bdf_buffer[i]->polyDerivCoefficient( 0 ) * idt( yy ) * id( nu ) / meas );
+            break;
+
+        default:
+            Feel::cout << "Unknonwn coupling.mode (" << ioption("coupling.mode") << ")" << std::endl;
+            break;
     }
 
 
-    // -< C/|Gamma_I| Y/dt, mu3>_Gamma_I
-    bbf( 3_c, 3_c, j, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -Cbuffer * M_bdf_buffer[i]->polyDerivCoefficient( 0 ) * idt( yy ) * id( nu ) / meas );
 
     double tElapsed = this->timerTool( "Constructor" ).stop( "assembleMatrix0d" );
     this->log( "CoupledMixedPoisson", "assembleMatrix0d", ( boost::format( "finish in %1% s" ) % tElapsed ).str() );
@@ -550,24 +576,25 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhs0d( int i )
     Feel::cout << "Value rhs 0d: " << mean( _range = markedfaces( this->mesh(), marker ), _expr = idv( bdf_poly ) )( 0, 0 ) << std::endl;
     // Feel::cout << "Value measure on 0d: " << meas << std::endl;
 
-    // -< C/|Gamma_I| Yold/dt, mu3>
-    std::cout << "Time is " << this->time() << std::endl;
     auto QI = expr( soption("coupling.QI") ); 
     auto Pi1 = expr( soption("coupling.Pi1") ); 
-    switch (ioption("coupling.mode"))
+    
+    // < C/|Gamma_I| Yold/dt, mu3>
+    blf( 3_c, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( Cbuffer * idv( bdf_poly ) ) * id( nu ) / meas );
+
+    if (ioption("coupling.mode") != 0)  // coupling enabled
     {
-        case 0:         // coupled system
-            Feel::cout << "solving the coupled equations" << std::endl,
-            blf( 3_c, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( -Cbuffer * idv( bdf_poly ) ) * id( nu ) / meas );
-            break;
-        case 1:         // uncoupled system
-            Feel::cout << "solving the UNcoupled equations" << std::endl;
-            blf( 3_c, j ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = ( -Cbuffer * idv( bdf_poly ) - QI ) * id( nu ) / meas );
-            blf( 3_c, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = -1/Rbuffer * Pi1 * id( nu ) / meas );
-            break;
-        default:
-            Feel::cout << "Unknonwn coupling.mode (" << ioption("coupling.mode") << ")" << std::endl;
-            break;
+        Feel::cout << "solving the coupled equations" << std::endl;
+    }
+    else
+    {
+        Feel::cout << "solving the UNcoupled equations" << std::endl;
+
+        // -1/(|GammaI|Rb) <Yexact, mu2>_GammaI
+        blf( 3_c, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = - Pi1 * id( nu ) / Rbuffer / meas );
+
+        // 1/|GammaI| <QIexact, mu3>_GammaI
+        blf( 3_c, i ) += integrate( _range = markedfaces( this->mesh(), marker ), _expr = QI * id( nu ) / Rbuffer / meas );
     }
 
     double tElapsed = this->timerTool( "Constructor" ).stop( "assembleRhs0d" );
