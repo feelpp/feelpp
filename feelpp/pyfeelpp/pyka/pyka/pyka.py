@@ -16,25 +16,23 @@ seconds = time.time()
     to the filter implementation 
 """
 
-def tic(message = ''):
+def tic(message = '', verbose: bool = False):
     """ Equivalent to tic in cpp """
     global seconds
     seconds = time.time()
-    if VERBOSE:
+    if VERBOSE or verbose:
         print(message)
 
-def toc(message = ''):
+def toc(message = '', verbose: bool = False):
     """ Equivalent to toc in cpp """
-    if not VERBOSE and message is not '':
-        print(message + ' {} seconds'.format(time.time() - seconds, '1.2'))
-    if VERBOSE:
+    if VERBOSE or verbose:
         print(message + ' {} seconds'.format(time.time() - seconds))
 
 def isempty(liste: list) -> bool:
     return not bool(len(liste))
 
 def isnumber(variable) -> bool:
-    return type(variable) is float or type(variable) is int
+    return type(variable) is float or type(variable) is int or type(variable) is np.float64
 
 def balancedpartition(nb_data,nb_procs):
     """ For parallelization purpose using MPI
@@ -359,7 +357,7 @@ class Filter:
         """
 
         tic()
-        if self.real_observations is None:
+        if isempty(self.real_observations):
             raise ValueError('Obervation data missing')
         if self.ts >= self.max_ts:
             raise RecursionError('Last time step exceeded')
@@ -411,7 +409,7 @@ class Filter:
         while self.ts < self.max_ts:
             self.forecast()
 
-    def extract_analysed_states(self, components = 'all'):
+    def extract_analyzed_states(self, components = 'all'):
         """ Extracts analyzed states trajectories.
 
         The argument \"component\" is either \"all\" or a list of indices.
@@ -421,7 +419,7 @@ class Filter:
         indices = range(self.tools.dim) if components == "all" else components
         for state in self.analyzed_states:
             output.append(state.get_values()[indices].reshape((len(indices),)))
-        return np.array(output).squeeze()
+        return np.array(output[1:]).squeeze()
 
     def __str__(self):
         message = "Filter at time step {}\n".format(self.get_ts()) \

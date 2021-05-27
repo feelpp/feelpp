@@ -60,7 +60,12 @@ class TestFilter():
         assert f.get_last_state().round(10) == State(input = goal).round(10)
 
     def test_sum_diff(self):
-        """ Test: real hidden state is [1,1], observation is [sum,difference] with small uncertainty """
+        """ Test: indirect measurement
+        
+        - real hidden state is [1,1]
+        - observation is [sum,difference] with small uncertainty
+        """
+
         forecast_obs = lambda tva : State(np.array([tva[0]+tva[1], tva[0]-tva[1]])) # tva: Two-Valued Array
         forecast_state = lambda tva : tva + State(input=np.random.random(2) - 0.5)
         f = Filter(
@@ -71,5 +76,39 @@ class TestFilter():
         f.load_measurements(50*[[2,0]])
         f.tools.set_covariance(0.01, 'measure')
         f.filter()
-        print(f.get_last_state().round(3).get_values())
         assert f.get_last_state().round(1) == State([1,1])
+
+    def test_noisy_tracking(self):
+
+        dt = 0.05
+
+        def forecast_state(state):
+            """ Using the raw approximation sin(x+h)~=sin(x)+sin(h) """
+            return state + np.sin(dt)
+
+        real_trajectory = np.sin(np.arange(0,10,0.1))
+        data = list(real_trajectory + np.random.normal(0,0.2,len(real_trajectory)))
+
+        f = Filter(
+                initial_state = 0,
+                forecast_state = forecast_state
+                )
+        f.load_measurements(data)
+        f.tools.set_covariance(0.5, 'measure')
+        f.filter()
+
+        rerr_ad = np.linalg.norm(f.extract_analyzed_states() \
+            - np.array(data))/np.linalg.norm(f.extract_analyzed_states()) #relative error, analyzed vs data
+        rerr_rd = np.linalg.norm(f.extract_analyzed_states() \
+            - real_trajectory)/np.linalg.norm(f.extract_analyzed_states()) #relative error, real vs data
+        
+        if False:
+            import matplotlib.pyplot as plt 
+            plt.plot(np.array(data))
+            plt.plot(f.extract_analyzed_states())
+            plt.plot(real_trajectory)
+            plt.show()
+            print("relative error, analyzed vs data : " + str(np.linalg.norm(f.extract_analyzed_states() - np.array(data))/np.linalg.norm(f.extract_analyzed_states())))
+            print("relative error, real vs     data : " + str(np.linalg.norm(f.extract_analyzed_states() - real_trajectory)/np.linalg.norm(f.extract_analyzed_states())))
+
+        assert rerr_ad < rerr_rd
