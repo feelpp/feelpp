@@ -118,6 +118,12 @@ class TestFilter():
         assert rerr_ad < rerr_rd
 
     def test_constant_velocity_estimation(self):
+        """ Test: constant velocity particle
+
+        Noisy position is measured
+        Trajectory is filtered and velocity is estimated
+        """
+        
         N = 1000
         exact_velocity = np.random.random()
         data = np.zeros(N) + exact_velocity*np.arange(N) + np.random.normal(0,0.1,N)
