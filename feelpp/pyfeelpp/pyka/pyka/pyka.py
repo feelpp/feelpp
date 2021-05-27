@@ -1,5 +1,6 @@
 """
 Perspectives:
+ . Other stencils using eigenvalues or t-designs
  . parallelization using MPI
  . riddance of used observations using pop method 
 """
@@ -107,7 +108,7 @@ def weighted_sum(element_list, weights = None):
     return result
 
 class State:
-    """ A State is the numpy.array representation of a configuration 
+    """ A State is the representation of a configuration 
     of the system of interest. The dimension can be accessed as an attribute.
     
     This class is used for States and for Observations since only their
