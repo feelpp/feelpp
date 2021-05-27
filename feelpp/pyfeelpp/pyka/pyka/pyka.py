@@ -68,18 +68,36 @@ def magnitude_order(array):
     return 10**np.floor(np.log10(np.linalg.norm(array)))
 
 def dispersion_matrix(array, optional_array = None):
+    """ Computes the dispersion matrix associated with one or two vectors.
+
+    input
+        array:          np.array of size n
+        optional_array: np.array of size m
+    output
+        return:         np.array of size (n,m)
+    """
+
     if optional_array is None:
         return np.outer(array,array)
     else:
         return np.outer(array, optional_array)
 
 def weighted_sum(element_list, weights = None):
+    """ Computes the weighted sum of a list of elements.
+
+    input
+        element_list: list of objects for which + and * are defined
+        weights:      list of floats of same length
+    output
+        return:       object of same type as any element
+    """
+
     if weights is None:
         weights = np.ones(len(element_list))/len(element_list)
     elif type(weights) is list and len(weights) != len(element_list):
         raise ValueError('There must be the same number of states and weights')
     if type(element_list[0]) is State:
-        result = State(dim = element_list[0].get_dim())
+        result = State(dim = element_list[0].get_dim()) # sets zero State
         for state, weight in zip(element_list,weights):
             result += weight * state
     else:
@@ -94,8 +112,36 @@ class State:
     
     This class is used for States and for Observations since only their
     respective dimention may differ.
+
+    input
+        input: State or np.array or list of numbers or single number
+        dim:   integer > 0
+    
+    attributes
+        _values: State's coords in state space
+        _dim:    state space's dimension
+
+    methods
+        __init__(input: list or np.array or number, dim: int) -> None
+        set_values(values: list or np.array or number) -> None
+        set_dim(integer: int) -> None
+        get_values() -> np.ndarray
+        get_dim() -> int
+        round(order: int) -> None
+        __add__(other: State) -> State
+        __iadd__(other: State) -> State
+        __sub__(other: State) -> State
+        __mul__(other: State) -> State
+        __rmul__(factor: float) -> State
+        __truediv__(divider: float) -> State
+        __matmul__(matrix) -> State
+        __eq__(other) -> bool
+        __getitem__(key) -> float
+        __str__() -> None
     """
-    def __init__(self, input = None, dim = 1):
+    def __init__(self, 
+                 input = None, 
+                 dim = 1):
         self._values = None
         self._dim = None
         if input is not None:
@@ -107,9 +153,14 @@ class State:
             self.set_dim(dim)
         
     def set_values(self, values):
-        """ Sets array as the state and computes the dimension """
+        """ Sets array as the state and computes the dimension 
+        
+        input
+            values: np.array or list of numbers or single number
+        """
+
         if type(values) is not np.ndarray and type(values) is not list and not isnumber(values):
-            raise TypeError('state description must be 1D numpy.array or list or number')
+            raise TypeError('state values must be 1D numpy.array or list or number')
         self._values = np.array([values])
         self._values.shape = (max(self._values.shape),)
         self._dim = len(self._values)
@@ -117,6 +168,9 @@ class State:
     def set_dim(self, integer: int):
         """ Sets the dimension of the state to integer 
         and sets the associated set to an array of zeros of that length 
+
+        input
+            integer > 0
         """
         if integer < 1:
             raise ValueError('the dimension must be at least 1')
@@ -133,7 +187,9 @@ class State:
         """ Getter for dimension """
         return self._dim
 
-    def round(self, order: int = 0):
+    def round(self, order: int = 0) -> None:
+        """ Method for rounding the State's values """
+
         return State(self.get_values().round(order))
 
     def __add__(self, other):
@@ -188,8 +244,27 @@ class EnsembleTools:
     """ Contains all the methods and parameters used in computations related
     to the ensemble
 
-    ensemble is an iterable list of states
+    ensemble: iterable list of states
     sigma_scheme is an iterable list of shift states (default is UKF friendly)
+
+    input
+        factor:      float, factor used in the computation of sigma-points
+        main_weight: float, weight of the central estimation
+        dim:         dictionary of int with entries state and measure
+
+    attributes
+        ensemble:    list of States
+        size:        depends on the dimension and on the method (default is UKF)
+        dim:         dictionary of int with entries state and measure
+        factor:      float, factor used in the computation of sigma-points
+        covariances: dictionary of arrays with entries state, observation, cross and measure
+
+    methods
+        __init__(factor: float, main_weight: float, dim: dict) -> None
+        set_dim(value: int, type: str) -> None
+        set_weights(value: float) -> None
+        set_covarianves(value: np.array or float, type: str) -> None
+        produce_ensemble(state: State) -> None
     """
 
     def __init__(self, 
@@ -243,7 +318,7 @@ class EnsembleTools:
         """ Computes the stencil of sigma-points 
         using the matrix square root method.
 
-        Only UKF fashion is implemented.
+        Only UKF is implemented.
         """
 
         self.ensemble = [state]
@@ -263,8 +338,39 @@ class Filter:
     . any for ensemble Kalman filter (not implemented)
     . 2*dim+1 for unscented Kalman filter (default)
 
-    forecast_state and forecast_obs are functions mapping a state 
-    to the predicted state one time step further ; default is identity
+    input
+        dimension:      dictionary with state and measure entries, both >0 integers
+        main_weight:    weight associated with the central estimation
+        initial_state:  starting point
+        forecast_state: function mapping a state onto the predicted state one time step further
+        forecast_obs:   function mapping a state onto associated expected measurement
+
+    attributes
+        forecast_state:    function mapping a state onto the predicted state one time step further
+        forecast_obs:      function mapping a state onto associated expected measurement
+        real_observations: list of provided measurements
+        gain:              current Kalman gain
+        ts:                current timestep
+        max_ts:            last timestep
+        tools:             EnsembleTools instance
+        analyzed_states:   time series of best-knowledge estimated states
+
+    methods
+        __init__(dimension: dict, main_weight: float, forecast_state: func, forecast_obs: func)
+        set_state(state: State) -> None
+        load_measurements(data: list) -> None
+        set_forecast_function(function: func) -> None
+        set_observation_function(function: func) -> None
+        get_last_state() -> State
+        get_last_obs() -> State
+        get_ts() -> int
+        step_ts() -> None
+        compute_gain(x_f, x_dag, y_dag) -> None
+        analyze(x_f, x_dag, y_dag) -> None
+        forecast() -> None
+        filter(initial_guess: State, data: list) -> None
+        extract_analyzed_states(components: str or list of int) -> np.array
+        __str__() -> None
     """
 
     def __init__(self, 
@@ -347,10 +453,6 @@ class Filter:
                 ),
             'observation'
             )
-#        print(self.tools.covariances['cross'].shape)
-#        print(self.tools.covariances['measure'])
-#        print(np.linalg.inv(self.tools.covariances['observation'] \
-#                                    + self.tools.covariances['measure']).shape)
         self.gain = self.tools.covariances['cross'] \
                     @ np.linalg.inv(self.tools.covariances['observation'] \
                                     + self.tools.covariances['measure'])
