@@ -195,22 +195,31 @@ class EnsembleTools:
     def __init__(self, 
                  factor: float, 
                  main_weight: float, 
-                 dim: int):
+                 dim: dict = {'state': 1, 'measure': 1}):
         self.ensemble = None
-        self.size = 2*dim+1
+        self.size = 2*dim['state']+1
         self.dim = dim
         self.factor = factor
-        self.weights = self.set_weights(main_weight)
-        self.covariances = {'state': None, 'observation': None}
+        self.set_weights(main_weight)
+        self.covariances = {}
         for type in ['state', 'observation', 'cross', 'measure']:
             self.set_covariance(1, type)
+
+    def set_dim(self, value: int, type: str):
+        if type in ['state','measure']:
+            self.dim[type] = value
+            self.size = 2*self.dim['state']+1
+            self.set_weights(self.weights[0])
+            self.set_covariance(1, type)
+        else:
+            raise ArgumentError('\'type\' must be \'state\' or \'measure\'')
 
     def set_weights(self, value: float):
         """ Computes the weights associated with the stencil size 
         and given central weight.
         """
 
-        return [value] + (self.size-1)*[(1-value)/(2*self.dim)]
+        self.weights = [value] + (self.size-1)*[(1-value)/(2*self.dim['state'])]
 
     def set_covariance(self, value, type: str):
         """ Sets the state or observation covariance. 
@@ -223,9 +232,12 @@ class EnsembleTools:
             raise ValueError('Covariance type is either \'state\', \'observation\', \'cross\' or \'measure\'')
         if np.linalg.norm(value) != 0:
             if isnumber(value):
-                self.covariances[type] = value * np.eye(self.dim)
+                if type is 'measure' or type is 'state':
+                    self.covariances[type] = value * np.eye(self.dim[type])
             else:
                 self.covariances[type] = value
+        else:
+            raise ValueError('A covariance cannot be zero')
 
     def produce_ensemble(self, state: State):
         """ Computes the stencil of sigma-points 
@@ -256,7 +268,7 @@ class Filter:
     """
 
     def __init__(self, 
-                 dimension: int = 1, 
+                 dimension: dict = {'state': 1, 'measure': 1}, 
                  main_weight: float = 0.5,
                  initial_state: State = None,
                  forecast_state = lambda x : x, 
@@ -269,14 +281,14 @@ class Filter:
         self.gain = None
         self.ts = 0
         self.max_ts = None
-        self.tools = EnsembleTools(factor = dimension/(1-main_weight), 
+        self.tools = EnsembleTools(factor = dimension['state']/(1-main_weight), 
                                    main_weight = main_weight,
                                    dim = dimension)
         self.analyzed_states = []
         if initial_state is not None:
             self.set_state(initial_state)
         else:
-            self.set_state(State(dim = dimension))
+            self.set_state(State(dim = dimension['state']))
         self.estimate_observations = [self.forecast_obs(self.get_last_state())]
 
     def set_state(self, state: State):
@@ -285,8 +297,8 @@ class Filter:
         else:
             self.analyzed_states.append(State(state))
         self.tools = EnsembleTools(factor = self.get_last_state().get_dim()/(1-self.tools.weights[0]),
-                                   main_weight = self.tools.weights[0],
-                                   dim = self.get_last_state().get_dim())
+                                   main_weight = self.tools.weights[0])
+        self.tools.set_dim(self.get_last_state().get_dim(), 'state')
 
     def load_measurements(self, list):
         tic()
@@ -297,6 +309,7 @@ class Filter:
             else:
                 self.real_observations.append(State(input = state))
         self.max_ts = len(self.real_observations)
+        self.tools.set_dim(self.real_observations[0].get_dim(), 'measure')
         toc('{} observations loaded in'.format(self.max_ts))
 
     def set_forecast_function(self, function):
@@ -334,7 +347,10 @@ class Filter:
                 ),
             'observation'
             )
-
+#        print(self.tools.covariances['cross'].shape)
+#        print(self.tools.covariances['measure'])
+#        print(np.linalg.inv(self.tools.covariances['observation'] \
+#                                    + self.tools.covariances['measure']).shape)
         self.gain = self.tools.covariances['cross'] \
                     @ np.linalg.inv(self.tools.covariances['observation'] \
                                     + self.tools.covariances['measure'])
@@ -416,16 +432,16 @@ class Filter:
         """
 
         output = []
-        indices = range(self.tools.dim) if components == "all" else components
+        indices = range(self.tools.dim['state']) if components == "all" else components
         for state in self.analyzed_states:
             output.append(state.get_values()[indices].reshape((len(indices),)))
         return np.array(output[1:]).squeeze()
 
     def __str__(self):
         message = "Filter at time step {}\n".format(self.get_ts()) \
-            + "    State dimension = {}\n".format(self.get_last_state().get_dim())
+            + "    State dimension = {}\n".format(self.tools.dim['state'])
         if isempty(self.real_observations):
             message += "    no observations"
         else:
-            message += "    Obs   dimension = {}".format(self.get_last_obs().get_dim())
+            message += "    Obs   dimension = {}".format(self.tools.dim['measure'])
         return message

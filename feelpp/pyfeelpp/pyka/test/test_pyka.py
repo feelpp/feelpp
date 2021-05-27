@@ -117,6 +117,34 @@ class TestFilter():
 
         assert rerr_ad < rerr_rd
 
-    def constant_velocity_estimation(self):
+    def test_constant_velocity_estimation(self):
+        N = 1000
         exact_velocity = np.random.random()
-        data = np.zeros(100) + exact_velocity*np.arange(100) + np.random.random(100)/10
+        data = np.zeros(N) + exact_velocity*np.arange(N) + np.random.normal(0,0.1,N)
+
+        def forecast_state(state): # velocity [1] is constant, next position [0] is [0]+[1]
+            return state @ np.array([[1,1],[0,1]])
+        def forecast_obs(state):
+            return State(state.get_values()[0])
+
+        f = Filter(
+                initial_state = [0.,1.], # initial pos: 0, initial speed: 1
+                forecast_state = forecast_state,
+                forecast_obs = forecast_obs
+                )
+        f.load_measurements(data)
+        f.filter()
+        
+        if False:
+            print(f.get_last_state().get_values())
+            print(exact_velocity)
+            import matplotlib.pyplot as plt 
+            plt.plot(f.extract_analyzed_states()[:,0])
+            plt.plot(data)
+            plt.plot(f.extract_analyzed_states()[:,1])
+            plt.plot(exact_velocity*np.ones(N))
+            plt.legend(['analyzed', 'measured', 'velocity estimate', 'real velocity'])
+            plt.show()
+        
+        rerr = abs(exact_velocity - f.get_last_state().get_values()[1])/exact_velocity
+        assert rerr < 0.01
