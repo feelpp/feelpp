@@ -79,6 +79,10 @@ class TestFilter():
         assert f.get_last_state().round(1) == State([1,1])
 
     def test_noisy_tracking(self):
+        """ Test: noisy sine
+
+        Noisy data is filtered using sine's order 3 Taylor expansion
+        """
 
         dt = 0.05
 
@@ -112,3 +116,7 @@ class TestFilter():
             print("relative error, real vs     data : " + str(np.linalg.norm(f.extract_analyzed_states() - real_trajectory)/np.linalg.norm(f.extract_analyzed_states())))
 
         assert rerr_ad < rerr_rd
+
+    def constant_velocity_estimation(self):
+        exact_velocity = np.random.random()
+        data = np.zeros(100) + exact_velocity*np.arange(100) + np.random.random(100)/10
