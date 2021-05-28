@@ -120,51 +120,6 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         super_model_meshes_type::updateTime( t );
     }
 
-
-bool
-ModelNumerical::checkResults() const
-{
-    if ( !M_useChecker )
-        return true;
-
-    std::string const& modelKeyword = this->keyword();
-
-    bool hasChecker = !this->modelProperties().postProcess().checkersMeasure( modelKeyword ).empty();
-    if ( !hasChecker )
-        return true;
-
-    bool resultsAreOk = true;
-    bool isMasterRank = this->worldComm().isMasterRank();
-
-    Feel::Table tableCheckerMeasures;
-    tableCheckerMeasures.add_row( {"check","name","measure","reference","error","tolerance"} );
-    tableCheckerMeasures.format().setFirstRowIsHeader( true );
-
-    for ( auto const& checkerMeasure : this->modelProperties().postProcess().checkersMeasure( modelKeyword ) )
-    {
-        std::string measureName = checkerMeasure.name();
-        if ( !M_postProcessMeasuresIO.hasMeasure( measureName ) )
-        {
-            LOG(WARNING) << "checker : ignore check of " << measureName << " because this measure was not computed";
-            continue;
-        }
-
-        double valueMeasured = M_postProcessMeasuresIO.measure( measureName );
-        auto [checkIsOk, diffVal] = checkerMeasure.run( valueMeasured );
-        std::string checkStr = checkIsOk? "[success]" : "[failure]";
-        tableCheckerMeasures.add_row( {checkStr,measureName,valueMeasured,checkerMeasure.value(),diffVal,checkerMeasure.tolerance()} );
-        tableCheckerMeasures( tableCheckerMeasures.nRow()-1,0).format().setFontColor( checkIsOk ? Font::Color::green :Font::Color::red );
-
-        resultsAreOk = resultsAreOk && checkIsOk;
-    }
-    auto tabInfoChecker = TabulateInformationsSections::New();
-    tabInfoChecker->add( (boost::format("Checkers : %1%")%modelKeyword).str(), TabulateInformations::New( tableCheckerMeasures ) );
-    if ( tableCheckerMeasures.nRow() > 1 && isMasterRank )
-        std::cout << *tabInfoChecker << std::endl;
-    return resultsAreOk;
-}
-
-
 void
 ModelNumerical::initPostProcess()
 {
@@ -179,6 +134,23 @@ ModelNumerical::initPostProcess()
     }
     if ( M_postProcessSaveFieldsFormat.empty() )
         M_postProcessSaveFieldsFormat = "default";
+}
+
+bool
+ModelNumerical::hasPostProcessExportsExpr( std::string const& exportTag ) const
+{
+    if ( this->hasModelProperties() )
+    {
+        for ( auto const& [_name,_expr,_markers,_rep,_tag] : this->modelProperties().postProcess().exports( this->keyword() ).expressions() )
+        {
+            if ( !_tag.empty() && _tag.find( exportTag ) == _tag.end() )
+                continue;
+            if ( _tag.empty() && exportTag != "" )
+                continue;
+            return true;
+        }
+    }
+    return false;
 }
 
 std::set<std::string>

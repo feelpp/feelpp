@@ -651,6 +651,26 @@ class GeoND
         // return ublas::subrange( M_G, 0, nRealDim, 0, numVertices );
     }
 
+    //! update G with all points of the element
+    template <typename TheNodesType>
+    void updateG( TheNodesType & G,
+                  std::enable_if_t<is_eigen_matrix_v<TheNodesType> >* = nullptr ) const
+    {
+        DCHECK( nRealDim == G.rows() && G.cols() >= numPoints ) << "G is not compatible";
+        for ( uint16_type i = 0; i < numPoints; ++i )
+            G.col( i ) = em_fixed_size_cmatrix_t<nRealDim,1,value_type>( M_points[i]->node().data().begin() );
+    }
+
+    //! update G with all vertices of the element
+    template <typename TheNodesType>
+    void updateVertices( TheNodesType & G,
+                         std::enable_if_t<is_eigen_matrix_v<TheNodesType> >* = nullptr ) const
+    {
+        DCHECK( nRealDim == G.rows() && G.cols() >= numVertices ) << "G is not compatible";
+        for ( uint16_type i = 0; i < numVertices; ++i )
+            G.col( i ) = em_fixed_size_cmatrix_t<nRealDim,1,value_type>( M_points[i]->node().data().begin() );
+    }
+
     point_iterator beginPoint()
     {
         return M_points.begin();

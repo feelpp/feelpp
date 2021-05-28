@@ -164,8 +164,12 @@ int cg_laplacian_app()
     e->add( "k", k );
     e->add( "f", f );
     e->add( "g", g );
-    e->add( "r_1", r_1 );
-    e->add( "r_2", r_2 );
+    if ( support( Vh )->hasAnyMarker( {"Robin"} ) )
+    {
+        auto rangeFacesRobin = markedfaces( support( Vh ), "Robin" );
+        e->add( "r_1", r_1, rangeFacesRobin );
+        e->add( "r_2", r_2, rangeFacesRobin );
+    }
     if ( thechecker.check() )
     {
         e->add( "solution", p_exact );

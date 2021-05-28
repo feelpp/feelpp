@@ -245,6 +245,13 @@ ModelMeasuresIO::currentMeasures() const
 }
 
 void
+ModelMeasuresIO::updateParameterValues( std::map<std::string,double> & mp, std::string const& prefix_symbol ) const
+{
+    for ( auto const& [name,val] : this->currentMeasures() )
+        mp.emplace( std::make_pair( prefixvm(prefix_symbol,name,"_"), val ) );
+}
+
+void
 ModelMeasuresEvaluatorContext::add( std::string const& field, int ctxId, std::string const& name )
 {
     M_mapFieldToMapCtxIdToName[field][ctxId] = name;

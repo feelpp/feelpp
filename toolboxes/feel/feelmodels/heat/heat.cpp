@@ -393,6 +393,8 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
         p["Finite element stabilization"] = subPt;
     }
 
+    this->modelFields().updateInformationObject( p["Fields"] );
+
     if ( !this->isStationary() )
     {
         subPt.clear();
@@ -445,6 +447,10 @@ HEAT_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Tabula
 
         tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
     }
+
+    // fields
+    if ( jsonInfo.contains("Fields") )
+        tabInfo->add( "Fields", TabulateInformationTools::FromJSON::tabulateInformationsModelFields( jsonInfo.at("Fields"), tabInfoProp ) );
 
     if ( jsonInfo.contains("Time Discretization") )
     {

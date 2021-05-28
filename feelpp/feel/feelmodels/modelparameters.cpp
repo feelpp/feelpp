@@ -196,6 +196,30 @@ ModelParameters::toParameterValues() const
     return pv;
 }
 
+void
+ModelParameter::updateInformationObject( std::string const& symbol, nl::json::array_t & ja ) const
+{
+    if ( this->type() == "expression" )
+    {
+        auto [exprStr,compInfo] = M_expr.exprInformations();
+        ja.push_back( symbolExprInformations( symbol, exprStr, compInfo, this->name() ) );
+    }
+    else if ( this->type() == "fit" )
+    {
+        auto compInfo = SymbolExprComponentSuffix( 1, 1 );
+        ja.push_back( symbolExprInformations( symbol, "fit(.)", compInfo, this->name() ) );
+    }
+}
 
+void
+ModelParameters::updateInformationObject( nl::json & p ) const
+{
+    nl::json::array_t ja;
+
+    for( auto const& [symbName, mparam] : *this )
+        mparam.updateInformationObject( symbName,ja );
+
+    p = ja;
+}
 
 }

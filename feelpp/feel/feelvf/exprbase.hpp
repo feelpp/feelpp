@@ -33,6 +33,8 @@
 #include <sstream>
 #include <iostream>
 
+#include <feel/feelpoly/context.hpp>
+
 namespace Feel
 {
 /**
@@ -123,5 +125,92 @@ protected:
 private:
 
 };
+
+
+namespace vf
+{
+
+class ExprDynamicBase
+{
+public:
+    ExprDynamicBase() = default;
+    explicit ExprDynamicBase( size_type c ) : M_context( c ) {}
+    size_type dynamicContext() const { return M_context; }
+private:
+    size_type M_context = 0;
+};
+
+//!
+//! @return true if the expr hass static context, false otherwise
+//!
+template <class T>
+constexpr bool hasStaticContext()
+{
+    return !has_dynamic_v<T::context>;
+}
+
+//!
+//! @return true if the expr hass static context, false otherwise
+//!
+template <class T>
+inline bool hasStaticContext( T const& t )
+{
+    return !has_dynamic_v<T::context>;
+}
+
+//!
+//! @return the static context  
+//!
+template <class T>
+constexpr size_type staticContext()
+{
+    return T::context;
+}
+
+//!
+//! @return the static context  
+//!
+template <class T>
+inline size_type staticContext( T const& t )
+{
+    return T::context;
+}
+
+//!
+//! @return true if the expression has dynamic context, false otherwise
+//!
+template <class T>
+constexpr bool hasDynamicContext()
+{
+    return has_dynamic_v<T::context>;// && std::is_base_of_v<ExprDynamicBase, T>;
+}
+
+//!
+//! @return true if the expression has dynamic context, false otherwise
+//!
+template <class T>
+inline bool hasDynamicContext( T const& t )
+{
+    return has_dynamic_v<T::context>;// && std::is_base_of_v<ExprDynamicBase, T>;
+}
+
+//!
+//! @return the dynamic context  if the expression has one or the static context otherwise
+//!
+template <class T>
+size_type dynamicContext( T const& t )
+{
+    if constexpr ( hasDynamicContext<T>() )
+    {
+        return t.dynamicContext() | T::context;
+    }
+    else
+    {
+        return T::context;
+    }
+}
+
+} // namespace vf
+
 }
 #endif /* FEELPP_EXPRBASE_HPP */

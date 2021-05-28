@@ -43,6 +43,10 @@ if ( NOT TARGET quickstart )
   add_custom_target(quickstart)
 endif()
 
+if ( NOT TARGET hdg_stokes )
+  add_custom_target(hdg_stokes)
+endif()
+
 add_subdirectory( python )
 add_subdirectory( laplacian )
 
@@ -60,9 +64,12 @@ add_dependencies(check ${QS_ADR_2D} ${QS_ADR_3D} )
 #
 feelpp_add_application( stokes_2d SRCS qs_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_STOKES_2D INSTALL TESTS)
 feelpp_add_application( stokes_3d SRCS qs_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_STOKES_3D INSTALL TESTS)
+feelpp_add_application( hdg_stokes_2d SRCS qs_hdg_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_HDG_STOKES_2D INSTALL TESTS)
+feelpp_add_application( hdg_stokes_3d SRCS qs_hdg_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_HDG_STOKES_3D INSTALL TESTS)
 feelpp_add_testcase( stokes PREFIX qs CATEGORY quickstart )
-add_dependencies(quickstart ${QS_STOKES_2D} ${QS_STOKES_3D})
-add_dependencies(check ${QS_STOKES_2D} ${QS_STOKES_3D})
+add_dependencies(quickstart ${QS_STOKES_2D} ${QS_STOKES_3D} ${QS_HDG_STOKES_2D} ${QS_HDG_STOKES_3D} )
+add_dependencies(check ${QS_STOKES_2D} ${QS_STOKES_3D} ${QS_HDG_STOKES_2D} ${QS_HDG_STOKES_3D})
+add_dependencies(hdg_stokes ${QS_HDG_STOKES_2D} ${QS_HDG_STOKES_3D})
 
 #
 # Linear elasticity

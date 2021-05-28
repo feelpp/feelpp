@@ -53,7 +53,7 @@
     {
         "Exports":
         {
-            "fields":["displacement","Von-Mises","pid"]
+            "fields":["displacement","von-mises-criterion","tresca-criterion","principal-stresses"]
         }
     }
 }

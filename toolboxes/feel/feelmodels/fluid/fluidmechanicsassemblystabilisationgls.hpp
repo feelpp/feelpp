@@ -1,9 +1,9 @@
 #ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_ASSEMBLY_STABILIZATIONGLS_HPP
 #define FEELPP_TOOLBOXES_FLUIDMECHANICS_ASSEMBLY_STABILIZATIONGLS_HPP 1
 
+#include <feel/feelvf/exproptionalconcat.hpp>
 #include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
-#include <feel/feelmodels/modelvf/exproptionalconcat.hpp>
 #include <feel/feelmodels/modelvf/fluidmecdivstresstensor.hpp>
 
 #include <feel/feelmodels/modelvf/exproperations.hpp>
