@@ -23,9 +23,4 @@
 #
 #
 
-add_subdirectory( 0-constant )
-add_subdirectory( 1-linear )
-add_subdirectory( 2-nonlinearR )
-add_subdirectory( 3-nonlinearC )
-add_subdirectory( test3d0d_nonlinearR )
-add_subdirectory( test-linear )
+feelpp_add_fmu( test_linear CLASS test_linear SRCS test_linear.mo )
