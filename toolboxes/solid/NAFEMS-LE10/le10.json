@@ -69,7 +69,7 @@
     {
         "Exports":
         {
-            "fields":["displacement","Von-Mises","tresca","principal-stresses"]
+            "fields":["displacement","von-mises-criterion","tresca-criterion","principal-stresses"]
         },
         "Measures":
         {
@@ -78,7 +78,7 @@
                 "pointD":
                 {
                     "coord":"{2,0,0.6}",
-                    "fields":["stress_yy"]
+                    "fields":["stress_yy"] // NOT AVAILABLE CURRENTLY
                 }
             }
         }

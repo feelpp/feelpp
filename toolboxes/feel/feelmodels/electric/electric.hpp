@@ -226,7 +226,7 @@ public :
     template <typename PotentialFieldType>
     auto modelFields( PotentialFieldType const& field_p, std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::potential(this), prefix, "electric-potential", field_p, "P", this->keyword() ) );
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::potential(this), prefix, "electric-potential", field_p, "P", this->keyword() ) );
         }
 
     auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const

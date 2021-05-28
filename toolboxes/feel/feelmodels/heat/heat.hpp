@@ -272,7 +272,7 @@ class Heat : public ModelNumerical,
         template <typename TemperatureFieldType>
         auto modelFields( TemperatureFieldType const& field_t, std::string const& prefix = "" ) const
             {
-                return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::temperature(this), prefix, "temperature", field_t, "T", this->keyword() ) );
+                return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::temperature(this), prefix, "temperature", field_t, "T", this->keyword() ) );
             }
 
         auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
