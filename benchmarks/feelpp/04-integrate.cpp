@@ -45,15 +45,14 @@ void BM_Space( benchmark::State& state )
         state.PauseTiming();
 
         mesh_ptr_t m;
-        if constexpr ( std::is_same_v<mesh_t, MeshStructured> )
+        if constexpr ( is_mesh_structured_v<mesh_t> )
         {
-            holo3_image<float> cx,cy;   
-            int nx_ = state.range( 0 );
-            int ny_ = state.range( 1 );
-            double psize_ = 1./state.range( 0 );
-            m = std::make_shared<MeshStructured>( nx_, ny_, psize_, cx, cy,
-                                                  Environment::worldCommPtr(),
-                                                  false, "", false );
+            typename mesh_t::index_type nx_ = state.range( 0 );
+            typename mesh_t::index_type ny_ = state.range( 1 );
+            //m = std::make_shared<mesh_t>( {nx_, ny_} );
+            m = std::make_shared<mesh_t>( nl::json{ { "Discretisation", {  { "n_points", { nx_,ny_ } } } } } );
+            m->components().set( size_type( MESH_UPDATE_FACES|MESH_UPDATE_EDGES ) );
+            m->updateForUse();
         }
         else
         {
@@ -62,9 +61,8 @@ void BM_Space( benchmark::State& state )
                           _savehdf5 = false, _verbose = false,
                           _h = 1. / state.range( 0 ) );
         }
-        
-        auto Xh = SpaceT::New( _mesh = m,
-                               _worldscomm = makeWorldsComm( 1, m->worldComm() ) );
+
+        auto Xh = SpaceT::New( _mesh = m );
         nitems = Xh->nLocalDof();
         auto a = form2( _test=Xh, _trial=Xh );
         auto v = Xh->element();
@@ -87,7 +85,7 @@ BENCHMARK_TEMPLATE(BM_Space,Pch_type<Mesh<Simplex<3>>,3>)->Unit(benchmark::kMill
 BENCHMARK_TEMPLATE(BM_Space,Pdh_type<Mesh<Simplex<2>>,1>)->Unit(benchmark::kMillisecond)->Args({4,0})->Args({8,0})->Args({16,0})->Args({32,0});
 BENCHMARK_TEMPLATE(BM_Space,Pdh_type<Mesh<Simplex<3>>,1>)->Unit(benchmark::kMillisecond)->Args({4,0})->Args({8,0})->Args({16,0})->Args({32,0});
 #endif
-BENCHMARK_TEMPLATE(BM_Space,Pch_type<MeshStructured,1>)->Unit(benchmark::kMillisecond)
+BENCHMARK_TEMPLATE(BM_Space,Pch_type<MeshStructured<Hypercube<2>>,1>)->Unit(benchmark::kMillisecond)
                     ->Args({4,4})->Args({8,8})->Args({16,16})->Args({32,32})->Args({64,64})
                     ->Args({128,128})->Args({256,256})->Args({512,512})->Args({1024,1024});
 //                    ->Args({1920,1024})->Args({2048,2048});
