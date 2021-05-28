@@ -77,7 +77,7 @@ template <int Dim, typename IndexT>
 class PartitioningMeshStructured
 {
 public:
-    static const int nDim = Dim;
+    static constexpr int nDim = Dim;
 
     using index_type = IndexT;
 
@@ -187,13 +187,38 @@ public:
 
         }
 
-    bool pointIsGhost( rank_type partId, int i, int j ) const
+    bool pointIsGhost( rank_type partId, std::array<index_type,nDim> const& indexes ) const
         {
-            return
-                ( i < M_startPtIdByAxis[partId][0] ) ||
-                ( i >= (M_startPtIdByAxis[partId][0]+M_nLocalPtByAxis[partId][0]) ) ||
-                ( j < M_startPtIdByAxis[partId][1] ) ||
-                ( j >= (M_startPtIdByAxis[partId][1]+M_nLocalPtByAxis[partId][1]) );
+            if constexpr ( nDim == 1 )
+            {
+                index_type i = indexes[0];
+                return
+                    ( i < M_startPtIdByAxis[partId][0] ) ||
+                    ( i >= (M_startPtIdByAxis[partId][0]+M_nLocalPtByAxis[partId][0]) );
+            }
+            else if constexpr ( nDim == 2 )
+            {
+                index_type i = indexes[0];
+                index_type j = indexes[1];
+                return
+                    ( i < M_startPtIdByAxis[partId][0] ) ||
+                    ( i >= (M_startPtIdByAxis[partId][0]+M_nLocalPtByAxis[partId][0]) ) ||
+                    ( j < M_startPtIdByAxis[partId][1] ) ||
+                    ( j >= (M_startPtIdByAxis[partId][1]+M_nLocalPtByAxis[partId][1]) );
+            }
+            else
+            {
+                index_type i = indexes[0];
+                index_type j = indexes[1];
+                index_type k = indexes[2];
+                return
+                    ( i < M_startPtIdByAxis[partId][0] ) ||
+                    ( i >= (M_startPtIdByAxis[partId][0]+M_nLocalPtByAxis[partId][0]) ) ||
+                    ( j < M_startPtIdByAxis[partId][1] ) ||
+                    ( j >= (M_startPtIdByAxis[partId][1]+M_nLocalPtByAxis[partId][1]) );
+                    ( k < M_startPtIdByAxis[partId][2] ) ||
+                    ( k >= (M_startPtIdByAxis[partId][2]+M_nLocalPtByAxis[partId][2]) );
+            }
         }
 
     std::vector<index_type> const& nLocalPtByAxis(rank_type p) const { return M_nLocalPtByAxis.at( p ); }
@@ -214,43 +239,35 @@ private:
 };
 } // namespace detail
 
+
 template <typename GeoShape, typename T, typename IndexT>
-MeshStructured<GeoShape,T,IndexT>::MeshStructured( int nx, int ny, double pixelsize,
-                                                   std::optional<holo3_image<float>> const& cx,
-                                                   std::optional<holo3_image<float>> const& cy,
-                                                   worldcomm_ptr_t const& wc,
-                                                   bool withCoord )
-    : super( wc ),
-      M_nx( nx ),
-      M_ny( ny ),
-      M_cx( cx ),
-      M_cy( cy ),
-      M_pixelsize( pixelsize )
+MeshStructured<GeoShape,T,IndexT>::MeshStructured( std::shared_ptr<setup_type> const& setup, worldcomm_ptr_t const& wc )
+    :
+    super( wc ),
+    M_setup( setup )
 {
-    if ( !M_cx && !M_cy )
+    if ( M_setup )
+        this->generateStructuredMesh();
+}
+
+template <typename GeoShape, typename T, typename IndexT>
+void
+MeshStructured<GeoShape,T,IndexT>::generateStructuredMesh()
+{
+
+    if ( M_setup->isCartesian() )
         this->setStructureProperty( "00110" );
     else
         this->setStructureProperty( "00010" );
-    LOG(INFO) << "nx x ny = " << nx << " x " << ny << "\t" << nx * ny << std::endl;
-    CHECK( nx > 1 ) << "number of point in x dir should be greater than 1";
-    CHECK( ny > 1 ) << "number of point in y dir should be greater than 1";
 
-
-    rank_type nProc = wc->localSize();
-    rank_type partId = wc->localRank();
+    rank_type nProc = this->worldComm().localSize();
+    rank_type partId = this->worldComm().localRank();
 
     std::unordered_map<size_type, boost::tuple<size_type, rank_type>> mapGhostElt;
     std::unordered_map<size_type, size_type> idStructuredMeshToFeelMesh;
-    node_type coords( 2 );
+    //node_type coords( 2 );
 
-
-    // std::shared_ptr<Feel::detail::PolygonMeshStructured> polygonTool;
-    // if ( withPoly )
-    //     polygonTool = std::make_shared<Feel::detail::PolygonMeshStructured>( pathPoly, M_pixelsize );
-    // bool inPoly = false;
-
-    std::vector<index_type> M_nGlobalPtByAxis;
-    M_nGlobalPtByAxis = { M_nx, M_ny };
+    std::vector<index_type> M_nGlobalPtByAxis = M_setup->nPointByAxis();
 
     Feel::detail::PartitioningMeshStructured<nDim,index_type> partitionTool(M_nGlobalPtByAxis, nProc, partId);
     auto const& startPtIdByAxisOnProc = partitionTool.startPtIdByAxis(partId);
@@ -259,12 +276,37 @@ MeshStructured<GeoShape,T,IndexT>::MeshStructured( int nx, int ny, double pixels
     auto const& nLocalPtByAxisWithGhostOnProc = partitionTool.nLocalPtByAxisWithGhost(partId);
 
     // points
-    for ( int i = startPtIdByAxisWithGhostOnProc[0]; i < (startPtIdByAxisWithGhostOnProc[0] + nLocalPtByAxisWithGhostOnProc[0]); ++i )
+    if constexpr ( nDim == 1 )
     {
-        for ( int j = startPtIdByAxisWithGhostOnProc[1]; j < (startPtIdByAxisWithGhostOnProc[1] + nLocalPtByAxisWithGhostOnProc[1]); ++j )
+        for ( index_type i = startPtIdByAxisWithGhostOnProc[0]; i < (startPtIdByAxisWithGhostOnProc[0] + nLocalPtByAxisWithGhostOnProc[0]); ++i )
         {
-            bool currentPtIsGhost = partitionTool.pointIsGhost( partId, i, j );
-            this->addStructuredPoint( i,j, partId, currentPtIsGhost, withCoord );
+            bool currentPtIsGhost = partitionTool.pointIsGhost( partId, {i} );
+            this->addStructuredPoint( {i}, partId, currentPtIsGhost );
+        }
+    }
+    else if constexpr ( nDim == 2 )
+    {
+        for ( index_type i = startPtIdByAxisWithGhostOnProc[0]; i < (startPtIdByAxisWithGhostOnProc[0] + nLocalPtByAxisWithGhostOnProc[0]); ++i )
+        {
+            for ( index_type j = startPtIdByAxisWithGhostOnProc[1]; j < (startPtIdByAxisWithGhostOnProc[1] + nLocalPtByAxisWithGhostOnProc[1]); ++j )
+            {
+                bool currentPtIsGhost = partitionTool.pointIsGhost( partId, {i,j} );
+                this->addStructuredPoint( {i,j}, partId, currentPtIsGhost );
+            }
+        }
+    }
+    else
+    {
+        for ( index_type i = startPtIdByAxisWithGhostOnProc[0]; i < (startPtIdByAxisWithGhostOnProc[0] + nLocalPtByAxisWithGhostOnProc[0]); ++i )
+        {
+            for ( index_type j = startPtIdByAxisWithGhostOnProc[1]; j < (startPtIdByAxisWithGhostOnProc[1] + nLocalPtByAxisWithGhostOnProc[1]); ++j )
+            {
+                for ( index_type k = startPtIdByAxisWithGhostOnProc[2]; k < (startPtIdByAxisWithGhostOnProc[2] + nLocalPtByAxisWithGhostOnProc[2]); ++k )
+                {
+                    bool currentPtIsGhost = partitionTool.pointIsGhost( partId, {i,j,k} );
+                    this->addStructuredPoint( {i,j,k}, partId, currentPtIsGhost );
+                }
+            }
         }
     }
 
@@ -272,36 +314,131 @@ MeshStructured<GeoShape,T,IndexT>::MeshStructured( int nx, int ny, double pixels
     std::vector<size_type> endEltIdByAxisOnProc(nDim,0);
     for ( int a=0;a<nDim;++a )
         endEltIdByAxisOnProc[a] = nLocalPtByAxisOnProc[a]>0? startPtIdByAxisOnProc[a] + (nLocalPtByAxisOnProc[a] - 1) : startPtIdByAxisOnProc[a];
-
-    for ( int i = startPtIdByAxisOnProc[0]; i < endEltIdByAxisOnProc[0]; ++i )
+    if constexpr ( nDim == 1 )
     {
-        for ( int j = startPtIdByAxisOnProc[1]; j < endEltIdByAxisOnProc[1]; ++j )
+        for ( index_type i = startPtIdByAxisOnProc[0]; i < endEltIdByAxisOnProc[0]; ++i )
         {
-            auto [eid,eidFeel] = this->addStructuredElement(i,j,partId,partId,{},withCoord );
+            auto [eid,eidFeel] = this->addStructuredElement({i},partId,partId,{} );
             idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eidFeel ) );
+        }
+    }
+    else if constexpr ( nDim == 2 )
+    {
+        for ( index_type i = startPtIdByAxisOnProc[0]; i < endEltIdByAxisOnProc[0]; ++i )
+        {
+            for ( index_type j = startPtIdByAxisOnProc[1]; j < endEltIdByAxisOnProc[1]; ++j )
+            {
+                auto [eid,eidFeel] = this->addStructuredElement({i,j},partId,partId,{} );
+                idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eidFeel ) );
+            }
+        }
+    }
+    else
+    {
+        for ( index_type i = startPtIdByAxisOnProc[0]; i < endEltIdByAxisOnProc[0]; ++i )
+        {
+            for ( index_type j = startPtIdByAxisOnProc[1]; j < endEltIdByAxisOnProc[1]; ++j )
+            {
+                for ( index_type k = startPtIdByAxisOnProc[2]; k < endEltIdByAxisOnProc[2]; ++k )
+                {
+                    auto [eid,eidFeel] = this->addStructuredElement({i,j,k},partId,partId,{} );
+                    idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eidFeel ) );
+                }
+            }
         }
     }
 
     // ghost elements
     for ( auto const& [partIdGhost, ghostEltsDesc] : partitionTool.eltGhost() )
     {
-        size_type start_i = std::get<0>( ghostEltsDesc )[0];
-        size_type start_j = std::get<0>( ghostEltsDesc )[1];
-        size_type end_i = std::get<1>( ghostEltsDesc )[0];
-        size_type end_j = std::get<1>( ghostEltsDesc )[1];
-        for ( size_type i = start_i; i < end_i; ++i )
+        if constexpr ( nDim == 1 )
         {
-            for ( size_type j = start_j; j < end_j; ++j )
+            index_type start_i = std::get<0>( ghostEltsDesc )[0];
+            index_type end_i = std::get<1>( ghostEltsDesc )[0];
+            for ( index_type i = start_i; i < end_i; ++i )
             {
-                auto [eid,eidFeel] = this->addStructuredElement(i,j,partId,partIdGhost,{},withCoord );
+                auto [eid,eidFeel] = this->addStructuredElement({i},partId,partIdGhost,{} );
                 idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eidFeel ) );
                 mapGhostElt.insert( std::make_pair( eid, boost::make_tuple( eidFeel, partIdGhost ) ) );
+            }
+        }
+        else if constexpr ( nDim == 2 )
+        {
+            index_type start_i = std::get<0>( ghostEltsDesc )[0];
+            index_type start_j = std::get<0>( ghostEltsDesc )[1];
+            index_type end_i = std::get<1>( ghostEltsDesc )[0];
+            index_type end_j = std::get<1>( ghostEltsDesc )[1];
+            for ( index_type i = start_i; i < end_i; ++i )
+            {
+                for ( index_type j = start_j; j < end_j; ++j )
+                {
+                    auto [eid,eidFeel] = this->addStructuredElement({i,j},partId,partIdGhost,{} );
+                    idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eidFeel ) );
+                    mapGhostElt.insert( std::make_pair( eid, boost::make_tuple( eidFeel, partIdGhost ) ) );
+                }
+            }
+        }
+        else
+        {
+            index_type start_i = std::get<0>( ghostEltsDesc )[0];
+            index_type start_j = std::get<0>( ghostEltsDesc )[1];
+            index_type start_k = std::get<0>( ghostEltsDesc )[2];
+            index_type end_i = std::get<1>( ghostEltsDesc )[0];
+            index_type end_j = std::get<1>( ghostEltsDesc )[1];
+            index_type end_k = std::get<1>( ghostEltsDesc )[2];
+            for ( index_type i = start_i; i < end_i; ++i )
+            {
+                for ( index_type j = start_j; j < end_j; ++j )
+                {
+                    for ( index_type k = start_k; k < end_k; ++k )
+                    {
+                        auto [eid,eidFeel] = this->addStructuredElement({i,j,k},partId,partIdGhost,{} );
+                        idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eidFeel ) );
+                        mapGhostElt.insert( std::make_pair( eid, boost::make_tuple( eidFeel, partIdGhost ) ) );
+                    }
+                }
             }
         }
     }
 
     this->updateGhostCellInfoByUsingNonBlockingComm( idStructuredMeshToFeelMesh, mapGhostElt );
 }
+
+template <typename GeoShape, typename T, typename IndexT>
+void
+MeshStructured<GeoShape,T,IndexT>::addStructuredPoint( std::array<index_type,nDim> const& indexes, rank_type partId, bool isGhost )
+{
+    index_type ptid = M_setup->pointId( indexes );
+    node_type coords = M_setup->pointCoordinates( indexes );
+    point_type pt( ptid, coords );
+    if ( !isGhost )
+        pt.setProcessId( partId );
+    pt.setProcessIdInPartition( partId );
+    this->addPoint( pt );
+}
+
+template <typename GeoShape, typename T, typename IndexT>
+std::pair<typename MeshStructured<GeoShape,T,IndexT>::size_type,typename MeshStructured<GeoShape,T,IndexT>::size_type>
+MeshStructured<GeoShape,T,IndexT>::addStructuredElement( std::array<index_type,nDim> const& indexes, rank_type processId, rank_type partId,
+                                                         std::vector<rank_type> const& neighborPartitionIds )
+{
+    index_type eid = M_setup->cellId( indexes ); // StructuredMesh Id
+    element_type e;
+    e.setMarker( 1, 1 );
+    e.setProcessIdInPartition( processId );
+    e.setProcessId( partId );
+
+    auto ptids = M_setup->pointIdsFromCellId( indexes );
+    for ( uint16_type k = 0; k < element_type::numPoints; ++k )
+        e.setPoint( k, this->point( ptids[k] ) );
+
+    if ( neighborPartitionIds.empty() )
+        e.setNeighborPartitionIds( neighborPartitionIds );
+
+    auto [eit,inserted] = this->addElement( e, true ); // e.id() is defined by Feel++
+    return std::make_pair( eid, eit->second.id() );
+}
+
 
 template <typename GeoShape, typename T, typename IndexT>
 void
@@ -446,60 +583,10 @@ MeshStructured<GeoShape,T,IndexT>::updateGhostCellInfoByUsingNonBlockingComm( st
 }
 
 
-template <typename GeoShape, typename T, typename IndexT>
-void
-MeshStructured<GeoShape,T,IndexT>::addStructuredPoint( size_type i, size_type j, rank_type partId, bool isGhost,
-                                                       bool withCoord )
-{
-    int ptid = (M_ny)*i + j;
-    node_type coords( 2 );
-    if ( withCoord && M_cx && M_cy )
-    {
-        coords[0] = (*M_cy)( j, i );
-        coords[1] = (*M_cx)( j, i );
-    }
-    else
-    {
-        coords[0] = M_pixelsize * i;
-        coords[1] = M_pixelsize *(M_ny - 1 - j);
-    }
-
-    point_type pt( ptid, coords );
-    if ( !isGhost )
-        pt.setProcessId( partId );
-    pt.setProcessIdInPartition( partId );
-    this->addPoint( pt );
-}
-
-template <typename GeoShape, typename T, typename IndexT>
-std::pair<typename MeshStructured<GeoShape,T,IndexT>::size_type,typename MeshStructured<GeoShape,T,IndexT>::size_type>
-MeshStructured<GeoShape,T,IndexT>::addStructuredElement( size_type i, size_type j, rank_type processId, rank_type partId,
-                                                         std::vector<rank_type> const& neighborPartitionIds,
-                                                         bool withCoord )
-{
-    size_type eid = ( M_ny - 1 ) * i + j; // StructuredMesh Id
-    element_type e;
-    e.setMarker( 1, 1 );
-    e.setProcessIdInPartition( processId );
-    e.setProcessId( partId );
-
-    std::vector<size_type> ptid = {( M_ny ) * ( i + 1 ) + j,     // 0
-                                   ( M_ny ) * ( i + 1 ) + j + 1, // 1
-                                   (M_ny)*i + j + 1,             // 2
-                                   (M_ny)*i + j};                // 3
-
-    for ( uint16_type k = 0; k < 4; ++k )
-        e.setPoint( k, this->point( ptid[k] ) );
-
-    if ( neighborPartitionIds.empty() )
-        e.setNeighborPartitionIds( neighborPartitionIds );
-
-    auto [eit,inserted] = this->addElement( e, true ); // e.id() is defined by Feel++
-    return std::make_pair( eid, eit->second.id() );
-}
 
 
-
+template class MeshStructured<Hypercube<1>>;
 template class MeshStructured<Hypercube<2>>;
+template class MeshStructured<Hypercube<3>>;
 
 } // namespace Feel
