@@ -50,7 +50,7 @@
     {
         "Exports":
         {
-            "fields":["displacement","von-mises-criterions"]
+            "fields":["displacement","von-mises-criterion","tresca-criterion","principal-stresses"]
         },
         "Measures":
         {

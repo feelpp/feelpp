@@ -21,10 +21,11 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef __FEELPP_VF_EIG_H
-#define __FEELPP_VF_EIG_H 1
+#ifndef __FEELPP_VF_TRESCA_H
+#define __FEELPP_VF_TRESCA_H 1
 
 #include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/eig.hpp>
 
 namespace Feel
 {
@@ -32,18 +33,29 @@ namespace vf
 {
 /// \cond detail
 /**
- * \class Eig
- * \brief Eig of a matrix
+ * \class Tresca
+ * \brief Tresca criterion of a matrix
  *
- * @author Christophe Prud'homme
+ * @author Vincent Chabannes
  * @see
  */
 template <typename ExprT>
-class Eig : public ExprDynamicBase
+class Tresca
 {
   public:
-    using super = ExprDynamicBase;
-    static const size_type context = ExprT::context;
+
+    /** @name Typedefs
+     */
+    //@{
+
+    typedef ExprT expression_type;
+    typedef typename expression_type::value_type value_type;
+    typedef value_type evaluate_type;
+    typedef Tresca<ExprT> this_type;
+
+    using expression_eig_type = Expr<Eig<expression_type>>;
+
+    static const size_type context = expression_eig_type::context;
     static const bool is_terminal = false;
 
     template <typename Func>
@@ -65,17 +77,6 @@ class Eig : public ExprDynamicBase
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
-    /** @name Typedefs
-     */
-    //@{
-
-    typedef ExprT expression_type;
-    typedef typename expression_type::value_type value_type;
-    typedef Eig<ExprT> this_type;
-
-    using evaluate_type = Eigen::Matrix<value_type,
-                                        (expression_type::evaluate_type::SizeAtCompileTime == Eigen::Dynamic)? Eigen::Dynamic : expression_type::evaluate_type::RowsAtCompileTime,
-                                        1>;
 
     //@}
 
@@ -83,16 +84,13 @@ class Eig : public ExprDynamicBase
      */
     //@{
 
-    explicit Eig( expression_type const& __expr )
-        : super( Feel::vf::dynamicContext( __expr ) ),
-          M_expr( __expr )
+    explicit Tresca( expression_type const& __expr )
+        :
+        M_expr( eig(__expr) )
     {
     }
-    Eig( Eig const& te )
-        : super( te ), M_expr( te.M_expr )
-    {
-    }
-    ~Eig() = default;
+    Tresca( Tresca const& te ) = default;
+    ~Tresca() = default;
 
     //@}
 
@@ -118,42 +116,27 @@ class Eig : public ExprDynamicBase
      */
     //@{
 
+    //! dynamic context
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr ); }
+
     //! polynomial order
-    uint16_type polynomialOrder() const { return 2 * M_expr.polynomialOrder(); }
+    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
 
     //! expression is polynomial?
     constexpr bool isPolynomial() const { return false; }
 
-    expression_type const& expression() const
-    {
-        return M_expr;
-    }
-
-    evaluate_type
-    evaluate( bool p,  worldcomm_ptr_t const& worldcomm ) const
-        {
-            auto evalExpr = M_expr.evaluate( p, worldcomm );
-            Eigen::SelfAdjointEigenSolver<typename expression_type::evaluate_type> es( evalExpr );
-            return es.eigenvalues();
-        }
+    expression_eig_type const& expression() const { return M_expr; }
 
     //@}
 
-    //template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,std::shared_ptrvf::detail::gmc<0> > > >, typename Basis_j_t = Basis_i_t>
     template <typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {
-        typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
+        typedef typename expression_eig_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
 
         typedef typename tensor_expr_type::shape expr_shape;
-        BOOST_MPL_ASSERT_MSG( ( boost::is_same<mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N>>::value ), INVALID_TENSOR_SHOULD_BE_RANK_2_OR_0, (mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N>));
-        typedef Shape<expr_shape::nDim, Vectorial, false, false> shape;
-
-        typedef Eigen::Matrix<value_type, expr_shape::M, expr_shape::N> matrix_type;
-        typedef Eigen::Matrix<value_type, shape::M, 1> vector_type;
-        typedef std::vector<matrix_type> eig_matrix_type;
-        typedef std::vector<vector_type> eig_vector_type;
+        typedef Shape<expr_shape::nDim, Scalar, false, false> shape;
 
         template <class Args>
         struct sig
@@ -168,24 +151,18 @@ class Eig : public ExprDynamicBase
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            : M_tensor_expr( expr.expression(), geom, fev, feu ),
-              M_eig( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() ),
-              M_eigv( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
+            : M_tensor_expr( expr.expression(), geom, fev, feu )
         {
         }
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
-            : M_tensor_expr( expr.expression(), geom, fev ),
-              M_eig( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() ),
-              M_eigv( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
+            : M_tensor_expr( expr.expression(), geom, fev )
         {
         }
 
         tensor( this_type const& expr, Geo_t const& geom )
-            : M_tensor_expr( expr.expression(), geom ),
-              M_eig( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() ),
-              M_eigv( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
+            : M_tensor_expr( expr.expression(), geom )
         {
         }
         template <typename IM>
@@ -204,12 +181,10 @@ class Eig : public ExprDynamicBase
         void update( Geo_t const& geom )
         {
             M_tensor_expr.update( geom );
-            computeEig();
         }
         void update( Geo_t const& geom, uint16_type face )
         {
             M_tensor_expr.update( geom, face );
-            computeEig();
         }
 
         value_type
@@ -232,60 +207,37 @@ class Eig : public ExprDynamicBase
 
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
-        {
-            return M_eigv[q]( c1, c2 );
-        }
-
-        Eigen::Map<const vector_type>
-        evalq( uint16_type q ) const
-        {
-            return Eigen::Map<const vector_type>(M_eigv[q].data());
-        }
-
-      private:
-        void  computeEig()
             {
-                for ( int q = 0; q < M_eig.size(); ++q )
-                {
-                    M_eig[q](0,0) = M_tensor_expr.evalq( 0, 0, q );
-                    if constexpr ( expr_shape::N > 1 )
-                    {
-                        M_eig[q](1,1) = M_tensor_expr.evalq( 1, 1, q );
-                        M_eig[q](1,0) = M_tensor_expr.evalq( 1, 0, q );
-                        if constexpr ( expr_shape::N > 2 )
-                        {
-                            M_eig[q](2,2) = M_tensor_expr.evalq( 2, 2, q );
-                            M_eig[q](2,0) = M_tensor_expr.evalq( 2, 0, q );
-                            M_eig[q](2,1) = M_tensor_expr.evalq( 2, 1, q );
-                        }
-                    }
-                    Eigen::SelfAdjointEigenSolver<matrix_type> es(M_eig[q]);
-                    M_eigv[q] = es.eigenvalues();
-                }
-            }
-
+                auto theEigs = M_tensor_expr.evalq(q);
+                if constexpr ( expr_shape::M == 1 )
+                    return value_type(0);
+                else if constexpr ( expr_shape::M == 2 )
+                                      return math::abs(theEigs(0)-theEigs(1));
+                else
+                    return std::max( math::abs(theEigs(0)-theEigs(1)),
+                                     std::max( math::abs(theEigs(1)-theEigs(2)),
+                                               math::abs(theEigs(2)-theEigs(0)) ) );
+        }
       private:
         tensor_expr_type M_tensor_expr;
-        eig_matrix_type M_eig;
-        eig_vector_type M_eigv;
     };
 
   private:
-    mutable expression_type M_expr;
+    mutable expression_eig_type M_expr;
 };
 /// \endcond
 
 /**
- * \brief eig of the expression tensor (expression is supposed to be self adjoint)
+ * \brief compute the Tresca yield criterion
  */
 template <typename ExprT>
-inline Expr<Eig<ExprT>>
-eig( ExprT v, std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
+inline Expr<Tresca<ExprT>>
+tresca( ExprT v, std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
 {
-    typedef Eig<ExprT> eig_t;
-    return Expr<eig_t>( eig_t( v ) );
+    typedef Tresca<ExprT> tresca_t;
+    return Expr<tresca_t>( tresca_t( v ) );
 }
 
 } // namespace vf
 } // namespace Feel
-#endif /* __Inv_H */
+#endif

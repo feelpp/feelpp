@@ -345,6 +345,9 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
     subPt["Electric Potential"] = M_XhElectricPotential->journalSection().to_string();
     p.emplace( "Function Spaces", subPt );
 
+    // fields
+    this->modelFields().updateInformationObject( p["Fields"] );
+
     // Algebraic Solver
     if ( M_algebraicFactory )
         M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
@@ -382,6 +385,10 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Ta
             tabInfoFunctionSpaces->add( "Electric Potential", TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( JournalManager::journalData().at( jsonPointerSpaceElectricPotential ), tabInfoProp ) );
         tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
     }
+
+    // fields
+    if ( jsonInfo.contains("Fields") )
+        tabInfo->add( "Fields", TabulateInformationTools::FromJSON::tabulateInformationsModelFields( jsonInfo.at("Fields"), tabInfoProp ) );
 
     if ( jsonInfo.contains( "Algebraic Solver" ) )
         tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
