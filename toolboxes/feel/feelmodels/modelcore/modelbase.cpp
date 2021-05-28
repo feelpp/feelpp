@@ -31,11 +31,47 @@
 
 namespace Feel {
 
+namespace TabulateInformationTools
+{
+namespace FromJSON
+{
+tabulate_informations_ptr_t
+tabulateInformationsModelFields( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    for ( auto const& el : jsonInfo.items() )
+    {
+        std::string const& fieldName = el.key();
+        auto tabInfoField = TabulateInformationsSections::New( tabInfoProp );
+
+        Feel::Table tabInfoBasic;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoBasic, el.value(), tabInfoProp );
+        tabInfoBasic.format()
+            .setShowAllBorders( false )
+            .setColumnSeparator(":")
+            .setHasRowSeparator( false );
+        tabInfoField->add( "", TabulateInformations::New( tabInfoBasic,tabInfoProp ) );
+        if ( el.value().contains( "SymbolsExpr" ) )
+        {
+            auto const& jSE = el.value().at( "SymbolsExpr" );
+            tabInfoField->add( "", TabulateInformationTools::FromJSON::tabulateInformationsSymbolsExpr( jSE,tabInfoProp.newByIncreasingVerboseLevel(),true) );
+        }
+        tabInfo->add( fieldName, tabInfoField );
+    }
+    return tabInfo;
+}
+
+} // namespace FromJSON
+} // namespace TabulateInformationTools
+
+
+
 namespace FeelModels {
 
 
 void printToolboxApplication( std::string const& toolboxName, worldcomm_t const& worldComm )
 {
+    return;
     std::vector<std::string> all_lines;
     all_lines.push_back("███████╗███████╗███████╗██╗       ██╗         ██╗           ████████╗ ██████╗  ██████╗ ██╗     ██████╗  ██████╗ ██╗  ██╗███████╗███████╗");
     all_lines.push_back("██╔════╝██╔════╝██╔════╝██║       ██║         ██║           ╚══██╔══╝██╔═══██╗██╔═══██╗██║     ██╔══██╗██╔═══██╗╚██╗██╔╝██╔════╝██╔════╝");
@@ -83,6 +119,7 @@ void printToolboxApplication( std::string const& toolboxName, worldcomm_t const&
         std::cout << tabInfo << std::endl;
     worldComm.barrier();
 }
+
 
 
 namespace ToolboxesDetail

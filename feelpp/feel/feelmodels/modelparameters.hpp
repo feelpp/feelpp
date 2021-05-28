@@ -138,6 +138,7 @@ struct FEELPP_EXPORT ModelParameter
     {
         M_expr.updateSymbolNames( this->name(), outputSymbNames );
     }
+    void updateInformationObject(  std::string const& symbol, nl::json::array_t & ja ) const;
 private:
     std::string M_name, M_type;
     double M_min, M_max;
@@ -206,6 +207,8 @@ public:
 
             return Feel::vf::symbolsExpr( SymbolsExpr( tupleSymbolExprs ), seFit );
         }
+
+    void updateInformationObject( nl::json & p ) const;
 
    void saveMD(std::ostream &os);
 private:

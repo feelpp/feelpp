@@ -79,6 +79,9 @@ public:
         DVLOG(2) << "OpMax::OpMax copy constructor\n";
     }
 
+    //! dynamic context
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr_1 ) | Feel::vf::dynamicContext( M_expr_2 ); }
+
     //! polynomial order
     uint16_type polynomialOrder() const { return std::max( M_expr_1.polynomialOrder(), M_expr_2.polynomialOrder() ); }
 
@@ -279,6 +282,9 @@ public:
     {
         DVLOG(2) << "OpMin::OpMin copy constructor\n";
     }
+
+    //! dynamic context
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr_1 ) | Feel::vf::dynamicContext( M_expr_2 ); }
 
     //! polynomial order
     uint16_type polynomialOrder() const { return std::max( M_expr_1.polynomialOrder(), M_expr_2.polynomialOrder() ); }

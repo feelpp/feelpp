@@ -1,0 +1,77 @@
+{
+    "Name": "Cahn-Hilliard",
+    "ShortName": "cahn-hilliard",
+    "Models":
+    {
+        "equations":[
+            {
+                "name":"equation1",
+                "unknown":
+                {
+                    "basis":"Pch1",
+                    "name":"c",
+                    "symbol":"c"
+                }
+            },
+            {
+                "name":"equation2",
+                "unknown":
+                {
+                    "basis":"Pch1",
+                    "name":"mu",
+                    "symbol":"mu"
+                }
+            }
+        ]
+    },
+    "Parameters": {
+        "M": 1,
+        "lambda":1e-2
+    },
+    "Materials":
+    {
+        "mymat1":
+        {
+            "markers":"Omega",
+            "equation1_d": "1", // time
+            "equation1_gamma": "{M*equation2_grad_mu_0,M*equation2_grad_mu_1}:equation2_grad_mu_0:equation2_grad_mu_1:M",
+            "equation2_gamma":"{-lambda*equation1_grad_c_0,-lambda*equation1_grad_c_1}:lambda:equation1_grad_c_0:equation1_grad_c_1", 
+            "equation2_a":"1",
+            "equation2_f":"100*equation1_c*equation1_c*(2*equation1_c-2)+200*(equation1_c*(1−equation1_c)*(1-equation1_c)):equation1_c"
+        }
+    },
+    "BoundaryConditions":
+    {
+        
+    },
+    "InitialConditions":
+    {
+        "c":{
+            "Expression": {
+                "myic": {
+                    "markers": "Omega",
+                    "expr": "0.63 + 0.02*(0.5-uniform(0,1))"
+                }
+            }
+        },
+        "mu": {
+            "Expression": {
+                "myic": {
+                    "markers": "Omega",
+                    "expr": "0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["all"]
+            }
+        }
+    }
+}

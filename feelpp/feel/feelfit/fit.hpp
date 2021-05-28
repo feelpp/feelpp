@@ -89,6 +89,9 @@ public:
     Interpolator const& interpolator() const { return *M_interpolator; }
     std::shared_ptr<Interpolator> const& interpolatorPtr() const { return M_interpolator; }
 
+    //! dynamic context
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr ); }
+
     //! polynomial order
     uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
 

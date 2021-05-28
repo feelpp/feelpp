@@ -185,6 +185,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
             this->functionSpacePressure()->updateInformationObject( subPt["Pressure"] );
         p["Function Spaces"] = subPt;
 
+        this->modelFields().updateInformationObject( p["Fields"] );
+
         if ( M_algebraicFactory )
             M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
     }
@@ -232,6 +234,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
         }
         tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
     }
+
+    // fields
+    if ( jsonInfo.contains("Fields") )
+        tabInfo->add( "Fields", TabulateInformationTools::FromJSON::tabulateInformationsModelFields( jsonInfo.at("Fields"), tabInfoProp ) );
 
     // Algebraic Solver
     if ( jsonInfo.contains( "Algebraic Solver" ) )

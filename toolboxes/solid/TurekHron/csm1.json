@@ -52,7 +52,7 @@
     {
         "Exports":
         {
-            "fields":["displacement","von-mises-criterions"]
+            "fields":["displacement","von-mises-criterion"]
         },
         "Measures":
         {

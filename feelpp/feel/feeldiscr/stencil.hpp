@@ -1951,9 +1951,9 @@ struct gmcDefFaceStencil
     typedef typename FaceType2::super2::template Element<FaceType2>::type EltType;
     typedef typename gmcDefStencil<EltType>::pc_type pc_type;
     typedef typename gmcDefStencil<EltType>::pc_ptrtype pc_ptrtype;
-    static const size_type gmc_v = gmcDefStencil<EltType>::gmc_v;
-    typedef typename gmcDefStencil<EltType>::gmc_type gmc_type;
-    typedef typename gmcDefStencil<EltType>::gmc_ptrtype gmc_ptrtype;
+    static const size_type gmc_v = vm::POINT;
+    typedef typename EltType::gm_type::template Context<EltType,1> gmc_type;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 };
 
 template<typename ImType,typename EltType>

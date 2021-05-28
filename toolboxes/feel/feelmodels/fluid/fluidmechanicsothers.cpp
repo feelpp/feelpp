@@ -224,8 +224,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n";
 
-    if ( this->worldComm().isMasterRank() )
-        std::cout << "symbolsExpr : \n "<<  this->symbolsExpr().names() << std::endl;
+    // if ( this->worldComm().isMasterRank() )
+    //     std::cout << "symbolsExpr : \n "<<  this->symbolsExpr().names() << std::endl;
 
     return _ostr;
 }
@@ -258,6 +258,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
     subPt["Velocity"] = this->functionSpaceVelocity()->journalSection().to_string();
     subPt["Pressure"] = this->functionSpacePressure()->journalSection().to_string();
     p["Function Spaces"] = subPt;
+
+    this->modelFields().updateInformationObject( p["Fields"] );
 
     if ( M_algebraicFactory )
         M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
@@ -305,6 +307,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
                 tabInfoFunctionSpaces->add( spaceName, TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( JournalManager::journalData().at( jsonPointerSpace ), tabInfoProp ) );
         }
     }
+
+    // fields
+    if ( jsonInfo.contains("Fields") )
+        tabInfo->add( "Fields", TabulateInformationTools::FromJSON::tabulateInformationsModelFields( jsonInfo.at("Fields"), tabInfoProp ) );
+
 
     std::map<std::string,uint16_type> jsonPtrFunctionSpacesToLevel;
     if ( jsonInfo.contains("Boundary Conditions") )
