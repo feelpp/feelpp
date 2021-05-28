@@ -178,5 +178,5 @@ PYBIND11_MODULE(_mesh, m )
     //defMesh<Simplex<2,2,3>>(m);
     //defMesh<Simplex<1,1,3>>(m);
     //defMesh<Simplex<1,2,3>>(m);
-    defMesh<MeshStructured>(m);
+    defMesh<MeshStructured<Hypercube<2>>>(m);
 }
