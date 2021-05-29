@@ -100,7 +100,7 @@ if [ "$DIST" = "buster" ]; then
     echo "deb http://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
 fi
 echo "deb https://feelpp.jfrog.io/artifactory/$FLAVOR $DIST $CHANNEL" | tee -a /etc/apt/sources.list
-wget -qO  - https://feelpp.jfrog.io/artifactory/api/security/keypair/debian/public | apt-key add -
+wget -qO  - https://feelpp.jfrog.io/artifactory/api/security/keypair/gpg-debian/public | apt-key add -
 apt update
 EOF
 fi
