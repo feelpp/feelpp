@@ -1,3 +1,4 @@
+import feelpp
 from ._fluid import *
 
 _cfds={
