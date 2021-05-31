@@ -524,8 +524,9 @@ STOKES_CLASS_TEMPLATE_TYPE::solve()
 
     bbf.solve(_solution=U, _rhs=blf, _condense=M_useSC, _name=this->prefix());
 
-    M_up = std::make_shared<element_flux_type>( U(0_c) );
-    M_pp = std::make_shared<element_potential_type>( U(1_c));
+    M_sp = std::make_shared<element_tensor_type>( U(0_c) );
+    M_up = std::make_shared<element_flux_type>( U(1_c) );
+    M_pp = std::make_shared<element_potential_type>( U(2_c));
 
 }
 
