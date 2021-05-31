@@ -1,4 +1,5 @@
 import sys
+import feelpp
 from feelpp.toolboxes.fluid import *
 e=feelpp.Environment(sys.argv,opts=toolboxes_options("fluid"))
 
@@ -6,7 +7,7 @@ e=feelpp.Environment(sys.argv,opts=toolboxes_options("fluid"))
 # 2D fluid solver using P2P1G1 approximation
 f=fluid(dim=2,orderVelocity=2,orderPressure=1)
 f.init()
-f.printAndSaveInfo()
+#f.printAndSaveInfo()
 if f.isStationary():
     f.solve()
     f.exportResults()

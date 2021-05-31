@@ -1,3 +1,4 @@
+import feelpp
 from ._electric import *
 
 _electrics={
@@ -7,13 +8,15 @@ _electrics={
     'electric(3,2)':Electric_3DP2,
 }
 
-def electric( dim=2, orderPotential=1, worldComm=core.Environment.worldCommPtr() ):
+def electric( dim=2, orderPotential=1, worldComm=None ):
     """create a electric toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
     orderPotential -- the polynomial order for the potential (default: 1)
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     """
+    if worldComm is None:
+        worldComm = feelpp.Environment.worldCommPtr()
     key='electric('+str(dim)+','+str(orderPotential)+')'
     if worldComm.isMasterRank():
         print(key)

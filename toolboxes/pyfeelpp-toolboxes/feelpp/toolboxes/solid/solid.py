@@ -1,11 +1,12 @@
 import sys
+import feelpp
 from feelpp.toolboxes.solid import *
-e=feelpp.Environment(sys.argv,opts=toolboxes_options("solid"))
+e = feelpp.Environment(sys.argv, opts=toolboxes_options("solid"))
 
 
 f=solid(dim=2,orderDisp=1)
 f.init()
-f.printAndSaveInfo()
+#f.printAndSaveInfo()
 if f.isStationary():
     f.solve()
     f.exportResults()
