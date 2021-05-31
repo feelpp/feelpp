@@ -20,6 +20,7 @@ Stokes<ConvexType, Dim, E_Order>::updateLinearPDE( DataUpdateHDG & data, ModelCo
     auto ps = this->spaceProduct();
     auto bbf = blockform2( ps, A );
     auto blf = blockform1( ps, F );
+    auto t = this->fieldTensor();
     auto u = this->fieldFlux();
     auto p = this->fieldPotential();
     auto phat = this->fieldTrace();
