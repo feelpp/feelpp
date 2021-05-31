@@ -118,6 +118,11 @@ public:
     // using vector_type = backend_type::vector_type;
     // using vector_ptrtype = backend_type::vector_ptrtype;
 
+    // Th
+    using space_tensor_type = Pdhms_type<mesh_type,Order>;
+    using space_tensor_ptrtype = Pdhms_ptrtype<mesh_type,Order>;
+    using element_tensor_type = typename space_tensor_type::element_type;
+    using element_tensor_ptrtype = typename space_tensor_type::element_ptrtype;
     // Vh
     using space_flux_type = Pdhv_type<mesh_type,Order>;
     using space_flux_ptrtype = Pdhv_ptrtype<mesh_type,Order>;
@@ -134,13 +139,13 @@ public:
     using element_postpotential_type = typename space_postpotential_type::element_type;
     using element_postpotential_ptrtype = typename space_postpotential_type::element_ptrtype;
     // Mh
-    using space_trace_type = Pdh_type<face_mesh_type,Order>;
-    using space_trace_ptrtype = Pdh_ptrtype<face_mesh_type,Order>;
+    using space_trace_type = Pdhv_type<face_mesh_type,Order>;
+    using space_trace_ptrtype = Pdhv_ptrtype<face_mesh_type,Order>;
     using element_trace_type = typename space_trace_type::element_type;
     using element_trace_ptrtype = typename space_trace_type::element_ptrtype;
     // Ch
-    using space_traceibc_type = Pch_type<face_mesh_type,0>;
-    using space_traceibc_ptrtype = Pch_ptrtype<face_mesh_type,0>;
+    using space_traceibc_type = Pchv_type<face_mesh_type,0>;
+    using space_traceibc_ptrtype = Pchv_ptrtype<face_mesh_type,0>;
     using element_traceibc_type = typename space_traceibc_type::element_type;
     using element_traceibc_ptrtype = typename space_traceibc_type::element_ptrtype;
     using element_traceibc_vector_type = std::vector<element_traceibc_ptrtype>;

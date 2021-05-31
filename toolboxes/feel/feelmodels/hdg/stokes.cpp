@@ -50,6 +50,7 @@ STOKES_CLASS_TEMPLATE_TYPE::Stokes( std::string const& prefix,
       M_physicMap(StokesPhysicsMap[physic]),
       M_potentialKey(StokesPhysicsMap[physic]["potentialK"]),
       M_fluxKey(StokesPhysicsMap[physic]["fluxK"]),
+      M_stressKey(StokesPhysicsMap[physic]["stressK"]),
       M_tauCst(doption( prefixvm(this->prefix(), "tau_constant") )),
       M_useSC(boption( prefixvm(this->prefix(), "use-sc")) ),
       M_postMatrixInit(false)
@@ -150,6 +151,7 @@ STOKES_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(this->mesh());
+        M_Th = space_tensor_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm() );
         M_Vh = space_flux_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm() );
         M_Wh = space_potential_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm() );
         M_Whp = space_postpotential_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm() );
@@ -158,11 +160,13 @@ STOKES_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     else
     {
         M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
+        M_Th = space_tensor_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
         M_Vh = space_flux_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
         M_Wh = space_potential_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
         M_Whp = space_postpotential_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
         M_P0dh = space_p0dh_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
+    M_tp = std::make_shared<element_tensor_type>(M_Th, M_physicMap["stressSymbol"]);
     M_up = std::make_shared<element_flux_type>(M_Vh, M_physicMap["fluxSymbol"]);
     M_pp = std::make_shared<element_potential_type>(M_Wh, M_physicMap["potentialSymbol"]);
     M_ppp = std::make_shared<element_postpotential_type>(M_Whp, "post"+M_physicMap["potentialSymbol"]);
@@ -201,7 +205,7 @@ STOKES_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     auto ibcSpaces = std::make_shared<ProductSpace<space_traceibc_ptrtype, true> >( M_bcIntegralMarkerManagement.markerIntegralBC().size(), M_Ch);
     std::vector<std::string> props(M_bcIntegralMarkerManagement.markerIntegralBC().size(), "Ibc");
     ibcSpaces->setProperties( props );
-    M_ps = std::make_shared<product2_space_type>(ibcSpaces, M_Vh, M_Wh, M_Mh);
+    M_ps = std::make_shared<product2_space_type>(ibcSpaces, M_Th, M_Vh, M_Wh, M_Mh);
 }
 
 STOKES_CLASS_TEMPLATE_DECLARATIONS
@@ -230,12 +234,12 @@ STOKES_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     M_bcRobinMarkerManagement.clearMarkerRobinBC();
     M_bcIntegralMarkerManagement.clearMarkerIntegralBC();
 
-    for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Dirichlet") )
+    for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_fluxKey, "Dirichlet") )
         M_bcDirichletMarkerManagement.addMarkerDirichletBC("nitsche", name, bc.markers() );
-    for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Neumann") )
+    for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_stressKey, "Neumann") )
         M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR, name, bc.markers() );
-    for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Robin") )
-        M_bcRobinMarkerManagement.addMarkerRobinBC(name, bc.markers() );
+    //for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Robin") )
+    //    M_bcRobinMarkerManagement.addMarkerRobinBC(name, bc.markers() );
     for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_fluxKey, "Integral") )
         M_bcIntegralMarkerManagement.addMarkerIntegralBC(name, bc.markers() );
 }
@@ -432,6 +436,7 @@ STOKES_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
     subPt["Potential"] = M_Wh->journalSection().to_string();
     subPt["Flux"] = M_Vh->journalSection().to_string();
     subPt["Trace"] = M_Mh->journalSection().to_string();
+    subPt["Stress"] = M_Th->journalSection().to_string();
     p.emplace( "Function Spaces", subPt );
 
     if ( !this->isStationary() )
@@ -485,6 +490,8 @@ STOKES_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Tabu
         nl::json::json_pointer jsonPointerSpaceTrace( jsonInfoFunctionSpaces.at( "Trace" ).template get<std::string>() );
         if ( JournalManager::journalData().contains( jsonPointerSpaceTrace ) )
             tabInfoFunctionSpaces->add( "Trace", TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( JournalManager::journalData().at( jsonPointerSpaceTrace ), tabInfoProp ) );
+        if ( JournalManager::journalData().contains( jsonPointerSpaceStress ) )
+            tabInfoFunctionSpaces->add( "Stress", TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( JournalManager::journalData().at( jsonPointerSpaceStress ), tabInfoProp ) );
         tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
     }
 
