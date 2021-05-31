@@ -22,13 +22,13 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file mixedpoisson.hpp
+   \file stokes.hpp
    \author Romain Hild <romain.hild@cemosis.fr>
    \date 2021-05-04
  */
 
-#ifndef _MIXEDPOISSON2_HPP
-#define _MIXEDPOISSON2_HPP
+#ifndef _STOKES2_HPP
+#define _STOKES2_HPP
 
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -55,7 +55,7 @@ namespace FeelModels
 {
 
 inline po::options_description
-makeMixedPoissonOptions( std::string const&  _prefix = "", std::string const&  _toolbox_prefix = "hdg.poisson" )
+makeStokesOptions( std::string const&  _prefix = "", std::string const&  _toolbox_prefix = "hdg.poisson" )
 {
     std::string prefix = _toolbox_prefix.empty()?"hdg.poisson":_toolbox_prefix;
     if ( !_prefix.empty() )
@@ -75,7 +75,7 @@ makeMixedPoissonOptions( std::string const&  _prefix = "", std::string const&  _
 }
 
 inline po::options_description
-makeMixedPoissonLibOptions( std::string const&  prefix = "", std::string const&  _toolbox_prefix = "hdg.poisson" )
+makeStokesLibOptions( std::string const&  prefix = "", std::string const&  _toolbox_prefix = "hdg.poisson" )
 {
     po::options_description mpLibOptions( "Mixed Poisson HDG Lib options");
     // if ( !prefix.empty() )
@@ -84,18 +84,18 @@ makeMixedPoissonLibOptions( std::string const&  prefix = "", std::string const& 
 }
 
 /**
- * Toolbox MixedPoisson
+ * Toolbox Stokes
  * @ingroup Toolboxes
  */
 template<typename ConvexType, int Order, int E_Order = 4>
-class MixedPoisson : public ModelNumerical,
+class Stokes : public ModelNumerical,
                      public ModelPhysics<ConvexType::nDim>,
-                     public std::enable_shared_from_this<MixedPoisson<ConvexType, Order, E_Order> >
+                     public std::enable_shared_from_this<Stokes<ConvexType, Order, E_Order> >
 {
 
 public:
     using super_type = ModelNumerical;
-    using self_type = MixedPoisson<ConvexType, Order, E_Order>;
+    using self_type = Stokes<ConvexType, Order, E_Order>;
     using self_ptrtype = std::shared_ptr<self_type>;
 
     // mesh
@@ -198,7 +198,7 @@ protected:
 
     // physical parameter
     materialsproperties_ptrtype M_materialsProperties;
-    MixedPoissonPhysics M_physic;
+    StokesPhysics M_physic;
     std::map<std::string,std::string> M_physicMap;
     std::string M_potentialKey;
     std::string M_fluxKey;
@@ -239,7 +239,7 @@ public:
           ( prefix,*( boost::is_convertible<mpl::_,std::string> ) )
           )
         ( optional
-          ( physic, *, MixedPoissonPhysics::None )
+          ( physic, *, StokesPhysics::None )
           ( worldcomm, *, Environment::worldCommPtr() )
           ( repository, *, ModelBaseRepository() )
           ) )
@@ -248,8 +248,8 @@ public:
         }
 
     // constructor
-    MixedPoisson( std::string const& prefix = "hdg.poisson",
-                  MixedPoissonPhysics const& physic = MixedPoissonPhysics::None,
+    Stokes( std::string const& prefix = "hdg.poisson",
+                  StokesPhysics const& physic = StokesPhysics::None,
                   worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                   std::string const& subPrefix = "",
                   ModelBaseRepository const& modelRep = ModelBaseRepository() );
@@ -434,9 +434,9 @@ public:
 template< typename ConvexType, int Order, int E_Order>
 template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprType>
 void
-MixedPoisson<ConvexType,Order, E_Order>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
+Stokes<ConvexType,Order, E_Order>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
 {
-    this->log("MixedPoisson","exportResults", "start");
+    this->log("Stokes","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
     this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
@@ -450,13 +450,13 @@ MixedPoisson<ConvexType,Order, E_Order>::exportResults( double time, ModelFields
             this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
         this->timerTool("PostProcessing").save();
     }
-    this->log("MixedPoisson","exportResults", "finish");
+    this->log("Stokes","exportResults", "finish");
 }
 
 template< typename ConvexType, int Order, int E_Order>
 template <typename ModelFieldsType, typename SymbolsExpr>
 void
-MixedPoisson<ConvexType,Order, E_Order>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
+Stokes<ConvexType,Order, E_Order>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
 {
     bool hasMeasure = false;
     bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
@@ -477,7 +477,7 @@ MixedPoisson<ConvexType,Order, E_Order>::executePostProcessMeasures( double time
 template< typename ConvexType, int Order, int E_Order>
 template <typename SymbolsExprType>
 void
-MixedPoisson<ConvexType,Order, E_Order>::updateInitialConditions( SymbolsExprType const& se )
+Stokes<ConvexType,Order, E_Order>::updateInitialConditions( SymbolsExprType const& se )
 {
     if ( !this->doRestart() )
     {
@@ -507,6 +507,6 @@ MixedPoisson<ConvexType,Order, E_Order>::updateInitialConditions( SymbolsExprTyp
 
 } // Namespace Feel
 
-#include <feel/feelmodels/hdg/mixedpoissonassembly.hpp>
+#include <feel/feelmodels/hdg/stokesassembly.hpp>
 
 #endif

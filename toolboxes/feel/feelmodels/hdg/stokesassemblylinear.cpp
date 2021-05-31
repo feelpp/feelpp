@@ -1,11 +1,11 @@
-#include <feel/feelmodels/hdg/mixedpoisson.cpp>
+#include <feel/feelmodels/hdg/stokes.cpp>
 
 namespace Feel {
 namespace FeelModels {
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateHDG & data ) const
+STOKES_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateHDG & data ) const
 {
     condensed_matrix_ptr_t<value_type>& A = data.matrix();
     condensed_vector_ptr_t<value_type>& F = data.rhs();
@@ -13,7 +13,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateHDG & data ) const
     bool buildNonCstPart = !buildCstPart;
 
     std::string scst = buildCstPart ? "(build cst part)" : "build non cst part)";
-    this->log("MixedPoisson", "updateLinearPDE", "start"+scst);
+    this->log("Stokes", "updateLinearPDE", "start"+scst);
 
     auto ps = this->spaceProduct();
     auto bbf = blockform2( ps, A );
@@ -78,9 +78,9 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateHDG & data ) const
     this->updateLinearPDE( data, this->modelContext() );
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updatePostPDE( DataUpdateHDG & data ) const
+STOKES_CLASS_TEMPLATE_TYPE::updatePostPDE( DataUpdateHDG & data ) const
 {
     this->updatePostPDE( data, this->modelContext() );
 }

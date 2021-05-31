@@ -1,11 +1,11 @@
 
-#include "mixedpoissonconfig.h"
-#include <feel/feelmodels/hdg/mixedpoisson.cpp>
+#include "stokesconfig.h"
+#include <feel/feelmodels/hdg/stokes.cpp>
 
 namespace Feel {
 namespace FeelModels {
 
-MIXEDPOISSON_CLASS_INSTANTIATION
+STOKES_CLASS_INSTANTIATION
 
 }
 }

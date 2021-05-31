@@ -1,5 +1,5 @@
-#ifndef FEELPP_TOOLBOXES_MIXEDPOISSON_ASSEMBLY_HPP
-#define FEELPP_TOOLBOXES_MIXEDPOISSON_ASSEMBLY_HPP 1
+#ifndef FEELPP_TOOLBOXES_STOKES_ASSEMBLY_HPP
+#define FEELPP_TOOLBOXES_STOKES_ASSEMBLY_HPP 1
 
 namespace Feel
 {
@@ -9,7 +9,7 @@ namespace FeelModels
 template< typename ConvexType, int Dim, int E_Order>
 template< typename ModelConvexType>
 void
-MixedPoisson<ConvexType, Dim, E_Order>::updateLinearPDE( DataUpdateHDG & data, ModelConvexType const& mctx ) const
+Stokes<ConvexType, Dim, E_Order>::updateLinearPDE( DataUpdateHDG & data, ModelConvexType const& mctx ) const
 {
     condensed_matrix_ptr_t<value_type>& A = data.matrix();
     condensed_vector_ptr_t<value_type>& F = data.rhs();
@@ -136,7 +136,7 @@ MixedPoisson<ConvexType, Dim, E_Order>::updateLinearPDE( DataUpdateHDG & data, M
 template< typename ConvexType, int Dim, int E_Order>
 template< typename ModelConvexType>
 void
-MixedPoisson<ConvexType, Dim, E_Order>::updatePostPDE( DataUpdateHDG & data, ModelConvexType const& mctx ) const
+Stokes<ConvexType, Dim, E_Order>::updatePostPDE( DataUpdateHDG & data, ModelConvexType const& mctx ) const
 {
     condensed_matrix_ptr_t<value_type>& A = data.matrix();
     condensed_vector_ptr_t<value_type>& F = data.rhs();

@@ -22,12 +22,12 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file mixedpoisson.hpp
+   \file stokes.hpp
    \author Romain Hild <romain.hild@cemosis.fr>
    \date 2021-05-04
  */
 
-#include <feel/feelmodels/hdg/mixedpoisson.hpp>
+#include <feel/feelmodels/hdg/stokes.hpp>
 #include <feel/feelmesh/complement.hpp>
 #include <numeric>
 #include <algorithm>
@@ -37,29 +37,29 @@ namespace Feel
 namespace FeelModels
 {
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
-                                                MixedPoissonPhysics const& physic,
+STOKES_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_TYPE::Stokes( std::string const& prefix,
+                                                StokesPhysics const& physic,
                                                 worldcomm_ptr_t const& _worldComm,
                                                 std::string const& subPrefix,
                                                 ModelBaseRepository const& modelRep )
-    : super_type( prefix, MixedPoissonPhysicsMap[physic]["keyword"], _worldComm, subPrefix, modelRep),
-      ModelPhysics<nDim>( MixedPoissonPhysicsMap[physic]["keyword"] ),
-      ModelBase( prefix, MixedPoissonPhysicsMap[physic]["keyword"], _worldComm, subPrefix, modelRep),
+    : super_type( prefix, StokesPhysicsMap[physic]["keyword"], _worldComm, subPrefix, modelRep),
+      ModelPhysics<nDim>( StokesPhysicsMap[physic]["keyword"] ),
+      ModelBase( prefix, StokesPhysicsMap[physic]["keyword"], _worldComm, subPrefix, modelRep),
       M_physic(physic),
-      M_physicMap(MixedPoissonPhysicsMap[physic]),
-      M_potentialKey(MixedPoissonPhysicsMap[physic]["potentialK"]),
-      M_fluxKey(MixedPoissonPhysicsMap[physic]["fluxK"]),
+      M_physicMap(StokesPhysicsMap[physic]),
+      M_potentialKey(StokesPhysicsMap[physic]["potentialK"]),
+      M_fluxKey(StokesPhysicsMap[physic]["fluxK"]),
       M_tauCst(doption( prefixvm(this->prefix(), "tau_constant") )),
       M_useSC(boption( prefixvm(this->prefix(), "use-sc")) ),
       M_postMatrixInit(false)
 {
-    this->log("MixedPoisson","constructor", "start" );
+    this->log("Stokes","constructor", "start" );
 
-    std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".MixedPoissonConstructor.data";
-    std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".MixedPoissonSolve.data";
-    std::string nameFilePostProcessing = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".MixedPoissonPostProcessing.data";
-    std::string nameFileTimeStepping = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".MixedPoissonTimeStepping.data";
+    std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".StokesConstructor.data";
+    std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".StokesSolve.data";
+    std::string nameFilePostProcessing = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".StokesPostProcessing.data";
+    std::string nameFileTimeStepping = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".StokesTimeStepping.data";
     this->addTimerTool("Constructor",nameFileConstructor);
     this->addTimerTool("Solve",nameFileSolve);
     this->addTimerTool("PostProcessing",nameFilePostProcessing);
@@ -70,23 +70,23 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
     // option in cfg files
     this->loadParameterFromOptionsVm();
     //-----------------------------------------------------------------------------//
-    this->log("MixedPoisson","constructor", "finish");
+    this->log("Stokes","constructor", "finish");
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
+STOKES_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
     // time stepping
     M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
     M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
+STOKES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
-    this->log("MixedPoisson","init", "start" );
+    this->log("Stokes","init", "start" );
     this->timerTool("Constructor").start();
 
     if ( this->physics().empty() )
@@ -138,12 +138,12 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
-    this->log("MixedPoisson","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
+    this->log("Stokes","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
+STOKES_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 {
     auto mom = this->materialsProperties()->materialsOnMesh(this->mesh());
     // functionspace
@@ -204,11 +204,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     M_ps = std::make_shared<product2_space_type>(ibcSpaces, M_Vh, M_Wh, M_Mh);
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initMesh()
+STOKES_CLASS_TEMPLATE_TYPE::initMesh()
 {
-    this->log("MixedPoisson","initMesh", "start");
+    this->log("Stokes","initMesh", "start");
     this->timerTool("Constructor").start();
 
     if ( this->doRestart() )
@@ -218,12 +218,12 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initMesh()
     CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("createMesh");
-    this->log("MixedPoisson","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
+    this->log("Stokes","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
+STOKES_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
     M_bcDirichletMarkerManagement.clearMarkerDirichletBC();
     M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
@@ -240,11 +240,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         M_bcIntegralMarkerManagement.addMarkerIntegralBC(name, bc.markers() );
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initTimeStep()
+STOKES_CLASS_TEMPLATE_TYPE::initTimeStep()
 {
-    this->log("MixedPoisson","initTimeStep", "start" );
+    this->log("Stokes","initTimeStep", "start" );
     this->timerTool("Constructor").start();
 
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
@@ -274,14 +274,14 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initTimeStep()
     }
 
     double tElapsed = this->timerTool("Constructor").stop("initTimeStep");
-    this->log("MixedPoisson","initTimeStep", (boost::format("finish in %1% s") %tElapsed).str() );
+    this->log("Stokes","initTimeStep", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initPostProcess()
+STOKES_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    this->log("MixedPoisson","initPostProcess", "start");
+    this->log("Stokes","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
     this->setPostProcessExportsAllFieldsAvailable( {M_potentialKey, M_fluxKey, "post"+M_potentialKey} );
@@ -324,12 +324,12 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     double tElpased = this->timerTool("Constructor").stop("createExporters");
-    this->log("MixedPoisson","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
+    this->log("Stokes","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateParameterValues()
+STOKES_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
     if ( !this->manageParameterValues() )
         return;
@@ -341,11 +341,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateParameterValues()
     this->setParameterValues( paramValues );
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
+STOKES_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
 {
-    this->log("MixedPoisson","setParameterValues", "start");
+    this->log("Stokes","setParameterValues", "start");
 
     if ( this->manageParameterValuesOfModelProperties() )
     {
@@ -360,30 +360,30 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,doubl
     // M_bcIntegral.setParameterValues( paramValues );
     // M_volumicForcesProperties.setParameterValues( paramValues );
 
-    this->log("MixedPoisson","setParameterValues", "finish");
+    this->log("Stokes","setParameterValues", "finish");
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time )
+STOKES_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     auto mfields = this->modelFields();
     auto se = this->symbolsExpr( mfields );
     this->exportResults( time, mfields, se, this->exprPostProcessExports( se ) );
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::getInfo() const
+STOKES_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     return _ostr;
 }
 
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
+STOKES_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
     if ( !this->isUpdatedForUse() )
         return;
@@ -449,9 +449,9 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
     //     M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 tabulate_informations_ptr_t
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+STOKES_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
     auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
     if ( jsonInfo.contains("Environment") )
@@ -502,9 +502,9 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo
 
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve()
+STOKES_CLASS_TEMPLATE_TYPE::solve()
 {
     M_A->zero();
     M_F->zero();
@@ -522,9 +522,9 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve()
 
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solvePostProcess()
+STOKES_CLASS_TEMPLATE_TYPE::solvePostProcess()
 {
     Feel::cout << "solving post process" << std::endl;;
     DataUpdateHDG dataHDGPost(M_App, M_Fpp, !M_postMatrixInit);
@@ -543,11 +543,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solvePostProcess()
     // M_ppp += M_pp->ewiseMean(M_P0dh);
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::startTimeStep()
+STOKES_CLASS_TEMPLATE_TYPE::startTimeStep()
 {
-    this->log("MixedPoisson","startTimeStep", "start");
+    this->log("Stokes","startTimeStep", "start");
 
     // // some time stepping require to compute residual without time derivative
     // this->updateTimeStepCurrentResidual();
@@ -561,14 +561,14 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::startTimeStep()
     // update all expressions in bc or in house prec
     this->updateParameterValues();
 
-    this->log("MixedPoisson","startTimeStep", "finish");
+    this->log("Stokes","startTimeStep", "finish");
 }
 
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+STOKES_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateTimeStep()
+STOKES_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
-    this->log("MixedPoisson","updateTimeStep", "start");
+    this->log("Stokes","updateTimeStep", "start");
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
@@ -597,7 +597,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
     this->timerTool("TimeStepping").stop("updateTimeStep");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
-    this->log("MixedPoisson","updateTimeStep", "finish");
+    this->log("Stokes","updateTimeStep", "finish");
 }
 
 } // namespace FeelModels

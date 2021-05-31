@@ -1,0 +1,20 @@
+#undef STOKES_DIM
+#undef STOKES_ORDERGEO
+#undef STOKES_ORDERPOLY
+
+#define STOKES_DIM @STOKES_DIM@
+#define STOKES_ORDERGEO @STOKES_ORDERGEO@
+#define STOKES_ORDERPOLY @STOKES_ORDERPOLY@
+
+#define STOKES_CLASS_TEMPLATE_DECLARATIONS \
+    template<typename ConvexType, int Order, int E_Order>    \
+        /**/
+#define STOKES_CLASS_TEMPLATE_TYPE \
+    Stokes<ConvexType, Order, E_Order> \
+        /**/
+#define STOKES_CLASS_TYPE \
+    Stokes< Simplex<STOKES_DIM,STOKES_ORDERGEO,STOKES_DIM>,STOKES_ORDERPOLY> \
+    /**/
+#define STOKES_CLASS_INSTANTIATION \
+    template class STOKES_CLASS_TYPE ;  \
+    /**/
