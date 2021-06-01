@@ -7,48 +7,58 @@
         "omega":
         {
             "name":"copper",
-            "cond":"-1",
-            "k":"-1"
+            "cond":"1",
+            "k":"1"
         }
     },
     "BoundaryConditions":
     {
         "potential":
         {
+            "InitialSolution":
+            {
+                "omega":
+                {
+                    "expr":"x:x"
+                }
+            },
             "SourceTerm":
             {
-                "": {"expr":"0"}
+                "omega":
+                {
+                    "expr":"0"
+                }
             },
             "Dirichlet":
             {
-                "out":
+                // "top":
+                // {
+                //     "expr":"x:x"
+                // },
+                // "lateral":
+                // {
+                //     "expr":"x:x"
+                // },
+                "bottom":
                 {
-                    "expr":"0"
+                    "expr":"x:x"
                 }
             },
             "Neumann":
             {
-                "R":
+                "lateral":
                 {
                     "expr":"0"
-                },
-                "top":
-                {
-                    "expr":"0"
-                },
-                "bottom":
-                {
-                    "expr":"0"
-                }
+                }	
             }
         },
         "flux":
         {
             "Integral":
             {
-                "in":
+                "top":
                 {
-                    "expr":"10*log(2)/pi"
+                    "expr":"-1"
                 }
             }
         },
@@ -58,7 +68,14 @@
             {
                 "omega":
                 {
-                    "expr":"5*2/pi*atan2(y,x):x:y"
+                    "expr":"x:x"
+                }
+            },
+            "u_exact":
+            {
+                "omega":
+                {
+                    "expr":"{-1,0,0}"
                 }
             }
         }
