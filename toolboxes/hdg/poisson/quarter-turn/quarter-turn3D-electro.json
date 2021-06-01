@@ -50,10 +50,10 @@
             },
             "Dirichlet":
             {
-                // "V0":
-                // {
-                //     "expr":"dif:dif"
-                // },
+                "V0":
+                {
+                    "expr":"dif:dif"
+                },
                 "V1":
                 {
                     "expr":"0"
@@ -63,23 +63,23 @@
             {
                 "Rint":
                 {
-                    "expr":"2*sigma0*dif/Pi*y/(x*x+y*y)*nx-ny*2*sigma0*dif/Pi*x/(x*x+y*y):x:y:z:nx:ny:dif:sigma0"
-                    // "expr":"0"
+                    // "expr":"2*sigma0*dif/Pi*y/(x*x+y*y)*nx-ny*2*sigma0*dif/Pi*x/(x*x+y*y):x:y:z:nx:ny:dif:sigma0"
+                    "expr":"0"
                 },
                 "Rext":
                 {
-                    "expr":"2*sigma0*dif/Pi*y/(x*x+y*y)*nx-ny*2*sigma0*dif/Pi*x/(x*x+y*y):x:y:z:nx:ny:dif:sigma0"
-                    // "expr":"0"
+                    // "expr":"2*sigma0*dif/Pi*y/(x*x+y*y)*nx-ny*2*sigma0*dif/Pi*x/(x*x+y*y):x:y:z:nx:ny:dif:sigma0"
+                    "expr":"0"
                 },
                 "top":
                 {
-                    "expr":"2*sigma0*dif/Pi*y/(x*x+y*y)*nx-ny*2*sigma0*dif/Pi*x/(x*x+y*y):x:y:z:nx:ny:dif:sigma0"
-                    // "expr":"0"
+                    // "expr":"2*sigma0*dif/Pi*y/(x*x+y*y)*nx-ny*2*sigma0*dif/Pi*x/(x*x+y*y):x:y:z:nx:ny:dif:sigma0"
+                    "expr":"0"
                 },
                 "bottom":
                 {
-                    "expr":"2*sigma0*dif/Pi*y/(x*x+y*y)*nx-ny*2*sigma0*dif/Pi*x/(x*x+y*y):x:y:z:nx:ny:dif:sigma0"
-                    // "expr":"0"
+                    // "expr":"2*sigma0*dif/Pi*y/(x*x+y*y)*nx-ny*2*sigma0*dif/Pi*x/(x*x+y*y):x:y:z:nx:ny:dif:sigma0"
+                    "expr":"0"
                 }
             }
         },
@@ -106,6 +106,99 @@
         "Exports":
         {
             "fields":["potential","flux"]
+        },
+        "Measures":
+        {
+            "Points":
+            {
+                "%1_1%":
+                {
+                    "coord":"%1_2%",
+                    "fields":"potential",
+                    "index1": [ ["V0", "{0,1.5,0.5}"],
+                                ["V1", "{1.5,0,0.5}"]
+                              ]
+                }
+            },
+            "Statistics":
+            {
+                "Intensity0":
+                {
+                    "type":"integrate",
+                    "field":"flux",
+                    "markers":"V0"
+                },
+                "Intensity1":
+                {
+                    "type":"integrate",
+                    "field":"flux",
+                    "markers":"V1"
+                },
+                "Power":
+                {
+                    "type":"integrate",
+                    "expr":"poisson_P:poisson_P",
+                    "markers":"omega"
+                }
+            },
+            "Norm":
+            {
+                "potential_error":
+                {
+                    "type":"L2-error",
+                    "field":"potential",
+                    "solution":"2*dif/Pi*atan2(y,x):x:y:z:dif",
+                    "markers":"omega"
+                },
+                "flux_error":
+                {
+                    "type":"L2-error",
+                    "field":"flux",
+                    "solution":"{2*dif*sigma0/Pi*y/(x*x+y*y),-2*dif*sigma0/Pi*x/(x*x+y*y),0}:x:y:z:dif:sigma0",
+                    "markers":"omega"
+                }
+            }
+        },
+        "Checkers":
+        {
+            "Measures":
+            {
+                "Statistics_Intensity0_integrate_0":
+                {
+                    "value":800,
+                    "tolerance":1e-4
+                },
+                "Statistics_Intensity1_integrate_1":
+                {
+                    "value":-800,
+                    "tolerance":1e-4
+                },
+                "Statistics_Power_integrate":
+                {
+                    "value":3.6799872684964548e-02,
+                    "tolerance":1e-1
+                },
+                "Points_V0_potential":
+                {
+                    "value":3.1238703842923307e-02,
+                    "tolerance":1e-1
+                },
+                "Points_V1_potential":
+                {
+                    "value":4.2548539363050999e-06,
+                    "tolerance":1e-1
+                },
+                "Norm_potential_error_L2-error":
+                {
+                    "value":0,
+                    "tolerance":1e-4
+                },
+                "Norm_flux_error_L2-error":
+                {
+                    "value":0,
+                    "tolerance":10
+                }
+            }
         }
     }
 }

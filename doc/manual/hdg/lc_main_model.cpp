@@ -49,8 +49,8 @@ int main(int argc, char *argv[])
     Feel::Environment env( _argc=argc,
                            _argv=argv,
                            _about=makeAbout(),
-                           _desc=FeelModels::makeMixedPoissonOptions("mixedpoisson"),             
-                           _desc_lib=FeelModels::makeMixedPoissonLibOptions("mixedpoisson").add(feel_options())
+                           _desc=FeelModels::makeMixedPoissonOptions("", "mixedpoisson"),             
+                           _desc_lib=FeelModels::makeMixedPoissonLibOptions("", "mixedpoisson").add(feel_options())
     					   );
 
     typedef FeelModels::LaminaCribrosa<FEELPP_DIM,FEELPP_ORDER, FEELPP_G_ORDER> lc_type;
@@ -63,11 +63,13 @@ int main(int argc, char *argv[])
     decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<FEELPP_ORDER>(mesh) ) ) Idhv;
     
 	if ( soption( "gmsh.submesh" ).empty() )
+    {
         LC -> init( mesh );
+    }
     else
     {
 		Feel::cout << "Using submesh: " << soption("gmsh.submesh") << std::endl;
-        auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldComm() );
+        auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")) );
         Idh = IPtr( _domainSpace=Pdh<FEELPP_ORDER>(cmesh), _imageSpace=Pdh<FEELPP_ORDER>(mesh) );
         Idhv = IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(cmesh), _imageSpace=Pdhv<FEELPP_ORDER>(mesh) );
         LC -> init( cmesh, mesh );
@@ -102,7 +104,6 @@ int main(int argc, char *argv[])
         }
     }
 
- 
     return 0;
 }
 
