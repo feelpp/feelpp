@@ -2,3 +2,17 @@
 
 set(PYFILES conftest.py test_core.py test_remotedata.py test_discr.py test_exporter.py test_mesh.py )
 install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp)
+
+add_test (NAME python-tests
+  COMMAND ${CMAKE_COMMAND} -E env
+        LD_LIBRARY_PATH=:${CMAKE_CURRENT_BINARY_DIR}/../../feel:$ENV{LD_LIBRARY_PATH}
+        PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}/..:{CMAKE_CURRENT_SOURCE_DIR}..
+        ${PYTHON_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_test (NAME python-tests-mpi
+  COMMAND ${CMAKE_COMMAND} -E env
+        LD_LIBRARY_PATH=:${CMAKE_CURRENT_BINARY_DIR}/../../feel:$ENV{LD_LIBRARY_PATH}
+        PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}/..:{CMAKE_CURRENT_SOURCE_DIR}..
+        mpirun -np 2 ${PYTHON_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}
+)
