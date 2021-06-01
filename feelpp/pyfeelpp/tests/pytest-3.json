@@ -1,0 +1,13 @@
+{
+    "application": {
+        "name": "pytest-3",
+        "date": {
+            "start": "2021-May-31 23:23:31",
+            "end": "2021-May-31 23:23:31"
+        },
+        "directories": {
+            "logs": "\/home\/prudhomm\/Devel\/feelpp\/feelpp\/pyfeelpp\/tests\/feelppdb\/np_1\/feelppdb\/.\/np_1\/logs",
+            "exprs": "\/home\/prudhomm\/Devel\/feelpp\/feelpp\/pyfeelpp\/tests\/feelppdb\/np_1\/feelppdb\/.\/exprs"
+        }
+    }
+}
