@@ -48,7 +48,7 @@ steps:
    agents:
      docker: true
  - wait
- - trigger: "pkg-feelpp-toolboxes"
+ - trigger: "pkg-feelpp-toolboxes-focal"
    label: ":package: :debian: :ubuntu: Feel++ Toolboxes ${BUILDKITE_BRANCH}"
    async: true
    if: |
