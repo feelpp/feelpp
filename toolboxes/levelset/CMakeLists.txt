@@ -15,6 +15,5 @@ feelpp_add_application( levelset_3d SRCS main_ls.cpp
   INSTALL
 )
 
-foreach( _testcase IN ITEMS "square" "tube" "injector" )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_levelset CATEGORY toolboxes/levelset)
-endforeach()
+feelpp_add_testcase(cases PREFIX feelpp_toolbox_levelset CATEGORY toolboxes/levelset)
+
