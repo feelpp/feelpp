@@ -26,7 +26,11 @@ class InitFeelpp:
             print('xxx call init_feelpp;', __file__)
             sys.argv=['test_pyfeelpptoolboxes']
             self.e = feelpp.Environment(
-                sys.argv, opts=tb.toolboxes_options("electric").add(tb.toolboxes_options("fluid")).add(tb.toolboxes_options("heat")))
+                sys.argv, opts=tb.toolboxes_options("electric")
+                                .add(tb.toolboxes_options("fluid"))
+                                .add(tb.toolboxes_options("heat"))
+                                .add(tb.toolboxes_options("coefficient-form-pdes", "cfpdes"))
+                                )
             print('is master? ', feelpp.Environment.worldCommPtr().isMasterRank())
         except Exception as err:
             print('Exception caucht while initializing Feel++: '.format(err))
