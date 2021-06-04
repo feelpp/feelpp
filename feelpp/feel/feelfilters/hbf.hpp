@@ -195,8 +195,8 @@ public:
 
     //typedef meta::Pch<Mesh<Hypercube<2>>,1>::ptrtype q1_space_ptrtype;
     //typedef meta::Pch<Mesh<Hypercube<2>>,1>::type space_type;
-    typedef meta::Pch<MeshStructured,1>::ptrtype q1_space_ptrtype;
-    typedef meta::Pch<MeshStructured,1>::type space_type;
+    typedef meta::Pch<MeshStructured<Hypercube<2>>,1>::ptrtype q1_space_ptrtype;
+    typedef meta::Pch<MeshStructured<Hypercube<2>>,1>::type space_type;
     typedef space_type::element_type q1_element_type;
 
     typedef boost::bimap<bimaps::unordered_set_of<std::pair<int,int>>, bimaps::unordered_set_of<int>, bimaps::list_of_relation > dof_table;
