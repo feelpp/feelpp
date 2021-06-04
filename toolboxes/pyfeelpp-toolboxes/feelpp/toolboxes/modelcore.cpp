@@ -92,35 +92,36 @@ PYBIND11_MODULE(_modelcore, m )
              )
         ;
 
-    py::class_<ModelNumerical, std::shared_ptr<ModelNumerical>, ModelAlgebraic>(m,"ModelNumerical")
-        .def(py::init<std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
-             py::arg("prefix"),
-             py::arg("worldComm")=Environment::worldCommPtr(),
-             py::arg("subprefix")=std::string(""),
-             py::arg("modelRep") = ModelBaseRepository(),
-             "Initialize ModelNumerical"
-             )
-        .def("isStationary", &ModelNumerical::isStationary, "return if steady state model, false otherwise")
-        .def("setStationary", &ModelNumerical::setStationary, "set model steady state to true or false", py::arg("state") )
-        .def("doRestart", &ModelNumerical::doRestart, "return if model is restarted, false otherwise")
-        .def("setRestart", &ModelNumerical::setRestart, "set model restart status", py::arg("state"))
+    py::class_<ModelNumerical, std::shared_ptr<ModelNumerical>, ModelAlgebraic>( m, "ModelNumerical" )
+        .def( py::init<std::string const&, worldcomm_ptr_t const&, std::string const&, ModelBaseRepository const&>(),
+              py::arg( "prefix" ),
+              py::arg( "worldComm" ) = Environment::worldCommPtr(),
+              py::arg( "subprefix" ) = std::string( "" ),
+              py::arg( "modelRep" ) = ModelBaseRepository(),
+              "Initialize ModelNumerical" )
+        .def( "isStationary", &ModelNumerical::isStationary, "return if steady state model, false otherwise" )
+        .def( "setStationary", &ModelNumerical::setStationary, "set model steady state to true or false", py::arg( "state" ) )
+        .def( "doRestart", &ModelNumerical::doRestart, "return if model is restarted, false otherwise" )
+        .def( "setRestart", &ModelNumerical::setRestart, "set model restart status", py::arg( "state" ) )
 
-        .def("hasModelProperties", &ModelNumerical::hasModelProperties, "returns true if model properties are defined, false otherwise")
-        .def("modelProperties", &ModelNumerical::modelPropertiesPtr, "return model properties",py::return_value_policy::reference)
-        .def("setModelProperties", static_cast<void (ModelNumerical::*)(std::string const&)>(&ModelNumerical::setModelProperties), "set model properties from filename",py::arg("model"))
-        .def("setModelProperties", static_cast<void (ModelNumerical::*)(nl::json const&)>(&ModelNumerical::setModelProperties), "set model properties from json",py::arg("model"))
-        .def("addParameterInModelProperties", &ModelNumerical::addParameterInModelProperties, "add new parameter in model properties")
-        
-        .def("time", &ModelNumerical::time, "get the current time")
-        .def("currentTime", &ModelNumerical::currentTime, "get the current time")
-        .def("updateTime", &ModelNumerical::updateTime, "update the current time", py::arg("time"))
-        .def("timeInitial", &ModelNumerical::timeInitial, "get the initial time")
-        .def("setTimeInitial", &ModelNumerical::setTimeInitial, "set the initial time", py::arg("time"))
-        .def("timeFinal", &ModelNumerical::timeFinal, "get the final time")
-        .def("setTimeFinal", &ModelNumerical::setTimeFinal, "set the final time", py::arg("time"))
-        .def("timeStep", &ModelNumerical::timeStep, "get the time step")
-        .def("setTimeStep", &ModelNumerical::setTimeStep, "set the time step", py::arg("step"))
+        .def( "hasModelProperties", &ModelNumerical::hasModelProperties, "returns true if model properties are defined, false otherwise" )
+        .def( "modelProperties", &ModelNumerical::modelPropertiesPtr, "return model properties", py::return_value_policy::reference )
+        .def( "setModelProperties", static_cast<void ( ModelNumerical::* )( std::string const& )>( &ModelNumerical::setModelProperties ), "set model properties from filename", py::arg( "model" ) )
+        .def( "setModelProperties", static_cast<void ( ModelNumerical::* )( nl::json const& )>( &ModelNumerical::setModelProperties ), "set model properties from json", py::arg( "model" ) )
+        .def( "addParameterInModelProperties", &ModelNumerical::addParameterInModelProperties, "add new parameter in model properties" )
+
+        .def( "time", &ModelNumerical::time, "get the current time" )
+        .def( "currentTime", &ModelNumerical::currentTime, "get the current time" )
+        .def( "updateTime", &ModelNumerical::updateTime, "update the current time", py::arg( "time" ) )
+        .def( "timeInitial", &ModelNumerical::timeInitial, "get the initial time" )
+        .def( "setTimeInitial", &ModelNumerical::setTimeInitial, "set the initial time", py::arg( "time" ) )
+        .def( "timeFinal", &ModelNumerical::timeFinal, "get the final time" )
+        .def( "setTimeFinal", &ModelNumerical::setTimeFinal, "set the final time", py::arg( "time" ) )
+        .def( "timeStep", &ModelNumerical::timeStep, "get the time step" )
+        .def( "setTimeStep", &ModelNumerical::setTimeStep, "set the time step", py::arg( "step" ) )
+
+        .def( "checkResults", static_cast<bool ( ModelNumerical::* )() const>( &ModelNumerical::checkResults ), "check results in toolbox case if Checkers section present" )
+
         ;
-    
 }
 
