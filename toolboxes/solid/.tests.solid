@@ -1,2 +1,2 @@
-TurekHron-csm1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/csm1.cfg
-TurekHron-csm2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/csm2.cfg
+TurekHron-csm1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/TurekHron/csm1.cfg
+TurekHron-csm2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/TurekHron/csm2.cfg

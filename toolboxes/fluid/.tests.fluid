@@ -1,13 +1,13 @@
-TurekHron-cfd1-P2P1G1-Newton --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd1.cfg --case.discretization=P2P1G1 --fluid.solver=Newton --directory=toolboxes/testsuite/fluid/TurekHron-cfd1-P2P1G1-Newton
-TurekHron-cfd2-P2P1G1-Newton --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd2.cfg --case.discretization=P2P1G1 --fluid.solver=Newton --directory=toolboxes/testsuite/fluid/TurekHron-cfd2-P2P1G1-Newton
-TurekHron-cfd1-P2P1G1-Picard --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd1.cfg --case.discretization=P2P1G1 --fluid.solver=Picard --directory=toolboxes/testsuite/fluid/TurekHron-cfd1-P2P1G1-Picard
-TurekHron-cfd2-P2P1G1-Picard --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd2.cfg --case.discretization=P2P1G1 --fluid.solver=Picard --directory=toolboxes/testsuite/fluid/TurekHron-cfd2-P2P1G1-Picard
-TurekHron-cfd1-P1P1G1-Newton --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd1.cfg --case.discretization=P1P1G1 --fluid.solver=Newton --fluid.stabilization-gls=1 --directory=toolboxes/testsuite/fluid/TurekHron-cfd1-P1P1G1-Newton 
+TurekHron-cfd1-P2P1G1-Newton --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/TurekHron/cfd1.cfg --case.discretization=P2P1G1 --fluid.solver=Newton --directory=toolboxes/testsuite/fluid/TurekHron-cfd1-P2P1G1-Newton
+TurekHron-cfd2-P2P1G1-Newton --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/TurekHron/cfd2.cfg --case.discretization=P2P1G1 --fluid.solver=Newton --directory=toolboxes/testsuite/fluid/TurekHron-cfd2-P2P1G1-Newton
+TurekHron-cfd1-P2P1G1-Picard --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/TurekHron/cfd1.cfg --case.discretization=P2P1G1 --fluid.solver=Picard --directory=toolboxes/testsuite/fluid/TurekHron-cfd1-P2P1G1-Picard
+TurekHron-cfd2-P2P1G1-Picard --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/TurekHron/cfd2.cfg --case.discretization=P2P1G1 --fluid.solver=Picard --directory=toolboxes/testsuite/fluid/TurekHron-cfd2-P2P1G1-Picard
+TurekHron-cfd1-P1P1G1-Newton --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/TurekHron/cfd1.cfg --case.discretization=P1P1G1 --fluid.solver=Newton --fluid.stabilization-gls=1 --directory=toolboxes/testsuite/fluid/TurekHron-cfd1-P1P1G1-Newton 
 
-TurekHron-cfd1-transient-BDF2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd1.cfg --ts.time-step=0.5 --ts.time-final=10 --fluid.time-stepping=BDF --fluid.bdf.order=2  --directory=toolboxes/testsuite/fluid/TurekHron-cfd1-transient-BDF2
-TurekHron-cfd2-transient-BDF2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd2.cfg --ts.time-step=0.5 --ts.time-final=10 --fluid.time-stepping=BDF --fluid.bdf.order=2  --directory=toolboxes/testsuite/fluid/TurekHron-cfd2-transient-BDF2
-TurekHron-cfd1-transient-CN --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd1.cfg --ts.time-step=0.5 --ts.time-final=10 --fluid.time-stepping=Theta --directory=toolboxes/testsuite/fluid/TurekHron-cfd1-transient-CN
-TurekHron-cfd2-transient-CN --config-file ${CMAKE_CURRENT_SOURCE_DIR}/TurekHron/cfd2.cfg --ts.time-step=0.5 --ts.time-final=10 --fluid.time-stepping=Theta --directory=toolboxes/testsuite/fluid/TurekHron-cfd2-transient-CN
+TurekHron-cfd1-transient-BDF2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/TurekHron/cfd1.cfg --ts.time-step=0.5 --ts.time-final=10 --fluid.time-stepping=BDF --fluid.bdf.order=2  --directory=toolboxes/testsuite/fluid/TurekHron-cfd1-transient-BDF2
+TurekHron-cfd2-transient-BDF2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/TurekHron/cfd2.cfg --ts.time-step=0.5 --ts.time-final=10 --fluid.time-stepping=BDF --fluid.bdf.order=2  --directory=toolboxes/testsuite/fluid/TurekHron-cfd2-transient-BDF2
+TurekHron-cfd1-transient-CN --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/TurekHron/cfd1.cfg --ts.time-step=0.5 --ts.time-final=10 --fluid.time-stepping=Theta --directory=toolboxes/testsuite/fluid/TurekHron-cfd1-transient-CN
+TurekHron-cfd2-transient-CN --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/TurekHron/cfd2.cfg --ts.time-step=0.5 --ts.time-final=10 --fluid.time-stepping=Theta --directory=toolboxes/testsuite/fluid/TurekHron-cfd2-transient-CN
 
 Pipe-Pressure-Stokes --case github:{repo:toolbox,path:examples/modules/cfd/examples/pipestokes/case_corrections/pression} --directory=toolboxes/testsuite/fluid/Pipe-Pressure-Stokes
 Pipe-Pressure-Navier-Stokes --case github:{repo:toolbox,path:examples/modules/cfd/examples/pipestokes/case_corrections/pression} --fluid.json-editions=Models.equations:Navier-Stokes --directory=toolboxes/testsuite/fluid/Pipe-Pressure-Navier-Stokes

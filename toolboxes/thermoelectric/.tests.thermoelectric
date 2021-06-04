@@ -1,3 +1,3 @@
-ElectroMagnets_HL-31_H1_linear --config-file ${CMAKE_CURRENT_SOURCE_DIR}/ElectroMagnets/HL-31_H1/HL-31_H1.cfg --directory=toolboxes/testsuite/thermoelectric/HL-31_H1_linear
-ElectroMagnets_HL-31_H1_nonlinear-newton --config-file ${CMAKE_CURRENT_SOURCE_DIR}/ElectroMagnets/HL-31_H1/HL-31_H1_nonlinear.cfg --thermo-electric.solver=Newton --directory=toolboxes/testsuite/thermoelectric/HL-31_H1_nonlinear-newton
-ElectroMagnets_HL-31_H1_nonlinear-picard --config-file ${CMAKE_CURRENT_SOURCE_DIR}/ElectroMagnets/HL-31_H1/HL-31_H1_nonlinear.cfg --thermo-electric.solver=Picard --directory=toolboxes/testsuite/thermoelectric/HL-31_H1_nonlinear-picard
+ElectroMagnets_HL-31_H1_linear --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/ElectroMagnets/HL-31_H1/HL-31_H1.cfg --directory=toolboxes/testsuite/thermoelectric/HL-31_H1_linear
+ElectroMagnets_HL-31_H1_nonlinear-newton --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/ElectroMagnets/HL-31_H1/HL-31_H1_nonlinear.cfg --thermo-electric.solver=Newton --directory=toolboxes/testsuite/thermoelectric/HL-31_H1_nonlinear-newton
+ElectroMagnets_HL-31_H1_nonlinear-picard --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/ElectroMagnets/HL-31_H1/HL-31_H1_nonlinear.cfg --thermo-electric.solver=Picard --directory=toolboxes/testsuite/thermoelectric/HL-31_H1_nonlinear-picard

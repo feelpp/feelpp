@@ -31,6 +31,4 @@ feelpp_add_application( fsi_3d_g2 SRCS main_fsi.cpp
   INSTALL
   )
 
-foreach( _testcase IN ITEMS "TurekHron" "wavepressure2d" "wavepressure3d" "movingboundary" )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_fsi CATEGORY toolboxes/fsi)
-endforeach()
+feelpp_add_testcase(cases PREFIX feelpp_toolbox_fsi CATEGORY toolboxes/fsi)
