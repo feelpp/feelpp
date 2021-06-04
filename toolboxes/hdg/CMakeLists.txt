@@ -81,10 +81,4 @@ feelpp_add_application( hdg_coupledpoisson
 endif()
 
 
-<<<<<<< HEAD
 feelpp_add_testcase(cases PREFIX feelpp_toolbox_hdg CATEGORY toolboxes/hdg)
-=======
-foreach( _testcase IN ITEMS "poisson" "elasticity" "thermoelectric" "coupledpoisson" )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_hdg CATEGORY toolboxes/hdg)
-endforeach()
->>>>>>> origin/develop
