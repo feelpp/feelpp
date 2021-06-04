@@ -99,8 +99,8 @@ apt-get install -y apt-transport-https ca-certificates gnupg software-properties
 if [ "$DIST" = "buster" ]; then
     echo "deb http://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
 fi
-echo "deb https://dl.bintray.com/feelpp/$FLAVOR $DIST $CHANNEL" | tee -a /etc/apt/sources.list
-wget -qO - https://bintray.com/user/downloadSubjectPublicKey?username=bintray | apt-key add -
+echo "deb https://feelpp.jfrog.io/artifactory/$FLAVOR $DIST $CHANNEL" | tee -a /etc/apt/sources.list
+wget -qO  - https://feelpp.jfrog.io/artifactory/api/security/keypair/gpg-debian/public | apt-key add -
 apt update
 EOF
 fi

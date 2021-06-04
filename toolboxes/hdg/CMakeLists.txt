@@ -29,13 +29,14 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 if ( FEELPP_HAS_OMC AND FEELPP_HAS_FMILIB )
-  feelpp_add_fmu( test3d0d_nonlinearR CLASS test3d0d_nonlinearR SRCS test3d0d_nonlinearR/test3d0d_nonlinearR.mo  test3d0d_nonlinearR/nonlinearResistor.mo  test3d0d_nonlinearR/voltage_nonlinearTest3d0d.mo )
+  add_subdirectory( coupledpoisson )
 endif()
 
 feelpp_add_application( hdg_poisson
   SRCS mixedpoisson_main.cpp
   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
-  INSTALL MAN hdg_poisson )
+  INSTALL MAN hdg_poisson
+  TESTS )
 
 feelpp_add_application( hdg_cvg_poisson
   SRCS cvg_mixedpoisson.cpp
@@ -80,4 +81,10 @@ feelpp_add_application( hdg_coupledpoisson
 endif()
 
 
+<<<<<<< HEAD
 feelpp_add_testcase(cases PREFIX feelpp_toolbox_hdg CATEGORY toolboxes/hdg)
+=======
+foreach( _testcase IN ITEMS "poisson" "elasticity" "thermoelectric" "coupledpoisson" )
+  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_hdg CATEGORY toolboxes/hdg)
+endforeach()
+>>>>>>> origin/develop

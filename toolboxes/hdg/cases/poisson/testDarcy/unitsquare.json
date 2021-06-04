@@ -18,7 +18,7 @@
             {
                 "omega":
                 {
-                    "expr":"0"
+		            "expr":"-2*sin(y)*cos(x)+2*x:x:y"
                 }
             },
             "Neumann":
@@ -28,16 +28,6 @@
 		            "expr":"0"
 		        }
             }
-        },
-	    "flux":
-	    {
-	        "SourceTerm":
-	        {
-		        "omega":
-		        {
-		            "expr":"-2*sin(y)*cos(x)+2*x:x:y"
-		        }
-	        }
 	    }
     },
     "Functions":

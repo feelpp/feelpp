@@ -13,7 +13,7 @@ steps:
        artifacts: Testing/junit-*.xml
        fail-build-on-error: true
    if: build.message !~ /skip feelpp/
- - wait
+# - wait
  - trigger: "pkg-feelpp"
    label: ":package: :debian: :ubuntu: Feel++ ${BUILDKITE_BRANCH}"
    async: true
@@ -48,13 +48,13 @@ steps:
    agents:
      docker: true
  - wait
- - trigger: "pkg-feelpp-toolboxes"
-   label: ":package: :debian: :ubuntu: Feel++ Toolboxes ${BUILDKITE_BRANCH}"
-   async: true
-   if: |
-     ((build.message !~ /skip toolboxes/) &&
-     (build.message !~ /skip components/)) &&
-     (pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" ))
+#- trigger: "pkg-feelpp-toolboxes-focal"
+#   label: ":package: :debian: :ubuntu: Feel++ Toolboxes ${BUILDKITE_BRANCH}"
+#   async: true
+#   if: |
+#     ((build.message !~ /skip toolboxes/) &&
+#     (build.message !~ /skip components/)) &&
+#     (pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" ))
 # #  - wait
 # # # - trigger: "feelpp-singularity"
 # # #   label: ":package: :singularity: Feel++ Toolboxes ${BUILDKITE_BRANCH} containers"
