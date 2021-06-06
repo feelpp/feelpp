@@ -1,0 +1,74 @@
+// -*- mode: javascript -*-
+{
+  "Name": "Cytometry Microchannel Fluid Mechanics",
+  "ShortName":"Microchannel_Fluid_Rigid_Sphere",
+  "Models":
+  {
+    "equations":"Navier-Stokes"
+  },
+  "Materials":
+  {
+    "Solvent":
+    {
+      "name":"Solvent",
+      "rho":"1e-3", // [kg/m^3]
+      "mu":"1.5e-2" // [Pa.s]
+    },
+    "Cell":
+    {
+      "name":"Cell",
+      "rho":"1e-3", // [kg/m^3]
+      "mu":"1.5e-2" // absurd, but for testing purpose
+    }
+  },
+  "BoundaryConditions":
+  {
+    "velocity":
+    {
+      "Dirichlet":
+      {
+        "ChannelWall":
+        {
+          "expr":"{0,0,0}"
+        }
+      }
+    },
+    "fluid":
+    {
+      "inlet":
+      {
+        "ChannelInlet":
+        {
+          "expr":"4e-4", // 4e-2 mm^3/s
+          "shape":"parabolic", // constant, parabolic,
+          "constraint":"flow_rate" // velocity_max, flow_rate
+        }
+      },
+      "outlet":
+      {
+        "ChannelOutlet":
+          {
+            "expr":"0" // free outlet
+          }
+      },
+      "body":
+      {
+        "Membrane":
+        {
+          "markers":["Membrane"],
+          "materials":
+          {
+          "names":["Cell"]
+          }
+        }
+      }
+    }
+  },
+  "PostProcess":
+  {
+    "Exports":
+    {
+      "fields":["velocity","pressure","pid","displacement"]
+    }
+  }
+}
