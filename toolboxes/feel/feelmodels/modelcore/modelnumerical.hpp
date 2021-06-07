@@ -234,8 +234,8 @@ class ModelNumerical : virtual public ModelBase,
         bool updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields );
         template <typename MeshType, typename RangeType, typename SymbolsExpr, typename ModelFieldsType>
         bool updatePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields );
-        template <typename MeasurePointEvalType, typename ModelFieldsType>
-        bool updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, ModelFieldsType const& mFields );
+        template <typename MeasurePointEvalType, typename SymbolsExprType, typename ModelFieldsType>
+        bool updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExprType const& se, ModelFieldsType const& mFields );
         template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
         bool updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation,
                                         SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields, ModelQuantitiesType const& mQuantities );
@@ -680,15 +680,15 @@ ModelNumerical::updatePostProcessMeasuresStatistics( std::shared_ptr<MeshType> m
     return hasMeasure;
 }
 
-template <typename MeasurePointEvalType, typename ModelFieldsType>
+template <typename MeasurePointEvalType, typename SymbolsExprType, typename ModelFieldsType>
 bool
-ModelNumerical::updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, ModelFieldsType const& mfields )
+ModelNumerical::updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExprType const& se, ModelFieldsType const& mfields )
 {
     if ( !measurePointsEvaluation )
         return false;
     bool hasMeasure = false;
     std::map<std::string,double> resPpPoints;
-    measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, mfields );
+    measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, se, mfields );
     for ( auto const& resPpPoint : resPpPoints )
     {
         this->postProcessMeasuresIO().setMeasure( resPpPoint.first, resPpPoint.second );
@@ -707,7 +707,7 @@ ModelNumerical::updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, Range
     bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( mesh, rangeMeshElements, symbolsExpr, mfields );
     bool hasMeasurePoint = false;
     if( measurePointsEvaluation )
-        hasMeasurePoint = this->updatePostProcessMeasuresPoint( measurePointsEvaluation, mfields );
+        hasMeasurePoint = this->updatePostProcessMeasuresPoint( measurePointsEvaluation, symbolsExpr, mfields );
 
     return ( hasMeasureQuantities || hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint );
 }

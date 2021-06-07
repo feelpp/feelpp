@@ -304,9 +304,14 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // point measures
+
+    auto geospace = std::make_shared<GeometricSpace<mesh_type>>( this->mesh() );
+    auto geospaceWithNames = std::make_pair( std::set<std::string>({"heattt"}), geospace );
+    auto meshes = hana::make_tuple( geospaceWithNames );
+
     auto fieldNamesWithSpaceTemperature = std::make_pair( std::set<std::string>({"temperature"}), this->spaceTemperature() );
     auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceTemperature );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
+    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( meshes,fieldNamesWithSpaces );
     for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
         M_measurePointsEvaluation->init( evalPoints );
 
