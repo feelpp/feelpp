@@ -198,6 +198,23 @@ public :
             {
                 // TODO : update point position if node has moved
             }
+
+            // update gmc ctx
+            hana::for_each( M_geoContexts,
+                            [this,&se](auto & x) {
+                                size_type dynctx=0;
+                                auto const& exprInCtx = std::get<2>( x );
+                                for ( auto const& [ptPosName, exprDataAndNodeIds ] : exprInCtx )
+                                {
+                                    for ( auto const& exprData : std::get<0>( exprDataAndNodeIds ) )
+                                    {
+                                        //auto const& exprName = std::get<0>( exprData );
+                                        auto const& mexpr = std::get<1>( exprData );
+                                        dynctx = dynctx | mexpr.dynamicContext( se );
+                                    }
+                                }
+                                std::get<0>( x )->template updateGmcContext<vm::DYNAMIC>( dynctx );
+                            });
 #if 0
             hana::for_each( M_contextFields,
                             [this,&fieldTuple,&res](auto const& x) {
@@ -242,13 +259,15 @@ public :
                                     {
                                         auto const& exprName = std::get<0>( exprData );
                                         auto const& mexpr = std::get<1>( exprData );
-                                        hana::for_each( ModelExpression::expr_shapes, [this,&se,&exprName,&mexpr]( auto const& e_ij )
+                                        std::string outputNameBase = (boost::format("Points_%1%_expr_%2%")%ptPosName %exprName).str();
+                                        hana::for_each( ModelExpression::expr_shapes, [this,&se,&x,&outputNameBase,&mexpr,&res]( auto const& e_ij )
                                                         {
                                                             constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
                                                             constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
                                                             if ( mexpr.template hasExpr<ni,nj>() )
                                                             {
                                                                 auto theExpr = expr( mexpr.template expr<ni,nj>(), se );
+                                                                this->evalImpl( std::get<0>( x ), theExpr, outputNameBase, res );
                                                             }
                                                         });
                                     }
@@ -312,6 +331,36 @@ private :
                 }
 
         }
+
+    template <typename ContextDataType,typename ExprType>
+    void
+    evalImpl( ContextDataType const& ctx, ExprType const& theExpr, std::string const& outputNameBase, std::map<std::string,double> & res )
+        {
+            auto evalAtNodes = evaluateFromContext( _context=*ctx,
+                                                    _expr=theExpr );
+
+            typedef typename ExprTraitsFromContext<std::decay_t<decltype(*ctx)>,std::decay_t<decltype(theExpr)>>::shape shape_type;
+
+            for ( int nodeId=0;nodeId<ctx->nPoints();++nodeId )
+            {
+                for ( int i=0;i<shape_type::M ;++i )
+                {
+                    for ( int j=0;j<shape_type::N ;++j )
+                    {
+                        double val = evalAtNodes( nodeId*shape_type::M*shape_type::N+i+j*shape_type::M );
+                        std::string outputName = outputNameBase;
+                        if ( shape_type::M > 1 && shape_type::N > 1 )
+                            outputName = (boost::format("%1%_%2%_%3%")%outputNameBase %i %j).str();
+                        else if ( shape_type::M > 1 )
+                            outputName = (boost::format("%1%_%2%")%outputNameBase %i).str();
+                        else if ( shape_type::N > 1 )
+                            outputName = (boost::format("%1%_%2%")%outputNameBase %j).str();
+                        res[outputName] = val;
+                    }
+                }
+            }
+        }
+
 
 private :
     tuple_geocontext_type M_geoContexts;
