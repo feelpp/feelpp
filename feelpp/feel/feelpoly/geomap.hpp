@@ -988,6 +988,24 @@ class GeoMap
         }
 
 
+        template<size_type CTX>
+        void updateContext( size_type dynctx = 0 )
+            {
+                M_dynamic_context = M_dynamic_context | dynctx;
+
+                if ( M_dynamic_context != 0 )
+                {
+                    this->resize<CTX|vm::DYNAMIC,true>();
+                    this->updateImpl<CTX|vm::DYNAMIC>();
+                }
+                else
+                {
+                    this->resize<CTX,true>();
+                    this->updateImpl<CTX>();
+                }
+            }
+
+
         FEELPP_STRONG_INLINE
         void setElement( element_type const& __e )
             {
