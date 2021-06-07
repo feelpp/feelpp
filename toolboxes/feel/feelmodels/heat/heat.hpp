@@ -46,6 +46,8 @@
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
+#include <feel/feeldiscr/geometricspace.hpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -100,7 +102,7 @@ class Heat : public ModelNumerical,
         typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
         // measure tools for points evaluation
-        typedef MeasurePointsEvaluation<space_temperature_type> measure_points_evaluation_type;
+        typedef MeasurePointsEvaluation< hana::tuple<GeometricSpace<mesh_type>>, space_temperature_type> measure_points_evaluation_type;
         typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
         struct FieldTag
@@ -575,7 +577,7 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
 
     bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
     bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
+    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, symbolsExpr, mfields );
     bool hasMeasureQuantity = this->updatePostProcessMeasuresQuantities( mquantities, symbolsExpr );
     if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint || hasMeasureQuantity )
         hasMeasure = true;
