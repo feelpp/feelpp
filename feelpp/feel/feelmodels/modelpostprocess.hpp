@@ -186,16 +186,19 @@ public :
     std::set<std::string> const& fields() const { return this->second; }
     std::set<std::string> & fields() { return this->second; }
 
+    std::map<std::string,std::tuple<ModelExpression,std::string> > const& expressions() const { return M_exprs; }
+
     void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setFields( std::set<std::string> const& fields ) { this->second = fields; }
     void addFields( std::string const& field ) { this->second.insert( field ); }
-    void setParameterValues( std::map<std::string,double> const& mp ) { this->pointPosition().setParameterValues( mp ); }
+    void setParameterValues( std::map<std::string,double> const& mp );
 private:
     void setup( std::string const& name, ModelIndexes const& indexes );
 private:
     pt::ptree M_p;
     std::string M_directoryLibExpr;
+    std::map<std::string,std::tuple<ModelExpression,std::string> > M_exprs; // name -> ( expr, tag )
 };
 
 //! store informations require by the postprocessing Norm
