@@ -343,6 +343,24 @@ public :
         return this->hasSymbolDependency( std::set<std::string>( { symbolStr } ), se );
     }
 
+
+    template <typename TheSymbolExprType = symbols_expression_empty_t>
+    size_type dynamicContext( TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
+    {
+        size_type ctx = 0;
+        hana::for_each( expr_shapes, [this,&se,&ctx]( auto const& e_ij )
+                        {
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )
+                            {
+                                auto theExpr = Feel::vf::expr( this->expr<ni,nj>(), se );
+                                ctx = ctx | Feel::vf::dynamicContext( theExpr );
+                            }
+                        });
+        return ctx;
+    }
+
 private :
     boost::optional<expr_scalar_type> M_exprScalar;
     boost::optional<expr_vectorial2_type> M_exprVectorial2;
