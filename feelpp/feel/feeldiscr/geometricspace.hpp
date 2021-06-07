@@ -62,7 +62,7 @@ public :
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef typename mesh_type::element_type element_type;
     typedef typename element_type::gm_type gm_type;
-    static const size_type gmc_context_v = vm::POINT;
+    static const size_type gmc_context_v = vm::POINT|vm::DYNAMIC;
     typedef typename gm_type::template Context<element_type> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
@@ -88,6 +88,7 @@ public :
     class ContextGeometric : public ContextGeometricBase
     {
     public :
+        using gmc_type = typename GeometricSpace<MeshType>::gmc_type;
         typedef std::shared_ptr<gmc_type> geometric_mapping_context_ptrtype;
 
         ContextGeometric() = default;
@@ -111,6 +112,13 @@ public :
         {
             M_meshGeoContext = meshGeoContext;
         }
+
+        template <size_type CTX>
+        void updateGmcContext( size_type dynctx = 0 )
+            {
+                if ( M_gmc )
+                    M_gmc->template updateContext<gmc_context_v|CTX>( dynctx );
+            }
 
     private :
         friend class boost::serialization::access;
@@ -291,6 +299,17 @@ public :
             return ret;
         }
 
+
+        template <size_type CTX>
+        void updateGmcContext( size_type dynctx = 0 )
+        {
+            for ( auto& [ptId,geoCtx] : *this )
+            {
+                if ( geoCtx )
+                    geoCtx->template updateGmcContext<CTX>( dynctx );
+            }
+        }
+
     private :
         void syncCtx( int ptId )
         {
@@ -393,6 +412,25 @@ private :
     mesh_ptrtype M_mesh;
 
 };
+
+#if 0
+template <typename MeshType, typename ... CTX>
+auto selectGeomapContext( std::shared_ptr<MeshType> const& mesh, CTX const& ... ctx )
+{
+    using geoelement_type = typename MeshType::element_type;
+    using gmc_type = typename geoelement_type::gm_type::template Context<geoelement_type>;
+    std::shared_ptr<gmc_type> res;
+    hana::for_each( hana::make_tuple( ctx... ), [&mesh,&res]( auto const& e )
+                    {
+                        if constexpr ( std::is_same_v<std::decay_t<decltype(e->gmContext())>, std::shared_ptr<gmc_type> > )
+                        {
+                            if ( e->gmContext()->element().mesh()->isSameMesh( mesh ) )
+                                res = e->gmContext();
+                        }
+                    } );
+    return res;
+}
+#endif
 
 } //namespace Feel
 
