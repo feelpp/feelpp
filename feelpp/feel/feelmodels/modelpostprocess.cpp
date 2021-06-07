@@ -293,6 +293,14 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
 }
 
 void
+ModelPostprocessPointPosition::setParameterValues( std::map<std::string,double> const& mp )
+{
+    this->pointPosition().setParameterValues( mp );
+    for ( auto & [name,exprData] : M_exprs )
+        std::get<0>( exprData ).setParameterValues( mp );
+}
+
+void
 ModelPostprocessNorm::setup( std::string const& name, ModelIndexes const& indexes )
 {
     M_name = name;
