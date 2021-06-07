@@ -290,6 +290,28 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
         this->addFields( field );
     }
 
+    // expressions
+    if ( auto exprTree = M_p.get_child_optional("expressions") )
+    {
+        for ( auto const& exprItem : *exprTree )
+        {
+            std::string exprName = exprItem.first;
+
+            if ( exprItem.second.empty() ) // name:expr
+            {
+                ModelExpression mexpr;
+                mexpr.setExpr( exprName, *exprTree, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+                CHECK( mexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
+                std::cout << "MYEXPR " << exprName << " : " << mexpr.exprToString() << std::endl;
+                M_exprs.emplace( exprName, std::make_tuple( std::move( mexpr ), "" ) );
+            }
+            else
+            {
+                CHECK( false ) << "wrong syntax" << std::endl;
+            }
+        }
+    }
+
 }
 
 void
