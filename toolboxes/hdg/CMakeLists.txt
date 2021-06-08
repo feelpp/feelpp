@@ -29,7 +29,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 if ( FEELPP_HAS_OMC AND FEELPP_HAS_FMILIB )
-  add_subdirectory( coupledpoisson )
+  add_subdirectory( cases/coupledpoisson )
 endif()
 
 feelpp_add_application( hdg_poisson
