@@ -1,0 +1,45 @@
+{
+    "Name":"Omega_f",
+    "Models": { "equations":"Stokes" },
+    "Materials":
+    {
+        "Omega_f":
+        {
+            "markers":"Omegaf",
+            "rho":"1.0e3",
+            "mu":"1.0"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "Gammaf-side":
+                {
+                    "expr":"{exp(x)*y^4,exp(y)*cos(2*x)}:x:y"
+                },
+                "Gammaf-top":
+                {
+                    "expr":"{exp(x)*y^4,exp(y)*cos(2*x)}:x:y"
+                },
+                "Gammaf-bottom":
+                {
+                    "expr":"{exp(x)*y^4,exp(y)*cos(2*x)}:x:y"
+                }
+            },
+            "Robin":
+            {
+                "Gamma":
+                {
+                    "expr1":"1",
+                    "expr2":"0"
+                }
+	        }
+        }
+    }
+}
+
+
+
