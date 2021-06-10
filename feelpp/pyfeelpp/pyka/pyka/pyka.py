@@ -7,7 +7,7 @@ Perspectives:
 
 import numpy as np
 import scipy as sci
-import scipy.linalg
+from scipy import linalg
 import time
 
 VERBOSE = not True
@@ -323,7 +323,9 @@ class EnsembleTools:
         """
 
         self.ensemble = [state]
-        shift_matrix = np.sqrt(self.factor) * sci.linalg.sqrtm(self.covariances['state'])
+#        shift_matrix = np.linalg.eig(0.1*self.covariances['state'])[1]
+        shift_matrix = sci.linalg.sqrtm(self.factor*self.covariances['state'])
+#        print('\n shift2:\n', (self.factor*self.covariances['state']).round(4).reshape(1,-1).tolist()[0])
         for column in range(len(shift_matrix)):
             self.ensemble.append(state + State(shift_matrix[:,column]))
             self.ensemble.append(state - State(shift_matrix[:,column]))
@@ -438,7 +440,7 @@ class Filter:
         self.ts += 1
 
     def compute_gain(self, x_f, x_dag, y_dag):
-        """ Computes the gain (transposed for easier further computation) """
+        """ Computes the gain """
 
         self.tools.set_covariance(
             weighted_sum(
@@ -501,15 +503,16 @@ class Filter:
                 weights = self.tools.weights
                 )
             )
+
+        self.analyze(forecast_state, ensemble_state, ensemble_obs)
         self.tools.set_covariance(
+            (np.eye(self.tools.dim['state']) - self.gain @ self.tools.covariances['measure']) @ \
             weighted_sum(
                 element_list = [dispersion_matrix(s.get_values() - self.get_last_state().get_values()) for s in self.tools.ensemble],
                 weights = self.tools.weights
                 ),
                 type = 'state'
-        )
-
-        self.analyze(forecast_state, ensemble_state, ensemble_obs)
+        )    
         self.step_ts()
 
         del sigma_point, ensemble_state, ensemble_obs, forecast_state

@@ -44,20 +44,22 @@ class TestFilter():
 
     def test_simple_direct_filter(self):
         """ Test: direct 1D filter with identity forecasts """
-        f = Filter(initial_state = 0)
-        f.load_measurements(100*[1])
+        start = np.random.random()
+        goal = np.random.random()
+        f = Filter(initial_state = start)
+        f.load_measurements(100*[goal])
         f.filter()
-        assert f.get_last_state().round(10) == State(input = [1.]).round(10)
+        assert np.linalg.norm(f.get_last_state().get_values() - State(input = goal).get_values()) < 0.05
 
     def test_multiple_direct_filter(self):
         """ Test: direct nD filter with identity forecasts """
-        dim = 1 + np.random.randint(100)
+        dim = 10
         start = np.random.random(dim)
         goal = np.random.random(dim)
         f = Filter(initial_state = start)
         f.load_measurements(100*[goal])
         f.filter()
-        assert f.get_last_state().round(10) == State(input = goal).round(10)
+        assert np.linalg.norm(f.get_last_state().get_values() - State(input = goal).get_values()) < 0.05
 
     def test_sum_diff(self):
         """ Test: indirect measurement
@@ -76,6 +78,7 @@ class TestFilter():
         f.load_measurements(50*[[2,0]])
         f.tools.set_covariance(0.01, 'measure')
         f.filter()
+        print(f.get_last_state().round(1))
         assert f.get_last_state().round(1) == State([1,1])
 
     def test_noisy_tracking(self):
@@ -84,13 +87,13 @@ class TestFilter():
         Noisy data is filtered using sine's order 3 Taylor expansion
         """
 
-        dt = 0.05
+        dt = 0.2
 
         def forecast_state(state):
             """ Using the raw approximation sin(x+h)~=sin(x)+sin(h) """
             return state + np.sin(dt)
 
-        real_trajectory = np.sin(np.arange(0,10,0.1))
+        real_trajectory = np.sin(np.arange(0,10,dt))
         data = list(real_trajectory + np.random.normal(0,0.2,len(real_trajectory)))
 
         f = Filter(
@@ -98,24 +101,27 @@ class TestFilter():
                 forecast_state = forecast_state
                 )
         f.load_measurements(data)
-        f.tools.set_covariance(0.5, 'measure')
+        f.tools.set_covariance(0.2, 'measure')
         f.filter()
 
-        rerr_ad = np.linalg.norm(f.extract_analyzed_states() \
-            - np.array(data))/np.linalg.norm(f.extract_analyzed_states()) #relative error, analyzed vs data
-        rerr_rd = np.linalg.norm(f.extract_analyzed_states() \
-            - real_trajectory)/np.linalg.norm(f.extract_analyzed_states()) #relative error, real vs data
+        rerr_ar = np.linalg.norm(f.extract_analyzed_states() \
+            - real_trajectory)/np.linalg.norm(f.extract_analyzed_states()) #relative error, analyzed vs real
+        rerr_dr = np.linalg.norm(np.array(data) \
+            - real_trajectory)/np.linalg.norm(np.array(data)) #relative error, data vs real
         
-        if False:
+        if True:
             import matplotlib.pyplot as plt 
+            fig = plt.figure()
             plt.plot(np.array(data))
             plt.plot(f.extract_analyzed_states())
             plt.plot(real_trajectory)
+            plt.legend(['data','analyzed','real'])
             plt.show()
-            print("relative error, analyzed vs data : " + str(np.linalg.norm(f.extract_analyzed_states() - np.array(data))/np.linalg.norm(f.extract_analyzed_states())))
-            print("relative error, real vs     data : " + str(np.linalg.norm(f.extract_analyzed_states() - real_trajectory)/np.linalg.norm(f.extract_analyzed_states())))
+            fig.savefig("tracking.pdf", bbox_inches='tight')
+            print("relative error, analyzed vs real : " + str(rerr_ar))
+            print("relative error, data vs     real : " + str(rerr_dr))
 
-        assert rerr_ad < rerr_rd
+        assert rerr_ar < rerr_dr
 
     def test_constant_velocity_estimation(self):
         """ Test: constant velocity particle
@@ -123,10 +129,11 @@ class TestFilter():
         Noisy position is measured
         Trajectory is filtered and velocity is estimated
         """
-        
-        N = 1000
+
+        N = 100
+        unc = 0.1
         exact_velocity = np.random.random()
-        data = np.zeros(N) + exact_velocity*np.arange(N) + np.random.normal(0,0.1,N)
+        data = exact_velocity*np.arange(N) + np.random.normal(0,np.sqrt(exact_velocity),N)
 
         def forecast_state(state): # velocity [1] is constant, next position [0] is [0]+[1]
             return state @ np.array([[1,1],[0,1]])
@@ -139,18 +146,25 @@ class TestFilter():
                 forecast_obs = forecast_obs
                 )
         f.load_measurements(data)
+        f.tools.set_covariance(unc, 'measure')
         f.filter()
         
-        if False:
-            print(f.get_last_state().get_values())
-            print(exact_velocity)
+        if True:
             import matplotlib.pyplot as plt 
-            plt.plot(f.extract_analyzed_states()[:,0])
-            plt.plot(data)
-            plt.plot(f.extract_analyzed_states()[:,1])
-            plt.plot(exact_velocity*np.ones(N))
-            plt.legend(['analyzed', 'measured', 'velocity estimate', 'real velocity'])
+            fig, axs = plt.subplots(2)
+            #fig = plt.figure()
+            axs[0].plot(f.extract_analyzed_states()[:,0])
+            axs[0].plot(data)
+            axs[0].plot(np.arange(N)*exact_velocity)
+            axs[0].legend(['analyzed', 'measured', 'real'])
+            #fig.savefig("trajectory.pdf", bbox_inches='tight')
+            #figg = plt.figure()
+            axs[1].plot(f.extract_analyzed_states()[:,1])
+            axs[1].plot(exact_velocity*np.ones(N))
+            axs[1].legend(['velocity estimate', 'real velocity'])
+            #figg.savefig("velocity.pdf", bbox_inches='tight')
             plt.show()
         
         rerr = abs(exact_velocity - f.get_last_state().get_values()[1])/exact_velocity
-        assert rerr < 0.01
+        print(rerr)
+        assert rerr < 0.1
