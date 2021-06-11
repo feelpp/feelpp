@@ -36,7 +36,7 @@ void defSM(py::module &m)
     using namespace Feel;
     using namespace Feel::FeelModels;
     using toolbox_t =  CoefficientFormPDEs< Simplex<nDim,1>,
-                                            Lagrange<0,Scalar,Continuous,PointSetFekete>,
+                                            //Lagrange<0,Scalar,Continuous,PointSetFekete>,
                                             Lagrange<1,Scalar,Continuous,PointSetFekete>,
                                             Lagrange<2,Scalar,Continuous,PointSetFekete>,
                                             Lagrange<1,Vectorial,Continuous,PointSetFekete> >;
