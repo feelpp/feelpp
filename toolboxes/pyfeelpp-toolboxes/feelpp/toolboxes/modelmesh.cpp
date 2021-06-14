@@ -26,7 +26,9 @@
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#if defined( FEELPP_MODELS_HAS_MESHALE )
 #include <feel/feelmodels/modelmesh/meshale.hpp>
+#endif
 #include <feel/feelmodels/modelcore/options.hpp>
 
 namespace py = pybind11;
@@ -40,7 +42,7 @@ void defToolbox(py::module &m)
     using convex_t = ConvexT;
     using mesh_t = Mesh<convex_t>;
     using mesh_ptr_t = std::shared_ptr<mesh_t>;
-
+#if defined( FEELPP_MODELS_HAS_MESHALE )
     using toolbox_t = MeshALE< convex_t >;
     using ale_map_element_t = typename toolbox_t::ale_map_element_type;
     using ale_map_element_ptr_t = typename toolbox_t::ale_map_element_ptrtype;
@@ -80,6 +82,7 @@ void defToolbox(py::module &m)
         .def( "revertMovingMesh", &toolbox_t::revertMovingMesh, py::arg("updateMeshMeasures") = true, "revert mesh in reference state" )
         .def( "updateTimeStep", &toolbox_t::updateTimeStep, "update time step" )
         .def( "exportResults", &toolbox_t::exportResults, py::arg("time")=0., "export results" );
+#endif        
 }
 
 PYBIND11_MODULE(_modelmesh, m )
