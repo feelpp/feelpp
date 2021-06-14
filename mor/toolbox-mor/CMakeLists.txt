@@ -17,5 +17,5 @@ if (EXISTS ${FEELPP_INSTALL_DIR}/include/feelpp/toolboxes)
   target_include_directories(feelpp_mor_toolboxmor-cfpdes PUBLIC ${FEELPP_INSTALL_DIR}/include/feelpp/toolboxes)
 endif()
 
-feelpp_add_testcase(toolboxes PREFIX feelpp_crb CATEGORY CRB)
+feelpp_add_testcase(opusheat PREFIX feelpp_crb CATEGORY CRB)
 
