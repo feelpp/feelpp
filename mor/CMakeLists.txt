@@ -85,7 +85,7 @@ OPTION(FEELPP_ENABLE_MOR_MINIMAL "enable minimal testcase" ${FEELPP_ENABLE_MOR_A
 OPTION(FEELPP_ENABLE_MOR_THERMOELECTRIC "enable thermoelectric testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_GREPLDEIM "enable grepldeim testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_TOOLBOX "enable toolbox testcase" ON)
-
+OPTION(FEELPP_ENABLE_MOR_MORDICUS "enable mordicus" OFF)
 
 if ( NOT MOR_SUBPROJECT AND NOT  FEELPP_TOOLBOXES_FOUND )
   message(STATUS "Feel++ Toolboxes not setup, disabling MOR_TOOLBOX...")
@@ -202,6 +202,16 @@ endif()
 if ( FEELPP_ENABLE_MOR_TOOLBOX )
   add_subdirectory(toolbox-mor)
 endif()
+
+if ( FEELPP_ENABLE_MOR_MORDICUS )
+  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/mordicus/src/cpp )
+    add_subdirectory(mordicus/src/cpp)
+    message(STATUS "[feelpp-mor] Mordicus enabled")
+  else()
+    set(FEELPP_ENABLE_MOR_MORDICUS OFF)
+    message(WARNING "[feelpp-mor] Mordicus enabled but not present")
+  endif()
+ENDIF()
 
 add_subdirectory(pyfeelpp-mor)
 
