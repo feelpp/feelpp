@@ -25,11 +25,11 @@ jobs:
         lfs: true
     - name: Update Dependencies
       run: |
+        sudo apt install -y gnupg
         wget -qO - https://feelpp.jfrog.io/artifactory/api/security/keypair/gpg-debian/public | gpg --dearmor > feelpp.gpg
         sudo mv feelpp.gpg /etc/apt/trusted.gpg.d
         echo "deb [signed-by=/etc/apt/trusted.gpg.d/feelpp.gpg] https://feelpp.jfrog.io/artifactory/ubuntu focal ${CHANNEL}" | tee -a feelpp.list
       	sudo mv feelpp.list /etc/apt/sources.list.d/
-        rm -f feelpp.gpg feelpp.list
         sudo apt update
         sudo apt --reinstall install -y libfeelpp1 libfeelpp-dev feelpp-tools doxygen
     - name: Configure Feelpp
