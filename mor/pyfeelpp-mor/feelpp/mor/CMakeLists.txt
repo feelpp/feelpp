@@ -21,10 +21,12 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+add_custom_target(pyfeelppmor)
+
 feelpp_add_pymodule(mor  SRCS crb.cpp DESTINATION feelpp/mor )
 feelpp_add_pymodule(toolboxmor SRCS toolboxmor.cpp DESTINATION feelpp/mor  )
 
 set(PYFILES __init__.py online.py test_heat3d.py test_parameterspace.py )
 install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor)
 
-
+add_dependencies(pyfeelppmor _mor _toolboxmor)
