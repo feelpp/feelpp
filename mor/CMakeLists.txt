@@ -205,6 +205,7 @@ endif()
 
 if ( FEELPP_ENABLE_MOR_MORDICUS )
   if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/mordicus/src/cpp )
+    set(MORDICUS_ENABLE_CEMOSIS ON)
     add_subdirectory(mordicus/src/cpp)
     message(STATUS "[feelpp-mor] Mordicus enabled")
   else()
