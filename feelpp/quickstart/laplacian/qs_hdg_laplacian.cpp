@@ -100,8 +100,6 @@ int hdg_laplacian()
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
     
-    auto K = expr(soption("k"));
-    auto lambda = cst(1.)/K;
     
 #if defined(FEELPP_HAS_SYMPY)
 
@@ -120,6 +118,7 @@ int hdg_laplacian()
     auto p_exact = expr( p_exact_str );
     auto u_exact = expr<FEELPP_DIM,1>( u_exact_str );
     auto k = expr( locals.at("k") );
+    auto lambda = cst(1.)/k;
     auto un = expr( locals.at("un") );
     auto f = expr( locals.at("f") );
     auto g = expr( locals.at("g") );
@@ -130,8 +129,13 @@ int hdg_laplacian()
     std::string u_exact_str = soption("solution.u");
     auto p_exact = expr(p_exact_str);
     auto u_exact = expr<Dim,1>(u_exact_str);
-    auto un_exact = trans(u_exact)*N();
-    auto f_exact = expr( soption( "functions.f") );
+    auto k = expr(soption("k"));
+    auto lambda = cst(1.)/k;
+    auto un = trans(u_exact)*N();
+    auto f = expr( soption( "functions.f") );
+    auto g = p_exact;
+    auto r_1 = cst(0.);
+    auto r_2 = un;
 #endif
     tic();
     auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
