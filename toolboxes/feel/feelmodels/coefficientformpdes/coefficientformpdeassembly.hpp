@@ -506,6 +506,32 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                                _expr= timeSteppingScaling*inner( gradt(u)*coeff_beta_expr, id(v) ),
                                _geomap=this->geomap() );
             }
+            bool coeffConvectionDependOnUnknown = coeff_beta.hasSymbolDependency( trialSymbolNames, se );
+            if ( coeffConvectionDependOnUnknown && buildNonCstPart )
+            {
+                hana::for_each( tse.map(), [this,&coeff_beta_expr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
+                {
+                    // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
+                    for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
+                    {
+                        auto trialXh = trialSpacePair.first;
+                        auto trialBlockIndex = trialSpacePair.second;
+
+                        auto coeff_beta_diff_expr = diffSymbolicExpr( coeff_beta_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+
+                        if ( !coeff_beta_diff_expr.expression().hasExpr() )
+                            continue;
+
+                        form2( _test=Xh,_trial=trialXh,_matrix=J,
+                               _pattern=size_type(Pattern::COUPLED),
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=trialBlockIndex ) +=
+                            integrate( _range=range,
+                                       _expr= timeSteppingScaling*inner( gradv(u)*coeff_beta_diff_expr, id(v) ),
+                                       _geomap=this->geomap() );
+                    }
+                });
+            }
         }
 
         // Diffusion
@@ -611,13 +637,14 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                 }
             }
         }
+        // conservative flux source
         if ( buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
         {
             auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
             bool coeffConservativeFluxSourceDependOnUnknown = coeff_gamma.hasSymbolDependency( trialSymbolNames, se );
             if ( coeffConservativeFluxSourceDependOnUnknown )
             {
-                auto getexpr = [&]( auto const& c ) {
+                auto getexpr = [&se]( auto const& c ) {
                     if constexpr ( unknown_is_scalar )
                     {
                         auto coeff_gamma_expr = expr( c.template expr<nDim, 1>(), se );
@@ -690,8 +717,6 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                 }
             }
 
-            // conservative flux source
-            
         }
 
 
