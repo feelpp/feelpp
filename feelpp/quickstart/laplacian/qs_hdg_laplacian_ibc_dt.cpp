@@ -270,8 +270,10 @@ int hdg_laplacian()
 
     auto pn = Wh->element( "p" );
     auto pnm1 = Wh->element( "p" );
+    auto e = exporter( _mesh = mesh );
+    e->setMesh( mesh );
 
-    pnm1 = expr( boption( "initial-condition" )); //( _range=mesh, _expr=boption( "initial-condition" ) );
+    pnm1.on( _range=elements(mesh), _expr=expr(soption( "initial-condition" )) );
 
     for (; t < tmax; t += dt)
     {
@@ -281,17 +283,19 @@ int hdg_laplacian()
             Feel::cout << "Time : " << t << " s (over " << tmax << " s)" << std::endl;
             Feel::cout << "============================================" << std::endl;
         }
-
+        rhs.zero();
+        a.zero();
         tic();
         // Building the RHS
         //
         // This is only a part of the RHS - how to build the whole RHS? Is it right to
         // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
         // How to identify Dirichlet/Neumann boundaries?
+        
         rhs(1_c) += integrate( _range=elements(mesh),
                                _expr=f*id(w));
         rhs(1_c) += integrate( _range=elements(mesh),
-                               _expr=pnm1*id(w));
+                               _expr=idv(pnm1)/dt*id(w));
 
         rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                             _expr=id(l)*un );
@@ -554,14 +558,13 @@ int hdg_laplacian()
         Feel::cout << "pmin= " << pmin << ", pmax=" << pmax << " qmin= " << qmin << ", qmax=" << qmax << std::endl;
 
         
-        auto e = exporter( _mesh=mesh );
-        e->setMesh( mesh );
-        e->addRegions();
-        e->add( "flux", U(0_c) );
-        e->add( "potential", U(1_c) );
-        e->add( "potentialpp", PP(0_c) );
-        e->add( "flux.exact", v );
-        e->add( "potential.exact", q );
+        
+        e->step(t)->addRegions();
+        e->step(t)->add( "flux", U(0_c) );
+        e->step(t)->add( "potential", U(1_c) );
+        e->step(t)->add( "potentialpp", PP(0_c) );
+        e->step(t)->add( "flux.exact", v );
+        e->step(t)->add( "potential.exact", q );
         e->save();
         toc("export");
 
@@ -609,9 +612,10 @@ int main( int argc, char** argv )
     // end::env[]
     if ( ioption( "order" ) == 1 )
         return hdg_laplacian<FEELPP_DIM,1>();
+#if 0
     if ( ioption( "order" ) == 2 )
         return hdg_laplacian<FEELPP_DIM,2>();
-#if 0
+
 
     if ( ioption( "order" ) == 3 )
         return !hdg_laplacian<FEELPP_DIM,3>();
