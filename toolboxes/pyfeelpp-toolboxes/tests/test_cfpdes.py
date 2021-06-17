@@ -4,8 +4,8 @@ import feelpp.toolboxes as tb
 import feelpp.toolboxes.cfpdes as cfpdes
 import pandas as pd
 
-def test_cfpdes_square2d():
-    feelpp.Environment.setConfigFile('cfpdes/square/square2d.cfg')
+def test_cfpdes_cfd():
+    feelpp.Environment.setConfigFile('cfpdes/fluid/TurekHron/cfd2.cfg')
     f = cfpdes.cfpdes(dim=2)
     f.init()
     #f.printAndSaveInfo()
