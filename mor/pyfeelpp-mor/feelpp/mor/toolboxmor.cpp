@@ -27,14 +27,24 @@
 namespace py = pybind11;
 using namespace Feel;
 
-template<typename SpaceType>
+template<typename SpaceType, int Options>
 void defToolboxMor(py::module &m)
 {
     using namespace Feel;
-    using mor_t = ToolboxMor<SpaceType>;
+    using mor_t = ToolboxMor<SpaceType, Options>;
     static constexpr uint16_type nDim = SpaceType::nDim;
+    static const bool is_time_dependent = ((Options&TimeDependent)==TimeDependent);
+    static const bool is_linear = !((Options&NonLinear)==NonLinear);
+    static const bool by_block = (Options&UseBlock)==UseBlock;
 
-    std::string pyclass_name = std::string("ToolboxMor_") + std::to_string(nDim) + std::string("D");
+    std::string opt = "";
+    if( is_time_dependent )
+        opt += "_dt";
+    if( !is_linear )
+        opt += "_nl";
+    if( by_block )
+        opt += "_block";
+    std::string pyclass_name = std::string("ToolboxMor_") + std::to_string(nDim) + std::string("D") + opt;
     py::class_<mor_t,std::shared_ptr<mor_t>>(m,pyclass_name.c_str())
         .def(py::init<std::string const&>(),
              py::arg("prefix")=std::string(""),
@@ -88,9 +98,12 @@ PYBIND11_MODULE(_toolboxmor, m )
     using namespace Feel;
     using space_2d_type = FunctionSpace<Mesh<Simplex<2> >, bases<Lagrange<1, Scalar,Continuous,PointSetFekete> > >;
     using space_3d_type = FunctionSpace<Mesh<Simplex<3> >, bases<Lagrange<1, Scalar,Continuous,PointSetFekete> > >;
+    
 
-    defToolboxMor<space_2d_type>(m);
-    defToolboxMor<space_3d_type>(m);
+    defToolboxMor<space_2d_type, 0>(m);
+    defToolboxMor<space_2d_type, 0x1>(m);
+    defToolboxMor<space_3d_type, 0>(m);
+    defToolboxMor<space_3d_type, 0x1>(m);
 
     m.def("makeToolboxMorOptions", &makeToolboxMorOptions, "get options for the model" );
 
