@@ -174,12 +174,14 @@ int hdg_laplacian()
         auto cgXh = Pch<OrderP+1>(mesh);
         Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
         auto u = cgLaplacian( cgXh, std::tuple{k,f,p_exact,un,r_1,r_2} );
+#if defined(FEELPP_HAS_SYMPY)
         if ( u )        
             status_cg = check( checker( _name= "L2/H1 convergence cG", 
                                         _solution_key="p",
                                         _gradient_key="grad_p",
                                         _inputs=locals
                                        ), *u );
+#endif
         Feel::cout << "-- CG<" << OrderP+1 << "> done ----------------------------------------------------------\n";
     }
     auto u = Vh->element( "u" );
@@ -381,23 +383,26 @@ int hdg_laplacian()
 
     tic();
 
+    int status1 = 0, status2 = 0, status3 = 0;
+#if defined(FEELPP_HAS_SYMPY)
     bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
     solution_t s_t = has_dirichlet?solution_t::unique:solution_t::up_to_a_constant;
-    int status1 = check( checker( _name= "L2/H1 convergence of potential", 
-                                  _solution_key="p",
-                                  _gradient_key="grad_p",
-                                  _inputs=locals
-                                ), pp, s_t );
-    int status2 = check( checker( _name= "L2 convergence of the flux", 
-                                  _solution_key="u",
-                                  _inputs=locals
-                                ), up );
-    int status3 = check( checker( _name= "L2/H1 convergence of postprocessed potential", 
-                                  _solution_key="p",
-                                  _gradient_key="grad_p",
-                                  _inputs=locals
-                                ), ppp, s_t );    
+    status1 = check( checker( _name= "L2/H1 convergence of potential", 
+                              _solution_key="p",
+                              _gradient_key="grad_p",
+                              _inputs=locals
+                              ), pp, s_t );
+    status2 = check( checker( _name= "L2 convergence of the flux", 
+                              _solution_key="u",
+                              _inputs=locals
+                              ), up );
+    status3 = check( checker( _name= "L2/H1 convergence of postprocessed potential", 
+                              _solution_key="p",
+                              _gradient_key="grad_p",
+                              _inputs=locals
+                              ), ppp, s_t );    
     // end::check[]
+#endif
 
     return status_cg || status1 || status2 || status3;
 }
