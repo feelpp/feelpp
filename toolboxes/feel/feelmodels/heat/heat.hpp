@@ -289,9 +289,10 @@ class Heat : public ModelNumerical,
         {
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr(); // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dn_T
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields );
         }
         auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
