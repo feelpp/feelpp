@@ -17,11 +17,11 @@ makeToolboxMorOptions();
 FEELPP_EXPORT AboutData
 makeToolboxMorAbout( std::string const& str = "opusheat-tb" );
 
-template<typename SpaceType>
-class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceType>
+template<typename SpaceType, int Options = 0>
+class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceType, Options>
 {
-    using self_type = ToolboxMor<SpaceType>;
-    using super_type = ModelCrbBase< ParameterSpace<>, SpaceType>;
+    using self_type = ToolboxMor<SpaceType, Options>;
+    using super_type = ModelCrbBase< ParameterSpace<>, SpaceType, Options>;
 
   public:
 
