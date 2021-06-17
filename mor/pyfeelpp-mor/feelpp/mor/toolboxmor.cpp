@@ -51,6 +51,8 @@ void defToolboxMor(py::module &m)
         .def("setOnlineAssembleMDEIM", &mor_t::setOnlineAssembleMDEIM, "set the function to assemble MDEIM for the online model", py::arg("fct"))
         .def("getDEIMReducedMesh", &mor_t::getDEIMReducedMesh, "get the reduced mesh of DEIM" )
         .def("getMDEIMReducedMesh", &mor_t::getMDEIMReducedMesh, "get the reduced mesh of MDEIM" )
+        .def("parameterSpace", &mor_t::parameterSpace, "get the parameter space")
+        .def("computeAffineDecomposition", static_cast<typename mor_t::affine_decomposition_type (mor_t::*)()> (&mor_t::computeAffineDecomposition), "compute affine decomposition")
         ;
     std::string modelnew_name = std::string("toolboxmor_") + std::to_string(nDim) +std::string("d");
     m.def(modelnew_name.c_str(), []() { return std::make_shared<mor_t>(); }," return a pointer on model");
@@ -88,7 +90,7 @@ PYBIND11_MODULE(_toolboxmor, m )
     using space_3d_type = FunctionSpace<Mesh<Simplex<3> >, bases<Lagrange<1, Scalar,Continuous,PointSetFekete> > >;
 
     defToolboxMor<space_2d_type>(m);
-    defToolboxMor<space_2d_type>(m);
+    defToolboxMor<space_3d_type>(m);
 
     m.def("makeToolboxMorOptions", &makeToolboxMorOptions, "get options for the model" );
 
