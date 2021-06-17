@@ -56,8 +56,15 @@ model.setOnlineAssembleMDEIM(assembleOnlineMDEIM)
 
 model.postInitModel()
 model.setInitialized(True)
-crbmodel = crbmodel_toolboxmor_2d(model)
-crb = crb_toolboxmor_2d(crbmodel)
-crb.offline()
+
+Mq = model.getMqm()
+Aq = model.getAqm()
+Fq = model.getFqm()
+
+print(Aq)
+
+# crbmodel = crbmodel_toolboxmor_2d(model)
+# crb = crb_toolboxmor_2d(crbmodel)
+# crb.offline()
 
 print("cool")
