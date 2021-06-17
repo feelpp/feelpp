@@ -173,7 +173,7 @@ int hdg_laplacian()
         Feel::cout << "-- CG<" << OrderP+1 << "> starts ----------------------------------------------------------\n";
         auto cgXh = Pch<OrderP+1>(mesh);
         Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
-        auto u = cgLaplacian( cgXh, std::tuple{K,f,p_exact,un,r_1,r_2} );
+        auto u = cgLaplacian( cgXh, std::tuple{k,f,p_exact,un,r_1,r_2} );
         if ( u )        
             status_cg = check( checker( _name= "L2/H1 convergence cG", 
                                         _solution_key="p",
