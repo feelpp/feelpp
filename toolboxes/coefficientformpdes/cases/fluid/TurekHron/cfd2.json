@@ -1,0 +1,107 @@
+{
+    "Name": "Turek-Hron cfd2",
+    "ShortName": "Turek-Hron cfd2",
+    "Models":
+    {
+        "equations":[
+            {
+                "name":"momentum",
+                "unknown":
+                {
+                    "basis":"Pchv2",
+                    "name":"velocity",
+                    "symbol":"u"
+                }
+            },
+            {
+                "name":"mass",
+                "unknown":
+                {
+                    "basis":"Pch1",
+                    "name":"pressure",
+                    "symbol":"p"
+                }
+            }
+        ]
+    },
+    "Parameters":
+    {
+        "ubar":"1.0"
+    },
+    "Materials":
+    {
+        "fluid":
+        {
+            "markers":"Fluid",
+            "rho":1e3,
+            "mu":1,
+            "momentum_beta":"{rho*momentum_u_0,rho*momentum_u_1}:rho:momentum_u_0:momentum_u_1",
+            //"momentum_c":"1", // diffusion
+            //"momentum_gamma":"{mass_p,0,0,mass_p}:mass_p", // diffusion
+            "momentum_gamma":"{mass_p-2*mu*momentum_grad_u_00,-mu*(momentum_grad_u_01+momentum_grad_u_10),-mu*(momentum_grad_u_01+momentum_grad_u_10),mass_p-2*mu*momentum_grad_u_11}:mu:mass_p:momentum_grad_u_00:momentum_grad_u_10:momentum_grad_u_01:momentum_grad_u_11",
+            //"mass_gamma":"{momentum_u_0,momentum_u_1}:momentum_u_0:momentum_u_1" // div u
+            "mass_f":"-(momentum_grad_u_00+momentum_grad_u_11):momentum_grad_u_00:momentum_grad_u_11" // div u 
+        }
+    },
+    "BoundaryConditions":
+    {
+        "momentum":
+        {
+            "Dirichlet":
+            {
+                "inlet": {
+                    "expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y),0}:ubar:y"
+                },
+                "wall": {
+                    "markers": ["wall1","wall2"],
+                    "expr":"{0,0}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["momentum.velocity","mass.pressure","pid"]
+            },
+            "Measures":
+            {
+                "Statistics":
+                {
+                    "drag":
+                    {
+                        "type":"integrate",
+                        "expr":"(-mass_p + 2*materials_mu*momentum_grad_u_00)*nx + (materials_mu*(momentum_grad_u_01+momentum_grad_u_10))*ny:mass_p:momentum_grad_u_00:momentum_grad_u_01:momentum_grad_u_10:materials_mu:nx:ny",
+                        "markers":"wall2"
+                    },
+                    "lift":
+                    {
+                        "type":"integrate",
+                        "expr":"(-mass_p + 2*materials_mu*momentum_grad_u_11)*ny + (materials_mu*(momentum_grad_u_01+momentum_grad_u_10))*nx:mass_p:momentum_grad_u_11:momentum_grad_u_01:momentum_grad_u_10:materials_mu:nx:ny",
+                        "markers":"wall2"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Statistics_lift_integrate":
+                    {
+                        "value":-10.53,
+                        "tolerance":1e-1
+                    },
+                    "Statistics_drag_integrate":
+                    {
+                        "value":-136.7,
+                        "tolerance":1e-1
+                    }
+                }
+            }
+        }
+    }
+}
