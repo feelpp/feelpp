@@ -66,10 +66,10 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
     sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag ) override;
     vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag ) override;
 
-    typename super_type::betaq_type
-    computeBetaQ( parameter_type const& mu , double time , bool only_terms_time_dependent=false ) override;
-    typename super_type::betaq_type
-    computeBetaQ( parameter_type const& mu ) override;
+    typename super_type::betaqm_type
+    computeBetaQm( parameter_type const& mu , double time , bool only_terms_time_dependent=false ) override;
+    typename super_type::betaqm_type
+    computeBetaQm( parameter_type const& mu ) override;
 
     double output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false ) override;
 
@@ -85,38 +85,38 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
     void updateBetaQ_impl( parameter_type const& mu , double time , bool only_terms_time_dependent );
 
     template<typename ModelType>
-    typename super_type::betaq_type
+    typename super_type::betaqm_type
     computeBetaQ_impl( parameter_type const& mu , double time , bool only_terms_time_dependent=false,
                        typename std::enable_if< !ModelType::is_time_dependent >::type* = nullptr )
         {
             this->updateBetaQ_impl( mu,time,only_terms_time_dependent);
-            return boost::make_tuple( this->M_betaAq, this->M_betaFq );
+            return boost::make_tuple( this->M_betaAqm, this->M_betaFqm );
         }
 
     template<typename ModelType>
-    typename super_type::betaq_type
+    typename super_type::betaqm_type
     computeBetaQ_impl( parameter_type const& mu , double time , bool only_terms_time_dependent=false,
                        typename std::enable_if< ModelType::is_time_dependent >::type* = nullptr )
         {
             this->updateBetaQ_impl( mu,time,only_terms_time_dependent);
-            return boost::make_tuple( this->M_betaMq, this->M_betaAq, this->M_betaFq );
+            return boost::make_tuple( this->M_betaMqm, this->M_betaAqm, this->M_betaFqm );
         }
 
 
     template<typename ModelType>
-    typename super_type::betaq_type
+    typename super_type::betaqm_type
     computeBetaQ_impl( parameter_type const& mu, typename std::enable_if< !ModelType::is_time_dependent >::type* = nullptr )
         {
             this->updateBetaQ_impl( mu,0,false);
-            return boost::make_tuple( this->M_betaAq, this->M_betaFq );
+            return boost::make_tuple( this->M_betaAqm, this->M_betaFqm );
         }
 
     template<typename ModelType>
-    typename super_type::betaq_type
+    typename super_type::betaqm_type
     computeBetaQ_impl( parameter_type const& mu, typename std::enable_if< ModelType::is_time_dependent >::type* = nullptr )
         {
             this->updateBetaQ_impl( mu,0,false);
-            return boost::make_tuple( this->M_betaMq, this->M_betaAq, this->M_betaFq );
+            return boost::make_tuple( this->M_betaMqm, this->M_betaAqm, this->M_betaFqm );
         }
 
     int Qa();

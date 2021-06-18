@@ -57,11 +57,24 @@ model.setOnlineAssembleMDEIM(assembleOnlineMDEIM)
 model.postInitModel()
 model.setInitialized(True)
 
-Mq = model.getMqm()
-Aq = model.getAqm()
-Fq = model.getFqm()
+[Aq, Fq] = model.getAffineDecomposition()
 
+print("Aq")
 print(Aq)
+print("Fq")
+print(Fq)
+
+Dmu = model.parameterSpace()
+mu = Dmu.element(True, False)
+
+[betaA, betaF] = model.computeBetaQm(mu)
+
+print("mu")
+print(mu)
+print("betaA")
+print(betaA)
+print("betaF")
+print(betaF)
 
 # crbmodel = crbmodel_toolboxmor_2d(model)
 # crb = crb_toolboxmor_2d(crbmodel)
