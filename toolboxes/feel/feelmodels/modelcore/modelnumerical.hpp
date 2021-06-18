@@ -287,9 +287,10 @@ class ModelNumerical : virtual public ModelBase,
                     return std::decay_t<decltype(this->modelProperties().parameters().symbolsExpr())>{};
             }
 
+        template <typename MeshType, bool AddFields = true>
         auto symbolsExprMeshes() const
             {
-                return super_model_meshes_type::symbolsExpr();
+                return super_model_meshes_type::template symbolsExpr<MeshType,AddFields>();
             }
 
 

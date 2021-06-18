@@ -1,8 +1,8 @@
 #ifndef _MIXEDPOISSONELASTICITY_HPP
 #define _MIXEDPOISSONELASTICITY_HPP
 
-#include <toolboxes/feel/feelmodels/hdg/mixedpoisson.hpp>
-#include <toolboxes/feel/feelmodels/hdg/mixedelasticity.hpp>
+#include <feel/feelmodels/hdg/mixedpoisson.hpp>
+#include <feel/feelmodels/hdg/mixedelasticity.hpp>
 
 namespace Feel
 {
