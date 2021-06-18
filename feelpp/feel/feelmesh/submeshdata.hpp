@@ -29,14 +29,8 @@
 #ifndef __SubMeshData_H
 #define __SubMeshData_H 1
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wredeclared-class-member"
-#endif
-#include <boost/bimap.hpp>
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#include <optional>
+#include <feel/feelcore/bimap.hpp>
 
 namespace Feel
 {
@@ -51,7 +45,7 @@ template <typename IndexT> class MeshBase;
  */
 
 template<typename IndexT = uint32_type>
-class SubMeshData
+class SubMeshData : public bimap<IndexT, IndexT>
 {
 public:
     /** @name Typedefs
@@ -60,20 +54,18 @@ public:
     using mesh_type = const MeshBase<IndexT>;
     using mesh_ptrtype = std::shared_ptr<mesh_type> ;
     using index_type = IndexT;
-    using bm_type = boost::bimap< index_type, index_type >;
+    
     //@}
 
     /** @name Constructors, destructor
      */
     //@{
-    template<typename MeshType>
-    explicit SubMeshData( std::shared_ptr<MeshType> m ) : mesh( m )
-        {}
 
-    ~SubMeshData()
-        {
-            VLOG(3) << "delete sub mesh data\n";
-        }
+    SubMeshData();
+
+    explicit SubMeshData( mesh_ptrtype m );
+
+    ~SubMeshData();
 
     //MeshBase* meshBase() { return dynamic_cast<MeshBase<> *>( mesh.get() ); }
     //MeshBase<> const* meshBase() const { return dynamic_cast<MeshBase<> const*>( mesh.get() ); }
@@ -83,10 +75,6 @@ public:
 
     // parent mesh
     mesh_ptrtype mesh;
-
-    // bi-directional map
-    bm_type bm;
-
 };
 } // Feel
 #endif /* __SubMeshData_H */
