@@ -12,8 +12,8 @@
         "Omega":
         {
             "name":"porousmedium",
-            "cond":"-K:K",
-            "k":"-K:K" 
+            // "k":"-K:K" !!! not working
+            "k": "-1"
         }
     },
     "BoundaryConditions":
