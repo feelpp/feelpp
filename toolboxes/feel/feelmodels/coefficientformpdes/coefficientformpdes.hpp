@@ -369,7 +369,7 @@ public :
         {
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
-            auto seMeshes = this->symbolsExprMeshes();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
             return Feel::vf::symbolsExpr( seToolbox,seParam,seMeshes,seMat,seFields );
