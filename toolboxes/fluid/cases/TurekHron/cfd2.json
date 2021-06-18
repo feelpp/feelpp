@@ -64,6 +64,13 @@
         {
             "fields":["velocity","pressure","pid"]
         },
+        "Save":
+        {
+            "Fields":
+            {
+                "names":"velocity"
+            }
+        },
         "Measures":
         {
             "Forces":"wall2",
