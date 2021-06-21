@@ -216,12 +216,13 @@ public :
         std::pair<iterator, bool>
         add( node_type const& t )
         {
+            int ptIdInCtx = M_t.size();
             M_t.push_back( t );
 
             std::pair<iterator, bool> ret = std::make_pair(this->end(),false);
 
             //rank of the current processor
-            rank_type proc_number = M_Xh->mesh()->worldComm().globalRank();
+            rank_type currentProcRank = M_Xh->mesh()->worldComm().globalRank();
             //total number of processors
             rank_type nprocs = M_Xh->mesh()->worldComm().globalSize();
 
@@ -236,20 +237,47 @@ public :
             bool found = found_points[0];
 
             std::vector<int> found_pt( nprocs, 0 );
+            if( found )
+                found_pt[currentProcRank]=1;
             std::vector<int> global_found_pt( nprocs, 0 );
+            if ( nprocs > 1 )
+                mpi::all_reduce( M_Xh->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
+            else
+                global_found_pt[ 0 ] = found_pt[ 0 ];
+            // only one proc has the point
+            bool findOneProcess = false;
+            for ( rank_type p=0;p<nprocs;++p )
+            {
+                if ( findOneProcess )
+                    global_found_pt[p] = 0;
+                if ( global_found_pt[p] == 1 )
+                    findOneProcess=true;
+            }
+            if ( global_found_pt[ currentProcRank ] == 1 ) //we are on the proc that have the searched point
+            {
+                auto it = loc->result_analysis_begin();
+                auto en = loc->result_analysis_end();
+                DCHECK( boost::next(it) == en ) << "Logic problem in finding one point in the mesh\n";
+                auto eid = it->first;
+                auto xref = boost::get<1>( *(it->second.begin()) );
+                DVLOG(2) << "found point " << t << " in element " << eid << " on proc "<<currentProcRank
+                         << "  - reference coordinates " << xref;
 
+                M_eltToUpdate[eid].push_back( std::make_tuple(ptIdInCtx, xref ) );
+            }
+#if 0
             if( found ) //we are on the proc that have the searched point
             {
 
-                found_pt[proc_number]=1;
+                found_pt[currentProcRank]=1;
 
                 auto it = loc->result_analysis_begin();
                 auto en = loc->result_analysis_end();
                 DCHECK( boost::next(it) == en ) << "Logic problem in finding one point in the mesh\n";
                 auto eid = it->first;
                 auto xref = boost::get<1>( *(it->second.begin()) );
-                DVLOG(2) << "found point " << t << " in element " << eid << " on proc "<<proc_number<<"\n";
-                DVLOG(2) << "  - reference coordinates " << xref << "\n";
+                DVLOG(2) << "found point " << t << " in element " << eid << " on proc "<<currentProcRank
+                         << "  - reference coordinates " << xref;
 
                 typename mesh_type::gm_type::precompute_type::matrix_node_t_type p(mesh_type::nDim,1);
 
@@ -277,7 +305,7 @@ public :
                     mpi::all_reduce( M_Xh->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
 
             }//not found case
-
+#endif
             //verify that the point is on a proc
             bool found_on_a_proc = false;
             for (int i = 0 ; i < global_found_pt.size(); ++i )
@@ -291,14 +319,54 @@ public :
                 }
             }
             CHECK( found_on_a_proc ) << "the point " << t << " was not found ! \n";
-
+            
+            //this->updateForUse();// TODO!!!!
+            
             // update geo context for each process + define context mesh
-            int mynumber = M_t.size()-1;
-            this->syncCtx( mynumber );
+            if ( false )
+            {
+                int mynumber = M_t.size()-1;
+                this->syncCtx( mynumber );
+            }
 
             return ret;
         }
 
+
+        void updateForUse()
+        {
+            //M_eltToUpdate[eid].push_back( std::make_tuple(ptIdInCtx, xref ) );
+            for ( auto const& [eid,data] : M_eltToUpdate )
+            {
+                typename mesh_type::gm_type::precompute_type::matrix_node_t_type xrefs(mesh_type::nDim,data.size());
+                int k=0;
+                std::vector<index_type> ptIds(data.size());
+                for ( auto const& [ptIdInCtx,xref] : data )
+                {
+                    ublas::column( xrefs, k ) = xref;
+                    ptIds[k] = ptIdInCtx;
+                }
+                // compute for each basis function in reference element its
+                // value at \hat{t} in reference element
+                auto gmpc = M_Xh->mesh()->gm()->preCompute( M_Xh->mesh()->gm(), xrefs );
+                DVLOG(2) << "build precompute data structure for geometric mapping\n";
+                // build geometric mapping
+                auto gmc = M_Xh->mesh()->gm()->template context<gmc_context_v>( M_Xh->mesh()->element( eid ), gmpc );
+                DVLOG(2) << "build geometric mapping context\n";
+
+                int number = this->size();//M_t.size()-1;
+                /*ret =*/ this->insert( std::make_pair( number , std::make_shared<ContextGeometric>( M_Xh, gmc ) ) );
+
+                M_ctxIdToPointIds.emplace( number, std::move(ptIds) );
+            }
+
+            M_eltToUpdate.clear();
+
+        }
+
+
+        // TODO : remove this and move into inherits
+        std::map<int,std::vector<index_type>> const& ctxIdToPointIds() const { return M_ctxIdToPointIds; }
 
         template <size_type CTX>
         void updateGmcContext( size_type dynctx = 0 )
@@ -401,6 +469,11 @@ public :
         std::vector<int> M_t_proc;//point number i is on proc M_t_proc[i]
         mesh_ptrtype M_meshGeoContext;
         bool M_ctxHaveBeenMpiBroadcasted;
+
+        //! internal container used by updateForUse
+        std::map<size_type, std::vector<std::tuple<size_type, node_type> > > M_eltToUpdate;
+
+        std::map<int,std::vector<index_type>> M_ctxIdToPointIds;
 
     };
 

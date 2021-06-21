@@ -308,6 +308,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( version )
 
     BOOST_PARAMETER_NAME( max_points_used )
+    BOOST_PARAMETER_NAME( points_used )
     BOOST_PARAMETER_NAME( projection )
 
     BOOST_PARAMETER_NAME( bc )
