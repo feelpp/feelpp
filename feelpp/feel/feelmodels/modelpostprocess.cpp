@@ -221,8 +221,8 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
 {
 
     // fields is necessary
-    if ( !M_p.get_child_optional("fields") )
-        return;
+    // if ( !M_p.get_child_optional("fields") &&  )
+    //     return;
 
     bool hasCoord = (M_p.get_child_optional("coord"))?true:false;
     bool hasMarker = (M_p.get_child_optional("marker"))?true:false;
@@ -276,18 +276,21 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
         }
     } // hasCoord
 
-    // store fields name
-    std::vector<std::string> fieldList = as_vector<std::string>( M_p, "fields" );
-    if ( fieldList.empty() )
+    // fields name
+    if ( auto fieldsTree = M_p.get_child_optional("fields") )
     {
-        std::string fieldUnique = indexes.replace( M_p.get<std::string>( "fields" ) );
-        if ( !fieldUnique.empty() )
-            fieldList = { fieldUnique };
-    }
-    for( std::string const& field : fieldList )
-    {
-        // std::cout << "add field = " << field << "\n";
-        this->addFields( field );
+        std::vector<std::string> fieldList = as_vector<std::string>( M_p, "fields" );
+        if ( fieldList.empty() )
+        {
+            std::string fieldUnique = indexes.replace( M_p.get<std::string>( "fields" ) );
+            if ( !fieldUnique.empty() )
+                fieldList = { fieldUnique };
+        }
+        for( std::string const& field : fieldList )
+        {
+            // std::cout << "add field = " << field << "\n";
+            this->addFields( field );
+        }
     }
 
     // expressions
@@ -550,7 +553,7 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
                     ModelPostprocessPointPosition myPpPtPos( this->worldCommPtr() );
                     myPpPtPos.setDirectoryLibExpr( M_directoryLibExpr );
                     myPpPtPos.setPTree( evalPoint.second, indexes.replace( evalPoint.first ), indexes );
-                    if ( !myPpPtPos.fields().empty() )
+                    if ( !myPpPtPos.fields().empty() || !myPpPtPos.expressions().empty() )
                         M_measuresPoint[name].push_back( myPpPtPos );
                 }
             }
