@@ -1,7 +1,7 @@
 import feelpp
 import sys
 import pytest
-
+from petsc4py import PETSc
 
 def test_alg():
     wc=feelpp.Environment.worldCommPtr()
@@ -11,12 +11,28 @@ def test_alg():
     assert(v.size()==10)
 
     
+    
     dm = feelpp.DataMap(wc)
     if feelpp.Environment.isMasterRank():
         print("dm size:", dm.nDof())
     assert(dm.nDof()==0)
 
-    vec=v.vec()
+    w=v.vec()
+
+    from math import sqrt
+    w.set(1)
+    n1 = w.norm(PETSc.NormType.NORM_1)
+    n2 = w.norm(PETSc.NormType.NORM_2)
+    ni = w.norm(PETSc.NormType.NORM_INFINITY)
+
+    assert(n1 == w.getSize())
+    assert(n2 == sqrt(w.getSize()))
+
+    # scalar product with itself
+    d=w.dot(w)
+    assert(abs(d) == w.getSize())
+
+
     return
     dmrow=feelpp.DataMap(10, 10, wc)
     if feelpp.Environment.isMasterRank():
