@@ -49,6 +49,7 @@ inline
 po::options_description
 makeOptions()
 {
+    // clang-format off
     po::options_description hdgoptions( "HDG options" );
     hdgoptions.add_options()
         ( "k", po::value<std::string>()->default_value( "1" ), "diffusion coefficient" )
@@ -72,6 +73,7 @@ makeOptions()
         ( "time-final", po::value<double>()->default_value( 10. ), "final time" )
         ( "initial-condition", po::value<std::string>()->default_value( "0" ), "initial condition")
         ;
+    // clang-format on
     return hdgoptions;
 }
  
@@ -272,10 +274,11 @@ int hdg_laplacian()
     auto pnm1 = Wh->element( "p" );
     auto e = exporter( _mesh = mesh );
     e->setMesh( mesh );
+    auto pinit = expr( soption( "initial-condition" ) );
+    pinit.setParameterValues( { "t", t } );
+    pnm1.on( _range = elements( mesh ), _expr = pinit );
 
-    pnm1.on( _range=elements(mesh), _expr=expr(soption( "initial-condition" )) );
-
-    for (; t < tmax; t += dt)
+    for (t=dt; t < tmax+dt; t += dt)
     {
         if( Environment::worldComm().isMasterRank() )
         {
@@ -285,6 +288,17 @@ int hdg_laplacian()
         }
         rhs.zero();
         a.zero();
+
+        p_exact.setParameterValues({"t",t});
+        u_exact.setParameterValues({"t",t});
+        k.setParameterValues({"t",t});
+        un.setParameterValues({"t",t});
+        f.setParameterValues({"t",t});
+        g.setParameterValues({"t",t});
+        r_1.setParameterValues({"t",t}); 
+        r_2.setParameterValues({"t",t}); 
+        J_exact.setParameterValues({"t",t});
+
         tic();
         // Building the RHS
         //
@@ -489,7 +503,7 @@ int hdg_laplacian()
         auto up = U(0_c);
         auto pp = U(1_c);
 
-        pnm1 = pn;
+        pnm1 = pp;
         pn = pp;
 
         
@@ -573,19 +587,22 @@ int hdg_laplacian()
         // tag::check[]
         bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
         solution_t s_t = has_dirichlet?solution_t::unique:solution_t::up_to_a_constant;
-        int status1 = check( checker( _name= "L2/H1 convergence of potential", 
-                                    _solution_key="p",
-                                    _gradient_key="grad_p",
-                                    _inputs=locals
-                                    ), pp, s_t );
-        int status2 = check( checker( _name= "L2 convergence of the flux", 
-                                    _solution_key="u",
-                                    _inputs=locals
-                                    ), up );
+        int status1 = check( checker( _name = "L2/H1 convergence of potential",
+                                      _solution_key = "p",
+                                      _gradient_key = "grad_p",
+                                      _inputs = locals,
+                                      _parameter_values = std::map<std::string, double>{ { "t", t } } ),
+                             pp, s_t );
+        int status2 = check( checker( _name = "L2 convergence of the flux",
+                                      _solution_key = "u",
+                                      _inputs = locals,
+                                      _parameter_values = std::map<std::string, double>{ { "t", t } } ),
+                             up );
         int status3 = check( checker( _name= "L2/H1 convergence of postprocessed potential", 
                                     _solution_key="p",
                                     _gradient_key="grad_p",
-                                    _inputs=locals
+                                    _inputs=locals,
+                                    _parameter_values=std::map<std::string,double>{{"t",t}}
                                     ), ppp, s_t );
         status_time |= (status1 || status2 || status3);
     }
