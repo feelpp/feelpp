@@ -19,6 +19,13 @@ def has_mpi4py():
         return False
 
 
+@pytest.fixture
+def has_petsc4py():
+    try:
+        import petsc4py
+        return True
+    except ImportError:
+        return False
 
 class InitFeelpp:
     def __init__(self):
