@@ -35,8 +35,8 @@ u=flux;
 J=tensorcontraction(tensorproduct(u,u),(0,1))/k;
 
 if compute_pde_coefficients=='true':
-    un=n(flux,1,ns);
-    f=div(flux,s);
+    un=n(flux,1,ns)
+    f = div(flux, s) + dt(p)
     g=p
     r_2=un-r_1*p
 else:
