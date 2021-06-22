@@ -242,6 +242,8 @@ PYBIND11_MODULE( _mor, m )
         .def("parameterName", &ElementP::parameterName, "return the i-th name ", py::arg("i"))
         .def("size", &ElementP::size, "return the size of the parameters" )
         .def("__call__", static_cast<double& (ElementP::*)(int)>(&ElementP::coeff), "return the ith parameter", py::arg("i") )
+        .def("setParameter", static_cast<void (ElementP::*)(int, double)>(&ElementP::setParameter), "set the i-th to the value", py::arg("i"), py::arg("value"))
+        .def("setParameterNamed", static_cast<void (ElementP::*)(std::string, double)>(&ElementP::setParameterNamed), "set the named parameter to the value", py::arg("name"), py::arg("value"))
         ;
 
     //!
