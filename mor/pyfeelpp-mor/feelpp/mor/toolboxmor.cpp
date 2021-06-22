@@ -18,6 +18,7 @@
 //!
 //!
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include <pybind11/functional.h>
 // #include <pybind11/eigen.h>
 
@@ -36,6 +37,7 @@ void defToolboxMor(py::module &m)
     static const bool is_time_dependent = ((Options&TimeDependent)==TimeDependent);
     static const bool is_linear = !((Options&NonLinear)==NonLinear);
     static const bool by_block = (Options&UseBlock)==UseBlock;
+    using affine_decomposition_type = typename mor_t::affine_decomposition_type;
 
     std::string opt = "";
     if( is_time_dependent )
@@ -61,6 +63,47 @@ void defToolboxMor(py::module &m)
         .def("setOnlineAssembleMDEIM", &mor_t::setOnlineAssembleMDEIM, "set the function to assemble MDEIM for the online model", py::arg("fct"))
         .def("getDEIMReducedMesh", &mor_t::getDEIMReducedMesh, "get the reduced mesh of DEIM" )
         .def("getMDEIMReducedMesh", &mor_t::getMDEIMReducedMesh, "get the reduced mesh of MDEIM" )
+        .def("parameterSpace", &mor_t::parameterSpace, "get the parameter space" )
+        .def("getAffineDecomposition",
+             [](mor_t& self) {
+                 auto AF = self.computeAffineDecomposition();
+                 if constexpr( is_time_dependent ) {
+                     auto Mqm = AF.template get<0>();
+                     auto Aqm = AF.template get<1>();
+                     auto Fqm = AF.template get<2>();
+                     return std::make_tuple(Mqm, Aqm, Fqm);
+                 } else {
+                     auto Aqm = AF.template get<0>();
+                     auto Fqm = AF.template get<1>();
+                     return std::make_tuple(Aqm, Fqm);
+                 }
+             })
+        .def("computeBetaQm", [](mor_t& self, ParameterSpaceX::Element const& mu) {
+                                 auto betaB = self.computeBetaQm(mu);
+                                 if constexpr( is_time_dependent ) {
+                                     auto betaMqm = betaB.template get<0>();
+                                     auto betaAqm = betaB.template get<1>();
+                                     auto betaFqm = betaB.template get<2>();
+                                     return std::make_tuple(betaMqm, betaAqm, betaFqm);
+                                 } else {
+                                     auto betaAqm = betaB.template get<0>();
+                                     auto betaFqm = betaB.template get<1>();
+                                     return std::make_tuple(betaAqm, betaFqm);
+                                 }
+                              }, "compute the coefficients for parameter mu" )
+        .def("computeBetaQm", [](mor_t& self, ParameterSpaceX::Element const& mu, double time) {
+                                 auto betaB = self.computeBetaQm(mu, time);
+                                 if constexpr( is_time_dependent ){
+                                     auto betaMqm = betaB.template get<0>();
+                                     auto betaAqm = betaB.template get<1>();
+                                     auto betaFqm = betaB.template get<2>();
+                                     return std::make_tuple(betaMqm, betaAqm, betaFqm);
+                                 } else {
+                                     auto betaAqm = betaB.template get<0>();
+                                     auto betaFqm = betaB.template get<1>();
+                                     return std::make_tuple(betaAqm, betaFqm);
+                                 }
+                              }, "compute the coefficients for parameter mu" )
         ;
     std::string modelnew_name = std::string("toolboxmor_") + std::to_string(nDim) +std::string("d");
     m.def(modelnew_name.c_str(), []() { return std::make_shared<mor_t>(); }," return a pointer on model");

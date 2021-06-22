@@ -258,14 +258,14 @@ ToolboxMor<SpaceType, Options>::updateBetaQ_impl( parameter_type const& mu , dou
 
 
 template<typename SpaceType, int Options>
-typename ToolboxMor<SpaceType, Options>::super_type::betaq_type
-ToolboxMor<SpaceType, Options>::computeBetaQ( parameter_type const& mu , double time , bool only_terms_time_dependent )
+typename ToolboxMor<SpaceType, Options>::super_type::betaqm_type
+ToolboxMor<SpaceType, Options>::computeBetaQm( parameter_type const& mu , double time , bool only_terms_time_dependent )
 {
     return computeBetaQ_impl<super_type>( mu, time, only_terms_time_dependent );
 }
 template<typename SpaceType, int Options>
-typename ToolboxMor<SpaceType, Options>::super_type::betaq_type
-ToolboxMor<SpaceType, Options>::computeBetaQ( parameter_type const& mu )
+typename ToolboxMor<SpaceType, Options>::super_type::betaqm_type
+ToolboxMor<SpaceType, Options>::computeBetaQm( parameter_type const& mu )
 {
     return computeBetaQ_impl<super_type>( mu );
 }
