@@ -73,9 +73,9 @@ ThermoElectricNL::ThermoElectricNL( std::string prefix ) :
     M_modelProps = std::make_shared<prop_type>(M_propertyPath);
     M_modelProps->enableBoundaryConditions2();
 
-    M_materials = M_modelProps->materials().materialWithPhysic(std::vector<std::string>({"electric","thermic"}));
+    M_materials = M_modelProps->materials().materialWithPhysic(std::vector<std::string>({"electric","heat"}));
     M_elecMaterials = M_modelProps->materials().materialWithPhysic("electric");
-    M_therMaterials = M_modelProps->materials().materialWithPhysic("thermic");
+    M_therMaterials = M_modelProps->materials().materialWithPhysic("heat");
     M_nbElecMat = M_elecMaterials.size();
     M_nbTherMat = M_therMaterials.size();
     auto bdConditions = M_modelProps->boundaryConditions2();
@@ -85,17 +85,14 @@ ThermoElectricNL::ThermoElectricNL( std::string prefix ) :
     M_nbTempRobin = temperatureRobin.size();
 
     auto parameters = M_modelProps->parameters();
+    auto parameterValues = parameters.toParameterValues();
+    parameterValues["heat_T"] = 293.;
     M_sigmaMax = 0;
     for( auto const& [name,mat] : M_elecMaterials )
     {
-        auto sigmaP = parameters[mat.getString("misc.sigmaKey")];
-        if( sigmaP.hasMinMax() )
-        {
-            if( sigmaP.min() > M_sigmaMax )
-                M_sigmaMax = sigmaP.min();
-        }
-        else if( sigmaP.value() > M_sigmaMax )
-            M_sigmaMax = sigmaP.value();
+        auto sigma = mat.getScalar("sigma", parameterValues).evaluate()(0,0);
+        if( sigma > M_sigmaMax )
+            M_sigmaMax = sigma;
     }
     Feel::cout << "sigmaMax=" << M_sigmaMax << std::endl;
 }
@@ -264,7 +261,7 @@ ThermoElectricNL::functionspace_type::mesh_support_vector_type
 ThermoElectricNL::functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
 {
     auto elecDomain = markedelements(mesh, M_materials.markersWithPhysic("electric"));
-    auto therDomain = markedelements(mesh, M_materials.markersWithPhysic("thermic"));
+    auto therDomain = markedelements(mesh, M_materials.markersWithPhysic("heat"));
     auto suppElec = std::make_shared<MeshSupport<mesh_type>>(mesh,elecDomain);
     auto suppTher = std::make_shared<MeshSupport<mesh_type>>(mesh,therDomain);
     return fusion::make_vector(suppElec,suppTher);
@@ -316,7 +313,7 @@ void ThermoElectricNL::initModel()
     auto VTInit = this->solveLinear(mu);
     M_InitialGuess[0][0]->template element<0>() = VTInit.template element<0>();
     M_InitialGuess[1][0]->template element<1>() = VTInit.template element<1>();
-#if 1
+#if 0
     auto ex = exporter(_mesh=M_mesh, _name="initial-guess");
     ex->add("V_Init",VTInit.template element<0>() );
     ex->add("T_Init",VTInit.template element<1>() );
@@ -415,17 +412,29 @@ void ThermoElectricNL::initModel()
     }
     else
     {
+        auto parameterValues = parameters.toParameterValues();
+        // std::vector<std::pair<std::string, Expr<Cst<boost::reference_wrapper<double> > >>> parameterRefs;
+        // for( auto const& [name, param] : parameters )
+        // {
+        //     if( param.hasMinMax() )
+        //     {
+        //         parameterValues.erase(name);
+        //         parameterRefs.push_back(std::make_pair(name, cst_ref(M_mu.parameterNamed(name))));
+        //     }
+        // }
+        // auto se = symbolsExpr( symbolExpr( "heat_T", _e1 ), symbolExpr(parameterRefs) );
+
         // eim
-        auto T0 = cst(293.0);
-        auto L = cst_ref(M_mu.parameterNamed("L"));
+        auto T0 = cst(parameters["T0"].value());
         i = 0;
         for( auto const& [key,mat] : M_therMaterials )
         {
-            auto name = "eim_k_"+key;
-            auto sigma0 = cst_ref(M_mu.parameterNamed(mat.getString("misc.sigmaKey")));
-            auto alpha = cst_ref(M_mu.parameterNamed(mat.getString("misc.alphaKey")));
-            auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
-            auto k = sigma*L*_e1;
+            auto name = "eim_k_"+algorithm::to_lower_copy(key);
+            auto k0 = cst(parameters[mat.getString("misc.kKey")].value());
+            auto alpha = cst(parameters[mat.getString("misc.alphaKey")].value());
+            auto k = k0*_e1/((1+alpha*(_e1-T0))*T0);
+            // auto k1 = expr(mat.getString("k"), parameterValues);
+            // auto k = expr(k1, se);
             auto Eh = eim_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, mat.meshMarkers()) );
 
             auto eim_k = eim( _model=std::dynamic_pointer_cast<ThermoElectricNL>(this->shared_from_this() ),
@@ -442,10 +451,12 @@ void ThermoElectricNL::initModel()
 
         for( auto const& [key,mat] : M_elecMaterials )
         {
-            auto name = "eim_sigma_"+key;
-            auto sigma0 = cst_ref(M_mu.parameterNamed(mat.getString("misc.sigmaKey")));
-            auto alpha = cst_ref(M_mu.parameterNamed(mat.getString("misc.alphaKey")));
-            auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
+            auto name = "eim_sigma_"+algorithm::to_lower_copy(key);
+            auto sigma0 = cst(parameters[mat.getString("misc.sigmaKey")].value());
+            auto alpha = cst(parameters[mat.getString("misc.alphaKey")].value());
+            auto sigma = sigma0/(1+alpha*(_e1-T0));
+            // auto sigma1 = expr(mat.getString("sigma"), parameterValues);
+            // auto sigma = expr(sigma1, se);
             auto Eh = eim_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, mat.meshMarkers()) );
             auto eim_sigma = eim( _model=std::dynamic_pointer_cast<ThermoElectricNL>(this->shared_from_this() ),
                                   _element=M_u.template element<1>(),
@@ -501,6 +512,19 @@ void ThermoElectricNL::initModel()
 void ThermoElectricNL::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
 {
     Feel::cout << "setup specificity model" << std::endl;
+    auto parameters = M_modelProps->parameters();
+    auto parameterValues = parameters.toParameterValues();
+    // std::vector<std::pair<std::string, Expr<Cst<boost::reference_wrapper<double> > >>> parameterRefs;
+    // for( auto const& [name, param] : parameters )
+    // {
+    //     if( param.hasMinMax() )
+    //     {
+    //         parameterValues.erase(name);
+    //         parameterRefs.push_back(std::make_pair(name, cst_ref(M_mu.parameterNamed(name))));
+    //     }
+    // }
+    // auto se = symbolsExpr( symbolExpr( "heat_T", _e1 ), symbolExpr(parameterRefs) );
+
     auto const& ptreeEim = ptree.get_child( "eim" );
     this->clearScalarContinuousEim();
     this->clearScalarDiscontinuousEim();
@@ -509,11 +533,16 @@ void ThermoElectricNL::setupSpecificityModel( boost::property_tree::ptree const&
     int i = 0;
     for( auto const& [key,mat] : M_therMaterials )
     {
-        auto name = "eim_k_"+key;
-        auto sigma0 = cst_ref(M_mu.parameterNamed(mat.getString("misc.sigmaKey")));
-        auto alpha = cst_ref(M_mu.parameterNamed(mat.getString("misc.alphaKey")));
-        auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
-        auto k = sigma*L*_e1;
+        auto name = "eim_k_"+algorithm::to_lower_copy(key);
+        auto k0 = cst(parameters[mat.getString("misc.kKey")].value());
+        auto alpha = cst(parameters[mat.getString("misc.alphaKey")].value());
+        auto k = k0*_e1/((1+alpha*(_e1-T0))*T0);
+        // auto k1 = expr(mat.getString("k"), parameterValues);
+        // auto k = expr(k1, se);
+        // auto sigma0 = cst_ref(M_mu.parameterNamed(mat.getString("misc.sigmaKey")));
+        // auto alpha = cst_ref(M_mu.parameterNamed(mat.getString("misc.alphaKey")));
+        // auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
+        // auto k = sigma*L*_e1;
         eim_space_ptrtype Eh;
         auto const& ptreeEimK = ptreeEim.get_child( name );
         std::string dbNameEimK = ptreeEimK.template get<std::string>( "database-filename" );
@@ -532,10 +561,15 @@ void ThermoElectricNL::setupSpecificityModel( boost::property_tree::ptree const&
 
     for( auto const& [key,mat] : M_elecMaterials )
     {
-        auto name = "eim_sigma_"+key;
-        auto sigma0 = cst_ref(M_mu.parameterNamed(mat.getString("misc.sigmaKey")));
-        auto alpha = cst_ref(M_mu.parameterNamed(mat.getString("misc.alphaKey")));
-        auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
+        auto name = "eim_sigma_"+algorithm::to_lower_copy(key);
+        auto sigma0 = cst(parameters[mat.getString("misc.sigmaKey")].value());
+        auto alpha = cst(parameters[mat.getString("misc.alphaKey")].value());
+        auto sigma = sigma0/(1+alpha*(_e1-T0));
+        // auto sigma1 = expr(mat.getString("sigma"), parameterValues);
+        // auto sigma = expr(sigma1, se);
+        // auto sigma0 = cst_ref(M_mu.parameterNamed(mat.getString("misc.sigmaKey")));
+        // auto alpha = cst_ref(M_mu.parameterNamed(mat.getString("misc.alphaKey")));
+        // auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
         eim_space_ptrtype Eh;
         auto const& ptreeEimSigma = ptreeEim.get_child( name );
         std::string dbNameEimSigma = ptreeEimSigma.template get<std::string>( "database-filename" );

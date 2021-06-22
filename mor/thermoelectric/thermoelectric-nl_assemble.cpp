@@ -260,6 +260,7 @@ void ThermoElectricNL::fillBetaQm( parameter_type const& mu, vectorN_type const&
     // Feel::cout << "betaGrad:\n" << betaGrad << std::endl;
     // Feel::cout << "betaK:\n" << betaK << std::endl;
     // Feel::cout << "betaSigma:\n" << betaSigma << std::endl;
+    auto parameters = M_modelProps->parameters();
     auto bdConditions = M_modelProps->boundaryConditions2();
     auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
     auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
@@ -281,9 +282,16 @@ void ThermoElectricNL::fillBetaQm( parameter_type const& mu, vectorN_type const&
     for( auto const&[bdName, bd] : temperatureRobin )
     {
         auto e = bd.expr1();
-        for( auto const& param : M_modelProps->parameters() )
+        for( auto const& param : parameters )
+        {
             if( e.expression().hasSymbol(param.first) )
-                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+            {
+                if( parameters[param.first].hasMinMax() )
+                    e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+                else
+                    e.setParameterValues( { param.first, parameters[param.first].value() } );
+            }
+        }
         M_betaAqm[i][0] = e.evaluate()(0,0);
         ++i;
     }
@@ -300,9 +308,16 @@ void ThermoElectricNL::fillBetaQm( parameter_type const& mu, vectorN_type const&
     for( auto const&[bdName, bd] : potentialDirichlet )
     {
         auto e = bd.expr();
-        for( auto const& param : M_modelProps->parameters() )
+        for( auto const& param : parameters )
+        {
             if( e.expression().hasSymbol(param.first) )
-                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+            {
+                if( parameters[param.first].hasMinMax() )
+                    e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+                else
+                    e.setParameterValues( { param.first, parameters[param.first].value() } );
+            }
+        }
         int idx = M_elecEimIndex[bd.material()]-M_nbTherMat;
         for( int m = 0; m < M_betaFqm[0][i].size(); ++m )
             M_betaFqm[0][i][m] = e.evaluate()(0,0)*betaSigma[idx](m);
@@ -311,9 +326,16 @@ void ThermoElectricNL::fillBetaQm( parameter_type const& mu, vectorN_type const&
     for( auto const&[bdName, bd] : temperatureRobin )
     {
         auto e = bd.expr2();
-        for( auto const& param : M_modelProps->parameters() )
+        for( auto const& param : parameters )
+        {
             if( e.expression().hasSymbol(param.first) )
-                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+            {
+                if( parameters[param.first].hasMinMax() )
+                    e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+                else
+                    e.setParameterValues( { param.first, parameters[param.first].value() } );
+            }
+        }
         M_betaFqm[0][i][0] = e.evaluate()(0,0);
         ++i;
     }
@@ -426,19 +448,33 @@ ThermoElectricNL::computeBetaLinearDecompositionA( parameter_type const& mu, dou
     auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
     auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
 
+    auto parameters = M_modelProps->parameters();
+    auto parameterValues = parameters.toParameterValues();
+    for(auto const& [name, param] : parameters )
+        if( param.hasMinMax() )
+            parameterValues[name] = mu.parameterNamed(name);
+    parameterValues["heat_T"] = 293.;
+
     int i = 0;
     for( auto const& [name,mat] : M_elecMaterials )
-        beta[i++][0] = mu.parameterNamed(mat.getString("misc.sigmaKey"))*mu.parameterNamed("L")*293;
+        beta[i++][0] = mat.getScalar("k", parameterValues).evaluate()(0,0);
     for( auto const& [name,mat] : M_elecMaterials )
-        beta[i++][0] = mu.parameterNamed(mat.getString("misc.sigmaKey"));
+        beta[i++][0] = mat.getScalar("sigma", parameterValues).evaluate()(0,0);
     for( auto const&[bdName, bd] : potentialDirichlet )
-        beta[i++][0] = mu.parameterNamed(M_elecMaterials[bd.material()].getString("misc.sigmaKey"));
+        beta[i++][0] = M_elecMaterials[bd.material()].getScalar("k", parameterValues).evaluate()(0,0);
     for( auto const&[bdName, bd] : temperatureRobin )
     {
         auto e = bd.expr1();
-        for( auto const& param : M_modelProps->parameters() )
+        for( auto const& param : parameters )
+        {
             if( e.expression().hasSymbol(param.first) )
-                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+            {
+                if( parameters[param.first].hasMinMax() )
+                    e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+                else
+                    e.setParameterValues( { param.first, parameters[param.first].value() } );
+            }
+        }
         beta[i++][0] = e.evaluate()(0,0);
     }
     return beta;

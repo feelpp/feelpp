@@ -6,7 +6,9 @@
     {
         "omega":
         {
-            "physics": ["thermic","electric"],
+            "physics": ["heat","electric"],
+            "sigma":"sigma/(1+alpha*(heat_T-T0)):sigma:alpha:heat_T:T0",
+            "k":"sigma/(1+alpha*(heat_T-T0))*L*heat_T:sigma:alpha:heat_T:T0:L",
             "misc":
             {
                 "sigmaKey": "sigma",
@@ -16,6 +18,7 @@
     },
     "Parameters":
     {
+        "T0":"293.",
         "sigma":
         {
             "value":55e+3,

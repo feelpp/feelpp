@@ -99,6 +99,9 @@ feelpp_add_application( saddle-thermoelectric-nonlinear-app
                         SRCS thermoelectric-nl.hpp thermoelectric-nl_main.cpp
                         DEFS THERMOELECTRIC_SADDLEPOINT
                         LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} INSTALL )
+feelpp_add_application( parameter-id-app
+                        SRCS thermoelectric-nl.hpp parameter-id.cpp
+                        LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} INSTALL )
 feelpp_add_application( electric-alpha-app
                         SRCS electric-alpha_main.cpp electric-alpha.hpp
                         LINK_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA}
@@ -127,6 +130,7 @@ feelpp_add_testcase( crb-electric-alpha CATEGORY CRB)
 feelpp_add_testcase( crb-biotsavart CATEGORY CRB)
 feelpp_add_testcase( bs-alpha-hel CATEGORY CRB)
 feelpp_add_testcase( eq-test CATEGORY CRB)
+feelpp_add_testcase( parameter-id CATEGORY CRB)
 
 
 feelpp_add_application( test_eq SRCS test_eq.cpp LINK_LIBRARIES ${GLPK_LIBRARIES} )

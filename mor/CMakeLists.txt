@@ -39,6 +39,7 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   endif()
 else()
   feelpp_get_environment()
+  set(FEELPP_TOOLBOXES_FOUND 1)
   # useful for pyfeelpp-toolboxes
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
   include_directories(${FEELPP_MOR_SOURCE_DIR})
