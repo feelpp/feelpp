@@ -23,10 +23,15 @@
 //! @date 15 Jun 2017
 //! @copyright 2017 Feel++ Consortium
 //!
+
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 #include <mpi4py/mpi4py.h>
+#include <petsc4py/petsc4py.h>
+
+#include "petsc_casters.hpp"
 
 #include <boost/parameter/keyword.hpp>
 #include <boost/parameter/preprocessor.hpp>
@@ -40,6 +45,7 @@
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <pybind11/stl_bind.h>
 
+
 namespace py = pybind11;
 
 using namespace Feel;
@@ -48,7 +54,10 @@ class PyVectorDouble : Vector<double,unsigned int>
 {
     using super = Vector<double,unsigned int>;
     using super::super;
+    using size_type = super::size_type;
 
+    size_type size() const override { PYBIND11_OVERLOAD_PURE( size_type, super, size ); }
+    size_type localSize() const override { PYBIND11_OVERLOAD_PURE( size_type, super, localSize ); }
     void close() override { PYBIND11_OVERLOAD_PURE(void, super, close ); }
     void zero() override { PYBIND11_OVERLOAD_PURE( void, super, zero ); }
     void zero(size_type start, size_type stop) override {
@@ -201,20 +210,48 @@ PYBIND11_MODULE(_alg, m )
 {
     using namespace Feel;
 
-    if (import_mpi4py()<0) return ;
+    if (import_mpi4py()<0 && import_petsc4py()<0) return ;
 
+    py::class_<datamap_t<uint32_type>, datamap_ptr_t<uint32_type>>( m, "DataMap" )
+        .def( py::init<std::shared_ptr<WorldComm>>() )
+        .def( py::init<uint32_type, uint32_type, std::shared_ptr<WorldComm>>() )
+//        .def( py::init<uint32_type, std::vector<int>, std::vector<int>>() )
+//        .def( py::init<std::vector<std::shared_ptr<DataMap<uint32_type>>>, std::shared_ptr<WorldComm>>() )
+        .def( "nDof", &DataMap<uint32_type>::nDof, "the total number of degrees of freedom in the problem" )
+        .def( "nLocalDof", &DataMap<uint32_type>::nLocalDof, "the total number of degrees of freedom in the problem" )
+        .def( "nLocalDofWithoutGhost", static_cast<uint32_type (DataMap<uint32_type>::*)() const>(&DataMap<uint32_type>::nLocalDofWithoutGhost), "the total number of degrees of freedom in the problem" )
+
+        ;
     py::class_<Vector<double, uint32_type>, PyVectorDouble, std::shared_ptr<Vector<double, uint32_type>> >(m, "VectorDouble")
         .def(py::init<>())
         ;
-    py::class_<VectorPetsc<double>, Vector<double,uint32_type>, std::shared_ptr<VectorPetsc<double> > >(m, "VectorPetscDouble")
-        .def(py::init<>())
+    py::class_<VectorPetsc<double>, Vector<double, uint32_type>, std::shared_ptr<VectorPetsc<double>>>( m, "VectorPetscDouble" )
+        .def( py::init<>() )
+        .def( py::init<int, std::shared_ptr<WorldComm>>() )
+        .def( py::init<int, int, std::shared_ptr<WorldComm>>() )
+        .def( py::init<datamap_ptr_t<uint32_type>, bool>() )
+        .def( "size", &VectorPetsc<double>::size, "return  PETSc Vector size" )
+        .def( "clear", &VectorPetsc<double>::clear, "clear PETSc vector" )
+        .def( "zero", static_cast<void ( VectorPetsc<double>::* )()>(&VectorPetsc<double>::zero), "zero PETSc vector" )
+
+        .def( "vec", static_cast<Vec ( VectorPetsc<double>::* )() const>( &VectorPetsc<double>::vec ), "return a PETSc Vector" )
         ;
     py::class_<MatrixSparse<double>, PyMatrixSparseDouble, std::shared_ptr<MatrixSparse<double>> >(m, "MatrixSparseDouble")
         .def(py::init<>())
         ;
-    py::class_<MatrixPetsc<double>, MatrixSparse<double>, std::shared_ptr<MatrixPetsc<double> > >(m, "MatrixPetscDouble")
-        .def(py::init<>())
+    py::class_<MatrixPetsc<double>, MatrixSparse<double>, std::shared_ptr<MatrixPetsc<double>>>( m, "MatrixPetscDouble" )
+        .def( py::init<worldcomm_ptr_t>() )
+        .def( py::init<datamap_ptr_t<uint32_type>,datamap_ptr_t<uint32_type>>() )
+        .def( py::init<datamap_ptr_t<uint32_type>,datamap_ptr_t<uint32_type>,worldcomm_ptr_t>() )
+        .def( "size1", &MatrixPetsc<double>::size1, "return  PETSc Matrix row size" )
+        .def( "size2", &MatrixPetsc<double>::size2, "return  PETSc Matrix column size" )
+        .def( "rowStart", &MatrixPetsc<double>::rowStart, "return  PETSc Matrix row start" )
+        .def( "rowStop", &MatrixPetsc<double>::rowStop, "return  PETSc Matrix row stop " )
+        .def( "clear", &MatrixPetsc<double>::clear, "clear PETSc matrix" )
+        .def( "zero", static_cast<void ( MatrixPetsc<double>::* )()>(&MatrixPetsc<double>::zero), "zero PETSc matrix" )
+        .def( "mat", static_cast<Mat ( MatrixPetsc<double>::* )() const>( &MatrixPetsc<double>::mat ), "return a PETSc sparse matrix" )
         ;
+
     py::class_<VectorUblas<double>, Vector<double,uint32_type>, std::shared_ptr<VectorUblas<double>>> vublas(m,"VectorUBlas<double,ublas::vector<double>>");
     vublas.def(py::init<>())
         .def(py::self + py::self )
@@ -236,7 +273,6 @@ PYBIND11_MODULE(_alg, m )
         ;
 
    m.def( "backend_options", &Feel::backend_options, py::arg("prefix"), "create a backend options descriptions with prefix" );
-
 }
 
 
