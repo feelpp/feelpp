@@ -40,6 +40,7 @@
 #include <boost/mpl/vector.hpp>
 
 #include<feel/feelalg/backend.hpp>
+#include<feel/feelalg/backendpetsc.hpp>
 #include<feel/feelalg/vectorublas.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
@@ -222,6 +223,15 @@ PYBIND11_MODULE(_alg, m )
         .def( "nLocalDofWithoutGhost", static_cast<uint32_type (DataMap<uint32_type>::*)() const>(&DataMap<uint32_type>::nLocalDofWithoutGhost), "the total number of degrees of freedom in the problem" )
 
         ;
+    py::class_<BackendPetsc<double>, std::shared_ptr<BackendPetsc<double>>>( m, "Backend" )
+        .def(py::init<worldcomm_ptr_t>())
+
+//        .def_static("newVector",[](){}, "" )
+        ;
+    
+    // create a backend
+    m.def( "backend", &Feel::detail::backend_impl<double>, py::arg( "name" ) = "", py::arg( "kind" ) = "petsc", py::arg( "rebuild" ) = true, py::arg( "worldcomm" ) = Feel::Environment::worldCommPtr(), "retrieve a backend" );
+
     py::class_<Vector<double, uint32_type>, PyVectorDouble, std::shared_ptr<Vector<double, uint32_type>> >(m, "VectorDouble")
         .def(py::init<>())
         ;
