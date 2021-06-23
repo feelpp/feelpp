@@ -72,6 +72,7 @@ AlphaElectric::AlphaElectric( mesh_ptrtype mesh,  std::string const& prefix )
       M_verbose(ioption("thermoelectric.verbose"))
 {
     M_modelProps = std::make_shared<prop_type>(M_propertyPath);
+    M_modelProps->enableBoundaryConditions2();
 
     auto parameters = M_modelProps->parameters();
     int nbCrbParameters = count_if(parameters.begin(), parameters.end(), [] (auto const& p)

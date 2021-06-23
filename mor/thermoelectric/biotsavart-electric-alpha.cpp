@@ -82,6 +82,7 @@ template<typename te_rb_model_type>
 void BiotSavartAlphaElectricCRB<te_rb_model_type>::initModel()
 {
     M_modelProps = std::make_shared<prop_type>(M_propertyPath);
+    M_modelProps->enableBoundaryConditions2();
     M_materials = M_modelProps->materials().materialWithPhysic("magnetic");
 
     M_mesh = loadMesh( _mesh=new mesh_type,

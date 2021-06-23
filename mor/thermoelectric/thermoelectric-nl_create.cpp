@@ -71,6 +71,7 @@ ThermoElectricNL::ThermoElectricNL( std::string prefix ) :
     Feel::cout << "construct model" << std::endl;
     this->addModelFile("property-file", M_propertyPath);
     M_modelProps = std::make_shared<prop_type>(M_propertyPath);
+    M_modelProps->enableBoundaryConditions2();
 
     M_materials = M_modelProps->materials().materialWithPhysic(std::vector<std::string>({"electric","thermic"}));
     M_elecMaterials = M_modelProps->materials().materialWithPhysic("electric");

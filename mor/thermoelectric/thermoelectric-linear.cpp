@@ -267,6 +267,7 @@ void ThermoElectric::initModel()
     M_exportFE = boption("thermoelectric.export-FE");
 
     M_modelProps = std::make_shared<prop_type>(M_propertyPath);
+    M_modelProps->enableBoundaryConditions2();
     M_materials = M_modelProps->materials().materialWithPhysic(std::vector<std::string>({"electric","thermic"}));
     M_elecMaterials = M_modelProps->materials().materialWithPhysic("electric");
     M_therMaterials = M_modelProps->materials().materialWithPhysic("thermic");

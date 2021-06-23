@@ -152,6 +152,7 @@ void Thermic::initModel()
     Feel::cout << "initModel" << std::endl;
     std::string propertyPath = Environment::expand( soption("thermoelectric.filename"));
     M_modelProps = std::make_shared<prop_type>(propertyPath);
+    M_modelProps->enableBoundaryConditions2();
     this->addModelFile("property-file", propertyPath);
 
     auto parameters = M_modelProps->parameters();
