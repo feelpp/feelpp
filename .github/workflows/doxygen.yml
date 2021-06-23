@@ -1,0 +1,44 @@
+name: Deploy Doxygen 
+
+on: 
+  push:
+    branches:
+      - develop
+
+jobs:
+#  docs:
+#    runs-on: ubuntu-latest
+#    steps:
+#    - uses: buildkite/trigger-pipeline-action@v1.2.0
+#      env:
+#        BUILDKITE_API_ACCESS_TOKEN: ${{ secrets.BUILDKITE_API_ACCESS_TOKEN }}
+#        PIPELINE: "feelpp/cemosis-docs"
+#        COMMIT: "HEAD"
+#        BRANCH: "master"
+#        MESSAGE: ":github: Triggered from a GitHub Action by Holo3 Project"
+  build:
+    runs-on: ubuntu-20.04
+    if: "!contains(github.event.head_commit.message, 'doc skip')"
+    steps:
+    - uses: actions/checkout@v2.3.4
+      with:
+        lfs: true
+    - name: Update Dependencies
+      run: |
+        echo "deb https://dl.bintray.com/feelpp/ubuntu focal latest" | sudo tee -a /etc/apt/sources.list
+        wget -qO - https://bintray.com/user/downloadSubjectPublicKey?username=bintray | sudo apt-key add -
+        sudo apt update
+        sudo apt --reinstall install -y libfeelpp1 libfeelpp-dev feelpp-tools doxygen
+    - name: Configure Feelpp
+      run: |
+        mkdir build && cd build
+        CXX=clang++ cmake -DFEELPP_ENABLE_DOXYGEN=ON ..
+    - name: Build Doxygen
+      run: make doxygen
+      working-directory: build
+    - name: Deploy
+      uses: JamesIves/github-pages-deploy-action@4.1.1
+      with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages # The branch the action should deploy to.
+          FOLDER: build/doc/api/html # The folder the action should deploy.

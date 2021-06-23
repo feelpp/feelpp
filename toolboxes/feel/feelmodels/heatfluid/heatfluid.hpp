@@ -36,6 +36,7 @@ namespace FeelModels
 
 template< typename HeatType, typename FluidType>
 class HeatFluid : public ModelNumerical,
+                  public ModelPhysics<HeatType::convex_type::nDim>,
                   public std::enable_shared_from_this< HeatFluid<HeatType,FluidType> >
 {
 
@@ -56,6 +57,11 @@ public:
     typedef mesh_fluid_type mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     static const uint16_type nDim = mesh_type::nDim;
+
+    // materials properties
+    typedef MaterialsProperties<mesh_type::nRealDim> materialsproperties_type;
+    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
+
     // exporter
     typedef Exporter<mesh_type,mesh_type::nOrder> export_type;
     typedef std::shared_ptr<export_type> export_ptrtype;
@@ -71,8 +77,11 @@ public:
                worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                std::string const& subPrefix = "",
                ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"HeatFluidMesh.path"); }
+
     std::shared_ptr<std::ostringstream> getInfo() const override;
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
 
 private :
     void loadParameterFromOptionsVm();
@@ -89,10 +98,12 @@ public :
     void exportResults( double time );
 
     void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
 
     //___________________________________________________________________________________//
 
-    mesh_ptrtype const& mesh() const { return M_mesh; }
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
 
     heat_model_ptrtype const& heatModel() const { return M_heatModel; }
     heat_model_ptrtype heatModel() { return M_heatModel; }
@@ -100,7 +111,10 @@ public :
     fluid_model_ptrtype const& fluidModel() const { return M_fluidModel; }
     fluid_model_ptrtype fluidModel() { return M_fluidModel; }
 
-    std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
+    // physical parameters
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
     backend_ptrtype const& backend() const { return M_backend; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
@@ -113,8 +127,125 @@ public :
     void startTimeStep();
     void updateTimeStep();
 
+    template <typename SymbolsExprType>
+    void updateInitialConditions( SymbolsExprType const& se );
+
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
+
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( this->heatModel()->modelFields( this->heatModel()->keyword() ),
+                                                  this->fluidModel()->modelFields( this->fluidModel()->keyword() ) );
+        }
+    auto modelFields( vector_ptrtype sol, size_type rowStartInVectorHeat, size_type rowStartInVectorFluid, std::string const& prefix = "" ) const
+        {
+            return this->modelFields( sol, rowStartInVectorHeat, sol, rowStartInVectorFluid, prefix );
+        }
+    auto modelFields( vector_ptrtype solHeat, size_type rowStartInVectorHeat, vector_ptrtype solFluid, size_type rowStartInVectorFluid, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( this->heatModel()->modelFields( solHeat, rowStartInVectorHeat, this->heatModel()->keyword() ),
+                                                  this->fluidModel()->modelFields( solFluid, rowStartInVectorFluid, this->fluidModel()->keyword() ) );
+        }
+    auto modelFields( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataHeat,
+                      std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataFluid,
+                      std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( this->heatModel()->modelFields( vectorDataHeat, this->heatModel()->keyword() ),
+                                                  this->fluidModel()->modelFields( vectorDataFluid, this->fluidModel()->keyword() ) );
+        }
+    template <typename ModelFieldsHeatType,typename ModelFieldsFluidType>
+    auto modelFields( ModelFieldsHeatType const& mfieldsHeat, ModelFieldsFluidType const& mfieldsFluid, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( mfieldsHeat, mfieldsFluid );
+        }
+
+    auto trialSelectorModelFields( size_type startBlockSpaceIndexHeat, size_type startBlockSpaceIndexFluid ) const
+        {
+            return Feel::FeelModels::selectorModelFields( this->heatModel()->trialSelectorModelFields( startBlockSpaceIndexHeat ),
+                                                          this->fluidModel()->trialSelectorModelFields( startBlockSpaceIndexFluid ) );
+        }
+
+
+    //___________________________________________________________________________________//
+    // symbols expressions
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
+        {
+            auto seHeat = this->heatModel()->symbolsExprToolbox( mfields );
+            auto seFluid = this->fluidModel()->symbolsExprToolbox( mfields );
+            auto seParam = this->symbolsExprParameter();
+            auto seMat = this->materialsProperties()->symbolsExpr();
+            auto seFields = mfields.symbolsExpr();
+            auto sePhysics = this->symbolsExprPhysics( this->physics() );
+            return Feel::vf::symbolsExpr( seHeat,seFluid,seParam,seMat,seFields,sePhysics );
+        }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+
+    template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
+    auto trialSymbolsExpr( ModelFieldsType const& mfields, TrialSelectorModelFieldsType const& tsmf ) const
+        {
+            return mfields.trialSymbolsExpr( tsmf );
+        }
+
+    //___________________________________________________________________________________//
+    // model context helper
+    //___________________________________________________________________________________//
+
+    // template <typename ModelFieldsType>
+    // auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+    //     {
+    //         return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ) );
+    //     }
+    auto modelContext( std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( prefix );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
+        }
+    auto modelContext( vector_ptrtype sol, size_type startBlockSpaceIndexHeat, size_type startBlockSpaceIndexFluid, std::string const& prefix = "" ) const
+        {
+            return this->modelContext( sol, startBlockSpaceIndexHeat, sol, startBlockSpaceIndexFluid, prefix );
+        }
+    auto modelContext( vector_ptrtype solHeat, size_type startBlockSpaceIndexHeat, vector_ptrtype solFluid, size_type startBlockSpaceIndexFluid, std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( solHeat, startBlockSpaceIndexHeat, solFluid, startBlockSpaceIndexFluid, prefix );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( startBlockSpaceIndexHeat, startBlockSpaceIndexFluid ) );
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
+        }
+    auto modelContextNoTrialSymbolsExpr( vector_ptrtype sol, size_type startBlockSpaceIndexHeat, size_type startBlockSpaceIndexFluid, std::string const& prefix = "" ) const
+        {
+            return this->modelContextNoTrialSymbolsExpr( sol, startBlockSpaceIndexHeat, sol, startBlockSpaceIndexFluid, prefix );
+        }
+    auto modelContextNoTrialSymbolsExpr( vector_ptrtype solHeat, size_type startBlockSpaceIndexHeat, vector_ptrtype solFluid, size_type startBlockSpaceIndexFluid, std::string const& prefix = "" ) const
+        {
+            // auto mfields = this->modelFields( solHeat, startBlockSpaceIndexHeat, solFluid, startBlockSpaceIndexFluid, prefix );
+            // auto se = this->symbolsExpr( mfields );
+            // return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
+            return this->modelContextNoTrialSymbolsExpr( { { "solution", std::make_tuple( solHeat, startBlockSpaceIndexHeat ) } },
+                                                         { { "solution", std::make_tuple( solFluid, startBlockSpaceIndexFluid ) } },
+                                                         prefix );
+        }
+    auto modelContextNoTrialSymbolsExpr( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataHeat,
+                                         std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataFluid,
+                                         std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( vectorDataHeat, vectorDataFluid, prefix );
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
+        }
+    auto modelContext( vector_ptrtype sol, heat_model_ptrtype const& heatModel, fluid_model_ptrtype const& fluidModel, std::string const& prefix = "" ) const
+        {
+            return this->modelContext( sol, heatModel->startBlockSpaceIndexVector(), fluidModel->startBlockSpaceIndexVector(), prefix );
+        }
+
     //___________________________________________________________________________________//
     // apply assembly and solver
+    //___________________________________________________________________________________//
     void solve();
 
     void updateInHousePreconditioner( DataUpdateLinear & data ) const override;
@@ -133,9 +264,15 @@ public :
     void updateResidual( DataUpdateResidual & data ) const override;
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
-    void updateLinearFluidSolver( DataUpdateLinear & data ) const;
-    void updateResidualFluidSolver( DataUpdateResidual & data ) const;
 private :
+    void updateLinear_Heat( DataUpdateLinear & data ) const;
+    void updateResidual_Heat( DataUpdateResidual & data ) const;
+    void updateJacobian_Heat( DataUpdateJacobian & data ) const;
+
+    void updateLinear_Fluid( DataUpdateLinear & data ) const;
+    void updateResidual_Fluid( DataUpdateResidual & data ) const;
+    void updateJacobian_Fluid( DataUpdateJacobian & data ) const;
+
     void updateTimeStepCurrentResidual();
 
 private :
@@ -143,32 +280,35 @@ private :
     heat_model_ptrtype M_heatModel;
     fluid_model_ptrtype M_fluidModel;
 
-    //bool M_isUpdatedForUse;
-
-    mesh_ptrtype M_mesh;
-    //elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
-    // materials range
-    std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
-
     // physical parameter
     bool M_useNaturalConvection;
     double M_BoussinesqRefTemperature;
     vector_field_expression<nDim,1,2> M_gravityForce;
+    materialsproperties_ptrtype M_materialsProperties;
 
     // solver
-    //std::string M_solverName;
     bool M_useSemiImplicitTimeScheme;
 
     // algebraic data/tools
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
-    vector_ptrtype M_timeStepThetaSchemePreviousContrib;
+    vector_ptrtype M_timeStepThetaSchemePreviousContrib, M_timeStepThetaSchemePreviousSolution;
+    std::map<std::string,double> M_currentParameterValues;
 
     // post-process
     export_ptrtype M_exporter;
-    std::set<std::string> M_postProcessFieldExportedHeatt, M_postProcessFieldExportedFluid;
 };
+
+template< typename HeatType, typename FluidType>
+template <typename SymbolsExprType>
+void
+HeatFluid<HeatType,FluidType>::updateInitialConditions( SymbolsExprType const& se )
+{
+    M_heatModel->updateInitialConditions( se );
+    M_fluidModel->updateInitialConditions( se );
+}
+
 
 } // namespace FeelModels
 } // namespace Feel

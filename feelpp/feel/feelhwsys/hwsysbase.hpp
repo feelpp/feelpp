@@ -60,7 +60,7 @@ public:
     HwSysBase& operator=( HwSysBase&& ) = default;
 
     //! Destructor
-    virtual ~HwSysBase() override = default;
+    ~HwSysBase() override = default;
 
     //! Accessors
     //! @{
@@ -72,54 +72,57 @@ public:
     virtual void updateCurrentState() {};
 
     //! Journal watcher notification.
-    void updateInformationObject( pt::ptree & p ) override
+    void updateInformationObject( nl::json & p ) const override
     {
         if ( M_host_name.empty() )
             return;
 
-        this->updateCurrentState();
+        const_cast<HwSysBase&>(*this).updateCurrentState();
 
-        std::string prefix = M_host_name;
-        if ( !p.get_child_optional( "application" ) )
+        std::string const& prefix = M_host_name;
+        if ( !p.contains( prefix ) )
         {
-            p.put( prefix + ".backend", M_backend );
-            p.put( prefix + ".os.name", M_os_name );
-            p.put( prefix + ".is_linux", M_os_is_linux );
-            p.put( prefix + ".is_apple", M_os_is_apple );
-            p.put( prefix + ".is_windows", M_os_is_windows );
-            p.put( prefix + ".os.release", M_os_release );
-            p.put( prefix + ".os.version", M_os_version );
-            p.put( prefix + ".os.platform", M_os_platform );
-            p.put( prefix + ".hostname", M_host_name );
-            p.put( prefix + ".domain_fqname", M_domain_name );
-            p.put( prefix + ".is_64bits", M_proc_is64bits );
-            p.put( prefix + ".proc.vendor_name", M_proc_vendor_name );
-            p.put( prefix + ".proc.vendor_id", M_proc_vendor_id );
-            p.put( prefix + ".proc.type_id", M_proc_type_id );
-            p.put( prefix + ".proc.family_id", M_proc_family_id );
-            p.put( prefix + ".proc.model_id", M_proc_model_id );
-            p.put( prefix + ".proc.extended_name", M_proc_extended_name );
-            p.put( prefix + ".proc.stepping_code", M_proc_stepping_code );
-            p.put( prefix + ".proc.serial_number", M_proc_serial_number );
-            p.put( prefix + ".proc.cache_size", M_proc_cache_size );
-            p.put( prefix + ".proc.logical_per_physical", M_proc_logical_per_physical );
-            p.put( prefix + ".proc.clock_frequency", M_proc_clock_frequency );
-            p.put( prefix + ".proc.logical_cpu_number", M_proc_logical_cpu_number );
-            p.put( prefix + ".proc.physical_cpu_number", M_proc_physical_cpu_number );
-            p.put( prefix + ".proc.cpu_id_support", M_proc_cpu_id_support );
-            p.put( prefix + ".proc.apic_id", M_proc_apic_id );
-            p.put( prefix + ".mem.total.virtual", M_mem_virtual_total );
-            p.put( prefix + ".mem.total.physical", M_mem_physical_total );
-            p.put( prefix + ".mem.total.host", M_mem_host_total );
-            p.put( prefix + ".mem.available.virtual", M_mem_virtual_avail );
-            p.put( prefix + ".mem.available.physical", M_mem_physical_avail );
-            p.put( prefix + ".mem.available.host", M_mem_host_avail );
-            p.put( prefix + ".mem.available.proc", M_mem_proc_avail );
-            //p.put( prefix + ".mem.load_average", M_load_avg );
+            p[prefix] =  nl::json( {
+                    { "backend", M_backend },
+                    { "os", {
+                            { "name", M_os_name },
+                            { "is_linux", M_os_is_linux },
+                            { "is_apple", M_os_is_apple },
+                            { "is_windows", M_os_is_windows },
+                            { "release", M_os_release },
+                            { "version", M_os_version },
+                            { "platform", M_os_platform }
+                        } },
+                    { "hostname", M_host_name },
+                    { "domain_name", M_domain_name },
+                    { "proc", {
+                            { "is_64bits", M_proc_is64bits },
+                            { "vendor_name", M_proc_vendor_name },
+                            { "vendor_id", M_proc_vendor_id },
+                            { "type_id", M_proc_type_id },
+                            { "family_id", M_proc_family_id },
+                            { "model_id", M_proc_model_id },
+                            { "extended_name", M_proc_extended_name },
+                            { "stepping_code", M_proc_stepping_code },
+                            { "serial_number", M_proc_serial_number },
+                            { "cache_size", M_proc_cache_size },
+                            { "logical_per_physical", M_proc_logical_per_physical },
+                            { "clock_frequency", M_proc_clock_frequency },
+                            { "logical_cpu_number", M_proc_logical_cpu_number },
+                            { "physical_cpu_number", M_proc_physical_cpu_number },
+                            { "cpu_id_support", M_proc_cpu_id_support },
+                            { "apic_id", M_proc_apic_id }
+                        } },
+                    { "mem", {
+                            { "total", { { "virtual", M_mem_virtual_total }, { "physical", M_mem_physical_total }, { "host", M_mem_host_total } } },
+                            { "available", { { "virtual", M_mem_virtual_avail }, { "physical", M_mem_physical_avail }, { "host", M_mem_host_avail }, { "proc", M_mem_proc_avail } } }
+                            //{ "load_average", M_load_avg }
+                        } }
+                } );
         }
         const auto ccp = std::to_string( JournalManager::journalCurrentCheckpoint() );
-        p.put( prefix + ".mem.used.checkpoint-" + ccp + ".host", M_mem_host_used );
-        p.put( prefix + ".mem.used.checkpoint-" + ccp + ".proc", M_mem_proc_used );
+        p[prefix]["mem"]["used"]["checkpoint-" + ccp]["host"] = M_mem_host_used;
+        p[prefix]["mem"]["used"]["checkpoint-" + ccp]["proc"] = M_mem_proc_used;
     }
 
     //! Private Methods
@@ -171,7 +174,7 @@ protected:
 	std::string M_mem_host_total;
 	std::string M_mem_host_avail;
 	std::string M_mem_proc_avail;
-	std::string M_mem_host_used;
+    std::string M_mem_host_used;
 	std::string M_mem_proc_used;
 	std::string M_load_avg;
 

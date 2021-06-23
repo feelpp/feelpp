@@ -33,7 +33,6 @@
                 "load":
                 {
                     "expr":"{0,-10000/0.02,0}"	// F/A
-
                 }
             }
         }
@@ -42,10 +41,11 @@
     {
         "Exports":
         {
-            "fields":["displacement","Von-Mises","tresca","principal-stresses"] //"sigma_xx"
+            "fields":["displacement","von-mises-criterion","tresca-criterion", "principal-stresses"]
         },
         "Measures":
         {
+            "VolumeVariation":"cantilever",
             "Maximum":
             {
                 "beam":

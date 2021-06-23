@@ -5,6 +5,17 @@
     {
         "equations":"Navier-Stokes"
     },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cfd.geo",
+                "hsize":0.03
+            }
+        }
+    },
     "Parameters":
     {
         "ubar":"1.0"
@@ -52,6 +63,13 @@
         "Exports":
         {
             "fields":["velocity","pressure","pid"]
+        },
+        "Save":
+        {
+            "Fields":
+            {
+                "names":"velocity"
+            }
         },
         "Measures":
         {

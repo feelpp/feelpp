@@ -405,27 +405,27 @@ expr( std::string const& s, std::pair<std::string,double> const& mp, std::string
 
 template<typename ExprT, int Order=2>
 inline
-Expr< GinacExVF<Order, SymbolsExpr<SymbolExpr<ExprT>>> >
+Expr< GinacExVF<Order, symbols_expression_t<SymbolExpr<ExprT>>> >
 expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , GiNaC::symbol const& s, ExprT const& e,
       std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
-    typedef GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> _expr_type;
+    typedef GinacExVF<Order,symbols_expression_t<SymbolExpr<ExprT>>> _expr_type;
     return Expr< _expr_type >( _expr_type( myexpr, syms, std::string(""), filename, world, dirLibExpr, symbolsExpr(symbolExpr(s.get_name(),e)) ) );
 }
 
 template<typename ExprT, int Order=2>
 inline
-Expr< GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> >
+Expr< GinacExVF<Order,symbols_expression_t<SymbolExpr<ExprT>>> >
 expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::pair<GiNaC::symbol,ExprT> const& e,
       std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
-    typedef GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> _expr_type;
+    typedef GinacExVF<Order,symbols_expression_t<SymbolExpr<ExprT>>> _expr_type;
     return Expr< _expr_type >( _expr_type( parse(s,lsym), lsym, s, filename, world, dirLibExpr, symbolsExpr(symbolExpr(e.first.get_name(),e.second)) ) );
 }
 
 template<typename ExprT, int Order=2>
 inline
-Expr< GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> >
+Expr< GinacExVF<Order,symbols_expression_t<SymbolExpr<ExprT>>> >
 expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::initializer_list<GiNaC::symbol> const& s, std::initializer_list<ExprT> const& e,
       std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
@@ -436,13 +436,13 @@ expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::initializ
     typename std::initializer_list<ExprT>::iterator it2 = e.begin();
     for(; it1!=s.end(); ++it1,++it2)
         VFmap.push_back( std::make_pair(it1->get_name(),*it2) );
-    typedef GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> _expr_type;
+    typedef GinacExVF<Order,symbols_expression_t<SymbolExpr<ExprT>>> _expr_type;
     return Expr< _expr_type >( _expr_type( myexpr, syms, std::string(""), filename, world, dirLibExpr, symbolsExpr(symbolExpr(VFmap)) ) );
 }
 
 template<typename ExprT, int Order=2>
 inline
-Expr< GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> >
+Expr< GinacExVF<Order,symbols_expression_t<SymbolExpr<ExprT>>> >
 expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::vector<GiNaC::symbol> const& s, std::vector<ExprT> const& e,
       std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
@@ -453,7 +453,7 @@ expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::vector<Gi
     typename std::vector<ExprT>::const_iterator it2 = e.begin();
     for( ; it1!=s.end(); ++it1,++it2)
         VFmap.push_back( std::make_pair(it1->get_name(), *it2) );
-    typedef GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> _expr_type;
+    typedef GinacExVF<Order,symbols_expression_t<SymbolExpr<ExprT>>> _expr_type;
     return Expr< _expr_type >( _expr_type( myexpr, syms, std::string(""), filename, world, dirLibExpr, symbolsExpr(symbolExpr(VFmap)) ) );
 }
 
@@ -461,7 +461,7 @@ expr( ex const& myexpr, std::vector<GiNaC::symbol> const & syms , std::vector<Gi
 template<typename ExprT, int Order=2>
 inline
 FEELPP_DEPRECATED
-Expr< GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> >
+Expr< GinacExVF<Order,symbols_expression_t<SymbolExpr<ExprT>>> >
 expr( std::string const& myexpr, std::vector<GiNaC::symbol> const & syms , std::vector<GiNaC::symbol> const& s, std::vector<ExprT> const& e,
       std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
@@ -481,18 +481,18 @@ expr( std::string const& myexpr, std::vector<GiNaC::symbol> const & syms , std::
 
 template<typename ExprT,int Order=2>
 inline
-Expr< GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> >
+Expr< GinacExVF<Order,symbols_expression_t<SymbolExpr<ExprT>> > >
 expr( std::string const& s, std::string const& se, ExprT const& e,
       std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
     std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
-    typedef GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> _expr_type;
+    typedef GinacExVF<Order, symbols_expression_t<SymbolExpr<ExprT>>> _expr_type;
     return Expr< _expr_type >( _expr_type( g.first, g.second, s, filename, world, dirLibExpr, symbolsExpr(symbolExpr(se,e)) ) );
 }
 
 template<typename ExprT,int Order=2>
 inline
-Expr< GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> >
+Expr< GinacExVF<Order,symbols_expression_t<SymbolExpr<ExprT>>> >
 expr( std::string const& s, std::initializer_list<std::string> const& se, std::initializer_list<ExprT> const& e,
       std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
@@ -504,13 +504,13 @@ expr( std::string const& s, std::initializer_list<std::string> const& se, std::i
     auto it2 = e.begin();
     for(;  it1!=se.end(); ++it1,++it2)
         VFmap.push_back( std::make_pair(*it1,*it2) );
-    typedef GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> _expr_type;
+    typedef GinacExVF<Order,symbols_expression_t<SymbolExpr<ExprT>>> _expr_type;
     return Expr< _expr_type >( _expr_type( g.first, g.second, s, filename, world, dirLibExpr, symbolsExpr(symbolExpr(VFmap)) ) );
 }
 
 template<typename ExprT,int Order=2>
 inline
-Expr< GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> >
+Expr< GinacExVF<Order,symbols_expression_t<SymbolExpr<ExprT>>> >
 expr( std::string const& s, std::vector<std::string> const& se, std::vector<ExprT> const& e,
       std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
@@ -522,28 +522,30 @@ expr( std::string const& s, std::vector<std::string> const& se, std::vector<Expr
     auto it2 = e.begin();
     for(;  it1!=se.end(); ++it1,++it2)
         VFmap.push_back( std::make_pair(*it1,*it2) );
-    typedef GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> _expr_type;
+    typedef GinacExVF<Order,symbols_expression_t<SymbolExpr<ExprT>>> _expr_type;
     return Expr< _expr_type >( _expr_type( g.first, g.second, s, filename, world, dirLibExpr, symbolsExpr(symbolExpr(VFmap)) ) );
 }
 
 template<int Order,typename... ExprT>
 inline
-Expr< GinacExVF<Order,SymbolsExpr<ExprT...> > >
+Expr< GinacExVF<Order,symbols_expression_t<ExprT...> > >
 expr( Expr<GinacEx<Order>> const& s, const ExprT&... expr )
 {
     auto const& symbexpr = s.expression();
-    auto res = Expr< GinacExVF<Order,SymbolsExpr<ExprT...> > >(  GinacExVF<Order,SymbolsExpr<ExprT...>>( symbexpr.expression(), symbexpr.symbols(), symbexpr.fun(), symbexpr.exprDesc(), symbolsExpr(expr...) ) );
+    typedef GinacExVF<Order,symbols_expression_t<ExprT...> > _expr_type;
+    auto res = Expr< _expr_type >( _expr_type( symbexpr.expression(), symbexpr.symbols(), symbexpr.fun(), symbexpr.exprDesc(), symbolsExpr(expr...) ) );
     res.setParameterValues( symbexpr.symbolNameToValue() );
     return res;
 }
 
 template<int M, int N, int Order,typename... ExprT>
 inline
-Expr< GinacMatrix<M,N,Order,SymbolsExpr<ExprT...> > >
+Expr< GinacMatrix<M,N,Order,symbols_expression_t<ExprT...> > >
 expr( Expr<GinacMatrix<M,N,Order>> const& s, const ExprT&... expr )
 {
     auto const& symbexpr = s.expression();
-    auto res = Expr< GinacMatrix<M,N,Order,SymbolsExpr<ExprT...> > >( GinacMatrix<M,N,Order,SymbolsExpr<ExprT...>>( symbexpr.expression(), symbexpr.symbols(), symbexpr.fun(), symbexpr.exprDesc(), symbolsExpr(expr...) ) );
+    typedef GinacMatrix<M,N,Order,symbols_expression_t<ExprT...> > _expr_type;
+    auto res = Expr< _expr_type >( _expr_type( symbexpr.expression(), symbexpr.symbols(), symbexpr.fun(), symbexpr.exprDesc(), symbolsExpr(expr...) ) );
     res.setParameterValues( symbexpr.symbolNameToValue() );
     return res;
 }
@@ -561,7 +563,7 @@ expr( Expr<GinacMatrix<M,N,Order>> const& s, const ExprT&... expr )
  */
 template<typename ExprT,int Order=2>
 inline
-Expr< GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> >
+Expr< GinacExVF<Order,symbols_expression_t<SymbolExpr<ExprT>>> >
 diff( std::string const& s, std::string const& ds, std::string const& se, ExprT const& e,
       std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
@@ -573,7 +575,7 @@ diff( std::string const& s, std::string const& ds, std::string const& se, ExprT 
     LOG(INFO) << "diff(" << s << "," << ds << ")=" << diffe;
 
     std::string exprDesc = (boost::format("diff(%1%,%2%)")%s %ds ).str();
-    typedef GinacExVF<Order,SymbolsExpr<SymbolExpr<ExprT>>> _expr_type;
+    typedef GinacExVF<Order,symbols_expression_t<SymbolExpr<ExprT>>> _expr_type;
     return Expr< _expr_type >( _expr_type( diffe, g.second, exprDesc, filename, world, dirLibExpr, symbolsExpr(symbolExpr(se,e)) ) );
 }
 
@@ -648,55 +650,22 @@ expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string co
     return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym, exprDesc, filename, world, dirLibExpr ) );
 }
 
-template<int M,int Order,typename SymbolsExprType>
+template<int Dim,int M,int N,int Order,typename SymbolsExprType>
 inline
-Expr<GinacMatrix<1,M,Order,SymbolsExprType> >
-grad( Expr<GinacExVF<Order,SymbolsExprType>> const& s, std::vector<std::string> const& gradSymbols, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
+auto
+grad( Expr<GinacMatrix<M,N,Order,SymbolsExprType>> const& s, std::vector<std::string> const& gradSymbols, std::string filename="", WorldComm const& world = Environment::worldComm(), std::string const& dirLibExpr="" )
 {
-    CHECK( M == gradSymbols.size() ) << "must be the same size : " << M  << " vs "<< gradSymbols.size() << "\n";
-    std::string exprDesc = (boost::format("grad(%1%)")% s.expression().exprDesc() ).str();
-    std::vector<GiNaC::symbol> gradSymbolsGinac = symbols( gradSymbols, s.expression().symbols() );
-    typedef GinacMatrix<1,M,Order,SymbolsExprType> _expr_type;
-    auto res = Expr< _expr_type >( _expr_type( GiNaC::grad(s.expression().expression(),gradSymbolsGinac), s.expression().symbols(),
-                                               exprDesc, filename, world, dirLibExpr,
-                                               s.expression().symbolsExpression() ) );
-    res.setParameterValues( s.expression().symbolNameToValue() );
-    return res;
-}
-template<int M,int Order,typename SymbolsExprType>
-inline
-Expr<GinacMatrix<1,M,Order,SymbolsExprType> >
-grad( Expr<GinacExVF<Order,SymbolsExprType>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
-{
-    std::vector<std::string> gradSymbols = { "x", "y", "z" };
-    gradSymbols.resize( M );
-    return grad<M>( s, gradSymbols, filename, world, dirLibExpr );
+    return expr( s.expression().template grad<Dim>( gradSymbols,world,dirLibExpr ) );
 }
 
-template<int M,int Order,typename SymbolsExprType>
+template<int Dim,int M,int N,int Order,typename SymbolsExprType>
 inline
-Expr<GinacMatrix<M,M,Order,SymbolsExprType> >
-grad( Expr<GinacMatrix<M,1,Order,SymbolsExprType>> const& s, std::vector<std::string> const& gradSymbols, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
-{
-    CHECK( M == gradSymbols.size() ) << "must be the same size : " << M  << " vs "<< gradSymbols.size() << "\n";
-    std::string exprDesc = (boost::format("grad(%1%)")% s.expression().exprDesc() ).str();
-    std::vector<GiNaC::symbol> gradSymbolsGinac = symbols( gradSymbols, s.expression().symbols() );
-    typedef GinacMatrix<M,M,Order,SymbolsExprType> _expr_type;
-    auto res = Expr< _expr_type >( _expr_type( GiNaC::grad(s.expression().expression(),gradSymbolsGinac), s.expression().symbols(),
-                                               exprDesc, filename, world, dirLibExpr,
-                                               s.expression().symbolsExpression() ) );
-    res.setParameterValues( s.expression().symbolNameToValue() );
-    return res;
-}
-
-template<int M,int Order,typename SymbolsExprType>
-inline
-Expr<GinacMatrix<M,M,Order,SymbolsExprType> >
-grad( Expr<GinacMatrix<M,1,Order,SymbolsExprType>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
+auto
+grad( Expr<GinacMatrix<M,N,Order,SymbolsExprType>> const& s, std::string filename="", WorldComm const& world = Environment::worldComm(), std::string const& dirLibExpr="" )
 {
     std::vector<std::string> gradSymbols = { "x", "y", "z" };
-    gradSymbols.resize( M );
-    return grad<M>( s, gradSymbols, filename, world, dirLibExpr );
+    gradSymbols.resize( Dim );
+    return grad<Dim>( s, gradSymbols, filename, world, dirLibExpr );
 }
 // Divergence
 template<int M=1,int Order=2>

@@ -35,19 +35,21 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelmesh/enums.hpp>
+#include <feel/feeldiscr/enums.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
 
-class ModelAlgebraic : public ModelBase
+class ModelAlgebraic : virtual public ModelBase
 {
 public :
     typedef ModelBase super_type;
 
     typedef double value_type;
-    using size_type = uint32_type;
+    using index_type = uint32_type;
+    using size_type = index_type;
     typedef Backend<value_type,size_type> backend_type;
     typedef std::shared_ptr<backend_type> backend_ptrtype;
 
@@ -100,6 +102,20 @@ public :
                 return M_matrixInfos.find(info)->second;
             }
 
+        void addParameterValuesInfo( std::string const& info, std::map<std::string,double> const& pv ) { M_parameterValuesInfos[info] = pv; }
+        void eraseParameterValuesInfo( std::string const& info ) { M_parameterValuesInfos.erase( info ); }
+        bool hasParameterValuesInfo( std::string const& info ) const { return M_parameterValuesInfos.find( info ) != M_parameterValuesInfos.end(); }
+        std::map<std::string,double> & parameterValuesInfo( std::string const& info )
+            {
+                CHECK( this->hasParameterValuesInfo( info ) ) << "parameter values info "<< info << "is missing";
+                return M_parameterValuesInfos.find(info)->second;
+            }
+        std::map<std::string,double> const& parameterValuesInfo( std::string const& info ) const
+            {
+                CHECK( this->hasParameterValuesInfo( info ) ) << "parameter values info "<< info << "is missing";
+                return M_parameterValuesInfos.find(info)->second;
+            }
+
         void copyInfos( DataUpdateBase const& dub )
             {
                 for ( std::string const& info : dub.M_infos )
@@ -110,6 +126,8 @@ public :
                     this->addVectorInfo( info,vec );
                 for ( auto const& [info,mat] : dub.M_matrixInfos )
                     this->addMatrixInfo( info,mat );
+                for ( auto const& [info,pv] : dub.M_parameterValuesInfos )
+                    this->addParameterValuesInfo( info,pv );
             }
 
         void clearInfos()
@@ -118,61 +136,15 @@ public :
                 M_doubleInfos.clear();
                 M_vectorInfos.clear();
                 M_matrixInfos.clear();
+                M_parameterValuesInfos.clear();
             }
     private :
         std::set<std::string> M_infos;
         std::map<std::string,double> M_doubleInfos;
         std::map<std::string,vector_ptrtype> M_vectorInfos;
         std::map<std::string,sparse_matrix_ptrtype> M_matrixInfos;
+        std::map<std::string,std::map<std::string,double>> M_parameterValuesInfos;
 
-    };
-
-    class DataUpdateLinear : public DataUpdateBase
-    {
-    public:
-        DataUpdateLinear( const vector_ptrtype& currentSolution,
-                          sparse_matrix_ptrtype matrix, vector_ptrtype rhs,
-                          bool buildCstPart,
-                          sparse_matrix_ptrtype matrixExtended, bool buildExtendedPart )
-            :
-            DataUpdateBase(),
-            M_matrix( matrix ),
-            M_rhs( rhs ),
-            M_currentSolution( currentSolution ),
-            M_buildCstPart( buildCstPart ),
-            M_matrixExtended( matrixExtended ),
-            M_buildExtendedPart( buildExtendedPart ),
-            M_doBCStrongDirichlet( true )
-            {}
-        DataUpdateLinear(DataUpdateLinear const& d) = default;
-        DataUpdateLinear(DataUpdateLinear && d) = default;
-
-        sparse_matrix_ptrtype& matrix() { return M_matrix; }
-        vector_ptrtype& rhs() { return M_rhs; }
-        vector_ptrtype const& currentSolution() { return M_currentSolution; }
-        bool buildCstPart() const { return M_buildCstPart; }
-        sparse_matrix_ptrtype& matrixExtended() { return M_matrixExtended; }
-        bool buildExtendedPart() const { return M_buildExtendedPart; }
-        bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
-        std::map<Feel::MatrixStructure,std::pair<sparse_matrix_ptrtype,double>> const& matrixToAdd() const { return M_matrixToAdd; }
-        std::vector<std::pair<sparse_matrix_ptrtype,vector_ptrtype>> const& rhsToAddFromMatrixVectorProduct() const { return M_rhsToAddFromMatrixVectorProduct; }
-
-        void setBuildCstPart( bool b ) { M_buildCstPart = b; }
-        void setDoBCStrongDirichlet( bool b ){ M_doBCStrongDirichlet = b; }
-        void addMatrixToAdd( sparse_matrix_ptrtype mat, Feel::MatrixStructure matStruc, double scaling ) { M_matrixToAdd[matStruc] = std::make_pair( mat, scaling ); }
-        void addRhsToAdd( sparse_matrix_ptrtype mat, vector_ptrtype vec ) { M_rhsToAddFromMatrixVectorProduct.push_back( std::make_pair(mat,vec) ); }
-    private :
-        sparse_matrix_ptrtype M_matrix;
-        vector_ptrtype M_rhs;
-        const vector_ptrtype& M_currentSolution;
-
-        bool M_buildCstPart;
-        sparse_matrix_ptrtype M_matrixExtended;
-        bool M_buildExtendedPart;
-        bool M_doBCStrongDirichlet;
-
-        std::map<Feel::MatrixStructure,std::pair<sparse_matrix_ptrtype,double>> M_matrixToAdd;
-        std::vector<std::pair<sparse_matrix_ptrtype,vector_ptrtype>> M_rhsToAddFromMatrixVectorProduct;
     };
 
     class DataDofEliminationIds
@@ -190,6 +162,47 @@ public :
     private:
         bool M_hasDofEliminationIds;
         std::set<size_type> M_dofEliminationIds;
+    };
+
+    class DataUpdateLinear : public DataUpdateBase
+    {
+    public:
+        DataUpdateLinear( const vector_ptrtype& currentSolution,
+                          sparse_matrix_ptrtype matrix, vector_ptrtype rhs,
+                          bool buildCstPart )
+            :
+            DataUpdateBase(),
+            M_matrix( matrix ),
+            M_rhs( rhs ),
+            M_currentSolution( currentSolution ),
+            M_buildCstPart( buildCstPart ),
+            M_doBCStrongDirichlet( true )
+            {}
+        DataUpdateLinear(DataUpdateLinear const& d) = default;
+        DataUpdateLinear(DataUpdateLinear && d) = default;
+
+        sparse_matrix_ptrtype& matrix() { return M_matrix; }
+        vector_ptrtype& rhs() { return M_rhs; }
+        vector_ptrtype const& currentSolution() { return M_currentSolution; }
+        bool buildCstPart() const { return M_buildCstPart; }
+        FEELPP_DEPRECATED bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
+        std::map<Feel::MatrixStructure,std::pair<sparse_matrix_ptrtype,double>> const& matrixToAdd() const { return M_matrixToAdd; }
+        std::vector<std::pair<sparse_matrix_ptrtype,vector_ptrtype>> const& rhsToAddFromMatrixVectorProduct() const { return M_rhsToAddFromMatrixVectorProduct; }
+
+        void setBuildCstPart( bool b ) { M_buildCstPart = b; }
+        FEELPP_DEPRECATED void setDoBCStrongDirichlet( bool b ){ M_doBCStrongDirichlet = b; }
+        void addMatrixToAdd( sparse_matrix_ptrtype mat, Feel::MatrixStructure matStruc, double scaling ) { M_matrixToAdd[matStruc] = std::make_pair( mat, scaling ); }
+        void addRhsToAdd( sparse_matrix_ptrtype mat, vector_ptrtype vec ) { M_rhsToAddFromMatrixVectorProduct.push_back( std::make_pair(mat,vec) ); }
+    private :
+        sparse_matrix_ptrtype M_matrix;
+        vector_ptrtype M_rhs;
+        const vector_ptrtype& M_currentSolution;
+
+        bool M_buildCstPart;
+        bool M_doBCStrongDirichlet;
+
+        std::map<Feel::MatrixStructure,std::pair<sparse_matrix_ptrtype,double>> M_matrixToAdd;
+        std::vector<std::pair<sparse_matrix_ptrtype,vector_ptrtype>> M_rhsToAddFromMatrixVectorProduct;
     };
 
     class DataUpdateResidual : public DataUpdateBase, public DataDofEliminationIds
@@ -230,16 +243,13 @@ public :
     {
     public:
         DataUpdateJacobian( const vector_ptrtype& currentSolution, sparse_matrix_ptrtype jacobian,
-                            vector_ptrtype vectorUsedInStrongDirichlet, bool buildCstPart,
-                            sparse_matrix_ptrtype matrixExtended, bool buildExtendedPart )
+                            vector_ptrtype vectorUsedInStrongDirichlet, bool buildCstPart )
             :
             DataUpdateBase(),
             M_jacobian( jacobian ),
             M_vectorUsedInStrongDirichlet( vectorUsedInStrongDirichlet ),
             M_currentSolution( currentSolution ),
             M_buildCstPart( buildCstPart ),
-            M_matrixExtended( matrixExtended ),
-            M_buildExtendedPart( buildExtendedPart ),
             M_doBCStrongDirichlet( true )
             {}
 
@@ -251,9 +261,7 @@ public :
         vector_ptrtype const& currentSolution() { return M_currentSolution; }
 
         bool buildCstPart() const { return M_buildCstPart; }
-        sparse_matrix_ptrtype& matrixExtended() { return M_matrixExtended; }
-        bool buildExtendedPart() const { return M_buildExtendedPart; }
-        bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
+        FEELPP_DEPRECATED bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
 
         void setBuildCstPart( bool b ) { M_buildCstPart = b; }
         void setDoBCStrongDirichlet( bool b ){ M_doBCStrongDirichlet = b; }
@@ -263,8 +271,6 @@ public :
         vector_ptrtype M_vectorUsedInStrongDirichlet;
         const vector_ptrtype& M_currentSolution;
         bool M_buildCstPart;
-        sparse_matrix_ptrtype M_matrixExtended;
-        bool M_buildExtendedPart;
         bool M_doBCStrongDirichlet;
     };
 
@@ -317,13 +323,15 @@ public :
     ModelAlgebraic( std::string _theprefix, std::string const& keyword,
                     worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
                     std::string const& subPrefix="",
-                    ModelBaseRepository const& modelRep = ModelBaseRepository() );
+                    ModelBaseRepository const& modelRep = ModelBaseRepository(),
+                    ModelBaseCommandLineOptions const& modelCmdLineOpt = ModelBaseCommandLineOptions() );
     ModelAlgebraic( std::string _theprefix,
                     worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
                     std::string const& subPrefix="",
-                    ModelBaseRepository const& modelRep = ModelBaseRepository() )
+                    ModelBaseRepository const& modelRep = ModelBaseRepository(),
+                    ModelBaseCommandLineOptions const& modelCmdLineOpt = ModelBaseCommandLineOptions() )
         :
-        ModelAlgebraic( _theprefix, _theprefix, _worldComm, subPrefix, modelRep )
+        ModelAlgebraic( _theprefix, _theprefix, _worldComm, subPrefix, modelRep, modelCmdLineOpt )
         {}
 
     ModelAlgebraic( ModelAlgebraic const& app ) = default;
@@ -362,24 +370,11 @@ public :
     void setPrintGraphFileName(std::string s);
 
     //----------------------------------------------------------------------------------//
-    /**
-     * return false
-     */
-    virtual bool hasExtendedPattern() const;
 
     /**
      * return an empty blockPattern if not overhead
      */
     virtual block_pattern_type blockPattern() const;
-
-    bool buildMatrixPrecond() const;
-
-    virtual
-    void
-    updatePreconditioner(const vector_ptrtype& X,
-                         sparse_matrix_ptrtype& A,
-                         sparse_matrix_ptrtype& A_extended,
-                         sparse_matrix_ptrtype& Prec) const;
 
     virtual void updateInHousePreconditioner( DataUpdateLinear & data ) const;
     virtual void updateInHousePreconditioner( DataUpdateJacobian & data ) const;
@@ -396,8 +391,6 @@ public :
     virtual void updateResidualDofElimination( DataUpdateResidual & data ) const;
     virtual void updateLinearPDE( DataUpdateLinear & data ) const;
     virtual void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
-    virtual void updatePicard( DataUpdateLinear & data ) const;
-    virtual double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
 
     //----------------------------------------------------------------------------------//
     virtual void preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const {}
@@ -408,7 +401,7 @@ public :
     virtual void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     //----------------------------------------------------------------------------------//
     virtual void updateNewtonIteration( int step, vector_ptrtype residual, vector_ptrtype sol, typename backend_type::solvernonlinear_type::UpdateIterationData const& data ) const {}
-
+    virtual void updatePicardIteration( int step, vector_ptrtype sol ) const {}
 
     //! index start of (sub-)block
     size_type rowStartInMatrix() const { return this->startBlockSpaceIndexMatrixRow(); }
@@ -457,6 +450,16 @@ public :
         }
     bool hasDofEliminationIds( std::string const& spaceName ) const { return M_dofEliminationIds.find( spaceName ) != M_dofEliminationIds.end(); }
 
+    template <typename SpaceType, typename RangeType>
+    void updateDofEliminationIds( std::string const& spaceName, std::shared_ptr<SpaceType> thespace, RangeType const& therange, ComponentType c1 = ComponentType::NO_COMPONENT )
+        {
+            ElementsType et = (ElementsType)boost::get<0>( therange ).value;
+            auto dofsToAdd = thespace->dofs( therange, c1 );
+            thespace->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+            this->dofEliminationIdsAll(spaceName,et).insert( dofsToAdd.begin(), dofsToAdd.end() );
+            auto dofsMultiProcessToAdd = thespace->dofs( therange, c1, true );
+            this->dofEliminationIdsMultiProcess(spaceName,et).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+        }
 private :
     // verbose
     bool M_verboseSolverTimer,M_verboseSolverTimerAllProc;

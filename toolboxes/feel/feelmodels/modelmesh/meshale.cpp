@@ -325,7 +325,7 @@ MeshALE<Convex>::exportResults(double time)
     M_exporter_ref->step( time )->add( prefixvm(this->prefix(),"ref_dispOnMovingBoundary"),*this->displacementOnMovingBoundaryInRef());
     M_exporter_ref->save();
 
-    if ( mesh_type::nOrder == 1 )
+    if constexpr ( mesh_type::nOrder <= 2 )
     {
         if (!M_exporter)
         {

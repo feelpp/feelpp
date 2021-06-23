@@ -1,0 +1,74 @@
+// -*- mode: javascript -*-
+{
+    "Name": "ISO 10211:2007 Thermal bridges in building construction",
+    "ShortName":"ThermalBridges",
+    "Parameters":
+    {
+        "alpha":4,
+        "beta":1.5,
+        "exact_solution":"cos(alpha*pi*x)*sin(beta*pi*y):x:y:alpha:beta",
+        "grad_exact_solution":"{-alpha*pi*sin(alpha*pi*x)*sin(beta*pi*y), beta*pi*cos(alpha*pi*x)*cos(beta*pi*y)}:x:y:alpha:beta",
+        "laplacian_exact_solution":"-((alpha*pi)^2)*cos(alpha*pi*x)*sin(beta*pi*y)-((beta*pi)^2)*cos(alpha*pi*x)*sin(beta*pi*y):x:y:alpha:beta"
+    },
+    "Materials":
+    {
+        "Omega":
+        {
+            "k":1
+        }
+    },
+    "BoundaryConditions":
+    {
+        "temperature":
+        {
+            "Dirichlet":
+            {
+                "mybc":
+                {
+                    "markers":["Left","Bottom","Right","Top"],
+                    "expr":"exact_solution:exact_solution"
+                }
+            },
+            "VolumicForces":
+            {
+                "Omega":
+                {
+                    "expr":"-laplacian_exact_solution:laplacian_exact_solution"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["temperature","pid"],
+            "expr":
+            {
+                "exact_solution":"exact_solution:exact_solution"
+            }
+        },
+        "Measures":
+        {
+            "Normal-Heat-Flux":
+            {
+                "bottom":
+                {
+                    "markers":"Top",
+                    "direction":"inward"
+                }
+            },
+            "Norm":
+            {
+                "error-evaluated":
+                {
+                    "field":"temperature",
+                    "type":["L2-error","H1-error","SemiH1-error"],
+                    "solution":"exact_solution:exact_solution",
+                    "grad_solution":"{grad_exact_solution_0,grad_exact_solution_1}:grad_exact_solution_0:grad_exact_solution_1"
+                }
+            }
+        }
+    }
+
+}

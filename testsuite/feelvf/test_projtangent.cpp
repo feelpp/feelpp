@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE( test_4 )
     // T2 = 1 and hence the integral should be equal to 1 on each 1 and 6
     // over all the the cube
     double b = integrate( _range= boundaryfaces( mesh ), _expr= trans(cross(basisT1(),basisT2()))*basisN() ).evaluate()( 0,0 );
-    BOOST_CHECK_CLOSE( b, 6, 1e-13);
+    BOOST_CHECK_CLOSE( b, 6., 1e-12);
     BOOST_TEST_MESSAGE( "int 1^T*T=" << b << " (must be zero)");
     BOOST_TEST_MESSAGE( "test_square done" );
 }

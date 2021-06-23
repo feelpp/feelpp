@@ -6,7 +6,8 @@
        Date: 2007-12-23
 
   Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
-
+  Copyright (C) 2011-present Feel++ Consortium
+  
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -81,7 +82,8 @@ Backend<T,SizeT>::Backend( worldcomm_ptr_t const& worldComm )
 #endif
     M_constant_null_space( false ),
     M_showKSPMonitor( false ),
-    M_showKSPConvergedReason( false )
+    M_showKSPConvergedReason( false ),
+    M_verbose( false )
 {
     if ( this->worldComm().globalSize() > 1 )
         M_pc = "gasm";
@@ -93,36 +95,37 @@ Backend<T,SizeT>::Backend( po::variables_map const& vm, std::string const& prefi
     super( worldComm ),
     M_vm( vm ),
     M_prefix( prefix ),
-    M_nlsolver( solvernonlinear_type::build( prefix, worldComm ) ),
+    M_nlsolver( solvernonlinear_type::build( prefix, worldComm, vm ) ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
-    M_rtolerance( vm[prefixvm( prefix,"ksp-rtol" )].template as<double>() ),
-    M_dtolerance( vm[prefixvm( prefix,"ksp-dtol" )].template as<double>() ),
-    M_atolerance( vm[prefixvm( prefix,"ksp-atol" )].template as<double>() ),
-    M_rtoleranceSNES( vm[prefixvm( prefix,"snes-rtol" )].template as<double>() ),
-    M_stoleranceSNES( vm[prefixvm( prefix,"snes-stol" )].template as<double>() ),
-    M_atoleranceSNES( vm[prefixvm( prefix,"snes-atol" )].template as<double>() ),
-    M_rtoleranceKSPinSNES( vm[prefixvm( prefix,"snes-ksp-rtol" )].template as<double>() ),
-    M_reuse_prec( vm[prefixvm( prefix,"reuse-prec" )].template as<bool>() ),
-    M_reuse_jac(  vm[prefixvm( prefix,"reuse-jac" )].template as<bool>() ),
+    M_rtolerance( doption(_name="ksp-rtol",_prefix=prefix,_vm=vm) ),
+    M_dtolerance( doption(_name="ksp-dtol",_prefix=prefix,_vm=vm) ),
+    M_atolerance( doption(_name="ksp-atol",_prefix=prefix,_vm=vm) ),
+    M_rtoleranceSNES( doption(_name="snes-rtol",_prefix=prefix,_vm=vm) ),
+    M_stoleranceSNES( doption(_name="snes-stol",_prefix=prefix,_vm=vm) ),
+    M_atoleranceSNES( doption(_name="snes-atol",_prefix=prefix,_vm=vm) ),
+    M_rtoleranceKSPinSNES( doption(_name="snes-ksp-rtol",_prefix=prefix,_vm=vm) ),
+    M_reuse_prec( boption(_name="reuse-prec",_prefix=prefix,_vm=vm) ),
+    M_reuse_jac( boption(_name="reuse-jac",_prefix=prefix,_vm=vm) ),
     M_reusePrecIsBuild( false ) ,
-    M_reusePrecRebuildAtFirstNewtonStep( vm[prefixvm( prefix,"reuse-prec.rebuild-at-first-newton-step" )].template as<bool>() ),
+    M_reusePrecRebuildAtFirstNewtonStep( boption(_name="reuse-prec.rebuild-at-first-newton-step",_prefix=prefix,_vm=vm) ),
     M_reuseJacIsBuild( false ) ,
-    M_reuseJacRebuildAtFirstNewtonStep( vm[prefixvm( prefix,"reuse-jac.rebuild-at-first-newton-step" )].template as<bool>() ),
+    M_reuseJacRebuildAtFirstNewtonStep( boption(_name="reuse-jac.rebuild-at-first-newton-step",_prefix=prefix,_vm=vm) ),
     M_transpose( false ),
-    M_maxitKSP( vm[prefixvm( prefix,"ksp-maxit" )].template as<int>() ),
-    M_maxitKSPinSNES( vm[prefixvm( prefix,"snes-ksp-maxit" )].template as<int>() ),
-    M_maxitSNES( vm[prefixvm( prefix,"snes-maxit" )].template as<int>() ),
-    M_maxitKSPReuse( (vm.count(prefixvm( prefix,"ksp-maxit-reuse")))? vm[prefixvm( prefix,"ksp-maxit-reuse" )].template as<int>() : M_maxitKSP ),
-    M_maxitKSPinSNESReuse( (vm.count(prefixvm( prefix,"snes-ksp-maxit-reuse")))? vm[prefixvm( prefix,"snes-ksp-maxit-reuse" )].template as<int>() : M_maxitKSPinSNES ),
-    M_maxitSNESReuse( (vm.count(prefixvm( prefix,"snes-maxit-reuse")))? vm[prefixvm( prefix,"snes-maxit-reuse" )].template as<int>() : M_maxitSNES ),
-    M_export( vm[prefixvm( prefix,"export-matlab" )].template as<std::string>() ),
-    M_ksp( vm[prefixvm( prefix,"ksp-type" )].template as<std::string>() ),
-    M_pc( vm[prefixvm( prefix,"pc-type" )].template as<std::string>() ),
-    M_fieldSplit( vm[prefixvm( prefix,"fieldsplit-type" )].template as<std::string>() ),
-    M_pcFactorMatSolverPackage( vm[prefixvm( prefix,"pc-factor-mat-solver-package-type" )].template as<std::string>() ),
-    M_constant_null_space( vm[prefixvm( prefix,"constant-null-space" )].template as<bool>() ),
-    M_showKSPMonitor( vm.count(prefixvm( prefix,"ksp-monitor" )) ),
-    M_showKSPConvergedReason( vm.count(prefixvm( prefix,"ksp-converged-reason" )) )
+    M_maxitKSP( ioption(_name="ksp-maxit",_prefix=prefix,_vm=vm) ),
+    M_maxitKSPinSNES( ioption(_name="snes-ksp-maxit",_prefix=prefix,_vm=vm) ),
+    M_maxitSNES( ioption(_name="snes-maxit",_prefix=prefix,_vm=vm) ),
+    M_maxitKSPReuse( (vm.count(prefixvm( prefix,"ksp-maxit-reuse")))?  ioption(_name="ksp-maxit-reuse",_prefix=prefix,_vm=vm) : M_maxitKSP ),
+    M_maxitKSPinSNESReuse( (vm.count(prefixvm( prefix,"snes-ksp-maxit-reuse")))? ioption(_name="snes-ksp-maxit-reuse",_prefix=prefix,_vm=vm) : M_maxitKSPinSNES ),
+    M_maxitSNESReuse( (vm.count(prefixvm( prefix,"snes-maxit-reuse")))? ioption(_name="snes-maxit-reuse",_prefix=prefix,_vm=vm) : M_maxitSNES ),
+    M_export( soption(_name="export-matlab",_prefix=prefix,_vm=vm) ),
+    M_ksp( soption(_name="ksp-type",_prefix=prefix,_vm=vm) ),
+    M_pc( soption(_name="pc-type",_prefix=prefix,_vm=vm) ),
+    M_fieldSplit( soption(_name="fieldsplit-type",_prefix=prefix,_vm=vm) ),
+    M_pcFactorMatSolverPackage( soption(_name="pc-factor-mat-solver-package-type",_prefix=prefix,_vm=vm) ),
+    M_constant_null_space( boption(_name="constant-null-space",_prefix=prefix,_vm=vm) ),
+    M_showKSPMonitor( boption(_name="ksp-monitor",_prefix=prefix,_vm=vm) ),
+    M_showKSPConvergedReason( vm.count(prefixvm( prefix,"ksp-converged-reason" )) ),
+    M_verbose( boption(_name="backend.verbose",_prefix=prefix,_vm=vm) )
 {
 }
 template <typename T, typename SizeT>
@@ -225,16 +228,16 @@ Backend<T,SizeT>::build( po::variables_map const& vm, std::string const& prefix,
 }
 template <typename T, typename SizeT>
 typename Backend<T,SizeT>::backend_ptrtype
-Backend<T,SizeT>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm )
+Backend<T,SizeT>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm, po::variables_map const& vm )
 {
     if ( kind == "eigen")
-        return backend_ptrtype( new BackendEigen<value_type,0,SizeT>( Environment::vm(), prefix, worldComm ) );
+        return backend_ptrtype( new BackendEigen<value_type,0,SizeT>( vm, prefix, worldComm ) );
     if ( kind == "eigen_dense")
-        return backend_ptrtype( new BackendEigen<value_type,1,SizeT>( Environment::vm(), prefix, worldComm ) );
+        return backend_ptrtype( new BackendEigen<value_type,1,SizeT>( vm, prefix, worldComm ) );
 #if defined ( FEELPP_HAS_PETSC_H )
     if ( kind == "petsc")
     {
-        auto b = backend_ptrtype( new BackendPetsc<value_type,SizeT>( Environment::vm(), prefix, worldComm ) );
+        auto b = backend_ptrtype( new BackendPetsc<value_type,SizeT>( vm, prefix, worldComm ) );
         b->attachPreconditioner();
         return b;
     }
@@ -248,12 +251,12 @@ Backend<T,SizeT>::build( std::string const& kind, std::string const& prefix, wor
 
 template <>
 typename Backend<std::complex<double>>::backend_ptrtype
-Backend<std::complex<double>>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm )
+Backend<std::complex<double>>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm, po::variables_map const& vm )
 {
     if ( kind == "eigen")
-        return backend_ptrtype( new BackendEigen<value_type>( Environment::vm(), prefix, worldComm ) );
+        return backend_ptrtype( new BackendEigen<value_type,0,size_type>( vm, prefix, worldComm ) );
     if ( kind == "eigen_dense")
-        return backend_ptrtype( new BackendEigen<value_type,1>( Environment::vm(), prefix, worldComm ) );
+        return backend_ptrtype( new BackendEigen<value_type,1,size_type>( vm, prefix, worldComm ) );
     // should never happen
     return backend_ptrtype();
 }
@@ -526,16 +529,7 @@ template <typename T, typename SizeT>
 typename Backend<T,SizeT>::value_type
 Backend<T,SizeT>::dot( vector_type const& x, vector_type const& y ) const
 {
-    value_type localres = 0;
-
-    for ( size_type i = 0; i < x.localSize(); ++i )
-    {
-        localres += x( i )*y( i );
-    }
-
-    value_type globalres=localres;
-    mpi::all_reduce( this->worldComm().globalComm(), localres, globalres, std::plus<value_type>() );
-    return globalres;
+    return x.dot( y );
 }
 
 template <>
@@ -543,12 +537,12 @@ typename Backend<std::complex<double>>::value_type
 Backend<std::complex<double>>::dot( vector_type const& x, vector_type const& y ) const
 {
     value_type localres = 0;
-    
-    for ( size_type i = 0; i < x.localSize(); ++i )
+
+    for ( size_type i = 0; i < x.map().nLocalDofWithoutGhost(); ++i )
     {
         localres += std::conj(x( i ))*y( i );
     }
-    
+
     value_type globalres=localres;
     mpi::all_reduce( this->worldComm().globalComm(), localres, globalres, std::plus<value_type>() );
     return globalres;

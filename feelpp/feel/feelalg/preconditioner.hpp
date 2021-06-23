@@ -116,7 +116,7 @@ public:
         {}
 
     //! destructor
-    virtual ~Preconditioner();
+    ~Preconditioner() override;
 
     static preconditioner_ptrtype build( 
             std::string const& name = "", 

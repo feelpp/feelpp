@@ -94,7 +94,7 @@ public :
         {
         }
 
-    ~QuadMapped() {}
+    ~QuadMapped() override {}
 
     permutation_points_type
     operator()( pointset_type const& pts )

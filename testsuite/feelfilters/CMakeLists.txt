@@ -13,3 +13,4 @@ if(FEELPP_HAS_MED)
 endif()
 
 feelpp_add_test( exporter_disc )
+feelpp_add_test( read_write_data )

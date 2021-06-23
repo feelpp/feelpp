@@ -4,7 +4,8 @@
     "ShortName":"Solid",
     "Models":
     {
-        "equations":"Hyper-Elasticity"
+        "equations":"Hyper-Elasticity",
+        "material-model":"StVenantKirchhoff"
     },
     "Parameters":
     {
@@ -49,7 +50,7 @@
     {
         "Exports":
         {
-            "fields":["displacement","Von-Mises"]
+            "fields":["displacement","von-mises-criterion","tresca-criterion","principal-stresses"]
         },
         "Measures":
         {
@@ -66,12 +67,12 @@
         {
             "Measures":
             {
-                "displacement_pointA_x":
+                "Points_pointA_displacement_0":
                 {
                     "value":-0.469e-3,
                     "tolerance":1e-1
                 },
-                "displacement_pointA_y":
+                "Points_pointA_displacement_1":
                 {
                     "value":-16.97e-3,
                     "tolerance":1e-1

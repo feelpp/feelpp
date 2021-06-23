@@ -1,9 +1,9 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 #ifndef __FEELPP_MODELS_VF_SOLIDMECGEOMAPEULERIAN_H
 #define __FEELPP_MODELS_VF_SOLIDMECGEOMAPEULERIAN_H 1
 
 #include <feel/feelmodels/modelvf/exprtensorbase.hpp>
-#include <feel/feelmodels/solid/mechanicalpropertiesdescription.hpp>
 
 namespace Feel
 {
@@ -92,7 +92,7 @@ public:
         // fe disp context
         typedef typename fe_disp_type::PreCompute pc_disp_type;
         typedef std::shared_ptr<pc_disp_type> pc_disp_ptrtype;
-        typedef typename fe_disp_type::template Context<context_disp, fe_disp_type,gm_type,geoelement_type,gmc_type::context> ctx_disp_type;
+        typedef typename fe_disp_type::template Context<context_disp, fe_disp_type,gm_type,geoelement_type,0, gmc_type::subEntityCoDim> ctx_disp_type;
         typedef std::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
 
         tensor( expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -370,19 +370,19 @@ private:
 
 template<class ElementDispType>
 inline
-Expr< SolidMecGeomapEulerian<ElementDispType,mpl::int_<ExprApplyType::EVAL> > >
+auto
 solidMecGeomapEulerian( ElementDispType const& v )
 {
-    typedef SolidMecGeomapEulerian<ElementDispType,mpl::int_<ExprApplyType::EVAL> > myexpr_type;
-    return Expr< myexpr_type >(  myexpr_type( v ) );
+    typedef SolidMecGeomapEulerian<unwrap_ptr_t<ElementDispType>,mpl::int_<ExprApplyType::EVAL> > myexpr_type;
+    return Expr< myexpr_type >(  myexpr_type( unwrap_ptr(v) ) );
 }
 template<class ElementDispType>
 inline
-Expr< SolidMecGeomapEulerian<ElementDispType,mpl::int_<ExprApplyType::JACOBIAN> > >
+auto
 solidMecGeomapEulerianJacobian( ElementDispType const& v )
 {
-    typedef SolidMecGeomapEulerian<ElementDispType,mpl::int_<ExprApplyType::JACOBIAN> > myexpr_type;
-    return Expr< myexpr_type >(  myexpr_type( v ) );
+    typedef SolidMecGeomapEulerian<unwrap_ptr_t<ElementDispType>,mpl::int_<ExprApplyType::JACOBIAN> > myexpr_type;
+    return Expr< myexpr_type >(  myexpr_type( unwrap_ptr(v) ) );
 }
 
 

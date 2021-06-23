@@ -30,12 +30,7 @@
 #include <feel/feelmodels/thermoelectric/thermoelectric.hpp>
 
 #include <feel/feelvf/vf.hpp>
-/*#include <feel/feelvf/form.hpp>
-#include <feel/feelvf/on.hpp>
-#include <feel/feelvf/operators.hpp>
- #include <feel/feelvf/operations.hpp>*/
-
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
+#include <feel/feelmodels/modelcore/utils.hpp>
 
 namespace Feel
 {
@@ -49,7 +44,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::ThermoElectric( std::string const& prefix,
                                                     std::string const& subPrefix,
                                                     ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep )
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    ModelPhysics<mesh_type::nDim>( "thermo-electric" ),
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
 {
     this->log("ThermoElectric","constructor", "start" );
 
@@ -92,8 +89,11 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("ThermoElectric","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
-    CHECK( M_mesh ) << "mesh generation fail";
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
+    CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("createMesh");
     this->log("ThermoElectric","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
@@ -164,27 +164,61 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("ThermoElectric","init", "start" );
     this->timerTool("Constructor").start();
 
-    if ( !M_mesh )
-        this->initMesh();
-
     M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
-                                                           this->subPrefix(), this->repository() ) );
-    if ( !M_heatModel->modelPropertiesPtr() )
-        M_heatModel->setModelProperties( this->modelPropertiesPtr() );
-    M_heatModel->setMesh( this->mesh() );
-    M_heatModel->init( false );
-
+                                           this->subPrefix(), this->repository() ) );
     M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), "electric", this->worldCommPtr(),
                                                    this->subPrefix(), this->repository() ) );
+
+    if ( this->physics().empty() )
+    {
+        typename ModelPhysics<mesh_type::nDim>::subphysic_description_type subPhyicsDesc;
+        subPhyicsDesc[M_heatModel->physicType()] = std::make_tuple( M_heatModel->keyword(), M_heatModel );
+        subPhyicsDesc[M_electricModel->physicType()] = std::make_tuple( M_electricModel->keyword(), M_electricModel );
+        this->initPhysics( this->keyword(), this->modelProperties().models(), subPhyicsDesc );
+    }
+
+    // physical properties
+    if ( !M_materialsProperties )
+    {
+        //auto paramValues = this->modelProperties().parameters().toParameterValues();
+        //this->modelProperties().materials().setParameterValues( paramValues );
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
+    }
+
+    if ( !this->mesh() )
+        this->initMesh();
+
+    this->materialsProperties()->addMesh( this->mesh() );
+
+    // init heat toolbox
+    M_heatModel->setPhysics( this->physics( M_heatModel->physicType() ), M_heatModel->keyword() );
+    M_heatModel->setManageParameterValues( false );
+    if ( !M_heatModel->modelPropertiesPtr() )
+    {
+        M_heatModel->setModelProperties( this->modelPropertiesPtr() );
+        M_heatModel->setManageParameterValuesOfModelProperties( false );
+    }
+    M_heatModel->setMesh( this->mesh() );
+    M_heatModel->setMaterialsProperties( M_materialsProperties );
+    M_heatModel->init( false );
+
+    // init electric toolbox
+    M_electricModel->setPhysics( this->physics( M_electricModel->physicType() ), M_electricModel->keyword() );
+    M_electricModel->setManageParameterValues( false );
     if ( !M_electricModel->modelPropertiesPtr() )
+    {
         M_electricModel->setModelProperties( this->modelPropertiesPtr() );
+        M_electricModel->setManageParameterValuesOfModelProperties( false );
+    }
     M_electricModel->setMesh( this->mesh() );
+    M_electricModel->setMaterialsProperties( M_materialsProperties );
     M_electricModel->init( false );
 
     M_modelName = "ThermoElectric";
     if ( M_solverName == "automatic" )
     {
-        if ( M_electricModel->electricProperties()->hasElectricConductivityDependingOnSymbol( "heat_T" ) )
+        if ( this->materialsProperties()->hasElectricConductivityDependingOnSymbol( "heat_T" ) )
             M_solverName = "Newton";
         else
             M_solverName = "Linear";
@@ -213,19 +247,11 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         intersect( M_heatModel->rangeMeshElements(), M_electricModel->rangeMeshElements() );
 #endif
 
-    for ( auto const& rangeData : M_electricModel->electricProperties()->rangeMeshElementsByMaterial() )
-    {
-        std::string const& matName = rangeData.first;
-        if ( !M_heatModel->thermalProperties()->hasMaterial( matName ) )
-            continue;
-        M_rangeMeshElementsByMaterial[matName] = rangeData.second;
-    }
     // post-process
     this->initPostProcess();
 
-    // update fields
-    M_heatModel->updateFields( this->symbolsExpr() );
-    M_electricModel->updateFields( this->symbolsExpr() );
+    // update constant parameters into
+    this->updateParameterValues();
 
     // backend
     M_backendMonolithic = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
@@ -272,7 +298,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("ThermoElectric","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
 }
 
-
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
@@ -280,11 +305,24 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("ThermoElectric","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    auto const& exportsFields = this->modelProperties().postProcess().exports( this->keyword() ).fields();
-    M_postProcessFieldExportedHeat = M_heatModel->postProcessExportsFields( exportsFields, M_heatModel->keyword() );
-    M_postProcessFieldExportedElectric = M_electricModel->postProcessExportsFields( exportsFields, M_electricModel->keyword() );
 
-    if ( !M_postProcessFieldExportedHeat.empty() || !M_postProcessFieldExportedElectric.empty() )
+    // need to not include export fields of material of subphysics
+    std::set<std::string> ppExportsAllFieldsAvailableHeat = Feel::FeelModels::detail::set_difference( this->heatModel()->postProcessExportsAllFieldsAvailable(),
+                                                                                                      this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->heatModel()->physicsAvailable() ) );
+    std::set<std::string> ppExportsAllFieldsAvailableElectric = Feel::FeelModels::detail::set_difference( this->electricModel()->postProcessExportsAllFieldsAvailable(),
+                                                                                                          this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->electricModel()->physicsAvailable() ) );
+    std::set<std::string> ppExportsAllFieldsAvailable;
+    for ( auto const& s : ppExportsAllFieldsAvailableHeat )
+        ppExportsAllFieldsAvailable.insert( prefixvm( this->heatModel()->keyword(), s) );
+    for ( auto const& s : ppExportsAllFieldsAvailableElectric )
+        ppExportsAllFieldsAvailable.insert( prefixvm( this->electricModel()->keyword(), s) );
+
+    this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
+    this->setPostProcessExportsPidName( "pid" );
+    super_type::initPostProcess();
+
+    if ( !this->postProcessExportsFields().empty() )
     {
         std::string geoExportType="static";//change_coords_only, change, static
         M_exporter = exporter( _mesh=this->mesh(),
@@ -305,48 +343,100 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
     if ( !this->isUpdatedForUse() )
         return;
-    if ( p.get_child_optional( "Prefix" ) )
+    if ( p.contains( "Environment" ) )
         return;
 
-    p.put( "Prefix", this->prefix() );
-    p.put( "Root Repository", this->rootRepository() );
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
 
-    p.put( "toolbox-heat", M_heatModel->journalSectionName() );
-    p.put( "toolbox-electric", M_electricModel->journalSectionName() );
+    super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
+
+    // p.put( "toolbox-heat", M_heatModel->journalSectionName() );
+    // p.put( "toolbox-electric", M_electricModel->journalSectionName() );
+
+    // Materials properties
+    if ( this->materialsProperties() )
+        this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
 
     // Numerical Solver
-    pt::ptree subPt;
-    subPt.put( "solver", M_solverName );
-    p.put_child( "Numerical Solver", subPt );
+    nl::json subPt;
+    subPt.emplace( "solver", M_solverName );
+    p["Numerical Solver"] = subPt;
 
     // Exporter
+#if 0
     if ( M_exporter )
     {
         subPt.clear();
         subPt.put( "type",M_exporter->type() );
         subPt.put( "freq save",M_exporter->freq() );
         pt::ptree subPt2;
-        for ( std::string const& fieldName : M_postProcessFieldExportedHeat )
+        for ( std::string const& fieldName : this->postProcessExportsFields() )
             subPt2.push_back( std::make_pair("", pt::ptree( fieldName ) ) );
-        subPt.put_child( "fields [heat]", subPt2 );
-        subPt2.clear();
-        for ( std::string const& fieldName : M_postProcessFieldExportedElectric )
-            subPt2.push_back( std::make_pair("", pt::ptree( fieldName ) ) );
-        subPt.put_child( "fields [electric]", subPt2 );
+        subPt.put_child( "fields", subPt2 );
         p.put_child( "Exporter", subPt );
     }
+#endif
 
     // Algebraic Solver
     if ( M_algebraicFactoryMonolithic )
+        M_algebraicFactoryMonolithic->updateInformationObject( p["Algebraic Solver"] );
+
+    p["Toolbox Heat"] = M_heatModel->journalSection().to_string();
+    p["Toolbox Electric"] = M_electricModel->journalSection().to_string();
+}
+
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+tabulate_informations_ptr_t
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Environment") )
+        tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
+
+    if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
+        tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Meshes") )
+        tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
+
+    // Numerical Solver
+    if ( jsonInfo.contains( "Numerical Solver" ) )
     {
-        subPt.clear();
-        M_algebraicFactoryMonolithic->updateInformationObject( subPt );
-        p.put_child( "Algebraic Solver", subPt );
+        Feel::Table tabInfoNumSolver;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoNumSolver, jsonInfo.at("Numerical Solver"), tabInfoProp );
+        tabInfo->add( "Numerical Solver",  TabulateInformations::New( tabInfoNumSolver, tabInfoProp ) );
     }
+
+    if ( jsonInfo.contains( "Algebraic Solver" ) )
+        tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
+
+    // generate sub toolboxes info
+    if ( M_heatModel && jsonInfo.contains( "Toolbox Heat" ) )
+    {
+        nl::json::json_pointer jsonPointerHeat( jsonInfo.at( "Toolbox Heat" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerHeat ) )
+        {
+            auto tabInfos_heat = M_heatModel->tabulateInformations( JournalManager::journalData().at( jsonPointerHeat ), tabInfoProp );
+            TabulateInformationsSections::cast( tabInfos_heat )->erase( "Materials Properties" );
+            tabInfo->add( "Toolbox Heat", tabInfos_heat );
+        }
+    }
+    if ( M_electricModel && jsonInfo.contains( "Toolbox Electric" ) )
+    {
+        nl::json::json_pointer jsonPointerElectric( jsonInfo.at( "Toolbox Electric" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerElectric ) )
+        {
+            auto tabInfos_electric = M_electricModel->tabulateInformations( JournalManager::journalData().at( jsonPointerElectric ), tabInfoProp );
+            TabulateInformationsSections::cast( tabInfos_electric )->erase( "Materials Properties" );
+            tabInfo->add( "Toolbox Electric", tabInfos_electric );
+        }
+    }
+
+    return tabInfo;
 }
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -354,6 +444,7 @@ std::shared_ptr<std::ostringstream>
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+#if 0
     *_ostr << M_heatModel->getInfo()->str();
     *_ostr << M_electricModel->getInfo()->str();
 
@@ -375,14 +466,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
         *_ostr << "\n   Exporter"
                << "\n     -- type            : " << M_exporter->type()
                << "\n     -- freq save       : " << M_exporter->freq();
-        std::string fieldExportedHeat;
-        for ( std::string const& fieldName : M_postProcessFieldExportedHeat )
-            fieldExportedHeat=(fieldExportedHeat.empty())? fieldName : fieldExportedHeat + " - " + fieldName;
-        std::string fieldExportedElectric;
-        for ( std::string const& fieldName : M_postProcessFieldExportedElectric )
-            fieldExportedElectric=(fieldExportedElectric.empty())? fieldName : fieldExportedElectric + " - " + fieldName;
-        *_ostr << "\n     -- fields [heat] : " << fieldExportedHeat
-               << "\n     -- fields [electric] : " << fieldExportedElectric;
+        std::string fieldExported;
+        for ( std::string const& fieldName : this->postProcessExportsFields() )
+            fieldExported=(fieldExported.empty())? fieldName : fieldExported + " - " + fieldName;
+        *_ostr << "\n     -- fields [heat] : " << fieldExported;
     }
     *_ostr << "\n   Processors"
            << "\n     -- number of proc : " << this->worldComm().globalSize()
@@ -394,11 +481,27 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n";
-
+#endif
     return _ostr;
 }
 
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::startTimeStep()
+{
+    this->heatModel()->startTimeStep();
+    this->updateTime( this->heatModel()->time() );
+    this->updateParameterValues();
+}
 
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateTimeStep()
+{
+    this->heatModel()->updateTimeStep();
+    this->updateTime( this->heatModel()->time() );
+    this->updateParameterValues();
+}
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -407,24 +510,16 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("ThermoElectric","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
-
-    if ( M_exporter && M_exporter->doExport() )
-    {
-        bool hasFieldToExportHeat = M_heatModel->updatePostProcessExports( M_exporter, M_postProcessFieldExportedHeat, time, M_heatModel->allFields() );
-        bool hasFieldToExportElectric = M_electricModel->updatePostProcessExports( M_exporter, M_postProcessFieldExportedElectric, time, M_electricModel->allFields() );
-        if ( hasFieldToExportHeat || hasFieldToExportElectric )
-        {
-            M_exporter->save();
-            this->upload( M_exporter->path() );
-        }
-    }
-
-    auto symbolExpr = this->symbolsExpr();
+    auto mfields = this->modelFields();
+    auto symbolExpr = this->symbolsExpr( mfields );
+    //std::cout << "holalla \n "<< symbolExpr.names() << std::endl;
     M_heatModel->exportResults( time, symbolExpr );
     M_electricModel->exportResults( time, symbolExpr );
+
+    auto exprExport =  hana::concat( M_materialsProperties->exprPostProcessExports( this->mesh(),this->physicsAvailable(),symbolExpr ),
+                                     hana::concat( M_heatModel->exprPostProcessExportsToolbox( symbolExpr,M_heatModel->keyword() ),
+                                                   M_electricModel->exprPostProcessExportsToolbox( symbolExpr,M_electricModel->keyword() ) ) );
+    this->executePostProcessExports( M_exporter, time, mfields, symbolExpr, exprExport );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -440,8 +535,28 @@ THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
-    M_heatModel->updateParameterValues();
-    M_electricModel->updateParameterValues();
+    if ( !this->manageParameterValues() )
+        return;
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->materialsProperties()->updateParameterValues( paramValues );
+
+    this->setParameterValues( paramValues );
+}
+
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
+{
+    if ( this->manageParameterValuesOfModelProperties() )
+    {
+        this->modelProperties().parameters().setParameterValues( paramValues );
+        this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->materialsProperties()->setParameterValues( paramValues );
+    }
+    M_heatModel->setParameterValues( paramValues );
+    M_electricModel->setParameterValues( paramValues );
 }
 
 
@@ -451,8 +566,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
 {
     this->log("ThermoElectric","solve", "start");
     this->timerTool("Solve").start();
-
-    this->updateParameterValues();
 
     this->setStartBlockSpaceIndex( 0 );
 
@@ -477,9 +590,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
         M_blockVectorSolutionMonolithic.localize();
     }
 
-    M_heatModel->updateFields( this->symbolsExpr() );
-    M_electricModel->updateFields( this->symbolsExpr() );
-
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
     {
@@ -488,316 +598,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
         this->timerTool("Solve").save();
     }
     this->log("ThermoElectric","solve", (boost::format("finish in %1% s")%tElapsed).str() );
-}
-
-
-
-THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
-{
-    const vector_ptrtype& vecCurrentPicardSolution = data.currentSolution();
-    sparse_matrix_ptrtype& A = data.matrix();
-    vector_ptrtype& F = data.rhs();
-    bool buildCstPart = data.buildCstPart();
-    bool buildNonCstPart = !buildCstPart;
-
-    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
-    this->log("ThermoElectric","updateLinearPDE", "start"+sc);
-
-    size_type startBlockIndexTemperature = M_heatModel->startBlockSpaceIndexVector()+0;
-    size_type startBlockIndexElectricPotential = M_electricModel->startBlockSpaceIndexVector()+0;
-    auto mesh = this->mesh();
-    auto XhV = M_electricModel->spaceElectricPotential();
-    auto XhT = M_heatModel->spaceTemperature();
-    auto v = *XhV->elementPtr( *vecCurrentPicardSolution, startBlockIndexElectricPotential );
-    auto t = *XhT->elementPtr( *vecCurrentPicardSolution, startBlockIndexTemperature );
-
-    auto symbolsExpr = this->symbolsExpr( t, v );
-    M_heatModel->updateLinearPDE( data,symbolsExpr );
-    M_electricModel->updateLinearPDE( data,symbolsExpr );
-
-    if ( buildNonCstPart )
-    {
-        auto mybfTV = form2( _test=XhT,_trial=XhV,_matrix=A,
-                             _pattern=size_type(Pattern::COUPLED),
-                             _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature ,
-                             _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
-
-        for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
-        {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
-            if ( M_modelUseJouleEffect )
-            {
-                auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
-                mybfTV +=
-                    integrate( _range=range,
-                               _expr= -sigmaExpr*inner(gradv(v),gradt(v))*id( t ),
-                               _geomap=this->geomap() );
-            }
-        }
-    }
-
-    this->log("ThermoElectric","updateLinearPDE","finish" );
-}
-
-THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
-{
-    M_heatModel->updateLinearPDEDofElimination( data );
-    M_electricModel->updateLinearPDEDofElimination( data );
-}
-
-
-THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinear_Electric( DataUpdateLinear & data ) const
-{
-    this->log("ThermoElectric","updateLinear_Electric","start" );
-
-    auto const& v = M_electricModel->fieldElectricPotential();
-    auto const& t = M_heatModel->fieldTemperature();
-    auto symbolsExpr = this->symbolsExpr(t,v);
-    M_electricModel->updateLinearPDE( data,symbolsExpr );
-
-    this->log("ThermoElectric","updateLinear_Electric","finish" );
-}
-
-THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinear_Heat( DataUpdateLinear & data ) const
-{
-    this->log("ThermoElectric","updateLinear_Heat","start" );
-
-    bool buildCstPart = data.buildCstPart();
-    bool buildNonCstPart = !buildCstPart;
-    vector_ptrtype& F = data.rhs();
-
-    auto const& v = M_electricModel->fieldElectricPotential();
-    auto const& t = M_heatModel->fieldTemperature();
-    auto symbolsExpr = this->symbolsExpr(t,v);
-    M_heatModel->updateLinearPDE( data,symbolsExpr );
-
-    if ( buildNonCstPart && M_modelUseJouleEffect ) // TODO : not always non cst part
-    {
-        auto XhT = M_heatModel->spaceTemperature();
-        auto myLinearForm = form1( _test=XhT,_vector=F,
-                                   _rowstart=M_heatModel->rowStartInVector() );
-
-        for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
-        {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
-            auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
-            myLinearForm +=
-                integrate( _range=range,
-                           _expr= sigmaExpr*inner(gradv(v))*id(t),
-                           _geomap=this->geomap() );
-        }
-    }
-
-    this->log("ThermoElectric","updateLinear_Heat","finish" );
-}
-THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual_Heat( DataUpdateResidual & data ) const
-{
-    this->log("ThermoElectric","updateResidual_Heat","start" );
-
-    const vector_ptrtype& XVec = data.currentSolution();
-    bool buildCstPart = data.buildCstPart();
-    bool buildNonCstPart = !buildCstPart;
-    vector_ptrtype& R = data.residual();
-
-    auto XhT = M_heatModel->spaceTemperature();
-    auto const& v = M_electricModel->fieldElectricPotential();
-    auto const t = XhT->element(XVec, M_heatModel->rowStartInVector());
-    auto symbolsExpr = this->symbolsExpr(t,v);
-
-    M_heatModel->updateResidual( data,symbolsExpr );
-
-    if ( buildNonCstPart && M_modelUseJouleEffect ) // TODO non const part only if sigma is related to Temperature
-    {
-        auto myLinearForm = form1( _test=XhT,_vector=R,
-                                   _rowstart=M_heatModel->rowStartInVector() );
-
-        for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
-        {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
-            auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
-            myLinearForm +=
-                integrate( _range=range,
-                           _expr= -sigmaExpr*inner(gradv(v))*id(t),
-                           _geomap=this->geomap() );
-        }
-    }
-
-    this->log("ThermoElectric","updateResidual_Heat","finish" );
-}
-
-
-THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
-{
-    this->log("ThermoElectric","updateNewtonInitialGuess","start" );
-    M_heatModel->updateNewtonInitialGuess( data );
-    M_electricModel->updateNewtonInitialGuess( data );
-    this->log("ThermoElectric","updateNewtonInitialGuess","finish" );
-}
-THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
-{
-    const vector_ptrtype& XVec = data.currentSolution();
-    sparse_matrix_ptrtype& J = data.jacobian();
-    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
-    bool buildCstPart = data.buildCstPart();
-    bool buildNonCstPart = !buildCstPart;
-
-    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
-    this->log("ThermoElectric","updateJacobian", "start"+sc);
-    size_type startBlockIndexTemperature = M_heatModel->startBlockSpaceIndexVector()+0;
-    size_type startBlockIndexElectricPotential = M_electricModel->startBlockSpaceIndexVector()+0;
-
-    auto mesh = this->mesh();
-
-    auto XhV = M_electricModel->spaceElectricPotential();
-    auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
-    auto XhT = M_heatModel->spaceTemperature();
-    //auto const& t = M_heatModel->fieldTemperature();
-    auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
-    auto symbolsExpr = this->symbolsExpr(t,v);
-
-    M_heatModel->updateJacobian( data,symbolsExpr );
-    M_electricModel->updateJacobian( data,symbolsExpr );
-
-    if ( !buildCstPart )
-    {
-        auto mybfTT = form2( _test=XhT,_trial=XhT,_matrix=J,
-                             _pattern=size_type(Pattern::COUPLED),
-                             _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature,
-                             _colstart=this->colStartInMatrix()+startBlockIndexTemperature );
-        auto mybfTV = form2( _test=XhT,_trial=XhV,_matrix=J,
-                             _pattern=size_type(Pattern::COUPLED),
-                             _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature,
-                             _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
-        auto mybfVT = form2( _test=XhV,_trial=XhT,_matrix=J,
-                             _pattern=size_type(Pattern::COUPLED),
-                             _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
-                             _colstart=this->colStartInMatrix()+startBlockIndexTemperature );
-
-        for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
-        {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
-            std::string symbolStr = "heat_T";
-            auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
-            if ( M_modelUseJouleEffect )
-            {
-                mybfTV +=
-                    integrate( _range=range,
-                               _expr= -sigmaExpr*2*inner(gradt(v),gradv(v))*id( t ),
-                               _geomap=this->geomap() );
-            }
-
-            if ( sigmaExpr.expression().hasSymbol( symbolStr ) )
-            {
-                auto sigmaDiffExpr = diff( sigmaExpr,symbolStr,1,"",this->worldComm(),this->repository().expr());
-                if ( M_modelUseJouleEffect )
-                {
-                    mybfTT +=
-                        integrate( _range=range,
-                                   _expr= -sigmaDiffExpr*idt(t)*inner(gradv(v)/*,gradv(v)*/)*id( t ),
-                                   _geomap=this->geomap() );
-                }
-
-                mybfVT +=
-                    integrate( _range=range,
-                               _expr= sigmaDiffExpr*idt(t)*inner(gradv(v),grad(v)),
-                               _geomap=this->geomap() );
-            }
-        }
-    }
-
-
-    this->log("ThermoElectric","updateJacobian", "finish"+sc);
-}
-
-THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
-{
-    const vector_ptrtype& XVec = data.currentSolution();
-    vector_ptrtype& R = data.residual();
-    bool buildCstPart = data.buildCstPart();
-    bool buildNonCstPart = !buildCstPart;
-    bool useJacobianLinearTerms = data.useJacobianLinearTerms();
-
-    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
-    this->log("ThermoElectric","updateResidual", "start"+sc);
-
-    size_type startBlockIndexTemperature = M_heatModel->startBlockSpaceIndexVector()+0;
-    size_type startBlockIndexElectricPotential = M_electricModel->startBlockSpaceIndexVector()+0;
-
-    auto mesh = this->mesh();
-
-    auto XhV = M_electricModel->spaceElectricPotential();
-    auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
-    auto XhT = M_heatModel->spaceTemperature();
-    auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
-    auto symbolsExpr = this->symbolsExpr(t,v);
-
-    M_heatModel->updateResidual( data,symbolsExpr );
-    M_electricModel->updateResidual( data,symbolsExpr );
-
-    if ( !buildCstPart )
-    {
-        auto mylfT = form1( _test=XhT, _vector=R,
-                            _rowstart=this->rowStartInVector()+startBlockIndexTemperature );
-        auto mylfV = form1( _test=XhV, _vector=R,
-                            _rowstart=this->rowStartInVector()+startBlockIndexElectricPotential );
-
-        for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
-        {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
-            auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
-            if ( M_modelUseJouleEffect )
-            {
-                mylfT +=
-                    integrate( _range=range,
-                               _expr= -sigmaExpr*inner(gradv(v))*id( t ),
-                               _geomap=this->geomap() );
-            }
-        }
-    }
-
-    this->log("ThermoElectric","updateResidual", "finish"+sc);
-}
-
-THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
-{
-    M_heatModel->updateJacobianDofElimination( data );
-    M_electricModel->updateJacobianDofElimination( data );
-}
-
-THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
-{
-    M_heatModel->updateResidualDofElimination( data );
-    M_electricModel->updateResidualDofElimination( data );
 }
 
 } // end namespace FeelModels

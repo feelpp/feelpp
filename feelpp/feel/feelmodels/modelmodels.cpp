@@ -26,12 +26,53 @@
 
 namespace Feel {
 
-ModelModel::ModelModel( pt::ptree const& p )
+ModelModel::ModelModel( std::string const& name, pt::ptree const& p, bool addVariants )
     :
+    M_name( name ),
     M_ptree( p )
 {
     if ( auto eq = M_ptree.get_optional<std::string>("equations") )
         M_equations = *eq;
+
+    if ( auto submodels = M_ptree.get_child_optional("submodels") )
+    {
+        if ( submodels->empty() ) // value case
+            M_submodels.insert( submodels->get_value<std::string>() );
+        else // array case
+        {
+            for ( auto const& item : *submodels )
+            {
+                CHECK( item.first.empty() ) << "should be an array, not a subtree";
+                std::string const& mname = item.second.template get_value<std::string>();
+                M_submodels.insert( mname );
+            }
+        }
+    }
+
+    if ( addVariants )
+    {
+        for( auto const& [key,ptreeVariant] : M_ptree )
+        {
+            if ( key == "equations" || key == "submodels" )
+                continue;
+            if ( ptreeVariant.empty() )
+                continue;
+
+            bool ptreeVariantIsArray = false;
+            for ( auto const& item : ptreeVariant )
+            {
+                if ( item.first.empty() )
+                {
+                    ptreeVariantIsArray = true;
+                    break;
+                }
+            }
+            if ( ptreeVariantIsArray )
+                continue;
+
+            M_variants.emplace( key, ModelModel( key, ptreeVariant, false ) );
+        }
+    }
 }
 
 ModelModels::ModelModels()
@@ -49,13 +90,14 @@ ModelModels::setup()
     {
         for( auto const& p1 : M_p )
         {
-            this->insert( std::make_pair( p1.first,ModelModel( p1.second ) ) );
+            std::string const& name = p1.first;
+            this->insert( std::make_pair( name,ModelModel( name, p1.second ) ) );
         }
     }
     else
     {
         std::string name = "";
-        this->insert( std::make_pair( name, ModelModel( M_p ) ) );
+        this->insert( std::make_pair( name, ModelModel(name, M_p ) ) );
     }
 }
 

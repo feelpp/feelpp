@@ -1,6 +1,6 @@
 h = 0.01;
 a = 0.1;
-x = DefineNumber[ x, Name "Parameters/h" ];
+h = DefineNumber[ h, Name "Parameters/h" ];
 a = DefineNumber[ a, Name "Parameters/a" ];
 Point(1) = {0, -a/2, 0, h};
 Point(2) = {0, a/2, 0, h};

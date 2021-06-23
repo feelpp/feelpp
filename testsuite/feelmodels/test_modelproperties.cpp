@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE( test_materials )
         auto xhiPair = mat.getMatrix<3>( "xhi", {"t",2.} );
         auto xhiMap = mat.getMatrix<3,3>( "xhi", {{"t",3.}});
 
-#if 1
+#if 0
         Feel::cout << "properties for " << matPair.first << std::endl;
         Feel::cout << "\t" << name << std::endl;
         Feel::cout << "\thas " << physics.size() << " physics:" << std::endl;
@@ -128,6 +128,7 @@ BOOST_AUTO_TEST_CASE( test_parameters )
 {
     ModelProperties model_props( Environment::expand(soption("json_filename")) );
     auto param = model_props.parameters();
+    BOOST_CHECK_EQUAL( param.size(), 3);
     for ( auto const& pp : param )
     {
         auto p = pp.second;
@@ -136,16 +137,23 @@ BOOST_AUTO_TEST_CASE( test_parameters )
             BOOST_CHECK_CLOSE( p.value(), 0.3, 10e-8);
             BOOST_CHECK_CLOSE( p.min(), 1e-4, 10e-8);
             BOOST_CHECK_EQUAL( p.max(), 10);
+            BOOST_CHECK_EQUAL( p.description(), "Um desc" );
         }
         else if( p.name() == "H" )
         {
             BOOST_CHECK_CLOSE( p.value(), 0.41, 10e-8 );
+            BOOST_CHECK_EQUAL( p.description(), "" );
+        }
+        else if( p.name() == "Te" )
+        {
+            BOOST_CHECK_CLOSE( p.value(), 293.1, 10e-8);
         }
 #if 0
         Feel::cout << p.name() << std::endl
                    << "\tvalue : " << p.value() << std::endl
                    << "\tmin   : " << p.min() << std::endl
-                   << "\tmax   : " << p.max() << std::endl;
+                   << "\tmax   : " << p.max() << std::endl
+                   << "\tdesc  : " << p.description() << std::endl;
         if ( p.hasExpression() )
             Feel::cout << "\texpr  : " << p.expression() << std::endl;
 #endif

@@ -4,7 +4,15 @@
     "ShortName":"beam2d",
     "Models":
     {
-        //"equations":"Hyper-Elasticity"
+        "equations":"Generalised-String"
+    },
+    "Materials":
+    {
+        "fsi-wall":{
+            "E":"0.75e6",
+            "nu":"0.5",
+            "rho":"1.1"
+        }
     },
     // "Materials":
     // {
@@ -26,6 +34,16 @@
                 "fsi-wall":
                 {
                     "expr":"0" 
+                }
+            }
+        },
+        "solid_1d":
+        {
+            "displacement_imposed":
+            {
+                "Fixe":
+                {
+                    "expr":"0"
                 }
             }
         }

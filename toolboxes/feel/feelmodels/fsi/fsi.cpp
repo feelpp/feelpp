@@ -40,6 +40,7 @@ template< class FluidType, class SolidType >
 FSI<FluidType,SolidType>::FSI(std::string const& prefix,worldcomm_ptr_t const& worldComm, std::string const& rootRepository )
     :
     super_type( prefix, worldComm, "", self_type::expandStringFromSpec( rootRepository ) ),
+    ModelBase( prefix, worldComm, "", self_type::expandStringFromSpec( rootRepository ) ),
     M_meshSize( doption(_name="hsize",_prefix=this->prefix()) ),
     M_tagFileNameMeshGenerated( soption(_name="mesh-save.tag",_prefix=this->prefix()) ),
     M_fsiCouplingType( soption(_name="coupling-type",_prefix=this->prefix()) ),
@@ -68,7 +69,6 @@ FSI<FluidType,SolidType>::FSI(std::string const& prefix,worldcomm_ptr_t const& w
     M_couplingNitscheFamily_gamma( doption(_name="coupling-nitsche-family.gamma",_prefix=this->prefix()) ),
     M_couplingNitscheFamily_gamma0( doption(_name="coupling-nitsche-family.gamma0",_prefix=this->prefix()) ),
     M_couplingNitscheFamily_alpha( doption(_name="coupling-nitsche-family.alpha",_prefix=this->prefix()) ),
-    M_coulingRNG_usePrecomputeBC( boption(_name="coupling-robin-neumann-generalized.use-precompute-bc",_prefix=this->prefix()) ),
     M_coulingRNG_strategyTimeStepCompatibility( soption(_name="coupling-robin-neumann-generalized.strategy-time-step-compatibility",_prefix=this->prefix()) )
 {
     this->log("FSI","constructor","start");
@@ -106,7 +106,6 @@ void
 FSI<FluidType,SolidType>::createMesh()
 {
     this->log("FSI","createMesh","start");
-
     FSIMesh<typename fluid_type::convex_type> fsimeshTool(this->prefix(),this->worldCommPtr());
 
     int nPart = this->worldComm().size();//this->nPartitions();
@@ -122,7 +121,7 @@ FSI<FluidType,SolidType>::createMesh()
     }
     else
         meshesdirectories = fs::path(this->repository().rootWithoutNumProc()) / fs::path("meshes");
-
+#if 0
     fs::path gp;
     if (this->hasMeshFile())
         gp = this->meshFile();
@@ -130,6 +129,8 @@ FSI<FluidType,SolidType>::createMesh()
         gp = this->geoFile();
 
     std::string nameMeshFile = gp.stem().string();
+#endif
+    std::string nameMeshFile = "fsi";
     fs::path mshFileNameFluidPart1, mshFileNameSolidPart1,mshFileNameFluidPartN,mshFileNameSolidPartN;
     fs::path mshFileNameFSI;
 #ifdef FEELPP_HAS_HDF5
@@ -166,25 +167,17 @@ FSI<FluidType,SolidType>::createMesh()
 
     fsimeshTool.setForceRebuild( boption(_prefix=this->prefix(),_name="mesh-save.force-rebuild" ) );
 
-    if (this->hasMeshFile())
-    {
-        fsimeshTool.setMshPathFSI( fs::path(this->meshFile()) );
-        fsimeshTool.buildFSIMeshFromMsh();
-    }
-    else if (this->hasGeoFile())
-    {
-        fs::path mshFileNameFSI;
-        if ( !M_tagFileNameMeshGenerated.empty() )
-            mshFileNameFSI = (boost::format("%1%_fsi_%2%_%3%.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated ).str();
-        else
-            mshFileNameFSI = (boost::format("%1%_fsi_%2%.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() ).str();
-        fs::path mshPathFSI = meshesdirectories / mshFileNameFSI;
 
-        fsimeshTool.setGeoPathFSI( fs::path(this->geoFile()) );
-        fsimeshTool.setMshPathFSI( mshPathFSI );
-        fsimeshTool.setMeshSize( this->meshSize() );
-        fsimeshTool.buildFSIMeshFromGeo();
+    this->modelMesh( this->keyword() ).importConfig().setupSequentialAndLoadByMasterRankOnly();
+    this->modelMesh( this->keyword() ).importConfig().setMeshComponents( MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES );
+    if ( !fs::exists( M_mshfilepathFluidPart1 ) || !fs::exists( M_mshfilepathSolidPart1 ) || fsimeshTool.forceRebuild() )
+    {
+        super_type::super_model_meshes_type::updateForUse<mesh_fluid_type>( this->keyword() );
+        if ( this->worldComm().isMasterRank() )
+            fsimeshTool.buildSubMesh( this->modelMesh( this->keyword() ).template mesh<mesh_fluid_type>()  );
     }
+    if ( nPart > 1 )
+        fsimeshTool.buildMeshesPartitioning();
 
     this->log("FSI","createMesh","finish");
 }
@@ -195,7 +188,7 @@ namespace detail
 {
 
 template <typename FluidType,typename SolidType>
-typename SolidType::mesh_1dreduced_ptrtype
+typename SolidType::solid_1dreduced_type::mesh_ptrtype
 createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, mpl::bool_<false> /**/ )
 {
     auto submeshStruct = createSubmesh( _mesh=FM->meshALE()->referenceMesh(), _range=markedfaces( FM->meshALE()->referenceMesh(), FM->markersFSI() ) );
@@ -234,23 +227,23 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
 }
 
 template <typename FluidType,typename SolidType>
-typename SolidType::mesh_1dreduced_ptrtype
+typename SolidType::solid_1dreduced_type::mesh_ptrtype
 createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, mpl::int_<2> /**/ )
 {
-  static const bool hasSameOrderGeo = FluidType::mesh_type::nOrder == SolidType::mesh_1dreduced_type::nOrder;
+    static const bool hasSameOrderGeo = FluidType::mesh_type::nOrder == SolidType::solid_1dreduced_type::mesh_type::nOrder;
   return createMeshStruct1dFromFluidMesh2d<FluidType,SolidType>(FM, mpl::bool_<hasSameOrderGeo>() );
 }
 
 template <typename FluidType,typename SolidType>
-typename SolidType::mesh_1dreduced_ptrtype
+typename SolidType::solid_1dreduced_type::mesh_ptrtype
 createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, mpl::int_<3> /**/ )
 {
     CHECK( false ) << "not possible";
-    return typename SolidType::mesh_1dreduced_ptrtype();
+    return typename SolidType::solid_1dreduced_type::mesh_ptrtype();
 }
 
 template <typename FluidType,typename SolidType>
-typename SolidType::mesh_1dreduced_ptrtype
+typename SolidType::solid_1dreduced_type::mesh_ptrtype
 createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM )
 {
   return createMeshStruct1dFromFluidMesh<FluidType,SolidType>( FM, mpl::int_<SolidType::nDim>() );
@@ -265,7 +258,7 @@ FSI<FluidType,SolidType>::init()
     this->log("FSI","init","start");
 
     // create fsimesh and partitioned meshes if require
-    if ( this->hasMeshFile() || this->hasGeoFile() )
+    if ( !this->modelMesh( this->keyword() ).importConfig().inputFilename().empty() && !this->doRestart() )
         this->createMesh();
 
     // fluid model build
@@ -273,7 +266,7 @@ FSI<FluidType,SolidType>::init()
     {
         M_fluidModel = std::make_shared<fluid_type>("fluid","fluid",this->worldCommPtr(), "", this->repository() );
         if ( !M_mshfilepathFluidPartN.empty() )
-            M_fluidModel->setMeshFile(M_mshfilepathFluidPartN.string());
+            M_fluidModel->modelMesh( M_fluidModel->keyword() ).importConfig().setupInputMeshFilenameWithoutApplyPartitioning( M_mshfilepathFluidPartN.string() );
 
         // temporary fix (else use in dirichle-neunamm bc in residual) TODO !!!!
         M_fluidModel->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
@@ -304,17 +297,18 @@ FSI<FluidType,SolidType>::init()
             //if ( M_fluidModel->doRestart() )
             //M_fluidModel->meshALE()->revertMovingMesh();
 
+            M_solidModel->createsSolid1dReduced();
             // TODO ( save 1d mesh and reload )
             if ( M_fluidModel->doRestart() )
-                M_solidModel->setMesh1dReduce(submeshStruct);
+                M_solidModel->solid1dReduced()->setMesh(submeshStruct);
             else
-                M_solidModel->setMesh1dReduce(submeshStruct);
+                M_solidModel->solid1dReduced()->setMesh(submeshStruct);
 
         }
         else
         {
             if ( !M_mshfilepathSolidPartN.empty() )
-                M_solidModel->setMeshFile( M_mshfilepathSolidPartN.string() );
+                M_solidModel->modelMesh( M_solidModel->keyword() ).importConfig().setupInputMeshFilenameWithoutApplyPartitioning( M_mshfilepathSolidPartN.string() );
         }
 
         // temporary fix TODO !!!!
@@ -375,7 +369,7 @@ FSI<FluidType,SolidType>::init()
     else if ( M_solidModel->is1dReducedModel() )
     {
         // normal stress as source term
-        M_spaceNormalStressFromFluid_solid1dReduced = space_solid1dreduced_normalstressfromfluid_vect_type::New(_mesh=M_solidModel->mesh1dReduced() );
+        M_spaceNormalStressFromFluid_solid1dReduced = space_solid1dreduced_normalstressfromfluid_vect_type::New(_mesh=M_solidModel->solid1dReduced()->mesh() );
         M_fieldNormalStressFromFluidScalar_solid1dReduced.reset( new element_solid1dreduced_normalstressfromfluid_scal_type( M_spaceNormalStressFromFluid_solid1dReduced->compSpace() ) );
         M_fieldNormalStressFromFluidVectorial_solid1dReduced.reset( new element_solid1dreduced_normalstressfromfluid_vect_type( M_spaceNormalStressFromFluid_solid1dReduced ) );
     }
@@ -469,8 +463,8 @@ FSI<FluidType,SolidType>::init()
     }
     else if ( M_solidModel->is1dReducedModel() )
     {
-        M_solidModel->algebraicFactory1dReduced()->addFunctionLinearAssembly( std::bind( &self_type::updateLinearPDE_Solid1dReduced,
-                                                                                         std::ref( *this ), std::placeholders::_1 ) );
+        M_solidModel->algebraicFactory()->addFunctionLinearAssembly( std::bind( &self_type::updateLinearPDE_Solid1dReduced,
+                                                                                std::ref( *this ), std::placeholders::_1 ) );
     }
     this->log("FSI","init","finish");
 }
@@ -536,6 +530,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
             sync( *M_coulingRNG_operatorDiagonalOnFluid, "=", M_dofsMultiProcessVelocitySpaceOnFSI_fluid );
             useAlgebraicInnerProductWithLumping = true;
         }
+#if 0
         else if ( true )
         {
             // compute algebraic counterpart of the operator B (my work V2 but not enought accurate)
@@ -621,10 +616,37 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
             M_coulingRNG_operatorDiagonalOnFluid->on( _range=M_rangeFSI_fluid,_expr=idv(rrrr));
             sync( *M_coulingRNG_operatorDiagonalOnFluid, "=", M_dofsMultiProcessVelocitySpaceOnFSI_fluid );
         }
-
+#endif
     }
     else if ( this->solidModel()->is1dReducedModel() )
     {
+#if 1 // NEW
+
+        auto VhSolid1dVelocityVect = this->solidModel()->solid1dReduced()->fieldVelocityVect1dReduced().functionSpace();
+        auto qqqq = VhSolid1dVelocityVect->element();
+        auto se = this->solidModel()->symbolsExpr();
+        for ( auto const& [physicName,physicData] :  this->solidModel()->solid1dReduced()->physicsFromCurrentType() )
+        {
+            //auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nRealDim>>(physicData);
+            for ( std::string const& matName : this->solidModel()->solid1dReduced()->materialsProperties()->physicToMaterials( physicName ) )
+            {
+                auto const& range = this->solidModel()->solid1dReduced()->materialsProperties()->rangeMeshElementsByMaterial( this->solidModel()->solid1dReduced()->mesh(),matName );
+                auto const& densityProp = this->solidModel()->solid1dReduced()->materialsProperties()->density( matName );
+                auto densityExpr = expr( densityProp.expr(), se );
+                double thickness = this->solidModel()->solid1dReduced()->thickness1dReduced();
+                qqqq.on(_range=range,_expr=thickness*densityExpr*one());
+            }
+        }
+
+        auto rrrr = M_XhMeshVelocityInterface->element();
+        M_opVelocity1dToNdconf->apply( qqqq, rrrr );
+
+        auto VhFluid = this->fluidModel()->functionSpaceVelocity();//meshVelocity2().functionSpace();
+        M_coulingRNG_operatorDiagonalOnFluid = VhFluid->elementPtr();
+        M_coulingRNG_operatorDiagonalOnFluid->on( _range=M_rangeFSI_fluid,_expr=idv(rrrr));
+        sync( *M_coulingRNG_operatorDiagonalOnFluid, "=", M_dofsMultiProcessVelocitySpaceOnFSI_fluid );
+
+#else
         auto VhFluid = this->fluidModel()->functionSpaceVelocity();//meshVelocity2().functionSpace();
         M_coulingRNG_operatorDiagonalOnFluid = VhFluid->elementPtr();
         std::set<size_type> dofsIdOnFSIFluid;
@@ -637,16 +659,17 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         }
         M_coulingRNG_operatorDiagonalOnFluid->on(_range=M_rangeFSI_fluid,_expr=one());
         sync( *M_coulingRNG_operatorDiagonalOnFluid, "=", dofsIdOnFSIFluid );
+#endif
     }
 
 
-    if ( M_coulingRNG_usePrecomputeBC )
+    if ( true )
     {
         // create matrix which represent time derivative  bc operator
         auto dmFullFluidSpace = this->fluidModel()->algebraicFactory()->sparsityMatrixGraph()->mapRowPtr();
         M_coulingRNG_vectorTimeDerivative = this->fluidModel()->backend()->newVector( dmFullFluidSpace );
         int nBlock = this->fluidModel()->nBlockMatrixGraph();
-        auto VhFluid = this->fluidModel()->spaceVelocityPressure();
+        auto VhVelocity = this->fluidModel()->functionSpaceVelocity();
         auto ru = stencilRange<0,0>(M_rangeFSI_fluid);
         auto const& u = M_fluidModel->fieldVelocity();
         if ( useAlgebraicInnerProductWithLumping )
@@ -656,17 +679,14 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
             graph->close();
             M_coulingRNG_matrixTimeDerivative = this->fluidModel()->backend()->newMatrix( 0,0,0,0,graph );
             auto thediagg = this->fluidModel()->backend()->newVector( dmFullFluidSpace );
-            auto thediaggUBLAS = VhFluid->element( thediagg, 0 );
-            auto thediaggUBLAS_u = thediaggUBLAS.template element<0>();
+            auto thediaggUBLAS_u = VhVelocity->element( thediagg, 0 );
             thediaggUBLAS_u = *M_coulingRNG_operatorDiagonalOnFluid;
             M_coulingRNG_matrixTimeDerivative->setDiagonal( thediagg );
         }
         else
         {
             BlocksBaseGraphCSR myblockGraphTimeDerivative(nBlock,nBlock);
-            auto blockpatternTimeDerivative = vf::Blocks<2,2,size_type>() << size_type(Pattern::COUPLED/*DEFAULT*/) << size_type(Pattern::ZERO) << size_type(Pattern::ZERO) << size_type(Pattern::ZERO);
-            auto mygraphTimeDerivative = stencil(_test=VhFluid,_trial=VhFluid,
-                                                 _pattern_block=blockpatternTimeDerivative,
+            auto mygraphTimeDerivative = stencil(_test=VhVelocity,_trial=VhVelocity,
                                                  _diag_is_nonzero=false,_close=true,
                                                  _range=stencilRangeMap(ru) )->graph();
             myblockGraphTimeDerivative(0,0) = mygraphTimeDerivative;
@@ -679,7 +699,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
             }
             M_coulingRNG_matrixTimeDerivative = this->fluidModel()->backend()->newBlockMatrix(_block=myblockGraphTimeDerivative);
             auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
-            form2(_test=VhFluid,_trial=VhFluid,_matrix=M_coulingRNG_matrixTimeDerivative/*,_pattern=size_type(Pattern::DEFAULT)*/ ) +=
+            form2(_test=VhVelocity,_trial=VhVelocity,_matrix=M_coulingRNG_matrixTimeDerivative/*,_pattern=size_type(Pattern::DEFAULT)*/ ) +=
                 integrate( _range=M_rangeFSI_fluid,
                            _expr=inner(myB*idt(u),id(u)),
                            _geomap=this->geomap() );
@@ -691,9 +711,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         M_coulingRNG_vectorStress = this->fluidModel()->backend()->newVector( VhStress );
         auto dofStress = VhStress->dof();
         BlocksBaseGraphCSR myblockGraph(nBlock,1);
-        auto blockpatternStress = vf::Blocks<2,1,size_type>() << size_type(Pattern::COUPLED) << size_type(Pattern::ZERO);
-        auto mygraph = stencil(_test=VhFluid,_trial=VhStress,
-                               _pattern_block=blockpatternStress,
+        auto mygraph = stencil(_test=VhVelocity,_trial=VhStress,
                                _diag_is_nonzero=false,_close=true,
                                _range=stencilRangeMap(ru) )->graph();
         myblockGraph(0,0) = mygraph;
@@ -706,10 +724,11 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         }
         M_coulingRNG_matrixStress = this->fluidModel()->backend()->newBlockMatrix(_block=myblockGraph);
         // assembly stress matrix
-        form2(_test=VhFluid,_trial=VhStress,_matrix=M_coulingRNG_matrixStress ) +=
+        form2(_test=VhVelocity,_trial=VhStress,_matrix=M_coulingRNG_matrixStress ) +=
             integrate( _range=M_rangeFSI_fluid,
                        _expr= inner( idt(M_fieldNormalStressRefMesh_fluid),id(u)),
                        _geomap=this->geomap() );
+        M_coulingRNG_matrixStress->close();
     }
 
 }
@@ -807,7 +826,7 @@ template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::initInHousePreconditionerPCD_fluid( operatorpcdbase_fluid_type & opPCDBase ) const
 {
-    typedef Feel::Alternatives::OperatorPCD<typename fluid_type::space_fluid_velocity_type,typename fluid_type::space_fluid_pressure_type> op_pcd_type;
+    typedef Feel::Alternatives::OperatorPCD<typename fluid_type::space_velocity_type,typename fluid_type::space_pressure_type> op_pcd_type;
     op_pcd_type * opPCD = dynamic_cast<op_pcd_type*>(&opPCDBase);
     CHECK( opPCD ) << "fails to cast OperatorPCD";
 
@@ -829,13 +848,13 @@ FSI<FluidType,SolidType>::updateInHousePreconditionerPCD_fluid( operatorpcdbase_
 {
     if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
     {
-        typedef Feel::Alternatives::OperatorPCD<typename fluid_type::space_fluid_velocity_type,typename fluid_type::space_fluid_pressure_type> op_pcd_type;
+        typedef Feel::Alternatives::OperatorPCD<typename fluid_type::space_velocity_type,typename fluid_type::space_pressure_type> op_pcd_type;
         op_pcd_type * opPCD = dynamic_cast<op_pcd_type*>(&opPCDBase);
         CHECK( opPCD ) << "fails to cast OperatorPCD";
         for ( auto const& rangeFacesMat : this->fluidModel()->rangeDistributionByMaterialName()->rangeMeshFacesByMaterial( "interface_fsi" ) )
         {
             std::string matName = rangeFacesMat.first;
-            auto rhoExpr = this->fluidModel()->materialProperties()->density( matName ).expr();
+            auto rhoExpr = this->fluidModel()->materialsProperties()->density( matName ).expr();
             opPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, "FSI_FluidDirichlet_" + matName, idv(this/*M_fluidModel*/->meshVelocity2()) );
         }
     }
@@ -990,7 +1009,7 @@ FSI<FluidType,SolidType>::solveImpl2()
             {
                 bool useExtrap = boption(_prefix=this->prefix(),_name="transfert-velocity-F2S.use-extrapolation");
                 this->transfertVelocityF2S(cptFSI,useExtrap);
-                if ( M_fluidModel->materialProperties()->hasNonNewtonianLaw() )
+                if ( this->fluidModel()->hasNonNewtonianViscosity() )
                     this->transfertGradVelocityF2S();
             }
             M_solidModel->solve();
@@ -1225,6 +1244,7 @@ FSI<FluidType,SolidType>::getInfo() const
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << this->fluidModel()->getInfo()->str()
            << this->solidModel()->getInfo()->str();
+#if 0
     *_ostr << "\n||==============================================||"
            << "\n||-----------------Info : FSI-------------------||"
            << "\n||==============================================||"
@@ -1272,10 +1292,120 @@ FSI<FluidType,SolidType>::getInfo() const
 
     *_ostr << "\n||==============================================||"
            << "\n";
-
+#endif
     return _ostr;
 }
 
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateInformationObject( nl::json & p ) const
+{
+    if ( p.contains( "Environment" ) )
+        return;
+
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
+
+    p["Toolbox Fluid"] = M_fluidModel->journalSection().to_string();
+    p["Toolbox Solid"] = M_solidModel->journalSection().to_string();
+
+
+    nl::json subPt;
+    subPt["type"] = this->fsiCouplingType();
+    subPt["BC"] = this->fsiCouplingBoundaryCondition();
+    subPt["Interface property"] = M_interfaceFSIisConforme? "conformal":"non conformal";
+
+    bool useAitken = false;
+    if ( this->fsiCouplingBoundaryCondition()  == "dirichlet-neumann" )
+    {
+        useAitken = true;
+    }
+    else if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
+              this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
+              this->fsiCouplingBoundaryCondition() == "nitsche" )
+    {
+        nl::json subPt2;
+        subPt2["gamma"] = M_couplingNitscheFamily_gamma;
+        if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
+              this->fsiCouplingBoundaryCondition() == "nitsche" )
+            subPt2["gamma0"] = M_couplingNitscheFamily_gamma0;
+        subPt2["alpha"] = M_couplingNitscheFamily_alpha;
+        subPt["Nitsche family parameters"] = subPt2;
+    }
+    else if (this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
+    {
+    }
+
+    p["Coupling"] = std::move( subPt );
+
+    subPt.clear();
+    subPt["method"] = useAitken? "fix point with Aitken relaxation" : "fix point";
+    subPt["tolerance"] = M_fixPointTolerance;
+    subPt["maxit"] = M_fixPointMaxIt;
+    if ( useAitken )
+    {
+        subPt["initial theta"] = M_fixPointInitialTheta;
+        subPt["min theta"] = M_fixPointMinTheta;
+    }
+    p["Numerical Solver"] = std::move( subPt );
+}
+
+template< class FluidType, class SolidType >
+tabulate_informations_ptr_t
+FSI<FluidType,SolidType>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Environment") )
+        tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
+
+    if ( jsonInfo.contains( "Coupling" ) )
+    {
+        auto tabInfoCoupling = TabulateInformationsSections::New( tabInfoProp );
+        auto const& jsonInfoCoupling = jsonInfo.at("Coupling");
+        Feel::Table tabInfoCouplingOther;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoCouplingOther, jsonInfoCoupling, tabInfoProp );
+        tabInfoCouplingOther.format().setShowAllBorders( false ).setColumnSeparator(":").setHasRowSeparator( false );
+        tabInfoCoupling->add( "", TabulateInformations::New( tabInfoCouplingOther, tabInfoProp ) );
+        if ( jsonInfoCoupling.contains( "Nitsche family parameters" ) )
+        {
+            Feel::Table tabInfoCouplingNitsche;
+            TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoCouplingNitsche, jsonInfoCoupling.at( "Nitsche family parameters" ), tabInfoProp );
+            tabInfoCouplingNitsche.format().setShowAllBorders( false ).setColumnSeparator(":").setHasRowSeparator( false );
+            tabInfoCoupling->add( "Nitsche family parameters", TabulateInformations::New( tabInfoCouplingNitsche, tabInfoProp ) );
+        }
+        tabInfo->add( "Coupling", tabInfoCoupling );
+    }
+
+    // Numerical Solver
+    if ( jsonInfo.contains( "Numerical Solver" ) )
+    {
+        Feel::Table tabInfoNumSolver;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoNumSolver, jsonInfo.at("Numerical Solver"), tabInfoProp );
+        tabInfoNumSolver.format().setShowAllBorders( false ).setColumnSeparator(":").setHasRowSeparator( false );
+        tabInfo->add( "Numerical Solver",  TabulateInformations::New( tabInfoNumSolver, tabInfoProp ) );
+    }
+
+    // generate sub toolboxes info
+    if ( M_fluidModel && jsonInfo.contains( "Toolbox Fluid" ) )
+    {
+        nl::json::json_pointer jsonPointerFluid( jsonInfo.at( "Toolbox Fluid" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerFluid ) )
+        {
+            auto tabInfos_fluid = M_fluidModel->tabulateInformations( JournalManager::journalData().at( jsonPointerFluid ), tabInfoProp );
+            tabInfo->add( "Toolbox Fluid", tabInfos_fluid );
+        }
+    }
+    if ( M_solidModel && jsonInfo.contains( "Toolbox Solid" ) )
+    {
+        nl::json::json_pointer jsonPointerSolid( jsonInfo.at( "Toolbox Solid" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerSolid ) )
+        {
+            auto tabInfos_solid = M_solidModel->tabulateInformations( JournalManager::journalData().at( jsonPointerSolid ), tabInfoProp );
+            tabInfo->add( "Toolbox Solid", tabInfos_solid );
+        }
+    }
+
+    return tabInfo;
+}
 
 } // namespace FeelModels
 } // namespace Feel

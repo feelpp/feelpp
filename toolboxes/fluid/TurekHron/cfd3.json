@@ -6,6 +6,17 @@
     {
         "equations":"Navier-Stokes"
     },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cfd.geo",
+                "hsize":0.03
+            }
+        }
+    },
     "Parameters":
     {
         "ubar":"2",

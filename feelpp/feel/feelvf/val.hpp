@@ -127,7 +127,7 @@ class Val
         }
 
 
-    void eval( int nx, value_type const* x, value_type* f ) const
+    void eval( int nx, value_type const* x, value_type* f ) const override
     {
         for ( int i = 0; i < nx; ++i )
             f[i] = x[i];
@@ -276,10 +276,10 @@ class Val
 
 /**
  * \brief precompute expression tensor
- *
+ * @ingroup DSEL-Variational-Formulation
  * This allows for more efficient  bi/linear form assembly
  */
-template <typename ExprT1>
+template <typename ExprT1> //, typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT1> >
 inline Expr<Val<typename mpl::if_<boost::is_arithmetic<ExprT1>,
                                   mpl::identity<Cst<ExprT1>>,
                                   mpl::identity<ExprT1>>::type::type>>

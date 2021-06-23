@@ -1,0 +1,243 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+
+# $Id$
+
+PortSystem  1.0
+# Portgroup is not an option until we find a way to get rid of the -arch option
+#PortGroup   cmake 1.0
+#PortGroup   active_variants 1.1
+PortGroup           cmake 1.1
+PortGroup           mpi 1.0
+#PortGroup           python 1.0
+
+name                 feel++
+#version              0.105.0
+#master_sites         https://github.com/feelpp/feelpp/releases/download/v${version}/
+version develop
+distname             feelpp-${version}
+# checksums            rmd160  f0064a2cd332fc88cc4a8d98b2c8ccdc2127c030 \
+#                      sha256  70418fb0ce9f5069190fcc1677615663dbca71cea39e2b858356476a9e8627cf
+
+fetch.type git
+git.url https://github.com/feelpp/feelpp.git
+git.branch develop
+
+categories           science
+platforms            macosx darwin freebsd
+#universal_variant   no
+
+maintainers          feelpp.org:christophe.prudhomme
+description          Finite Element Embedded Library and Language in C++
+long_description    \
+ Feel++ is a versatile finite element library\
+ to solve partial differential equations.\
+ \
+ Support 1D, 2D, 3D\
+ \
+ Support the following basic entities: simplices (segment, triangle,\
+ tetrahedron) and product of simplices (quadrangle, hexahedron)\
+ \
+ Support various point sets on these basic entities: equispaced\
+ points, quadrature points, interpolation points (Gauss-Lobatto,\
+ Fekete, WarpBlend?)\
+ \
+ Support continuous and discontinuous Galerkin methods\
+ \
+ Support various polynomial sets:\
+ \
+  * Lagrange(continuous,discontinuous,all dimensions,all interpolation\
+ point sets)\
+ \
+  * Dubiner(discontinuous), boundary adapted(continuous)\
+ \
+  * Legendre(discontinuous), boundary adapted(continuous)\
+ \
+ Provide mathematical concept for higher order abstraction (Function\
+ spaces and associated elements, forms and operators)\
+ \
+ Provide a language embedded in C++ for variational formulations,\
+ projection and numerical integration
+
+homepage            http://www.feelpp.org
+
+
+post-fetch {
+    system -W ${worksrcpath} "git submodule update --init"
+}
+
+
+
+
+
+# #worksrcdir	feel++-${version}
+# configure	{
+#     file mkdir ${worksrcpath}/build
+#     system "cd ${worksrcpath}/build && ${configure.cmd} .. ${configure.args} "
+#     #file mkdir ${worksrcdir}/build
+#     #system "cd ${worksrcdir}/build && cmake ${configure.args} ../"
+# }
+
+# #build.target feelpp
+
+# build {
+#     if {${build.jobs} ne {} } {
+#         # only the libfeelpp use // compilation
+#         system "cd ${worksrcpath}/build && ${build.cmd} feelpp -j ${build.jobs} && ${build.cmd} ${build.target}"
+#     } else {
+#         system "cd ${worksrcpath}/build && ${build.cmd} feelpp && ${build.cmd} ${build.target}"
+#     }
+# }
+build.jobs 3
+
+# configure.env-append  PETSC_DIR=${prefix}/lib/petsc
+# configure.env-append  SLEPC_DIR=${prefix}/lib/petsc
+
+
+# # make sure to keep below in sync with cmake Portgroup except
+# # for the configure.args option that mess up feel++
+# # standard place to install extra CMake modules
+# set cmake_share_module_dir ${prefix}/share/cmake/modules
+# configure.cmd       cmake
+#configure.pre_args
+
+
+
+cmake.install_rpath
+
+# paraview sets its own optimization flags
+# configure.optflags
+
+# avoid `Unknown build type "MacPorts".  Allowed values are Debug, Release,`
+if {[variant_isset debug]} {
+    cmake.build_type    Debug
+} else {
+    cmake.build_type    Release
+}
+
+
+configure.post_args-append \
+    -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=OFF
+
+configure.args-append \
+    -DFEELPP_ENABLE_DOCUMENTATION:BOOL=OFF \
+    -DFEELPP_ENABLE_APPLICATIONS:BOOL=OFF \
+    -DFEELPP_ENABLE_BENCHMARKS:BOOL=OFF \
+    -DFEELPP_ENABLE_TESTS:BOOL=OFF \
+    -DFEELPP_ENABLE_RESEARCH:BOOL=OFF \
+    -DFEELPP_ENABLE_QUICKSTART:BOOL=OFF \
+    -DFEELPP_ENABLE_TOOLBOXES:BOOL=OFF \
+    -DFEELPP_ENABLE_PYTHON:BOOL=OFF \
+    -DFEELPP_ENABLE_VTK:BOOL=OFF
+
+depends_lib    \
+    port:cmake\
+    port:boost \
+    port:hdf5 \
+    port:petsc\
+    port:slepc\
+    port:gmsh \
+    port:libANN \
+    port:libxml2 \
+    port:cln
+
+require_active_variants petsc hdf5
+#require_active_variants petsc ml
+require_active_variants petsc hypre
+require_active_variants petsc mumps
+#require_active_variants petsc openmpi
+require_active_variants petsc parmetis
+require_active_variants petsc suitesparse
+
+#require_active_variants slepc openmpi
+
+set mpi.require 1
+#set mpi.default 1
+#mpi_variant_isset openmpi
+
+mpi.enforce_variant   boost
+mpi.enforce_variant   hdf5
+mpi.enforce_variant   gmsh
+mpi.enforce_variant   petsc
+mpi.enforce_variant   slepc
+compilers.enforce_c   cln
+mpi.setup 
+
+
+variant paraview description {Add ParaView support} {
+    depends_lib-append port:paraview
+    configure.args-delete -DFEELPP_ENABLE_VTK:BOOL=OFF
+    configure.args-append -DFEELPP_ENABLE_VTK:BOOL=ON
+    mpi.enforce_variant   paraview
+}
+
+variant glpk description {Add GLPK support} {
+    depends_lib-append port:glpk
+}
+
+# Supported pythons
+set python_versions {35 36 37 38}
+
+foreach pyver ${python_versions} {
+    # Conflicting python versions
+    set other_python_versions {}
+    foreach other_pyver ${python_versions} {
+        if {${other_pyver} ne ${pyver}} {
+            if {${other_pyver} ni ${other_python_versions}} {
+                lappend other_python_versions python${other_pyver}
+            }
+        }
+    }
+
+    # Get python branch
+    set python_branch  "[string range ${pyver} 0 end-1].[string index ${pyver} end]"
+
+    variant python${pyver} conflicts {*}${other_python_versions} description "Add Python ${python_branch} support" "
+            depends_lib-append port:py${pyver}-sympy
+            configure.args-delete -DFEELPP_ENABLE_PYTHON:BOOL=OFF
+            configure.args-append \
+                -DFEELPP_ENABLE_PYTHON:BOOL=ON \
+                -DPython_EXECUTABLE=${prefix}/bin/python${python_branch} \
+                -DPython3_EXECUTABLE=${prefix}/bin/python${python_branch}
+
+            if {[mpi_variant_isset]} {
+                depends_lib-append port:py${pyver}-mpi4py
+            }
+            if { ![variant_isset paraview]  } {
+               require_active_variants paraview python${pyver}
+            }
+    "
+}
+
+
+
+# variant doc description {Add doc support} {
+#   depends_lib_append \
+#     port:doxygen \
+#     port:latex2html \
+#     port:imagemagick
+#   configure.args-delete -DFEEL_ENABLE_DOCUMENTATION=OFF
+#   configure.args-append -DFEEL_ENABLE_DOCUMENTATION=ON
+# }
+
+# variant scipy description {Add python bindings} {
+#   depends_lib-append \
+#     port:py27-scipy\
+#     port:py27-numpy
+# }
+
+# variant applications description {Add applications support} {
+#   configure.args-delete -DFEELPP_ENABLE_APPLICATIONS=OFF
+#   configure.args-append -DFEELPP_ENABLE_APPLICATIONS=ON
+# }
+
+# variant octave description {Add octave bindings} {
+#   depends_lib-append \
+#     port:octave
+#   configure.args-append \
+#     -DCMAKE_DISABLE_FIND_PACKAGE_Octave=FALSE
+# }
+
+#variant tbb description {Add tbb support} {
+#  depends_lib_append \
+#    port:tbb
+#}

@@ -37,6 +37,7 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     :
     super( world ),
     M_prefix( prefix ),
+    M_directoryLibExpr( directoryLibExpr ),
     M_params( world ),
     M_mat( world ),
     M_bc( world, false ),
@@ -72,6 +73,34 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     std::istringstream istr( json_str_wo_comments );
     pt::read_json(istr, M_p);
 
+    this->setup();
+}
+ModelProperties::ModelProperties( pt::ptree const& pt, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix )
+    :
+    super( world ),
+    M_prefix( prefix ),
+    M_directoryLibExpr( directoryLibExpr ),
+    M_p( pt )
+{
+    this->setup();
+}
+ModelProperties::ModelProperties( nl::json const& j, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix )
+    :
+    super( world ),
+    M_prefix( prefix ),
+    M_directoryLibExpr( directoryLibExpr ),
+    M_p()
+{
+    auto json_str_wo_comments = removeComments(j.dump(1));
+    LOG(INFO) << "json file without comment:" << json_str_wo_comments;
+    std::istringstream istr( json_str_wo_comments );
+    pt::read_json(istr, M_p);
+    this->setup();
+}
+
+void
+ModelProperties::setup()
+{
     editPtreeFromOptions( M_p, M_prefix );
 
     try {
@@ -100,35 +129,32 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     if ( par )
     {
         LOG(INFO) << "Model with parameters\n";
-        if ( !directoryLibExpr.empty() )
-            M_params.setDirectoryLibExpr( directoryLibExpr );
+        if ( !M_directoryLibExpr.empty() )
+            M_params.setDirectoryLibExpr( M_directoryLibExpr );
         M_params.setPTree( *par );
     }
     auto func = M_p.get_child_optional("Functions");
     if ( func )
     {
         LOG(INFO) << "Model with functions\n";
-        if ( !directoryLibExpr.empty() )
-            M_functions.setDirectoryLibExpr( directoryLibExpr );
+        if ( !M_directoryLibExpr.empty() )
+            M_functions.setDirectoryLibExpr( M_directoryLibExpr );
         M_functions.setPTree( *func );
     }
     auto bc = M_p.get_child_optional("BoundaryConditions");
     if ( bc )
     {
         LOG(INFO) << "Model with boundary conditions\n";
-        if ( !directoryLibExpr.empty() )
-            M_bc.setDirectoryLibExpr( directoryLibExpr );
+        if ( !M_directoryLibExpr.empty() )
+            M_bc.setDirectoryLibExpr( M_directoryLibExpr );
         M_bc.setPTree( *bc );
-#if 1 // TODO
-        M_bc2.setPTree( *bc );
-#endif
     }
     auto ic = M_p.get_child_optional("InitialConditions");
     if ( ic )
     {
         LOG(INFO) << "Model with initial conditions\n";
-        if ( !directoryLibExpr.empty() )
-            M_ic.setDirectoryLibExpr( directoryLibExpr );
+        if ( !M_directoryLibExpr.empty() )
+            M_ic.setDirectoryLibExpr( M_directoryLibExpr );
         M_ic.setPTree( *ic );
     }
 
@@ -136,8 +162,8 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     if ( icDeprecated )
     {
         LOG(INFO) << "Model with initial conditions\n";
-        if ( !directoryLibExpr.empty() )
-            M_icDeprecated.setDirectoryLibExpr( directoryLibExpr );
+        if ( !M_directoryLibExpr.empty() )
+            M_icDeprecated.setDirectoryLibExpr( M_directoryLibExpr );
         M_icDeprecated.setPTree( *icDeprecated );
     }
 
@@ -145,24 +171,24 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     if ( mat )
     {
         LOG(INFO) << "Model with materials\n";
-        if ( !directoryLibExpr.empty() )
-            M_mat.setDirectoryLibExpr( directoryLibExpr );
+        if ( !M_directoryLibExpr.empty() )
+            M_mat.setDirectoryLibExpr( M_directoryLibExpr );
         M_mat.setPTree( *mat );
     }
     auto pp = M_p.get_child_optional("PostProcess");
     if ( pp )
     {
         LOG(INFO) << "Model with PostProcess\n";
-        if ( !directoryLibExpr.empty() )
-            M_postproc.setDirectoryLibExpr( directoryLibExpr );
+        if ( !M_directoryLibExpr.empty() )
+            M_postproc.setDirectoryLibExpr( M_directoryLibExpr );
         M_postproc.setPTree( *pp );
     }
     auto out = M_p.get_child_optional("Outputs");
     if ( out )
     {
         LOG(INFO) << "Model with outputs\n";
-        if ( !directoryLibExpr.empty() )
-            M_outputs.setDirectoryLibExpr( directoryLibExpr );
+        if ( !M_directoryLibExpr.empty() )
+            M_outputs.setDirectoryLibExpr( M_directoryLibExpr );
         M_outputs.setPTree( *out );
     }
 }
@@ -204,5 +230,18 @@ void ModelProperties::put(std::string const &key, std::string const &entry)
 void ModelProperties::write(std::string const &f)
 {
     pt::write_json(f,M_p);
+}
+
+ModelProperties&
+ModelProperties::enableBoundaryConditions2()
+{
+    M_bc2_enabled = true; 
+    auto bc = M_p.get_child_optional("BoundaryConditions");
+    if ( bc )
+    {
+        VLOG(1) << "Model with boundary conditions\n";
+        M_bc2.setPTree( *bc );
+    }
+    return *this; 
 }
 }

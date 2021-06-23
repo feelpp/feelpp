@@ -109,7 +109,7 @@ feelpp_add_application( biotsavart-app
                         LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} INSTALL )
 feelpp_add_application( biotsavart-electric-alpha-app
                         SRCS electric-alpha.hpp biotsavart-electric-alpha.hpp biotsavart-electric-alpha_main.cpp
-                        LINK_LIBRARIES ${CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA} feelpp_toolbox_electric_lib_3dP1G1 feelpp_modelcore )
+                        LINK_LIBRARIES ${CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA} Feelpp::feelpp_toolbox_electric_lib Feelpp::feelpp_modelcore )
 
 # feelpp_add_application( test SRCS test.cpp )
 

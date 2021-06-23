@@ -119,7 +119,7 @@ public:
     /**
      * Destructor.
      */
-    ~SolverEigenSlepc()
+    ~SolverEigenSlepc() override
     {
         this->clear ();
     }
@@ -130,7 +130,7 @@ public:
     /**
      * Initialize data structures if not done so already.
      */
-    void init();
+    void init() override;
 
     //@}
 
@@ -152,12 +152,12 @@ public:
      * vector. Note that also in case of purely real matrix entries the
      * eigenpair may be complex values.
      */
-    eigenpair_type eigenPair ( unsigned int i );
+    eigenpair_type eigenPair ( unsigned int i ) override;
 
     /**
      * Returns the eigen modes in a map
      */
-    virtual eigenmodes_type eigenModes () ;
+    eigenmodes_type eigenModes () override ;
 
     /**
      * @computes and returns the relative error
@@ -181,7 +181,7 @@ public:
     /**
      * Release all memory and clear data structures.
      */
-    void clear();
+    void clear() override;
 
 
     /**
@@ -196,7 +196,7 @@ public:
                                int nev,
                                int ncv,
                                const double tol,
-                               const unsigned int m_its );
+                               const unsigned int m_its ) override;
 
     /**
      * This function calls the SLEPc solver to compute the eigenpairs
@@ -212,7 +212,7 @@ public:
                                int nev,
                                int ncv,
                                const double tol,
-                               const unsigned int m_its );
+                               const unsigned int m_its ) override;
 
 
 

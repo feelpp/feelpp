@@ -5,6 +5,7 @@ set -eo pipefail
 
 # this script must be executed at the top level of the Feel++ directories
 
+
 BUILDKITE_AGENT_NAME=${BUILDKITE_AGENT_NAME:-default}
 # default values
 CHANNEL=latest
@@ -15,11 +16,14 @@ if [ "$BUILDKITE_BRANCH" = "master" -o  "$BRANCH" = "master" ]; then
     CHANNEL=stable
 fi 
 DIST=${DIST:-focal}
-if [ "$DIST" = "focal" -o "$DIST" = "eoan" ]; then
+if [ "$DIST" = "bionic" -o "$DIST" = "eoan" -o "$DIST" = "focal"  -o "$DIST" = "groovy"  -o "$DIST" = "hirsute"  ]; then
    FLAVOR=ubuntu
-elif [ "$DIST" = "buster" ]; then
+elif [ "$DIST" = "buster" -o "$DIST" = "bullseye" -o "$DIST" = "sid" ]; then
     FLAVOR=debian
 fi
+
+
+
 COMPONENT=${COMPONENT:-feelpp}
 #OTHERMIRROR=
 #if [ "$COMPONENT" = "feelpp-toolboxes" ]; then
@@ -27,8 +31,23 @@ COMPONENT=${COMPONENT:-feelpp}
 #fi
 echo "Building $FLAVOR/$DIST packages for channel $CHANNEL Feel++ component $COMPONENT"
 
-PBUILDER_RESULTS=/var/lib/buildkite-agent/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
+# update apt tools
+echo "--- update apt tools"
+sudo apt update
+sudo apt install -y ubuntu-dev-tools
+if [ "$COMPONENT" = "feelpp-toolboxes" -o "$COMPONENT" = "feelpp-mor" ]; then
+    echo "--- update feelpp packages"
+    # this is necessary for toolboxes and mor to retrieve the proper feelpp version
+    sudo apt install -y --reinstall libfeelpp-dev feelpp-tools 
+fi
 
+#PBUILDER_RESULTS=/var/lib/buildkite-agent/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
+# local debug build
+PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
+if [ ! -f $HOME/pbuilder/${DIST}_base.tgz ]; then
+    echo "--- creating distribution $DIST"
+    pbuilder-dist $DIST create
+fi
 echo "--- start from clean slate"
 if [ -d build-$DIST ]; then rm -rf build-$DIST; fi
 
@@ -41,14 +60,49 @@ else
     echo "no files in ${PBUILDER_RESULTS}/";
 fi
 
-echo "--- update base for pbuilder $DIST"
+echo "--- update for pbuilder $DIST"
 pbuilder-dist $DIST update
-if [ "$COMPONENT" = "feelpp-toolboxes" ]; then
-    echo "--- add bintray key"
+if [ "$DIST" = "bionic" ]; then
+echo "--- fixes for pbuilder $DIST"
+    pbuilder-dist $DIST login --save-after-login << EOF
+apt-get update
+apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
+
+echo "deb https://apt.kitware.com/ubuntu/ bionic main" >> /etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu bionic universe"  >> /etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu bionic-updates main" >> /etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu bionic-updates universe" >> /etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu bionic-backports main" >> /etc/apt/sources.list
+echo "deb http://archive.ubuntu.com/ubuntu bionic-security main" >> /etc/apt/sources.list
+wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc  | apt-key add -
+apt-get update
+EOF
+fi
+if [ "$DIST" = "buster" ]; then
+echo "--- fixes for pbuilder $DIST"
+    pbuilder-dist $DIST login --save-after-login << EOF
+apt-get update
+apt-get install -y apt-transport-https ca-certificates gnupg software-properties-common wget
+
+echo "deb http://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
+apt-get update
+EOF
+fi
+# pbuilder-dist $DIST update
+if [ "$COMPONENT" = "feelpp-toolboxes" -o "$COMPONENT" = "feelpp-mor" ]; then
+    echo "--- add bintray key for $COMPONENT"
     export DIST
     export CHANNEL
     export FLAVOR
-    feelpp/tools/scripts/pkg/add_key.sh
+    pbuilder-dist $DIST login --save-after-login << EOF
+apt-get install -y apt-transport-https ca-certificates gnupg software-properties-common wget
+if [ "$DIST" = "buster" ]; then
+    echo "deb http://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
+fi
+echo "deb https://feelpp.jfrog.io/artifactory/$FLAVOR $DIST $CHANNEL" | tee -a /etc/apt/sources.list
+wget -qO  - https://feelpp.jfrog.io/artifactory/api/security/keypair/gpg-debian/public | apt-key add -
+apt update
+EOF
 fi
 
 echo "--- setting directory build-$DIST to build source tarball"
@@ -58,10 +112,14 @@ if [ "$COMPONENT" = "feelpp" ]; then
     cd build-$DIST && ../configure -r --enable-toolboxes --enable-mor --cmakeflags="-DFEELPP_ENABLE_GIT=OFF -DLIBBSON_DIR=/usr -DLIBMONGOC_DIR=/usr"
 elif [ "$COMPONENT" = "feelpp-toolboxes" ]; then
     cd build-$DIST && ../configure -r --root=../toolboxes
+elif [ "$COMPONENT" = "feelpp-mor" ]; then
+    cd build-$DIST && ../configure -r --root=../mor    
 fi
 make package_source
 echo "--- cloning feelpp.pkg"
 git clone -q https://github.com/feelpp/feelpp.pkg.git
+# local debug build
+#ln -s ../../Debian/feelpp.pkg
 
 
 
@@ -90,5 +148,6 @@ pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  ../${COMPONENT}_${v
 
 echo "+++ uploading ${PBUILDER_RESULTS} to bintray $COMPONENT $FLAVOR/$DIST"
 ls  -1 ${PBUILDER_RESULTS}
+echo "../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT"
 ../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT
 

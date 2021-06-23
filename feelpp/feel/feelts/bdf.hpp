@@ -129,23 +129,14 @@ public:
      * Constructor
      *
      * @param space approximation space
-     * @param n order of the BDF
-     */
-    FEELPP_DEPRECATED
-    Bdf( po::variables_map const& vm, space_ptrtype const& space, std::string const& name, std::string const& prefix="" )
-        : bdf_type( space, name, prefix ) {}
-    Bdf( space_ptrtype const& space, std::string const& name, std::string const& prefix="" );
-
-    /**
-     * Constructor
-     * @param space approximation space
      * @param name name of the BDF
      */
-    Bdf( space_ptrtype const& space, std::string const& name );
+    Bdf( space_ptrtype const& space, std::string const& name, std::string const& prefix="", po::variables_map const& vm =  Environment::vm() );
+
     //! copy operator
     Bdf( Bdf const& b );
 
-    ~Bdf();
+    ~Bdf() override;
 
 
     //! return a deep copy of the bdf object
@@ -258,7 +249,7 @@ public:
     /**
      * Move to next time step (solution not shifted).
      */
-    double next() const
+    double next() const override
     {
         double tcur = super::next();
 
@@ -349,7 +340,7 @@ public:
     //! Load current unknown in a file (hdf5, binary, ...)
     void loadCurrent();
 
-    void print() const
+    void print() const override
     {
         LOG(INFO) << "============================================================\n";
         LOG(INFO) << "BDF Information\n";
@@ -419,13 +410,14 @@ private:
 template <typename SpaceType>
 Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
                      std::string const& name,
-                     std::string const& prefix )
+                     std::string const& prefix,
+                     po::variables_map const& vm )
     :
-    super( name, prefix, __space->worldComm() ),
-    M_order( ioption(_prefix=prefix,_name="bdf.order") ),
-    M_strategyHighOrderStart( ioption(_prefix=prefix,_name="bdf.strategy-high-order-start") ),
+    super( name, prefix, __space->worldComm(), vm ),
+    M_order( ioption(_prefix=prefix,_name="bdf.order",_vm=vm) ),
+    M_strategyHighOrderStart( ioption(_prefix=prefix,_name="bdf.strategy-high-order-start",_vm=vm) ),
     M_order_cur( M_order ),
-    M_iterations_between_order_change( ioption(_prefix=prefix,_name="bdf.iterations-between-order-change") ),
+    M_iterations_between_order_change( ioption(_prefix=prefix,_name="bdf.iterations-between-order-change",_vm=vm) ),
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
     M_beta( BDF_MAX_ORDER ),
@@ -442,13 +434,6 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     }
     computeCoefficients();
 }
-
-template <typename SpaceType>
-Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
-                     std::string const& name  )
-    :
-    bdf_type( __space, name, "" )
-{}
 
 //! copy operator
 template <typename SpaceType>
@@ -920,27 +905,28 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( space,*( boost::is_convertible<mpl::_,std::shared_ptr<Feel::FunctionSpaceBase> > ) ) )
     ( optional
+      ( vm, ( po::variables_map const& ), Environment::vm() )
       ( prefix,*,"" )
       ( name,*,"bdf" )
-      ( order,*( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="bdf.order") )
-      ( initial_time,*( boost::is_floating_point<mpl::_> ), doption(_prefix=prefix,_name="bdf.time-initial") )
-      ( final_time,*( boost::is_floating_point<mpl::_> ),  doption(_prefix=prefix,_name="bdf.time-final") )
-      ( time_step,*( boost::is_floating_point<mpl::_> ), doption(_prefix=prefix,_name="bdf.time-step") )
-      ( strategy,*( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="bdf.strategy") )
-      ( steady,*( bool ), boption(_prefix=prefix,_name="bdf.steady") )
-      ( reverse,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.reverse") )
-      ( restart,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.restart") )
-      ( restart_path,*, soption(_prefix=prefix,_name="bdf.restart.path") )
-      ( restart_at_last_save,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.restart.at-last-save") )
-      ( save,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.save") )
-      ( freq,*(boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="bdf.save.freq") )
-      ( format,*, soption(_prefix=prefix,_name="bdf.file-format") )
-      ( rank_proc_in_files_name,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.rank-proc-in-files-name") )
+      ( order,*( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="bdf.order",_vm=vm) )
+      ( initial_time,*( boost::is_floating_point<mpl::_> ), doption(_prefix=prefix,_name="bdf.time-initial",_vm=vm) )
+      ( final_time,*( boost::is_floating_point<mpl::_> ),  doption(_prefix=prefix,_name="bdf.time-final",_vm=vm) )
+      ( time_step,*( boost::is_floating_point<mpl::_> ), doption(_prefix=prefix,_name="bdf.time-step",_vm=vm) )
+      ( strategy,*( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="bdf.strategy",_vm=vm) )
+      ( steady,*( bool ), boption(_prefix=prefix,_name="bdf.steady",_vm=vm) )
+      ( reverse,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.reverse",_vm=vm) )
+      ( restart,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.restart",_vm=vm) )
+      ( restart_path,*, soption(_prefix=prefix,_name="bdf.restart.path",_vm=vm) )
+      ( restart_at_last_save,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.restart.at-last-save",_vm=vm) )
+      ( save,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.save",_vm=vm) )
+      ( freq,*(boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="bdf.save.freq",_vm=vm) )
+      ( format,*, soption(_prefix=prefix,_name="bdf.file-format",_vm=vm) )
+      ( rank_proc_in_files_name,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.rank-proc-in-files-name",_vm=vm) )
       ( n_consecutive_save,*( boost::is_integral<mpl::_> ), order )
     ) )
 {
     typedef typename meta::remove_all<space_type>::type::element_type _space_type;
-    auto thebdf = std::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>( space,name,prefix ) );
+    auto thebdf = std::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>( space,name,prefix,vm ) );
     thebdf->setTimeInitial( initial_time );
     thebdf->setTimeFinal( final_time );
     thebdf->setTimeStep( time_step );

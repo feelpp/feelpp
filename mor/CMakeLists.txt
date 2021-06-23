@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-12
 #
-#  Copyright (C) 2009-2017 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2009-2017 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,8 +21,14 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.7.2)
+cmake_minimum_required(VERSION 3.13.0)
+if(DEFINED PROJECT_NAME)
+  set( MOR_SUBPROJECT ON )
+endif()
+
+
 project(mor)
+  
 
 set(FEELPP_MOR_SOURCE_DIR ${PROJECT_SOURCE_DIR})
 set(FEELPP_MOR_BINARY_DIR ${PROJECT_BINARY_DIR})
@@ -38,11 +44,16 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
     message(WARNING "Feel++ was not installed with toolboxes")
   endif()
 else()
+  feelpp_get_environment()
+  # useful for pyfeelpp-toolboxes
+  set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
   include_directories(${FEELPP_MOR_SOURCE_DIR})
   include_directories(${FEELPP_MOR_BINARY_DIR})  
 endif()
 
-
+if ( FEELPP_HAS_PYTHON )
+  message(STATUS "[feelpp-mor] python module path:${FEELPP_PYTHON_MODULE_PATH}")
+endif()
 
 
 
@@ -54,6 +65,8 @@ OPTION(FEELPP_ENABLE_MOR_HEAT1D "enable HEAT1D testcase" ON )
 OPTION(FEELPP_ENABLE_MOR_HEAT2D "enable HEAT2D testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_HEAT3D "enable HEAT3D testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_LINEARELASTICITY "enable LINEARELASTICITY testcase" ${FEELPP_ENABLE_MOR_ALL})
+OPTION(FEELPP_ENABLE_MOR_OPUSHEAT "enable OpusHeat testcases" OFF)
+OPTION(FEELPP_ENABLE_MOR_THERMALBUILDING "enable ThermalBuilding testcases" OFF)
 OPTION(FEELPP_ENABLE_MOR_RBHEAT "enable RBHEAT testcases" OFF)
 OPTION(FEELPP_ENABLE_MOR_CABINEHEAT "enable CABINEHEAT testcases" OFF)
 OPTION(FEELPP_ENABLE_MOR_FINALCABINEHEAT "enable FINALCABINEHEAT testcases" OFF)
@@ -68,12 +81,16 @@ OPTION(FEELPP_ENABLE_MOR_THERMALFIN "enable ThermalFin testcases" ${FEELPP_ENABL
 OPTION(FEELPP_ENABLE_MOR_EEG "enable EEG testcase" OFF)
 OPTION(FEELPP_ENABLE_MOR_CONVECTION "enable Convection testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_STOKESDEIM "enable stokes with deim testcase" ${FEELPP_ENABLE_MOR_ALL})
-OPTION(FEELPP_ENABLE_MOR_THERMOELECTRIC "enable thermoelectric testcase" {FEELPP_ENABLE_MOR_ALL})
+OPTION(FEELPP_ENABLE_MOR_MINIMAL "enable minimal testcase" ${FEELPP_ENABLE_MOR_ALL})
+OPTION(FEELPP_ENABLE_MOR_THERMOELECTRIC "enable thermoelectric testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_GREPLDEIM "enable grepldeim testcase" ${FEELPP_ENABLE_MOR_ALL})
+OPTION(FEELPP_ENABLE_MOR_TOOLBOX "enable toolbox testcase" ON)
 
 
-if ( NOT FEELPP_TOOLBOXES_FOUND )
+if ( NOT MOR_SUBPROJECT AND NOT  FEELPP_TOOLBOXES_FOUND )
+  message(STATUS "Feel++ Toolboxes not setup, disabling MOR_TOOLBOX...")
   set( FEELPP_ENABLE_MOR_THERMOELECTRIC OFF )
+  set( FEELPP_ENABLE_MOR_TOOLBOX OFF )
 endif()
 MESSAGE(STATUS "FEELPP_ENABLE_MOR_THERMOELECTRIC=${FEELPP_ENABLE_MOR_THERMOELECTRIC}")
 
@@ -183,6 +200,9 @@ endif()
 if ( FEELPP_ENABLE_MOR_GREPLDEIM )
   add_subdirectory(grepldeim)
 endif()
+if ( FEELPP_ENABLE_MOR_TOOLBOX )
+  add_subdirectory(toolbox-mor)
+endif()
 
 add_subdirectory(pyfeelpp-mor)
 
@@ -192,3 +212,8 @@ install(EXPORT feelpp-mor-export-targets
   NAMESPACE Feelpp::
   DESTINATION share/feelpp/mor/cmake/
   )
+
+if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp-mor.package.cmake)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.version.cmake)
+endif()

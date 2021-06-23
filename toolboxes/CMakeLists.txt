@@ -22,7 +22,7 @@
 #
 #
 
-cmake_minimum_required(VERSION 3.7.2)
+cmake_minimum_required(VERSION 3.13)
 
 project(toolboxes)
 set(PROJECT_SHORTNAME "toolbox")
@@ -43,6 +43,11 @@ else()
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
 endif()
 
+if ( FEELPP_HAS_PYTHON )
+  message(STATUS "[feelpp-toolboxes] python module path:${FEELPP_PYTHON_MODULE_PATH}")
+endif()
+
+
 option( FEELPP_ENABLE_ASCIIDOCTOR "Enable AsciiDoctor Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 
 if ( FEELPP_ENABLE_ASCIIDOCTOR )
@@ -56,8 +61,9 @@ if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
   set(FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW 1)
 endif()
 
-option(FEELPP_TOOLBOXES_ENABLE "Enable/Disable Heat" ON)
+option(FEELPP_TOOLBOXES_ENABLE "Enable/Disable Toolboxes" ON)
 option(FEELPP_TOOLBOXES_ENABLE_HEAT "Enable/Disable Heat" ON)
+option(FEELPP_TOOLBOXES_ENABLE_CFPDE "Enable/Disable CFPDE" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_ELECTRIC "Enable/Disable Electric" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC "Enable/Disable ThermoElectric" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS "Enable/Disable FluidMechanics" ${FEELPP_TOOLBOXES_ENABLE})
@@ -65,7 +71,7 @@ option(FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS "Enable/Disable SolidMechanics" ${
 option(FEELPP_TOOLBOXES_ENABLE_FSI "Enable/Disable FSI" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_ADVECTION "Enable/Disable Advection" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_LEVELSET "Enable/Disable LevelSet" ${FEELPP_TOOLBOXES_ENABLE})
-option(FEELPP_TOOLBOXES_ENABLE_MULTIFLUID "Enable/Disable MultiFluid" ${FEELPP_TOOLBOXES_ENABLE})
+option(FEELPP_TOOLBOXES_ENABLE_MULTIFLUID "Enable/Disable MultiFluid" OFF ) # ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_HDG "Enable/Disable HDG" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_MAXWELL "Enable/Disable Magnetostatic" ${FEELPP_TOOLBOXES_ENABLE})
 #option(FEELPP_ENABLE_PCH_MODELS "Enable precompiled headers for models (pch)" OFF)
@@ -73,9 +79,9 @@ option(FEELPP_TOOLBOXES_ENABLE_MAXWELL "Enable/Disable Magnetostatic" ${FEELPP_T
 set(FEELPP_TOOLBOXES_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(FEELPP_TOOLBOXES_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
-include_directories(${CMAKE_SOURCE_DIR}/feelpp)
-include_directories(${FEELPP_TOOLBOXES_SOURCE_DIR})
-include_directories(${FEELPP_TOOLBOXES_BINARY_DIR})
+#include_directories(${CMAKE_SOURCE_DIR}/feelpp)
+#include_directories(${FEELPP_TOOLBOXES_SOURCE_DIR})
+#include_directories(${FEELPP_TOOLBOXES_BINARY_DIR})
 
 INCLUDE(CTest)
 ENABLE_TESTING()
@@ -84,13 +90,17 @@ add_subdirectory(cmake)
 add_subdirectory( feel/feelmodels )
 add_subdirectory( pyfeelpp-toolboxes )
 
-if ( FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
+if ( FEELPP_TOOLBOXES_ENABLE_CFPDE )
+  add_subdirectory( coefficientformpdes )
+endif()
+
+if ( FEELPP_TOOLBOXES_ENABLE_CFPDE AND FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
   add_subdirectory( fluid )
 endif()
 if ( FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS )
   add_subdirectory( solid )
 endif()
-if ( FEELPP_TOOLBOXES_ENABLE_FSI )
+if ( FEELPP_TOOLBOXES_ENABLE_CFPDE AND FEELPP_TOOLBOXES_ENABLE_FSI )
   add_subdirectory( fsi )
 endif()
 if ( FEELPP_TOOLBOXES_ENABLE_HDG AND ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" ) )

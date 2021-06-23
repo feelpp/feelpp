@@ -90,9 +90,9 @@ public:
 template<typename T, typename Storage = ublas::vector<T> >
 class FEELPP_EXPORT VectorUblas
     : public Vector<T>
-    , boost::addable<VectorUblas<T,Storage> >
-    , boost::subtractable<VectorUblas<T,Storage> >
-    , boost::multipliable<VectorUblas<T,Storage>, T >
+//    , boost::addable<VectorUblas<T,Storage> >
+//    , boost::subtractable<VectorUblas<T,Storage> >
+//    , boost::multipliable<VectorUblas<T,Storage>, T >
 {
     typedef Vector<T> super1;
 public:
@@ -112,7 +112,7 @@ public:
     typedef Vector<value_type> clone_type;
     typedef std::shared_ptr<clone_type> clone_ptrtype;
     typedef VectorUblas<value_type, Storage> this_type;
-
+    using self_t = this_type;
     typedef typename vector_type::iterator iterator;
     typedef typename vector_type::const_iterator const_iterator;
 
@@ -193,7 +193,7 @@ public:
                  size_type nGhostDof, value_type* arrayGhostDof,
                  datamap_ptrtype const& dm );
 
-    ~VectorUblas();
+    ~VectorUblas() override;
 
     /**
      * Change the dimension of the vector to \p N. The reserved memory
@@ -209,25 +209,25 @@ public:
      */
     void init ( const size_type N,
                 const size_type n_local,
-                const bool      fast=false );
+                const bool      fast=false ) override;
 
     /**
      * call init with n_local = N,
      */
     void init ( const size_type n,
-                const bool      fast=false );
+                const bool      fast=false ) override;
 
     /**
      * init from a \p DataMap
      */
-    void init( datamap_ptrtype const& dm );
+    void init( datamap_ptrtype const& dm ) override;
 
 
     /**
      * Creates a copy of this vector and returns it in an
      * \p shared_ptr<>.
      */
-    clone_ptrtype clone() const
+    clone_ptrtype clone() const override
     {
         return clone_ptrtype( new this_type( *this ) );
     }
@@ -241,7 +241,7 @@ public:
     /**
      *  \f$U = V\f$: copy all components.
      */
-    Vector<value_type>& operator= ( const Vector<value_type> &V );
+    Vector<value_type>& operator= ( const Vector<value_type> &V ) override;
     Vector<value_type>& operator= ( const this_type &V );
 
     template<typename AE>
@@ -254,7 +254,7 @@ public:
     /**
      * Access components, returns \p u(i).
      */
-    T operator()( size_type i ) const
+    T operator()( size_type i ) const override
     {
         checkIndex(i);
         if ( has_non_contiguous_ghosts )
@@ -273,7 +273,7 @@ public:
     /**
      * Access components, returns \p u(i).
      */
-    T& operator()( size_type i )
+    T& operator()( size_type i ) override
     {
         checkIndex(i);
         if ( has_non_contiguous_ghosts )
@@ -313,21 +313,66 @@ public:
      * Addition operator.
      * Fast equivalent to \p U.add(1, V).
      */
-    Vector<T>& operator+=( const Vector<T>& v )
+    Vector<T>& operator+=( const Vector<T>& v ) override
     {
         add( 1., v );
         return *this;
     }
+    /**
+     * Addition operator.
+     */
+    self_t operator+( const self_t& v ) const
+    {
+        self_t w( *this );
+        w += v;
+        return w;
+    }
+    /**
+     * Addition operator with a scalar
+     */
+    self_t operator+( T const& f ) const
+    {
+        self_t v( *this );
+        v.setConstant( f );
+        v.add( 1., *this );
+        return v;
+    }
+    /**
+     * @brief operator f + v
+     * 
+     * @param f scalar
+     * @param v VectorUblas
+     * @return self_t new vector
+     */
+    friend self_t operator+(T f, const self_t &v) { self_t w( v ); w.setConstant( f ); w.add(1.,v); return w;  }
 
     /**
      * Subtraction operator.
      * Fast equivalent to \p U.add(-1, V).
      */
-    Vector<T>& operator-=( const Vector<T>& v )
+    Vector<T>& operator-=( const Vector<T>& v ) override { add( -1., v ); return *this; }
+    /**
+     * Addition operator.
+     */
+    self_t operator-( const self_t& v ) const { self_t w( *this ); w -= v; return w; }
+    /**
+     * substraction operator with a scalar
+     */
+    self_t operator-( T const& f ) const
     {
-        add( -1., v );
-        return *this;
+        self_t v( *this );
+        v.setConstant( -f );
+        v.add( 1., *this );
+        return v;
     }
+    /**
+     * @brief operator f - v
+     * 
+     * @param f scalar
+     * @param v VectorUblas
+     * @return self_t new vector
+     */
+    friend self_t operator-(T f, const self_t &v) { self_t w( v ); w.setConstant( f ); w.add(-1.,v); return w;  }
 
     /**
      * multiplication by a scalar value
@@ -337,6 +382,33 @@ public:
         this->scale( v );
         return *this;
     }
+    /**
+     * @return negative of this vector
+     */
+    self_t operator-() const
+    {
+        self_t v( *this );
+        v.scale( -1. );
+        return v;
+    }
+    /**
+     * @return v * f
+     */
+    self_t operator*( T f ) const
+    {
+        self_t v( *this );
+        v.scale( f );
+        return v;
+    }
+    /**
+     * @brief operator f * v
+     * 
+     * @param f scalar
+     * @param v VectorUblas
+     * @return self_t scaled vector
+     */
+    friend self_t operator*(T f, const self_t &v) { self_t w( v ); w.scale( f ); return w;  }
+
     //@}
 
     /** @name Accessors
@@ -413,7 +485,7 @@ public:
     /**
      * \return true if vector is initialized/usable, false otherwise
      */
-    bool isInitialized() const
+    bool isInitialized() const override
     {
         return true;
     }
@@ -429,7 +501,7 @@ public:
      * see if vector has been closed
      * and fully assembled yet
      */
-    bool closed() const
+    bool closed() const override
     {
         return true;
     }
@@ -512,7 +584,7 @@ public:
     /**
      * set the entries to the constant \p v
      */
-    void setConstant( value_type v )
+    void setConstant( value_type v ) override
     {
         M_vec = ublas::scalar_vector<double>( M_vec.size(), v );
         if ( has_non_contiguous_ghosts )
@@ -536,20 +608,20 @@ public:
      * having called the default
      * constructor.
      */
-    void clear ();
+    void clear () override;
 
     /**
      * Set all entries to 0. This method retains
      * sparsity structure.
      */
-    void zero ()
+    void zero () override
     {
         std::fill( this->begin(), this->end(), value_type( 0 ) );
         if ( has_non_contiguous_ghosts )
             std::fill( this->beginGhost(), this->endGhost(), value_type( 0 ) );
     }
 
-    void zero ( size_type /*start1*/, size_type /*stop1*/ )
+    void zero ( size_type /*start1*/, size_type /*stop1*/ ) override
     {
         this->zero();
         //ublas::project( (*this), ublas::range( start1, stop1 ) ) = ublas::zero_vector<value_type>( stop1 );
@@ -558,7 +630,7 @@ public:
     /**
      * Add \p value to the value already accumulated
      */
-    void add ( const size_type i, const value_type& value )
+    void add ( const size_type i, const value_type& value ) override
     {
 #if !defined(NDEBUG)
         checkInvariant();
@@ -569,7 +641,7 @@ public:
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
      */
-    void addVector ( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_v<size_type> )
+    void addVector ( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_v<size_type> ) override
     {
         for ( int j = 0; j < n; ++j )
             ( *this )( i[j] ) += v[j];
@@ -578,7 +650,7 @@ public:
     /**
      * set to \p value
      */
-    void set ( size_type i, const value_type& value )
+    void set ( size_type i, const value_type& value ) override
     {
 #if !defined(NDEBUG)
         checkInvariant();
@@ -589,7 +661,7 @@ public:
     /**
      * v([i1,i2,...,in]) = [value1,...,valuen]
      */
-    void setVector ( int* i, int n, value_type* v )
+    void setVector ( int* i, int n, value_type* v ) override
     {
         for ( int j = 0; j < n; ++j )
             ( *this )( i[j] ) = v[j];
@@ -601,7 +673,7 @@ public:
      * want to specify WHERE to add it
      */
     void addVector ( const std::vector<value_type>& v,
-                     const std::vector<size_type>& dof_indices )
+                     const std::vector<size_type>& dof_indices ) override
     {
         FEELPP_ASSERT ( v.size() == dof_indices.size() ).error( "invalid dof indices" );
 
@@ -616,7 +688,7 @@ public:
      * the \p NumericVector<T> V
      */
     void addVector ( const Vector<value_type>& V,
-                     const std::vector<size_type>& dof_indices )
+                     const std::vector<size_type>& dof_indices ) override
     {
         FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
 
@@ -630,7 +702,7 @@ public:
      * and a \p Vector \p V to \p this, where \p this=U.
      */
     void addVector ( const Vector<value_type>& /*V_in*/,
-                     const MatrixSparse<value_type>& /*A_in*/ )
+                     const MatrixSparse<value_type>& /*A_in*/ ) override
     {
         FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
@@ -655,7 +727,7 @@ public:
      * and you want to specify WHERE to insert it
      */
     void insert ( const std::vector<T>& /*v*/,
-                  const std::vector<size_type>& /*dof_indices*/ )
+                  const std::vector<size_type>& /*dof_indices*/ ) override
     {
         FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
@@ -667,7 +739,7 @@ public:
      * the Vector<T> V
      */
     void insert ( const Vector<T>& /*V*/,
-                  const std::vector<size_type>& /*dof_indices*/ )
+                  const std::vector<size_type>& /*dof_indices*/ ) override
     {
         FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
@@ -680,7 +752,7 @@ public:
      * the DenseVector<T> V
      */
     void insert ( const ublas::vector<T>& /*V*/,
-                  const std::vector<size_type>& /*dof_indices*/ )
+                  const std::vector<size_type>& /*dof_indices*/ ) override
     {
         FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
@@ -689,7 +761,7 @@ public:
      * Scale each element of the
      * vector by the given factor.
      */
-    void scale ( const T factor )
+    void scale ( const T factor ) override
     {
         M_vec.operator *=( factor );
         if ( has_non_contiguous_ghosts )
@@ -703,15 +775,15 @@ public:
      * vector to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL", bool renumber = false ) const;
+    void printMatlab( const std::string name="NULL", bool renumber = false ) const override;
 
-    void close() {}
+    void close() override {}
 
     /**
      * @return the minimum element in the vector.  In case of complex
      * numbers, this returns the minimum Real part.
      */
-    real_type min() const
+    real_type min() const override
     {
         return this->min( true );
     }
@@ -739,7 +811,7 @@ public:
      * @return the maximum element in the vector.  In case of complex
      * numbers, this returns the maximum Real part.
      */
-    real_type max() const
+    real_type max() const override
     {
         return this->max( true );
     }
@@ -768,7 +840,7 @@ public:
      * @return the \f$l_1\f$-norm of the vector, i.e.  the sum of the
      * absolute values.
      */
-    real_type l1Norm() const
+    real_type l1Norm() const override
     {
         checkInvariant();
 
@@ -797,7 +869,7 @@ public:
      * @return the \f$l_2\f$-norm of the vector, i.e.  the square root
      * of the sum of the squares of the elements.
      */
-    real_type l2Norm() const
+    real_type l2Norm() const override
     {
         checkInvariant();
         real_type local_norm2 = 0;
@@ -825,7 +897,7 @@ public:
      * @return the maximum absolute value of the elements of this
      * vector, which is the \f$l_\infty\f$-norm of a vector.
      */
-    real_type linftyNorm() const
+    real_type linftyNorm() const override
     {
         checkInvariant();
         real_type local_norminf = 0;
@@ -849,7 +921,7 @@ public:
     /**
      * @return the sum of the vector.
      */
-    value_type sum() const
+    value_type sum() const override
     {
         checkInvariant();
         value_type local_sum = 0;
@@ -888,7 +960,7 @@ public:
      * Addition of \p s to all components.
      * \note \p s is a scalar and not a vector.
      */
-    void add( const T& a )
+    void add( const T& a ) override
     {
         checkInvariant();
 #if 1
@@ -908,7 +980,7 @@ public:
      * \f$U+=V\f$.
      * Simple vector addition, equal to the \p operator+=.
      */
-    void add( const Vector<T>& v )
+    void add( const Vector<T>& v ) override
     {
         add( 1., v );
         return;
@@ -919,7 +991,7 @@ public:
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add( const T& a, const Vector<T>& v );
+    void add( const T& a, const Vector<T>& v ) override;
 
     /**
      * Creates a copy of the global vector in the
@@ -992,7 +1064,7 @@ public:
                                   const size_type proc_id = 0 ) const;
 
 
-    value_type dot( Vector<T> const& __v ) const;
+    value_type dot( Vector<T> const& __v ) const override;
     //@}
 
 #ifdef FEELPP_HAS_HDF5

@@ -115,7 +115,7 @@ public:
         if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace , _pattern=M_pattern );
     }
 
-    virtual ~OperatorLinear() {}
+    ~OperatorLinear() override {}
 
     virtual void
     init( domain_space_ptrtype     domainSpace,
@@ -134,6 +134,7 @@ public:
     void setName( std::string name ) { M_name = name; }
     std::string name() const { return M_name ; }
 
+    void setMatrix( matrix_ptrtype m ) { M_matrix = m; }
 
     // apply the operator: ie := Op de
     template<typename Storage>
@@ -153,9 +154,9 @@ public:
         ie.container() = *_v2;
     }
 
-    virtual void
+    void
     apply( const domain_element_type& de,
-           image_element_type&        ie ) const
+           image_element_type&        ie ) const override
     {
         if ( ! M_matrix->closed() )
         {

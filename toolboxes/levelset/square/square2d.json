@@ -12,27 +12,27 @@
         "r0": "0.08"
     },
 
-    "InitialConditionsDeprecated":
+    "InitialConditions":
     {
         "levelset":
         {
-            "Dirichlet":
+            "Expression":
             {
-                "":
+                "drop1":
                 {
                     "expr":"sqrt( (x-x0)*(x-x0) + (y-y0)*(y-y0) ) - r0 :x:x0:y:y0:r0"
                 }
             },
-            "shapes":
+            "Shapes":
             {
-                "drop1":
+                "drop2":
                 {
                     "shape": "sphere",
                     "xc": "-0.1",
                     "yc": "-0.05",
                     "radius": "0.16"
                 },
-                "drop2":
+                "drop3":
                 {
                     "shape": "sphere",
                     "xc": "-0.25",
@@ -46,13 +46,24 @@
     {
         "levelset":
         {
-            "inflow":
-            {
-                "Left":
-                {
-                    "expr":"0"
-                }
-            }
+//            "inflow":
+//            {
+//                "Left":
+//                {
+//                    "expr":"0"
+//                }
+//            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields": ["phi", "normal", "curvature"]
+        },
+        "Measures":
+        {
+            "quantities": ["volume"]
         }
     }
 }

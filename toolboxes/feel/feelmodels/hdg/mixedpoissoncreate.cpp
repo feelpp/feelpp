@@ -17,6 +17,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
                                                 std::string const& subPrefix,
                                                 ModelBaseRepository const& modelRep )
     : super_type( prefix, MixedPoissonPhysicsMap[physic]["keyword"], worldComm, subPrefix, modelRep ),
+      ModelBase( prefix, MixedPoissonPhysicsMap[physic]["keyword"], worldComm, subPrefix, modelRep ),
       M_physic(physic),
       M_potentialKey(MixedPoissonPhysicsMap[physic]["potentialK"]),
       M_fluxKey(MixedPoissonPhysicsMap[physic]["fluxK"]),
@@ -32,9 +33,6 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedPoisson","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
-
-
-    this->setFilenameSaveInfo( prefixvm(this->prefix(),"MixedPoisson.info") );
 
 
     if ( this->prefix().empty())

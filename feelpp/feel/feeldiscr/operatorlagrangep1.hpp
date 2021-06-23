@@ -35,6 +35,7 @@
 #include <feel/feelfilters/pointsettomesh.hpp>
 //#include <feel/feelfilters/exporterquick.hpp>
 #ifdef FEELPP_HAS_GMSH
+#include <feel/feelfilters/straightenmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
 #endif
 //#include <feel/feelfilters/savegmshmesh.hpp>
@@ -142,7 +143,8 @@ public:
 
     typedef typename domain_mesh_type::gm_type gm_type;
     typedef typename domain_mesh_type::element_type element_type;
-    typedef typename gm_type::template Context<vm::POINT, element_type> gmc_type;
+    static const size_type gmc_context_v = vm::POINT;
+    typedef typename gm_type::template Context<element_type> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename gm_type::precompute_ptrtype gmpc_ptrtype;
 
@@ -171,7 +173,7 @@ public:
     /**
      * destructor. nothing really to be done here
      */
-    ~OperatorLagrangeP1()
+    ~OperatorLagrangeP1() override
     {}
 
     //@}
@@ -512,9 +514,9 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
 
         // update the gemap context
         if ( !M_gmc )
-            M_gmc = gmc_ptrtype( new gmc_type( meshDomain->gm(), curelt, M_gmpc ) );
+            M_gmc = meshDomain->gm()->template context<gmc_context_v>( curelt, M_gmpc );
         else
-            M_gmc->update( curelt );
+            M_gmc->template update<gmc_context_v>( curelt );
 
         // iterate on each new element (from ref elt)
         auto itl = M_p2m.mesh()->beginElement();
@@ -686,9 +688,9 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
                 elt.setNeighborPartitionIds( parentElt.neighborPartitionIds() );
 
                 if ( !M_gmc )
-                    M_gmc = gmc_ptrtype( new gmc_type( meshDomain->gm(), parentElt, M_gmpc ) );
+                    M_gmc = meshDomain->gm()->template context<gmc_context_v>( parentElt, M_gmpc );
                 else
-                    M_gmc->update( parentElt );
+                    M_gmc->template update<gmc_context_v>( parentElt );
 
                 auto const& pointData = boost::get<2>( dataByElt );
                 bool isConnectedToActiveAnElement = false;
@@ -770,7 +772,7 @@ OperatorLagrangeP1<space_type>::operator()( element_type const& u ) const
 
     for ( ; it != en; ++it )
     {
-        gmc_ptrtype gmc( new gmc_type( this->domainSpace()->mesh()->gm(), *it, M_gmpc ) );
+        this->domainSpace()->mesh()->gm()->template context<gmc_context_v>( unwrap_ref( *it ), M_gmpc );
         typename matrix_node<value_type>::type u_at_pts = u.id( *gmc );
 
         typename std::list<size_type>::const_iterator ite = M_el2el[it->id()].begin();

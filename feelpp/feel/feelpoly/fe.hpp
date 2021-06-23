@@ -178,7 +178,7 @@ public:
         M_primal( fe.M_primal )
     {}
 
-    ~FiniteElement()
+    ~FiniteElement() override
     {}
 
     //@}
@@ -304,7 +304,7 @@ public:
     /**
      * \return the family name of the finite element
      */
-    virtual std::string familyName() const = 0;
+    std::string familyName() const override = 0;
 
     //! \return the component of a local dof
     virtual uint16_type component( uint16_type localDofId ) const = 0;

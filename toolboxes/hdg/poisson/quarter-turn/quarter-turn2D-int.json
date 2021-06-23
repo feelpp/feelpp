@@ -1,13 +1,28 @@
 {
     "Name": "HDG-Mixed-Poisson ",
     "ShortName":"MP",
-    "Models":{"equations":"hdg"},
+    "Models":
+    {
+        "equations":"hdg",
+        "p_expr":"2*dif/Pi*atan2(y,x):x:y:z:dif",
+        "u_expr":"{2*dif*sigma/Pi*y/(x*x+y*y),-2*dif*sigma/Pi*x/(x*x+y*y)}:x:y:z:dif:sigma"
+    },
+    "Parameters":
+    {
+        "dif":0.031238,
+        "int":-800,
+        "sigma":58e3,
+        "k":0.38,
+        "h":0.08,
+        "Tw":293
+    },
     "Materials":
     {
         "omega":
         {
             "name":"copper",
-            "cond":"-1"
+            "cond":"58e3",
+            "k":58e3
             // "alpha":"3.35e-3",
             // "T0":"293",
             // "sigma0":"50",
@@ -24,7 +39,7 @@
             {
                 "top":
                 {
-                    "expr":"2.2064"
+                    "expr":"-800"
                 }
             }
         },
@@ -52,13 +67,133 @@
                     "expr":"0"
                 }
             }
-        }
+        },
+	    "Exact solution":
+	    {
+	        "p_exact":
+	        {
+		        "omega":
+		        {
+		            "expr":"2*dif/Pi*atan2(y,x):x:y:z:dif"
+		        }
+	        },
+            "u_exact":
+            {
+                "omega":
+                {
+                    "expr":"{2*dif*sigma/Pi*y/(x*x+y*y),-2*dif*sigma/Pi*x/(x*x+y*y)}:x:y:z:dif:sigma"
+                }
+            }
+	    }
     },
     "PostProcess":
     {
         "Exports":
 		{
             "fields":["potential","flux"]
+        },
+        "Measures":
+        {
+            "Points":
+            {
+                "%1_1%":
+                {
+                    "coord":"%1_2%",
+                    "fields":"potential",
+                    "index1": [ ["V0", "{0,1.5}"],
+                                ["V1", "{1.5,0}"]
+                              ]
+                }
+            },
+            "Statistics":
+            {
+                "Intensity0":
+                {
+                    "type":"integrate",
+                    "field":"flux",
+                    "markers":"top"
+                },
+                "Intensity1":
+                {
+                    "type":"integrate",
+                    "field":"flux",
+                    "markers":"bottom"
+                },
+                "Power":
+                {
+                    "type":"integrate",
+                    "expr":"poisson_P:poisson_P",
+                    "markers":"omega"
+                }
+            },
+            "Norm":
+            {
+                "potential_error":
+                {
+                    "type":"L2-error",
+                    "field":"potential",
+                    "solution":"2*dif/Pi*atan2(y,x):x:y:z:dif",
+                    "markers":"omega"
+                },
+                "flux_error":
+                {
+                    "type":"L2-error",
+                    "field":"flux",
+                    "solution":"{2*dif*sigma/Pi*y/(x*x+y*y),-2*dif*sigma/Pi*x/(x*x+y*y)}:x:y:z:dif:sigma",
+                    "markers":"omega"
+                }
+            }
+        },
+        "Checkers":
+        {
+            "Measures":
+            {
+                "Statistics_Intensity0_integrate_0":
+                {
+                    "value":800,
+                    "tolerance":1e-8
+                },
+                "Statistics_Intensity0_integrate_1":
+                {
+                    "value":-8.343084e-01,
+                    "tolerance":1e-1
+                },
+                "Statistics_Intensity1_integrate_0":
+                {
+                    "value":8.227654e-01,
+                    "tolerance":1e-1
+                },
+                "Statistics_Intensity1_integrate_1":
+                {
+                    "value":-800,
+                    "tolerance":1e-8
+                },
+                "Statistics_Power_integrate":
+                {
+                    "value":3.6815531607082702e-02,
+                    "tolerance":1e-1
+                },
+                "Points_V0_potential":
+                {
+                    "value":3.1256783010645731e-02,
+                    "tolerance":1e-1
+                },
+                "Points_V1_potential":
+                {
+                    "value":6.1011953469842531e-06,
+                    "tolerance":1e-1
+                },
+                "Norm_potential_error_L2-error":
+                {
+                    "value":0,
+                    "tolerance":1e-4
+                },
+                "Norm_flux_error_L2-error":
+                {
+                    "value":0,
+                    "tolerance":10
+                }
+            }
         }
-    }    
+    }
 }

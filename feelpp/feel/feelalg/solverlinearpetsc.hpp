@@ -152,22 +152,22 @@ public:
     /**
      *  Constructor. Initializes Petsc data structures
      */
-    SolverLinearPetsc ( po::variables_map const& vm, worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
+    SolverLinearPetsc ( std::string const& prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), po::variables_map const& vm = Environment::vm() );
 
     /**
      * Destructor.
      */
-    ~SolverLinearPetsc ();
+    ~SolverLinearPetsc () override;
 
     /**
      * Release all memory and clear data structures.
      */
-    void clear ();
+    void clear () override;
 
     /**
      * Initialize data structures if not done so already.
      */
-    void init ();
+    void init () override;
 
     /**
      * if \p cns is true, set the null space to be the constant values
@@ -195,7 +195,7 @@ public:
             Vector<T> const& b,
             const double tolerance,
             const unsigned int maxit,
-            bool transpose )
+            bool transpose ) override
     {
         return this->solve( mat, mat, x, b, tolerance, maxit, transpose );
     }
@@ -240,7 +240,7 @@ public:
             Vector<T> const& b,
             const double tolerance,
             const unsigned int maxit,
-            bool transpose );
+            bool transpose ) override;
 
     /**
      * @retun the Krylov SubsPace  data structure
@@ -336,9 +336,9 @@ SolverLinearPetsc<T>::SolverLinearPetsc ( worldcomm_ptr_t const& worldComm )
 
 template <typename T>
 inline
-SolverLinearPetsc<T>::SolverLinearPetsc ( po::variables_map const& vm, worldcomm_ptr_t const& worldComm )
+SolverLinearPetsc<T>::SolverLinearPetsc ( std::string const& prefix, worldcomm_ptr_t const& worldComm, po::variables_map const& vm )
     :
-    super( vm, worldComm ),
+    super( prefix, worldComm, vm ),
     M_constant_null_space( false )
 {
 }

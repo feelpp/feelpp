@@ -211,16 +211,6 @@ endif()
 
 
 
-# on APPLE enfore the use of macports openmpi version
- if ( APPLE )
-   if ( EXISTS /usr/local/bin/mpic++ )
-     set(MPI_COMPILER /usr/local/bin/mpic++)
-   endif()
-
-#   #  set(MPI_LIBRARY "MPI_LIBRARY-NOTFOUND" )
-   MESSAGE(STATUS "[feelpp] Use mpi compiler ${MPI_COMPILER}")
-
- endif( APPLE )
 FIND_PACKAGE(MPI REQUIRED)
 IF ( MPI_FOUND )
   #SET(CMAKE_REQUIRED_INCLUDES "${MPI_INCLUDE_PATH};${CMAKE_REQUIRED_INCLUDES}")
@@ -538,9 +528,26 @@ if(FEELPP_ENABLE_PYTHON)
       
   endif()
 
-endif()
+  if (DEFINED PYTHON_SITE_PACKAGES)
+    set (FEELPP_PYTHON_MODULE_PATH ${PYTHON_SITE_PACKAGES})
+  else ()
+    execute_process (COMMAND ${PYTHON_EXECUTABLE} -c "from distutils import sysconfig; print(sysconfig.get_python_lib(plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}'))"
+                      OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
+                      RESULT_VARIABLE _PYTHON_pythonlib_result
+                      OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION})
+    if (_PYTHON_pythonlib_result)
+      message (SEND_ERROR "Could not run ${PYTHON_EXECUTABLE}")
+    endif ()
+
+    get_filename_component (_ABS_PYTHON_MODULE_PATH ${_ABS_PYTHON_MODULE_PATH} ABSOLUTE)
+    file (RELATIVE_PATH FEELPP_PYTHON_MODULE_PATH ${CMAKE_INSTALL_PREFIX} ${_ABS_PYTHON_MODULE_PATH})
+  endif ()
+  set (FEELPP_PYTHON${PYTHON_VERSION_MAJOR}_MODULE_PATH ${FEELPP_PYTHON_MODULE_PATH})
+  message(STATUS "[feelpp] python module path: ${FEELPP_PYTHON_MODULE_PATH}")
+endif(FEELPP_ENABLE_PYTHON)
+
+option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Python wrapping implementation" ON)
 
 # Boost
 SET(BOOST_MIN_VERSION "1.65.0")
@@ -565,7 +572,7 @@ endif()
 if ( NOT Boost_ARCHITECTURE )
   set(Boost_ARCHITECTURE "-x64")
 endif()
-set(Boost_ADDITIONAL_VERSIONS "1.61" "1.62" "1.63" "1.64" "1.65" "1.66" "1.67" "1.68" "1.69" "1.70")
+set(Boost_ADDITIONAL_VERSIONS "1.61" "1.62" "1.63" "1.64" "1.65" "1.66" "1.67" "1.68" "1.69" "1.70" "1.71")
 set(BOOST_COMPONENTS_REQUIRED date_time filesystem system program_options unit_test_framework ${FEELPP_BOOST_MPI} regex serialization iostreams ) 
 FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS ${BOOST_COMPONENTS_REQUIRED})
 if(Boost_FOUND)
@@ -606,7 +613,7 @@ ENDIF()
 OPTION(BOOST_ENABLE_TEST_DYN_LINK "enable boost test with dynamic lib" ON)
 MARK_AS_ADVANCED(BOOST_ENABLE_TEST_DYN_LINK)
 
-set( BOOST_PARAMETER_MAX_ARITY 24 )
+set( BOOST_PARAMETER_MAX_ARITY 25 )
 #set( BOOST_FILESYSTEM_VERSION 2)
 set( BOOST_FILESYSTEM_VERSION 3)
 if (BOOST_ENABLE_TEST_DYN_LINK)

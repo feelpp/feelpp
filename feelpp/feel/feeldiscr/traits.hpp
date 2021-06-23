@@ -194,7 +194,7 @@ using element_t = typename SpaceT::element_type;
  * get the element shared ptr type of a functionspace
  */
 template<typename SpaceT, typename = std::enable_if_t<is_functionspace_v<SpaceT>>>
-using element_ptr_t = typename SpaceT::element_ptr_type;
+using element_ptr_t = typename SpaceT::element_ptrtype;
 
 /**
  * @} // end Traits group

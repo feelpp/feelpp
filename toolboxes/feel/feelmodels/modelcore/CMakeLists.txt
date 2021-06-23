@@ -9,7 +9,7 @@ INSTALL( FILES ${CMAKE_CURRENT_BINARY_DIR}/feelmodelscoreconstconfig.hpp DESTINA
 add_library(feelpp_modelcore
   SHARED
   options.cpp log.cpp timertool.cpp
-  modelbase.cpp modelalgebraic.cpp modelnumerical.cpp
+  modelbase.cpp modelalgebraic.cpp modelnumerical.cpp modelphysics.cpp modelgenericpde.cpp modelmeshes.cpp
   markermanagement.cpp modelmeasures.cpp
   )
 target_link_libraries(feelpp_modelcore Feelpp::feelpp)
@@ -17,6 +17,7 @@ add_library(Feelpp::feelpp_modelcore ALIAS feelpp_modelcore )  # to match export
 set_target_properties(feelpp_modelcore PROPERTIES OUTPUT_NAME "feelpp_modelcore")
 target_include_directories(feelpp_modelcore PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
   $<INSTALL_INTERFACE:include/feelpp/toolboxes>  )
 set_property(TARGET feelpp_modelcore PROPERTY MACOSX_RPATH ON)
 if( FEELPP_ENABLE_PCH_MODELS )

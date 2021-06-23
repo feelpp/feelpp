@@ -35,14 +35,21 @@ class FEELPP_EXPORT ModelModel
 {
   public :
     ModelModel() = default;
-    ModelModel( pt::ptree const& p );
+    ModelModel( std::string const& name, pt::ptree const& p, bool addVariants = true );
     ModelModel( ModelModel const& ) = default;
     ModelModel( ModelModel && ) = default;
+    std::string const& name() const { return M_name; }
     pt::ptree const& ptree() const { return M_ptree; }
     std::string const& equations() const { return M_equations; }
+    std::set<std::string> const& submodels() const { return M_submodels; }
+    std::map<std::string,ModelModel> const& variants() const { return M_variants; }
+
   private:
+    std::string M_name;
     pt::ptree M_ptree;
     std::string M_equations;
+    std::set<std::string> M_submodels;
+    std::map<std::string,ModelModel> M_variants;
 };
 
 class FEELPP_EXPORT ModelModels : public std::map<std::string,ModelModel>
@@ -52,6 +59,7 @@ class FEELPP_EXPORT ModelModels : public std::map<std::string,ModelModel>
     ModelModels( ModelModels const& ) = default;
     ModelModels( ModelModels && ) = default;
     pt::ptree const& pTree() const { return M_p; }
+    bool useModelName() const { return M_useModelName; }
     ModelModel const& model( std::string const& name = "" ) const;
     bool hasModel( std::string const& name = "" ) const;
 

@@ -44,7 +44,7 @@ enum class solution_t {
  * @return 0 if ok, 1 otherwise
  */
 template<typename CheckerT, typename ElementT, 
-         typename = std::enable_if_t<is_scalar_field_v<ElementT> || is_vector_field_v<ElementT> || is_matrix_field_v<ElementT> >>
+         typename = std::enable_if_t<is_scalar_field_v<ElementT> || is_vector_field_v<ElementT> || is_matrix_field_v<ElementT> >>
 int check( CheckerT&& thechecker, ElementT const& u, solution_t s = solution_t::unique )
 {
     int status = 0;
