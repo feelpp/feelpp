@@ -226,7 +226,7 @@ PYBIND11_MODULE(_alg, m )
     py::class_<BackendPetsc<double>, std::shared_ptr<BackendPetsc<double>>>( m, "Backend" )
         .def(py::init<worldcomm_ptr_t>())
 
-//        .def_static("newVector",[](){}, "" )
+       .def("newVector", static_cast<std::shared_ptr<Vector<double>> (BackendPetsc<double>::*)(datamap_ptr_t<uint32_type> const&)>(&BackendPetsc<double>::newVector), py::arg("dm"), "build a vector from a DataMap" )
         ;
     
     // create a backend
