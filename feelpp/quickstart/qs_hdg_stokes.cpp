@@ -293,8 +293,10 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     tic();
     a( 3_c, 3_c) += integrate(_range=internalfaces(mesh),                  
                               _expr=-sc_param*mu*tau_constant*trans(idt(uhat))*id(m) );
-    a( 3_c, 3_c) += integrate(_range=markedfaces(mesh,{"Dirichlet", "Robin"}),
+    a( 3_c, 3_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                               _expr=trans(idt(uhat))*id(m) );
+    a( 3_c, 3_c) += integrate(_range=markedfaces(mesh,"Robin"),
+                              _expr=r*trans(idt(uhat))*id(m) );
     a( 3_c, 3_c ) += integrate( _range = markedfaces( mesh, {"Neumann", "Robin"} ),
                                 _expr = -mu*tau_constant*trans( idt( uhat ) ) * id( m ) );
     toc("a(3,3)", true);
