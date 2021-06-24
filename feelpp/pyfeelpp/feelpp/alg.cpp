@@ -267,7 +267,7 @@ PYBIND11_MODULE(_alg, m )
         .def( "mat", static_cast<Mat ( MatrixPetsc<double>::* )() const>( &MatrixPetsc<double>::mat ), "return a PETSc sparse matrix" )
         ;
 
-    py::class_<VectorUblas<double>, Vector<double,uint32_type>, std::shared_ptr<VectorUblas<double>>> vublas(m,"VectorUBlas<double,ublas::vector<double>>");
+    py::class_<VectorUblas<double>, Vector<double,uint32_type>, std::shared_ptr<VectorUblas<double>>> vublas(m,"VectorUBlas");
     vublas.def(py::init<>())
         .def(py::self + py::self )
         .def(py::self - py::self)
@@ -285,9 +285,20 @@ PYBIND11_MODULE(_alg, m )
 //        .def(py::self /= double())
 //        .def(py::self *= py::self)
 //        .def(py::self /= py::self)
+        .def( "to_petsc", [](VectorUblas<double> &v){ return toPETSc( v ); }, "cast a VectorDouble to a VectorPetscDouble" );
+
         ;
 
-   m.def( "backend_options", &Feel::backend_options, py::arg("prefix"), "create a backend options descriptions with prefix" );
+    m.def( "backend_options", &Feel::backend_options, py::arg("prefix"), "create a backend options descriptions with prefix" );
+    
+#if 0
+    py::class_<preconditioner_type, std::shared_ptr<preconditioner_type> >(m, "Preconditioner")
+        .def(py::init<>())
+        .def(py::init<std::string,worldcomm_ptr_t>())
+        .def("initialized",&preconditioner_type::make i)
+        ;
+#endif
+
 }
 
 

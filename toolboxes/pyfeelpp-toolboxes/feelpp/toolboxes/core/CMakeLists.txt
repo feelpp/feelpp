@@ -23,36 +23,17 @@
 #
 cmake_minimum_required(VERSION 3.3)
 
-add_custom_target(pyfeelpptoolboxes)
-add_dependencies(pyfeelpptoolboxes pyfeelpp)
+feelpp_add_pymodule(modelcore SRCS modelcore.cpp DESTINATION feelpp/toolboxes/core LINK_LIBRARIES Feelpp::feelpp_modelcore )
+feelpp_add_pymodule(modelalg SRCS modelalg.cpp DESTINATION feelpp/toolboxes/core LINK_LIBRARIES Feelpp::feelpp_modelalg )
 
-add_subdirectory( core )
-
-
-if ( FEELPP_TOOLBOXES_ENABLE_CFPDE )
-add_subdirectory( coefficientformpdes )
-add_dependencies(pyfeelpptoolboxes _cfpdes)
+if( FEELPP_MODELS_HAS_MESHALE )
+  feelpp_add_pymodule(modelmesh SRCS modelmesh.cpp DESTINATION feelpp/toolboxes/core LINK_LIBRARIES Feelpp::feelpp_modelmesh Feelpp::feelpp_modelmeshale)
+else()
+  feelpp_add_pymodule(modelmesh SRCS modelmesh.cpp DESTINATION feelpp/toolboxes/core LINK_LIBRARIES Feelpp::feelpp_modelmesh )
 endif()
 
-if ( FEELPP_TOOLBOXES_ENABLE_HEAT )
-  add_subdirectory( heat )
-  add_dependencies(pyfeelpptoolboxes _heat)
-endif()
+install(FILES  __init__.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/core)
 
-if ( FEELPP_TOOLBOXES_ENABLE_ELECTRIC )
-  add_subdirectory( electric )
-  add_dependencies(pyfeelpptoolboxes _electric)
-endif()
-if ( FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC )
-  add_subdirectory( thermoelectric )
-  add_dependencies(pyfeelpptoolboxes _thermoelectric)
-endif()
-if ( FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS )
-  add_subdirectory( solid )
-  add_dependencies(pyfeelpptoolboxes _solid)
-endif()
-if ( FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
-  add_subdirectory( fluid )
-  add_dependencies(pyfeelpptoolboxes _fluid)
-endif()
+add_dependencies(pyfeelpptoolboxes _modelcore _modelmesh _modelalg) 
+
 
