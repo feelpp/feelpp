@@ -45,9 +45,20 @@ def test_alg():
         print("matrix rows:{}, cols:{}".format(M.size1(),M.size2()))
     
 #    assert(M.size1() == 10)
-def test_backend():
+def test_backend_vector():
     wc = feelpp.Environment.worldCommPtr()
     b = feelpp.backend(worldcomm=wc)
     dm = feelpp.DataMap(10,10,wc)
     v=b.newVector(dm)
     assert(v.size()==10)
+
+
+def test_backend_matrix():
+    wc = feelpp.Environment.worldCommPtr()
+    b = feelpp.backend(worldcomm=wc)
+    dm = feelpp.DataMap(10, 10, wc)
+    v = b.newMatrix(dmrow=dm,dmcol=dm)
+    assert(v.size1() == 10 and v.size2() == 10)
+    M=v.mat()
+    M.zeroEntries()
+
