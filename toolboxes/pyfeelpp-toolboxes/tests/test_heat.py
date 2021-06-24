@@ -37,7 +37,7 @@ def test_heat_alg():
         b=maf.rhs().vec()
         from petsc4py import PETSc
         KSP_TYPE = PETSc.KSP.Type.GMRES
-        PC_TYPE = PETSc.PC.Type.GAMG
+        PC_TYPE = PETSc.PC.Type.LU
         
         ksp = PETSc.KSP()
         ksp.create(PETSc.COMM_SELF)
