@@ -31,8 +31,7 @@ def test_alg():
     # scalar product with itself
     d=w.dot(w)
     assert(abs(d) == w.getSize())
-
-
+   
     return
     dmrow=feelpp.DataMap(10, 10, wc)
     if feelpp.Environment.isMasterRank():
@@ -46,3 +45,9 @@ def test_alg():
         print("matrix rows:{}, cols:{}".format(M.size1(),M.size2()))
     
 #    assert(M.size1() == 10)
+def test_backend():
+    wc = feelpp.Environment.worldCommPtr()
+    b = feelpp.backend(worldcomm=wc)
+    dm = feelpp.DataMap(10,10,wc)
+    v=b.newVector(dm)
+    assert(v.size()==10)
