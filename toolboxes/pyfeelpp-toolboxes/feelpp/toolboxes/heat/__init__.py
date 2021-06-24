@@ -1,5 +1,6 @@
 import feelpp
-from feelpp.toolboxes import *
+
+from feelpp.toolboxes.core import *
 
 has_heat = False
 _heats = None
