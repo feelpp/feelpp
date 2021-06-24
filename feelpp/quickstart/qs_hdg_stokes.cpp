@@ -55,6 +55,7 @@ makeOptions()
         ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
         ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
         ( "mu", po::value<std::string>()->default_value( "1" ), "viscosity" )
+        ( "r", po::value<double>()->default_value( 1.0 ), "robin left hand side factor")
         ( "hface", po::value<int>()->default_value( 0 ), "hface" )
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
@@ -108,6 +109,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
     auto mu = expr("1");//locals.at("mu"));
+    auto r = doption("hdg.robin.lhs");
 
 #if 0
     auto velocity_exact = expr<Dim,1>( locals.at("velocity") );
@@ -189,9 +191,9 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     tic();
     rhs( 1_c ) += integrate( _range = elements( mesh ), _quad = ioption( "quad" ),
                              _expr = trans( rhs_f ) * id( v ) );
-    rhs(3_c) += integrate(_range=markedfaces(mesh, "Neumann"),_quad=ioption("quad"),
+    rhs(3_c) += integrate(_range=markedfaces(mesh, {"Neumann", "Robin"}),_quad=ioption("quad"),
                           _expr= (-1)*inner(stressn,id(m)) );
-    rhs(3_c) += integrate(_range=markedfaces(mesh, "Dirichlet"),_quad=ioption("quad"),
+    rhs(3_c) += integrate(_range=markedfaces(mesh, {"Dirichlet", "Robin"}),_quad=ioption("quad"),
                           _expr=trans(velocity)*id(m) );
     rhs( 4_c ) += integrate( _range = elements(mesh),
                              _expr = 0 * id( qm ) );
@@ -272,28 +274,28 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
                                          trans(id(m))*rightfacet(idt(delta)*N())) );
 //    a( 3_c, 0_c) += integrate(_range=boundaryfaces(mesh),
 //                              _expr=-mu*trans(id(m))*idt(delta)*N());
-    a( 3_c, 0_c ) += integrate(_range = markedfaces( mesh, "Neumann" ),
+    a( 3_c, 0_c ) += integrate(_range = markedfaces( mesh, {"Neumann", "Robin"} ),
                                _expr = -2*mu * trans(id(m))*(idt(delta)*N() ));
     toc("a(3,0)", true);
     tic();
     a( 3_c, 1_c) += integrate(_range=internalfaces(mesh),
                               _expr=mu*tau_constant*(trans(leftfacet(idt(u)))*id(m)+
                                                    trans(rightfacet(idt(u)))*id(m)) );
-    a( 3_c, 1_c ) += integrate( _range = markedfaces( mesh, "Neumann" ),
+    a( 3_c, 1_c ) += integrate( _range = markedfaces( mesh, {"Neumann", "Robin"} ),
                                 _expr = mu * tau_constant * ( trans( idt( u ) ) * id( m ) ) );
     toc("a(3,1)", true);
     tic();
     a( 3_c, 2_c) += integrate(_range=internalfaces(mesh),
                               _expr=inner(id(m),jumpt(idt(p))) ); //normalt(m)*(rightface(id(p))-leftface(id(p))) );
-    a( 3_c, 2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
+    a( 3_c, 2_c) += integrate(_range=markedfaces(mesh,{"Neumann", "Robin"}),
                               _expr=idt(p)*trans(id(m))*N() );
     toc("a(3,2)", true);
     tic();
     a( 3_c, 3_c) += integrate(_range=internalfaces(mesh),                  
                               _expr=-sc_param*mu*tau_constant*trans(idt(uhat))*id(m) );
-    a( 3_c, 3_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),                  
+    a( 3_c, 3_c) += integrate(_range=markedfaces(mesh,{"Dirichlet", "Robin"}),
                               _expr=trans(idt(uhat))*id(m) );
-    a( 3_c, 3_c ) += integrate( _range = markedfaces( mesh, "Neumann" ),
+    a( 3_c, 3_c ) += integrate( _range = markedfaces( mesh, {"Neumann", "Robin"} ),
                                 _expr = -mu*tau_constant*trans( idt( uhat ) ) * id( m ) );
     toc("a(3,3)", true);
     tic();
