@@ -1787,6 +1787,8 @@ public:
     void initInHousePreconditioner();
     void updateInHousePreconditioner( DataUpdateLinear & data ) const override;
     void updateInHousePreconditioner( DataUpdateJacobian & data ) const override;
+    template <typename ModelContextType>
+    void updateInHousePreconditioner( DataUpdateBase & data, ModelContextType const& mctx ) const;
     typedef OperatorPCDBase<typename space_velocity_type::value_type> operatorpcdbase_type;
     //typedef std::shared_ptr<operatorpcdbase_type> operatorpcdbase_ptrtype;
     void addUpdateInHousePreconditionerPCD( std::string const& name, std::function<void(operatorpcdbase_type &)> const& init,
@@ -1798,8 +1800,11 @@ public:
     std::shared_ptr<operatorpcdbase_type> operatorPCD() const { return M_operatorPCD; }
     bool hasOperatorPCD() const { return ( M_operatorPCD.use_count() > 0 ); }
 private :
-    void updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
-    void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol, DataUpdateBase & data ) const;
+    template <typename ModelContextType>
+    void updateInHousePreconditionerPMM( DataUpdateBase & data, ModelContextType const& mctx ) const;
+    template <typename ModelContextType>
+    void updateInHousePreconditionerPCD( DataUpdateBase & data, ModelContextType const& mctx ) const;
+
 public :
 
     //___________________________________________________________________________________//
@@ -2191,6 +2196,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
 }
 
 
+
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template <typename ModelFieldsType, typename SymbolsExprType, typename ExportsExprType>
 void
@@ -2335,6 +2341,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::BodyBoundaryCond
 #include <feel/feelmodels/fluid/fluidmechanicsassemblyjacobian.hpp>
 #include <feel/feelmodels/fluid/fluidmechanicsassemblyresidual.hpp>
 #include <feel/feelmodels/fluid/fluidmechanicsassemblystabilisationgls.hpp>
+#include <feel/feelmodels/fluid/fluidmechanicsothers.hpp>
 
 #endif /* FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP */
 
