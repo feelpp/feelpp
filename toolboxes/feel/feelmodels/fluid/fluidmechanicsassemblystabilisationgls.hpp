@@ -164,7 +164,11 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
 
     // residual lhs
     using expr_convection_residual_lhs_type = std::decay_t<decltype( timeSteppingScaling*expr_density_type{}*gradt(u)*idv(beta_u) )>;
+#if 0
     using expr_viscoous_stress_residual_lhs_type = std::decay_t<decltype( -timeSteppingScaling*muExpr*laplaciant(u) )>;
+#else
+    using expr_viscoous_stress_residual_lhs_type = std::decay_t<decltype( -timeSteppingScaling*fluidMecDivViscousStressTensorLinearTrial(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se) )>;
+#endif
     using expr_time_derivative_residual_lhs_type = std::decay_t<decltype( expr_density_type{}*this->timeStepBDF()->polyDerivCoefficient(0)*idt(u) )>;
     auto residual_lhs = exprOptionalConcat<expr_convection_residual_lhs_type,
                                            expr_viscoous_stress_residual_lhs_type,
@@ -191,10 +195,16 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
         residual_lhs.expression().add( densityExpr*this->timeStepBDF()->polyDerivCoefficient(0)*idt(u) );
         residual_rhs.expression().add( densityExpr*idv(this->timeStepBDF()->polyDeriv()) );
     }
+#if 0
     if constexpr( nOrderVelocity>1 )
     {
         residual_lhs.expression().add( -timeSteppingScaling*muExpr*laplaciant(u) );
     }
+#else
+    auto divSigmaViscous = fluidMecDivViscousStressTensorLinearTrial(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se);
+    if ( !divSigmaViscous.expression().isZero() )
+        residual_lhs.expression().add( -timeSteppingScaling*divSigmaViscous );
+#endif
 
 
     if ( !this->isStationaryModel() && this->timeStepping() == "Theta" )
@@ -213,10 +223,23 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
         tauExprSUPG->expression().setDiffusion( muExpr );
 
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
+
+#if 1
+        int coeffNatureStabilization = ( this->stabilizationGLSType() == "supg" )? 0 : (this->stabilizationGLSType() == "gls")? 1 : -1;
+        // test functions
+        using expr_convection_test_type = std::decay_t<decltype( densityExpr*grad(u)*idv(beta_u) )>;
+        auto divSigmaViscousTest = fluidMecDivViscousStressTensorLinearTest(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se);
+        using expr_viscous_stress_test_type = std::decay_t<decltype( -coeffNatureStabilization*divSigmaViscousTest )>;
+        auto stab_test = exprOptionalConcat<expr_convection_test_type,expr_viscous_stress_test_type>();
+        stab_test.expression().add( densityExpr*grad(u)*idv(beta_u) );
+        if ( coeffNatureStabilization != 0 && !divSigmaViscousTest.expression().isZero() )
+            stab_test.expression().add( -coeffNatureStabilization*divSigmaViscousTest );
+#else
         static constexpr bool velocityOrderGreaterThan1 = nOrderVelocity>1;
         auto stab_test = hana::eval_if( hana::bool_c<velocityOrderGreaterThan1>,
                                         [&u,&beta_u,&densityExpr] { return densityExpr*grad(u)*idv(beta_u); },
                                         [&u,&beta_u,&densityExpr,&muExpr] { return densityExpr*grad(u)*idv(beta_u) - muExpr*laplacian(u); } );
+#endif
 
         auto rangeEltConvectionDiffusion = this->stabilizationGLSEltRangeConvectionDiffusion( matName );
         auto tauFieldPtr = this->stabilizationGLSParameterConvectionDiffusion()->fieldTauPtr();
@@ -391,11 +414,22 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
     if ( this->stabilizationGLSType() != "pspg" )
     {
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
+#if 1
+        int coeffNatureStabilization = ( this->stabilizationGLSType() == "supg" )? 0 : (this->stabilizationGLSType() == "gls")? 1 : -1;
+        // test functions
+        using expr_convection_test_type = std::decay_t<decltype( densityExpr*grad(u)*idv(beta_u) )>;
+        auto divSigmaViscousTest = fluidMecDivViscousStressTensorLinearTest(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se);
+        using expr_viscous_stress_test_type = std::decay_t<decltype( -coeffNatureStabilization*divSigmaViscousTest )>;
+        auto stab_test = exprOptionalConcat<expr_convection_test_type,expr_viscous_stress_test_type>();
+        stab_test.expression().add( densityExpr*grad(u)*idv(beta_u) );
+        if ( coeffNatureStabilization != 0 && !divSigmaViscousTest.expression().isZero() )
+            stab_test.expression().add( -coeffNatureStabilization*divSigmaViscousTest );
+#else
         static constexpr bool velocityOrderGreaterThan1 = nOrderVelocity>1;
         auto stab_test = hana::eval_if( hana::bool_c<velocityOrderGreaterThan1>,
                                         [&u,&beta_u,&densityExpr] { return densityExpr*grad(u)*idv(beta_u); },
                                         [&u,&beta_u,&densityExpr,&muExpr] { return densityExpr*grad(u)*idv(beta_u) - muExpr*laplacian(u); } );
-
+#endif
         auto rangeEltConvectionDiffusion = this->stabilizationGLSEltRangeConvectionDiffusion( matName );
         auto tauFieldPtr = this->stabilizationGLSParameterConvectionDiffusion()->fieldTauPtr();
         //tauFieldPtr->on(_range=rangeEltConvectionDiffusion,_expr=*tauExprSUPG);
@@ -551,12 +585,22 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualSt
         tauExprSUPG->expression().setDiffusion( muExpr );
 
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
-
+#if 1
+        int coeffNatureStabilization = ( this->stabilizationGLSType() == "supg" )? 0 : (this->stabilizationGLSType() == "gls")? 1 : -1;
+        // test functions
+        using expr_convection_test_type = std::decay_t<decltype( densityExpr*grad(u)*idv(beta_u) )>;
+        auto divSigmaViscousTest = fluidMecDivViscousStressTensorLinearTest(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se);
+        using expr_viscous_stress_test_type = std::decay_t<decltype( -coeffNatureStabilization*divSigmaViscousTest )>;
+        auto stab_test = exprOptionalConcat<expr_convection_test_type,expr_viscous_stress_test_type>();
+        stab_test.expression().add( densityExpr*grad(u)*idv(beta_u) );
+        if ( coeffNatureStabilization != 0 && !divSigmaViscousTest.expression().isZero() )
+            stab_test.expression().add( -coeffNatureStabilization*divSigmaViscousTest );
+#else
         static constexpr bool velocityOrderGreaterThan1 = nOrderVelocity>1;
         auto stab_test = hana::eval_if( hana::bool_c<velocityOrderGreaterThan1>,
                                         [&u,&beta_u,&densityExpr] { return densityExpr*grad(u)*idv(beta_u); },
                                         [&u,&beta_u,&densityExpr,&muExpr] { return densityExpr*grad(u)*idv(beta_u) - muExpr*laplacian(u); } );
-
+#endif
         auto rangeEltConvectionDiffusion = this->stabilizationGLSEltRangeConvectionDiffusion( matName );
         auto tauFieldPtr = this->stabilizationGLSParameterConvectionDiffusion()->fieldTauPtr();
         tauFieldPtr->on(_range=rangeEltConvectionDiffusion,_expr=*tauExprSUPG);
