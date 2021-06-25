@@ -4,7 +4,7 @@ import sys
 import py
 import pytest
 import feelpp
-import feelpp.toolboxes as tb
+import feelpp.toolboxes.core as tb
 log = getLogger(__name__)
 MPI_ARGS = ("mpirun", "-n")
 PYTEST_ARGS = (sys.executable, "-mpytest")
@@ -33,7 +33,7 @@ class InitFeelpp:
                                 )
             print('is master? ', feelpp.Environment.worldCommPtr().isMasterRank())
         except Exception as err:
-            print('Exception caucht while initializing Feel++: '.format(err))
+            print('Exception caught while initializing Feel++: '.format(err))
             return 
 
 
