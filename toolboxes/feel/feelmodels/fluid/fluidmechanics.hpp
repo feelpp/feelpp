@@ -1356,7 +1356,7 @@ public :
 
     auto modelFields( std::string const& prefix = "" ) const
         {
-            return this->modelFields( this->fieldVelocityPtr(), this->fieldPressurePtr(), M_bodySetBC.modelFields( *this, prefix ), element_velocity_external_storage_ptrtype{}, prefix );
+            return this->modelFields( this->fieldVelocityPtr(), this->fieldPressurePtr(), M_bodySetBC.modelFields( *this, prefix ), M_fieldVelocityExtrapolated/*element_velocity_external_storage_ptrtype{}*/, prefix );
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
