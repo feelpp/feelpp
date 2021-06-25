@@ -33,7 +33,7 @@ namespace Feel
 {
 namespace FeelModels
 {
-    enum ExprApplyType { EVAL=0,JACOBIAN=1 };
+enum class ExprApplyType { EVAL=0,JACOBIAN,LINEAR_TRIAL,LINEAR_TEST };
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename ShapeType, typename ValueType>
     struct tensorBase
