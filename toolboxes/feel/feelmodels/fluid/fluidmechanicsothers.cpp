@@ -1162,14 +1162,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVelocityExtrapolated()
     if ( this->isStationary() )
         return;
 
-    if ( !M_fieldVelocityExtrapolated )
-    {
-        CHECK( M_vectorVelocityExtrapolated ) << "should be init";
-        //M_vectorVelocityExtrapolated = M_backend->newVector( this->functionSpaceVelocity() );
-        M_fieldVelocityExtrapolated = this->functionSpaceVelocity()->elementPtr( *M_vectorVelocityExtrapolated, 0 );
-    }
-    else
-        M_fieldVelocityExtrapolated->zero();
+    CHECK( M_fieldVelocityExtrapolated ) << "should be init";
+    M_fieldVelocityExtrapolated->zero();
 
     if ( this->currentTime() == this->timeInitial() )
     {
@@ -1211,15 +1205,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStepPreProcess()
 {
     this->log("FluidMechanics","startTimeStepPreProcess", "start" );
 
-    if ( M_useVelocityExtrapolated )
-    {
-        if ( !M_vectorPreviousVelocityExtrapolated )
-        {
-            M_vectorVelocityExtrapolated = M_backend->newVector( this->functionSpaceVelocity() );
-            M_vectorPreviousVelocityExtrapolated = M_backend->newVector( this->functionSpaceVelocity() );
-        }
-        this->updateVelocityExtrapolated();
-    }
+    this->updateVelocityExtrapolated();
 
     if ( M_usePreviousSolution )
         *M_vectorPreviousSolution = *M_blockVectorSolution.vectorMonolithic();
@@ -1251,7 +1237,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep( bool applyPreProcess )
     // up current time
     this->updateTime( M_bdfVelocity->time() );
 
-    if ( M_useVelocityExtrapolated )
+    if ( true )//M_useVelocityExtrapolated )
     {
         *M_vectorPreviousVelocityExtrapolated = *M_vectorVelocityExtrapolated;
         this->updateVelocityExtrapolated();
@@ -1353,7 +1339,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     if ( rebuildCstAssembly )
         this->setNeedToRebuildCstPart(true);
 
-    if ( M_useVelocityExtrapolated )
+    if ( true )//M_useVelocityExtrapolated )
     {
         *M_vectorPreviousVelocityExtrapolated = *M_vectorVelocityExtrapolated;
         this->updateVelocityExtrapolated();

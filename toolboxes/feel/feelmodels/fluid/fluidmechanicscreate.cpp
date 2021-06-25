@@ -1310,6 +1310,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     M_bdfVelocity = this->createBdf( this->functionSpaceVelocity(),"velocity", bdfOrder, nConsecutiveSave, myFileFormat );
     M_savetsPressure = this->createBdf( this->functionSpacePressure(),"pressure", 1, nConsecutiveSave, myFileFormat );
 #endif
+
+    // velocity extrapolated
+    M_vectorVelocityExtrapolated = M_backend->newVector( this->functionSpaceVelocity() );
+    M_vectorPreviousVelocityExtrapolated = M_backend->newVector( this->functionSpaceVelocity() );
+    M_fieldVelocityExtrapolated = this->functionSpaceVelocity()->elementPtr( *M_vectorVelocityExtrapolated, 0 );
+
+    
     double tir = M_bdfVelocity->timeInitial();
     if ( this->doRestart() )
     {
