@@ -18,6 +18,8 @@
 #define Pi M_PI
 #define pi M_PI
 
+inline double conjugate( double x ) { return x; }
+
 inline std::pair<std::uniform_real_distribution<>, std::mt19937&> uniformDistribution( double a, double b )
 {
     static std::random_device rd;
