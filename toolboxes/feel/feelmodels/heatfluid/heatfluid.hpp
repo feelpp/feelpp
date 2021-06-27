@@ -273,6 +273,9 @@ private :
     void updateResidual_Fluid( DataUpdateResidual & data ) const;
     void updateJacobian_Fluid( DataUpdateJacobian & data ) const;
 
+    void updateInHousePreconditioner_Fluid( DataUpdateLinear & data ) const;
+    void updateInHousePreconditioner_Fluid( DataUpdateJacobian & data ) const;
+
     void updateTimeStepCurrentResidual();
 
 private :
