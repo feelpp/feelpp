@@ -91,16 +91,21 @@ ModelAlgebraicFactory::init( model_ptrtype const& model, backend_ptrtype const& 
                              graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit )
 {
     M_model = model;
-    this->setFunctionLinearAssembly(  boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateLinearPDE,
-                                                   boost::ref( *model ), _1 ) );
-    this->setFunctionLinearDofElimination( boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateLinearPDEDofElimination,
-                                                        boost::ref( *model ), _1 ) );
-    this->setFunctionNewtonInitialGuess( boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateNewtonInitialGuess,
-                                                      boost::ref( *model ), _1 ) );
-    this->setFunctionJacobianAssembly(  boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateJacobian,
-                                                     boost::ref( *model ), _1 ) );
-    this->setFunctionResidualAssembly(  boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateResidual,
-                                                     boost::ref( *model ), _1 ) );
+    this->setFunctionLinearAssembly( std::bind( &model_type::updateLinearPDE,
+                                                std::ref( *model ), std::placeholders::_1 ) );
+    this->setFunctionLinearDofElimination( std::bind( &model_type::updateLinearPDEDofElimination,
+                                                      std::ref( *model ), std::placeholders::_1 ) );
+    this->setFunctionNewtonInitialGuess( std::bind( &model_type::updateNewtonInitialGuess,
+                                                    std::ref( *model ), std::placeholders::_1 ) );
+    this->setFunctionJacobianAssembly( std::bind( &model_type::updateJacobian,
+                                                  std::ref( *model ), std::placeholders::_1 ) );
+    this->setFunctionResidualAssembly( std::bind( &model_type::updateResidual,
+                                                  std::ref( *model ), std::placeholders::_1 ) );
+
+    this->setFunctionUpdateInHousePreconditionerLinear( std::bind( static_cast<void(model_type::*)(ModelAlgebraic::DataUpdateLinear&) const>(&model_type::updateInHousePreconditioner),
+                                                                   std::ref( *model ), std::placeholders::_1 ) );
+    this->setFunctionUpdateInHousePreconditionerJacobian( std::bind( static_cast<void(model_type::*)(ModelAlgebraic::DataUpdateJacobian&) const>(&model_type::updateInHousePreconditioner),
+                                                                     std::ref( *model ), std::placeholders::_1 ) );
 
     this->init( backend, graph, indexSplit );
 }
@@ -690,7 +695,8 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
         if ( M_useSolverPtAP )
         {
             ModelAlgebraic::DataUpdateLinear dataLinearSolverPtAP(U,M_solverPtAP_matPtAP,M_solverPtAP_PtF,false);
-            this->model()->updateInHousePreconditioner( dataLinearSolverPtAP );
+
+            std::invoke( M_functionUpdateInHousePreconditionerLinear, dataLinearSolverPtAP );
 
             solveStat = M_solverPtAP_backend->solve( _matrix=M_solverPtAP_matPtAP,
                                                      _solution=M_solverPtAP_solution,
@@ -705,7 +711,7 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
         {
             // set preconditioner
             //M_PrecondManage->setMatrix(M_Prec);
-            this->model()->updateInHousePreconditioner( dataLinearNonCst );
+            std::invoke( M_functionUpdateInHousePreconditionerLinear, dataLinearNonCst );
 
             // solve linear system
             solveStat = M_backend->solve( _matrix=M_J,
@@ -830,7 +836,7 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
         for ( auto const& func : M_addFunctionJacobianPostAssembly )
             func.second( dataJacobianDofElimination );
 
-        model->updateInHousePreconditioner( dataJacobianDofElimination );
+        std::invoke( M_functionUpdateInHousePreconditionerJacobian, dataJacobianDofElimination );
 
         double tElapsed = model->timerTool("Solve").stop();
         model->timerTool("Solve").addDataValue("algebraic-jacobian",tElapsed);
@@ -1402,7 +1408,7 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             }
 
             // update in-house preconditioners
-            this->model()->updateInHousePreconditioner( *dataDofElimination );
+            std::invoke( M_functionUpdateInHousePreconditionerLinear, *dataDofElimination );
 
             // set pre/post solve functions
             pre_solve_type pre_solve = std::bind(&model_type::preSolvePicard, this->model(), std::placeholders::_1, std::placeholders::_2);
