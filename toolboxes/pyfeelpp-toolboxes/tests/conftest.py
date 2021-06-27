@@ -33,7 +33,7 @@ class InitFeelpp:
                                 )
             print('is master? ', feelpp.Environment.worldCommPtr().isMasterRank())
         except Exception as err:
-            print('Exception caucht while initializing Feel++: '.format(err))
+            print('Exception caught while initializing Feel++: '.format(err))
             return 
 
 
