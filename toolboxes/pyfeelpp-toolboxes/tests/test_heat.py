@@ -1,5 +1,6 @@
 import sys
 import feelpp
+from feelpp.toolboxes.core import *
 from feelpp.toolboxes.heat import *
 
 def test_heat():

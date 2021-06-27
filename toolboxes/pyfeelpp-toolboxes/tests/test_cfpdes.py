@@ -1,6 +1,6 @@
 import sys
 import feelpp
-import feelpp.toolboxes as tb
+import feelpp.toolboxes.core as tb
 import feelpp.toolboxes.cfpdes as cfpdes
 import pandas as pd
 

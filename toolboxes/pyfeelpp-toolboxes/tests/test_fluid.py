@@ -2,7 +2,7 @@ from feelpp.toolboxes.fluid import *
 import sys
 import pytest
 import feelpp as feelpp 
-import feelpp.toolboxes as tb
+import feelpp.toolboxes.core as tb
 from feelpp.toolboxes.fluid import *
 
 
