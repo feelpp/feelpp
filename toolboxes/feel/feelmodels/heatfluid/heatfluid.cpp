@@ -308,19 +308,24 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     {
         M_heatModel->initAlgebraicFactory();
         M_fluidModel->initAlgebraicFactory();
-        M_heatModel->algebraicFactory()->setFunctionLinearAssembly( boost::bind( &self_type::updateLinear_Heat,
-                                                                                 boost::ref( *this ), _1 ) );
-        M_heatModel->algebraicFactory()->setFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Heat,
-                                                                                   boost::ref( *this ), _1 ) );
-        M_heatModel->algebraicFactory()->setFunctionJacobianAssembly( boost::bind( &self_type::updateJacobian_Heat,
-                                                                                   boost::ref( *this ), _1 ) );
+        M_heatModel->algebraicFactory()->setFunctionLinearAssembly( std::bind( &self_type::updateLinear_Heat,
+                                                                               std::ref( *this ), std::placeholders::_1 ) );
+        M_heatModel->algebraicFactory()->setFunctionResidualAssembly( std::bind( &self_type::updateResidual_Heat,
+                                                                                 std::ref( *this ), std::placeholders::_1 ) );
+        M_heatModel->algebraicFactory()->setFunctionJacobianAssembly( std::bind( &self_type::updateJacobian_Heat,
+                                                                                 std::ref( *this ), std::placeholders::_1 ) );
 
-        M_fluidModel->algebraicFactory()->setFunctionLinearAssembly( boost::bind( &self_type::updateLinear_Fluid,
-                                                                                  boost::ref( *this ), _1 ) );
-        M_fluidModel->algebraicFactory()->setFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Fluid,
-                                                                                    boost::ref( *this ), _1 ) );
-        M_fluidModel->algebraicFactory()->setFunctionJacobianAssembly( boost::bind( &self_type::updateJacobian_Fluid,
-                                                                                    boost::ref( *this ), _1 ) );
+        M_fluidModel->algebraicFactory()->setFunctionLinearAssembly( std::bind( &self_type::updateLinear_Fluid,
+                                                                                std::ref( *this ), std::placeholders::_1 ) );
+        M_fluidModel->algebraicFactory()->setFunctionResidualAssembly( std::bind( &self_type::updateResidual_Fluid,
+                                                                                  std::ref( *this ), std::placeholders::_1 ) );
+        M_fluidModel->algebraicFactory()->setFunctionJacobianAssembly( std::bind( &self_type::updateJacobian_Fluid,
+                                                                                  std::ref( *this ), std::placeholders::_1 ) );
+
+        M_fluidModel->algebraicFactory()->setFunctionUpdateInHousePreconditionerLinear( std::bind( static_cast<void(self_type::*)(ModelAlgebraic::DataUpdateLinear&) const>(&self_type::updateInHousePreconditioner_Fluid),
+                                                                                                   std::ref( *this ), std::placeholders::_1 ) );
+        M_fluidModel->algebraicFactory()->setFunctionUpdateInHousePreconditionerJacobian( std::bind( static_cast<void(self_type::*)(ModelAlgebraic::DataUpdateJacobian&) const>(&self_type::updateInHousePreconditioner_Fluid),
+                                                                                                     std::ref( *this ), std::placeholders::_1 ) );
     }
 
     this->setIsUpdatedForUse( true );
@@ -668,15 +673,37 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( DataUpdateLinear & data ) const
 {
+    vector_ptrtype const& vecCurrentSolution = data.currentSolution();
+    auto mctx = this->modelContext( vecCurrentSolution, this->heatModel(), this->fluidModel() );
     M_heatModel->updateInHousePreconditioner( data );
-    M_fluidModel->updateInHousePreconditioner( data );
+    M_fluidModel->updateInHousePreconditioner( data, mctx );
 }
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( DataUpdateJacobian & data ) const
 {
+    vector_ptrtype const& vecCurrentSolution = data.currentSolution();
+    auto mctx = this->modelContext( vecCurrentSolution, this->heatModel(), this->fluidModel() );
     M_heatModel->updateInHousePreconditioner( data );
-    M_fluidModel->updateInHousePreconditioner( data );
+    M_fluidModel->updateInHousePreconditioner( data, mctx );
+}
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner_Fluid( DataUpdateLinear & data ) const
+{
+    const vector_ptrtype& vecCurrentSolution = data.currentSolution();
+    auto mctx = this->modelContext( this->heatModel()->blockVectorSolution().vectorMonolithic(), 0,
+                                    vecCurrentSolution, this->fluidModel()->startBlockSpaceIndexVector() );
+    M_fluidModel->updateInHousePreconditioner( data, mctx );
+}
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner_Fluid( DataUpdateJacobian & data ) const
+{
+    const vector_ptrtype& vecCurrentSolution = data.currentSolution();
+    auto mctx = this->modelContext( this->heatModel()->blockVectorSolution().vectorMonolithic(), 0,
+                                    vecCurrentSolution, this->fluidModel()->startBlockSpaceIndexVector() );
+    M_fluidModel->updateInHousePreconditioner( data, mctx );
 }
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
