@@ -55,7 +55,7 @@ makeOptions()
         ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
         ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
         ( "mu", po::value<std::string>()->default_value( "1" ), "viscosity" )
-        ( "r", po::value<double>()->default_value( 1.0 ), "robin left hand side factor")
+        ( "hdg.robin", po::value<double>()->default_value( 1.0 ), "robin left hand side factor")
         ( "hface", po::value<int>()->default_value( 0 ), "hface" )
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
@@ -109,7 +109,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
     auto mu = expr("1");//locals.at("mu"));
-    auto r = doption("hdg.robin.lhs");
+    auto r = doption("hdg.robin");
 
 #if 0
     auto velocity_exact = expr<Dim,1>( locals.at("velocity") );
@@ -364,6 +364,12 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
         Feel::cout << fmt::format( "{:<30}: {: .4e}", "mean pressure exact", mean_pe ) << std::endl;
         Feel::cout << fmt::format( "{:<30}: {: .4e}", "mean pressure", mean_p ) << std::endl;
         Feel::cout << fmt::format( "{:<30}: {: .4e}", "L2 error pressure", l2err_pres ) << std::endl;
+        
+        auto h = doption("hsize");
+        ofstream errors;
+        errors.open ("hdg_stokes_errors.csv");
+        errors << h << l2err_delta << l2err_vel << l2err_pres <<"\n";
+        errors.close();
         toc("error");
                     
         // CHECKER
