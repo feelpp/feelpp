@@ -284,7 +284,7 @@ PYBIND11_MODULE(_alg, m )
         .def( "zero", static_cast<void ( MatrixPetsc<double>::* )()>( &MatrixPetsc<double>::zero ), "zero PETSc matrix" )
         .def( "mat", static_cast<Mat ( MatrixPetsc<double>::* )() const>( &MatrixPetsc<double>::mat ), "return a PETSc sparse matrix" )
         .def( "scale", static_cast<void ( MatrixPetsc<double>::* )( const double )>( &MatrixPetsc<double>::scale ), py::arg("scale")=1.0, "return a scaled PETSc sparse matrix" )
-        .def( "addMatrix", static_cast<void ( MatrixPetsc<double>::* )( double, MatrixSparse<double> const&,  Feel::MatrixStructure)>( &MatrixPetsc<double>::addMatrix ), py::arg("scale")=1.0, py::arg("matrix"), py::arg("structure")=Feel::SAME_NONZERO_PATTERN, "add a scaled PETSc sparse matrix" )
+        .def( "addMatrix", static_cast<void ( MatrixPetsc<double>::* )( double, MatrixSparse<double> const&,  Feel::MatrixStructure)>( &MatrixPetsc<double>::addMatrix ), py::arg("scale")=1.0, py::arg("matrix"), py::arg("structure")=(int)Feel::SAME_NONZERO_PATTERN, "add a scaled PETSc sparse matrix" )
         ;
 
     py::class_<VectorUblas<double>, Vector<double,uint32_type>, std::shared_ptr<VectorUblas<double>>> vublas(m,"VectorUBlas");
