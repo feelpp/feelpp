@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-08-11
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -186,13 +186,21 @@ public:
                 return this->operator()( it - paramNames.begin() );
             }
 
+        /**
+         * set a parameter
+         */
         void setParameterNamed( std::string name, double value )
-            {
-                auto paramNames = M_space->parameterNames();
-                auto it = std::find(paramNames.begin(), paramNames.end(), name);
-                if( it != paramNames.end() )
-                    this->operator()( it - paramNames.begin() ) = value;
-            }
+        {
+            auto paramNames = M_space->parameterNames();
+            auto it = std::find(paramNames.begin(), paramNames.end(), name);
+            if( it != paramNames.end() )
+                this->operator()( it - paramNames.begin() ) = value;
+        }
+
+        void setParameter( int i, double value)
+        {
+            this->operator()(i) = value;
+        }
 
         /**
          * get index of named parameter

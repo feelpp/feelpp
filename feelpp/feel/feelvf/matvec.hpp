@@ -252,6 +252,17 @@ public:
      */
     //@{
 
+    //! dynamic context
+    size_type dynamicContext() const
+        {
+            size_type res = 0;
+            hana::for_each( M_expr, [&res]( auto const& e )
+                            {
+                                res = res | Feel::vf::dynamicContext( e );
+                            } );
+            return res;
+        }
+
     //! polynomial order
     uint16_type polynomialOrder() const
         {

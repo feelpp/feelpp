@@ -35,6 +35,7 @@
 #include <boost/hana/integral_constant.hpp>
 #include <boost/hana/length.hpp>
 
+#include <feel/feelalg/condenser.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/feelio.hpp>
 #include <feel/feeldiscr/traits.hpp>
@@ -1810,7 +1811,6 @@ template<typename E>
 void
 StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces >= 4>*  )
 {
-#if 0
     using Feel::cout;
     auto& e1 = e(0_c);
     auto& e2 = e(1_c);
@@ -1874,7 +1874,6 @@ StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>>
         //futs.push_back( std::async(std::launch::async, f ) );
         f();
     }
-#endif
 #if 0
     for( auto& fut : futs )
     {

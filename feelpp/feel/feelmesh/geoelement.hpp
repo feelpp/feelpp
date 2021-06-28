@@ -1100,7 +1100,8 @@ public:
     typedef typename super::vertex_permutation_type vertex_permutation_type;
     typedef typename super::edge_permutation_type edge_permutation_type;
     typedef typename super::edge_permutation_type permutation_type;
-    typedef typename super::face_permutation_type face_permutation_type;
+    //typedef typename super::face_permutation_type face_permutation_type;
+    using face_permutation_type = edge_permutation_type;
     typedef typename super2::element_connectivity_type element_connectivity_type;
 
     /**
@@ -1337,6 +1338,7 @@ public:
 
         M_edge_permutation[i] = o;
     }
+    void setFacePermutation( uint16_type i, edge_permutation_type o ) { this->setEdgePermutation( i,o ); }
 
     typedef typename std::vector<edge_type*>::iterator face_iterator;
     typedef typename std::vector<edge_type*>::const_iterator face_const_iterator;

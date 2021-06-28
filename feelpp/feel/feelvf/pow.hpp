@@ -92,6 +92,10 @@ public:
      * \warning the Pow order computation is wrong here, we actually need the
      * ExprT2 value (and not imorder) to multiply by ExprT1::imorder.
      */
+
+    //! dynamic context
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr_1 ) | Feel::vf::dynamicContext( M_expr_2 ); }
+
     //! polynomial order
     uint16_type polynomialOrder() const { return M_expr_1.polynomialOrder(); }
 
