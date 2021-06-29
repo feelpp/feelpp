@@ -7,8 +7,8 @@ d2 = 0.5;
 d3 = 0.5;
 d4 = 0.5;
 
-Point (0) = {0,0,0, 2*h};
-Point (1) = {R,0,0, 2*h};
+Point (0) = {0,0,0, h};
+Point (1) = {R,0,0, h};
 Point (2) = {R,d1,0, h/2};
 Point (3) = {R+L,d1,0, h};
 Point (4) = {R+L,d1+t,0, h};
@@ -106,20 +106,20 @@ Curve Loop(9) = {40, 41, 42, -11};
 Surface(9) = {9};
 
 
-Physical Surface("Omega_0", 43) = {1};
-Physical Surface("Omega_1", 44) = {2, 3};
-Physical Surface("Omega_2", 45) = {4, 5};
-Physical Surface("Omega_3", 46) = {6, 7};
-Physical Surface("Omega_4", 47) = {8, 9};
+Physical Surface("Omega_0") = {1};
+Physical Surface("Omega_1") = {2, 3};
+Physical Surface("Omega_2") = {4, 5};
+Physical Surface("Omega_3") = {6, 7};
+Physical Surface("Omega_4") = {8, 9};
 
-Physical Curve("Gamma_0_ext", 48) = {10};
-Physical Curve("Gamma_1_int", 49) = {3, 17};
-Physical Curve("Gamma_2_int", 50) = {5, 15};
-Physical Curve("Gamma_3_int", 51) = {7, 13};
-Physical Curve("Gamma_4_int", 52) = {9, 11};
-Physical Curve("Gamma_1_ext", 53) = {19, 20, 21, 22, 23, 24};
-Physical Curve("Gamma_2_ext", 54) = {25, 26, 27, 28, 29, 30};
-Physical Curve("Gamma_3_ext", 55) = {31, 32, 33, 34, 35, 36};
-Physical Curve("Gamma_4_ext", 56) = {37, 38, 39, 40, 41, 42};
-Physical Curve("Gamma_Root", 57) = {1};
-Physical Curve("Gamma_0_side", 58) = {2, 4, 6, 8, 12, 14, 16, 18};
+Physical Curve("Gamma_0_ext") = {10};
+Physical Curve("Gamma_1_int") = {3, 17};
+Physical Curve("Gamma_2_int") = {5, 15};
+Physical Curve("Gamma_3_int") = {7, 13};
+Physical Curve("Gamma_4_int") = {9, 11};
+Physical Curve("Gamma_1_ext") = {19, 20, 21, 22, 23, 24};
+Physical Curve("Gamma_2_ext") = {25, 26, 27, 28, 29, 30};
+Physical Curve("Gamma_3_ext") = {31, 32, 33, 34, 35, 36};
+Physical Curve("Gamma_4_ext") = {37, 38, 39, 40, 41, 42};
+Physical Curve("Gamma_Root") = {1};
+Physical Curve("Gamma_0_side") = {2, 4, 6, 8, 12, 14, 16, 18};
