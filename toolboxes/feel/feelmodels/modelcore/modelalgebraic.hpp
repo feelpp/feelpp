@@ -42,6 +42,8 @@ namespace Feel
 namespace FeelModels
 {
 
+class ModelAlgebraicFactory;
+
 class ModelAlgebraic : virtual public ModelBase
 {
 public :
@@ -62,6 +64,13 @@ public :
     typedef backend_type::indexsplit_ptrtype indexsplit_ptrtype;
 
     typedef vf::BlocksBase<size_type> block_pattern_type;
+
+    using block_vector_type = BlocksBaseVector<double>;
+    using block_vector_ptrtype = std::shared_ptr<block_vector_type>;
+
+    // algebraic solver
+    typedef ModelAlgebraicFactory model_algebraic_factory_type;
+    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
     class DataUpdateBase
     {
@@ -460,6 +469,58 @@ public :
             auto dofsMultiProcessToAdd = thespace->dofs( therange, c1, true );
             this->dofEliminationIdsMultiProcess(spaceName,et).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
+
+
+    void initAlgebraicBackend( std::string const& name = "" )
+        {
+            std::string nameUsed = name.empty()? this->keyword() : name;
+            std::get<0>( M_algebraicDataAndTools[nameUsed] ) = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr(), this->clovm() );
+        }
+
+    backend_ptrtype algebraicBackend( std::string const& name = "" ) const
+        {
+            std::string nameUsed = name.empty()? this->keyword() : name;
+            auto itFind = M_algebraicDataAndTools.find( nameUsed );
+            if ( itFind == M_algebraicDataAndTools.end() )
+                return nullptr;
+            return std::get<0>( itFind->second );
+        }
+    backend_ptrtype backend() const { return algebraicBackend(); }
+
+    block_vector_ptrtype initAlgebraicBlockVectorSolution( int nBlock, std::string const& name = "" )
+        {
+            std::string nameUsed = name.empty()? this->keyword() : name;
+            auto bvs = std::make_shared<block_vector_type>(nBlock);
+            std::get<1>( M_algebraicDataAndTools[nameUsed] ) = bvs;
+            return bvs;
+        }
+
+    block_vector_ptrtype algebraicBlockVectorSolution( std::string const& name = "" )
+        {
+            std::string nameUsed = name.empty()? this->keyword() : name;
+            auto itFind = M_algebraicDataAndTools.find( nameUsed );
+            if ( itFind == M_algebraicDataAndTools.end() )
+                return nullptr;
+            return std::get<1>( itFind->second );
+        }
+
+    void setAlgebraicFactory( std::string const& name, model_algebraic_factory_ptrtype algFact )
+        {
+            std::get<2>( M_algebraicDataAndTools[name] ) = algFact;
+        }
+    void setAlgebraicFactory( model_algebraic_factory_ptrtype algFact )
+        {
+            this->setAlgebraicFactory( this->keyword(), algFact );
+        }
+    model_algebraic_factory_ptrtype algebraicFactory( std::string const& name = "" ) const
+        {
+            std::string nameUsed = name.empty()? this->keyword() : name;
+            auto itFind = M_algebraicDataAndTools.find( nameUsed );
+            if ( itFind == M_algebraicDataAndTools.end() )
+                return nullptr;
+            return std::get<2>( itFind->second );
+        }
+
 private :
     // verbose
     bool M_verboseSolverTimer,M_verboseSolverTimerAllProc;
@@ -482,12 +543,15 @@ private :
     //! dofs eliminiation ( spaceName -> ( ElementsType -> ( all dofs, only dofs at interprocess that the value can be used) ) )
     std::map<std::string,std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type> > > > M_dofEliminationIds;
 
-
+    // data and tools
+    std::map<std::string,std::tuple<backend_ptrtype,block_vector_ptrtype,model_algebraic_factory_ptrtype>> M_algebraicDataAndTools;
 };
 
 
 } // namespace FeelModels
 } // namespace feel
 
+// include after because modelalgebraicfactory.hpp include this file
+#include <feel/feelmodels/modelcore/modelalgebraicfactory.hpp>
 
 #endif // FEELPP_MODELALGEBRAIC_HPP

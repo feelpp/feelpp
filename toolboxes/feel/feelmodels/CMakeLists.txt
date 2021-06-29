@@ -27,24 +27,20 @@ INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.models.macros.cmake DESTI
 
 add_subdirectory(cmake)
 add_subdirectory(modelcore)
-add_subdirectory(modelalg)
 add_subdirectory(modelmesh)
 add_subdirectory(modelvf)
 add_subdirectory(modelmaterials)
 
-
-add_custom_target(feelpp-models-algebra)
-add_dependencies(feelpp-models-algebra feelpp_modelalg)
 
 add_custom_target(feelpp-models-mesh)
 add_dependencies(feelpp-models-mesh feelpp_modelmesh)
 
 add_custom_target(feelpp-models)
 #add_dependencies(feelpp-models feelpp_model_heat feelpp_model_solidmechanics feelpp_model_fluid feelpp_model_fsi)
-add_dependencies(feelpp-models feelpp-models-algebra feelpp-models-mesh)
+add_dependencies(feelpp-models feelpp-models-mesh)
 
 add_custom_target(feelpp-models-common)
-add_dependencies(feelpp-models-common feelpp_modelcore feelpp_modelalg feelpp_modelmesh)
+add_dependencies(feelpp-models-common feelpp_modelcore feelpp_modelmesh)
 if( FEELPP_MODELS_HAS_MESHALE )
   add_dependencies(feelpp-models-common feelpp_modelmeshale)
 endif()
