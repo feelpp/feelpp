@@ -7,8 +7,8 @@
         "k_0":
         {
             "value":"1",
-            "min":"0.1",
-            "max":"10"
+            "min":"1",
+            "max":"1"
         },
         "k_1":
         {
@@ -51,32 +51,32 @@
     {
         "Omega_0":
         {
-            "k":"0.1",
+            "k":"k_0:k_0",
             "Cp":"1.4e6",
             "rho":"1"
         },
         "Omega_1":
         {
-            "k":"1",
+            "k":"k_1:k_1",
             "Cp":"1.4e6",
             "rho":"1"
         },
         "Omega_2":
         {
-            "k":"1",
+            "k":"k_2:k_2",
             "Cp":"1.4e6",
             "rho":"1100"
         },
         "Omega_3":
         {
 
-            "k":"0.5",
+            "k":"k_3:k_3",
             "Cp":"1.4e6",
             "rho":"1"
         },
         "Omega_4":
         {
-            "k":"0.2",
+            "k":"k_4:k_4",
             "Cp":"1.4e6",
             "rho":"1"
         }
@@ -90,7 +90,7 @@
                 "init": 
                 {
                     "markers":["Omega_0","Omega_1","Omega_2","Omega_3","Omega_4"], 
-                    "expr":"500" 
+                    "expr":"300" 
                 }
             }
         }
@@ -101,36 +101,36 @@
         {
             "Neumann":
             {
-                "GammaRoot":
+                "Gamma_Root":
                 {
-                    "expr":"-1/k0:k0"     // according to doc : -k nabla T.n = g
+                    "expr":"1"     // according to doc : -k nabla T.n = g
                 }
             },
             "Robin":
             {
                 "Gamma_0_ext":
                 {
-                    "expr1":"k0:k0",
+                    "expr1":"Bi:Bi",
                     "expr2":"0"
                 },
                 "Gamma_1_ext":
                 {
-                    "expr1":"k1:k1",
+                    "expr1":"Bi:Bi",
                     "expr2":"0"
                 },
                 "Gamma_2_ext":
                 {
-                    "expr1":"k2:k2",
+                    "expr1":"Bi:Bi",
                     "expr2":"0"
                 },
                 "Gamma_3_ext":
                 {
-                    "expr1":"k3:k3",
+                    "expr1":"Bi:Bi",
                     "expr2":"0"
                 },
                 "Gamma_4_ext":
                 {
-                    "expr1":"k4:k4",
+                    "expr1":"Bi:Bi",
                     "expr2":"0"
                 }
             }
