@@ -266,7 +266,8 @@ PYBIND11_MODULE( _mor, m )
     py::class_<ParameterSpaceX,std::shared_ptr<ParameterSpaceX>>(m,"ParameterSpace")
         .def( py::init<>() )
         .def("sampling", &ParameterSpaceX::sampling)
-        .def("element", &ParameterSpaceX::element)
+        .def("element", &ParameterSpaceX::element, "return a parameter from the space\n  - broadcast : share the parameter to all processors\n  - apply_log : log random chosen parameter",
+            py::arg("broadcast")=true, py::arg("apply_log")=false)
         //.def("New", &ParameterSpaceX::New, ParameterSpaceX_New_overloads(args("dim", "WorldComm"), "New")).staticmethod("New")
         .def_static("create",&ParameterSpaceX::create )
         ;
