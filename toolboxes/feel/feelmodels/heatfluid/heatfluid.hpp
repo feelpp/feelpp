@@ -66,10 +66,6 @@ public:
     typedef Exporter<mesh_type,mesh_type::nOrder> export_type;
     typedef std::shared_ptr<export_type> export_ptrtype;
 
-    // algebraic solver
-    typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
-
     //___________________________________________________________________________________//
     // constructor
     HeatFluid( std::string const& prefix,
@@ -115,10 +111,6 @@ public :
     materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
-
-    backend_ptrtype const& backend() const { return M_backend; }
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
 
     //___________________________________________________________________________________//
 
@@ -292,10 +284,6 @@ private :
     // solver
     bool M_useSemiImplicitTimeScheme;
 
-    // algebraic data/tools
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    BlocksBaseVector<double> M_blockVectorSolution;
     vector_ptrtype M_timeStepThetaSchemePreviousContrib, M_timeStepThetaSchemePreviousSolution;
     std::map<std::string,double> M_currentParameterValues;
 
