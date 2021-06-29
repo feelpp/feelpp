@@ -44,7 +44,6 @@
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 
@@ -67,7 +66,7 @@ namespace Feel
 namespace FeelModels
 {
 
-/** 
+/**
  * Fluid Mechanics Toolbox
  * \ingroup Toolboxes
  */
@@ -208,8 +207,8 @@ public:
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     // algebraic tools
-    typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    // typedef ModelAlgebraicFactory model_algebraic_factory_type;
+    // typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
     typedef typename model_algebraic_factory_type::graph_type graph_type;
     typedef typename model_algebraic_factory_type::graph_ptrtype graph_ptrtype;
     typedef typename model_algebraic_factory_type::indexsplit_type indexsplit_type;
@@ -1145,19 +1144,13 @@ public :
 
     //___________________________________________________________________________________//
     // algebraic data
-    backend_ptrtype backend() { return M_backend; }
-    backend_ptrtype const& backend() const { return  M_backend; }
     typename super_type::block_pattern_type blockPattern() const override;
     virtual BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     graph_ptrtype buildMatrixGraph() const override;
     virtual int nBlockMatrixGraph() const;
-    model_algebraic_factory_ptrtype algebraicFactory() { return M_algebraicFactory; }
-    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
     virtual size_type nLocalDof() const;
     void buildBlockVector();
-    BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    void updateBlockVectorSolution();
+    //void updateBlockVectorSolution();
 
     //___________________________________________________________________________________//
     // time step scheme
@@ -2066,9 +2059,9 @@ private :
     //----------------------------------------------------
     //----------------------------------------------------
     // algebraic data/tools
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    BlocksBaseVector<double> M_blockVectorSolution;
+    // backend_ptrtype M_backend;
+    // model_algebraic_factory_ptrtype M_algebraicFactory;
+    // BlocksBaseVector<double> M_blockVectorSolution;
     bool M_usePreviousSolution;
     vector_ptrtype M_vectorPreviousSolution;
     //----------------------------------------------------

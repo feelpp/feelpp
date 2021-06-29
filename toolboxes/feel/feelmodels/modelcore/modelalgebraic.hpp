@@ -471,10 +471,18 @@ public :
         }
 
 
-    void initAlgebraicBackend( std::string const& name = "" )
+    void setAlgebraicBackend( std::string const& name, backend_ptrtype backend )
         {
             std::string nameUsed = name.empty()? this->keyword() : name;
-            std::get<0>( M_algebraicDataAndTools[nameUsed] ) = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr(), this->clovm() );
+            std::get<0>( M_algebraicDataAndTools[nameUsed] ) = backend;
+        }
+    void setAlgebraicBackend( backend_ptrtype backend )
+        {
+            this->setAlgebraicBackend( this->keyword(), backend );
+        }
+    void initAlgebraicBackend( std::string const& name = "" )
+        {
+            this->setAlgebraicBackend( name, backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr(), this->clovm() ) );
         }
 
     backend_ptrtype algebraicBackend( std::string const& name = "" ) const
@@ -495,7 +503,7 @@ public :
             return bvs;
         }
 
-    block_vector_ptrtype algebraicBlockVectorSolution( std::string const& name = "" )
+    block_vector_ptrtype algebraicBlockVectorSolution( std::string const& name = "" ) const
         {
             std::string nameUsed = name.empty()? this->keyword() : name;
             auto itFind = M_algebraicDataAndTools.find( nameUsed );
