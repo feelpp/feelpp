@@ -1,12 +1,12 @@
 // -*- mode: javascript -*-
 {
-    "Name": "Opus heat toolbox",
-    "ShortName":"OpusHeat-tb",
+    "Name": "Themal Fin 2d",
+    "ShortName":"ThermalFin2d",
     "Parameters":
     {
         "k_0":
         {
-            "value":"0.1",
+            "value":"1",
             "min":"0.1",
             "max":"10"
         },
@@ -103,34 +103,34 @@
             {
                 "GammaRoot":
                 {
-                    "expr":"-1/0.1"     // according to doc : -k nabla T.n = g
+                    "expr":"-1/k0:k0"     // according to doc : -k nabla T.n = g
                 }
             },
             "Robin":
             {
                 "Gamma_0_ext":
                 {
-                    "expr1":"0.01",
+                    "expr1":"k0:k0",
                     "expr2":"0"
                 },
                 "Gamma_1_ext":
                 {
-                    "expr1":"0.01",
+                    "expr1":"k1:k1",
                     "expr2":"0"
                 },
                 "Gamma_2_ext":
                 {
-                    "expr1":"0.01",
+                    "expr1":"k2:k2",
                     "expr2":"0"
                 },
                 "Gamma_3_ext":
                 {
-                    "expr1":"0.01",
+                    "expr1":"k3:k3",
                     "expr2":"0"
                 },
                 "Gamma_4_ext":
                 {
-                    "expr1":"0.01",
+                    "expr1":"k4:k4",
                     "expr2":"0"
                 }
             }
