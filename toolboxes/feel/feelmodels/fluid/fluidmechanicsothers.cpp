@@ -213,8 +213,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n   Numerical Solver"
            << "\n     -- scheme : " << (this->useSemiImplicitTimeScheme()? std::string("semi-implicit"):std::string("implicit"))
            << "\n     -- solver : " << M_solverName;
-    if ( M_algebraicFactory )
-        *_ostr << M_algebraicFactory->getInfo()->str();
+    if ( this->algebraicFactory() )
+        *_ostr << this->algebraicFactory()->getInfo()->str();
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if ( this->isMoveDomain() )
         *_ostr << this->meshALE()->getInfo()->str();
@@ -261,8 +261,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
 
     this->modelFields().updateInformationObject( p["Fields"] );
 
-    if ( M_algebraicFactory )
-        M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
+    if ( this->algebraicFactory() )
+        this->algebraicFactory()->updateInformationObject( p["Algebraic Solver"] );
 
     if ( !M_bodySetBC.empty() )
         M_bodySetBC.updateInformationObject( p["Boundary Conditions"] );
@@ -881,13 +881,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     this->setStartBlockSpaceIndex( 0 );
 
     // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
-    this->updateBlockVectorSolution();
+    this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
 
     if ( M_applyMovingMeshBeforeSolve && ( !M_bcMovingBoundaryImposed.empty() || !M_bodySetBC.empty() ) )
         this->updateALEmesh();
 
     M_bodySetBC.updateForUse( *this );
-    M_bodySetBC.updateAlgebraicFactoryForUse( *this, M_algebraicFactory );
+    M_bodySetBC.updateAlgebraicFactoryForUse( *this, this->algebraicFactory() );
 #if 0 // TODO
     if ( this->startBySolveStokesStationary() &&
          !this->hasSolveStokesStationaryAtKickOff() && !this->doRestart() )
@@ -941,9 +941,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     //--------------------------------------------------
     // run solver
     std::string algebraicSolver = M_solverName;
-    M_algebraicFactory->solve( algebraicSolver, this->blockVectorSolution().vectorMonolithic() );
+    this->algebraicFactory()->solve( algebraicSolver, this->algebraicBlockVectorSolution()->vectorMonolithic() );
     // update sub vector
-    M_blockVectorSolution.localize();
+    this->algebraicBlockVectorSolution()->localize();
 
     //--------------------------------------------------
     // update windkessel solution ( todo put fluidOutletWindkesselPressureDistal and Proximal in blockVectorSolution )
@@ -967,8 +967,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 
             if ( M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
             {
-                M_fluidOutletWindkesselPressureDistal[k] = M_blockVectorSolution(cptBlock)->operator()(0);
-                M_fluidOutletWindkesselPressureProximal[k]= M_blockVectorSolution(cptBlock)->operator()(1);
+                M_fluidOutletWindkesselPressureDistal[k] = this->algebraicBlockVectorSolution()->operator()(cptBlock)->operator()(0);
+                M_fluidOutletWindkesselPressureProximal[k] = this->algebraicBlockVectorSolution()->operator()(cptBlock)->operator()(1);
             }
             ++cptBlock;
         }
@@ -1208,7 +1208,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStepPreProcess()
     this->updateVelocityExtrapolated();
 
     if ( M_usePreviousSolution )
-        *M_vectorPreviousSolution = *M_blockVectorSolution.vectorMonolithic();
+        *M_vectorPreviousSolution = *this->algebraicBlockVectorSolution()->vectorMonolithic();
 
     this->log("FluidMechanics","startTimeStepPreProcess", "finish" );
 }
@@ -1244,7 +1244,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep( bool applyPreProcess )
     }
 
     if ( M_usePreviousSolution )
-        *M_vectorPreviousSolution = *M_blockVectorSolution.vectorMonolithic();
+        *M_vectorPreviousSolution = *this->algebraicBlockVectorSolution()->vectorMonolithic();
 
     // update all expressions in bc or in house prec
     this->updateParameterValues();
@@ -1346,7 +1346,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     }
 
     if ( M_usePreviousSolution )
-        *M_vectorPreviousSolution = *M_blockVectorSolution.vectorMonolithic();
+        *M_vectorPreviousSolution = *this->algebraicBlockVectorSolution()->vectorMonolithic();
 
     // update user functions which depend of time only
     this->updateUserFunctions(true);
@@ -1366,22 +1366,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
 {
     if ( this->isStationaryModel() )
         return;
-    if ( !M_algebraicFactory )
+    auto algebraicFactory = this->algebraicFactory();
+    if ( !algebraicFactory )
         return;
+
     if ( M_timeStepping == "Theta" )
     {
         M_timeStepThetaSchemePreviousContrib->zero();
-        M_blockVectorSolution.updateVectorFromSubVectors();
-        ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
+        this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
+        ModelAlgebraic::DataUpdateResidual dataResidual( this->algebraicBlockVectorSolution()->vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
         dataResidual.addInfo( prefixvm( this->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
 
-        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
-        M_algebraicFactory->evaluateResidual( dataResidual );
-        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+        algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+        algebraicFactory->evaluateResidual( dataResidual );
+        algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
 
         if ( M_stabilizationGLS )
         {
-            auto & dataInfos = M_algebraicFactory->dataInfos();
+            auto & dataInfos = algebraicFactory->dataInfos();
             //*dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *M_blockVectorSolution.vectorMonolithic();
             dataInfos.addParameterValuesInfo( "time-stepping.previous-parameter-values", M_currentParameterValues );
         }
@@ -1955,6 +1957,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nLocalDof() const
     return res;
 }
 
+#if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
@@ -1980,7 +1983,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
 //     {}
 
 }
-
+#endif
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

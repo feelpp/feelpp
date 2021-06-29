@@ -691,7 +691,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
             // with velocity field
             auto Xh_create_ho = M_XhVelocity->compSpace();
             auto opLagP1 = lagrangeP1( _space=Xh_create_ho,
-                                       _backend=M_backend,
+                                       _backend=this->algebraicBackend(),
                                        //_worldscomm=this->localNonCompositeWorldsComm(),
                                        _path=this->rootRepository(),
                                        _prefix=this->prefix(),
@@ -704,7 +704,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
             // with pressure velocity field
             auto Xh_create_ho = M_XhPressure;
             auto opLagP1 = lagrangeP1( _space=Xh_create_ho,
-                                       _backend=M_backend,
+                                       _backend=this->algebraicBackend(),
                                        //_worldscomm=this->localNonCompositeWorldsComm(),
                                        _path=this->rootRepository(),
                                        _prefix=this->prefix(),
@@ -746,7 +746,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
         M_opIvelocity = opInterpolation(_domainSpace=M_XhVelocity,
                                         _imageSpace=M_XhVectorialVisuHO,
                                         _range=elements(M_XhVectorialVisuHO->mesh()),
-                                        _backend=M_backend,
+                                        _backend=this->algebraicBackend(),
                                         _type=InterpolationNonConforme(false,true,false,15) );
 
         this->log("FluidMechanics","createPostProcessExporters", "step1 done" );
@@ -754,7 +754,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
         M_opIpressure = opInterpolation(_domainSpace=M_XhPressure,
                                         _imageSpace=M_XhScalarVisuHO,
                                         _range=elements(M_XhScalarVisuHO->mesh()),
-                                        _backend=M_backend,
+                                        _backend=this->algebraicBackend(),
                                         _type=InterpolationNonConforme(false,true,false,15) );
 #if 0
         if ( this->hasPostProcessFieldExported( "normal-stress" ) ||
@@ -768,7 +768,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
             M_opIstress = opInterpolation(_domainSpace=M_XhNormalBoundaryStress,
                                           _imageSpace=M_XhVectorialDiscVisuHO,
                                           _range=elements(M_XhVectorialDiscVisuHO->mesh()),
-                                          _backend=M_backend,
+                                          _backend=this->algebraicBackend(),
                                           _type=InterpolationNonConforme(false,true,false,15) );
         }
 #endif
@@ -780,7 +780,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
             M_opImeshdisp = opInterpolation(_domainSpace=M_meshALE->functionSpace(),
                                             _imageSpace=M_XhVectorialVisuHO,
                                             _range=elements(M_XhVectorialVisuHO->mesh()),
-                                            _backend=M_backend,
+                                            _backend=this->algebraicBackend(),
                                             _type=InterpolationNonConforme(false,true,false,15) );
 #endif
         }
@@ -987,7 +987,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->materialsProperties()->addMesh( this->mesh() );
 
     // backend
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
+    this->initAlgebraicBackend();
 
     if ( M_solverName == "automatic" )
     {
@@ -1153,11 +1153,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
-    M_algebraicFactory.reset( new model_algebraic_factory_type(this->shared_from_this(),this->backend()) );
+    auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
+    this->setAlgebraicFactory( algebraicFactory );
 
     if ( !M_bodySetBC.empty() )
     {
-        M_bodySetBC.initAlgebraicFactory( *this, M_algebraicFactory );
+        M_bodySetBC.initAlgebraicFactory( *this, this->algebraicFactory() );
     }
 
     if ( boption(_name="use-velocity-near-null-space",_prefix=this->prefix() ) )
@@ -1167,7 +1168,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
             nearNullSpacePrefix = soption( _name="use-velocity-near-null-space.prefix", _prefix=this->prefix() );
 
         NullSpace<double> userNullSpace = detail::getNullSpace(this->functionSpaceVelocity(), mpl::int_<nDim>() ) ;
-        M_algebraicFactory->attachNearNullSpace( 0,userNullSpace, nearNullSpacePrefix ); // for block velocity in fieldsplit
+        algebraicFactory->attachNearNullSpace( 0,userNullSpace, nearNullSpacePrefix ); // for block velocity in fieldsplit
     }
 
     bool attachMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-mass-matrix");
@@ -1188,11 +1189,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 
     if ( M_timeStepping == "Theta" )
     {
-        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
-        M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
-        M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(this->algebraicBlockVectorSolution()->vectorMonolithic()->mapPtr() );
+        algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+        algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
         if ( M_stabilizationGLS )
-            M_algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", M_vectorPreviousSolution/*this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() )*/ );
+            algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", M_vectorPreviousSolution/*this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() )*/ );
     }
 
 
@@ -1312,11 +1313,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
 #endif
 
     // velocity extrapolated
-    M_vectorVelocityExtrapolated = M_backend->newVector( this->functionSpaceVelocity() );
-    M_vectorPreviousVelocityExtrapolated = M_backend->newVector( this->functionSpaceVelocity() );
+    M_vectorVelocityExtrapolated = this->algebraicBackend()->newVector( this->functionSpaceVelocity() );
+    M_vectorPreviousVelocityExtrapolated = this->algebraicBackend()->newVector( this->functionSpaceVelocity() );
     M_fieldVelocityExtrapolated = this->functionSpaceVelocity()->elementPtr( *M_vectorVelocityExtrapolated, 0 );
 
-    
+
     double tir = M_bdfVelocity->timeInitial();
     if ( this->doRestart() )
     {
@@ -1845,7 +1846,7 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockVector()
 {
     this->initBlockVector();
-    M_blockVectorSolution.buildVector( this->backend() );
+    this->algebraicBlockVectorSolution()->buildVector( this->backend() );
 
     M_usePreviousSolution = false;
     if ( timeStepping() == "Theta" && this->stabilizationGLS() )
@@ -1863,7 +1864,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockVector()
     }
 
     if ( M_usePreviousSolution )
-        M_vectorPreviousSolution = this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() );
+        M_vectorPreviousSolution = this->backend()->newVector( this->algebraicBlockVectorSolution()->vectorMonolithic()->mapPtr() );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1871,34 +1872,34 @@ int
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
 {
     int nBlock = this->nBlockMatrixGraph();
-    M_blockVectorSolution.resize( nBlock );
+    auto bvs = this->initAlgebraicBlockVectorSolution( nBlock );
     int cptBlock = 0;
-    M_blockVectorSolution(cptBlock++) = this->fieldVelocityPtr();
-    M_blockVectorSolution(cptBlock++) = this->fieldPressurePtr();
+    bvs->operator()(cptBlock++) = this->fieldVelocityPtr();
+    bvs->operator()(cptBlock++) = this->fieldPressurePtr();
     // impose mean pressure by lagrange multiplier
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
         for ( int k=0;k<M_XhMeanPressureLM.size();++k )
-            M_blockVectorSolution(cptBlock++) = this->backend()->newVector( M_XhMeanPressureLM[k] );
+            bvs->operator()(cptBlock++) = this->backend()->newVector( M_XhMeanPressureLM[k] );
     }
     // lagrange multiplier for Dirichlet BC
     if (this->hasMarkerDirichletBClm())
     {
-        M_blockVectorSolution(cptBlock) = this->backend()->newVector( this->XhDirichletLM() );
+        bvs->operator()(cptBlock) = this->backend()->newVector( this->XhDirichletLM() );
         ++cptBlock;
     }
     if ( this->hasMarkerPressureBC() )
     {
-        M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC1;
+        bvs->operator()(cptBlock++) = M_fieldLagrangeMultiplierPressureBC1;
         if ( nDim == 3 )
-            M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC2;
+            bvs->operator()(cptBlock++) = M_fieldLagrangeMultiplierPressureBC2;
     }
     // windkessel outel with implicit scheme
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
         for (int k=0;k<this->nFluidOutletWindkesselImplicit();++k)
         {
-            M_blockVectorSolution(cptBlock) = this->backend()->newVector( M_fluidOutletWindkesselSpace );
+            bvs->operator()(cptBlock) = this->backend()->newVector( M_fluidOutletWindkesselSpace );
             ++cptBlock;
         }
     }
@@ -1907,15 +1908,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
     {
         for ( auto const& [bpname,bpbc] : M_bodySetBC )
         {
-            M_blockVectorSolution(cptBlock++) = bpbc.fieldTranslationalVelocityPtr();
-            M_blockVectorSolution(cptBlock++) = bpbc.fieldAngularVelocityPtr();
+            bvs->operator()(cptBlock++) = bpbc.fieldTranslationalVelocityPtr();
+            bvs->operator()(cptBlock++) = bpbc.fieldAngularVelocityPtr();
         }
         for ( auto const& nba : M_bodySetBC.nbodyArticulated() )
         {
             if ( nba.articulationMethod() != "lm" )
                 continue;
             for ( auto const& ba : nba.articulations() )
-                M_blockVectorSolution(cptBlock++) = ba.vectorLagrangeMultiplierTranslationalVelocity();
+                bvs->operator()(cptBlock++) = ba.vectorLagrangeMultiplierTranslationalVelocity();
         }
     }
 
@@ -3153,7 +3154,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::initAlgebraicFacto
     for (int i=0;i<nBlock;++i)
     {
         if ( blockIndexNotDiagIdendity.find( i ) == blockIndexNotDiagIdendity.end() )
-            myblockMat(i,i) = fluidToolbox.backend()->newIdentityMatrix( fluidToolbox.blockVectorSolution()(i)->mapPtr(),fluidToolbox.blockVectorSolution()(i)->mapPtr() );
+            myblockMat(i,i) = fluidToolbox.backend()->newIdentityMatrix( fluidToolbox.algebraicBlockVectorSolution()->operator()(i)->mapPtr(),
+                                                                         fluidToolbox.algebraicBlockVectorSolution()->operator()(i)->mapPtr() );
     }
 
 

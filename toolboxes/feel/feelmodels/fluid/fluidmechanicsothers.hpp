@@ -35,7 +35,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePre
         pmmMat = this->algebraicFactory()->auxiliarySparseMatrix( "pmm" );
     else
     {
-        pmmMat = M_backend->newMatrix(_trial=this->functionSpacePressure(), _test=this->functionSpacePressure());
+        pmmMat = this->algebraicBackend()->newMatrix(_trial=this->functionSpacePressure(), _test=this->functionSpacePressure());
         this->algebraicFactory()->attachAuxiliarySparseMatrix( "pmm", pmmMat );
     }
     CHECK( pmmMat ) << "pmmMat is not initialized";

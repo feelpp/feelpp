@@ -96,8 +96,6 @@ public :
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
 
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
 
     space_displacement_component_ptrtype const& functionSpace1dReduced() const { return M_spaceDisp; }
@@ -223,11 +221,6 @@ private :
     map_scalar_field<2> M_bcDirichlet;
     map_scalar_field<2> M_volumicForcesProperties;
 
-    // backend
-    //backend_ptrtype M_backend;
-    // algebraic solver ( assembly+solver )
-    //model_algebraic_factory_ptrtype M_algebraicFactory_1dReduced;
-    BlocksBaseVector<double> M_blockVectorSolution;
     // exporter
     exporter_ptrtype M_exporter;
 
