@@ -16,7 +16,7 @@ For r In {1:N}
     Printf("fin = %g",r);
 
     Rectangle(r+1) = {-L, r*(d+t), 0, 2*L+1, t, 0};
-    
+
 EndFor
 
 S[]=BooleanFragments{ Surface{1}; Delete; }{Surface{2:N+1}; Delete;};
@@ -28,8 +28,10 @@ Characteristic Length{ PointsOf{ Surface{ : }; } } = h;
 //Physical Surface (Sprintf("fin-%g",r)) = r+1;
 
 Physical Surface("Post") = {1:N*2};
+i = 1;
 For r In {2*N+1:#S[]:2}
-  Physical Surface(Sprintf("Fin_%g",r)) = {r,r+1};
+  Physical Surface(Sprintf("Fin_%g",i)) = {r,r+1};
+  i = i + 1;
 EndFor
 
 bdy[] = CombinedBoundary { Surface{:}; };
@@ -40,10 +42,11 @@ Physical Curve("Gamma_ext") = bdy[0];
 For ii In { 1 : (#bdy[]-1) }
  If (bdy[ii] != 4)
       Printf("boundary number %g = %g", ii, bdy[ii]);
-      Physical Curve("Gamma_ext") += bdy[ii];   
+      Physical Curve("Gamma_ext") += bdy[ii];
   Else
      Physical Curve("Gamma_root") = bdy[ii];
   EndIf
  EndFor
 
- Mesh 2; //+
+ Mesh 2; //+//+
+Show "*";
