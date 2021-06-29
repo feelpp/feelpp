@@ -27,7 +27,7 @@
  \date 2012-01-19
  */
 
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
+#include <feel/feelmodels/modelcore/modelalgebraicfactory.hpp>
 #include <feel/feelalg/vectorublas.hpp>
 #include <feel/feelalg/enums.hpp>
 
