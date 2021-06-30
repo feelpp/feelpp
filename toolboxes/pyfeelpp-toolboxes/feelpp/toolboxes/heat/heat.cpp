@@ -82,7 +82,7 @@ void defSM(py::module &m)
                                     auto mat = t.algebraicFactory()->matrix();//->clone();
                                     mat->zero();
                                     auto rhsTMP = t.algebraicFactory()->rhs()->clone();
-                                    t.algebraicFactory()->applyAssemblyLinear( t.blockVectorSolution().vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
+                                    t.algebraicFactory()->applyAssemblyLinear( t.algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
                                     return mat;
                                 },
             "returns the assembled matrix" )
@@ -90,7 +90,7 @@ void defSM(py::module &m)
                                     auto rhs = t.algebraicFactory()->rhs()->clone();
                                     rhs->zero();
                                     auto matTMP = t.algebraicFactory()->matrix()->clone();
-                                    t.algebraicFactory()->applyAssemblyLinear( t.blockVectorSolution().vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
+                                    t.algebraicFactory()->applyAssemblyLinear( t.algebraicBlockVectorSolution()->vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
                                     return rhs;
                                 },
             "returns the assembled rhs" )
