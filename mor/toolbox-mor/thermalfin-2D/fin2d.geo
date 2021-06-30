@@ -16,7 +16,7 @@ For r In {1:N}
     Printf("fin = %g",r);
 
     Rectangle(r+1) = {-L, r*(d+t), 0, 2*L+1, t, 0};
-    
+
 EndFor
 
 S[]=BooleanFragments{ Surface{1}; Delete; }{Surface{2:N+1}; Delete;};
@@ -49,4 +49,5 @@ For ii In { 1 : (#bdy[]-1) }
   EndIf
  EndFor
 
- Mesh 2; //+
+ Mesh 2; //+//+
+Show "*";
