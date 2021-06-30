@@ -69,10 +69,13 @@ namespace FeelModels
         typedef model_type::indexsplit_ptrtype indexsplit_ptrtype;
 
 
-        typedef boost::function<void ( ModelAlgebraic::DataUpdateLinear& )> function_assembly_linear_type;
-        typedef boost::function<void ( ModelAlgebraic::DataUpdateJacobian& )> function_assembly_jacobian_type;
-        typedef boost::function<void ( ModelAlgebraic::DataUpdateResidual& )> function_assembly_residual_type;
-        typedef boost::function<void ( ModelAlgebraic::DataNewtonInitialGuess& )> function_newton_initial_guess_type;
+        typedef std::function<void ( ModelAlgebraic::DataUpdateLinear& )> function_assembly_linear_type;
+        typedef std::function<void ( ModelAlgebraic::DataUpdateJacobian& )> function_assembly_jacobian_type;
+        typedef std::function<void ( ModelAlgebraic::DataUpdateResidual& )> function_assembly_residual_type;
+        typedef std::function<void ( ModelAlgebraic::DataNewtonInitialGuess& )> function_newton_initial_guess_type;
+
+        typedef std::function<void ( ModelAlgebraic::DataUpdateLinear& )> function_updateInHousePreconditioner_linear_type;
+        typedef std::function<void ( ModelAlgebraic::DataUpdateJacobian& )> function_updateInHousePreconditioner_jacobian_type;
 
         typedef typename backend_type::pre_solve_type pre_solve_type;
         typedef typename backend_type::post_solve_type post_solve_type;
@@ -236,6 +239,10 @@ namespace FeelModels
         void setActivationAddVectorLinearRhsAssembly( std::string const& key, bool b );
         void setActivationAddVectorResidualAssembly( std::string const& key, bool b );
 
+        // update in-house preconditioner
+        void setFunctionUpdateInHousePreconditionerLinear( function_updateInHousePreconditioner_linear_type const& func ) { M_functionUpdateInHousePreconditionerLinear = func; }
+        void setFunctionUpdateInHousePreconditionerJacobian( function_updateInHousePreconditioner_jacobian_type const& func ) { M_functionUpdateInHousePreconditionerJacobian = func; }
+
         void updateNewtonIteration( int step, vector_ptrtype residual, vector_ptrtype sol, typename backend_type::solvernonlinear_type::UpdateIterationData const& data );
         void updatePicardIteration( int step, vector_ptrtype sol );
     private :
@@ -303,6 +310,10 @@ namespace FeelModels
         // ( key -> ( vector,scaling, cstPart?, activated? ) )
         std::map<std::string, std::tuple<vector_ptrtype,double,bool,bool>> M_addVectorLinearRhsAssembly;
         std::map<std::string, std::tuple<vector_ptrtype,double,bool,bool>> M_addVectorResidualAssembly;
+
+        // update in-house preconditioner
+        function_updateInHousePreconditioner_linear_type M_functionUpdateInHousePreconditionerLinear;
+        function_updateInHousePreconditioner_jacobian_type M_functionUpdateInHousePreconditionerJacobian;
 
         bool M_usePseudoTransientContinuation;
         std::string M_pseudoTransientContinuationEvolutionMethod;
