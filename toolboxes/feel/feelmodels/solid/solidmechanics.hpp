@@ -623,19 +623,19 @@ public :
     template <typename ModelFieldsType>
     auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
         {
-            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type,typename solid_1dreduced_type::mesh_type>();
             return Feel::FeelModels::modelContext( mfields, std::move( se ) );
         }
     auto modelContext( std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( prefix );
-            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type,typename solid_1dreduced_type::mesh_type>();
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
     auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
-            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type,typename solid_1dreduced_type::mesh_type>();
             auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( rowStartInVector ) );
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
         }
