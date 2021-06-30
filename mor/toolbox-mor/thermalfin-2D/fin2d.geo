@@ -28,8 +28,11 @@ Characteristic Length{ PointsOf{ Surface{ : }; } } = h;
 //Physical Surface (Sprintf("fin-%g",r)) = r+1;
 
 Physical Surface("Post") = {1:N*2};
+finid=1;
 For r In {2*N+1:#S[]:2}
-  Physical Surface(Sprintf("Fin_%g",r)) = {r,r+1};
+  Printf("Fin number %g %g ", r, finid);
+  Physical Surface(Sprintf("Fin_%g",finid)) = {r,r+1};
+  finid+=1;
 EndFor
 
 bdy[] = CombinedBoundary { Surface{:}; };
@@ -39,8 +42,8 @@ Physical Curve("Gamma_ext") = bdy[0];
 
 For ii In { 1 : (#bdy[]-1) }
  If (bdy[ii] != 4)
-      Printf("boundary number %g = %g", ii, bdy[ii]);
-      Physical Curve("Gamma_ext") += bdy[ii];   
+      Printf("boundary number %g = %g", ii, Abs(bdy[ii]));
+      Physical Curve("Gamma_ext") += Abs(bdy[ii]);   
   Else
      Physical Curve("Gamma_root") = bdy[ii];
   EndIf

@@ -49,32 +49,32 @@
     },
     "Materials":
     {
-        "Omega_0":
+        "Post":
         {
             "k":"k_0:k_0",
             "Cp":"1.4e6",
             "rho":"1"
         },
-        "Omega_1":
+        "Fin_1":
         {
             "k":"k_1:k_1",
             "Cp":"1.4e6",
             "rho":"1"
         },
-        "Omega_2":
+        "Fin_2":
         {
             "k":"k_2:k_2",
             "Cp":"1.4e6",
             "rho":"1100"
         },
-        "Omega_3":
+        "Fin_3":
         {
 
             "k":"k_3:k_3",
             "Cp":"1.4e6",
             "rho":"1"
         },
-        "Omega_4":
+        "Fin_4":
         {
             "k":"k_4:k_4",
             "Cp":"1.4e6",
@@ -101,34 +101,14 @@
         {
             "Neumann":
             {
-                "Gamma_Root":
+                "Gamma_root":
                 {
                     "expr":"1"     // according to doc : -k nabla T.n = g
                 }
             },
             "Robin":
             {
-                "Gamma_0_ext":
-                {
-                    "expr1":"Bi:Bi",
-                    "expr2":"0"
-                },
-                "Gamma_1_ext":
-                {
-                    "expr1":"Bi:Bi",
-                    "expr2":"0"
-                },
-                "Gamma_2_ext":
-                {
-                    "expr1":"Bi:Bi",
-                    "expr2":"0"
-                },
-                "Gamma_3_ext":
-                {
-                    "expr1":"Bi:Bi",
-                    "expr2":"0"
-                },
-                "Gamma_4_ext":
+                "Gamma_ext":
                 {
                     "expr1":"Bi:Bi",
                     "expr2":"0"
