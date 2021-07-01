@@ -245,8 +245,8 @@ PYBIND11_MODULE( _mor, m )
         .def("__call__", static_cast<double& (ElementP::*)(int)>(&ElementP::coeff), "return the ith parameter", py::arg("i") )
         .def("setParameter", static_cast<void (ElementP::*)(int, double)>(&ElementP::setParameter), "set the i-th to the value", py::arg("i"), py::arg("value"))
         .def("setParameterNamed", static_cast<void (ElementP::*)(std::string, double)>(&ElementP::setParameterNamed), "set the named parameter to the value", py::arg("name"), py::arg("value"))
-        .def("setParameters", static_cast<void (ElementP::*)(std::vector<double>)>(&ElementP::setParameters), "set the parameter to the given list", py::arg("values"))
-        .def("setParameters", static_cast<void (ElementP::*)(std::map<std::string, double> values)>(&ElementP::setParameters), "set the parameter to the given dict with values", py::arg("values"))
+        .def("setParameters", static_cast<void (ElementP::*)(const std::vector<double> &param)>(&ElementP::setParameters), "set the parameter to the given list", py::arg("values"))
+        .def("setParameters", static_cast<void (ElementP::*)(const std::map<std::string, double> &dict)>(&ElementP::setParameters), "set the parameter to the given dict with values", py::arg("values"))
         ;
 
     //!
