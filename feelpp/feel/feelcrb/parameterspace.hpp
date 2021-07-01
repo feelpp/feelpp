@@ -201,6 +201,8 @@ public:
             auto it = std::find(paramNames.begin(), paramNames.end(), name);
             if( it != paramNames.end() )
                 this->operator()( it - paramNames.begin() ) = value;
+            else
+                LOG( WARNING ) << name << " is not a parameter" << std::endl;
         }
 
         void setParameter( int i, double value)
@@ -211,14 +213,17 @@ public:
         /**
          * set many parameters at once (overloaded function)
          */
-        void setParameters( std::vector<double> values)
+        void setParameters( const std::vector<double> &values)
         {
             size_t n = values.size();
-            for (size_t i=0; i<n; ++i)
+            if (n != this->size())
+                LOG( WARNING ) << "The size of the given vector (" << n << ") is different fom the size (" << this->size() << ")" << std::endl;
+            size_t N = (n >= this->size()) ? n : this->size();
+            for (size_t i=0; i<N; ++i)
                 this->operator()(i) = values[i];
         }
 
-        void setParameters( std::map<std::string, double> values )
+        void setParameters( const std::map<std::string, double> &values )
         {
             for (auto a : values)
                 setParameterNamed( a.first, a.second );
