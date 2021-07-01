@@ -38,6 +38,7 @@
 // #include <boost/mpl/plus.hpp>
 // #include <boost/mpl/arithmetic.hpp>
 
+#include <boost/mp11.hpp>
 
 namespace Feel
 {
@@ -172,17 +173,31 @@ public:
     template<typename... TheExpr>
     struct Lambda
     {
-        struct TransformLambdaExpr
-        {
-            template <typename T>
-            constexpr auto operator()(T const& t) const
-                {
-                    return typename T::template Lambda<TheExpr...>::type{};
-                }
+        template <typename T>
+        using TransformLambdaExpr = typename T::template Lambda<TheExpr...>::type;
+#if 0
+        // utility to convert tuple (hana, std, ... )
+        template <template <typename...> class C, typename Tuple> struct RebindImpl;
+        template <template <typename...> class C, typename ... Ts>
+        struct RebindImpl<C, hana::tuple<Ts...>>{
+            using type = C<Ts...>;
+        };
+        template <template <typename...> class C, typename ... Ts>
+        struct RebindImpl<C, std::tuple<Ts...>>{
+            using type = C<Ts...>;
         };
 
-        using lambda_tuple_type = std::decay_t<decltype( hana::transform( expression_matrix_type{}, TransformLambdaExpr{} ) ) >;
-        using type = Mat<M,N,lambda_tuple_type>;
+        // convert hana::tuple<...> to std::tuple<...>
+        using expr_tuple_as_std_tuple_type = typename RebindImpl< std::tuple, expression_matrix_type >::type;
+
+        // transfrom std::tuple<..> with Lambda type
+        using lambda_expr_tuple_as_std_tuple_type = boost::mp11::mp_transform<TransformLambdaExpr,expr_tuple_as_std_tuple_type>;
+
+        // get type by converting std::tuple<...> to hana::tuple<...>
+        using type = Mat<M,N, typename RebindImpl< hana::tuple, lambda_expr_tuple_as_std_tuple_type >::type>;
+#else
+        using type = Mat<M,N,  boost::mp11::mp_transform<TransformLambdaExpr,expression_matrix_type> >;
+#endif
     };
 
     template<typename... TheExpr>
