@@ -186,6 +186,12 @@ public:
                 return this->operator()( it - paramNames.begin() );
             }
 
+        void view() const
+        {
+            for (int i=0; i<this->size(); ++i)
+                std::cout << M_space->parameterName( i ) << "\t" << this->operator()( i ) << std::endl;
+        }
+
         /**
          * set a parameter
          */
@@ -200,6 +206,22 @@ public:
         void setParameter( int i, double value)
         {
             this->operator()(i) = value;
+        }
+
+        /**
+         * set many parameters at once (overloaded function)
+         */
+        void setParameters( std::vector<double> values)
+        {
+            size_t n = values.size();
+            for (size_t i=0; i<n; ++i)
+                this->operator()(i) = values[i];
+        }
+
+        void setParameters( std::map<std::string, double> values )
+        {
+            for (auto a : values)
+                setParameterNamed( a.first, a.second );
         }
 
         /**
