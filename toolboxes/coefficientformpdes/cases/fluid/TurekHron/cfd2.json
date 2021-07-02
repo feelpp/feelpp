@@ -40,7 +40,8 @@
             //"momentum_gamma":"{mass_p,0,0,mass_p}:mass_p", // diffusion
             "momentum_gamma":"{mass_p-2*mu*momentum_grad_u_00,-mu*(momentum_grad_u_01+momentum_grad_u_10),-mu*(momentum_grad_u_01+momentum_grad_u_10),mass_p-2*mu*momentum_grad_u_11}:mu:mass_p:momentum_grad_u_00:momentum_grad_u_10:momentum_grad_u_01:momentum_grad_u_11",
             //"mass_gamma":"{momentum_u_0,momentum_u_1}:momentum_u_0:momentum_u_1" // div u
-            "mass_f":"-(momentum_grad_u_00+momentum_grad_u_11):momentum_grad_u_00:momentum_grad_u_11" // div u 
+            //"mass_f":"-(momentum_grad_u_00+momentum_grad_u_11):momentum_grad_u_00:momentum_grad_u_11" // div u
+            "mass_f":"-momentum_div_u:momentum_div_u" // div u 
         }
     },
     "BoundaryConditions":

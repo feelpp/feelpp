@@ -5,6 +5,7 @@
 #define FEELPP_TOOLBOXES_MODELCORE_TRIALSSYMBOLSEXPR_H 1
 
 #include <feel/feelcore/tuple_utils.hpp>
+#include <feel/feelmodels/modelcore/traits.hpp>
 
 namespace Feel
 {
@@ -18,12 +19,15 @@ public :
     using space_type = SpaceType;
     using space_ptrtype = std::shared_ptr<space_type>;
     using expr_type = ExprType;
+    using expr_shape_type = typename ExprTraitsFromMeshElement<typename space_type::mesh_type::element_type,expr_type>::shape;
+
     TrialSymbolExpr1( space_ptrtype const& space, std::string const& symbol, expr_type const& expr, size_type blockSpaceIndex )
         :
         M_space( space ),
         M_symbol( symbol ),
         M_expr( expr ),
-        M_blockSpaceIndex( blockSpaceIndex )
+        M_blockSpaceIndex( blockSpaceIndex ),
+        M_secs( expr_shape_type::M, expr_shape_type::N )
         {}
     TrialSymbolExpr1( TrialSymbolExpr1 const& ) = default;
     TrialSymbolExpr1( TrialSymbolExpr1 && ) = default;
@@ -32,6 +36,7 @@ public :
     std::string const& symbol() const { return M_symbol; }
     expr_type const& expr() const { return M_expr; }
     size_type blockSpaceIndex() const { return M_blockSpaceIndex; }
+    SymbolExprComponentSuffix const& componentSuffix() const { return M_secs; }
 
     bool isDefinedOn( space_ptrtype const& space, size_type blockSpaceIndex ) const
         {
@@ -46,6 +51,7 @@ private :
     std::string M_symbol;
     expr_type M_expr;
     size_type M_blockSpaceIndex;
+    SymbolExprComponentSuffix M_secs;
 };
 
 
@@ -57,11 +63,12 @@ template <typename SpaceType,typename ExprType>
 class TrialSymbolExpr : public std::vector<TrialSymbolExpr1<SpaceType,ExprType>>
 {
     using super_type = std::vector<TrialSymbolExpr1<SpaceType,ExprType>>;
+public :
     using trial_symbol_expr1_type = TrialSymbolExpr1<SpaceType,ExprType>;
     using space_type = typename trial_symbol_expr1_type::space_type;
     using space_ptrtype = typename trial_symbol_expr1_type::space_ptrtype;
     using expr_type = typename trial_symbol_expr1_type::expr_type;
-public :
+
     using feelpp_tag = TrialSymbolExprFeelppTag;
 
     TrialSymbolExpr() = default;
@@ -253,7 +260,15 @@ public :
                                 hana::for_each( hana::second(e).tuple(), [&res]( auto const& e2 ) {
                                         for ( auto const& e3 : e2 )
                                         {
-                                            res.insert( e3.symbol() );
+                                            if constexpr ( std::decay_t<decltype( e3 )>::expr_shape_type::is_scalar )
+                                            {
+                                                res.insert( e3.symbol() );
+                                            }
+                                            else
+                                            {
+                                                for ( auto const& [_suffix,compArray] : e3.componentSuffix() )
+                                                    res.insert( e3.symbol()+_suffix );
+                                            }
                                         }
                                     });
                             });

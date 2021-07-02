@@ -35,7 +35,6 @@
 //#include <feel/feelfilters/exporter.hpp>
 
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
 namespace Feel
 {
@@ -52,8 +51,8 @@ public :
     typedef MeshType mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    // typedef ModelAlgebraicFactory model_algebraic_factory_type;
+    // typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
     typedef typename super_type::backend_ptrtype backend_ptrtype;
     typedef typename super_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -109,7 +108,6 @@ public :
     std::shared_ptr<std::ostringstream> getInfo() const override;
 
 
-    backend_ptrtype const& backend() const { return M_backend; }
     space_ptrtype const& functionSpace() const { return M_Xh; }
     element_ptrtype const& displacement() const { return M_displacement; }
     element_ptrtype const& dispImposedOnBoundary() const { return M_dispImposedOnBoundary; }

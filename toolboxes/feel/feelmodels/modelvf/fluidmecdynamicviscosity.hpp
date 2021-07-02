@@ -7,6 +7,7 @@ namespace Feel
 {
 namespace FeelModels
 {
+enum class ExprOperatorType { ID=0,GRAD };
 
 template<typename FieldType>
 class ExprEvaluateFieldOperators
@@ -339,6 +340,10 @@ struct FluidMecDynamicViscosityBase
 
     virtual uint16_type polynomialOrder() const = 0;
 
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const;
+
+
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename... TheArgsType>
     std::shared_ptr<tensor_base_type<Geo_t,Basis_i_t,Basis_j_t> >
     evaluator( tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain, const TheArgsType&... theInitArgs/*Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu*/ ) const;
@@ -368,10 +373,46 @@ public :
     using this_type = FluidMecDynamicViscosityNewtonian<ExprType>;
     using material_property_scalar_expr_type = typename expr_type::template material_property_expr_type<1,1>;
 
+
+    // special trick to avoid a infinite compilation loop.
+    // it's caused by grad<expr_type::nDim>( material_property_scalar_expr_type{} ) because fluidmecdynaviscosity is alrady in se).
+    // TODO : diff of symbol expr should be done before (when se is fully built)
+    struct DeferToExprOpId
+    {
+        template<class Ts1>
+        using execute = Ts1;
+    };
+    struct DeferToExprOpGrad
+    {
+        template<class Ts1>
+        using execute = std::decay_t<decltype( grad<expr_type::nDim>( Ts1{} ) )>;
+    };
+    template< class Prog, class... Ts >
+    using runRRR = typename Prog::template execute<Ts...>;
+    //static const bool is_same_expr = expr_type::isExprOpID();//std::is_same_v<the_expr_type,the_expr_expand_type>;
+    using choice = typename std::conditional< expr_type::isExprOpID(), DeferToExprOpId, DeferToExprOpGrad  >::type;
+
+    using expr_dynamic_viscosity_newtonian_type = runRRR< choice, material_property_scalar_expr_type >;
+
+
+#if 0
+    using expr_grad_material_property_scalar_type = std::decay_t<decltype( grad<expr_type::nDim>( material_property_scalar_expr_type{} ) )>;
+    using expr_dynamic_viscosity_newtonian_type = typename mpl::if_c< expr_type::isExprOpID(),
+                                                                      material_property_scalar_expr_type, //material_property_scalar_expr_type
+                                                                      expr_grad_material_property_scalar_type >::type;
+#endif
+    template <ExprOperatorType TheExprOp = expr_type::exprOp, std::enable_if_t< TheExprOp == ExprOperatorType::ID, bool> = true>
     FluidMecDynamicViscosityNewtonian( ExprType const& expr )
         :
         super_type( expr ),
         M_exprDynamicVisocsity( expr.template materialPropertyExpr<1,1>("dynamic-viscosity") )
+        {}
+
+    template <ExprOperatorType TheExprOp = expr_type::exprOp, std::enable_if_t< TheExprOp == ExprOperatorType::GRAD, bool> = true>
+    FluidMecDynamicViscosityNewtonian( ExprType const& expr )
+        :
+        super_type( expr ),
+        M_exprDynamicVisocsity( grad<expr_type::nDim>( expr.template materialPropertyExpr<1,1>("dynamic-viscosity")/*, "", world, dirLibExpr*/ /*TODO*/ ) )
         {}
 
     FluidMecDynamicViscosityNewtonian( FluidMecDynamicViscosityNewtonian const& ) = default;
@@ -383,8 +424,13 @@ public :
 
     uint16_type polynomialOrder() const override { return M_exprDynamicVisocsity.polynomialOrder(); }
 
-    material_property_scalar_expr_type const& exprDynamicVisocsity() const { return M_exprDynamicVisocsity; }
+    expr_dynamic_viscosity_newtonian_type const& exprDynamicVisocsity() const { return M_exprDynamicVisocsity; }
 
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            return M_exprDynamicVisocsity.hasSymbolDependency( symb, se );
+        }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor : public this_type::super_type::template tensor_base_type<Geo_t,Basis_i_t,Basis_j_t>
@@ -461,13 +507,21 @@ public :
                     M_localEval.setConstant( nPoints, super_type::matrix_shape_type::Zero() );
 
                 for ( uint16_type q = 0; q < nPoints; ++q )
-                    M_localEval[q](0,0) = M_muExprTensor.evalq(0,0,q);
+                {
+                    if constexpr ( expr_type::isExprOpID() )
+                          M_localEval[q](0,0) = M_muExprTensor.evalq(0,0,q);
+                    else
+                    {
+                        for ( uint16_type c1 = 0; c1 < expr_type::nDim; ++c1 )
+                            M_localEval[q](0,c1) = M_muExprTensor.evalq(0,c1,q);
+                    }
+                }
             }
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( c1,c2,q );
                 else
                 {
@@ -477,7 +531,7 @@ public :
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( q );
                 else
                 {
@@ -489,7 +543,7 @@ public :
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( c1,c2,q );
                 else
                 {
@@ -500,7 +554,7 @@ public :
         ret_type
         evaliq( uint16_type i, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( q );
                 else
                 {
@@ -523,13 +577,13 @@ public :
 
     private :
         this_type const& M_expr;
-        typename material_property_scalar_expr_type::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>  M_muExprTensor;
+        typename expr_dynamic_viscosity_newtonian_type::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>  M_muExprTensor;
         array_shape_type M_localEval;
     };
 
 
 private:
-    material_property_scalar_expr_type M_exprDynamicVisocsity;
+    expr_dynamic_viscosity_newtonian_type M_exprDynamicVisocsity;
 };
 
 
@@ -568,6 +622,13 @@ public :
 
     uint16_type polynomialOrder() const override { return 2+this->expr().exprEvaluateVelocityOperatorsPtr()->exprGrad().polynomialOrder(); }
 
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+             return (symb == "x") || (symb == "y") || (symb == "z") ||
+                M_kExpr.hasSymbolDependency( symb, se ) || M_nExpr.hasSymbolDependency( symb, se ) ||
+                M_muMinExpr.hasSymbolDependency( symb, se )  || M_muMaxExpr.hasSymbolDependency( symb, se ) ;
+        }
 
     material_property_scalar_expr_type const& kExpr() const { return M_kExpr; }
     material_property_scalar_expr_type const& nExpr() const { return M_nExpr; }
@@ -680,7 +741,7 @@ public :
                 {
                     M_localEval.setConstant( nPoints, super_type::matrix_shape_type::Zero() );
                     M_muIsInInterval.resize( nPoints, false );
-                    if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::JACOBIAN )
+                    if constexpr ( expr_type::is_applied_as_jacobian )
                          M_localEvalPrecompute.setConstant( nPoints, super_type::matrix_shape_type::Zero() );
                 }
 
@@ -729,7 +790,7 @@ public :
 
                     M_localEval[q](0,0) = muEval;
 
-                    if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::JACOBIAN )
+                    if constexpr ( expr_type::is_applied_as_jacobian )
                          M_localEvalPrecompute[q](0,0) = power_k_generic*power_n_generic*math::pow( gammapoint2v , power_n_generic-1.0 );
                 }
             }
@@ -737,7 +798,7 @@ public :
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( c1,c2,q );
                 else
                 {
@@ -748,7 +809,7 @@ public :
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( q );
                 else
                 {
@@ -800,7 +861,7 @@ public :
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( c1,c2,q );
                 else
                 {
@@ -811,7 +872,7 @@ public :
         ret_type
         evaliq( uint16_type i, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( q );
                 else
                 {
@@ -876,6 +937,14 @@ public :
 
     uint16_type polynomialOrder() const override { return 2+this->expr().exprEvaluateVelocityOperatorsPtr()->exprGrad().polynomialOrder(); }
 
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            return (symb == "x") || (symb == "y") || (symb == "z") ||
+                M_mu0Expr.hasSymbolDependency( symb, se ) || M_muInfExpr.hasSymbolDependency( symb, se ) ||
+                M_lambdaExpr.hasSymbolDependency( symb, se ) || M_nExpr.hasSymbolDependency( symb, se ) ;
+        }
 
     material_property_scalar_expr_type const& mu0Expr() const { return M_mu0Expr; }
     material_property_scalar_expr_type const& muInfExpr() const { return M_muInfExpr; }
@@ -986,7 +1055,7 @@ public :
                 if ( M_localEval.size() != nPoints )
                 {
                     M_localEval.setConstant( nPoints, super_type::matrix_shape_type::Zero() );
-                    if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::JACOBIAN )
+                    if constexpr ( expr_type::is_applied_as_jacobian )
                          M_localEvalPrecompute.setConstant( nPoints, super_type::matrix_shape_type::Zero() );
                 }
 
@@ -1021,7 +1090,7 @@ public :
                     const value_type muEval = mu_inf + (mu_0 - mu_inf)*math::pow( 1. + carreau_lambda_pow2_time2*DxD, carreauValPower );
                     M_localEval[q](0,0) = muEval;
 
-                    if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::JACOBIAN )
+                    if constexpr ( expr_type::is_applied_as_jacobian )
                     {
                         const value_type gammapoint2v = 2*DxD;
                         M_localEvalPrecompute[q](0,0) = part1_carreauLaw*math::pow( 1. + carreau_lambda2*gammapoint2v, (carreau_n-3)/2.0 );
@@ -1032,7 +1101,7 @@ public :
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( c1,c2,q );
                 else
                 {
@@ -1043,7 +1112,7 @@ public :
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( q );
                 else
                 {
@@ -1085,7 +1154,7 @@ public :
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( c1,c2,q );
                 else
                 {
@@ -1096,7 +1165,7 @@ public :
         ret_type
         evaliq( uint16_type i, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( q );
                 else
                 {
@@ -1160,6 +1229,13 @@ public :
 
     uint16_type polynomialOrder() const override { return 2+this->expr().exprEvaluateVelocityOperatorsPtr()->exprGrad().polynomialOrder(); }
 
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            return (symb == "x") || (symb == "y") || (symb == "z") ||
+                M_mu0Expr.hasSymbolDependency( symb, se ) || M_muInfExpr.hasSymbolDependency( symb, se ) ||
+                M_lambdaExpr.hasSymbolDependency( symb, se ) || M_nExpr.hasSymbolDependency( symb, se ) || M_aExpr.hasSymbolDependency( symb, se );
+        }
 
     material_property_scalar_expr_type const& mu0Expr() const { return M_mu0Expr; }
     material_property_scalar_expr_type const& muInfExpr() const { return M_muInfExpr; }
@@ -1278,7 +1354,7 @@ public :
                 if ( M_localEval.size() != nPoints )
                 {
                     M_localEval.setConstant( nPoints, super_type::matrix_shape_type::Zero() );
-                    if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::JACOBIAN )
+                    if constexpr ( expr_type::is_applied_as_jacobian )
                          M_localEvalPrecompute.setConstant( nPoints, super_type::matrix_shape_type::Zero() );
                 }
 
@@ -1317,7 +1393,7 @@ public :
                     const value_type muEval = mu_inf + (mu_0 - mu_inf)*math::pow( 1. + carreauYasuda_lambda_pow_a*math::pow( gammapoint2v, carreauYasudaValPower) , carreauYasudaValPower2 );
                     M_localEval[q](0,0) = muEval;
 
-                    if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::JACOBIAN )
+                    if constexpr ( expr_type::is_applied_as_jacobian )
                     {
                         const value_type part2_carreauYasudaLaw = 1. + carreauYasuda_lambdaA*math::pow( gammapoint2v, carreauYasuda_a/2.);
                         const value_type part3_carreauYasudaLaw = 0.5*carreauYasuda_a*carreauYasuda_lambdaA*math::pow( gammapoint2v, (carreauYasuda_a-2.)/2.);
@@ -1329,7 +1405,7 @@ public :
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( c1,c2,q );
                 else
                 {
@@ -1340,7 +1416,7 @@ public :
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( q );
                 else
                 {
@@ -1384,7 +1460,7 @@ public :
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( c1,c2,q );
                 else
                 {
@@ -1395,7 +1471,7 @@ public :
         ret_type
         evaliq( uint16_type i, uint16_type q ) const override
             {
-                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::is_applied_as_eval )
                     return this->evalq( q );
                 else
                 {
@@ -1426,6 +1502,25 @@ private :
     material_property_scalar_expr_type M_mu0Expr, M_muInfExpr, M_lambdaExpr, M_nExpr, M_aExpr;
 };
 
+
+template< typename ExprType>
+template <typename TheSymbolExprType>
+bool
+FluidMecDynamicViscosityBase<ExprType>::hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+{
+    auto const& dynamicViscosity = this->expr().dynamicViscosity();
+    if ( dynamicViscosity.isNewtonianLaw() )
+        return static_cast<FluidMecDynamicViscosityNewtonian<expr_type> const&>(*this).hasSymbolDependency( symb, se );
+    else if ( dynamicViscosity.isPowerLaw() )
+        return static_cast<FluidMecDynamicViscosityPowerLaw<expr_type> const&>(*this).hasSymbolDependency( symb, se );
+    else if ( dynamicViscosity.isCarreauLaw() )
+        return static_cast<FluidMecDynamicViscosityCarreau<expr_type> const&>(*this).hasSymbolDependency( symb, se );
+    else if ( dynamicViscosity.isCarreauYasudaLaw() )
+        return static_cast<FluidMecDynamicViscosityCarreauYasuda<expr_type> const&>(*this).hasSymbolDependency( symb, se );
+    else
+        CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosity.lawName() <<"\n";
+    return false;
+}
 
 
 
@@ -1517,21 +1612,28 @@ FluidMecDynamicViscosityBase<ExprType>::updateEvaluator( std::true_type /**/, st
 }
 
 
-template<typename ExprEvaluateFieldOperatorsType, typename FiniteElementVelocityType, typename ModelPhysicFluidType, typename SymbolsExprType, typename SpecificExprType>
-class FluidMecDynamicViscosityImpl : public Feel::vf::ExprDynamicBase
+template<typename ExprEvaluateFieldOperatorsType, typename FiniteElementVelocityType, typename ModelPhysicFluidType, typename SymbolsExprType, ExprApplyType ExprApplied, ExprOperatorType ExprOp = ExprOperatorType::ID>
+class FluidMecDynamicViscosityImpl// : public Feel::vf::ExprDynamicBase
 {
 public:
 
-    typedef FluidMecDynamicViscosityImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ModelPhysicFluidType,SymbolsExprType,SpecificExprType> this_type;
+    typedef FluidMecDynamicViscosityImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ModelPhysicFluidType,SymbolsExprType,ExprApplied,ExprOp> this_type;
 
     static const size_type context_velocity = vm::JACOBIAN|vm::KB|vm::GRAD;
     static const size_type context = context_velocity|vm::DYNAMIC;
 
     using model_physic_fluid_type = ModelPhysicFluidType;
     using symbols_expr_type = SymbolsExprType;
-    using specific_expr_type = SpecificExprType;
+
+    static constexpr bool is_applied_as_eval = (ExprApplied == ExprApplyType::EVAL);
+    static constexpr bool is_applied_as_jacobian = (ExprApplied == ExprApplyType::JACOBIAN);
+
+    static constexpr ExprOperatorType exprOp = ExprOp;
+
     using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperatorsType;
     using value_type = typename expr_evaluate_velocity_opertors_type::value_type;
+
+    static constexpr uint16_type nDim = model_physic_fluid_type::nDim;
 
     template <int M,int N>
     using material_property_expr_type = std::decay_t<decltype( expr( ModelExpression{}.template expr<M,N>(),symbols_expr_type{} ) )>;
@@ -1549,15 +1651,15 @@ public:
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = mpl::if_<boost::is_same<SpecificExprType,mpl::int_<ExprApplyType::JACOBIAN> >,
-                                            typename mpl::if_<boost::is_same<Func,FiniteElementVelocityType>,
-                                                              mpl::bool_<true>,
-                                                              mpl::bool_<false> >::type,
-                                            mpl::bool_<false> >::type::value;
+        static const bool result = is_applied_as_jacobian && std::is_same_v<Func,FiniteElementVelocityType>;
     };
 
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
+
+    static constexpr bool isExprOpID() { return ExprOp == ExprOperatorType::ID; }
+    static constexpr bool isExprOpGRAD() { return ExprOp == ExprOperatorType::GRAD; }
+
 
     FluidMecDynamicViscosityImpl( std::shared_ptr<expr_evaluate_velocity_opertors_type> exprEvaluateVelocityOperators,
                                   model_physic_fluid_type const& physicFluid,
@@ -1598,6 +1700,17 @@ public:
     ~FluidMecDynamicViscosityImpl()
     {}
 
+
+    // allow to use the current SymbolsExpr in a concat operation
+    // TODO : improve management SymbolsExpr with tensor ctx with concat
+    auto const& symbolsExpressionWithoutTensorContext() const
+        {
+            if constexpr ( is_symbols_expression_v<SymbolsExprType> )
+                return M_se;
+            else
+                return M_se.symbolsExpression();
+        }
+
     bool dependsOnVelocityField() const { return M_exprDynamicViscosityBase->dependsOnVelocityField(); }
 
     size_type dynamicContext() const
@@ -1615,8 +1728,7 @@ public:
             uint16_type res = 2*(orderGradVelocity+1); // default value for non newtonian
             if ( this->dynamicViscosity().isNewtonianLaw() )
             {
-                //if ( SpecificExprType::value == FMSTExprApplyType::FM_VISCOSITY_EVAL )
-                res = this->materialPropertyExpr<1,1>("dynamic-viscosity").polynomialOrder();
+                res = M_exprDynamicViscosityBase->polynomialOrder();
             }
             return res;
         }
@@ -1624,13 +1736,26 @@ public:
     //! expression is polynomial?
     bool isPolynomial() const { return true; }
 
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            // TODO mv this information in SymbolsExpr class
+            typedef typename SymbolsExprType::symbols_expr_type::tuple_type symbols_expression_tuple_type;
+            static const int nSymbolsExpr = std::decay_t<decltype(hana::size(symbols_expression_tuple_type{}))>::value;
+            if constexpr ( nSymbolsExpr > 0 )
+            {
+                return this->exprDynamicViscosityBase()->hasSymbolDependency( symb, Feel::vf::symbolsExpr( this->symbolsExpressionWithoutTensorContext(), se ) );
+            }
+            else
+                return this->exprDynamicViscosityBase()->hasSymbolDependency( symb, se );
+        }
 
     template <typename OtherSymbolsExprType>
     auto applySymbolsExpr( OtherSymbolsExprType const& se ) const
         {
-            auto newse = Feel::vf::symbolsExpr( M_se, se );
+            auto newse = Feel::vf::symbolsExpr( this->symbolsExpressionWithoutTensorContext(), se );
             using new_se_type = std::decay_t<decltype(newse)>;
-            using new_this_type = FluidMecDynamicViscosityImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ModelPhysicFluidType,new_se_type,SpecificExprType>;
+            using new_this_type = FluidMecDynamicViscosityImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ModelPhysicFluidType,new_se_type,ExprApplied,ExprOp>;
             return new_this_type( M_exprEvaluateVelocityOperators,M_physicFluid,M_matProps,M_polynomialOrder,newse );
         }
 
@@ -1658,8 +1783,16 @@ public:
     struct tensor
     {
         using tensor_expr_evaluate_velocity_opertors_type = typename expr_evaluate_velocity_opertors_type::template tensor<Geo_t,Basis_i_t,Basis_j_t>;
+
+#if 1
+        using shape = typename mpl::if_c< ExprOp == ExprOperatorType::ID,
+                                          Shape<tensor_expr_evaluate_velocity_opertors_type::shape_grad_type::nDim, Scalar, false, false>,
+                                          Shape<tensor_expr_evaluate_velocity_opertors_type::shape_grad_type::nDim, Vectorial, true, false> >::type;
+#else
+        using shape = Shape<tensor_expr_evaluate_velocity_opertors_type::shape_grad_type::nDim, Scalar, false, false>;
+#endif
         typedef tensorBase<Geo_t, Basis_i_t, Basis_j_t,
-                           Shape<tensor_expr_evaluate_velocity_opertors_type::shape_grad_type::nDim, Scalar, false, false>,
+                           shape,//Shape<tensor_expr_evaluate_velocity_opertors_type::shape_grad_type::nDim, Scalar, false, false>,
                            typename expr_evaluate_velocity_opertors_type::value_type> tensorbase_type;
         typedef std::shared_ptr<tensorbase_type> tensorbase_ptrtype;
 
@@ -1668,7 +1801,7 @@ public:
         //using key_type = typename tensorbase_type::key_type;
         using gmc_type = typename tensorbase_type::gmc_type;
         using gm_type = typename tensorbase_type::gm_type;
-        using shape = typename tensorbase_type::shape_type;
+        //using shape = typename tensorbase_type::shape_type;
         using matrix_shape_type = typename tensorbase_type::matrix_shape_type;
         using ret_type = typename tensorbase_type::ret_type;
 
@@ -1841,6 +1974,7 @@ private :
             else
                 CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosity.lawName() <<"\n";
         }
+
 private:
     std::shared_ptr<expr_dynamic_viscosity_base_type> M_exprDynamicViscosityBase;
     std::shared_ptr<expr_evaluate_velocity_opertors_type> M_exprEvaluateVelocityOperators;
@@ -1861,7 +1995,7 @@ fluidMecViscosity( Expr<ExprGradVelocityType> const& grad_u,
                    uint16_type polyOrder = invalid_uint16_type_value )
 {
     using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperatorGradFromExpr<Expr<ExprGradVelocityType>>;
-    typedef FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type,std::nullptr_t,ModelPhysicFluidType,SymbolsExprType,mpl::int_<ExprApplyType::EVAL> > fmstresstensor_t;
+    typedef FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type,std::nullptr_t,ModelPhysicFluidType,SymbolsExprType,ExprApplyType::EVAL> fmstresstensor_t;
     auto exprEvaluateVelocityOperators = std::make_shared<expr_evaluate_velocity_opertors_type>( grad_u );
     return Expr< fmstresstensor_t >(  fmstresstensor_t( exprEvaluateVelocityOperators,physicFluid,matProps,polyOrder,se ) );
 }

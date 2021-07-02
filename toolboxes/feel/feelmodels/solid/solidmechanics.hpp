@@ -51,7 +51,6 @@
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 
 #include <feel/feelmodels/modelcore/options.hpp>
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
 
@@ -61,7 +60,7 @@ namespace Feel
 {
 namespace FeelModels
 {
-/** 
+/**
  * Solid Mechanics Toolbox
  * \ingroup Toolboxes
  */
@@ -150,10 +149,10 @@ public:
     typedef std::shared_ptr<element_stress_scal_type> element_stress_scal_ptrtype;
     //___________________________________________________________________________________//
     // methodsnum tool
-    typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
-    typedef typename model_algebraic_factory_type::graph_type graph_type;
-    typedef typename model_algebraic_factory_type::graph_ptrtype graph_ptrtype;
+    // typedef ModelAlgebraicFactory model_algebraic_factory_type;
+    // typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    // typedef typename model_algebraic_factory_type::graph_type graph_type;
+    // typedef typename model_algebraic_factory_type::graph_ptrtype graph_ptrtype;
     //___________________________________________________________________________________//
     // newmark or savets(bdf) class
     typedef Newmark<space_displacement_type> newmark_displacement_type;
@@ -624,35 +623,26 @@ public :
     template <typename ModelFieldsType>
     auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
         {
-            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type,typename solid_1dreduced_type::mesh_type>();
             return Feel::FeelModels::modelContext( mfields, std::move( se ) );
         }
     auto modelContext( std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( prefix );
-            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type,typename solid_1dreduced_type::mesh_type>();
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
     auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
-            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type,typename solid_1dreduced_type::mesh_type>();
             auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( rowStartInVector ) );
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
         }
 
     //----------------------------------//
-    //backend_ptrtype backend() { return M_backend; }
-    backend_ptrtype const& backend() const { return M_backend; }
-
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     int nBlockMatrixGraph() const;
-    BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    //void updateBlockVectorSolution();
-
-    model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
-    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
 
     void updateMassMatrixLumped();
     bool useMassMatrixLumped() const { return M_useMassMatrixLumped; }
@@ -785,11 +775,7 @@ private :
     newmark_displacement_ptrtype M_timeStepNewmark;
     savets_pressure_ptrtype M_savetsPressure;
 
-    // algebraic data/tools
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    BlocksBaseVector<double> M_blockVectorSolution;
-
+    // mass matrix lumped
     bool M_useMassMatrixLumped;
     sparse_matrix_ptrtype M_massMatrixLumped;
     vector_ptrtype M_vecDiagMassMatrixLumped;

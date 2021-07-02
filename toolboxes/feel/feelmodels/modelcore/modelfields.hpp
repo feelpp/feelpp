@@ -30,10 +30,12 @@ const size_type GRAD         = ( 1<<2 );
 const size_type GRAD_NORMAL  = ( 1<<3 );
 const size_type CURL         = ( 1<<4 );
 const size_type CURL_MAGNITUDE = ( 1<<5 );
+const size_type DIV          = ( 1<<6 );
 
 const size_type FULL = FieldCtx::ID|FieldCtx::MAGNITUDE|
                        FieldCtx::GRAD|FieldCtx::GRAD_NORMAL|
-                       FieldCtx::CURL|FieldCtx::CURL_MAGNITUDE;
+                       FieldCtx::CURL|FieldCtx::CURL_MAGNITUDE|
+                       FieldCtx::DIV;
 }
 
 
@@ -116,6 +118,16 @@ struct ModelField1
                                                                                secs, this->updateFunctionSymbolExpr() );
         }
     template <size_type Ctx>
+    auto trialSymbolExpr1( size_type blockSpaceIndex, std::enable_if_t< Ctx == FieldCtx::ID >* = nullptr ) const
+        {
+            using _expr_type = std::decay_t<decltype( idt(this->field()) )>;
+            using trial_symbol_expr1_type = typename trial_symbol_expr_t<functionspace_type,_expr_type>::trial_symbol_expr1_type;
+            static_assert( trial_symbol_expr1_type::expr_shape_type::M == nComponents1 && trial_symbol_expr1_type::expr_shape_type::N == nComponents2, "invalid shape");
+            std::string symbolNameBase = prefixvm( this->prefixSymbol(),this->symbol(),"_" );
+            auto theSpace = unwrap_ptr( this->field() ).functionSpace();
+            return trial_symbol_expr1_type( theSpace,symbolNameBase,idt( this->field() ), blockSpaceIndex );
+        }
+    template <size_type Ctx>
     auto symbolExpr1( std::enable_if_t< Ctx == FieldCtx::MAGNITUDE >* = nullptr ) const
         {
             SymbolExprComponentSuffix secs( 1, 1 );
@@ -133,6 +145,17 @@ struct ModelField1
                                                                                gradv(this->field()),
                                                                                secs, this->updateFunctionSymbolExpr() );
         }
+    template <size_type Ctx>
+    auto trialSymbolExpr1( size_type blockSpaceIndex, std::enable_if_t< Ctx == FieldCtx::GRAD >* = nullptr ) const
+        {
+            using _expr_type = std::decay_t<decltype( gradt(this->field()) )>;
+            using trial_symbol_expr1_type = typename trial_symbol_expr_t<functionspace_type,_expr_type>::trial_symbol_expr1_type;
+            static_assert( trial_symbol_expr1_type::expr_shape_type::M == nComponents1 && trial_symbol_expr1_type::expr_shape_type::N == nRealDim, "invalid shape");
+            std::string symbolNameBase = prefixvm( this->prefixSymbol(), "grad_"+this->symbol(),"_" );
+            auto theSpace = unwrap_ptr( this->field() ).functionSpace();
+            return trial_symbol_expr1_type( theSpace,symbolNameBase,gradt( this->field() ), blockSpaceIndex );
+        }
+
     template <size_type Ctx>
     auto symbolExpr1( std::enable_if_t< Ctx == FieldCtx::GRAD_NORMAL >* = nullptr ) const
         {
@@ -154,6 +177,17 @@ struct ModelField1
                                                                                secs, this->updateFunctionSymbolExpr() );
         }
     template <size_type Ctx>
+    auto trialSymbolExpr1( size_type blockSpaceIndex, std::enable_if_t< Ctx == FieldCtx::CURL >* = nullptr ) const
+        {
+            using _expr_type = std::decay_t<decltype( curlt(this->field()) )>;
+            using trial_symbol_expr1_type = typename trial_symbol_expr_t<functionspace_type,_expr_type>::trial_symbol_expr1_type;
+            static_assert( trial_symbol_expr1_type::expr_shape_type::M == (nRealDim==3 ? 3 : 1) && trial_symbol_expr1_type::expr_shape_type::N == 1, "invalid shape");
+            std::string symbolNameBase = prefixvm( this->prefixSymbol(), "curl_"+this->symbol(),"_" );
+            auto theSpace = unwrap_ptr( this->field() ).functionSpace();
+            return trial_symbol_expr1_type( theSpace,symbolNameBase,curlt( this->field() ), blockSpaceIndex );
+        }
+
+    template <size_type Ctx>
     auto symbolExpr1( std::enable_if_t< Ctx == FieldCtx::CURL_MAGNITUDE >* = nullptr ) const
         {
             static_assert( nComponents1 > 1 && nComponents2 == 1, "only for vectorial shape" );
@@ -163,6 +197,27 @@ struct ModelField1
                                                                                norm2(curlv(this->field())),
                                                                                secs, this->updateFunctionSymbolExpr() );
         }
+    template <size_type Ctx>
+    auto symbolExpr1( std::enable_if_t< Ctx == FieldCtx::DIV >* = nullptr ) const
+        {
+            static_assert( nComponents1 > 1 /*&& nComponents2 == 1*/, "only for vectorial/tensorial shape" );
+            SymbolExprComponentSuffix secs( nComponents2==1 ? 1 : nComponents1, 1 );
+            using _expr_type = std::decay_t<decltype( divv(this->field()) )>;
+            return typename symbol_expression_t<_expr_type>::symbolexpr1_type( prefixvm( this->prefixSymbol(), "div_"+this->symbol(),"_" ),
+                                                                               divv(this->field()),
+                                                                               secs, this->updateFunctionSymbolExpr() );
+        }
+    template <size_type Ctx>
+    auto trialSymbolExpr1( size_type blockSpaceIndex, std::enable_if_t< Ctx == FieldCtx::DIV >* = nullptr ) const
+        {
+            using _expr_type = std::decay_t<decltype( divt(this->field()) )>;
+            using trial_symbol_expr1_type = typename trial_symbol_expr_t<functionspace_type,_expr_type>::trial_symbol_expr1_type;
+            static_assert( trial_symbol_expr1_type::expr_shape_type::M == (nComponents2==1 ? 1 : nComponents1) && trial_symbol_expr1_type::expr_shape_type::N == 1, "invalid shape");
+            std::string symbolNameBase = prefixvm( this->prefixSymbol(), "div_"+this->symbol(),"_" );
+            auto theSpace = unwrap_ptr( this->field() ).functionSpace();
+            return trial_symbol_expr1_type( theSpace,symbolNameBase,divt( this->field() ), blockSpaceIndex );
+        }
+
 
     template <size_type Ctx>
     void updateInformationObject( nl::json & p ) const
@@ -181,7 +236,8 @@ struct ModelField1
                                              std::make_tuple( std::integral_constant<size_type,FieldCtx::GRAD>{}, "gradv(.)",  "grad of "+ M_name ),
                                              std::make_tuple( std::integral_constant<size_type,FieldCtx::GRAD_NORMAL>{}, "dnv(.)",  "normal derivative of "+ M_name ),
                                              std::make_tuple( std::integral_constant<size_type,FieldCtx::CURL>{}, "curlv(.)",  "curl of "+ M_name ),
-                                             std::make_tuple( std::integral_constant<size_type,FieldCtx::CURL_MAGNITUDE>{}, "norm2(curlv(.))",  "norm2 of curl of "+ M_name )
+                                             std::make_tuple( std::integral_constant<size_type,FieldCtx::CURL_MAGNITUDE>{}, "norm2(curlv(.))",  "norm2 of curl of "+ M_name ),
+                                             std::make_tuple( std::integral_constant<size_type,FieldCtx::DIV>{}, "divv(.)",  "div of "+ M_name )
                                              ), [this,&jaSE](auto const& x) {
                     constexpr size_type thectx = std::decay_t<decltype( std::get<0>( x ) )>::value;
                     if constexpr ( has_value_v<Ctx,thectx> )
@@ -211,7 +267,7 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
 
     using model_field1_type = ModelField1<ModelFieldTagType,FieldType>;
 
-    static constexpr size_type ctx_clean_scalar = nComponents1 == 1? clear_values_v<Ctx,FieldCtx::CURL,FieldCtx::CURL_MAGNITUDE> : Ctx;
+    static constexpr size_type ctx_clean_scalar = nComponents1 == 1? clear_values_v<Ctx,FieldCtx::CURL,FieldCtx::CURL_MAGNITUDE|FieldCtx::DIV> : Ctx;
     static constexpr size_type ctx_clean_vectorial = ctx_clean_scalar;
     static constexpr size_type ctx_clean_tensor2 = nComponents2 > 1? clear_values_v<ctx_clean_vectorial,FieldCtx::CURL,FieldCtx::CURL_MAGNITUDE|FieldCtx::GRAD_NORMAL> : ctx_clean_vectorial;
     static constexpr size_type ctx_clean = ctx_clean_tensor2;
@@ -256,15 +312,18 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
                                       this->symbolsExprImpl<FieldCtx::GRAD>(),
                                       this->symbolsExprImpl<FieldCtx::GRAD_NORMAL>(),
                                       this->symbolsExprImpl<FieldCtx::CURL>(),
-                                      this->symbolsExprImpl<FieldCtx::CURL_MAGNITUDE>()
+                                      this->symbolsExprImpl<FieldCtx::CURL_MAGNITUDE>(),
+                                      this->symbolsExprImpl<FieldCtx::DIV>()
                                       );
     }
 
     template <typename SelectorModelFieldType>
     auto trialSymbolsExpr( SelectorModelFieldType const& smf ) const
         {
-            return Feel::FeelModels::trialSymbolsExpr<functionspace_type>( this->trialSymbolsExpr_ID( smf ),
-                                                                           this->trialSymbolsExpr_GRAD( smf )
+            return Feel::FeelModels::trialSymbolsExpr<functionspace_type>( this->trialSymbolsExprImpl<FieldCtx::ID>( smf ),
+                                                                           this->trialSymbolsExprImpl<FieldCtx::GRAD>( smf ),
+                                                                           this->trialSymbolsExprImpl<FieldCtx::CURL>( smf ),
+                                                                           this->trialSymbolsExprImpl<FieldCtx::DIV>( smf )
                                                                            );
         }
 
@@ -292,87 +351,30 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
             return symbols_expression_empty_t{};
     }
 
-    template <typename SelectorModelFieldType>
-    auto trialSymbolsExpr_ID( SelectorModelFieldType const& smfs ) const
-    {
-        if constexpr ( has_value_v<Ctx,FieldCtx::ID> )
+    template <size_type TheContext,typename SelectorModelFieldType>
+    auto trialSymbolsExprImpl( SelectorModelFieldType const& smfs ) const
         {
-            SymbolExprComponentSuffix secs( nComponents1, nComponents2 );
-            //using _expr_type = std::decay_t<decltype( idt(this->front().field()) )>;
-            static constexpr bool is_scalar_trial_expr = nComponents1 == 1 && nComponents2 == 1;
-            using _expr_type = typename mpl::if_c< is_scalar_trial_expr,
-                                                   std::decay_t<decltype( idt( (*this).front().field()) )>,
-                                                   std::decay_t<decltype( idt( (*this).front().field())(0,0) )> >::type;
-            trial_symbol_expr_t<functionspace_type,_expr_type> tse;
-            for ( auto const& mfield : *this )
+            if constexpr ( has_value_v<ctx_clean,TheContext> )
             {
-                for ( auto const& smf : smfs )
+                using _expr_type = typename std::decay_t<decltype( this->front().template trialSymbolExpr1<TheContext>(0) ) >::expr_type;
+                trial_symbol_expr_t<functionspace_type,_expr_type> tse;
+                for ( auto const& mfield : *this )
                 {
-                    if ( smf.name() != mfield.name() )
-                        continue;
-                    if ( smf.tag() != mfield.tag() )
-                        continue;
+                    for ( auto const& smf : smfs )
+                    {
+                        if ( smf.name() != mfield.name() )
+                            continue;
+                        if ( smf.tag() != mfield.tag() )
+                            continue;
 
-                    std::string symbolNameBase = prefixvm( mfield.prefixSymbol(),mfield.symbol(),"_" );
-                    auto theSpace = unwrap_ptr( mfield.field() ).functionSpace();
-                    if constexpr ( is_scalar_trial_expr )
-                    {
-                        tse.add( theSpace, symbolNameBase, idt(mfield.field()), smf.blockSpaceIndex() );
+                        tse.push_back( mfield.template trialSymbolExpr1<TheContext>( smf.blockSpaceIndex() ) );
                     }
-                    else
-                    {
-                        for ( auto const& [_suffix,compArray] : secs )
-                        {
-                            std::string symbolWithSuffix = symbolNameBase+ _suffix;
-                            uint16_type c1 = compArray[0];
-                            uint16_type c2 = compArray[1];
-                            tse.add( theSpace, symbolWithSuffix, idt(mfield.field())(c1,c2), smf.blockSpaceIndex() );
-                        }
-                    }
-                    break;
                 }
+                return Feel::FeelModels::trialSymbolsExpr<functionspace_type>( tse );
             }
-            return Feel::FeelModels::trialSymbolsExpr<functionspace_type>( tse );
+            else
+                return trial_symbols_expr_empty_t<functionspace_type>{};
         }
-        else
-            return trial_symbols_expr_empty_t<functionspace_type>{};
-    }
-
-    template <typename SelectorModelFieldType>
-    auto trialSymbolsExpr_GRAD( SelectorModelFieldType const& smfs ) const
-    {
-        if constexpr ( has_value_v<Ctx,FieldCtx::GRAD> && nComponents2 == 1 )
-        {
-            SymbolExprComponentSuffix secs( nComponents1, nRealDim );
-            using _expr_type = std::decay_t<decltype( gradt( (*this).front().field())(0,0) )>;
-            trial_symbol_expr_t<functionspace_type,_expr_type> tse;
-            for ( auto const& mfield : *this )
-            {
-                for ( auto const& smf : smfs )
-                {
-                    if ( smf.name() != mfield.name() )
-                        continue;
-                    if ( smf.tag() != mfield.tag() )
-                        continue;
-
-                    std::string symbolNameBase = prefixvm( mfield.prefixSymbol(),"grad_" + mfield.symbol(),"_" );
-                    auto theSpace = unwrap_ptr( mfield.field() ).functionSpace();
-
-                    for ( auto const& [_suffix,compArray] : secs )
-                    {
-                        std::string symbolWithSuffix = symbolNameBase+ _suffix;
-                        uint16_type c1 = compArray[0];
-                        uint16_type c2 = compArray[1];
-                        tse.add( theSpace, symbolWithSuffix, gradt(mfield.field())(c1,c2), smf.blockSpaceIndex() );
-                    }
-                    break;
-                }
-            }
-            return Feel::FeelModels::trialSymbolsExpr<functionspace_type>( tse );
-        }
-        else
-            return trial_symbols_expr_empty_t<functionspace_type>{};
-    }
 
 };
 
@@ -625,6 +627,7 @@ private :
                 {
                     using CurrentModelFieldType = typename std::decay_t<decltype( hana::at( M_tuple, hana::int_c<Index> ) )>;
                     using CurrentTagType = typename CurrentModelFieldType::tag_type;
+
                     using SelectorTagType = typename std::decay_t<decltype( hana::at( t, hana::int_c<Index2> ) )>::tag_type;
                     if constexpr ( std::is_same_v<SelectorTagType,CurrentTagType> )
                     {

@@ -631,10 +631,12 @@ struct SymbolsExpr : public SymbolsExprBase
         using symbols_expr_type = symbols_expr_type;
 
         TensorContext() = default;
-        TensorContext( std::shared_ptr<symbols_expr_type> const& se, map_expr_tensor_type const& met )
+
+        template <typename TheMetType, std::enable_if_t<std::is_same_v<std::decay_t<TheMetType>, map_expr_tensor_type>,bool> = true >
+        TensorContext( std::shared_ptr<symbols_expr_type> const& se, TheMetType && met )
             :
             M_se( se ),
-            M_mapExprTensor( met )
+            M_mapExprTensor( std::forward<TheMetType>( met ) )
             {
 #if 0
                 hana::for_each( M_mapExprTensor, [this]( auto& pair )
@@ -664,30 +666,35 @@ struct SymbolsExpr : public SymbolsExprBase
         map_expr_tensor_type M_mapExprTensor;
     };
 
-    template <typename MeshType>
+    template <typename... MeshesType>
     auto createTensorContext() const
         {
-            using gm_type = typename MeshType::gm_type;
-            using geoelement_type = typename MeshType::element_type;
-
             auto sePtr = std::make_shared<self_type>( *this );
+            auto met = hana::fold( hana::tuple_t<MeshesType...>, hana::make_map(), [this,&sePtr]( auto && state, auto const& e )
+                                   {
+                                       using mesh_type = typename std::decay_t<decltype(e)>::type;
+                                       using gm_type = typename mesh_type::gm_type;
+                                       using geoelement_type = typename mesh_type::element_type;
 
-            if constexpr ( geoelement_type::nOrder > 1 )
-            {
-                using gm1_type = typename MeshType::gm1_type;
-                auto met_gN = createTensorContextImpl<gm_type,geoelement_type>( sePtr );
-                auto met_g1 = createTensorContextImpl<gm1_type,geoelement_type>( sePtr );
-                auto met = hana::union_(std::move(met_gN), std::move(met_g1));
-                using MapExprTensorType = std::decay_t<decltype(met)>;
-                return TensorContext<MapExprTensorType>( sePtr, met );
-            }
-            else
-            {
-                auto met = createTensorContextImpl<gm_type,geoelement_type>( sePtr );
-                using MapExprTensorType = std::decay_t<decltype(met)>;
-                return TensorContext<MapExprTensorType>( sePtr, met );
-            }
+                                       using state_type = std::decay_t<decltype(state)>;
+
+                                       if constexpr ( geoelement_type::nOrder > 1 )
+                                       {
+                                           using gm1_type = typename mesh_type::gm1_type;
+                                           auto met_gN = createTensorContextImpl<gm_type,geoelement_type>( sePtr );
+                                           auto met_g1 = createTensorContextImpl<gm1_type,geoelement_type>( sePtr );
+                                           return hana::union_( std::forward<state_type>( state ), hana::union_( std::move(met_gN), std::move(met_g1) ) );
+                                       }
+                                       else
+                                       {
+                                           auto met = createTensorContextImpl<gm_type,geoelement_type>( sePtr );
+                                           return hana::union_( std::forward<state_type>( state ), std::move(met) );
+                                       }
+                                   } );
+            using MapExprTensorType = std::decay_t<decltype(met)>;
+            return TensorContext<MapExprTensorType>( sePtr, std::move( met ) );
         }
+
 private :
     template <typename GmType,typename GeoElementType>
     auto

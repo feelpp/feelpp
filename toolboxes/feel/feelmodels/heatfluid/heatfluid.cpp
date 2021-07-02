@@ -249,25 +249,25 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->updateInitialConditions( this->symbolsExpr() );
 
     // backend
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
+    this->initAlgebraicBackend();
 
     // block vector solution
-    auto blockVectorSolutionFluid = M_fluidModel->blockVectorSolution();
-    auto blockVectorSolutionHeat = M_heatModel->blockVectorSolution();
+    auto const& blockVectorSolutionFluid = *(M_fluidModel->algebraicBlockVectorSolution());
+    auto const& blockVectorSolutionHeat = *(M_heatModel->algebraicBlockVectorSolution());
     int nBlockFluid = blockVectorSolutionFluid.size();
     int nBlockHeat = blockVectorSolutionHeat.size();
     int nBlock = nBlockFluid + nBlockHeat;
-    M_blockVectorSolution.resize( nBlock );
+    auto bvs = this->initAlgebraicBlockVectorSolution( nBlock );
     int indexBlock=0;
     int numberOfBlockSpaceFluid = 0;
     for ( int k=0;k<nBlockFluid ;++k )
     {
-        M_blockVectorSolution(indexBlock+k) = blockVectorSolutionFluid(k);
+        bvs->operator()(indexBlock+k) = blockVectorSolutionFluid(k);
         numberOfBlockSpaceFluid += blockVectorSolutionFluid(k)->map().numberOfDofIdToContainerId();
     }
     indexBlock += nBlockFluid;
     for ( int k=0;k<nBlockHeat ;++k )
-        M_blockVectorSolution(indexBlock+k) = blockVectorSolutionHeat(k);
+        bvs->operator()(indexBlock+k) = blockVectorSolutionHeat(k);
     indexBlock += nBlockHeat;
 
     size_type currentStartBlockSpaceIndex = 0;
@@ -276,29 +276,30 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->setStartSubBlockSpaceIndex( "heat", currentStartBlockSpaceIndex );
 
     // init monolithic vector associated to the block vector
-    M_blockVectorSolution.buildVector( this->backend() );
+    bvs->buildVector( this->backend() );
 
     if ( ( M_fluidModel->timeStepping() == "Theta" || M_heatModel->timeStepping() == "Theta" ) &&
          ( M_fluidModel->stabilizationGLS() || M_heatModel->stabilizationGLS() ) )
-        M_timeStepThetaSchemePreviousSolution = this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() );
+        M_timeStepThetaSchemePreviousSolution = this->backend()->newVector( bvs->vectorMonolithic()->mapPtr() );
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
     {
         if ( M_useNaturalConvection && !M_useSemiImplicitTimeScheme )
         {
-            M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+            auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
+            this->setAlgebraicFactory( algebraicFactory );
             if ( M_fluidModel->hasOperatorPCD() )
-                M_algebraicFactory->preconditionerTool()->attachOperatorPCD( "pcd", M_fluidModel->operatorPCD() );
+                algebraicFactory->preconditionerTool()->attachOperatorPCD( "pcd", M_fluidModel->operatorPCD() );
 
             if ( ( M_fluidModel->timeStepping() == "Theta" ) || ( M_heatModel->timeStepping() == "Theta" ) )
             {
-                M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
-                M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
-                M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+                M_timeStepThetaSchemePreviousContrib = this->backend()->newVector( this->algebraicBlockVectorSolution()->vectorMonolithic()->mapPtr() );
+                algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+                algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
                 if ( M_fluidModel->stabilizationGLS() || M_heatModel->stabilizationGLS() )
                 {
-                    M_algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", M_timeStepThetaSchemePreviousSolution );
+                    algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", M_timeStepThetaSchemePreviousSolution );
                 }
             }
         }
@@ -308,19 +309,24 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     {
         M_heatModel->initAlgebraicFactory();
         M_fluidModel->initAlgebraicFactory();
-        M_heatModel->algebraicFactory()->setFunctionLinearAssembly( boost::bind( &self_type::updateLinear_Heat,
-                                                                                 boost::ref( *this ), _1 ) );
-        M_heatModel->algebraicFactory()->setFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Heat,
-                                                                                   boost::ref( *this ), _1 ) );
-        M_heatModel->algebraicFactory()->setFunctionJacobianAssembly( boost::bind( &self_type::updateJacobian_Heat,
-                                                                                   boost::ref( *this ), _1 ) );
+        M_heatModel->algebraicFactory()->setFunctionLinearAssembly( std::bind( &self_type::updateLinear_Heat,
+                                                                               std::ref( *this ), std::placeholders::_1 ) );
+        M_heatModel->algebraicFactory()->setFunctionResidualAssembly( std::bind( &self_type::updateResidual_Heat,
+                                                                                 std::ref( *this ), std::placeholders::_1 ) );
+        M_heatModel->algebraicFactory()->setFunctionJacobianAssembly( std::bind( &self_type::updateJacobian_Heat,
+                                                                                 std::ref( *this ), std::placeholders::_1 ) );
 
-        M_fluidModel->algebraicFactory()->setFunctionLinearAssembly( boost::bind( &self_type::updateLinear_Fluid,
-                                                                                  boost::ref( *this ), _1 ) );
-        M_fluidModel->algebraicFactory()->setFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Fluid,
-                                                                                    boost::ref( *this ), _1 ) );
-        M_fluidModel->algebraicFactory()->setFunctionJacobianAssembly( boost::bind( &self_type::updateJacobian_Fluid,
-                                                                                    boost::ref( *this ), _1 ) );
+        M_fluidModel->algebraicFactory()->setFunctionLinearAssembly( std::bind( &self_type::updateLinear_Fluid,
+                                                                                std::ref( *this ), std::placeholders::_1 ) );
+        M_fluidModel->algebraicFactory()->setFunctionResidualAssembly( std::bind( &self_type::updateResidual_Fluid,
+                                                                                  std::ref( *this ), std::placeholders::_1 ) );
+        M_fluidModel->algebraicFactory()->setFunctionJacobianAssembly( std::bind( &self_type::updateJacobian_Fluid,
+                                                                                  std::ref( *this ), std::placeholders::_1 ) );
+
+        M_fluidModel->algebraicFactory()->setFunctionUpdateInHousePreconditionerLinear( std::bind( static_cast<void(self_type::*)(ModelAlgebraic::DataUpdateLinear&) const>(&self_type::updateInHousePreconditioner_Fluid),
+                                                                                                   std::ref( *this ), std::placeholders::_1 ) );
+        M_fluidModel->algebraicFactory()->setFunctionUpdateInHousePreconditionerJacobian( std::bind( static_cast<void(self_type::*)(ModelAlgebraic::DataUpdateJacobian&) const>(&self_type::updateInHousePreconditioner_Fluid),
+                                                                                                     std::ref( *this ), std::placeholders::_1 ) );
     }
 
     this->setIsUpdatedForUse( true );
@@ -411,8 +417,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- number of proc : " << this->worldComm().globalSize()
            << "\n     -- current rank : " << this->worldComm().globalRank();
 
-    if ( M_algebraicFactory )
-        *_ostr << M_algebraicFactory->getInfo()->str();
+    if ( this->algebraicFactory() )
+        *_ostr << this->algebraicFactory()->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -439,8 +445,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
         this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
 
     // Algebraic Solver
-    if ( M_algebraicFactory )
-        M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
+    if ( this->algebraicFactory() )
+        this->algebraicFactory()->updateInformationObject( p["Algebraic Solver"] );
 
     p["Toolbox Heat"] = M_heatModel->journalSection().to_string();
     p["Toolbox Fluid"] = M_fluidModel->journalSection().to_string();
@@ -517,13 +523,14 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
     if ( M_heatModel->isStationary() && M_fluidModel->isStationaryModel() )
         return;
 
+    auto algebraicFactory = this->algebraicFactory();
     if ( ( M_fluidModel->timeStepping() == "Theta" ) || ( M_heatModel->timeStepping() == "Theta" ) )
     {
-        M_blockVectorSolution.updateVectorFromSubVectors();
-        if ( M_algebraicFactory )
+        this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
+        if ( algebraicFactory )
         {
             M_timeStepThetaSchemePreviousContrib->zero();
-            ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
+            ModelAlgebraic::DataUpdateResidual dataResidual( this->algebraicBlockVectorSolution()->vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
             dataResidual.addInfo( prefixvm( this->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
             if ( M_fluidModel->timeStepping() == "Theta" )
                 dataResidual.addInfo( prefixvm( M_fluidModel->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
@@ -533,18 +540,18 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
             M_fluidModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
             M_heatModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat") );
 
-            M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
-            M_algebraicFactory->evaluateResidual( dataResidual );
-            M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+            algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+            algebraicFactory->evaluateResidual( dataResidual );
+            algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
         }
 
         if ( M_fluidModel->stabilizationGLS() || M_heatModel->stabilizationGLS() )
         {
-            *M_timeStepThetaSchemePreviousSolution = *M_blockVectorSolution.vectorMonolithic();
+            *M_timeStepThetaSchemePreviousSolution = *this->algebraicBlockVectorSolution()->vectorMonolithic();
 
-            if ( M_algebraicFactory )
+            if ( algebraicFactory )
             {
-                auto & dataInfos = M_algebraicFactory->dataInfos();
+                auto & dataInfos = algebraicFactory->dataInfos();
                 // *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *M_blockVectorSolution.vectorMonolithic();
                 dataInfos.addParameterValuesInfo( "time-stepping.previous-parameter-values", M_currentParameterValues );
             }
@@ -630,7 +637,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
     {
         M_fluidModel->solve();
         M_heatModel->solve();
-        M_blockVectorSolution.updateVectorFromSubVectors();
+        this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
     }
     else
     {
@@ -638,18 +645,18 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
         {
             M_heatModel->solve();
             M_fluidModel->solve();
-            M_blockVectorSolution.updateVectorFromSubVectors();
+            this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
         }
         else
         {
-            M_blockVectorSolution.updateVectorFromSubVectors();
+            this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
 
             M_fluidModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
             M_heatModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat") );
 
-            M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
+            this->algebraicFactory()->solve( "Newton", this->algebraicBlockVectorSolution()->vectorMonolithic() );
 
-            M_blockVectorSolution.localize();
+            this->algebraicBlockVectorSolution()->localize();
         }
     }
 
@@ -668,15 +675,37 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( DataUpdateLinear & data ) const
 {
+    vector_ptrtype const& vecCurrentSolution = data.currentSolution();
+    auto mctx = this->modelContext( vecCurrentSolution, this->heatModel(), this->fluidModel() );
     M_heatModel->updateInHousePreconditioner( data );
-    M_fluidModel->updateInHousePreconditioner( data );
+    M_fluidModel->updateInHousePreconditioner( data, mctx );
 }
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( DataUpdateJacobian & data ) const
 {
+    vector_ptrtype const& vecCurrentSolution = data.currentSolution();
+    auto mctx = this->modelContext( vecCurrentSolution, this->heatModel(), this->fluidModel() );
     M_heatModel->updateInHousePreconditioner( data );
-    M_fluidModel->updateInHousePreconditioner( data );
+    M_fluidModel->updateInHousePreconditioner( data, mctx );
+}
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner_Fluid( DataUpdateLinear & data ) const
+{
+    const vector_ptrtype& vecCurrentSolution = data.currentSolution();
+    auto mctx = this->modelContext( this->heatModel()->algebraicBlockVectorSolution()->vectorMonolithic(), 0,
+                                    vecCurrentSolution, this->fluidModel()->startBlockSpaceIndexVector() );
+    M_fluidModel->updateInHousePreconditioner( data, mctx );
+}
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner_Fluid( DataUpdateJacobian & data ) const
+{
+    const vector_ptrtype& vecCurrentSolution = data.currentSolution();
+    auto mctx = this->modelContext( this->heatModel()->algebraicBlockVectorSolution()->vectorMonolithic(), 0,
+                                    vecCurrentSolution, this->fluidModel()->startBlockSpaceIndexVector() );
+    M_fluidModel->updateInHousePreconditioner( data, mctx );
 }
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS

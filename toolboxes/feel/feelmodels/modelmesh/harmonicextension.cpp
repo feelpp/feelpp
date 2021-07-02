@@ -60,10 +60,10 @@ HarmonicExtension<MeshType,Order>::HarmonicExtension( mesh_ptrtype mesh, backend
     :
     super_type( prefix, worldcomm,"",modelRep ),
     ModelBase( prefix, worldcomm,"",modelRep ),
-    M_backend( backend ),
     M_mesh( mesh ),
     M_useAdaptPenal( option(_prefix=this->prefix(),_name="use_adaptive_penalisation").template as<bool>() )
 {
+    this->setAlgebraicBackend( backend );
     M_Xh = space_type::New(_mesh=this->mesh(),_worldscomm=makeWorldsComm(1,worldcomm),
                            _extended_doftable=std::vector<bool>(1,useGhostEltFromExtendedStencil) );
     M_displacement = M_Xh->elementPtr();
@@ -77,20 +77,16 @@ HarmonicExtension<MeshType,Order>::HarmonicExtension( space_ptrtype space, backe
     :
     super_type( prefix, space->worldCommPtr(),"",modelRep ),
     ModelBase( prefix, space->worldCommPtr(),"",modelRep ),
-    M_backend( backend ),
     M_mesh( space->mesh() ),
     M_Xh( space ),
     M_useAdaptPenal( option(_prefix=this->prefix(),_name="use_adaptive_penalisation").template as<bool>() )
 {
+    this->setAlgebraicBackend( backend );
     M_displacement = M_Xh->elementPtr();
     M_dispImposedOnBoundary = M_Xh->elementPtr();
     M_XhP0 = space_P0_type::New( _mesh=this->mesh(),_worldscomm=makeWorldsComm(1,this->worldCommPtr()) );
 }
 
-
-template< typename MeshType, int Order >
-typename HarmonicExtension<MeshType,Order>::backend_ptrtype const&
-HarmonicExtension<MeshType,Order>::backend() const { return M_backend; }
 
 template< typename MeshType, int Order >
 typename HarmonicExtension<MeshType,Order>::mesh_ptrtype const&
@@ -177,15 +173,11 @@ HarmonicExtension<MeshType,Order>::init()
     this->log(this->prefix(),"init", "start");
     // mesh not move so not rebuild cst part
     this->setRebuildCstPartInLinearSystem(false);
-#if 1
+
     auto graph = stencil( _test=M_Xh, _trial=M_Xh )->graph();
-    M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend(),
-                                                         graph, graph->mapRow().indexSplit() ) );
-#else
-    // A bug to fix with this code ( probably block pattern )
-    M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
-    M_algebraicFactory->initFromFunctionSpace( this->functionSpace() );
-#endif
+    auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend(),
+                                                                            graph, graph->mapRow().indexSplit() );
+    this->setAlgebraicFactory( algebraicFactory );
 
 #if 0 // code for implement near null space
     if ( true )
@@ -300,7 +292,7 @@ HarmonicExtension<MeshType,Order>::solve()
 {
     this->log(this->prefix(),"solve", "start");
     // assemble and solve linear system
-    M_algebraicFactory->solveLinear(M_vectorSolution);
+    this->algebraicFactory()->solveLinear(M_vectorSolution);
     // copy algebraic vector into an finite element approximation
     *M_displacement = *M_vectorSolution;
 
