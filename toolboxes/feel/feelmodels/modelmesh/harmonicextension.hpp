@@ -36,7 +36,6 @@
 #include <feel/feelvf/operators.hpp>
 
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
 namespace Feel
 {
@@ -60,8 +59,8 @@ public :
     typedef typename space_type::element_type element_type;
     typedef std::shared_ptr<element_type> element_ptrtype;
 
-    typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    // typedef ModelAlgebraicFactory model_algebraic_factory_type;
+    // typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
     typedef super_type::backend_ptrtype backend_ptrtype;
     typedef super_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -92,7 +91,6 @@ public :
 
     void solve();
 
-    backend_ptrtype const& backend() const;
     mesh_ptrtype const& mesh() const;
     space_ptrtype const& functionSpace() const;
     element_ptrtype const& displacement() const;
@@ -117,9 +115,6 @@ public :
     }
 
 private :
-
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
 
     mesh_ptrtype M_mesh;
     space_ptrtype M_Xh;

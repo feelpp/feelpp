@@ -18,7 +18,7 @@ feelpp_add_test( spacefunc )
 # feelpp_add_test( space_0d SKIP_TEST )
 
 
-feelpp_add_test( hdiv CFG test_hdiv.cfg NO_MPI_TEST)
+feelpp_add_test( hdiv CFG test_hdiv.cfg NO_MPI_TEST SKIP_TEST)
 feelpp_add_test( hdiv_oneelt CFG test_hdiv_oneelt.cfg NO_MPI_TEST )
 # feelpp_add_test( hdiv3D CFG test_hdiv3D.cfg)
 feelpp_add_test( hdiv3D_oneelt CFG test_hdiv3D_oneelt.cfg NO_MPI_TEST )
