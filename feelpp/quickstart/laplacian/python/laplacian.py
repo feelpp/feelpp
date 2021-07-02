@@ -5,6 +5,11 @@ if 'compute_pde_coefficients' in locals() and locals()['compute_pde_coefficients
 else:
     compute_pde_coefficients='true'
 
+if 'is_time_dependent' in locals() and locals()['is_time_dependent']:
+    is_time_dependent = locals()['is_time_dependent']
+else:
+    is_time_dependent = 'true'
+
 if 'k' in locals() and locals()['k']:
     k=sympify(locals()['k']);
 else:
@@ -20,23 +25,28 @@ if 'p' in locals():
     p=sympify(locals()['p']);
 else:
     p=x+y
+print("potential:",p)
 
 if 'dim' in locals():
     dim=int(locals()['dim']);
 else:
     dim=2
-    
-
+import sys    
+print(sys.path)    
+print("p=",p)
 s=syms( dim );
 ns=nsyms( dim );
 grad_p=grad(p,s);
 flux=-k*grad(p,s);
-u=flux;
+u=flux
+print("u=",u)
 J=tensorcontraction(tensorproduct(u,u),(0,1))/k;
 
 if compute_pde_coefficients=='true':
     un=n(flux,1,ns)
-    f = div(flux, s) + dt(p)
+    print("un:", un)
+    f = div(flux, s) # + dt(p)
+    print("f:",f)
     g=p
     r_2=un-r_1*p
 else:
