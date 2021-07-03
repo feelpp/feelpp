@@ -57,8 +57,8 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::init()
 
     this->initPostProcess();
 
-    M_blockVectorSolution.resize( 1 );
-    M_blockVectorSolution(0) = M_fieldDisp;
+    auto bvs = this->initAlgebraicBlockVectorSolution( 1 );
+    bvs->operator()(0) = M_fieldDisp;
 
     this->setIsUpdatedForUse( true );
 

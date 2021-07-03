@@ -254,28 +254,28 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->updateParameterValues();
 
     // backend
-    M_backendMonolithic = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
+    this->initAlgebraicBackend();
 
     // block vector solution
-    auto blockVectorSolutionHeat = M_heatModel->blockVectorSolution();
-    auto blockVectorSolutionElectric = M_electricModel->blockVectorSolution();
+    auto const& blockVectorSolutionHeat = *M_heatModel->algebraicBlockVectorSolution();
+    auto const& blockVectorSolutionElectric = *M_electricModel->algebraicBlockVectorSolution();
     int nBlockHeat = blockVectorSolutionHeat.size();
     int nBlockElectric = blockVectorSolutionElectric.size();
     int nBlock = nBlockHeat + nBlockElectric;
-    M_blockVectorSolutionMonolithic.resize( nBlock );
+    auto bvs = this->initAlgebraicBlockVectorSolution( nBlock );
     int indexBlock=0;
     int numberOfBlockSpaceHeat = 0;
     for ( int k=0;k<nBlockHeat ;++k )
     {
-        M_blockVectorSolutionMonolithic(indexBlock+k) = blockVectorSolutionHeat(k);
+        bvs->operator()(indexBlock+k) = blockVectorSolutionHeat(k);
         numberOfBlockSpaceHeat += blockVectorSolutionHeat(k)->map().numberOfDofIdToContainerId();
     }
     indexBlock += nBlockHeat;
     for ( int k=0;k<nBlockElectric ;++k )
-        M_blockVectorSolutionMonolithic(indexBlock+k) = blockVectorSolutionElectric(k);
+        bvs->operator()(indexBlock+k) = blockVectorSolutionElectric(k);
     indexBlock += nBlockElectric;
     // init monolithic vector associated to the block vector
-    M_blockVectorSolutionMonolithic.buildVector( this->backend() );
+    bvs->buildVector( this->backend() );
 
     size_type currentStartBlockSpaceIndex = 0;
     this->setStartSubBlockSpaceIndex( "heat", currentStartBlockSpaceIndex );
@@ -287,7 +287,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     {
         if ( M_solverName == "Newton" || M_solverName == "Picard" )
         {
-            M_algebraicFactoryMonolithic.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+            auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
+            this->setAlgebraicFactory( algebraicFactory );
         }
     }
 
@@ -382,8 +383,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
 #endif
 
     // Algebraic Solver
-    if ( M_algebraicFactoryMonolithic )
-        M_algebraicFactoryMonolithic->updateInformationObject( p["Algebraic Solver"] );
+    if ( this->algebraicFactory() )
+        this->algebraicFactory()->updateInformationObject( p["Algebraic Solver"] );
 
     p["Toolbox Heat"] = M_heatModel->journalSection().to_string();
     p["Toolbox Electric"] = M_electricModel->journalSection().to_string();
@@ -475,8 +476,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- number of proc : " << this->worldComm().globalSize()
            << "\n     -- current rank : " << this->worldComm().globalRank();
 
-    if ( M_algebraicFactoryMonolithic )
-        *_ostr << M_algebraicFactoryMonolithic->getInfo()->str();
+    if ( this-<algebraicFactory() )
+        *_ostr << this->algebraicFactory()->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -573,6 +574,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
     {
         M_electricModel->solve();
         M_heatModel->solve();
+        this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
     }
     else if ( M_solverName == "Newton" || M_solverName == "Picard" )
     {
@@ -585,9 +587,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
         // solve non linear monolithic system
         M_heatModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat") );
         M_electricModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("electric") );
-        M_blockVectorSolutionMonolithic.updateVectorFromSubVectors();
-        M_algebraicFactoryMonolithic->solve( M_solverName, M_blockVectorSolutionMonolithic.vectorMonolithic() );
-        M_blockVectorSolutionMonolithic.localize();
+        this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
+        this->algebraicFactory()->solve( M_solverName, this->algebraicBlockVectorSolution()->vectorMonolithic() );
+        this->algebraicBlockVectorSolution()->localize();
     }
 
     double tElapsed = this->timerTool("Solve").stop("solve");

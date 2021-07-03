@@ -63,17 +63,18 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // post-process
     this->initPostProcess();
 
-
     // backend
-    this->M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr(), this->clovm() );
+    this->initAlgebraicBackend();
 
     // subspaces index
     size_type currentStartIndex = 0;
     this->setStartSubBlockSpaceIndex( this->unknownName(), currentStartIndex++ );
 
      // vector solution
-    this->M_blockVectorSolution.resize( 1 );
-    this->M_blockVectorSolution(0) = this->fieldUnknownPtr();
+    auto bvs = this->initAlgebraicBlockVectorSolution( 1 );
+    bvs->operator()(0) = this->fieldUnknownPtr();
+    // init petsc vector associated to the block
+    bvs->buildVector( this->backend() );
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -279,10 +280,8 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
-    // init petsc vector associated to the block
-    this->M_blockVectorSolution.buildVector( this->backend() );
-
-    this->M_algebraicFactory.reset( new typename super_type::model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+    auto algebraicFactory = std::make_shared<typename ModelAlgebraic::model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
+    this->setAlgebraicFactory( algebraicFactory );
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
