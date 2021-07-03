@@ -1,6 +1,7 @@
-from liquid import Environment, template
+from liquid import Environment
 from liquid import FileSystemLoader
 
+import os
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -24,7 +25,7 @@ if args.dim == "3" and args.cylinder not in [0, 1, 2]:
 
 
 
-env = Environment(loader=FileSystemLoader("templates/"))
+env = Environment(loader=FileSystemLoader(os.path.dirname(__file__)+"/templates/"))
 templateGeo = env.get_template("fin.geo")
 templateCfg = env.get_template("thermal-fin.cfg")
 templateJson = env.get_template("thermal-fin.json")
@@ -68,7 +69,6 @@ else:
     
 renderGeo = templateGeo.render(
     P = args.P,
-    R = args.R,
     N = args.N,
     L = args.L,
     t = args.t,
