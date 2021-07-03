@@ -575,9 +575,9 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
 
         if ( !BuildCstPart && !UseJacobianLinearTerms )
         {
-            auto lambdaBC = this->XhDirichletLM()->element();
+            auto lambdaBC = this->XhDirichletLM()->element( XVec, rowStartInVector+startBlockIndexDirichletLM );
             //int dataBaseIdLM = XVec->map().basisIndexFromGp( rowStartInVector+startBlockIndexDirichletLM );
-            M_blockVectorSolution.setSubVector( lambdaBC, *XVec, rowStartInVector+startBlockIndexDirichletLM );
+            //this->algebraicBlockVectorSolution()->setSubVector( lambdaBC, *XVec, rowStartInVector+startBlockIndexDirichletLM );
 
             linearFormV +=
                 integrate( _range=markedfaces(mesh,this->markerDirichletBClm() ),

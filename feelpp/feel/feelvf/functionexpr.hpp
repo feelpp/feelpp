@@ -119,12 +119,12 @@ public:
         typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gmc_type::gm_type gm_type;
         // args tensors
-        static constexpr auto arg_expr_tensor_type = []( auto argExpr ) { 
+        static constexpr auto arg_expr_tensor_type = []( auto argExpr ) {
             typedef std::decay_t<decltype(argExpr)> arg_expr_type;
             typedef typename arg_expr_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> arg_tensor_type;
-            return std::make_shared<arg_tensor_type>( argExpr, std::declval<Geo_t>() );
+            return std::make_shared<arg_tensor_type>( argExpr, /*std::declval<Geo_t>()*/Geo_t{} );
         };
-        using args_tensors_tuple_type = decltype( 
+        using args_tensors_tuple_type = decltype(
                 hana::transform( std::declval<args_tuple_type>(), arg_expr_tensor_type )
                 );
         // args types

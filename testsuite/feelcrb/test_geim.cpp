@@ -113,8 +113,8 @@ BOOST_AUTO_TEST_CASE( test_eim_offline )
     for(int i = 0; i < M; ++i )
     {
         for(int j = 0; j < i; ++j )
-            BOOST_CHECK_SMALL(B(j,i), 1e-8);
-        BOOST_CHECK_SMALL(B(i,i)-1, 1e-8);
+            BOOST_CHECK_SMALL(B(j,i), 1e-6);
+        BOOST_CHECK_SMALL(B(i,i)-1, 1e-6);
     }
     BOOST_TEST_MESSAGE("B="<< B);
 

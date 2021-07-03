@@ -26,8 +26,17 @@ struct TransformDiffSymbolicExpr
 #else
             auto diffExpr = M_expr.template diff<1>( firstTse.symbol()/*,world, dirLibExpr*/ );
 #endif
-            auto trialExpr = firstTse.expr();
-            return trialExpr*diffExpr;
+
+            if constexpr ( std::decay_t<decltype( firstTse )>::expr_shape_type::is_scalar )
+            {
+                auto trialExpr = firstTse.expr();
+                return trialExpr*diffExpr;
+            }
+            else
+            {
+                auto trialExpr = firstTse.expr()(0,0);
+                return trialExpr*diffExpr;
+            }
         }
 
     template <typename... TheType>
@@ -57,22 +66,41 @@ auto diffSymbolicExpr( SymbolicExprType const& theExpr, TrialSymbolsExpr<SpaceTy
                             if ( !e2.isDefinedOn( trialSpace, trialBlockSpaceIndex ) )
                                 continue;
 
-                            if ( !theExpr.hasSymbolDependency( e2.symbol() ) )
-                                continue;
+                            if constexpr ( std::decay_t<decltype( e2 )>::expr_shape_type::is_scalar )
+                            {
+
+                                if ( !theExpr.hasSymbolDependency( e2.symbol() ) )
+                                    continue;
 #if 0
-                            auto diffExpr = diff( theExpr, e2.symbol(),1,"",world, dirLibExpr);
+                                auto diffExpr = diff( theExpr, e2.symbol(),1,"",world, dirLibExpr);
 #else
-                            auto diffExpr = theExpr.template diff<1>( e2.symbol(),world, dirLibExpr );
+                                auto diffExpr = theExpr.template diff<1>( e2.symbol(), world, dirLibExpr );
 #endif
-                            // std::cout << "diffExprBIS = " << str( diffExprBIS.expression() ) << std::endl;
-                            // std::cout << "diffExpr    = " << str( diffExpr.expression() ) << std::endl;
-                            // std::cout << "diffExprBIS se names : " << diffExprBIS.expression().symbolsExpression().names() << std::endl;
-                            // std::cout << "diffExpr    se names : " << diffExpr.expression().symbolsExpression().names() << std::endl;
+                                // std::cout << "diffExprBIS = " << str( diffExprBIS.expression() ) << std::endl;
+                                // std::cout << "diffExpr    = " << str( diffExpr.expression() ) << std::endl;
+                                // std::cout << "diffExprBIS se names : " << diffExprBIS.expression().symbolsExpression().names() << std::endl;
+                                // std::cout << "diffExpr    se names : " << diffExpr.expression().symbolsExpression().names() << std::endl;
 
-                            auto trialExpr = e2.expr();
-                            //std::cout << "diffSymbolicExpr add expr" << std::endl;
+                                auto trialExpr = e2.expr();
+                                //std::cout << "diffSymbolicExpr add expr" << std::endl;
 
-                            resExpr.expression().add( trialExpr*diffExpr );
+                                resExpr.expression().add( trialExpr*diffExpr );
+                            }
+                            else
+                            {
+                                for ( auto const& [_suffix,compArray] : e2.componentSuffix() )
+                                {
+                                    std::string thesymbol = e2.symbol() + _suffix;
+                                    if ( !theExpr.hasSymbolDependency( thesymbol ) )
+                                        continue;
+                                    auto diffExpr = theExpr.template diff<1>( thesymbol, world, dirLibExpr );
+                                    uint16_type c1 = compArray[0];
+                                    uint16_type c2 = compArray[1];
+                                    auto trialExpr = e2.expr()(c1,c2);
+                                    resExpr.expression().add( trialExpr*diffExpr );
+                                }
+
+                            }
                         }
                     });
 
