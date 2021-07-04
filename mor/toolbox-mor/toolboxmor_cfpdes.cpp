@@ -61,7 +61,7 @@ int runSimulation(std::shared_ptr<FeelModels::coefficient_form_PDEs_t<ConvexType
                     cfpdes->addParameterInModelProperties(mu.parameterName(i), mu(i));
                 cfpdes->updateParameterValues();
                 rhs->zero();
-                cfpdes->algebraicFactory()->applyAssemblyLinear( cfpdes->blockVectorSolution().vectorMonolithic(), mat, rhs, {"ignore-assembly.lhs"} );
+                cfpdes->algebraicFactory()->applyAssemblyLinear( cfpdes->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.lhs"} );
                 return rhs;
             };
     model->setAssembleDEIM(assembleDEIM);
@@ -72,7 +72,7 @@ int runSimulation(std::shared_ptr<FeelModels::coefficient_form_PDEs_t<ConvexType
                     cfpdes->addParameterInModelProperties(mu.parameterName(i), mu(i));
                 cfpdes->updateParameterValues();
                 mat->zero();
-                cfpdes->algebraicFactory()->applyAssemblyLinear( cfpdes->blockVectorSolution().vectorMonolithic(), mat, rhs, {"ignore-assembly.rhs"} );
+                cfpdes->algebraicFactory()->applyAssemblyLinear( cfpdes->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.rhs"} );
                 return mat;
             };
     model->setAssembleMDEIM(assembleMDEIM);
@@ -91,7 +91,7 @@ int runSimulation(std::shared_ptr<FeelModels::coefficient_form_PDEs_t<ConvexType
                 auto rhs = deimToolbox->algebraicFactory()->rhs()->clone();
                 rhs->zero();
                 auto matTMP = deimToolbox->algebraicFactory()->matrix()->clone();
-                deimToolbox->algebraicFactory()->applyAssemblyLinear( deimToolbox->blockVectorSolution().vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
+                deimToolbox->algebraicFactory()->applyAssemblyLinear( deimToolbox->algebraicBlockVectorSolution()->vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
                 return rhs;
             };
     model->setOnlineAssembleDEIM(assembleOnlineDEIM);
@@ -110,7 +110,7 @@ int runSimulation(std::shared_ptr<FeelModels::coefficient_form_PDEs_t<ConvexType
                 auto mat = mdeimToolbox->algebraicFactory()->matrix()->clone();
                 mat->zero();
                 auto rhsTMP = mdeimToolbox->algebraicFactory()->rhs()->clone();
-                mdeimToolbox->algebraicFactory()->applyAssemblyLinear( mdeimToolbox->blockVectorSolution().vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
+                mdeimToolbox->algebraicFactory()->applyAssemblyLinear( mdeimToolbox->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
                 return mat;
             };
     model->setOnlineAssembleMDEIM(assembleOnlineMDEIM);
