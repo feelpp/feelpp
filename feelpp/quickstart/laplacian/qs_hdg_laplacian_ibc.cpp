@@ -112,10 +112,7 @@ int hdg_laplacian()
 
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
-    
-    auto K = expr(soption("k"));
-    auto lambda = cst(1.)/K;
-    
+
 #if defined(FEELPP_HAS_SYMPY)
 
     std::map<std::string,std::string> inputs{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("checker.solution")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"g",""}, {"J",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
@@ -133,12 +130,28 @@ int hdg_laplacian()
     auto p_exact = expr( p_exact_str );
     auto u_exact = expr<FEELPP_DIM,1>( u_exact_str );
     auto k = expr( locals.at("k") );
+    auto lambda = cst(1.)/k;
     auto un = expr( locals.at("un") );
     auto f = expr( locals.at("f") );
     auto g = expr( locals.at("g") );
     auto r_1 = expr( locals.at("r_1") );
     auto r_2 = expr( locals.at("r_2") ); 
     auto J_exact = expr( locals.at("J") );
+#else
+    std::string p_exact_str = soption("solution.p");
+    std::string u_exact_str = soption("solution.u");
+    auto p_exact = expr(p_exact_str);
+    auto u_exact = expr<Dim,1>(u_exact_str);
+    auto k = expr(soption("k"));
+    auto lambda = cst(1.)/k;
+    auto un = trans(u_exact)*N();
+    auto f = expr( soption( "functions.f") );
+    auto g = p_exact;
+    auto r_1 = cst(0.);
+    auto r_2 = un;
+    auto ibc_exact = expr( soption("functions.i") );
+    auto J_exact = inner(u_exact)/k;
+#endif
 
     std::map<std::string,double> ibc_exact_map;
     for( auto const& [ibc_type, ibc_data ] : ibcs )
@@ -146,16 +159,6 @@ int hdg_laplacian()
             ibc_exact_map[ibc_type] = 0;
         else
             ibc_exact_map[ibc_type] = integrate(markedfaces(mesh,ibc_data.second), un).evaluate()(0,0);
-
-#else
-    std::string p_exact_str = soption("solution.p");
-    std::string u_exact_str = soption("solution.u");
-    auto p_exact = expr(p_exact_str);
-    auto u_exact = expr<Dim,1>(u_exact_str);
-    auto un_exact = trans(u_exact)*N();
-    auto f_exact = expr( soption( "functions.f") );
-    auto ibc_exact = expr( soption("functions.i") );
-#endif
 
     // ****** Hybrid-mixed formulation ******
     // We treat Vh, Wh, and Mh separately
@@ -205,13 +208,15 @@ int hdg_laplacian()
     {
         auto cgXh = Pch<OrderP+1>(mesh);
         Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
-        auto u = cgLaplacian( cgXh, std::tuple{K,f,p_exact,un,r_1,r_2} );
+        auto u = cgLaplacian( cgXh, std::tuple{k,f,p_exact,un,r_1,r_2} );
+#if defined(FEELPP_HAS_SYMPY)
         if ( u )        
             status_cg = check( checker( _name= "L2/H1 convergence cG", 
                                         _solution_key="p",
                                         _gradient_key="grad_p",
                                         _inputs=locals
                                        ), *u );
+#endif
     }
 
     auto u = Vh->element( "u" );
@@ -483,11 +488,11 @@ int hdg_laplacian()
     q.on( _range=elements(mesh), _expr=p_exact );
 
     
-    double I1 = integrate( _range=elements(mesh), _expr=K*gradv(pp)*trans(gradv(pp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-    double I2 = integrate( _range=elements(mesh), _expr=inner(idv(up))/K, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-    double I3 = integrate( _range=elements(mesh), _expr=inner(u_exact)/K, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-    double I4 = integrate( _range=elements(mesh), _expr=K*inner(gradv(q)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-    double I5 = integrate( _range=elements(mesh), _expr=K*inner(gradv(ppp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+    double I1 = integrate( _range=elements(mesh), _expr=k*gradv(pp)*trans(gradv(pp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+    double I2 = integrate( _range=elements(mesh), _expr=inner(idv(up))/k, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+    double I3 = integrate( _range=elements(mesh), _expr=inner(u_exact)/k, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+    double I4 = integrate( _range=elements(mesh), _expr=k*inner(gradv(q)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+    double I5 = integrate( _range=elements(mesh), _expr=k*inner(gradv(ppp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
     double I6 = integrate( _range=elements(mesh), _expr=J_exact, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
 
     std::vector<double> J = {I1,I2,I5,I3,I4,I6};
@@ -522,26 +527,28 @@ int hdg_laplacian()
 
     tic();
 
+    int status1 = 0, status2 = 0, status3 = 0;
+#if defined(FEELPP_HAS_SYMPY)
     // tag::check[]
     bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
     solution_t s_t = has_dirichlet?solution_t::unique:solution_t::up_to_a_constant;
-    int status1 = check( checker( _name= "L2/H1 convergence of potential", 
-                                  _solution_key="p",
-                                  _gradient_key="grad_p",
-                                  _inputs=locals
-                                ), pp, s_t );
-    int status2 = check( checker( _name= "L2 convergence of the flux", 
-                                  _solution_key="u",
-                                  _inputs=locals
-                                ), up );
-    int status3 = check( checker( _name= "L2/H1 convergence of postprocessed potential", 
-                                  _solution_key="p",
-                                  _gradient_key="grad_p",
-                                  _inputs=locals
-                                ), ppp, s_t );    
+    status1 = check( checker( _name= "L2/H1 convergence of potential", 
+                              _solution_key="p",
+                              _gradient_key="grad_p",
+                              _inputs=locals
+                              ), pp, s_t );
+    status2 = check( checker( _name= "L2 convergence of the flux", 
+                              _solution_key="u",
+                              _inputs=locals
+                              ), up );
+    status3 = check( checker( _name= "L2/H1 convergence of postprocessed potential", 
+                              _solution_key="p",
+                              _gradient_key="grad_p",
+                              _inputs=locals
+                              ), ppp, s_t );    
     
     // end::check[]
-
+#endif
     return status_cg || status1 || status2 || status3;
 }
 
