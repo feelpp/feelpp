@@ -65,7 +65,7 @@ int runSimulation()
                     heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
                 heatBox->updateParameterValues();
                 rhs->zero();
-                heatBox->algebraicFactory()->applyAssemblyLinear( heatBox->blockVectorSolution().vectorMonolithic(), mat, rhs, {"ignore-assembly.lhs"} );
+                heatBox->algebraicFactory()->applyAssemblyLinear( heatBox->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.lhs"} );
                 return rhs;
             };
     model->setAssembleDEIM(assembleDEIM);
@@ -76,7 +76,7 @@ int runSimulation()
                     heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
                 heatBox->updateParameterValues();
                 mat->zero();
-                heatBox->algebraicFactory()->applyAssemblyLinear( heatBox->blockVectorSolution().vectorMonolithic(), mat, rhs, {"ignore-assembly.rhs"} );
+                heatBox->algebraicFactory()->applyAssemblyLinear( heatBox->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.rhs"} );
                 return mat;
             };
     model->setAssembleMDEIM(assembleMDEIM);
@@ -95,7 +95,7 @@ int runSimulation()
                 auto rhs = deimHeatBox->algebraicFactory()->rhs()->clone();
                 rhs->zero();
                 auto matTMP = deimHeatBox->algebraicFactory()->matrix()->clone();
-                deimHeatBox->algebraicFactory()->applyAssemblyLinear( deimHeatBox->blockVectorSolution().vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
+                deimHeatBox->algebraicFactory()->applyAssemblyLinear( deimHeatBox->algebraicBlockVectorSolution()->vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
                 return rhs;
             };
     model->setOnlineAssembleDEIM(assembleOnlineDEIM);
@@ -114,7 +114,7 @@ int runSimulation()
                 auto mat = mdeimHeatBox->algebraicFactory()->matrix()->clone();
                 mat->zero();
                 auto rhsTMP = mdeimHeatBox->algebraicFactory()->rhs()->clone();
-                mdeimHeatBox->algebraicFactory()->applyAssemblyLinear( mdeimHeatBox->blockVectorSolution().vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
+                mdeimHeatBox->algebraicFactory()->applyAssemblyLinear( mdeimHeatBox->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
                 return mat;
             };
     model->setOnlineAssembleMDEIM(assembleOnlineMDEIM);

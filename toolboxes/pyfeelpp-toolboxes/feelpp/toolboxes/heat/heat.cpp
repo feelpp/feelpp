@@ -78,21 +78,26 @@ void defSM(py::module &m)
 
         .def( "setMesh", &toolbox_t::setMesh, "set the mesh", py::arg("mesh") )
         .def( "updateParameterValues", &toolbox_t::updateParameterValues, "update parameter values" )
-        .def( "assembleMatrix", [](const toolbox_t& t) {
-                                    auto mat = t.algebraicFactory()->matrix();//->clone();
-                                    mat->zero();
-                                    auto rhsTMP = t.algebraicFactory()->rhs()->clone();
-                                    t.algebraicFactory()->applyAssemblyLinear( t.algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
-                                    return mat;
-                                },
+
+        .def(
+            "assembleMatrix", []( const toolbox_t& t )
+            {
+                auto mat = t.algebraicFactory()->matrix(); //->clone();
+                mat->zero();
+                auto rhsTMP = t.algebraicFactory()->rhs()->clone();
+                t.algebraicFactory()->applyAssemblyLinear( t.algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhsTMP, { "ignore-assembly.rhs" } );
+                return mat;
+            },
             "returns the assembled matrix" )
-        .def( "assembleRhs", [](const toolbox_t& t) {
-                                    auto rhs = t.algebraicFactory()->rhs()->clone();
-                                    rhs->zero();
-                                    auto matTMP = t.algebraicFactory()->matrix()->clone();
-                                    t.algebraicFactory()->applyAssemblyLinear( t.algebraicBlockVectorSolution()->vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
-                                    return rhs;
-                                },
+        .def(
+            "assembleRhs", []( const toolbox_t& t )
+            {
+                auto rhs = t.algebraicFactory()->rhs()->clone();
+                rhs->zero();
+                auto matTMP = t.algebraicFactory()->matrix()->clone();
+                t.algebraicFactory()->applyAssemblyLinear( t.algebraicBlockVectorSolution()->vectorMonolithic(), matTMP, rhs, { "ignore-assembly.lhs" } );
+                return rhs;
+            },
             "returns the assembled rhs" )
         // .def( "updateFieldVelocityConvection", static_cast<void (toolbox_t::*)(bool)>(&toolbox_t::updateFieldVelocityConvection), "update field velocity convection", py::arg("onlyExprWithTimeSymbol")=false )
         // .def( "assembleLinear", &toolbox_t::assembleLinear, "assemble linear matrix and vector" )
