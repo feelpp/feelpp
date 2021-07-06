@@ -82,6 +82,12 @@ PYBIND11_MODULE(_modelcore, m )
         .def("printAndSaveInfo", &ModelBase::printAndSaveInfo, "print and save model info")
         ;
 
+   py::class_<ModelAlgebraicFactory, std::shared_ptr<ModelAlgebraicFactory>>( m, "ModelAlgebraicFactory" )
+        //.def( py::init<std::string, backend_ptr_t<double>>(),"Initialize ModelAlgebraicFactory" )
+        .def( "matrix", &ModelAlgebraicFactory::matrix, "get the matrix" )
+        .def( "rhs", &ModelAlgebraicFactory::rhs, "get the right hand side" )
+        .def( "backend", &ModelAlgebraicFactory::backend, "get the backend" );
+
     py::class_<ModelAlgebraic, std::shared_ptr<ModelAlgebraic>, ModelBase>(m,"ModelAlgebraic")
         .def(py::init<std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
@@ -90,6 +96,8 @@ PYBIND11_MODULE(_modelcore, m )
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize ModelAlgebraic"
              )
+        // Algrebraic factory
+        .def( "algebraicFactory", static_cast<typename ModelAlgebraic::model_algebraic_factory_ptrtype (ModelAlgebraic::*)( std::string const& ) const>(&ModelAlgebraic::algebraicFactory), "get the algebraic factory" )
         ;
 
     py::class_<ModelNumerical, std::shared_ptr<ModelNumerical>, ModelAlgebraic>( m, "ModelNumerical" )
