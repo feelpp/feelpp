@@ -269,7 +269,12 @@ PYBIND11_MODULE(_alg, m )
         .def( "addDiagonal", static_cast<void ( MatrixSparse<double>::* )( std::shared_ptr<Vector<double>> const& )>( &MatrixSparse<double>::addDiagonal ), py::arg( "diag" ), "add vector on diagonal" )
         .def( "transpose", static_cast<void ( MatrixSparse<double>::* )( std::shared_ptr<MatrixSparse<double>>&, uint32_type ) const>( &MatrixSparse<double>::transpose ), py::arg( "matrix" ), py::arg( "structure" ) = (int)Feel::SAME_NONZERO_PATTERN, "transpose matrix" )
         .def( "symmetricPart", static_cast<void ( MatrixSparse<double>::* )( std::shared_ptr<MatrixSparse<double>>& ) const>( &MatrixSparse<double>::symmetricPart ), py::arg( "matrix" ), "compute symmetric part of the matrix" )
-        .def( "energy", static_cast<double ( MatrixSparse<double>::* )( std::shared_ptr<Vector<double>> const&, std::shared_ptr<Vector<double>> const&, bool ) const>( &MatrixSparse<double>::energy ), py::arg( "v" ), py::arg( "w" ), py::arg( "tranpose" )=false, "compute v^T A w" );
+        .def( "energy", static_cast<double ( MatrixSparse<double>::* )( std::shared_ptr<Vector<double>> const&, std::shared_ptr<Vector<double>> const&, bool ) const>( &MatrixSparse<double>::energy ), py::arg( "v" ), py::arg( "w" ), py::arg( "tranpose" ) = false, "compute v^T A w" )
+        .def(
+            "to_petsc", []( std::shared_ptr<MatrixSparse<double>> const& m )
+            { return toPETSc( m ); },
+            "cast a MattrixSparse to a MatrixPetsc" );
+    ;
     py::class_<MatrixPetsc<double>, MatrixSparse<double>, std::shared_ptr<MatrixPetsc<double>>>( m, "MatrixPetscDouble" )
         .def( py::init<worldcomm_ptr_t>() )
         .def( py::init<datamap_ptr_t<uint32_type>, datamap_ptr_t<uint32_type>>() )
