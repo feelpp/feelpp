@@ -13,20 +13,20 @@ steps:
    label: ":package: :debian: buster Feel++  ${BUILDKITE_BRANCH}"
    async: true
    if: pipeline.slug=="pkg-feelpp" && ( build.branch == "develop" || build.branch == "master" )
- - wait
-# Toolboxes 
- - trigger: "pkg-feelpp-toolboxes-focal"
-   label: ":package: :ubuntu: focal Feel++ Toolboxes ${BUILDKITE_BRANCH}"
-   async: true
-   if: pipeline.slug=="pkg-feelpp-toolboxes" && ( build.branch == "develop" || build.branch == "master" )
- - wait
- - trigger: "pkg-feelpp-toolboxes-buster"
-   label: ":package: :debian: buster Feel++ Toolboxes  ${BUILDKITE_BRANCH}"
-   async: true
-   if: pipeline.slug=="pkg-feelpp-toolboxes" && ( build.branch == "develop" || build.branch == "master" )
- - wait
-# MOR 
- - trigger: "pkg-feelpp-mor-focal"
-   label: ":package: :ubuntu: focal Feel++ MOR ${BUILDKITE_BRANCH}"
-   async: true
-   if: pipeline.slug=="pkg-feelpp-mor" && ( build.branch == "develop" || build.branch == "master" )
+# - wait
+# # Toolboxes 
+#  - trigger: "pkg-feelpp-toolboxes-focal"
+#    label: ":package: :ubuntu: focal Feel++ Toolboxes ${BUILDKITE_BRANCH}"
+#    async: true
+#    if: pipeline.slug=="pkg-feelpp-toolboxes" && ( build.branch == "develop" || build.branch == "master" )
+#  - wait
+#  - trigger: "pkg-feelpp-toolboxes-buster"
+#    label: ":package: :debian: buster Feel++ Toolboxes  ${BUILDKITE_BRANCH}"
+#    async: true
+#    if: pipeline.slug=="pkg-feelpp-toolboxes" && ( build.branch == "develop" || build.branch == "master" )
+#  - wait
+# # MOR 
+#  - trigger: "pkg-feelpp-mor-focal"
+#    label: ":package: :ubuntu: focal Feel++ MOR ${BUILDKITE_BRANCH}"
+#    async: true
+#    if: pipeline.slug=="pkg-feelpp-mor" && ( build.branch == "develop" || build.branch == "master" )
