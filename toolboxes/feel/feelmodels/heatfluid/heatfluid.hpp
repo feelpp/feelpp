@@ -170,10 +170,11 @@ public :
             auto seHeat = this->heatModel()->symbolsExprToolbox( mfields );
             auto seFluid = this->fluidModel()->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
             auto sePhysics = this->symbolsExprPhysics( this->physics() );
-            return Feel::vf::symbolsExpr( seHeat,seFluid,seParam,seMat,seFields,sePhysics );
+            return Feel::vf::symbolsExpr( seHeat,seFluid,seParam,seMeshes,seMat,seFields,sePhysics );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 

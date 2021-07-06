@@ -225,7 +225,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
 
 #if 1
-        int coeffNatureStabilization = ( this->stabilizationGLSType() == "supg" )? 0 : (this->stabilizationGLSType() == "gls")? 1 : -1;
+        int coeffNatureStabilization = ( this->stabilizationGLSType() == "supg" || this->stabilizationGLSType() == "supg-pspg" )? 0 : (this->stabilizationGLSType() == "gls")? 1 : -1;
         // test functions
         using expr_convection_test_type = std::decay_t<decltype( densityExpr*grad(u)*idv(beta_u) )>;
         auto divSigmaViscousTest = fluidMecDivViscousStressTensorLinearTest(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se);
@@ -415,7 +415,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
     {
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
 #if 1
-        int coeffNatureStabilization = ( this->stabilizationGLSType() == "supg" )? 0 : (this->stabilizationGLSType() == "gls")? 1 : -1;
+        int coeffNatureStabilization = ( this->stabilizationGLSType() == "supg" || this->stabilizationGLSType() == "supg-pspg" )? 0 : (this->stabilizationGLSType() == "gls")? 1 : -1;
         // test functions
         using expr_convection_test_type = std::decay_t<decltype( densityExpr*grad(u)*idv(beta_u) )>;
         auto divSigmaViscousTest = fluidMecDivViscousStressTensorLinearTest(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se);
@@ -586,7 +586,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualSt
 
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
 #if 1
-        int coeffNatureStabilization = ( this->stabilizationGLSType() == "supg" )? 0 : (this->stabilizationGLSType() == "gls")? 1 : -1;
+        int coeffNatureStabilization = ( this->stabilizationGLSType() == "supg" || this->stabilizationGLSType() == "supg-pspg" )? 0 : (this->stabilizationGLSType() == "gls")? 1 : -1;
         // test functions
         using expr_convection_test_type = std::decay_t<decltype( densityExpr*grad(u)*idv(beta_u) )>;
         auto divSigmaViscousTest = fluidMecDivViscousStressTensorLinearTest(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se);
