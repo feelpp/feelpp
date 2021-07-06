@@ -58,14 +58,7 @@ void defSM(py::module &m)
         .def( "mesh", &toolbox_t::mesh, "get the mesh" )
         .def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
 
-        // Algrebrzic factory
-        .def( "algebraicFactory", static_cast<typename toolbox_t::model_algebraic_factory_ptrtype const&  (toolbox_t::*)() const>(&toolbox_t::algebraicFactory), "get the algebraic factory" )
-#if 0
-        .def( "matrix", &toolbox_t::matrix, "matrix used for assembly linear system or the jacobian" )
-        .def( "rhs", &toolbox_t::rhs, "vector used for assembly rhs in linear system or the residual" )
-        .def( "backend", &ModelAlgebraic::backend, "get the backend" )
-        .def( "model", &ModelAlgebraic::model, "get the model" )
-#endif        
+     
         // elements
         .def( "spaceTemperature", &toolbox_t::spaceTemperature, "get the temperature function space" )
         .def( "fieldTemperature", static_cast<element_temperature_t const& (toolbox_t::*)() const>( &toolbox_t::fieldTemperature ), "returns the temperature field" )
