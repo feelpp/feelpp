@@ -227,7 +227,7 @@ int hdg_laplacian()
     {
         auto cgXh = Pch<OrderP+1>(mesh);
         Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
-        auto u = cgLaplacian( cgXh, std::tuple{K,f,p_exact,un,r_1,r_2} );
+        auto u = cgLaplacian( cgXh, std::tuple{k,f,p_exact,un,r_1,r_2} );
 #if defined(FEELPP_HAS_SYMPY)
         if ( u )        
             status_cg = check( checker( _name= "L2/H1 convergence cG", 
@@ -550,11 +550,11 @@ int hdg_laplacian()
         q.on( _range=elements(mesh), _expr=p_exact );
 
         
-        double I1 = integrate( _range=elements(mesh), _expr=K*gradv(pp)*trans(gradv(pp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-        double I2 = integrate( _range=elements(mesh), _expr=inner(idv(up))/K, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-        double I3 = integrate( _range=elements(mesh), _expr=inner(u_exact)/K, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-        double I4 = integrate( _range=elements(mesh), _expr=K*inner(gradv(q)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-        double I5 = integrate( _range=elements(mesh), _expr=K*inner(gradv(ppp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+        double I1 = integrate( _range=elements(mesh), _expr=k*gradv(pp)*trans(gradv(pp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+        double I2 = integrate( _range=elements(mesh), _expr=inner(idv(up))/k, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+        double I3 = integrate( _range=elements(mesh), _expr=inner(u_exact)/k, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+        double I4 = integrate( _range=elements(mesh), _expr=k*inner(gradv(q)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+        double I5 = integrate( _range=elements(mesh), _expr=k*inner(gradv(ppp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
         double I6 = integrate( _range=elements(mesh), _expr=J_exact, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
 
         std::vector<double> J = {I1,I2,I5,I3,I4,I6};
