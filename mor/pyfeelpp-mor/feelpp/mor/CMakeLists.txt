@@ -29,4 +29,6 @@ feelpp_add_pymodule(toolboxmor SRCS toolboxmor.cpp DESTINATION feelpp/mor  )
 set(PYFILES __init__.py online.py test_heat3d.py test_parameterspace.py )
 install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor)
 
-add_dependencies(pyfeelppmor _mor _toolboxmor pyfeelpptoolboxes pyfeelpp)
+if ( TARGET pyfeelpptoolboxes  AND TARGET pyfeelpp )
+    add_dependencies(pyfeelppmor _mor _toolboxmor pyfeelpptoolboxes pyfeelpp)
+endif()
