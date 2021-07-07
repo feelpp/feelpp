@@ -51,9 +51,6 @@ void defSM(py::module &m)
         .def( "mesh", &toolbox_t::mesh, "get the mesh" )
         //.def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
 
-        // algebraic factory
-        .def( "algebraicFactory", static_cast<typename toolbox_t::model_algebraic_factory_ptrtype const& (toolbox_t::*)() const>( &toolbox_t::algebraicFactory ), "get the algebraic factory" )
-
         // elements
         //.def( "spaceTemperature", &toolbox_t::spaceTemperature, "get the temperature function space")
         //.def( "fieldTemperature", static_cast<element_temperature_t const& (toolbox_t::*)() const>(&toolbox_t::fieldTemperature), "returns the temperature field" )
