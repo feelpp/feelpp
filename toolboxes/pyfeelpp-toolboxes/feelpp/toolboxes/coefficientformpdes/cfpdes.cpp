@@ -68,9 +68,13 @@ void defSM(py::module &m)
         .def( "exportResults", static_cast<void ( toolbox_t::* )()>( &toolbox_t::exportResults ), "export the results of the cfpde problem" )
         .def( "checkResults", static_cast<bool ( toolbox_t::* )() const>( &toolbox_t::checkResults ), "check the results of the cfpde problem" )
         //        .def("exportResults",static_cast<void (toolbox_t::*)( double )>(&toolbox_t::exportResults), "export the results of the heat mechanics problem", py::arg("time"))
+
+
+        .def( "setMesh", &toolbox_t::setMesh, "set the mesh", py::arg( "mesh" ) )
+        .def( "updateParameterValues", &toolbox_t::updateParameterValues, "update parameter values" )
         ;
 }
-    
+
 
 PYBIND11_MODULE(_cfpdes, m )
 {
