@@ -97,17 +97,19 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->log("CoefficientFormPDE","initFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
+    bool useExtendedDoftable = is_lagrange_polynomialset_v<typename space_unknown_type::fe_type> && !space_unknown_type::fe_type::isContinuous;
+
     auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
     // functionspace
     if ( mom->isDefinedOnWholeMesh( this->physic() ) )
     {
         this->M_rangeMeshElements = elements(this->mesh());
-        M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+        M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_extended_doftable=useExtendedDoftable );
     }
     else
     {
         this->M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physic() ));
-        M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=this->M_rangeMeshElements );
+        M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=this->M_rangeMeshElements,_extended_doftable=useExtendedDoftable );
     }
 
     M_fieldUnknown.reset( new element_unknown_type( M_Xh,this->unknownName() ) );
@@ -124,7 +126,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
     M_bcRobinMarkerManagement.clearMarkerRobinBC();
 
-    if constexpr ( unknown_is_scalar )
+    if constexpr ( unknown_is_scalar || is_hcurl_conforming_v<typename space_unknown_type::fe_type> )
         M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( { { this->physic(), std::string("Dirichlet") } } );
     else
         M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( { { this->physic(), std::string("Dirichlet") } } );
@@ -132,7 +134,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     for( auto const& d : this->M_bcDirichlet )
         M_bcDirichletMarkerManagement.addMarkerDirichletBC("elimination", name(d), markers(d) );
 
-    if constexpr ( unknown_is_vectorial )
+    if constexpr ( unknown_is_vectorial && !is_hcurl_conforming_v<typename space_unknown_type::fe_type> )
     {
         for ( ComponentType comp : std::vector<ComponentType>( { ComponentType::X, ComponentType::Y, ComponentType::Z } ) )
         {
@@ -289,9 +291,14 @@ BlocksBaseGraphCSR
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 {
     int nBlock = 1;//this->nBlockMatrixGraph();
+
+    size_type thePat = size_type(Pattern::COUPLED);
+    if ( is_lagrange_polynomialset_v<typename space_unknown_type::fe_type> && !space_unknown_type::fe_type::isContinuous )
+        thePat = size_type(Pattern::EXTENDED);
     BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
     myblockGraph(0,0) = stencil(_test=this->spaceUnknown(),
-                                _trial=this->spaceUnknown() )->graph();
+                                _trial=this->spaceUnknown(),
+                                _pattern=thePat )->graph();
     return myblockGraph;
 }
 

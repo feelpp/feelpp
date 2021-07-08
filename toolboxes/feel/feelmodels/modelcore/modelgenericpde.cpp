@@ -44,7 +44,7 @@ ModelGenericPDE<Dim>::Infos::Infos( std::string const& name, pt::ptree const& eq
     }
 
     std::string unknownShape;
-    if ( M_unknownBasis == "Pch1" ||  M_unknownBasis == "Pch2" )
+    if ( M_unknownBasis == "Pch1" || M_unknownBasis == "Pch2" || M_unknownBasis == "Pdh1" )
         unknownShape = "scalar";
     else if ( M_unknownBasis == "Pchv1" ||  M_unknownBasis == "Pchv2" )
         unknownShape = "vectorial";
@@ -61,7 +61,7 @@ ModelGenericPDE<Dim>::setupGenericPDE()
     auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(),  this->physicDefault() );
 
     std::string unknownShape;
-    if ( this->unknownBasis() == "Pch1" ||  this->unknownBasis() == "Pch2" )
+    if ( this->unknownBasis() == "Pch1" ||  this->unknownBasis() == "Pch2" || this->unknownBasis() == "Pdh1" )
         unknownShape = "scalar";
     else if ( this->unknownBasis() == "Pchv1" ||  this->unknownBasis() == "Pchv2" )
         unknownShape = "vectorial";
