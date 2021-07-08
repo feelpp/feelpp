@@ -11,7 +11,7 @@
 #include <feel/feelfilters/exporter.hpp>
 //#include <feel/feelvf/vf.hpp>
 #include <feel/feelts/bdf.hpp>
-
+#include <feel/feelpoly/nedelec.hpp>
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
@@ -304,7 +304,8 @@ private :
     bdf_unknown_ptrtype M_bdfUnknown;
 
     // boundary conditions
-    using map_field_dirichlet = typename mpl::if_c<unknown_is_scalar,  map_scalar_field<2>,  map_vector_field<nDim,1,2> >::type;
+    using map_field_dirichlet = typename mpl::if_c<unknown_is_scalar || is_hcurl_conforming_v<typename space_unknown_type::fe_type>,
+                                                   map_scalar_field<2>,  map_vector_field<nDim,1,2> >::type;
     map_field_dirichlet M_bcDirichlet;
     std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
     map_scalar_field<2> M_bcNeumann;
