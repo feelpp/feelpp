@@ -630,6 +630,9 @@ public:
 
     //@}
 
+    //! dynamic context
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr ); }
+
     //! polynomial order
     uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
 

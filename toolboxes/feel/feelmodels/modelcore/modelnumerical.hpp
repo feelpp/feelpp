@@ -353,6 +353,7 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
     for( auto const& [time,icByType] : icts )
     {
         auto & u = *dataToUpdate[0];
+        bool needToSyncValues = false;
         auto itFindIcFile = icByType.find( "File" );
         if ( itFindIcFile != icByType.end() )
         {
@@ -399,14 +400,20 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
                         u.on(_range=markedelements(u.mesh(),listMarkerElements),_expr=theExpr,_geomap=geomapStrategy);
                     if ( !listMarkerFaces.empty() )
                         u.on(_range=markedfaces(u.mesh(),listMarkerFaces),_expr=theExpr,_geomap=geomapStrategy);
-                    if ( !listMarkerEdges.empty() )
-                        u.on(_range=markededges(u.mesh(),listMarkerEdges),_expr=theExpr,_geomap=geomapStrategy);
-                    if ( !listMarkerPoints.empty() )
-                        u.on(_range=markedpoints(u.mesh(),listMarkerPoints),_expr=theExpr,_geomap=geomapStrategy);
+                    if constexpr ( !is_hcurl_conforming_v<typename std::decay_t<decltype(u)>::functionspace_type::fe_type> )
+                    {
+                        if ( !listMarkerEdges.empty() )
+                            u.on(_range=markededges(u.mesh(),listMarkerEdges),_expr=theExpr,_geomap=geomapStrategy);
+                        if ( !listMarkerPoints.empty() )
+                            u.on(_range=markedpoints(u.mesh(),listMarkerPoints),_expr=theExpr,_geomap=geomapStrategy);
+                    }
                 }
+                needToSyncValues = true;
             }
         }
-    }
+        if ( needToSyncValues )
+            sync( u, "=" );
+    } // for( auto const& [time,icByType] : icts )
 
     for (int k=1;k<dataToUpdate.size();++k)
         *dataToUpdate[k] = *dataToUpdate[0];
