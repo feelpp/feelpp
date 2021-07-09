@@ -9,10 +9,12 @@ namespace FeelModels
 {
 
 template <uint16_type Dim>
-ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name, ModelModel const& model )
+ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name, ModelBase const& mparent, ModelModel const& model )
     :
     M_type( type ),
-    M_name( name )
+    M_name( name ),
+    M_worldComm( mparent.worldCommPtr() ),
+    M_directoryLibExpr( mparent.repository().expr() )
 {
 
     // save name of submodel but not yet intialized
@@ -79,16 +81,17 @@ ModelPhysic<Dim>::New( ModelPhysics<Dim> const& mphysics, std::string const& typ
     else if ( type == "solid" )
         return std::make_shared<ModelPhysicSolid<Dim>>( mphysics, name, model );
     else
-        return std::make_shared<ModelPhysic<Dim>>( type, name, model );
+        return std::make_shared<ModelPhysic<Dim>>( type, name, mphysics, model );
 }
 
 template <uint16_type Dim>
 ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model )
     :
-    super_type( "fluid", name, model ),
+    super_type( "fluid", name, mphysics, model ),
     M_equation( "Navier-Stokes" ),
     M_gravityForceEnabled( boption(_name="use-gravity-force",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ),
-    M_dynamicViscosity( soption(_name="viscosity.law",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) )
+    M_dynamicViscosity( soption(_name="viscosity.law",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ),
+    M_turbulence( this )
 {
     auto const& pt = model.ptree();
     if ( auto eq = pt.template get_optional<std::string>("equations") )
@@ -167,7 +170,7 @@ ModelPhysicFluid<Dim>::Turbulence::setup( pt::ptree const& pt )
 template <uint16_type Dim>
 ModelPhysicSolid<Dim>::ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model )
     :
-    super_type( "solid", name, model ),
+    super_type( "solid", name, mphysics, model ),
     M_equation( "Hyper-Elasticity" ),
     M_materialModel( soption(_prefix=mphysics.prefix(), _name="material_law",_vm=mphysics.clovm() ) ),
     M_formulation( soption(_prefix=mphysics.prefix(), _name="formulation",_vm=mphysics.clovm() ) ),

@@ -400,6 +400,24 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                                _geomap=this->geomap() );
             }
 
+            //--------------------------------------------------------------------------------------------------//
+            // apply turbulent wall function : wall shear stress bc
+            if ( physicFluidData->turbulence().isEnabled() && (physicFluidData->turbulence().model() == "k-epsilon" )  && BuildNonCstPart )
+            {
+                auto frictionVelocityExpr = physicFluidData->turbulence().frictionVelocityWallFunctionExpr( matName, se );
+                auto u_plusExpr = cst(11.06); // TODO
+                auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
+                //auto expr_turbulence_wst = expr( expr( "physics_fluid_fluid_fluid_Omega_turbulence_k_epsilon_u_tauBC_V2/11.06:physics_fluid_fluid_fluid_Omega_turbulence_k_epsilon_u_tauBC_V2" ) , se );
+                for ( auto const& [bcName,bcWall] : M_turbulenceModelBoundaryConditions.wall() )
+                {
+                    bilinearFormVV_PatternDefault +=
+                        integrate( _range=markedfaces(this->mesh(), bcWall.markers() /* {"Gamma1","Gamma3"}*/ ),
+                                   //_expr= timeSteppingScaling*expr_turbulence_wst*inner( idt(u),id(v) ),
+                                   _expr=timeSteppingScaling*densityExpr*(frictionVelocityExpr/u_plusExpr)*inner( idt(u),id(v) ),
+                                   _geomap=this->geomap() );
+                }
+            }
+
             // stabilization gls
             if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
             {
