@@ -24,7 +24,9 @@
 cmake_minimum_required(VERSION 3.3)
 
 add_custom_target(pyfeelpptoolboxes)
-add_dependencies(pyfeelpptoolboxes pyfeelpp)
+if ( TARGET pyfeelpp )
+  add_dependencies(pyfeelpptoolboxes pyfeelpp)
+endif()
 
 add_subdirectory( core )
 
