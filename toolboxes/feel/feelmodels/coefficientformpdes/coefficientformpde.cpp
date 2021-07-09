@@ -126,7 +126,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
     M_bcRobinMarkerManagement.clearMarkerRobinBC();
 
-    if constexpr ( unknown_is_scalar || is_hcurl_conforming_v<typename space_unknown_type::fe_type> )
+    if constexpr ( unknown_is_scalar )
         M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( { { this->physic(), std::string("Dirichlet") } } );
     else
         M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( { { this->physic(), std::string("Dirichlet") } } );

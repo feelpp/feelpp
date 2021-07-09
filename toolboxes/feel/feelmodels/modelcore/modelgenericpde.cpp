@@ -46,7 +46,7 @@ ModelGenericPDE<Dim>::Infos::Infos( std::string const& name, pt::ptree const& eq
     std::string unknownShape;
     if ( M_unknownBasis == "Pch1" || M_unknownBasis == "Pch2" || M_unknownBasis == "Pdh1" )
         unknownShape = "scalar";
-    else if ( M_unknownBasis == "Pchv1" ||  M_unknownBasis == "Pchv2" )
+    else if ( M_unknownBasis == "Pchv1" || M_unknownBasis == "Pchv2" || M_unknownBasis == "Ned1h0" )
         unknownShape = "vectorial";
     else
         CHECK( false ) << "invalid unknown.basis : " << M_unknownBasis;
@@ -63,7 +63,7 @@ ModelGenericPDE<Dim>::setupGenericPDE()
     std::string unknownShape;
     if ( this->unknownBasis() == "Pch1" ||  this->unknownBasis() == "Pch2" || this->unknownBasis() == "Pdh1" )
         unknownShape = "scalar";
-    else if ( this->unknownBasis() == "Pchv1" ||  this->unknownBasis() == "Pchv2" )
+    else if ( this->unknownBasis() == "Pchv1" || this->unknownBasis() == "Pchv2" || this->unknownBasis() == "Ned1h0" )
         unknownShape = "vectorial";
     else
         CHECK( false ) << "invalid unknown.basis : " << this->unknownBasis();
@@ -89,6 +89,7 @@ ModelGenericPDE<Dim>::setupGenericPDE()
     {
         mphysic->addMaterialPropertyDescription( this->sourceCoefficientName(), this->sourceCoefficientName(), { vectorialShape } );
         mphysic->addMaterialPropertyDescription( this->conservativeFluxSourceCoefficientName(), this->conservativeFluxSourceCoefficientName(), { matrixShape } );
+        mphysic->addMaterialPropertyDescription( this->curlCurlCoefficientName(), this->curlCurlCoefficientName(), { scalarShape } );
     }
 
     this->M_physics.emplace( mphysic->name(), mphysic );

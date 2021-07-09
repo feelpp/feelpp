@@ -160,6 +160,24 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
             }
         }
 
+        // curl curl
+        if constexpr ( unknown_is_vectorial )
+        {
+            if ( this->materialsProperties()->hasProperty( matName, this->curlCurlCoefficientName() ) )
+            {
+                auto const& coeff_zeta = this->materialsProperties()->materialProperty( matName, this->curlCurlCoefficientName() );
+                auto coeff_zeta_expr = expr( coeff_zeta.template expr<1,1>(), se );
+                bool build_curlCurlTerm = coeff_zeta_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+                if ( build_curlCurlTerm )
+                {
+                    bilinearForm +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*coeff_zeta_expr*inner(curlt(u),curl(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+        }
+
         // Reaction
         if ( this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() ) )
         {
@@ -765,6 +783,46 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
             }
         }
 
+        // curl curl
+        if constexpr ( unknown_is_vectorial )
+        {
+            if ( this->materialsProperties()->hasProperty( matName, this->curlCurlCoefficientName() ) )
+            {
+                auto const& coeff_zeta = this->materialsProperties()->materialProperty( matName, this->curlCurlCoefficientName() );
+                auto coeff_zeta_expr = expr( coeff_zeta.template expr<1,1>(), se );
+                bool build_curlCurlTerm = coeff_zeta_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+                if ( build_curlCurlTerm )
+                {
+                    bilinearForm +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*coeff_zeta_expr*inner(curlt(u),curl(v)),
+                                   _geomap=this->geomap() );
+                }
+                bool coeffCurlCurlDependOnUnknown = coeff_zeta.hasSymbolDependency( trialSymbolNames, se );
+                if ( coeffCurlCurlDependOnUnknown && buildNonCstPart )
+                {
+                    hana::for_each( tse.map(), [this,&coeff_zeta_expr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
+                    {
+                        for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
+                        {
+                            auto trialXh = trialSpacePair.first;
+                            auto trialBlockIndex = trialSpacePair.second;
+                            auto coeff_zeta_diff_expr = diffSymbolicExpr( coeff_zeta_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+                            if ( !coeff_zeta_diff_expr.expression().hasExpr() )
+                                continue;
+
+                            form2( _test=Xh,_trial=trialXh,_matrix=J,
+                                   _pattern=size_type(Pattern::COUPLED),
+                                   _rowstart=this->rowStartInMatrix(),
+                                   _colstart=trialBlockIndex ) +=
+                                integrate( _range=range,
+                                           _expr=timeSteppingScaling*coeff_zeta_diff_expr*inner(curlv(u),curl(v)),
+                                           _geomap=this->geomap() );
+                        }
+                    });
+                }
+            }
+        }
 
         // Reaction
         if ( this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() ) )
@@ -1125,6 +1183,24 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
                     linearForm +=
                         integrate( _range=range,
                                    _expr= timeSteppingScaling*inner(idv(u)*trans(coeff_alpha_expr),grad(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+        }
+
+        // curl curl
+        if constexpr ( unknown_is_vectorial )
+        {
+            if ( this->materialsProperties()->hasProperty( matName, this->curlCurlCoefficientName() ) )
+            {
+                auto const& coeff_zeta = this->materialsProperties()->materialProperty( matName, this->curlCurlCoefficientName() );
+                auto coeff_zeta_expr = expr( coeff_zeta.template expr<1,1>(), se );
+                bool build_curlCurlTerm = coeff_zeta_expr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+                if ( build_curlCurlTerm )
+                {
+                    linearForm +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*coeff_zeta_expr*inner(curlv(u),curl(v)),
                                    _geomap=this->geomap() );
                 }
             }
