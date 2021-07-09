@@ -24,13 +24,11 @@
 cmake_minimum_required(VERSION 3.3)
 
 add_custom_target(pyfeelpptoolboxes)
+if ( TARGET pyfeelpp )
+  add_dependencies(pyfeelpptoolboxes pyfeelpp)
+endif()
 
-feelpp_add_pymodule(modelcore SRCS modelcore.cpp DESTINATION feelpp/toolboxes/ LINK_LIBRARIES Feelpp::feelpp_modelcore )
-feelpp_add_pymodule(modelmesh SRCS modelmesh.cpp DESTINATION feelpp/toolboxes/ LINK_LIBRARIES Feelpp::feelpp_modelmesh Feelpp::feelpp_modelmeshale)
-
-install(FILES  __init__.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/)
-
-add_dependencies(pyfeelpptoolboxes _modelcore _modelmesh)
+add_subdirectory( core )
 
 
 if ( FEELPP_TOOLBOXES_ENABLE_CFPDE )

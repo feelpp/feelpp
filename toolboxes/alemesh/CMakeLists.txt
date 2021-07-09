@@ -45,7 +45,5 @@ feelpp_add_application( alemesh_remesh_3d SRCS alemesh_remesh.cpp
   )
 
 
-foreach( _testcase IN ITEMS  "TurekHron" "sphere" )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_alemesh CATEGORY toolboxes/alemesh)
-endforeach()
+feelpp_add_testcase(cases PREFIX feelpp_toolbox_alemesh CATEGORY toolboxes/alemesh)
 

@@ -1,9 +1,11 @@
 import feelpp 
 import sys
+import pytest
 
-print(sys.argv)
-e=feelpp.Environment(sys.argv)
 
-print("pid:",e.worldComm().localRank() )
-print("isMasterRank:",e.isMasterRank() )
+
+def test_core(init_feelpp):
+    if feelpp.Environment.isMasterRank():
+        print("pid:",feelpp.Environment.worldComm().localRank() )
+        print("isMasterRank:", feelpp.Environment.isMasterRank())
 

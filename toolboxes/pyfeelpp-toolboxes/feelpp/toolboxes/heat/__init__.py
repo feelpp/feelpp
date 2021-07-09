@@ -1,13 +1,22 @@
 import feelpp
-from feelpp.toolboxes import *
-from ._heat import *
 
-_heats={
-    'heat(2,1)':Heat_2DP1,
-    'heat(2,2)':Heat_2DP2,
-    'heat(3,1)':Heat_3DP1,
-    'heat(3,2)':Heat_3DP2,
-}
+from feelpp.toolboxes.core import *
+
+has_heat = False
+_heats = None
+try:
+    from ._heat import *
+
+    _heats={
+        'heat(2,1)':Heat_2DP1,
+        'heat(2,2)':Heat_2DP2,
+        'heat(3,1)':Heat_3DP1,
+        'heat(3,2)':Heat_3DP2,
+    }
+    has_heat = True
+except ImportError as e:
+    print('has_heat:', has_heat)
+    pass  # module doesn't exist, deal with it.
 
 def heat( dim=2, order=1, worldComm=None ):
     """create a heat toolbox solver
@@ -16,6 +25,8 @@ def heat( dim=2, order=1, worldComm=None ):
     order -- the polynomial order for the temperature (default: 1)
     worldComm -- the parallel communicator for the mesh (default: feelpp.Environment::worldCommPtr())
     """
+    if not has_heat:
+        raise Exception('Heat toolbox is not enabled in Feel++')
     if worldComm is None:
         worldComm = feelpp.Environment.worldCommPtr()
     key='heat('+str(dim)+','+str(order)+')'

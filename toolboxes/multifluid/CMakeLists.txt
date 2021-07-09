@@ -20,6 +20,5 @@ feelpp_add_application( multifluid_3d SRCS main_mf.cpp
 )
 
 
-foreach( _testcase IN ITEMS "square" "drop" "vesicle_rest" "vesicle_shear" "sheared_sphere" )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_multifluid CATEGORY toolboxes/multifluid)
-endforeach()
+feelpp_add_testcase(cases PREFIX feelpp_toolbox_multifluid CATEGORY toolboxes/multifluid)
+

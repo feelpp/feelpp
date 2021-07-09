@@ -9,13 +9,15 @@ _fsis={
     'fsi(3,2)':Fsi_3DP2,
 }
 
-def fsi( dim=2, order=1, buildMesh=True, worldComm=feelpp.Environment.worldCommPtr() ):
+def fsi( dim=2, order=1, buildMesh=True, worldComm=None ):
     """create a fsi toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
     orderPotential -- the polynomial order for the potential (default: 1)
     worldComm -- the parallel communicator for the mesh (default: feelpp.Environment::worldCommPtr())
     """
+    if worldComm is None:
+        worldComm = feelpp.Environment.worldCommPtr()
     key='fsi('+str(dim)+','+str(orderPotential)+')'
     if worldComm.isMasterRank():
         print(key)

@@ -1,1 +1,1 @@
-ThermalBridgesENISO10211_case2  --config-file ${CMAKE_CURRENT_SOURCE_DIR}/Building/ThermalBridgesENISO10211/thermo2dCase2.cfg  --directory=toolboxes/testsuite/heat/ThermalBridgesENISO10211/2dCase2
+ThermalBridgesENISO10211_case2  --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/Building/ThermalBridgesENISO10211/thermo2dCase2.cfg  --directory=toolboxes/testsuite/heat/ThermalBridgesENISO10211/2dCase2
