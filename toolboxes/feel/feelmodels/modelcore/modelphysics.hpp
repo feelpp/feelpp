@@ -80,7 +80,7 @@ public :
     inline static const uint16_type nDim = Dim;
 
     //ModelPhysic() = default;
-    ModelPhysic( std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysic( std::string const& type, std::string const& name, ModelBase const& mparent, ModelModel const& model = ModelModel{} );
     ModelPhysic( ModelPhysic const& ) = default;
     ModelPhysic( ModelPhysic && ) = default;
 
@@ -141,6 +141,10 @@ public :
         {
             M_parameterNameToExpr[pname].setExpr( expr, worldComm, directoryLibExpr );
             return this->symbolFromParameter( pname );
+        }
+    std::string addParameter( std::string const& pname, std::string const& expr )
+        {
+            return this->addParameter( pname,expr, *M_worldComm, M_directoryLibExpr );
         }
 
     //! set parameter values in expression
@@ -217,8 +221,30 @@ public :
     //! return the full symbol from parameter name
     std::string symbolFromParameter( std::string const& pname ) const { return "physics_" + prefixvm( prefixvm( M_type, M_name, "_" ), pname, "_" ); }
 
+    //! return true if parameter \pname of shape MxN is present, false otherwise
+    template <int M,int N>
+    bool hasParameterExpr( std::string const& pname ) const
+        {
+            auto itFindParam = M_parameterNameToExpr.find( pname );
+            if ( itFindParam == M_parameterNameToExpr.end() )
+                return false;
+            return itFindParam->second.template hasExpr<M,N>();
+        }
+
+    //! return the expression of the parameter \pname
+    template <int M,int N,typename SymbolsExprType = symbols_expression_empty_t>
+    auto paramterExpr( std::string const& pname, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            if ( !this->hasParameterExpr<M,N>( pname ) )
+                CHECK( false ) << "parameter " << pname << " not found or shape incompatible";
+            auto itFindParam = M_parameterNameToExpr.find( pname );
+            return expr( itFindParam->second.template expr<M,N>(), se );
+        }
+
 private :
     std::string M_type, M_name;
+    worldcomm_ptr_t M_worldComm;
+    std::string M_directoryLibExpr;
     std::set<std::string> M_subphysicsTypes;
     std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> M_subphysics;
     std::map<std::string,material_property_description_type> M_materialPropertyDescription; // name -> (symbol, shapes.. )
@@ -229,6 +255,7 @@ template <uint16_type Dim>
 class ModelPhysicFluid : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicFluid<Dim>;
 public :
     struct DynamicViscosity
     {
@@ -260,7 +287,7 @@ public :
 
     struct Turbulence
     {
-        Turbulence() : M_isEnabled( false ) {}
+        Turbulence( self_type * mparent ) : M_parent( mparent ), M_isEnabled( false ) {}
         Turbulence( Turbulence const& ) = default;
         Turbulence( Turbulence && ) = default;
 
@@ -272,7 +299,33 @@ public :
 
         void setup( pt::ptree const& p );
 
+        void setFrictionVelocityWallFunction( std::string const& matName, std::string const& expr )
+            {
+                M_parent->addParameter( this->symbolBaseNameOnMaterial( matName, "u_tau_wallfunction" ), expr );
+            }
+        std::string frictionVelocityWallFunctionSymbol( std::string const& matName ) const
+            {
+                return M_parent->symbolFromParameter( this->symbolBaseNameOnMaterial( matName, "u_tau_wallfunction" ) );
+            }
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto frictionVelocityWallFunctionExpr( std::string const& matName, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+            {
+                return M_parent->template paramterExpr<1,1>( this->symbolBaseNameOnMaterial( matName, "u_tau_wallfunction" ), se );
+            }
+
     private :
+        std::string symbolBaseNameOnMaterial( std::string const& matName, std::string const& propName ) const
+            {
+                //M_model == "k-epsilon";
+                std::string turbModel = "k_epsilon";
+                std::string prefix = "turbulence_" + turbModel;
+                if ( !matName.empty() )
+                    prefix += "_" + matName;
+                return prefixvm( prefix,propName,"_");
+            }
+
+    private :
+        self_type * M_parent;
         bool M_isEnabled;
         std::string M_model;
     };
@@ -289,6 +342,7 @@ public :
 
     DynamicViscosity const& dynamicViscosity() const { return M_dynamicViscosity; }
     Turbulence const& turbulence() const { return M_turbulence; }
+    Turbulence & turbulence() { return M_turbulence; }
 
     //! set parameter values in expression
     void setParameterValues( std::map<std::string,double> const& mp ) override

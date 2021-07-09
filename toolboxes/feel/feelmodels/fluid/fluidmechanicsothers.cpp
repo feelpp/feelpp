@@ -987,7 +987,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 #endif
 
     if ( this->hasTurbulenceModel() && M_useSemiImplicitTurbulenceCoupling )
-        M_turbulenceModelType->solve();
+    {
+        for (int k=0;k<ioption(_name="solver-inner-turbulence.nit");++k)
+            M_turbulenceModelType->solve();
+    }
 
     // if ( this->hasTurbulenceModel() )
     //     M_turbulenceModelType->solve();
