@@ -236,13 +236,17 @@ PYBIND11_MODULE(_alg, m )
     // create a backend
     m.def( "backend", &Feel::detail::backend_impl<double>, py::arg( "name" ) = "", py::arg( "kind" ) = "petsc", py::arg( "rebuild" ) = true, py::arg( "worldcomm" ) = Feel::Environment::worldCommPtr(), "retrieve a backend" );
 
-    py::class_<Vector<double, uint32_type>, PyVectorDouble, std::shared_ptr<Vector<double, uint32_type>> >(m, "VectorDouble")
-        .def(py::init<>())
+    py::class_<Vector<double, uint32_type>, PyVectorDouble, std::shared_ptr<Vector<double, uint32_type>>>( m, "VectorDouble" )
+        .def( py::init<>() )
         .def( "clone", &Vector<double>::clone, "return  Vector clone" )
         .def( "size", &Vector<double>::size, "return   Vector size" )
         .def( "clear", &Vector<double>::clear, "clear  vector" )
-        .def( "zero", static_cast<void ( Vector<double>::* )()>(&Vector<double>::zero), "zero  vector" )
-        ;
+        .def( "zero", static_cast<void ( Vector<double>::* )()>( &Vector<double>::zero ), "zero  vector" )
+        .def(
+            "to_petsc", []( std::shared_ptr<Vector<double>> const& m )
+            { return toPETSc( m ); },
+            "cast a VectorDouble to a VectorPetsc" );
+    ;
     py::class_<VectorPetsc<double>, Vector<double, uint32_type>, std::shared_ptr<VectorPetsc<double>>>( m, "VectorPetscDouble" )
         .def( py::init<>() )
         .def( py::init<int, std::shared_ptr<WorldComm>>() )
