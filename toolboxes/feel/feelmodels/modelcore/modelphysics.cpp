@@ -165,6 +165,21 @@ ModelPhysicFluid<Dim>::Turbulence::setup( pt::ptree const& pt )
         M_model = *ptModel;
         CHECK( M_model == "Spalart-Allmaras" || M_model == "k-epsilon" ) << "invalid turubulence model " << M_model;
     }
+
+    this->setParameterNoMaterialNoModelLink( "kappa", "0.41" );
+    // upper limit on the mixing length :
+    // * default choice (see Comsol doc) : l_mix_lim = 0.5*lbb where lbb is the shortest side of the geometry bounding box.
+    // * for complex geometry, l_mix_lim should be given manually
+    //this->setParameterNoMaterialNoModelLink( "l_mix_lim", "0.5*0.0635" ); // turbulent pipe case
+    //this->setParameterNoMaterialNoModelLink( "l_mix_lim", "0.0508" ); // backward facing step case
+    this->setParameterNoMaterialNoModelLink( "l_mix_lim", "0.0381+0.0762" ); // backward facing step case
+
+    this->setParameterNoMaterialLink( "c_mu", "0.09", "k-epsilon" );
+    this->setParameterNoMaterialLink( "c_1epsilon", "1.44", "k-epsilon" );
+    this->setParameterNoMaterialLink( "c_2epsilon", "1.92", "k-epsilon" );
+    this->setParameterNoMaterialLink( "sigma_k", "1.0", "k-epsilon" );
+    this->setParameterNoMaterialLink( "sigma_epsilon", "1.3", "k-epsilon" );
+
 }
 
 template <uint16_type Dim>
