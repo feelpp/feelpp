@@ -97,7 +97,7 @@ PYBIND11_MODULE(_modelcore, m )
              "Initialize ModelAlgebraic"
              )
         // Algrebraic factory
-        .def( "algebraicFactory", static_cast<typename ModelAlgebraic::model_algebraic_factory_ptrtype (ModelAlgebraic::*)( std::string const& ) const>(&ModelAlgebraic::algebraicFactory), "get the algebraic factory" )
+        .def( "algebraicFactory", static_cast<typename ModelAlgebraic::model_algebraic_factory_ptrtype (ModelAlgebraic::*)( std::string const& ) const>(&ModelAlgebraic::algebraicFactory), py::arg("name")=std::string{}, "get the algebraic factory" )
         ;
 
     py::class_<ModelNumerical, std::shared_ptr<ModelNumerical>, ModelAlgebraic>( m, "ModelNumerical" )

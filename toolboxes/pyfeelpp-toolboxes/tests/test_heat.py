@@ -34,8 +34,8 @@ def test_heat_alg():
     if f.isStationary():
         f.solve()
         maf=f.algebraicFactory()
-        A=maf.matrix().mat()
-        b=maf.rhs().vec()
+        A=maf.matrix().to_petsc().mat()
+        b=maf.rhs().to_petsc().vec()
         from petsc4py import PETSc
         KSP_TYPE = PETSc.KSP.Type.GMRES
         PC_TYPE = PETSc.PC.Type.LU
@@ -63,7 +63,7 @@ def test_heat_alg():
         err=T-x
         n2 = err.norm(PETSc.NormType.NORM_2)
         print("error norm:",n2)
-        #assert(n2<1e-10)
+        assert(n2<1e-8)
 
 
 
