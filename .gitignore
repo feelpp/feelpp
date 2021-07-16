@@ -149,3 +149,4 @@ toolboxes/pyfeelpp-toolboxes/tests/*.mesh.path
 toolboxes/pyfeelpp-toolboxes/tests/*.csv
 toolboxes/pyfeelpp-toolboxes/tests/*.h5
 toolboxes/pyfeelpp-toolboxes/Testing/
+feelpp/pyfeelpp/pytest-3.json
