@@ -28,16 +28,18 @@ def has_petsc4py():
         return False
 
 class InitFeelpp:
-    def __init__(self):
+    def __init__(self,config):
         try:
-            print('xxx call init_feelpp')
             sys.argv=['test_feelpp']
-            self.e = feelpp.Environment(sys.argv)
-            print('proc:',feelpp.Environment.isMasterRank())
+            self.e = feelpp.Environment(sys.argv,config=config)
         except Exception:
             return 
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def init_feelpp():
-    return InitFeelpp()
+    return InitFeelpp(feelpp.globalRepository("pyfeelpp-tests"))
+
+@pytest.fixture(scope="session")
+def init_feelpp_config_local():
+    return InitFeelpp(feelpp.localRepository("feelppdb"))
