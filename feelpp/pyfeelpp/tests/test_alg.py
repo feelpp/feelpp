@@ -3,7 +3,9 @@ import sys
 import pytest
 from petsc4py import PETSc
 
-def test_alg():
+def test_alg(init_feelpp):
+    feelpp.Environment.changeRepository(
+        directory="pyfeelpp-tests/alg/test_alg")
     wc=feelpp.Environment.worldCommPtr()
     if feelpp.Environment.isSequential():
         v = feelpp.VectorPetscDouble(10,wc)
@@ -34,6 +36,8 @@ def test_alg():
    
 
 def test_backend_vector():
+    feelpp.Environment.changeRepository(
+        directory="pyfeelpp-tests/alg/test_vector")
     wc = feelpp.Environment.worldCommPtr()
     if feelpp.Environment.isSequential():
         b = feelpp.backend(worldcomm=wc)
@@ -43,6 +47,8 @@ def test_backend_vector():
 
 
 def test_backend_matrix():
+    feelpp.Environment.changeRepository(
+        directory="pyfeelpp-tests/alg/test_backend_matrix")
     wc = feelpp.Environment.worldCommPtr()
     if feelpp.Environment.isSequential():
         b = feelpp.backend(worldcomm=wc)

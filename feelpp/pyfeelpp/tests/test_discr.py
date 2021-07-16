@@ -36,6 +36,10 @@ def test_discr(init_feelpp):
         '2':feelpp.download( "github:{repo:feelpp,path:feelpp/quickstart/laplacian/cases/feelpp2d/feelpp2d.geo}", worldComm=feelpp.Environment.worldCommPtr() )[0],
         '3':feelpp.download( "github:{repo:feelpp,path:feelpp/quickstart/laplacian/cases/feelpp3d/feelpp3d.geo}", worldComm=feelpp.Environment.worldCommPtr() )[0]
     }
+    feelpp.Environment.changeRepository(
+        directory="pyfeelpp-tests/discr/test_2d")
     run( feelpp.mesh(dim=2), geo['2'] )
+    feelpp.Environment.changeRepository(
+        directory="pyfeelpp-tests/discr/test_3d")
     run( feelpp.mesh(dim=3,realdim=3), geo['3'] )
     
