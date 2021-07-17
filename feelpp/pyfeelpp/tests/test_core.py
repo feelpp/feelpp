@@ -11,7 +11,7 @@ def test_core(init_feelpp):
         print("isMasterRank:", feelpp.Environment.isMasterRank())
 
 
-def test_config_local(init_feelpp_config_local):
-    feelpp.Environment.changeRepository(
-        directory="pyfeelpp-tests/core/test_config_local")
+#def test_config_local(init_feelpp_config_local):
+#    feelpp.Environment.changeRepository(
+#        directory="pyfeelpp-tests/core/test_config_local")
 
