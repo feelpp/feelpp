@@ -104,7 +104,10 @@
         "hash_set": "cpp",
         "slist": "cpp",
         "future": "cpp",
-        "csignal": "cpp"
+        "csignal": "cpp",
+        "format": "cpp",
+        "*.in": "cpp",
+        "texture": "cpp"
     },
     "C_Cpp.configurationWarnings": "Disabled",
     "C_Cpp.loggingLevel": "Debug",

@@ -36,8 +36,8 @@ makeToolboxMorAbout( std::string const& str )
     return about;
 }
 
-template<typename SpaceType>
-ToolboxMor<SpaceType>::ToolboxMor(std::string const& prefix)
+template<typename SpaceType, int Options>
+ToolboxMor<SpaceType, Options>::ToolboxMor(std::string const& prefix)
     :
     super_type("ToolboxMor", Environment::worldCommPtr(), prefix),
     M_propertyPath(Environment::expand( soption("toolboxmor.filename"))),
@@ -70,31 +70,31 @@ ToolboxMor<SpaceType>::ToolboxMor(std::string const& prefix)
 
 }
 
-template<typename SpaceType>
-int ToolboxMor<SpaceType>::Qa()
+template<typename SpaceType, int Options>
+int ToolboxMor<SpaceType, Options>::Qa()
 {
     return 1;
 }
 
-template<typename SpaceType>
-int ToolboxMor<SpaceType>::mQA( int q )
+template<typename SpaceType, int Options>
+int ToolboxMor<SpaceType, Options>::mQA( int q )
 {
     return this->mdeim()->size();
 }
 
-template<typename SpaceType>
-int ToolboxMor<SpaceType>::Nl()
+template<typename SpaceType, int Options>
+int ToolboxMor<SpaceType, Options>::Nl()
 {
     return 1;
 }
 
-template<typename SpaceType>
-int ToolboxMor<SpaceType>::Ql( int l)
+template<typename SpaceType, int Options>
+int ToolboxMor<SpaceType, Options>::Ql( int l)
 {
     return 1;
 }
-template<typename SpaceType>
-int ToolboxMor<SpaceType>::mLQF( int l, int q )
+template<typename SpaceType, int Options>
+int ToolboxMor<SpaceType, Options>::mLQF( int l, int q )
 {
     switch( l )
     {
@@ -106,9 +106,9 @@ int ToolboxMor<SpaceType>::mLQF( int l, int q )
         return 0;
     }
 }
-template<typename SpaceType>
+template<typename SpaceType, int Options>
 void
-ToolboxMor<SpaceType>::resizeQm( bool resizeMat )
+ToolboxMor<SpaceType, Options>::resizeQm( bool resizeMat )
 {
     if( resizeMat )
         this->M_Aqm.resize( Qa());
@@ -144,40 +144,40 @@ ToolboxMor<SpaceType>::resizeQm( bool resizeMat )
     // }
 }
 
-template<typename SpaceType>
-typename ToolboxMor<SpaceType>::sparse_matrix_ptrtype
-ToolboxMor<SpaceType>::assembleForMDEIM( parameter_type const& mu, int const& tag )
+template<typename SpaceType, int Options>
+typename ToolboxMor<SpaceType, Options>::sparse_matrix_ptrtype
+ToolboxMor<SpaceType, Options>::assembleForMDEIM( parameter_type const& mu, int const& tag )
 {
     return M_assembleForMDEIM(mu);
 }
 
-template<typename SpaceType>
-typename ToolboxMor<SpaceType>::vector_ptrtype
-ToolboxMor<SpaceType>::assembleForDEIM( parameter_type const& mu, int const& tag )
+template<typename SpaceType, int Options>
+typename ToolboxMor<SpaceType, Options>::vector_ptrtype
+ToolboxMor<SpaceType, Options>::assembleForDEIM( parameter_type const& mu, int const& tag )
 {
     return M_assembleForDEIM(mu);
 }
 
-template<typename SpaceType>
+template<typename SpaceType, int Options>
 void
-ToolboxMor<SpaceType>::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
+ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
 {
     auto ptreeSpecificityOfModel = ptree.get_child_optional( "specifity-of-model" );
     CHECK( ptreeSpecificityOfModel ) << "invalid ptree : section specifity-of-model is missing";
     // M_measureMarkedSurface["IC2"] = ptreeSpecificityOfModel->template get<double>( "surface-measure-IC2" );
     //std::cout << "surface loaded " << M_surface << "\n";
 }
-template<typename SpaceType>
+template<typename SpaceType, int Options>
 void
-ToolboxMor<SpaceType>::updateSpecificityModel( boost::property_tree::ptree & ptree ) const
+ToolboxMor<SpaceType, Options>::updateSpecificityModel( boost::property_tree::ptree & ptree ) const
 {
     // ptree.add( "surface-measure-IC2", M_measureMarkedSurface.find("IC2")->second );
 }
 
 
-template<typename SpaceType>
+template<typename SpaceType, int Options>
 void
-ToolboxMor<SpaceType>::initModel()
+ToolboxMor<SpaceType, Options>::initModel()
 {
     this->addModelFile("property-file", M_propertyPath);
 
@@ -227,19 +227,19 @@ ToolboxMor<SpaceType>::initModel()
     this->mdeim()->run();
     Feel::cout << tc::green << "Electric MDEIM construction finished!!" << tc::reset << std::endl;
 
-} // ToolboxMor<SpaceType>::init
+} // ToolboxMor<SpaceType, Options>::init
 
-template<typename SpaceType>
+template<typename SpaceType, int Options>
 void
-ToolboxMor<SpaceType>::postInitModel()
+ToolboxMor<SpaceType, Options>::postInitModel()
 {
     this->resizeQm();
     assembleData();
 }
 
-template<typename SpaceType>
+template<typename SpaceType, int Options>
 void
-ToolboxMor<SpaceType>::updateBetaQ_impl( parameter_type const& mu , double time , bool only_terms_time_dependent )
+ToolboxMor<SpaceType, Options>::updateBetaQ_impl( parameter_type const& mu , double time , bool only_terms_time_dependent )
 {
     auto betaA = this->mdeim()->beta(mu);
     auto betaF = this->deim()->beta(mu);
@@ -257,21 +257,21 @@ ToolboxMor<SpaceType>::updateBetaQ_impl( parameter_type const& mu , double time 
 
 
 
-template<typename SpaceType>
-typename ToolboxMor<SpaceType>::super_type::betaq_type
-ToolboxMor<SpaceType>::computeBetaQ( parameter_type const& mu , double time , bool only_terms_time_dependent )
+template<typename SpaceType, int Options>
+typename ToolboxMor<SpaceType, Options>::super_type::betaqm_type
+ToolboxMor<SpaceType, Options>::computeBetaQm( parameter_type const& mu , double time , bool only_terms_time_dependent )
 {
     return computeBetaQ_impl<super_type>( mu, time, only_terms_time_dependent );
 }
-template<typename SpaceType>
-typename ToolboxMor<SpaceType>::super_type::betaq_type
-ToolboxMor<SpaceType>::computeBetaQ( parameter_type const& mu )
+template<typename SpaceType, int Options>
+typename ToolboxMor<SpaceType, Options>::super_type::betaqm_type
+ToolboxMor<SpaceType, Options>::computeBetaQm( parameter_type const& mu )
 {
     return computeBetaQ_impl<super_type>( mu );
 }
-template<typename SpaceType>
+template<typename SpaceType, int Options>
 void
-ToolboxMor<SpaceType>::assembleData()
+ToolboxMor<SpaceType, Options>::assembleData()
 {
     int M_A = this->mdeim()->size();
     auto qa = this->mdeim()->q();
@@ -303,8 +303,8 @@ ToolboxMor<SpaceType>::assembleData()
 
 }
 
-// ToolboxMor<SpaceType>::element_type
-// ToolboxMor<SpaceType>::solve( parameter_type const& mu )
+// ToolboxMor<SpaceType, Options>::element_type
+// ToolboxMor<SpaceType, Options>::solve( parameter_type const& mu )
 // {
 //     for( int i = 0; i < mu.size(); ++i )
 //         M_heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
@@ -315,9 +315,9 @@ ToolboxMor<SpaceType>::assembleData()
 // }
 
 
-template<typename SpaceType>
+template<typename SpaceType, int Options>
 double
-ToolboxMor<SpaceType>::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve )
+ToolboxMor<SpaceType, Options>::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve )
 {
     using namespace vf;
 

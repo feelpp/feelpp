@@ -1,5 +1,4 @@
-from pyfeelpp import core,mesh,discr,models
-from pyfeelpptoolboxes.modelcore import *
+import feelpp
 from _hdg import *
 
 _hdgs={
@@ -18,7 +17,7 @@ def hdgpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", worldCo
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     """
     if worldComm is None:
-        worldComm=core.Environment.worldCommPtr()
+        worldComm=feelpp.Environment.worldCommPtr()
     key='hdg('+str(dim)+','+str(order)+')'
     if worldComm.isMasterRank():
         print(key)

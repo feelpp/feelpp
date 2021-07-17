@@ -131,9 +131,12 @@ PYBIND11_MODULE(_core, m )
         .def_static("worldsCommSeq",static_cast<worldscomm_ptr_t& (*)(int)>(&Feel::Environment::worldsCommSeq), "get the Environment sequential WorldsComm",py::arg("size")=1)
         .def_static("rootRepository",&Feel::Environment::rootRepository,"get the root repository for Feel++, default $HOME/feel",py::return_value_policy::move)
         .def_static("downloadsRepository",&Feel::Environment::downloadsRepository,"get the downloads repository for Feel++",py::return_value_policy::move)
+        .def_static("appRepository",&Feel::Environment::appRepository,"get the application repository",py::return_value_policy::move)
         .def_static("findFile",&Feel::Environment::findFile,"find file",py::return_value_policy::move)
         .def_static("expand",&Feel::Environment::expand,"expand variable in string",py::return_value_policy::move)
         .def_static("setConfigFile",&Feel::Environment::setConfigFile,"set config file and update variable map",py::arg("filename"))
+        .def_static("changeRepository", []( std::string const& fmt,  bool subdir )
+            { Feel::Environment::changeRepository(_directory=boost::format(fmt),_subdir=subdir); },py::arg("directory"), py::arg("subdir")=true,"change repository")
         ;
 
     py::class_<Info>(m,"Info")

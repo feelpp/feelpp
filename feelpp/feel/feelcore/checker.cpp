@@ -27,6 +27,9 @@
 #include <feel/feelmath/polyfit.hpp>
 #include <feel/feelmath/vector.hpp>
 #include <feel/feelpython/pyexpr.hpp>
+#include <fmt/core.h>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 namespace Feel {
 
@@ -187,11 +190,14 @@ Checker::Checker( std::string const& name )
 }
 
 void
-Checker::setScript( std::string const& s, variables_t const& in, bool u )
+Checker::setScript( std::string const& s, variables_t const& in, std::map<std::string,double> const& p, bool u )
 {
     M_use_script = u;
     M_script_in = in;
     M_script = s;
+    std::cout << fmt::format( "script: {}", s ) << std::endl;
+    M_param_values= p;
+    std::cout << fmt::format( "param_values: {}", M_param_values ) << std::endl;
 }
 Checker::variables_t
 Checker::runScript()

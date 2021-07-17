@@ -211,6 +211,11 @@ public:
     size_type size2 () const override;
 
     /**
+     * @returns \p (m,n) the shape of the matrix
+     */
+    std::pair<size_t,size_t> shape () const { return std::pair<size_t,size_t> (size1() , size2()); }
+
+    /**
      * return row_start, the index of the first
      * matrix row stored on this processor
      */

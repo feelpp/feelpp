@@ -44,41 +44,40 @@ void defSM(py::module &m)
     using space_temperature_ptr_t = typename toolbox_t::space_temperature_ptrtype;
 
     std::string pyclass_name = std::string("Heat_") + std::to_string(nDim) + std::string("DP") + std::to_string(Order);
-    py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelNumerical>(m,pyclass_name.c_str())
-        .def(py::init<std::string const&,std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
-             py::arg("prefix"),
-             py::arg("keyword")=std::string("heat"),
-             py::arg("worldComm")=Environment::worldCommPtr(),
-             py::arg("subprefix")=std::string(""),
-             py::arg("modelRep") = ModelBaseRepository(),
-             "Initialize the heat mechanics toolbox"
-             )
-        .def("init",&toolbox_t::init, "initialize the heat  toolbox",py::arg("buildModelAlgebraicFactory")= true)
+    py::class_<toolbox_t, std::shared_ptr<toolbox_t>, ModelNumerical>( m, pyclass_name.c_str() )
+        .def( py::init<std::string const&, std::string const&, worldcomm_ptr_t const&, std::string const&, ModelBaseRepository const&>(),
+              py::arg( "prefix" ),
+              py::arg( "keyword" ) = std::string( "heat" ),
+              py::arg( "worldComm" ) = Environment::worldCommPtr(),
+              py::arg( "subprefix" ) = std::string( "" ),
+              py::arg( "modelRep" ) = ModelBaseRepository(),
+              "Initialize the heat mechanics toolbox" )
+        .def( "init", &toolbox_t::init, "initialize the heat  toolbox", py::arg( "buildModelAlgebraicFactory" ) = true )
 
         // mesh
         .def( "mesh", &toolbox_t::mesh, "get the mesh" )
         .def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
 
+     
         // elements
-        .def( "spaceTemperature", &toolbox_t::spaceTemperature, "get the temperature function space")
-        .def( "fieldTemperature", static_cast<element_temperature_t const& (toolbox_t::*)() const>(&toolbox_t::fieldTemperature), "returns the temperature field" )
-        .def( "fieldTemperaturePtr", static_cast<element_temperature_ptr_t const& (toolbox_t::*)() const>(&toolbox_t::fieldTemperaturePtr), "returns the temperature field shared_ptr" )
+        .def( "spaceTemperature", &toolbox_t::spaceTemperature, "get the temperature function space" )
+        .def( "fieldTemperature", static_cast<element_temperature_t const& (toolbox_t::*)() const>( &toolbox_t::fieldTemperature ), "returns the temperature field" )
+        .def( "fieldTemperaturePtr", static_cast<element_temperature_ptr_t const& (toolbox_t::*)() const>( &toolbox_t::fieldTemperaturePtr ), "returns the temperature field shared_ptr" )
         //.def( "spaceVelocityConvection", &toolbox_t::spaceVelocityConvection, "get the field function space")
         // .def( "fieldVelocityConvection", static_cast<element_velocityconvection_t const& (toolbox_t::*)() const>(&toolbox_t::fieldVelocityConvection), "returns the convection velocity field" )
         // .def( "fieldVelocityConvectionPtr", static_cast<element_velocityconvection_ptr_t const& (toolbox_t::*)() const>(&toolbox_t::fieldVelocityConvectionPtr), "returns the convection velocity field shared_ptr" )
 
         // time stepping
-        .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (toolbox_t::*)() const>(&toolbox_t::timeStepBase), "get time stepping base")
-        .def("updateTimeStep",&toolbox_t::updateTimeStep, "update time stepping")
+        .def( "timeStepBase", static_cast<std::shared_ptr<TSBase> ( toolbox_t::* )() const>( &toolbox_t::timeStepBase ), "get time stepping base" )
+        .def( "updateTimeStep", &toolbox_t::updateTimeStep, "update time stepping" )
 
         // solve
-        .def("solve",&toolbox_t::solve, "solve the heat mechanics problem, set boolean to true to update velocity and acceleration")
-        .def("exportResults",static_cast<void (toolbox_t::*)()>(&toolbox_t::exportResults), "export the results of the heat mechanics problem")
-        .def("exportResults",static_cast<void (toolbox_t::*)( double )>(&toolbox_t::exportResults), "export the results of the heat mechanics problem", py::arg("time"))
+        .def( "solve", &toolbox_t::solve, "solve the heat mechanics problem, set boolean to true to update velocity and acceleration" )
+        .def( "exportResults", static_cast<void ( toolbox_t::* )()>( &toolbox_t::exportResults ), "export the results of the heat mechanics problem" )
+        .def( "exportResults", static_cast<void ( toolbox_t::* )( double )>( &toolbox_t::exportResults ), "export the results of the heat mechanics problem", py::arg( "time" ) )
 
-        .def( "setMesh", &toolbox_t::setMesh, "set the mesh", py::arg("mesh") )
+        .def( "setMesh", &toolbox_t::setMesh, "set the mesh", py::arg( "mesh" ) )
         .def( "updateParameterValues", &toolbox_t::updateParameterValues, "update parameter values" )
-
         .def(
             "assembleMatrix", []( const toolbox_t& t )
             {
@@ -104,7 +103,6 @@ void defSM(py::module &m)
         // .def( "rhs", &toolbox_t::rhs, "returns the right hand side" )
         // .def( "matrix", &toolbox_t::matrix, "returns the matrix" )
         ;
-
 }
 
 
