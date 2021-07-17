@@ -286,8 +286,15 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                             if ( !cfpde ) CHECK( false ) << "failure in dynamic_pointer_cast";
 
                             int rowId = this->startSubBlockSpaceIndex( cfpde->physicDefault() );
+#if 0
                             myblockGraph(rowId,rowId) = stencil(_test=cfpde->spaceUnknown(),
                                                                 _trial=cfpde->spaceUnknown() )->graph();
+#else
+                            auto blockGraph = cfpde->buildBlockMatrixGraph();
+                            for (int bg1 = 0 ; bg1< blockGraph.nRow() ; ++bg1)
+                                for (int bg2 = 0 ; bg2< blockGraph.nCol() ; ++bg2)
+                                    myblockGraph(rowId+bg1,rowId+bg2) = blockGraph(bg1,bg2);
+#endif
 
                             // maybe coupling with other equation in the row
                             for ( int k2=0;k2<nEq;++k2 )

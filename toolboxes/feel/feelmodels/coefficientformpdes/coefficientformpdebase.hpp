@@ -166,8 +166,9 @@ CoefficientFormPDEBase<ConvexType>::hasSymbolDependencyInCoefficients( std::set<
              ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxConvectionCoefficientName() ) &&
                this->materialsProperties()->materialProperty( matName, this->conservativeFluxConvectionCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
              ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) &&
-               this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() ).hasSymbolDependency( symbs, se ) )
-
+               this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
+             ( !this->unknownIsScalar() && this->materialsProperties()->hasProperty( matName, this->curlCurlCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->curlCurlCoefficientName() ).hasSymbolDependency( symbs, se ) )
              )
         {
             hasDependency = true;
