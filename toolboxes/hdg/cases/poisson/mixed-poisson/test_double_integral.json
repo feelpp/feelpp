@@ -1,0 +1,81 @@
+{
+    "Name": "HDG-Mixed-Poisson for lamina cribrosa",
+    "ShortName":"MP_LC",
+    "Models": { "equations":"hdg"},
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+	    "R_ext":"0.095",
+	    "k":"1",
+	    "H":"0.03" 
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "SourceTerm":
+            {
+                "omega":
+                {
+                   "expr":"4*( (x^2+y^2)*sin(x^2+y^2)-cos(x^2+y^2) ):x:y"
+                }
+            },
+            "Dirichlet":
+	    {
+	    	"in":
+        	{
+                     "expr":"2+sin(x^2+y^2):x:y" 
+               	}
+	    },
+            "Neumann":
+            {
+                "bottom":
+                {
+                     "expr":"0.0"
+                },
+                "top":
+                {
+                     "expr":"0.0"
+                }
+            }
+	},
+	"flux":
+	{
+	    "Integral":
+	    {
+        	"out_1":
+                {
+		     "expr":"-2*1.67*pi*0.03*(x^2+y^2)*cos(x^2+y^2):x:y" // "-2000*pi*H*Rext^2*k*cos(Rext^2):H:Rext:k" 
+                },
+		"out_2":
+		{
+		     "expr":"-2*0.33*pi*0.03*(x^2+y^2)*cos(x^2+y^2):x:y" 
+		}
+ 	    }
+    	},
+	"Exact solution":
+	{
+	    "p_exact":
+	    {
+		"omega":
+		{
+		     "expr":"2+sin(x^2+y^2):x:y" 
+		}
+	    }
+	}
+     },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["potential","flux"]
+        }
+    }
+}
+
+
+
+

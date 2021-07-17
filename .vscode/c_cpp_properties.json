@@ -47,7 +47,10 @@
                 "/usr/lib/x86_64-linux-gnu/openmpi/include",
                 "${workspaceFolder}/**"
             ],
-            "defines": [],
+            "defines": [
+                "FEELPP_HAS_PETSC=1",
+                "FEELPP_HAS_PETSC4PY=1",
+            ],
             "intelliSenseMode": "clang-x64",
             "browse": {
                 "path": [
