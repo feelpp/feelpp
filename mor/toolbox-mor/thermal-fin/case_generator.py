@@ -9,7 +9,6 @@ parser.add_argument("--N", help="number of fins [default=4]", type=str, default=
 parser.add_argument("--L", help="width of a fin [default=2.5]", type=str, default="2.5")
 parser.add_argument("--d", help="distance between two fins [default=0.5]", type=str, default="0.5")
 parser.add_argument("--t", help="thickness of a fin [default=0.25]", type=str, default="0.25")
-parser.add_argument("--P", help="tickness of the thermal fin (only for 3D case) [default=1]", type=str, default="1")
 parser.add_argument("--dim", help="dimension of the case (2 or 3) [default=2]", type=str, default="2")
 parser.add_argument("--cylinder", help="shape of fin and post (0=boxes, 1=box/cylinders, 2=cylinders) [default=0]", type=int, default=0)
 
@@ -55,7 +54,7 @@ else:
     
     if args.cylinder <= 1:
         PostShape = "Box"
-        PostArgs = "{0, 0, 0, 1, P, N*(d+t)+t}"
+        PostArgs = "{0, 0, 0, 1, 1, N*(d+t)+t}"
     else:
         PostShape = "Cylinder"
         PostArgs = "{0.5, 0.5, 0, 0, 0, N*(d+t)+t, 0.5, 2*Pi}"
@@ -74,7 +73,6 @@ else:
     diffVal = [5, 5, 17][args.cylinder]
     
 renderGeo = templateGeo.render(
-    P = args.P,
     N = args.N,
     L = args.L,
     t = args.t,
