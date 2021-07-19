@@ -1,7 +1,7 @@
 from liquid import Environment
 from liquid import FileSystemLoader
 
-import os
+import os, sys
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -23,9 +23,12 @@ if args.dim not in ["2","3"]:
 if args.dim == "3" and args.cylinder not in [0, 1, 2]:
     raise ValueError("cylinder must be 0, 1 or 2")
 
+DIRPATH = os.path.dirname(__file__)
+if len(DIRPATH) != 0:
+    DIRPATH += '/'
 
 
-env = Environment(loader=FileSystemLoader(os.path.dirname(__file__)+"/templates/"))
+env = Environment(loader=FileSystemLoader(DIRPATH + "templates/"))
 templateGeo = env.get_template("fin.geo")
 templateCfg = env.get_template("thermal-fin.cfg")
 templateJson = env.get_template("thermal-fin.json")
@@ -42,8 +45,9 @@ if args.dim == "2":
     FinArgs = "{-L, r*(d+t), 0, 2*L+1, t, 0}"
     eltDim = "Surface"
     eltDimM1 = "Curve"
+    step = 2
+    physicalArg = "{r,r+1}"
     diffVal = 4
-    Elt = "N"
 
 else:
     eltDim = "Volume"
@@ -51,21 +55,23 @@ else:
     
     if args.cylinder <= 1:
         PostShape = "Box"
-        PostArgs = ["{0, 0, 0, 1, P, N*(d+t)+t}", "{0, 0, 0, 1, t, N*(d+t)+t}"][args.cylinder]
+        PostArgs = "{0, 0, 0, 1, P, N*(d+t)+t}"
     else:
         PostShape = "Cylinder"
-        PostArgs = "{t/2, t/2, 0, 0, 0, N*(d+t)+t, t/2, 2*Pi}"
+        PostArgs = "{0.5, 0.5, 0, 0, 0, N*(d+t)+t, 0.5, 2*Pi}"
+
+    step = 1
+    physicalArg = "{ r }"
     
     if args.cylinder >= 1:
         FinShape = "Cylinder"
-        FinArgs = "{-L, t/2, r*(d+t)+t/2, 2*L+1, 0, 0, t/2, 2*Pi}"
-        Elt = "(N+1)"
+        FinArgs = "{0.5, 0.5, r*(d+t), 0, 0, t, L, 2*Pi}"
+        
     else:
         FinShape = "Box"
-        FinArgs = "{-L, 0, r*(d+t), 2*L+1, P, t}"
-        Elt = "N"
+        FinArgs = "{-L, -L, r*(d+t), 2*L+1, 2*L+1, t}"
 
-    diffVal = [5, 5, 33][args.cylinder]
+    diffVal = [5, 5, 17][args.cylinder]
     
 renderGeo = templateGeo.render(
     P = args.P,
@@ -77,10 +83,11 @@ renderGeo = templateGeo.render(
     PostArgs = PostArgs,
     FinShape = FinShape,
     FinArgs = FinArgs,
+    step = step,
+    physicalArg = physicalArg,
     eltDim = eltDim,
     eltDimM1 = eltDimM1,
     diffVal = diffVal,
-    Elt = Elt
 )
 
 renderCfg = templateCfg.render(
