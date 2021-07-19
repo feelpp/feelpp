@@ -2,7 +2,6 @@ SetFactory("OpenCASCADE");
 //+
 h = 0.05;
 
-P = DefineNumber[ {{ P }}, Name "Parameters/P" ];
 N = DefineNumber[ {{ N }}, Name "Parameters/N" ];
 L = DefineNumber[ {{ L }}, Name "Parameters/L" ];
 t = DefineNumber[ {{ t }}, Name "Parameters/t" ];
