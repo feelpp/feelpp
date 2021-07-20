@@ -887,6 +887,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
         this->updateALEmesh();
 
     M_bodySetBC.updateForUse( *this );
+
+     
+    for ( auto nba : M_bodySetBC.nbodyArticulated() )
+    {
+        if (nba.hasUniqueRotationalDof())
+            nba.updateForUse2();
+    }
+
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        //auto rangeMFOF = bpbc.rangeMarkedFacesOnFluid();
+        // temporary fix of interpolation with meshale space
+        std::cout << "Center of mass inside solve"<< bpbc.name() << " = " <<bpbc.getCenterOfMass2() << std::endl;
+        std::cout << "Moment of Inertia inside"<< bpbc.name() << " = "<< bpbc.getMomentOfInertia2() << std::endl;
+    }
+
     M_bodySetBC.updateAlgebraicFactoryForUse( *this, this->algebraicFactory() );
 #if 0 // TODO
     if ( this->startBySolveStokesStationary() &&
@@ -1727,6 +1743,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
         if ( nba.articulationMethod() != "lm" )
             continue;
         nBlock += nba.articulations().size();
+        
+        if (nba.hasUniqueRotationalDof())
+            nBlock += nba.articulations().size();
+        
     }
     return nBlock;
 }
@@ -1868,7 +1888,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
             size_type startBlockIndexTranslationalVelocityBody1 = this->startSubBlockSpaceIndex("body-bc."+bbc1.name()+".translational-velocity");
             size_type startBlockIndexTranslationalVelocityBody2 = this->startSubBlockSpaceIndex("body-bc."+bbc2.name()+".translational-velocity");
             size_type startBlockIndexArticulationLMTranslationalVelocity = this->startSubBlockSpaceIndex( "body-bc.articulation-lm."+ba.name()+".translational-velocity");
-
+            
+            size_type startBlockIndexAngularVelocityBody1 = this->startSubBlockSpaceIndex("body-bc."+bbc1.name()+".angular-velocity");
+            size_type startBlockIndexAngularVelocityBody2 = this->startSubBlockSpaceIndex("body-bc."+bbc2.name()+".angular-velocity");
+            size_type startBlockIndexArticulationLMAngularVelocity = this->startSubBlockSpaceIndex( "body-bc.articulation-lm."+ba.name()+".angular-velocity");
             auto createArticulationGraph = [] ( auto const& map1, auto const& map2, bool closeGraph = true, size_type pattern = Pattern::COUPLED ) {
                 Feel::Context graph_prop( pattern );
                 auto sparsity_graph = std::make_shared<GraphCSR>( map1, map2 );
@@ -1912,6 +1935,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
             myblockGraph(startBlockIndexArticulationLMTranslationalVelocity,startBlockIndexTranslationalVelocityBody2) = createArticulationGraph( ba.dataMapLagrangeMultiplierTranslationalVelocity(),
                                                                                                                                                   bbc2.spaceTranslationalVelocity()->mapPtr(),
                                                                                                                                                   false, Pattern::DEFAULT );
+
+            myblockGraph(startBlockIndexAngularVelocityBody1,startBlockIndexArticulationLMAngularVelocity) = createArticulationGraph( bbc1.spaceAngularVelocity()->mapPtr(),
+                                                                                                                                                  ba.dataMapLagrangeMultiplierAngularVelocity(),
+                                                                                                                                                  false, Pattern::DEFAULT );
+            myblockGraph(startBlockIndexAngularVelocityBody2,startBlockIndexArticulationLMAngularVelocity) = createArticulationGraph( bbc2.spaceAngularVelocity()->mapPtr(),
+                                                                                                                                                  ba.dataMapLagrangeMultiplierAngularVelocity(),
+                                                                                                                                                  false, Pattern::DEFAULT );
+            myblockGraph(startBlockIndexArticulationLMAngularVelocity,startBlockIndexAngularVelocityBody1) = createArticulationGraph( ba.dataMapLagrangeMultiplierAngularVelocity(),
+                                                                                                                                                  bbc1.spaceAngularVelocity()->mapPtr(),
+                                                                                                                                                  false, Pattern::DEFAULT );
+            myblockGraph(startBlockIndexArticulationLMAngularVelocity,startBlockIndexAngularVelocityBody2) = createArticulationGraph( ba.dataMapLagrangeMultiplierAngularVelocity(),
+                                                                                                                                                  bbc2.spaceAngularVelocity()->mapPtr(),
+                                                                                                                                                  false, Pattern::DEFAULT );
+             
             ++indexBlock;
 
         }

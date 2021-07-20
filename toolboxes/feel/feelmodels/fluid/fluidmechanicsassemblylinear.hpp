@@ -829,6 +829,14 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 bool hasActiveDofTranslationalVelocityBody1 = bbc1.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
                 bool hasActiveDofTranslationalVelocityBody2 = bbc2.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
                 size_type startBlockIndexArticulationLMTranslationalVelocity = this->startSubBlockSpaceIndex( "body-bc.articulation-lm."+ba.name()+".translational-velocity");
+                
+                size_type startBlockIndexAngularVelocityBody1 = this->startSubBlockSpaceIndex("body-bc."+bbc1.name()+".angular-velocity");
+                size_type startBlockIndexAngularVelocityBody2 = this->startSubBlockSpaceIndex("body-bc."+bbc2.name()+".angular-velocity");
+                bool hasActiveDofAngularVelocityBody1 = bbc1.spaceAngularVelocity()->nLocalDofWithoutGhost() > 0;
+                bool hasActiveDofAngularVelocityBody2 = bbc2.spaceAngularVelocity()->nLocalDofWithoutGhost() > 0;
+                size_type startBlockIndexArticulationLMAngularVelocity = this->startSubBlockSpaceIndex( "body-bc.articulation-lm."+ba.name()+".angular-velocity");
+                auto const& momentOfInertia = bbc1.body().momentOfInertia();
+                int nLocalDofAngularVelocity = bbc1.spaceAngularVelocity()->nLocalDofWithoutGhost();
                 if ( BuildCstPart)
                 {
                     A->setIsClosed( false );
@@ -856,6 +864,47 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                             A->add( basisToContainerGpTranslationalVelocityBody2Row[d],basisToContainerGpArticulationLMTranslationalVelocityCol[d],-1.0 );
                         }
                     }
+                    
+                    if ( hasActiveDofAngularVelocityBody1 )
+                    {
+                        auto const& basisToContainerGpAngularVelocityBody1Row = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexAngularVelocityBody1 );
+                        auto const& basisToContainerGpAngularVelocityBody1Col = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexAngularVelocityBody1 );
+                        auto const& basisToContainerGpArticulationLMAngularVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexArticulationLMAngularVelocity );
+                        auto const& basisToContainerGpArticulationLMAngularVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexArticulationLMAngularVelocity );
+                        if constexpr (nDim==2)
+                        {
+                            A->add( basisToContainerGpAngularVelocityBody1Row[0],basisToContainerGpArticulationLMAngularVelocityCol[0],momentOfInertia(0,0));//1.0 );
+                            A->add( basisToContainerGpArticulationLMAngularVelocityRow[0],basisToContainerGpAngularVelocityBody1Col[0],1.0);//1.0 );
+                        }
+                        else
+                        {
+                            for (int d=0;d<nDim;++d)
+                            {
+                                A->add( basisToContainerGpAngularVelocityBody1Row[d],basisToContainerGpArticulationLMAngularVelocityCol[d],1.0 );
+                                A->add( basisToContainerGpArticulationLMAngularVelocityRow[d],basisToContainerGpAngularVelocityBody1Col[d],1.0 );
+                            }
+                        }
+                    }
+                    if ( hasActiveDofAngularVelocityBody2 )
+                    {
+                        auto const& basisToContainerGpAngularVelocityBody2Row = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexAngularVelocityBody2 );
+                        auto const& basisToContainerGpAngularVelocityBody2Col = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexAngularVelocityBody2 );
+                        auto const& basisToContainerGpArticulationLMAngularVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexArticulationLMAngularVelocity );
+                        auto const& basisToContainerGpArticulationLMAngularVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexArticulationLMAngularVelocity );
+                        if constexpr (nDim==2)
+                        {
+                            A->add( basisToContainerGpArticulationLMAngularVelocityRow[0],basisToContainerGpAngularVelocityBody2Col[0],-1.0);//-1.0 );
+                            A->add( basisToContainerGpAngularVelocityBody2Row[0],basisToContainerGpArticulationLMAngularVelocityCol[0],-momentOfInertia(0,0));//-1.0 );
+                        }
+                        else
+                        {
+                            for (int d=0;d<nDim;++d)
+                            {
+                                A->add( basisToContainerGpArticulationLMAngularVelocityRow[d],basisToContainerGpAngularVelocityBody2Col[d],-1.0 );
+                                A->add( basisToContainerGpAngularVelocityBody2Row[d],basisToContainerGpArticulationLMAngularVelocityCol[d],-1.0 );
+                            }
+                        }
+                    }
                 }
                 if ( BuildNonCstPart )
                 {
@@ -868,6 +917,27 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                         {
                             F->add( basisToContainerGpArticulationLMTranslationalVelocityVector[d],
                                     articulationTranslationalVelocityExpr(d) );
+                        }
+                    }
+                    
+                    if ( hasActiveDofAngularVelocityBody1 )
+                    {
+                        auto const& basisToContainerGpArticulationLMAngularVelocityVector = F->map().dofIdToContainerId( rowStartInVector+startBlockIndexArticulationLMAngularVelocity );
+                        //auto expression_angular = zero<nDim,1>();//mass*(x-xCM)*trans(x-xCM)*omega_reference;
+                        //auto sigmaExpr = this->stressTensorExpr( se );
+                        //auto integral_stress = integrate(_range=bbc1.rangeMarkedFacesOnFluid(),_expr=cross(sigmaExpr*N(),bbc1.massCenterExpr())).evaluate(false);
+                        if constexpr (nDim==2)
+                        {
+                            F->add( basisToContainerGpArticulationLMAngularVelocityVector[0],
+                                        0 );
+                        }
+                        else
+                        {
+                            for (int d=0;d<nDim;++d)
+                            {
+                                F->add( basisToContainerGpArticulationLMAngularVelocityVector[d],
+                                        0 );
+                            }
                         }
                     }
                 }

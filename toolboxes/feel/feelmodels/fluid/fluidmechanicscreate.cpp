@@ -1835,6 +1835,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
             continue;
         for ( auto const& ba : nba.articulations() )
             this->setStartSubBlockSpaceIndex( "body-bc.articulation-lm."+ba.name()+".translational-velocity", currentStartIndex++ );
+        // Add the Lagrange multipliers blocks for the angular velocities
+        for ( auto const& ba : nba.articulations() )
+        {
+            this->setStartSubBlockSpaceIndex( "body-bc.articulation-lm."+ba.name()+".angular-velocity", currentStartIndex++ );
+        }
     }
 
 
@@ -1917,6 +1922,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
                 continue;
             for ( auto const& ba : nba.articulations() )
                 bvs->operator()(cptBlock++) = ba.vectorLagrangeMultiplierTranslationalVelocity();
+            for ( auto const& ba : nba.articulations() )
+                bvs->operator()(cptBlock++) = ba.vectorLagrangeMultiplierAngularVelocity();
         }
     }
 
@@ -2811,7 +2818,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
 
     if (fluidToolbox.isMoveDomain())
     {
-        if ( M_body->hasMaterialsProperties() )
+        if ( M_body->hasMaterialsProperties())
         {
             M_body->updateForUse();
         }
@@ -3008,6 +3015,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyArticulation::initLagrangeMultiplier( se
     M_vectorLagrangeMultiplierTranslationalVelocity = fluidToolbox.backend()->newVector( M_dataMapLagrangeMultiplierTranslationalVelocity );
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyArticulation::initLagrangeMultiplierUniqueRotationDof( self_type const& fluidToolbox )
+{
+    M_dataMapLagrangeMultiplierAngularVelocity =
+        utility_constant_functionspace::aggregateParallelSupport( { this->body1().spaceAngularVelocity()->mapPtr(), this->body2().spaceAngularVelocity()->mapPtr() },
+                                                                  fluidToolbox.worldCommPtr() );
+    M_vectorLagrangeMultiplierAngularVelocity = fluidToolbox.backend()->newVector( M_dataMapLagrangeMultiplierAngularVelocity );
+}
+
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -3045,6 +3062,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::init( self_type const& flu
             datamaps.push_back( bbcPtr->spaceTranslationalVelocity()->mapPtr() );
         M_dataMapPMatrixTranslationalVelocity = utility_constant_functionspace::aggregateParallelSupport( datamaps, fluidToolbox.worldCommPtr() );
     }
+
+    if(this->hasUniqueRotationalDof())
+    {
+        //this->computeMass();
+        //this->computeMassCenter();
+        //this->computeMomentInertia();
+
+        for ( auto & ba : M_articulations )
+            ba.initLagrangeMultiplierUniqueRotationDof( fluidToolbox );
+    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -3063,17 +3090,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::init( self_type co
         bpbc.init( fluidToolbox );
 
     std::vector<BodyArticulation> articulations;
-    for ( auto const& [name,bbc] : *this )
+    for ( auto & [name,bbc] : *this )
     {
-        if ( bbc.articulationTranslationalVelocityExpr().empty() )
+        if ( bbc.articulationTranslationalVelocityExprNoConst().empty() )
             continue;
-        std::string const& bbcName = bbc.articulationTranslationalVelocityExpr().begin()->first; // WARNING : we guess that we have only one body! TODO 
+        std::string bbcName = bbc.articulationTranslationalVelocityExprNoConst().begin()->first; // WARNING : we guess that we have only one body! TODO 
         auto itFind = this->find( bbcName );
         CHECK( itFind != this->end() ) << "body not found";
 
         BodyArticulation ba( &bbc, &(itFind->second) );
         //ba.setTranslationalVelocityExpr( bbc.articulationTranslationalVelocityModelExpr() );
-        ba.setTranslationalVelocityExpr( bbc.articulationTranslationalVelocityExpr().begin()->second );
+        ba.setTranslationalVelocityExpr( bbc.articulationTranslationalVelocityExprNoConst().begin()->second );
         articulations.push_back( std::move( ba ) );
     }
 
