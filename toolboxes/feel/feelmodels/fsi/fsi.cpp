@@ -692,7 +692,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
             myblockGraphTimeDerivative(0,0) = mygraphTimeDerivative;
             for ( int k=1;k<nBlock;++k )
             {
-                auto mapPtr = this->fluidModel()->blockVectorSolution()(k)->mapPtr();
+                auto mapPtr = this->fluidModel()->algebraicBlockVectorSolution()->operator()(k)->mapPtr();
                 graph_ptrtype zeroGraph = std::make_shared<graph_type>( mapPtr,mapPtr );
                 zeroGraph->zero();
                 myblockGraphTimeDerivative(k,k) = zeroGraph;
@@ -717,7 +717,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         myblockGraph(0,0) = mygraph;
         for ( int k=1;k<nBlock;++k )
         {
-            auto mapPtr = this->fluidModel()->blockVectorSolution()(k)->mapPtr();
+            auto mapPtr = this->fluidModel()->algebraicBlockVectorSolution()->operator()(k)->mapPtr();
             graph_ptrtype zeroGraph = std::make_shared<graph_type>( mapPtr,dofStress );
             zeroGraph->zero();
             myblockGraph(k,0) = zeroGraph;

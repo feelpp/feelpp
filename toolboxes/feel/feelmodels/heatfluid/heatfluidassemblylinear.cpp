@@ -143,7 +143,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinear_Heat( DataUpdateLinear & data ) cons
 {
     const vector_ptrtype& vecCurrentSolution = data.currentSolution();
     auto mctx = this->modelContext( vecCurrentSolution, this->heatModel()->startBlockSpaceIndexVector(),
-                                    this->fluidModel()->blockVectorSolution().vectorMonolithic(), 0 );
+                                    this->fluidModel()->algebraicBlockVectorSolution()->vectorMonolithic(), 0 );
     if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
     {
         auto previousSolHeat = data.vectorInfo( "time-stepping.previous-solution");
@@ -176,7 +176,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinear_Fluid( DataUpdateLinear & data ) con
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("HeatFluid","updateLinear_Fluid", "start"+sc);
 
-    auto mctx = this->modelContext( this->heatModel()->blockVectorSolution().vectorMonolithic(), 0,
+    auto mctx = this->modelContext( this->heatModel()->algebraicBlockVectorSolution()->vectorMonolithic(), 0,
                                     vecCurrentSolution, this->fluidModel()->startBlockSpaceIndexVector() );
     if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
     {

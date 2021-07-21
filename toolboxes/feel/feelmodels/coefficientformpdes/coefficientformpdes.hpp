@@ -369,7 +369,7 @@ public :
         {
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
-            auto seMeshes = this->symbolsExprMeshes();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
             return Feel::vf::symbolsExpr( seToolbox,seParam,seMeshes,seMat,seFields );
@@ -428,13 +428,7 @@ public :
         }
 
     //___________________________________________________________________________________//
-    // algebraic data and solver
-    backend_ptrtype const& backend() const { return  M_backend; }
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
-    size_type nLocalDof() const;
-    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
-    model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
+
 
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     //int nBlockMatrixGraph() const { return 1; }
@@ -505,11 +499,6 @@ private :
 
     // post-process
     export_ptrtype M_exporter;
-
-    // algebraic data/tools
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    BlocksBaseVector<double> M_blockVectorSolution;
 
     vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 

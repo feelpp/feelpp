@@ -156,6 +156,16 @@ ModelMesh<IndexType>::setup( pt::ptree const& pt, ModelMeshes<IndexType> const& 
             M_codbme.emplace( std::make_pair( dataName, std::move( c ) ) );
         }
     }
+
+    if ( auto fieldsPtree = pt.get_child_optional("Fields") )
+    {
+        for ( auto const& item : *fieldsPtree )
+        {
+            std::string dataName = item.first;
+            FieldsSetup fs(dataName,item.second );
+            M_fieldsSetup.push_back( std::move( fs ) );
+        }
+    }
 }
 
 template <typename IndexType>
@@ -274,6 +284,34 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
     {
         data.setMesh( M_mesh );
         data.template updateForUse<MeshType>();
+    }
+
+
+    // fields
+    static constexpr auto tuple_t_basis = hana::make_tuple( hana::make_tuple( "Pch1", hana::type_c<Lagrange<1,Scalar,Continuous,PointSetFekete>> ),
+                                                            hana::make_tuple( "Pch2", hana::type_c<Lagrange<2,Scalar,Continuous,PointSetFekete>> ),
+                                                            hana::make_tuple( "Pchv1", hana::type_c<Lagrange<1,Vectorial,Continuous,PointSetFekete>> ),
+                                                            hana::make_tuple( "Pchv2", hana::type_c<Lagrange<2,Vectorial,Continuous,PointSetFekete>> )
+                                                            );
+    for ( auto const& fs : M_fieldsSetup )
+    {
+        std::string const& basis = fs.basis();
+        hana::for_each( tuple_t_basis, [this,&basis,&fs]( auto const& b )
+                        {
+                            if ( basis == hana::at_c<0>( b ) )
+                            {
+                                using basis_type = typename std::decay_t<decltype(hana::at_c<1>( b ) )>::type;
+                                using space_type = FunctionSpace<MeshType, bases<basis_type> >;
+
+                                if ( M_functionSpaces.find( basis ) == M_functionSpaces.end() )
+                                    M_functionSpaces[basis] = space_type::New(_mesh=this->mesh<MeshType>());
+
+                                auto Vh = std::dynamic_pointer_cast<space_type>( M_functionSpaces[basis] );
+                                auto u = Vh->elementPtr();
+                                u->load(_path=fs.filename(),_type="default");
+                                M_fields[fs.name()] = u;
+                            }
+                        });
     }
 }
 

@@ -34,7 +34,6 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
@@ -172,12 +171,6 @@ public :
 
     maxwellproperties_ptrtype const& maxwellProperties() const { return M_maxwellProperties; }
 
-    backend_ptrtype const& backend() const { return M_backend; }
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
-    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
-    model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
-
     //___________________________________________________________________________________//
     // apply assembly and solver
     void solve();
@@ -223,10 +216,6 @@ private :
     // regularization
     double M_epsilon;
 
-    // algebraic data/tools
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    BlocksBaseVector<double> M_blockVectorSolution;
     std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
     // start dof index fields in matrix (temperature,maxwell-potential,...)
     std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;

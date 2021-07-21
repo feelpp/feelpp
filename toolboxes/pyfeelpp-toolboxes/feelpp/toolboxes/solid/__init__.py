@@ -1,3 +1,5 @@
+import feelpp
+import feelpp.toolboxes as *
 from ._solid import *
 
 _csms={
@@ -15,7 +17,7 @@ def solid( dim=2, orderDisp=1, worldComm=None):
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     """
     if worldComm is None:
-        worldComm=core.Environment.worldCommPtr()
+        worldComm=feelpp.Environment.worldCommPtr()
     key='solid('+str(dim)+','+str(orderDisp)+')'
     if worldComm.isMasterRank():
         print(key)
