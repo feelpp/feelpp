@@ -7,6 +7,7 @@ from ._discr import *
 from ._exporter import  *
 from ._ts import  *
 from ._vf import  *
+from ._measure import  *
 from ._models import *
 
 
