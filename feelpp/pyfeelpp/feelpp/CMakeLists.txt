@@ -8,9 +8,10 @@ feelpp_add_pymodule(discr SRCS discr.cpp DESTINATION feelpp )
 feelpp_add_pymodule(exporter SRCS exporter.cpp hbf.cpp  DESTINATION feelpp )
 feelpp_add_pymodule(ts SRCS ts.cpp DESTINATION feelpp )
 feelpp_add_pymodule(vf SRCS vf.cpp DESTINATION feelpp )
+feelpp_add_pymodule(measure SRCS measure.cpp DESTINATION feelpp )
 feelpp_add_pymodule(models SRCS models.cpp DESTINATION feelpp )
 
-foreach(MODULE IN ITEMS core feelpp alg mesh discr exporter ts vf models )
+foreach(MODULE IN ITEMS core feelpp alg mesh discr exporter ts vf measure models )
   add_dependencies(pyfeelpp _${MODULE})
 endforeach()
 
