@@ -20,7 +20,7 @@ def create_rectangle():
         gmsh.model.setPhysicalName(1, gamma_2, "Gamma_2")
         gmsh.model.mesh.generate(2)
         gmsh.write("rectangle.msh")
-    return "rectangle.msh",2,2,4
+    return "rectangle.msh",2,2,4,6
 
 
 def create_box():
@@ -41,12 +41,12 @@ def create_box():
         gmsh.model.setPhysicalName(2, gamma_3, "Gamma_3")
         gmsh.model.mesh.generate(3)
         gmsh.write("box.msh")
-    return "box.msh", 1, 1.5, 1.5
+    return "box.msh", 1, 1.5, 1.5,7
 
 
 
 def run(m, geo):
-    mesh_name, e_meas, e_s_1, e_s_2=geo
+    mesh_name, e_meas, e_s_1, e_s_2, e_s_bdy=geo
     mesh= feelpp.load(m, mesh_name, 0.1)
 
     M=feelpp.measure(range=feelpp.elements(mesh))
@@ -55,6 +55,8 @@ def run(m, geo):
     assert(abs(S_1-e_s_1) <1e-10)
     S_2 = feelpp.measure(range=feelpp.markedfaces(mesh, "Gamma_2"))
     assert(abs(S_2-e_s_2)<1e-10)
+    S_bdy = feelpp.measure(range=feelpp.boundaryfaces(mesh))
+    assert(abs(S_bdy-e_s_bdy) < 1e-10)
 
 def test_measure(init_feelpp):
     geo = {
