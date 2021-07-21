@@ -7,6 +7,9 @@
 #include <feel/feelfilters/databymeshentity.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelmodels/modelcore/modelfields.hpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -101,6 +104,39 @@ public :
 
     std::map<std::string,collection_data_by_mesh_entity_type> const& collectionOfDataByMeshEntity() const { return M_codbme; }
 
+    template <typename MeshType>
+    auto modelFields( std::string const& prefix_symbol = "" ) const
+        {
+            static constexpr auto tuple_t_basis = hana::to_tuple(hana::tuple_t<
+                                                                 Lagrange<1,Scalar,Continuous,PointSetFekete>,
+                                                                 Lagrange<2,Scalar,Continuous,PointSetFekete>,
+                                                                 Lagrange<1,Vectorial,Continuous,PointSetFekete>,
+                                                                 Lagrange<2,Vectorial,Continuous,PointSetFekete>
+                                                                 >);
+
+            std::string prefix = prefix_symbol;
+
+            auto mfields = hana::fold( tuple_t_basis, model_fields_empty_t{}, [this,prefix,prefix_symbol]( auto const& r, auto const& cur )
+                                       {
+                                           using basis_type = typename std::decay_t<decltype(cur)>::type;
+                                           using space_type = FunctionSpace<MeshType, bases<basis_type> >;
+                                           using field_type = typename space_type::element_type;
+                                           using field_ptrtype = std::shared_ptr<field_type>;
+
+                                           auto mftag = ModelFieldTag< ModelMesh<index_type>,0>( this );
+                                           auto mf = modelField<FieldCtx::ID,field_ptrtype>( mftag );
+
+                                           for ( auto const& [name,fieldBase] : M_fields )
+                                           {
+                                               if ( auto u = std::dynamic_pointer_cast<field_type>( fieldBase ) )
+                                                   mf.add( mftag, prefix, name, u, name, prefixvm( prefix_symbol, "fields", "_" ) );
+                                           }
+                                           return Feel::FeelModels::modelFields( r,mf );
+                                       });
+            return mfields;
+        }
+
+    template <typename MeshType = mesh_base_type, bool AddFields = true>
     auto symbolsExpr( std::string const& prefix_symbol = "" ) const
         {
             using _se_type = std::decay_t< decltype( M_codbme.begin()->second.symbolsExpr() )>;
@@ -109,7 +145,15 @@ public :
             {
                 res =  Feel::vf::symbolsExpr( res, data.symbolsExpr( prefixvm( prefix_symbol, "data_"+name, "_" ) ) );
             }
-            return res;
+
+            if constexpr( AddFields && !std::is_same_v<MeshType,mesh_base_type> )
+            {
+                return Feel::vf::symbolsExpr( res, this->modelFields<MeshType>( prefix_symbol ).symbolsExpr() );
+            }
+            else
+            {
+                return res;
+            }
         }
 
     void updateTime( double time )
@@ -123,12 +167,43 @@ public :
 
     static tabulate_informations_ptr_t tabulateInformations( nl::json const& p, TabulateInformationProperties const& tabInfoProp );
 
+
+
 private:
     std::string M_name;
     mesh_base_ptrtype M_mesh;
     std::string M_meshFilename;
     ImportConfig M_importConfig;
     std::map<std::string,collection_data_by_mesh_entity_type> M_codbme;
+
+
+    struct FieldsSetup
+    {
+        FieldsSetup( std::string const& name, pt::ptree const& pt )
+            :
+            M_name( name )
+            {
+                if ( auto filenameOpt = pt.template get_optional<std::string>( "filename" ) )
+                    M_filename = Environment::expand( *filenameOpt );
+                else
+                    CHECK( false ) << "filename required";
+                if ( auto basisOpt = pt.template get_optional<std::string>( "basis" ) )
+                    M_basis = Environment::expand( *basisOpt );
+                else
+                    CHECK( false ) << "filename required";
+            }
+        std::string const& name() const { return M_name; }
+        std::string const& filename() const { return M_filename; }
+        std::string const& basis() const { return M_basis; }
+    private :
+        std::string M_name;
+        std::string M_filename;
+        std::string M_basis;
+    };
+
+    std::vector<FieldsSetup> M_fieldsSetup;
+    std::map<std::string, std::shared_ptr<FunctionSpaceBase> > M_functionSpaces;
+    std::map<std::string, std::shared_ptr<Vector<double>> > M_fields;
 };
 
 template <typename IndexType>
@@ -193,12 +268,13 @@ public:
         return this->modelMesh( meshName ).template mesh<MeshType>();
     }
 
+    template <typename MeshType = mesh_base_type, bool AddFields = true>
     auto symbolsExpr( std::string const& prefix_symbol = "meshes" ) const
     {
-        using _se_type = std::decay_t< decltype( this->begin()->second->symbolsExpr() )>;
+        using _se_type = std::decay_t< decltype( this->begin()->second->template symbolsExpr<MeshType,AddFields>() )>;
         _se_type res;
         for ( auto const& [meshName,mMesh] : *this )
-            res =  Feel::vf::symbolsExpr( res, mMesh->symbolsExpr( prefixvm( prefix_symbol, meshName, "_" ) ) );
+            res =  Feel::vf::symbolsExpr( res, mMesh->template symbolsExpr<MeshType,AddFields>( prefixvm( prefix_symbol, meshName, "_" ) ) );
         return res;
     }
 

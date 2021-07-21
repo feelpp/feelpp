@@ -151,21 +151,18 @@ MAXWELL_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // post-process
     this->initPostProcess();
 
-    // backend : use worldComm of Xh
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
+    // backend
+    this->initAlgebraicBackend();
 
     size_type currentStartIndex = 0;// velocity and pressure before
     M_startBlockIndexFieldsInMatrix["potential-maxwell"] = currentStartIndex;
 
     // vector solution
     int nBlock = this->nBlockMatrixGraph();
-    M_blockVectorSolution.resize( nBlock );
-    int indexBlock=0;
-    M_blockVectorSolution(indexBlock) = this->fieldMagneticPotentialPtr();
-
+    auto bvs = this->initAlgebraicBlockVectorSolution( nBlock );
+    bvs->operator()(0) = this->fieldMagneticPotentialPtr();
     // init petsc vector associated to the block
-    M_blockVectorSolution.buildVector( this->backend() );
-
+    bvs->buildVector( this->backend() );
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -279,7 +276,8 @@ MAXWELL_CLASS_TEMPLATE_DECLARATIONS
 void
 MAXWELL_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
-    M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+    auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
+    this->setAlgebraicFactory( algebraicFactory );
 }
 
 MAXWELL_CLASS_TEMPLATE_DECLARATIONS
@@ -312,8 +310,8 @@ MAXWELL_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n   Space MagneticPotential Discretization"
            << "\n     -- order         : " << nOrderPolyMagneticPotential
            << "\n     -- number of dof : " << M_XhMagneticPotential->nDof() << " (" << M_XhMagneticPotential->nLocalDof() << ")";
-    if ( M_algebraicFactory )
-        *_ostr << M_algebraicFactory->getInfo()->str();
+    if ( this->algebraicFactory() )
+        *_ostr << this->algebraicFactory()->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -442,9 +440,9 @@ MAXWELL_CLASS_TEMPLATE_TYPE::solve()
 
     this->setStartBlockSpaceIndex( 0 );
 
-    M_blockVectorSolution.updateVectorFromSubVectors();
-    M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
-    M_blockVectorSolution.localize();
+    this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
+    this->algebraicFactory()->solve( "LinearSystem", this->algebraicBlockVectorSolution()->vectorMonolithic() );
+    this->algebraicBlockVectorSolution()->localize();
 
     this->updateMagneticField();
 
