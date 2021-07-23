@@ -4,6 +4,7 @@ import sys
 import py
 import pytest
 import feelpp
+import gmsh 
 
 log = getLogger(__name__)
 MPI_ARGS = ("mpirun", "-n")
@@ -43,3 +44,11 @@ def init_feelpp():
 @pytest.fixture(scope="session")
 def init_feelpp_config_local():
     return InitFeelpp(feelpp.localRepository("feelppdb"))
+
+
+def gmshGenerate(dim, fname):
+    gmsh.model.mesh.generate(dim)
+    gmsh.option.setNumber("Mesh.PartitionCreateGhostCells", 1)
+    gmsh.option.setNumber("Mesh.PartitionCreatePhysicals", 1)
+    gmsh.model.mesh.partition(feelpp.Environment.numberOfProcessors())
+    gmsh.write(fname)
