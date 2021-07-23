@@ -1,7 +1,7 @@
 import math
 import sys
 import feelpp
-from feelpp.measure import measure
+from feelpp.integrate  import integrate
 import pytest
 from conftest import gmshGenerate
 
@@ -12,16 +12,16 @@ def create_rectangle():
         gmsh.initialize()
         gmsh.model.add("rectangle")
         gmsh.logger.start()
-        rectangle=gmsh.model.occ.addRectangle(0, 0, 0, 1, 2)
+        rectangle = gmsh.model.occ.addRectangle(0, 0, 0, 1, 2)
         gmsh.model.occ.synchronize()
-        omega=gmsh.model.addPhysicalGroup(2, [rectangle])
-        gmsh.model.setPhysicalName(2,omega,"Omega")
-        gamma_1=gmsh.model.addPhysicalGroup(1, [1, 3])
+        omega = gmsh.model.addPhysicalGroup(2, [rectangle])
+        gmsh.model.setPhysicalName(2, omega, "Omega")
+        gamma_1 = gmsh.model.addPhysicalGroup(1, [1, 3])
         gmsh.model.setPhysicalName(1, gamma_1, "Gamma_1")
-        gamma_2=gmsh.model.addPhysicalGroup(1, [2, 4])
+        gamma_2 = gmsh.model.addPhysicalGroup(1, [2, 4])
         gmsh.model.setPhysicalName(1, gamma_2, "Gamma_2")
         gmshGenerate(2,"rectangle.msh")
-    return "rectangle.msh",2,2,4,6
+    return "rectangle.msh", 2, 2, 4, 6
 
 
 def create_box():
@@ -38,27 +38,31 @@ def create_box():
         gmsh.model.setPhysicalName(2, gamma_1, "Gamma_1")
         gamma_2 = gmsh.model.addPhysicalGroup(2, [2, 4])
         gmsh.model.setPhysicalName(2, gamma_2, "Gamma_2")
-        gamma_3= gmsh.model.addPhysicalGroup(2, [5, 6])
+        gamma_3 = gmsh.model.addPhysicalGroup(2, [5, 6])
         gmsh.model.setPhysicalName(2, gamma_3, "Gamma_3")
         gmshGenerate(3,"box.msh")
-    return "box.msh", 1, 1.5, 1.5,7
-
+    return "box.msh", 1, 1.5, 1.5, 7
 
 
 def run(m, geo):
-    mesh_name, e_meas, e_s_1, e_s_2, e_s_bdy=geo
-    mesh= feelpp.load(m, mesh_name, 0.1)
+    mesh_name, e_meas, e_s_1, e_s_2, e_s_bdy = geo
+    mesh = feelpp.load(m, mesh_name, 0.1)
 
-    M=measure(range=feelpp.elements(mesh))
-    assert(abs(M-e_meas)<1e-10)
-    S_1=measure(range=feelpp.markedfaces(mesh,"Gamma_1"))
-    assert(abs(S_1-e_s_1) <1e-10)
-    S_2 = measure(range=feelpp.markedfaces(mesh, "Gamma_2"))
-    assert(abs(S_2-e_s_2)<1e-10)
-    S_bdy = measure(range=feelpp.boundaryfaces(mesh))
-    assert(abs(S_bdy-e_s_bdy) < 1e-10)
+    M = integrate(range=feelpp.elements(mesh),expr="1")
+    assert(abs(M[0]-e_meas) < 1e-10)
+    S_1 = integrate(range=feelpp.markedfaces(mesh, "Gamma_1"), expr="1")
+    assert(abs(S_1[0]-e_s_1) < 1e-10)
+    S_2 = integrate(range=feelpp.markedfaces(mesh, "Gamma_2"), expr="1")
+    assert(abs(S_2[0]-e_s_2) < 1e-10)
+    S_bdy = integrate(range=feelpp.boundaryfaces(mesh), expr="1")
+    assert(abs(S_bdy[0]-e_s_bdy) < 1e-10)
+    if mesh.dimension() == 2 :
+        S_bdy = integrate(range=feelpp.boundaryfaces(mesh), expr="nx+ny:nx:ny")
+    elif mesh.dimension() == 3:
+        S_bdy = integrate(range=feelpp.boundaryfaces(mesh), expr="nx+ny+nz:nx:ny:nz")
+    assert(abs(S_bdy[0]) < 1e-10)
 
-def test_measure(init_feelpp):
+def test_integrate(init_feelpp):
     geo = {
         '2': create_rectangle(),
         '3': create_box(),
