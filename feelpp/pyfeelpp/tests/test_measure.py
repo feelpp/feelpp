@@ -19,6 +19,8 @@ def run(m, geo):
     assert(abs(S_bdy-e_s_bdy) < 1e-10)
 
 def test_measure(init_feelpp):
+    feelpp.Environment.changeRepository(
+        directory="pyfeelpp-tests/measure")
     geo = {
         '2': feelpp.create_rectangle(),
         '3': feelpp.create_box(),

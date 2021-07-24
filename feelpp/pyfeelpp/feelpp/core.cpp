@@ -79,7 +79,7 @@ PYBIND11_MODULE(_core, m )
         .def( "barrier", []( std::shared_ptr<WorldComm> const& wc){
                 wc->barrier();
             }, "create a barrier" )
-        .def( "to_comm", []( std::shared_ptr<WorldComm> const& wc ){
+        .def( "to_comm", []( std::shared_ptr<WorldComm>& wc ){
             return static_cast<boost::mpi::communicator>( *wc );
             }, "return worldComm as MPI  communicator" );
 

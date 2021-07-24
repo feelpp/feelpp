@@ -132,6 +132,7 @@ def gmshGenerate(dim, fname):
         gmsh.option.setNumber("Mesh.PartitionCreatePhysicals", 1)
         gmsh.model.mesh.partition(Environment.numberOfProcessors())
         gmsh.write(mshname)
+    Environment.worldComm().to_comm().barrier()
     return mshname
 
 
