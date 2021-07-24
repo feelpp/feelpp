@@ -23,6 +23,8 @@ def run(m, geo):
     assert(abs(S_bdy[0]) < 1e-10)
 
 def test_integrate(init_feelpp):
+    feelpp.Environment.changeRepository(
+        directory="pyfeelpp-tests/integrate")
     geo = {
         '2': feelpp.create_rectangle(),
         '3': feelpp.create_box(),
