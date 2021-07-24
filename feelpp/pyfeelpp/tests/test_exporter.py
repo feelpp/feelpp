@@ -2,9 +2,9 @@ import sys
 import feelpp 
 import pytest
 
-
 def run(m, geo):
-    m2d = feelpp.load(m, geo, 0.1)
+    mesh_name, e_meas, e_s_1, e_s_2, e_s_bdy = geo
+    m2d = feelpp.load(m, mesh_name, 0.1)
 
     Xh = feelpp.functionSpace(space="Pch", mesh=m2d, order=1)
     P0h = feelpp.functionSpace(space="Pdh", mesh=m2d, order=0)
@@ -21,8 +21,8 @@ def run(m, geo):
 
 def test_exporter(init_feelpp):
     geo={
-        '2':feelpp.download( "github:{repo:feelpp,path:feelpp/quickstart/laplacian/cases/feelpp2d/feelpp2d.geo}", worldComm=feelpp.Environment.worldCommPtr() )[0],
-        '3':feelpp.download( "github:{repo:feelpp,path:feelpp/quickstart/laplacian/cases/feelpp3d/feelpp3d.geo}", worldComm=feelpp.Environment.worldCommPtr() )[0]
+        '2':feelpp.create_rectangle(),
+        '3':feelpp.create_box()
     }
     run( feelpp.mesh( dim=2 ), geo['2'] )
     run( feelpp.mesh( dim=3, realdim=3 ), geo['3'] )
