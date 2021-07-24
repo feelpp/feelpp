@@ -121,3 +121,55 @@ def expr(e,filename=None,worldComm=None,directory=None):
     if worldComm is None:
         worldComm=Environment.worldComm()
     return expr_(e,filename=filename,dir=directory,worldComm=worldComm)
+
+def gmshGenerate(dim, fname):
+    mshname = '{}-{}.msh'.format(fname,
+                                 Environment.numberOfProcessors())
+    if Environment.isMasterRank():
+        import gmsh
+        gmsh.model.mesh.generate(dim)
+        gmsh.option.setNumber("Mesh.PartitionCreateGhostCells", 1)
+        gmsh.option.setNumber("Mesh.PartitionCreatePhysicals", 1)
+        gmsh.model.mesh.partition(Environment.numberOfProcessors())
+        gmsh.write(mshname)
+    return mshname
+
+
+def create_rectangle():
+    mshname = None
+    if Environment.isMasterRank():
+        import gmsh
+        gmsh.initialize()
+        gmsh.model.add("rectangle")
+        gmsh.logger.start()
+        rectangle = gmsh.model.occ.addRectangle(0, 0, 0, 1, 2)
+        gmsh.model.occ.synchronize()
+        omega = gmsh.model.addPhysicalGroup(2, [rectangle])
+        gmsh.model.setPhysicalName(2, omega, "Omega")
+        gamma_1 = gmsh.model.addPhysicalGroup(1, [1, 3])
+        gmsh.model.setPhysicalName(1, gamma_1, "Gamma_1")
+        gamma_2 = gmsh.model.addPhysicalGroup(1, [2, 4])
+        gmsh.model.setPhysicalName(1, gamma_2, "Gamma_2")
+    mshname = gmshGenerate(2, "rectangle")
+    return mshname, 2, 2, 4, 6
+
+
+def create_box():
+    mshname = None
+    if Environment.isMasterRank():
+        import gmsh
+        gmsh.initialize()
+        gmsh.model.add("box")
+        gmsh.logger.start()
+        box = gmsh.model.occ.addBox(0, 0, 0, 1, 2, 0.5)
+        gmsh.model.occ.synchronize()
+        omega = gmsh.model.addPhysicalGroup(3, [box])
+        gmsh.model.setPhysicalName(3, omega, "Omega")
+        gamma_1 = gmsh.model.addPhysicalGroup(2, [1, 3])
+        gmsh.model.setPhysicalName(2, gamma_1, "Gamma_1")
+        gamma_2 = gmsh.model.addPhysicalGroup(2, [2, 4])
+        gmsh.model.setPhysicalName(2, gamma_2, "Gamma_2")
+        gamma_3 = gmsh.model.addPhysicalGroup(2, [5, 6])
+        gmsh.model.setPhysicalName(2, gamma_3, "Gamma_3")
+    mshname = gmshGenerate(3, "box")
+    return mshname, 1, 1.5, 1.5, 7
