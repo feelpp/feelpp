@@ -148,8 +148,8 @@ pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  ../${COMPONENT}_${v
 
 echo "+++ uploading ${PBUILDER_RESULTS} to bintray $COMPONENT $FLAVOR/$DIST"
 ls  -1 ${PBUILDER_RESULTS}
-echo "$pwd/publish.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT"
-$scriptdir/publish.sh  $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT
+echo "$scriptdir/publish.sh $main_version ${PBUILDER_RESULTS} $HOME/debian $DIST $CHANNEL $COMPONENT"
+$scriptdir/publish.sh  $main_version ${PBUILDER_RESULTS} $HOME/debian $DIST $CHANNEL $COMPONENT
 #repreprocmd=reprepro -Vb $HOME/debian/$DIST -C $COMPONENT 
 
 ## echo "../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT"
