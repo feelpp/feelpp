@@ -5,7 +5,7 @@ set -eo pipefail
 
 # this script must be executed at the top level of the Feel++ directories
 
-pwd=$PWD
+pwd=$PWD/$(basename $0)
 BUILDKITE_AGENT_NAME=${BUILDKITE_AGENT_NAME:-default}
 # default values
 CHANNEL=latest
