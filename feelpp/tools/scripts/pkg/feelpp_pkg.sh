@@ -1,11 +1,11 @@
-#! /bin/bash
+! /bin/bash
 
 set -eo pipefail
 #set -x
 
 # this script must be executed at the top level of the Feel++ directories
 
-
+pwd=$PWD
 BUILDKITE_AGENT_NAME=${BUILDKITE_AGENT_NAME:-default}
 # default values
 CHANNEL=latest
@@ -55,7 +55,7 @@ if [ -n "$(ls -A ${PBUILDER_RESULTS}/ 2>/dev/null)" ];
 then
     echo "removing previous builds in $PBUILDER_RESULTS";
     ls -1 ${PBUILDER_RESULTS}/
-    rm -f ${PBUILDER_RESULTS}/*;
+    rm -f "${PBUILDER_RESULTS}/*";
 else
     echo "no files in ${PBUILDER_RESULTS}/";
 fi
@@ -99,8 +99,8 @@ apt-get install -y apt-transport-https ca-certificates gnupg software-properties
 if [ "$DIST" = "buster" ]; then
     echo "deb http://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
 fi
-echo "deb https://feelpp.jfrog.io/artifactory/$FLAVOR $DIST $CHANNEL" | tee -a /etc/apt/sources.list
-wget -qO  - https://feelpp.jfrog.io/artifactory/api/security/keypair/gpg-debian/public | apt-key add -
+echo "deb https://apt.feelpp.org/debian/$FLAVOR $DIST $CHANNEL" | tee -a /etc/apt/sources.list
+#wget -qO  - https://feelpp.jfrog.io/artifactory/api/security/keypair/gpg-debian/public | apt-key add -
 apt update
 EOF
 fi
@@ -148,6 +148,10 @@ pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  ../${COMPONENT}_${v
 
 echo "+++ uploading ${PBUILDER_RESULTS} to bintray $COMPONENT $FLAVOR/$DIST"
 ls  -1 ${PBUILDER_RESULTS}
-echo "../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT"
-../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT
+echo "$pwd/publish.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT"
+$pwd/publish.sh  $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT
+#repreprocmd=reprepro -Vb $HOME/debian/$DIST -C $COMPONENT 
+
+## echo "../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT"
+## ../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT
 
