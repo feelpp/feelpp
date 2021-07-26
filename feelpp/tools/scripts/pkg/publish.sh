@@ -9,7 +9,7 @@ component=${6:-feelpp}
 arch=${7:-amd64}
 repository=$repo/$distribution
 
-for i in ${incoming}/*.deb do
+for i in ${incoming}/*.deb; do
     newpackage=`dpkg-deb -I $i | grep Package | awk '{print $2}'`
     newversion=`dpkg-deb -I $i | grep Version | awk '{print $2}'`
     currentpackage=`reprepro -Vb $repository -C $channel list $distribution | grep "\b$newpackage\b"`
