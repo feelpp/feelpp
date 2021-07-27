@@ -31,7 +31,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
-
+#include "mpi_caster.hpp"
 #include <boost/parameter/binding.hpp>
 #include <boost/parameter/keyword.hpp>
 #include <boost/parameter/preprocessor.hpp>
@@ -65,17 +65,29 @@ PYBIND11_MODULE(_core, m )
         .def(py::init<>())
         .def("add",static_cast<po::options_description & (po::options_description::*)(po::options_description const& )>(&po::options_description::add), "add options description",py::arg("desc"));
 
-    py::class_<WorldComm,std::shared_ptr<WorldComm>>(m,"WorldComm")
-        .def(py::init<>())
-        .def("isMasterRank", &Feel::WorldComm::isMasterRank,"returns true if master rank, false otherwise")
-        .def("localRank", &Feel::WorldComm::localRank,"returns the rank of the local worldcomm")
-        .def("globalRank", &Feel::WorldComm::globalRank,"returns the rank of the global worldcomm")
-        .def("masterRank", &Feel::WorldComm::masterRank,"returns the master rank")
-        ;
+    py::class_<WorldComm, std::shared_ptr<WorldComm>>( m, "WorldComm" )
+        .def( py::init<>() )
+        .def( "isMasterRank", &Feel::WorldComm::isMasterRank, "returns true if master rank, false otherwise" )
+        .def( "localRank", &Feel::WorldComm::localRank, "returns the rank of the local worldcomm" )
+        .def( "globalRank", &Feel::WorldComm::globalRank, "returns the rank of the global worldcomm" )
+        .def( "masterRank", &Feel::WorldComm::masterRank, "returns the master rank" )
+        .def( "localComm", &Feel::WorldComm::localComm, "returns the local communicator" )
+        .def( "localSize", &Feel::WorldComm::localSize, "returns the local communicator size" )
+        .def( "globalComm", &Feel::WorldComm::globalComm, "returns the global communicator" )
+        .def( "globalSize", &Feel::WorldComm::globalSize, "returns the global communicator size" )
+        .def( "selfComm", &Feel::WorldComm::selfComm, "returns the self communicator" )
+        .def( "barrier", []( std::shared_ptr<WorldComm> const& wc){
+                wc->barrier();
+            }, "create a barrier" )
+        .def( "to_comm", []( std::shared_ptr<WorldComm>& wc ){
+            return static_cast<boost::mpi::communicator>( *wc );
+            }, "return worldComm as MPI  communicator" );
+
     py::class_<worldscomm_ptr_t>(m,"WorldsComm").def(py::init<>())
         .def("clear", &worldscomm_ptr_t::clear)
         .def("pop_back", &worldscomm_ptr_t::pop_back)
-        .def("__len__", [](const worldscomm_ptr_t &v) { return v.size(); })
+        .def("__len__", [](const worldscomm_ptr_t &v) {
+        return v.size(); })
         .def("__iter__", [](worldscomm_ptr_t &v) {
                 return py::make_iterator(v.begin(), v.end());
             }, py::keep_alive<0, 1>()) /* Keep vector alive while iterator is used */;
@@ -158,5 +170,4 @@ PYBIND11_MODULE(_core, m )
     
     m.def( "feel_options", &Feel::feel_options, py::arg("prefix")="", "create feelpp options with optional prefix" );
     m.def( "feel_nooptions", &Feel::feel_nooptions, "create feelpp options with optional prefix" );
-
 }
