@@ -9,7 +9,7 @@ e=feelpp.Environment(sys.argv,opts=o)
 
 heatBox=heat(dim=2,order=1)
 heatBox.init()
-model = toolboxmor_2d()
+model = toolboxmor(dim=2,time_dependent=True)
 model.setFunctionSpaces( Vh=heatBox.spaceTemperature())
 
 def assembleDEIM(mu):
@@ -57,12 +57,14 @@ model.setOnlineAssembleMDEIM(assembleOnlineMDEIM)
 model.postInitModel()
 model.setInitialized(True)
 
-[Aq, Fq] = model.getAffineDecomposition()
+[Mq, Aq, Fq] = model.getAffineDecomposition()
 
 print("Aq")
 print(Aq)
 print("Fq")
 print(Fq)
+print("Mq")
+print(Mq)
 
 Dmu = model.parameterSpace()
 mu = Dmu.element(True, False)

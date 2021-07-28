@@ -136,6 +136,11 @@ ToolboxMor<SpaceType, Options>::resizeQm( bool resizeMat )
         }
     }
 
+    if( resizeMat )
+    {
+        this->M_Mqm.resize(1);
+        this->M_Mqm[0].resize(1, backend()->newMatrix(this->Xh, this->Xh ) );
+    }
     // if( resizeMat )
     // {
     //     M_InitialGuess.resize(1);
@@ -301,9 +306,8 @@ ToolboxMor<SpaceType, Options>::assembleData()
     this->M_energy_matrix = backend()->newMatrix(this->Xh, this->Xh );
     m->symmetricPart(this->M_energy_matrix);
 
-    this->M_Mqm.resize(1);
-    this->M_Mqm[0].resize(1, backend()->newMatrix(this->Xh, this->Xh ) );
-    form2( _test=this->Xh, _trial=this->Xh, _matrix=this->M_Mqm[0][0] ) = integrate(_range=elements(this->mesh()), _expr=inner(id(u), idt(v)) ); 
+    auto u = this->Xh->element();
+    form2( _test=this->Xh, _trial=this->Xh, _matrix=this->M_Mqm[0][0] ) = integrate(_range=elements(this->mesh()), _expr=inner(id(u), idt(u)) );
 
 }
 
