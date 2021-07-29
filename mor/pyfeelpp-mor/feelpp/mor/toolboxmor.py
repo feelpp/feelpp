@@ -69,7 +69,7 @@ print(Mq)
 Dmu = model.parameterSpace()
 mu = Dmu.element(True, False)
 
-[betaA, betaF] = model.computeBetaQm(mu)
+[betaM, betaA, betaF] = model.computeBetaQm(mu)
 
 print("mu")
 print(mu)
