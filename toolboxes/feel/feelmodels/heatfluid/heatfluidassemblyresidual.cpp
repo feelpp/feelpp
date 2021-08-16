@@ -149,7 +149,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual_Heat( DataUpdateResidual & data ) 
 {
     const vector_ptrtype& vecCurrentSolution = data.currentSolution();
     auto mctx = this->modelContext( vecCurrentSolution, this->heatModel()->startBlockSpaceIndexVector(),
-                                    M_blockVectorSolution.vectorMonolithic(), this->startSubBlockSpaceIndex("fluid") );
+                                    this->algebraicBlockVectorSolution()->vectorMonolithic(), this->startSubBlockSpaceIndex("fluid") );
     if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
     {
         auto previousSolHeat = data.vectorInfo( "time-stepping.previous-solution");
@@ -171,7 +171,7 @@ void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual_Fluid( DataUpdateResidual & data ) const
 {
     const vector_ptrtype& vecCurrentSolution = data.currentSolution();
-    auto mctx = this->modelContext( this->heatModel()->blockVectorSolution().vectorMonolithic(), 0,
+    auto mctx = this->modelContext( this->heatModel()->algebraicBlockVectorSolution()->vectorMonolithic(), 0,
                                     vecCurrentSolution, this->fluidModel()->startBlockSpaceIndexVector() );
     if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
     {

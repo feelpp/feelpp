@@ -40,12 +40,14 @@ Winslow<MeshType,Order>::Winslow( mesh_ptrtype mesh, std::string const& prefix,
     :
     super_type( prefix, mesh->worldCommPtr(),"", modelRep ),
     ModelBase( prefix, mesh->worldCommPtr(),"", modelRep ),
-    M_backend( backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() ) ),
+    //M_backend( backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() ) ),
     M_solverType( soption(_prefix=this->prefix(),_name="solver") ),
     M_mesh(mesh),
     M_flagSet(/*flagSet*/),
     M_Xh( space_type::New(_mesh=mesh ) )
-{}
+{
+    this->initAlgebraicBackend();
+}
 
 //----------------------------------------------------------------------------//
 
@@ -55,12 +57,13 @@ Winslow<MeshType,Order>::Winslow( space_ptrtype const& space, std::string const&
     :
     super_type( prefix, space->worldCommPtr(),"",modelRep ),
     ModelBase( prefix, space->worldCommPtr(),"",modelRep ),
-    M_backend( backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() ) ),
     M_solverType( soption(_prefix=this->prefix(),_name="solver") ),
     M_mesh(space->mesh()),
     M_flagSet(/*flagSet*/),
     M_Xh(space)
-{}
+{
+    this->initAlgebraicBackend();
+}
 
 //----------------------------------------------------------------------------//
 

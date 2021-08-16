@@ -146,8 +146,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- local rank : " << this->worldComm().localRank()
            << "\n   Numerical Solver"
            << "\n     -- solver : " << M_solverName;
-    if ( M_algebraicFactory )
-        *_ostr << M_algebraicFactory->getInfo()->str();
+    if ( this->algebraicFactory() )
+        *_ostr << this->algebraicFactory()->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n";
 
@@ -187,8 +187,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
 
         this->modelFields().updateInformationObject( p["Fields"] );
 
-        if ( M_algebraicFactory )
-            M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
+        if ( this->algebraicFactory() )
+            this->algebraicFactory()->updateInformationObject( p["Algebraic Solver"] );
     }
 
     if ( this->hasSolidEquation1dReduced() )
@@ -311,7 +311,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     }
     if ( this->hasSolidEquation1dReduced() )
     {
-        nBlock += M_solid1dReduced->blockVectorSolution().size();
+        nBlock += M_solid1dReduced->algebraicBlockVectorSolution()->size();
     }
     return nBlock;
 }
@@ -950,17 +950,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
 {
     if ( this->hasSolidEquationStandard() )
     {
-        if ( !M_algebraicFactory || M_timeStepping == "BDF" || M_timeStepping == "Newmark" )
+        auto algebraicFactory = this->algebraicFactory();
+        if ( !algebraicFactory || M_timeStepping == "BDF" || M_timeStepping == "Newmark" )
             return;
 
         if ( M_timeStepping == "Theta" )
         {
             M_timeStepThetaSchemePreviousContrib->zero();
-            M_blockVectorSolution.updateVectorFromSubVectors();
+            this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
             std::vector<std::string> infos = { prefixvm(this->prefix(),"time-stepping.evaluate-residual-without-time-derivative") };
-            M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
-            M_algebraicFactory->evaluateResidual(  M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos, false );
-            M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+            algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+            algebraicFactory->evaluateResidual( this->algebraicBlockVectorSolution()->vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos, false );
+            algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
         }
     }
 }
@@ -1056,9 +1057,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 
     //this->updateParameterValues();
 
-    M_blockVectorSolution.updateVectorFromSubVectors();
-    M_algebraicFactory->solve( M_solverName, M_blockVectorSolution.vectorMonolithic() );
-    M_blockVectorSolution.localize();
+    this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
+    this->algebraicFactory()->solve( M_solverName, this->algebraicBlockVectorSolution()->vectorMonolithic() );
+    this->algebraicBlockVectorSolution()->localize();
 
     if ( upVelAcc && !this->isStationary() )
         this->updateVelocity();

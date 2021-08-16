@@ -69,10 +69,6 @@ public:
     typedef Exporter<mesh_type,mesh_type::nOrder> export_type;
     typedef std::shared_ptr<export_type> export_ptrtype;
 
-    // algebraic solver
-    typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
-
     //___________________________________________________________________________________//
     // constructor
     ThermoElectric( std::string const& prefix,
@@ -119,10 +115,6 @@ public :
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
-
-    backend_ptrtype const& backend() const { return M_backendMonolithic; }
-    BlocksBaseVector<double> const& blockVectorSolutionMonolithic() const { return M_blockVectorSolutionMonolithic; }
-    BlocksBaseVector<double> & blockVectorSolutionMonolithic() { return M_blockVectorSolutionMonolithic; }
 
     //___________________________________________________________________________________//
 
@@ -243,11 +235,6 @@ private :
     // solver
     std::string M_solverName;
     bool M_solverNewtonInitialGuessUseLinearThermoElectric,M_solverNewtonInitialGuessUseLinearHeat,M_solverNewtonInitialGuessUseLinearElectric;
-
-    // algebraic data/tools
-    backend_ptrtype M_backendMonolithic;
-    model_algebraic_factory_ptrtype M_algebraicFactoryMonolithic;
-    BlocksBaseVector<double> M_blockVectorSolutionMonolithic;
 
     // post-process
     export_ptrtype M_exporter;

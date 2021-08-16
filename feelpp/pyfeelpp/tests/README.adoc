@@ -1,0 +1,32 @@
+:feelpp: Feel++
+= Tests for pyfeelpp
+
+
+== Command lines
+
+first go in `tests` directory
+----
+cd feelpp/pyfeelpp/tests
+----
+
+NOTE: check that `PYTHONPATH` and `LD_LIBRARY_PATH` are pointing to the correct locations if you don't use the {feelpp} system installation
+
+.tests in sequential
+----
+pytest
+----
+
+.check specific tests
+----
+pytest -k measure # check test which contain measure in the name
+----
+
+.check in verbose mode
+----
+pytest -s -v
+----
+
+.tests in parallel
+----
+mpirun -np 2 python3 -m pytest
+----

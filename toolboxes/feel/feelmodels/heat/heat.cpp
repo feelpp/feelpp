@@ -135,7 +135,7 @@ HEAT_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                 _trial=this->spaceTemperature() )->graph();
     return myblockGraph;
 }
-
+#if 0
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 typename HEAT_CLASS_TEMPLATE_TYPE::size_type
 HEAT_CLASS_TEMPLATE_TYPE::nLocalDof() const
@@ -143,7 +143,7 @@ HEAT_CLASS_TEMPLATE_TYPE::nLocalDof() const
     size_type res = this->spaceTemperature()->nLocalDofWithGhost();
     return res;
 }
-
+#endif
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -187,19 +187,18 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // post-process
     this->initPostProcess();
 
-    // backend : use worldComm of Xh
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldCommPtr() );
+    // backend
+    this->initAlgebraicBackend();
 
     // subspaces index
     size_type currentStartIndex = 0;
     this->setStartSubBlockSpaceIndex( "temperature", currentStartIndex++ );
 
      // vector solution
-    M_blockVectorSolution.resize( 1 );
-    M_blockVectorSolution(0) = this->fieldTemperaturePtr();
-
+    auto bvs = this->initAlgebraicBlockVectorSolution( 1 );
+    bvs->operator()(0) = this->fieldTemperaturePtr();
     // init petsc vector associated to the block
-    M_blockVectorSolution.buildVector( this->backend() );
+    bvs->buildVector( this->backend() );
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -332,15 +331,16 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
-    M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+    auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
+    this->setAlgebraicFactory( algebraicFactory );
 
     if ( M_timeStepping == "Theta" )
     {
-        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
-        M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
-        M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector( this->algebraicBlockVectorSolution()->vectorMonolithic()->mapPtr() );
+        algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+        algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
         if ( M_stabilizationGLS )
-            M_algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() ) );
+            algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", this->backend()->newVector( this->algebraicBlockVectorSolution()->vectorMonolithic()->mapPtr() ) );
     }
 
 }
@@ -412,9 +412,9 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 
 
     // Algebraic Solver
-    if ( M_algebraicFactory )
+    if ( this->algebraicFactory() )
     {
-        M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
+        this->algebraicFactory()->updateInformationObject( p["Algebraic Solver"] );
     }
 }
 
@@ -528,8 +528,8 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
         if ( M_stabilizationGLSParameter )
             *_ostr << "\n     -- paramter method : " << M_stabilizationGLSParameter->method();
     }
-    if ( M_algebraicFactory )
-        *_ostr << M_algebraicFactory->getInfo()->str();
+    if ( this->algebraicFactory() )
+        *_ostr << this->algebraicFactory()->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -631,14 +631,14 @@ HEAT_CLASS_TEMPLATE_TYPE::solve()
 
     this->setStartBlockSpaceIndex( 0 );
 
-    M_blockVectorSolution.updateVectorFromSubVectors();
+    this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
 
     if ( this->materialsProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
-        M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
+        this->algebraicFactory()->solve( "Newton", this->algebraicBlockVectorSolution()->vectorMonolithic() );
     else
-        M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
+        this->algebraicFactory()->solve( "LinearSystem", this->algebraicBlockVectorSolution()->vectorMonolithic() );
 
-    M_blockVectorSolution.localize();
+    this->algebraicBlockVectorSolution()->localize();
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
@@ -732,23 +732,26 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
 {
     if ( this->isStationary() )
         return;
-    if ( !M_algebraicFactory )
+
+    auto algebraicFactory = this->algebraicFactory();
+    if ( !algebraicFactory )
         return;
+
     if ( M_timeStepping == "Theta" )
     {
         M_timeStepThetaSchemePreviousContrib->zero();
-        M_blockVectorSolution.updateVectorFromSubVectors();
-        ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
+        this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
+        ModelAlgebraic::DataUpdateResidual dataResidual( this->algebraicBlockVectorSolution()->vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
         dataResidual.addInfo( prefixvm( this->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
         this->setStartBlockSpaceIndex( 0 );
-        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
-        M_algebraicFactory->evaluateResidual( dataResidual );
-        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+        algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+        algebraicFactory->evaluateResidual( dataResidual );
+        algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
 
         if ( M_stabilizationGLS )
         {
-            auto & dataInfos = M_algebraicFactory->dataInfos();
-            *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *M_blockVectorSolution.vectorMonolithic();
+            auto & dataInfos = algebraicFactory->dataInfos();
+            *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *this->algebraicBlockVectorSolution()->vectorMonolithic();
             dataInfos.addParameterValuesInfo( "time-stepping.previous-parameter-values", M_currentParameterValues );
         }
     }

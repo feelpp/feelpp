@@ -23,10 +23,15 @@
 //! @date 15 Jun 2017
 //! @copyright 2017 Feel++ Consortium
 //!
+
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 #include <mpi4py/mpi4py.h>
+#include <petsc4py/petsc4py.h>
+
+#include "petsc_casters.hpp"
 
 #include <boost/parameter/keyword.hpp>
 #include <boost/parameter/preprocessor.hpp>
@@ -35,10 +40,12 @@
 #include <boost/mpl/vector.hpp>
 
 #include<feel/feelalg/backend.hpp>
+#include<feel/feelalg/backendpetsc.hpp>
 #include<feel/feelalg/vectorublas.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <pybind11/stl_bind.h>
+
 
 namespace py = pybind11;
 
@@ -48,7 +55,10 @@ class PyVectorDouble : Vector<double,unsigned int>
 {
     using super = Vector<double,unsigned int>;
     using super::super;
+    using size_type = super::size_type;
 
+    size_type size() const override { PYBIND11_OVERLOAD_PURE( size_type, super, size ); }
+    size_type localSize() const override { PYBIND11_OVERLOAD_PURE( size_type, super, localSize ); }
     void close() override { PYBIND11_OVERLOAD_PURE(void, super, close ); }
     void zero() override { PYBIND11_OVERLOAD_PURE( void, super, zero ); }
     void zero(size_type start, size_type stop) override {
@@ -201,21 +211,92 @@ PYBIND11_MODULE(_alg, m )
 {
     using namespace Feel;
 
-    if (import_mpi4py()<0) return ;
+    if (import_mpi4py()<0 && import_petsc4py()<0) return ;
 
-    py::class_<Vector<double, uint32_type>, PyVectorDouble, std::shared_ptr<Vector<double, uint32_type>> >(m, "VectorDouble")
-        .def(py::init<>())
+    py::class_<datamap_t<uint32_type>, datamap_ptr_t<uint32_type>>( m, "DataMap" )
+        .def( py::init<std::shared_ptr<WorldComm>>() )
+        .def( py::init<uint32_type, uint32_type, std::shared_ptr<WorldComm>>() )
+//        .def( py::init<uint32_type, std::vector<int>, std::vector<int>>() )
+//        .def( py::init<std::vector<std::shared_ptr<DataMap<uint32_type>>>, std::shared_ptr<WorldComm>>() )
+        .def( "nDof", &DataMap<uint32_type>::nDof, "the total number of degrees of freedom in the problem" )
+        .def( "nLocalDof", &DataMap<uint32_type>::nLocalDof, "the total number of degrees of freedom in the problem" )
+        .def( "nLocalDofWithoutGhost", static_cast<uint32_type (DataMap<uint32_type>::*)() const>(&DataMap<uint32_type>::nLocalDofWithoutGhost), "the total number of degrees of freedom in the problem" )
+
         ;
-    py::class_<VectorPetsc<double>, Vector<double,uint32_type>, std::shared_ptr<VectorPetsc<double> > >(m, "VectorPetscDouble")
-        .def(py::init<>())
+    py::class_<BackendPetsc<double>, std::shared_ptr<BackendPetsc<double>>>( m, "Backend" )
+        .def( py::init<worldcomm_ptr_t>() )
+
+        .def( "newVector", static_cast<std::shared_ptr<Vector<double>> ( BackendPetsc<double>::* )( datamap_ptr_t<uint32_type> const& )>( &BackendPetsc<double>::newVector ), py::arg( "dm" ), "build a vector from a DataMap" )
+        .def( "newMatrix", static_cast<std::shared_ptr<MatrixSparse<double>> ( BackendPetsc<double>::* )( datamap_ptr_t<uint32_type> const&, datamap_ptr_t<uint32_type> const&, uint32_type, bool )>( &BackendPetsc<double>::newMatrix ), py::arg( "dmrow" ) = datamap_ptr_t<uint32_type>{}, py::arg( "dmcol" ) = datamap_ptr_t<uint32_type>{}, py::arg( "prop" ) = (int)NON_HERMITIAN, py::arg( "init" ) = true, "build a zero matrix from DataMap" )
+
+        .def( "newZeroMatrix", static_cast<std::shared_ptr<MatrixSparse<double>> ( BackendPetsc<double>::* )( datamap_ptr_t<uint32_type> const&, datamap_ptr_t<uint32_type> const& )>( &BackendPetsc<double>::newZeroMatrix ), py::arg( "dmrow" ), py::arg( "dmcol" ), "build a zero matrix from DataMap" )
+
         ;
-    py::class_<MatrixSparse<double>, PyMatrixSparseDouble, std::shared_ptr<MatrixSparse<double>> >(m, "MatrixSparseDouble")
-        .def(py::init<>())
+
+    // create a backend
+    m.def( "backend", &Feel::detail::backend_impl<double>, py::arg( "name" ) = "", py::arg( "kind" ) = "petsc", py::arg( "rebuild" ) = true, py::arg( "worldcomm" ) = Feel::Environment::worldCommPtr(), "retrieve a backend" );
+
+    py::class_<Vector<double, uint32_type>, PyVectorDouble, std::shared_ptr<Vector<double, uint32_type>>>( m, "VectorDouble" )
+        .def( py::init<>() )
+        .def( "clone", &Vector<double>::clone, "return  Vector clone" )
+        .def( "size", &Vector<double>::size, "return   Vector size" )
+        .def( "clear", &Vector<double>::clear, "clear  vector" )
+        .def( "zero", static_cast<void ( Vector<double>::* )()>( &Vector<double>::zero ), "zero  vector" )
+        .def(
+            "to_petsc", []( std::shared_ptr<Vector<double>> const& m )
+            { return toPETSc( m ); },
+            "cast a VectorDouble to a VectorPetsc" );
+    ;
+    py::class_<VectorPetsc<double>, Vector<double, uint32_type>, std::shared_ptr<VectorPetsc<double>>>( m, "VectorPetscDouble" )
+        .def( py::init<>() )
+        .def( py::init<int, std::shared_ptr<WorldComm>>() )
+        .def( py::init<int, int, std::shared_ptr<WorldComm>>() )
+        .def( py::init<datamap_ptr_t<uint32_type>, bool>() )
+        .def( "clone", &VectorPetsc<double>::clone, "return  PETSc Vector clone" )
+        .def( "size", &VectorPetsc<double>::size, "return  PETSc Vector size" )
+        .def( "clear", &VectorPetsc<double>::clear, "clear PETSc vector" )
+        .def( "zero", static_cast<void ( VectorPetsc<double>::* )()>(&VectorPetsc<double>::zero), "zero PETSc vector" )
+
+        .def( "vec", static_cast<Vec ( VectorPetsc<double>::* )() const>( &VectorPetsc<double>::vec ), "return a PETSc Vector" )
         ;
-    py::class_<MatrixPetsc<double>, MatrixSparse<double>, std::shared_ptr<MatrixPetsc<double> > >(m, "MatrixPetscDouble")
-        .def(py::init<>())
+    py::class_<MatrixSparse<double>, PyMatrixSparseDouble, std::shared_ptr<MatrixSparse<double>>>( m, "MatrixSparseDouble" )
+        .def( py::init<>() )
+        .def( "clone", &MatrixSparse<double>::clone, "return  MatrixSparse clone" )
+        .def( "size1", &MatrixSparse<double>::size1, "return Matrix size1" )
+        .def( "size2", &MatrixSparse<double>::size2, "return Matrix size2" )
+        .def( "clear", &MatrixSparse<double>::clear, "clear " )
+        .def( "zero", static_cast<void ( MatrixSparse<double>::* )()>( &MatrixSparse<double>::zero ), "zero " )
+        .def( "scale", static_cast<void ( MatrixSparse<double>::* )( const double )>( &MatrixSparse<double>::scale ), py::arg( "scale" ) = 1.0, "return a scaled sparse matrix" )
+        .def( "addMatrix", static_cast<void ( MatrixSparse<double>::* )( double, MatrixSparse<double> const&, Feel::MatrixStructure )>( &MatrixPetsc<double>::addMatrix ), py::arg( "scale" ) = 1.0, py::arg( "matrix" ), py::arg( "structure" ) = (int)Feel::SAME_NONZERO_PATTERN, "add a scaled sparse matrix" )
+        .def( "diagonal", static_cast<void ( MatrixSparse<double>::* )( std::shared_ptr<Vector<double>>& ) const>( &MatrixSparse<double>::diagonal ), py::arg( "diag" ), "set vector from the diagonal of the matrix" )
+        .def( "setDiagonal", static_cast<void ( MatrixSparse<double>::* )( std::shared_ptr<Vector<double>> const& )>( &MatrixSparse<double>::setDiagonal ), py::arg( "diag" ), "set diagonal from a vector" )
+        .def( "addDiagonal", static_cast<void ( MatrixSparse<double>::* )( std::shared_ptr<Vector<double>> const& )>( &MatrixSparse<double>::addDiagonal ), py::arg( "diag" ), "add vector on diagonal" )
+        .def( "transpose", static_cast<void ( MatrixSparse<double>::* )( std::shared_ptr<MatrixSparse<double>>&, uint32_type ) const>( &MatrixSparse<double>::transpose ), py::arg( "matrix" ), py::arg( "structure" ) = (int)Feel::SAME_NONZERO_PATTERN, "transpose matrix" )
+        .def( "symmetricPart", static_cast<void ( MatrixSparse<double>::* )( std::shared_ptr<MatrixSparse<double>>& ) const>( &MatrixSparse<double>::symmetricPart ), py::arg( "matrix" ), "compute symmetric part of the matrix" )
+        .def( "energy", static_cast<double ( MatrixSparse<double>::* )( std::shared_ptr<Vector<double>> const&, std::shared_ptr<Vector<double>> const&, bool ) const>( &MatrixSparse<double>::energy ), py::arg( "v" ), py::arg( "w" ), py::arg( "tranpose" ) = false, "compute v^T A w" )
+        .def(
+            "to_petsc", []( std::shared_ptr<MatrixSparse<double>> const& m )
+            { return toPETSc( m ); },
+            "cast a MattrixSparse to a MatrixPetsc" );
+    ;
+    py::class_<MatrixPetsc<double>, MatrixSparse<double>, std::shared_ptr<MatrixPetsc<double>>>( m, "MatrixPetscDouble" )
+        .def( py::init<worldcomm_ptr_t>() )
+        .def( py::init<datamap_ptr_t<uint32_type>, datamap_ptr_t<uint32_type>>() )
+        .def( py::init<datamap_ptr_t<uint32_type>, datamap_ptr_t<uint32_type>, worldcomm_ptr_t>() )
+        .def( "clone", &MatrixPetsc<double>::clone, "return  PETSc MatrixSparse clone" )
+        .def( "size1", &MatrixPetsc<double>::size1, "return  PETSc Matrix row size" )
+        .def( "size2", &MatrixPetsc<double>::size2, "return  PETSc Matrix column size" )
+        .def( "shape", &MatrixPetsc<double>::shape, "return the shape of the matrix" )
+        .def( "rowStart", &MatrixPetsc<double>::rowStart, "return  PETSc Matrix row start" )
+        .def( "rowStop", &MatrixPetsc<double>::rowStop, "return  PETSc Matrix row stop " )
+        .def( "clear", &MatrixPetsc<double>::clear, "clear PETSc matrix" )
+        .def( "zero", static_cast<void ( MatrixPetsc<double>::* )()>( &MatrixPetsc<double>::zero ), "zero PETSc matrix" )
+        .def( "mat", static_cast<Mat ( MatrixPetsc<double>::* )() const>( &MatrixPetsc<double>::mat ), "return a PETSc sparse matrix" )
+        .def( "scale", static_cast<void ( MatrixPetsc<double>::* )( const double )>( &MatrixPetsc<double>::scale ), py::arg("scale")=1.0, "return a scaled PETSc sparse matrix" )
+        .def( "addMatrix", static_cast<void ( MatrixPetsc<double>::* )( double, MatrixSparse<double> const&,  Feel::MatrixStructure)>( &MatrixPetsc<double>::addMatrix ), py::arg("scale")=1.0, py::arg("matrix"), py::arg("structure")=(int)Feel::SAME_NONZERO_PATTERN, "add a scaled PETSc sparse matrix" )
         ;
-    py::class_<VectorUblas<double>, Vector<double,uint32_type>, std::shared_ptr<VectorUblas<double>>> vublas(m,"VectorUBlas<double,ublas::vector<double>>");
+
+    py::class_<VectorUblas<double>, Vector<double,uint32_type>, std::shared_ptr<VectorUblas<double>>> vublas(m,"VectorUBlas");
     vublas.def(py::init<>())
         .def(py::self + py::self )
         .def(py::self - py::self)
@@ -233,9 +314,19 @@ PYBIND11_MODULE(_alg, m )
 //        .def(py::self /= double())
 //        .def(py::self *= py::self)
 //        .def(py::self /= py::self)
+        .def( "to_petsc", [](VectorUblas<double> &v){ return toPETSc( v ); }, "cast a VectorDouble to a VectorPetscDouble" );
+
         ;
 
-   m.def( "backend_options", &Feel::backend_options, py::arg("prefix"), "create a backend options descriptions with prefix" );
+    m.def( "backend_options", &Feel::backend_options, py::arg("prefix"), "create a backend options descriptions with prefix" );
+    
+#if 0
+    py::class_<preconditioner_type, std::shared_ptr<preconditioner_type> >(m, "Preconditioner")
+        .def(py::init<>())
+        .def(py::init<std::string,worldcomm_ptr_t>())
+        .def("initialized",&preconditioner_type::make i)
+        ;
+#endif
 
 }
 
