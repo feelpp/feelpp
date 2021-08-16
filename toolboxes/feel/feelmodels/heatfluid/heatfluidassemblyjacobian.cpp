@@ -172,7 +172,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian_Heat( DataUpdateJacobian & data ) 
 {
     const vector_ptrtype& vecCurrentSolution = data.currentSolution();
     auto mctx = this->modelContext( vecCurrentSolution, this->heatModel()->startBlockSpaceIndexVector(),
-                                    this->fluidModel()->blockVectorSolution().vectorMonolithic(), 0 );
+                                    this->fluidModel()->algebraicBlockVectorSolution()->vectorMonolithic(), 0 );
 
     M_heatModel->updateJacobian( data,mctx );
 }
@@ -183,7 +183,7 @@ void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian_Fluid( DataUpdateJacobian & data ) const
 {
     const vector_ptrtype& vecCurrentSolution = data.currentSolution();
-    auto mctx = this->modelContext( this->heatModel()->blockVectorSolution().vectorMonolithic(), 0,
+    auto mctx = this->modelContext( this->heatModel()->algebraicBlockVectorSolution()->vectorMonolithic(), 0,
                                     vecCurrentSolution, this->fluidModel()->startBlockSpaceIndexVector() );
 
     bool currentSabDoGLSDoAssembly = M_fluidModel->stabilizationGLSDoAssembly();

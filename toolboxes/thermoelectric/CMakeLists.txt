@@ -24,6 +24,4 @@ feelpp_add_application( cvg_thermoelectric_3d SRCS cvg_thermoelectric.cpp
   )
 endif()
 
-foreach( _testcase IN ITEMS "test" "ElectroMagnets" "cvg" )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_thermoelectric CATEGORY toolboxes/thermoelectric)
-endforeach()
+feelpp_add_testcase(cases PREFIX feelpp_toolbox_thermoelectric CATEGORY toolboxes/thermoelectric)

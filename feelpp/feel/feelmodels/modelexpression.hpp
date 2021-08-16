@@ -315,6 +315,9 @@ public :
         if ( this->isConstant() )
             return false;
 
+        if ( symbolsStr.empty() )
+            return false;
+
         bool res = false;
         hana::for_each( expr_shapes, [this,&symbolsStr,&se,&res]( auto const& e_ij )
                         {
@@ -343,6 +346,18 @@ public :
         return this->hasSymbolDependency( std::set<std::string>( { symbolStr } ), se );
     }
 
+    template <int Dim, typename TheSymbolExprType = symbols_expression_empty_t>
+    bool hasSymbolDependencyOnCoordinatesInSpace( TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
+    {
+        std::set<std::string> coords( { "x","y","z" } );
+        if ( Dim >=1 )
+            coords.insert( "x" );
+        if ( Dim >=2 )
+            coords.insert( "y" );
+        if ( Dim ==3 )
+            coords.insert( "z" );
+        return this->hasSymbolDependency( coords, se );
+    }
 
     template <typename TheSymbolExprType = symbols_expression_empty_t>
     size_type dynamicContext( TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
@@ -360,6 +375,7 @@ public :
                         });
         return ctx;
     }
+
 
 private :
     boost::optional<expr_scalar_type> M_exprScalar;

@@ -31,6 +31,5 @@ feelpp_add_application( solenoid_3d SRCS stress.cpp
   )
 endif()
 
-foreach( _testcase IN ITEMS "NAFEMS-LE1" "NAFEMS-LE10" "Solenoid" "TurekHron" "torsionbar" "cantilever" )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_solid CATEGORY toolboxes/solid)
-endforeach()
+feelpp_add_testcase(cases PREFIX feelpp_toolbox_solid CATEGORY toolboxes/solid)
+

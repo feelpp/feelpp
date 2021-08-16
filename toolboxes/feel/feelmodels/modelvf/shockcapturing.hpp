@@ -304,7 +304,7 @@ private :
 };
 
 
-template<typename ExprResidualType, typename ExprResidualDerivativeType, typename ExprTauParameterType, typename ExprConvectionType,typename ElementType, int TheExprType>
+template<typename ExprResidualType, typename ExprResidualDerivativeType, typename ExprTauParameterType, typename ExprConvectionType,typename ElementType, ExprApplyType TheExprType>
 class ShockCapturingExpr : public Feel::vf::ExprDynamicBase
 {
 public:
@@ -315,7 +315,7 @@ public:
     typedef ExprTauParameterType expression_tau_parameter_type;
     typedef ExprConvectionType expression_convection_type;
 
-    static const bool is_applied_in_jacobian = (TheExprType == ExprApplyType::JACOBIAN);
+    static constexpr bool is_applied_in_jacobian = (TheExprType == ExprApplyType::JACOBIAN);
     using expression_gradv_u_type = std::decay_t<decltype(Feel::vf::gradv(ElementType{}))>;
     typedef ElementType element_type;
 
@@ -334,7 +334,7 @@ public:
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = (TheExprType == ExprApplyType::JACOBIAN);
+        static const bool result = is_applied_in_jacobian &&  std::is_same_v<Func,typename unwrap_ptr_t<element_type>::functionspace_type::reference_element_type>;
     };
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
