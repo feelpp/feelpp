@@ -107,97 +107,76 @@ class FEELPP_EXPORT ModelPostprocessQuantities : public CommObject
     std::map<std::string,ModelExpression> M_exprs;
 };
 
-class FEELPP_EXPORT ModelPointPosition
+class FEELPP_EXPORT ModelPostprocessPointPosition : public CommObject
 {
+    using super_type = CommObject;
 public :
-    typedef Eigen::MatrixXd coord_value_type;
-    typedef vector_field_expression<3> coord_expr_type;
 
-    ModelPointPosition()
-        :
-        M_value( coord_value_type::Zero(3,1) )
-        {}
+    struct PointPosition
+    {
+        using coord_value_type = Eigen::MatrixXd;
 
-    ModelPointPosition( ModelPointPosition const& ) = default;
-    ModelPointPosition( ModelPointPosition&& ) = default;
-    ModelPointPosition& operator=( ModelPointPosition const& ) = default;
-    ModelPointPosition& operator=( ModelPointPosition && ) = default;
+        PointPosition() = default;
+        PointPosition( PointPosition const& ) = default;
+        PointPosition( PointPosition && ) = default;
+        PointPosition& operator=( PointPosition const& ) = default;
+        PointPosition& operator=( PointPosition && ) = default;
 
-    std::string const& name() const { return M_name; }
-    coord_value_type const& value() const { return M_value; }
-    std::string const& meshMarker() const { return M_meshMarker; }
-    coord_expr_type const& expression() const { CHECK( this->hasExpression() ) << "no expression defined"; return *M_expr; }
-    bool hasExpression() const { return M_expr.get_ptr() != 0; }
+        coord_value_type const& coordinatesEvaluated() const { return M_coordinatesEvaluated; }
 
-    void setName( std::string const& s ) { M_name = s; }
-    void setValue( coord_value_type const& v ) { M_value = v; }
-    void setMeshMarker( std::string const& s ) { M_meshMarker = s; }
-    void setExpression( std::string const& expression, std::string const& dirLibExpr = "",
-                        WorldComm const& world = Environment::worldComm() )
-        {
-            M_expr = expr<3,1>( expression,"",world,dirLibExpr );
-            M_value = M_expr->evaluate();
-        }
+        void setExpression( ModelExpression && mexpr ) { M_coordinatesExpr = mexpr; this->updateForUse(); }
+        void setMeshMarker( std::string const& s ) { M_meshMarker = s; }
 
-    void setParameterValues( std::map<std::string,double> const& mp )
-        {
-            if ( !this->hasExpression() )
-                return;
-            M_expr->setParameterValues( mp );
-            M_value = M_expr->evaluate();
-        }
+        void setParameterValues( std::map<std::string,double> const& mp )
+            {
+                if ( !M_coordinatesExpr.hasAtLeastOneExpr() )
+                    return;
+                M_coordinatesExpr.setParameterValues( mp );
+                this->updateForUse();
+            }
 
-private:
-    std::string M_name;
-    coord_value_type M_value;
-    boost::optional<coord_expr_type> M_expr;
-    std::string M_meshMarker;
+        void updateForUse()
+            {
+                if ( !M_coordinatesExpr.hasAtLeastOneExpr() )
+                    return;
+                M_coordinatesEvaluated = M_coordinatesExpr.evaluate();
+            }
+    private:
+        coord_value_type M_coordinatesEvaluated;
+        ModelExpression M_coordinatesExpr;
+        std::string M_meshMarker;
+    };
 
-};
-
-class FEELPP_EXPORT ModelPostprocessPointPosition : public std::pair< ModelPointPosition, std::set<std::string> >, public CommObject
-{
-    typedef std::pair< ModelPointPosition, std::set<std::string> > super_type;
-public :
-    using super2 = CommObject;
     ModelPostprocessPointPosition( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
-        super_type(),
-        super2( world )
-        {}
-    ModelPostprocessPointPosition( ModelPointPosition const& ptPos, worldcomm_ptr_t const& world = Environment::worldCommPtr() )
-        :
-        super_type( ptPos,std::set<std::string>() ),
-        super2( world )
-        {}
-    ModelPostprocessPointPosition( ModelPointPosition const& ptPos, std::set<std::string> const& fields,
-                                   worldcomm_ptr_t const& world = Environment::worldCommPtr() )
-        :
-        super_type( ptPos,fields ),
-        super2( world )
+        super_type( world )
         {}
     ModelPostprocessPointPosition( ModelPostprocessPointPosition const& ) = default;
     ModelPostprocessPointPosition( ModelPostprocessPointPosition&& ) = default;
     ModelPostprocessPointPosition& operator=( ModelPostprocessPointPosition const& ) = default;
     ModelPostprocessPointPosition& operator=( ModelPostprocessPointPosition && ) = default;
 
-    ModelPointPosition const& pointPosition() const { return this->first; }
-    ModelPointPosition & pointPosition() { return this->first; }
-    std::set<std::string> const& fields() const { return this->second; }
-    std::set<std::string> & fields() { return this->second; }
+    std::string const& name() const { return M_name; }
+    std::vector<PointPosition> const& pointsSampling() const { return M_pointsSampling; }
+
+    std::set<std::string> const& fields() const { return M_fields; }
+    std::set<std::string> & fields() { return M_fields; }
 
     std::map<std::string,std::tuple<ModelExpression,std::string> > const& expressions() const { return M_exprs; }
 
     void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
-    void setFields( std::set<std::string> const& fields ) { this->second = fields; }
-    void addFields( std::string const& field ) { this->second.insert( field ); }
+    void setFields( std::set<std::string> const& fields ) { M_fields = fields; }
+    void addFields( std::string const& field ) { M_fields.insert( field ); }
     void setParameterValues( std::map<std::string,double> const& mp );
 private:
     void setup( std::string const& name, ModelIndexes const& indexes );
 private:
+    std::string M_name;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
+    std::vector<PointPosition> M_pointsSampling;
+    std::set<std::string> M_fields;
     std::map<std::string,std::tuple<ModelExpression,std::string> > M_exprs; // name -> ( expr, tag )
 };
 
