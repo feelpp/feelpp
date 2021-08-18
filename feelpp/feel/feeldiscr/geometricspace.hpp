@@ -345,6 +345,7 @@ public :
                 {
                     ublas::column( xrefs, k ) = xref;
                     ptIds[k] = ptIdInCtx;
+                    ++k;
                 }
                 // compute for each basis function in reference element its
                 // value at \hat{t} in reference element
