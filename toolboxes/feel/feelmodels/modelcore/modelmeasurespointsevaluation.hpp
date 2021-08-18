@@ -103,10 +103,12 @@ public :
     void
     init( ModelPostprocessPointPosition const& evalPoints )
         {
+#if 0
             auto const& ptPos = evalPoints.pointPosition();
             node_type ptCoord(3);
             for ( int c=0;c<3;++c )
                 ptCoord[c]=ptPos.value()(c);
+#endif
 
             auto const& fields = evalPoints.fields();
 
@@ -139,7 +141,7 @@ public :
             std::map<int,int> nodeAddedInGeoCtx;
             int ctxId = 0;
             hana::for_each( M_geoContexts,
-                            [&evalPoints,&fields,&ptPos,&ptCoord,&nodeAddedInGeoCtx,&ctxId](auto & x) {
+                            [&evalPoints,&fields/*,&ptPos,&ptCoord*/,&nodeAddedInGeoCtx,&ctxId](auto & x) {
                                 auto & geoctx = std::get<0>( x );
                                 auto & ptPosNameToNodeIds = std::get<1>( x );
                                 auto & fieldsInCtx = std::get<2>( x );
@@ -177,19 +179,24 @@ public :
                                 }
                                 if ( !mapExprNameToExpr.empty() || !fieldsUsed.empty() )
                                 {
-                                    std::set<index_type> & nodeIds = ptPosNameToNodeIds[ptPos.name()];
+                                    std::set<index_type> & nodeIds = ptPosNameToNodeIds[evalPoints.name()];
                                     //std::set<index_type> nodeIds;
-                                    if ( true )//nodeAddedInGeoCtx.find( ctxId ) == nodeAddedInGeoCtx.end() )
+                                        //if ( true )//nodeAddedInGeoCtx.find( ctxId ) == nodeAddedInGeoCtx.end() )
+                                    for ( auto const& ptPos : evalPoints.pointsSampling() )
                                     {
                                         int nodeIdInCtx = geoctx->nPoints();
+                                        node_type ptCoord(3);
+                                        auto const& ptCoordEig = ptPos.coordinatesEvaluated();
+                                        for ( int c=0;c</*3*/ptCoordEig.size();++c )
+                                            ptCoord[c]=ptCoordEig(c);
                                         geoctx->add( ptCoord );
                                         nodeIds.insert( nodeIdInCtx );
                                         nodeAddedInGeoCtx[ ctxId ] = nodeIdInCtx;
                                     }
                                     for ( std::string const& field : fieldsUsed )
-                                        fieldsInCtx[field].insert( ptPos.name() );
+                                        fieldsInCtx[field].insert( evalPoints.name() );
                                     if ( !mapExprNameToExpr.empty() )
-                                        exprInCtx[ptPos.name()] = std::make_tuple( std::move(mapExprNameToExpr)/*, std::move( nodeIds )*/ );
+                                        exprInCtx[evalPoints.name()] = std::make_tuple( std::move(mapExprNameToExpr)/*, std::move( nodeIds )*/ );
                                 }
                                 ++ctxId;
                             });
@@ -394,9 +401,12 @@ private :
                                                     _expr=theExpr,
                                                     _points_used=nodeIds );
 
+            std::cout << "evalAtNodes=\n" << evalAtNodes << std::endl;
+
             typedef typename ExprTraitsFromContext<std::decay_t<decltype(*ctx)>,std::decay_t<decltype(theExpr)>>::shape shape_type;
 
-            for ( int nodeId=0;nodeId<nodeIds.size()/*ctx->nPoints()*/;++nodeId )
+            index_type numberOfNodes = nodeIds.size();
+            for ( int nodeId=0;nodeId<numberOfNodes/*ctx->nPoints()*/;++nodeId )
             {
                 for ( int i=0;i<shape_type::M ;++i )
                 {
@@ -410,6 +420,8 @@ private :
                             outputName = (boost::format("%1%_%2%")%outputNameBase %i).str();
                         else if ( shape_type::N > 1 )
                             outputName = (boost::format("%1%_%2%")%outputNameBase %j).str();
+                        if ( numberOfNodes > 1 )
+                            outputName += "_" + std::to_string( nodeId );
                         res[outputName] = val;
                     }
                 }
