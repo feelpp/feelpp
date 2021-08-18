@@ -26,6 +26,7 @@
 #include <feel/feelcore/environment.hpp>
 
 #include <feel/feelmodels/modelpostprocess.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 namespace Feel {
 
@@ -219,99 +220,99 @@ ModelPostprocessSave::setup( pt::ptree const& p )
 void
 ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes const& indexes )
 {
+    std::ostringstream pt_ostr;
+    write_json( pt_ostr, M_p );
+    std::istringstream pt_istream( pt_ostr.str() );
+    nl::json jData;
+    pt_istream >> jData;
 
-    // fields is necessary
-    // if ( !M_p.get_child_optional("fields") &&  )
-    //     return;
+    bool hasCoord = jData.contains( "coord" );
+    bool hasMarker = jData.contains( "marker" );
 
-    bool hasCoord = (M_p.get_child_optional("coord"))?true:false;
-    bool hasMarker = (M_p.get_child_optional("marker"))?true:false;
     // coord or marker is necessary
     if ( !hasCoord && !hasMarker )
         return;
 
-
-    this->pointPosition().setName( name );
+    M_name = name;
     if ( hasMarker )
     {
+#if 0
+        // TODO
         std::string marker = M_p.get<std::string>( "marker" );
         this->pointPosition().setMeshMarker( marker );
+#endif
     }
     if ( hasCoord )
     {
-        std::string coordExpr = indexes.replace( M_p.get<std::string>( "coord" ) );
-        //std::cout << "coordExpr : "<< coordExpr << "\n";
+        nl::json const& jCoord = jData.at( "coord" );
 
-        auto parseExpr = GiNaC::parse(coordExpr);
-        auto const& coordMatExpr = parseExpr.first.evalm();
-        auto const& coordExprSymbol = parseExpr.second;
-        int nComp = coordMatExpr.nops();
-        ModelPointPosition::coord_value_type coordData = ModelPointPosition::coord_value_type::Zero(3,1);
-        //for ( auto symbb : coordExprSymbol )
-        //    std::cout << "symbb " << symbb << "\n";
-        if ( coordExprSymbol.empty() || ( coordExprSymbol.size() == 1 && coordExprSymbol[0].get_name() == "0" ) )
+        std::vector<std::string> coordExprs;
+        if ( jCoord.is_string() )
         {
-            int nComp = GiNaC::parse(coordExpr).first.evalm().nops();
-            //std::cout << "ncomp " << nComp << "\n";
-            for (int comp=0;comp<nComp;++comp )
-            {
-                std::string compExpr = str( coordMatExpr.op(comp) );
-                try
-                {
-                    coordData(comp) = std::stod( compExpr );
-                }
-                catch (std::invalid_argument& err)
-                {
-                    LOG(WARNING) << "cast fail from expr to double\n";
-                    coordData(comp) = 0;
-                }
-            }
-            LOG(INFO) << "point coord is a cst expr : " << coordData(0) << "," << coordData(1) << "," << coordData(2);
-            this->pointPosition().setValue( coordData );
+            coordExprs.push_back( jCoord.get<std::string>() );
         }
-        else
+        else if ( jCoord.is_array() )
         {
-            LOG(INFO) << "point coord is a symbolic expr : " << coordExpr;
-            this->pointPosition().setExpression( coordExpr, M_directoryLibExpr, this->worldComm() );
+            for ( auto const& el : jCoord.items() )
+            {
+                CHECK( el.value().is_string() ) << "coord item should be a string";
+                coordExprs.push_back( el.value() );
+            }
+        }
+
+        for ( std::string coordExprBase : coordExprs )
+        {
+            std::string coordExpr = indexes.replace( coordExprBase );
+
+            ModelExpression mexpr;
+            mexpr.setExpr( coordExpr, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+            CHECK( mexpr.isScalar() || mexpr.isVector() ) << "wrong kind of expression with coord";
+
+            PointPosition ptPos;
+            ptPos.setExpression( std::move( mexpr ) );
+
+            M_pointsSampling.push_back( std::move( ptPos ) );
         }
     } // hasCoord
 
-    // fields name
-    if ( auto fieldsTree = M_p.get_child_optional("fields") )
+    if ( jData.contains( "fields" ) )
     {
-        std::vector<std::string> fieldList = as_vector<std::string>( M_p, "fields" );
-        if ( fieldList.empty() )
+        auto const& jFields = jData.at( "fields" );
+
+        std::vector<std::string> fieldList;
+        if ( jFields.is_string() )
         {
-            std::string fieldUnique = indexes.replace( M_p.get<std::string>( "fields" ) );
-            if ( !fieldUnique.empty() )
-                fieldList = { fieldUnique };
+            fieldList.push_back( jFields.get<std::string>() );
         }
-        for( std::string const& field : fieldList )
+        else if ( jFields.is_array() )
         {
-            // std::cout << "add field = " << field << "\n";
-            this->addFields( field );
+            for ( auto const& el : jFields.items() )
+            {
+                CHECK( el.value().is_string() ) << "fields item should be a string";
+                fieldList.push_back( el.value() );
+            }
         }
+
+        for ( std::string field : fieldList )
+            this->addFields( indexes.replace( field ) );
     }
 
-    // expressions
-    if ( auto exprTree = M_p.get_child_optional("expressions") )
+    if ( jData.contains( "expressions" ) )
     {
-        for ( auto const& exprItem : *exprTree )
-        {
-            std::string exprName = exprItem.first;
+        auto const& jExprs = jData.at( "expressions" );
 
-            if ( exprItem.second.empty() ) // name:expr
-            {
-                ModelExpression mexpr;
-                mexpr.setExpr( exprName, *exprTree, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
-                CHECK( mexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
-                std::cout << "MYEXPR " << exprName << " : " << mexpr.exprToString() << std::endl;
-                M_exprs.emplace( exprName, std::make_tuple( std::move( mexpr ), "" ) );
-            }
-            else
-            {
-                CHECK( false ) << "wrong syntax" << std::endl;
-            }
+        for ( auto const& el : jExprs.items() )
+        {
+            std::string const& exprName = el.key();
+            auto const& exprJson = el.value();
+            CHECK( exprJson.is_string() ) << "expr should be a string";
+            std::string const& exprStr = exprJson.get<std::string>();
+
+            ModelExpression mexpr;
+            mexpr.setExpr( exprStr, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+            CHECK( mexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
+            std::cout << "MYEXPR " << exprName << " : " << mexpr.exprToString() << std::endl;
+            M_exprs.emplace( exprName, std::make_tuple( std::move( mexpr ), "" ) );
         }
     }
 
@@ -320,7 +321,9 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
 void
 ModelPostprocessPointPosition::setParameterValues( std::map<std::string,double> const& mp )
 {
-    this->pointPosition().setParameterValues( mp );
+    //this->pointPosition().setParameterValues( mp );
+    for ( auto & ptPos : M_pointsSampling )
+        ptPos.setParameterValues( mp );
     for ( auto & [name,exprData] : M_exprs )
         std::get<0>( exprData ).setParameterValues( mp );
 }
