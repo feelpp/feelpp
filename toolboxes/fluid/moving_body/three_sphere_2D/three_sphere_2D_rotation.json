@@ -1,0 +1,124 @@
+{
+    "Name": "three_sphere_2D swimmer",
+    "ShortName":"three_sphere_2D swimmer",
+    "Models":
+    {
+        "equations":"Stokes"
+    },
+    "Materials":
+    {
+        "Fluid":{
+            "physics":"fluid",
+            "rho":"1",
+            "mu":"1"
+        },
+        "CirLeft":{
+            "physics":"body",
+            "rho":1e-1//"1e-3"
+        },
+        "CirCenter":{
+            "physics":"body",
+            "rho":1e-1//"1e-3"
+        },
+        "CirRight":{
+            "physics":"body",
+            "rho":1e-1//"1e-3"
+        }
+    },
+    "Parameters":
+    {
+        "eps":1e-10,
+        "speed_translational":4
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "BoxWalls":
+                {
+                    "expr":"{0,0}"
+                },
+                "Outlet":
+                {
+                    "expr":"{0,0}:y"
+                },
+                "Inlet":
+                {
+                    "expr":"{0,0}:y"
+                }
+            }
+        },
+        "fluid":
+        {
+            "body":
+            {
+                "CircleCenter":
+                {
+                    "markers":["CircleCenter"],
+                    //"materials":"MySolid",
+                    "materials":
+                    {
+                        "names":["CirCenter"]
+                    },
+                    "articulation":
+                    {
+                        "body":"CircleLeft",
+                        //"translational-velocity":"4*pulse(t,0,1,4)-4*pulse(t,2,3,4):t"
+                        "translational-velocity":"speed_translational*(pulse(t,0,1-eps,4)+pulse(t,4-eps,4,4)) -speed_translational*pulse(t,2-eps,3-eps,4):t:eps:speed_translational"
+                    },
+                    "angular-velocity":"0.1"
+                },
+                "CircleRight":
+                {
+                    "markers":["CircleRight"],
+                    //"materials":"MySolid",
+                    "materials":
+                    {
+                        "names":["CirRight"]
+                    },
+                    "articulation":
+                    {
+                        "body":"CircleCenter",
+                        //"translational-velocity":"4*pulse(t,1,2,4)-4*pulse(t,3,4,4):t"
+                        "translational-velocity":"0"//speed_translational*(pulse(t,0,1-eps,4)+pulse(t,4-eps,4,4)) -speed_translational*pulse(t,2-eps,3-eps,4):t:eps:speed_translational"
+                        //"translational-velocity":"(speed_translational*pulse(t,1-eps,2-eps,4)-speed_translational*pulse(t,3-eps,4-eps,4)):t:eps:speed_translational"
+                    }
+                },
+                "CircleLeft":
+                {
+                    "markers":["CircleLeft"],
+                    //"materials":"MySolid",
+                    "materials":
+                    {
+                        "names":["CirLeft"]
+                    }
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["all"]//velocity","pressure","pid","displacement"]
+        },
+        "Measures":
+        {
+            //"Forces":"CircleCenter"
+            "Quantities":
+            {
+                "names":"all"//"body_SphereLeft.fluid_forces"// ["body_SphereLeft.mass_center","body_SphereCenter.mass_center","body_SphereRight.mass_center"]
+                // "expr":
+                // {
+                //     "mc_Left":"{body_SphereLeft_mass_center_0,body_SphereLeft_mass_center_1,body_SphereLeft_mass_center_2}:body_SphereLeft_mass_center_0:body_SphereLeft_mass_center_1:body_SphereLeft_mass_center_2",
+                //     "mc_Center":"{body_SphereCenter_mass_center_0,body_SphereCenter_mass_center_1,body_SphereCenter_mass_center_2}:body_SphereCenter_mass_center_0:body_SphereCenter_mass_center_1:body_SphereCenter_mass_center_2",
+                //     "mc_Right":"{body_SphereRight_mass_center_0,body_SphereRight_mass_center_1,body_SphereRight_mass_center_2}:body_SphereRight_mass_center_0:body_SphereRight_mass_center_1:body_SphereRight_mass_center_2"
+                // }
+            }
+        }
+    }
+
+}
+

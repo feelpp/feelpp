@@ -873,7 +873,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                         auto const& basisToContainerGpArticulationLMAngularVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexArticulationLMAngularVelocity );
                         if constexpr (nDim==2)
                         {
-                            A->add( basisToContainerGpAngularVelocityBody1Row[0],basisToContainerGpArticulationLMAngularVelocityCol[0],momentOfInertia(0,0));//1.0 );
+                            A->add( basisToContainerGpAngularVelocityBody1Row[0],basisToContainerGpArticulationLMAngularVelocityCol[0],1.0 );
                             A->add( basisToContainerGpArticulationLMAngularVelocityRow[0],basisToContainerGpAngularVelocityBody1Col[0],1.0);//1.0 );
                         }
                         else
@@ -894,7 +894,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                         if constexpr (nDim==2)
                         {
                             A->add( basisToContainerGpArticulationLMAngularVelocityRow[0],basisToContainerGpAngularVelocityBody2Col[0],-1.0);//-1.0 );
-                            A->add( basisToContainerGpAngularVelocityBody2Row[0],basisToContainerGpArticulationLMAngularVelocityCol[0],-momentOfInertia(0,0));//-1.0 );
+                            A->add( basisToContainerGpAngularVelocityBody2Row[0],basisToContainerGpArticulationLMAngularVelocityCol[0],-1.0 );
                         }
                         else
                         {
@@ -928,14 +928,18 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                         //auto integral_stress = integrate(_range=bbc1.rangeMarkedFacesOnFluid(),_expr=cross(sigmaExpr*N(),bbc1.massCenterExpr())).evaluate(false);
                         if constexpr (nDim==2)
                         {
-                            F->add( basisToContainerGpArticulationLMAngularVelocityVector[0],
-                                        0 );
+                            for (int i=0;i<nLocalDofAngularVelocity;++i)
+                            {
+                                std::cout << " i nlocal dof" << std::endl;
+                                F->add( basisToContainerGpArticulationLMAngularVelocityVector[i],
+                                            0 );
+                            }
                         }
                         else
                         {
-                            for (int d=0;d<nDim;++d)
+                            for (int i=0;i<nLocalDofAngularVelocity;++i)
                             {
-                                F->add( basisToContainerGpArticulationLMAngularVelocityVector[d],
+                                F->add( basisToContainerGpArticulationLMAngularVelocityVector[i],
                                         0 );
                             }
                         }

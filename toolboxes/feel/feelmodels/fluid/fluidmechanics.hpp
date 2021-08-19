@@ -640,6 +640,7 @@ public:
         vector_ptrtype vectorLagrangeMultiplierAngularVelocity() const { return M_vectorLagrangeMultiplierAngularVelocity; }
 
         void setTranslationalVelocityExpr( ModelExpression const& e ) { M_exprTranslationalVelocity = e; }
+        void setAngularVelocityExpr( ModelExpression const& e ) { M_exprAngularVelocity = e; }
 
         bool has( BodyBoundaryCondition const& bbc ) const { return (bbc.name() == this->body1().name()) || (bbc.name() == this->body2().name()); }
 
@@ -650,7 +651,7 @@ public:
         {
             auto body = this->body1().body(); 
             auto mom = body.returnMatProperties()->materialsOnMesh(body.returnMesh());
-            double M_mass = 0;
+            double M_mass = 0;            
             eigen_vector_type<nRealDim> M_massCenter = eigen_vector_type<nRealDim>::Zero();
             for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
             {
@@ -685,6 +686,7 @@ public:
             eigen_vector_type<nRealDim> /*auto*/ unitDir = (mc2-mc1);
             unitDir.normalize();
             //std::cout << "unit dir : " << unitDir << std::endl;
+            std::cout << " " << this->body1().name() << " " << this->body2().name() << " " << unitDir << std::endl;
             auto e = expr( M_exprTranslationalVelocity.template expr<1,1>(), se );
             // std::cout << "e=" << str(e.expression()) << std::endl;
             // std::cout << "e.eval=" << e.evaluate()(false) << std::endl;
@@ -700,6 +702,7 @@ public:
         void setParameterValues( std::map<std::string,double> const& mp )
             {
                 M_exprTranslationalVelocity.setParameterValues( mp );
+                M_exprAngularVelocity.setParameterValues( mp );
             }
 
     private :
@@ -708,6 +711,7 @@ public:
         BodyBoundaryCondition * M_body1_modif;
         BodyBoundaryCondition * M_body2_modif;
         ModelExpression M_exprTranslationalVelocity;
+        ModelExpression M_exprAngularVelocity;
         datamap_ptr_t<> M_dataMapLagrangeMultiplierTranslationalVelocity;
         vector_ptrtype M_vectorLagrangeMultiplierTranslationalVelocity;
 
