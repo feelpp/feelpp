@@ -874,7 +874,6 @@ Environment::~Environment()
 #endif // FEELPP_HAS_PETSC_H
 
     stopLogging();
-    generateSummary( S_about.appName(), "end", true );
 
     JournalManager::journalFinalize();
     S_timers.reset();
@@ -1947,8 +1946,6 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
          << " . " << Environment::about().appName() << " files are stored in " << tc::red << Environment::appRepository()
          << tc::reset << std::endl;
     cout << " .. logfiles :" << Environment::logsRepository() << std::endl;
-
-    Environment::generateSummary( Environment::about().appName(), "start", true ); 
     
     // eventually cleanup
     if ( remove )
@@ -1958,32 +1955,6 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
             fs::remove_all( S_paths.back() );
     }
 }
-
-pt::ptree&
-Environment::generateSummary( std::string fname, std::string stage, bool write )
-{
-    using namespace std::string_literals;
-    std::string jsonfname = Environment::about().appName()+".json";
-    S_summary.put("application.name",Environment::about().appName());
-
-    //boost::gregorian::date today = boost::gregorian::day_clock::local_day();
-    using boost::posix_time::ptime;
-    using boost::posix_time::second_clock;
-    using boost::posix_time::to_simple_string;
-    using boost::gregorian::day_clock;
-
-    ptime todayUtc(day_clock::universal_day(), second_clock::universal_time().time_of_day());
-    std::string today = to_simple_string(todayUtc);
-    
-    S_summary.put("application.date."s+stage,today);
-    S_summary.put("application.directories.logs",Environment::logsRepository());
-    S_summary.put("application.directories.exprs",Environment::exprRepository());
-
-    if ( write )
-        pt::write_json(jsonfname, S_summary);
-    return S_summary;
-}
-
 
 void
 Environment::updateInformationObject( nl::json & p ) const
@@ -2601,7 +2572,6 @@ int Environment::S_argc = 0;
 char** Environment::S_argv = 0;
 
 AboutData Environment::S_about;
-pt::ptree Environment::S_summary;
 std::shared_ptr<po::command_line_parser> Environment::S_commandLineParser;
 std::vector<std::tuple<std::string,std::istringstream> > Environment::S_configFiles;
 po::variables_map Environment::S_vm;

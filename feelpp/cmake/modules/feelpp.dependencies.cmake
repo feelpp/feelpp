@@ -525,6 +525,14 @@ if(FEELPP_ENABLE_PYTHON)
     else()
       message(STATUS "[feelpp] python wrapper will not be enabled")
     endif()
+
+    Find_Package(PETSC4PY)
+    if ( PETSC4PY_FOUND )
+      set( FEELPP_HAS_PETSC4PY 1 )
+      message(STATUS "[feelpp] petsc4py installed; headers: ${PETSC4PY_INCLUDE_DIR}")
+    else()
+      message(STATUS "[feelpp] petsc4py python wrapper will not be enabled")
+    endif()
       
   endif()
 
