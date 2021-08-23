@@ -1975,11 +1975,12 @@ public:
         :
         //public std::vector<basis_context_ptrtype>
         //the index of point is associated to a basis_context_ptrtype
-        public std::map<int,basis_context_ptrtype>
+        public std::map<int,std::pair<basis_context_ptrtype,std::vector<index_type>>>
     {
     public:
         static const bool is_rb_context = false;
-        typedef std::map<int,basis_context_ptrtype> super;
+        //typedef std::map<int,basis_context_ptrtype> super;
+        using super = std::map<int,std::pair<basis_context_ptrtype,std::vector<index_type>>>;
         typedef typename super::value_type bc_type;
         typedef typename matrix_node<value_type>::type matrix_node_type;
         typedef typename super::iterator iterator;
@@ -2095,7 +2096,8 @@ public:
                 DVLOG(2) << "build basis function context\n";
 
                 int number = (ptIdInCtx < 0)? M_t.size()-1 : ptIdInCtx;
-                ret = this->insert( std::pair<int,basis_context_ptrtype>( number , ctx ) );
+                std::vector<index_type> ptIds;ptIds.push_back( number );
+                ret = this->insert( std::make_pair( number , std::make_pair( ctx, std::move(ptIds) ) ) );
                 //DVLOG(2) << "Context size: " << this->size() << "\n";
 
             }//if( found )
@@ -2121,10 +2123,10 @@ public:
         }//add ( non composite case )
 
     public :
-        void addCtx( basis_context_ptrtype ctx , int proc_having_the_point)
+        void addCtx( std::pair<basis_context_ptrtype,std::vector<index_type>> const& /*basis_context_ptrtype*/ ctx , int proc_having_the_point)
         {
             int position = M_t.size();
-            this->insert( std::pair<int,basis_context_ptrtype>( position , ctx ) );
+            this->insert( std::make_pair( position, ctx ) );
             node_type n;//only to increase M_t ( this function may be called during online step of crb )
             M_t.push_back( n );
             M_t_proc.push_back( proc_having_the_point );
@@ -3265,7 +3267,7 @@ public:
                 for( int i = 0 ; it != en; ++it, ++i )
                 {
                     v[0].setZero();
-                    auto basis = it->second;
+                    auto basis = std::get<0>( it->second );
                     id( *basis, v );
                     int global_index = it->first;
                     for(int comp=0; comp<ncdof; comp++)
@@ -3306,7 +3308,7 @@ public:
             if( proc_number == proc_having_the_point )
             {
                 auto basis = context.at( i );
-                id( *basis , v );
+                id( *std::get<0>( basis ) , v );
                 result = v[0](0,0);
             }
 

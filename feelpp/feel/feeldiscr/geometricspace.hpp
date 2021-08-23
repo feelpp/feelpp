@@ -170,10 +170,10 @@ public :
 
     class Context
         :
-        public std::map<int,std::shared_ptr<ContextGeometric>>
+        public std::map<int,std::pair<std::shared_ptr<ContextGeometric>,std::vector<index_type>>>
     {
     public:
-        typedef std::map<int,std::shared_ptr<ContextGeometric>> super_type;
+        using super_type = std::map<int,std::pair<std::shared_ptr<ContextGeometric>,std::vector<index_type>>>;
         typedef typename super_type::iterator iterator;
 
         typedef geometricspace_type functionspace_type;
@@ -356,32 +356,28 @@ public :
                 DVLOG(2) << "build geometric mapping context\n";
 
                 int number = this->size();//M_t.size()-1;
-                /*ret =*/ this->insert( std::make_pair( number , std::make_shared<ContextGeometric>( M_Xh, gmc ) ) );
-
-                M_ctxIdToPointIds.emplace( number, std::move(ptIds) );
+                /*ret =*/ this->insert( std::make_pair( number , std::make_pair( std::make_shared<ContextGeometric>( M_Xh, gmc ), std::move(ptIds) ) ) );
             }
 
             M_eltToUpdate.clear();
 
         }
 
-
-        // TODO : remove this and move into inherits
-        std::map<int,std::vector<index_type>> const& ctxIdToPointIds() const { return M_ctxIdToPointIds; }
-
         template <size_type CTX>
         void updateGmcContext( size_type dynctx = 0 )
         {
             for ( auto& [ptId,geoCtx] : *this )
             {
-                if ( geoCtx )
-                    geoCtx->template updateGmcContext<CTX>( dynctx );
+                if ( std::get<0>( geoCtx ) )
+                    std::get<0>( geoCtx )->template updateGmcContext<CTX>( dynctx );
             }
         }
 
     private :
         void syncCtx( int ptId )
         {
+            CHECK( false ) << "TODO";
+#if 0
             rank_type procId = M_t_proc[ptId];
             rank_type myrank = M_Xh->worldComm().rank();
 
@@ -417,7 +413,7 @@ public :
                 this->operator[]( ptId ) = geoCtxReload;
 
             //std::cout << "["<<M_Xh->worldComm().rank()<<"] M_meshGeoContext->numElements() : " << M_meshGeoContext->numElements() << "\n";
-
+#endif
         }
 
         friend class boost::serialization::access;
@@ -435,9 +431,13 @@ public :
 
                 for ( int geoCtxKey : geoCtxKeys )
                 {
+                    auto const& [ctx,ptIds] = this->find( geoCtxKey )->second;
                     std::string geoctxNameInSerialization = (boost::format("geoSpaceContext_%1%")%geoCtxKey).str();
                     // std::cout << "geospace::Context save name : " << geoctxNameInSerialization << "\n";
-                    ar & boost::serialization::make_nvp( geoctxNameInSerialization.c_str(), *(this->find( geoCtxKey )->second) );
+                    ar & boost::serialization::make_nvp( geoctxNameInSerialization.c_str(), *ctx /* *(this->find( geoCtxKey )->second)*/ );
+
+                    std::string ptIdsInCtxNameInSerialization = (boost::format("ptIdsInCtx_%1%")%geoCtxKey).str();
+                    ar & boost::serialization::make_nvp( ptIdsInCtxNameInSerialization.c_str(), ptIds );
                 }
             }
         template<class Archive>
@@ -459,7 +459,12 @@ public :
                     std::string geoctxNameInSerialization = (boost::format("geoSpaceContext_%1%")%geoCtxKey).str();
                     // std::cout << "geospace::Context load name : " << geoctxNameInSerialization << "\n";
                     ar & boost::serialization::make_nvp( geoctxNameInSerialization.c_str(), *geoCtxReload );
-                    /*ret =*/ this->insert( std::make_pair( geoCtxKey , geoCtxReload ) );
+
+                    std::string ptIdsInCtxNameInSerialization = (boost::format("ptIdsInCtx_%1%")%geoCtxKey).str();
+                    std::vector<index_type> ptIds;
+                    ar & boost::serialization::make_nvp( ptIdsInCtxNameInSerialization.c_str(), ptIds );
+
+                    /*ret =*/ this->insert( std::make_pair( geoCtxKey , std::make_pair( geoCtxReload,ptIds ) ) );
                 }
             }
         BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -473,9 +478,6 @@ public :
 
         //! internal container used by updateForUse
         std::map<size_type, std::vector<std::tuple<size_type, node_type> > > M_eltToUpdate;
-
-        std::map<int,std::vector<index_type>> M_ctxIdToPointIds;
-
     };
 
     Context context() /*const*/ { return Context( this->shared_from_this() ); }

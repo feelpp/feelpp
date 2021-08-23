@@ -203,7 +203,7 @@ EvaluatorContext<CTX, ExprT, CTX2>::operator()() const
     auto it = M_ctx.begin();
     auto en = M_ctx.end();
 
-    typedef typename CTX::mapped_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
+    typedef typename CTX::mapped_type::first_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
     typedef expression_type the_expression_type;
     typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
@@ -265,13 +265,13 @@ EvaluatorContext<CTX, ExprT, CTX2>::operator()() const
         //loop on local points
         for ( int p = 0; it!=en ; ++it, ++p )
         {
-            auto const& ctx = *it;
+            auto const& ctx = std::get<0>( it->second );
+            auto const& curCtxIdToPointIds = std::get<1>( it->second );
 
             int global_p = it->first;
 
             //int global_p_BIS = M_ctx.ctxIdToPointIds().find( global_p )->second[0];
             std::vector<std::tuple<uint16_type,index_type,index_type>> gmcNodesUsed;
-            auto const& curCtxIdToPointIds = M_ctx.ctxIdToPointIds().find( global_p )->second;
             std::cout << "evaluator ctxId " << global_p <<  " vv="<<curCtxIdToPointIds.size() << std::endl; 
             for ( uint16_type q=0;q<curCtxIdToPointIds.size();++q )
             {
@@ -293,18 +293,20 @@ EvaluatorContext<CTX, ExprT, CTX2>::operator()() const
 #if 1
             // TODO VINCENT : really rebuild tensor or reuse-it (warning in GinacMatrix updateContext(..) called update(geom))
             // maybe with geometric space call directly update(geom)
-            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >(it->second->gmContext() ) );
+            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >(ctx->gmContext() ) );
             t_expr_type tensor_expr( M_expr, mapgmc );
 #endif
             //if( global_p < global_max_size )
             {
                 if ( !M_ctx2.empty() && M_ctx2.find( global_p ) != M_ctx2.end() )
                 {
-                    auto const& ctx2 = *M_ctx2.find( global_p );
-                    tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ), Xh2->contextBasis( ctx2, M_ctx2 ) );
+                    //auto const& ctx2 = *M_ctx2.find( global_p );
+                    auto const& ctx2 = std::get<0>( M_ctx2.find( global_p )->second );
+                    //tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ), Xh2->contextBasis( ctx2, M_ctx2 ) );
+                    tensor_expr.updateContext( ctx, ctx2 );
                 }
                 else
-                    tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ) );
+                    tensor_expr.updateContext( ctx );//Xh->contextBasis( ctx, M_ctx ) );
 
                 //LOG( INFO ) << "Xh->contextBasis returns a context of type \n"<< typeid( decltype( Xh->contextBasis( ctx, M_ctx ) )  ).name();
 
@@ -349,7 +351,7 @@ template<typename CTX, typename ExprT, typename CTX2>
 typename EvaluatorContext<CTX, ExprT, CTX2>::element_type
 EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection(  ) const
 {
-    typedef typename CTX::mapped_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
+    typedef typename CTX::mapped_type::first_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
     typedef expression_type the_expression_type;
     typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
@@ -374,7 +376,7 @@ EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection( mpl::bool_<true> ) const
     auto it = M_ctx.begin();
     auto en = M_ctx.end();
 
-    typedef typename CTX::mapped_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
+    typedef typename CTX::mapped_type::first_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
     typedef expression_type the_expression_type;
     typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
@@ -404,7 +406,7 @@ EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection( mpl::bool_<true> ) const
          * the programmer so that we don't have to re-create the expression
          * context if the reference points are the same
          */
-        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >(it->second->gmContext() ) );
+        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >(std::get<0>(it->second)->gmContext() ) );
 
         t_expr_type tensor_expr( M_expr, mapgmc );
 
@@ -417,7 +419,7 @@ EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection( mpl::bool_<true> ) const
 
             if( global_p < max_size )
             {
-                auto const& e = ctx.second->gmContext()->element();
+                auto const& e = std::get<0>(ctx.second)->gmContext()->element();
                 //Xh is a pointer, not a shared ptr
                 //functionspace is a shared ptr
                 auto functionspace = M_ctx.functionSpace();
