@@ -746,15 +746,13 @@ public :
         typedef this_type reducedbasisspace_type;
         typedef this_ptrtype reducedbasisspace_ptrtype;
         typedef typename fespace_type::basis_context_type  super;
-        typedef std::pair<int,super> ctx_type;
-        typedef std::pair<int,std::shared_ptr<super>> ctx_ptrtype;
 
         static const uint16_type nComponents = reducedbasisspace_type::nComponents;
 
-        ContextRB( ctx_ptrtype const& ctx, reducedbasisspace_ptrtype W )
+        ContextRB( int index, std::shared_ptr<super> const& ctx, reducedbasisspace_ptrtype W )
         :
-        super( *ctx.second ),
-        M_index( ctx.first ),
+        super( *ctx ),
+        M_index( index ),
         M_rbspace( W )
 
             {
@@ -1030,9 +1028,9 @@ public :
      * store the evaluation of basis functions in given points
      */
     class ContextRBSet
-        : public std::map<int,std::shared_ptr<ContextRB> >
+        : public std::map<int,std::pair<std::shared_ptr<ContextRB>,std::vector<index_type>>>
     {
-        typedef typename std::map<int,std::shared_ptr<ContextRB>> super;
+        using super = std::map<int,std::pair<std::shared_ptr<ContextRB>,std::vector<index_type>>>;
 
     public :
         static const bool is_rb_context = true;
@@ -1121,7 +1119,7 @@ public :
                 {
                     rank_type procId = M_ctx_fespace.processorHavingPoint(c.first);
                     if ( procId == M_rbspace->worldComm().globalRank() )
-                        c.second->update();
+                        std::get<0>( c.second )->update();
                 }
                 // update context for each process + define context mesh
                 if ( this->nPoints() > 0 )
@@ -1172,7 +1170,8 @@ public :
             // add it to the ContextRB set
             if ( ret.second )
             {
-                return this->insert( std::make_pair( ret.first->first, std::make_shared<ContextRB>( *ret.first, M_rbspace ) ) );
+                std::vector<index_type> ptIds;ptIds.push_back( ret.first->first );
+                return this->insert( std::make_pair( ret.first->first, std::make_pair( std::make_shared<ContextRB>( ret.first->first, std::get<0>(ret.first->second), M_rbspace ), ptIds ) ) );
             }
             return std::make_pair( this->end(), false );
         }
@@ -1194,11 +1193,12 @@ public :
                 M_meshForRbContext = std::make_shared<mesh_type>( M_rbspace->worldCommPtr() );
 
             ctxrb_ptrtype rbCtxReload;
+            std::vector<index_type> ptIds;
             if ( myrank == procId )
             {
                 // update additional mesh used in rb context
                 CHECK( this->find( ptId ) != this->end() ) << "point id is not saved on this process";
-                rbCtxReload = this->operator[]( ptId );
+                std::tie(rbCtxReload,ptIds) = this->operator[]( ptId );
                 CHECK( rbCtxReload ) << "rbCtxReload not init";
                 rbCtxReload->setMeshForRbContext( M_meshForRbContext );
                 auto const& modelMeshEltCtx = rbCtxReload->gmContext()->element();
@@ -1217,10 +1217,11 @@ public :
             }
             // recv rb context from process which have localized the point
             mpi::broadcast( M_rbspace->worldComm().globalComm(), *rbCtxReload, procId );
+            mpi::broadcast( M_rbspace->worldComm().globalComm(), ptIds, procId );
 
             // save rb context with process which doesnt have localized the point
             if ( myrank != procId )
-                this->operator[]( ptId ) = rbCtxReload;
+                this->operator[]( ptId ) = std::make_pair( rbCtxReload, std::move(ptIds) );
 
             // std::cout << "["<<M_rbspace->worldComm().rank()<<"] M_meshForRbContext->numElements() : " << M_meshForRbContext->numElements() << "\n";
         }
@@ -1238,8 +1239,12 @@ public :
                 ar & BOOST_SERIALIZATION_NVP( rbCtxKeys );
                 for ( int rbCtxKey : rbCtxKeys )
                 {
+                    auto const& [ctx,ptIds] = this->find( rbCtxKey )->second;
                     std::string rbctxNameInSerialization = (boost::format("rbSpaceContext_%1%")%rbCtxKey).str();
-                    ar & boost::serialization::make_nvp( rbctxNameInSerialization.c_str(), *(this->find( rbCtxKey )->second) );
+                    ar & boost::serialization::make_nvp( rbctxNameInSerialization.c_str(), *ctx );
+
+                    std::string ptIdsInCtxNameInSerialization = (boost::format("ptIdsInCtx_%1%")%rbCtxKey).str();
+                    ar & boost::serialization::make_nvp( ptIdsInCtxNameInSerialization.c_str(), ptIds );
                 }
 
             }
@@ -1267,7 +1272,12 @@ public :
                         rbCtxReload->setMeshForRbContext( M_meshForRbContext );
                     }
                     ar & boost::serialization::make_nvp( rbctxNameInSerialization.c_str(), *rbCtxReload );
-                    this->operator[]( rbCtxKey ) = rbCtxReload;
+
+                    std::string ptIdsInCtxNameInSerialization = (boost::format("ptIdsInCtx_%1%")%rbCtxKey).str();
+                    std::vector<index_type> ptIds;
+                    ar & boost::serialization::make_nvp( ptIdsInCtxNameInSerialization.c_str(), ptIds );
+
+                    this->operator[]( rbCtxKey ) = std::make_pair( rbCtxReload, ptIds );
                 }
             }
         BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -1303,7 +1313,10 @@ public :
             eigen_matrix_type m( nComponents, M_primal_rb_basis.size() );
 
             auto s = this->functionSpace()->context();
-            s.addCtx( ctx, this->functionSpace()->worldComm().localRank() );
+
+            std::vector<index_type> ptIds( ctx->nPoints() );
+            std::iota(ptIds.begin(), ptIds.end(), 0);
+            s.addCtx( std::make_pair(ctx,ptIds), this->functionSpace()->worldComm().localRank() );
 
             //index of the column to be filled
             int c = 0;
@@ -1323,7 +1336,10 @@ public :
     eigen_matrix_type evaluateGradBasis( int i , std::shared_ptr<ContextBasisFem> const& ctxs )
         {
             auto ctx = this->functionSpace()->context();
-            ctx.addCtx( ctxs, this->functionSpace()->worldComm().localRank() );
+
+            std::vector<index_type> ptIds( ctxs->nPoints() );
+            std::iota(ptIds.begin(), ptIds.end(), 0);
+            ctx.addCtx( std::make_pair(ctxs,ptIds), this->functionSpace()->worldComm().localRank() );
 
             int npts = ctx.nPoints();
             eigen_matrix_type evaluation;
@@ -1333,7 +1349,7 @@ public :
             //so we need to indicate to evaluateFromContext not do "all_reduce" at the end
             //that is why we use a boolean _mpi_communications
 
-            if( nDim >= 1 )
+            if constexpr ( nDim >= 1 )
             {
                 auto evalx = evaluateFromContext( _context=ctx , _expr= dxv( M_primal_rb_basis[i] ) , _mpi_communications=false );
                 for(int p=0; p<npts; p++)
@@ -1342,7 +1358,7 @@ public :
                         evaluation( 0 , p*nComponents+c ) = evalx( p*nComponents+c );
                 }
             }
-            if( nDim >= 2 )
+            if constexpr ( nDim >= 2 )
             {
                 auto evaly = evaluateFromContext( _context=ctx , _expr= dyv( M_primal_rb_basis[i] ), _mpi_communications=false );
                 for(int p=0; p<npts; p++)
@@ -1351,7 +1367,7 @@ public :
                         evaluation( 1 , p*nComponents+c ) = evaly( p*nComponents+c );
                 }
             }
-            if( nDim == 3 )
+            if constexpr ( nDim == 3 )
             {
                 auto evalz = evaluateFromContext( _context=ctx , _expr= dzv( M_primal_rb_basis[i] ), _mpi_communications=false );
                 for(int p=0; p<npts; p++)
@@ -1595,7 +1611,7 @@ public :
                 for ( int p = 0; it!=en ; ++it, ++p )
                 {
                     int global_position=it->first;
-                    auto ctx=it->second;
+                    auto ctx = std::get<0>( it->second );
                     local_result.segment( nComponents*global_position, nComponents )  = this->evaluate( *ctx );
                 }
 
