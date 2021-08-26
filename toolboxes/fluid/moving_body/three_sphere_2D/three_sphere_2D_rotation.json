@@ -28,7 +28,7 @@
     "Parameters":
     {
         "eps":1e-10,
-        "speed_translational":4
+        "speed_translational":3 //4
     },
     "BoundaryConditions":
     {
@@ -67,8 +67,8 @@
                         "body":"CircleLeft",
                         //"translational-velocity":"4*pulse(t,0,1,4)-4*pulse(t,2,3,4):t"
                         "translational-velocity":"speed_translational*(pulse(t,0,1-eps,4)+pulse(t,4-eps,4,4)) -speed_translational*pulse(t,2-eps,3-eps,4):t:eps:speed_translational"
-                    },
-                    "angular-velocity":"0.1"
+                    }
+                    //,"angular-velocity":"0.1"
                 },
                 "CircleRight":
                 {
@@ -82,8 +82,8 @@
                     {
                         "body":"CircleCenter",
                         //"translational-velocity":"4*pulse(t,1,2,4)-4*pulse(t,3,4,4):t"
-                        "translational-velocity":"0"//speed_translational*(pulse(t,0,1-eps,4)+pulse(t,4-eps,4,4)) -speed_translational*pulse(t,2-eps,3-eps,4):t:eps:speed_translational"
-                        //"translational-velocity":"(speed_translational*pulse(t,1-eps,2-eps,4)-speed_translational*pulse(t,3-eps,4-eps,4)):t:eps:speed_translational"
+                        //"translational-velocity":"speed_translational*(pulse(t,0,1-eps,4)+pulse(t,4-eps,4,4)) -speed_translational*pulse(t,2-eps,3-eps,4):t:eps:speed_translational"
+                        "translational-velocity":"(speed_translational*pulse(t,1-eps,2-eps,4)-speed_translational*pulse(t,3-eps,4-eps,4)):t:eps:speed_translational"
                     }
                 },
                 "CircleLeft":

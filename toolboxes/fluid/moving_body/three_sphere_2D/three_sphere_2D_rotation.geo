@@ -8,7 +8,7 @@ lcDom = h;
 // The construction of the center circle
 Center = 0;
 // To place the three sphere swimmer next to top boundary; 
-Centery = 0;//16
+Centery = 16;//0;//16
 // To tilt the three sphere swimmer
 delta_y=0;//1;
 
