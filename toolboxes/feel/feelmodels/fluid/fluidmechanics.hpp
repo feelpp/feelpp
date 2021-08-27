@@ -44,7 +44,6 @@
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 
@@ -67,7 +66,7 @@ namespace Feel
 namespace FeelModels
 {
 
-/** 
+/**
  * Fluid Mechanics Toolbox
  * \ingroup Toolboxes
  */
@@ -208,8 +207,8 @@ public:
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     // algebraic tools
-    typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    // typedef ModelAlgebraicFactory model_algebraic_factory_type;
+    // typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
     typedef typename model_algebraic_factory_type::graph_type graph_type;
     typedef typename model_algebraic_factory_type::graph_ptrtype graph_ptrtype;
     typedef typename model_algebraic_factory_type::indexsplit_type indexsplit_type;
@@ -1177,19 +1176,13 @@ public :
 
     //___________________________________________________________________________________//
     // algebraic data
-    backend_ptrtype backend() { return M_backend; }
-    backend_ptrtype const& backend() const { return  M_backend; }
     typename super_type::block_pattern_type blockPattern() const override;
     virtual BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     graph_ptrtype buildMatrixGraph() const override;
     virtual int nBlockMatrixGraph() const;
-    model_algebraic_factory_ptrtype algebraicFactory() { return M_algebraicFactory; }
-    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
     virtual size_type nLocalDof() const;
     void buildBlockVector();
-    BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    void updateBlockVectorSolution();
+    //void updateBlockVectorSolution();
 
     //___________________________________________________________________________________//
     // time step scheme
@@ -1388,7 +1381,7 @@ public :
 
     auto modelFields( std::string const& prefix = "" ) const
         {
-            return this->modelFields( this->fieldVelocityPtr(), this->fieldPressurePtr(), M_bodySetBC.modelFields( *this, prefix ), element_velocity_external_storage_ptrtype{}, prefix );
+            return this->modelFields( this->fieldVelocityPtr(), this->fieldPressurePtr(), M_bodySetBC.modelFields( *this, prefix ), M_fieldVelocityExtrapolated/*element_velocity_external_storage_ptrtype{}*/, prefix );
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
@@ -1425,7 +1418,7 @@ public :
             if ( M_turbulenceModelType )
                 mfields_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>();
 
-            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::MAGNITUDE|FieldCtx::CURL_MAGNITUDE/*FieldCtx::CURL|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL*/>( FieldTag::velocity(this), prefix, "velocity", field_u, "U", this->keyword() ),
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::velocity(this), prefix, "velocity", field_u, "U", this->keyword() ),
                                                   modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix, "pressure", field_p, "P", this->keyword() ),
                                                   modelField<FieldCtx::ID>( FieldTag::velocity_extrapolated(this), prefix, "velocity_extrapolated", field_beta_u, "beta_u", this->keyword() ),
                                                   mfields_body, mfields_ale, mfields_turbulence,
@@ -1450,10 +1443,11 @@ public :
 #ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
             auto sePhysics = this->symbolsExprPhysicsFromCurrentType();
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields, sePhysics );
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields, sePhysics );
 #else
             return symbols_expression_empty_t{};
 #endif
@@ -1819,6 +1813,8 @@ public:
     void initInHousePreconditioner();
     void updateInHousePreconditioner( DataUpdateLinear & data ) const override;
     void updateInHousePreconditioner( DataUpdateJacobian & data ) const override;
+    template <typename ModelContextType>
+    void updateInHousePreconditioner( DataUpdateBase & data, ModelContextType const& mctx ) const;
     typedef OperatorPCDBase<typename space_velocity_type::value_type> operatorpcdbase_type;
     //typedef std::shared_ptr<operatorpcdbase_type> operatorpcdbase_ptrtype;
     void addUpdateInHousePreconditionerPCD( std::string const& name, std::function<void(operatorpcdbase_type &)> const& init,
@@ -1830,8 +1826,11 @@ public:
     std::shared_ptr<operatorpcdbase_type> operatorPCD() const { return M_operatorPCD; }
     bool hasOperatorPCD() const { return ( M_operatorPCD.use_count() > 0 ); }
 private :
-    void updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
-    void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol, DataUpdateBase & data ) const;
+    template <typename ModelContextType>
+    void updateInHousePreconditionerPMM( DataUpdateBase & data, ModelContextType const& mctx ) const;
+    template <typename ModelContextType>
+    void updateInHousePreconditionerPCD( DataUpdateBase & data, ModelContextType const& mctx ) const;
+
 public :
 
     //___________________________________________________________________________________//
@@ -2094,9 +2093,9 @@ private :
     //----------------------------------------------------
     //----------------------------------------------------
     // algebraic data/tools
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    BlocksBaseVector<double> M_blockVectorSolution;
+    // backend_ptrtype M_backend;
+    // model_algebraic_factory_ptrtype M_algebraicFactory;
+    // BlocksBaseVector<double> M_blockVectorSolution;
     bool M_usePreviousSolution;
     vector_ptrtype M_vectorPreviousSolution;
     //----------------------------------------------------
@@ -2284,6 +2283,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
 }
 
 
+
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template <typename ModelFieldsType, typename SymbolsExprType, typename ExportsExprType>
 void
@@ -2428,6 +2428,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::BodyBoundaryCond
 #include <feel/feelmodels/fluid/fluidmechanicsassemblyjacobian.hpp>
 #include <feel/feelmodels/fluid/fluidmechanicsassemblyresidual.hpp>
 #include <feel/feelmodels/fluid/fluidmechanicsassemblystabilisationgls.hpp>
+#include <feel/feelmodels/fluid/fluidmechanicsothers.hpp>
 
 #endif /* FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP */
 

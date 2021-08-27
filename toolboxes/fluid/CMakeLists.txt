@@ -34,6 +34,7 @@ feelpp_add_application( fluid SRCS main_fm.cpp
   INSTALL TESTS
   MAN fluid
 )
+feelpp_add_testcase( cases PREFIX feelpp_toolbox_fluid CATEGORY toolboxes/fluid)
 
 feelpp_add_application( swimmer SRCS main_swimmer.cpp
   LINK_LIBRARIES
@@ -47,6 +48,3 @@ feelpp_add_application( three_sphere SRCS main_three_sphere.cpp
   feelpp_toolbox_fluid_lib_3dP2P1G1
 )
 
-foreach( _testcase IN ITEMS "lid-driven-cavity" "TurekHron" "TurekHronExt3d" "backwardfacingstep" "movingboundary" "moving_body" "sphere_testcase" "Spermatozoon_Luca" )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_fluid CATEGORY toolboxes/fluid)
-endforeach()

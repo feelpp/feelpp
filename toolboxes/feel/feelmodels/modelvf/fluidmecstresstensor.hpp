@@ -36,12 +36,12 @@ namespace Feel
 namespace FeelModels
 {
 
-template<typename ExprEvaluateFieldOperatorsType, typename FiniteElementVelocityType, typename ExprIdPressureType, typename ModelPhysicFluidType, typename SymbolsExprType, typename SpecificExprType>
-class FluidMecStressTensorImpl : public Feel::vf::ExprDynamicBase
+template<typename ExprEvaluateFieldOperatorsType, typename FiniteElementVelocityType, typename ExprIdPressureType, typename ModelPhysicFluidType, typename SymbolsExprType, ExprApplyType ExprApplied>
+class FluidMecStressTensorImpl// : public Feel::vf::ExprDynamicBase
 {
 public:
 
-    typedef FluidMecStressTensorImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ExprIdPressureType,ModelPhysicFluidType,SymbolsExprType,SpecificExprType> this_type;
+    typedef FluidMecStressTensorImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ExprIdPressureType,ModelPhysicFluidType,SymbolsExprType,ExprApplied> this_type;
 
     static const size_type context_velocity = vm::JACOBIAN|vm::KB|vm::GRAD;
     static const size_type context_pressure = vm::JACOBIAN;
@@ -50,9 +50,13 @@ public:
     using expr_id_pressure_type = ExprIdPressureType;
     using model_physic_fluid_type = ModelPhysicFluidType;
     using symbols_expr_type = SymbolsExprType;
-    using specific_expr_type = SpecificExprType;
+    //using specific_expr_type = SpecificExprType;
     using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperatorsType;
     using value_type = typename expr_evaluate_velocity_opertors_type::value_type;
+
+    static constexpr bool is_applied_as_eval = ExprApplied == ExprApplyType::EVAL;
+    static constexpr bool is_applied_as_jacobian = ExprApplied == ExprApplyType::JACOBIAN;
+
 
     static const bool is_terminal = true;
 
@@ -66,11 +70,7 @@ public:
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = mpl::if_<boost::is_same<SpecificExprType,mpl::int_<ExprApplyType::JACOBIAN> >,
-                                            typename mpl::if_<boost::is_same<Func,FiniteElementVelocityType>,
-                                                              mpl::bool_<true>,
-                                                              mpl::bool_<false> >::type,
-                                            mpl::bool_<false> >::type::value;
+        static const bool result = is_applied_as_jacobian && std::is_same_v<Func,FiniteElementVelocityType>;
     };
 
     using test_basis = std::nullptr_t;
@@ -81,8 +81,8 @@ public:
 
     using material_property_scalar_expr_type = material_property_expr_type<1,1>;
 
-    using expr_dynamic_viscosity_type = FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type,FiniteElementVelocityType,ModelPhysicFluidType,SymbolsExprType,
-                                                                     mpl::int_< this_type::specific_expr_type::value == ExprApplyType::EVAL? ExprApplyType::EVAL : ExprApplyType::JACOBIAN> >;
+    using expr_dynamic_viscosity_type = FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type,FiniteElementVelocityType,ModelPhysicFluidType,SymbolsExprType,ExprApplied>;
+
 
     FluidMecStressTensorImpl( std::shared_ptr<expr_evaluate_velocity_opertors_type> exprEvalVelocityOperators,
                               expr_id_pressure_type const& exprIdPressure,
@@ -162,7 +162,7 @@ public:
         {
             auto newse = Feel::vf::symbolsExpr( M_se, se );
             using new_se_type = std::decay_t<decltype(newse)>;
-            using new_this_type = FluidMecStressTensorImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ExprIdPressureType,ModelPhysicFluidType,new_se_type,SpecificExprType>;
+            using new_this_type = FluidMecStressTensorImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ExprIdPressureType,ModelPhysicFluidType,new_se_type,ExprApplied>;
             return new_this_type( M_exprEvaluateVelocityOperators,M_exprIdPressure,M_physicFluid,M_matProps,M_polynomialOrder,M_withPressureTerm,newse );
         }
 
@@ -295,7 +295,7 @@ public:
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
         {
-            if constexpr ( this_type::specific_expr_type::value == ExprApplyType::EVAL )
+            if constexpr ( this_type::is_applied_as_eval )
                 return this->evalq( q );
             else
             {
@@ -359,7 +359,7 @@ public:
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const override
         {
-            if constexpr ( this_type::specific_expr_type::value == ExprApplyType::EVAL )
+            if constexpr ( this_type::is_applied_as_eval )
                 return this->evalq( c1,c2,q );
             else
             {
@@ -371,14 +371,14 @@ public:
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const override
         {
-            if constexpr ( this_type::specific_expr_type::value != ExprApplyType::EVAL )
+            if constexpr ( !this_type::is_applied_as_eval )
                  CHECK( false ) << "not allow";
             return this->evalq( c1,c2,q );
         }
         ret_type
         evaliq( uint16_type i, uint16_type q ) const override
         {
-            if constexpr ( this_type::specific_expr_type::value != ExprApplyType::EVAL )
+            if constexpr ( !this_type::is_applied_as_eval )
                  CHECK( false ) << "not allow";
             return this->evalq( q );
         }
@@ -416,7 +416,7 @@ public:
 
         void updateImpl()
             {
-                if constexpr ( this_type::specific_expr_type::value != ExprApplyType::EVAL )
+                if constexpr ( !this_type::is_applied_as_eval )
                                  return;
 
                 uint16_type nPoints = this->gmc()->nPoints();
@@ -529,7 +529,7 @@ fluidMecStressTensor( Expr<ExprGradVelocityType> const& grad_u, Expr<ExprIdPress
                       uint16_type polyOrder = invalid_uint16_type_value )
 {
     using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperatorGradFromExpr<Expr<ExprGradVelocityType>>;
-    typedef FluidMecStressTensorImpl<expr_evaluate_velocity_opertors_type,std::nullptr_t,Expr<ExprIdPressureType>,ModelPhysicFluidType,SymbolsExprType,mpl::int_<ExprApplyType::EVAL> > fmstresstensor_t;
+    typedef FluidMecStressTensorImpl<expr_evaluate_velocity_opertors_type,std::nullptr_t,Expr<ExprIdPressureType>,ModelPhysicFluidType,SymbolsExprType,ExprApplyType::EVAL > fmstresstensor_t;
     auto exprEvaluateVelocityOperators = std::make_shared<expr_evaluate_velocity_opertors_type>( grad_u );
     return Expr< fmstresstensor_t >(  fmstresstensor_t( exprEvaluateVelocityOperators,p,physicFluid,matProps,polyOrder,withPressure,se ) );
 }
@@ -547,7 +547,7 @@ fluidMecStressTensor( VelocityFieldType const& u, Expr<ExprIdPressureType> const
                       )
 {
     using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperators<VelocityFieldType>;
-    typedef FluidMecStressTensorImpl<expr_evaluate_velocity_opertors_type,std::nullptr_t,Expr<ExprIdPressureType>,ModelPhysicFluidType,SymbolsExprType,mpl::int_<ExprApplyType::EVAL> > fmstresstensor_t;
+    typedef FluidMecStressTensorImpl<expr_evaluate_velocity_opertors_type,std::nullptr_t,Expr<ExprIdPressureType>,ModelPhysicFluidType,SymbolsExprType,ExprApplyType::EVAL > fmstresstensor_t;
     auto exprEvaluateVelocityOperators = std::make_shared<expr_evaluate_velocity_opertors_type>( u );
     return Expr< fmstresstensor_t >(  fmstresstensor_t( exprEvaluateVelocityOperators,p,physicFluid,matProps,polyOrder,withPressure,se ) );
 }
@@ -562,7 +562,7 @@ fluidMecViscousStressTensorJacobian( Expr<ExprGradVelocityType> const& grad_u, E
                                      uint16_type polyOrder = invalid_uint16_type_value )
 {
     using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperatorGradFromExpr<Expr<ExprGradVelocityType>>;
-    typedef FluidMecStressTensorImpl<expr_evaluate_velocity_opertors_type,typename unwrap_ptr_t<ElementVelocityType>::functionspace_type::reference_element_type,Expr<Cst<double>>,ModelPhysicFluidType,SymbolsExprType,mpl::int_<ExprApplyType::JACOBIAN> > fmstresstensor_t;
+    typedef FluidMecStressTensorImpl<expr_evaluate_velocity_opertors_type,typename unwrap_ptr_t<ElementVelocityType>::functionspace_type::reference_element_type,Expr<Cst<double>>,ModelPhysicFluidType,SymbolsExprType,ExprApplyType::JACOBIAN > fmstresstensor_t;
     auto exprEvaluateVelocityOperators = std::make_shared<expr_evaluate_velocity_opertors_type>( grad_u );
     return Expr< fmstresstensor_t >(  fmstresstensor_t( exprEvaluateVelocityOperators,/*p*/cst(0.),physicFluid,matProps,polyOrder,false,se ) );
 }
@@ -577,7 +577,7 @@ fluidMecViscousStressTensorJacobian( VelocityFieldType const& u,
                                      uint16_type polyOrder = invalid_uint16_type_value )
 {
     using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperators<VelocityFieldType>;
-    typedef FluidMecStressTensorImpl<expr_evaluate_velocity_opertors_type,typename unwrap_ptr_t<VelocityFieldType>::functionspace_type::reference_element_type,Expr<Cst<double>>,ModelPhysicFluidType,SymbolsExprType,mpl::int_<ExprApplyType::JACOBIAN> > fmstresstensor_t;
+    typedef FluidMecStressTensorImpl<expr_evaluate_velocity_opertors_type,typename unwrap_ptr_t<VelocityFieldType>::functionspace_type::reference_element_type,Expr<Cst<double>>,ModelPhysicFluidType,SymbolsExprType,ExprApplyType::JACOBIAN > fmstresstensor_t;
     auto exprEvaluateVelocityOperators = std::make_shared<expr_evaluate_velocity_opertors_type>( u );
     return Expr< fmstresstensor_t >(  fmstresstensor_t( exprEvaluateVelocityOperators,/*p*/cst(0.),physicFluid,matProps,polyOrder,false,se ) );
 }

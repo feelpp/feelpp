@@ -105,7 +105,10 @@
         "slist": "cpp",
         "future": "cpp",
         "csignal": "cpp",
-        "primitiveset": "cpp"
+        "primitiveset": "cpp",
+        "format": "cpp",
+        "*.in": "cpp",
+        "texture": "cpp"
     },
     "C_Cpp.configurationWarnings": "Disabled",
     "C_Cpp.loggingLevel": "Debug",

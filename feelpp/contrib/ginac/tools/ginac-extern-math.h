@@ -28,6 +28,7 @@ inline double print( std::string const& s, double x )
     fmt::print("{}: {}\n", s, x);
     return  x;
 }
+inline double conjugate( double x ) { return x; }
 
 inline std::pair<std::uniform_real_distribution<>, std::mt19937&> uniformDistribution( double a, double b )
 {
