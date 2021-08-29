@@ -1721,9 +1721,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
 
-    nBlock += 2*M_bodySetBC.size();
+    for ( auto const& [bpname,bbc] : M_bodySetBC )
+    {
+        ++nBlock; // translational velocity
+        if ( !bbc.isInNBodyArticulated() )
+            ++nBlock; // angular velocity
+    }
     for ( auto const& nba : M_bodySetBC.nbodyArticulated() )
     {
+        ++nBlock; // angular velocity
         if ( nba.articulationMethod() != "lm" )
             continue;
         nBlock += nba.articulations().size();
@@ -1849,16 +1855,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     for ( auto const& [bpname,bbc] : M_bodySetBC )
     {
         size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".translational-velocity");
-        size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".angular-velocity");
         myblockGraph(startBlockIndexTranslationalVelocity,startBlockIndexTranslationalVelocity) = stencil(_test=bbc.spaceTranslationalVelocity(),_trial=bbc.spaceTranslationalVelocity(),
                                                                                                           _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(startBlockIndexAngularVelocity,startBlockIndexAngularVelocity) = stencil(_test=bbc.spaceAngularVelocity(),_trial=bbc.spaceAngularVelocity(),
-                                                                                              _diag_is_nonzero=false,_close=false)->graph();
-        indexBlock +=2;
+        if ( !bbc.isInNBodyArticulated() )
+        {
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".angular-velocity");
+            myblockGraph(startBlockIndexAngularVelocity,startBlockIndexAngularVelocity) = stencil(_test=bbc.spaceAngularVelocity(),_trial=bbc.spaceAngularVelocity(),
+                                                                                                  _diag_is_nonzero=false,_close=false)->graph();
+        }
+        //indexBlock +=2;
     }
 
     for ( auto const& nba : M_bodySetBC.nbodyArticulated() )
     {
+        size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+nba.name()+".angular-velocity");
+        myblockGraph(startBlockIndexAngularVelocity,startBlockIndexAngularVelocity) = stencil(_test=nba.spaceAngularVelocity(),_trial=nba.spaceAngularVelocity(),
+                                                                                              _diag_is_nonzero=false,_close=false)->graph();
         if ( nba.articulationMethod() != "lm" )
             continue;
         for ( auto const& ba : nba.articulations() )
@@ -1912,7 +1924,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
             myblockGraph(startBlockIndexArticulationLMTranslationalVelocity,startBlockIndexTranslationalVelocityBody2) = createArticulationGraph( ba.dataMapLagrangeMultiplierTranslationalVelocity(),
                                                                                                                                                   bbc2.spaceTranslationalVelocity()->mapPtr(),
                                                                                                                                                   false, Pattern::DEFAULT );
-            ++indexBlock;
+            //++indexBlock;
 
         }
     }
