@@ -362,6 +362,31 @@ public:
                 return mass;
             }
 
+        template <typename MassCenterExprType>
+        void computeMomentOfInertia( MassCenterExprType const& massCenterExpr, moment_of_inertia_type & momentOfInertia, bool addValue = false ) const
+            {
+                auto mom = M_materialsProperties->materialsOnMesh(M_mesh);
+                if ( !addValue )
+                    momentOfInertia = moment_of_inertia_type::Zero();
+                for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
+                {
+                    std::string const& matName = rangeData.first;
+                    auto const& range = rangeData.second;
+                    auto const& density = M_materialsProperties->density( matName );
+                    auto const& densityExpr = density.exprScalar();
+
+                    if constexpr ( nDim == 2 )
+                    {
+                        momentOfInertia(0,0) += integrate(_range=range,_expr=densityExpr*( inner(P()-massCenterExpr) ) ).evaluate()(0,0);
+                    }
+                    else
+                    {
+                        auto rvec = P()-massCenterExpr;
+                        momentOfInertia += integrate(_range=range,_expr=densityExpr*( inner(rvec)*eye<nDim,nDim>() - rvec*trans(rvec) ) ).evaluate();
+                    }
+                }
+            }
+
         void setParameterValues( std::map<std::string,double> const& mp )
             {
                 if ( M_materialsProperties )
@@ -385,7 +410,196 @@ public:
     };
 
     // fwd type
+    class BodyBoundaryCondition;
     class BodySetBoundaryCondition;
+
+
+    class BodyArticulation
+    {
+    public :
+        BodyArticulation( BodyBoundaryCondition const* b1,  BodyBoundaryCondition const* b2)
+            :
+            M_body1( b1 ),
+            M_body2( b2 )
+            {}
+        BodyBoundaryCondition const& body1() const { return *M_body1; }
+        BodyBoundaryCondition const& body2() const { return *M_body2; }
+        datamap_ptr_t<> dataMapLagrangeMultiplierTranslationalVelocity() const { return M_dataMapLagrangeMultiplierTranslationalVelocity; }
+        vector_ptrtype vectorLagrangeMultiplierTranslationalVelocity() const { return M_vectorLagrangeMultiplierTranslationalVelocity; }
+
+        //! return the name this articulation
+        std::string name() const;
+
+        //! return true if this articulation has the BodyBoundaryCondition \bbc
+        bool has( BodyBoundaryCondition const& bbc ) const;
+
+        //! return true if this articulation is connected to \ba
+        bool areConnected( BodyArticulation const& ba ) const { return this->has( ba.body1() ) || this->has( ba.body2() ); }
+
+        //! return the translationalVelocityExpr between mass center of 2 bodies
+        template <typename SymbolsExprType>
+        auto translationalVelocityExpr( SymbolsExprType const& se ) const
+            {
+#if 0
+                auto mc1 = this->body1().body().massCenter();
+                auto mc2 = this->body2().body().massCenter();
+                eigen_vector_type<nRealDim> /*auto*/ unitDir = (mc2-mc1);
+                unitDir.normalize();
+#endif
+                eigen_vector_type<nRealDim> unitDir = this->unitDirBetweenMassCenters();
+                //std::cout << "unit dir : " << unitDir << std::endl;
+                auto e = expr( M_exprTranslationalVelocity.template expr<1,1>(), se );
+                // std::cout << "e=" << str(e.expression()) << std::endl;
+                // std::cout << "e.eval=" << e.evaluate()(false) << std::endl;
+                if constexpr ( nDim == 2 )
+                    return e*vec( cst(unitDir(0)), cst(unitDir(1)) );
+                else
+                    return e*vec( cst(unitDir(0)), cst(unitDir(1)), cst(unitDir(2)) );
+            }
+
+        //! init LagrangeMultiplier
+        void initLagrangeMultiplier( self_type const& fluidToolbox );
+
+        //! set setTranslationalVelocityExpr
+        void setTranslationalVelocityExpr( ModelExpression const& e ) { M_exprTranslationalVelocity = e; }
+
+        void setParameterValues( std::map<std::string,double> const& mp )
+            {
+                M_exprTranslationalVelocity.setParameterValues( mp );
+            }
+
+    private:
+        eigen_vector_type<nRealDim> unitDirBetweenMassCenters() const;
+
+    private :
+        BodyBoundaryCondition const* M_body1;
+        BodyBoundaryCondition const* M_body2;
+        ModelExpression M_exprTranslationalVelocity;
+        datamap_ptr_t<> M_dataMapLagrangeMultiplierTranslationalVelocity;
+        vector_ptrtype M_vectorLagrangeMultiplierTranslationalVelocity;
+    };
+
+    class NBodyArticulated
+    {
+    public :
+        typedef typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
+                                   space_trace_p0c_scalar_type,
+                                   space_trace_p0c_vectorial_type >::type space_trace_angular_velocity_type;
+        typedef std::shared_ptr<space_trace_angular_velocity_type> space_trace_angular_velocity_ptrtype;
+        typedef typename space_trace_angular_velocity_type::element_type element_trace_angular_velocity_type;
+        typedef std::shared_ptr<element_trace_angular_velocity_type> element_trace_angular_velocity_ptrtype;
+
+        using moment_of_inertia_type = typename Body::moment_of_inertia_type;
+
+        NBodyArticulated( self_type const& fluidToolbox )
+            :
+            M_articulationMethod( soption(_prefix=fluidToolbox.prefix(),_name="body.articulation.method") )
+            {
+                CHECK( M_articulationMethod == "lm" || M_articulationMethod == "p-matrix" ) << "invalid " <<M_articulationMethod;
+            }
+
+        NBodyArticulated( NBodyArticulated const& ) = default;
+        NBodyArticulated( NBodyArticulated && ) = default;
+
+        std::string name() const;
+
+        std::vector<BodyArticulation> const& articulations() const { return M_articulations; }
+        std::string const& articulationMethod() const { return M_articulationMethod; }
+
+        std::string const& pmatrixMasterBodyName() const { return M_pmatrixMasterBodyName; }
+        BodyBoundaryCondition const& pmatrixMasterBody() const;
+        BodyBoundaryCondition const& masterBody() const { return this->pmatrixMasterBody(); }
+
+        space_trace_angular_velocity_ptrtype spaceAngularVelocity() const { return M_XhAngularVelocity; }
+        element_trace_angular_velocity_ptrtype fieldAngularVelocityPtr() const { return M_fieldAngularVelocity; }
+
+        sparse_matrix_ptrtype matrixPTilde_angular() const { return M_matrixPTilde_angular; }
+
+        void updateMatrixPTilde_angular( self_type const& fluidToolbox );
+        void updateMatrixPTilde_angular( self_type const& fluidToolbox, sparse_matrix_ptrtype & mat, size_type startBlockIndexVelocity = 0, size_type startBlockIndexAngularVelocity = 0 ) const;
+
+        datamap_ptr_t<> dataMapPMatrixTranslationalVelocity() const { return M_dataMapPMatrixTranslationalVelocity; }
+
+        void addArticulation( BodyArticulation const& art ) { M_articulations.push_back( art ); }
+
+        bool canBeConnectedTo( BodyArticulation const& ba ) const
+            {
+                return std::find_if( M_articulations.begin(), M_articulations.end(),
+                                     [&ba]( BodyArticulation const& e ) { return e.areConnected( ba ); } ) != M_articulations.end();
+            }
+
+        bool has( BodyBoundaryCondition const& bbc ) const
+            {
+                return  std::find_if( M_articulations.begin(), M_articulations.end(),
+                                      [&bbc]( BodyArticulation const& e ) { return e.has( bbc ); } ) != M_articulations.end();
+            }
+
+        void init( self_type const& fluidToolbox );
+
+        void setParameterValues( std::map<std::string,double> const& mp )
+            {
+                for ( auto & ba : M_articulations )
+                    ba.setParameterValues( mp );
+            }
+
+        //! return the list of all BodyBoundaryCondition connected
+        //! by setting \withMaster = false, the master BodyBoundaryCondition will not be present in the list
+        std::vector<BodyBoundaryCondition const*> bodyList( bool withMaster = true ) const;
+
+        //! compute mass, mass center
+        void updateForUse();
+
+        //! return mass value
+        double mass() const { return M_mass; }
+
+        //! return mass expression
+        auto massExpr() const { return cst( M_mass ); }
+
+        //! return momentOfInertiaExpr
+        moment_of_inertia_type const& momentOfInertia() const { return M_momentOfInertia; }
+
+        //! return momentOfInertiaExpr expression
+        auto momentOfInertiaExpr() const
+            {
+                if constexpr ( nDim == 2 )
+                    return cst(M_momentOfInertia(0,0));
+                else
+                    return mat<3,3>( cst(M_momentOfInertia(0,0)),cst(M_momentOfInertia(0,1)),cst(M_momentOfInertia(0,2)),
+                                     cst(M_momentOfInertia(1,0)),cst(M_momentOfInertia(1,1)),cst(M_momentOfInertia(1,2)),
+                                     cst(M_momentOfInertia(2,0)),cst(M_momentOfInertia(2,1)),cst(M_momentOfInertia(2,2)) );
+            }
+
+        //! return center of mass
+        eigen_vector_type<nRealDim> const& massCenter() const { return M_massCenter; }
+
+        //! return center of mass expression
+        auto massCenterExpr() const
+            {
+                if constexpr ( nDim == 2 )
+                    return vec( cst(M_massCenter(0)), cst(M_massCenter(1)) );
+                else
+                    return vec( cst(M_massCenter(0)), cst(M_massCenter(1)), cst(M_massCenter(2)) );
+            }
+
+    private :
+        range_faces_type M_rangeMarkedFacesOnFluid;
+
+        std::vector<BodyArticulation> M_articulations;
+        std::string M_articulationMethod;
+        std::string M_pmatrixMasterBodyName;
+
+        datamap_ptr_t<> M_dataMapPMatrixTranslationalVelocity;
+
+        sparse_matrix_ptrtype M_matrixPTilde_angular;
+
+        double M_mass;
+        eigen_vector_type<nRealDim> M_massCenter;
+        moment_of_inertia_type M_momentOfInertia;
+
+        space_trace_angular_velocity_ptrtype M_XhAngularVelocity;
+        element_trace_angular_velocity_ptrtype M_fieldAngularVelocity;
+    };
+
     // bc body
     class BodyBoundaryCondition
     {
@@ -412,6 +626,7 @@ public:
 
         void setup( std::string const& bodyName, pt::ptree const& p, self_type const& fluidToolbox );
         void init( self_type const& fluidToolbox );
+        void initFromNBodyArticulated();
         void updateForUse( self_type const& fluidToolbox );
 
         void updateInformationObject( nl::json & p ) const;
@@ -460,10 +675,13 @@ public:
 
         Body const& body() const { return *M_body; }
         auto massExpr() const { return M_body->massExpr(); }
-        auto momentOfInertiaExpr() const { return M_body->momentOfInertiaExpr(); }
+        auto momentOfInertiaExpr() const
+            {
+                return this->isInNBodyArticulated()? M_NBodyArticulated->momentOfInertiaExpr() : M_body->momentOfInertiaExpr();
+            }
         auto massCenterExpr() const
             {
-                return M_body->massCenterExpr();
+                return this->isInNBodyArticulated()? M_NBodyArticulated->massCenterExpr() : M_body->massCenterExpr();
             }
 
         bool hasTranslationalVelocityExpr() const { return M_translationalVelocityExpr.template hasExpr<nDim,1>(); }
@@ -580,6 +798,13 @@ public:
         // articulation info (only used for build a BodyArticulation)
         std::map<std::string,ModelExpression> const& articulationTranslationalVelocityExpr() const { return M_articulationTranslationalVelocityExpr; }
 
+        //! return true if this object is in NBodyArticulated
+        bool isInNBodyArticulated() const { return M_NBodyArticulated != nullptr; }
+        //! attach a NBodyArticulated to this object
+        void attachToNBodyArticulated( NBodyArticulated const& nba ) { M_NBodyArticulated = &nba; }
+        //! return NBodyArticulated object related if inside (else assert failed)
+        NBodyArticulated const& getNBodyArticulated() const { CHECK( this->isInNBodyArticulated() ) << "this object is not in NBodyArticulated"; return *M_NBodyArticulated; }
+
     private :
         std::string M_name;
         ModelMarkers M_markers;
@@ -607,145 +832,11 @@ public:
 
         // articulation info (only used for build a BodyArticulation)
         std::map<std::string,ModelExpression> M_articulationTranslationalVelocityExpr;
+
+        NBodyArticulated const* M_NBodyArticulated = nullptr;
     };
 
-    class BodyArticulation
-    {
-    public :
-        BodyArticulation( BodyBoundaryCondition const* b1,  BodyBoundaryCondition const* b2)
-            :
-            M_body1( b1 ),
-            M_body2( b2 )
-            {}
-        BodyBoundaryCondition const& body1() const { return *M_body1; }
-        BodyBoundaryCondition const& body2() const { return *M_body2; }
-        datamap_ptr_t<> dataMapLagrangeMultiplierTranslationalVelocity() const { return M_dataMapLagrangeMultiplierTranslationalVelocity; }
-        vector_ptrtype vectorLagrangeMultiplierTranslationalVelocity() const { return M_vectorLagrangeMultiplierTranslationalVelocity; }
-        std::string name() const { return this->body1().name() + "_" + this->body2().name(); }
 
-        void setTranslationalVelocityExpr( ModelExpression const& e ) { M_exprTranslationalVelocity = e; }
-
-        bool has( BodyBoundaryCondition const& bbc ) const { return (bbc.name() == this->body1().name()) || (bbc.name() == this->body2().name()); }
-
-        bool areConnected( BodyArticulation const& ba ) const { return this->has( ba.body1() ) || this->has( ba.body2() ); }
-
-        template <typename SymbolsExprType>
-        auto translationalVelocityExpr( SymbolsExprType const& se ) const
-            {
-                auto mc1 = this->body1().body().massCenter();
-                auto mc2 = this->body2().body().massCenter();
-                eigen_vector_type<nRealDim> /*auto*/ unitDir = (mc2-mc1);
-                unitDir.normalize();
-                //std::cout << "unit dir : " << unitDir << std::endl;
-                auto e = expr( M_exprTranslationalVelocity.template expr<1,1>(), se );
-                // std::cout << "e=" << str(e.expression()) << std::endl;
-                // std::cout << "e.eval=" << e.evaluate()(false) << std::endl;
-                if constexpr ( nDim == 2 )
-                                 return e*vec( cst(unitDir(0)), cst(unitDir(1)) );
-                else
-                    return e*vec( cst(unitDir(0)), cst(unitDir(1)), cst(unitDir(2)) );
-            }
-
-        void initLagrangeMultiplier( self_type const& fluidToolbox );
-
-        void setParameterValues( std::map<std::string,double> const& mp )
-            {
-                M_exprTranslationalVelocity.setParameterValues( mp );
-            }
-
-    private :
-        BodyBoundaryCondition const* M_body1;
-        BodyBoundaryCondition const* M_body2;
-        ModelExpression M_exprTranslationalVelocity;
-        datamap_ptr_t<> M_dataMapLagrangeMultiplierTranslationalVelocity;
-        vector_ptrtype M_vectorLagrangeMultiplierTranslationalVelocity;
-    };
-
-    class NBodyArticulated
-    {
-    public :
-        NBodyArticulated( self_type const& fluidToolbox )
-            :
-            M_articulationMethod( soption(_prefix=fluidToolbox.prefix(),_name="body.articulation.method") )
-            {
-                CHECK( M_articulationMethod == "lm" || M_articulationMethod == "p-matrix" ) << "invalid " <<M_articulationMethod;
-            }
-
-        NBodyArticulated( NBodyArticulated const& ) = default;
-        NBodyArticulated( NBodyArticulated && ) = default;
-
-        std::vector<BodyArticulation> const& articulations() const { return M_articulations; }
-        std::string const& articulationMethod() const { return M_articulationMethod; }
-
-        std::string const& pmatrixMasterBodyName() const { return M_pmatrixMasterBodyName; }
-        BodyBoundaryCondition const& pmatrixMasterBody() const
-            {
-                std::string const& bbcMasterName = this->pmatrixMasterBodyName();
-                for ( auto const& ba : M_articulations )
-                {
-                    auto const& bbc1 = ba.body1();
-                    if ( bbc1.name() == this->pmatrixMasterBodyName() )
-                        return bbc1;
-                    auto const& bbc2 = ba.body2();
-                    if ( bbc2.name() == this->pmatrixMasterBodyName() )
-                        return bbc2;
-                }
-                CHECK( false ) << "master body not found";
-                return M_articulations.front().body1();
-            }
-        datamap_ptr_t<> dataMapPMatrixTranslationalVelocity() const { return M_dataMapPMatrixTranslationalVelocity; }
-
-        void addArticulation( BodyArticulation const& art ) { M_articulations.push_back( art ); }
-
-        bool canBeConnectedTo( BodyArticulation const& ba ) const
-            {
-                return std::find_if( M_articulations.begin(), M_articulations.end(),
-                                     [&ba]( BodyArticulation const& e ) { return e.areConnected( ba ); } ) != M_articulations.end();
-            }
-
-        bool has( BodyBoundaryCondition const& bbc ) const
-            {
-                return  std::find_if( M_articulations.begin(), M_articulations.end(),
-                                      [&bbc]( BodyArticulation const& e ) { return e.has( bbc ); } ) != M_articulations.end();
-            }
-
-        void init( self_type const& fluidToolbox );
-
-        void setParameterValues( std::map<std::string,double> const& mp )
-            {
-                for ( auto & ba : M_articulations )
-                    ba.setParameterValues( mp );
-            }
-
-        std::vector<BodyBoundaryCondition const*> bodyList( bool withMaster = true ) const
-            {
-                std::vector<BodyBoundaryCondition const*> res;
-                for ( auto const& ba : M_articulations )
-                {
-                    auto const& bbc1 = ba.body1();
-                    if ( withMaster || (bbc1.name() != M_pmatrixMasterBodyName) )
-                    {
-                        if ( std::find_if( res.begin(), res.end(),
-                                           [&bbc1]( BodyBoundaryCondition const* e ) { return e->name() == bbc1.name(); } ) ==res.end() )
-                            res.push_back( &bbc1 );
-                    }
-                    auto const& bbc2 = ba.body2();
-                    if ( withMaster || (bbc2.name() != M_pmatrixMasterBodyName) )
-                    {
-                        if ( std::find_if( res.begin(), res.end(),
-                                           [&bbc2]( BodyBoundaryCondition const* e ) { return e->name() == bbc2.name(); } ) == res.end() )
-                            res.push_back( &bbc2 );
-                    }
-                }
-                return res;
-            }
-
-    private :
-        std::vector<BodyArticulation> M_articulations;
-        std::string M_articulationMethod;
-        std::string M_pmatrixMasterBodyName;
-        datamap_ptr_t<> M_dataMapPMatrixTranslationalVelocity;
-    };
 
     class BodySetBoundaryCondition : public std::map<std::string,BodyBoundaryCondition>
     {
@@ -902,6 +993,7 @@ public:
     private :
         std::vector<NBodyArticulated> M_nbodyArticulated;
     };
+
 
     struct TurbulenceModelBoundaryConditions
     {
