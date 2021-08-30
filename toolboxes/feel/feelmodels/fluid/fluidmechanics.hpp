@@ -1070,21 +1070,25 @@ private :
     void initPostProcess() override;
     void createPostProcessExporters();
 public :
+    /**
+     * @brief initialize the toolbox
+     * 
+     * @param buildModelAlgebraicFactory set to true to build the algebraic factory
+     */
     void init( bool buildModelAlgebraicFactory=true );
-   /* template <typename Ivel_type,typename Ip_type, typename Idisp_type>
-    void init(self_ptrtype const& oldToolbox,
-        Ivel_type I_vel,
-        Ip_type I_press,
-        Idisp_type I_disp,
-        bool buildModelAlgebraicFactory=true); 
-    void init(self_ptrtype const& oldToolbox,
-        I_ptr_t<space_velocity_type,space_velocity_type> I_vel,
-        I_ptr_t<space_pressure_type,space_pressure_type> I_press,
-        I_ptr_t<space_mesh_disp_type,space_mesh_disp_type> I_disp,
-        bool buildModelAlgebraicFactory=true);*/
-    void init(self_ptrtype const& oldToolbox,
-        std::vector<std::string> markersInterpolate,
-        bool buildModelAlgebraicFactory=true);
+    /**
+     * @brief initialize the toolbox from another toolbox 
+     * 
+     * @param oldToolbox another toolbox to build and interpolate data from
+     * @param markersInterpolate markers (faces or elements) where the data should be interpolated
+     * @param buildModelAlgebraicFactory set to true to build the algebraic factory
+     */
+    void init(self_ptrtype const& oldToolbox, std::vector<std::string> const& markersInterpolate, bool buildModelAlgebraicFactory=true);
+
+    /**
+     * @brief initialize the algebraic factory of the toolbox
+     * 
+     */
     void initAlgebraicFactory();
 
     void createFunctionSpacesNormalStress();
