@@ -780,7 +780,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 }
             }
 
-            if ( !bpbc.isInNBodyArticulated() || ( bpbc.getNBodyArticulated().masterBody().name() == bpbc.name() ) )
+            if ( !bpbc.isInNBodyArticulated() || ( bpbc.getNBodyArticulated().masterBodyBC().name() == bpbc.name() ) )
             {
                 size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
                 auto momentOfInertiaExpr = bpbc.momentOfInertiaExpr();

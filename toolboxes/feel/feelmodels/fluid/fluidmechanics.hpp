@@ -488,6 +488,8 @@ public:
         typedef std::shared_ptr<space_trace_angular_velocity_type> space_trace_angular_velocity_ptrtype;
         typedef typename space_trace_angular_velocity_type::element_type element_trace_angular_velocity_type;
         typedef std::shared_ptr<element_trace_angular_velocity_type> element_trace_angular_velocity_ptrtype;
+        typedef Bdf<space_trace_angular_velocity_type> bdf_trace_angular_velocity_type;
+        typedef std::shared_ptr<bdf_trace_angular_velocity_type> bdf_trace_angular_velocity_ptrtype;
 
         using moment_of_inertia_type = typename Body::moment_of_inertia_type;
 
@@ -506,12 +508,11 @@ public:
         std::vector<BodyArticulation> const& articulations() const { return M_articulations; }
         std::string const& articulationMethod() const { return M_articulationMethod; }
 
-        std::string const& pmatrixMasterBodyName() const { return M_pmatrixMasterBodyName; }
-        BodyBoundaryCondition const& pmatrixMasterBody() const;
-        BodyBoundaryCondition const& masterBody() const { return this->pmatrixMasterBody(); }
+        BodyBoundaryCondition const& masterBodyBC() const { CHECK( M_masterBodyBC ) << "not init";return *M_masterBodyBC; }
 
         space_trace_angular_velocity_ptrtype spaceAngularVelocity() const { return M_XhAngularVelocity; }
         element_trace_angular_velocity_ptrtype fieldAngularVelocityPtr() const { return M_fieldAngularVelocity; }
+        bdf_trace_angular_velocity_ptrtype bdfAngularVelocity() const { return M_bdfAngularVelocity; }
 
         sparse_matrix_ptrtype matrixPTilde_angular() const { return M_matrixPTilde_angular; }
 
@@ -536,6 +537,7 @@ public:
 
         void init( self_type const& fluidToolbox );
 
+        //! set parameter values with symbolic expression
         void setParameterValues( std::map<std::string,double> const& mp )
             {
                 for ( auto & ba : M_articulations )
@@ -581,12 +583,37 @@ public:
                     return vec( cst(M_massCenter(0)), cst(M_massCenter(1)), cst(M_massCenter(2)) );
             }
 
+
+        //! init the time stepping
+        void initTimeStep( self_type const& fluidToolbox, int bdfOrder, int nConsecutiveSave, std::string const& myFileFormat )
+            {
+                M_bdfAngularVelocity = fluidToolbox.createBdf( M_XhAngularVelocity, "body."+this->name()+".angular-velocity", bdfOrder, nConsecutiveSave, myFileFormat );
+                if ( fluidToolbox.doRestart() )
+                {
+                    M_bdfAngularVelocity->restart();
+                    *M_fieldAngularVelocity = M_bdfAngularVelocity->unknown(0);
+                }
+            }
+
+        //! start the time stepping
+        void startTimeStep()
+            {
+                M_bdfAngularVelocity->start( *M_fieldAngularVelocity );
+            }
+
+        //! update the time stepping to the next time
+        void updateTimeStep()
+            {
+                M_bdfAngularVelocity->next( *M_fieldAngularVelocity );
+            }
+
     private :
         range_faces_type M_rangeMarkedFacesOnFluid;
 
         std::vector<BodyArticulation> M_articulations;
         std::string M_articulationMethod;
-        std::string M_pmatrixMasterBodyName;
+
+        BodyBoundaryCondition const* M_masterBodyBC = nullptr;
 
         datamap_ptr_t<> M_dataMapPMatrixTranslationalVelocity;
 
@@ -598,6 +625,7 @@ public:
 
         space_trace_angular_velocity_ptrtype M_XhAngularVelocity;
         element_trace_angular_velocity_ptrtype M_fieldAngularVelocity;
+        bdf_trace_angular_velocity_ptrtype M_bdfAngularVelocity;
     };
 
     // bc body
@@ -638,26 +666,34 @@ public:
         void initTimeStep( self_type const& fluidToolbox, int bdfOrder, int nConsecutiveSave, std::string const& myFileFormat )
             {
                 M_bdfTranslationalVelocity = fluidToolbox.createBdf( M_XhTranslationalVelocity, "body."+M_name+".translational-velocity", bdfOrder, nConsecutiveSave, myFileFormat );
-                M_bdfAngularVelocity = fluidToolbox.createBdf( M_XhAngularVelocity, "body."+M_name+".angular-velocity", bdfOrder, nConsecutiveSave, myFileFormat );
-
                 if ( fluidToolbox.doRestart() )
                 {
                     M_bdfTranslationalVelocity->restart();
-                    M_bdfAngularVelocity->restart();
                     *M_fieldTranslationalVelocity = M_bdfTranslationalVelocity->unknown(0);
-                    *M_fieldAngularVelocity = M_bdfAngularVelocity->unknown(0);
+                }
+
+                if ( !this->isInNBodyArticulated() )
+                {
+                    M_bdfAngularVelocity = fluidToolbox.createBdf( M_XhAngularVelocity, "body."+M_name+".angular-velocity", bdfOrder, nConsecutiveSave, myFileFormat );
+                    if ( fluidToolbox.doRestart() )
+                    {
+                        M_bdfAngularVelocity->restart();
+                        *M_fieldAngularVelocity = M_bdfAngularVelocity->unknown(0);
+                    }
                 }
             }
 
         void startTimeStep()
             {
                 M_bdfTranslationalVelocity->start( *M_fieldTranslationalVelocity );
-                M_bdfAngularVelocity->start( *M_fieldAngularVelocity );
+                if ( !this->isInNBodyArticulated() )
+                    M_bdfAngularVelocity->start( *M_fieldAngularVelocity );
             }
         void updateTimeStep()
             {
                 M_bdfTranslationalVelocity->next( *M_fieldTranslationalVelocity );
-                M_bdfAngularVelocity->next( *M_fieldAngularVelocity );
+                if ( !this->isInNBodyArticulated() )
+                    M_bdfAngularVelocity->next( *M_fieldAngularVelocity );
             }
 
         std::string const& name() const { return M_name; }
@@ -673,7 +709,7 @@ public:
         element_trace_angular_velocity_ptrtype fieldAngularVelocityPtr() const { return M_fieldAngularVelocity; }
 
         bdf_trace_p0c_vectorial_ptrtype bdfTranslationalVelocity() const { return M_bdfTranslationalVelocity; }
-        bdf_trace_angular_velocity_ptrtype bdfAngularVelocity() const { return M_bdfAngularVelocity; }
+        bdf_trace_angular_velocity_ptrtype bdfAngularVelocity() const { return this->isInNBodyArticulated()? M_NBodyArticulated->bdfAngularVelocity() : M_bdfAngularVelocity; }
 
         Body const& body() const { return *M_body; }
         //auto massExpr() const { return M_body->massExpr(); }
@@ -768,7 +804,8 @@ public:
                                                          eigen_matrix_type<1, 1> >::type;
         evaluate_torques_type fluidTorques() const
             {
-                evaluate_torques_type res = M_body->momentOfInertia()*(M_bdfAngularVelocity->polyDerivCoefficient(0)*idv(M_fieldAngularVelocity)-idv(M_bdfAngularVelocity->polyDeriv())).evaluate(true,M_mesh->worldCommPtr());
+                // WARNING : is the case of  isInNBodyArticulated, this torque is related to nNBodyArticulated object (else we need compute momentOfInertia of this body)
+                evaluate_torques_type res = this->momentOfInertia()*(this->bdfAngularVelocity()->polyDerivCoefficient(0)*idv(M_fieldAngularVelocity)-idv(this->bdfAngularVelocity()->polyDeriv())).evaluate(true,M_mesh->worldCommPtr());
                 return res;
             }
         //---------------------------------------------------------------------------//
@@ -873,16 +910,22 @@ public:
             {
                 for ( auto & [name,bpbc] : *this )
                     bpbc.initTimeStep( fluidToolbox, bdfOrder, nConsecutiveSave, myFileFormat );
+                for (auto & nba : M_nbodyArticulated )
+                    nba.initTimeStep( fluidToolbox, bdfOrder, nConsecutiveSave, myFileFormat );
             }
         void startTimeStep()
             {
                 for ( auto & [name,bpbc] : *this )
                     bpbc.startTimeStep();
+                for (auto & nba : M_nbodyArticulated )
+                    nba.startTimeStep();
             }
         void updateTimeStep()
             {
                 for ( auto & [name,bpbc] : *this )
                     bpbc.updateTimeStep();
+                for (auto & nba : M_nbodyArticulated )
+                    nba.updateTimeStep();
             }
 
         void init( self_type const& fluidToolbox );

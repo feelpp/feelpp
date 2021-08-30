@@ -2811,24 +2811,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
     if ( !M_mesh )
         this->init( fluidToolbox );
 
-    // auto const& w = *M_fieldAngularVelocity;
-
-    if (fluidToolbox.isMoveDomain())
+    if ( M_body->hasMaterialsProperties() )
     {
-        if ( M_body->hasMaterialsProperties() )
-        {
-            M_body->updateForUse();
-        }
-        else
-        {
-            auto disp = mean(_range=M_rangeMarkedFacesOnFluid,_expr=idv(fluidToolbox.meshALE()->displacement()) );
-            //M_massCenter = M_massCenterRef + disp;
-            M_body->setMassCenter( M_massCenterRef + disp );
-        }
-
-        //if ( fluidToolbox.worldComm().isMasterRank() )
-        //    std::cout << "M_massCenter=\n " << M_body->massCenter() << std::endl;
+        M_body->updateForUse();
     }
+    else if ( fluidToolbox.isMoveDomain() )
+    {
+        auto disp = mean(_range=M_rangeMarkedFacesOnFluid,_expr=idv(fluidToolbox.meshALE()->displacement()) );
+        //M_massCenter = M_massCenterRef + disp;
+        M_body->setMassCenter( M_massCenterRef + disp );
+    }
+
+    //if ( fluidToolbox.worldComm().isMasterRank() )
+    //    std::cout << "M_massCenter=\n " << M_body->massCenter() << std::endl;
 
     auto XhV = fluidToolbox.functionSpaceVelocity();
 
@@ -3060,27 +3055,29 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyArticulation::unitDirBetweenMassCenters(
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::string
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::name() const { return "articulation_"+masterBody().name(); }
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::name() const { return "articulation_"+this->masterBodyBC().name(); }
 
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::init( self_type const& fluidToolbox )
 {
-    std::map<std::string,int> count;
+    std::map<std::string,std::tuple<int,BodyBoundaryCondition const*>> count;
     for ( auto const& ba : M_articulations )
     {
-        for ( std::string bbc_name : { ba.body1().name(), ba.body2().name() } )
+        for ( BodyBoundaryCondition const* bbcPtr : { &ba.body1(), &ba.body2() } )
         {
-            if ( count.find( bbc_name ) == count.end() )
-                count[bbc_name] = 1;
+            auto const& bbc = *bbcPtr;
+            if ( count.find( bbc.name() ) == count.end() )
+                count[bbc.name()] = std::make_tuple(1,bbcPtr);
             else
-                ++count[bbc_name];
+                ++std::get<0>( count[bbc.name()] );
         }
     }
-    auto itMax = std::max_element(count.begin(), count.end(), [](auto const& e1,auto const& e2) { return e1.second < e2.second; } );
+    auto itMax = std::max_element(count.begin(), count.end(), [](auto const& e1,auto const& e2) { return std::get<0>(e1.second) < std::get<0>(e2.second); } );
     CHECK ( itMax != count.end() ) << "something wrong";
-    M_pmatrixMasterBodyName = itMax->first;
+    M_masterBodyBC = std::get<1>( itMax->second );
+    CHECK( M_masterBodyBC->name() == itMax->first ) << "something wrong";
 
     // std::cout << "M_pmatrixMasterBodyName = "<< M_pmatrixMasterBodyName << std::endl;
     // std::cout << "this->bodyList().size()="<< this->bodyList().size() << std::endl;
@@ -3094,7 +3091,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::init( self_type const& flu
     else
     {
         // create datamap shared on all processess where a body bc is defined (active dofs use the master body)
-        std::vector<std::shared_ptr<datamap_t<>>> datamaps = { this->pmatrixMasterBody().spaceTranslationalVelocity()->mapPtr() };
+        std::vector<std::shared_ptr<datamap_t<>>> datamaps = { this->masterBodyBC().spaceTranslationalVelocity()->mapPtr() };
         for ( auto const& bbcPtr : this->bodyList(false) )
             datamaps.push_back( bbcPtr->spaceTranslationalVelocity()->mapPtr() );
         M_dataMapPMatrixTranslationalVelocity = utility_constant_functionspace::aggregateParallelSupport( datamaps, fluidToolbox.worldCommPtr() );
@@ -3112,39 +3109,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::init( self_type const& flu
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition const&
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::pmatrixMasterBody() const
-{
-    std::string const& bbcMasterName = this->pmatrixMasterBodyName();
-    for ( auto const& ba : M_articulations )
-    {
-        auto const& bbc1 = ba.body1();
-        if ( bbc1.name() == this->pmatrixMasterBodyName() )
-            return bbc1;
-        auto const& bbc2 = ba.body2();
-        if ( bbc2.name() == this->pmatrixMasterBodyName() )
-            return bbc2;
-    }
-    CHECK( false ) << "master body not found";
-    return M_articulations.front().body1();
-}
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::vector<typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition const*>
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::bodyList( bool withMaster ) const
 {
+    std::string const& masterBodyBCName = this->masterBodyBC().name();
     std::vector<BodyBoundaryCondition const*> res;
     for ( auto const& ba : M_articulations )
     {
         auto const& bbc1 = ba.body1();
-        if ( withMaster || (bbc1.name() != M_pmatrixMasterBodyName) )
+        if ( withMaster || (bbc1.name() != masterBodyBCName) )
         {
             if ( std::find_if( res.begin(), res.end(),
                                [&bbc1]( BodyBoundaryCondition const* e ) { return e->name() == bbc1.name(); } ) ==res.end() )
                 res.push_back( &bbc1 );
         }
         auto const& bbc2 = ba.body2();
-        if ( withMaster || (bbc2.name() != M_pmatrixMasterBodyName) )
+        if ( withMaster || (bbc2.name() != masterBodyBCName) )
         {
             if ( std::find_if( res.begin(), res.end(),
                                [&bbc2]( BodyBoundaryCondition const* e ) { return e->name() == bbc2.name(); } ) == res.end() )
@@ -3351,10 +3331,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::initAlgebraicFacto
             auto opI_partTranslationalVelocity = opInterpolation( _domainSpace=bbcPtr->spaceTranslationalVelocity() ,_imageSpace=XhV,_range=bbcPtr->rangeMarkedFacesOnFluid(),_matrix=matSetup );
         }
 
-        size_type startBlockIndexTranslationalVelocityMasterBody = fluidToolbox.startSubBlockSpaceIndex("body-bc."+nba.pmatrixMasterBodyName()+".translational-velocity");
+        size_type startBlockIndexTranslationalVelocityMasterBody = fluidToolbox.startSubBlockSpaceIndex("body-bc."+nba.masterBodyBC().name()+".translational-velocity");
         myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocityMasterBody) = matrixPMatrixPTilde_TranslationalVelocity;
 
-        myblockMat(startBlockIndexTranslationalVelocityMasterBody,startBlockIndexTranslationalVelocityMasterBody) = fluidToolbox.backend()->newIdentityMatrix( nba.dataMapPMatrixTranslationalVelocity(), nba.pmatrixMasterBody().spaceTranslationalVelocity()->mapPtr() );
+        myblockMat(startBlockIndexTranslationalVelocityMasterBody,startBlockIndexTranslationalVelocityMasterBody) = fluidToolbox.backend()->newIdentityMatrix( nba.dataMapPMatrixTranslationalVelocity(),
+                                                                                                                                                               nba.masterBodyBC().spaceTranslationalVelocity()->mapPtr() );
 
         for ( auto const& bbcPtr : nba.bodyList(false) )
         {
@@ -3439,8 +3420,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFac
         {
             auto const& bbc1 = ba.body1();
             auto const& bbc2 = ba.body2();
-            CHECK( bbc1.name() == nba.pmatrixMasterBodyName() || bbc2.name() == nba.pmatrixMasterBodyName() ) << "Case not handle : too complex articulation";
-            auto const& bbc = bbc1.name() == nba.pmatrixMasterBodyName()? bbc2 : bbc1;
+            CHECK( bbc1.name() == nba.masterBodyBC().name() || bbc2.name() == nba.masterBodyBC().name() ) << "Case not handle : too complex articulation";
+            auto const& bbc = bbc1.name() == nba.masterBodyBC().name()? bbc2 : bbc1;
 
             applyCloseInExplictPartOfSolution = true;
             size_type startBlockIndexTranslationalVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bbc.name()+".translational-velocity");
