@@ -21,6 +21,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <cmath>
+#include <random>
 #include <algorithm>
 #include "parse_context.h"
 #include "power.h"
@@ -33,6 +34,139 @@
 
 namespace GiNaC
 {
+DECLARE_FUNCTION_2P(rand);
+static ex rand_eval(const ex & a,const ex & b) 
+{
+	return rand(a,b).hold();
+}
+
+static void rand_print_latex( const ex& arg1, const ex& arg2, const print_context& c )
+{
+    c.s << "{"; arg1.print(c); c.s << "|}";
+}
+
+static void rand_print_csrc_float( const ex& arg1, const ex& arg2, const print_context& c )
+{
+    c.s << "[](){ auto [dis, gen] = uniformDistribution("; 
+	arg1.print(c); 
+	c.s << ",";
+	arg2.print( c );
+	c.s << "); return dis(gen); }()";
+}
+REGISTER_FUNCTION(rand, eval_func( rand_eval).
+                       evalf_func( rand_eval).
+                       print_func<print_latex>( rand_print_latex).
+                       print_func<print_csrc_float>( rand_print_csrc_float).
+                       print_func<print_csrc_double>( rand_print_csrc_float));
+
+DECLARE_FUNCTION_2P( uniform );
+static ex uniform_eval( const ex& a, const ex& b )
+{
+    return uniform( a,b ).hold();
+}
+
+static void uniform_print_latex( const ex& arg1, const ex& arg2, const print_context& c )
+{
+    c.s << "{";
+    arg1.print( c );
+    c.s << "|}";
+}
+
+static void uniform_print_csrc_float( const ex& arg1, const ex& arg2, const print_context& c )
+{
+    c.s << "[](){ auto [dis, gen] = uniformDistribution(";
+    arg1.print( c );
+    c.s << ",";
+    arg2.print( c );
+    c.s << "); return dis(gen); }()";
+}
+REGISTER_FUNCTION( uniform, eval_func( uniform_eval ).
+                         evalf_func( uniform_eval ).
+						 print_func<print_latex>( uniform_print_latex ).
+						 print_func<print_csrc_float>( uniform_print_csrc_float ).
+						 print_func<print_csrc_double>( uniform_print_csrc_float ) );
+
+DECLARE_FUNCTION_2P( loguniform );
+static ex loguniform_eval( const ex& a, const ex& b )
+{
+    return loguniform( a,b ).hold();
+}
+
+static void loguniform_print_latex( const ex& arg1, const ex& arg2, const print_context& c )
+{
+    c.s << "{";
+    arg1.print( c );
+    c.s << "|}";
+}
+
+static void loguniform_print_csrc_float( const ex& arg1, const ex& arg2, const print_context& c )
+{
+    c.s << "[](){ auto [dis, gen] = uniformDistribution( std::log(";
+    arg1.print( c );
+    c.s << "),std::log(";
+    arg2.print( c );
+    c.s << ")); return exp(dis(gen)); }()";
+}
+REGISTER_FUNCTION( loguniform, eval_func( loguniform_eval ).
+                         evalf_func( loguniform_eval ).
+						 print_func<print_latex>( loguniform_print_latex ).
+						 print_func<print_csrc_float>( loguniform_print_csrc_float ).
+						 print_func<print_csrc_double>( loguniform_print_csrc_float ) );
+
+DECLARE_FUNCTION_2P( normal );
+static ex normal_eval( const ex& a, const ex& b )
+{
+    return normal( a,b ).hold();
+}
+
+static void normal_print_latex( const ex& arg1, const ex& arg2, const print_context& c )
+{
+    c.s << "{";
+    arg1.print( c );
+    c.s << "|}";
+}
+
+static void normal_print_csrc_float( const ex& arg1, const ex& arg2, const print_context& c )
+{
+    c.s << "[](){ auto [dis, gen] = normalDistribution(";
+    arg1.print( c );
+    c.s << ",";
+    arg2.print( c );
+    c.s << "); return dis(gen); }()";
+}
+REGISTER_FUNCTION( normal, eval_func( normal_eval ).
+                         evalf_func( normal_eval ).
+						 print_func<print_latex>( normal_print_latex ).
+						 print_func<print_csrc_float>( normal_print_csrc_float ).
+						 print_func<print_csrc_double>( normal_print_csrc_float ) );
+
+DECLARE_FUNCTION_2P( lognormal );
+static ex lognormal_eval( const ex& a, const ex& b )
+{
+    return lognormal( a,b ).hold();
+}
+
+static void lognormal_print_latex( const ex& arg1, const ex& arg2, const print_context& c )
+{
+    c.s << "{";
+    arg1.print( c );
+    c.s << "|}";
+}
+
+static void lognormal_print_csrc_float( const ex& arg1, const ex& arg2, const print_context& c )
+{
+    c.s << "[](){ auto [dis, gen] = lognormalDistribution(";
+    arg1.print( c );
+    c.s << ",";
+    arg2.print( c );
+    c.s << "); return dis(gen); }()";
+}
+REGISTER_FUNCTION( lognormal, eval_func( lognormal_eval ).
+                         evalf_func( lognormal_eval ).
+						 print_func<print_latex>( lognormal_print_latex ).
+						 print_func<print_csrc_float>( lognormal_print_csrc_float ).
+						 print_func<print_csrc_double>( lognormal_print_csrc_float ) );
+
 DECLARE_FUNCTION_2P(mod);
 static ex mod_eval(const ex & x, const ex& y ) 
 { 

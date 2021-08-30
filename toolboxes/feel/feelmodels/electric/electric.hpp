@@ -38,7 +38,6 @@
 #include <feel/feelmodels/modelcore/modelphysics.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 
 namespace Feel
@@ -86,10 +85,6 @@ public:
     typedef Exporter<mesh_type,nOrderGeo> export_type;
     typedef std::shared_ptr<export_type> export_ptrtype;
 
-    // algebraic solver
-    typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
-
     // measure tools for points evaluation
     typedef MeasurePointsEvaluation<space_electricpotential_type> measure_points_evaluation_type;
     typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
@@ -122,12 +117,6 @@ public:
     materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
-
-    backend_ptrtype const& backend() const { return M_backend; }
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
-    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
-    model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
 
 private :
     void loadParameterFromOptionsVm();
@@ -226,7 +215,7 @@ public :
     template <typename PotentialFieldType>
     auto modelFields( PotentialFieldType const& field_p, std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::potential(this), prefix, "electric-potential", field_p, "P", this->keyword() ) );
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::potential(this), prefix, "electric-potential", field_p, "P", this->keyword() ) );
         }
 
     auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
@@ -380,11 +369,6 @@ private :
     MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
     MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
     MarkerManagementRobinBC M_bcRobinMarkerManagement;
-
-    // algebraic data/tools
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    BlocksBaseVector<double> M_blockVectorSolution;
 
     // post-process
     export_ptrtype M_exporter;

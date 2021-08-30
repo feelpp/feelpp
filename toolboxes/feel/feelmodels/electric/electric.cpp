@@ -159,20 +159,19 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // update constant parameters
     this->updateParameterValues();
 
-    // backend : use worldComm of Xh
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
+    // backend
+    this->initAlgebraicBackend();
 
     size_type currentStartIndex = 0;// velocity and pressure before
     this->setStartSubBlockSpaceIndex( "potential-electric", currentStartIndex );
 
+
     // vector solution
     int nBlock = this->nBlockMatrixGraph();
-    M_blockVectorSolution.resize( nBlock );
-    int indexBlock=0;
-    M_blockVectorSolution(indexBlock) = this->fieldElectricPotentialPtr();
-
+    auto bvs = this->initAlgebraicBlockVectorSolution( nBlock );
+    bvs->operator()(0) = this->fieldElectricPotentialPtr();
     // init petsc vector associated to the block
-    M_blockVectorSolution.buildVector( this->backend() );
+    bvs->buildVector( this->backend() );
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -296,7 +295,8 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
-    M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+    auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
+    this->setAlgebraicFactory( algebraicFactory );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -345,9 +345,12 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
     subPt["Electric Potential"] = M_XhElectricPotential->journalSection().to_string();
     p.emplace( "Function Spaces", subPt );
 
+    // fields
+    this->modelFields().updateInformationObject( p["Fields"] );
+
     // Algebraic Solver
-    if ( M_algebraicFactory )
-        M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
+    if ( this->algebraicFactory() )
+        this->algebraicFactory()->updateInformationObject( p["Algebraic Solver"] );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -382,6 +385,10 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Ta
             tabInfoFunctionSpaces->add( "Electric Potential", TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( JournalManager::journalData().at( jsonPointerSpaceElectricPotential ), tabInfoProp ) );
         tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
     }
+
+    // fields
+    if ( jsonInfo.contains("Fields") )
+        tabInfo->add( "Fields", TabulateInformationTools::FromJSON::tabulateInformationsModelFields( jsonInfo.at("Fields"), tabInfoProp ) );
 
     if ( jsonInfo.contains( "Algebraic Solver" ) )
         tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
@@ -422,8 +429,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- order         : " << nOrderPolyElectricPotential
            << "\n     -- number of dof : " << M_XhElectricPotential->nDof() << " (" << M_XhElectricPotential->nLocalDof() << ")";
 
-    if ( M_algebraicFactory )
-        *_ostr << M_algebraicFactory->getInfo()->str();
+    if ( this->algebraicFactory() )
+        *_ostr << this->algebraicFactory()->getInfo()->str();
 #endif
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
@@ -503,9 +510,9 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::solve()
 
     this->setStartBlockSpaceIndex( 0 );
 
-    M_blockVectorSolution.updateVectorFromSubVectors();
-    M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
-    M_blockVectorSolution.localize();
+    this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
+    this->algebraicFactory()->solve( "LinearSystem", this->algebraicBlockVectorSolution()->vectorMonolithic() );
+    this->algebraicBlockVectorSolution()->localize();
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )

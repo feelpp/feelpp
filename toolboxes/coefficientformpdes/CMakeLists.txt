@@ -9,6 +9,5 @@ feelpp_add_application( coefficientformpdes SRCS main.cpp
 #  MAN coefficientformpdes
   )
 
-foreach( _testcase IN ITEMS "adr" "bratu" "heat" "predator-prey" "thermoelectric" )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_coefficientformpdes CATEGORY toolboxes/coefficientformpdes)
-endforeach()
+feelpp_add_testcase(cases PREFIX feelpp_toolbox_cfpdes CATEGORY toolboxes/coefficientformpdes)
+

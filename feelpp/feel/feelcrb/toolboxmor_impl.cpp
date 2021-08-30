@@ -11,7 +11,6 @@ makeToolboxMorOptions()
         ( "toolboxmor.trainset-deim-size", po::value<int>()->default_value(40), "size of the deim trainset" )
         ( "toolboxmor.trainset-mdeim-size", po::value<int>()->default_value(40), "size of the mdeim trainset" )
         ( "toolboxmor.test-deim", po::value<bool>()->default_value(false), "test deim decomposition" )
-        ( "toolboxmor.sampling-size", po::value<int>()->default_value(0), "size of the sampling" )
         ;
     options.add(crbOptions())
         .add(crbSEROptions())
@@ -37,8 +36,8 @@ makeToolboxMorAbout( std::string const& str )
     return about;
 }
 
-template<int Dim>
-ToolboxMor<Dim>::ToolboxMor(std::string const& prefix)
+template<typename SpaceType, int Options>
+ToolboxMor<SpaceType, Options>::ToolboxMor(std::string const& prefix)
     :
     super_type("ToolboxMor", Environment::worldCommPtr(), prefix),
     M_propertyPath(Environment::expand( soption("toolboxmor.filename"))),
@@ -71,31 +70,31 @@ ToolboxMor<Dim>::ToolboxMor(std::string const& prefix)
 
 }
 
-template<int Dim>
-int ToolboxMor<Dim>::Qa()
+template<typename SpaceType, int Options>
+int ToolboxMor<SpaceType, Options>::Qa()
 {
     return 1;
 }
 
-template<int Dim>
-int ToolboxMor<Dim>::mQA( int q )
+template<typename SpaceType, int Options>
+int ToolboxMor<SpaceType, Options>::mQA( int q )
 {
     return this->mdeim()->size();
 }
 
-template<int Dim>
-int ToolboxMor<Dim>::Nl()
+template<typename SpaceType, int Options>
+int ToolboxMor<SpaceType, Options>::Nl()
 {
     return 1;
 }
 
-template<int Dim>
-int ToolboxMor<Dim>::Ql( int l)
+template<typename SpaceType, int Options>
+int ToolboxMor<SpaceType, Options>::Ql( int l)
 {
     return 1;
 }
-template<int Dim>
-int ToolboxMor<Dim>::mLQF( int l, int q )
+template<typename SpaceType, int Options>
+int ToolboxMor<SpaceType, Options>::mLQF( int l, int q )
 {
     switch( l )
     {
@@ -107,9 +106,9 @@ int ToolboxMor<Dim>::mLQF( int l, int q )
         return 0;
     }
 }
-template<int Dim>
+template<typename SpaceType, int Options>
 void
-ToolboxMor<Dim>::resizeQm( bool resizeMat )
+ToolboxMor<SpaceType, Options>::resizeQm( bool resizeMat )
 {
     if( resizeMat )
         this->M_Aqm.resize( Qa());
@@ -145,40 +144,40 @@ ToolboxMor<Dim>::resizeQm( bool resizeMat )
     // }
 }
 
-template<int Dim>
-typename ToolboxMor<Dim>::sparse_matrix_ptrtype
-ToolboxMor<Dim>::assembleForMDEIM( parameter_type const& mu, int const& tag )
+template<typename SpaceType, int Options>
+typename ToolboxMor<SpaceType, Options>::sparse_matrix_ptrtype
+ToolboxMor<SpaceType, Options>::assembleForMDEIM( parameter_type const& mu, int const& tag )
 {
     return M_assembleForMDEIM(mu);
 }
 
-template<int Dim>
-typename ToolboxMor<Dim>::vector_ptrtype
-ToolboxMor<Dim>::assembleForDEIM( parameter_type const& mu, int const& tag )
+template<typename SpaceType, int Options>
+typename ToolboxMor<SpaceType, Options>::vector_ptrtype
+ToolboxMor<SpaceType, Options>::assembleForDEIM( parameter_type const& mu, int const& tag )
 {
     return M_assembleForDEIM(mu);
 }
 
-template<int Dim>
+template<typename SpaceType, int Options>
 void
-ToolboxMor<Dim>::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
+ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
 {
     auto ptreeSpecificityOfModel = ptree.get_child_optional( "specifity-of-model" );
     CHECK( ptreeSpecificityOfModel ) << "invalid ptree : section specifity-of-model is missing";
     // M_measureMarkedSurface["IC2"] = ptreeSpecificityOfModel->template get<double>( "surface-measure-IC2" );
     //std::cout << "surface loaded " << M_surface << "\n";
 }
-template<int Dim>
+template<typename SpaceType, int Options>
 void
-ToolboxMor<Dim>::updateSpecificityModel( boost::property_tree::ptree & ptree ) const
+ToolboxMor<SpaceType, Options>::updateSpecificityModel( boost::property_tree::ptree & ptree ) const
 {
     // ptree.add( "surface-measure-IC2", M_measureMarkedSurface.find("IC2")->second );
 }
 
 
-template<int Dim>
+template<typename SpaceType, int Options>
 void
-ToolboxMor<Dim>::initModel()
+ToolboxMor<SpaceType, Options>::initModel()
 {
     this->addModelFile("property-file", M_propertyPath);
 
@@ -228,19 +227,19 @@ ToolboxMor<Dim>::initModel()
     this->mdeim()->run();
     Feel::cout << tc::green << "Electric MDEIM construction finished!!" << tc::reset << std::endl;
 
-} // ToolboxMor<Dim>::init
+} // ToolboxMor<SpaceType, Options>::init
 
-template<int Dim>
+template<typename SpaceType, int Options>
 void
-ToolboxMor<Dim>::postInitModel()
+ToolboxMor<SpaceType, Options>::postInitModel()
 {
     this->resizeQm();
     assembleData();
 }
 
-template<int Dim>
+template<typename SpaceType, int Options>
 void
-ToolboxMor<Dim>::updateBetaQ_impl( parameter_type const& mu , double time , bool only_terms_time_dependent )
+ToolboxMor<SpaceType, Options>::updateBetaQ_impl( parameter_type const& mu , double time , bool only_terms_time_dependent )
 {
     auto betaA = this->mdeim()->beta(mu);
     auto betaF = this->deim()->beta(mu);
@@ -258,21 +257,21 @@ ToolboxMor<Dim>::updateBetaQ_impl( parameter_type const& mu , double time , bool
 
 
 
-template<int Dim>
-typename ToolboxMor<Dim>::super_type::betaq_type
-ToolboxMor<Dim>::computeBetaQ( parameter_type const& mu , double time , bool only_terms_time_dependent )
+template<typename SpaceType, int Options>
+typename ToolboxMor<SpaceType, Options>::super_type::betaqm_type
+ToolboxMor<SpaceType, Options>::computeBetaQm( parameter_type const& mu , double time , bool only_terms_time_dependent )
 {
     return computeBetaQ_impl<super_type>( mu, time, only_terms_time_dependent );
 }
-template<int Dim>
-typename ToolboxMor<Dim>::super_type::betaq_type
-ToolboxMor<Dim>::computeBetaQ( parameter_type const& mu )
+template<typename SpaceType, int Options>
+typename ToolboxMor<SpaceType, Options>::super_type::betaqm_type
+ToolboxMor<SpaceType, Options>::computeBetaQm( parameter_type const& mu )
 {
     return computeBetaQ_impl<super_type>( mu );
 }
-template<int Dim>
+template<typename SpaceType, int Options>
 void
-ToolboxMor<Dim>::assembleData()
+ToolboxMor<SpaceType, Options>::assembleData()
 {
     int M_A = this->mdeim()->size();
     auto qa = this->mdeim()->q();
@@ -304,8 +303,8 @@ ToolboxMor<Dim>::assembleData()
 
 }
 
-// ToolboxMor<Dim>::element_type
-// ToolboxMor<Dim>::solve( parameter_type const& mu )
+// ToolboxMor<SpaceType, Options>::element_type
+// ToolboxMor<SpaceType, Options>::solve( parameter_type const& mu )
 // {
 //     for( int i = 0; i < mu.size(); ++i )
 //         M_heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
@@ -316,9 +315,9 @@ ToolboxMor<Dim>::assembleData()
 // }
 
 
-template<int Dim>
+template<typename SpaceType, int Options>
 double
-ToolboxMor<Dim>::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve )
+ToolboxMor<SpaceType, Options>::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve )
 {
     using namespace vf;
 

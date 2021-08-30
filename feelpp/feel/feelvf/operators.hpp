@@ -48,6 +48,7 @@
 # include <boost/preprocessor/stringize.hpp>
 
 #include <feel/feelvf/exproptionalconcat.hpp>
+#include <feel/feelvf/one.hpp>
 
 namespace Feel
 {
@@ -425,9 +426,17 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                 res.expression().add( Feel::vf::expr( OpGrad<element_type, VF_OP_TYPE_OBJECT(T)>( this->e(), this->useInterpWithConfLoc() ) )(0,compNameToIndex[diffVariable]) ); \
                             return res;                                 \
                         }                                               \
+                        else if constexpr ( fe_type::is_vectorial )     \
+                            {                                           \
+                                using diff_expr_type = std::decay_t<decltype( Feel::vf::expr( OpGrad<element_type, VF_OP_TYPE_OBJECT(T)>( this->e(), this->useInterpWithConfLoc() ) )*Feel::vf::one<functionspace_type::nRealDim>(0) )>; \
+                                auto res = exprOptionalConcat<diff_expr_type>(); \
+                                if ( diffVariable == "x" || diffVariable == "y" || diffVariable == "z" ) \
+                                    res.expression().add( Feel::vf::expr( OpGrad<element_type, VF_OP_TYPE_OBJECT(T)>( this->e(), this->useInterpWithConfLoc() ) )*Feel::vf::one<functionspace_type::nRealDim>(compNameToIndex[diffVariable]) ); \
+                                return res;                             \
+                            }                                           \
                         else                                            \
                         {                                               \
-                            CHECK( false ) << "TODO";                   \
+                            CHECK( false ) << "TODO tensorial case";    \
                             return *this;                               \
                         }                                               \
                     }                                                   \

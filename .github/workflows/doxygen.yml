@@ -20,13 +20,16 @@ jobs:
     runs-on: ubuntu-20.04
     if: "!contains(github.event.head_commit.message, 'doc skip')"
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v2.3.4
       with:
         lfs: true
     - name: Update Dependencies
       run: |
-        echo "deb https://dl.bintray.com/feelpp/ubuntu focal latest" | sudo tee -a /etc/apt/sources.list
-        wget -qO - https://bintray.com/user/downloadSubjectPublicKey?username=bintray | sudo apt-key add -
+        sudo apt install -y gnupg
+        wget -qO - https://feelpp.jfrog.io/artifactory/api/security/keypair/gpg-debian/public | gpg --dearmor > feelpp.gpg
+        sudo mv feelpp.gpg /etc/apt/trusted.gpg.d
+        echo "deb [signed-by=/etc/apt/trusted.gpg.d/feelpp.gpg] https://feelpp.jfrog.io/artifactory/ubuntu focal ${CHANNEL}" | tee -a feelpp.list
+      	sudo mv feelpp.list /etc/apt/sources.list.d/
         sudo apt update
         sudo apt --reinstall install -y libfeelpp1 libfeelpp-dev feelpp-tools doxygen
     - name: Configure Feelpp

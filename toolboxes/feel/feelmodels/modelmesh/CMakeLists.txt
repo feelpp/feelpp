@@ -59,7 +59,7 @@ if( FEELPP_MODELS_HAS_MESHALE )
     SHARED
     ${FEELPP_MODELS_MESHALE_SRC}
     )
-  set( FEELPP_MODELS_MESHALE_LIB_DEPENDS feelpp_modelalg feelpp_modelcore )
+  set( FEELPP_MODELS_MESHALE_LIB_DEPENDS feelpp_modelcore )
   target_link_libraries( feelpp_modelmeshale
     ${FEELPP_MODELS_MESHALE_LIB_DEPENDS}
     )

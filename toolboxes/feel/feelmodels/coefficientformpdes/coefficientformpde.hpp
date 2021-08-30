@@ -11,7 +11,7 @@
 #include <feel/feelfilters/exporter.hpp>
 //#include <feel/feelvf/vf.hpp>
 #include <feel/feelts/bdf.hpp>
-
+#include <feel/feelpoly/nedelec.hpp>
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
@@ -368,13 +368,16 @@ private :
     std::string M_solverName;
 
     // boundary conditions
-    using map_field_dirichlet = typename mpl::if_c<unknown_is_scalar,  map_scalar_field<2>,  map_vector_field<nDim,1,2> >::type;
-    map_field_dirichlet/*map_scalar_field<2>*/ M_bcDirichlet;
+    using map_field_dirichlet = typename mpl::if_c<unknown_is_scalar, map_scalar_field<2>, map_vector_field<nDim,1,2> >::type;
+    map_field_dirichlet M_bcDirichlet;
+    std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
     map_scalar_field<2> M_bcNeumann;
     map_scalar_fields<2> M_bcRobin;
     MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
     MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
     MarkerManagementRobinBC M_bcRobinMarkerManagement;
+    // Comp -> ( Dirichlet bc Name -> markers distribute on entities )
+    std::map<ComponentType, std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > > M_meshMarkersDofEliminationUnknown;
 
     // post-process
     measure_points_evaluation_ptrtype M_measurePointsEvaluation;
