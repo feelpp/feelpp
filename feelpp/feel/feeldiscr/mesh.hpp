@@ -1983,10 +1983,9 @@ Mesh<Shape, T, Tag, IndexT>::createP1mesh( RangeType const& range, size_type ctx
     P1_mesh_ptrtype new_mesh{std::make_shared<P1_mesh_type>( this->worldCommPtr() )};
 
     //!  How the nodes on this mesh will be renumbered to nodes on the new_mesh.
-    boost::unordered_map<size_type, size_type> new_node_numbers;
-    boost::unordered_map<size_type, int> new_vertex;
-    std::vector<size_type> new_element_numbers( this->numElements(), invalid_v<size_type> );
-
+    std::unordered_map<size_type, size_type> new_node_numbers;
+    std::unordered_map<size_type, int> new_vertex;
+    std::unordered_map<size_type, size_type> new_element_numbers; 
     const int nProc = new_mesh->worldComm().localSize();
 
     //!  the number of nodes on the new mesh, will be incremented
@@ -1995,7 +1994,7 @@ Mesh<Shape, T, Tag, IndexT>::createP1mesh( RangeType const& range, size_type ctx
     size_type n_new_faces = 0;
 
     //!  inherit the table of markersName
-    BOOST_FOREACH ( auto itMark, this->markerNames() )
+    for( auto itMark : this->markerNames() )
     {
         new_mesh->addMarkerName( itMark.first, itMark.second[0], itMark.second[1] );
     }
