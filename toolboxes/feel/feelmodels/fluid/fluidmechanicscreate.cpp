@@ -3328,37 +3328,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init(self_ptrtype const& oldToolbox,
         I_ptr_t<space_mesh_disp_type,space_mesh_disp_type> I_disp,
         bool buildModelAlgebraicFactory )*/
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init(self_ptrtype const& oldToolbox,
-       std::vector<std::string> markersInterpolate,
-        bool buildModelAlgebraicFactory )        
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( self_ptrtype const& oldToolbox,
+                                          std::vector<std::string> const& markersInterpolate,
+                                          bool buildModelAlgebraicFactory )        
 {
     this->setTimeInitial(oldToolbox->time()-oldToolbox->timeStep());
-#if 0
-    auto exp_remesh_instant = exporter(_mesh=oldToolbox->mesh(), _name="move_remesh", _geo="change" );
-    auto exp_reference = exporter(_mesh=oldToolbox->meshALE()->referenceMesh(),_name="move_remesh_ref",_geo="change");
-
-    exp_remesh_instant->step(oldToolbox->time()-oldToolbox->timeStep())->setMesh(oldToolbox->mesh());
-    exp_remesh_instant->step(oldToolbox->time()-oldToolbox->timeStep())->add("disp",oldToolbox->meshALE()->displacement());
-    exp_remesh_instant->step(oldToolbox->time()-oldToolbox->timeStep())->add("vel",oldToolbox->fieldVelocity() );
-    exp_remesh_instant->step(oldToolbox->time()-oldToolbox->timeStep())->add("pres",oldToolbox->fieldPressure() );
-    exp_remesh_instant->step(oldToolbox->time()-oldToolbox->timeStep())->add("ale_vel",oldToolbox->meshALE()->aleVelocityBDF()->unknown(0) );
-    exp_remesh_instant->step(oldToolbox->time()-oldToolbox->timeStep())->add("ale_disp0",oldToolbox->meshALE()->displacementRefBDF()->unknown(0) );
-    exp_remesh_instant->step(oldToolbox->time()-oldToolbox->timeStep())->add("ale_disp1",oldToolbox->meshALE()->displacementRefBDF()->unknown(1) );
-    exp_remesh_instant->step(oldToolbox->time()-oldToolbox->timeStep())->add("ale_disp_ref",oldToolbox->meshALE()->displacementInRef() );
-    exp_remesh_instant->save();
-
-    exp_reference->step(oldToolbox->time()-oldToolbox->timeStep())->setMesh(oldToolbox->meshALE()->referenceMesh());
-    exp_reference->step(oldToolbox->time()-oldToolbox->timeStep())->add("ale_vel",oldToolbox->meshALE()->aleVelocityBDF()->unknown(0) );
-    exp_reference->step(oldToolbox->time()-oldToolbox->timeStep())->add("ale_disp0",oldToolbox->meshALE()->displacementRefBDF()->unknown(0) );
-    exp_reference->step(oldToolbox->time()-oldToolbox->timeStep())->add("ale_disp1",oldToolbox->meshALE()->displacementRefBDF()->unknown(1) );
-    exp_reference->step(oldToolbox->time()-oldToolbox->timeStep())->add("ale_disp_ref",oldToolbox->meshALE()->displacementInRef() );
-    exp_reference->save();
-
-    Feel::cout << "ok" <<std::endl;
-    meshMove(oldToolbox->meshALE()->modifyReferenceMesh(),oldToolbox->meshALE()->displacementRefBDF()->unknown(0));
-#endif
     this->init(buildModelAlgebraicFactory);
-    Feel::cout << "ok" <<std::endl;
+
     // Interpolate BDF fields
     //---------------------
     /*Feel::cout << markersInterpolate << std::endl;
@@ -3370,14 +3346,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init(self_ptrtype const& oldToolbox,
     //---------------------
     //this->M_bdfVelocity->interpolate(oldToolbox->M_bdfVelocity,I_vel);
     this->M_bdfVelocity->interpolate(oldToolbox->M_bdfVelocity,markersInterpolate);
-    Feel::cout << "ok" <<std::endl;
+    *M_fieldVelocity = this->M_bdfVelocity->unknown(0);
     
     this->meshALE()->remeshingRevertBDF(oldToolbox->meshALE()->aleVelocityBDF(),oldToolbox->meshALE()->displacementRefBDF(),
                                         oldToolbox->meshALE()->aleIdentityBDF());
-    Feel::cout << "ok" <<std::endl;
     //this->meshALE()->displacementRefBDF()->interpolate(oldToolbox->meshALE()->displacementRefBDF(),I_disp); 
     this->meshALE()->displacementRefBDF()->interpolate(oldToolbox->meshALE()->displacementRefBDF(),markersInterpolate); 
-    Feel::cout << "ok" <<std::endl;
     //this->meshALE()->aleIdentityBDF()->interpolate(oldToolbox->meshALE()->aleIdentityBDF(),I_disp);
     //this->meshALE()->aleVelocityBDF()->interpolate(oldToolbox->meshALE()->aleVelocityBDF(),I_disp); 
     this->meshALE()->aleIdentityBDF()->interpolate(oldToolbox->meshALE()->aleIdentityBDF(),markersInterpolate);
@@ -3401,57 +3375,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init(self_ptrtype const& oldToolbox,
         //this->bodySetBC().bdfAngularVelocity()->unknown(0) = oldToolbox->bodySetBC().bdfAngularVelocity()->unknown(0);
     }
     
-    //Feel::cout << "Same shared pointer? " << (this->meshALE()->movingMesh()==this->meshALE()->referenceMesh()) <<std::endl;
-    #if 0
-    // do the same for the ALE map and velocity
-    exp_remesh_instant->step(oldToolbox->time())->setMesh(this->meshALE()->movingMesh());
-    exp_remesh_instant->step(oldToolbox->time())->add("disp",this->meshALE()->displacementRefBDF()->unknown(1));
-    exp_remesh_instant->step(oldToolbox->time())->add("vel",this->M_bdfVelocity->unknown(0) );
-    exp_remesh_instant->step(oldToolbox->time())->add("pres",press_interpolated);
-    //exp_remesh_instant->step(oldToolbox->time())->add("ale_vel",oldToolbox->meshALE()->aleVelocityBDF()->unknown(0) );
-    //exp_remesh_instant->step(oldToolbox->time())->add("ale_disp",oldToolbox->meshALE()->displacementRefBDF()->unknown(0) );
-    exp_remesh_instant->step(oldToolbox->time())->add("ale_vel",oldToolbox->meshALE()->aleVelocityBDF()->unknown(0) );
-    exp_remesh_instant->step(oldToolbox->time())->add("ale_disp0",oldToolbox->meshALE()->displacementRefBDF()->unknown(0) );
-    exp_remesh_instant->step(oldToolbox->time())->add("ale_disp1",oldToolbox->meshALE()->displacementRefBDF()->unknown(1) );
-    exp_remesh_instant->step(oldToolbox->time())->add("ale_disp_ref",oldToolbox->meshALE()->displacementInRef() );
-    exp_remesh_instant->save();
-
-
-    exp_reference->step(oldToolbox->time())->setMesh(this->meshALE()->referenceMesh());
-    exp_reference->step(oldToolbox->time())->add("ale_vel",this->meshALE()->aleVelocityBDF()->unknown(0) );
-    exp_reference->step(oldToolbox->time())->add("ale_disp0",this->meshALE()->displacementRefBDF()->unknown(0) );
-    exp_reference->step(oldToolbox->time())->add("ale_disp1",this->meshALE()->displacementRefBDF()->unknown(1) );
-    exp_reference->step(oldToolbox->time())->add("ale_disp_ref",this->meshALE()->displacementInRef() );
-    exp_reference->save();
-
-
-    exp_remesh_instant->step(oldToolbox->time()+oldToolbox->timeStep())->setMesh(this->mesh());
-    exp_remesh_instant->step(oldToolbox->time()+oldToolbox->timeStep())->add("disp",this->meshALE()->displacement());
-    exp_remesh_instant->step(oldToolbox->time()+oldToolbox->timeStep())->add("vel",this->M_bdfVelocity->unknown(0) );
-    exp_remesh_instant->step(oldToolbox->time()+oldToolbox->timeStep())->add("pres",press_interpolated);
-    exp_remesh_instant->step(oldToolbox->time()+oldToolbox->timeStep())->add("ale_vel",oldToolbox->meshALE()->aleVelocityBDF()->unknown(0) );
-    exp_remesh_instant->step(oldToolbox->time()+oldToolbox->timeStep())->add("ale_disp",oldToolbox->meshALE()->displacementRefBDF()->unknown(0) );
-    exp_remesh_instant->save();
-
-    exp_reference->step(oldToolbox->time()+oldToolbox->timeStep())->setMesh(this->meshALE()->referenceMesh());
-    exp_reference->step(oldToolbox->time()+oldToolbox->timeStep())->add("ale_vel",this->meshALE()->aleVelocityBDF()->unknown(0) );
-    exp_reference->step(oldToolbox->time()+oldToolbox->timeStep())->add("ale_disp0",this->meshALE()->displacementRefBDF()->unknown(0) );
-    exp_reference->step(oldToolbox->time()+oldToolbox->timeStep())->add("ale_disp1",this->meshALE()->displacementRefBDF()->unknown(1) );
-    exp_reference->step(oldToolbox->time()+oldToolbox->timeStep())->add("ale_disp_ref",this->meshALE()->displacementInRef() );
-    exp_reference->save();
-#endif
     // Copy exporter
     this->M_exporter=oldToolbox->M_exporter;
     this->meshALE()->exporterALE() = oldToolbox->meshALE()->exporterALE();
     this->meshALE()->exporterRef() = oldToolbox->meshALE()->exporterRef();
-#if 0
-    this->M_exporter->step( oldToolbox->time() )->setMesh(this->mesh());
-    this->meshALE()->exporterALE()->step( oldToolbox->time() )->setMesh(this->mesh());
-    this->meshALE()->exporterRef()->step( oldToolbox->time())->setMesh(this->mesh());
-#endif
-    Feel::cout << "ok" <<std::endl;
-    
-
 }
 
 
