@@ -1144,6 +1144,7 @@ eq_options( std::string const& prefix )
 po::options_description
 feel_options( std::string const& prefix  )
 {
+    // clang-format  off    
     auto opt = benchmark_options( prefix )
         .add( mesh_options( 1, prefix ) )
         .add( mesh_options( 2, prefix ) )
@@ -1192,6 +1193,8 @@ feel_options( std::string const& prefix  )
         /* gmsh options */
         .add( gmsh_options( prefix ) )
 
+        .add( remesh_options( prefix ) )
+
         /* gmsh domain options */
         .add( gmsh_domain_options( prefix ) )
         #
@@ -1235,6 +1238,6 @@ feel_options( std::string const& prefix  )
         ;
 
     return opt;
-
+    // clang-format  on
 }
 }
