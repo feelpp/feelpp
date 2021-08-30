@@ -555,10 +555,10 @@ public:
         //! return mass expression
         auto massExpr() const { return cst( M_mass ); }
 
-        //! return momentOfInertiaExpr
+        //! return moment of inertia
         moment_of_inertia_type const& momentOfInertia() const { return M_momentOfInertia; }
 
-        //! return momentOfInertiaExpr expression
+        //! return moment of inertia expression
         auto momentOfInertiaExpr() const
             {
                 if constexpr ( nDim == 2 )
@@ -613,6 +613,8 @@ public:
         typedef std::shared_ptr<element_trace_angular_velocity_type> element_trace_angular_velocity_ptrtype;
         typedef Bdf<space_trace_angular_velocity_type> bdf_trace_angular_velocity_type;
         typedef std::shared_ptr<bdf_trace_angular_velocity_type> bdf_trace_angular_velocity_ptrtype;
+
+        using moment_of_inertia_type = typename Body::moment_of_inertia_type;
 
         struct FieldTag
         {
@@ -674,11 +676,21 @@ public:
         bdf_trace_angular_velocity_ptrtype bdfAngularVelocity() const { return M_bdfAngularVelocity; }
 
         Body const& body() const { return *M_body; }
-        auto massExpr() const { return M_body->massExpr(); }
+        //auto massExpr() const { return M_body->massExpr(); }
+
+        //! return moment of inertia
+        moment_of_inertia_type const& momentOfInertia() const
+            {
+                return this->isInNBodyArticulated()? M_NBodyArticulated->momentOfInertia() : M_body->momentOfInertia();
+            }
+
+        //! return moment of inertia expression
         auto momentOfInertiaExpr() const
             {
                 return this->isInNBodyArticulated()? M_NBodyArticulated->momentOfInertiaExpr() : M_body->momentOfInertiaExpr();
             }
+
+        //! return center of mass expression
         auto massCenterExpr() const
             {
                 return this->isInNBodyArticulated()? M_NBodyArticulated->massCenterExpr() : M_body->massCenterExpr();

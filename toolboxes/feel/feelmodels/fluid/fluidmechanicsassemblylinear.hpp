@@ -742,8 +742,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
             //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.angular-velocity") ) << " start dof index for body-bc.angular-velocity is not present\n";
             size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
             bool hasActiveDofTranslationalVelocity = bpbc.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
-
-            double massBody = bpbc.massExpr().evaluate()(0,0); // TODO VINCENT
+            double massBody = bpbc.body().mass();
             if ( BuildCstPart)
             {
                 A->setIsClosed( false );
@@ -785,8 +784,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
             {
                 size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
                 auto momentOfInertiaExpr = bpbc.momentOfInertiaExpr();
-                auto const& momentOfInertia = bpbc.isInNBodyArticulated()? bpbc.getNBodyArticulated().momentOfInertia() : bpbc.body().momentOfInertia();
-                bool hasActiveDofTranslationalVelocity = bpbc.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
+                auto const& momentOfInertia = bpbc.momentOfInertia();
                 int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
                 bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
                 if ( BuildCstPart)
