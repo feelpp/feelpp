@@ -727,7 +727,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                 size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
                 int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
                 bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
-                if ( BuildCstPart && doAssemblyRhs )
+                if ( !BuildCstPart && !UseJacobianLinearTerms )
                 {
                     R->setIsClosed( false );
                     if ( hasActiveDofAngularVelocity )

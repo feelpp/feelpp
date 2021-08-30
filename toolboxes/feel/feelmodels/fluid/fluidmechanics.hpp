@@ -510,7 +510,7 @@ public:
 
         BodyBoundaryCondition const& masterBodyBC() const { CHECK( M_masterBodyBC ) << "not init";return *M_masterBodyBC; }
 
-        space_trace_angular_velocity_ptrtype spaceAngularVelocity() const { return M_XhAngularVelocity; }
+        space_trace_angular_velocity_ptrtype spaceAngularVelocity() const { return M_spaceAngularVelocity; }
         element_trace_angular_velocity_ptrtype fieldAngularVelocityPtr() const { return M_fieldAngularVelocity; }
         bdf_trace_angular_velocity_ptrtype bdfAngularVelocity() const { return M_bdfAngularVelocity; }
 
@@ -587,7 +587,7 @@ public:
         //! init the time stepping
         void initTimeStep( self_type const& fluidToolbox, int bdfOrder, int nConsecutiveSave, std::string const& myFileFormat )
             {
-                M_bdfAngularVelocity = fluidToolbox.createBdf( M_XhAngularVelocity, "body."+this->name()+".angular-velocity", bdfOrder, nConsecutiveSave, myFileFormat );
+                M_bdfAngularVelocity = fluidToolbox.createBdf( this->spaceAngularVelocity(), "body."+this->name()+".angular-velocity", bdfOrder, nConsecutiveSave, myFileFormat );
                 if ( fluidToolbox.doRestart() )
                 {
                     M_bdfAngularVelocity->restart();
@@ -623,7 +623,7 @@ public:
         eigen_vector_type<nRealDim> M_massCenter;
         moment_of_inertia_type M_momentOfInertia;
 
-        space_trace_angular_velocity_ptrtype M_XhAngularVelocity;
+        space_trace_angular_velocity_ptrtype M_spaceAngularVelocity;
         element_trace_angular_velocity_ptrtype M_fieldAngularVelocity;
         bdf_trace_angular_velocity_ptrtype M_bdfAngularVelocity;
     };
@@ -656,7 +656,6 @@ public:
 
         void setup( std::string const& bodyName, pt::ptree const& p, self_type const& fluidToolbox );
         void init( self_type const& fluidToolbox );
-        void initFromNBodyArticulated();
         void updateForUse( self_type const& fluidToolbox );
 
         void updateInformationObject( nl::json & p ) const;
@@ -665,7 +664,7 @@ public:
 
         void initTimeStep( self_type const& fluidToolbox, int bdfOrder, int nConsecutiveSave, std::string const& myFileFormat )
             {
-                M_bdfTranslationalVelocity = fluidToolbox.createBdf( M_XhTranslationalVelocity, "body."+M_name+".translational-velocity", bdfOrder, nConsecutiveSave, myFileFormat );
+                M_bdfTranslationalVelocity = fluidToolbox.createBdf( this->spaceTranslationalVelocity(), "body."+M_name+".translational-velocity", bdfOrder, nConsecutiveSave, myFileFormat );
                 if ( fluidToolbox.doRestart() )
                 {
                     M_bdfTranslationalVelocity->restart();
@@ -674,7 +673,7 @@ public:
 
                 if ( !this->isInNBodyArticulated() )
                 {
-                    M_bdfAngularVelocity = fluidToolbox.createBdf( M_XhAngularVelocity, "body."+M_name+".angular-velocity", bdfOrder, nConsecutiveSave, myFileFormat );
+                    M_bdfAngularVelocity = fluidToolbox.createBdf( this->spaceAngularVelocity(), "body."+M_name+".angular-velocity", bdfOrder, nConsecutiveSave, myFileFormat );
                     if ( fluidToolbox.doRestart() )
                     {
                         M_bdfAngularVelocity->restart();
@@ -703,16 +702,15 @@ public:
 
         std::set<std::string>/*ModelMarkers*/ const& markers() const { return M_markers; }
 
-        space_trace_p0c_vectorial_ptrtype spaceTranslationalVelocity() const { return M_XhTranslationalVelocity; }
-        space_trace_angular_velocity_ptrtype spaceAngularVelocity() const { return M_XhAngularVelocity; }
+        space_trace_p0c_vectorial_ptrtype spaceTranslationalVelocity() const { return M_spaceTranslationalVelocity; }
+        space_trace_angular_velocity_ptrtype spaceAngularVelocity() const { return this->isInNBodyArticulated()? M_NBodyArticulated->spaceAngularVelocity() : M_spaceAngularVelocity; }
         element_trace_p0c_vectorial_ptrtype fieldTranslationalVelocityPtr() const { return M_fieldTranslationalVelocity; }
-        element_trace_angular_velocity_ptrtype fieldAngularVelocityPtr() const { return M_fieldAngularVelocity; }
+        element_trace_angular_velocity_ptrtype fieldAngularVelocityPtr() const { return this->isInNBodyArticulated()? M_NBodyArticulated->fieldAngularVelocityPtr() : M_fieldAngularVelocity; }
 
         bdf_trace_p0c_vectorial_ptrtype bdfTranslationalVelocity() const { return M_bdfTranslationalVelocity; }
         bdf_trace_angular_velocity_ptrtype bdfAngularVelocity() const { return this->isInNBodyArticulated()? M_NBodyArticulated->bdfAngularVelocity() : M_bdfAngularVelocity; }
 
         Body const& body() const { return *M_body; }
-        //auto massExpr() const { return M_body->massExpr(); }
 
         //! return moment of inertia
         moment_of_inertia_type const& momentOfInertia() const
@@ -758,9 +756,9 @@ public:
         auto rigidVelocityExprFromFields() const
             {
                 if constexpr ( nDim == 2 )
-                    return idv(M_fieldTranslationalVelocity) + idv(M_fieldAngularVelocity)*vec(-Py()+this->massCenterExpr()(1,0),Px()-this->massCenterExpr()(0,0) );
+                    return idv(this->fieldTranslationalVelocityPtr()) + idv(this->fieldAngularVelocityPtr())*vec(-Py()+this->massCenterExpr()(1,0),Px()-this->massCenterExpr()(0,0) );
                 else
-                    return idv(M_fieldTranslationalVelocity) + cross( idv(M_fieldAngularVelocity), P()-this->massCenterExpr() );
+                    return idv(this->fieldTranslationalVelocityPtr()) + cross( idv(this->fieldAngularVelocityPtr()), P()-this->massCenterExpr() );
             }
 
         sparse_matrix_ptrtype matrixPTilde_translational() const { return M_matrixPTilde_translational; }
@@ -792,7 +790,7 @@ public:
         eigen_vector_type<nRealDim> fluidForces() const
             {
                 eigen_vector_type<nRealDim> res = eigen_vector_type<nRealDim>::Zero();
-                res = M_body->mass()*(M_bdfTranslationalVelocity->polyDerivCoefficient(0)*idv(M_fieldTranslationalVelocity)-idv(M_bdfTranslationalVelocity->polyDeriv())).evaluate(true,M_mesh->worldCommPtr());
+                res = M_body->mass()*(M_bdfTranslationalVelocity->polyDerivCoefficient(0)*idv(this->fieldTranslationalVelocityPtr())-idv(M_bdfTranslationalVelocity->polyDeriv())).evaluate(true,M_mesh->worldCommPtr());
                 if ( this->gravityForceEnabled() )
                     res -= this->gravityForceWithMass();
                 return res;
@@ -805,7 +803,7 @@ public:
         evaluate_torques_type fluidTorques() const
             {
                 // WARNING : is the case of  isInNBodyArticulated, this torque is related to nNBodyArticulated object (else we need compute momentOfInertia of this body)
-                evaluate_torques_type res = this->momentOfInertia()*(this->bdfAngularVelocity()->polyDerivCoefficient(0)*idv(M_fieldAngularVelocity)-idv(this->bdfAngularVelocity()->polyDeriv())).evaluate(true,M_mesh->worldCommPtr());
+                evaluate_torques_type res = this->momentOfInertia()*(this->bdfAngularVelocity()->polyDerivCoefficient(0)*idv(this->fieldAngularVelocityPtr())-idv(this->bdfAngularVelocity()->polyDeriv())).evaluate(true,M_mesh->worldCommPtr());
                 return res;
             }
         //---------------------------------------------------------------------------//
@@ -859,8 +857,8 @@ public:
         ModelMarkers M_markers;
         range_faces_type M_rangeMarkedFacesOnFluid;
         trace_mesh_ptrtype M_mesh;
-        space_trace_p0c_vectorial_ptrtype M_XhTranslationalVelocity;
-        space_trace_angular_velocity_ptrtype M_XhAngularVelocity;
+        space_trace_p0c_vectorial_ptrtype M_spaceTranslationalVelocity;
+        space_trace_angular_velocity_ptrtype M_spaceAngularVelocity;
         element_trace_p0c_vectorial_ptrtype M_fieldTranslationalVelocity;
         element_trace_angular_velocity_ptrtype M_fieldAngularVelocity;
         bdf_trace_p0c_vectorial_ptrtype M_bdfTranslationalVelocity;
@@ -871,7 +869,7 @@ public:
         std::shared_ptr<Body> M_body;
         eigen_vector_type<nRealDim> M_massCenterRef;
 
-        space_trace_velocity_ptrtype M_XhElasticVelocity;
+        space_trace_velocity_ptrtype M_spaceElasticVelocity;
         element_trace_velocity_ptrtype M_fieldElasticVelocity;
         std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> M_elasticVelocityExprBC;
 

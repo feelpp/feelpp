@@ -2671,18 +2671,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
     auto rangeBodyBoundary = markedfaces(fluidToolbox.mesh(), std::set<std::string>(M_markers) );
     M_rangeMarkedFacesOnFluid = rangeBodyBoundary;
     M_mesh = createSubmesh(_mesh=/*fluidToolbox.mesh()*/fluidToolbox.functionSpaceVelocity()->template meshSupport<0>(),_range=rangeBodyBoundary,_view=true );
-    M_XhTranslationalVelocity = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
-    if constexpr ( nDim == 2 )
-                     M_XhAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
-    else
-        M_XhAngularVelocity = M_XhTranslationalVelocity;
-    M_fieldTranslationalVelocity = M_XhTranslationalVelocity->elementPtr();
-    M_fieldAngularVelocity = M_XhAngularVelocity->elementPtr();
+    M_spaceTranslationalVelocity = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
+    M_fieldTranslationalVelocity = M_spaceTranslationalVelocity->elementPtr();
+
+    if ( !this->isInNBodyArticulated() )
+    {
+        if constexpr ( nDim == 2 )
+            M_spaceAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
+        else
+            M_spaceAngularVelocity = M_spaceTranslationalVelocity;
+        M_fieldAngularVelocity = M_spaceAngularVelocity->elementPtr();
+    }
 
     if ( this->hasElasticVelocityFromExpr() )
     {
-        M_XhElasticVelocity = space_trace_velocity_type::New( _mesh=M_mesh );
-        M_fieldElasticVelocity = M_XhElasticVelocity->elementPtr();
+        M_spaceElasticVelocity = space_trace_velocity_type::New( _mesh=M_mesh );
+        M_fieldElasticVelocity = M_spaceElasticVelocity->elementPtr();
     }
 
 
@@ -2698,17 +2702,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
     }
 }
 
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::initFromNBodyArticulated()
-{
-    if ( !this->isInNBodyArticulated() )
-        return;
-
-    M_XhAngularVelocity = M_NBodyArticulated->spaceAngularVelocity();
-    M_fieldAngularVelocity = M_NBodyArticulated->fieldAngularVelocityPtr();
-}
 
 namespace utility_constant_functionspace
 {
@@ -2832,7 +2825,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
     // matrix interpolation of translational velocity
     if ( !M_matrixPTilde_translational )
     {
-        auto opI_partTranslationalVelocity = opInterpolation( _domainSpace=M_XhTranslationalVelocity ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid );
+        auto opI_partTranslationalVelocity = opInterpolation( _domainSpace=this->spaceTranslationalVelocity() ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid );
         M_matrixPTilde_translational = opI_partTranslationalVelocity->matPtr();
     }
 
@@ -2948,7 +2941,7 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateMatrixPTilde_angular( self_type const& fluidToolbox, sparse_matrix_ptrtype & mat, size_type startBlockIndexVelocity, size_type startBlockIndexAngularVelocity ) const
 {
     auto XhV = fluidToolbox.functionSpaceVelocity();
-    auto const& w = *M_fieldAngularVelocity;
+    auto const& w = *this->fieldAngularVelocityPtr();
     // matrix interpolation with angular velocity expr (depends on mesh position and mass center -> rebuild at each call of updateForUse)
     auto massCenter = this->massCenterExpr();
 
@@ -2958,7 +2951,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateMatrixPTilde_an
                                                startBlockIndexVelocity, startBlockIndexAngularVelocity );
     if constexpr (nDim == 2 )
     {
-        auto opI_AngularVelocity = opInterpolation( _domainSpace=M_XhAngularVelocity ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid,
+        auto opI_AngularVelocity = opInterpolation( _domainSpace=this->spaceAngularVelocity(),_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid,
                                                     _type= makeExprInterpolation( id(w)*vec(-Py()+massCenter(1,0),Px()-massCenter(0,0) ), nonconforming_t() ),
                                                     _matrix=matSetup );
         if ( buildNewMatrix )
@@ -2968,7 +2961,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateMatrixPTilde_an
     else
     {
         auto r = vec(Px()-massCenter(0,0),Py()-massCenter(1,0),Pz()-massCenter(2,0) );
-        auto opI_AngularVelocity = opInterpolation( _domainSpace=M_XhAngularVelocity,
+        auto opI_AngularVelocity = opInterpolation( _domainSpace=this->spaceAngularVelocity(),
                                                     _imageSpace=XhV,
                                                     _range=M_rangeMarkedFacesOnFluid,
                                                     _type= makeExprInterpolation( cross(id(w),r), nonconforming_t() ),
@@ -2984,7 +2977,7 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::updateMatrixPTilde_angular( self_type const& fluidToolbox, sparse_matrix_ptrtype & mat, size_type startBlockIndexVelocity, size_type startBlockIndexAngularVelocity ) const
 {
     auto XhV = fluidToolbox.functionSpaceVelocity();
-    auto const& w = *M_fieldAngularVelocity;
+    auto const& w = *this->fieldAngularVelocityPtr();
     // matrix interpolation with angular velocity expr (depends on mesh position and mass center -> rebuild at each call of updateForUse)
     auto massCenter = this->massCenterExpr();
 
@@ -2994,7 +2987,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::updateMatrixPTilde_angular
                                                startBlockIndexVelocity, startBlockIndexAngularVelocity );
     if constexpr (nDim == 2 )
     {
-        auto opI_AngularVelocity = opInterpolation( _domainSpace=M_XhAngularVelocity ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid,
+        auto opI_AngularVelocity = opInterpolation( _domainSpace=this->spaceAngularVelocity() ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid,
                                                     _type= makeExprInterpolation( id(w)*vec(-Py()+massCenter(1,0),Px()-massCenter(0,0) ), nonconforming_t() ),
                                                     _matrix=matSetup );
         if ( buildNewMatrix )
@@ -3004,7 +2997,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::updateMatrixPTilde_angular
     else
     {
         auto r = vec(Px()-massCenter(0,0),Py()-massCenter(1,0),Pz()-massCenter(2,0) );
-        auto opI_AngularVelocity = opInterpolation( _domainSpace=M_XhAngularVelocity,
+        auto opI_AngularVelocity = opInterpolation( _domainSpace=this->spaceAngularVelocity(),
                                                     _imageSpace=XhV,
                                                     _range=M_rangeMarkedFacesOnFluid,
                                                     _type= makeExprInterpolation( cross(id(w),r), nonconforming_t() ),
@@ -3104,8 +3097,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::init( self_type const& flu
     auto rangeBodyBoundary = markedfaces(fluidToolbox.mesh(), M_markers );
     M_rangeMarkedFacesOnFluid = rangeBodyBoundary;
     auto M_mesh = createSubmesh(_mesh=/*fluidToolbox.mesh()*/fluidToolbox.functionSpaceVelocity()->template meshSupport<0>(),_range=rangeBodyBoundary,_view=true );
-    M_XhAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
-    M_fieldAngularVelocity = M_XhAngularVelocity->elementPtr();
+    M_spaceAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
+    M_fieldAngularVelocity = M_spaceAngularVelocity->elementPtr();
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -3242,9 +3235,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::init( self_type co
 
     for ( auto & nba : M_nbodyArticulated )
         nba.init( fluidToolbox );
-
-    for ( auto & [name,bbc] : *this )
-        bbc.initFromNBodyArticulated();
 }
 
 
