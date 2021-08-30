@@ -539,11 +539,11 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::solve()
 
     this->setStartBlockSpaceIndex( 0 );
 
-    this->M_blockVectorSolution.updateVectorFromSubVectors();
+    this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
 
-    this->M_algebraicFactory->solve( M_solverName, this->M_blockVectorSolution.vectorMonolithic() );
+    this->algebraicFactory()->solve( M_solverName, this->algebraicBlockVectorSolution()->vectorMonolithic() );
 
-    this->M_blockVectorSolution.localize();
+    this->algebraicBlockVectorSolution()->localize();
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )

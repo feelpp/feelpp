@@ -25,21 +25,21 @@ inline std::pair<std::uniform_real_distribution<>, std::mt19937&> uniformDistrib
     static std::random_device rd;
     static std::mt19937 gen( rd() );
     std::uniform_real_distribution<> dis( a, b );
-    return std::pair<std::uniform_real_distribution<>&, std::mt19937&>{ dis, gen };
+    return std::pair<std::uniform_real_distribution<>&, std::mt19937&>( dis, gen );
 }
 inline std::pair<std::normal_distribution<>, std::mt19937&> normalDistribution( double m, double s )
 {
     static std::random_device rd;
     static std::mt19937 gen( rd() );
-    std::normal_distribution<> dis{ m, s };
-    return std::pair<std::normal_distribution<>&, std::mt19937&>{ dis, gen };
+    std::normal_distribution<> dis( m, s );
+    return std::pair<std::normal_distribution<>&, std::mt19937&>( dis, gen );
 }
 inline std::pair<std::lognormal_distribution<>, std::mt19937&> lognormalDistribution( double m, double s )
 {
     static std::random_device rd;
     static std::mt19937 gen( rd() );
-    std::lognormal_distribution<> dis{ m, s };
-    return std::pair<std::lognormal_distribution<>&, std::mt19937&>{ dis, gen };
+    std::lognormal_distribution<> dis( m, s );
+    return std::pair<std::lognormal_distribution<>&, std::mt19937&>( dis, gen );
 }
 
 #else

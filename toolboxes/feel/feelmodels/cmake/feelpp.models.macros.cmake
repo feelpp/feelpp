@@ -409,7 +409,7 @@ macro( genLibCoefficientFormPDE )
       set(COEFFICIENTFORMPDE_CODEGEN_SOURCES
           ${COEFFICIENTFORMPDE_LIB_DIR}/coefficientformpde_inst.cpp
           )
-      set(COEFFICIENTFORMPDE_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdebase  ) 
+      set(COEFFICIENTFORMPDE_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdebase  ) 
       # generate the lib target
       genLibBase(
           LIB_NAME ${COEFFICIENTFORMPDE_LIB_NAME}
