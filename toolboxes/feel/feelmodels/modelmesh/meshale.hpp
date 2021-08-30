@@ -114,8 +114,7 @@ class MeshALE : public ModelBase
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     void init();
-    template <typename self_type>
-    void init( self_type const& oldToolbox );
+
     std::shared_ptr<std::ostringstream> getInfo() const;
 
     void addBoundaryFlags( std::string const& bctype, std::string const& marker );
@@ -440,74 +439,6 @@ class MeshALE : public ModelBase
 };
 
 //------------------------------------------------------------------------------------------------//
-
-template <class Convex>
-template <typename self_ptrtype>
-void MeshALE<Convex>::init( self_ptrtype const& oldToolbox )
-{
-    std::ofstream outfile, outfile2, outfile3, outfile4;
-    outfile.open( "/ssd/berti/phd/points_old.txt", std::ios_base::out );
-    outfile2.open( "/ssd/berti/phd/points_new.txt", std::ios_base::out );
-    outfile3.open( "/ssd/berti/phd/points_old2.txt", std::ios_base::out );
-    outfile4.open( "/ssd/berti/phd/points_new2.txt", std::ios_base::out );
-    if ( outfile.is_open() )
-    {
-        std::cout << "the file outfile is open" << std::endl;
-    }
-    else
-    {
-        std::cout << "outfile not open" << std::endl;
-    }
-
-    this->remeshingRevertBDF( oldToolbox->aleVelocityBDF(), oldToolbox->displacementRefBDF(),
-                              oldToolbox->aleIdentityBDF() );
-    /*auto I_disp = opInterpolation( _domainSpace=oldToolbox->functionSpace() , 
-                                _imageSpace=this->functionSpace() ,
-                                _backend=backend(_rebuild=true));*/
-    this->displacementRefBDF()->interpolate( oldToolbox->displacementRefBDF(), { "Fluid" } );
-    this->aleIdentityBDF()->interpolate( oldToolbox->aleIdentityBDF(), { "Fluid" } );
-    this->aleVelocityBDF()->interpolate( oldToolbox->aleVelocityBDF(), { "Fluid" } );
-
-    this->init();
-
-    this->M_exporter = oldToolbox->M_exporter;
-    this->M_exporter_ref = oldToolbox->M_exporter_ref;
-    this->M_exporter->step( oldToolbox->displacementRefBDF()->time() )->setMesh( this->movingMesh() );
-    this->M_exporter_ref->step( oldToolbox->displacementRefBDF()->time() )->setMesh( this->referenceMesh() );
-    auto points_old = points( oldToolbox->referenceMesh() );
-    auto points_new = points( this->referenceMesh() );
-    for ( auto const& e_old : points_old )
-    {
-        auto const& elt_old = unwrap_ref( e_old );
-        std::cout << elt_old << std::endl;
-        outfile << elt_old << ")\n";
-    }
-    for ( auto const& e_new : points_new )
-    {
-        auto const& elt_new = unwrap_ref( e_new );
-        std::cout << elt_new << std::endl;
-        outfile2 << elt_new << ")\n";
-    }
-    meshMove( oldToolbox->modifyReferenceMesh(), oldToolbox->displacementRefBDF()->unknown( 0 ) );
-    points_old = points( oldToolbox->referenceMesh() );
-    points_new = points( this->referenceMesh() );
-    for ( auto const& e_old : points_old )
-    {
-        auto const& elt_old = unwrap_ref( e_old );
-        std::cout << elt_old << std::endl;
-        outfile3 << elt_old << ")\n";
-    }
-    for ( auto const& e_new : points_new )
-    {
-        auto const& elt_new = unwrap_ref( e_new );
-        std::cout << elt_new << std::endl;
-        outfile4 << elt_new << ")\n";
-    }
-    outfile.close();
-    outfile2.close();
-    outfile3.close();
-    outfile4.close();
-}
 
 template <class Convex>
 template <typename elem_type>
