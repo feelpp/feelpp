@@ -2562,28 +2562,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::updateForUse()
     }
     M_massCenter /= M_mass;
 
-
     this->computeMomentOfInertia( this->massCenterExpr(), M_momentOfInertia );
-#if 0
-    M_momentOfInertia = moment_of_inertia_type::Zero();
-    for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
-    {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
-        auto const& density = M_materialsProperties->density( matName );
-        auto const& densityExpr = density.exprScalar();
-
-        if constexpr ( nDim == 2 )
-                     {
-                         M_momentOfInertia(0,0) += integrate(_range=range,_expr=densityExpr*( inner(P()-this->massCenterExpr()) ) ).evaluate()(0,0);
-                     }
-        else
-        {
-            auto rvec = P()-this->massCenterExpr();
-            M_momentOfInertia += integrate(_range=range,_expr=densityExpr*( inner(rvec)*eye<nDim,nDim>() - rvec*trans(rvec) ) ).evaluate();
-        }
-    }
-#endif
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -2832,7 +2811,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
     if ( !M_mesh )
         this->init( fluidToolbox );
 
-    auto const& w = *M_fieldAngularVelocity;
+    // auto const& w = *M_fieldAngularVelocity;
 
     if (fluidToolbox.isMoveDomain())
     {
@@ -2866,23 +2845,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
         this->updateMatrixPTilde_angular( fluidToolbox, M_matrixPTilde_angular );
 
 
-#if 0
-    if ( this->hasElasticVelocityFromExpr() )
-    {
-        bool meshIsOnRefAtBegin = fluidToolbox.meshALE()->isOnReferenceMesh();
-        if ( !meshIsOnRefAtBegin )
-            fluidToolbox.meshALE()->revertReferenceMesh( false );
-        for ( auto const& [bcName,eve] : M_elasticVelocityExprBC )
-        {
-            auto eveRange = std::get<1>( eve ).empty()? elements(this->mesh())/*bpbc.rangeMarkedFacesOnFluid()*/ : markedelements(this->mesh(),std::get<1>( eve ) );
-            auto eveExpr =  std::get<0>( eve ).template expr<nDim,1>();
-            M_fieldElasticVelocity->on(_range=eveRange,_expr=eveExpr,_close=true ); // TODO crash if use here markedfaces of fluid with partial mesh support
-        }
-        if ( !meshIsOnRefAtBegin )
-            fluidToolbox.meshALE()->revertMovingMesh( false );
-    }
-#endif
-
 
     if ( M_gravityForceEnabled )
     {
@@ -2898,7 +2860,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
         double rho = fluidToolbox.materialProperties()->cstDensity( matName );
         //auto const& rho = fluidToolbox.materialProperties()->fieldRho();
 #endif
-        double massBody = massExpr().evaluate()(0,0);
+        double massBody = M_body->mass();
         double massOfFluid = M_body->evaluateMassFromDensity( cst( rho ) );
         // if ( Environment::isMasterRank() )
         // {
