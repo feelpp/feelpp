@@ -176,5 +176,8 @@ po::options_description geim_options( std::string const& prefix="" );
 
 //! pbdw options
 po::options_description pbdw_options( std::string const& prefix="" );
+
+//8 remesh optios
+po::options_description remesh_options( std::string const& prefix="" );
 }
 #endif // FEELPP_OPTIONS_HPP
