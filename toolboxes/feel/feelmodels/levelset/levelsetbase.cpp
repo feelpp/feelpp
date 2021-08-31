@@ -187,10 +187,12 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initLevelsetValue()
     // Synchronize with current phi
     if( M_initialPhi ) // user-provided initial value
     {
+        this->log("LevelSetBase", "initLevelsetValue", "initial value found");
         *M_phi = *M_initialPhi;
     }
     else // no initial value
     {
+        this->log("LevelSetBase", "initLevelsetValue", "no initial value found; setting to zero");
         M_phi->zero();
     }
 

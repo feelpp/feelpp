@@ -62,7 +62,8 @@ runLevelsetApplication()
     {
         int redist_every = ioption( _name="levelset.redist-every" );
 
-        for ( int iter = 1; !LS->timeStepBase()->isFinished(); LS->updateTimeStep(), ++iter )
+        int iter = 1;
+        for ( LS->startTimeStep(); !LS->timeStepBase()->isFinished(); LS->updateTimeStep(), ++iter )
         {
             Feel::cout << "============================================================\n";
             Feel::cout << "time simulation: " << LS->time() << "s \n";

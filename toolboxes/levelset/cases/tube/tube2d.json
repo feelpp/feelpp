@@ -3,7 +3,16 @@
     "ShortName": "Tube2d",
     "Models":
     {
-        "equations":"Levelset"
+        "equations":"levelset"
+    },
+    
+    "Materials":
+    {
+        "levelset":
+        {
+            "markers":"Omega",
+            "levelset_phi_beta":"{0.2*(1-(y-0.5)*(y-0.5)/(0.5*0.5)),0}:y" // advection velocity: poiseuille
+        }
     },
 
     "InitialConditions":

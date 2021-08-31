@@ -3,13 +3,23 @@
     "ShortName": "Square2d",
     "Models":
     {
-        "equations":"Levelset"
+        "equations":"levelset"
     },
     "Parameters":
     {
         "x0": "-0.3",
         "y0": "-0.3",
         "r0": "0.08"
+    },
+
+    "Materials":
+    {
+        "levelset":
+        {
+            "markers":"Omega",
+            "levelset_phi_beta":"{0.5*y, -0.5*x}:x:y" // advection velocity: rotation
+            //"levelset_phi_beta":"{0.1*(1-y*y/(0.5*0.5)),0}:y" // advection velocity: poiseuille
+        }
     },
 
     "InitialConditions":
