@@ -724,13 +724,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
         for ( auto const& [bpname,bpbc] : M_bodySetBC )
         {
             size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
-            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
-            double massBody = bpbc.massExpr().evaluate()(0,0);
-            auto const& momentOfInertia = bpbc.body().momentOfInertia();
-
             bool hasActiveDofTranslationalVelocity = bpbc.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
-            int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
-            bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
+            double massBody = bpbc.body().mass();
             if ( BuildCstPart )
             {
                 J->setIsClosed( false );
@@ -744,21 +739,29 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                                 bpbc.bdfTranslationalVelocity()->polyDerivCoefficient(0)*massBody );
                     }
                 }
-                if ( hasActiveDofAngularVelocity )
+
+                if ( !bpbc.isInNBodyArticulated() || ( bpbc.getNBodyArticulated().masterBodyBC().name() == bpbc.name() ) )
                 {
-                    auto const& basisToContainerGpAngularVelocityRow = J->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexAngularVelocity );
-                    auto const& basisToContainerGpAngularVelocityCol = J->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexAngularVelocity );
-                    for (int i=0;i<nLocalDofAngularVelocity;++i)
+                    size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
+                    int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
+                    bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
+                    auto const& momentOfInertia = bpbc.momentOfInertia();
+                    if ( hasActiveDofAngularVelocity )
                     {
-                        for (int j=0;j<nLocalDofAngularVelocity;++j)
+                        auto const& basisToContainerGpAngularVelocityRow = J->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexAngularVelocity );
+                        auto const& basisToContainerGpAngularVelocityCol = J->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexAngularVelocity );
+                        for (int i=0;i<nLocalDofAngularVelocity;++i)
                         {
-                            J->add( basisToContainerGpAngularVelocityRow[i], basisToContainerGpAngularVelocityCol[j],
-                                    bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia(i,j) );
+                            for (int j=0;j<nLocalDofAngularVelocity;++j)
+                            {
+                                J->add( basisToContainerGpAngularVelocityRow[i], basisToContainerGpAngularVelocityCol[j],
+                                        bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia(i,j) );
+                            }
                         }
                     }
                 }
-            }
-        }
+            } // BuildCstPart
+        } // for ( auto const& [bpname,bpbc] : M_bodySetBC )
 
         for ( auto const& nba : M_bodySetBC.nbodyArticulated() )
         {

@@ -1825,13 +1825,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
         this->setStartSubBlockSpaceIndex( "windkessel", currentStartIndex++ );
     }
 
-    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    for ( auto const& [bpname,bbc] : M_bodySetBC )
     {
-        this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".translational-velocity", currentStartIndex++ );
-        this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".angular-velocity", currentStartIndex++ );
+        this->setStartSubBlockSpaceIndex( "body-bc."+bbc.name()+".translational-velocity", currentStartIndex++ );
+        if ( !bbc.isInNBodyArticulated() )
+            this->setStartSubBlockSpaceIndex( "body-bc."+bbc.name()+".angular-velocity", currentStartIndex++ );
     }
     for ( auto const& nba : M_bodySetBC.nbodyArticulated() )
     {
+        this->setStartSubBlockSpaceIndex( "body-bc."+nba.name()+".angular-velocity", currentStartIndex );
+        // defined alias in each body
+        for ( auto bbc : nba.bodyList() )
+            this->setStartSubBlockSpaceIndex( "body-bc."+bbc->name()+".angular-velocity", currentStartIndex );
+        ++currentStartIndex;
+
         if ( nba.articulationMethod() != "lm" )
             continue;
         for ( auto const& ba : nba.articulations() )
@@ -1910,10 +1917,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
         for ( auto const& [bpname,bpbc] : M_bodySetBC )
         {
             bvs->operator()(cptBlock++) = bpbc.fieldTranslationalVelocityPtr();
-            bvs->operator()(cptBlock++) = bpbc.fieldAngularVelocityPtr();
+            if ( !bpbc.isInNBodyArticulated() )
+                bvs->operator()(cptBlock++) = bpbc.fieldAngularVelocityPtr();
         }
         for ( auto const& nba : M_bodySetBC.nbodyArticulated() )
         {
+            bvs->operator()(cptBlock++) = nba.fieldAngularVelocityPtr();
             if ( nba.articulationMethod() != "lm" )
                 continue;
             for ( auto const& ba : nba.articulations() )
@@ -2554,24 +2563,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::updateForUse()
     }
     M_massCenter /= M_mass;
 
-    M_momentOfInertia = moment_of_inertia_type::Zero();
-    for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
-    {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
-        auto const& density = M_materialsProperties->density( matName );
-        auto const& densityExpr = density.exprScalar();
-
-        if constexpr ( nDim == 2 )
-                     {
-                         M_momentOfInertia(0,0) += integrate(_range=range,_expr=densityExpr*( inner(P()-this->massCenterExpr()) ) ).evaluate()(0,0);
-                     }
-        else
-        {
-            auto rvec = P()-this->massCenterExpr();
-            M_momentOfInertia += integrate(_range=range,_expr=densityExpr*( inner(rvec)*eye<nDim,nDim>() - rvec*trans(rvec) ) ).evaluate();
-        }
-    }
+    this->computeMomentOfInertia( this->massCenterExpr(), M_momentOfInertia );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -2680,18 +2672,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
     auto rangeBodyBoundary = markedfaces(fluidToolbox.mesh(), std::set<std::string>(M_markers) );
     M_rangeMarkedFacesOnFluid = rangeBodyBoundary;
     M_mesh = createSubmesh(_mesh=/*fluidToolbox.mesh()*/fluidToolbox.functionSpaceVelocity()->template meshSupport<0>(),_range=rangeBodyBoundary,_view=true );
-    M_XhTranslationalVelocity = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
-    if constexpr ( nDim == 2 )
-                     M_XhAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
-    else
-        M_XhAngularVelocity = M_XhTranslationalVelocity;
-    M_fieldTranslationalVelocity = M_XhTranslationalVelocity->elementPtr();
-    M_fieldAngularVelocity = M_XhAngularVelocity->elementPtr();
+    M_spaceTranslationalVelocity = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
+    M_fieldTranslationalVelocity = M_spaceTranslationalVelocity->elementPtr();
+
+    if ( !this->isInNBodyArticulated() )
+    {
+        if constexpr ( nDim == 2 )
+            M_spaceAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
+        else
+            M_spaceAngularVelocity = M_spaceTranslationalVelocity;
+        M_fieldAngularVelocity = M_spaceAngularVelocity->elementPtr();
+    }
 
     if ( this->hasElasticVelocityFromExpr() )
     {
-        M_XhElasticVelocity = space_trace_velocity_type::New( _mesh=M_mesh );
-        M_fieldElasticVelocity = M_XhElasticVelocity->elementPtr();
+        M_spaceElasticVelocity = space_trace_velocity_type::New( _mesh=M_mesh );
+        M_fieldElasticVelocity = M_spaceElasticVelocity->elementPtr();
     }
 
 
@@ -2706,6 +2702,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
         }
     }
 }
+
 
 namespace utility_constant_functionspace
 {
@@ -2808,24 +2805,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
     if ( !M_mesh )
         this->init( fluidToolbox );
 
-    auto const& w = *M_fieldAngularVelocity;
-
-    if (fluidToolbox.isMoveDomain())
+    if ( M_body->hasMaterialsProperties() )
     {
-        if ( M_body->hasMaterialsProperties() )
-        {
-            M_body->updateForUse();
-        }
-        else
-        {
-            auto disp = mean(_range=M_rangeMarkedFacesOnFluid,_expr=idv(fluidToolbox.meshALE()->displacement()) );
-            //M_massCenter = M_massCenterRef + disp;
-            M_body->setMassCenter( M_massCenterRef + disp );
-        }
-
-        //if ( fluidToolbox.worldComm().isMasterRank() )
-        //    std::cout << "M_massCenter=\n " << M_body->massCenter() << std::endl;
+        M_body->updateForUse();
     }
+    else if ( fluidToolbox.isMoveDomain() )
+    {
+        auto disp = mean(_range=M_rangeMarkedFacesOnFluid,_expr=idv(fluidToolbox.meshALE()->displacement()) );
+        //M_massCenter = M_massCenterRef + disp;
+        M_body->setMassCenter( M_massCenterRef + disp );
+    }
+
+    //if ( fluidToolbox.worldComm().isMasterRank() )
+    //    std::cout << "M_massCenter=\n " << M_body->massCenter() << std::endl;
 
     auto XhV = fluidToolbox.functionSpaceVelocity();
 
@@ -2834,29 +2826,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
     // matrix interpolation of translational velocity
     if ( !M_matrixPTilde_translational )
     {
-        auto opI_partTranslationalVelocity = opInterpolation( _domainSpace=M_XhTranslationalVelocity ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid );
+        auto opI_partTranslationalVelocity = opInterpolation( _domainSpace=this->spaceTranslationalVelocity() ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid );
         M_matrixPTilde_translational = opI_partTranslationalVelocity->matPtr();
     }
 
-    this->updateMatrixPTilde_angular( fluidToolbox, M_matrixPTilde_angular );
+    if ( !this->isInNBodyArticulated() )
+        this->updateMatrixPTilde_angular( fluidToolbox, M_matrixPTilde_angular );
 
-
-#if 0
-    if ( this->hasElasticVelocityFromExpr() )
-    {
-        bool meshIsOnRefAtBegin = fluidToolbox.meshALE()->isOnReferenceMesh();
-        if ( !meshIsOnRefAtBegin )
-            fluidToolbox.meshALE()->revertReferenceMesh( false );
-        for ( auto const& [bcName,eve] : M_elasticVelocityExprBC )
-        {
-            auto eveRange = std::get<1>( eve ).empty()? elements(this->mesh())/*bpbc.rangeMarkedFacesOnFluid()*/ : markedelements(this->mesh(),std::get<1>( eve ) );
-            auto eveExpr =  std::get<0>( eve ).template expr<nDim,1>();
-            M_fieldElasticVelocity->on(_range=eveRange,_expr=eveExpr,_close=true ); // TODO crash if use here markedfaces of fluid with partial mesh support
-        }
-        if ( !meshIsOnRefAtBegin )
-            fluidToolbox.meshALE()->revertMovingMesh( false );
-    }
-#endif
 
 
     if ( M_gravityForceEnabled )
@@ -2873,7 +2849,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
         double rho = fluidToolbox.materialProperties()->cstDensity( matName );
         //auto const& rho = fluidToolbox.materialProperties()->fieldRho();
 #endif
-        double massBody = massExpr().evaluate()(0,0);
+        double massBody = M_body->mass();
         double massOfFluid = M_body->evaluateMassFromDensity( cst( rho ) );
         // if ( Environment::isMasterRank() )
         // {
@@ -2966,7 +2942,7 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateMatrixPTilde_angular( self_type const& fluidToolbox, sparse_matrix_ptrtype & mat, size_type startBlockIndexVelocity, size_type startBlockIndexAngularVelocity ) const
 {
     auto XhV = fluidToolbox.functionSpaceVelocity();
-    auto const& w = *M_fieldAngularVelocity;
+    auto const& w = *this->fieldAngularVelocityPtr();
     // matrix interpolation with angular velocity expr (depends on mesh position and mass center -> rebuild at each call of updateForUse)
     auto massCenter = this->massCenterExpr();
 
@@ -2976,7 +2952,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateMatrixPTilde_an
                                                startBlockIndexVelocity, startBlockIndexAngularVelocity );
     if constexpr (nDim == 2 )
     {
-        auto opI_AngularVelocity = opInterpolation( _domainSpace=M_XhAngularVelocity ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid,
+        auto opI_AngularVelocity = opInterpolation( _domainSpace=this->spaceAngularVelocity(),_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid,
                                                     _type= makeExprInterpolation( id(w)*vec(-Py()+massCenter(1,0),Px()-massCenter(0,0) ), nonconforming_t() ),
                                                     _matrix=matSetup );
         if ( buildNewMatrix )
@@ -2986,7 +2962,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateMatrixPTilde_an
     else
     {
         auto r = vec(Px()-massCenter(0,0),Py()-massCenter(1,0),Pz()-massCenter(2,0) );
-        auto opI_AngularVelocity = opInterpolation( _domainSpace=M_XhAngularVelocity,
+        auto opI_AngularVelocity = opInterpolation( _domainSpace=this->spaceAngularVelocity(),
                                                     _imageSpace=XhV,
                                                     _range=M_rangeMarkedFacesOnFluid,
                                                     _type= makeExprInterpolation( cross(id(w),r), nonconforming_t() ),
@@ -2995,9 +2971,59 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateMatrixPTilde_an
             mat = opI_AngularVelocity->matPtr();
         // M_matrixPTilde_angular = opI_AngularVelocity->matPtr();
     }
-
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::updateMatrixPTilde_angular( self_type const& fluidToolbox, sparse_matrix_ptrtype & mat, size_type startBlockIndexVelocity, size_type startBlockIndexAngularVelocity ) const
+{
+    auto XhV = fluidToolbox.functionSpaceVelocity();
+    auto const& w = *this->fieldAngularVelocityPtr();
+    // matrix interpolation with angular velocity expr (depends on mesh position and mass center -> rebuild at each call of updateForUse)
+    auto massCenter = this->massCenterExpr();
+
+    bool buildNewMatrix = mat? false : true;
+
+    OperatorInterpolationMatrixSetup matSetup( mat, buildNewMatrix? Feel::DIFFERENT_NONZERO_PATTERN : Feel::SAME_NONZERO_PATTERN,
+                                               startBlockIndexVelocity, startBlockIndexAngularVelocity );
+    if constexpr (nDim == 2 )
+    {
+        auto opI_AngularVelocity = opInterpolation( _domainSpace=this->spaceAngularVelocity() ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid,
+                                                    _type= makeExprInterpolation( id(w)*vec(-Py()+massCenter(1,0),Px()-massCenter(0,0) ), nonconforming_t() ),
+                                                    _matrix=matSetup );
+        if ( buildNewMatrix )
+            mat = opI_AngularVelocity->matPtr();
+        // M_matrixPTilde_angular = opI_AngularVelocity->matPtr();
+    }
+    else
+    {
+        auto r = vec(Px()-massCenter(0,0),Py()-massCenter(1,0),Pz()-massCenter(2,0) );
+        auto opI_AngularVelocity = opInterpolation( _domainSpace=this->spaceAngularVelocity(),
+                                                    _imageSpace=XhV,
+                                                    _range=M_rangeMarkedFacesOnFluid,
+                                                    _type= makeExprInterpolation( cross(id(w),r), nonconforming_t() ),
+                                                    _matrix=matSetup );
+        if ( buildNewMatrix )
+            mat = opI_AngularVelocity->matPtr();
+        // M_matrixPTilde_angular = opI_AngularVelocity->matPtr();
+    }
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::updateMatrixPTilde_angular( self_type const& fluidToolbox )
+{
+    this->updateMatrixPTilde_angular( fluidToolbox, M_matrixPTilde_angular );
+}
+
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+std::string
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyArticulation::name() const { return this->body1().name() + "_" + this->body2().name(); }
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+bool
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyArticulation::has( BodyBoundaryCondition const& bbc ) const { return (bbc.name() == this->body1().name()) || (bbc.name() == this->body2().name()); }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -3009,11 +3035,48 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyArticulation::initLagrangeMultiplier( se
     M_vectorLagrangeMultiplierTranslationalVelocity = fluidToolbox.backend()->newVector( M_dataMapLagrangeMultiplierTranslationalVelocity );
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+eigen_vector_type<FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nRealDim>
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyArticulation::unitDirBetweenMassCenters() const
+{
+    auto mc1 = this->body1().body().massCenter();
+    auto mc2 = this->body2().body().massCenter();
+    eigen_vector_type<nRealDim> /*auto*/ unitDir = (mc2-mc1);
+    unitDir.normalize();
+    return unitDir;
+}
+
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+std::string
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::name() const { return "articulation_"+this->masterBodyBC().name(); }
+
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::init( self_type const& fluidToolbox )
 {
+    std::map<std::string,std::tuple<int,BodyBoundaryCondition const*>> count;
+    for ( auto const& ba : M_articulations )
+    {
+        for ( BodyBoundaryCondition const* bbcPtr : { &ba.body1(), &ba.body2() } )
+        {
+            auto const& bbc = *bbcPtr;
+            if ( count.find( bbc.name() ) == count.end() )
+                count[bbc.name()] = std::make_tuple(1,bbcPtr);
+            else
+                ++std::get<0>( count[bbc.name()] );
+        }
+    }
+    auto itMax = std::max_element(count.begin(), count.end(), [](auto const& e1,auto const& e2) { return std::get<0>(e1.second) < std::get<0>(e2.second); } );
+    CHECK ( itMax != count.end() ) << "something wrong";
+    M_masterBodyBC = std::get<1>( itMax->second );
+    CHECK( M_masterBodyBC->name() == itMax->first ) << "something wrong";
+
+    // std::cout << "M_pmatrixMasterBodyName = "<< M_pmatrixMasterBodyName << std::endl;
+    // std::cout << "this->bodyList().size()="<< this->bodyList().size() << std::endl;
+    // std::cout << "this->bodyList(false).size()="<< this->bodyList(false).size() << std::endl;
+
     if ( this->articulationMethod() == "lm" )
     {
         for ( auto & ba : M_articulations )
@@ -3021,32 +3084,69 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::init( self_type const& flu
     }
     else
     {
-        std::map<std::string,int> count;
-        for ( auto const& ba : M_articulations )
-        {
-            for ( std::string bbc_name : { ba.body1().name(), ba.body2().name() } )
-            {
-                if ( count.find( bbc_name ) == count.end() )
-                    count[bbc_name] = 1;
-                else
-                    ++count[bbc_name];
-            }
-        }
-        auto itMax = std::max_element(count.begin(), count.end(), [](auto const& e1,auto const& e2) { return e1.second < e2.second; } );
-        CHECK ( itMax != count.end() ) << "something wrong";
-        M_pmatrixMasterBodyName = itMax->first;
-
-        // std::cout << "M_pmatrixMasterBodyName = "<< M_pmatrixMasterBodyName << std::endl;
-        // std::cout << "this->bodyList().size()="<< this->bodyList().size() << std::endl;
-        // std::cout << "this->bodyList(false).size()="<< this->bodyList(false).size() << std::endl;
-
         // create datamap shared on all processess where a body bc is defined (active dofs use the master body)
-        std::vector<std::shared_ptr<datamap_t<>>> datamaps = { this->pmatrixMasterBody().spaceTranslationalVelocity()->mapPtr() };
+        std::vector<std::shared_ptr<datamap_t<>>> datamaps = { this->masterBodyBC().spaceTranslationalVelocity()->mapPtr() };
         for ( auto const& bbcPtr : this->bodyList(false) )
             datamaps.push_back( bbcPtr->spaceTranslationalVelocity()->mapPtr() );
         M_dataMapPMatrixTranslationalVelocity = utility_constant_functionspace::aggregateParallelSupport( datamaps, fluidToolbox.worldCommPtr() );
     }
+
+
+    std::set<std::string> M_markers;
+    for ( auto bbc : this->bodyList() )
+        M_markers.insert( bbc->markers().begin(), bbc->markers().end() );
+    auto rangeBodyBoundary = markedfaces(fluidToolbox.mesh(), M_markers );
+    M_rangeMarkedFacesOnFluid = rangeBodyBoundary;
+    auto M_mesh = createSubmesh(_mesh=/*fluidToolbox.mesh()*/fluidToolbox.functionSpaceVelocity()->template meshSupport<0>(),_range=rangeBodyBoundary,_view=true );
+    M_spaceAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
+    M_fieldAngularVelocity = M_spaceAngularVelocity->elementPtr();
 }
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+std::vector<typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition const*>
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::bodyList( bool withMaster ) const
+{
+    std::string const& masterBodyBCName = this->masterBodyBC().name();
+    std::vector<BodyBoundaryCondition const*> res;
+    for ( auto const& ba : M_articulations )
+    {
+        auto const& bbc1 = ba.body1();
+        if ( withMaster || (bbc1.name() != masterBodyBCName) )
+        {
+            if ( std::find_if( res.begin(), res.end(),
+                               [&bbc1]( BodyBoundaryCondition const* e ) { return e->name() == bbc1.name(); } ) ==res.end() )
+                res.push_back( &bbc1 );
+        }
+        auto const& bbc2 = ba.body2();
+        if ( withMaster || (bbc2.name() != masterBodyBCName) )
+        {
+            if ( std::find_if( res.begin(), res.end(),
+                               [&bbc2]( BodyBoundaryCondition const* e ) { return e->name() == bbc2.name(); } ) == res.end() )
+                res.push_back( &bbc2 );
+        }
+    }
+    return res;
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::updateForUse()
+{
+    auto allbbc = this->bodyList();
+    M_mass = 0;
+    M_massCenter = eigen_vector_type<nRealDim>::Zero();
+    for ( auto const& bbc : allbbc )
+    {
+        M_mass += bbc->body().mass();
+        M_massCenter += bbc->body().mass()*bbc->body().massCenter();
+    }
+    M_massCenter /= M_mass;
+
+    M_momentOfInertia = moment_of_inertia_type::Zero();
+    for ( auto const& bbc : allbbc )
+        bbc->body().computeMomentOfInertia( this->massCenterExpr(), M_momentOfInertia, true );
+}
+
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -3054,15 +3154,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateForUse( self
 {
     for ( auto & [name,bpbc] : *this )
         bpbc.updateForUse( fluidToolbox );
+
+    for ( auto & nba : M_nbodyArticulated )
+        nba.updateForUse();
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::init( self_type const& fluidToolbox )
 {
-    for ( auto & [name,bpbc] : *this )
-        bpbc.init( fluidToolbox );
-
     std::vector<BodyArticulation> articulations;
     for ( auto const& [name,bbc] : *this )
     {
@@ -3117,13 +3217,25 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::init( self_type co
         }
     }
 
+    // attach nba to bbc
+    for ( auto & nba : M_nbodyArticulated )
+    {
+        for ( auto & [name,bbc] : *this )
+        {
+            if ( nba.has( bbc ) )
+                bbc.attachToNBodyArticulated( nba );
+        }
+    }
+
     // std::cout << "M_nbodyArticulated.size()="<<M_nbodyArticulated.size()<<std::endl;
     // for ( auto const& nba : M_nbodyArticulated )
     //     std::cout << "nba.articulations.size()="<<nba.articulations().size()<<std::endl;
 
+    for ( auto & [name,bbc] : *this )
+        bbc.init( fluidToolbox );
+
     for ( auto & nba : M_nbodyArticulated )
         nba.init( fluidToolbox );
-
 }
 
 
@@ -3164,11 +3276,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::initAlgebraicFacto
     for ( auto & [bpname,bbc] : *this )
     {
         size_type startBlockIndexTranslationalVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bbc.name()+".translational-velocity");
-        size_type startBlockIndexAngularVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bbc.name()+".angular-velocity");
 
         if ( bodyInPMatrixArticulation.find( bbc.name() ) == bodyInPMatrixArticulation.end() )
             myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bbc.matrixPTilde_translational();
-        myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bbc.matrixPTilde_angular();
+
+        if ( !bbc.isInNBodyArticulated() )
+        {
+            size_type startBlockIndexAngularVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bbc.name()+".angular-velocity");
+            myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bbc.matrixPTilde_angular();
+        }
 
         auto dofsBody = fluidToolbox.functionSpaceVelocity()->dofs( bbc.rangeMarkedFacesOnFluid() );
         auto matFI_Id = myblockMat(startBlockIndexVelocity,startBlockIndexVelocity);
@@ -3182,8 +3298,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::initAlgebraicFacto
 
 
     // p-matrix articulation
-    for ( auto const& nba : this->nbodyArticulated() )
+    //for ( auto const& nba : this->nbodyArticulated() )
+    for ( auto & nba : M_nbodyArticulated )
     {
+        nba.updateMatrixPTilde_angular( fluidToolbox );
+        size_type startBlockIndexAngularVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+nba.name()+".angular-velocity");
+        myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = nba.matrixPTilde_angular();
+
         if ( nba.articulationMethod() != "p-matrix" )
             continue;
 
@@ -3201,10 +3322,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::initAlgebraicFacto
             auto opI_partTranslationalVelocity = opInterpolation( _domainSpace=bbcPtr->spaceTranslationalVelocity() ,_imageSpace=XhV,_range=bbcPtr->rangeMarkedFacesOnFluid(),_matrix=matSetup );
         }
 
-        size_type startBlockIndexTranslationalVelocityMasterBody = fluidToolbox.startSubBlockSpaceIndex("body-bc."+nba.pmatrixMasterBodyName()+".translational-velocity");
+        size_type startBlockIndexTranslationalVelocityMasterBody = fluidToolbox.startSubBlockSpaceIndex("body-bc."+nba.masterBodyBC().name()+".translational-velocity");
         myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocityMasterBody) = matrixPMatrixPTilde_TranslationalVelocity;
 
-        myblockMat(startBlockIndexTranslationalVelocityMasterBody,startBlockIndexTranslationalVelocityMasterBody) = fluidToolbox.backend()->newIdentityMatrix( nba.dataMapPMatrixTranslationalVelocity(), nba.pmatrixMasterBody().spaceTranslationalVelocity()->mapPtr() );
+        myblockMat(startBlockIndexTranslationalVelocityMasterBody,startBlockIndexTranslationalVelocityMasterBody) = fluidToolbox.backend()->newIdentityMatrix( nba.dataMapPMatrixTranslationalVelocity(),
+                                                                                                                                                               nba.masterBodyBC().spaceTranslationalVelocity()->mapPtr() );
 
         for ( auto const& bbcPtr : nba.bodyList(false) )
         {
@@ -3263,8 +3385,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFac
         size_type startBlockIndexVelocity = fluidToolbox.startSubBlockSpaceIndex("velocity");
         for ( auto & [bpname,bbc] : *this )
         {
+            if ( bbc.isInNBodyArticulated() )
+                continue;
             size_type startBlockIndexAngularVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bbc.name()+".angular-velocity");
             bbc.updateMatrixPTilde_angular( fluidToolbox, matP, startBlockIndexVelocity, startBlockIndexAngularVelocity );
+        }
+
+        for ( auto const& nba : this->nbodyArticulated() )
+        {
+            size_type startBlockIndexAngularVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+nba.name()+".angular-velocity");
+            nba.updateMatrixPTilde_angular( fluidToolbox, matP, startBlockIndexVelocity, startBlockIndexAngularVelocity );
         }
     }
 
@@ -3281,8 +3411,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFac
         {
             auto const& bbc1 = ba.body1();
             auto const& bbc2 = ba.body2();
-            CHECK( bbc1.name() == nba.pmatrixMasterBodyName() || bbc2.name() == nba.pmatrixMasterBodyName() ) << "Case not handle : too complex articulation";
-            auto const& bbc = bbc1.name() == nba.pmatrixMasterBodyName()? bbc2 : bbc1;
+            CHECK( bbc1.name() == nba.masterBodyBC().name() || bbc2.name() == nba.masterBodyBC().name() ) << "Case not handle : too complex articulation";
+            auto const& bbc = bbc1.name() == nba.masterBodyBC().name()? bbc2 : bbc1;
 
             applyCloseInExplictPartOfSolution = true;
             size_type startBlockIndexTranslationalVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bbc.name()+".translational-velocity");
