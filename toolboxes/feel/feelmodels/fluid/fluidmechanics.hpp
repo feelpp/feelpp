@@ -792,7 +792,7 @@ public:
 
         element_trace_velocity_ptrtype fieldElasticVelocityPtr() const { return M_fieldElasticVelocity; }
         element_trace_velocity_ptrtype & fieldElasticVelocityPtr() { return M_fieldElasticVelocity; }
-        space_trace_velocity_ptrtype const& spaceElasticVelocityPtr() const {return M_XhElasticVelocity;}
+        space_trace_velocity_ptrtype const& spaceElasticVelocityPtr() const {return M_spaceElasticVelocity;}
         auto elasticVelocityExpr() const { CHECK( this->hasElasticVelocity() ) << "no elastic velocity"; return idv(M_fieldElasticVelocity); }
         // LUCA
         std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> const& exprElasticVelocity() const {return M_elasticVelocityExprBC;}
