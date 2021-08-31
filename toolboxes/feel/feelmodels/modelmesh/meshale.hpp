@@ -455,8 +455,25 @@ void MeshALE<Convex>::update( elem_type const& polyDisplacementSet )
 
     CHECK( this->isOnMovingMesh() ) << "meshALE must be on moving mesh\n";
 
-    M_displacementOnMovingBoundary_HO_ref->on( _range = markedfaces( M_movingMesh, this->aleFactory()->flagSet( "moving" ) ),
-                                               _expr = vf::idv( polyDisplacementSet ) );
+    for ( uint16_type i=0; i < this->aleFactory()->flagSet("moving").size(); ++i )
+        {
+            //if (this->worldComm().isMasterRank() ) std::cout << "M_flagSet[moving][i]" << M_flagSet["moving"][i]<< std::endl;
+
+            std::string marker_name = M_movingMesh->markerName( this->aleFactory()->flagSet( "moving", i ) );
+            if ( M_movingMesh->markerDim( marker_name ) == M_movingMesh->dimension() -1 )
+            {
+                std::cout << " update : assembling on facets with marker: '" << marker_name << "'\n";
+     
+                M_displacementOnMovingBoundary_HO_ref->on( _range = markedfaces( M_movingMesh, this->aleFactory()->flagSet( "moving", i ) ),
+                                                   _expr = vf::idv( polyDisplacementSet ) );
+            }
+            else if ( M_movingMesh->markerDim( marker_name ) == M_movingMesh->dimension() )
+            {
+                std::cout << " update : assembling on elements with marker '" << marker_name << "'\n";
+                M_displacementOnMovingBoundary_HO_ref->on( _range = markedelements( M_movingMesh, this->aleFactory()->flagSet( "moving", i ) ),
+                                                            _expr = vf::idv( polyDisplacementSet ) );
+            }
+        }
     sync( *M_displacementOnMovingBoundary_HO_ref, "=", M_dofsMultiProcessOnMovingBoundary_HO );
 
     this->updateImpl();

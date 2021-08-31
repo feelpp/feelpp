@@ -266,11 +266,27 @@ HarmonicExtension<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) co
         for ( uint16_type i=0; i < this->flagSet("moving").size(); ++i )
         {
             //if (this->worldComm().isMasterRank() ) std::cout << "M_flagSet[moving][i]" << M_flagSet["moving"][i]<< std::endl;
-            form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
-                on( _range=markedfaces( this->mesh(), this->flagSet("moving",i) ),
-                    _element=*u,
-                    _rhs=F,
-                    _expr=idv( this->dispImposedOnBoundary() ) );
+            
+            std::string marker_name = this->mesh()->markerName( this->flagSet("moving",i) );
+            if ( this->mesh()->markerDim( marker_name ) == this->mesh()->dimension() -1 )
+            {
+                std::cout << " harmonic : assembling on facets with marker: '" << marker_name << "'\n";
+                form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
+                    on( _range=markedfaces( this->mesh(), this->flagSet("moving",i) ),
+                        _element=*u,
+                        _rhs=F,
+                        _expr=idv( this->dispImposedOnBoundary() ) );
+            }
+            else if ( this->mesh()->markerDim( marker_name ) == this->mesh()->dimension() )
+            {
+                std::cout << " harmonic : assembling on elements with marker '" << marker_name << "'\n";
+                form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
+                    on( _range=markedelements( this->mesh(), this->flagSet("moving",i) ),
+                        _element=*u,
+                        _rhs=F,
+                        _expr=idv( this->dispImposedOnBoundary() ) );
+            }
+
         }
 
         for ( uint16_type i=0; i < this->flagSet("fixed").size(); ++i )
