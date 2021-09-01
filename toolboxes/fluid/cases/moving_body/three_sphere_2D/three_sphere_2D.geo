@@ -7,7 +7,7 @@ lcDom = h;
 
 // The construction of the center circle
 Center = 0;
-Centery = 0;
+Centery = 16;
 
 Point(9) = {Center,Centery,0,lcCircle};
 Point(10) = {Center+RCircle,Centery,0,lcCircle};
