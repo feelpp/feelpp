@@ -15,5 +15,5 @@ Disk of radius 0.125 in (1.4) -> the correct value is in their reference paper b
 Solid density 1.5
 Gravity -980
 
-The .csv file contains the curve "Present study" of figure 19. 
+The curve_comparison.csv file contains the curve "Present study" of figure 19, representing the y coordinate of the cylinder as it falls. 
 Our simulation can not handle collision, so we compare just the fall of the cylinder.

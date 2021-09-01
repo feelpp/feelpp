@@ -69,8 +69,19 @@ typemesh const rem( typemesh const& mesh, typealemesh const& alemesh, Body const
     auto nlayers = ioption( _name = "remesh.metric.layers" );
     auto [havg, hmin, hmax] = hMeasures( submesh );
     auto expr_magnitude_disp = ( sqrt( inner( idv( alemesh->displacement() ), idv( alemesh->displacement() ) ) ) + cst( 1 ) );
-    metric.on( _range = elements( mesh ),
-               _expr = cst( havg ) );
+    if(soption("remesh.strategy")=="progressive")
+    {
+        metric.on( _range = elements( mesh ),
+                   _expr = cst( havg ) );
+    }
+    else if(soption("remesh.strategy")=="constant")
+    {
+        metric.on(_range=elements(mesh),_expr=cst(doption("remesh.strategy.constant.value")));
+    }
+    else
+    {
+        std::cout << "problem on the mesh metric, not defined" << std::endl;
+    }
     ///_expr=flatThenIncreaseAroundEntityRange(phi,nlayers*h())*havg);//(hmin+0.5*havg)/(expr_magnitude_disp));
     //metric.on(_range=elements(mesh),_expr=flatThenIncreaseAroundEntityRange(phi,nlayers*h(),nlayers)*(hmin+havg)*0.5);//cst(havg));
     //auto r = remesher( submesh, mesh->markerName( "Swimmer" ), alemesh->aleFactory()->flagSet( "moving" ) );
@@ -93,7 +104,7 @@ typemesh const rem( typemesh const& mesh, typealemesh const& alemesh, Body const
 
     std::cout << "We need to remesh!!" << std::endl;
 }
-
+#if 0
 void updateMeasureFile( std::string fileName, std::string rootRepository )
 {
     std::string filename = rootRepository + "/" + fileName;
@@ -103,6 +114,7 @@ void updateMeasureFile( std::string fileName, std::string rootRepository )
     of_c.seekp( 0, std::ios_base::end );
     of_c << if_b.rdbuf();
 }
+#endif
 template <int nDim, uint16_type OrderVelocity, uint16_type OrderPressure, uint16_type OrderGeo = 1>
 int runApplicationFluid( Body const& body )
 {
@@ -120,6 +132,7 @@ int runApplicationFluid( Body const& body )
     auto global_mesh = FM_ref->mesh();
     auto Xh_ref_swimmer = Pchv<1>( FM_ref->mesh() );
     auto bdf_global = bdf( _space = FM_ref->functionSpaceVelocity(), _name = "mybdf", _prefix = "mybdf" );
+    FeelModels::ModelMeasuresIO measures( "fluid-global.measures.csv", Environment::worldCommPtr() );    
     auto e = exporter( _mesh = global_mesh, _name = "move", _geo = "change" );
     auto eSave = [&e]( double t, auto alemesh, auto vel, auto press, auto w ) {
         e->step( t )->setMesh( alemesh->movingMesh() );
@@ -328,7 +341,9 @@ int runApplicationFluid( Body const& body )
 
             } // end of Picard
             FM->exportResults();
-            updateMeasureFile( "fluid_glob.measures.csv", FM->rootRepository() );
+            measures.setMeasures( FM->postProcessMeasuresIO().currentMeasures() );
+            measures.exportMeasures();
+            // updateMeasureFile( "fluid_glob.measures.csv", FM->rootRepository() );
             {
                 auto Yh = Pch<1>( FM->mesh() );
                 auto w = Yh->element();
@@ -364,6 +379,9 @@ int main( int argc, char** argv )
       ( "body.markers.volume", po::value<std::vector<std::string> >()->multitoken(), "list of volume markers for the moving body" )
       ( "body.markers.facet", po::value<std::vector<std::string> >()->multitoken(), "list of facet markers for the moving body" )
       ( "picard.iterations", Feel::po::value<int>()->default_value( 1 ), "number of picard iterations" )
+      ( "remesh.strategy" ,Feel::po::value<std::string>()->default_value("progressive"),"remesh strategy")
+      ( "remesh.strategy.constant.value" ,Feel::po::value<double>()->default_value(1),"remesh constant value")
+      ( "remesh.tolerance" ,Feel::po::value<double>()->default_value(4),"remesh constant value")
       ;
     // clang-format on
 

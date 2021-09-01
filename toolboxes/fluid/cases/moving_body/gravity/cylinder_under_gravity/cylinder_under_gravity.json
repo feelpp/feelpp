@@ -24,7 +24,7 @@
             "mu":"0.01"
         },
         "MySolid":{
-            "markers":"Swimmer",
+            "markers":"CylinderVolume",
             "physics":"body",
             "rho":"1.5"
             //"rho":"2.0e3+1e3*sin((t/0.1)*pi/2):t"
@@ -59,7 +59,7 @@
             {
                 "p1_mark":
                  {
-                     "markers":"Head",
+                     "markers":"CylinderSurface",
                      "materials":"MySolid"
                      // ,"translational-velocity":"{0.5,-1}"
                      // ,"angular-velocity":"0"

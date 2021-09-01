@@ -45,11 +45,11 @@ Plane Surface(2) = {2};
 //+
 Physical Surface("Fluid") = {1};
 //+
-Physical Surface("Swimmer") = {2}; // Volume of the cylinder
+Physical Surface("CylinderVolume") = {2}; // Volume of the cylinder
 //+
 Physical Curve("Walls") = {8, 6};
 //+
 Physical Curve("Top") = {5};
 //+
 Physical Curve("Bottom") = {7};
-Physical Curve("Head") = {4, 1, 2, 3}; // Boundary of the cylinder
+Physical Curve("CylinderSurface") = {4, 1, 2, 3}; // Boundary of the cylinder
