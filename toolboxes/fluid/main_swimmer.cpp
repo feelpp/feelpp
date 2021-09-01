@@ -1,6 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
  */
-
+#include <fmt/core.h>
+#include <fmt/ranges.h>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feells/disttoentityrange.hpp>
@@ -10,6 +11,12 @@
 #include <feel/options.hpp>
 namespace Feel
 {
+struct Body
+{
+    std::vector<std::string> v_markers;
+    std::vector<std::string> f_markers;
+};
+
 template <typename DistFieldT, typename DistToRangeExpr, typename = std::enable_if_t<is_functionspace_element_v<DistFieldT>>>
 auto flatThenIncreaseAroundEntityRange( DistFieldT const& d, DistToRangeExpr const& e, int coefexp = 3 )
 {
@@ -48,7 +55,7 @@ bool mesh_quality( type_mesh const& mesh, type_tolerance tolerance, quality_fiel
     return toRemesh;
 }
 template <typename typemesh, typename typealemesh>
-typemesh const rem( typemesh const& mesh, typealemesh const& alemesh, typemesh parent = {} )
+typemesh const rem( typemesh const& mesh, typealemesh const& alemesh, Body const& body, typemesh parent = {} )
 {
     bool first_material = true;
     //auto mats = rangeMeshElementsByMaterial();
@@ -58,7 +65,7 @@ typemesh const rem( typemesh const& mesh, typealemesh const& alemesh, typemesh p
     auto submesh = mesh; //createSubmesh(mesh,markedelements(mesh,meshMarkers));
     auto Xh = Pch<1>( submesh );
     auto metric = Xh->element();
-    auto phi = distToEntityRange( Xh, markedfaces( Xh->mesh(), { "Head", "Tail" } ) );
+    auto phi = distToEntityRange( Xh, markedfaces( Xh->mesh(), body.f_markers ) );
     auto nlayers = ioption( _name = "remesh.metric.layers" );
     auto [havg, hmin, hmax] = hMeasures( submesh );
     auto expr_magnitude_disp = ( sqrt( inner( idv( alemesh->displacement() ), idv( alemesh->displacement() ) ) ) + cst( 1 ) );
@@ -66,10 +73,8 @@ typemesh const rem( typemesh const& mesh, typealemesh const& alemesh, typemesh p
                _expr = cst( havg ) );
     ///_expr=flatThenIncreaseAroundEntityRange(phi,nlayers*h())*havg);//(hmin+0.5*havg)/(expr_magnitude_disp));
     //metric.on(_range=elements(mesh),_expr=flatThenIncreaseAroundEntityRange(phi,nlayers*h(),nlayers)*(hmin+havg)*0.5);//cst(havg));
-    std::cout << "mesh marker swimmer" << mesh->markerName( "Swimmer" ) << std::endl;
-    std::cout << "alemesh moving" << alemesh->aleFactory()->flagSet( "moving" ) << std::endl;
     //auto r = remesher( submesh, mesh->markerName( "Swimmer" ), alemesh->aleFactory()->flagSet( "moving" ) );
-    auto r = remesher( submesh, std::vector<int>{}, alemesh->aleFactory()->flagSet( "moving" ), parent );
+    auto r = remesher( submesh, body.v_markers, body.f_markers, parent );
 
     r.setMetric( metric );
     auto new_mesh_remeshed = r.execute();
@@ -88,37 +93,7 @@ typemesh const rem( typemesh const& mesh, typealemesh const& alemesh, typemesh p
 
     std::cout << "We need to remesh!!" << std::endl;
 }
-#if 0
-template<typename typemesh>
-typemesh const rem(typemesh const& mesh)
-{
-    bool first_material = true;
-    //auto mats = rangeMeshElementsByMaterial();
-    //for ( auto const& matPair : mats )
-     
-        //auto meshMarkers = mat.meshMarkers();
-        auto submesh = mesh; //createSubmesh(mesh,markedelements(mesh,meshMarkers));
-        auto Xh = Pch<1>(submesh);
-        auto metric = Xh->element();
-        auto phi = distToEntityRange( Xh, markedfaces( Xh->mesh(),{"Head","Tail"}) );
-        auto nlayers = ioption(_name="remesh.metric.layers");
-        auto [ havg, hmin, hmax ] = hMeasures( submesh );
-        //metric.on( _range=elements(mesh), _expr=flatThenIncreaseAroundEntityRange(phi,nlayers*h(),nlayers)*cst(havg));
-        //metric.on(_range=elements(mesh),_expr=flatThenIncreaseAroundEntityRange(phi,nlayers*h(),nlayers)*(hmin+havg)*0.5);//cst(havg));
-        metric.on(_range=elements(mesh),_expr=cst(hmax));
-        std::cout << "mesh marker circlevol" << mesh->markerName("Swimmer") <<std::endl;
-        auto r = remesher(submesh,mesh->markerName("Swimmer"), alemesh->aleFactory()->flagSet("moving") );
-        r.setMetric(metric);
-        auto new_mesh_remeshed = r.execute();
-        new_mesh_remeshed->updateForUse();
-        new_mesh_remeshed->setMarkerNames(submesh->markerNames());
 
-    
-    return new_mesh_remeshed; //mesh.reset(new typemesh(new_mesh_remeshed));
-
-    std::cout << "We need to remesh!!" << std::endl;
-}
-#endif
 void updateMeasureFile( std::string fileName, std::string rootRepository )
 {
     std::string filename = rootRepository + "/" + fileName;
@@ -129,7 +104,7 @@ void updateMeasureFile( std::string fileName, std::string rootRepository )
     of_c << if_b.rdbuf();
 }
 template <int nDim, uint16_type OrderVelocity, uint16_type OrderPressure, uint16_type OrderGeo = 1>
-int runApplicationFluid()
+int runApplicationFluid( Body const& body )
 {
     using namespace Feel;
 
@@ -199,15 +174,16 @@ int runApplicationFluid()
             if constexpr ( nDim == 2 )
             {
                 auto dispExpr = expr<nDim, 1>( "{0,0}:x" );
-                disp.on( _range = markedfaces( FM_ref->meshALE()->movingMesh(), "Tail" ), _expr = dispExpr );
+                disp.on( _range = markedfaces( FM_ref->meshALE()->movingMesh(), body.f_markers ), _expr = dispExpr );
             }
             else if constexpr ( nDim == 3 )
             {
                 auto dispExpr = expr<nDim, 1>( "{0,0,0}:x" );
-                disp.on( _range = markedfaces( FM_ref->meshALE()->movingMesh(), "Tail" ), _expr = dispExpr );
+                disp.on( _range = markedfaces( FM_ref->meshALE()->movingMesh(), body.f_markers ), _expr = dispExpr );
             }
             FM_ref->meshALE()->update( disp );
-            auto new_mesh = rem( FM_ref->meshALE()->movingMesh(), FM_ref->meshALE() );
+            auto new_mesh = rem( FM_ref->meshALE()->movingMesh(), FM_ref->meshALE(), body );
+            CHECK( FM_ref->meshALE()->movingMesh()->isParentMeshOf( new_mesh) );
             new_mesh->saveHDF5( "init_mesh.json" );
 
             auto remeshing_time = FM_ref->time();
@@ -223,12 +199,12 @@ int runApplicationFluid()
             FM->timeStepBase()->setTimeInitial( bdf_global->time() - bdf_global->timeStep() );
             FM->printAndSaveInfo();
             FM->startTimeStep();
-            auto center_of_mass_init = integrate( _range = markedelements( FM->mesh(), "Swimmer" ), _expr = P() ).evaluate();
-            auto mass = integrate( _range = markedelements( FM->mesh(), "Swimmer" ), _expr = cst( 1.0 ) ).evaluate()( 0, 0 );
+            auto center_of_mass_init = integrate( _range = markedelements( FM->mesh(), body.v_markers ), _expr = P() ).evaluate();
+            auto mass = integrate( _range = markedelements( FM->mesh(), body.v_markers ), _expr = cst( 1.0 ) ).evaluate()( 0, 0 );
             center_of_mass_init /= mass;
             delta_CM_init = center_of_mass_init( 0, 0 );
             remesh_boolean = false;
-
+#if 0
             for ( auto& [name, bpbc] : FM->bodySetBC() )
             {
                 if ( bpbc.name() == "Swimmer" )
@@ -240,6 +216,7 @@ int runApplicationFluid()
                     PosInit.on( _range = elements( bpbc.mesh() ), _expr = Px() );
                 }
             }
+#endif            
         }
 
         if ( FM_ref->worldComm().isMasterRank() )
@@ -273,7 +250,7 @@ int runApplicationFluid()
                 delta_CM = delta_CM_init;
                 std::cout << "Need to remesh now!  \n";
                 //bool toRemesh = mesh_quality(FM->meshALE()->movingMesh(),tolerance,quality_field);
-                auto new_mesh = rem( FM->meshALE()->movingMesh(), FM->meshALE(), FM_ref->mesh() );
+                auto new_mesh = rem( FM->meshALE()->movingMesh(), FM->meshALE(), body, FM_ref->meshALE()->movingMesh() );
                 new_mesh->saveHDF5( "new_mesh.json" );
                 auto u = FM->fieldVelocity();
                 u.saveHDF5( "new_initialCondition.json" );
@@ -286,14 +263,12 @@ int runApplicationFluid()
                 FM_after_remeshing->setMesh( new_mesh );
                 FM_after_remeshing->setTimeInitial( remeshing_time - FM->timeStep() );
                 FM_after_remeshing->addParameterInModelProperties( "T0", remeshing_time - FM->timeStep() );
-                auto center_of_mass_cur = integrate( _range = markedelements( FM->mesh(), "Swimmer" ), _expr = P() ).evaluate();
-                auto mass = integrate( _range = markedelements( FM->mesh(), "Swimmer" ), _expr = cst( 1.0 ) ).evaluate()( 0, 0 );
+                auto center_of_mass_cur = integrate( _range = markedelements( FM->mesh(), body.v_markers ), _expr = P() ).evaluate();
+                auto mass = integrate( _range = markedelements( FM->mesh(), body.v_markers ), _expr = cst( 1.0 ) ).evaluate()( 0, 0 );
                 center_of_mass_cur /= mass;
                 delta_CM -= center_of_mass_cur( 0, 0 );
                 std::cout << "delta_CM " << delta_CM << std::endl;
 
-                FM_after_remeshing->addParameterInModelProperties( "head_junct", 20 - delta_CM );
-                FM_after_remeshing->addParameterInModelProperties( "offset", delta_CM );
                 FM_after_remeshing->init( true );
                 FM_after_remeshing->updateParameterValues();
                 auto Yh = Pch<1>( new_mesh );
@@ -380,6 +355,7 @@ int runApplicationFluid()
                 FM = FM_after_remeshing;
 
                 Feel::cout << "FM " << FM << "FM_after_remeshing " << FM_after_remeshing << std::endl;
+#if 0                
                 for ( auto& [name, bpbc] : FM->bodySetBC() )
                 {
                     if ( bpbc.name() == "Swimmer" )
@@ -388,6 +364,7 @@ int runApplicationFluid()
                         bpbc.selectHighOrderSchemeElasticVelocity(true);
                     }
                 }
+#endif                
             }
 
             FM->updateParameterValues();
@@ -456,7 +433,16 @@ int main( int argc, char** argv )
     fluidmecoptions.add( backend_options( "Iv" ) );
     fluidmecoptions.add( backend_options( "Idisp" ) );
     fluidmecoptions.add( alemesh_options( "alemesh_init" ) );
-    fluidmecoptions.add_options()( "case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension" )( "case.discretization", Feel::po::value<std::string>()->default_value( "P2P1G1" ), "discretization : P2P1G1,P2P1G2" )( "export.matlab", po::value<bool>()->default_value( true ), "export matrix and vector to matlab" )( "remesh.metric.layers", po::value<int>()->default_value( 2 ), "number of remeshing layers" );
+    // clang-format off
+    fluidmecoptions.add_options()
+      ( "case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension" )
+      ( "case.discretization", Feel::po::value<std::string>()->default_value( "P2P1G1" ), "discretization : P2P1G1,P2P1G2" )
+      ( "export.matlab", po::value<bool>()->default_value( true ), "export matrix and vector to matlab" )
+      ( "remesh.metric.layers", po::value<int>()->default_value( 2 ), "number of remeshing layers" )
+      ( "body.markers.volume", po::value<std::vector<std::string> >()->multitoken(), "list of volume markers for the moving body" )
+      ( "body.markers.facet", po::value<std::vector<std::string> >()->multitoken(), "list of facet markers for the moving body" )
+      ;
+    // clang-format on
 
     Environment env( _argc = argc, _argv = argv,
                      _desc = fluidmecoptions,
@@ -473,15 +459,21 @@ int main( int argc, char** argv )
 
     auto discretizationt = hana::make_tuple( hana::make_tuple( "P2P1G1", hana::make_tuple( hana::int_c<2>, hana::int_c<1>, hana::int_c<1> ) ) );
 
+    
+    Body body;
+    body.v_markers = vsoption("body.markers.volume");
+    body.f_markers = vsoption("body.markers.facet");
+    std::cout << fmt::format("body volume makers: {}", body.v_markers) << std::endl;
+    std::cout << fmt::format("body facet makers: {}", body.f_markers) << std::endl;
     int status = 0;
-    hana::for_each( hana::cartesian_product( hana::make_tuple( dimt, discretizationt ) ), [&discretization, &dimension, &status]( auto const& d ) {
+    hana::for_each( hana::cartesian_product( hana::make_tuple( dimt, discretizationt ) ), [&discretization, &dimension, &status, &body]( auto const& d ) {
         constexpr int _dim = std::decay_t<decltype( hana::at_c<0>( d ) )>::value;
         std::string const& _discretization = hana::at_c<0>( hana::at_c<1>( d ) );
         constexpr int _uorder = std::decay_t<decltype( hana::at_c<0>( hana::at_c<1>( hana::at_c<1>( d ) ) ) )>::value;
         constexpr int _porder = std::decay_t<decltype( hana::at_c<1>( hana::at_c<1>( hana::at_c<1>( d ) ) ) )>::value;
         constexpr int _gorder = std::decay_t<decltype( hana::at_c<2>( hana::at_c<1>( hana::at_c<1>( d ) ) ) )>::value;
         if ( dimension == _dim && discretization == _discretization )
-            status = runApplicationFluid<_dim, _uorder, _porder, _gorder>();
+            status = runApplicationFluid<_dim, _uorder, _porder, _gorder>( body );
     } );
     return status;
 }
