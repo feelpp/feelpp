@@ -204,19 +204,6 @@ int runApplicationFluid( Body const& body )
             center_of_mass_init /= mass;
             delta_CM_init = center_of_mass_init( 0, 0 );
             remesh_boolean = false;
-#if 0
-            for ( auto& [name, bpbc] : FM->bodySetBC() )
-            {
-                if ( bpbc.name() == "Swimmer" )
-                {
-                    std::cout << "we are inside the swimmer BodyBoundaryConditions" << std::endl;
-                    Xh_disp = trace_space_component_type::New( _mesh = bpbc.mesh() );
-                    PosInit = Xh_disp->element();
-                    Disp = Xh_disp->element();
-                    PosInit.on( _range = elements( bpbc.mesh() ), _expr = Px() );
-                }
-            }
-#endif            
         }
 
         if ( FM_ref->worldComm().isMasterRank() )
@@ -287,65 +274,6 @@ int runApplicationFluid( Body const& body )
                 auto p_new = FM_after_remeshing->fieldPressure();
                 std::cout << "OK before VelOpinterp" << std::endl;
 
-#if 0
-                auto submesh_fluid = createSubmesh(FM->mesh(),markedelements(FM->mesh(),"Fluid"));
-
-                auto VelSpace_temp = Pchv<2>(submesh_fluid);
-                auto op_vel_temp = opInterpolation( _domainSpace=FM->functionSpaceVelocity(), _imageSpace=VelSpace_temp ,
-                                        _backend=backend(_rebuild=true));
-                //auto v_intermediate= op_vel_temp.operator()( u );
-
-                auto op_vel = opInterpolation( _domainSpace=FM->functionSpaceVelocity(),//VelSpace_temp, 
-                                                _imageSpace=FM_after_remeshing->functionSpaceVelocity(),
-                                                _range=markedelements(FM_after_remeshing->functionSpaceVelocity()->mesh(),"Fluid"),
-                                                _backend=backend(_name="Iv",_rebuild=true));
-                /*auto op_vel = opInterpolation( _domainSpace=VelSpace_temp,//FM->functionSpaceVelocity(),//VelSpace_temp, 
-                                                _imageSpace=FM_after_remeshing->functionSpaceVelocity(),
-                                                _range=markedelements(FM_after_remeshing->functionSpaceVelocity()->mesh(),"Fluid"),
-                                                _backend=backend(_name="Iv",_rebuild=true));*/
-
-                
-                std::cout << "OK after VelOpinterp" << std::endl;
-                if ( Environment::numberOfProcessors() == 1 && boption("export.matlab") )
-                {
-                    op_vel->matPtr()->printMatlab("op_vel.m");
-                }
-                //op_vel->apply(v_intermediate,u_new);
-                //op_vel->apply(u,u_new);
-                auto PressSpace_temp = Pch<1>(submesh_fluid);
-                auto op_press_temp = opInterpolation( _domainSpace=FM->functionSpacePressure(), _imageSpace=PressSpace_temp,
-                                        _backend=backend(_rebuild=true) );
-                //auto p_intermediate= op_press_temp.operator()( p );
-                auto op_press = opInterpolation( _domainSpace=FM->functionSpacePressure(), 
-                                _imageSpace=FM_after_remeshing->functionSpacePressure(),
-                                _range=markedelements(FM_after_remeshing->functionSpacePressure()->mesh(),"Fluid"),
-                                _backend=backend(_name="Ip",_rebuild=true));
-                /*auto op_press = opInterpolation( _domainSpace=PressSpace_temp,//FM->functionSpacePressure(), 
-                                _imageSpace=FM_after_remeshing->functionSpacePressure(),
-                                _range=markedelements(FM_after_remeshing->functionSpacePressure()->mesh(),"Fluid"),
-                                _backend=backend(_name="Ip",_rebuild=true));*/
-                if ( Environment::numberOfProcessors() == 1 && boption("export.matlab") )
-                {
-                    op_press->matPtr()->printMatlab("op_press.m");
-                }
-                std::cout << "OK after PressOpinterp" << std::endl;
-                //op_press->apply(p_intermediate,p_new);
-                //op_press->apply(p,p_new);
-                //eSave(bdf_global->time()+FM->timeStep(),FM_after_remeshing->meshALE(),u_new,p_new,w);
-                std::cout << FM_after_remeshing->time() << std::endl;
-                //FM_after_remeshing->exportResults();
-                //meshMove(FM->meshALE()->modifyReferenceMesh(),FM->meshALE()->displacementRefBDF()->unknown(0));
-                
-                std::cout << "OK before DispOpinterp" << std::endl;
-                auto DispSpace_temp = Pch<1>(submesh_fluid);
-                auto op_disp_temp = opInterpolation( _domainSpace=FM->meshALE()->functionSpaceInRef() , _imageSpace=DispSpace_temp,
-                                                     _backend=backend(_rebuild=true));
-                auto op_disp = opInterpolation( _domainSpace=FM->meshALE()->functionSpaceInRef() , 
-                                _imageSpace=FM_after_remeshing->meshALE()->functionSpaceInRef() ,
-                                _range=markedelements(FM_after_remeshing->meshALE()->functionSpaceInRef()->mesh(),"Fluid"),
-                                _backend=backend(_name="Idisp",_rebuild=true));
-
-#endif
                 toRemesh = false;
 
                 std::vector<std::string> markersInterpolate;
@@ -354,57 +282,51 @@ int runApplicationFluid( Body const& body )
                 FM_after_remeshing->startTimeStep();
                 FM = FM_after_remeshing;
 
-                Feel::cout << "FM " << FM << "FM_after_remeshing " << FM_after_remeshing << std::endl;
-#if 0                
-                for ( auto& [name, bpbc] : FM->bodySetBC() )
-                {
-                    if ( bpbc.name() == "Swimmer" )
-                    {
-                        Disp.on( _range = elements( bpbc.mesh() ), _expr = Px() );
-                        bpbc.selectHighOrderSchemeElasticVelocity(true);
-                    }
-                }
-#endif                
+                Feel::cout << "FM " << FM << "FM_after_remeshing " << FM_after_remeshing << std::endl;             
             }
+            // Picard sub iterations 
+            for(int i_picard = 0; i_picard < ioption("picard.iterations"); ++ i_picard )
+            {
+                FM->updateParameterValues();
+                Feel::cout << "ok fino export results" << std::endl;
+                Feel::cout << " is MoveDomain " << FM->isMoveDomain() << std::endl;
+                FM->setApplyMovingMeshBeforeSolve( false );
 
-            FM->updateParameterValues();
-            Feel::cout << "ok fino export results" << std::endl;
-            Feel::cout << " is MoveDomain " << FM->isMoveDomain() << std::endl;
-            FM->setApplyMovingMeshBeforeSolve( false );
+                auto expr_swimming_f = [&FM](double t){
+                    if constexpr ( nDim == 2 )
+                    {
+                        auto ud = expr(expr<nDim,1>("{udxt_0,udxt_1}:udxt_0:udxt_1"),FM->symbolsExpr());
+                        ud.setParameterValues({{"t",t}});
+                        return ud;
+                    }
+                    else
+                    {
+                        auto ud = expr(expr<nDim,1>("{udxt_0,udxt_1,udxt_2}:udxt_0:udxt_1:udxt_2"),FM->symbolsExpr());
+                        ud.setParameterValues({{"t",t}});
+                        return ud;
+                    }
 
-            auto expr_swimming_f = [&FM](double t){
-                if constexpr ( nDim == 2 )
-                {
-                    auto ud = expr(expr<nDim,1>("{udxt_0,udxt_1}:udxt_0:udxt_1"),FM->symbolsExpr());
-                    ud.setParameterValues({{"t",t}});
-                    return ud;
-                }
-                else
-                {
-                    auto ud = expr(expr<nDim,1>("{udxt_0,udxt_1,udxt_2}:udxt_0:udxt_1:udxt_2"),FM->symbolsExpr());
-                    ud.setParameterValues({{"t",t}});
-                    return ud;
-                }
+                };
+                auto expr_swimming_tnp1 =  expr_swimming_f(FM->time());
+                auto expr_swimming_tnp05 =  expr_swimming_f(FM->time()-0.5*FM->timeStep());
+                auto expr_swimming_tn =  expr_swimming_f(FM->time()-FM->timeStep());
+                expr_swimming_tnp1.setParameterValues( FM->modelProperties().parameters().toParameterValues() );
+                expr_swimming_tnp05.setParameterValues( FM->modelProperties().parameters().toParameterValues() );
+                expr_swimming_tn.setParameterValues( FM->modelProperties().parameters().toParameterValues() );
+                auto ud = Xh_ref_swimmer->element( expr_swimming_tnp1 );
+                auto integ_ud = Xh_ref_swimmer->element( 1.0/6.0*(expr_swimming_tn+4.0*expr_swimming_tnp05+expr_swimming_tnp1) );
+                auto integral_1 = integrate(_range=elements(Xh_ref_swimmer->mesh()),_expr=expr_swimming_tnp1).evaluate();
+                auto integral_2 = integrate(_range=elements(Xh_ref_swimmer->mesh()),_expr=idv(ud)).evaluate();
+                auto integral_3 = integrate(_range=elements(Xh_ref_swimmer->mesh()),_expr=idv(integ_ud)).evaluate();
+                std::cout << "Integral1 "  << integral_1 << " Integral2 " << integral_2 <<" Integral3 " << integral_3 << std::endl;            
+                auto se = Feel::vf::symbolsExpr( FM->symbolsExpr(), 
+                                                 symbolExpr( "ud", idv( ud ),SymbolExprComponentSuffix( nDim,1 ) ),
+                                                 symbolExpr( "integ_ud", idv( integ_ud ),SymbolExprComponentSuffix( nDim,1 ) )  );
 
-            };
-            auto expr_swimming_tnp1 =  expr_swimming_f(FM->time());
-            auto expr_swimming_tnp05 =  expr_swimming_f(FM->time()-0.5*FM->timeStep());
-            auto expr_swimming_tn =  expr_swimming_f(FM->time()-FM->timeStep());
-            expr_swimming_tnp1.setParameterValues( FM->modelProperties().parameters().toParameterValues() );
-            expr_swimming_tnp05.setParameterValues( FM->modelProperties().parameters().toParameterValues() );
-            expr_swimming_tn.setParameterValues( FM->modelProperties().parameters().toParameterValues() );
-            auto ud = Xh_ref_swimmer->element( expr_swimming_tnp1 );
-            auto integ_ud = Xh_ref_swimmer->element( 1.0/6.0*(expr_swimming_tn+4.0*expr_swimming_tnp05+expr_swimming_tnp1) );
-            auto integral_1 = integrate(_range=elements(Xh_ref_swimmer->mesh()),_expr=expr_swimming_tnp1).evaluate();
-            auto integral_2 = integrate(_range=elements(Xh_ref_swimmer->mesh()),_expr=idv(ud)).evaluate();
-            auto integral_3 = integrate(_range=elements(Xh_ref_swimmer->mesh()),_expr=idv(integ_ud)).evaluate();
-            std::cout << "Integral1 "  << integral_1 << " Integral2 " << integral_2 <<" Integral3 " << integral_3 << std::endl;            
-            auto se = Feel::vf::symbolsExpr( FM->symbolsExpr(), 
-                                             symbolExpr( "ud", idv( ud ),SymbolExprComponentSuffix( nDim,1 ) ),
-                                             symbolExpr( "integ_ud", idv( integ_ud ),SymbolExprComponentSuffix( nDim,1 ) )  );
-            
-            FM->updateALEmesh( se );
-            FM->solve();
+                FM->updateALEmesh( se );
+                FM->solve();
+
+            } // end of Picard
             FM->exportResults();
             updateMeasureFile( "fluid_glob.measures.csv", FM->rootRepository() );
             {
@@ -441,6 +363,7 @@ int main( int argc, char** argv )
       ( "remesh.metric.layers", po::value<int>()->default_value( 2 ), "number of remeshing layers" )
       ( "body.markers.volume", po::value<std::vector<std::string> >()->multitoken(), "list of volume markers for the moving body" )
       ( "body.markers.facet", po::value<std::vector<std::string> >()->multitoken(), "list of facet markers for the moving body" )
+      ( "picard.iterations", Feel::po::value<int>()->default_value( 1 ), "number of picard iterations" )
       ;
     // clang-format on
 
