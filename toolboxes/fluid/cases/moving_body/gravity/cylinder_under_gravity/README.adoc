@@ -1,0 +1,19 @@
+= Falling disk testcase
+
+Source: Figure 19, section 3.3.3
+Michel Bergmann, Jessica Hovnanian et Angelo Iollo  
+"An accurate cartesian method for incompressible flows with moving boundaries".
+Communications in Computational Physics, 15(5):1266–1290, 2014.
+
+Setting: 
+
+Box [0,2]x[0,6]
+Fluid density 1
+Fluid viscosity 0.01
+
+Disk of radius 0.125 in (1.4) -> the correct value is in their reference paper by Coquerelle-Cottet
+Solid density 1.5
+Gravity -980
+
+The .csv file contains the curve "Present study" of figure 19. 
+Our simulation can not handle collision, so we compare just the fall of the cylinder.
