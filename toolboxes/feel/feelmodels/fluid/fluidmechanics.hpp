@@ -59,7 +59,7 @@
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 #include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
 
-// #define FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
+#define FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
 
 namespace Feel
 {
@@ -470,7 +470,11 @@ public:
             {
                 M_exprTranslationalVelocity.setParameterValues( mp );
             }
+        auto modelMeasuresQuantities( std::string const& prefix ) const
+            {
 
+                return Feel::FeelModels::modelMeasuresQuantities( modelMeasuresQuantity( prefix, "mass_center_vector", std::bind( &BodyArticulation::unitDirBetweenMassCenters, this ) ));
+            }
     private:
         eigen_vector_type<nRealDim> unitDirBetweenMassCenters() const;
 
@@ -1042,6 +1046,20 @@ public:
                     std::string currentPrefix = prefixvm( prefix, (boost::format("body_%1%")%name).str() );
                     res = Feel::FeelModels::modelMeasuresQuantities( res, bbc.modelMeasuresQuantities( currentPrefix ) );
                 }
+#if 0           
+                using _res1_type = std::decay_t<decltype(this->nbodyArticulated().articulations().modelMeasuresQuantities(""))>;
+                _res1_type res1;      
+                for (auto & nba : this->nbodyArticulated())
+                {
+                    for ( auto & ba : nba.articulations() )
+                    {
+                        auto name=ba.name();
+                        std::string currentPrefix = prefixvm( prefix, (boost::format("articulation_%1%")%name).str() );
+                        res1 = Feel::FeelModels::modelMeasuresQuantities( res1, ba.modelMeasuresQuantities( currentPrefix ) );
+                    }
+                }
+                return {res,res1}
+#endif
                 return res;
             }
     private:
@@ -2348,68 +2366,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
         // temporary fix of interpolation with meshale space
         auto rangeMFOF = FluidToolbox_detail::removeBadFace( velocityMeshSupport,bpbc.rangeMarkedFacesOnFluid() );
         if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() && !bpbc.hasElasticVelocity() )
-            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExpr(), rangeMFOF );
+            {this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExpr(), rangeMFOF );}
         else if ( bpbc.hasElasticVelocityFromExpr() )
             {
-                // LUCA
-            /*if(bpbc.hasElasticVelocityHighOrder())
-            {
-                bpbc.updateElasticVelocityFromExpr(*this,se );
-                double t0 = this->time();
-                //this->updateParameterValues();
-                //this->setParameterValues(this->modelProperties().parameters().toParameterValues());
-                auto ev_n = bpbc.spaceElasticVelocityPtr()->element();
-                ev_n = *bpbc.fieldElasticVelocityPtr();
-                auto RK_elastic_velocity_n = idv(ev_n);
-                //auto RK_elastic_velocity_n = bpbc.elasticVelocityExpr();
-                double thalf = this->time()+this->timeStep()*0.5;
-                //this->updateTime(thalf);
-                //this->updateParameterValues();
-                //this->setParameterValues(this->modelProperties().parameters().toParameterValues());
-                M_bodySetBC.setParameterValues({{"t",thalf}});
-                bpbc.updateElasticVelocityFromExpr(*this,se );
-                auto n_plusonehalf = bpbc.spaceElasticVelocityPtr()->element();
-                n_plusonehalf = *bpbc.fieldElasticVelocityPtr();
-                auto RK_elastic_velocity_n_onehalf = idv(n_plusonehalf);
-                //auto RK_elastic_velocity_n_onehalf = bpbc.elasticVelocityExpr();
-                double tnp1 = this->time()+this->timeStep();
-                //this->updateTime(tnp1);
-                //this->updateParameterValues();
-                //this->setParameterValues(this->modelProperties().parameters().toParameterValues());
-                M_bodySetBC.setParameterValues({{"t",tnp1}});
-                bpbc.updateElasticVelocityFromExpr(*this,se );
-                auto n_plusone = bpbc.spaceElasticVelocityPtr()->element();
-                n_plusone = *bpbc.fieldElasticVelocityPtr();
-                auto RK_elastic_velocity_n_plusone = idv(n_plusone);//bpbc.elasticVelocityExpr();
-                auto difference1 = integrate(_range=elements(bpbc.spaceElasticVelocityPtr()->mesh()), _expr =inner(RK_elastic_velocity_n-RK_elastic_velocity_n_onehalf,RK_elastic_velocity_n-RK_elastic_velocity_n_onehalf)).evaluate()(0,0);
-                auto difference2 = integrate(_range=elements(bpbc.spaceElasticVelocityPtr()->mesh()), _expr =inner(RK_elastic_velocity_n_plusone-RK_elastic_velocity_n_onehalf,RK_elastic_velocity_n_plusone-RK_elastic_velocity_n_onehalf)).evaluate()(0,0);
-                std::cout << "difference1 " << difference1 << " difference2 " << difference2<< std::endl;
-                this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + 1.0/6.0*(RK_elastic_velocity_n+4.0*RK_elastic_velocity_n_onehalf+RK_elastic_velocity_n_plusone), rangeMFOF );
-                //this->updateTime(t0);
-                //this->updateParameterValues();
-                //this->setParameterValues(this->modelProperties().parameters().toParameterValues());
-                M_bodySetBC.setParameterValues({{"t",t0}});
-                bpbc.updateElasticVelocityFromExpr(*this,se );
-                *bpbc.fieldElasticVelocityPtr() = ev_n;
-            }
-            else*/
-                //this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), rangeMFOF );
-#if 0                
-                hana::for_each(se.tuple(),[&,this](auto const& e)
-                {
-                    for(auto const& e1:e)
-                    {
-                        if (e1.symbol()=="integ_ud")
-                        {
-                            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + e1.expr(), rangeMFOF );
-                        }
-                    }   
-                });
-#else
-             this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + expr(expr<nDim,1>("{integ_ud_0,integ_ud_1}:integ_ud_0:integ_ud_1"),se), rangeMFOF );  
-#endif
-
-                //this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), rangeMFOF );
+                this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), rangeMFOF );
             }
         else
             this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields(), rangeMFOF ); // TO FIX : use idv(this->fieldVelocity() require to need a range with partial support mesh info
