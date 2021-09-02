@@ -59,7 +59,7 @@
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 #include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
 
-#define FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
+//#define FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
 
 namespace Feel
 {
