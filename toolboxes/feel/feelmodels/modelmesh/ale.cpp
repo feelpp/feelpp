@@ -25,13 +25,13 @@
  \date 2010-10-12
  */
 
-#include <boost/preprocessor/comparison/greater_equal.hpp>
+//#include <boost/preprocessor/comparison/greater_equal.hpp>
 
 #include <feel/feelmodels/modelmesh/ale.hpp>
 #include <feel/feelmodels/modelmesh/ale_impl.hpp>
 
 
-#include <feel/feelfilters/gmsh.hpp>
+//#include <feel/feelfilters/gmsh.hpp>
 
 
 namespace Feel
@@ -40,7 +40,7 @@ namespace FeelModels
 {
 
 template < class Convex, int Order >
-ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t const& worldcomm,
+ALE<Convex,Order>::ALE( /*mesh_ptrtype mesh,*/ std::string prefix, worldcomm_ptr_t const& worldcomm,
                         ModelBaseRepository const& modelRep )
     :
     super_type( prefix/*prefixvm(prefix,"alemesh")*/, worldcomm,"",modelRep )
@@ -58,6 +58,15 @@ ALE<Convex,Order>::build( mesh_ptrtype mesh, std::string prefix,
                           ModelBaseRepository const& modelRep)
 {
     return self_ptrtype( new ALE_IMPL::ALE<Convex,Order>(mesh,prefix,worldcomm,modelRep ) );
+}
+
+template< class Convex, int Order >
+typename ALE<Convex,Order>::self_ptrtype
+ALE<Convex,Order>::build( mesh_ptrtype mesh, range_elements_type const& rangeElt, std::string prefix,
+                          worldcomm_ptr_t const& worldcomm,
+                          ModelBaseRepository const& modelRep)
+{
+    return self_ptrtype( new ALE_IMPL::ALE<Convex,Order>(mesh,rangeElt,prefix,worldcomm,modelRep ) );
 }
 
 
