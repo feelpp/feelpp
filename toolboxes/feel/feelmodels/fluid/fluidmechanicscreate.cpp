@@ -358,6 +358,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createALE()
         M_isMoveDomain=true;
 
         M_meshALE = meshale( _mesh=this->mesh(),_prefix=this->prefix(),_directory=this->repository() );
+        if ( this->functionSpaceVelocity()->dof()->meshSupport()->isPartialSupport() )
+            M_meshALE->setComputationalDomain( this->keyword(), M_rangeMeshElements );
+        else
+            M_meshALE->setWholeMeshAsComputationalDomain( this->keyword() );
+        M_meshALE->init();
         this->log("FluidMechanics","createALE", "create meshale object done" );
         // mesh displacement only on moving
         M_meshDisplacementOnInterface.reset( new element_mesh_disp_type(M_meshALE->displacement()->functionSpace(),"mesh_disp_on_interface") );
@@ -1090,20 +1095,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if (this->isMoveDomain())
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-        auto itAleBC = this->markerALEMeshBC().begin();
-        auto const enAleBC = this->markerALEMeshBC().end();
-        for ( ; itAleBC!=enAleBC ; ++itAleBC )
+        for ( auto const& [bcName,markers] : this->markerALEMeshBC() )
         {
-            std::string bcName = itAleBC->first;
-            auto itAleMark = itAleBC->second.begin();
-            auto const enAleMark = itAleBC->second.end();
-            for ( ; itAleMark!=enAleMark ; ++itAleMark )
-                M_meshALE->addBoundaryFlags( bcName, *itAleMark );
+            for ( std::string const& marker : markers )
+                M_meshALE->addBoundaryFlags( bcName, marker );
         }
 
-        M_meshALE->init();
-
-        this->log("FluidMechanics","init", "meshALE done" );
+        if ( this->doRestart() )
+            M_meshALE->revertMovingMesh();
+        this->log("FluidMechanics","finish init", "meshALE done" );
 #endif
     }
 
@@ -2529,13 +2529,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::setup( pt::ptree const& p, ModelMateri
         }
     }
 
-   ModelMarkers onlyMarkers;
+    ModelMarkers onlyMarkers;
     if ( auto ptmarkers = p.get_child_optional("markers") )
         onlyMarkers.setPTree(*ptmarkers/*, indexes*/);
 
     M_materialsProperties.reset( new materialsproperties_type( M_modelPhysics ) );
     M_materialsProperties->updateForUse( mats, matNames, onlyMarkers );
     M_materialsProperties->addMesh( M_mesh );
+
+    // init displacement space
+    auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
+    auto M_rangeMeshElements = markedelements(this->mesh(), mom->markers( M_modelPhysics->physicsAvailableFromCurrentType() ) );
+    M_spaceDisplacement = space_displacement_type::New(_mesh=M_mesh,_range=M_rangeMeshElements);
+    M_fieldRigidDisplacement = M_spaceDisplacement->elementPtr();
 
     this->updateForUse();
 

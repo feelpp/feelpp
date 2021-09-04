@@ -669,8 +669,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
     if ( this->isMoveDomain() )
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-        auto drm = M_meshALE->dofRelationShipMap();
 #if 0
+        auto drm = M_meshALE->dofRelationShipMap();
         auto thedisp = M_meshALE->functionSpace()->element();
         for (size_type i=0;i<thedisp.nLocalDof();++i)
         {
@@ -1537,7 +1537,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmeshImpl()
     //-------------------------------------------------------------------//
     // compute ALE map
     //std::vector< mesh_ale_type::ale_map_element_type> polyBoundarySet = { *M_meshDisplacementOnInterface };
-    M_meshALE->update(*M_meshDisplacementOnInterface/*polyBoundarySet*/);
+    //M_meshALE->update(*M_meshDisplacementOnInterface/*polyBoundarySet*/);
+    M_meshALE->updateMovingMesh();
 
     //-------------------------------------------------------------------//
 
