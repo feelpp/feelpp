@@ -54,7 +54,7 @@ namespace FeelModels
 {
 namespace ALE_IMPL
 {
-
+#if 0
 namespace detailALE
 {
 template < typename SpaceLowType,typename SpaceHighType >
@@ -71,29 +71,53 @@ buildSpaceHigh(std::shared_ptr<SpaceLowType> spaceLow, mpl::bool_<true> /**/ )
     return spaceLow;
 }
 }
+#endif
 
-
+template < class Convex, int Order >
+ALE<Convex,Order>::ALE( std::string prefix, worldcomm_ptr_t const& worldcomm,
+                        ModelBaseRepository const& modelRep )
+    :
+    super_type( prefix,worldcomm,modelRep ),
+    M_verboseSolverTimer(boption(_prefix=this->prefix(),_name="verbose_solvertimer")),
+    M_verboseSolverTimerAllProc(boption(_prefix=this->prefix(),_name="verbose_solvertimer_allproc")),
+    M_alemeshTypeName( soption( _name="type",_prefix=this->prefix() ) ),
+    M_doHoCorrection( boption(_prefix=this->prefix(),_name="apply-ho-correction") ),
+    M_isInitHarmonicExtension( false ),
+    M_isInitWinslow( false )
+{}
 
 template < class Convex, int Order >
 ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t const& worldcomm,
                         ModelBaseRepository const& modelRep )
     :
-    super_type( mesh,prefix,worldcomm,modelRep ),
-    M_verboseSolverTimer(boption(_prefix=this->prefix(),_name="verbose_solvertimer")),
-    M_verboseSolverTimerAllProc(boption(_prefix=this->prefix(),_name="verbose_solvertimer_allproc")),
-    M_reference_mesh( mesh ),
-    M_alemeshTypeName( soption( _name="type",_prefix=this->prefix() ) ),
-    M_doHoCorrection( boption(_prefix=this->prefix(),_name="apply-ho-correction") ),
-    M_isInitHarmonicExtension( false ),
-    M_isInitWinslow( false )
+    ALE( prefix,worldcomm,modelRep )
 {
-    this->log( "ALE", "constructor", "start" );
+    this->log( "ALE", "constructor 1", "start" );
+
+    M_reference_mesh = mesh;
 
     this->createALE();
 
     this->preCompute();
 
-    this->log( "ALE", "constructor", "finish" );
+    this->log( "ALE", "constructor 1", "finish" );
+}
+template < class Convex, int Order >
+ALE<Convex,Order>::ALE( mesh_ptrtype mesh, range_elements_type const& rangeElt,
+                        std::string prefix, worldcomm_ptr_t const& worldcomm,
+                        ModelBaseRepository const& modelRep )
+    :
+    ALE( prefix,worldcomm,modelRep )
+{
+    this->log( "ALE", "constructor 2", "start" );
+
+    M_reference_mesh = mesh;
+
+    this->createALE( rangeElt );
+
+    this->preCompute();
+
+    this->log( "ALE", "constructor 2", "finish" );
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -205,46 +229,46 @@ ALE<Convex,Order>::init()
 
 template < class Convex, int Order >
 void
-ALE<Convex,Order>::createALE()
+ALE<Convex,Order>::createALE( std::optional<range_elements_type> const& rangeElt )
 {
-    M_fspaceLow = space_low_type::New( _mesh=M_reference_mesh );
+    if ( rangeElt )
+        M_fspaceLow = space_low_type::New( _mesh=M_reference_mesh,_range=*rangeElt );
+    else
+        M_fspaceLow = space_low_type::New( _mesh=M_reference_mesh );
     M_aleLow.reset( new element_low_type( M_fspaceLow, "low_order_ALE_map" ) );
     M_displacementLow.reset( new element_low_type( M_fspaceLow, "low_order_displacement" ) );
     M_identityLow.reset( new element_low_type( M_fspaceLow, "low_order_identity_map" ) );
 
-    //M_fspaceHigh = detailALE::buildSpaceHigh<space_low_type,space_high_type>(M_fspaceLow, M_moveGhostEltFromExtendedStencil,
-    //                                                                         mpl::bool_<isEqualOrderAndOrderLow>() );
-    this->createALEHO( mpl::bool_< ( Order > Order_low ) >() );
-}
-template < class Convex, int Order >
-void
-ALE<Convex,Order>::createALEHO( mpl::true_ )
-{
-    M_bHigh = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"ho"), this->worldCommPtr() );
-    M_fspaceHigh = detailALE::buildSpaceHigh<space_low_type,space_high_type>(M_fspaceLow,mpl::bool_<isEqualOrderAndOrderLow>() );
-#if ALE_WITH_BOUNDARYELEMENT
-    M_fspaceHighLocal = space_high_type::New( createSubmesh( M_reference_mesh, boundaryelements(M_reference_mesh) ) );
-#endif
-    M_aleHigh.reset( new element_high_type( M_fspaceHigh, "high_order_ALE map" ) );
-    M_displacementHigh.reset( new element_high_type( M_fspaceHigh, "high_order_displacement" ) );
-    M_identityHigh.reset( new element_high_type( M_fspaceHigh, "high_order_identity map" ) );
-#if ALE_WITH_BOUNDARYELEMENT
-    M_harmonicHigh =  M_bHigh->newMatrix( M_fspaceHighLocal, M_fspaceHighLocal );
-    M_rhsHigh = M_bHigh->newVector( M_fspaceHighLocal );
-#else
-    M_harmonicHigh = M_bHigh->newMatrix( M_fspaceHigh, M_fspaceHigh );
-    M_rhsHigh = M_bHigh->newVector( M_fspaceHigh );
-#endif
-}
-template < class Convex, int Order >
-void
-ALE<Convex,Order>::createALEHO( mpl::false_ )
-{
+    //this->createALEHO( mpl::bool_< ( Order > Order_low ) >() );
+    if constexpr (  Order > Order_low )
+    {
+        M_bHigh = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"ho"), this->worldCommPtr() );
+        //M_fspaceHigh = detailALE::buildSpaceHigh<space_low_type,space_high_type>(M_fspaceLow,mpl::bool_<isEqualOrderAndOrderLow>() );
+        if constexpr ( std::is_same_v<space_low_type,space_high_type> )
+            M_fspaceHigh = M_fspaceLow;
+        else
+            M_fspaceHigh = space_high_type::New( _mesh=M_fspaceLow->mesh(),_range=M_fspaceLow->template meshSupport<0>() );
 
+#if ALE_WITH_BOUNDARYELEMENT
+        M_fspaceHighLocal = space_high_type::New( createSubmesh( M_reference_mesh, boundaryelements(M_reference_mesh) ) );
+#endif
+        M_aleHigh.reset( new element_high_type( M_fspaceHigh, "high_order_ALE map" ) );
+        M_displacementHigh.reset( new element_high_type( M_fspaceHigh, "high_order_displacement" ) );
+        M_identityHigh.reset( new element_high_type( M_fspaceHigh, "high_order_identity map" ) );
+#if ALE_WITH_BOUNDARYELEMENT
+        M_harmonicHigh =  M_bHigh->newMatrix( M_fspaceHighLocal, M_fspaceHighLocal );
+        M_rhsHigh = M_bHigh->newVector( M_fspaceHighLocal );
+#else
+        M_harmonicHigh = M_bHigh->newMatrix( M_fspaceHigh, M_fspaceHigh );
+        M_rhsHigh = M_bHigh->newVector( M_fspaceHigh );
+#endif
+
+    }
 }
 
 //-------------------------------------------------------------------------------------------//
 
+#if 0
 template < class Convex, int Order >
 void
 ALE<Convex,Order>::restart( mesh_ptrtype mesh )
@@ -256,6 +280,7 @@ ALE<Convex,Order>::restart( mesh_ptrtype mesh )
 
     this->preCompute();
 }
+#endif
 
 //-------------------------------------------------------------------------------------------//
 
@@ -386,7 +411,7 @@ ALE<Convex,Order>::preCompute()
 
     M_aleLow->zero();
     M_displacementLow->zero();
-    M_identityLow->on( _range=elements( M_reference_mesh ), _expr=P() );
+    M_identityLow->on( _range=elements( /*M_reference_mesh*/support(M_fspaceLow) ), _expr=P() );
 
     this->preComputeHO( mpl::bool_< ( Order > Order_low ) >() );
 }
@@ -401,7 +426,7 @@ ALE<Convex,Order>::preComputeHO( mpl::true_ )
 {
     M_aleHigh->zero();
     M_displacementHigh->zero();
-    *M_identityHigh = vf::project( _space=M_fspaceHigh, _range=elements( M_reference_mesh ), _expr=P() );
+    *M_identityHigh = vf::project( _space=M_fspaceHigh, _range=elements( /*M_reference_mesh*/support(M_fspaceHigh) ), _expr=P() );
 
     using namespace Feel::vf;
 #if ALE_WITH_BOUNDARYELEMENT

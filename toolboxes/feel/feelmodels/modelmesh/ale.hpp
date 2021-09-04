@@ -51,6 +51,7 @@ public :
     static const uint16_type Order_low = convex_type::nOrder;
     typedef Mesh< convex_type > mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
+    using range_elements_type = elements_reference_wrapper_t<mesh_type>;
     using size_type = typename mesh_type::size_type;
     typedef std::map< std::string, std::vector<flag_type> > flagSet_type;
 
@@ -85,7 +86,7 @@ public:
     /**
      * constructor,copy,desctructor
      */
-    ALE( mesh_ptrtype mesh, std::string prefix="",
+    explicit ALE( /*mesh_ptrtype mesh, */std::string prefix="",
          worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
          ModelBaseRepository const& modelRep = ModelBaseRepository() );
     ALE( ALE const& tc ) = default;
@@ -95,6 +96,9 @@ public:
      * static builder
      */
     static self_ptrtype build(mesh_ptrtype mesh, std::string prefix="",
+                              worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
+                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    static self_ptrtype build(mesh_ptrtype mesh, range_elements_type const& rangeElt, std::string prefix="",
                               worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
                               ModelBaseRepository const& modelRep = ModelBaseRepository() );
 

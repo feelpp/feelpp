@@ -64,11 +64,11 @@ HarmonicExtension<MeshType,Order>::HarmonicExtension( mesh_ptrtype mesh, backend
     M_useAdaptPenal( option(_prefix=this->prefix(),_name="use_adaptive_penalisation").template as<bool>() )
 {
     this->setAlgebraicBackend( backend );
-    M_Xh = space_type::New(_mesh=this->mesh(),_worldscomm=makeWorldsComm(1,worldcomm),
+    M_Xh = space_type::New(_mesh=this->mesh(),
                            _extended_doftable=std::vector<bool>(1,useGhostEltFromExtendedStencil) );
     M_displacement = M_Xh->elementPtr();
     M_dispImposedOnBoundary = M_Xh->elementPtr();
-    M_XhP0 = space_P0_type::New( _mesh=this->mesh(),_worldscomm=makeWorldsComm(1,worldcomm) );
+    M_XhP0 = space_P0_type::New( _mesh=this->mesh() );
 }
 
 template< typename MeshType, int Order >
@@ -84,7 +84,7 @@ HarmonicExtension<MeshType,Order>::HarmonicExtension( space_ptrtype space, backe
     this->setAlgebraicBackend( backend );
     M_displacement = M_Xh->elementPtr();
     M_dispImposedOnBoundary = M_Xh->elementPtr();
-    M_XhP0 = space_P0_type::New( _mesh=this->mesh(),_worldscomm=makeWorldsComm(1,this->worldCommPtr()) );
+    M_XhP0 = space_P0_type::New( _mesh=this->mesh(),_range=M_Xh->template meshSupport<0>() );
 }
 
 
@@ -217,24 +217,25 @@ HarmonicExtension<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) co
     vector_ptrtype& F = data.rhs();
     bool buildCstPart = data.buildCstPart();
 
-    auto u = this->displacement();
-    auto v = this->displacement();
+    auto const& u = this->displacement();
+    auto const& v = this->displacement();
 
     if ( buildCstPart )
     {
+        auto rangeElt = elements(support(M_Xh));
         if ( M_useAdaptPenal )
         {
             //std::cout << " harmonic : use_adaptive_penalisation \n";
             /* Calculate penalization term due to Masud and Hughes \tau_e = \frac{1-V_{min}/V_{max}}{V_e/V_{max}} */
             auto XhP0 = M_XhP0;
-            auto Volume = integrate( elements(this->mesh()), meas() ).broken( XhP0 );
+            auto Volume = integrate( rangeElt, meas() ).broken( XhP0 );
             double Vmin = Volume.min();
             double Vmax = Volume.max();
             auto tau = ((1.0 - Vmin/Vmax)/( idv(Volume)/Vmax ));
 
             form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
-                integrate( _range=elements(this->mesh()),
-                           _expr=val(1+tau)*trace( trans(gradt(u))*grad(v) ) );
+                integrate( _range=rangeElt,
+                           _expr=val(1+tau)*inner(gradt(u),grad(v)) );
 #if 0
             for ( uint16_type i=0; i < M_flagSet["free"].size(); ++i )
                 form1( _test=M_Xh, _vector=F ) +=
@@ -248,8 +249,8 @@ HarmonicExtension<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) co
         {
             //std::cout << " standart harmonic\n";
             form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
-                integrate( _range=elements(this->mesh()),
-                           _expr=trace( trans(gradt(u))*grad(v) ) );
+                integrate( _range=rangeElt,
+                           _expr=inner(gradt(u),grad(v)) );
 #if 0
             for ( uint16_type i=0; i < M_flagSet["free"].size(); ++i )
                 form1( _test=M_Xh, _vector=F ) +=
