@@ -13,6 +13,9 @@ runALEMesh()
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,OrderGeo>>);
 
     auto alemesh = FeelModels::meshale( _mesh=mesh );
+    //alemesh->setComputationalDomain( "fluid", markedelements(mesh,"Omega") );
+    //alemesh->setComputationalDomain( "fluid", elements(mesh) );
+    alemesh->init();
 
     for ( std::string const& bctype : std::vector<std::string>({ "moving","fixed","free" }) )
     {
@@ -21,7 +24,6 @@ runALEMesh()
             alemesh->addBoundaryFlags( bctype, Environment::vm()[opt].as<std::vector<std::string> >() );
     }
 
-    alemesh->init();
     alemesh->printAndSaveInfo();
 
     if ( Environment::vm().count( "mesh-adaptation-function" ) )
@@ -33,14 +35,15 @@ runALEMesh()
     }
 
 
-    auto disp = alemesh->functionSpace()->element();
     if ( Environment::vm().count( "displacement-imposed" ) )
     {
         auto dispExpr = expr<FEELPP_DIM,1>( soption(_name="displacement-imposed") );
-        disp.on(_range=elements(mesh),_expr=dispExpr);
+        //alemesh->updateDisplacementImposed( dispExpr,elements(mesh) );
+        if ( Environment::vm().count( "markers.moving" ) )
+            alemesh->updateDisplacementImposed( dispExpr,markedfaces(mesh,Environment::vm()["markers.moving"].as<std::vector<std::string> >() ) );
     }
 
-    alemesh->update( disp );
+    alemesh->updateMovingMesh();
 
     alemesh->exportResults();
 
@@ -69,7 +72,6 @@ runALEMesh()
         ein->add( "nsrQ", nsrQ(mesh) );
         ein->save();
         auto eout = exporter( _mesh=out, _name="remeshed" );
-        eout->add( "disp", disp );
         eout->add( "etaQ", etaQ( out ) );
         eout->add( "nsrQ", nsrQ( out ) );
         eout->save();
