@@ -1416,7 +1416,6 @@ public :
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     mesh_ale_ptrtype meshALE() { return M_meshALE; }
     mesh_ale_ptrtype const& meshALE() const { return M_meshALE; }
-    element_mesh_disp_ptrtype meshDisplacementOnInterface() { return M_meshDisplacementOnInterface; }
     element_meshvelocity_type & meshVelocity() { return *M_meshALE->velocity(); }
     element_meshvelocity_type const & meshVelocity() const { return *M_meshALE->velocity(); }
 #endif
@@ -2152,7 +2151,6 @@ private :
     bool M_isMoveDomain;
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     mesh_ale_ptrtype M_meshALE;
-    element_mesh_disp_ptrtype M_meshDisplacementOnInterface;
 #endif
     //----------------------------------------------------
     // physical properties/parameters and space
@@ -2394,6 +2392,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
         else
         {
             CHECK( false ) << "TODO";
+#if 0
             auto velocityMeshSupport = this->functionSpaceVelocity()->template meshSupport<0>();
             //auto rangeMFOF = bpbc.rangeMarkedFacesOnFluid();
             // temporary fix of interpolation with meshale space
@@ -2405,6 +2404,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
             else
                 this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields(), rangeMFOF ); // TO FIX : use idv(this->fieldVelocity() require to need a range with partial support mesh info
             //this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, idv(this->fieldVelocity())/*bpbc.rigidVelocityExprFromFields()*/, rangeMFOF );
+#endif
         }
 #if 0
         (*M_meshDisplacementOnInterface)[Component::X].on(_range=bpbc.rangeMarkedFacesOnFluid(),_expr=cst(0.) );

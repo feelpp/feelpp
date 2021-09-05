@@ -358,14 +358,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createALE()
         M_isMoveDomain=true;
 
         M_meshALE = meshale( _mesh=this->mesh(),_prefix=this->prefix(),_directory=this->repository() );
-        if ( this->functionSpaceVelocity()->dof()->meshSupport()->isPartialSupport() )
+        if ( this->functionSpaceVelocity()->dof()->hasMeshSupport() && this->functionSpaceVelocity()->dof()->meshSupport()->isPartialSupport() )
             M_meshALE->setComputationalDomain( this->keyword(), M_rangeMeshElements );
         else
             M_meshALE->setWholeMeshAsComputationalDomain( this->keyword() );
         M_meshALE->init();
         this->log("FluidMechanics","createALE", "create meshale object done" );
         // mesh displacement only on moving
-        M_meshDisplacementOnInterface.reset( new element_mesh_disp_type(M_meshALE->displacement()->functionSpace(),"mesh_disp_on_interface") );
+        //M_meshDisplacementOnInterface.reset( new element_mesh_disp_type(M_meshALE->displacement()->functionSpace(),"mesh_disp_on_interface") );
         // mesh velocity used with stab CIP terms (need extended dof table)
         if ( this->doCIPStabConvection() )
             M_fieldMeshVelocityUsedWithStabCIP.reset( new element_velocity_type( this->functionSpaceVelocity() ) );
@@ -822,11 +822,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesSourceAdded()
 {
-    if ( this->functionSpaceVelocity()->dof()->meshSupport()->isPartialSupport() ) //M_materialProperties->isDefinedOnWholeMesh() )
-        M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=this->mesh(),_worldscomm=this->localNonCompositeWorldsComm() );
-    else
+    if ( this->functionSpaceVelocity()->dof()->hasMeshSupport() && this->functionSpaceVelocity()->dof()->meshSupport()->isPartialSupport() ) //M_materialProperties->isDefinedOnWholeMesh() )
         M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=this->mesh(),_worldscomm=this->localNonCompositeWorldsComm(),
-                                                      _range=M_rangeMeshElements );
+                                                       _range=M_rangeMeshElements );
+    else
+        M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=this->mesh(),_worldscomm=this->localNonCompositeWorldsComm() );
     M_SourceAdded.reset( new element_vectorial_PN_type(M_XhSourceAdded,"SourceAdded"));
 }
 
