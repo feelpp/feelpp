@@ -197,6 +197,7 @@ template < typename elem_type,typename elem2_type >
 void
 Winslow<MeshType,Order>::generateALEMap( elem_type const & elem,elem2_type const & elem2 )
 {
+#if 0
     M_dispImposedOnBoundary->on( _range=elements(M_displacement->mesh()),
                                  _expr=idv(elem) );
 
@@ -205,7 +206,14 @@ Winslow<MeshType,Order>::generateALEMap( elem_type const & elem,elem2_type const
     *M_displacement += vf::project(_space=M_displacement->functionSpace(),_range=elements(M_displacement->mesh()),_expr=vf::idv(elem2) );
     *M_displacementOld = *M_identity;
     *M_displacementOld += vf::project(_space=M_displacement->functionSpace(),_range=elements(M_displacement->mesh()),_expr=vf::idv(elem2) );
+#else
+    auto rangeElt = elements(support(M_displacement->functionSpace()));
+    M_dispImposedOnBoundary->on( _range=rangeElt,
+                                 _expr=idv(elem) );
 
+    M_displacement->on(_range=rangeElt,_expr=idv(M_identity) + idv(elem2) );
+    *M_displacementOld = *M_displacement;
+#endif
     // solve winslow model
     this->solve();
 }

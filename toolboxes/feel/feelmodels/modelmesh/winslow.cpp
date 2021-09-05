@@ -115,9 +115,10 @@ Winslow<MeshType,Order>::init()
 
     auto Xh = this->functionSpace();
     auto mesh = this->functionSpace()->mesh();
+    auto rangeElt = elements(support(Xh));
     auto const& u = *M_displacement;
     form2( _trial=Xh, _test=Xh,_matrix=M_matrixMetricDerivative)
-        += integrate(_range=elements(mesh),
+    += integrate(_range=rangeElt,
                      _expr=inner(idt(u),id(u)) );
     M_matrixMetricDerivative->close();
 
@@ -270,6 +271,8 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
     if ( buildCstPart )
         return;
 
+    auto rangeElt = elements(support(Xh));
+    auto rangeBoundaryFaces = boundaryfaces(support(Xh));
 #if 0
     const vector_ptrtype& vecCurrentPicardSolution = data.currentSolution();
     auto u = Xh->element( vecCurrentPicardSolution, 0 );
@@ -314,9 +317,9 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
 
     M_vectorMetricDerivative->zero();
     auto lf = form1( _test=Xh,_vector=M_vectorMetricDerivative );
-    lf += integrate(_range=elements(mesh),
+    lf += integrate(_range=rangeElt,
                     _expr=inner(invG, grad(u)) );
-    lf += integrate(_range=boundaryfaces(mesh),
+    lf += integrate(_range=rangeBoundaryFaces,//boundaryfaces(mesh),
                     _expr=-inner(invG*N(), id(u)) );
     //M_vectorMetricDerivative->close();
     M_backendMetricDerivative->solve(_matrix=M_matrixMetricDerivative,_solution=*M_fieldMetricDerivative,_rhs=M_vectorMetricDerivative);
@@ -327,10 +330,10 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
 #if 0
         auto tau = idv(M_weightFunctionTensor2);
         form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= inner(invG*trans(tau*gradt(u)),trans(grad(u))) );
         form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr=-inner(tau*gradt(u)*idv(M_fieldMetricDerivative),id(u)) );
 #else
         CHECK( false ) << "not work";
@@ -340,10 +343,10 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
     {
         auto tau = idv( M_weightFunctionScalar );
         form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= (tau)*inner(invG*trans(gradt(u)),trans(grad(u))) );
         form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr=-(tau)*inner(gradt(u)*idv(M_fieldMetricDerivative),id(u)) );
     }
 #endif
@@ -427,15 +430,18 @@ Winslow<MeshType,Order>::updateResidual( DataUpdateResidual & data ) const
     auto linearFormMapping = form1( _test=Xh, _vector=R,_rowstart=0 );
     auto linearFormLagMult = form1( _test=Xh, _vector=R,_rowstart=1 );
 
+    auto rangeElt = elements(support(Xh));
+    auto rangeBoundaryFaces = boundaryfaces(support(Xh));
+
     if ( false/*M_useMeshAdapation && !M_useMeshAdapationScalar*/ )
     {
 #if 0
         auto tau = idv(M_weightFunctionTensor2);
         linearFormMapping +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= inner(invG*trans(tau*gradv(u)),trans(grad(u))) );
         linearFormMapping +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= -inner( tau*gradv(u)*idv(alpha), id(u) ) );
 #else
         CHECK( false ) << "not work";
@@ -445,20 +451,20 @@ Winslow<MeshType,Order>::updateResidual( DataUpdateResidual & data ) const
     {
         auto tau = idv( M_weightFunctionScalar );
         linearFormMapping +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= tau*inner(invG*trans(gradv(u)),trans(grad(u))) );
         linearFormMapping +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= -tau*inner( gradv(u)*idv(alpha), id(u) ) );
     }
     linearFormLagMult +=
-        integrate( _range=elements(mesh),
+        integrate( _range=rangeElt,
                    _expr= inner( idv(alpha), id(alpha) ) );
     linearFormLagMult +=
-        integrate( _range=elements(mesh),
+        integrate( _range=rangeElt,
                    _expr= -inner( invG, grad(alpha) ) );
     linearFormLagMult +=
-        integrate( _range=boundaryfaces(mesh),
+        integrate( _range=rangeBoundaryFaces,//boundaryfaces(mesh),
                    _expr= inner( invG*N(), id(alpha) ) );
 
     this->log("Winslow","updateResidual", "finish" );
@@ -521,6 +527,8 @@ Winslow<MeshType,Order>::updateJacobian( DataUpdateJacobian & data ) const
     this->log("Winslow","updateJacobian", "start" );
     auto Xh = this->functionSpace();
     auto mesh = Xh->mesh();
+    auto rangeElt = elements(support(Xh));
+    auto rangeBoundaryFaces = boundaryfaces(support(Xh));
 
     auto u = Xh->element( XVec, 0 );
     auto alpha = Xh->element( XVec, 1 );
@@ -535,20 +543,20 @@ Winslow<MeshType,Order>::updateJacobian( DataUpdateJacobian & data ) const
         auto tau = idv(M_weightFunctionTensor2);
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=0 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= inner(invG*trans(tau*gradt(u)),trans(grad(u))) );
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=0 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= inner(invGt*trans(tau*gradv(u)),trans(grad(u))) );
 
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=0 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= -inner( tau*gradt(u)*idv(alpha), id(u) ) );
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=1 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= -inner( tau*gradv(u)*idt(alpha), id(u) ) );
 #else
         CHECK( false ) << "not work";
@@ -559,35 +567,35 @@ Winslow<MeshType,Order>::updateJacobian( DataUpdateJacobian & data ) const
         auto tau = idv( M_weightFunctionScalar );
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=0 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= tau*inner(invG*trans(gradt(u)),trans(grad(u))) );
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=0 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= tau*inner(invGt*trans(gradv(u)),trans(grad(u))) );
 
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=0 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= -tau*inner( gradt(u)*idv(alpha), id(u) ) );
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=1 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= -tau*inner( gradv(u)*idt(alpha), id(u) ) );
     }
 
     form2( _test=Xh, _trial=Xh, _matrix=J,
            _rowstart=1,_colstart=1 ) +=
-        integrate( _range=elements(mesh),
+        integrate( _range=rangeElt,
                    _expr= inner( idt(alpha), id(alpha) ) );
 
     form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=1,_colstart=0 ) +=
-        integrate( _range=elements(mesh),
+        integrate( _range=rangeElt,
                    _expr= -inner( invGt*eye<mesh_type::nDim,mesh_type::nDim>(), grad(alpha) ) );
     form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=1,_colstart=0 ) +=
-        integrate( _range=boundaryfaces(mesh),
+        integrate( _range=rangeBoundaryFaces,
                    _expr= inner( invGt*N(), id(alpha) ) );
 
 
