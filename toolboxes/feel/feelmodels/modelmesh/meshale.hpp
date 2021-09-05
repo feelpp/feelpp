@@ -265,8 +265,6 @@ public :
      */
     void exportResults(double time=0);
 
-    void updateForUseOnMovingMesh();
-
     //! update the moving mesh by using displacement imposed given
     void updateMovingMesh() { this->updateImpl(); }
 

@@ -202,7 +202,7 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buidGeoElementMap()
 
     auto dof1 = M_Xh1->dof();
     auto dof2 = M_Xh2->dof();
-    bool isPartialSupport1 = dof1->meshSupport()->isPartialSupport();
+    bool isPartialSupport1 = dof1->hasMeshSupport() && dof1->meshSupport()->isPartialSupport();
 
     M_geoElementMap.clear();
 

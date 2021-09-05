@@ -84,8 +84,8 @@ MeshALE<Convex>::init()
     if ( M_computationalDomains.empty() )
         this->setWholeMeshAsComputationalDomain( "default");
 
-    for ( auto & [name,aleRefDomain] : M_computationalDomains )
-        aleRefDomain.init( M_isARestart );
+    for ( auto & [name,cd] : M_computationalDomains )
+        cd.init( M_isARestart );
 
     this->initTimeStep();
 
@@ -101,8 +101,8 @@ MeshALE<Convex>::init()
         M_bdf_ale_velocity->restart();
 
         // transfert displacement on the mobile mesh
-        for ( auto & [name,aleRefDomain] : M_computationalDomains )
-            aleRefDomain.updateDisplacement( *M_displacement );
+        for ( auto & [name,cd] : M_computationalDomains )
+            cd.updateDisplacement( *M_displacement );
 
 #if 0
         //move the mesh
@@ -120,16 +120,6 @@ MeshALE<Convex>::init()
         M_isOnReferenceMesh = true;
         M_isOnMovingMesh = false;
     }
-
-#if 0
-    for ( auto const& [name,aleRefDomain] : M_computationalDomains ) // TODO VINCENT
-    {
-        auto therange = markedfaces(M_movingMesh,aleRefDomain.aleFactory()->flagSet("moving") );
-        //M_dofsMultiProcessOnMovingBoundary_HO = M_displacementOnMovingBoundary_HO_ref->functionSpace()->dofs( therange, ComponentType::NO_COMPONENT, true );
-        auto dofMultiProcessOnRange = M_displacementOnMovingBoundary_HO_ref->functionSpace()->dofs( therange, ComponentType::NO_COMPONENT, true );
-        M_dofsMultiProcessOnMovingBoundary_HO.insert( dofMultiProcessOnRange.begin(), dofMultiProcessOnRange.end() );
-    }
-#endif
 
     this->log(prefixvm(this->prefix(),"MeshALE"),"init", "finish");
 }
@@ -188,8 +178,8 @@ MeshALE<Convex>::getInfo() const
            << "\n||----------------Info : MeshALE----------------||"
            << "\n||==============================================||"
            << "\n   Prefix : " << this->prefix();
-    for ( auto const& [name,aleRefDomain] : M_computationalDomains )
-        *_ostr << aleRefDomain.aleFactory()->getInfo()->str()
+    for ( auto const& [name,cd] : M_computationalDomains )
+        *_ostr << cd.aleFactory()->getInfo()->str()
                << "\n||==============================================||"
                << "\n";
     return _ostr;
@@ -202,16 +192,16 @@ void
 MeshALE<Convex>::setWholeMeshAsComputationalDomain( std::string const& name )
 {
     CHECK( M_computationalDomains.empty() ) << "can't define on whole mesh";
-    ComputationalDomain hola( this );
-    M_computationalDomains.emplace( std::make_pair( name, std::move( hola ) ) );
+    ComputationalDomain cd( this );
+    M_computationalDomains.emplace( std::make_pair( name, std::move( cd ) ) );
 }
 
 template< class Convex >
 void
 MeshALE<Convex>::setComputationalDomain( std::string const& name, range_elements_type const& rangeElt )
 {
-    ComputationalDomain hola( this,rangeElt );
-    M_computationalDomains.emplace( std::make_pair( name, std::move( hola ) ) );
+    ComputationalDomain cd( this,rangeElt );
+    M_computationalDomains.emplace( std::make_pair( name, std::move( cd ) ) );
 }
 
 template< class Convex >
@@ -219,8 +209,8 @@ void
 MeshALE<Convex>::addBoundaryFlags(std::string const& bctype, std::string const& marker)
 {
     //CHECK( this->referenceMesh()->hasMarker(marker) ) << " marker " << marker << " is not define in reference mesh\n";
-    for ( auto & [name,aleRefDomain] : M_computationalDomains )
-        aleRefDomain.addBoundaryFlags( bctype, marker );
+    for ( auto & [name,cd] : M_computationalDomains )
+        cd.addBoundaryFlags( bctype, marker );
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -301,8 +291,8 @@ MeshALE<Convex>::updateTimeStep()
 {
     M_bdf_ale_identity->next( *M_identity_ale );
     M_bdf_ale_velocity->next( *M_meshVelocity );
-    for ( auto & [name,aleRefDomain] : M_computationalDomains )
-        aleRefDomain.updateTimeStep();
+    for ( auto & [name,cd] : M_computationalDomains )
+        cd.updateTimeStep();
 }
 //------------------------------------------------------------------------------------------------//
 
@@ -368,46 +358,9 @@ MeshALE<Convex>::updateImpl()
 {
     this->updateDisplacementImposedForUse();
 
-    //---------------------------------------------------------------------------------------------//
-    // transform disp from ref_ho -> ref_p1
-#if 0
-    for (size_type i=0;i<M_displacementOnMovingBoundary_P1_ref->nLocalDof();++i)
-    {
-        if constexpr ( mesh_type::nOrder != mesh_ref_type::nOrder )
-            (*M_displacementOnMovingBoundary_P1_ref)(i) = (*M_displacementOnMovingBoundary_HO_ref)(M_drm->dofRelMap()[i]) + (*M_dispP1ToHO_ref)(i);
-        else
-            (*M_displacementOnMovingBoundary_P1_ref)(i) = (*M_displacementOnMovingBoundary_HO_ref)(M_drm->dofRelMap()[i]);
-    }
-    //---------------------------------------------------------------------------------------------//
-    //---------------------------------------------------------------------------------------------//
-    //---------------------------------------------------------------------------------------------//
-    boost::mpi::timer mpiTimer;
-    this->log(prefixvm(this->prefix(),"MeshALE"),"updateImpl", "start generateMap");
-    //---------------------------------------------------------------------------------------------//
-    //generate the ale map
-    M_aleFactory->generateMap( *M_displacementOnMovingBoundary_P1_ref, M_bdf_ale_displacement_ref->unknown(0) );
-    //---------------------------------------------------------------------------------------------//
-    double tElapsed =  mpiTimer.elapsed();
-    this->log(prefixvm(this->prefix(),"MeshALE"),"updateImpl", (boost::format("finish generateMap in %1% s")%tElapsed).str() );
-    //---------------------------------------------------------------------------------------------//
-    //---------------------------------------------------------------------------------------------//
-    //---------------------------------------------------------------------------------------------//
-    //---------------------------------------------------------------------------------------------//
-    //usefull for implicit fsi coupling (reset when we are in ptfixe cycle)
-    //auto resetDisp = *M_displacement;
-    //resetDisp.scale(-1.);
-    //M_mesh_mover.apply(M_movingMesh, resetDisp );
-
-
-    //---------------------------------------------------------------------------------------------//
-    // get displacement on ref mesh
-    *M_displacement_ref = M_aleFactory->displacement();
-#else
-    for ( auto & [name,aleRefDomain] : M_computationalDomains )
-    {
-        aleRefDomain.generateMap(*M_displacementOnMovingBoundary_HO_ref);
-    }
-#endif
+    // update computation domains
+    for ( auto & [name,cd] : M_computationalDomains )
+        cd.generateMap(*M_displacementOnMovingBoundary_HO_ref);
 
     // save previous disp
     if ( M_isOnMovingMesh )
@@ -416,57 +369,27 @@ MeshALE<Convex>::updateImpl()
     // copy displacement imposed (maybe some part are only imposed,no required computation)
     *M_displacement = *M_displacementOnMovingBoundary_HO_ref;
 
-    //---------------------------------------------------------------------------------------------//
-    // get displacement on mesh and move it
+    // get displacement on moving mesh
+    for ( auto & [name,cd] : M_computationalDomains )
+        cd.updateDisplacement( *M_displacement );
+
+    // move the mesh
     if ( M_isOnReferenceMesh )
     {
-#if 0
-        for (size_type i=0;i<M_displacement->nLocalDof();++i)
-        {
-            size_type j = M_drm->dofRelMap()[i];
-            if constexpr ( mesh_type::nOrder != mesh_ref_type::nOrder )
-                             M_displacement->set( j, (*M_displacement_ref)(i) - (*M_dispP1ToHO_ref)(i) );
-            else
-                M_displacement->set( j, (*M_displacement_ref)(i) );
-        }
-#else
-        for ( auto & [name,aleRefDomain] : M_computationalDomains )
-            aleRefDomain.updateDisplacement( *M_displacement );
-#endif
         //move the mesh
         M_mesh_mover.apply( M_movingMesh, *M_displacement );
     }
-    else // M_isOnMovingMesh
+    else
     {
         auto displacementToApply = M_fieldTmp;
-        //*displacementToApply = *M_displacement; // save previous disp
-#if 0
-        for (size_type i=0;i<M_displacement->nLocalDof();++i)
-        {
-            size_type j = M_drm->dofRelMap()[i];
-            if constexpr ( mesh_type::nOrder != mesh_ref_type::nOrder )
-                             M_displacement->set( j, (*M_displacement_ref)(i) - (*M_dispP1ToHO_ref)(i) );
-            else
-                M_displacement->set( j, (*M_displacement_ref)(i) );
-
-            displacementToApply->set( j, (*M_displacement)(j) - (*displacementToApply)(j) );
-        }
-#else
-        for ( auto & [name,aleRefDomain] : M_computationalDomains )
-            aleRefDomain.updateDisplacement( *M_displacement );
         for (size_type j=0;j<M_displacement->nLocalDof();++j)
             displacementToApply->set( j, (*M_displacement)(j) - (*displacementToApply)(j) );
-#endif
+
         //move the mesh
         M_mesh_mover.apply( M_movingMesh, *displacementToApply );
     }
     M_isOnReferenceMesh = false;
     M_isOnMovingMesh = true;
-
-    //---------------------------------------------------------------------------------------------//
-
-    // rebuild dof point (necessary in updateIdentityMap with extended dof table)
-    //M_Xhmove->rebuildDofPoints();
 
     // up identity
     this->updateIdentityMap();
@@ -517,22 +440,22 @@ template< class Convex >
 void
 MeshALE<Convex>::ComputationalDomain::build()
 {
-    M_drm.reset( new DofRelationshipMap_type(/*M_Xhref*/ M_aleFactory->functionSpace(),M_meshALE->functionSpace()/* Xhmove*/ ) );
     auto M_Xhref = M_aleFactory->functionSpace();
+    M_drm.reset( new DofRelationshipMap_type( M_Xhref,M_meshALE->functionSpace() ) );
     M_dispP1ToHO_ref.reset(new ale_map_element_ref_type( M_Xhref) );
     M_displacementOnMovingBoundary_P1_ref.reset(new ale_map_element_ref_type( M_Xhref) );
     M_displacement_ref.reset(new ale_map_element_ref_type( M_Xhref) );
 
-#if 0 // TODO VINCENT
     // compute dist between P1(ref) to Ho mesh
     if ( mesh_type::nOrder != mesh_ref_type::nOrder )
     {
-        M_dispP1ToHO_ref->on(_range=elements(/*M_referenceMesh*/support(M_Xhref)),
+        M_dispP1ToHO_ref->on(_range=elements(support(M_Xhref)),
                              _expr=vf::P() );
+
+        auto const& theIdentityALE = *M_meshALE->identityALE();
         for (size_type i=0;i<M_dispP1ToHO_ref->nLocalDof();++i)
-            (*M_dispP1ToHO_ref)(i) = (*M_identity_ale)(M_drm->dofRelMap()[i]) - (*M_dispP1ToHO_ref)(i);
+            (*M_dispP1ToHO_ref)(i) = theIdentityALE(M_drm->dofRelMap()[i]) - (*M_dispP1ToHO_ref)(i);
     }
-#endif
 }
 
 template< class Convex >
@@ -586,6 +509,7 @@ template< class Convex >
 void
 MeshALE<Convex>::ComputationalDomain::generateMap( ale_map_element_type const& displacementOnMovingBoundary_HO_ref )
 {
+    // transform disp imposed into ref mesh
     for (size_type i=0;i<M_displacementOnMovingBoundary_P1_ref->nLocalDof();++i)
     {
         if constexpr ( mesh_type::nOrder != mesh_ref_type::nOrder )
@@ -594,24 +518,15 @@ MeshALE<Convex>::ComputationalDomain::generateMap( ale_map_element_type const& d
             (*M_displacementOnMovingBoundary_P1_ref)(i) = displacementOnMovingBoundary_HO_ref(M_drm->dofRelMap()[i]);
     }
 
-    //---------------------------------------------------------------------------------------------//
-    //---------------------------------------------------------------------------------------------//
-    //---------------------------------------------------------------------------------------------//
-#if 0
+
     boost::mpi::timer mpiTimer;
-    this->log(prefixvm(this->prefix(),"MeshALE"),"updateImpl", "start generateMap");
-#endif
+    M_meshALE->log(prefixvm(M_meshALE->prefix(),"MeshALE::ComputationalDomain"),"generateMap", "start");
     //---------------------------------------------------------------------------------------------//
     //generate the ale map
     M_aleFactory->generateMap( *M_displacementOnMovingBoundary_P1_ref, M_bdf_ale_displacement_ref->unknown(0) );
     //---------------------------------------------------------------------------------------------//
-#if 0
     double tElapsed =  mpiTimer.elapsed();
-    this->log(prefixvm(this->prefix(),"MeshALE"),"updateImpl", (boost::format("finish generateMap in %1% s")%tElapsed).str() );
-#endif
-    //---------------------------------------------------------------------------------------------//
-    //---------------------------------------------------------------------------------------------//
-    //---------------------------------------------------------------------------------------------//
+    M_meshALE->log(prefixvm(M_meshALE->prefix(),"MeshALE::ComputationalDomain"),"generateMap", (boost::format("finish in %1% s")%tElapsed).str() );
 
     // get displacement on ref mesh
     *M_displacement_ref = M_aleFactory->displacement();
@@ -643,7 +558,7 @@ template< class Convex >
 void
 MeshALE<Convex>::ComputationalDomain::addBoundaryFlags(std::string const& bctype, std::string const& marker)
 {
-    CHECK( M_meshALE->referenceMesh()->hasMarker(marker) ) << " marker " << marker << " is not define in reference mesh\n";
+    CHECK( M_meshALE->referenceMesh()->hasMarker(marker) ) << " marker " << marker << " is not define in reference mesh";
     M_aleFactory->addBoundaryFlags( bctype, M_meshALE->referenceMesh()->markerName( marker ) );
 }
 
