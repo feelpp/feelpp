@@ -344,6 +344,7 @@ FSI<FluidType,SolidType>::init()
     // mesh velocity only on moving interface
     M_meshVelocityInterface.reset(new element_fluid_meshvelocityonboundary_type( M_XhMeshVelocityInterface ) );
 
+    M_meshDisplacementOnInterface_fluid = this->fluidModel()->meshALE()->displacement()->functionSpace()->elementPtr();
 
     this->fluidModel()->updateRangeDistributionByMaterialName( "interface_fsi", M_rangeFSI_fluid );
 
