@@ -327,13 +327,13 @@ FSI<FluidType,SolidType>::transfertDisplacement()
         {
             CHECK( M_opDisp2dTo2dconf ) << "interpolation operator not build";
             M_opDisp2dTo2dconf->apply(M_solidModel->fieldDisplacement(),
-                                      *(M_fluidModel->meshDisplacementOnInterface()) );
+                                      *M_meshDisplacementOnInterface_fluid/*  *(M_fluidModel->meshDisplacementOnInterface()) */ );
         }
         else
         {
             CHECK( M_opDisp2dTo2dnonconf ) << "interpolation operator not build";
             M_opDisp2dTo2dnonconf->apply(M_solidModel->fieldDisplacement(),
-                                         *(M_fluidModel->meshDisplacementOnInterface()) );
+                                         *M_meshDisplacementOnInterface_fluid /**(M_fluidModel->meshDisplacementOnInterface())*/ );
         }
     }
     else if ( M_solidModel->is1dReducedModel() )
@@ -343,16 +343,19 @@ FSI<FluidType,SolidType>::transfertDisplacement()
         {
             CHECK( M_opDisp1dToNdconf ) << "interpolation operator not build";
             M_opDisp1dToNdconf->apply(M_solidModel->solid1dReduced()->fieldDisplacementVect1dReduced(),
-                                      *(M_fluidModel->meshDisplacementOnInterface() ) );
+                                      *M_meshDisplacementOnInterface_fluid /**(M_fluidModel->meshDisplacementOnInterface())*/ );
         }
         else
         {
             CHECK( M_opDisp1dToNdnonconf ) << "interpolation operator not build";
             M_opDisp1dToNdnonconf->apply(M_solidModel->solid1dReduced()->fieldDisplacementVect1dReduced(),
-                                         *(M_fluidModel->meshDisplacementOnInterface() ) );
+                                         *M_meshDisplacementOnInterface_fluid /**(M_fluidModel->meshDisplacementOnInterface())*/ );
         }
     }
-    else std::cout << "[InterpolationFSI] : BUG " << std::endl;
+    else
+        CHECK( false ) << "something wrong";
+
+    this->fluidModel()->meshALE()->updateDisplacementImposed( idv(M_meshDisplacementOnInterface_fluid), M_rangeFSI_fluid );
 
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertDisplacement", "finish",
                                                this->worldComm(),this->verboseAllProc());
