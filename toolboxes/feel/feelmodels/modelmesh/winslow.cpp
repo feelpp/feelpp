@@ -25,7 +25,7 @@
 #include <feel/feelmodels/modelmesh/winslow.hpp>
 
 #include <feel/feelvf/vf.hpp>
-
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
 //#define FSI_WINSLOW_USE_OPT_EXPR 0
 
 namespace Feel
@@ -43,7 +43,6 @@ Winslow<MeshType,Order>::Winslow( mesh_ptrtype mesh, std::string const& prefix,
     //M_backend( backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() ) ),
     M_solverType( soption(_prefix=this->prefix(),_name="solver") ),
     M_mesh(mesh),
-    M_flagSet(/*flagSet*/),
     M_Xh( space_type::New(_mesh=mesh ) )
 {
     this->initAlgebraicBackend();
@@ -59,7 +58,6 @@ Winslow<MeshType,Order>::Winslow( space_ptrtype const& space, std::string const&
     ModelBase( prefix, space->worldCommPtr(),"",modelRep ),
     M_solverType( soption(_prefix=this->prefix(),_name="solver") ),
     M_mesh(space->mesh()),
-    M_flagSet(/*flagSet*/),
     M_Xh(space)
 {
     this->initAlgebraicBackend();
@@ -86,24 +84,33 @@ Winslow<MeshType,Order>::init()
     M_l2projector = opProjection(_domainSpace=this->functionSpaceScalM1(),
                                  _imageSpace=this->functionSpaceScalM1(),
                                  _backend=backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"l2proj"), this->worldCommPtr() ),
-                                 _type=Feel::L2 ) );
+                                 _type=Feel::L2 );
 #endif
 
 
     // update dofsWithValueImposed
-    std::set<flag_type> flagsMovingAndFixed;
-    if ( this->hasFlagSet("moving" ) )
-        flagsMovingAndFixed.insert( this->flagSet("moving").begin(), this->flagSet("moving").end() );
-    if ( this->hasFlagSet("fixed" ) )
-        flagsMovingAndFixed.insert( this->flagSet("fixed").begin(), this->flagSet("fixed").end() );
     M_dofsWithValueImposed.clear();
-    for ( auto const& faceWrap : markedfaces(M_Xh->mesh(), flagsMovingAndFixed ) )
+    std::set<std::string> markersMovingAndFixed;
+    for ( std::string bctype : { "moving","fixed" } )
     {
-        auto const& face = unwrap_ref( faceWrap );
-        auto facedof = M_Xh->dof()->faceLocalDof( face.id() );
-        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+        auto itFindMarkers = M_bcToMarkers.find(bctype);
+        if ( itFindMarkers != M_bcToMarkers.end() )
+            markersMovingAndFixed.insert( itFindMarkers->second.begin(), itFindMarkers->second.end() );
+    }
+    auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(M_Xh->mesh(), markersMovingAndFixed );
+    auto const& faceMarkers = std::get<0>( dmlose );
+
+    if ( !faceMarkers.empty() )
+    {
+        // TODO : use dofs method of FunctionSpace
+        for ( auto const& faceWrap : markedfaces(M_Xh->mesh(), faceMarkers ) )
         {
-            M_dofsWithValueImposed.insert( it->index() );
+            auto const& face = unwrap_ref( faceWrap );
+            auto facedof = M_Xh->dof()->faceLocalDof( face.id() );
+            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            {
+                M_dofsWithValueImposed.insert( it->index() );
+            }
         }
     }
 
@@ -363,22 +370,32 @@ Winslow<MeshType,Order>::updateLinearPDEDofElimination( DataUpdateLinear & data 
     auto mesh = this->functionSpace()->mesh();
     auto const& u = *M_displacement;
 
-    if ( this->hasFlagSet("moving" ) )
+    if ( M_bcToMarkers.find("moving") != M_bcToMarkers.end() )
     {
-        auto aux_pol = idv( this->dispImposedOnBoundary() ) + idv(this->identity());
-        form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-            on( _range=markedfaces( mesh, this->flagSet("moving") ),
-                _element=u, _rhs=F,
-                _expr=aux_pol/*, ON_ELIMINATION*/ );
+        auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(mesh, M_bcToMarkers.at("moving") );
+        auto const& faceMarkers = std::get<0>( dmlose );
+        if ( !faceMarkers.empty() )
+        {
+            auto aux_pol = idv( this->dispImposedOnBoundary() ) + idv(this->identity());
+            form2( _test=Xh, _trial=Xh, _matrix=A ) +=
+                on( _range=markedfaces( mesh, faceMarkers ),
+                    _element=u, _rhs=F,
+                    _expr=aux_pol/*, ON_ELIMINATION*/ );
+        }
     }
 
-    if ( this->hasFlagSet("fixed" ) )
+    if ( M_bcToMarkers.find("fixed") != M_bcToMarkers.end() )
     {
-        form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-            on( _range=markedfaces(mesh, this->flagSet("fixed") ),
-                _element=u, _rhs=F,
-                _expr=idv(this->identity())/*, ON_ELIMINATION*/ );
+        auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(mesh, M_bcToMarkers.at("fixed") );
+        auto const& faceMarkers = std::get<0>( dmlose );
+        if ( !faceMarkers.empty() )
+        {
+            form2( _test=Xh, _trial=Xh, _matrix=A ) +=
+                on( _range=markedfaces(mesh, faceMarkers ),
+                    _element=u, _rhs=F,
+                    _expr=idv(this->identity())/*, ON_ELIMINATION*/ );
 
+        }
     }
 }
 
@@ -395,10 +412,22 @@ Winslow<MeshType,Order>::updateNewtonInitialGuess( DataNewtonInitialGuess & data
     auto mesh = Xh->mesh();
     auto u = Xh->element( U );
 
-    u.on(_range=markedfaces(mesh, this->flagSet("moving") ),
-         _expr=idv(M_dispImposedOnBoundary)+idv(M_identity) );
-    u.on(_range=markedfaces(mesh, this->flagSet("fixed") ),
-         _expr=idv(M_identity) );
+    if ( M_bcToMarkers.find("moving") != M_bcToMarkers.end() )
+    {
+        auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(mesh, M_bcToMarkers.at("moving") );
+        auto const& faceMarkers = std::get<0>( dmlose );
+        if ( !faceMarkers.empty() )
+            u.on(_range=markedfaces(mesh, faceMarkers ),
+                 _expr=idv(M_dispImposedOnBoundary)+idv(M_identity) );
+    }
+    if ( M_bcToMarkers.find("fixed") != M_bcToMarkers.end() )
+    {
+        auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(mesh, M_bcToMarkers.at("fixed") );
+        auto const& faceMarkers = std::get<0>( dmlose );
+        if ( !faceMarkers.empty() )
+            u.on(_range=markedfaces(mesh, faceMarkers ),
+                 _expr=idv(M_identity) );
+    }
 
     sync( u, "=", M_dofsWithValueImposed );
 
@@ -614,17 +643,19 @@ Winslow<MeshType,Order>::updateJacobianDofElimination( DataUpdateJacobian & data
     auto mesh = Xh->mesh();
     auto const& u = *M_displacement;
 
-    if ( this->hasFlagSet("moving" ) )
+    for ( std::string bctype : { "moving","fixed" } )
     {
-        form2( _test=Xh, _trial=Xh, _matrix=J ) +=
-            on( _range=markedfaces( mesh, this->flagSet("moving") ),
-                _element=u, _rhs=RBis, _expr=vf::zero<mesh_type::nDim,1>() );
-    }
-    if ( this->hasFlagSet("fixed" ) )
-    {
-        form2( _test=Xh, _trial=Xh, _matrix=J ) +=
-            on( _range=markedfaces(mesh, this->flagSet("fixed") ),
-                _element=u, _rhs=RBis, _expr=vf::zero<mesh_type::nDim,1>() );
+        if ( M_bcToMarkers.find(bctype) != M_bcToMarkers.end() )
+        {
+            auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(mesh, M_bcToMarkers.at(bctype) );
+            auto const& faceMarkers = std::get<0>( dmlose );
+            if ( !faceMarkers.empty() )
+            {
+                form2( _test=Xh, _trial=Xh, _matrix=J ) +=
+                    on( _range=markedfaces( mesh, faceMarkers ),
+                        _element=u, _rhs=RBis, _expr=vf::zero<mesh_type::nDim,1>() );
+            }
+        }
     }
 
     this->log("Winslow","updateJacobianDofElimination", "finish" );

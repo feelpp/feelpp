@@ -32,6 +32,7 @@
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/unary.hpp>
 #include <feel/feelvf/one.hpp>
+#include <feel/feelvf/ones.hpp>
 #include <feel/feelvf/cst.hpp>
 #include <feel/feelvf/geometricdata.hpp>
 #include <feel/feelvf/operations.hpp>
@@ -46,6 +47,7 @@
 
 #include <feel/feelmodels/modelcore/log.hpp>
 
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
 
 namespace Feel
 {
@@ -53,7 +55,7 @@ namespace FeelModels
 {
 
 template< typename MeshType, int Order >
-HarmonicExtension<MeshType,Order>::HarmonicExtension( mesh_ptrtype mesh, backend_ptrtype const& backend, std::string prefix,
+HarmonicExtension<MeshType,Order>::HarmonicExtension( mesh_ptrtype mesh, backend_ptrtype const& backend, std::string const& prefix,
                                                       worldcomm_ptr_t const& worldcomm,
                                                       bool useGhostEltFromExtendedStencil,
                                                       ModelBaseRepository const& modelRep )
@@ -72,7 +74,7 @@ HarmonicExtension<MeshType,Order>::HarmonicExtension( mesh_ptrtype mesh, backend
 }
 
 template< typename MeshType, int Order >
-HarmonicExtension<MeshType,Order>::HarmonicExtension( space_ptrtype space, backend_ptrtype const& backend, std::string prefix,
+HarmonicExtension<MeshType,Order>::HarmonicExtension( space_ptrtype space, backend_ptrtype const& backend, std::string const& prefix,
                                                       ModelBaseRepository const& modelRep )
     :
     super_type( prefix, space->worldCommPtr(),"",modelRep ),
@@ -103,33 +105,6 @@ HarmonicExtension<MeshType,Order>::displacement() const { return M_displacement;
 template< typename MeshType, int Order >
 typename HarmonicExtension<MeshType,Order>::element_ptrtype const&
 HarmonicExtension<MeshType,Order>::dispImposedOnBoundary() const { return M_dispImposedOnBoundary; }
-
-template< typename MeshType, int Order >
-typename HarmonicExtension<MeshType,Order>::flagSet_type const&
-HarmonicExtension<MeshType,Order>::flagSet() const { return M_flagSet; }
-
-template< typename MeshType, int Order >
-std::vector<flag_type> const&
-HarmonicExtension<MeshType,Order>::flagSet(std::string key) const
-{
-    CHECK( M_flagSet.find(key) != M_flagSet.end() ) << "the flag type " << key << " is unknown \n";
-    return M_flagSet.find(key)->second;
-}
-template< typename MeshType, int Order >
-flag_type
-HarmonicExtension<MeshType,Order>::flagSet(std::string key, int k) const
-{
-    CHECK( M_flagSet.find(key) != M_flagSet.end() ) << "the flag type " << key << " is unknown \n";
-    CHECK( M_flagSet.find(key)->second.size() > k ) << "the key " << k << " must be <  " <<  M_flagSet.find(key)->second.size() << "\n";
-    return M_flagSet.find(key)->second.at(k);
-}
-
-template< typename MeshType, int Order >
-void
-HarmonicExtension<MeshType,Order>::setflagSet( flagSet_type const & fl )
-{
-    M_flagSet=fl;
-}
 
 #if 0 // code for implement near null space
 namespace detail
@@ -264,24 +239,32 @@ HarmonicExtension<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) co
 
     if ( !buildCstPart )
     {
-        for ( uint16_type i=0; i < this->flagSet("moving").size(); ++i )
+        if ( M_bcToMarkers.find("moving") != M_bcToMarkers.end() )
         {
-            //if (this->worldComm().isMasterRank() ) std::cout << "M_flagSet[moving][i]" << M_flagSet["moving"][i]<< std::endl;
-            form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
-                on( _range=markedfaces( this->mesh(), this->flagSet("moving",i) ),
-                    _element=*u,
-                    _rhs=F,
-                    _expr=idv( this->dispImposedOnBoundary() ) );
+            auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(this->mesh(), M_bcToMarkers.at("moving") );
+            auto const& faceMarkers = std::get<0>( dmlose );
+            if ( !faceMarkers.empty() )
+            {
+                form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
+                    on( _range=markedfaces( this->mesh(), faceMarkers ),
+                        _element=*u,
+                        _rhs=F,
+                        _expr=idv( this->dispImposedOnBoundary() ) );
+            }
         }
 
-        for ( uint16_type i=0; i < this->flagSet("fixed").size(); ++i )
+        if ( M_bcToMarkers.find("fixed") != M_bcToMarkers.end() )
         {
-            //if (this->worldComm().isMasterRank() ) std::cout << "M_flagSet[fixed][i]" << M_flagSet["fixed"][i]<< std::endl;
-            form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
-                on( _range=markedfaces(this->mesh(), this->flagSet("fixed",i) ),
-                    _element=*u,
-                    _rhs=F,
-                    _expr=0*one() );
+            auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(this->mesh(), M_bcToMarkers.at("fixed") );
+            auto const& faceMarkers = std::get<0>( dmlose );
+            if ( !faceMarkers.empty() )
+            {
+                form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
+                    on( _range=markedfaces(this->mesh(), faceMarkers ),
+                        _element=*u,
+                        _rhs=F,
+                        _expr=vf::zero<mesh_type::nRealDim,1>() );
+            }
         }
     }
 

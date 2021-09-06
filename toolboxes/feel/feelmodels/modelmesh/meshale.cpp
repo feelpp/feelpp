@@ -100,9 +100,14 @@ MeshALE<Convex>::init()
         M_bdf_ale_identity->restart();
         M_bdf_ale_velocity->restart();
 
+#if 0
         // transfert displacement on the mobile mesh
         for ( auto & [name,cd] : M_computationalDomains )
             cd.updateDisplacement( *M_displacement );
+#else
+        *M_displacement = M_bdf_ale_identity->unknown(0);
+        *M_displacement -= *M_identity_ale;
+#endif
 
 #if 0
         //move the mesh
@@ -206,11 +211,27 @@ MeshALE<Convex>::setComputationalDomain( std::string const& name, range_elements
 
 template< class Convex >
 void
-MeshALE<Convex>::addBoundaryFlags(std::string const& bctype, std::string const& marker)
+MeshALE<Convex>::addMarkerInBoundaryCondition(std::string const& bctype, std::string const& marker)
 {
     //CHECK( this->referenceMesh()->hasMarker(marker) ) << " marker " << marker << " is not define in reference mesh\n";
     for ( auto & [name,cd] : M_computationalDomains )
-        cd.addBoundaryFlags( bctype, marker );
+        cd.addMarkerInBoundaryCondition( bctype, marker );
+}
+
+template< class Convex >
+std::set<std::string>
+MeshALE<Convex>::markers( std::string const& bc ) const
+{
+    std::set<std::string> res;
+    for ( auto const& [name,cd] : M_computationalDomains )
+    {
+        if ( cd.hasBoundaryCondition( bc ) )
+        {
+            auto const& themarkers = cd.markers( bc );
+            res.insert(themarkers.begin(),themarkers.end());
+        }
+    }
+    return res;
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -556,10 +577,10 @@ MeshALE<Convex>::ComputationalDomain::updateTimeStep()
 
 template< class Convex >
 void
-MeshALE<Convex>::ComputationalDomain::addBoundaryFlags(std::string const& bctype, std::string const& marker)
+MeshALE<Convex>::ComputationalDomain::addMarkerInBoundaryCondition(std::string const& bctype, std::string const& marker)
 {
     CHECK( M_meshALE->referenceMesh()->hasMarker(marker) ) << " marker " << marker << " is not define in reference mesh";
-    M_aleFactory->addBoundaryFlags( bctype, M_meshALE->referenceMesh()->markerName( marker ) );
+    M_aleFactory->addMarkerInBoundaryCondition( bctype, marker );
 }
 
 } // namespace FeelModels
