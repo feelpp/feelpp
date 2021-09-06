@@ -53,7 +53,7 @@ public :
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     using range_elements_type = elements_reference_wrapper_t<mesh_type>;
     using size_type = typename mesh_type::size_type;
-    typedef std::map< std::string, std::vector<flag_type> > flagSet_type;
+    using bc_to_markers_type = std::map< std::string, std::set<std::string> >;
 
 protected :
 
@@ -86,32 +86,44 @@ public:
     /**
      * constructor,copy,desctructor
      */
-    explicit ALE( /*mesh_ptrtype mesh, */std::string prefix="",
-         worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
-         ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    explicit ALE( std::string const& prefix="",
+                  worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
+                  ModelBaseRepository const& modelRep = ModelBaseRepository() );
     ALE( ALE const& tc ) = default;
+    ALE( ALE && tc ) = default;
     //~ALE();
 
     /**
      * static builder
      */
-    static self_ptrtype build(mesh_ptrtype mesh, std::string prefix="",
+    static self_ptrtype build(mesh_ptrtype mesh, std::string const& prefix="",
                               worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
                               ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    static self_ptrtype build(mesh_ptrtype mesh, range_elements_type const& rangeElt, std::string prefix="",
+    static self_ptrtype build(mesh_ptrtype mesh, range_elements_type const& rangeElt, std::string const& prefix="",
                               worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
                               ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     /**
      * Add the set of flags that mark the boundary
      */
-    void addBoundaryFlags( flagSet_type flags );
-    void addBoundaryFlags( std::string str, flag_type flag );
-    void clearFlagSet();
-    void setFlagSet( flagSet_type const & fl );
-    flagSet_type const& flagSet() const;
-    std::vector<flag_type> const& flagSet(std::string key) const;
-    flag_type flagSet(std::string key, int k) const;
+    void addMarkerInBoundaryCondition( std::string const& bc, std::string const& marker );
+
+    template <typename MarkersType,std::enable_if_t< is_iterable_v<MarkersType>, bool> = true>
+    void addMarkersInBoundaryCondition( std::string const& bc, MarkersType const& markers )
+        {
+            for ( std::string const& marker : markers )
+                this->addMarkerInBoundaryCondition( bc, marker );
+        }
+
+    bc_to_markers_type const& bcToMarkers() const { return M_bcToMarkers; }
+    std::set<std::string> const& markers( std::string const& bc ) const
+        {
+            auto itFind = M_bcToMarkers.find( bc );
+            CHECK( itFind != M_bcToMarkers.end() ) << "no valid bc type : " << bc;
+            return itFind->second;
+        }
+
+    bool hasBoundaryCondition( std::string const& bc ) const { return M_bcToMarkers.find( bc ) != M_bcToMarkers.end(); }
 
     virtual void init() = 0;
 
@@ -136,9 +148,7 @@ public:
 protected :
     metricmeshadaptation_ptrtype M_metricMeshAdaptation;
 private :
-    flagSet_type M_flagSet;
-
-
+    bc_to_markers_type M_bcToMarkers;
 };
 } // namespace FeelModels
 } // namespace Feel

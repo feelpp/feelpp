@@ -47,6 +47,7 @@
 #include <feel/feelvf/on.hpp>
 
 #include <feel/feelmodels/modelmesh/metricmeshadaptation.hpp>
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
 
 namespace Feel
 {
@@ -74,7 +75,7 @@ buildSpaceHigh(std::shared_ptr<SpaceLowType> spaceLow, mpl::bool_<true> /**/ )
 #endif
 
 template < class Convex, int Order >
-ALE<Convex,Order>::ALE( std::string prefix, worldcomm_ptr_t const& worldcomm,
+ALE<Convex,Order>::ALE( std::string const& prefix, worldcomm_ptr_t const& worldcomm,
                         ModelBaseRepository const& modelRep )
     :
     super_type( prefix,worldcomm,modelRep ),
@@ -87,7 +88,7 @@ ALE<Convex,Order>::ALE( std::string prefix, worldcomm_ptr_t const& worldcomm,
 {}
 
 template < class Convex, int Order >
-ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t const& worldcomm,
+ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string const& prefix, worldcomm_ptr_t const& worldcomm,
                         ModelBaseRepository const& modelRep )
     :
     ALE( prefix,worldcomm,modelRep )
@@ -104,7 +105,7 @@ ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t c
 }
 template < class Convex, int Order >
 ALE<Convex,Order>::ALE( mesh_ptrtype mesh, range_elements_type const& rangeElt,
-                        std::string prefix, worldcomm_ptr_t const& worldcomm,
+                        std::string const& prefix, worldcomm_ptr_t const& worldcomm,
                         ModelBaseRepository const& modelRep )
     :
     ALE( prefix,worldcomm,modelRep )
@@ -128,39 +129,42 @@ ALE<Convex,Order>::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n   Physical Markers";
-    if ( this->flagSet().find("fixed") != this->flagSet().end() )
+    for ( std::string bctype : { "moving","fixed","free" } )
     {
-        *_ostr << "\n     -- fixed : ";
-        auto it = this->flagSet().find("fixed")->second.begin();
-        auto en = this->flagSet().find("fixed")->second.end();
-        for ( int cptMark = 0 ; it!=en ; ++it,++cptMark )
+        if ( this->bcToMarkers().find(bctype) != this->bcToMarkers().end() )
         {
-            if ( cptMark > 0 ) *_ostr << " , ";
-            *_ostr << *it;
+            *_ostr << "\n     -- " << bctype << " : ";
+            auto it = this->bcToMarkers().find(bctype)->second.begin();
+            auto en = this->bcToMarkers().find(bctype)->second.end();
+            for ( int cptMark = 0 ; it!=en ; ++it,++cptMark )
+            {
+                if ( cptMark > 0 ) *_ostr << " , ";
+                *_ostr << *it;
+            }
         }
     }
-    if ( this->flagSet().find("moving") != this->flagSet().end() )
-    {
-        *_ostr << "\n     -- moving : ";
-        auto it = this->flagSet().find("moving")->second.begin();
-        auto en = this->flagSet().find("moving")->second.end();
-        for ( int cptMark = 0 ; it!=en ; ++it,++cptMark )
-        {
-            if ( cptMark > 0 ) *_ostr << " , ";
-            *_ostr << *it;
-        }
-    }
-    if ( this->flagSet().find("free") != this->flagSet().end() )
-    {
-        *_ostr << "\n     -- free : ";
-        auto it = this->flagSet().find("free")->second.begin();
-        auto en = this->flagSet().find("free")->second.end();
-        for ( int cptMark = 0 ; it!=en ; ++it,++cptMark )
-        {
-            if ( cptMark > 0 ) *_ostr << " , ";
-            *_ostr << *it;
-        }
-    }
+        // if ( this->flagSet().find("moving") != this->flagSet().end() )
+    // {
+    //     *_ostr << "\n     -- moving : ";
+    //     auto it = this->flagSet().find("moving")->second.begin();
+    //     auto en = this->flagSet().find("moving")->second.end();
+    //     for ( int cptMark = 0 ; it!=en ; ++it,++cptMark )
+    //     {
+    //         if ( cptMark > 0 ) *_ostr << " , ";
+    //         *_ostr << *it;
+    //     }
+    // }
+    // if ( this->flagSet().find("free") != this->flagSet().end() )
+    // {
+    //     *_ostr << "\n     -- free : ";
+    //     auto it = this->flagSet().find("free")->second.begin();
+    //     auto en = this->flagSet().find("free")->second.end();
+    //     for ( int cptMark = 0 ; it!=en ; ++it,++cptMark )
+    //     {
+    //         if ( cptMark > 0 ) *_ostr << " , ";
+    //         *_ostr << *it;
+    //     }
+    // }
 
 
 #if defined( FEELPP_TOOLBOXES_HAS_MESHALE_HARMONICEXTENSION )
@@ -214,7 +218,7 @@ ALE<Convex,Order>::init()
         for ( std::string const& bctype : std::vector<std::string>( { "moving","fixed" } ) )
         {
             auto & dofsHighOnBoundary = M_dofsHighOnBoundary[bctype];
-            for ( auto const& faceWrap : markedfaces(M_fspaceHigh->mesh(),this->flagSet(bctype) ) )
+            for ( auto const& faceWrap : markedfaces(M_fspaceHigh->mesh(),this->markers(bctype) ) )
             {
                 auto const& face = unwrap_ref( faceWrap );
                 auto facedof = M_fspaceHigh->dof()->faceLocalDof( face.id() );
@@ -299,7 +303,7 @@ ALE<Convex,Order>::createHarmonicExtension()
                                                                   Feel::backend(_rebuild=true,_name=this->prefix() ),
                                                                   prefixvm(this->prefix(),"harmonic"),
                                                                   this->repository() ) );
-    M_harmonicextensionFactory->setflagSet(this->flagSet());
+    M_harmonicextensionFactory->setMarkersInBoundaryCondition(this->bcToMarkers());
     M_harmonicextensionFactory->init();
     M_isInitHarmonicExtension = true;
 
@@ -318,7 +322,7 @@ ALE<Convex,Order>::createWinslow()
 
     M_winslowFactory.reset(new winslow_type( M_fspaceLow,//M_reference_mesh,
                                              prefixvm(this->prefix(),"winslow") ) );
-    M_winslowFactory->setflagSet(this->flagSet());
+    M_winslowFactory->setMarkersInBoundaryCondition(this->bcToMarkers());
     M_winslowFactory->init();
     M_isInitWinslow=true;
 
@@ -363,7 +367,7 @@ void
 ALE<Convex,Order>::generateLowOrderMap_HARMONIC( ale_map_element_type const & dispOnBoundary )
 {
 #if defined( FEELPP_TOOLBOXES_HAS_MESHALE_HARMONICEXTENSION )
-    M_harmonicextensionFactory->setflagSet(this->flagSet());
+    M_harmonicextensionFactory->setMarkersInBoundaryCondition(this->bcToMarkers());
     M_harmonicextensionFactory->generateALEMap(dispOnBoundary);
 
     *M_displacementLow = *M_harmonicextensionFactory->displacement();
@@ -385,7 +389,7 @@ ALE<Convex,Order>::generateLowOrderMap_WINSLOW( ale_map_element_type const & dis
                                                 ale_map_element_type const & oldDisp )
 {
 #if defined( FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW )
-    M_winslowFactory->setflagSet(this->flagSet());
+    M_winslowFactory->setMarkersInBoundaryCondition(this->bcToMarkers());
     M_winslowFactory->generateALEMap(dispOnBoundary,oldDisp);
 
     // interpolate disp
@@ -507,10 +511,10 @@ ALE<Convex,Order>::updateBoundaryElements( ale_map_element_type const & dispOnBo
     auto zero = 0*one();
 
     auto dispHighAux = M_fspaceHigh->element();
-    dispHighAux.on(_range=markedfaces(M_fspaceHigh->mesh(), this->flagSet("moving")),
+    dispHighAux.on(_range=markedfaces(M_fspaceHigh->mesh(), this->markers("moving")),
                    _expr=correction);
     // also at fixed boundary (if boundary is ho, else is zero)
-    dispHighAux.on(_range=markedfaces(M_fspaceHigh->mesh(), this->flagSet("fixed")),
+    dispHighAux.on(_range=markedfaces(M_fspaceHigh->mesh(), this->markers("fixed")),
                    _expr=correction);
     // synch values
     auto itFindDofsMoving = M_dofsHighOnBoundary.find( "moving" );
@@ -568,30 +572,34 @@ ALE<Convex,Order>::updateBoundaryElements( ale_map_element_type const & dispOnBo
 #endif
 
     /* Impose boundary conditions for the moving boundary = position - aleLow */
-    for ( uint16_type i=0; i < this->flagSet("moving").size(); ++i )
+    if ( this->bcToMarkers().find("moving") != this->bcToMarkers().end() )
     {
-        form2( _test=M_fspaceHigh, _trial=M_fspaceHigh, _matrix=M_harmonicHigh ) +=
-            on( _range=markedfaces( M_reference_mesh, this->flagSet("moving",i) ),
-                _element=v,
-                _rhs=M_rhsHigh,
-                _expr=correction );
+        auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(M_reference_mesh, this->markers("moving") );
+        auto const& faceMarkers = std::get<0>( dmlose );
+        if ( !faceMarkers.empty() )
+        {
+            form2( _test=M_fspaceHigh, _trial=M_fspaceHigh, _matrix=M_harmonicHigh ) +=
+                on( _range=markedfaces( M_reference_mesh, faceMarkers ),
+                    _element=v,
+                    _rhs=M_rhsHigh,
+                    _expr=correction );
+        }
     }
-
-    for ( uint16_type i=0; i < this->flagSet("fixed").size(); ++i )
+    for ( std::string bctype : { "fixed","free" } )
     {
-        form2( _test=M_fspaceHigh, _trial=M_fspaceHigh, _matrix=M_harmonicHigh ) +=
-            on( _range=markedfaces( M_reference_mesh, this->flagSet("fixed",i) ),
-                _element=v,
-                _rhs=M_rhsHigh,
-                _expr=idv(dispOnBoundary)/*zero*/ );
-    }
-    for ( uint16_type i=0; i < this->flagSet("free").size(); ++i )
-    {
-        form2( _test=M_fspaceHigh, _trial=M_fspaceHigh, _matrix=M_harmonicHigh ) +=
-            on( _range=markedfaces( M_reference_mesh, this->flagSet("free",i) ),
-                _element=v,
-                _rhs=M_rhsHigh,
-                _expr=idv(dispOnBoundary)/*zero*/ );
+        if ( this->bcToMarkers().find(bctype) != this->bcToMarkers().end() )
+        {
+            auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(M_reference_mesh, this->markers(bctype) );
+            auto const& faceMarkers = std::get<0>( dmlose );
+            if ( !faceMarkers.empty() )
+            {
+                form2( _test=M_fspaceHigh, _trial=M_fspaceHigh, _matrix=M_harmonicHigh ) +=
+                    on( _range=markedfaces( M_reference_mesh, faceMarkers ),
+                        _element=v,
+                        _rhs=M_rhsHigh,
+                        _expr=idv(dispOnBoundary)/*zero*/ );
+            }
+        }
     }
 
     //std::cout << "  -- ale : solving for high order correction" << std::endl;

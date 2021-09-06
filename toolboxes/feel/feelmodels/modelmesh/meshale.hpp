@@ -127,7 +127,13 @@ public :
         void updateDisplacement( ale_map_element_type & displacement );
 
         //! add boundary marker with respect to type \bctype
-        void addBoundaryFlags(std::string const& bctype, std::string const& marker);
+        void addMarkerInBoundaryCondition(std::string const& bctype, std::string const& marker);
+
+        //! return true if the boundary condition type \bctype has been defined
+        bool hasBoundaryCondition( std::string const& bctype ) const { return M_aleFactory->hasBoundaryCondition( bctype ); }
+
+        //! return markers associated to a boundary condition type \bctype
+        std::set<std::string> const& markers( std::string const& bctype ) const { return M_aleFactory->markers( bctype ); }
 
         //! return the object that manage the ale computation
         ale_map_ptrtype const& aleFactory() const { return M_aleFactory; }
@@ -162,16 +168,23 @@ public :
 
     std::shared_ptr<std::ostringstream> getInfo() const;
 
-
+    //! defined the whole mesh as a computational domain (compute disp from boundary)
     void setWholeMeshAsComputationalDomain( std::string const& name );
+    //! defined a part of mesh as a computational domain
+    //! the displacement should be given in parts that not inside a computational domain
     void setComputationalDomain( std::string const& name, range_elements_type const& rangeElt );
 
-    void addBoundaryFlags( std::string const& bctype, std::string const& marker );
-    void addBoundaryFlags( std::string const& bctype, std::vector<std::string> const& markers )
+    //! add marker in a boundary condition type (i.e. fixed, moving, free)
+    void addMarkerInBoundaryCondition( std::string const& bctype, std::string const& marker );
+    //! add markers in a boundary condition type (i.e. fixed, moving, free)
+    template <typename MarkersType,std::enable_if_t< is_iterable_v<MarkersType>, bool> = true>
+    void addMarkersInBoundaryCondition( std::string const& bc, MarkersType const& markers )
         {
             for ( std::string const& marker : markers )
-                this->addBoundaryFlags( bctype,marker );
+                this->addMarkerInBoundaryCondition( bc, marker );
         }
+    //! return set of markers associated to boundary condition type \bc
+    std::set<std::string> markers( std::string const& bc ) const;
 
     /**
      * \return the reference mesh

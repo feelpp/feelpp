@@ -92,7 +92,6 @@ public :
     typedef Projector<space_scal_m1_type,space_scal_m1_type> projector_scal_m1_type;
     typedef std::shared_ptr<projector_scal_m1_type> projector_scal_m1_ptrtype;
 #endif
-    typedef std::map< std::string, std::vector<flag_type> > flagSet_type;
 
     //typedef Exporter<mesh_type,mesh_type::nOrder> exporter_type;
     //typedef std::shared_ptr<exporter_type> exporter_ptrtype;
@@ -114,15 +113,7 @@ public :
     element_ptrtype const& identity() const { return M_identity; }
     //space_scal_m1_ptrtype const& functionSpaceScalM1() const { return M_XhScalM1; }
 
-    flagSet_type const& flagSet() const { return M_flagSet; }
-    bool hasFlagSet( std::string const& key ) const { return ( M_flagSet.find(key) != M_flagSet.end() ); }
-    std::vector<flag_type> const& flagSet( std::string const& key ) const
-        {
-            CHECK( hasFlagSet( key ) ) << "the flag type " << key << " is unknown \n";
-            return M_flagSet.find(key)->second;
-        }
-    void setflagSet( flagSet_type const & fl ) { M_flagSet=fl; }
-
+    void setMarkersInBoundaryCondition( std::map< std::string, std::set<std::string> > const& bcToMarkers ) { M_bcToMarkers = bcToMarkers; }
     //projector_scal_m1_ptrtype /*const&*/ l2projector() const { return M_l2projector; }
 
     template < typename elem_type, typename elem2_type >
@@ -157,8 +148,9 @@ private :
 
     std::string M_solverType;
 
+    std::map< std::string, std::set<std::string> > M_bcToMarkers;
+
     mesh_ptrtype M_mesh;
-    flagSet_type M_flagSet;
     space_ptrtype M_Xh;
     element_ptrtype M_displacement;
     element_ptrtype M_displacementOld;

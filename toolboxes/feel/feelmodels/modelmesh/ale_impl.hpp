@@ -118,11 +118,11 @@ public :
      * constructor
      *
      */
-    ALE( std::string prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
+    ALE( std::string const& prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
          ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    ALE( mesh_ptrtype mesh, std::string prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
+    ALE( mesh_ptrtype mesh, std::string const& prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
          ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    ALE( mesh_ptrtype mesh, range_elements_type const& rangeElt, std::string prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
+    ALE( mesh_ptrtype mesh, range_elements_type const& rangeElt, std::string const& prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
          ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     /**
