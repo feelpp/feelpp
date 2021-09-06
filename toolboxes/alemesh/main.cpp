@@ -21,7 +21,7 @@ runALEMesh()
     {
         std::string opt = (boost::format( "markers.%1%" ) %bctype).str();
         if ( Environment::vm().count( opt ) )
-            alemesh->addBoundaryFlags( bctype, Environment::vm()[opt].as<std::vector<std::string> >() );
+            alemesh->addMarkersInBoundaryCondition( bctype, Environment::vm()[opt].as<std::vector<std::string> >() );
     }
 
     alemesh->printAndSaveInfo();
@@ -38,9 +38,7 @@ runALEMesh()
     if ( Environment::vm().count( "displacement-imposed" ) )
     {
         auto dispExpr = expr<FEELPP_DIM,1>( soption(_name="displacement-imposed") );
-        //alemesh->updateDisplacementImposed( dispExpr,elements(mesh) );
-        if ( Environment::vm().count( "markers.moving" ) )
-            alemesh->updateDisplacementImposed( dispExpr,markedfaces(mesh,Environment::vm()["markers.moving"].as<std::vector<std::string> >() ) );
+        alemesh->updateDisplacementImposed( dispExpr,markedfaces(mesh,alemesh->markers("moving")) );
     }
 
     alemesh->updateMovingMesh();
