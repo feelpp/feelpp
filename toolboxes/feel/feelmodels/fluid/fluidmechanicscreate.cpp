@@ -1091,15 +1091,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // init post-processinig (exporter, measure at point, ...)
     this->initPostProcess();
     //-------------------------------------------------//
-    // init ALE mesh
+    // update ALE mesh for use
     if (this->isMoveDomain())
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         for ( auto const& [bcName,markers] : this->markerALEMeshBC() )
-        {
-            for ( std::string const& marker : markers )
-                M_meshALE->addBoundaryFlags( bcName, marker );
-        }
+            M_meshALE->addMarkersInBoundaryCondition( bcName, markers );
 
         if ( this->doRestart() )
             M_meshALE->revertMovingMesh();
