@@ -1896,6 +1896,10 @@ public :
     trace_mesh_ptrtype const& fluidOutletWindkesselMesh() const { return M_fluidOutletWindkesselMesh; }
     space_fluidoutlet_windkessel_ptrtype const& fluidOutletWindkesselSpace() { return M_fluidOutletWindkesselSpace; }
 
+    //! return the set of body BC
+    BodySetBoundaryCondition const& bodySetBC() const { return M_bodySetBC; }
+    //! return the set of body BC
+    BodySetBoundaryCondition & bodySetBC() { return M_bodySetBC; }
 
     bool hasStrongDirichletBC() const
         {
