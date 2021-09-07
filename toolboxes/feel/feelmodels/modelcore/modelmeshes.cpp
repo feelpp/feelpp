@@ -18,6 +18,7 @@ ModelMesh<IndexType>::ImportConfig::ImportConfig( ModelMeshes<IndexType> const& 
     M_generatePartitioning( boption(_prefix=mMeshes.prefix(),_name="gmsh.partition",_vm=mMeshes.clovm()) ),
     M_numberOfPartition( mMeshes.worldComm().localSize() ),
     M_meshSize( doption(_prefix=mMeshes.prefix(),_name="gmsh.hsize",_vm=mMeshes.clovm()) ),
+    M_straightenMesh( boption(_prefix=mMeshes.prefix(),_name="gmsh.straighten",_vm=mMeshes.clovm()) ),
     M_meshComponents( MESH_UPDATE_FACES|MESH_UPDATE_EDGES ),
     M_loadByMasterRankOnly( false )
 {
@@ -225,6 +226,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                                   _prefix=mMeshes.prefix(),
                                   _vm=mMeshes.clovm(),
                                   _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
+                                  _straighten=M_importConfig.straightenMesh(),
                                   _rebuild_partitions=generatePartitioning,
                                   _rebuild_partitions_filename=meshPartitionedFilename,
                                   _partitions=M_importConfig.numberOfPartition(),
@@ -260,6 +262,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                                         _vm=mMeshes.clovm(),
                                         _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
                                         _h=M_importConfig.meshSize(),
+                                        _straighten=M_importConfig.straightenMesh(),
                                         _partitions=M_importConfig.numberOfPartition(),
                                         _update=M_importConfig.meshComponents(),
                                         _directory=mMeshes.rootRepository() );
