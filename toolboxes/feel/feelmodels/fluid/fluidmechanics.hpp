@@ -308,9 +308,11 @@ public:
         using element_displacement_type = typename space_displacement_type::element_type;
         using element_displacement_ptrtype = std::shared_ptr<element_displacement_type>;
 
-        using rotation_angles_type = typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
-                                                        eigen_matrix_type<nDim, 1>,
-                                                        eigen_matrix_type<1, 1> >::type;
+
+        using translational_velocity_type = eigen_vector_type<nRealDim>;
+        static constexpr int nDimRotation = (nDim==3)?3:1;
+        using rotation_angles_type = eigen_matrix_type<nDimRotation, 1>;
+        using angular_velocity_type = rotation_angles_type;
 
         Body() = default;
             // :
@@ -342,14 +344,6 @@ public:
         //! return the elastic displacement (corresponding to displacement applied to the current moving mesh)
         element_displacement_type & fieldElasticDisplacement() { return *M_fieldElasticDisplacement; }
 
-        // template <typename RangeType, typename ExprT>
-        // void updateRigidDisplacementFromRigidVelocity( RangeType const& range, Expr<ExprT> const& e, double dt )
-        //     {
-        //         auto dold = M_spaceDisplacement->element();
-        //         dold = this->fieldRigidDisplacement();
-        //         M_fieldDisplacement->on(_range=range,_expr=e*dt+idv(dold));
-        //     }
-#if 1
         //! update the elastic displacement from an expression \e on entities \range
         template <typename RangeType, typename ExprT>
         void updateDisplacement( RangeType const& range, Expr<ExprT> const& e )
@@ -358,7 +352,7 @@ public:
                     M_fieldDisplacement = M_spaceDisplacement->elementPtr();
                 M_fieldDisplacement->on(_range=range,_expr=e);
             }
-#endif
+
         auto vectorExprFromVectorValues( eigen_vector_type<nRealDim> const& vectorValues ) const
             {
                 if constexpr ( nRealDim == 2 )
@@ -367,7 +361,10 @@ public:
                     return vec( cst(vectorValues(0)), cst(vectorValues(1)), cst(vectorValues(2)) );
             }
 
+        //! return the current translation as an expression
+        auto rigidTranslationExpr() const { return this->vectorExprFromVectorValues( M_rigidTranslationDisplacement ); }
 
+        //! return rotation matrix from angles
         auto rigidRotationMatrixExpr( rotation_angles_type const& rigidRotationAngles ) const
             {
                 if constexpr ( nRealDim == 2 )
@@ -383,48 +380,19 @@ public:
                 }
             }
 
+        //! return the current rotation matrix
         auto rigidRotationMatrixExpr() const { return this->rigidRotationMatrixExpr( M_rigidRotationAngles ); }
-#if 0
-        template <typename AngleExprType>
-        auto rigidRotationMatrix( Expr<AngleExprType> const& angleExpr )
-            {
-                if constexpr ( nRealDim == 2 )
-                {
-                    return mat<2,2>( cos(angleExpr), -sin(angleExpr), sin(angleExpr), cos(angleExpr) );
-                }
-                else
-                {
-                    CHECK( false ) << "TODO 3D";
-                    return eye<nDim,nDim>();
-                }
-            }
-        template <typename AngleExprType>
-        void updateRigidRotationMatrix( Expr<AngleExprType> const& angleExpr, eigen_matrix_type<nRealDim, nRealDim> & rigidRotationMatrix )
-            {
-                if constexpr ( nRealDim == 2 )
-                             {
-                                 auto R = mat<2,2>( cos(angleExpr), -sin(angleExpr), sin(angleExpr), cos(angleExpr) );
-                                 rigidRotationMatrix = R.evaluate(false);
-                             }
-                else
-                    CHECK( false ) << "TODO 3D";
-            }
-
-#endif
-        template <typename ExprTranslationVelocityType, typename ExprAngularVelocityType>
-        void updateDisplacementFromRigidVelocity( Expr<ExprTranslationVelocityType> const& translationVelocityExpr,
-                                                  Expr<ExprAngularVelocityType> const& angularVelocityExpr,
+        void updateDisplacementFromRigidVelocity( translational_velocity_type const& translationVelocity,
+                                                  angular_velocity_type const& angularVelocity,
                                                   double dt )
             {
                 // WARNING : only valid if evaluated in reference mesh
 
-                auto dispByTranslationExpr = translationVelocityExpr*dt + this->vectorExprFromVectorValues( M_rigidTranslationDisplacementAtPreviousTime );
-                //auto angleExpr = angularVelocityExpr*dt + cst(M_rigidRotationAnglesAtPreviousTime(0,0));
+                // get translation disp and angles from Euler time scheme
+                M_rigidTranslationDisplacement = dt*translationVelocity + M_rigidTranslationDisplacementAtPreviousTime;
+                M_rigidRotationAngles = dt*angularVelocity + M_rigidRotationAnglesAtPreviousTime;
 
-                M_rigidRotationAngles = dt*angularVelocityExpr.evaluate() + M_rigidRotationAnglesAtPreviousTime;
-
-
-                //auto R = mat<2,2>( cos(angleExpr), -sin(angleExpr), sin(angleExpr), cos(angleExpr) );
+                auto dispByTranslationExpr = this->rigidTranslationExpr();
                 auto R = this->rigidRotationMatrixExpr();
 
                 if ( this->hasElasticDisplacement() )
@@ -438,12 +406,11 @@ public:
                 }
                 else
                 {
-                    CHECK( false ) << "TODO";
+                    auto mcExpr = this->massCenterExpr();
+                    this->updateDisplacement( elements(support(M_spaceDisplacement)), R*(P()+dispByTranslationExpr-mcExpr) + mcExpr -P() );
                 }
 
-                // TODO : go to updateTimeStep
-                M_rigidTranslationDisplacementAtPreviousTime = dispByTranslationExpr.evaluate();
-                //M_rigidRotationAnglesAtPreviousTime(0,0) = angleExpr.evaluate()(0,0);
+                M_rigidTranslationDisplacementAtPreviousTime = M_rigidTranslationDisplacement;
                 M_rigidRotationAnglesAtPreviousTime = M_rigidRotationAngles;
             }
 
@@ -508,7 +475,7 @@ public:
             }
 
 
-#if 1
+        //! compute mass center of the body with a displacement apply to the current mesh (on moving or reference state)
         template <typename DispElementType>
         eigen_vector_type<nRealDim>
         computeMassCenterFromDisplacementField( DispElementType const& d )
@@ -536,7 +503,7 @@ public:
                 massCenter /= mass;
                 return massCenter;
             }
-#endif
+
         template <typename MassCenterExprType>
         void computeMomentOfInertia( MassCenterExprType const& massCenterExpr, moment_of_inertia_type & momentOfInertia, bool addValue = false ) const
             {
@@ -585,9 +552,8 @@ public:
         moment_of_inertia_type M_momentOfInertia;
 
 
-        //eigen_matrix_type<nDim, nDim> M_rigidRotationMatrix;
+        eigen_vector_type<nRealDim> M_rigidTranslationDisplacement = eigen_vector_type<nRealDim>::Zero();
         eigen_vector_type<nRealDim> M_rigidTranslationDisplacementAtPreviousTime = eigen_vector_type<nRealDim>::Zero();
-        //double M_rigidAngleAtPreviousTime = 0;
         rotation_angles_type M_rigidRotationAngles = rotation_angles_type::Zero();
         rotation_angles_type M_rigidRotationAnglesAtPreviousTime = rotation_angles_type::Zero();
 
@@ -967,10 +933,6 @@ public:
         element_trace_velocity_ptrtype & fieldElasticVelocityPtr() { return M_fieldElasticVelocity; }
         space_trace_velocity_ptrtype const& spaceElasticVelocityPtr() const {return M_spaceElasticVelocity;}
         auto elasticVelocityExpr() const { CHECK( this->hasElasticVelocity() ) << "no elastic velocity"; return idv(M_fieldElasticVelocity); }
-#if 0
-        template <typename SymbolsExprType>
-        void updateElasticVelocityFromExpr( self_type const& fluidToolbox, SymbolsExprType const& se );
-#endif
         //---------------------------------------------------------------------------//
         // gravity
         bool gravityForceEnabled() const { return M_gravityForceEnabled; }
@@ -1106,20 +1068,23 @@ public:
         template <typename ElasticBehaviorType>
         void updateElasticBehavior( ElasticBehaviorType const& elasticBehavior, self_type const& fluidToolbox );
 
-#if 1
+        //! update displacement of body
         void updateDisplacement( double dt )
             {
-                // TODO VINCENT
-                //double dt = this->timeStep();
-                // if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() )
-                //     bpbc.updateDisplacementFieldFromRigidVelocity( translationalVelocityExpr(), );
-                // else
-                this->body().updateDisplacementFromRigidVelocity( this->body().vectorExprFromVectorValues( idv(M_fieldTranslationalVelocity).evaluate() ),
-                                                                  cst( idv(M_fieldAngularVelocity).evaluate()(0,0) ),
-                                                                  dt
-                                                                  );
+                typename Body::translational_velocity_type translationalVelocity = Body::translational_velocity_type::Zero();
+                typename Body::angular_velocity_type angularVelocity = Body::angular_velocity_type::Zero();
+                if ( this->hasTranslationalVelocityExpr() )
+                    translationalVelocity = this->translationalVelocityExpr().evaluate();
+                else
+                    translationalVelocity = idv(M_fieldTranslationalVelocity).evaluate();
+                if ( this->hasAngularVelocityExpr() )
+                    angularVelocity = this->angularVelocityExpr().evaluate();
+                else
+                    angularVelocity = idv(M_fieldAngularVelocity).evaluate();
+                this->body().updateDisplacementFromRigidVelocity( translationalVelocity,angularVelocity,dt );
             }
 
+        //! update the elastic velocty with the rotation applied to the body
         void updateElasticVelocityWithRotation()
             {
                 CHECK( M_fieldElasticVelocity ) << "elasticVelocity not int";
