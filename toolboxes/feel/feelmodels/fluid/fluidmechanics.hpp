@@ -308,6 +308,10 @@ public:
         using element_displacement_type = typename space_displacement_type::element_type;
         using element_displacement_ptrtype = std::shared_ptr<element_displacement_type>;
 
+        using rotation_angles_type = typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
+                                                        eigen_matrix_type<nDim, 1>,
+                                                        eigen_matrix_type<1, 1> >::type;
+
         Body() = default;
             // :
             // ModelPhysics<nDim>( "body" )
@@ -329,19 +333,133 @@ public:
         bool hasMaterialsProperties() const { return (M_materialsProperties? true : false); }
         materialsproperties_ptrtype materialsProperties() const { return M_materialsProperties; }
 
-        //! return the rigid displacement (corresponding to displacement applied to the reference mesh)
-        element_displacement_type const& fieldRigidDisplacement() const { return *M_fieldRigidDisplacement; }
-        //! return the rigid displacement (corresponding to displacement applied to the reference mesh)
-        element_displacement_type & fieldRigidDisplacement() { return *M_fieldRigidDisplacement; }
+        //! return the current displacement (corresponding to displacement applied to the reference mesh  and including elastic displacement if enabled)
+        element_displacement_type const& fieldDisplacement() const { return *M_fieldDisplacement; }
+        //! return the current displacement (corresponding to displacement applied to the reference mesh and including elastic displacement if enabled)
+        element_displacement_type & fieldDisplacement() { return *M_fieldDisplacement; }
         //! return the elastic displacement (corresponding to displacement applied to the current moving mesh)
         element_displacement_type const& fieldElasticDisplacement() const { return *M_fieldElasticDisplacement; }
+        //! return the elastic displacement (corresponding to displacement applied to the current moving mesh)
+        element_displacement_type & fieldElasticDisplacement() { return *M_fieldElasticDisplacement; }
 
+        // template <typename RangeType, typename ExprT>
+        // void updateRigidDisplacementFromRigidVelocity( RangeType const& range, Expr<ExprT> const& e, double dt )
+        //     {
+        //         auto dold = M_spaceDisplacement->element();
+        //         dold = this->fieldRigidDisplacement();
+        //         M_fieldDisplacement->on(_range=range,_expr=e*dt+idv(dold));
+        //     }
+#if 1
+        //! update the elastic displacement from an expression \e on entities \range
+        template <typename RangeType, typename ExprT>
+        void updateDisplacement( RangeType const& range, Expr<ExprT> const& e )
+            {
+                if ( !M_fieldDisplacement )
+                    M_fieldDisplacement = M_spaceDisplacement->elementPtr();
+                M_fieldDisplacement->on(_range=range,_expr=e);
+            }
+#endif
+        auto vectorExprFromVectorValues( eigen_vector_type<nRealDim> const& vectorValues ) const
+            {
+                if constexpr ( nRealDim == 2 )
+                    return vec( cst(vectorValues(0)), cst(vectorValues(1)) );
+                else
+                    return vec( cst(vectorValues(0)), cst(vectorValues(1)), cst(vectorValues(2)) );
+            }
+
+
+        auto rigidRotationMatrixExpr( rotation_angles_type const& rigidRotationAngles ) const
+            {
+                if constexpr ( nRealDim == 2 )
+                {
+                    double angle = rigidRotationAngles(0,0);
+                    return mat<2,2>( cst( std::cos(angle) ), cst( -std::sin(angle) ),
+                                     cst( std::sin(angle) ), cst(  std::cos(angle) ) );
+                }
+                else
+                {
+                    CHECK( false ) << "TODO 3D";
+                    return eye<nDim,nDim>();
+                }
+            }
+
+        auto rigidRotationMatrixExpr() const { return this->rigidRotationMatrixExpr( M_rigidRotationAngles ); }
+#if 0
+        template <typename AngleExprType>
+        auto rigidRotationMatrix( Expr<AngleExprType> const& angleExpr )
+            {
+                if constexpr ( nRealDim == 2 )
+                {
+                    return mat<2,2>( cos(angleExpr), -sin(angleExpr), sin(angleExpr), cos(angleExpr) );
+                }
+                else
+                {
+                    CHECK( false ) << "TODO 3D";
+                    return eye<nDim,nDim>();
+                }
+            }
+        template <typename AngleExprType>
+        void updateRigidRotationMatrix( Expr<AngleExprType> const& angleExpr, eigen_matrix_type<nRealDim, nRealDim> & rigidRotationMatrix )
+            {
+                if constexpr ( nRealDim == 2 )
+                             {
+                                 auto R = mat<2,2>( cos(angleExpr), -sin(angleExpr), sin(angleExpr), cos(angleExpr) );
+                                 rigidRotationMatrix = R.evaluate(false);
+                             }
+                else
+                    CHECK( false ) << "TODO 3D";
+            }
+
+#endif
+        template <typename ExprTranslationVelocityType, typename ExprAngularVelocityType>
+        void updateDisplacementFromRigidVelocity( Expr<ExprTranslationVelocityType> const& translationVelocityExpr,
+                                                  Expr<ExprAngularVelocityType> const& angularVelocityExpr,
+                                                  double dt )
+            {
+                // WARNING : only valid if evaluated in reference mesh
+
+                auto dispByTranslationExpr = translationVelocityExpr*dt + this->vectorExprFromVectorValues( M_rigidTranslationDisplacementAtPreviousTime );
+                //auto angleExpr = angularVelocityExpr*dt + cst(M_rigidRotationAnglesAtPreviousTime(0,0));
+
+                M_rigidRotationAngles = dt*angularVelocityExpr.evaluate() + M_rigidRotationAnglesAtPreviousTime;
+
+
+                //auto R = mat<2,2>( cos(angleExpr), -sin(angleExpr), sin(angleExpr), cos(angleExpr) );
+                auto R = this->rigidRotationMatrixExpr();
+
+                if ( this->hasElasticDisplacement() )
+                {
+                    auto dispByTranslationAndElastic = M_spaceDisplacement->element();
+                    dispByTranslationAndElastic.on(_range=elements(support(M_spaceDisplacement)),_expr=dispByTranslationExpr+idv(this->fieldElasticDisplacement()));
+                    auto newMassCenter = this->computeMassCenterFromDisplacementField( dispByTranslationAndElastic );
+                    auto mcExpr = this->vectorExprFromVectorValues( newMassCenter );
+
+                    this->updateDisplacement( elements(support(M_spaceDisplacement)), R*(P()+idv(dispByTranslationAndElastic)-mcExpr) + mcExpr -P() );
+                }
+                else
+                {
+                    CHECK( false ) << "TODO";
+                }
+
+                // TODO : go to updateTimeStep
+                M_rigidTranslationDisplacementAtPreviousTime = dispByTranslationExpr.evaluate();
+                //M_rigidRotationAnglesAtPreviousTime(0,0) = angleExpr.evaluate()(0,0);
+                M_rigidRotationAnglesAtPreviousTime = M_rigidRotationAngles;
+            }
+
+
+        //! init init elastic displacement field if not built
+        void initElasticDisplacement()
+            {
+                if ( !M_fieldElasticDisplacement )
+                    M_fieldElasticDisplacement = M_spaceDisplacement->elementPtr();
+            }
         //! update the elastic displacement from an expression \e on entities \range
         template <typename RangeType, typename ExprT>
         void updateElasticDisplacement( RangeType const& range, Expr<ExprT> const& e )
             {
                 if ( !M_fieldElasticDisplacement )
-                    M_fieldElasticDisplacement = M_spaceDisplacement->elementPtr();
+                    this->initElasticDisplacement();
                 M_fieldElasticDisplacement->on(_range=range,_expr=e);
             }
 
@@ -389,6 +507,36 @@ public:
                 return mass;
             }
 
+
+#if 1
+        template <typename DispElementType>
+        eigen_vector_type<nRealDim>
+        computeMassCenterFromDisplacementField( DispElementType const& d )
+            {
+                CHECK( M_materialsProperties ) << "no materialsProperties defined";
+
+                auto const Id = eye<nDim,nDim>();
+                // deformation tensor
+                auto F = Id+gradv(d);
+                auto J = det(F);
+
+                auto mom = M_materialsProperties->materialsOnMesh(M_mesh);
+                double mass = 0;
+                eigen_vector_type<nRealDim> massCenter = eigen_vector_type<nRealDim>::Zero();
+                for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
+                {
+                    std::string const& matName = rangeData.first;
+                    auto const& range = rangeData.second;
+                    auto const& density = M_materialsProperties->density( matName );
+                    auto const& densityExpr = density.exprScalar();
+
+                    mass += integrate(_range=range,_expr=densityExpr*J).evaluate()(0,0);
+                    massCenter += integrate(_range=range,_expr=densityExpr*(P()+idv(d))*J).evaluate();
+                }
+                massCenter /= mass;
+                return massCenter;
+            }
+#endif
         template <typename MassCenterExprType>
         void computeMomentOfInertia( MassCenterExprType const& massCenterExpr, moment_of_inertia_type & momentOfInertia, bool addValue = false ) const
             {
@@ -436,8 +584,15 @@ public:
         double M_mass;
         moment_of_inertia_type M_momentOfInertia;
 
+
+        //eigen_matrix_type<nDim, nDim> M_rigidRotationMatrix;
+        eigen_vector_type<nRealDim> M_rigidTranslationDisplacementAtPreviousTime = eigen_vector_type<nRealDim>::Zero();
+        //double M_rigidAngleAtPreviousTime = 0;
+        rotation_angles_type M_rigidRotationAngles = rotation_angles_type::Zero();
+        rotation_angles_type M_rigidRotationAnglesAtPreviousTime = rotation_angles_type::Zero();
+
         space_displacement_ptrtype M_spaceDisplacement;
-        element_displacement_ptrtype M_fieldRigidDisplacement;
+        element_displacement_ptrtype M_fieldDisplacement;
         element_displacement_ptrtype M_fieldElasticDisplacement;
     };
 
@@ -805,15 +960,17 @@ public:
         bool hasElasticVelocity() const { return ( M_fieldElasticVelocity? true : false ); }
 
         bool hasElasticVelocityFromExpr() const { return !M_elasticVelocityExprBC.empty(); }
+        bool hasElasticDisplacementFromExpr() const { return !M_elasticDisplacementExprBC.empty(); }
+        bool hasElasticBehaviorFromExpr() const { return this->hasElasticVelocityFromExpr() || this->hasElasticDisplacementFromExpr(); }
 
         element_trace_velocity_ptrtype fieldElasticVelocityPtr() const { return M_fieldElasticVelocity; }
         element_trace_velocity_ptrtype & fieldElasticVelocityPtr() { return M_fieldElasticVelocity; }
         space_trace_velocity_ptrtype const& spaceElasticVelocityPtr() const {return M_spaceElasticVelocity;}
         auto elasticVelocityExpr() const { CHECK( this->hasElasticVelocity() ) << "no elastic velocity"; return idv(M_fieldElasticVelocity); }
-
+#if 0
         template <typename SymbolsExprType>
         void updateElasticVelocityFromExpr( self_type const& fluidToolbox, SymbolsExprType const& se );
-
+#endif
         //---------------------------------------------------------------------------//
         // gravity
         bool gravityForceEnabled() const { return M_gravityForceEnabled; }
@@ -888,41 +1045,91 @@ public:
 
 
 
-        template <typename ExprType>
+        template <typename ExprVelocityType,typename ExprDisplacementType>
         struct ElasticBehavior
         {
-            static constexpr bool hasDisplacement = false;
+            static constexpr bool hasVelocity = true;
+            static constexpr bool hasDisplacement = true;
 
-            template <typename TheExprType>
-            ElasticBehavior( TheExprType && elasticVelocityExpr )
-                :
-                M_elasticVelocityExpr( std::forward<TheExprType>( elasticVelocityExpr ) )
-                {}
+            ElasticBehavior() = default;
             ElasticBehavior( ElasticBehavior const& ) = default;
             ElasticBehavior( ElasticBehavior && ) = default;
+
+            bool canUpdateVelocity() const { return M_elasticVelocityExpr? true : false; }
+            bool canUpdateDisplacement() const { return M_elasticDisplacementExpr? true : false; }
+
+            template <typename TheExprType>
+            void setVelocity( TheExprType && velocityExpr ) { M_elasticVelocityExpr.emplace( std::forward<TheExprType>( velocityExpr ) ); }
+            template <typename TheExprType>
+            void setDisplacement( TheExprType && displacementExpr ) { M_elasticDisplacementExpr.emplace( std::forward<TheExprType>( displacementExpr ) ); }
 
             template <typename ElementType, typename RangeType>
             void updateVelocity( ElementType & u, RangeType const& range, double time ) const
                 {
-                    M_elasticVelocityExpr.setParameterValues( { { "t",time } } );
-                    u.on(_range=range,_expr=M_elasticVelocityExpr);
+                    CHECK( this->canUpdateVelocity() ) << "elastic velocity expr can not be evaluated";
+                    M_elasticVelocityExpr->setParameterValues( { { "t",time } } );
+                    u.on(_range=range,_expr=*M_elasticVelocityExpr);
+                }
+            template <typename ElementType, typename RangeType>
+            void updateDisplacement( ElementType & u, RangeType const& range, double time ) const
+                {
+                    CHECK( this->canUpdateDisplacement() ) << "elastic displacement expr can not be evaluated";
+                    M_elasticDisplacementExpr->setParameterValues( { { "t",time } } );
+                    u.on(_range=range,_expr=*M_elasticDisplacementExpr);
                 }
         private :
-            mutable ExprType M_elasticVelocityExpr;
+            mutable std::optional<ExprVelocityType> M_elasticVelocityExpr;
+            mutable std::optional<ExprDisplacementType> M_elasticDisplacementExpr;
         };
 
         template <typename SymbolsExprType>
         auto createElasticBehavior( SymbolsExprType const& se ) const
             {
-                CHECK( M_elasticVelocityExprBC.size() == 1 ) << "TODO";
-                auto e = expr( std::get<0>( M_elasticVelocityExprBC.begin()->second ).template expr<nDim,1>(), se );
-                return ElasticBehavior<std::decay_t<decltype(e)>>( e );
+                using _expr_velocity_type = std::decay_t<decltype( expr( std::get<0>( M_elasticVelocityExprBC.begin()->second ).template expr<nDim,1>(), se ) )>;
+                using _expr_displacement_type = std::decay_t<decltype( expr( std::get<0>( M_elasticDisplacementExprBC.begin()->second ).template expr<nDim,1>(), se ) )>;
+                ElasticBehavior<_expr_velocity_type,_expr_displacement_type> eb;
+                if ( !M_elasticVelocityExprBC.empty() )
+                {
+                    CHECK( M_elasticVelocityExprBC.size() == 1 ) << "TODO";
+                    auto e = expr( std::get<0>( M_elasticVelocityExprBC.begin()->second ).template expr<nDim,1>(), se );
+                    eb.setVelocity( std::move( e) );
+                }
+                if ( !M_elasticDisplacementExprBC.empty() )
+                {
+                    CHECK( M_elasticDisplacementExprBC.size() == 1 ) << "TODO";
+                    auto e = expr( std::get<0>( M_elasticDisplacementExprBC.begin()->second ).template expr<nDim,1>(), se );
+                    eb.setDisplacement( std::move( e) );
+                }
+                return eb;
             }
 
         template <typename ElasticBehaviorType>
         void updateElasticBehavior( ElasticBehaviorType const& elasticBehavior, self_type const& fluidToolbox );
 
+#if 1
+        void updateDisplacement( double dt )
+            {
+                // TODO VINCENT
+                //double dt = this->timeStep();
+                // if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() )
+                //     bpbc.updateDisplacementFieldFromRigidVelocity( translationalVelocityExpr(), );
+                // else
+                this->body().updateDisplacementFromRigidVelocity( this->body().vectorExprFromVectorValues( idv(M_fieldTranslationalVelocity).evaluate() ),
+                                                                  cst( idv(M_fieldAngularVelocity).evaluate()(0,0) ),
+                                                                  dt
+                                                                  );
+            }
 
+        void updateElasticVelocityWithRotation()
+            {
+                CHECK( M_fieldElasticVelocity ) << "elasticVelocity not int";
+                auto XhVel = M_fieldElasticVelocity->functionSpace();
+                auto tmp = XhVel->element();
+                tmp = *M_fieldElasticVelocity;
+                auto R = this->body().rigidRotationMatrixExpr();
+                M_fieldElasticVelocity->on(_range=elements(support(XhVel)),_expr=R*idv(tmp) );
+            }
+#endif
     private :
         std::string M_name;
         ModelMarkers M_markers;
@@ -943,6 +1150,7 @@ public:
         space_trace_velocity_ptrtype M_spaceElasticVelocity;
         element_trace_velocity_ptrtype M_fieldElasticVelocity;
         std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> M_elasticVelocityExprBC;
+        std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> M_elasticDisplacementExprBC;
 
         bool M_gravityForceEnabled;
         //double M_massOfFluid;
@@ -1030,6 +1238,13 @@ public:
             {
                 for ( auto const& [name,bpbc] : *this )
                     if ( bpbc.hasElasticVelocityFromExpr() )
+                        return true;
+                return false;
+            }
+        bool hasElasticBehaviorFromExpr() const
+            {
+                for ( auto const& [name,bpbc] : *this )
+                    if ( bpbc.hasElasticBehaviorFromExpr() )
                         return true;
                 return false;
             }
@@ -2353,7 +2568,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
 {
     this->log("FluidMechanics","updateALEmesh", "start");
 
-    if ( !M_bcMovingBoundaryImposed.empty() || M_bodySetBC.hasElasticVelocityFromExpr() )
+    if ( !M_bcMovingBoundaryImposed.empty() || !M_bodySetBC.empty() )
     {
         // Warning : evaluate expression on reference mesh (maybe it will better to change the API in order to avoid tjese meshmoves)
         bool meshIsOnRefAtBegin = this->meshALE()->isOnReferenceMesh();
@@ -2365,28 +2580,43 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
         }
         for ( auto & [bpname,bpbc] : M_bodySetBC )
         {
-            if ( bpbc.hasElasticVelocityFromExpr() )
+            if ( bpbc.hasElasticBehaviorFromExpr() )
             {
-                //bpbc.updateElasticVelocityFromExpr(*this,se );
                 auto hola = bpbc.createElasticBehavior( se );
                 bpbc.updateElasticBehavior( hola, *this );
             }
-        }
 
+            bpbc.updateDisplacement( this->timeStep() );
+            this->meshALE()->updateDisplacementImposed( idv(bpbc.body().fieldDisplacement()), elements(support(bpbc.body().fieldDisplacement().functionSpace())) );
+
+            if ( bpbc.hasElasticVelocity() )
+            {
+                bpbc.updateElasticVelocityWithRotation();
+            }
+        }
         if ( !meshIsOnRefAtBegin )
             this->meshALE()->revertMovingMesh( false );
     }
 
+#if 0
     for ( auto /*const*/& [bpname,bpbc] : M_bodySetBC )
     {
         if ( bpbc.body().hasMaterialsProperties() )
         {
             // update rigid disp
             auto range = elements(support(bpbc.body().fieldRigidDisplacement().functionSpace()));
+#if 0
             if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() )
                 this->meshALE()->updateDisplacementFieldFromVelocity( bpbc.body().fieldRigidDisplacement(), bpbc.rigidVelocityExpr(), range );
             else
                 this->meshALE()->updateDisplacementFieldFromVelocity( bpbc.body().fieldRigidDisplacement(), bpbc.rigidVelocityExprFromFields(), range );
+#else
+            double dt = this->timeStep();
+            if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() )
+                bpbc.body().updateRigidDisplacementFromRigidVelocity( range, bpbc.rigidVelocityExpr(), dt );
+            else
+                bpbc.body().updateRigidDisplacementFromRigidVelocity( range, bpbc.rigidVelocityExprFromFields(), dt );
+#endif
 
             if ( bpbc.body().hasElasticDisplacement() )
                 this->meshALE()->updateDisplacementImposed( idv(bpbc.body().fieldRigidDisplacement()) + idv(bpbc.body().fieldElasticDisplacement()), range );
@@ -2421,6 +2651,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
         }
 #endif
     }
+
+#endif
 #if 0
     if ( !M_bodySetBC.empty() && velocityMeshSupport->isPartialSupport() )
         sync( *M_meshDisplacementOnInterface, "=", dofToSync );
@@ -2545,7 +2777,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::computeForce( ra
 
 
 
-
+#if 0
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template <typename SymbolsExprType>
 void
@@ -2566,6 +2798,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::BodyBoundaryCond
     if ( !meshIsOnRefAtBegin )
         fluidToolbox.meshALE()->revertMovingMesh( false );
 }
+#endif
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template <typename ElasticBehaviorType>
@@ -2575,33 +2808,80 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::BodyBoundaryCond
     double t = fluidToolbox.currentTime();
     double dt = fluidToolbox.timeStep();
 
-    auto rangeUsedByElasticVelocity = elements(this->mesh());
-    elasticBehavior.updateVelocity( *M_fieldElasticVelocity, rangeUsedByElasticVelocity, t );
-
-    //auto oldDispExpr = fluidToolbox.meshALE()->displacementExprAtPreviousTime();
-    auto spaceDisp = this->body().fieldRigidDisplacement().functionSpace();
-    auto range = elements(support(spaceDisp));
-    if constexpr ( !ElasticBehaviorType::hasDisplacement )
+    // update the elastic velocity
+    if ( elasticBehavior.canUpdateVelocity() )
     {
-#if 1
-        // RK4
-        auto v1 = spaceDisp->element();
-        auto v2 = spaceDisp->element();
-        auto v3 = spaceDisp->element();
-        elasticBehavior.updateVelocity( v1, range, t-dt );
-        elasticBehavior.updateVelocity( v2, range, t-0.5*dt );
-        elasticBehavior.updateVelocity( v3, range, t );
-        this->body().updateElasticDisplacement( range, /*oldDispExpr +*/ dt * ( idv( v1 ) + 4 * idv( v2 ) + idv( v3 ) ) / 6.0 );
-#else
-        // backward euler
-        auto v1 = spaceDisp->element();
-        elasticBehavior.updateVelocity( v1, range, t );
-        this->body().updateElasticDisplacement( range, /*oldDispExpr +*/ dt *idv(v1) );
-#endif
+        if constexpr ( ElasticBehaviorType::hasVelocity )
+        {
+            auto rangeUsedByElasticVelocity = elements(this->mesh());
+            elasticBehavior.updateVelocity( *M_fieldElasticVelocity, rangeUsedByElasticVelocity, t );
+        }
+        else
+        {
+            CHECK( false ) << "something wrong in ElasticBehavior object : canUpdateVelocity() is true but static hasVelocity is false";
+        }
     }
     else
     {
-        // TODO pro
+        CHECK( elasticBehavior.canUpdateDisplacement() ) << "we can't update the elastic velocity beacause canUpdateVelocity and canUpdateDisplacement are false";
+        if constexpr ( ElasticBehaviorType::hasDisplacement )
+        {
+            CHECK( false ) << "TODO";
+            // TODO velocity from disp
+        }
+        else
+        {
+            CHECK( false ) << "something wrong in ElasticBehavior object : canUpdateDisplacement() is true but static hashasDisplacement is false";
+        }
+    }
+
+    // update the elastic displacement
+    //auto oldDispExpr = fluidToolbox.meshALE()->displacementExprAtPreviousTime();
+    auto spaceDisp = this->body().fieldDisplacement().functionSpace();
+    auto range = elements(support(spaceDisp));
+
+    if ( elasticBehavior.canUpdateDisplacement() )
+    {
+        if constexpr ( ElasticBehaviorType::hasDisplacement )
+        {
+            if ( fluidToolbox.worldComm().isMasterRank() )
+                std::cout << "up ElasticDisplacement from DISP"<<std::endl;
+            this->body().initElasticDisplacement();
+            elasticBehavior.updateDisplacement( this->body().fieldElasticDisplacement(), range, t );
+        }
+    }
+    else
+    {
+        CHECK( elasticBehavior.canUpdateVelocity() ) << "we can't update the elastic displacement beacause canUpdateVelocity and canUpdateDisplacement are false";
+        if constexpr ( ElasticBehaviorType::hasVelocity )
+        {
+#if 1
+            // RK4
+            auto v1 = spaceDisp->element();
+            auto v2 = spaceDisp->element();
+            auto v3 = spaceDisp->element();
+            elasticBehavior.updateVelocity( v1, range, t-dt );
+            elasticBehavior.updateVelocity( v2, range, t-0.5*dt );
+            elasticBehavior.updateVelocity( v3, range, t );
+#if 0
+            this->body().updateElasticDisplacement( range, /*oldDispExpr +*/ dt * ( idv( v1 ) + 4 * idv( v2 ) + idv( v3 ) ) / 6.0 );
+#else
+            this->body().initElasticDisplacement();
+            auto oldElasticDisp = spaceDisp->element();
+            oldElasticDisp = this->body().fieldElasticDisplacement(); // TODO use bdf
+            this->body().updateElasticDisplacement( range, idv(oldElasticDisp) + dt * ( idv( v1 ) + 4 * idv( v2 ) + idv( v3 ) ) / 6.0 );
+#endif
+#else
+            // backward euler
+            auto v1 = spaceDisp->element();
+            elasticBehavior.updateVelocity( v1, range, t );
+            this->body().updateElasticDisplacement( range, /*oldDispExpr +*/ dt *idv(v1) );
+#endif
+        }
+        else
+        {
+            CHECK( false ) << "something wrong in ElasticBehavior object : canUpdateVelocity() is true but static hasVelocity is false";
+        }
     }
 }
 

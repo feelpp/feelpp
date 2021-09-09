@@ -2538,7 +2538,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::setup( pt::ptree const& p, ModelMateri
     auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
     auto M_rangeMeshElements = markedelements(this->mesh(), mom->markers( M_modelPhysics->physicsAvailableFromCurrentType() ) );
     M_spaceDisplacement = space_displacement_type::New(_mesh=M_mesh,_range=M_rangeMeshElements);
-    M_fieldRigidDisplacement = M_spaceDisplacement->elementPtr();
+    M_fieldDisplacement = M_spaceDisplacement->elementPtr();
 
     this->updateForUse();
 
@@ -2652,6 +2652,34 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string co
         }
     }
 
+    if ( auto ptElasticDisplacement = pt.get_child_optional("elastic-displacement") )
+    {
+        if ( ptElasticDisplacement->empty() )
+        {
+            std::tuple< ModelExpression, std::set<std::string>> dataExpr;
+            std::get<0>( dataExpr ).setExpr( "elastic-displacement", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+            if ( std::get<0>( dataExpr ).template hasExpr<nDim,1>() )
+                M_elasticDisplacementExprBC.emplace( "", dataExpr );
+        }
+        else
+        {
+            for ( auto const& item : *ptElasticDisplacement )
+            {
+                std::string bcElasticDisplacementName = item.first;
+                std::tuple< ModelExpression, std::set<std::string>> dataExpr;
+                std::get<0>( dataExpr ).setExpr( "expr", item.second, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+                if ( !std::get<0>( dataExpr ).template hasExpr<nDim,1>() )
+                    continue;
+                ModelMarkers bcElasticDisplacementMarkers;
+                if ( auto ptmarkers = item.second.get_child_optional("markers") )
+                    bcElasticDisplacementMarkers.setPTree(*ptmarkers/*, indexes*/);
+                std::get<1>( dataExpr ) = bcElasticDisplacementMarkers;
+                M_elasticDisplacementExprBC.emplace( bcElasticDisplacementName, dataExpr );
+            }
+        }
+    }
+
+
     if ( auto ptArticulation = pt.get_child_optional("articulation") )
     {
         if ( auto ptBodyName = ptArticulation->get_optional<std::string>( "body" ) )
@@ -2686,7 +2714,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
         M_fieldAngularVelocity = M_spaceAngularVelocity->elementPtr();
     }
 
-    if ( this->hasElasticVelocityFromExpr() )
+    if ( this->hasElasticBehaviorFromExpr()/*this->hasElasticVelocityFromExpr()*/ )
     {
         M_spaceElasticVelocity = space_trace_velocity_type::New( _mesh=M_mesh );
         M_fieldElasticVelocity = M_spaceElasticVelocity->elementPtr();
@@ -3435,6 +3463,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFac
     // update explicit part of solution if we have an elastic velocity
     if ( this->hasElasticVelocity() )
     {
+        if ( !algebraicFactory->explictPartOfSolution() )
+            algebraicFactory->initExplictPartOfSolution();
         auto uExplictiPart = fluidToolbox.functionSpaceVelocity()->element( algebraicFactory->explictPartOfSolution(), fluidToolbox.rowStartInVector()+startBlockIndexVelocity);
         for ( auto const& [bname,bbc] : *this )
             uExplictiPart.on(_range=bbc.rangeMarkedFacesOnFluid(),_expr=idv(bbc.fieldElasticVelocityPtr()),_close=true ); // TODO sync all body in one call
