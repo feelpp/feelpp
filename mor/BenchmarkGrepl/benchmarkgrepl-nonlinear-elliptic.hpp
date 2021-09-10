@@ -151,7 +151,7 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
 
 
 
-    BenchmarkGreplNonlinearElliptic();
+    BenchmarkGreplNonlinearElliptic(std::string const& prefix = "");
 
     //! initialization of the model
     void initModel() override;
@@ -165,7 +165,7 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
         vector_ptrtype V = this->M_backend->newVector(Xh);
         auto temp = Xh->element(V,0);
         mesh = Xh->mesh();
-        temp.on( elements(mesh), cst(mu(0))/cst(mu(1))*( exp( cst(mu(1))*idv(u) ) - 1  ) );
+        temp.on( _range=elements(mesh), _expr=cst(mu(0))/cst(mu(1))*( exp( cst(mu(1))*idv(u) ) - 1  ) );
         return V;
     }
 
