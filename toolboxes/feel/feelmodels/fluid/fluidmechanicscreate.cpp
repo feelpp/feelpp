@@ -2713,13 +2713,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
             M_spaceAngularVelocity = M_spaceTranslationalVelocity;
         M_fieldAngularVelocity = M_spaceAngularVelocity->elementPtr();
     }
-
+#if 0
     if ( this->hasElasticBehaviorFromExpr()/*this->hasElasticVelocityFromExpr()*/ )
     {
         M_spaceElasticVelocity = space_trace_velocity_type::New( _mesh=M_mesh );
         M_fieldElasticVelocity = M_spaceElasticVelocity->elementPtr();
     }
-
+#endif
 
     // maybe enable gravity (TODO : select only physic with gravity)
     for ( auto const& [physicName,physicData] : fluidToolbox.physicsFromCurrentType() )
