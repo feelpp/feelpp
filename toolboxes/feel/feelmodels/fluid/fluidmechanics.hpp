@@ -63,6 +63,41 @@
 
 namespace Feel
 {
+
+namespace vf
+{
+
+template <int Dim>
+auto toExpr( eigen_vector_type<Dim> const& ev )
+{
+    static_assert( Dim > 0 && Dim <=3, "toExpr only implement with Dim 1,2,3" );
+    if constexpr ( Dim == 1 )
+        return cst(ev(0));
+    else if constexpr ( Dim == 2 )
+        return vec( cst(ev(0)), cst(ev(1)) );
+    else
+        return vec( cst(ev(0)), cst(ev(1)), cst(ev(2)) );
+}
+
+template <int RowDim,int RowCol>
+auto toExpr( eigen_matrix_type<RowDim, RowCol> const& em )
+{
+    static_assert( RowDim == RowCol && (RowDim == 2 || RowDim == 3), "toExpr only implement matrix 2x2 or 3x3" );
+    if constexpr ( RowDim == 2 && RowCol == 2 )
+    {
+        return mat<2,2>( cst( em(0,0) ), cst( em(0,1) ),
+                         cst( em(1,0) ), cst( em(1,1) ) );
+    }
+    else
+    {
+        return mat<3,3>( cst( em(0,0) ), cst( em(0,1) ), cst( em(0,2) ),
+                         cst( em(1,0) ), cst( em(1,1) ), cst( em(1,2) ),
+                         cst( em(2,0) ), cst( em(2,1) ), cst( em(2,2) ) );
+    }
+}
+
+}
+
 namespace FeelModels
 {
 
@@ -335,9 +370,12 @@ public:
 
         void updateForUse();
 
+        //! return the mesh containing the body mesh
         mesh_ptrtype mesh() const { return M_mesh; }
 
+        //! return true if a MaterialsProperties has been attached to this body
         bool hasMaterialsProperties() const { return (M_materialsProperties? true : false); }
+        //! return the MaterialsProperties object associated to this body
         materialsproperties_ptrtype materialsProperties() const { return M_materialsProperties; }
 
         //! return the current displacement (corresponding to displacement applied to the reference mesh  and including elastic displacement if enabled)
@@ -348,6 +386,17 @@ public:
         element_displacement_type const& fieldElasticDisplacement() const { return *M_fieldElasticDisplacement; }
         //! return the elastic displacement (corresponding to displacement applied to the current moving mesh)
         element_displacement_type & fieldElasticDisplacement() { return *M_fieldElasticDisplacement; }
+        //! return the elastic velocity
+        element_velocity_type const& fieldElasticVelocity() const { return *M_fieldElasticVelocity; }
+        //! return the elastic velocity
+        element_velocity_type & fieldElasticVelocity() { return *M_fieldElasticVelocity; }
+
+        //! return true if an elastic displacement is defined
+        bool hasElasticDisplacement() const { return M_fieldElasticDisplacement? true : false; }
+
+        //! return true if an elastic velocity is defined
+        bool hasElasticVelocity() const { return M_fieldElasticVelocity? true:false; }
+
 
         //! update the elastic displacement from an expression \e on entities \range
         template <typename RangeType, typename ExprT>
@@ -358,35 +407,41 @@ public:
                 M_fieldDisplacement->on(_range=range,_expr=e);
             }
 
-        auto vectorExprFromVectorValues( eigen_vector_type<nRealDim> const& vectorValues ) const
-            {
-                if constexpr ( nRealDim == 2 )
-                    return vec( cst(vectorValues(0)), cst(vectorValues(1)) );
-                else
-                    return vec( cst(vectorValues(0)), cst(vectorValues(1)), cst(vectorValues(2)) );
-            }
-
         //! return the current translation as an expression
-        auto rigidTranslationExpr() const { return this->vectorExprFromVectorValues( M_rigidTranslationDisplacement ); }
+        auto rigidTranslationExpr() const { return Feel::vf::toExpr( M_rigidTranslationDisplacement ); }
 
         //! return rotation matrix from angles
-        auto rigidRotationMatrixExpr( rotation_angles_type const& rigidRotationAngles ) const
+        static eigen_matrix_type<nRealDim, nRealDim> rigidRotationMatrix( rotation_angles_type const& rigidRotationAngles )
             {
+                eigen_matrix_type<nRealDim, nRealDim> res;
                 if constexpr ( nRealDim == 2 )
                 {
                     double angle = rigidRotationAngles(0,0);
-                    return mat<2,2>( cst( std::cos(angle) ), cst( -std::sin(angle) ),
-                                     cst( std::sin(angle) ), cst(  std::cos(angle) ) );
+                    res <<   std::cos(angle), -std::sin(angle),
+                        /**/ std::sin(angle),  std::cos(angle);
                 }
                 else
                 {
-                    CHECK( false ) << "TODO 3D";
-                    return eye<nDim,nDim>();
+                    double angleZ = rigidRotationAngles(2);
+                    double angleY = rigidRotationAngles(1);
+                    double angleX = rigidRotationAngles(0);
+                    eigen_matrix_type<3, 3> rotMatZ,rotMatY,rotMatX;
+                    rotMatZ << std::cos(angleZ), -std::sin(angleZ), 0,
+                        /**/   std::sin(angleZ),  std::cos(angleZ), 0,
+                        /**/                  0,                 0, 1;
+                    rotMatY << std::cos(angleY), 0, std::sin(angleY),
+                        /**/                  0, 1,                0,
+                        /**/  -std::sin(angleY), 0, std::cos(angleY);
+                    rotMatX << 1,                0,                 0,
+                        /**/   0, std::cos(angleX), -std::sin(angleX),
+                        /**/   0, std::sin(angleX),  std::cos(angleX);
+                    res = rotMatZ*rotMatY*rotMatX;
                 }
+                return res;
             }
 
         //! return the current rotation matrix
-        auto rigidRotationMatrixExpr() const { return this->rigidRotationMatrixExpr( M_rigidRotationAngles ); }
+        auto rigidRotationMatrixExpr() const { return toExpr( this->rigidRotationMatrix( M_rigidRotationAngles ) ); }
 
 
         void updateDisplacementFromRigidVelocity( translational_velocity_type const& translationVelocity,
@@ -407,7 +462,7 @@ public:
                     auto dispByTranslationAndElastic = M_spaceDisplacement->element();
                     dispByTranslationAndElastic.on(_range=elements(support(M_spaceDisplacement)),_expr=dispByTranslationExpr+idv(this->fieldElasticDisplacement()));
                     auto [newMass,newMassCenter] = this->computeMassAndMassCenterFromDisplacementField( dispByTranslationAndElastic );
-                    auto mcExpr = this->vectorExprFromVectorValues( newMassCenter );
+                    auto mcExpr = Feel::vf::toExpr( newMassCenter );
                     this->updateDisplacement( elements(support(M_spaceDisplacement)), R*(P()+idv(dispByTranslationAndElastic)-mcExpr) + mcExpr -P() );
                 }
                 else
@@ -415,7 +470,7 @@ public:
                     auto dispByTranslationField = M_spaceDisplacement->element();
                     dispByTranslationField.on(_range=elements(support(M_spaceDisplacement)),_expr=dispByTranslationExpr);
                     auto [newMass,newMassCenter] = this->computeMassAndMassCenterFromDisplacementField( dispByTranslationField );
-                    auto mcExpr = this->vectorExprFromVectorValues( newMassCenter );
+                    auto mcExpr = Feel::vf::toExpr( newMassCenter );
                     this->updateDisplacement( elements(support(M_spaceDisplacement)), R*(P()+idv(dispByTranslationField)-mcExpr) + mcExpr -P() );
                 }
             }
@@ -436,6 +491,19 @@ public:
                 if ( !M_fieldElasticDisplacement )
                     M_fieldElasticDisplacement = M_spaceDisplacement->elementPtr();
             }
+
+        //! init init elastic displacement field if not built
+        void initElasticVelocity()
+            {
+                if ( !M_fieldElasticVelocity )
+                {
+                    auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
+                    auto M_rangeMeshElements = markedelements(this->mesh(), mom->markers( M_modelPhysics->physicsAvailableFromCurrentType() ) );
+                    M_spaceElasticVelocity = space_velocity_type::New(_mesh=M_mesh,_range=M_rangeMeshElements);
+                    M_fieldElasticVelocity = M_spaceElasticVelocity->elementPtr();
+                }
+            }
+
         //! update the elastic displacement from an expression \e on entities \range
         template <typename RangeType, typename ExprT>
         void updateElasticDisplacement( RangeType const& range, Expr<ExprT> const& e )
@@ -455,56 +523,28 @@ public:
             }
 
 
-        //! return true if an elastic displacement is defined
-        bool hasElasticDisplacement() const { return M_fieldElasticDisplacement? true : false; }
-
-
-        //! init init elastic displacement field if not built
-        void initElasticVelocity()
-            {
-                if ( !M_fieldElasticVelocity )
-                {
-                    auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
-                    auto M_rangeMeshElements = markedelements(this->mesh(), mom->markers( M_modelPhysics->physicsAvailableFromCurrentType() ) );
-                    M_spaceElasticVelocity = space_velocity_type::New(_mesh=M_mesh,_range=M_rangeMeshElements);
-                    M_fieldElasticVelocity = M_spaceElasticVelocity->elementPtr();
-                }
-            }
-        //! return true if an elastic velocity is defined
-        bool hasElasticVelocity() const { return M_fieldElasticVelocity? true:false; }
-
-
-        element_velocity_type const& fieldElasticVelocity() const { return *M_fieldElasticVelocity; }
-        element_velocity_type & fieldElasticVelocity() { return *M_fieldElasticVelocity; }
-
 
         void setMass( double m ) { M_mass = m; }
         void setMomentOfInertia( moment_of_inertia_type const& m ) { M_momentOfInertia = m; }
         void setMomentOfInertia( double val ) { M_momentOfInertia = val*moment_of_inertia_type::Identity(); }
         void setMassCenter( eigen_vector_type<nRealDim> const& massCenter ) { M_massCenter = massCenter; }
+
+        //! return the mass of the body
         double mass() const { return M_mass; }
-        moment_of_inertia_type const& momentOfInertia() const { return M_momentOfInertia; }
-        eigen_vector_type<nRealDim> const& massCenter() const { return M_massCenter; }
-
+        //! return the mass of the body as an expression
         auto massExpr() const { return cst( M_mass ); }
-        auto momentOfInertiaExpr() const
-            {
-                if constexpr ( nDim == 2 )
-                    return cst(M_momentOfInertia(0,0));
-                else
-                    return mat<3,3>( cst(M_momentOfInertia(0,0)),cst(M_momentOfInertia(0,1)),cst(M_momentOfInertia(0,2)),
-                                     cst(M_momentOfInertia(1,0)),cst(M_momentOfInertia(1,1)),cst(M_momentOfInertia(1,2)),
-                                     cst(M_momentOfInertia(2,0)),cst(M_momentOfInertia(2,1)),cst(M_momentOfInertia(2,2)) );
-            }
-        auto massCenterExpr() const
-            {
-                if constexpr ( nDim == 2 )
-                    return vec( cst(M_massCenter(0)), cst(M_massCenter(1)) );
-                else
-                    return vec( cst(M_massCenter(0)), cst(M_massCenter(1)), cst(M_massCenter(2)) );
-            }
 
+        //! return the moment of inertia
+        moment_of_inertia_type const& momentOfInertia() const { return M_momentOfInertia; }
+        //! return the moment of inertia as an expression
+        auto momentOfInertiaExpr() const { return Feel::vf::toExpr(M_momentOfInertia); }
 
+        //! return the center of mass of the body 
+        eigen_vector_type<nRealDim> const& massCenter() const { return M_massCenter; }
+        //! return the center of mass of the body as an expression
+        auto massCenterExpr() const { return Feel::vf::toExpr(M_massCenter); }
+
+        //! return the mass from an expression of the density \densityExpr
         template <typename ExprType>
         double evaluateMassFromDensity( Expr<ExprType> const& densityExpr ) const
             {
@@ -643,21 +683,11 @@ public:
         template <typename SymbolsExprType>
         auto translationalVelocityExpr( SymbolsExprType const& se ) const
             {
-#if 0
-                auto mc1 = this->body1().body().massCenter();
-                auto mc2 = this->body2().body().massCenter();
-                eigen_vector_type<nRealDim> /*auto*/ unitDir = (mc2-mc1);
-                unitDir.normalize();
-#endif
-                eigen_vector_type<nRealDim> unitDir = this->unitDirBetweenMassCenters();
-                //std::cout << "unit dir : " << unitDir << std::endl;
                 auto e = expr( M_exprTranslationalVelocity.template expr<1,1>(), se );
                 // std::cout << "e=" << str(e.expression()) << std::endl;
                 // std::cout << "e.eval=" << e.evaluate()(false) << std::endl;
-                if constexpr ( nDim == 2 )
-                    return e*vec( cst(unitDir(0)), cst(unitDir(1)) );
-                else
-                    return e*vec( cst(unitDir(0)), cst(unitDir(1)), cst(unitDir(2)) );
+                auto unitDirExpr = Feel::vf::toExpr( this->unitDirBetweenMassCenters() );
+                return e*unitDirExpr;
             }
 
         //! init LagrangeMultiplier
@@ -733,6 +763,7 @@ public:
                                      [&ba]( BodyArticulation const& e ) { return e.areConnected( ba ); } ) != M_articulations.end();
             }
 
+        //! return true if the BodyBoundaryCondition \bbc is present in this nbody articulated
         bool has( BodyBoundaryCondition const& bbc ) const
             {
                 return  std::find_if( M_articulations.begin(), M_articulations.end(),
@@ -765,47 +796,16 @@ public:
         moment_of_inertia_type const& momentOfInertia() const { return M_momentOfInertia; }
 
         //! return moment of inertia expression
-        auto momentOfInertiaExpr() const
-            {
-                if constexpr ( nDim == 2 )
-                    return cst(M_momentOfInertia(0,0));
-                else
-                    return mat<3,3>( cst(M_momentOfInertia(0,0)),cst(M_momentOfInertia(0,1)),cst(M_momentOfInertia(0,2)),
-                                     cst(M_momentOfInertia(1,0)),cst(M_momentOfInertia(1,1)),cst(M_momentOfInertia(1,2)),
-                                     cst(M_momentOfInertia(2,0)),cst(M_momentOfInertia(2,1)),cst(M_momentOfInertia(2,2)) );
-            }
+        auto momentOfInertiaExpr() const { return Feel::vf::toExpr( M_momentOfInertia ); }
 
         //! return center of mass
         eigen_vector_type<nRealDim> const& massCenter() const { return M_massCenter; }
 
         //! return center of mass expression
-        auto massCenterExpr() const
-            {
-                if constexpr ( nDim == 2 )
-                    return vec( cst(M_massCenter(0)), cst(M_massCenter(1)) );
-                else
-                    return vec( cst(M_massCenter(0)), cst(M_massCenter(1)), cst(M_massCenter(2)) );
-            }
-
-
-        //! return rotation matrix from angles
-        auto rigidRotationMatrixExpr( rotation_angles_type const& rigidRotationAngles ) const
-            {
-                if constexpr ( nRealDim == 2 )
-                {
-                    double angle = rigidRotationAngles(0,0);
-                    return mat<2,2>( cst( std::cos(angle) ), cst( -std::sin(angle) ),
-                                     cst( std::sin(angle) ), cst(  std::cos(angle) ) );
-                }
-                else
-                {
-                    CHECK( false ) << "TODO 3D";
-                    return eye<nDim,nDim>();
-                }
-            }
+        auto massCenterExpr() const { return Feel::vf::toExpr( M_massCenter ); }
 
         //! return the current rotation matrix
-        auto rigidRotationMatrixExpr() const { return this->rigidRotationMatrixExpr( M_rigidRotationAngles ); }
+        auto rigidRotationMatrixExpr() const { return Feel::vf::toExpr( Body::rigidRotationMatrix( M_rigidRotationAngles ) ); }
 
         //! init the time stepping
         void initTimeStep( self_type const& fluidToolbox, int bdfOrder, int nConsecutiveSave, std::string const& myFileFormat )
@@ -2702,8 +2702,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
             {
                 if ( !nba.has( bbc ) )
                     continue;
-                auto massCenterExpr = bbc.body().vectorExprFromVectorValues(massCenter);
-                bbc.body().applyRotationToCurrentDisplacement( R, massCenterExpr );
+                bbc.body().applyRotationToCurrentDisplacement( R, Feel::vf::toExpr(massCenter) );
             }
         }
 
