@@ -54,35 +54,6 @@ namespace Feel
 namespace FeelModels
 {
 
-inline po::options_description
-makeMixedPoissonOptions( std::string const&  _prefix = "", std::string const&  _toolbox_prefix = "hdg.poisson" )
-{
-    std::string prefix = _toolbox_prefix.empty()?"hdg.poisson":_toolbox_prefix;
-    if ( !_prefix.empty() )
-        prefix = prefixvm( prefix, _prefix );
-    po::options_description mpOptions( "Mixed Poisson HDG options" );
-    mpOptions.add_options()( "gmsh.submesh", po::value<std::string>()->default_value( "" ), "submesh extraction" )
-        ( prefixvm( prefix, "tau_constant" ).c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
-        ( prefixvm( prefix, "use-sc" ).c_str(), po::value<bool>()->default_value( true ), "use static condensation" )
-        ( prefixvm( prefix, "time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
-        ( prefixvm( prefix, "time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
-        ;
-    mpOptions.add( modelnumerical_options( prefix ) );
-    mpOptions.add( bdf_options( prefix ) );
-    mpOptions.add( ts_options( prefix ) );
-    mpOptions.add( backend_options( prefix + ".sc" ) );
-    return mpOptions;
-}
-
-inline po::options_description
-makeMixedPoissonLibOptions( std::string const&  prefix = "", std::string const&  _toolbox_prefix = "hdg.poisson" )
-{
-    po::options_description mpLibOptions( "Mixed Poisson HDG Lib options");
-    // if ( !prefix.empty() )
-    //     mpLibOptions.add( backend_options( prefix ) );
-    return mpLibOptions;
-}
-
 /**
  * Toolbox MixedPoisson
  * @ingroup Toolboxes
@@ -112,11 +83,6 @@ public:
     using face_mesh_ptrtype = std::shared_ptr<face_mesh_type>;
 
     static const uint16_type expr_order = (Order+E_Order)*nOrderGeo;
-
-    // using sparse_matrix_type = backend_type::sparse_matrix_type;
-    // using sparse_matrix_ptrtype = backend_type::sparse_matrix_ptrtype;
-    // using vector_type = backend_type::vector_type;
-    // using vector_ptrtype = backend_type::vector_ptrtype;
 
     // Vh
     using space_flux_type = Pdhv_type<mesh_type,Order>;
@@ -148,6 +114,8 @@ public:
     using space_p0dh_type = Pdh_type<mesh_type,0>;
     using space_p0dh_ptrtype = Pdh_ptrtype<mesh_type,0>;
 
+    using product_space_type = ProductSpace<space_traceibc_ptrtype, true>;
+    using product_space_ptrtype = std::shared_ptr<product_space_type>;
     using product2_space_type = ProductSpaces2<space_traceibc_ptrtype,
                                                space_flux_ptrtype,
                                                space_potential_ptrtype,
@@ -293,14 +261,16 @@ public:
     void setTauCst(double cst) { M_tauCst = cst; }
     bool useSC() const { return M_useSC; }
     void setUseSC(bool sc) { M_useSC = sc; }
+    virtual int constantSpacesSize() const { return M_bcIntegralMarkerManagement.markerIntegralBC().size(); }
 
-private :
+protected :
     void loadParameterFromOptionsVm();
     void initMesh();
-    void initBoundaryConditions();
+    virtual void initBoundaryConditions();
     void initFunctionSpaces();
-    void initTimeStep();
+    virtual void initTimeStep();
     void initPostProcess() override;
+    virtual void setSpaceProperties(product_space_ptrtype const& ibcSpaces);
 
 public:
     void init( bool buildModelAlgebraicFactory = true );
@@ -351,8 +321,8 @@ public:
     // apply assembly and solver
     //___________________________________________________________________________________//
 
-    void solve();
-    void updateLinearPDE( DataUpdateHDG& data ) const;
+    virtual void solve();
+    virtual void updateLinearPDE( DataUpdateHDG& data ) const;
     template <typename ModelContextType>
     void updateLinearPDE( DataUpdateHDG & data, ModelContextType const& mfields ) const;
 
@@ -423,8 +393,8 @@ public:
     bdf_potential_ptrtype const& timeStepBdfPotential() const { return M_bdfPotential; }
     std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfPotential(); }
     std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBdfPotential(); }
-    void startTimeStep();
-    void updateTimeStep();
+    virtual void startTimeStep();
+    virtual void updateTimeStep();
 
     template <typename SymbolsExprType>
     void updateInitialConditions( SymbolsExprType const& se );
