@@ -68,12 +68,12 @@ feelpp_add_application( hdg_elasticity
 #  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
 #  )
 
-# if ( FEELPP_HAS_FMILIB )
-# feelpp_add_application( hdg_coupledpoisson
-#   SRCS coupledmixedpoisson_main.cpp
-#   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
-#   INSTALL MAN hdg_coupledpoisson  )
-# endif()
+if ( FEELPP_HAS_FMILIB )
+  feelpp_add_application( hdg_coupledpoisson
+    SRCS coupledmixedpoisson_main.cpp
+    LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
+    INSTALL MAN hdg_coupledpoisson  )
+endif()
 
 
 foreach( _testcase IN ITEMS "poisson" "elasticity" "thermoelectric" "coupledpoisson" )
