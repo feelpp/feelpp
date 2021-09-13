@@ -1,0 +1,125 @@
+{
+    "Name": "HDG-CoupledMixedPoisson-constant",
+    "ShortName": "CMP",
+    "Models":
+    {
+        "equations":"hdg"
+    },
+    "Parameters":
+    {
+        "Cb":1,
+        "Rb":1,
+        "L":1,
+        "H":2,
+        "a":10,
+        "b":0.5,
+        "Rout":1,
+        "k":1
+    },
+    "Materials":
+    {
+        "omega":
+        {
+            "cond":"k:k"
+        }
+    },
+    "InitialConditions":
+    {
+        "potential":
+        {
+            "Expression":
+            {
+                "myic1":
+                {
+                    "markers":"omega",
+                    "expr": "10"
+                    // "expr":"a+b*x*t:x:y:z:a:b:t"
+                }
+            }
+        }
+    },
+    "BoundaryConditions":
+    {
+        "flux":
+        {
+            "Integral":
+            {
+                "top":
+                {
+                    "expr":"-0.5*t:t"
+                    // "expr":"-k*b*t:k:b:t"
+                }
+            }
+        },
+        "potential":
+        {
+            "VolumicForces":
+            {
+                "omega":
+                {
+                    "expr":"0.5*x:x"
+                    // "expr":"b*x:x:b"
+                }
+            },
+            "Dirichlet":
+            {
+                "bottom":
+                {
+                    "expr":"10"
+                }
+            },
+            "Neumann":
+            {
+                "lateral":
+                {
+                    "expr":0
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["potential","flux"]
+        },
+        "Measures":
+        {
+            "Norm":
+            {
+                "potential_error":
+                {
+                    "type":"L2-error",
+                    "field": "potential",
+                    // "solution": "a+b*x*t:x:a:b:t",
+                    "solution": "10+0.5*x*0.08:x",
+                    "markers":"omega"
+                },
+                "flux_error":
+                {
+                    "type":"L2-error",
+                    "field":"flux",
+                    // "solution":"{-k*b*t,0,0}:k:b:t",
+                    "solution":"{-0.5*0.08,0,0}:t",
+                    "markers":"omega"
+                }
+            }
+        },
+        "Checkers":
+        {
+            "Measures":
+            {
+                "Norm_potential_error_L2-error":
+                {
+                    "value":0,
+                    "tolerance":1
+                },
+                "Norm_flux_error_L2-error":
+                {
+                    "value":0,
+                    "tolerance":1
+                }
+            }
+        }
+    }
+}
