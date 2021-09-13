@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     using namespace Feel;
 
     po::options_description mpoptions( "hdg.poisson options" );
-    mpoptions.add( FeelModels::makeMixedPoissonOptions() );
+    mpoptions.add( toolboxes_options("mixedpoisson", "hdg.poisson") );
     mpoptions.add_options()
         ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
         ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     int dimension = ioption(_name="case.dimension");
     std::string discretization = soption(_name="case.discretization");
 
-    auto dimt = hana::make_tuple(hana::int_c<2>/*,hana::int_c<3>*/);
+    auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
     auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
     int status = 1;
 

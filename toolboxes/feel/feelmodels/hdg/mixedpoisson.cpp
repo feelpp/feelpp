@@ -195,13 +195,20 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 
     auto ibc_mesh = createSubmesh( _mesh=this->mesh(), _range=markedfaces(this->mesh(), ibcMarkers), _update=0 );
     M_Ch = space_traceibc_type::New( _mesh=ibc_mesh, _extended_doftable=true, _worldscomm=this->worldsComm() );
-    M_mup = element_traceibc_vector_type(M_bcIntegralMarkerManagement.markerIntegralBC().size(),
+    M_mup = element_traceibc_vector_type(this->constantSpacesSize(),
                                          std::make_shared<element_traceibc_type>(M_Ch, "mup"));
 
-    auto ibcSpaces = std::make_shared<ProductSpace<space_traceibc_ptrtype, true> >( M_bcIntegralMarkerManagement.markerIntegralBC().size(), M_Ch);
-    std::vector<std::string> props(M_bcIntegralMarkerManagement.markerIntegralBC().size(), "Ibc");
-    ibcSpaces->setProperties( props );
+    auto ibcSpaces = std::make_shared<ProductSpace<space_traceibc_ptrtype, true> >( this->constantSpacesSize(), M_Ch);
+    this->setSpaceProperties(ibcSpaces);
     M_ps = std::make_shared<product2_space_type>(ibcSpaces, M_Vh, M_Wh, M_Mh);
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+void
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::setSpaceProperties(product_space_ptrtype const& ibcSpaces)
+{
+    std::vector<std::string> props(this->constantSpacesSize(), "Ibc");
+    ibcSpaces->setProperties( props );
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
