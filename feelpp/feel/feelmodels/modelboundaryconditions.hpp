@@ -91,7 +91,7 @@ class FEELPP_EXPORT ModelBoundaryCondition : public CommObject
 
     void setParameterValues( std::map<std::string,double> const& mp );
 
-private:
+protected:
     pt::ptree M_pt;
     std::string M_name;
     std::string M_material;
