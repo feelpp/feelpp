@@ -31,6 +31,7 @@
 #include <parmmg/libparmmg.h>
 #include <variant>
 #include <feel/feelmesh/concatenate.hpp>
+#include <feel/feeldiscr/pch.hpp>
 
 namespace Feel
 {
@@ -82,9 +83,14 @@ class Remesh
         : Remesh( nullptr )
     {
     }
+    Remesh( std::shared_ptr<MeshType> const& mesh ): Remesh( mesh, std::vector<std::string>{}, std::vector<std::string>{} ) {}
+    Remesh( std::shared_ptr<MeshType> const& mesh,
+            boost::any const& required_element_markers ): Remesh( mesh, required_element_markers, std::vector<std::string>{} ) {}
     Remesh( std::shared_ptr<MeshType> const& mesh,
             boost::any const& required_element_markers,
             boost::any const& required_facet_markers );
+    Remesh( Remesh const& r ) = default;
+    Remesh( Remesh&& r ) = default;
 
     ~Remesh()
     {
@@ -110,7 +116,8 @@ class Remesh
                            PMMG_ARG_end );
         }
     }
-
+    Remesh& operator=( Remesh const& r ) = default;
+    Remesh& operator=( Remesh && r ) = default;
     /**
      * set scalar metric
      */
