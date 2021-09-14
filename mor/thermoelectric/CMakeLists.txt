@@ -33,9 +33,9 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
 endif()
 
 # how to FEELPP_INCLUDE_DIR
-if (EXISTS ${FEELPP_INSTALL_DIR}/include/feelpp/toolboxes)
-  MESSAGE(STATUS "Loading toolboxes headers from ${FEELPP_INSTALL_DIR}/include/feelpp/toolboxes")
-  include_directories(${FEELPP_INSTALL_DIR}/include/feelpp/toolboxes)
+if (EXISTS ${FEELPP_DIR}/include/feelpp/toolboxes)
+  MESSAGE(STATUS "Loading toolboxes headers from ${FEELPP_DIR}/include/feelpp/toolboxes")
+  include_directories(${FEELPP_DIR}/include/feelpp/toolboxes)
 else()
   MESSAGE(STATUS "Loading toolboxes headers from ${CMAKE_SOURCE_DIR}/toolboxes and ${CMAKE_BINARY_DIR}/toolboxes")
   include_directories(${CMAKE_SOURCE_DIR}/toolboxes)
@@ -66,7 +66,7 @@ crb_add_library( electric-alpha SRCS electric-alpha.cpp EXEC CRB_LIB_ELECTRIC_AL
 set(FEELPP_CRB_ELECTRIC_ALPHA_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_ELECTRIC_ALPHA_LIBRARIES PARENT_SCOPE)
 
-crb_add_library( biotsavart-electric-alpha SRCS biotsavart-electric-alpha.hpp biotsavart-electric-alpha.cpp LINK_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA} ${GLPK_LIBRARIES} EXEC CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA )
+crb_add_library( biotsavart-electric-alpha SRCS biotsavart-electric-alpha.hpp biotsavart-electric-alpha.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} feelpp_modelcore feelpp_modelalg feelpp_toolbox_electric_lib_3dP1G1 ${CRB_LIB_ELECTRIC_ALPHA} ${GLPK_LIBRARIES} EXEC CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA )
 target_include_directories(feelpp_crb_biotsavart-electric-alpha PUBLIC ${GLPK_INCLUDE_DIR} )
 set(FEELPP_CRB_BIOTSAVART_ELECTRIC_ALPHA_LIBRARIES ${CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_BIOTSAVART_ELECTRIC_ALPHA_LIBRARIES PARENT_SCOPE)
