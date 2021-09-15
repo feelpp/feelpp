@@ -739,7 +739,7 @@ toolboxes_options( std::string const& type, std::string const& prefix )
     else if (type == "mixedpoisson")
         toolboxesOptions.add(mixedpoisson_options(prefix));
     else
-        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric, heat-fluid, heat-fluid, coefficient-form-pdes";
+        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric, heat-fluid, heat-fluid, coefficient-form-pdes, mixedpoisson";
 
     return toolboxesOptions;
 }
