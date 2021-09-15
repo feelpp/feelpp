@@ -2098,18 +2098,28 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     {
         if ( bpbc.hasTranslationalVelocityExpr() )
         {
+#if 0
             this->updateDofEliminationIds( "body-bc.translational-velocity",  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
             // only do for one, dof ids are the same for all
             break;
+#else
+            std::string spaceName = "body-bc."+bpbc.name()+".translational-velocity";
+            this->updateDofEliminationIds( spaceName,  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
+#endif
         }
     }
     for ( auto const& [bpname,bpbc] : M_bodySetBC )
     {
         if ( bpbc.hasAngularVelocityExpr() )
         {
+#if 0
             this->updateDofEliminationIds( "body-bc.angular-velocity",  bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
             // only do for one, dof ids are the same for all
             break;
+#else
+            std::string spaceName = "body-bc."+bpbc.name()+".angular-velocity";
+            this->updateDofEliminationIds( spaceName, bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
+#endif
         }
     }
 }

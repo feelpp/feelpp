@@ -154,7 +154,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
             }
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( M_isMoveDomain && !BuildCstPart && !UseJacobianLinearTerms )
+            if ( this->isMoveDomain() && !BuildCstPart && !UseJacobianLinearTerms && ( physicFluidData->equation() == "Navier-Stokes" ||  physicFluidData->equation() == "StokesTransient" ) )
             {
                 auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
                 // mesh velocity (convection) term
@@ -164,8 +164,6 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                                _geomap=this->geomap() );
             }
 #endif
-
-
             if ( !BuildCstPart && !UseJacobianLinearTerms && physicFluidData->equation() == "Navier-Stokes" && data.hasVectorInfo( "explicit-part-of-solution" ) )
             {
                 auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
@@ -727,30 +725,49 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                 size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
                 int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
                 bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
-                if ( !BuildCstPart && !UseJacobianLinearTerms )
+                R->setIsClosed( false );
+
+                if ( hasActiveDofAngularVelocity )
                 {
-                    R->setIsClosed( false );
-                    if ( hasActiveDofAngularVelocity )
+                    auto uAngularVelocity = bpbc.spaceAngularVelocity()->element( XVec, rowStartInVector+startBlockIndexAngularVelocity );
+
+                    auto w_eval = idv(uAngularVelocity).evaluate(false);
+                    auto const& basisToContainerGpAngularVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
+                    auto const& momentOfInertia = bpbc.momentOfInertia();
+                    auto timeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia(this->timeStep());
+                    if ( !BuildCstPart && !UseJacobianLinearTerms )
                     {
-                        auto uAngularVelocity = bpbc.spaceAngularVelocity()->element( XVec, rowStartInVector+startBlockIndexAngularVelocity );
-                        auto const& basisToContainerGpAngularVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
-                        auto const& momentOfInertia = bpbc.momentOfInertia();
+                        typename Body::moment_of_inertia_type termWithTimeDerivativeOfMomentOfInertia;
+                        if constexpr ( nDim == 2 )
+                            termWithTimeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia(this->timeStep());
+                        else
+                        {
+                            auto rotationMat = bpbc.rigidRotationMatrix();
+                            termWithTimeDerivativeOfMomentOfInertia = rotationMat*bpbc.timeDerivativeOfMomentOfInertia(this->timeStep())*(rotationMat.transpose());
+                        }
+
                         //auto contribLhsAngularVelocity = (bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*((momentOfInertiaExpr*idv(uAngularVelocity)).evaluate(false))).eval(); // not works if not call eval(), probably aliasing issue
-                        auto contribLhsAngularVelocity = bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia*(idv(uAngularVelocity).evaluate(false));
+                        auto contribLhsAngularVelocity = (bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia + termWithTimeDerivativeOfMomentOfInertia)*w_eval;
                         for (int i=0;i<nLocalDofAngularVelocity;++i)
                         {
-                            R->add( basisToContainerGpAngularVelocityVector[i],
-                                    contribLhsAngularVelocity(i,0)
-                                    );
+                            double val = contribLhsAngularVelocity(i,0);
+                            R->add( basisToContainerGpAngularVelocityVector[i], val );
                         }
                     }
-                }
-                if ( BuildCstPart && doAssemblyRhs )
-                {
-                    R->setIsClosed( false );
-                    if ( hasActiveDofAngularVelocity )
+                    if ( BuildNonCstPart )
                     {
-                        auto const& basisToContainerGpAngularVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
+                        if constexpr ( nDim == 3 )
+                        {
+                            // term : w x Iw
+                            auto Iw_eval = momentOfInertia*w_eval;
+                            auto wCrossIw = w_eval.cross( Iw_eval );
+                            for (int i=0;i<nLocalDofAngularVelocity;++i)
+                                R->add( basisToContainerGpAngularVelocityVector[i], wCrossIw(i) );
+                        }
+                    }
+                    if ( BuildCstPart && doAssemblyRhs )
+                    {
+                        //auto const& basisToContainerGpAngularVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
                         auto angularVelocityPolyDeriv = bpbc.bdfAngularVelocity()->polyDeriv();
                         auto momentOfInertiaExpr = bpbc.momentOfInertiaExpr();
                         auto contribRhsAngularVelocity = (momentOfInertiaExpr*idv(angularVelocityPolyDeriv)).evaluate(false);
@@ -762,7 +779,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                                     );
                         }
                     }
-                }
+                } // hasActiveDofAngularVelocity
             }
 
         } // for ( auto const& [bpname,bpbc] : M_bodySetBC )

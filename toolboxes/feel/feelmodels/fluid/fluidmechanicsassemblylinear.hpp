@@ -787,23 +787,49 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 auto const& momentOfInertia = bpbc.momentOfInertia();
                 int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
                 bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
-                if ( BuildCstPart)
+                if ( BuildNonCstPart/*BuildCstPart*/ )
                 {
                     A->setIsClosed( false );
                     if ( hasActiveDofAngularVelocity )
                     {
+                        typename Body::moment_of_inertia_type termWithTimeDerivativeOfMomentOfInertia;
+                        if constexpr ( nDim == 2 )
+                            termWithTimeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia(this->timeStep());
+                        else
+                        {
+                            auto rotationMat = bpbc.rigidRotationMatrix();
+                            termWithTimeDerivativeOfMomentOfInertia = rotationMat*bpbc.timeDerivativeOfMomentOfInertia(this->timeStep())*(rotationMat.transpose());
+                        }
+
                         auto const& basisToContainerGpAngularVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexAngularVelocity );
                         auto const& basisToContainerGpAngularVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexAngularVelocity );
+                        auto timeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia(this->timeStep());
                         for (int i=0;i<nLocalDofAngularVelocity;++i)
                         {
                             for (int j=0;j<nLocalDofAngularVelocity;++j)
                             {
-                                A->add( basisToContainerGpAngularVelocityRow[i], basisToContainerGpAngularVelocityCol[j],
-                                        bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia(i,j) );
+                                double val = bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia(i,j);
+                                val += termWithTimeDerivativeOfMomentOfInertia(i,j);
+                                A->add( basisToContainerGpAngularVelocityRow[i], basisToContainerGpAngularVelocityCol[j], val );
                             }
+                        }
+                        if constexpr ( nDim == 3 )
+                        {
+                            auto const& uAngularVelocity = mctx.field( BodyBoundaryCondition::FieldTag::angular_velocity(&bpbc), "angular-velocity" );
+                            auto w_eval = idv(uAngularVelocity).evaluate(false);
+                            auto Iw_eval = momentOfInertia*w_eval;
+                            //  w curl I w
+                            A->add( basisToContainerGpAngularVelocityRow[0], basisToContainerGpAngularVelocityCol[1], Iw_eval(2) );
+                            A->add( basisToContainerGpAngularVelocityRow[0], basisToContainerGpAngularVelocityCol[2], -Iw_eval(1) );
+                            A->add( basisToContainerGpAngularVelocityRow[1], basisToContainerGpAngularVelocityCol[0], -Iw_eval(2) );
+                            A->add( basisToContainerGpAngularVelocityRow[1], basisToContainerGpAngularVelocityCol[2], Iw_eval(0) );
+                            A->add( basisToContainerGpAngularVelocityRow[2], basisToContainerGpAngularVelocityCol[0], Iw_eval(1) );
+                            A->add( basisToContainerGpAngularVelocityRow[2], basisToContainerGpAngularVelocityCol[1], -Iw_eval(0) );
                         }
                     }
                 }
+
+
                 if ( BuildNonCstPart )
                 {
                     F->setIsClosed( false );
@@ -840,7 +866,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 bool hasActiveDofTranslationalVelocityBody1 = bbc1.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
                 bool hasActiveDofTranslationalVelocityBody2 = bbc2.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
                 size_type startBlockIndexArticulationLMTranslationalVelocity = this->startSubBlockSpaceIndex( "body-bc.articulation-lm."+ba.name()+".translational-velocity");
-                if ( BuildCstPart)
+                if ( BuildCstPart )
                 {
                     A->setIsClosed( false );
                     if ( hasActiveDofTranslationalVelocityBody1 )
