@@ -1,15 +1,15 @@
-from pyfeelpp import core,mesh,discr,models
-from pyfeelpptoolboxes.modelcore import *
-from _hdg import *
+import feelpp
+from feelpp.toolboxes import *
+from ._hdgpoisson import *
 
 _hdgs={
-    'hdg(2,1)':HDGPoisson_2DP1,
-    'hdg(2,2)':HDGPoisson_2DP2,
-    'hdg(3,1)':HDGPoisson_3DP1,
-    'hdg(3,2)':HDGPoisson_3DP2,
+    'mixedpoisson(2,1)':mixedpoisson_2DP1,
+    'mixedpoisson(2,2)':mixedpoisson_2DP2,
+    'mixedpoisson(3,1)':mixedpoisson_3DP1,
+    'mixedpoisson(3,2)':mixedpoisson_3DP2,
 }
 
-def hdgpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", worldComm=None ):
+def mixedpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", worldComm=None ):
     """create a hdg toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -18,11 +18,11 @@ def hdgpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", worldCo
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     """
     if worldComm is None:
-        worldComm=core.Environment.worldCommPtr()
-    key='hdg('+str(dim)+','+str(order)+')'
+        worldComm=feelpp.Environment.worldCommPtr()
+    key='mixedpoisson('+str(dim)+','+str(order)+')'
     if worldComm.isMasterRank():
         print(key)
     if key not in _hdgs:
         raise RuntimeError('HDG solver '+key+' not existing')
     _prefix= prefix_toolbox+"."+prefix if prefix else prefix_toolbox
-    return _hdgs[key]( _prefix, worldComm )
+    return _hdgs[key]( _prefix, worldComm=worldComm )
