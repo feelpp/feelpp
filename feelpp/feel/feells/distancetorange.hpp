@@ -19,7 +19,7 @@
 //! License along with this library; if not, write to the Free Software
 //! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 //!
-//! @file distancetomesh.hpp
+//! @file distancetorange.hpp
 //! @author Thibaut Metivet <thibaut.metivet@inria.fr>
 //! @date 01 Sept 2021
 //! @copyright 2021 Feel++ Consortium
@@ -116,13 +116,16 @@ class DistanceToRange
 
         fastmarching_ptrtype M_fastMarching;
 
+        mutable elements_reference_wrapper_distance_ptrtype M_eltsTouchingFaces;
+
         mutable std::unordered_map< size_type, Eigen::Matrix<value_type,3,3> > M_faceTriangleTransformationMatrices;
 };
 
 template< typename FunctionSpaceType >
 DistanceToRange< FunctionSpaceType >::DistanceToRange(
         functionspace_distance_ptrtype const& spaceDistance ) :
-    M_spaceDistance( spaceDistance )
+    M_spaceDistance( spaceDistance ),
+    M_eltsTouchingFaces( new elements_reference_wrapper_distance_type{} )
 {}
 
 template< typename FunctionSpaceType >
@@ -186,8 +189,8 @@ DistanceToRange< FunctionSpaceType >::unsignedDistanceToFaces( range_faces_type 
 {
     auto unsignedDistance = this->functionSpaceDistance()->element( "unsignedDistance" );
     // Initialise distance with arbitrarily large value
-    //unsignedDistance->setConstant( std::numeric_limits<value_type>::max() );
-    unsignedDistance.setConstant(1e8);
+    unsignedDistance.setConstant( std::numeric_limits<value_type>::max() );
+    //unsignedDistance.setConstant(1e8);
     // Compute exact distance on touching elements
     auto const& dofTable = this->functionSpaceDistance()->dof();
     auto const computeDistanceToFaceOnElt = [ & ] ( size_type const faceId, size_type const eltId )
@@ -197,12 +200,20 @@ DistanceToRange< FunctionSpaceType >::unsignedDistanceToFaces( range_faces_type 
             size_type const eltDofGlobalId = dofTable->localToGlobal( eltId, j, 0 ).index();
 
             auto dist = this->distanceDofToFace( eltDofGlobalId, faceId );
+            Feel::cout 
+                << "dist = " << dist << ", "
+                << "current = " << unsignedDistance.localToGlobal( eltId, j, 0 )
+                << "\t";
             if( dist < unsignedDistance.localToGlobal( eltId, j, 0 ) )
+            {
                 unsignedDistance.assign( eltId, j, 0, dist );
+                Feel::cout << "accept";
+            }
+                Feel::cout << std::endl;
         }
     };
 
-    elements_reference_wrapper_distance_ptrtype eltsTouchingFaces( new elements_reference_wrapper_distance_type );
+    M_eltsTouchingFaces->clear();
 
     auto face_it = rangeFaces.template get<1>();
     auto face_en = rangeFaces.template get<2>();
@@ -212,17 +223,17 @@ DistanceToRange< FunctionSpaceType >::unsignedDistanceToFaces( range_faces_type 
         size_type const faceId = face.id();
         if ( face.isConnectedTo0() )
         {
-            eltsTouchingFaces->push_back( boost::cref( face.element0() ) );
+            M_eltsTouchingFaces->push_back( boost::cref( face.element0() ) );
             computeDistanceToFaceOnElt( faceId, face.element0().id() );
         }
         if ( face.isConnectedTo1() )
         {
-            eltsTouchingFaces->push_back( boost::cref( face.element1() ) );
+            M_eltsTouchingFaces->push_back( boost::cref( face.element1() ) );
             computeDistanceToFaceOnElt( faceId, face.element1().id() );
         }
     }
-    eltsTouchingFaces->shrink_to_fit();
-    range_elements_distance_type rangeEltsTouchingFaces( mpl::size_t<MESH_ELEMENTS>(), eltsTouchingFaces->begin(), eltsTouchingFaces->end(), eltsTouchingFaces );
+    M_eltsTouchingFaces->shrink_to_fit();
+    range_elements_distance_type rangeEltsTouchingFaces( mpl::size_t<MESH_ELEMENTS>(), M_eltsTouchingFaces->begin(), M_eltsTouchingFaces->end(), M_eltsTouchingFaces );
 
     // Sync initial distance
     syncDofs( unsignedDistance, rangeEltsTouchingFaces,
@@ -236,7 +247,6 @@ DistanceToRange< FunctionSpaceType >::unsignedDistanceToFaces( range_faces_type 
     // Then perform fast-marching
     //unsignedDistance = this->fastMarching()->march( unsignedDistance, rangeEltsTouchingFaces );
     unsignedDistance = this->fastMarching()->run( unsignedDistance, rangeEltsTouchingFaces );
-    sync( unsignedDistance, "min" );
     // Return
     return unsignedDistance;
 }
@@ -248,12 +258,9 @@ DistanceToRange< FunctionSpaceType >::signedDistanceToFaces( range_faces_type co
     // Compute unsigned distance
     // Set sign: set negative everywhere, then propagate + sign from the domain boundary
     // note: the element container (VectorUblas) does not provide unary operators at the moment -> TODO: need to improve
+    // note2: elements touching the faces are cached by unsignedDistanceToFaces in M_eltsTouchingFaces
     auto signedDistance = this->unsignedDistanceToFaces( rangeFaces );
     signedDistance->scale( -1. );
-    // Find elements touching the faces
-    // TODO: remove duplicate run with unsignedDistanceToFaces
-    range_elements_distance_type rangeEltsWithFaces = elementsWithFaces( rangeFaces );
-    elements_reference_wrapper_distance_ptrtype eltsWithFaces = rangeEltsWithFaces.template get<3>();
 
     // Communication
     rank_type const pidMeshDistance = this->meshDistance()->worldCommPtr()->localRank();
@@ -335,7 +342,7 @@ DistanceToRange< FunctionSpaceType >::signedDistanceToFaces( range_faces_type co
             {
                 if( eltsVisited.find( eltId ) != eltsVisited.end()
                         // stop when reaching an intersecting elt
-                        || eltsWithFaces->find( eltId ) != intersectingElements.end() )
+                        || M_eltsTouchingFaces->find( eltId ) != intersectingElements.end() )
                     continue;
                 // need to visit neighbor
                 eltsToVisit.insert( eltId );
