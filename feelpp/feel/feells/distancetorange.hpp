@@ -77,8 +77,6 @@ class DistanceToRange
 
         //--------------------------------------------------------------------//
         // Fast-marching
-        //typedef ReinitializerFMS< functionspace_distance_type > fastmarching_type;
-        //typedef std::shared_ptr<fastmarching_type> fastmarching_ptrtype;
         typedef FastMarching<functionspace_distance_type> fastmarching_type;
         typedef std::shared_ptr< fastmarching_type > fastmarching_ptrtype;
 
@@ -245,7 +243,6 @@ DistanceToRange< FunctionSpaceType >::unsignedDistanceToFaces( range_faces_type 
         );
 
     // Then perform fast-marching
-    //unsignedDistance = this->fastMarching()->march( unsignedDistance, rangeEltsTouchingFaces );
     unsignedDistance = this->fastMarching()->run( unsignedDistance, rangeEltsTouchingFaces );
     // Return
     return unsignedDistance;
