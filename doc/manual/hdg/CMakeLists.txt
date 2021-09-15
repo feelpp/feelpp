@@ -24,25 +24,29 @@
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/toolboxes)
-feelpp_add_application( electro-thermal SRCS et_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 LINK_LIBRARIES feelpp_modelcore )
 
-feelpp_add_application( electro-thermal-2 SRCS et2_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 LINK_LIBRARIES feelpp_modelcore)
-feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 LINK_LIBRARIES feelpp_modelcore)
-
-foreach(D 3)
-   foreach(P RANGE 1 1 1)
-	feelpp_add_application( mixed-poisson-elasticity_${D}DP${P} SRCS mixedpoissonelasticity_main.cpp INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} )
+if (FEELPP_TOOLBOXES_ENABLE_HDG)
+   feelpp_add_application( electro-thermal SRCS et_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 LINK_LIBRARIES feelpp_modelcore )
+   
+   feelpp_add_application( electro-thermal-2 SRCS et2_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 LINK_LIBRARIES feelpp_modelcore)
+   feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 LINK_LIBRARIES feelpp_modelcore)
+   
+   foreach(D 3)
+      foreach(P RANGE 1 1 1)
+   	feelpp_add_application( mixed-poisson-elasticity_${D}DP${P} SRCS mixedpoissonelasticity_main.cpp INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} )
+      endforeach()
    endforeach()
-endforeach()
-
-#foreach(D 3)
-#   foreach(P RANGE 1 1 1)
-	#configure_file(lc_main_model.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/lc${D}DP${P}_main.cpp )
-#	feelpp_add_application( lamina-cribrosa-model_${D}DP${P} SRCS lc_main_model.cpp INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} )
-#   endforeach()
-#endforeach()
-
-feelpp_add_application( lamina-cribrosa-model_3DP1 SRCS lc_main_model.cpp  LINK_LIBRARIES Feelpp::feelpp_modelcore Feelpp::feelpp_toolbox_hdg_poisson_lib DEFS FEELPP_DIM=3 FEELPP_ORDER=1 FEELPP_G_ORDER=1 )
+   
+   #foreach(D 3)
+   #   foreach(P RANGE 1 1 1)
+   	#configure_file(lc_main_model.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/lc${D}DP${P}_main.cpp )
+   #	feelpp_add_application( lamina-cribrosa-model_${D}DP${P} SRCS lc_main_model.cpp INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} )
+   #   endforeach()
+   #endforeach()
+   
+   
+      feelpp_add_application( lamina-cribrosa-model_3DP1 SRCS lc_main_model.cpp  LINK_LIBRARIES Feelpp::feelpp_modelcore Feelpp::feelpp_toolbox_hdg_poisson_lib DEFS FEELPP_DIM=3 FEELPP_ORDER=1 FEELPP_G_ORDER=1 )
+endif()
 
 feelpp_add_application( mixed-stokes SRCS mixedstokes.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=1)
 

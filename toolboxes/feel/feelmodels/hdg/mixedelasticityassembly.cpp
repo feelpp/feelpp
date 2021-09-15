@@ -60,9 +60,9 @@ void MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleMatrixIBC( int i , std::string
     bbf( 3_c, 1_c, i, 1 ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                        _expr= tau_constant * pow(idv(H),M_tauOrder)* inner(idt(u),id(nu)) ),
 
-        // -<lambda2, m>_Gamma_I
-        bbf( 3_c, 3_c, i, i ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                           _expr=-tau_constant * pow(idv(H),M_tauOrder) * inner(idt(uI),id(nu)) );
+    // -<lambda2, m>_Gamma_I
+    bbf( 3_c, 3_c, i, i ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+                                       _expr=-tau_constant * pow(idv(H),M_tauOrder) * inner(idt(uI),id(nu)) );
 
 
 
@@ -257,7 +257,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
         Feel::cout << "c1: " << mean(_range=elements(M_mesh),_expr=c1) << std::endl;
         Feel::cout << "c2: " << mean(_range=elements(M_mesh),_expr=c2) << std::endl;
 
-        bbf( 0_c, 0_c ) +=  integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c1*inner(idt(sigma),id(v))) );
+        bbf( 0_c, 0_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c1*inner(idt(sigma),id(v))) );
         bbf( 0_c, 0_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
     }
 

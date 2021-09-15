@@ -147,7 +147,23 @@ void defMesh(py::module &m)
     m.def("nelements", &nElementsTuple<mesh_ptr_t>,"get the number of elements in range, the local one if global is false", py::arg("range"),py::arg("global") = true );
     m.def("nfaces", &nFacesTuple<mesh_ptr_t>,"get the number of faces in range, the local one if global is false", py::arg("range"),py::arg("global") = true );
     //m.def("markedfaces", &markedfaces<mesh_t>,"get iterator over the marked faces of the mesh");
-    
+    m.def( "markedelements", []( mesh_ptr_t const& r, std::string const& m ) {
+            return markedelements(r,m);
+        },py::arg("range"), py::arg("marker"), "return the range of elements of the mesh with marker" );
+    m.def(
+        "markedfaces", []( mesh_ptr_t const& r, std::string const& m ) {
+            return markedfaces( r, m );
+        },
+        py::arg( "range" ), py::arg( "marker" ), "return the range of facets of the mesh with marker" );
+    if constexpr ( mesh_t::nDim == 3 )
+    {
+        m.def(
+            "markededges", []( mesh_ptr_t const& r, std::string const& m ) {
+                return markededges( r, m );
+            },
+            py::arg( "range" ), py::arg( "marker" ), "return the range of facets of the mesh with marker" );
+
+    }
 }
     
 
@@ -178,5 +194,5 @@ PYBIND11_MODULE(_mesh, m )
     //defMesh<Simplex<2,2,3>>(m);
     //defMesh<Simplex<1,1,3>>(m);
     //defMesh<Simplex<1,2,3>>(m);
-    defMesh<MeshStructured>(m);
+    defMesh<MeshStructured<Hypercube<2>>>(m);
 }

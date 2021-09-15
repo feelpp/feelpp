@@ -168,13 +168,15 @@ public:
     void setGradient( std::string const& s, std::string const& key = "gradient" ) { M_gradient = s; M_gradient_key = key; }
 
     //! set the script to configure a PDE from a set of coefficient using a script
-    void setScript( std::string const& s, variables_t const& inputs = {} , bool use = true );
+    void setScript( std::string const& s, variables_t const& inputs = {} , std::map<std::string,double> const& params = {}, bool use = true );
 
     //! @return true if use the script, false otherwise
     void setUseScript( bool u ) { M_use_script = u; }
     //! @return true if use the script, false otherwise
     bool useScript() const { return M_use_script; }
 
+    void setParameterValues( std::map<std::string,double> const& p ) { M_param_values = p; }
+    std::map<std::string,double> const& parameterValues() const { return M_param_values; }
     /*
      * compute manufactured solution from a python script
      * @param vm variables map
@@ -195,6 +197,7 @@ private:
     double M_etol, M_otol;
     std::string M_script;
     std::map<std::string,std::string> M_script_in;
+    std::map<std::string,double> M_param_values;
     bool M_use_script;
 };
 
@@ -284,6 +287,7 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( inputs,(std::map<std::string,std::string>), (std::map<std::string,std::string>{})  )
+      ( parameter_values,(std::map<std::string,double>), (std::map<std::string,double>{})  )
       ( solution, (std::string), inputs.count(solution_key)?inputs.at(solution_key):soption("checker.solution"))
       ( gradient_key, (std::string), std::string{"grad_"}+solution_key)
       ( gradient, (std::string), inputs.count(gradient_key)?inputs.at(gradient_key):soption("checker.gradient"))
@@ -309,7 +313,7 @@ BOOST_PARAMETER_FUNCTION(
         c.setGradient( gradient, gradient_key );
     else
         c.setGradientKey( gradient_key );
-    c.setScript( script, inputs, compute_pde_coefficients ); 
+    c.setScript( script, inputs, parameter_values, compute_pde_coefficients ); 
     return c;
 }
 

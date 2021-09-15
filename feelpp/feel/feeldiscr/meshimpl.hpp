@@ -2386,7 +2386,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
 {
     typedef std::vector<boost::tuple<size_type, std::vector<double>>> resultghost_point_type;
     typedef std::vector<boost::tuple<size_type, bool, std::vector<double>>> resultghost_edge_type;
-    typedef std::vector<boost::tuple<size_type, bool, std::vector<double>>> resultghost_face_type;
+    typedef std::vector<boost::tuple<size_type, bool, std::vector<double>, uint16_type>> resultghost_face_type;
 
     DVLOG( 1 ) << "updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm : start on rank " << MeshBase<IndexT>::worldComm().localRank() << "\n";
 
@@ -2477,7 +2477,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
 
             //---------------------------//
             // get faces id and bary
-            resultghost_face_type idFacesWithBary( this->numLocalFaces(), boost::make_tuple( invalid_v<size_type>, false, std::vector<double>( nRealDim, 0. ) ) );
+            resultghost_face_type idFacesWithBary( this->numLocalFaces(), boost::make_tuple( invalid_v<size_type>, false, std::vector<double>( nRealDim, 0. ), invalid_v<uint16_type> ) );
             for ( uint16_type j = 0; j < theelt.nTopologicalFaces() /*this->numLocalFaces()*/; j++ )
             {
                 if ( !theelt.facePtr( j ) )
@@ -2506,6 +2506,10 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
                 {
                     idFacesWithBary[j].template get<2>()[comp] = baryFace[comp];
                 }
+
+                // face permutation
+                if constexpr ( nDim > 1 )
+                   idFacesWithBary[j].template get<3>() = theelt.facePermutation( j ).value();
             }
             //---------------------------//
             // get edges id and bary
@@ -2581,6 +2585,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
                         continue;
                     const bool faceOnBoundaryRecv = idFacesWithBaryRecv[j].template get<1>();
                     auto const& baryFaceRecv = idFacesWithBaryRecv[j].template get<2>();
+                    uint16_type facePermutation = idFacesWithBaryRecv[j].template get<3>();
 
                     //objective : find  face_it (hence jBis in theelt ) (permutations would be necessary)
                     uint16_type jBis = invalid_uint16_type_value;
@@ -2632,6 +2637,10 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
                     // maybe the face is not really on boundary
                     if ( faceModified.isOnBoundary() && !faceOnBoundaryRecv )
                         faceModified.setOnBoundary( false );
+
+                    // face permutation in the ghost element
+                    if constexpr ( nDim > 1 )
+                        theelt.setFacePermutation( jBis, typename element_type::face_permutation_type( facePermutation ) );
 
                 } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
 

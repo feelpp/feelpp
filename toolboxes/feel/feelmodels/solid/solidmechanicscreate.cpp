@@ -445,7 +445,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
 
             bool doLagP1parallel=false;
             auto opLagP1 = lagrangeP1(_space=Xh_create_ho,
-                                      _backend=M_backend,
+                                      _backend=this->algebraicBackend(),
                                       //_worldscomm=this->localNonCompositeWorldsComm(),
                                       _path=this->rootRepository(),
                                       _prefix=this->prefix(),
@@ -476,7 +476,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
         M_opIdisplacement = opInterpolation(_domainSpace=this->functionSpaceDisplacement(),
                                             _imageSpace=M_XhVectorialVisuHO,
                                             _range=elements(M_XhVectorialVisuHO->mesh()),
-                                            _backend=M_backend,
+                                            _backend=this->algebraicBackend(),
                                             _type=InterpolationNonConforme(false) );
 
 #if 0
@@ -487,7 +487,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
                                                 _imageSpace=M_XhVectorialVisuHO,
                                                 //_range=elements(M_XhVectorialVisuHO->mesh()),
                                                 _range=boundaryfaces(M_XhVectorialVisuHO->mesh()),
-                                                _backend=M_backend,
+                                                _backend=this->algebraicBackend(),
                                                 _type=InterpolationNonConforme(false) );
         }
 #endif
@@ -500,7 +500,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
             M_opIpressure = opInterpolation(_domainSpace=M_XhPressure,
                                             _imageSpace=M_XhScalarVisuHO,
                                             _range=elements(M_XhScalarVisuHO->mesh()),
-                                            _backend=M_backend,
+                                            _backend=this->algebraicBackend(),
                                             _type=InterpolationNonConforme(false) );
         }
 #endif // FEELPP_HAS_VTK
@@ -608,9 +608,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
     this->initMaterialProperties();
 
-    // backend : use worldComm of Xh
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
-
+    // backend
+    this->initAlgebraicBackend();
 
     bool hasSolid1dReduced = false;
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
@@ -701,7 +700,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
     size_type currentStartIndex = 0;
     // prepare block vector
     int nBlock = this->nBlockMatrixGraph();
-    M_blockVectorSolution.resize( nBlock );
+    auto bvs = this->initAlgebraicBlockVectorSolution( nBlock );
     int cptBlock = 0;
     // update block vector (index + data struct)
     if ( this->hasSolidEquationStandard() )
@@ -712,34 +711,34 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
         if ( M_timeSteppingUseMixedFormulation )
             this->setStartSubBlockSpaceIndex( "velocity", currentStartIndex++ );
 
-        M_blockVectorSolution(cptBlock++) = this->fieldDisplacementPtr();
+        bvs->operator()(cptBlock++) = this->fieldDisplacementPtr();
         if ( this->hasDisplacementPressureFormulation() )
-            M_blockVectorSolution(cptBlock++) = M_fieldPressure;
+            bvs->operator()(cptBlock++) = M_fieldPressure;
         if ( M_timeSteppingUseMixedFormulation )
-            M_blockVectorSolution(cptBlock++) = M_fieldVelocity;
+            bvs->operator()(cptBlock++) = M_fieldVelocity;
     }
     if ( this->hasSolidEquation1dReduced() )
     {
         this->setStartSubBlockSpaceIndex( "solid-1dreduced", currentStartIndex );
-        auto blockVectorSolution1dReduced = M_solid1dReduced->blockVectorSolution();
+        auto blockVectorSolution1dReduced = *M_solid1dReduced->algebraicBlockVectorSolution();
         int nBlock1dReduced = blockVectorSolution1dReduced.size();
         int numberOfBlockSpace1dReduced = 0;
         for ( int k=0;k<nBlock1dReduced ;++k )
         {
-            M_blockVectorSolution(cptBlock+k) = blockVectorSolution1dReduced(k);
+            bvs->operator()(cptBlock+k) = blockVectorSolution1dReduced(k);
             numberOfBlockSpace1dReduced += blockVectorSolution1dReduced(k)->map().numberOfDofIdToContainerId();
         }
         cptBlock += nBlock1dReduced;
         currentStartIndex += numberOfBlockSpace1dReduced;
     }
+    // init vector representing all blocs
+    bvs->buildVector( this->backend() );
 
     // update algebraic model
     if (buildAlgebraicFactory)
     {
-        // init vector representing all blocs
-        M_blockVectorSolution.buildVector( this->backend() );
-
-        M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+        auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
+        this->setAlgebraicFactory( algebraicFactory );
 
         if ( this->hasSolidEquationStandard() )
         {
@@ -747,18 +746,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
             {
                 NullSpace<double> userNullSpace = detail::getNullSpace(this->functionSpaceDisplacement(), mpl::int_<nDim>() ) ;
                 if ( boption(_name="use-null-space",_prefix=this->prefix() ) )
-                    M_algebraicFactory->attachNullSpace( userNullSpace );
+                    algebraicFactory->attachNullSpace( userNullSpace );
                 if ( boption(_name="use-near-null-space",_prefix=this->prefix() ) )
-                    M_algebraicFactory->attachNearNullSpace( userNullSpace );
+                    algebraicFactory->attachNearNullSpace( userNullSpace );
             }
             else
             {
                 NullSpace<double> userNullSpace = detail::getNullSpace(this->functionSpaceDisplacement(), mpl::int_<nDim>() ) ;
-                NullSpace<double> userNullSpaceFull = detail::extendNullSpace( userNullSpace, M_algebraicFactory->backend(), M_algebraicFactory->sparsityMatrixGraph()->mapRowPtr() );
+                NullSpace<double> userNullSpaceFull = detail::extendNullSpace( userNullSpace, algebraicFactory->backend(), algebraicFactory->sparsityMatrixGraph()->mapRowPtr() );
                 if ( boption(_name="use-near-null-space",_prefix=this->prefix() ) )
                 {
-                    M_algebraicFactory->attachNearNullSpace( 0,userNullSpace ); // for block disp in fieldsplit
-                    M_algebraicFactory->attachNearNullSpace( userNullSpaceFull ); // for multigrid on full system
+                    algebraicFactory->attachNearNullSpace( 0,userNullSpace ); // for block disp in fieldsplit
+                    algebraicFactory->attachNearNullSpace( userNullSpaceFull ); // for multigrid on full system
                 }
             }
 
@@ -777,9 +776,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
             if ( M_timeStepping == "Theta" )
             {
-                M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
-                M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
-                M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+                M_timeStepThetaSchemePreviousContrib = this->backend()->newVector( this->algebraicBlockVectorSolution()->vectorMonolithic()->mapPtr() );
+                algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+                algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
             }
         }
     }
@@ -1036,7 +1035,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("SolidMechanics","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    std::set<std::string> fieldsAvailable = { "displacement", "von-mises-criterions", "tresca-criterions", "princial-stress" };
+    std::set<std::string> fieldsAvailable = { "displacement", "von-mises-criterion", "tresca-criterion", "principal-stresses" };
     if ( !this->isStationary() )
         fieldsAvailable.insert( "velocity" );
     if ( this->hasDisplacementPressureFormulation() )

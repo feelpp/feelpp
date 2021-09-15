@@ -48,12 +48,15 @@ add_dependencies(qs_laplacian ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_2DH} ${QS_LAPLAC
 # HDG Laplacian
 #
 feelpp_add_application( hdg_laplacian_2d SRCS qs_hdg_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_HDG_LAPLACIAN_2D INSTALL TESTS)
-feelpp_add_application( hdg_laplacian_3d SRCS qs_hdg_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_HDG_LAPLACIAN_3D INSTALL TESTS) 
+feelpp_add_application( hdg_laplacian_3d SRCS qs_hdg_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_HDG_LAPLACIAN_3D INSTALL TESTS)
 add_dependencies(qs_laplacian ${QS_HDG_LAPLACIAN_2D} ${QS_HDG_LAPLACIAN_3D}  )
 # with ibc
 feelpp_add_application( hdg_laplacian_ibc_2d SRCS qs_hdg_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_HDG_LAPLACIAN_IBC_2D INSTALL TESTS )
-feelpp_add_application( hdg_laplacian_ibc_3d SRCS qs_hdg_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_HDG_LAPLACIAN_IBC_3D INSTALL TESTS ) 
-add_dependencies(qs_laplacian ${QS_HDG_LAPLACIAN_IBC_2D} ${QS_HDG_LAPLACIAN_IBC_3D}  )
+feelpp_add_application( hdg_laplacian_ibc_3d SRCS qs_hdg_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_HDG_LAPLACIAN_IBC_3D INSTALL TESTS )
+# parabolic
+feelpp_add_application( hdg_laplacian_ibc_dt_2d SRCS qs_hdg_laplacian_ibc_dt.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_HDG_LAPLACIAN_DT_IBC_2D INSTALL  )
+#feelpp_add_application( hdg_laplacian_ibc_dt_3d SRCS qs_hdg_laplacian_ibc_dt.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_HDG_LAPLACIAN_DT_IBC_3D INSTALL )
+add_dependencies(qs_laplacian ${QS_HDG_LAPLACIAN_IBC_2D} ${QS_HDG_LAPLACIAN_IBC_3D} ${QS_HDG_LAPLACIAN_DT_IBC_2D} ${QS_HDG_LAPLACIAN_DT_IBC_3D}  )
 
 add_dependencies(check qs_laplacian )
 add_dependencies(quickstart qs_laplacian )

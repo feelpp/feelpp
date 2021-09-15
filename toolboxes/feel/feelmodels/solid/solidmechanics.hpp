@@ -39,6 +39,7 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/vonmises.hpp>
 #include <feel/feelvf/eig.hpp>
+#include <feel/feelvf/tresca.hpp>
 
 #include <feel/feelts/bdf.hpp>
 #include <feel/feelts/newmark.hpp>
@@ -50,7 +51,6 @@
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 
 #include <feel/feelmodels/modelcore/options.hpp>
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
 
@@ -60,7 +60,7 @@ namespace Feel
 {
 namespace FeelModels
 {
-/** 
+/**
  * Solid Mechanics Toolbox
  * \ingroup Toolboxes
  */
@@ -149,10 +149,10 @@ public:
     typedef std::shared_ptr<element_stress_scal_type> element_stress_scal_ptrtype;
     //___________________________________________________________________________________//
     // methodsnum tool
-    typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
-    typedef typename model_algebraic_factory_type::graph_type graph_type;
-    typedef typename model_algebraic_factory_type::graph_ptrtype graph_ptrtype;
+    // typedef ModelAlgebraicFactory model_algebraic_factory_type;
+    // typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    // typedef typename model_algebraic_factory_type::graph_type graph_type;
+    // typedef typename model_algebraic_factory_type::graph_ptrtype graph_ptrtype;
     //___________________________________________________________________________________//
     // newmark or savets(bdf) class
     typedef Newmark<space_displacement_type> newmark_displacement_type;
@@ -422,8 +422,10 @@ public :
         {
             using _expr_firstPiolaKirchhof_type = std::decay_t<decltype(Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(this->fieldDisplacement(),M_fieldPressure,*std::shared_ptr<ModelPhysicSolid<nDim>>{}, this->materialsProperties()->materialProperties(""),se))>;
             using _expr_vonmises_type = std::decay_t<decltype( vonmises(_expr_firstPiolaKirchhof_type{}) )>;
+            using _expr_tresca_type = std::decay_t<decltype( tresca(_expr_firstPiolaKirchhof_type{}) )>;
             using _expr_princial_stress_type = std::decay_t<decltype( eig(_expr_firstPiolaKirchhof_type{}) )>;
             std::map<std::string,std::vector<std::tuple< _expr_vonmises_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVonMisses;
+            std::map<std::string,std::vector<std::tuple< _expr_tresca_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprTresca;
             std::map<std::string,std::vector<std::tuple< _expr_princial_stress_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprPrincipalStress;
             if ( this->hasSolidEquationStandard() )
             {
@@ -439,16 +441,18 @@ public :
 
                         auto fpk = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,M_fieldPressure,*physicSolidData,matProperties,se);
                         auto vonmisesExpr = vonmises( fpk );
-                        mapExprVonMisses[prefixvm(prefix,"von-mises-criterions")].push_back( std::make_tuple( vonmisesExpr, range, "element" ) );
+                        mapExprVonMisses[prefixvm(prefix,"von-mises-criterion")].push_back( std::make_tuple( vonmisesExpr, range, "element" ) );
+
+                        auto trescaExpr = tresca( fpk );
+                        mapExprTresca[prefixvm(prefix,"tresca-criterion")].push_back( std::make_tuple( trescaExpr, range, "element" ) );
 
                         auto principalStressExpr = eig( fpk );
-                        mapExprPrincipalStress[prefixvm(prefix,"princial-stress")].push_back( std::make_tuple( principalStressExpr, range, "element" ) );
+                        mapExprPrincipalStress[prefixvm(prefix,"principal-stresses")].push_back( std::make_tuple( principalStressExpr, range, "element" ) );
                     }
                 }
             }
 
-            return hana::make_tuple( mapExprVonMisses,mapExprPrincipalStress );
-
+            return hana::make_tuple( mapExprVonMisses,mapExprTresca,mapExprPrincipalStress );
         }
     template <typename SymbExprType>
     auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
@@ -568,7 +572,7 @@ public :
     auto modelFields( DisplacementFieldType const& field_s, VelocityFieldType const& field_v, PressureFieldType const& field_p, std::string const& prefix = "" ) const
         {
             //auto mfield_disp = modelField<FieldCtx::ID|FieldCtx::MAGNITUDE,element_displacement_ptrtype>( FieldTag::displacement(this) );
-            auto mfield_disp = modelField<FieldCtx::ID|FieldCtx::MAGNITUDE,DisplacementFieldType>( FieldTag::displacement(this) );
+            auto mfield_disp = modelField<FieldCtx::FULL,DisplacementFieldType>( FieldTag::displacement(this) );
             mfield_disp.add( FieldTag::displacement(this), prefix,"displacement", field_s, "s", this->keyword() );
             if constexpr ( std::is_same_v<DisplacementFieldType,VelocityFieldType> )
                 mfield_disp.add( FieldTag::displacement(this), prefix,"velocity", field_v, "v", this->keyword() );
@@ -619,35 +623,26 @@ public :
     template <typename ModelFieldsType>
     auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
         {
-            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type,typename solid_1dreduced_type::mesh_type>();
             return Feel::FeelModels::modelContext( mfields, std::move( se ) );
         }
     auto modelContext( std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( prefix );
-            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type,typename solid_1dreduced_type::mesh_type>();
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
     auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
-            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+            auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type,typename solid_1dreduced_type::mesh_type>();
             auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( rowStartInVector ) );
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
         }
 
     //----------------------------------//
-    //backend_ptrtype backend() { return M_backend; }
-    backend_ptrtype const& backend() const { return M_backend; }
-
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     int nBlockMatrixGraph() const;
-    BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    //void updateBlockVectorSolution();
-
-    model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
-    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
 
     void updateMassMatrixLumped();
     bool useMassMatrixLumped() const { return M_useMassMatrixLumped; }
@@ -780,11 +775,7 @@ private :
     newmark_displacement_ptrtype M_timeStepNewmark;
     savets_pressure_ptrtype M_savetsPressure;
 
-    // algebraic data/tools
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    BlocksBaseVector<double> M_blockVectorSolution;
-
+    // mass matrix lumped
     bool M_useMassMatrixLumped;
     sparse_matrix_ptrtype M_massMatrixLumped;
     vector_ptrtype M_vecDiagMassMatrixLumped;

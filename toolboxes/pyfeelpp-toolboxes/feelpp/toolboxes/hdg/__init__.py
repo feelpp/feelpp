@@ -1,13 +1,22 @@
 import feelpp
-from feelpp.toolboxes import *
-from ._hdgpoisson import *
 
-_hdgs={
-    'mixedpoisson(2,1)':mixedpoisson_2DP1,
-    'mixedpoisson(2,2)':mixedpoisson_2DP2,
-    'mixedpoisson(3,1)':mixedpoisson_3DP1,
-    'mixedpoisson(3,2)':mixedpoisson_3DP2,
-}
+from feelpp.toolboxes.core import *
+
+has_hdg = False
+_hdgs = None
+try:
+    from ._hdgpoisson import *
+
+    _hdgs={
+        'mixedpoisson(2,1)':mixedpoisson_2DP1,
+        'mixedpoisson(2,2)':mixedpoisson_2DP2,
+        'mixedpoisson(3,1)':mixedpoisson_3DP1,
+        'mixedpoisson(3,2)':mixedpoisson_3DP2,
+    }
+    has_hdg = True
+except ImportError as e:
+    print('has_hdg:', has_hdg)
+    pass
 
 def mixedpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", worldComm=None ):
     """create a hdg toolbox solver

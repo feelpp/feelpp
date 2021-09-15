@@ -40,7 +40,6 @@
 #include <feel/feelmodels/modelcore/modelphysics.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 
@@ -94,10 +93,6 @@ class Heat : public ModelNumerical,
         // exporter
         typedef Exporter<mesh_type,nOrderGeo> export_type;
         typedef std::shared_ptr<export_type> export_ptrtype;
-
-        // algebraic solver
-        typedef ModelAlgebraicFactory model_algebraic_factory_type;
-        typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
         // measure tools for points evaluation
         typedef MeasurePointsEvaluation<space_temperature_type> measure_points_evaluation_type;
@@ -157,14 +152,6 @@ class Heat : public ModelNumerical,
         map_scalar_field<2> const& bcNeumann() const { return M_bcNeumann; }
         map_scalar_fields<2> const& bcRobin() const { return M_bcRobin; }
         map_scalar_field<2> const& bodyForces() const { return M_volumicForcesProperties; }
-        //___________________________________________________________________________________//
-        // algebraic data and solver
-        backend_ptrtype const& backend() const { return  M_backend; }
-        BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-        BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
-        size_type nLocalDof() const;
-        model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
-        model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
         //___________________________________________________________________________________//
         // time step scheme
         std::string const& timeStepping() const { return M_timeStepping; }
@@ -272,7 +259,7 @@ class Heat : public ModelNumerical,
         template <typename TemperatureFieldType>
         auto modelFields( TemperatureFieldType const& field_t, std::string const& prefix = "" ) const
             {
-                return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::temperature(this), prefix, "temperature", field_t, "T", this->keyword() ) );
+                return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::temperature(this), prefix, "temperature", field_t, "T", this->keyword() ) );
             }
 
         auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
@@ -289,9 +276,10 @@ class Heat : public ModelNumerical,
         {
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr(); // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dn_T
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields );
         }
         auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
@@ -489,11 +477,6 @@ class Heat : public ModelNumerical,
         bool M_stabilizationGLS;
         std::string M_stabilizationGLSType;
         stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
-
-        // algebraic data/tools
-        backend_ptrtype M_backend;
-        model_algebraic_factory_ptrtype M_algebraicFactory;
-        BlocksBaseVector<double> M_blockVectorSolution;
 
         // post-process
         export_ptrtype M_exporter;
