@@ -1,5 +1,5 @@
-quarter-turn-2d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/poisson/quarter-turn/quarter-turn2D.cfg
-quarter-turn-2d-int --config-file ${CMAKE_CURRENT_SOURCE_DIR}/poisson/quarter-turn/quarter-turn2D-int.cfg
-quarter-turn-3d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/poisson/quarter-turn/quarter-turn3D.cfg
-quarter-turn-3d-int --config-file ${CMAKE_CURRENT_SOURCE_DIR}/poisson/quarter-turn/quarter-turn3D-int.cfg
-linear-para --config-file poisson/testHDG/linear.cfg --ts.time-final 0.505
+quarter-turn-2d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/quarter-turn/quarter-turn2D.cfg
+quarter-turn-2d-int --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/quarter-turn/quarter-turn2D-int.cfg
+quarter-turn-3d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/quarter-turn/quarter-turn3D.cfg
+quarter-turn-3d-int --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/quarter-turn/quarter-turn3D-int.cfg
+linear-para --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --ts.time-final 0.505

@@ -802,24 +802,6 @@ public:
     //!
     static void stopLogging( bool remove = false );
 
-    //! @return the summry tree of the application
-    static pt::ptree& summary() { return S_summary; }
-
-    //!
-    //! generate a summary of the execution of the application
-    //! @param fname name of the filename to generate
-    //! @param stage a string describing the stage at which the summary is generated/updated
-    //! @param write a boolean true to write the summary to disk, false otherwise
-    //! \code
-    //! Environment::generateSummary( about().appName(), "start", true ); // write to disk
-    //! Environment::generateSummary( about().appName(), "mid", false ); // do not write to disk but update tree
-    //! Environment::generateSummary( about().appName(), "end", true ); // write to disk
-    //! \endcode
-    //!
-    //!
-    [[deprecated("is replaced by Feel++ journal from v0.106.0")]]
-    static pt::ptree& generateSummary( std::string fname, std::string stage, bool write = true );
-
     template<typename Observer>
     static void
     addDeleteObserver( Observer const& obs )
@@ -931,7 +913,6 @@ private:
     static fs::path S_cfgdir;
     static AboutData S_about;
     static inline bool S_init_python = true;
-    static pt::ptree S_summary;
     static std::shared_ptr<po::command_line_parser> S_commandLineParser;
     static std::vector<std::tuple<std::string,std::istringstream> > S_configFiles;
     static po::variables_map S_vm;

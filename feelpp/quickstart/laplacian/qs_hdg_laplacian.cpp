@@ -100,8 +100,6 @@ int hdg_laplacian()
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
     
-    auto K = expr(soption("k"));
-    auto lambda = cst(1.)/K;
     
 #if defined(FEELPP_HAS_SYMPY)
 
@@ -120,6 +118,7 @@ int hdg_laplacian()
     auto p_exact = expr( p_exact_str );
     auto u_exact = expr<FEELPP_DIM,1>( u_exact_str );
     auto k = expr( locals.at("k") );
+    auto lambda = cst(1.)/k;
     auto un = expr( locals.at("un") );
     auto f = expr( locals.at("f") );
     auto g = expr( locals.at("g") );
@@ -130,8 +129,13 @@ int hdg_laplacian()
     std::string u_exact_str = soption("solution.u");
     auto p_exact = expr(p_exact_str);
     auto u_exact = expr<Dim,1>(u_exact_str);
-    auto un_exact = trans(u_exact)*N();
-    auto f_exact = expr( soption( "functions.f") );
+    auto k = expr(soption("k"));
+    auto lambda = cst(1.)/k;
+    auto un = trans(u_exact)*N();
+    auto f = expr( soption( "functions.f") );
+    auto g = p_exact;
+    auto r_1 = cst(0.);
+    auto r_2 = un;
 #endif
     tic();
     auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
@@ -169,13 +173,15 @@ int hdg_laplacian()
         Feel::cout << "-- CG<" << OrderP+1 << "> starts ----------------------------------------------------------\n";
         auto cgXh = Pch<OrderP+1>(mesh);
         Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
-        auto u = cgLaplacian( cgXh, std::tuple{K,f,p_exact,un,r_1,r_2} );
+        auto u = cgLaplacian( cgXh, std::tuple{k,f,p_exact,un,r_1,r_2} );
+#if defined(FEELPP_HAS_SYMPY)
         if ( u )        
             status_cg = check( checker( _name= "L2/H1 convergence cG", 
                                         _solution_key="p",
                                         _gradient_key="grad_p",
                                         _inputs=locals
                                        ), *u );
+#endif
         Feel::cout << "-- CG<" << OrderP+1 << "> done ----------------------------------------------------------\n";
     }
     auto u = Vh->element( "u" );
@@ -377,23 +383,26 @@ int hdg_laplacian()
 
     tic();
 
+    int status1 = 0, status2 = 0, status3 = 0;
+#if defined(FEELPP_HAS_SYMPY)
     bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
     solution_t s_t = has_dirichlet?solution_t::unique:solution_t::up_to_a_constant;
-    int status1 = check( checker( _name= "L2/H1 convergence of potential", 
-                                  _solution_key="p",
-                                  _gradient_key="grad_p",
-                                  _inputs=locals
-                                ), pp, s_t );
-    int status2 = check( checker( _name= "L2 convergence of the flux", 
-                                  _solution_key="u",
-                                  _inputs=locals
-                                ), up );
-    int status3 = check( checker( _name= "L2/H1 convergence of postprocessed potential", 
-                                  _solution_key="p",
-                                  _gradient_key="grad_p",
-                                  _inputs=locals
-                                ), ppp, s_t );    
+    status1 = check( checker( _name= "L2/H1 convergence of potential", 
+                              _solution_key="p",
+                              _gradient_key="grad_p",
+                              _inputs=locals
+                              ), pp, s_t );
+    status2 = check( checker( _name= "L2 convergence of the flux", 
+                              _solution_key="u",
+                              _inputs=locals
+                              ), up );
+    status3 = check( checker( _name= "L2/H1 convergence of postprocessed potential", 
+                              _solution_key="p",
+                              _gradient_key="grad_p",
+                              _inputs=locals
+                              ), ppp, s_t );    
     // end::check[]
+#endif
 
     return status_cg || status1 || status2 || status3;
 }
