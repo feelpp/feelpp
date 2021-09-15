@@ -80,6 +80,9 @@ class DistanceToRange
         typedef FastMarching<functionspace_distance_type> fastmarching_type;
         typedef std::shared_ptr< fastmarching_type > fastmarching_ptrtype;
 
+        //--------------------------------------------------------------------//
+        typedef std::unordered_map< size_type, std::vector< size_type > > map_face_dofs_type;
+
     public:
         //--------------------------------------------------------------------//
         // Constructor
@@ -109,12 +112,16 @@ class DistanceToRange
         element_distance_type unsignedDistanceToFaces( range_faces_type const& rangeFaces ) const;
         element_distance_type signedDistanceToFaces( range_faces_type const& rangeFaces ) const;
 
+        elements_reference_wrapper_distance_ptrtype eltsTouchingFaces( range_faces_type const& rangeFaces ) const;
+        map_face_dofs_type dofsNeighbouringFaces( range_faces_type const& rangeFaces ) const;
+
     private:
         functionspace_distance_ptrtype M_spaceDistance;
 
         fastmarching_ptrtype M_fastMarching;
 
         mutable elements_reference_wrapper_distance_ptrtype M_eltsTouchingFaces;
+        mutable std::unordered_map< size_type, std::vector< size_type > > M_dofsNeighbouringFaces;
 
         mutable std::unordered_map< size_type, Eigen::Matrix<value_type,3,3> > M_faceTriangleTransformationMatrices;
 };
@@ -188,50 +195,24 @@ DistanceToRange< FunctionSpaceType >::unsignedDistanceToFaces( range_faces_type 
     auto unsignedDistance = this->functionSpaceDistance()->element( "unsignedDistance" );
     // Initialise distance with arbitrarily large value
     unsignedDistance.setConstant( std::numeric_limits<value_type>::max() );
-    //unsignedDistance.setConstant(1e8);
-    // Compute exact distance on touching elements
-    auto const& dofTable = this->functionSpaceDistance()->dof();
-    auto const computeDistanceToFaceOnElt = [ & ] ( size_type const faceId, size_type const eltId )
+    // Set distance=0 on rangeFaces
+    unsignedDistance.on( _range=rangeFaces, _expr=cst(0.) );
+    // Compute exact distance on neighbouring dofs
+    auto const dofsNeighbouringFaces = this->dofsNeighbouringFaces( rangeFaces );
+    for( auto const [faceId, dofsIds]: dofsNeighbouringFaces )
     {
-        for( uint16_type j = 0; j < nDofPerEltDistance; j++ )
+        for( size_type dofId: dofsIds )
         {
-            size_type const eltDofGlobalId = dofTable->localToGlobal( eltId, j, 0 ).index();
-
-            auto dist = this->distanceDofToFace( eltDofGlobalId, faceId );
-            Feel::cout 
-                << "dist = " << dist << ", "
-                << "current = " << unsignedDistance.localToGlobal( eltId, j, 0 )
-                << "\t";
-            if( dist < unsignedDistance.localToGlobal( eltId, j, 0 ) )
+            auto dist = this->distanceDofToFace( dofId, faceId );
+            if( dist < unsignedDistance(dofId) )
             {
-                unsignedDistance.assign( eltId, j, 0, dist );
-                Feel::cout << "accept";
+                unsignedDistance(dofId) = dist;
             }
-                Feel::cout << std::endl;
-        }
-    };
-
-    M_eltsTouchingFaces->clear();
-
-    auto face_it = rangeFaces.template get<1>();
-    auto face_en = rangeFaces.template get<2>();
-    for( ; face_it != face_en ; ++face_it )
-    {
-        auto const& face = boost::unwrap_ref( *face_it );
-        size_type const faceId = face.id();
-        if ( face.isConnectedTo0() )
-        {
-            M_eltsTouchingFaces->push_back( boost::cref( face.element0() ) );
-            computeDistanceToFaceOnElt( faceId, face.element0().id() );
-        }
-        if ( face.isConnectedTo1() )
-        {
-            M_eltsTouchingFaces->push_back( boost::cref( face.element1() ) );
-            computeDistanceToFaceOnElt( faceId, face.element1().id() );
         }
     }
-    M_eltsTouchingFaces->shrink_to_fit();
-    range_elements_distance_type rangeEltsTouchingFaces( mpl::size_t<MESH_ELEMENTS>(), M_eltsTouchingFaces->begin(), M_eltsTouchingFaces->end(), M_eltsTouchingFaces );
+
+    auto eltsTouchingFaces = this->eltsTouchingFaces( rangeFaces );
+    range_elements_distance_type rangeEltsTouchingFaces( mpl::size_t<MESH_ELEMENTS>(), eltsTouchingFaces->begin(), eltsTouchingFaces->end(), eltsTouchingFaces );
 
     // Sync initial distance
     syncDofs( unsignedDistance, rangeEltsTouchingFaces,
@@ -359,6 +340,76 @@ DistanceToRange< FunctionSpaceType >::signedDistanceToFaces( range_faces_type co
 
     // Return
     return signedDistance;
+}
+
+template< typename FunctionSpaceType >
+typename DistanceToRange< FunctionSpaceType >::elements_reference_wrapper_distance_ptrtype 
+DistanceToRange< FunctionSpaceType >::eltsTouchingFaces( range_faces_type const& rangeFaces ) const
+{
+    // Get ids of elements touching a face in rangeFaces
+    // and cache in M_eltsTouchingFaces for reuse
+    M_eltsTouchingFaces->clear();
+
+    auto face_it = rangeFaces.template get<1>();
+    auto face_en = rangeFaces.template get<2>();
+    for( ; face_it != face_en ; ++face_it )
+    {
+        auto const& face = boost::unwrap_ref( *face_it );
+        size_type const faceId = face.id();
+        if ( face.isConnectedTo0() )
+        {
+            M_eltsTouchingFaces->push_back( boost::cref( face.element0() ) );
+        }
+        if ( face.isConnectedTo1() )
+        {
+            M_eltsTouchingFaces->push_back( boost::cref( face.element1() ) );
+        }
+    }
+    M_eltsTouchingFaces->shrink_to_fit();
+
+    return M_eltsTouchingFaces;
+}
+
+template< typename FunctionSpaceType >
+typename DistanceToRange< FunctionSpaceType >::map_face_dofs_type
+DistanceToRange< FunctionSpaceType >::dofsNeighbouringFaces( range_faces_type const& rangeFaces ) const
+{
+    // Get ids of dofs touching a face in rangeFaces via an element, without the face dofs
+    // and cache in M_dofsNeighbouringFaces
+    M_dofsNeighbouringFaces.clear();
+
+    auto const elementDofsNeighbouringFaces = [&]( size_type const faceId, auto const faceDofsBe, auto const faceDofsEn, size_type const eltId )
+    {
+        auto const [eltDofsBegin, eltDofsEnd] = this->functionSpaceDistance()->dof()->localDof( eltId );
+        for( auto const& [lDof, gDof]: this->functionSpaceDistance()->dof()->localDof( eltId ) )
+        {
+            size_type const dofId = gDof.index();
+            auto const findIt = std::find_if( faceDofsBe, faceDofsEn, 
+                    [dofId]( auto const& faceDof ) { return faceDof.index() == dofId; }
+                    );
+            if( findIt == faceDofsEn )
+                M_dofsNeighbouringFaces[faceId].push_back( dofId );
+        }
+    };
+
+    auto face_it = rangeFaces.template get<1>();
+    auto face_en = rangeFaces.template get<2>();
+    for( ; face_it != face_en ; ++face_it )
+    {
+        auto const& face = boost::unwrap_ref( *face_it );
+        size_type const faceId = face.id();
+        auto const [faceDofsBegin, faceDofsEnd] = this->functionSpaceDistance()->dof()->faceLocalDof( faceId );
+        if ( face.isConnectedTo0() )
+        {
+            elementDofsNeighbouringFaces( faceId, faceDofsBegin, faceDofsEnd, face.element0().id() );
+        }
+        if ( face.isConnectedTo1() )
+        {
+            elementDofsNeighbouringFaces( faceId, faceDofsBegin, faceDofsEnd, face.element1().id() );
+        }
+    }
+
+    return M_dofsNeighbouringFaces;
 }
 
 } // namespace Feel
