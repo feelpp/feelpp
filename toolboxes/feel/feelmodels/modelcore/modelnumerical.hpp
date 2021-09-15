@@ -398,8 +398,11 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
                         u.on(_range=markedelements(u.mesh(),listMarkerElements),_expr=theExpr,_geomap=geomapStrategy);
                     if ( !listMarkerFaces.empty() )
                         u.on(_range=markedfaces(u.mesh(),listMarkerFaces),_expr=theExpr,_geomap=geomapStrategy);
-                    if ( !listMarkerEdges.empty() )
-                        u.on(_range=markededges(u.mesh(),listMarkerEdges),_expr=theExpr,_geomap=geomapStrategy);
+                    if constexpr (RangeTraits<RangeType>::element_type::nDim > 2 )
+                    {
+                        if ( !listMarkerEdges.empty() )
+                            u.on(_range=markededges(u.mesh(),listMarkerEdges),_expr=theExpr,_geomap=geomapStrategy);
+                    }
                     if ( !listMarkerPoints.empty() )
                         u.on(_range=markedpoints(u.mesh(),listMarkerPoints),_expr=theExpr,_geomap=geomapStrategy);
                 }
