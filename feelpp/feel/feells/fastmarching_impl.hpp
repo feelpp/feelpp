@@ -51,7 +51,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::FastMarching(
     // First find active dofs with sharing procs
     M_dofSharedOnCluster = dofTable->activeDofSharedOnCluster();
     // Then send this information with sharing procs so that
-    // they can also which are the other ghost-owning procs
+    // they also know which are the other ghost-owning procs
     rank_type const localPid = dofTable->worldCommPtr()->localRank();
     int nRequests = 2 * dofTable->neighborSubdomains().size();
     mpi::request * mpiRequests = new mpi::request[nRequests];
@@ -125,7 +125,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
 {
     // Initialize return
     element_type sol = this->functionSpace()->element();
-    sol.on( _range=elements( this->mesh() ), _expr=idv(phi) );
+    sol = phi;
 
     // Initialize helper structures
     std::fill( M_dofStatus.begin(), M_dofStatus.end(), FastMarchingDofStatus::FAR );
@@ -234,7 +234,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateNeighborDofs( size_
             // CLOSE or DONE neighbors are only considered
             // if they have the same sign than the dofDone
             int dofSgn = (0. < sol(dofId)) - (sol(dofId) < 0.);
-            if( dofSgn != dofDoneSgn 
+            if( dofSgn != dofDoneSgn && dofDoneSgn != 0.
                     && !(M_dofStatus[dofId] & FastMarchingDofStatus::FAR) )
                 continue;
 #ifdef DEBUG_FM_COUT
@@ -287,11 +287,13 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateCloseDofs( std::vec
     for( auto const& [closeDofId,closeDofVal]: closeDofsIdVals )
     {
 #ifdef DEBUG_FM_COUT
+        int dofDoneSgn = (0. < sol(dofDoneIds[0])) - (sol(dofDoneIds[0]) < 0.);
         std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]" 
             << "updating dof(" << closeDofId << "," 
             << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster( closeDofId ) << ")"
             << " with value " << sol(closeDofId)
-            << " to value " << closeDofVal
+            //<< " to value " << closeDofVal << "(" << ( (sol(dofDoneIds[0]) > 0.) ? "+":"-" ) << ")"
+            << " to value " << closeDofVal << "(" << dofDoneSgn << ")"
             << " using dofs {";
         for( auto dofId: dofDoneIds )
             std::cout << "(" << dofId << "," 
@@ -304,18 +306,33 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateCloseDofs( std::vec
 #endif
         if( less_abs<value_type>()( closeDofVal, sol(closeDofId) ) )
         {
-            if( sol(dofDoneIds[0]) > 0. )
+            // we look for the first non-zero sign of done dofs
+            int dofSgn = 0;
+            for( size_type dofDoneId: dofDoneIds )
+            {
+                if( sol(dofDoneId) > 0. )
+                {
+                    dofSgn = 1;
+                    break;
+                }
+                else if( sol(dofDoneId) < 0. )
+                {
+                    dofSgn = -1;
+                    break;
+                }
+            }
+            if( dofSgn >= 0 ) // positive or no signed done dof (default to positive)
             {
                 sol(closeDofId) = closeDofVal;
                 M_positiveCloseDofHeap.insert_or_assign( pair_dof_value_type(closeDofId, closeDofVal) );
-                M_dofStatus[closeDofId] = FastMarchingDofStatus::CLOSE_NEW;
             }
-            else
+            else if( dofSgn < 0 )
             {
                 sol(closeDofId) = -closeDofVal;
                 M_negativeCloseDofHeap.insert_or_assign( pair_dof_value_type(closeDofId, -closeDofVal) );
-                M_dofStatus[closeDofId] = FastMarchingDofStatus::CLOSE_NEW;
             }
+
+            M_dofStatus[closeDofId] = FastMarchingDofStatus::CLOSE_NEW;
         }
     }
 }
