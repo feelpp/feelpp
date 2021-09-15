@@ -37,6 +37,7 @@
 #include <feel/feells/fastmarching_impl.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feeldiscr/syncdofs.hpp>
+#include <feel/feelcore/traits.hpp>
 
 #include "geometryconceptwrappers.hpp"
 #include "distancepointtoface.hpp"
@@ -410,6 +411,14 @@ DistanceToRange< FunctionSpaceType >::dofsNeighbouringFaces( range_faces_type co
     }
 
     return M_dofsNeighbouringFaces;
+}
+
+template< typename SpaceType, typename RangeType >
+typename Feel::decay_type<SpaceType>::element_type
+distanceToRange( SpaceType const& space, RangeType const& range )
+{
+    DistanceToRange distToRange( space );
+    return distToRange.unsignedDistance( range );
 }
 
 } // namespace Feel
