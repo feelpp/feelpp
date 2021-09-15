@@ -339,20 +339,18 @@ public:
     {
     public :
         using self_type = Body;
-        using moment_of_inertia_type = typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
-                                                       eigen_matrix_type<nDim, nDim>,
-                                                       eigen_matrix_type<1, 1> >::type;
+
+        static constexpr int nDimRotation = (nDim==3)?3:1;
+        using moment_of_inertia_type = eigen_matrix_type<nDimRotation,nDimRotation>;
+        using translational_velocity_type = eigen_vector_type<nRealDim>;
+        using rotation_angles_type = eigen_matrix_type<nDimRotation, 1>;
+        using angular_velocity_type = rotation_angles_type;
 
         using space_displacement_type = typename mesh_ale_type::ale_map_functionspace_type;
         using space_displacement_ptrtype = std::shared_ptr<space_displacement_type>;
         using element_displacement_type = typename space_displacement_type::element_type;
         using element_displacement_ptrtype = std::shared_ptr<element_displacement_type>;
 
-
-        using translational_velocity_type = eigen_vector_type<nRealDim>;
-        static constexpr int nDimRotation = (nDim==3)?3:1;
-        using rotation_angles_type = eigen_matrix_type<nDimRotation, 1>;
-        using angular_velocity_type = rotation_angles_type;
 
         Body() = default;
             // :
@@ -441,7 +439,10 @@ public:
             }
 
         //! return the current rotation matrix
-        auto rigidRotationMatrixExpr() const { return toExpr( this->rigidRotationMatrix( M_rigidRotationAngles ) ); }
+        eigen_matrix_type<nRealDim, nRealDim> rigidRotationMatrix() const { return Body::rigidRotationMatrix( M_rigidRotationAngles ); }
+
+        //! return the current rotation matrix as an expression
+        auto rigidRotationMatrixExpr() const { return toExpr( this->rigidRotationMatrix() ); }
 
 
         void updateDisplacementFromRigidVelocity( translational_velocity_type const& translationVelocity,
@@ -538,8 +539,13 @@ public:
         moment_of_inertia_type const& momentOfInertia() const { return M_momentOfInertia; }
         //! return the moment of inertia as an expression
         auto momentOfInertiaExpr() const { return Feel::vf::toExpr(M_momentOfInertia); }
+        //! return time derivative of moment of inertia
+        moment_of_inertia_type timeDerivativeOfMomentOfInertia( double dt ) const
+            {
+                return (1/dt)*(M_momentOfInertia - M_momentOfInertiaAtPreviousTime);
+            }
 
-        //! return the center of mass of the body 
+        //! return the center of mass of the body
         eigen_vector_type<nRealDim> const& massCenter() const { return M_massCenter; }
         //! return the center of mass of the body as an expression
         auto massCenterExpr() const { return Feel::vf::toExpr(M_massCenter); }
@@ -631,6 +637,7 @@ public:
             {
                 M_rigidTranslationDisplacementAtPreviousTime = M_rigidTranslationDisplacement;
                 M_rigidRotationAnglesAtPreviousTime = M_rigidRotationAngles;
+                M_momentOfInertiaAtPreviousTime = M_momentOfInertia;
             }
 
     private :
@@ -640,8 +647,8 @@ public:
 
         eigen_vector_type<nRealDim> M_massCenter;//, M_massCenterRef;
         double M_mass;
-        moment_of_inertia_type M_momentOfInertia;
-
+        moment_of_inertia_type M_momentOfInertia = moment_of_inertia_type::Zero();
+        moment_of_inertia_type M_momentOfInertiaAtPreviousTime = moment_of_inertia_type::Zero();
 
         eigen_vector_type<nRealDim> M_rigidTranslationDisplacement = eigen_vector_type<nRealDim>::Zero();
         eigen_vector_type<nRealDim> M_rigidTranslationDisplacementAtPreviousTime = eigen_vector_type<nRealDim>::Zero();
@@ -798,6 +805,12 @@ public:
         //! return moment of inertia expression
         auto momentOfInertiaExpr() const { return Feel::vf::toExpr( M_momentOfInertia ); }
 
+        //! return time derivative of moment of inertia
+        moment_of_inertia_type timeDerivativeOfMomentOfInertia( double dt ) const
+            {
+                return (1/dt)*(M_momentOfInertia - M_momentOfInertiaAtPreviousTime);
+            }
+
         //! return center of mass
         eigen_vector_type<nRealDim> const& massCenter() const { return M_massCenter; }
 
@@ -805,7 +818,10 @@ public:
         auto massCenterExpr() const { return Feel::vf::toExpr( M_massCenter ); }
 
         //! return the current rotation matrix
-        auto rigidRotationMatrixExpr() const { return Feel::vf::toExpr( Body::rigidRotationMatrix( M_rigidRotationAngles ) ); }
+        eigen_matrix_type<nRealDim, nRealDim> rigidRotationMatrix() const { return Body::rigidRotationMatrix( M_rigidRotationAngles ); }
+
+        //! return the current rotation matrix as an expression
+        auto rigidRotationMatrixExpr() const { return Feel::vf::toExpr( this->rigidRotationMatrix() ); }
 
         //! init the time stepping
         void initTimeStep( self_type const& fluidToolbox, int bdfOrder, int nConsecutiveSave, std::string const& myFileFormat )
@@ -869,7 +885,8 @@ public:
 
         double M_mass;
         eigen_vector_type<nRealDim> M_massCenter;
-        moment_of_inertia_type M_momentOfInertia;
+        moment_of_inertia_type M_momentOfInertia = moment_of_inertia_type::Zero();
+        moment_of_inertia_type M_momentOfInertiaAtPreviousTime = moment_of_inertia_type::Zero();
 
         rotation_angles_type M_rigidRotationAngles = rotation_angles_type::Zero();
         rotation_angles_type M_rigidRotationAnglesAtPreviousTime = rotation_angles_type::Zero();
@@ -978,6 +995,14 @@ public:
             {
                 return this->isInNBodyArticulated()? M_NBodyArticulated->momentOfInertiaExpr() : M_body->momentOfInertiaExpr();
             }
+
+        moment_of_inertia_type timeDerivativeOfMomentOfInertia( double dt ) const
+            {
+                return this->isInNBodyArticulated()? M_NBodyArticulated->timeDerivativeOfMomentOfInertia( dt ) : M_body->timeDerivativeOfMomentOfInertia( dt );
+            }
+
+        //! return the current rotation matrix
+        eigen_matrix_type<nRealDim, nRealDim> rigidRotationMatrix() const { return this->isInNBodyArticulated()? M_NBodyArticulated->rigidRotationMatrix() : M_body->rigidRotationMatrix(); }
 
         //! return center of mass expression
         auto massCenterExpr() const
@@ -2222,7 +2247,8 @@ public :
 
     bool hasStrongDirichletBC() const
         {
-            bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet() || M_bcMarkersMovingBoundaryImposed.hasMarkerDirichletBCelimination() || this->hasMarkerPressureBC();
+            bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet() || M_bcMarkersMovingBoundaryImposed.hasMarkerDirichletBCelimination() || this->hasMarkerPressureBC()
+                || M_bodySetBC.hasTranslationalVelocityExpr() || M_bodySetBC.hasAngularVelocityExpr();
             return hasStrongDirichletBC;
         }
 
