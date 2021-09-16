@@ -1664,7 +1664,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     for ( auto const& [bname,bbc] : M_bodySetBC )
     {
         this->addPostProcessExportsAllFieldsAvailable( "trace_mesh", { (boost::format("body.%1%.translational-velocity")%bname).str(), (boost::format("body.%1%.angular-velocity")%bname).str() } );
-        this->addPostProcessMeasuresQuantitiesAllNamesAvailable( { (boost::format("body_%1%.mass_center")%bname).str(), (boost::format("body_%1%.moment_of_inertia")%bname).str(),
+        this->addPostProcessMeasuresQuantitiesAllNamesAvailable( { (boost::format("body_%1%.mass_center")%bname).str(),
+                    (boost::format("body_%1%.moment_of_inertia")%bname).str(),
+                    (boost::format("body_%1%.moment_of_inertia_body_frame")%bname).str(),
                     (boost::format("body_%1%.fluid_forces")%bname).str(), (boost::format("body_%1%.fluid_torques")%bname).str() } );
     }
     this->setPostProcessExportsPidName( "trace_mesh", "trace.pid" );
@@ -2565,7 +2567,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::updateForUse()
     }
     M_massCenter /= M_mass;
 
-    this->computeMomentOfInertia( this->massCenterExpr(), M_momentOfInertia );
+    this->computeMomentOfInertia_bodyFrame( this->massCenterExpr(), this->rigidRotationMatrix(), M_momentOfInertia_bodyFrame );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -2606,12 +2608,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string co
         if constexpr ( nDim == 2 )
         {
             if ( momentOfInertiaExpr.template hasExpr<1,1>() )
-                M_body->setMomentOfInertia( momentOfInertiaExpr.template expr<1,1>().evaluate()(0,0) );
+                M_body->setMomentOfInertia_bodyFrame( momentOfInertiaExpr.template expr<1,1>().evaluate()(0,0) );
         }
         else
         {
             if ( momentOfInertiaExpr.template hasExpr<nDim,nDim>() )
-                M_body->setMomentOfInertia( momentOfInertiaExpr.template expr<nDim,nDim>().evaluate() );
+                M_body->setMomentOfInertia_bodyFrame( momentOfInertiaExpr.template expr<nDim,nDim>().evaluate() );
         }
         initialMassCenterExpr.setExpr( "mass-center", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
         if ( initialMassCenterExpr.template hasExpr<nRealDim,1>() )
@@ -2733,6 +2735,66 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
     }
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::initElasticBehavior()
+{
+    this->body().initElasticDisplacement();
+    this->body().initElasticVelocity();
+    if ( !M_fieldElasticVelocity )
+    {
+        M_spaceElasticVelocity = space_trace_velocity_type::New( _mesh=M_mesh );
+        M_fieldElasticVelocity = M_spaceElasticVelocity->elementPtr();
+
+
+
+        if ( M_mesh->worldComm().size() == 1 )
+        {
+            // TODO : NOT WORK IN // with some special partitioning
+            // idea to fix without change opInterlation : introduce an intermediate functionspace
+            // defined on mesh with elements connected to the interface only. And then create 2 opInterp
+            auto opInterpolationElasticVelocity = opInterpolation(_domainSpace=this->body().fieldElasticVelocity().functionSpace(),
+                                                                  _imageSpace=M_spaceElasticVelocity,
+                                                                  _range=elements(M_mesh),
+                                                                  _type=InterpolationConforme()/*,
+                                                                                                _backend=M_fluidModel->backend()*/ );
+            M_matrixInterpolationElasticVelocity = opInterpolationElasticVelocity->matPtr();
+
+        }
+        else
+        {
+#if 0
+            typename trace_mesh_type::smd_ptrtype smd;
+            smd = M_mesh->subMeshData();
+            M_mesh->setSubMeshData( typename trace_mesh_type::smd_ptrtype{} );
+#endif
+            M_spaceElasticVelocityTouchingBodyInterface = space_velocity_type::New( _mesh=M_body->mesh(),_range=elements( M_body->mesh(), this->rangeMarkedFacesOnFluid()/*, ElementsType::MESH_FACES*/ ) );
+            //M_spaceElasticVelocityTouchingBodyInterface = space_velocity_type::New( _mesh=M_body->mesh() );
+            M_fieldElasticVelocityTouchingBodyInterface = M_spaceElasticVelocityTouchingBodyInterface->elementPtr();
+            auto opInterpolationElasticVelocity_tmp1 = opInterpolation(_domainSpace=this->body().fieldElasticVelocity().functionSpace(),
+                                                                       _imageSpace=M_spaceElasticVelocityTouchingBodyInterface,
+                                                                       //_range= this->rangeMarkedFacesOnFluid(),
+                                                                       //_range=elements(support(this->body().fieldElasticVelocity().functionSpace())),
+                                                                       _range=intersect(elements(support(this->body().fieldElasticVelocity().functionSpace())),elements(support(M_spaceElasticVelocityTouchingBodyInterface))),
+                                                                       _type=InterpolationConforme() );
+
+            auto opInterpolationElasticVelocity_tmp2 = opInterpolation(_domainSpace=M_spaceElasticVelocityTouchingBodyInterface,
+                                                                       _imageSpace=M_spaceElasticVelocity,
+                                                                       _range=elements(M_mesh),
+                                                                       _type=InterpolationConforme() );
+
+            M_matrixInterpolationElasticVelocity_tmp1 = opInterpolationElasticVelocity_tmp1->matPtr();
+            M_matrixInterpolationElasticVelocity_tmp2 = opInterpolationElasticVelocity_tmp2->matPtr();
+#if 0
+            if ( smd )
+                M_mesh->setSubMeshData( smd );
+#endif
+        }
+
+
+    }
+
+}
 
 namespace utility_constant_functionspace
 {
@@ -3172,9 +3234,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::updateForUse()
     }
     M_massCenter /= M_mass;
 
-    M_momentOfInertia = moment_of_inertia_type::Zero();
+    M_momentOfInertia_bodyFrame = moment_of_inertia_type::Zero();
     for ( auto const& bbc : allbbc )
-        bbc->body().computeMomentOfInertia( this->massCenterExpr(), M_momentOfInertia, true );
+        bbc->body().computeMomentOfInertia_bodyFrame( this->massCenterExpr(), this->rigidRotationMatrix(), M_momentOfInertia_bodyFrame, true );
 }
 
 

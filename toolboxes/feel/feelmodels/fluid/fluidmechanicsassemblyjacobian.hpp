@@ -750,16 +750,16 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                 size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
                 int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
                 bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
-                auto const& momentOfInertia = bpbc.momentOfInertia();
+                auto const& momentOfInertia = bpbc.momentOfInertia_inertialFrame();
                 if ( hasActiveDofAngularVelocity )
                 {
                     typename Body::moment_of_inertia_type termWithTimeDerivativeOfMomentOfInertia;
                     if constexpr ( nDim == 2 )
-                        termWithTimeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia(this->timeStep());
+                        termWithTimeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia_bodyFrame(this->timeStep());
                     else
                     {
                         auto rotationMat = bpbc.rigidRotationMatrix();
-                        termWithTimeDerivativeOfMomentOfInertia = rotationMat*bpbc.timeDerivativeOfMomentOfInertia(this->timeStep())*(rotationMat.transpose());
+                        termWithTimeDerivativeOfMomentOfInertia = rotationMat*bpbc.timeDerivativeOfMomentOfInertia_bodyFrame(this->timeStep())*(rotationMat.transpose());
                     }
                     auto const& basisToContainerGpAngularVelocityRow = J->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexAngularVelocity );
                     auto const& basisToContainerGpAngularVelocityCol = J->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexAngularVelocity );
