@@ -526,8 +526,8 @@ public:
 
 
         void setMass( double m ) { M_mass = m; }
-        void setMomentOfInertia( moment_of_inertia_type const& m ) { M_momentOfInertia = m; }
-        void setMomentOfInertia( double val ) { M_momentOfInertia = val*moment_of_inertia_type::Identity(); }
+        void setMomentOfInertia_bodyFrame( moment_of_inertia_type const& m ) { M_momentOfInertia_bodyFrame = m; }
+        void setMomentOfInertia_bodyFrame( double val ) { M_momentOfInertia_bodyFrame = val*moment_of_inertia_type::Identity(); }
         void setMassCenter( eigen_vector_type<nRealDim> const& massCenter ) { M_massCenter = massCenter; }
 
         //! return the mass of the body
@@ -535,14 +535,25 @@ public:
         //! return the mass of the body as an expression
         auto massExpr() const { return cst( M_mass ); }
 
-        //! return the moment of inertia
-        moment_of_inertia_type const& momentOfInertia() const { return M_momentOfInertia; }
-        //! return the moment of inertia as an expression
-        auto momentOfInertiaExpr() const { return Feel::vf::toExpr(M_momentOfInertia); }
-        //! return time derivative of moment of inertia
-        moment_of_inertia_type timeDerivativeOfMomentOfInertia( double dt ) const
+        //! return the moment of inertia related to body frame
+        moment_of_inertia_type const& momentOfInertia_bodyFrame() const { return M_momentOfInertia_bodyFrame; }
+        //! return the moment of inertia related to body frame as an expression
+        auto momentOfInertiaExpr_bodyFrame() const { return Feel::vf::toExpr(M_momentOfInertia_bodyFrame); }
+        //! return the moment of inertia related to inertial frame
+        moment_of_inertia_type momentOfInertia_inertialFrame() const
             {
-                return (1/dt)*(M_momentOfInertia - M_momentOfInertiaAtPreviousTime);
+                if constexpr ( nDim == 2 )
+                   return M_momentOfInertia_bodyFrame;
+                else
+                {
+                    auto R = this->rigidRotationMatrix();
+                    return R*M_momentOfInertia_bodyFrame*(R.transpose());
+                }
+            }
+        //! return time derivative of moment of inertia related to body frame
+        moment_of_inertia_type timeDerivativeOfMomentOfInertia_bodyFrame( double dt ) const
+            {
+                return (1/dt)*(M_momentOfInertia_bodyFrame - M_momentOfInertiaAtPreviousTime_bodyFrame);
             }
 
         //! return the center of mass of the body
@@ -596,7 +607,7 @@ public:
             }
 
         template <typename MassCenterExprType>
-        void computeMomentOfInertia( MassCenterExprType const& massCenterExpr, moment_of_inertia_type & momentOfInertia, bool addValue = false ) const
+        void computeMomentOfInertia_inertialFrame( MassCenterExprType const& massCenterExpr, moment_of_inertia_type & momentOfInertia, bool addValue = false ) const
             {
                 auto mom = M_materialsProperties->materialsOnMesh(M_mesh);
                 if ( !addValue )
@@ -619,6 +630,24 @@ public:
                     }
                 }
             }
+        template <typename MassCenterExprType>
+        void computeMomentOfInertia_bodyFrame( MassCenterExprType const& massCenterExpr, eigen_matrix_type<nRealDim, nRealDim> const& R, moment_of_inertia_type & momentOfInertia, bool addValue = false ) const
+            {
+                if constexpr ( nDim == 2 )
+                {
+                    this->computeMomentOfInertia_inertialFrame( massCenterExpr, momentOfInertia, addValue );
+                }
+                else
+                {
+                    moment_of_inertia_type momentOfInertia_inertialFrame;
+                    this->computeMomentOfInertia_inertialFrame( massCenterExpr,momentOfInertia_inertialFrame );
+                    if ( addValue )
+                        momentOfInertia += R.transpose()*momentOfInertia_inertialFrame*R;
+                    else
+                        momentOfInertia = R.transpose()*momentOfInertia_inertialFrame*R;
+                }
+            }
+
 
         void setParameterValues( std::map<std::string,double> const& mp )
             {
@@ -629,7 +658,8 @@ public:
         auto modelMeasuresQuantities( std::string const& prefix ) const
             {
                 return Feel::FeelModels::modelMeasuresQuantities( modelMeasuresQuantity( prefix, "mass_center", std::bind( &self_type::massCenter, this ) ),
-                                                                  modelMeasuresQuantity( prefix, "moment_of_inertia", std::bind( &self_type::momentOfInertia, this ) )
+                                                                  modelMeasuresQuantity( prefix, "moment_of_inertia", std::bind( &self_type::momentOfInertia_inertialFrame, this ) ),
+                                                                  modelMeasuresQuantity( prefix, "moment_of_inertia_body_frame", std::bind( &self_type::momentOfInertia_bodyFrame, this ) )
                                                                   );
             }
 
@@ -637,7 +667,7 @@ public:
             {
                 M_rigidTranslationDisplacementAtPreviousTime = M_rigidTranslationDisplacement;
                 M_rigidRotationAnglesAtPreviousTime = M_rigidRotationAngles;
-                M_momentOfInertiaAtPreviousTime = M_momentOfInertia;
+                M_momentOfInertiaAtPreviousTime_bodyFrame = M_momentOfInertia_bodyFrame;
             }
 
     private :
@@ -647,8 +677,8 @@ public:
 
         eigen_vector_type<nRealDim> M_massCenter;//, M_massCenterRef;
         double M_mass;
-        moment_of_inertia_type M_momentOfInertia = moment_of_inertia_type::Zero();
-        moment_of_inertia_type M_momentOfInertiaAtPreviousTime = moment_of_inertia_type::Zero();
+        moment_of_inertia_type M_momentOfInertia_bodyFrame = moment_of_inertia_type::Zero();
+        moment_of_inertia_type M_momentOfInertiaAtPreviousTime_bodyFrame = moment_of_inertia_type::Zero();
 
         eigen_vector_type<nRealDim> M_rigidTranslationDisplacement = eigen_vector_type<nRealDim>::Zero();
         eigen_vector_type<nRealDim> M_rigidTranslationDisplacementAtPreviousTime = eigen_vector_type<nRealDim>::Zero();
@@ -799,16 +829,28 @@ public:
         //! return mass expression
         auto massExpr() const { return cst( M_mass ); }
 
-        //! return moment of inertia
-        moment_of_inertia_type const& momentOfInertia() const { return M_momentOfInertia; }
+        //! return moment of inertia related to body frame
+        moment_of_inertia_type const& momentOfInertia_bodyFrame() const { return M_momentOfInertia_bodyFrame; }
 
-        //! return moment of inertia expression
-        auto momentOfInertiaExpr() const { return Feel::vf::toExpr( M_momentOfInertia ); }
+        //! return moment of inertia related to body frame as an expression
+        auto momentOfInertiaExpr_bodyFrame() const { return Feel::vf::toExpr( M_momentOfInertia_bodyFrame ); }
+
+        //! return the moment of inertia related to inertial frame
+        moment_of_inertia_type momentOfInertia_inertialFrame() const
+            {
+                if constexpr ( nDim == 2 )
+                    return M_momentOfInertia_bodyFrame;
+                else
+                {
+                    auto R = this->rigidRotationMatrix();
+                    return R*M_momentOfInertia_bodyFrame*(R.transpose());
+                }
+            }
 
         //! return time derivative of moment of inertia
-        moment_of_inertia_type timeDerivativeOfMomentOfInertia( double dt ) const
+        moment_of_inertia_type timeDerivativeOfMomentOfInertia_bodyFrame( double dt ) const
             {
-                return (1/dt)*(M_momentOfInertia - M_momentOfInertiaAtPreviousTime);
+                return (1/dt)*(M_momentOfInertia_bodyFrame - M_momentOfInertiaAtPreviousTime_bodyFrame);
             }
 
         //! return center of mass
@@ -885,8 +927,8 @@ public:
 
         double M_mass;
         eigen_vector_type<nRealDim> M_massCenter;
-        moment_of_inertia_type M_momentOfInertia = moment_of_inertia_type::Zero();
-        moment_of_inertia_type M_momentOfInertiaAtPreviousTime = moment_of_inertia_type::Zero();
+        moment_of_inertia_type M_momentOfInertia_bodyFrame = moment_of_inertia_type::Zero();
+        moment_of_inertia_type M_momentOfInertiaAtPreviousTime_bodyFrame = moment_of_inertia_type::Zero();
 
         rotation_angles_type M_rigidRotationAngles = rotation_angles_type::Zero();
         rotation_angles_type M_rigidRotationAnglesAtPreviousTime = rotation_angles_type::Zero();
@@ -984,21 +1026,28 @@ public:
         Body const& body() const { return *M_body; }
         Body & body() { return *M_body; }
 
-        //! return moment of inertia
-        moment_of_inertia_type const& momentOfInertia() const
+        //! return moment of inertia related to body frame
+        moment_of_inertia_type const& momentOfInertia_bodyFrame() const
             {
-                return this->isInNBodyArticulated()? M_NBodyArticulated->momentOfInertia() : M_body->momentOfInertia();
+                return this->isInNBodyArticulated()? M_NBodyArticulated->momentOfInertia_bodyFrame() : M_body->momentOfInertia_bodyFrame();
             }
 
-        //! return moment of inertia expression
-        auto momentOfInertiaExpr() const
+        //! return moment of inertia related to body frame as an expression
+        // auto momentOfInertiaExpr_bodyFrame() const
+        //     {
+        //         return this->isInNBodyArticulated()? M_NBodyArticulated->momentOfInertiaExpr_bodyFrame() : M_body->momentOfInertiaExpr_bodyFrame();
+        //     }
+
+        //! return the moment of inertia related to inertial frame
+        moment_of_inertia_type momentOfInertia_inertialFrame() const
             {
-                return this->isInNBodyArticulated()? M_NBodyArticulated->momentOfInertiaExpr() : M_body->momentOfInertiaExpr();
+                return this->isInNBodyArticulated()? M_NBodyArticulated->momentOfInertia_inertialFrame() : M_body->momentOfInertia_inertialFrame();
             }
 
-        moment_of_inertia_type timeDerivativeOfMomentOfInertia( double dt ) const
+
+        moment_of_inertia_type timeDerivativeOfMomentOfInertia_bodyFrame( double dt ) const
             {
-                return this->isInNBodyArticulated()? M_NBodyArticulated->timeDerivativeOfMomentOfInertia( dt ) : M_body->timeDerivativeOfMomentOfInertia( dt );
+                return this->isInNBodyArticulated()? M_NBodyArticulated->timeDerivativeOfMomentOfInertia_bodyFrame( dt ) : M_body->timeDerivativeOfMomentOfInertia_bodyFrame( dt );
             }
 
         //! return the current rotation matrix
@@ -1082,7 +1131,7 @@ public:
         evaluate_torques_type fluidTorques() const
             {
                 // WARNING : is the case of  isInNBodyArticulated, this torque is related to nNBodyArticulated object (else we need compute momentOfInertia of this body)
-                evaluate_torques_type res = this->momentOfInertia()*(this->bdfAngularVelocity()->polyDerivCoefficient(0)*idv(this->fieldAngularVelocityPtr())-idv(this->bdfAngularVelocity()->polyDeriv())).evaluate(true,M_mesh->worldCommPtr());
+                evaluate_torques_type res = this->momentOfInertia_inertialFrame()*(this->bdfAngularVelocity()->polyDerivCoefficient(0)*idv(this->fieldAngularVelocityPtr())-idv(this->bdfAngularVelocity()->polyDeriv())).evaluate(true,M_mesh->worldCommPtr());
                 return res;
             }
         //---------------------------------------------------------------------------//
@@ -1191,26 +1240,7 @@ public:
                 return eb;
             }
 
-        void initElasticBehavior()
-            {
-                this->body().initElasticDisplacement();
-                this->body().initElasticVelocity();
-                if ( !M_fieldElasticVelocity )
-                {
-                    M_spaceElasticVelocity = space_trace_velocity_type::New( _mesh=M_mesh );
-                    M_fieldElasticVelocity = M_spaceElasticVelocity->elementPtr();
-                    // TODO : NOT WORK IN // with some special partitioning
-                    // idea to fix without change opInterlation : introduce an intermediate functionspace
-                    // defined on mesh with elements connected to the interface only. And then create 2 opInterp
-                    auto opInterpolationElasticVelocity = opInterpolation(_domainSpace=this->body().fieldElasticVelocity().functionSpace(),
-                                                                          _imageSpace=M_spaceElasticVelocity,
-                                                                          _range=elements(M_mesh),
-                                                                          _type=InterpolationConforme()/*,
-                                                                                                        _backend=M_fluidModel->backend()*/ );
-
-                    M_matrixInterpolationElasticVelocity = opInterpolationElasticVelocity->matPtr();
-                }
-            }
+        void initElasticBehavior();
 
         template <typename ElasticBehaviorType>
         void updateElasticBehavior( ElasticBehaviorType const& elasticBehavior, self_type const& fluidToolbox );
@@ -1252,8 +1282,18 @@ public:
                 tmp = fieldElasticVelocityInBody;
                 auto R = this->body().rigidRotationMatrixExpr();
                 fieldElasticVelocityInBody.on(_range=elements(support(XhVel)),_expr=R*idv(tmp) );
-                CHECK(M_matrixInterpolationElasticVelocity) << "aiaia";
-                M_matrixInterpolationElasticVelocity->multVector( fieldElasticVelocityInBody, *M_fieldElasticVelocity );
+
+
+                if ( M_fieldElasticVelocityTouchingBodyInterface ) // WARNING SPECIAL PARALLEL FIX
+                {
+                    M_matrixInterpolationElasticVelocity_tmp1->multVector( fieldElasticVelocityInBody, *M_fieldElasticVelocityTouchingBodyInterface );
+                    M_matrixInterpolationElasticVelocity_tmp2->multVector( *M_fieldElasticVelocityTouchingBodyInterface, *M_fieldElasticVelocity );
+                }
+                else
+                {
+                    CHECK(M_matrixInterpolationElasticVelocity) << "aiaia";
+                    M_matrixInterpolationElasticVelocity->multVector( fieldElasticVelocityInBody, *M_fieldElasticVelocity );
+                }
 #endif
             }
 
@@ -1277,6 +1317,11 @@ public:
         space_trace_velocity_ptrtype M_spaceElasticVelocity;
         element_trace_velocity_ptrtype M_fieldElasticVelocity;
         sparse_matrix_ptrtype M_matrixInterpolationElasticVelocity;
+#if 1 // special fix (should be removed when opInterp will be fixed)
+        space_velocity_ptrtype M_spaceElasticVelocityTouchingBodyInterface;
+        element_velocity_ptrtype M_fieldElasticVelocityTouchingBodyInterface;
+        sparse_matrix_ptrtype M_matrixInterpolationElasticVelocity_tmp1, M_matrixInterpolationElasticVelocity_tmp2;
+#endif
         std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> M_elasticVelocityExprBC;
         std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> M_elasticDisplacementExprBC;
 

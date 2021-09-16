@@ -783,8 +783,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
             if ( !bpbc.isInNBodyArticulated() || ( bpbc.getNBodyArticulated().masterBodyBC().name() == bpbc.name() ) )
             {
                 size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
-                auto momentOfInertiaExpr = bpbc.momentOfInertiaExpr();
-                auto const& momentOfInertia = bpbc.momentOfInertia();
+                //auto momentOfInertiaExpr = bpbc.momentOfInertiaExpr();
+                auto const& momentOfInertia = bpbc.momentOfInertia_inertialFrame();
                 int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
                 bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
                 if ( BuildNonCstPart/*BuildCstPart*/ )
@@ -794,16 +794,16 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                     {
                         typename Body::moment_of_inertia_type termWithTimeDerivativeOfMomentOfInertia;
                         if constexpr ( nDim == 2 )
-                            termWithTimeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia(this->timeStep());
+                            termWithTimeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia_bodyFrame(this->timeStep());
                         else
                         {
                             auto rotationMat = bpbc.rigidRotationMatrix();
-                            termWithTimeDerivativeOfMomentOfInertia = rotationMat*bpbc.timeDerivativeOfMomentOfInertia(this->timeStep())*(rotationMat.transpose());
+                            termWithTimeDerivativeOfMomentOfInertia = rotationMat*bpbc.timeDerivativeOfMomentOfInertia_bodyFrame(this->timeStep())*(rotationMat.transpose());
                         }
 
                         auto const& basisToContainerGpAngularVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexAngularVelocity );
                         auto const& basisToContainerGpAngularVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexAngularVelocity );
-                        auto timeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia(this->timeStep());
+                        //auto timeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia(this->timeStep());
                         for (int i=0;i<nLocalDofAngularVelocity;++i)
                         {
                             for (int j=0;j<nLocalDofAngularVelocity;++j)
@@ -837,7 +837,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                     {
                         auto const& basisToContainerGpAngularVelocityVector = F->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
                         auto angularVelocityPolyDeriv = bpbc.bdfAngularVelocity()->polyDeriv();
-                        auto contribRhsAngularVelocity = (momentOfInertiaExpr*idv(angularVelocityPolyDeriv)).evaluate(false);
+                        //auto contribRhsAngularVelocity = (momentOfInertiaExpr*idv(angularVelocityPolyDeriv)).evaluate(false);
+                        auto contribRhsAngularVelocity = momentOfInertia*(idv(angularVelocityPolyDeriv).evaluate(false));
                         for (int i=0;i<nLocalDofAngularVelocity;++i)
                         {
                             F->add( basisToContainerGpAngularVelocityVector[i],

@@ -733,17 +733,17 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
 
                     auto w_eval = idv(uAngularVelocity).evaluate(false);
                     auto const& basisToContainerGpAngularVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
-                    auto const& momentOfInertia = bpbc.momentOfInertia();
-                    auto timeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia(this->timeStep());
+                    auto const& momentOfInertia = bpbc.momentOfInertia_inertialFrame();
+                    //auto timeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia_bodyFrame(this->timeStep());
                     if ( !BuildCstPart && !UseJacobianLinearTerms )
                     {
                         typename Body::moment_of_inertia_type termWithTimeDerivativeOfMomentOfInertia;
                         if constexpr ( nDim == 2 )
-                            termWithTimeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia(this->timeStep());
+                            termWithTimeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia_bodyFrame(this->timeStep());
                         else
                         {
                             auto rotationMat = bpbc.rigidRotationMatrix();
-                            termWithTimeDerivativeOfMomentOfInertia = rotationMat*bpbc.timeDerivativeOfMomentOfInertia(this->timeStep())*(rotationMat.transpose());
+                            termWithTimeDerivativeOfMomentOfInertia = rotationMat*bpbc.timeDerivativeOfMomentOfInertia_bodyFrame(this->timeStep())*(rotationMat.transpose());
                         }
 
                         //auto contribLhsAngularVelocity = (bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*((momentOfInertiaExpr*idv(uAngularVelocity)).evaluate(false))).eval(); // not works if not call eval(), probably aliasing issue
@@ -769,8 +769,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                     {
                         //auto const& basisToContainerGpAngularVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
                         auto angularVelocityPolyDeriv = bpbc.bdfAngularVelocity()->polyDeriv();
-                        auto momentOfInertiaExpr = bpbc.momentOfInertiaExpr();
-                        auto contribRhsAngularVelocity = (momentOfInertiaExpr*idv(angularVelocityPolyDeriv)).evaluate(false);
+                        //auto momentOfInertiaExpr = bpbc.momentOfInertiaExpr();
+                        auto contribRhsAngularVelocity = momentOfInertia*(idv(angularVelocityPolyDeriv).evaluate(false));
                         for (int i=0;i<nLocalDofAngularVelocity;++i)
                         {
                             R->add( basisToContainerGpAngularVelocityVector[i],
