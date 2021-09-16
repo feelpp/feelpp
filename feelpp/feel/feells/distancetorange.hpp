@@ -33,7 +33,6 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feells/reinit_fms_impl.hpp>
 #include <feel/feells/fastmarching_impl.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feeldiscr/syncdofs.hpp>
