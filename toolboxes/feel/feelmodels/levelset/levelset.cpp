@@ -105,6 +105,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     if ( !this->isStationary() )
     {
         this->setTimeInitial( M_advectionToolbox->timeInitial() );
+        this->setTimeOrder( M_advectionToolbox->timeOrder() );
         this->updateTime( M_advectionToolbox->currentTime() );
     }
 
