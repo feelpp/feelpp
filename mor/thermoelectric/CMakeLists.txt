@@ -66,10 +66,11 @@ crb_add_library( electric-alpha SRCS electric-alpha.cpp EXEC CRB_LIB_ELECTRIC_AL
 set(FEELPP_CRB_ELECTRIC_ALPHA_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_ELECTRIC_ALPHA_LIBRARIES PARENT_SCOPE)
 
-crb_add_library( biotsavart-electric-alpha SRCS biotsavart-electric-alpha.hpp biotsavart-electric-alpha.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} feelpp_modelcore feelpp_modelalg feelpp_toolbox_electric_lib_3dP1G1 ${CRB_LIB_ELECTRIC_ALPHA} ${GLPK_LIBRARIES} EXEC CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA )
-target_include_directories(feelpp_crb_biotsavart-electric-alpha PUBLIC ${GLPK_INCLUDE_DIR} )
-set(FEELPP_CRB_BIOTSAVART_ELECTRIC_ALPHA_LIBRARIES ${CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA} PARENT_SCOPE)
-set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_BIOTSAVART_ELECTRIC_ALPHA_LIBRARIES PARENT_SCOPE)
+# # Comment out since it FTBS
+# crb_add_library( biotsavart-electric-alpha SRCS biotsavart-electric-alpha.hpp biotsavart-electric-alpha.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} feelpp_modelcore feelpp_modelalg feelpp_toolbox_electric_lib_3dP1G1 ${CRB_LIB_ELECTRIC_ALPHA} ${GLPK_LIBRARIES} EXEC CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA )
+# target_include_directories(feelpp_crb_biotsavart-electric-alpha PUBLIC ${GLPK_INCLUDE_DIR} )
+# set(FEELPP_CRB_BIOTSAVART_ELECTRIC_ALPHA_LIBRARIES ${CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA} PARENT_SCOPE)
+# set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_BIOTSAVART_ELECTRIC_ALPHA_LIBRARIES PARENT_SCOPE)
 
 #install( FILES electric.hpp thermic.hpp thermoelectric-simple.hpp thermoelectric-linear.hpp thermoelectric-nonlinear.hpp electric-alpha.hpp
 install( FILES thermoelectric-nl.hpp electric-alpha.hpp biotsavart.hpp biotsavart-electric-alpha.hpp
@@ -107,9 +108,10 @@ feelpp_add_application( electric-alpha-app
 feelpp_add_application( biotsavart-app
                         SRCS thermoelectric-nl.hpp biotsavart.hpp biotsavart_main.cpp
                         LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} INSTALL )
-feelpp_add_application( biotsavart-electric-alpha-app
-                        SRCS electric-alpha.hpp biotsavart-electric-alpha.hpp biotsavart-electric-alpha_main.cpp
-                        LINK_LIBRARIES ${CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA} Feelpp::feelpp_toolbox_electric_lib Feelpp::feelpp_modelcore )
+# # Comment out since it FTBS
+# feelpp_add_application( biotsavart-electric-alpha-app
+#                         SRCS electric-alpha.hpp biotsavart-electric-alpha.hpp biotsavart-electric-alpha_main.cpp
+#                         LINK_LIBRARIES ${CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA} Feelpp::feelpp_toolbox_electric_lib Feelpp::feelpp_modelcore )
 
 # feelpp_add_application( test SRCS test.cpp )
 
