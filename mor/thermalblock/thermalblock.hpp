@@ -246,11 +246,11 @@ public:
             for ( int i=0; i<=nx*ny; i++ )
             {
                 ginac_expressionA[i].expression().setParameterValues( map_symbols );
-                M_betaAq[i] = ginac_expressionA[i].evaluate();
+                M_betaAq[i] = ginac_expressionA[i].evaluate()(0,0);
             }
 
             ginac_expressionF[0].expression().setParameterValues( map_symbols );
-            M_betaFq[0][0] = ginac_expressionF[0].evaluate();
+            M_betaFq[0][0] = ginac_expressionF[0].evaluate()(0,0);
 
         }//ginac
         else

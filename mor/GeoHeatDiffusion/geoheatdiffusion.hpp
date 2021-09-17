@@ -48,6 +48,7 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelalg/solvereigen.hpp>
+#include <feel/feelfilters/geotool.hpp>
 
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
