@@ -221,10 +221,10 @@ PYBIND11_MODULE(_discr, m )
                            defDiscr<Pdh_type<Mesh<Simplex<_dim>>, _order>>( m );
                            defDiscr<Pchv_type<Mesh<Simplex<_dim>>, _order>>( m );
                            defDiscr<Pdhv_type<Mesh<Simplex<_dim>>, _order>>( m );
-                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Scalar, Continuous, PointSetFekete>>>>(m, "_fekete");
-                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Scalar, Discontinuous, PointSetFekete>>>>(m, "_fekete");
-                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Vectorial, Continuous, PointSetFekete>>>>(m, "_fekete");
-                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Vectorial, Discontinuous, PointSetFekete>>>>(m, "_fekete");
+//                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Scalar, Continuous, PointSetFekete>>>>(m, "_fekete");
+//                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Scalar, Discontinuous, PointSetFekete>>>>(m, "_fekete");
+//                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Vectorial, Continuous, PointSetFekete>>>>(m, "_fekete");
+//                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Vectorial, Discontinuous, PointSetFekete>>>>(m, "_fekete");
                        });
 
     defDiscr<Pdh_type<Mesh<Simplex<2>>,0>>( m );
