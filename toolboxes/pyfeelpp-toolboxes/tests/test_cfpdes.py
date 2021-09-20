@@ -25,3 +25,30 @@ def test_cfpdes_cfd():
             f.updateTimeStep()
     return not f.checkResults()
 #
+
+
+def test_cfpdes_remesh():
+    feelpp.Environment.setConfigFile('cfpdes/laplace/l-shape/l-shape.cfg')
+    f = cfpdes.cfpdes(dim=2)
+    f.init()
+    f.solve()
+    e = feelpp.exporter(mesh=f.mesh(), name="l-shape", geo="change")
+    e.step(0.).setMesh(f.mesh())
+    f.exportSolutionToStep( e.step(0.) )
+    e.save()
+    Xh = feelpp.functionSpace(mesh=f.mesh())
+    metric = Xh.element()
+    metric.on(range=feelpp.elements(f.mesh()), expr=feelpp.expr("0.1"))
+    R = feelpp.remesher(mesh=f.mesh())
+    R.setMetric(metric)
+    new_mesh = R.execute()
+    
+    
+    fnew = cfpdes.cfpdes(dim=2)
+    fnew.setMesh(new_mesh)
+    fnew.init()
+    fnew.solve()
+    e.step(1.).setMesh(new_mesh)
+    fnew.exportSolutionToStep(e.step(1.))
+    e.save()
+    return not fnew.checkResults()
