@@ -37,7 +37,7 @@ namespace meta {
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 struct Pch
 {
@@ -54,20 +54,20 @@ struct Pch
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pch_type = typename meta::Pch<MeshType,Order,T,Pts,Tag>::type;
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pch_ptrtype = typename meta::Pch<MeshType,Order,T,Pts,Tag>::ptrtype;
 
-template<typename MeshType,int Order,typename T = double, template<class, uint16_type, class> class Pts = PointSetEquiSpaced, int Tag = 0>
+template<typename MeshType,int Order,typename T = double, template<class, uint16_type, class> class Pts = PointSetFekete, int Tag = 0>
 using Pch_element_t=typename Pch_type<MeshType,Order, T,Pts, Tag>::element_type;
 
-template<typename MeshType,int Order,typename T = double,template<class, uint16_type, class> class Pts = PointSetEquiSpaced, int Tag = 0>
+template<typename MeshType,int Order,typename T = double,template<class, uint16_type, class> class Pts = PointSetFekete, int Tag = 0>
 using Pch_element_type=Pch_element_t<MeshType,Order,T,Pts, Tag>;
 
 
@@ -79,7 +79,7 @@ using Pch_element_type=Pch_element_t<MeshType,Order,T,Pts, Tag>;
  */
 template<int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          typename MeshType,
          int Tag = 0>
 inline
@@ -99,7 +99,7 @@ Pch( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
  */
 template<int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          typename MeshType,
          int Tag = 0>
 inline
