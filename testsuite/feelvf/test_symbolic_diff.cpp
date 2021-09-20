@@ -29,6 +29,7 @@
 
 // #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 // #include <feel/feelfilters/exporter.hpp>
 // #include <feel/feelmesh/concatenate.hpp>
@@ -144,7 +145,60 @@ BOOST_AUTO_TEST_CASE( test3 )
     BOOST_CHECK_SMALL( error_diff_e3b_y, 1e-10 );
     BOOST_CHECK_SMALL( error_diff_e3b_z, 1e-10 );
     BOOST_CHECK_SMALL( error_grad_e3b, 1e-10 );
+
+    auto g1 = idv(u);
+    auto g2 = Px();
+    auto g_base = expr( "3*g2^2:g2" ) - g1;
+    auto g_se = symbolsExpr( symbolExpr( "g2", g2 ) );
+    auto g = g_base.applySymbolsExpr( g_se );
+    auto diff_g_g2 = g.diff<1>( "g2" );
+    auto diff_g_g2_exact = 6*Px();
+    double error_diff_g_g2 = normL2(_range=elements(mesh),_expr= diff_g_g2 - diff_g_g2_exact );
+    BOOST_CHECK_SMALL( error_diff_g_g2, 1e-10 );
+
+#if 0
+    auto diff_g_g2_bis = expr( expr("diff_g_g2:diff_g_g2"),  symbolExpr("diff_g_g2",diff_g_g2) );
+#else
+    auto diff_g_g2_symbolic = expr("diff_g_g2:diff_g_g2");
+    auto diff_g_g2_inter = exprOptionalConcat<std::decay_t<decltype(diff_g_g2_symbolic)>>();
+    diff_g_g2_inter.expression().add( diff_g_g2_symbolic );
+    //auto diff_g_g2_bis = expr( expr("diff_g_g2:diff_g_g2"),  symbolExpr("diff_g_g2",diff_g_g2_tmp) );
+    auto diff_g_g2_bis = expr( expr("diff_g_g2_inter:diff_g_g2_inter"), symbolExpr("diff_g_g2_inter",diff_g_g2_inter),  symbolExpr("diff_g_g2",diff_g_g2_exact) );
+#endif
+    double error_diff_g_g2_bis = normL2(_range=elements(mesh),_expr= diff_g_g2_bis - diff_g_g2_exact );
+    BOOST_CHECK_SMALL( error_diff_g_g2_bis, 1e-10 );
+
+    auto h1 = Py();
+    auto h_se = symbolsExpr( symbolExpr( "h1", h1 ) );
+    auto h_base = expr( "5*h1^3:h1" )*diff_g_g2;
+    auto h = h_base.applySymbolsExpr( h_se );
+    auto diff_h_h1 = h.diff<1>( "h1" );
+    auto diff_h_h1_exact = 15*pow(h1,2)*diff_g_g2_exact;
+    double error_diff_h_h1 = normL2(_range=elements(mesh),_expr= diff_h_h1 - diff_h_h1_exact );
+    BOOST_CHECK_SMALL( error_diff_h_h1, 1e-10 );
 }
 
+BOOST_AUTO_TEST_CASE( test_vectorialspace )
+{
+    using namespace Feel;
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<3,1>>);
+    auto Vh = Pchv<2>( mesh );
+    auto u = Vh->element( P() );
+
+    auto e1base = expr<3,1>( "{u_0+5*u_1+6*u_2,3*u_0+2*u_1+4*u_2,7*u_0+9*u_1+3*u_2}:u_0:u_1:u_2");
+    auto e1 = expr( e1base, symbolExpr("u",idv(u),SymbolExprComponentSuffix(3,1)) );;
+    auto diff_e1_x = e1.diff<1>( "x" );
+    auto diff_e1_y = e1.diff<1>( "y" );
+    auto diff_e1_z = e1.diff<1>( "z" );
+    auto diff_e1_x_exact = vec( cst(1.), cst(3.), cst(7.) );
+    auto diff_e1_y_exact = vec( cst(5.), cst(2.), cst(9.) );
+    auto diff_e1_z_exact = vec( cst(6.), cst(4.), cst(3.) );
+    double error_diff_e1_x = normL2(_range=elements(mesh),_expr= diff_e1_x - diff_e1_x_exact );
+    double error_diff_e1_y = normL2(_range=elements(mesh),_expr= diff_e1_y - diff_e1_y_exact );
+    double error_diff_e1_z = normL2(_range=elements(mesh),_expr= diff_e1_z - diff_e1_z_exact );
+    BOOST_CHECK_SMALL( error_diff_e1_x, 1e-10 );
+    BOOST_CHECK_SMALL( error_diff_e1_y, 1e-10 );
+    BOOST_CHECK_SMALL( error_diff_e1_z, 1e-10 );
+}
 
 BOOST_AUTO_TEST_SUITE_END()

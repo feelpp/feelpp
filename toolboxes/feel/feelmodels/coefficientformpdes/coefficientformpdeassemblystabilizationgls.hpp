@@ -6,10 +6,11 @@
 
 #include <feel/feelmodels/coefficientformpdes/coefficientformpde.hpp>
 
+#include <feel/feelvf/exproptionalconcat.hpp>
+
 #include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 
-#include <feel/feelmodels/modelvf/exproptionalconcat.hpp>
 #include <feel/feelmodels/modelvf/shockcapturing.hpp>
 
 namespace Feel
@@ -102,7 +103,7 @@ exprResidual( CoefficientFormPDEType const& cfpde, std::string const& matName, F
             {
                 residual_full.expression().add( -timeSteppingScaling*coeff_c_expr*laplacianv(u) );
             }
-            if ( coeff_c_expr.template hasSymbolDependencyOnCoordinatesInSpace<nDim>() )
+            if ( cfpde.stabilizationDoAssemblyWithGradDiffusionCoeff() && coeff_c_expr.template hasSymbolDependencyOnCoordinatesInSpace<nDim>() )
             {
                 auto grad_coeff_c_expr = grad<nDim>(coeff_c_expr,"",cfpde.worldComm(),cfpde.repository().expr());
                 if constexpr( unknown_is_scalar )
@@ -264,7 +265,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
                 if ( coeffNatureStabilization != 0 )
                     stab_test.expression().add( -coeffNatureStabilization*coeff_c_expr*laplacian(u) );
             }
-            if ( coeff_c_expr.template hasSymbolDependencyOnCoordinatesInSpace<nDim>() )
+            if ( this->stabilizationDoAssemblyWithGradDiffusionCoeff() && coeff_c_expr.template hasSymbolDependencyOnCoordinatesInSpace<nDim>() )
             {
                 auto grad_coeff_c_expr = grad<nDim>(coeff_c_expr,"",this->worldComm(),this->repository().expr());
                 if constexpr( unknown_is_scalar )
@@ -484,7 +485,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
                 if ( coeffNatureStabilization != 0 )
                     stab_test.expression().add( -coeffNatureStabilization*coeff_c_expr*laplacian(u) );
             }
-            if ( coeff_c_expr.template hasSymbolDependencyOnCoordinatesInSpace<nDim>() )
+            if ( this->stabilizationDoAssemblyWithGradDiffusionCoeff() && coeff_c_expr.template hasSymbolDependencyOnCoordinatesInSpace<nDim>() )
             {
                 auto grad_coeff_c_expr = grad<nDim>(coeff_c_expr,"",this->worldComm(),this->repository().expr());
                 if constexpr( unknown_is_scalar )
@@ -692,7 +693,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS(
                 if ( coeffNatureStabilization != 0 )
                     stab_test.expression().add( -coeffNatureStabilization*coeff_c_expr*laplacian(u) );
             }
-            if ( coeff_c_expr.template hasSymbolDependencyOnCoordinatesInSpace<nDim>() )
+            if ( this->stabilizationDoAssemblyWithGradDiffusionCoeff() && coeff_c_expr.template hasSymbolDependencyOnCoordinatesInSpace<nDim>() )
             {
                 auto grad_coeff_c_expr = grad<nDim>(coeff_c_expr,"",this->worldComm(),this->repository().expr());
                 if constexpr( unknown_is_scalar )

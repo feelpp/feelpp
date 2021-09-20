@@ -1,3 +1,4 @@
+downloads/
 build*/
 *.bak
 *.aux
@@ -132,3 +133,20 @@ pyfeelpp-env
 projects
 *bak
 /build*
+feelpp/quickstart/laplacian/qs_laplacian/
+doc/api/DocCmakeLists.doc
+node_modules
+feelppdb/
+toolboxes/pyfeelpp-toolboxes/tests/fluid.exports/
+toolboxes/pyfeelpp-toolboxes/tests/heat.exports/
+toolboxes/pyfeelpp-toolboxes/tests/Testing
+toolboxes/pyfeelpp-toolboxes/tests/heat.save/
+toolboxes/pyfeelpp-toolboxes/tests/*.geo
+toolboxes/pyfeelpp-toolboxes/tests/*.cfg
+toolboxes/pyfeelpp-toolboxes/tests/*.json
+toolboxes/pyfeelpp-toolboxes/tests/*.msh
+toolboxes/pyfeelpp-toolboxes/tests/*.mesh.path
+toolboxes/pyfeelpp-toolboxes/tests/*.csv
+toolboxes/pyfeelpp-toolboxes/tests/*.h5
+toolboxes/pyfeelpp-toolboxes/Testing/
+feelpp/pyfeelpp/pytest-3.json

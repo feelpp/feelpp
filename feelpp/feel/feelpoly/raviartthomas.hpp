@@ -578,11 +578,10 @@ public:
         typedef  RaviartThomas<NewDim, O, T, Convex,  TheTAG> type;
     };
 
-    
     RaviartThomas( RaviartThomas const& cr ) = default;
     RaviartThomas( RaviartThomas && cr ) = default;
 
-    ~RaviartThomas()
+    ~RaviartThomas() override
     {}
 
     //@}

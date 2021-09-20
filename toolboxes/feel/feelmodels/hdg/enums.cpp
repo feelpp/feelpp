@@ -1,3 +1,5 @@
+#include <map>
+#include <string>
 #include <feel/feelmodels/hdg/enums.hpp>
 
 namespace Feel {

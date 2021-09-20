@@ -89,6 +89,9 @@ public:
     Interpolator const& interpolator() const { return *M_interpolator; }
     std::shared_ptr<Interpolator> const& interpolatorPtr() const { return M_interpolator; }
 
+    //! dynamic context
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr ); }
+
     //! polynomial order
     uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
 
@@ -188,6 +191,15 @@ public:
             M_tensor_expr( expr.expression(), geom )
             {}
 
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_exprFit( expr ),
+            M_tensor_expr( std::true_type{}, exprExpanded.expression(), ttse, expr.expression(), geom, theInitArgs... )
+            {}
+
+
         // IM =
         template<typename IM>
         void init( IM const& im )
@@ -215,6 +227,12 @@ public:
         {
             M_tensor_expr.update( geom, face );
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                M_tensor_expr.update( std::true_type{}, exprExpanded.expression(), ttse, geom, theUpdateArgs... );
+            }
 
         // i : local index of basis test function
         // j : local index of basis trial function

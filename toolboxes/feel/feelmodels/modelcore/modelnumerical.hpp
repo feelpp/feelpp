@@ -34,12 +34,10 @@
 #define FEELPP_MODELNUMERICAL_HPP 1
 
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
+#include <feel/feelmodels/modelcore/modelmeshes.hpp>
 
 #include <feel/feelpoly/geomap.hpp>
 
-#include <boost/fusion/tuple.hpp>
-#include <boost/fusion/sequence.hpp>
-#include <boost/fusion/algorithm.hpp>
 #include <feel/feelvf/ginac.hpp>
 
 #include <feel/feelmodels/modelproperties.hpp>
@@ -48,12 +46,14 @@
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 
 #include <feel/feelcore/tuple_utils.hpp>
+#include <feel/feelcore/json.hpp>
 
 #include <feel/feelmodels/modelcore/modelcontext.hpp>
 
 #include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
 #include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresquantities.hpp>
 
 namespace Feel
 {
@@ -62,12 +62,15 @@ namespace FeelModels
 /**
  * Handles some numerical model aspects: timestepping, mesh and properties
  */
-class ModelNumerical : public ModelAlgebraic
+class ModelNumerical : virtual public ModelBase,
+                       public ModelAlgebraic,
+                       public ModelMeshes<typename ModelAlgebraic::index_type>
     {
+    protected :
+        using super_model_base_type = ModelBase;
+        using super_model_meshes_type = ModelMeshes<typename ModelAlgebraic::index_type>;
     public:
         typedef ModelAlgebraic super_type;
-
-        static const bool is_class_null = false;
 
         typedef double value_type;
         using index_type = typename super_type::index_type;
@@ -100,9 +103,6 @@ class ModelNumerical : public ModelAlgebraic
         ModelNumerical( ModelNumerical const& app ) = default;
 
         virtual ~ModelNumerical() {};
-
-        //std::shared_ptr<PsLogger> psLogger()  { return M_PsLogger; }
-        //std::shared_ptr<PsLogger> const& psLogger() const { return M_PsLogger; }
 
         bool isStationary() const { return M_isStationary; }
         void setStationary(bool b);
@@ -164,6 +164,21 @@ class ModelNumerical : public ModelAlgebraic
         ModelProperties const& modelProperties() const { return *M_modelProps; }
         ModelProperties & modelProperties() { return *M_modelProps; }
         void setModelProperties( std::shared_ptr<ModelProperties> modelProps ) { M_modelProps = modelProps; }
+
+        /**
+         * @brief Set the Model Properties object from a filename
+         * 
+         * @param filename file name
+         */
+        void setModelProperties( std::string const& filename );
+
+        /**
+         * @brief Set the Model Properties object from a json struct
+         * the json may come from python 
+         * @param j json data structure
+         */
+        void setModelProperties( nl::json const& j );
+
         void addParameterInModelProperties( std::string const& symbolName,double value );
 
         bool manageParameterValues() const { return M_manageParameterValues; }
@@ -176,16 +191,6 @@ class ModelNumerical : public ModelAlgebraic
 
         //----------------------------------------------------------------------------------//
 
-
-        std::string meshFile() const { return M_meshFile; }
-        void setMeshFile(std::string const& file)  { M_meshFile=file; }
-        std::string geoFile() const { return M_geoFile; }
-        void setGeoFile(std::string const& file)  { M_geoFile=file; }
-        bool hasMeshFile() const { return !M_meshFile.empty(); }
-        bool hasGeoFile() const { return !M_geoFile.empty(); }
-
-        void saveMeshFile( std::string const& fileSavePath, std::string const& meshPath = "" ) const;
-
         void setExporterPath(std::string const& s)  { M_exporterPath=s; }
         std::string exporterPath() const { return M_exporterPath; }
 
@@ -197,6 +202,7 @@ class ModelNumerical : public ModelAlgebraic
                     return false;
                 return std::get<0>( itFindTag->second ).find( fieldName ) != std::get<0>( itFindTag->second ).end();
             }
+        bool hasPostProcessExportsExpr( std::string const& exportTag = "" ) const;
         std::set<std::string> const& postProcessExportsFields( std::string const& exportTag = "" ) const { return std::get<0>( M_postProcessExportsFields.find( exportTag )->second ); }
         std::set<std::string> const& postProcessExportsAllFieldsAvailable( std::string const& exportTag = "" ) const { return std::get<1>( M_postProcessExportsFields.find( exportTag )->second ); }
         std::string const& postProcessExportsPidName( std::string const& exportTag = "" ) const { return std::get<2>( M_postProcessExportsFields.find( exportTag )->second ); }
@@ -204,32 +210,35 @@ class ModelNumerical : public ModelAlgebraic
         fs::path const& postProcessSaveRepository() const { return M_postProcessSaveRepository; }
         std::set<std::string> postProcessExportsFields( std::string const& tag, std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
         std::set<std::string> postProcessSaveFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
+        std::set<std::string> postProcessMeasuresQuantitiesNames( std::set<std::string> const& inames ) const;
 
         template <typename ExporterType,typename ModelFieldsType, typename SymbolsExprType = symbols_expression_empty_t, typename TupleExprOnRangeType = hana::tuple<> >
-        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, std::string const& tag, double time, ModelFieldsType const& tupleFields,
+        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, std::string const& tag, double time, ModelFieldsType const& mFields,
                                         SymbolsExprType const& symbolsExpr = symbols_expression_empty_t{}, TupleExprOnRangeType const& tupleExprOnRange = hana::make_tuple() );
         template <typename ExporterType,typename ModelFieldsType, typename SymbolsExprType = symbols_expression_empty_t, typename TupleExprOnRangeType = hana::tuple<> >
-        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, ModelFieldsType const& tupleFields,
+        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, ModelFieldsType const& mFields,
                                         SymbolsExprType const& symbolsExpr = symbols_expression_empty_t{}, TupleExprOnRangeType const& tupleExprOnRange = hana::make_tuple() )
             {
-                this->executePostProcessExports(exporter,"",time,tupleFields,symbolsExpr,tupleExprOnRange);
+                this->executePostProcessExports(exporter,"",time,mFields,symbolsExpr,tupleExprOnRange);
             }
         template <typename ExporterType,typename ModelFieldsType, typename SymbolsExprType, typename TupleExprOnRangeType>
-        bool updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fields, double time, ModelFieldsType const& tupleFields,
+        bool updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fields, double time, ModelFieldsType const& mFields,
                                        SymbolsExprType const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange );
 
-        template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename ModelFieldsType, typename TupleQuantitiesType>
-        void executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, ModelFieldsType const& tupleFields, TupleQuantitiesType const& tupleQuantities );
-        template<typename TupleQuantitiesType>
-        bool updatePostProcessMeasuresQuantities( TupleQuantitiesType const& tupleQuantities );
+        template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
+        void executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation,
+                                         SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields, ModelQuantitiesType const& mQuantities );
+        template<typename ModelQuantitiesType, typename SymbolsExprType = symbols_expression_empty_t>
+        bool updatePostProcessMeasuresQuantities( ModelQuantitiesType const& mQuantities, SymbolsExprType const& symbolsExpr = symbols_expression_empty_t{} );
         template <typename MeshType, typename RangeType, typename SymbolsExpr, typename ModelFieldsType>
-        bool updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, ModelFieldsType const& tupleFields );
+        bool updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields );
         template <typename MeshType, typename RangeType, typename SymbolsExpr, typename ModelFieldsType>
-        bool updatePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, ModelFieldsType const& tupleFields );
+        bool updatePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields );
         template <typename MeasurePointEvalType, typename ModelFieldsType>
-        bool updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, ModelFieldsType const& tupleFields );
-        template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename ModelFieldsType, typename TupleQuantitiesType>
-        bool updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, ModelFieldsType const& tupleFields, TupleQuantitiesType const& tupleQuantities );
+        bool updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, ModelFieldsType const& mFields );
+        template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
+        bool updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation,
+                                        SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields, ModelQuantitiesType const& mQuantities );
 
         template <typename ModelFieldsType>
         void executePostProcessSave( uint32_type index, ModelFieldsType const& fields )
@@ -244,8 +253,16 @@ class ModelNumerical : public ModelAlgebraic
         ModelMeasuresEvaluatorContext const& postProcessMeasuresEvaluatorContext() const { return M_postProcessMeasuresEvaluatorContext; }
         ModelMeasuresEvaluatorContext & postProcessMeasuresEvaluatorContext() { return M_postProcessMeasuresEvaluatorContext; }
 
-        virtual bool checkResults() const;
+        virtual
+        void updateParameterValues_postProcess( std::map<std::string,double> & mp, std::string const& prefix_symbol ) const
+            {
+                M_postProcessMeasuresIO.updateParameterValues( mp, prefixvm(prefix_symbol,"measures","_") );
+            }
 
+
+        virtual bool checkResults() const { return checkResults( symbols_expression_empty_t{} ); }
+        template <typename SymbolsExprType>
+        bool checkResults( SymbolsExprType const& se ) const;
     protected :
 
         void setPostProcessExportsAllFieldsAvailable( std::set<std::string> const& ifields ) { this->setPostProcessExportsAllFieldsAvailable( "", ifields ); }
@@ -256,6 +273,10 @@ class ModelNumerical : public ModelAlgebraic
         void setPostProcessExportsPidName( std::string const& pidName ) { this->setPostProcessExportsPidName( "", pidName ); }
         void setPostProcessExportsPidName( std::string const& exportTag,std::string const& pidName ) { std::get<2>( M_postProcessExportsFields[exportTag] ) = pidName; }
         void setPostProcessSaveAllFieldsAvailable( std::set<std::string> const& ifields ) { M_postProcessSaveAllFieldsAvailable = ifields; }
+
+        void setPostProcessMeasuresQuantitiesAllNamesAvailable( std::set<std::string> const& inames ) { M_postProcessMeasuresQuantitiesAllNamesAvailable = inames; }
+        void addPostProcessMeasuresQuantitiesAllNamesAvailable( std::set<std::string> const& inames ) { M_postProcessMeasuresQuantitiesAllNamesAvailable.insert( inames.begin(), inames.end() ); }
+
         virtual void initPostProcess();
 
         auto symbolsExprParameter() const
@@ -265,6 +286,13 @@ class ModelNumerical : public ModelAlgebraic
                 else
                     return std::decay_t<decltype(this->modelProperties().parameters().symbolsExpr())>{};
             }
+
+        template <typename MeshType, bool AddFields = true>
+        auto symbolsExprMeshes() const
+            {
+                return super_model_meshes_type::template symbolsExpr<MeshType,AddFields>();
+            }
+
 
         template <typename ElementType, typename RangeType, typename SymbolsExpr>
         void
@@ -297,18 +325,14 @@ class ModelNumerical : public ModelAlgebraic
         std::shared_ptr<ModelProperties> M_modelProps;
         bool M_manageParameterValues, M_manageParameterValuesOfModelProperties;
 
-
-        std::string M_meshFile, M_geoFile;
-
         std::string M_exporterPath;
         std::map<std::string,std::tuple< std::set<std::string>, std::set<std::string>, std::string > > M_postProcessExportsFields; // (fields, allFieldsAvailable,pidName)
         std::set<std::string> M_postProcessSaveFields, M_postProcessSaveAllFieldsAvailable;
         std::string M_postProcessSaveFieldsFormat;
         fs::path M_postProcessSaveRepository;
+        std::set<std::string> M_postProcessMeasuresQuantitiesNames, M_postProcessMeasuresQuantitiesAllNamesAvailable;
         ModelMeasuresIO M_postProcessMeasuresIO;
         ModelMeasuresEvaluatorContext M_postProcessMeasuresEvaluatorContext;
-
-        //std::shared_ptr<PsLogger> M_PsLogger;
 
         GeomapStrategyType M_geomap;
 
@@ -329,6 +353,7 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
     for( auto const& [time,icByType] : icts )
     {
         auto & u = *dataToUpdate[0];
+        bool needToSyncValues = false;
         auto itFindIcFile = icByType.find( "File" );
         if ( itFindIcFile != icByType.end() )
         {
@@ -375,14 +400,20 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
                         u.on(_range=markedelements(u.mesh(),listMarkerElements),_expr=theExpr,_geomap=geomapStrategy);
                     if ( !listMarkerFaces.empty() )
                         u.on(_range=markedfaces(u.mesh(),listMarkerFaces),_expr=theExpr,_geomap=geomapStrategy);
-                    if ( !listMarkerEdges.empty() )
-                        u.on(_range=markededges(u.mesh(),listMarkerEdges),_expr=theExpr,_geomap=geomapStrategy);
-                    if ( !listMarkerPoints.empty() )
-                        u.on(_range=markedpoints(u.mesh(),listMarkerPoints),_expr=theExpr,_geomap=geomapStrategy);
+                    if constexpr ( !is_hcurl_conforming_v<typename std::decay_t<decltype(u)>::functionspace_type::fe_type> )
+                    {
+                        if ( !listMarkerEdges.empty() )
+                            u.on(_range=markededges(u.mesh(),listMarkerEdges),_expr=theExpr,_geomap=geomapStrategy);
+                        if ( !listMarkerPoints.empty() )
+                            u.on(_range=markedpoints(u.mesh(),listMarkerPoints),_expr=theExpr,_geomap=geomapStrategy);
+                    }
                 }
+                needToSyncValues = true;
             }
         }
-    }
+        if ( needToSyncValues )
+            sync( u, "=" );
+    } // for( auto const& [time,icByType] : icts )
 
     for (int k=1;k<dataToUpdate.size();++k)
         *dataToUpdate[k] = *dataToUpdate[0];
@@ -390,7 +421,7 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
 
 template <typename ExporterType,typename ModelFieldsType,typename SymbolsExpr,typename TupleExprOnRangeType>
 void
-ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporter, std::string const& tag, double time, ModelFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange )
+ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporter, std::string const& tag, double time, ModelFieldsType const& mFields, SymbolsExpr const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange )
 {
     if ( !exporter ) return;
     if ( !exporter->doExport() ) return;
@@ -417,7 +448,7 @@ ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporte
     }
 #endif
 
-    bool hasFieldToExport = this->updatePostProcessExports( exporter, fieldsNamesToExport, time, tupleFields, symbolsExpr,
+    bool hasFieldToExport = this->updatePostProcessExports( exporter, fieldsNamesToExport, time, mFields, symbolsExpr,
                                                             hana::concat( hana::make_tuple(mapExportsExpr),tupleExprOnRange) );
 
     std::string const& pidName = this->postProcessExportsPidName( tag );
@@ -436,13 +467,13 @@ ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporte
 
 template <typename ExporterType,typename ModelFieldsType,typename SymbolsExpr,typename TupleExprOnRangeType>
 bool
-ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fieldsNamesToExport, double time, ModelFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange )
+ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fieldsNamesToExport, double time, ModelFieldsType const& mFields, SymbolsExpr const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange )
 {
     if ( !exporter ) return false;
     if ( !exporter->doExport() ) return false;
 
     bool hasFieldToExport = false;
-    hana::for_each( tupleFields.tuple(), [this,&exporter,&fieldsNamesToExport,&time,&hasFieldToExport]( auto const& e )
+    hana::for_each( mFields.tuple(), [this,&exporter,&fieldsNamesToExport,&time,&hasFieldToExport]( auto const& e )
                     {
                         if constexpr ( is_iterable_v<decltype(e)> )
                             {
@@ -492,6 +523,10 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                 continue;
                             for ( auto const&[theexpr,range,reprs] : exprDatas )
                             {
+                                using entity_range_type = entity_range_t<std::decay_t<decltype(range)>>;
+                                if constexpr ( decay_type<ExporterType>::mesh_type::nRealDim == entity_range_type::nRealDim &&
+                                               decay_type<ExporterType>::mesh_type::nDim >= entity_range_type::nDim )
+                                {
                                 if constexpr ( std::is_base_of_v<ExprBase,decay_type<decltype(theexpr)>> )
                                 {
                                     using _expr_shape = typename std::decay_t<decltype(theexpr)>::template evaluator_t<typename  decay_type<ExporterType>::mesh_type::element_type>::shape;
@@ -549,6 +584,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                                     });
                                 } // is ModelExpression
 #endif
+                                } // range compatibility with exporter
                             }
                         }
                     });
@@ -556,11 +592,12 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
     return hasFieldToExport;
 }
 
-template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename ModelFieldsType, typename TupleQuantitiesType>
-void 
-ModelNumerical::executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& range, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, ModelFieldsType const& tupleFields, TupleQuantitiesType const& tupleQuantities )
+template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
+void
+ModelNumerical::executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& range, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation,
+                                            SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields, ModelQuantitiesType const& mQuantities )
 {
-    bool hasMeasure = this->updatePostProcessMeasures( mesh, range, measurePointsEvaluation, symbolsExpr, tupleFields, tupleQuantities );
+    bool hasMeasure = this->updatePostProcessMeasures( mesh, range, measurePointsEvaluation, symbolsExpr, mFields, mQuantities );
 
     if ( hasMeasure )
     {
@@ -571,46 +608,43 @@ ModelNumerical::executePostProcessMeasures( double time, std::shared_ptr<MeshTyp
     }
 }
 
-template<typename TupleQuantitiesType>
-bool 
-ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& tupleQuantities )
+template<typename ModelQuantitiesType, typename SymbolsExprType>
+bool
+ModelNumerical::updatePostProcessMeasuresQuantities( ModelQuantitiesType const& mQuantities, SymbolsExprType const& se )
 {
     bool hasMeasure = false;
-    std::set<std::string> const& quantitiesToMeasure = this->modelProperties().postProcess().measuresQuantities( this->keyword() ).quantities();
-    Feel::for_each( tupleQuantities, [this,&hasMeasure,&quantitiesToMeasure]( auto const& mquantity )
+    std::string prefix_quantities = "Quantities";
+
+    if ( this->hasModelProperties() )
+    {
+        for ( auto const& [_name,_expr] : this->modelProperties().postProcess().measuresQuantities( this->keyword() ).expressions() )
+        {
+            std::string nameUsed = prefixvm( prefixvm( prefix_quantities, "expr", "_" ), _name, "_" );
+            auto const& _exprBIS = _expr;
+            hana::for_each( ModelExpression::expr_shapes, [this,&hasMeasure,&nameUsed,&_exprBIS,&se]( auto const& e_ij )
+                            {
+                                constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                                constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                                if ( _exprBIS.template hasExpr<ni,nj>() )
+                                {
+                                    auto theExpr = _exprBIS.template expr<ni,nj>().applySymbolsExpr( se );
+                                    this->postProcessMeasuresIO().setMeasure( nameUsed,theExpr.evaluate() );
+                                    hasMeasure = true;
+                                }
+                            });
+        }
+    }
+
+    std::set<std::string> const& quantitiesToMeasure = M_postProcessMeasuresQuantitiesNames;//this->modelProperties().postProcess().measuresQuantities( this->keyword() ).quantities();
+    Feel::for_each( mQuantities.tuple(), [this,&hasMeasure,&quantitiesToMeasure,&prefix_quantities]( auto const& mquantity )
             {
-                if constexpr( is_iterable_v<decltype(mquantity)> )
+                for( auto const& quantity : mquantity )
                 {
-                    for( auto const& quantity : mquantity )
-                    {
-                        std::string quantityName = quantity.nameWithPrefix();
-                        if( quantitiesToMeasure.find( quantityName ) != quantitiesToMeasure.end() )
-                        {
-                            if constexpr( is_iterable_v<decltype(quantity.value())> )
-                            {
-                                this->postProcessMeasuresIO().setMeasureComp( quantityName, quantity.value() );
-                            }
-                            else
-                            {
-                                this->postProcessMeasuresIO().setMeasure( quantityName, quantity.value() );
-                            }
-                            hasMeasure = true;
-                        }
-                    }
-                }
-                else
-                {
-                    std::string quantityName = mquantity.nameWithPrefix();
+                    std::string quantityName = quantity.nameWithPrefix();
                     if( quantitiesToMeasure.find( quantityName ) != quantitiesToMeasure.end() )
                     {
-                        if constexpr( is_iterable_v<decltype(mquantity.value())> )
-                        {
-                            this->postProcessMeasuresIO().setMeasureComp( quantityName, mquantity.value() );
-                        }
-                        else
-                        {
-                            this->postProcessMeasuresIO().setMeasure( quantityName, mquantity.value() );
-                        }
+                        std::string quantityNameUsed = prefixvm( prefix_quantities, quantityName, "_" );
+                        this->postProcessMeasuresIO().setMeasure( quantityNameUsed, quantity.value() );
                         hasMeasure = true;
                     }
                 }
@@ -620,13 +654,13 @@ ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& 
 
 template <typename MeshType, typename RangeType, typename SymbolsExpr, typename ModelFieldsType>
 bool
-ModelNumerical::updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, ModelFieldsType const& tupleFields )
+ModelNumerical::updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields )
 {
     bool hasMeasure = false;
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
     {
         std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( mesh, rangeMeshElements, ppNorm, resPpNorms, symbolsExpr, tupleFields );
+        measureNormEvaluation( mesh, rangeMeshElements, ppNorm, resPpNorms, symbolsExpr, mFields );
         for ( auto const& resPpNorm : resPpNorms )
         {
             this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
@@ -638,13 +672,13 @@ ModelNumerical::updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, R
 
 template <typename MeshType, typename RangeType, typename SymbolsExpr, typename ModelFieldsType>
 bool
-ModelNumerical::updatePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, ModelFieldsType const& tupleFields )
+ModelNumerical::updatePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields )
 {
     bool hasMeasure = false;
     for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
     {
         std::map<std::string,double> resPpStats;
-        measureStatisticsEvaluation( mesh, rangeMeshElements, ppStat, resPpStats, symbolsExpr, tupleFields );
+        measureStatisticsEvaluation( mesh, rangeMeshElements, ppStat, resPpStats, symbolsExpr, mFields );
         for ( auto const& resPpStat : resPpStats )
         {
             this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
@@ -671,10 +705,10 @@ ModelNumerical::updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEval
     return hasMeasure;
 }
 
-template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename ModelFieldsType, typename TupleQuantitiesType>
-bool 
+template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
+bool
 ModelNumerical::updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation,
-                                           SymbolsExpr const& symbolsExpr, ModelFieldsType const& mfields, TupleQuantitiesType const& tupleQuantities )
+                                           SymbolsExpr const& symbolsExpr, ModelFieldsType const& mfields, ModelQuantitiesType const& tupleQuantities )
 {
     bool hasMeasureQuantities = this->updatePostProcessMeasuresQuantities( tupleQuantities );
     bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( mesh, rangeMeshElements, symbolsExpr, mfields );
@@ -727,6 +761,50 @@ ModelNumerical::executePostProcessSave( std::set<std::string> const& fieldsNames
                     });
 }
 
+template <typename SymbolsExprType>
+bool
+ModelNumerical::checkResults( SymbolsExprType const& se ) const
+{
+    if ( !M_useChecker )
+        return true;
+
+    std::string const& modelKeyword = this->keyword();
+
+    bool hasChecker = !this->modelProperties().postProcess().checkersMeasure( modelKeyword ).empty();
+    if ( !hasChecker )
+        return true;
+
+    bool resultsAreOk = true;
+    bool isMasterRank = this->worldComm().isMasterRank();
+
+    Feel::Table tableCheckerMeasures;
+    tableCheckerMeasures.add_row( {"check","name","measure","reference","error","tolerance"} );
+    tableCheckerMeasures.format().setFirstRowIsHeader( true );
+
+    for ( auto const& checkerMeasure : this->modelProperties().postProcess().checkersMeasure( modelKeyword ) )
+    {
+        std::string measureName = checkerMeasure.name();
+        if ( !M_postProcessMeasuresIO.hasMeasure( measureName ) )
+        {
+            LOG(WARNING) << "checker : ignore check of " << measureName << " because this measure was not computed";
+            continue;
+        }
+
+        double valueMeasured = M_postProcessMeasuresIO.measure( measureName );
+        auto [checkIsOk, diffVal] = checkerMeasure.run( valueMeasured, se );
+        std::string checkStr = checkIsOk? "[success]" : "[failure]";
+        tableCheckerMeasures.add_row( {checkStr,measureName,valueMeasured,checkerMeasure.value(),diffVal,checkerMeasure.tolerance()} );
+        tableCheckerMeasures( tableCheckerMeasures.nRow()-1,0).format().setFontColor( checkIsOk ? Font::Color::green :Font::Color::red );
+
+        resultsAreOk = resultsAreOk && checkIsOk;
+    }
+    auto tabInfoChecker = TabulateInformationsSections::New();
+    tabInfoChecker->add( (boost::format("Checkers : %1%")%modelKeyword).str(), TabulateInformations::New( tableCheckerMeasures ) );
+    if ( tableCheckerMeasures.nRow() > 1 && isMasterRank )
+        std::cout << *tabInfoChecker << std::endl;
+    return resultsAreOk;
+
+}
 
 
 } // namespace FeelModels

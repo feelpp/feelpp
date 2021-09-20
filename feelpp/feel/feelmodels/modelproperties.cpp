@@ -75,7 +75,6 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
 
     this->setup();
 }
-
 ModelProperties::ModelProperties( pt::ptree const& pt, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix )
     :
     super( world ),
@@ -83,6 +82,19 @@ ModelProperties::ModelProperties( pt::ptree const& pt, std::string const& direct
     M_directoryLibExpr( directoryLibExpr ),
     M_p( pt )
 {
+    this->setup();
+}
+ModelProperties::ModelProperties( nl::json const& j, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix )
+    :
+    super( world ),
+    M_prefix( prefix ),
+    M_directoryLibExpr( directoryLibExpr ),
+    M_p()
+{
+    auto json_str_wo_comments = removeComments(j.dump(1));
+    LOG(INFO) << "json file without comment:" << json_str_wo_comments;
+    std::istringstream istr( json_str_wo_comments );
+    pt::read_json(istr, M_p);
     this->setup();
 }
 
@@ -136,9 +148,6 @@ ModelProperties::setup()
         if ( !M_directoryLibExpr.empty() )
             M_bc.setDirectoryLibExpr( M_directoryLibExpr );
         M_bc.setPTree( *bc );
-#if 0 // TODO
-        M_bc2.setPTree( *bc );
-#endif
     }
     auto ic = M_p.get_child_optional("InitialConditions");
     if ( ic )
@@ -221,5 +230,18 @@ void ModelProperties::put(std::string const &key, std::string const &entry)
 void ModelProperties::write(std::string const &f)
 {
     pt::write_json(f,M_p);
+}
+
+ModelProperties&
+ModelProperties::enableBoundaryConditions2()
+{
+    M_bc2_enabled = true; 
+    auto bc = M_p.get_child_optional("BoundaryConditions");
+    if ( bc )
+    {
+        VLOG(1) << "Model with boundary conditions\n";
+        M_bc2.setPTree( *bc );
+    }
+    return *this; 
 }
 }

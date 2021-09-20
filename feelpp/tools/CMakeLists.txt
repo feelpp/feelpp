@@ -24,6 +24,7 @@
 
 add_subdirectory(remotedata)
 add_subdirectory( mesh )
+add_subdirectory( plot )
 add_subdirectory( fmi )
 add_subdirectory( databases )
 

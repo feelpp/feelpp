@@ -12,7 +12,6 @@
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/modelgenericpde.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
@@ -82,9 +81,9 @@ public :
 
     //___________________________________________________________________________________//
     // mesh
-    mesh_ptrtype const& mesh() const { return M_mesh; }
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
-    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
 
     //___________________________________________________________________________________//
     // physical parameters
@@ -98,6 +97,7 @@ public :
     std::string const& stabilizationType() const { return M_stabilizationType; }
     stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
     bool stabilizationGLS_applyShockCapturing() const { return M_stabilizationGLS_applyShockCapturing; }
+    bool stabilizationDoAssemblyWithGradDiffusionCoeff() const { return M_stabilizationDoAssemblyWithGradDiffusionCoeff; }
 
     //___________________________________________________________________________________//
     // time discretisation
@@ -105,16 +105,8 @@ public :
     virtual void startTimeStep() = 0;
     virtual void updateTimeStep() = 0;
     std::string const& timeStepping() const { return M_timeStepping; }
-    //___________________________________________________________________________________//
-    // algebraic data and solver
-    backend_ptrtype const& backend() const { return M_backend; }
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
-    size_type nLocalDof() const;
-    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
-    model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
 
-    //int nBlockMatrixGraph() const { return 1; }
+    //___________________________________________________________________________________//
 
     virtual void setParameterValues( std::map<std::string,double> const& paramValues ) = 0;
 
@@ -129,7 +121,6 @@ protected :
 
 protected :
 
-    mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
     // physical parameters
@@ -145,14 +136,10 @@ protected :
     std::string M_stabilizationType;
     stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
     bool M_stabilizationGLS_applyShockCapturing;
+    bool M_stabilizationDoAssemblyWithGradDiffusionCoeff;
 
     // post-process
     export_ptrtype M_exporter;
-
-    // algebraic data/tools
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    BlocksBaseVector<double> M_blockVectorSolution;
 };
 
 
@@ -176,12 +163,12 @@ CoefficientFormPDEBase<ConvexType>::hasSymbolDependencyInCoefficients( std::set<
                this->materialsProperties()->materialProperty( matName, this->firstTimeDerivativeCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
              ( this->materialsProperties()->hasProperty( matName, this->secondTimeDerivativeCoefficientName() ) &&
                this->materialsProperties()->materialProperty( matName, this->secondTimeDerivativeCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
-
-             ( this->unknownIsScalar() && this->materialsProperties()->hasProperty( matName, this->conservativeFluxConvectionCoefficientName() ) &&
+             ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxConvectionCoefficientName() ) &&
                this->materialsProperties()->materialProperty( matName, this->conservativeFluxConvectionCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
-             ( this->unknownIsScalar() && this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) &&
-               this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() ).hasSymbolDependency( symbs, se ) )
-
+             ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
+             ( !this->unknownIsScalar() && this->materialsProperties()->hasProperty( matName, this->curlCurlCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->curlCurlCoefficientName() ).hasSymbolDependency( symbs, se ) )
              )
         {
             hasDependency = true;

@@ -79,8 +79,9 @@ const uint16_type MESH_COMPONENTS_DEFAULTS = MESH_RENUMBER | MESH_CHECK;
 //! @see
 //!/
 template<typename IndexT = uint32_type>
-class FEELPP_EXPORT MeshBase : public CommObject
+class FEELPP_EXPORT MeshBase : public CommObject, public JournalWatcher
 {
+    using super2 = JournalWatcher;
 public:
 
 
@@ -125,12 +126,21 @@ public:
     {}
     MeshBase( MeshBase const& ) = default;
     MeshBase( MeshBase && ) = default;
-    virtual ~MeshBase();
+    ~MeshBase() override;
 
     /**
      * build from a topological dimension, a real dimension and a communicator
      */
     MeshBase( uint16_type topodim, uint16_type realdim,
+              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+        :
+        MeshBase( "", topodim, realdim, worldComm )
+    {}
+
+    /**
+     * build from a name, a topological dimension, a real dimension and a communicator
+     */
+    MeshBase( std::string const& name, uint16_type topodim, uint16_type realdim,
               worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     //@}

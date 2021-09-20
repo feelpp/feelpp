@@ -157,10 +157,12 @@ struct is_point : mpl::bool_<(decay_type<T>::nDim == 0)> {};
 
 template<typename T>
 struct is_convex : std::is_convertible<T,ConvexBase>::type {};
+
 template<typename T>
 struct is_simplex : std::is_base_of<SimplexBase, T>::type {};
 template<typename T>
-constexpr bool is_simplex_v = is_simplex<T>::value;
+inline constexpr bool is_simplex_v = is_simplex<T>::value;
+
 template<typename T>
 struct is_triangle : mpl::and_<is_simplex<T>,is_2d<T>> {};
 template<typename T>
@@ -168,6 +170,10 @@ struct is_tetrahedron : mpl::and_<is_simplex<T>,is_3d<T>> {};
 
 template<typename T>
 struct is_hypercube : std::is_base_of<HypercubeBase, T>::type {};
+template <typename T>
+inline constexpr bool is_hypercube_v = is_hypercube<T>::value;
+
+
 template<typename T>
 struct is_square : mpl::and_<is_hypercube<T>,is_2d<T>> {};
 template<typename T>

@@ -28,79 +28,76 @@ namespace Feel
 {
 
 ModelBoundaryCondition::ModelBoundaryCondition( worldcomm_ptr_t const& worldComm )
-    :
-    super( worldComm )
-{}
+    : super( worldComm )
+{
+}
 
 ModelBoundaryCondition::ModelBoundaryCondition( pt::ptree const& p, std::string const& name,
                                                 std::string const& material, std::string const& e1,
                                                 std::string const& e2,
                                                 worldcomm_ptr_t const& worldComm )
-    :
-    super(worldComm),
-    M_pt(p),
-    M_name(name),
-    M_material(material),
-    M_markers(name),
-    M_expr1(e1),
-    M_expr2(e2)
+    : super( worldComm ),
+      M_pt( p ),
+      M_name( name ),
+      M_material( material ),
+      M_markers( name ),
+      M_expr1( e1 ),
+      M_expr2( e2 )
 {
-    if( auto markers = M_pt.get_child_optional("markers") )
-        M_markers.setPTree(*markers);
+    if ( auto markers = M_pt.get_child_optional( "markers" ) )
+        M_markers.setPTree( *markers );
 
-    if( this->hasExpression() )
-        M_modelExpr1.setExpr(M_expr1);
-    if( this->hasExpression2() )
-        M_modelExpr2.setExpr(M_expr2);
+    if ( this->hasExpression() )
+        M_modelExpr1.setExpr( M_expr1 );
+    if ( this->hasExpression2() )
+        M_modelExpr2.setExpr( M_expr2 );
 }
 
 ModelBoundaryConditions::ModelBoundaryConditions( worldcomm_ptr_t const& worldComm )
-    :
-    super( worldComm )
-{}
+    : super( worldComm )
+{
+}
 
-void
-ModelBoundaryConditions::setPTree( pt::ptree const& p )
+void ModelBoundaryConditions::setPTree( pt::ptree const& p )
 {
     M_pt = p;
     setup();
 }
 
-void
-ModelBoundaryConditions::setup()
+void ModelBoundaryConditions::setup()
 {
-    for( auto const& v : M_pt )
+    for ( auto const& v : M_pt )
     {
         std::string field = v.first; // field name
-        for( auto const& f : v.second )
+        for ( auto const& f : v.second )
         {
             std::string cond = f.first;
-            for( auto const& c : f.second ) // condition
+            for ( auto const& c : f.second ) // condition
             {
                 std::string name = c.first;
-                std::string mat = c.second.get("material", "");
+                std::string mat = c.second.get( "material", "" );
                 std::string e1 = "";
                 std::string e2 = "";
                 try
                 {
-                    e1 = c.second.get<std::string>("expr");
-                    LOG(INFO) << "adding boundary " << name << " with expression "
-                              << e1 << " to condition of type " << cond << " on " << field;
+                    e1 = c.second.get<std::string>( "expr" );
+                    LOG( INFO ) << "adding boundary " << name << " with expression "
+                                << e1 << " to condition of type " << cond << " on " << field;
                 }
-                catch( ... )
+                catch ( ... )
                 {
                     try
                     {
-                        e1 = c.second.get<std::string>("expr1");
-                        e2 = c.second.get<std::string>("expr2");
-                        LOG(INFO) << "adding boundary " << name
-                                  << " with expressions " << e1 << " and " << e2
-                                  << " to condition of type " << cond << " on " << field;
+                        e1 = c.second.get<std::string>( "expr1" );
+                        e2 = c.second.get<std::string>( "expr2" );
+                        LOG( INFO ) << "adding boundary " << name
+                                    << " with expressions " << e1 << " and " << e2
+                                    << " to condition of type " << cond << " on " << field;
                     }
-                    catch( ... )
+                    catch ( ... )
                     {
-                        LOG(INFO) << "adding boundary " << name << " without expression "
-                                  << "to condition of type " << cond << " on " << field;
+                        LOG( INFO ) << "adding boundary " << name << " without expression "
+                                    << "to condition of type " << cond << " on " << field;
                     }
                 }
                 auto bc = ModelBoundaryCondition( c.second, name, mat, e1, e2 );
@@ -110,4 +107,26 @@ ModelBoundaryConditions::setup()
     }
 }
 
+std::map<ModelBoundaryId, ModelBoundaryCondition>
+ModelBoundaryConditions::flatten() const
+{
+    // cout << " - flatten" << std::endl;
+    std::map<ModelBoundaryId, ModelBoundaryCondition> f_;
+    for ( auto const& [bcfield, bc1] : *this )
+    {
+        // cout << "   field : " << bcfield << std::endl;
+        for ( auto const& [bctype, bc2] : bc1 )
+        {
+            // cout << "   type : " << bctype << std::endl;
+            for ( auto const& [bcname, bc] : bc2 )
+            {
+                // cout << "   name : " << bctype << std::endl;
+                ModelBoundaryId bcid{ std::tuple{ bcfield, bctype, bcname } };
+                // cout << "   * " << bcid << std::endl;
+                f_[bcid] = bc;
+            }
+        }
+    }
+    return f_;
 }
+} // namespace Feel

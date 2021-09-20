@@ -308,6 +308,13 @@ const size_type mctx = vm::MEASURE;
                 :                                                       \
                 M_gmc( fusion::at_key<key_type>( geom ).get() )        \
                 {}                                                      \
+            template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
+            tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
+                        expression_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs ) \
+                :                                                       \
+                tensor( expr, geom, theInitArgs... )                    \
+            {}                                                          \
+                                                                        \
             template<typename IM>                                       \
                 void init( IM const& im )                               \
             {                                                           \
@@ -328,6 +335,12 @@ const size_type mctx = vm::MEASURE;
             {                                                           \
                 /*BOOST_STATIC_ASSERT( dim_ok );*/                      \
                 update( geom );                                         \
+            }                                                           \
+            template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
+                void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
+                             Geo_t const& geom, const TheArgsType&... theUpdateArgs ) \
+            {                                                           \
+                this->update( geom );                                   \
             }                                                           \
             template<typename ... CTX>                                  \
             void updateContext( CTX const& ... ctx )                    \

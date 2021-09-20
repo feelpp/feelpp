@@ -80,10 +80,13 @@ class FEELPP_EXPORT ModelPostprocessSave
     std::string M_fieldsFormat;
 };
 
-class FEELPP_EXPORT ModelPostprocessQuantities
+class FEELPP_EXPORT ModelPostprocessQuantities : public CommObject
 {
+    using super = CommObject;
   public :
-    ModelPostprocessQuantities()
+    ModelPostprocessQuantities( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
+        :
+        super( world )
     {}
     ModelPostprocessQuantities( ModelPostprocessQuantities const& ) = default;
     ModelPostprocessQuantities( ModelPostprocessQuantities&& ) = default;
@@ -91,11 +94,17 @@ class FEELPP_EXPORT ModelPostprocessQuantities
     ModelPostprocessQuantities& operator=( ModelPostprocessQuantities && ) = default;
 
     std::set<std::string> const& quantities() const { return M_quantities; }
+    std::map<std::string,ModelExpression> const& expressions() const { return M_exprs; }
 
     void setup( pt::ptree const& p );
 
+    void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+    void setParameterValues( std::map<std::string,double> const& mp );
+
   private :
+    std::string M_directoryLibExpr;
     std::set<std::string> M_quantities;
+    std::map<std::string,ModelExpression> M_exprs;
 };
 
 class FEELPP_EXPORT ModelPointPosition
@@ -323,18 +332,27 @@ class FEELPP_EXPORT ModelPostprocessCheckerMeasure : public CommObject
     //! check if the arg val is close at tolerance to the reference value
     //! \return tuple ( check is true, diff value )
     std::tuple<bool,double> run( double val ) const;
+    //! check if the arg val is close at tolerance to the reference value (the target value can be an expression which depending on symbols expr given in arg)
+    //! \return tuple ( check is true, diff value )
+    template <typename SymbolsExprType>
+    std::tuple<bool,double> run( double val, SymbolsExprType const& se ) const
+    {
+        M_value = expr( M_valueExpr.exprScalar(), se ).evaluate()(0,0);
+        return this->runImpl( val );
+    }
 
     void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
   private:
+    std::tuple<bool,double> runImpl( double val ) const;
     void setup( std::string const& name, ModelIndexes const& indexes );
   private :
     pt::ptree M_p;
     std::string M_name;
     std::string M_directoryLibExpr;
     ModelExpression M_valueExpr;
-    double M_value;
+    mutable double M_value;
     double M_tolerance;
 };
 

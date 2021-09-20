@@ -62,7 +62,8 @@ struct TestInterp
     typedef std::shared_ptr<mesh_type> mesh_ptr_type;
 
     typedef typename mesh_type::gm_type gm_type;
-    typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN, typename mesh_type::element_type> gmc_type;
+    static const size_type gmc_context_v = vm::POINT|vm::JACOBIAN|vm::HESSIAN;
+    typedef typename gm_type::template Context<typename mesh_type::element_type> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename gm_type::Inverse gic_type;
 public:
@@ -102,11 +103,15 @@ public:
 
         //boost::tie( boost::tuples::ignore, el_it, el_en ) = elements( *M_mesh );
         std::cout << "refelem = " << refelem.points() << "\n";
+        gmc_ptrtype gmc;
 
         for ( ; el_it != el_en; ++el_it )
         {
-            auto const& meshElt = boost::unwrap_ref( *el_it );
-            gmc_type gmc( M_mesh->gm(), meshElt, __geopc );
+            auto const& meshElt = unwrap_ref( *el_it );
+            if ( !gmc )
+                gmc = M_mesh->gm()->template context<gmc_context_v>( meshElt, __geopc );
+            else
+                gmc->template update<gmc_context_v>( meshElt );
             gic_type gic( M_mesh->gm(), meshElt );
 
             meshinv.pointsInConvex( meshElt.id(), itab );
@@ -118,10 +123,10 @@ public:
 
             for ( int q = 0; q < refelem.points().size2(); ++q )
             {
-                std::cout << "gmc xref " << q << " = " << gmc.xRef( q ) << "\n";
-                std::cout << "is in gmc? = " << gmc.geometricMapping()->isIn( gmc.xRef( q ) ) << "\n";
+                std::cout << "gmc xref " << q << " = " << gmc->xRef( q ) << "\n";
+                std::cout << "is in gmc? = " << gmc->geometricMapping()->isIn( gmc->xRef( q ) ) << "\n";
 
-                gic.setXReal( gmc.xReal( q ) );
+                gic.setXReal( gmc->xReal( q ) );
 
                 typename ref_entity_type::points_type pts( Dim, 1 );
                 ublas::column( pts, 0 ) = gic.xRef();
@@ -130,7 +135,7 @@ public:
             }
 
             FEELPP_ASSERT( gic.isIn() )
-            ( refelem.points() )( gmc.xReal() )
+            ( refelem.points() )( gmc->xReal() )
             ( meshElt.id() ).error( "invalid geometric transformation inversion" );
         }
 

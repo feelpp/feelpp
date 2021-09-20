@@ -25,7 +25,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 
     std::string StateTemporal = (this->isStationary())? "Stationary" : "Transient";
     size_type nElt,nDof;
-    if (this->hasSolidEquationStandard()) {nElt=M_mesh->numGlobalElements(); nDof=M_XhDisplacement->nDof();}
+    if (this->hasSolidEquationStandard()) {/*nElt=M_mesh->numGlobalElements();*/ nDof=M_XhDisplacement->nDof();}
 #if 0
     else {nElt=M_mesh_1dReduced->numGlobalElements(); nDof=M_Xh_1dReduced->nDof();}
 #endif
@@ -90,6 +90,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
                << M_bcNeumannEulerianFrameMarkerManagement.getInfoNeumannEulerianFrameBC()
                << M_bcRobinMarkerManagement.getInfoRobinBC()
                << M_bcFSIMarkerManagement.getInfoFluidStructureInterfaceBC();
+#if 0
         *_ostr << "\n   Space Discretization";
         if ( this->hasGeoFile() )
             *_ostr << "\n     -- geo file name   : " << this->geoFile();
@@ -99,6 +100,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
                << "\n     -- polynomial order : " << nOrder;
         if ( this->hasDisplacementPressureFormulation() )
             *_ostr << "\n     -- nb dof (pressure) : " << M_XhPressure->nDof();
+#endif
     }
     if ( !this->isStationary() )
     {
@@ -144,14 +146,108 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- local rank : " << this->worldComm().localRank()
            << "\n   Numerical Solver"
            << "\n     -- solver : " << M_solverName;
-    if ( M_algebraicFactory )
-        *_ostr << M_algebraicFactory->getInfo()->str();
+    if ( this->algebraicFactory() )
+        *_ostr << this->algebraicFactory()->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n";
 
     this->log("SolidMechanics","getInfo", "finish" );
 
     return _ostr;
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
+{
+    if ( !this->isUpdatedForUse() )
+        return;
+    if ( p.contains( "Environment" ) )
+        return;
+
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
+
+    nl::json subPt;
+    subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
+    p["Physics"] = subPt;
+
+    // Materials properties
+    if ( this->materialsProperties() )
+        this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
+
+    if (this->hasSolidEquationStandard())
+    {
+        super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
+
+        subPt.clear();
+        this->functionSpaceDisplacement()->updateInformationObject( subPt["Displacement"] );
+        if ( this->hasDisplacementPressureFormulation() )
+            this->functionSpacePressure()->updateInformationObject( subPt["Pressure"] );
+        p["Function Spaces"] = subPt;
+
+        this->modelFields().updateInformationObject( p["Fields"] );
+
+        if ( this->algebraicFactory() )
+            this->algebraicFactory()->updateInformationObject( p["Algebraic Solver"] );
+    }
+
+    if ( this->hasSolidEquation1dReduced() )
+        M_solid1dReduced->updateInformationObject( p["Toolbox Solid 1d Reduced"] );
+
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+tabulate_informations_ptr_t
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New();
+
+    // Environment
+    if ( jsonInfo.contains("Environment") )
+        tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
+
+    // Physics
+    if ( jsonInfo.contains("Physics") )
+    {
+        Feel::Table tabInfoPhysics;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
+        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics ) );
+    }
+
+    // Materials Properties
+    if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
+        tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
+
+    // Meshes
+    if ( jsonInfo.contains("Meshes") )
+        tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
+
+    // Function Spaces
+    if ( jsonInfo.contains("Function Spaces") )
+    {
+        auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
+        auto tabInfoFunctionSpaces = TabulateInformationsSections::New();
+        for ( std::string const& spaceName : std::vector<std::string>({"Displacement","Pressure"}) )
+        {
+            if ( jsonInfoFunctionSpaces.contains( spaceName ) )
+                tabInfoFunctionSpaces->add( spaceName, TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( jsonInfoFunctionSpaces.at( spaceName ), tabInfoProp ) );
+        }
+        tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
+    }
+
+    // fields
+    if ( jsonInfo.contains("Fields") )
+        tabInfo->add( "Fields", TabulateInformationTools::FromJSON::tabulateInformationsModelFields( jsonInfo.at("Fields"), tabInfoProp ) );
+
+    // Algebraic Solver
+    if ( jsonInfo.contains( "Algebraic Solver" ) )
+        tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
+
+    // Subtoolbox
+    if ( this->hasSolidEquation1dReduced() && jsonInfo.contains( "Toolbox Solid 1d Reduced" ) )
+        tabInfo->add( "Toolbox Solid 1d Reduced", M_solid1dReduced->tabulateInformations( jsonInfo.at("Toolbox Solid 1d Reduced"), tabInfoProp ) );
+
+    return tabInfo;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -215,7 +311,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     }
     if ( this->hasSolidEquation1dReduced() )
     {
-        nBlock += M_solid1dReduced->blockVectorSolution().size();
+        nBlock += M_solid1dReduced->algebraicBlockVectorSolution()->size();
     }
     return nBlock;
 }
@@ -854,17 +950,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
 {
     if ( this->hasSolidEquationStandard() )
     {
-        if ( !M_algebraicFactory || M_timeStepping == "BDF" || M_timeStepping == "Newmark" )
+        auto algebraicFactory = this->algebraicFactory();
+        if ( !algebraicFactory || M_timeStepping == "BDF" || M_timeStepping == "Newmark" )
             return;
 
         if ( M_timeStepping == "Theta" )
         {
             M_timeStepThetaSchemePreviousContrib->zero();
-            M_blockVectorSolution.updateVectorFromSubVectors();
+            this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
             std::vector<std::string> infos = { prefixvm(this->prefix(),"time-stepping.evaluate-residual-without-time-derivative") };
-            M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
-            M_algebraicFactory->evaluateResidual(  M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos, false );
-            M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+            algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+            algebraicFactory->evaluateResidual( this->algebraicBlockVectorSolution()->vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos, false );
+            algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
         }
     }
 }
@@ -960,9 +1057,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 
     //this->updateParameterValues();
 
-    M_blockVectorSolution.updateVectorFromSubVectors();
-    M_algebraicFactory->solve( M_solverName, M_blockVectorSolution.vectorMonolithic() );
-    M_blockVectorSolution.localize();
+    this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
+    this->algebraicFactory()->solve( M_solverName, this->algebraicBlockVectorSolution()->vectorMonolithic() );
+    this->algebraicBlockVectorSolution()->localize();
 
     if ( upVelAcc && !this->isStationary() )
         this->updateVelocity();

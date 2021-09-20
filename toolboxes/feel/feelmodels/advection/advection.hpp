@@ -39,7 +39,6 @@
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelcore/utils.hpp>
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelmodels/advection/diffusionreactionmodel.hpp>
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
@@ -398,7 +397,7 @@ public :
     // Measures quantities
     auto allMeasuresQuantities() const
     {
-        return hana::make_tuple();
+        return model_measures_quantities_empty_t{};
     }
 
     //--------------------------------------------------------------------//

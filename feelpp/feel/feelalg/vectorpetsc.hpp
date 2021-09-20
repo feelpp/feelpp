@@ -277,7 +277,7 @@ public:
      * Destructor, deallocates memory. Made virtual to allow
      * for derived classes to behave properly.
      */
-    ~VectorPetsc ()
+    ~VectorPetsc () override
     {
         this->clear();
     }
@@ -431,12 +431,12 @@ public:
     /**
      *  \f$v = x*y\f$: coefficient-wise multiplication
      */
-    virtual void pointwiseMult ( Vector<T> const& x, Vector<T> const& y ) override;
+    void pointwiseMult ( Vector<T> const& x, Vector<T> const& y ) override;
 
     /**
      *  \f$v = x/y\f$: coefficient-wise divide
      */
-    virtual void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y ) override;
+    void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y ) override;
 
     /**
      * Call the assemble functions
@@ -599,7 +599,7 @@ public:
      * Addition of \p s to all components. Note
      * that \p s is a scalar and not a vector.
      */
-    virtual void add ( const value_type& v_in ) override;
+    void add ( const value_type& v_in ) override;
 
     /**
      * \f$ U+=V \f$ .
@@ -613,11 +613,11 @@ public:
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    virtual void add ( const value_type& a_in, const Vector<value_type>& v_in ) override;
+    void add ( const value_type& a_in, const Vector<value_type>& v_in ) override;
     /**
      * Replaces each component of a vector by its reciprocal.
      */
-    virtual int reciprocal() override;
+    int reciprocal() override;
 
     /**
      * @return the minimum element in the vector.
@@ -860,7 +860,7 @@ public:
         super( v )
         {}
 
-    ~VectorPetscMPI()
+    ~VectorPetscMPI() override
     {
         this->clear();
     }
@@ -887,21 +887,21 @@ public:
     /**
      * \f$ v(i) = \mathrm{value} \forall i\f$
      */
-    virtual void set( const value_type& value ) override;
+    void set( const value_type& value ) override;
 
     /**
      * \f$ U(0-DIM)+=s\f$.
      * Addition of \p s to all components. Note
      * that \p s is a scalar and not a vector.
      */
-    virtual void add( const value_type& v_in ) override;
+    void add( const value_type& v_in ) override;
 
     /**
      * \f$ U+=a*V \f$ .
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    virtual void add( const value_type& a_in, const Vector<value_type>& v_in ) override;
+    void add( const value_type& a_in, const Vector<value_type>& v_in ) override;
 
     /**
      * v(i) = value (i is global process index)
@@ -926,17 +926,17 @@ public:
     /**
      *  \f$v = x*y\f$: coefficient-wise multiplication
      */
-    virtual void pointwiseMult( Vector<T> const& x, Vector<T> const& y ) override;
+    void pointwiseMult( Vector<T> const& x, Vector<T> const& y ) override;
 
     /**
      *  \f$v = x/y\f$: coefficient-wise divide
      */
-    virtual void pointwiseDivide( Vector<T> const& x, Vector<T> const& y ) override;
+    void pointwiseDivide( Vector<T> const& x, Vector<T> const& y ) override;
 
     /**
      * Set all entries to zero. Equivalent to \p v = 0.
      */
-    virtual void zero() override;
+    void zero() override;
     void zero( size_type /*start*/,  size_type /*stop*/ ) override
     {
         this->zero();
@@ -945,17 +945,17 @@ public:
     /**
      * Replaces each component of a vector by its reciprocal.
      */
-    virtual int reciprocal() override;
+    int reciprocal() override;
 
     /**
      * @returns the \p VectorPetsc<T> to a pristine state.
      */
-    virtual void clear() override;
+    void clear() override;
 
     /**
      * Update ghost values
      */
-    virtual void localize() override;
+    void localize() override;
 
     /**
      * Call the assemble functions and update ghost values
@@ -1005,7 +1005,7 @@ public:
             const PetscScalar* arrayGhost = ( this->map().nLocalGhosts() > 0 )? std::addressof( *v.beginGhost() ) : NULL;
             this->initRangeView( arrayActive,arrayGhost );
         }
-    ~VectorPetscMPIRange()
+    ~VectorPetscMPIRange() override
     {
         this->clear();
     }
@@ -1013,65 +1013,65 @@ public:
     /**
      * call init with datamap,
      */
-    void init( datamap_ptrtype const& dm );
+    void init( datamap_ptrtype const& dm ) override;
 
     /**
      * @returns the \p VectorPetsc<T> to a pristine state.
      */
-    void clear();
+    void clear() override;
 
-    value_type operator() ( const size_type i ) const;
-    value_type& operator() ( const size_type i );
+    value_type operator() ( const size_type i ) const override;
+    value_type& operator() ( const size_type i ) override;
 
     /**
      *  \f$U = V\f$: copy all components.
      */
-    Vector<value_type>& operator= ( const Vector<value_type> &V );
+    Vector<value_type>& operator= ( const Vector<value_type> &V ) override;
     Vector<value_type>& operator= ( const VectorPetscMPIRange<value_type> &V );
 
     /**
      * \f$ v(i) = \mathrm{value} \forall i\f$
      */
-    void set( const value_type& value );
+    void set( const value_type& value ) override;
 
     /**
      * \f$ U(0-DIM)+=s\f$.
      * Addition of \p s to all components. Note
      * that \p s is a scalar and not a vector.
      */
-    void add( const value_type& v_in );
+    void add( const value_type& v_in ) override;
 
     /**
      * \f$ U+=a*V \f$ .
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add( const value_type& a_in, const Vector<value_type>& v_in );
+    void add( const value_type& a_in, const Vector<value_type>& v_in ) override;
 
     /**
      *  \f$v = x*y\f$: coefficient-wise multiplication
      */
-    void pointwiseMult( Vector<T> const& x, Vector<T> const& y );
+    void pointwiseMult( Vector<T> const& x, Vector<T> const& y ) override;
 
     /**
      *  \f$v = x/y\f$: coefficient-wise divide
      */
-    void pointwiseDivide( Vector<T> const& x, Vector<T> const& y );
+    void pointwiseDivide( Vector<T> const& x, Vector<T> const& y ) override;
 
     /**
      * Set all entries to zero. Equivalent to \p v = 0.
      */
-    void zero();
+    void zero() override;
 
     /**
      * Replaces each component of a vector by its reciprocal.
      */
-    int reciprocal();
+    int reciprocal() override;
 
     /**
      * Update ghost values
      */
-    void localize();
+    void localize() override;
 
     /**
      * Returns the raw PETSc vector of ghosts in context pointer

@@ -38,6 +38,7 @@
 // #include <boost/mpl/plus.hpp>
 // #include <boost/mpl/arithmetic.hpp>
 
+#include <boost/mp11.hpp>
 
 namespace Feel
 {
@@ -172,17 +173,31 @@ public:
     template<typename... TheExpr>
     struct Lambda
     {
-        struct TransformLambdaExpr
-        {
-            template <typename T>
-            constexpr auto operator()(T const& t) const
-                {
-                    return typename T::template Lambda<TheExpr...>::type{};
-                }
+        template <typename T>
+        using TransformLambdaExpr = typename T::template Lambda<TheExpr...>::type;
+#if 0
+        // utility to convert tuple (hana, std, ... )
+        template <template <typename...> class C, typename Tuple> struct RebindImpl;
+        template <template <typename...> class C, typename ... Ts>
+        struct RebindImpl<C, hana::tuple<Ts...>>{
+            using type = C<Ts...>;
+        };
+        template <template <typename...> class C, typename ... Ts>
+        struct RebindImpl<C, std::tuple<Ts...>>{
+            using type = C<Ts...>;
         };
 
-        using lambda_tuple_type = std::decay_t<decltype( hana::transform( expression_matrix_type{}, TransformLambdaExpr{} ) ) >;
-        using type = Mat<M,N,lambda_tuple_type>;
+        // convert hana::tuple<...> to std::tuple<...>
+        using expr_tuple_as_std_tuple_type = typename RebindImpl< std::tuple, expression_matrix_type >::type;
+
+        // transfrom std::tuple<..> with Lambda type
+        using lambda_expr_tuple_as_std_tuple_type = boost::mp11::mp_transform<TransformLambdaExpr,expr_tuple_as_std_tuple_type>;
+
+        // get type by converting std::tuple<...> to hana::tuple<...>
+        using type = Mat<M,N, typename RebindImpl< hana::tuple, lambda_expr_tuple_as_std_tuple_type >::type>;
+#else
+        using type = Mat<M,N,  boost::mp11::mp_transform<TransformLambdaExpr,expression_matrix_type> >;
+#endif
     };
 
     template<typename... TheExpr>
@@ -251,6 +266,17 @@ public:
     /** @name  Methods
      */
     //@{
+
+    //! dynamic context
+    size_type dynamicContext() const
+        {
+            size_type res = 0;
+            hana::for_each( M_expr, [&res]( auto const& e )
+                            {
+                                res = res | Feel::vf::dynamicContext( e );
+                            } );
+            return res;
+        }
 
     //! polynomial order
     uint16_type polynomialOrder() const
@@ -365,6 +391,14 @@ public:
                     using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
                     return _tensor_type( t, geom );
                 }
+
+            template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename T, typename... TheArgsType>
+            constexpr auto operator()(std::true_type, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                                      T const& t, Geo_t const& geom, const TheArgsType&... theInitArgs ) const
+                {
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    return _tensor_type( std::true_type{}, exprExpanded, ttse, t, geom, theInitArgs... );
+                }
         };
         using tensor_matrix_type = std::decay_t<decltype( hana::transform( expression_matrix_type{}, TransformExprToTensor{} ) ) >;
 
@@ -394,6 +428,18 @@ public:
             M_expr( hana::transform( expr.expression(), [&geom](auto const& t) { return TransformExprToTensor{}(t,geom); } ) )
             {}
 
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                expression_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            //M_expr( hana::transform( hana::make_range( hana::int_c<0>, hana::int_c<nExpr> ), [&exprExpanded,ttse,&expr,&geom,&theInitArgs...](auto eId )
+            M_expr( hana::transform( hana::unpack( hana::make_range( hana::int_c<0>, hana::int_c<nExpr> ), hana::make_tuple ), [&exprExpanded,&ttse,&expr,&geom,&theInitArgs...](auto eId )
+                                     {
+                                         return TransformExprToTensor{}(std::true_type{},hana::at( exprExpanded.expression(), hana::int_c<eId> ), ttse,
+                                                                        hana::at( expr.expression(), hana::int_c<eId> ), geom, theInitArgs...);
+                                     } ) )
+            {}
+
         template<typename IM>
         void init( IM const& im )
         {
@@ -419,6 +465,16 @@ public:
         {
             hana::for_each( M_expr, [&ctx...]( auto & e ) { e.updateContext( ctx... ); } );
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+        {
+            hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nExpr> ), [this,&exprExpanded,&ttse,&geom,&theUpdateArgs...]( auto eId )
+                            {
+                                hana::at( M_expr, hana::int_c<eId> ).update( std::true_type{}, hana::at( exprExpanded.expression(), hana::int_c<eId> ), ttse, geom, theUpdateArgs... );
+                            } );
+        }
+
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const

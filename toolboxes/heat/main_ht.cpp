@@ -2,6 +2,7 @@
  */
 
 #include <feel/feelmodels/heat/heat.hpp>
+#include <feel/feelmodels/modelcore/convergencemode.hpp>
 
 template <typename ToolboxType>
 int
@@ -37,48 +38,13 @@ runToolboxSimulation( std::shared_ptr<ToolboxType> toolbox )
 }
 
 
-template <int nDim,int OrderT>
+template <typename ToolboxType>
 int
 runHeatSimulation()
 {
     using namespace Feel;
-    typedef Feel::FeelModels::Heat< Simplex<nDim,1>,
-                                    Lagrange<OrderT, Scalar,Continuous,PointSetFekete> > model_type;
-    auto heat = model_type::New(_prefix="heat");
+    auto heat = ToolboxType::New(_prefix="heat");
     return runToolboxSimulation( heat );
-}
-template <int nDim,int OrderT>
-int
-runHeatHConvergence()
-{
-    using namespace Feel;
-    int status = 0;
-
-    typedef FeelModels::Heat< Simplex<nDim,1>,
-                                      Lagrange<OrderT, Scalar,Continuous,PointSetFekete> > model_type;
-
-    FeelModels::ModelMeasuresIO measures( "h-convergence.measures.csv", Environment::worldCommPtr() );
-    CHECK( Environment::vm().count( "case.mode.h-convergence.hsize" ) ) << "require option : case.mode.h-convergence.hsize";
-    std::vector<double> meshSizes = vdoption( _name="case.mode.h-convergence.hsize" );
-
-    for ( int k=0;k<meshSizes.size();++k )
-    {
-        double meshSize = meshSizes[k];
-        std::string runSubdir = (boost::format("run_h%1%")%k).str();
-        Feel::Environment::setOptionValue( "heat.gmsh.hsize", meshSize );
-
-        auto heat = model_type::New( _prefix="heat",
-                                     _repository=Feel::FeelModels::ModelBaseRepository( (fs::path(Environment::appRepository())/runSubdir).string(), false, Environment::exprRepository() ) );
-        status = runToolboxSimulation( heat );
-        if ( status != 0 )
-            return status;
-
-        measures.setMeasure( "run_id", k );
-        measures.setMeasure( "mesh_size", meshSize );
-        measures.setMeasures( heat->postProcessMeasuresIO().currentMeasures() );
-        measures.exportMeasures();
-    }
-    return status;
 }
 
 int
@@ -99,6 +65,8 @@ main(int argc, char**argv )
                      _about=about(_name="toolboxes_heat",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
+
+    Feel::FeelModels::printToolboxApplication( "heat" );
 
     std::string mode = soption(_name="case.mode");
     int dimension = ioption(_name="case.dimension");
@@ -126,10 +94,12 @@ main(int argc, char**argv )
                             constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
                             if ( dimension == _dim && discretization == _discretization )
                             {
+                                typedef Feel::FeelModels::Heat< Simplex<_dim,1>,
+                                                                Lagrange<_torder, Scalar,Continuous,PointSetFekete> > model_type;
                                 if ( mode == "simulation" )
-                                    status = runHeatSimulation<_dim,_torder>();
+                                    status = runHeatSimulation<model_type>();
                                 else
-                                    status = runHeatHConvergence<_dim,_torder>();
+                                    status = runHConvergence<model_type>("heat", runToolboxSimulation<model_type>);
                             }
                         } );
     }

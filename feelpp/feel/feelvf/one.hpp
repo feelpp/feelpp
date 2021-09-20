@@ -43,8 +43,10 @@ namespace vf
  * CType =  0 : (1 0 0)
  * CType =  1 : (0 1 0)
  * CType =  2 : (0 0 1)
+ *
+ * if Dim = -1 then Dim evaluated by gmc
  */
-template<int CType>
+template<int CType,int Dim=-1>
 class One
 {
 public:
@@ -70,22 +72,22 @@ public:
 
 
 
-    typedef One<CType> this_type;
+    typedef One<CType,Dim> this_type;
 
     typedef double value_type;
 
     One() = default;
     One( One const& /*__vff*/ ) = default;
-    One( ComponentType c )
+    explicit One( int c )
         :
         M_oneComponentsDynamic( { c } )
         {}
-    One( std::set<ComponentType> const& c)
+    explicit One( std::set<int> const& c)
         :
         M_oneComponentsDynamic( c )
         {}
 
-    std::set<ComponentType> const& oneComponentsDynamic() const { return M_oneComponentsDynamic; }
+    std::set<int> const& oneComponentsDynamic() const { return M_oneComponentsDynamic; }
 
     template<typename... TheExpr>
     struct Lambda
@@ -121,18 +123,19 @@ public:
     {
         typedef this_type expression_type;
         using key_type = key_t<Geo_t>;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-        typedef Shape<gmc_type::nDim, Vectorial, false, false> shape;
-        static const bool theshape = ( shape::M == gmc_type::nDim && shape::N == 1 );
-        BOOST_MPL_ASSERT_MSG( theshape,
-                              INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_1,
-                              ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
+        //typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
+        //typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+        using gmc_type = gmc_t<Geo_t>;
+        static const uint16_type nComponents = Dim<0? gmc_type::nDim : Dim;
+        using shape = ShapeGeneric<gmc_type::nDim,nComponents,1>;
+        //typedef Shape<gmc_type::nDim, Vectorial, false, false> shape;
+        // static const bool theshape = ( shape::M == gmc_type::nDim && shape::N == 1 );
+        // BOOST_MPL_ASSERT_MSG( theshape,
+        //                       INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_1,
+        //                       ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
         typedef typename expression_type::value_type value_type;
 
-        static const uint16_type nComponents = gmc_type::nDim;
-        //static const int16_type vector_comp = ( CType==-1 )?1:CType;
 
         using vector_type = Eigen::Matrix<value_type,nComponents,1>;
 
@@ -162,19 +165,23 @@ public:
             {
                 if constexpr ( CType == -1 )
                     M_one = vector_type::Ones();
-                else if constexpr ( CType >= 0 )
+                else if constexpr ( CType >= 0 && CType < nComponents )
                     M_one(CType) = 1;
                 else if constexpr ( CType == -3 )
                 {
-                    auto const& theDynComp = expr.oneComponentsDynamic();
-                    if ( nComponents > 0 && theDynComp.find( ComponentType::X ) != theDynComp.end() )
-                        M_one( 0 ) = 1;
-                    if ( nComponents > 1 && theDynComp.find( ComponentType::Y ) != theDynComp.end() )
-                        M_one( 1 ) = 1;
-                    if ( nComponents > 2 && theDynComp.find( ComponentType::Z ) != theDynComp.end() )
-                        M_one( 2 ) = 1;
+                    for ( int c : expr.oneComponentsDynamic() )
+                    {
+                        if ( c < nComponents )
+                            M_one( c ) = 1;
+                    }
                 }
             }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                expression_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            tensor( expr, geom, theInitArgs... )
+            {}
         template<typename IM>
         void init( IM const& /*im*/ )
         {
@@ -191,6 +198,11 @@ public:
         void update( Geo_t const& /*geom*/, uint16_type /*face*/ )
         {
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {}
+
         template<typename ... CTX>
         void updateContext( CTX const& ... ctx )
         {
@@ -217,7 +229,7 @@ public:
         FEELPP_STRONG_INLINE value_type
         evalq( uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
-            if ( c1 >= gmc_type::nDim )
+            if ( c1 >= nComponents )
                 return value_type(0);
             else
                 return M_one( c1 );
@@ -241,7 +253,7 @@ public:
         vector_type M_one;
     };
 private :
-    std::set<ComponentType> M_oneComponentsDynamic;
+    std::set<int> M_oneComponentsDynamic;
 };
 
 inline
@@ -300,23 +312,65 @@ vector_zero()
     return Expr< One<-2> >(  One<-2>() );
 }
 
+template<int Dim>
+Expr<One<-3,Dim> >
+one( std::set<int> const& c)
+{
+    return Expr< One<-3,Dim> >(  One<-3,Dim>( c ) );
+}
+
+template<int Dim>
+Expr<One<-3,Dim> >
+one( int c)
+{
+    return one<Dim>( std::set<int>( { c } ) );
+}
+
+template<int Dim>
+Expr<One<-3,Dim> >
+one( std::initializer_list<int> const& c)
+{
+    return one<Dim>( std::set<int>( c ) );
+}
+
+
+inline
+Expr<One<-3> >
+one( std::set<ComponentType> const& cs)
+{
+    std::set<int> compConvert;
+    for ( ComponentType c : cs )
+    {
+        switch ( c )
+        {
+        case ComponentType::X:
+            compConvert.insert( 0 );
+            break;
+        case ComponentType::Y:
+            compConvert.insert( 1 );
+            break;
+        case ComponentType::Z:
+            compConvert.insert( 2 );
+            break;
+        default:
+            break;
+        }
+    }
+    return one<-1>( compConvert );
+}
+
 inline
 Expr<One<-3> >
 one( ComponentType c)
 {
-    return Expr< One<-3> >(  One<-3>( c ) );
+    return one( std::set<ComponentType>( { c } ) );
 }
-inline
-Expr<One<-3> >
-one( std::set<ComponentType> const& c)
-{
-    return Expr< One<-3> >(  One<-3>( c ) );
-}
+
 inline
 Expr<One<-3> >
 one( std::initializer_list<ComponentType> const& c)
 {
-    return Expr< One<-3> >(  One<-3>( std::set<ComponentType>( c ) ) );
+    return one( std::set<ComponentType>( c ) );
 }
 
 } // vf

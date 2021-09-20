@@ -50,6 +50,24 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name,
         this->addMaterialPropertyDescription( "Lame-second-parameter", "mu", { scalarShape } );
         this->addMaterialPropertyDescription( "bulk-modulus", "K", { scalarShape } );
     }
+    if ( M_type == "fluid" || M_type == "heat-fluid" )
+    {
+        this->addMaterialPropertyDescription( "dynamic-viscosity", "mu", { scalarShape } );
+        this->addMaterialPropertyDescription( "turbulent-dynamic-viscosity", "mu_t", { scalarShape } );
+        this->addMaterialPropertyDescription( "turbulent-kinetic-energy", "tke", { scalarShape } );
+        this->addMaterialPropertyDescription( "consistency-index", "mu_k", { scalarShape } );
+        this->addMaterialPropertyDescription( "power-law-index", "mu_power_law_n", { scalarShape } );
+        this->addMaterialPropertyDescription( "viscosity-min", "mu_min", { scalarShape } );
+        this->addMaterialPropertyDescription( "viscosity-max", "mu_max", { scalarShape } );
+        this->addMaterialPropertyDescription( "viscosity-zero-shear", "mu_0", { scalarShape } );
+        this->addMaterialPropertyDescription( "viscosity-infinite-shear", "mu_inf", { scalarShape } );
+        this->addMaterialPropertyDescription( "carreau-law-lambda", "mu_carreau_law_lambda", { scalarShape } );
+        this->addMaterialPropertyDescription( "carreau-law-n", "mu_carreau_law_n", { scalarShape } );
+        this->addMaterialPropertyDescription( "carreau-yasuda-law-lambda", "mu_carreau_yasuda_law_lambda", { scalarShape } );
+        this->addMaterialPropertyDescription( "carreau-yasuda-law-n", "mu_carreau_yasuda_law_n", { scalarShape } );
+        this->addMaterialPropertyDescription( "carreau-yasuda-law-a", "mu_carreau_yasuda_law_a", { scalarShape } );
+    }
+
 }
 
 template <uint16_type Dim>
@@ -69,7 +87,8 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
     :
     super_type( "fluid", name, model ),
     M_equation( "Navier-Stokes" ),
-    M_gravityForceEnabled( boption(_name="use-gravity-force",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) )
+    M_gravityForceEnabled( boption(_name="use-gravity-force",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ),
+    M_dynamicViscosity( soption(_name="viscosity.law",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) )
 {
     auto const& pt = model.ptree();
     if ( auto eq = pt.template get_optional<std::string>("equations") )
@@ -100,6 +119,12 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
             gravityStr = "{0,0,-9.80665}";
         M_gravityForceExpr.setExpr( gravityStr,mphysics.worldComm(),mphysics.repository().expr() );
     }
+
+    if ( auto vl = pt.template get_optional<std::string>("viscosity_law") )
+        M_dynamicViscosity.setLaw( *vl );
+
+    if ( auto ptreeTurbulence = pt.get_child_optional("turbulence") )
+        M_turbulence.setup( *ptreeTurbulence );
 }
 
 template <uint16_type Dim>
@@ -108,6 +133,35 @@ ModelPhysicFluid<Dim>::setEquation( std::string const& eq )
 {
     CHECK( eq == "Navier-Stokes" || eq == "Stokes" || eq == "StokesTransient" ) << "invalid equation of fluid : " << eq;
     M_equation = eq;
+}
+
+template <uint16_type Dim>
+bool
+ModelPhysicFluid<Dim>::Turbulence::useBoussinesqApproximation() const
+{
+    return (M_model == "Spalart-Allmaras") || (M_model == "k-epsilon");
+}
+template <uint16_type Dim>
+bool
+ModelPhysicFluid<Dim>::Turbulence::hasTurbulentKineticEnergy() const
+{
+    return (M_model == "k-epsilon");
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicFluid<Dim>::Turbulence::setup( pt::ptree const& pt )
+{
+    if ( auto ptEnable = pt.template get_optional<bool>("enable") )
+        M_isEnabled = *ptEnable;
+
+    if ( !M_isEnabled )
+        return;
+    if ( auto ptModel = pt.template get_optional<std::string>("model") )
+    {
+        M_model = *ptModel;
+        CHECK( M_model == "Spalart-Allmaras" || M_model == "k-epsilon" ) << "invalid turubulence model " << M_model;
+    }
 }
 
 template <uint16_type Dim>
@@ -308,6 +362,8 @@ template class ModelPhysic<2>;
 template class ModelPhysic<3>;
 template class ModelPhysics<2>;
 template class ModelPhysics<3>;
+template class ModelPhysicFluid<2>;
+template class ModelPhysicFluid<3>;
 
 } // namespace FeelModels
 } // namespace Feel

@@ -16,7 +16,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess 
     vector_ptrtype& U = data.initialGuess();
     auto mctx = this->modelContext( U, this->heatModel(), this->fluidModel() );
     M_heatModel->updateNewtonInitialGuess( data, mctx );
-    M_fluidModel->updateNewtonInitialGuess( data );
+    M_fluidModel->updateNewtonInitialGuess( data, mctx );
     this->log("HeatFluid","updateNewtonInitialGuess","finish" );
 }
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -33,7 +33,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
     this->log("HeatFluid","updateJacobian", "start"+sc);
 
     auto mctx = this->modelContext( XVec, this->heatModel(), this->fluidModel() );
-    auto const& symbolsExpr = mctx.symbolsExpr();
+    auto const& se = mctx.symbolsExpr();
     auto const& t = mctx.field( heat_model_type::FieldTag::temperature(this->heatModel().get()), "temperature" );
     auto const& u = mctx.field( fluid_model_type::FieldTag::velocity(this->fluidModel().get()), "velocity" );
     auto const& p = mctx.field( fluid_model_type::FieldTag::pressure(this->fluidModel().get()), "pressure" );
@@ -48,7 +48,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
     size_type blockIndexPressure = this->fluidModel()->startBlockSpaceIndexVector() + this->fluidModel()->startSubBlockSpaceIndex("pressure");
 
     M_heatModel->updateJacobian( data, mctx );
-    M_fluidModel->updateJacobian( data/*, symbolsExpr*/ );
+    M_fluidModel->updateJacobian( data, mctx );
 
     if ( buildNonCstPart )
     {
@@ -68,32 +68,32 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
             for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
             {
                 auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                auto const& matProps = this->materialsProperties()->materialProperties( matName );
                 auto const& rho = this->materialsProperties()->rho( matName );
                 auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
                 auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
 
-                auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
-                auto rhoExpr = rho.expr();
-                auto beta = thermalExpansion.expr();
-#if 0
-                form2( _test=XhT,_trial=XhT,_matrix=J,
-                       _rowstart=M_heatModel->rowStartInMatrix(),
-                       _colstart=M_heatModel->colStartInMatrix() ) +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradt(t)*idv(u))*id(t),
-                               _geomap=this->geomap() );
-#endif
-                form2( _test=XhT,_trial=XhV,_matrix=J,
-                       _rowstart=M_heatModel->rowStartInMatrix(),
-                       _colstart=M_fluidModel->colStartInMatrix() ) +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradv(t)*idt(u))*id(t),
-                               _geomap=this->geomap() );
+                auto rhoHeatCapacityExpr = expr( rhoHeatCapacity.expr(), se );
+                auto rhoExpr = expr( rho.template expr<1,1>(), se );
+                auto beta = expr( thermalExpansion.template expr<1,1>(), se );
 
-                bfVT +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling_fluid*rhoExpr*beta*idt(t)*inner(M_gravityForce,id(u)),
-                               _geomap=this->geomap() );
+                if ( !M_fluidModel->useSemiImplicitTimeScheme() )
+                {
+                    form2( _test=XhT,_trial=XhV,_matrix=J,
+                           _rowstart=M_heatModel->rowStartInMatrix(),
+                           _colstart=M_fluidModel->colStartInMatrix() ) +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradv(t)*idt(u))*id(t),
+                                   _geomap=this->geomap() );
+                }
+
+                if ( M_useNaturalConvection )
+                {
+                    bfVT +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling_fluid*rhoExpr*beta*idt(t)*inner(M_gravityForce,id(u)),
+                                   _geomap=this->geomap() );
+                }
 
                 if ( M_heatModel->stabilizationGLS() )
                 {
@@ -141,16 +141,11 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 #endif
                 }
 
-                if ( M_fluidModel->stabilizationGLS() )
+                if ( M_fluidModel->stabilizationGLS() && M_useNaturalConvection )
                 {
-                    auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
-                    //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
-                    auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
+                    auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>( physicData->subphysicFromType( M_fluidModel->physicType() ) );
                     auto exprAddedInGLSResidual = rhoExpr*beta*idt(t)*M_gravityForce;
-
-                    auto XhP = M_fluidModel->functionSpacePressure();
-                    //auto const p = XhP->element(XVec, M_fluidModel->rowStartInVector()+1 );
-                    M_fluidModel->updateJacobianStabilisationGLS( data, *u, *p, rhoF, mu, matName, std::make_pair(bfVT, exprAddedInGLSResidual) );
+                    M_fluidModel->updateJacobianStabilizationGLS( data, mctx, *physicFluidData, matProps, range, std::make_tuple(XhT,blockIndexTemperature,exprAddedInGLSResidual) );
                 }
             } // matName
         } // physic
@@ -175,13 +170,35 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian_Heat( DataUpdateJacobian & data ) const
 {
-    const vector_ptrtype& XVec = data.currentSolution();
-    auto mfields = this->modelFields( this->heatModel()->modelFields( XVec, this->heatModel()->rowStartInVector(), this->heatModel()->keyword() ),
-                                      this->fluidModel()->modelFields( this->fluidModel()->keyword() ) );
-    auto mctx = Feel::FeelModels::modelContext( std::move(mfields), this->symbolsExpr( mfields ) );
+    const vector_ptrtype& vecCurrentSolution = data.currentSolution();
+    auto mctx = this->modelContext( vecCurrentSolution, this->heatModel()->startBlockSpaceIndexVector(),
+                                    this->fluidModel()->algebraicBlockVectorSolution()->vectorMonolithic(), 0 );
+
     M_heatModel->updateJacobian( data,mctx );
 }
 
+
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian_Fluid( DataUpdateJacobian & data ) const
+{
+    const vector_ptrtype& vecCurrentSolution = data.currentSolution();
+    auto mctx = this->modelContext( this->heatModel()->algebraicBlockVectorSolution()->vectorMonolithic(), 0,
+                                    vecCurrentSolution, this->fluidModel()->startBlockSpaceIndexVector() );
+
+    bool currentSabDoGLSDoAssembly = M_fluidModel->stabilizationGLSDoAssembly();
+    M_fluidModel->setStabilizationGLSDoAssembly( true );
+    M_fluidModel->updateJacobian( data, mctx );
+    M_fluidModel->setStabilizationGLSDoAssembly( currentSabDoGLSDoAssembly );
+    // for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    // {
+    //     for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+    //     {
+    //         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+    //         auto const& matProps = this->materialsProperties()->materialProperties( matName );
+    //     }
+    // }
+}
 
 } // namespace FeelModels
 } // namespace Feel

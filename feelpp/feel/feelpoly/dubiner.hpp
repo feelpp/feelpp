@@ -404,7 +404,7 @@ private:
     static matrix_type
     evaluate( points_type const& __pts, mpl::int_<1> )
     {
-        matrix_type m ( JacobiBatchEvaluation<nOrder,value_type>( 0.0, 0.0, ublas::row( __pts, 0 ) ) );
+        matrix_type m ( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts, 0 ) ) );
 
         if ( is_normalized )
         {
@@ -434,7 +434,7 @@ private:
     {
         vector_matrix_type D( 1 );
         D[0].resize( nOrder+1, __pts().size2() );
-        D[0] = JacobiBatchDerivation<nOrder,value_type>( 0.0, 0.0, ublas::row( __pts(),0 ) );
+        D[0] = JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(),0 ) );
 
         if ( is_normalized )
             for ( uint16_type i = 0; i < nOrder+1; ++i )
@@ -530,7 +530,7 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( 
     //std::cout << "xis = " << __pts << "\n";
     //std::cout << "etas = " << etas() << "\n";
 
-    matrix_type as( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta1s ) );
+    matrix_type as( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
     std::vector<matrix_type> bs( nOrder+1 );
 
     for ( int i = 0; i < nOrder+1; ++i )
@@ -592,8 +592,8 @@ Dubiner<Dim, RealDim,  Degree, NormalizationPolicy, T, StoragePolicy>::derivate(
     //std::cout << "etas = " << etas() << "\n";
 
     // evaluate Dubiner polynomials components
-    matrix_type as( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta1s ) );
-    matrix_type das( JacobiBatchDerivation<nOrder, value_type>( 0.0, 0.0, eta1s ) );
+    matrix_type as(  JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
+    matrix_type das( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
     //std::cout << "das= " << das <<  "\n";
     std::vector<matrix_type> bs( nOrder+1 );
     std::vector<matrix_type> dbs( nOrder+1 );
@@ -684,7 +684,7 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( 
     //std::cout << "xis = " << __pts << "\n";
     //std::cout << "etas = " << etas() << "\n";
 
-    matrix_type as( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta1s ) );
+    matrix_type as( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
     std::vector<matrix_type> bs( nOrder+1 );
     ublas::matrix<matrix_type> cs( nOrder+1, nOrder+1 );
 
@@ -767,8 +767,8 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( 
     //std::cout << "xis = " << __pts << "\n";
     //std::cout << "etas = " << etas() << "\n";
 
-    matrix_type as( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta1s ) );
-    matrix_type das( JacobiBatchDerivation<nOrder, value_type>( 0.0, 0.0, eta1s ) );
+    matrix_type as(  JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
+    matrix_type das( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
     std::vector<matrix_type> bs( nOrder+1 );
     std::vector<matrix_type> dbs( nOrder+1 );
     ublas::matrix<matrix_type> cs( nOrder+1, nOrder+1 );

@@ -455,7 +455,7 @@ public:
         //std::cout << "end constructor...\n";
     }
 
-    ~PointSetGaussLobatto() {}
+    ~PointSetGaussLobatto() override {}
 
 private:
 

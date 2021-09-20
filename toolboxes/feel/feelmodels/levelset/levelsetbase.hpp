@@ -274,8 +274,8 @@ public:
     space_scalar_ptrtype const& functionSpaceScalar() const { return M_spaceLevelset; }
     space_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceVectorial; }
 
-    mesh_ptrtype const& mesh() const { return this->functionSpace()->mesh(); }
-    void setMesh( mesh_ptrtype const& m ) { M_mesh = m; }
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
 
     bool useSpaceIsoPN() const { return M_useSpaceIsoPN; }
 
@@ -470,6 +470,7 @@ public:
     // Measures quantities
     auto allMeasuresQuantities( std::string const& prefix = "" ) const
     {
+#if 0
         // TODO : we need to explicitly convert Eigen::Matrix to std::vector as
         // the begin and end iterators used in ModelNumerical::588 are only implemented from
         // Eigen v3.4 on (not released yet).
@@ -479,11 +480,12 @@ public:
             Eigen::Matrix<value_type, nDim, 1>::Map( &v[0], v.size() ) = m;
             return v;
         };
-        return hana::make_tuple(
-                ModelMeasuresQuantity( prefix, "volume", std::bind( &self_type::volume, this ) ),
-                ModelMeasuresQuantity( prefix, "perimeter", std::bind( &self_type::perimeter, this ) ),
-                ModelMeasuresQuantity( prefix, "position-com", std::bind( eigenToVec, std::bind( &self_type::positionCOM, this ) ) )
-                );
+#endif
+        return Feel::FeelModels::modelMeasuresQuantities( modelMeasuresQuantity( prefix, "volume", std::bind( &self_type::volume, this ) ),
+                                                          modelMeasuresQuantity( prefix, "perimeter", std::bind( &self_type::perimeter, this ) ),
+                                                          modelMeasuresQuantity( prefix, "position-com", std::bind( &self_type::positionCOM, this ) )
+                                                          //ModelMeasuresQuantity( prefix, "position-com", std::bind( eigenToVec, std::bind( &self_type::positionCOM, this ) ) )
+                                                          );
     }
     //--------------------------------------------------------------------//
     // Curvature diffusion
@@ -728,7 +730,6 @@ protected:
 private:
     //--------------------------------------------------------------------//
     // Meshes 
-    mesh_ptrtype M_mesh;
     range_elements_type M_rangeMeshElements;
 
     mutable mesh_ptrtype M_submeshDirac;

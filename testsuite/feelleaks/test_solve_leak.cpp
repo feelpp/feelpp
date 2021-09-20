@@ -6,7 +6,7 @@
        Date: 2006-11-23
 
   Copyright (C) 2006-2009 Université Joseph Fourier (Grenoble I)
-
+    
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -31,7 +31,11 @@
 
 #include <feel/feelcore/testsuite.hpp>
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelvf/vf.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 
 #if defined(FEELPP_HAS_GPERFTOOLS)
 #include <gperftools/heap-checker.h>

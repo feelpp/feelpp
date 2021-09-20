@@ -46,7 +46,7 @@ public:
     void setMatrix(std::vector<std::vector<double> > matrix);
     double getObjectiveValue();
     double getColumnPrimalValue(int i); // index start at 1 !
-    static std::string check(int e);
+    static std::string const& check(int e);
     glp_prob* problem() const { return M_pb; }
     glp_smcp* params() const { return M_params; }
 

@@ -110,8 +110,8 @@ public:
     {
     }
 
-    void run();
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
+    void run() override;
+    void run( const double* X, unsigned long P, double* Y, unsigned long N ) override;
 
 private:
 

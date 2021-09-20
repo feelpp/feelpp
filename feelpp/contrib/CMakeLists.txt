@@ -23,8 +23,35 @@
 #
 message(STATUS "============================================================")
 message(STATUS "Contrib libraries")
+include(FetchContent)
 add_library(feelpp_contrib INTERFACE)
 add_library( Feelpp::feelpp_contrib ALIAS feelpp_contrib)
+
+set( CMAKE_INSTALL_DATADIR "share/feelpp")
+if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
+    set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+endif()
+
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring FMT")
+set(FETCHCONTENT_SOURCE_DIR_FMT ${CMAKE_CURRENT_SOURCE_DIR}/fmt)
+FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/feelpp/fmt.git GIT_TAG 7bdf0628b1276379886c7f6dda2cef2b3b374f0b) 
+
+set(FMT_INSTALL ON)
+set(FMT_CMAKE_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+FetchContent_MakeAvailable(fmt)
+set_target_properties(fmt PROPERTIES OUTPUT_NAME "feelpp_fmt")
+target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_FMT )
+target_include_directories(fmt INTERFACE
+    $<BUILD_INTERFACE:${fmt_SOURCE_DIR}/include/>
+    $<INSTALL_INTERFACE:include/feelpp> )
+target_link_libraries( feelpp_contrib INTERFACE fmt )
+install(TARGETS fmt EXPORT feelpp-contrib-export-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring GFlags")
@@ -103,53 +130,48 @@ target_link_libraries(feelpp_contrib INTERFACE feelpp_ginac)
 
 
 message(STATUS "------------------------------------------------------------")
-message(STATUS "Configuring Eigen")
-#
+message(STATUS "Configuring MKL")
+option( FEELPP_ENABLE_MKL "Enable MKL Support" ON )
+if ( FEELPP_ENABLE_MKL )
+  find_package(MKL)
+  target_include_directories( feelpp_contrib BEFORE INTERFACE ${MKL_INCLUDE_DIRS})
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_MKL )
+endif()
+
+
 # Eigen
 #
-if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
-  FIND_PACKAGE(Eigen3 REQUIRED)
-  MESSAGE(STATUS "Eigen3 system found:")
-else()
 
-  set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 1)
-  set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
-  add_subdirectory(eigen)
 
-  if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/feel AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/contrib )
-    option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
-    
-    set( EIGEN3_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen/unsupported )
-    target_include_directories( feelpp_contrib BEFORE
+include(FetchContent)
+set(EIGEN_BUILD_DOC OFF)
+set(BUILD_TESTING OFF)
+set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 0)
+set(EIGEN_TEST_NOQT 1)
+set(FETCHCONTENT_SOURCE_DIR_EIGEN ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
+set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
+
+FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 20440849794789eb9d9d29bc834296ce0e73b05c) # the commit hash for 1.5.0
+FetchContent_MakeAvailable(eigen)
+target_include_directories( feelpp_contrib BEFORE
       INTERFACE
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/contrib/eigen/>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen/unsupported>
+      $<BUILD_INTERFACE:${eigen_SOURCE_DIR}>
+      $<BUILD_INTERFACE:${eigen_SOURCE_DIR}/unsupported>
       $<INSTALL_INTERFACE:include/feelpp/eigen>
       $<INSTALL_INTERFACE:include/feelpp/eigen/unsupported>
       )
 
-    SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Eigen3/Contrib" )
-  else()
-    message(FATAL_ERROR "Eigen contrib not found" )
-    # find_path(EIGEN3_INCLUDE_DIR NAMES signature_of_eigen3_matrix_library
-    #   PATHS
-    #   $ENV{FEELPP_DIR}/include/feelpp
-    #   NO_DEFAULT_PATH
-    #   )
-  endif()
-
-endif()
-
+target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_EIGEN3 )
+target_link_libraries(feelpp_contrib INTERFACE Eigen3::Eigen )
 # there is an issue with eigen+mkl
-if ( 0 ) #MKL_FOUND )
+if ( MKL_FOUND )
+  target_include_directories( eigen  INTERFACE ${MKL_INCLUDE_DIRS})
   target_compile_definitions(eigen INTERFACE EIGEN_USE_MKL_ALL)
   target_link_libraries(eigen INTERFACE ${MKL_LIBRARIES})  # error with cmake < 3.13, see CMP0079, use instead feelpp_contrib
   #target_link_libraries(feelpp_contrib INTERFACE ${MKL_LIBRARIES})
-  target_include_directories(eigen INTERFACE ${MKL_INCLUDE_DIRS})
-  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_MKL )
+  #target_include_directories(eigen INTERFACE ${MKL_INCLUDE_DIRS})
+  
 endif()
-target_compile_definitions(feelpp_contrib INTERFACE FEELP_HAS_EIGEN3 )
-target_link_libraries(feelpp_contrib INTERFACE eigen )
 
 SET(FEELPP_HAS_EIGEN3 1)
 SET(FEELPP_HAS_EIGEN3 1 PARENT_SCOPE)
@@ -419,6 +441,68 @@ add_subdirectory( boost )
 #include(feelpp.module.paralution)
 #include(feelpp.module.jsonlab)
 
+option( FEELPP_ENABLE_SIMPLE_WEB_SERVER "Enable Simple Web Server" OFF )
+if ( FEELPP_ENABLE_SIMPLE_WEB_SERVER )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring Simplee Web Server")
+  feelppContribPrepare( simple-web-server )
+  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    set(BUILD_TESTING OFF)
+    add_subdirectory( simple-web-server )
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_SIMPLE_WEB_SERVER )
+    target_link_libraries(feelpp_contrib INTERFACE simple-web-server )
+    target_include_directories(feelpp_contrib INTERFACE
+      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/simple-web-server/>
+      $<INSTALL_INTERFACE:include/feelpp> )
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SimpleWebServer/Contrib")
+  endif()
+endif( FEELPP_ENABLE_SIMPLE_WEB_SERVER )
+
+option( FEELPP_ENABLE_RANGE_V3 "Enable Range V3" ON )
+if ( FEELPP_ENABLE_RANGE_V3 )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring Range V3")
+  feelppContribPrepare( range-v3 )
+  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    set( RANGES_CXX_STD "17" )
+    if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
+      set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+    endif()
+    message( STATUS "range-v3 CMAKE_INSTALL°INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
+    add_subdirectory( range-v3 )
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_RANGE_V3 )
+    target_link_libraries(feelpp_contrib INTERFACE range-v3 )
+    target_include_directories(feelpp_contrib INTERFACE
+      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/range-v3/>
+      $<INSTALL_INTERFACE:include/feelpp> )
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} range-v3/Contrib")
+  endif()
+endif( FEELPP_ENABLE_RANGE_V3 )
+
+option( FEELPP_ENABLE_MATPLOT "Enable MatPlot++" OFF )
+if ( FEELPP_ENABLE_MATPLOT )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring MatPlot++")
+  feelppContribPrepare( matplot )
+  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
+      set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+    endif()
+    message( STATUS "matplot++ CMAKE_INSTALL_INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
+    add_subdirectory( matplot )
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_MATPLOT )
+#    target_link_libraries(feelpp_contrib INTERFACE matplot )
+    target_include_directories(feelpp_contrib INTERFACE
+      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/matplot/source/>
+      $<INSTALL_INTERFACE:include/feelpp> )
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} MatPPlot++/Contrib")
+  endif()
+endif( FEELPP_ENABLE_MATPLOT )
+
+option( FEELPP_PARMMG_DOWNLOAD_METIS "Download Metis for PARMMG" OFF )
+option( FEELPP_ENABLE_MMG "Enable MMG/PARMMG" ON )
+option( FEELPP_PARMMG_DOWNLOAD_METIS "Disable metis dowload" OFF )
+if ( FEELPP_ENABLE_MMG )
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring Mmg")
 feelppContribPrepare( mmg )
@@ -429,7 +513,11 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
   set(MMGS_CI OFF)
   set(BUILD_SHARED_LIBS ON)
   set(ONLY_VERY_SHORT_TESTS ON)
-  set(CMAKE_INSTALL_INCLUDEDIR "include/feelpp" )
+  set(MMG_CMAKE_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+  if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
+    set(CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp" )
+  endif()
+  message( STATUS "mmg CMAKE_INSTALL°INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
   add_subdirectory( mmg )
   target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_MMG )
   target_link_libraries(feelpp_contrib INTERFACE libfeelpp_mmg_so )
@@ -437,6 +525,7 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
   if ( SCOTCH_FOUND )
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_SCOTCH )
   endif() 
+  
 
   # setup parmmg only if mmg is ok
   feelppContribPrepare( parmmg )
@@ -444,19 +533,50 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     SET ( LIBPARMMG_STATIC OFF )
     SET ( LIBPARMMG_SHARED ON )
     SET( DOWNLOAD_MMG OFF )
-    SET( DOWNLOAD_METIS OFF )
-    SET(MMG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
-    SET(MMG_BUILDDIR ${CMAKE_CURRENT_BINARY_DIR}/mmg)
-    if ( 0 )
-      add_subdirectory( parmmg )
-      target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PARMMG )
-      target_link_libraries(feelpp_contrib INTERFACE libfeelpp_parmmg_so )
-      set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} ParMmg/Contrib")
-    endif( 0 )
+    SET( DOWNLOAD_METIS ${FEELPP_PARMMG_DOWNLOAD_METIS} )
+    
+#    SET(MMG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
+#    SET(MMG_BUILDDIR ${CMAKE_CURRENT_BINARY_DIR}/mmg)
+#    SET(MMG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
+    add_subdirectory( parmmg )
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PARMMG )
+    target_link_libraries(feelpp_contrib INTERFACE libfeelpp_parmmg_so )
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} ParMmg/Contrib")
+
   endif()
+endif(FEELPP_CONTRIB_PREPARE_SUCCEED)
+endif(FEELPP_ENABLE_MMG)
+
+option( FEELPP_ENABLE_CPR "Enable CPR" ON )
+if ( FEELPP_ENABLE_CPR )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring CPR")
+  set(FETCHCONTENT_SOURCE_DIR_CPR ${CMAKE_CURRENT_SOURCE_DIR}/cpr)
+  # patch includes fix for 18.04 compilation
+  FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/feelpp/cpr.git GIT_TAG e554da6bde33edc35f1c28bd8197ae50bdf4a4d4) 
+  set( USE_SYSTEM_CURL ON )
+  set( BUILD_CPR_TESTS OFF )
+  if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
+      set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+  endif()
+  FetchContent_MakeAvailable(cpr)
+  add_library(feelpp_cpr INTERFACE)  
+  set_target_properties(cpr PROPERTIES OUTPUT_NAME "feelpp_cpr")
+  target_link_libraries(feelpp_cpr INTERFACE cpr)
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_CPR )
+  add_library(Feelpp::feelpp_cpr ALIAS feelpp_cpr)
+  target_include_directories(feelpp_cpr INTERFACE
+      $<BUILD_INTERFACE:${cpr_SOURCE_DIR}/include/>
+      $<INSTALL_INTERFACE:include/feelpp> )
+  install(TARGETS feelpp_cpr cpr EXPORT feelpp-contrib-export-targets
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
+  target_link_libraries( feelpp_contrib INTERFACE feelpp_cpr )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} CPR/Contrib")
 endif()
-
-
 
 # Add an info message to be displayed at the end of the cmake process.
 if( FEELPP_CONTRIB_SUBMODULE_UPDATED )

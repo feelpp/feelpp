@@ -56,21 +56,29 @@ endif()
 #
 # setup for pyfeelpp-libfeelpp
 #
-OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "Enable PyFeel++ for libfeelpp" ON  )
-if (FEELPP_ENABLE_PYFEELPP_LIBFEELPP)
-  set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
-  set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
-  configure_file(${SETUP_PY_IN} ${SETUP_PY})
-  set(PYFEELPP_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages/)
-  install(DIRECTORY DESTINATION ${PYFEELPP_INSTALL_DIR})
-  install(
-    CODE "set(ENV{PYTHONPATH} \"${PYFEELPP_INSTALL_DIR}:$ENV{PYTHONPATH}\")"
-    CODE "
-    execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install --prefix ${CMAKE_INSTALL_PREFIX} RESULT_VARIABLE ret )
-    if(ret EQUAL \"1\")
-       message( FATAL_ERROR \"pyfeelpp setup.py bad exit status\")
-    endif()
-    "
-    )
-endif()
+# OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "Enable PyFeel++ for libfeelpp" ON  )
+# if (FEELPP_ENABLE_PYFEELPP_LIBFEELPP)
+#   set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
+#   set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
+#   configure_file(${SETUP_PY_IN} ${SETUP_PY})
+#   set(PYFEELPP_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages/)
+#   install(DIRECTORY DESTINATION ${PYFEELPP_INSTALL_DIR})
+#   install(
+#     CODE "set(ENV{PYTHONPATH} \"${PYFEELPP_INSTALL_DIR}:$ENV{PYTHONPATH}\")"
+#     CODE "
+#     execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install --prefix ${CMAKE_INSTALL_PREFIX} RESULT_VARIABLE ret )
+#     if(ret EQUAL \"1\")
+#        message( FATAL_ERROR \"pyfeelpp setup.py bad exit status\")
+#     endif()
+#     "
+#     )
+# endif()
 
+#  if (WIN32)
+#    set (PYTHON_SITE_PACKAGES Lib/site-packages/feelpp)
+#  else ()
+#    set (PYTHON_SITE_PACKAGES ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages/feelpp)
+#  endif ()
+
+add_subdirectory(feelpp)
+add_subdirectory(tests)

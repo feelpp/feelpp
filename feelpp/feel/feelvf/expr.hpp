@@ -45,7 +45,7 @@
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelpoly/policy.hpp>
-#include <feel/feelpoly/context.hpp>
+//#include <feel/feelpoly/context.hpp>
 
 #include <feel/feelvf/exprbase.hpp>
 #include <feel/feelvf/detail/gmc.hpp>
@@ -127,6 +127,9 @@ public:
     {}
 
     //@}
+
+    //! dynamic context
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr ); }
 
     //! polynomial order
     uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
@@ -229,6 +232,14 @@ public:
             M_c2( expr.M_c2 )
         {
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_tensor_expr( std::true_type{}, exprExpanded.expression(), ttse, expr.expression(), geom, theInitArgs... ),
+            M_c1( exprExpanded.M_c1 ),
+            M_c2( exprExpanded.M_c2 )
+            {}
 
         template<typename IM>
         void init( IM const& im )
@@ -251,6 +262,12 @@ public:
         {
             M_tensor_expr.update( geom, face );
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                M_tensor_expr.update( std::true_type{}, exprExpanded.expression(), ttse, geom, theUpdateArgs... );
+            }
 
 
         value_type
@@ -296,85 +313,6 @@ public:
 
 class IntegratorBase {};
 
-class ExprDynamicBase
-{
-public:
-    ExprDynamicBase() = default;
-    explicit ExprDynamicBase( size_type c ) : M_context( c ) {}
-    size_type dynamicContext() const { return M_context; }
-private:
-    size_type M_context = 0;
-};
-
-//!
-//! @return true if the expr hass static context, false otherwise
-//!
-template <class T>
-constexpr bool hasStaticContext()
-{
-    return !has_dynamic_v<T::context>;
-}
-
-//!
-//! @return true if the expr hass static context, false otherwise
-//!
-template <class T>
-inline bool hasStaticContext( T const& t )
-{
-    return !has_dynamic_v<T::context>;
-}
-
-//!
-//! @return the static context  
-//!
-template <class T>
-constexpr size_type staticContext()
-{
-    return T::context;
-}
-
-//!
-//! @return the static context  
-//!
-template <class T>
-inline size_type staticContext( T const& t )
-{
-    return T::context;
-}
-
-//!
-//! @return true if the expression has dynamic context, false otherwise
-//!
-template <class T>
-constexpr bool hasDynamicContext()
-{
-    return has_dynamic_v<T::context> && std::is_base_of_v<ExprDynamicBase, T>;
-}
-
-//!
-//! @return true if the expression has dynamic context, false otherwise
-//!
-template <class T>
-inline bool hasDynamicContext( T const& t )
-{
-    return has_dynamic_v<T::context> && std::is_base_of_v<ExprDynamicBase, T>;
-}
-
-//!
-//! @return the dynamic context  if the expression has one or the static context otherwise
-//!
-template <class T>
-size_type dynamicContext( T const& t )
-{
-    if constexpr ( hasDynamicContext<T>() )
-    {
-        return t.dynamicContext() | T::context;
-    }
-    else
-    {
-        return T::context;
-    }
-}
 
 // type T can be used with vf expr
 template <typename T, typename = void>
@@ -515,7 +453,7 @@ public:
         :
         M_expr( __expr )
     {}
-    virtual ~Expr()
+    ~Expr() override
     {}
 
     //@}
@@ -646,7 +584,12 @@ public:
     template <typename SymbolsExprType>
     auto applySymbolsExpr( SymbolsExprType const& se ) const
         {
-            return Feel::vf::expr( M_expr.applySymbolsExpr( se ) );
+            auto theNewExpr = M_expr.applySymbolsExpr( se );
+            if constexpr( std::is_base_of_v<ExprBase, std::decay_t<decltype(theNewExpr)> > )
+                return theNewExpr;
+            else
+                return Feel::vf::expr( std::move( theNewExpr ) );
+            //return Feel::vf::expr( M_expr.applySymbolsExpr( se ) );
         }
 
     //! return true if the symbol \symb is used in the current expression
@@ -750,8 +693,15 @@ public:
             :
             M_geo( fusion::at_key<key_type>( geom ).get() ),
             M_tensor_expr( expr.expression(), geom )
-        {
-        }
+        {}
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_geo( fusion::at_key<key_type>( geom ).get() ),
+            M_tensor_expr( std::true_type{}, exprExpanded.expression(), ttse, expr.expression(), geom, theInitArgs... )
+        {}
 
         gmc_ptrtype geom() const { return M_geo; }
 
@@ -784,6 +734,13 @@ public:
             M_tensor_expr.updateContext( ctx... );
         }
 
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                M_tensor_expr.update( std::true_type{}, exprExpanded.expression(), ttse, geom, theUpdateArgs... );
+            }
 
         value_type
         evalij( uint16_type i, uint16_type j ) const noexcept
@@ -895,7 +852,7 @@ private :
     private :
         typedef ElementType element_type;
         typedef typename element_type::gm_type gm_type;
-        typedef typename gm_type::template Context<this_type::context, element_type> gmc_type;
+        typedef typename gm_type::template Context<element_type> gmc_type;
         typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef fusion::map<fusion::pair<Feel::vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
         typedef typename this_type::template tensor<map_gmc_type> eval_expr_type;

@@ -220,7 +220,7 @@ class Geo0D
         }
 
     //! Destructor
-    virtual ~Geo0D()
+    ~Geo0D() override
     {
         if ( !M_isView )
             delete M_node;
@@ -379,7 +379,7 @@ class Geo0D
     /**
      * \return the measure of a point
      */
-    value_type measure() const
+    value_type measure() const override
     {
         return 0;
     }

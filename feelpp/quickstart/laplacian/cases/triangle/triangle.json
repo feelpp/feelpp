@@ -1,0 +1,47 @@
+// -*- mode: javascript -*-
+{
+    "Name":"triangle",
+    "ShortName":"triangle",
+    "Materials":
+    {
+        "Triangle":
+        {
+            "k":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "u":
+        {
+            "Load":
+            {
+                "Triangle":
+                {
+                    "expr":"0" 
+                }
+            },
+            "Dirichlet":
+            {
+                "Dirichlet":
+                {
+                    "expr":"x+y:x:y" 
+                }
+            },
+            "Neumann":
+            {
+                "Neumann":
+                {
+                    "expr":"-nx-ny:nx:ny" 
+                }
+            },
+            "Robin":
+            {
+                "Robin":
+                {
+                    "expr1":"1",
+                    "expr2":"-nx-ny-x-y:x:y:nx:ny"
+                }
+            }
+        }
+    }
+}

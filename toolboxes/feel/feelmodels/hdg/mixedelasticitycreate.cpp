@@ -21,22 +21,19 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::MixedElasticity( std::string const& prefix,
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedElasticity","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
 
-    this->setFilenameSaveInfo( prefixvm(this->prefix(),"MixedElasticity.info") );
-
-
     if (M_useSC)
     {
         if ( this->prefix().empty())
-            M_backend = backend( _name="sc", _rebuild=true);
+            M_backend = Feel::backend( _name="sc", _rebuild=true);
         else
-            M_backend = backend( _name=prefixvm(prefix,"sc"), _rebuild=true);
+            M_backend = Feel::backend( _name=prefixvm(prefix,"sc"), _rebuild=true);
     }
     else
     {
         if ( this->prefix().empty())
-            M_backend = backend( _rebuild=true);
+            M_backend = Feel::backend( _rebuild=true);
         else
-            M_backend = backend( _name=prefix, _rebuild=true);
+            M_backend = Feel::backend( _name=prefix, _rebuild=true);
     }
 
     M_useUserIBC = false;

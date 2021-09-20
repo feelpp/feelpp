@@ -44,7 +44,7 @@ std::shared_ptr<MeshType>
 reloadMesh(std::string const& nameFile, worldcomm_ptr_t const& worldComm, int straighten )
 {
     typedef MeshType mesh_type;
-
+#if 0
     // reload mesh path stored in file
     std::ifstream file( nameFile.c_str() );
     if ( !file )
@@ -66,6 +66,9 @@ reloadMesh(std::string const& nameFile, worldcomm_ptr_t const& worldComm, int st
                     _savehdf5=0,
                     _straighten=straighten,
                     _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
+#else
+    return std::make_shared<mesh_type>();
+#endif
 } // reloadFluidMesh()
 
 
@@ -73,6 +76,7 @@ template <typename MeshType>
 void
 createMeshModel( ModelNumerical & model, std::shared_ptr<MeshType> & mesh, std::string const& modelMeshRestartFile )
 {
+#if 0
     typedef MeshType mesh_type;
     std::string fmpath = (fs::path( model.rootRepository() ) / fs::path( modelMeshRestartFile/*model.fileNameMeshPath()*/)).string();
     if (model.doRestart())
@@ -181,7 +185,7 @@ createMeshModel( ModelNumerical & model, std::shared_ptr<MeshType> & mesh, std::
 #endif
         model.saveMeshFile( fmpath );
     } //not restart
-
+#endif
 }
 
 template std::shared_ptr<Mesh<Simplex<2,1>>> reloadMesh<Mesh<Simplex<2,1>>>( std::string const&, worldcomm_ptr_t const&, int );

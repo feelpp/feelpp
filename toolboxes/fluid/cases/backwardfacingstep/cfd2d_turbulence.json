@@ -1,0 +1,86 @@
+{
+    "Name": "turbulence-plane-channel",
+    "ShortName":"turbulence-plane-channel",
+    "Models":
+    {
+        "fluid":
+        {
+            "equations":"Navier-Stokes",
+            "turbulence":
+            {
+                "enable":1,
+                "model":"Spalart-Allmaras"
+            }
+        }
+    },
+    "Parameters":
+    {
+        "umax":10,//44.2,
+        "tfix":0.1,//0.1,
+        "chi":"t<tfix:t:tfix",
+        "umax_inlet":"umax*((1-chi) +  ((1-cos(pi*t/tfix))/2)*chi):t:tfix:chi:umax"
+        //"umax_inlet":"umax:umax"
+        // "H":0.0635,
+        // "Re":32000
+        // //"Re":16000//32000//12000//3200
+    },
+    "Materials":
+    {
+        "fluid":{
+            "rho":"1",
+            //"mu":"(rho*umax*(H/2))/Re:rho:umax:H:Re"
+            "mu":1.56e-05
+        }
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "wall":
+                {
+                    "expr":"{0,0}",
+                    "turbulence_bc":"wall"
+                }
+            }
+        },
+        "fluid":
+        {
+            "inlet":
+            {
+                "inlet":
+                {
+                    "shape":"constant",
+                    "constraint":"velocity_max",
+                    //"expr":"44.2"
+                    "expr":"umax_inlet:umax_inlet"
+                }
+            }
+        },
+        "fluid":
+        {
+            "outlet":
+            {
+                "outlet":
+                {
+                    "expr":"0" 
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["velocity","pressure","pid"],
+            "expr":{
+                "dist2wall":"fluid_dist2wall:fluid_dist2wall",
+                "mu_t":"materials_mu_t:materials_mu_t",
+                "curl_U_magnitude":"fluid_curl_U_magnitude:fluid_curl_U_magnitude",
+                "SA_nu":"fluid_turbulence_SA_nu:fluid_turbulence_SA_nu"
+            }
+        }
+    }
+
+}

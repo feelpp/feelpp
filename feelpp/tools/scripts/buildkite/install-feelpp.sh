@@ -35,13 +35,15 @@ if [ "${component}" = "feelpp" ] ; then
 elif [ "${component}" = "toolboxes" -o "${component}" = "testsuite" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp:${tag}" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "mor" ] ; then
-    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
+#    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
+    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp:${tag}" > docker/${image}/dockerfile.tmp
 else
     dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
 fi
 
 if [ "${component}" = "feelpp" ] ; then
-    CTEST_FLAGS="-R feelpp_qs_ -T test --no-compress-output"
+    CTEST_FLAGS="-R python-mpi  -T test --no-compress-output -V"
+    #CTEST_FLAGS="-R feelpp_qs_ -T test --no-compress-output -V"
 elif [ "${component}" = "toolboxes" ] ; then
     CTEST_FLAGS="-R feelpp_toolbox_ -T test --no-compress-output"
 elif [ "${component}" = "testsuite" ] ; then
@@ -87,3 +89,4 @@ for tagalias in ${extratags[@]}; do
     echo "Tagging feelpp/${image}:$tag as feelpp/${image}:$tagalias"
     docker tag "feelpp/${image}:$tag" "feelpp/${image}:$tagalias"
 done
+source $(dirname $0)/release.sh  -- ${image}

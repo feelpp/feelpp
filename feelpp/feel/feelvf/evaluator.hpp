@@ -199,9 +199,9 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
     boost::timer __timer;
 
     typedef typename mesh_element_type::gm_type gm_type;
-    typedef typename gm_type::template Context<context, mesh_element_type> gm_context_type;
+    typedef typename gm_type::template Context<mesh_element_type> gm_context_type;
     typedef typename mesh_element_type::gm1_type gm1_type;
-    typedef typename gm1_type::template Context<context, mesh_element_type> gm1_context_type;
+    typedef typename gm1_type::template Context<mesh_element_type> gm1_context_type;
 
 
     typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
@@ -251,8 +251,8 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
 
 
-    gm_context_ptrtype __c( new gm_context_type( initElt.gm(), initElt,__geopc ) );
-    gm1_context_ptrtype __c1( new gm1_context_type( initElt.gm1(),initElt,__geopc1 ) );
+    gm_context_ptrtype __c = initElt.gm()->template context<context>( initElt,__geopc );
+    gm1_context_ptrtype __c1 =  initElt.gm1()->template context<context>( initElt,__geopc1 );
 
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
     t_expr_type tensor_expr( M_expr, mapgmc );
@@ -268,7 +268,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
         {
         case GeomapStrategyType::GEOMAP_HO:
         {
-            __c->update( curElt );
+            __c->template update<context>( curElt );
             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
             tensor_expr.update( mapgmc );
 
@@ -292,7 +292,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
         case GeomapStrategyType::GEOMAP_O1:
         {
-            __c1->update( curElt );
+            __c1->template update<context>( curElt );
             map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
             tensor_expr1.update( mapgmc1 );
 
@@ -318,7 +318,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
             if ( curElt.isOnBoundary() )
             {
                 // HO if on boundary
-                __c->update( curElt );
+                __c->template update<context>( curElt );
                 map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                 tensor_expr.update( mapgmc );
 
@@ -341,7 +341,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
             else
             {
-                __c1->update( curElt );
+                __c1->template update<context>( curElt );
                 map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                 tensor_expr1.update( mapgmc1 );
 
@@ -392,10 +392,10 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     typedef typename geoelement_type::gm1_type gm1_type;
     typedef std::shared_ptr<gm1_type> gm1_ptrtype;
 
-    typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
+    typedef typename gm_type::template Context<geoelement_type,1> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-    typedef typename gm1_type::template Context<context, geoelement_type> gmc1_type;
+    typedef typename gm1_type::template Context<geoelement_type,1> gmc1_type;
     typedef std::shared_ptr<gmc1_type> gmc1_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
 
@@ -463,8 +463,8 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
 
     auto const& initFace = boost::unwrap_ref( *__face_it );
     uint16_type __face_id = initFace.pos_first();
-    gmc_ptrtype __c( new gmc_type( __gm, initFace.element( 0 ), __geopc, __face_id ) );
-    gmc1_ptrtype __c1( new gmc1_type( __gm1, initFace.element( 0 ), __geopc1, __face_id ) );
+    gmc_ptrtype __c = __gm->template context<context>( initFace.element( 0 ), __geopc, __face_id );
+    gmc1_ptrtype __c1 = __gm1->template context<context>( initFace.element( 0 ), __geopc1, __face_id );
 
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
     t_expr_type expr( M_expr, mapgmc );
@@ -502,7 +502,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
         case GeomapStrategyType::GEOMAP_OPT:
         case GeomapStrategyType::GEOMAP_HO:
         {
-            __c->update( curFace.element( 0 ), __face_id );
+            __c->template update<context>( curFace.element( 0 ), __face_id );
             DVLOG(2) << "[evaluator::GEOMAP_HO|GEOMAP_OPT] FACE_ID = " << curFace.id() << "  ref pts=" << __c->xRefs() << "\n";
             DVLOG(2) << "[evaluator::GEOMAP_HO|GEOMAP_OPT] FACE_ID = " << curFace.id() << " real pts=" << __c->xReal() << "\n";
 
@@ -530,7 +530,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
 
         case GeomapStrategyType::GEOMAP_O1:
         {
-            __c1->update( curFace.element( 0 ), __face_id );
+            __c1->template update<context>( curFace.element( 0 ), __face_id );
             DVLOG(2) << "[evaluator::GEOMAP_O1] FACE_ID = " << curFace.id() << "  ref pts=" << __c1->xRefs() << "\n";
             DVLOG(2) << "[evaluator::GEOMAP_O1] FACE_ID = " << curFace.id() << " real pts=" << __c1->xReal() << "\n";
 
@@ -834,7 +834,7 @@ struct minmaxData : public boost::tuple<double,double, Eigen::Matrix<double, Dim
     /**
      * coordinates of the points where  min and max are attained
      */
-    Eigen::Matrix<double, Dim,1> const& coords() const { return this->template get<2>(); }
+    Eigen::Matrix<double, Dim,2> const& coords() const { return this->template get<2>(); }
 
     /**
      * Serialization for minmaxData
@@ -891,8 +891,8 @@ BOOST_PARAMETER_FUNCTION(
 
     int indexmin = 0;
     int indexmax = 0;
-    double mine = 1e-30;
-    double maxe = 1e-30;
+    double mine = std::numeric_limits<double>::max();
+    double maxe = std::numeric_limits<double>::lowest();
 
     if ( e.data().size() )
     {

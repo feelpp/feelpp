@@ -25,14 +25,14 @@ struct ModelContext
         {}
     ModelContext( model_fields_type && mfields, symbol_expr_type && se )
         :
-        M_modelFields( mfields ),
-        M_symbolsExpr( se )
+        M_modelFields( std::move(mfields) ),
+        M_symbolsExpr( std::move(se) )
         {}
     ModelContext( model_fields_type && mfields, symbol_expr_type && se, trial_symbol_expr_type && tse )
         :
-        M_modelFields( mfields ),
-        M_symbolsExpr( se ),
-        M_trialSymbolsExpr( tse )
+        M_modelFields( std::move(mfields) ),
+        M_symbolsExpr( std::move(se) ),
+        M_trialSymbolsExpr( std::move(tse) )
         {}
     ModelContext( ModelContext const& ) = default;
     ModelContext( ModelContext && ) = default;
@@ -74,23 +74,16 @@ private :
 };
 
 
-
-template <typename ModelFieldsType, typename SymbolsExprType>
-auto modelContext( ModelFieldsType const& mfields, SymbolsExprType const& se )
-{
-    return ModelContext<ModelFieldsType,SymbolsExprType>( mfields,se );
-}
-
 template <typename ModelFieldsType, typename SymbolsExprType>
 auto modelContext( ModelFieldsType && mfields, SymbolsExprType && se )
 {
-    return ModelContext<ModelFieldsType,SymbolsExprType>( std::forward<ModelFieldsType>(mfields), std::forward<SymbolsExprType>(se) );
+    return ModelContext<std::decay_t<ModelFieldsType>,std::decay_t<SymbolsExprType>>( std::forward<ModelFieldsType>(mfields), std::forward<SymbolsExprType>(se) );
 }
 
 template <typename ModelFieldsType, typename SymbolsExprType, typename TrialSymbolsExprType>
 auto modelContext( ModelFieldsType && mfields, SymbolsExprType && se, TrialSymbolsExprType && tse )
 {
-    return ModelContext<ModelFieldsType,SymbolsExprType,TrialSymbolsExprType>( std::forward<ModelFieldsType>(mfields), std::forward<SymbolsExprType>(se), std::forward<TrialSymbolsExprType>(tse) );
+    return ModelContext<std::decay_t<ModelFieldsType>,std::decay_t<SymbolsExprType>,std::decay_t<TrialSymbolsExprType>>( std::forward<ModelFieldsType>(mfields), std::forward<SymbolsExprType>(se), std::forward<TrialSymbolsExprType>(tse) );
 }
 
 } // namespace FeelModels

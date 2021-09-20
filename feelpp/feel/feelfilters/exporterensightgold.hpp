@@ -135,7 +135,7 @@ public :
 
     ExporterEnsightGold( ExporterEnsightGold const & __ex ) = default;
 
-    ~ExporterEnsightGold();
+    ~ExporterEnsightGold() override;
 
 
     //@}

@@ -151,7 +151,7 @@ public :
         this->setName( "equispaced", Order );
     }
 
-    ~PointSetEquiSpaced() {}
+    ~PointSetEquiSpaced() override {}
 
     ublas::matrix_range<nodes_type const> pointsByEntity( uint16_type e ) const
     {

@@ -27,15 +27,15 @@
 
 namespace Feel {
 
-extern template void partition<Simplex<1>>( std::vector<int> const& nParts);
-extern template void partition<Simplex<2>>( std::vector<int> const& nParts);
-extern template void partition<Simplex<2,2>>( std::vector<int> const& nParts);
-extern template void partition<Simplex<3>>( std::vector<int> const& nParts);
-extern template void partition<Simplex<3,2>>( std::vector<int> const& nParts);
-extern template void partition<Hypercube<2>>( std::vector<int> const& nParts);
-extern template void partition<Hypercube<2,2>>( std::vector<int> const& nParts);
-extern template void partition<Hypercube<3>>( std::vector<int> const& nParts);
-extern template void partition<Hypercube<3,3>>( std::vector<int> const& nParts);
+extern template void partition<Simplex<1>>( std::vector<int> const& nParts, nl::json const& j );
+extern template void partition<Simplex<2>>( std::vector<int> const& nParts, nl::json const& j );
+extern template void partition<Simplex<2,2>>( std::vector<int> const& nParts, nl::json const& j );
+extern template void partition<Simplex<3>>( std::vector<int> const& nParts, nl::json const& j );
+extern template void partition<Simplex<3,2>>( std::vector<int> const& nParts, nl::json const& j );
+extern template void partition<Hypercube<2>>( std::vector<int> const& nParts, nl::json const& j );
+extern template void partition<Hypercube<2,2>>( std::vector<int> const& nParts, nl::json const& j );
+extern template void partition<Hypercube<3>>( std::vector<int> const& nParts, nl::json const& j );
+extern template void partition<Hypercube<3,3>>( std::vector<int> const& nParts, nl::json const& j );
 
 }
 
@@ -43,6 +43,7 @@ int main( int argc, char** argv )
 {
     using namespace Feel;
     using Feel::cout;
+    
 	po::options_description meshpartoptions( "Mesh Partitioner options" );
 	meshpartoptions.add_options()
         ( "dim", po::value<int>()->default_value( 3 ), "mesh dimension" )
@@ -51,6 +52,7 @@ int main( int argc, char** argv )
         ( "by-markers", "partitioning by markers" )
         ( "by-markers-desc", po::value<std::vector<std::string> >()->multitoken(), "partitioning by markers. Example : --by-markers-desc=marker1:marker2,marker3" )
         ( "part", po::value<std::vector<int> >()->multitoken(), "number of partition" )
+        ( "json", po::value<std::string>(), "json configuration file" )
         ( "ifile", po::value<std::string>(), "input mesh filename" )
         ( "odir", po::value<std::string>(), "output directory [optional]" )
         ( "ofile", po::value<std::string>(), "output mesh filename [optional]" )
@@ -87,6 +89,14 @@ int main( int argc, char** argv )
             std::cout << "do nothing because --ifile is missing\n";
         return 0;
     }
+    nl::json partconfig;
+    if ( Environment::vm().count("json") && fs::exists( fs::current_path() / soption("json") ) )
+    {
+        Feel::cout << "reading partitioner configuration: " << ( fs::current_path() / soption("json") ) << std::endl;
+        std::ifstream ifs( ( fs::current_path() / soption("json") ).string() );
+        partconfig = nl::json::parse( ifs );
+    }
+    Feel::cout << "json config: " << partconfig.dump(1) << std::endl;
 
     fs::path pathInputMesh = fs::system_complete( soption("ifile") );
     if ( !fs::exists( pathInputMesh ) )
@@ -98,7 +108,7 @@ int main( int argc, char** argv )
 
     if ( dim == 1 )
     {
-        partition<Simplex<1>>( nParts );
+        partition<Simplex<1>>( nParts, partconfig );
     }
     else
     {
@@ -108,15 +118,15 @@ int main( int argc, char** argv )
             {
             case 2 :
                 if ( order == 1 )
-                    partition<Simplex<2>>( nParts );
+                    partition<Simplex<2>>( nParts, partconfig );
                 else if ( order==2 )
-                    partition<Simplex<2,2>>( nParts );
+                    partition<Simplex<2,2>>( nParts, partconfig );
                 break;
             case 3 :
                 if ( order == 1 )
-                    partition<Simplex<3>>( nParts );
+                    partition<Simplex<3>>( nParts, partconfig );
                 else if ( order==2 )
-                    partition<Simplex<3,2>>( nParts );
+                    partition<Simplex<3,2>>( nParts, partconfig );
                 break;
             }
         }
@@ -126,20 +136,19 @@ int main( int argc, char** argv )
             {
             case 2 :
                 if ( order == 1 )
-                    partition<Hypercube<2>>( nParts );
+                    partition<Hypercube<2>>( nParts, partconfig );
                 else if ( order==2 )
-                    partition<Hypercube<2,2>>( nParts );
+                    partition<Hypercube<2,2>>( nParts, partconfig );
                 break;
             case 3 :
                 if ( order == 1 )
-                    partition<Hypercube<3>>( nParts );
+                    partition<Hypercube<3>>( nParts, partconfig );
                 else if ( order==2 )
-                    partition<Hypercube<3,2>>( nParts );
+                    partition<Hypercube<3,2>>( nParts, partconfig );
                 break;
             }
         }
     }
-
     return 0;
 
 }

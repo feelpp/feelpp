@@ -76,7 +76,7 @@ setup(
     long_description='',
     package_dir={ 'pyfeelpp': '@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp' },
     packages=['pyfeelpp',
-              'pyfeelpp.core','pyfeelpp.mesh','pyfeelpp.discr','pyfeelpp.ts','pyfeelpp.filters','pyfeelpp.vf','pyfeelpp.models',
+              'pyfeelpp.core','pyfeelpp.mesh','pyfeelpp.discr','pyfeelpp.ts','pyfeelpp.filters','pyfeelpp.vf','pyfeelpp.models','pyfeelpp.alg',
     ],
     #packages=['pyfeelpp','pyfeelpp.core' ],
 #    ext_modules=[Extension('pyfeelpp',['pyfeelpp/python.cpp'],include_dirs=@FEELPP_INCLUDE_DIRS@,libraries=@FEELPP_LIBRARIES@)
@@ -88,6 +88,7 @@ setup(
                  CMakeExtension('_exporter','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp/filters'),
                  CMakeExtension('_vf','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp/vf'),
                  CMakeExtension('_models','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp/models'),
+                 CMakeExtension('_alg','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp/alg'),
     ],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,

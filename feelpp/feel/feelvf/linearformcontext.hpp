@@ -328,7 +328,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
                           INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
                           ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
-    if ( !UseMortar )
+    if constexpr ( !UseMortar )
     {
         for ( uint16_type i = 0; i < M_test_dof->nLocalDof(); ++i )
         {
@@ -382,7 +382,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
                           INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
                           ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
-    if ( !UseMortar )
+    if constexpr ( !UseMortar )
     {
         if ( isFirstExperience )
             for ( uint16_type i = 0; i < M_test_dof->nLocalDof(); ++i )
@@ -421,7 +421,7 @@ void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( index_type elt_0 )
 {
 
-    if ( !UseMortar )
+    if constexpr ( !UseMortar )
     {
         M_local_rows = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerId() ).array();
 

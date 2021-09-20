@@ -432,6 +432,36 @@ public:
     void setParameterValues( std::map<std::string,double> const& mp );
 
     void saveMD(std::ostream &os);
+
+    /**
+     * get the list of symbols associated to expressions
+     */
+    auto symbolsExpr( bool add_evaluable = false ) const
+    {
+        auto extract = [this,&add_evaluable](auto const& e_ij) {
+            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+            using _expr_type = std::decay_t< decltype( ModelExpression{}.expr<ni,nj>() ) >;
+            symbol_expression_t<_expr_type> seParamValue;
+            for ( auto const& [cname, mat] : *this )
+            {
+                for( auto const& [symbName,mparam] : mat.properties() )
+                {  
+                    if ( mparam.isEvaluable() && !add_evaluable )
+                        continue;
+                    if ( !mparam.template hasExpr<ni,nj>() )
+                        continue;
+                    auto const& theexpr = mparam.template expr<ni,nj>();
+                    VLOG(1) << "material " << cname << " has property " << symbName;
+                    seParamValue.add( cname+"_"+symbName, theexpr, SymbolExprComponentSuffix( ni, nj ) );
+                }
+            }
+            return seParamValue;
+        };
+        auto tupleSymbolExprs = hana::transform( ModelExpression::expr_shapes, extract );
+        
+        return Feel::vf::symbolsExpr( SymbolsExpr( tupleSymbolExprs ) );
+    }
 private:
     void setup();
 private:
@@ -439,6 +469,8 @@ private:
     std::string M_directoryLibExpr;
 
 };
+
+
 
 FEELPP_EXPORT inline ModelMaterial
 material( ModelMaterials::value_type const& m )

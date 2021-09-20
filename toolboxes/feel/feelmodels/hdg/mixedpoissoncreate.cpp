@@ -35,13 +35,10 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
                                                this->worldComm(),this->verboseAllProc());
 
 
-    this->setFilenameSaveInfo( prefixvm(this->prefix(),"MixedPoisson.info") );
-
-
     if ( this->prefix().empty())
-        M_backend = backend( _rebuild=true);
+        M_backend = Feel::backend( _rebuild=true);
     else
-        M_backend = backend( _name=this->prefix(), _rebuild=true);
+        M_backend = Feel::backend( _name=this->prefix(), _rebuild=true);
 
     //-----------------------------------------------------------------------------//
 
@@ -332,8 +329,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initMatricesAndVector()
     M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend );
 #endif
     M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);
-    M_App = makeSharedMatrixCondensed<value_type>(spp,  csrGraphBlocks(pps, (spp>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), backend(), true );
-    M_Fpp = makeSharedVectorCondensed<value_type>(solve::strategy::local, blockVector(pps), backend(), false);
+    M_App = makeSharedMatrixCondensed<value_type>(spp,  csrGraphBlocks(pps, (spp>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), Feel::backend(), true );
+    M_Fpp = makeSharedVectorCondensed<value_type>(solve::strategy::local, blockVector(pps), Feel::backend(), false);
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS

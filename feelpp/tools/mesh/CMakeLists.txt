@@ -48,5 +48,6 @@ feelpp_get_compile_definition(Feelpp::feelpp FEELPP_HAS_HDF5)
 if (FEELPP_HAS_HDF5)
   message(STATUS "compiling feelpp_mesh_partitioner...")
   feelpp_add_application( partitioner SRCS mesh_partitioner.cpp mesh_partitioner_simplex.cpp mesh_partitioner_hypercube.cpp INCLUDE_IN_ALL PROJECT mesh INSTALL MAN partitioner )
+  feelpp_add_testcase( cases PREFIX mesh CATEGORY mesh  )
 endif (FEELPP_HAS_HDF5)
 

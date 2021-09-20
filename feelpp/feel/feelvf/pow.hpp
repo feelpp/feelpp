@@ -64,12 +64,8 @@ public:
     typedef ExprT2 expression_2_type;
     typedef typename expression_1_type::value_type value_1_type;
     typedef typename expression_2_type::value_type value_2_type;
-    typedef value_1_type value_type;
-    using evaluate_type = typename expression_1_type::evaluate_type;
-
-    // verify that all returning types are integral or floating types
-    BOOST_STATIC_ASSERT( ::boost::is_arithmetic<value_1_type>::value  &&
-                         ::boost::is_arithmetic<value_2_type>::value );
+    using value_type = decltype(std::pow(value_1_type{}, value_2_type{}));
+    using evaluate_type = evaluate_expression_t<this_type>;
 
     explicit Pow( expression_1_type const& __expr1, expression_2_type const& __expr2  )
         :
@@ -96,6 +92,10 @@ public:
      * \warning the Pow order computation is wrong here, we actually need the
      * ExprT2 value (and not imorder) to multiply by ExprT1::imorder.
      */
+
+    //! dynamic context
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr_1 ) | Feel::vf::dynamicContext( M_expr_2 ); }
+
     //! polynomial order
     uint16_type polynomialOrder() const { return M_expr_1.polynomialOrder(); }
 
@@ -328,6 +328,13 @@ protected:
     expression_2_type M_expr_2;
 };
 
+/**
+ * @brief provide pow expression e1^e2
+ * @ingroup DSEL-Variational-Formulation
+ * \code
+   std::cout << integrate( _range=elements(mesh), _expr=pow( Px(), Py() ) ).evaluate();
+   \endcode
+ */
 template<typename ExprT1,  typename ExprT2>
 inline
 // Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
@@ -337,7 +344,7 @@ inline
 //       mpl::identity<Cst<ExprT2> >,
 //       mpl::identity<ExprT2> >::type::type> >
 auto
-      pow( ExprT1 const& __e1, ExprT2 const& __e2 )
+pow( ExprT1 const& __e1, ExprT2 const& __e2 )
 {
     typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
                               mpl::identity<Expr<Cst<ExprT1>> >,
@@ -346,26 +353,24 @@ auto
                               mpl::identity<Expr<Cst<ExprT2> > >,
                               mpl::identity<ExprT2> >::type::type t2;
     typedef Pow<t1, t2> expr_t;
-    if constexpr ( boost::is_arithmetic<ExprT1>::value && boost::is_arithmetic<ExprT2>::value )
-                     return expr( expr_t( cst(__e1), cst(__e2) ) );
-    else if constexpr ( boost::is_arithmetic<ExprT1>::value )
-                          return expr( expr_t( cst(__e1), __e2 ) );
-    else if constexpr ( boost::is_arithmetic<ExprT2>::value )
-                          return expr( expr_t(  __e1, cst(__e2) ) );
+    if constexpr ( std::is_arithmetic_v<ExprT1> && std::is_arithmetic_v<ExprT2> )
+        return expr( expr_t( cst(__e1), cst(__e2) ) );
+    else if constexpr ( std::is_arithmetic_v<ExprT1> )
+        return expr( expr_t( cst(__e1), __e2 ) );
+    else if constexpr ( std::is_arithmetic_v<ExprT2> )
+        return expr( expr_t(  __e1, cst(__e2) ) );
     else
         return expr( expr_t(  __e1, __e2) );
-        //return Expr< expr_t >(  expr_t( t1( __e1 ), t2( __e2 ) ) );
 }
 
 
+/**
+ * provide pow expression e1^e2
+ * @ingroup DSEL-Variational-Formulation
+ */
 template<typename ExprT1,  typename ExprT2>
 inline
-Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-                            mpl::identity<Cst<ExprT1> >,
-                            mpl::identity<Expr<ExprT1> > >::type::type,
-          typename mpl::if_<boost::is_arithmetic<ExprT2>,
-                            mpl::identity<Cst<ExprT2> >,
-                            mpl::identity<Expr<ExprT2> > >::type::type> >
+auto
 operator^( typename mpl::if_<boost::is_arithmetic<ExprT1>,
                              mpl::identity<ExprT1>,
                              mpl::identity<Expr<ExprT1> > >::type::type const& __e1,

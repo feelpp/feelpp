@@ -3,8 +3,6 @@
 
 #include <feel/feelmodels/coefficientformpdes/coefficientformpdebase.hpp>
 
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
-
 namespace Feel
 {
 namespace FeelModels
@@ -48,6 +46,8 @@ CoefficientFormPDEBase<ConvexType>::loadParameterFromOptionsVm()
     M_stabilizationType = soption(_name="stabilization.type",_prefix=this->prefix(),_vm=this->clovm());
     M_stabilizationGLS_applyShockCapturing = boption(_name="stabilization.gls.shock-capturing",_prefix=this->prefix(),_vm=this->clovm());
 
+    M_stabilizationDoAssemblyWithGradDiffusionCoeff = boption(_name="stabilization.do-assembly-with-grad-diffusion-coeff",_prefix=this->prefix(),_vm=this->clovm());
+
     // time stepping
     M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix(),_vm=this->clovm());
     M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix(),_vm=this->clovm());
@@ -60,9 +60,17 @@ CoefficientFormPDEBase<ConvexType>::initMesh()
     this->log("CoefficientFormPDE","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    std::string fileNameMeshPath = prefixvm(this->prefix(),"CoefficientFormPDEMesh.path");
-    createMeshModel<mesh_type>(*this,M_mesh,fileNameMeshPath);
-    CHECK( M_mesh ) << "mesh generation fail";
+    // std::string fileNameMeshPath = prefixvm(this->prefix(),"CoefficientFormPDEMesh.path");
+    // createMeshModel<mesh_type>(*this,M_mesh,fileNameMeshPath);
+    // CHECK( M_mesh ) << "mesh generation fail";
+
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+
+    //super_type::super_model_meshes_type::setMesh( this->keyword(), M_mesh );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
+    CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
     this->log("CoefficientFormPDE","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
@@ -78,8 +86,8 @@ CoefficientFormPDEBase<ConvexType>::initMaterialProperties()
 
     if ( !M_materialsProperties )
     {
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().materials().setParameterValues( paramValues );
+        // auto paramValues = this->modelProperties().parameters().toParameterValues();
+        // this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this_cfpdebase() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
@@ -101,7 +109,7 @@ CoefficientFormPDEBase<ConvexType>::initBasePostProcess()
     this->setPostProcessSaveAllFieldsAvailable( { this->unknownName() } );
     super_type::initPostProcess();
 
-    if ( !this->postProcessExportsFields().empty() )
+    if ( !this->postProcessExportsFields().empty() || this->hasPostProcessExportsExpr() )
     {
         std::string geoExportType="static";//change_coords_only, change, static
         M_exporter = exporter( _mesh=this->mesh(),
@@ -127,6 +135,8 @@ CoefficientFormPDEBase<ConvexType>::initBasePostProcess()
 
 template class CoefficientFormPDEBase< Simplex<2,1> >;
 template class CoefficientFormPDEBase< Simplex<3,1> >;
+template class CoefficientFormPDEBase< Simplex<2,2> >;
+template class CoefficientFormPDEBase< Simplex<3,2> >;
 
 } // namespace Feel
 } // namespace FeelModels

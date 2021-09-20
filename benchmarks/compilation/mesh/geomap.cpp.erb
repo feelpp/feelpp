@@ -1,0 +1,16 @@
+#include <feel/feelalg/glas.hpp>
+#include <feel/feelpoly/geomap.hpp>
+#include <feel/feelmesh/geoelement.hpp>
+
+int main( int argc, char** argv )
+{
+    using namespace Feel;
+    auto T = std::make_shared<GeoElement<%= n %>D<<%= n %>,Simplex<<%= n %>>>>();
+#if defined(METABENCH)
+    
+    auto gm = std::make_shared<GeoMap<<%= n %>,1,<%= n %>>>();
+    GeoMap<<%= n %>,1,<%= n %>>::Context<vm::JACOBIAN,GeoElement<%= n %>D<<%= n %>,Simplex<<%= n %>>>> gmc{gm,*T};
+    std::cout << gmc.element().id();
+#endif
+    
+}
