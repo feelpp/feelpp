@@ -62,7 +62,7 @@ GiNaCBase::GiNaCBase( std::vector<GiNaC::symbol> const& syms )
             {
                 int d = std::distance( M_syms.begin(), itSym );
                 M_indexSymbolGeom.insert( std::make_pair( str.first, d ) );
-                std::cout << fmt::format( "[expr relation] {}:{}", str.first, d ) << std::endl;
+                VLOG( 1 ) << fmt::format( "[expr relation] {}:{}", str.first, d ) << std::endl;
             }
         }
         for ( auto const& is : M_indexSymbolXYZ )
