@@ -1148,7 +1148,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDED
              bilinearFormVV +=
                  on( _range=bpbc.rangeMarkedFacesOnFluid(),
                      _element=u, _rhs=F,
-                     _expr=zero<nDim,1>() );
+                     _expr=Feel::vf::zero<nDim,1>() );
         }
     }
 
