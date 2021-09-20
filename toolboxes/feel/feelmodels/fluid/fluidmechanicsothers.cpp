@@ -2107,9 +2107,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
             this->updateDofEliminationIds( spaceName,  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
 #endif
         }
-    }
-    for ( auto const& [bpname,bpbc] : M_bodySetBC )
-    {
+
         if ( bpbc.hasAngularVelocityExpr() )
         {
 #if 0
@@ -2121,6 +2119,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
             this->updateDofEliminationIds( spaceName, bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
 #endif
         }
+
+        if ( true )
+        {
+            this->updateDofEliminationIds( "velocity", XhVelocity, bpbc.rangeMarkedFacesOnFluid() );
+        }
+
     }
 }
 

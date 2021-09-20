@@ -1135,6 +1135,21 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDED
                 on( _range=elements(bpbc.mesh()), _rhs=F,
                     _element=*bpbc.fieldAngularVelocityPtr(), _expr=bpbc.angularVelocityExpr() );
         }
+
+        if ( bpbc.hasElasticVelocity() && !M_bodySetBC.internal_elasticVelocity_is_v0() )
+        {
+            bilinearFormVV +=
+                on( _range=bpbc.rangeMarkedFacesOnFluid(),
+                    _element=u, _rhs=F,
+                    _expr=idv(bpbc.fieldElasticVelocityPtr()) );
+        }
+        else
+        {
+             bilinearFormVV +=
+                 on( _range=bpbc.rangeMarkedFacesOnFluid(),
+                     _element=u, _rhs=F,
+                     _expr=zero<nDim,1>() );
+        }
     }
 
     double timeElapsed = this->timerTool("Solve").stop();

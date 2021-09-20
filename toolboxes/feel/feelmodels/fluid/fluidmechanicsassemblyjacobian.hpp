@@ -190,6 +190,12 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateNewtonInit
             //this->updateDofEliminationIds( spaceName, this->dofEliminationIds( "body-bc.angular-velocity" ), data );
             this->updateDofEliminationIds( spaceName, data );
         }
+
+        if ( bpbc.hasElasticVelocity() && !M_bodySetBC.internal_elasticVelocity_is_v0() )
+        {
+            u.on( _range=bpbc.rangeMarkedFacesOnFluid(),
+                  _expr=idv(bpbc.fieldElasticVelocityPtr()) );
+        }
     }
 
     // imposed mean pressure (TODO use updateDofEliminationIds)
