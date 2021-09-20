@@ -1339,7 +1339,9 @@ public:
 
     class BodySetBoundaryCondition : public std::map<std::string,BodyBoundaryCondition>
     {
+        bool M_internal_elasticVelocity_is_v0 = false;
     public:
+        bool internal_elasticVelocity_is_v0() const { return M_internal_elasticVelocity_is_v0; }
         void updateInformationObject( nl::json & p ) const
             {
                 for ( auto & [name,bpbc] : *this )

@@ -676,7 +676,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
 
     //--------------------------------------------------------------------------------------------------//
 
-    if ( !M_bodySetBC.empty() )
+    if ( !M_bodySetBC.empty() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
     {
         this->log("FluidMechanics","updateJacobianWeakBC","assembly of body bc");
 

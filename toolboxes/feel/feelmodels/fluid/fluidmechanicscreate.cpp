@@ -3255,6 +3255,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::init( self_type const& fluidToolbox )
 {
+    M_internal_elasticVelocity_is_v0 = boption(_prefix=fluidToolbox.prefix(),_name="body.elastic-behavior.use-old-version");
     std::vector<BodyArticulation> articulations;
     for ( auto const& [name,bbc] : *this )
     {
@@ -3364,7 +3365,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::initAlgebraicFacto
     }
 
 
-    std::set<size_type> dofsAllBodies;
     for ( auto & [bpname,bbc] : *this )
     {
         size_type startBlockIndexTranslationalVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bbc.name()+".translational-velocity");
@@ -3383,7 +3383,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::initAlgebraicFacto
         for ( auto dofid : dofsBody )
         {
             matFI_Id->set( dofid,dofid, 0.);
-            dofsAllBodies.insert( dofid );
         }
         matFI_Id->close();
     }
@@ -3434,14 +3433,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::initAlgebraicFacto
 
     algebraicFactory->initSolverPtAP( matP,matQ );
 
-    fluidToolbox.functionSpaceVelocity()->dof()->updateIndexSetWithParallelMissingDof( dofsAllBodies );
     std::set<size_type> dofEliminationIdsPtAP;
-    matP->mapCol().dofIdToContainerId(startBlockIndexVelocity, dofsAllBodies, dofEliminationIdsPtAP );
-
+    bool hasDofEliminationIdsPtAP = false;
     for ( auto const& nba : this->nbodyArticulated() )
     {
         if ( nba.articulationMethod() != "p-matrix" )
             continue;
+        hasDofEliminationIdsPtAP = true;
         for ( auto const& bbcPtr : nba.bodyList(false) )
         {
             if ( bbcPtr->spaceTranslationalVelocity()->nLocalDofWithGhost() > 0 )
@@ -3453,10 +3451,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::initAlgebraicFacto
             }
         }
     }
+    if ( hasDofEliminationIdsPtAP )
+        algebraicFactory->solverPtAP_setDofEliminationIds( dofEliminationIdsPtAP );
 
-    algebraicFactory->solverPtAP_setDofEliminationIds( dofEliminationIdsPtAP );
-
-    if ( this->hasElasticVelocity() ||  this->hasArticulationWithMethodPMatrix() )
+    if ( ( this->hasElasticVelocity() && false ) ||  this->hasArticulationWithMethodPMatrix() )
         algebraicFactory->initExplictPartOfSolution();
 }
 
@@ -3477,8 +3475,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFac
         size_type startBlockIndexVelocity = fluidToolbox.startSubBlockSpaceIndex("velocity");
         for ( auto & [bpname,bbc] : *this )
         {
+            if ( true )
+            {
+                auto dofsBody = fluidToolbox.functionSpaceVelocity()->dofs( bbc.rangeMarkedFacesOnFluid() );
+                auto const& dofIdToContainer_velocity_row = matP->mapRow().dofIdToContainerId( startBlockIndexVelocity );
+                auto const& dofIdToContainer_velocity_col = matP->mapCol().dofIdToContainerId( startBlockIndexVelocity );
+                double val = bbc.hasElasticVelocity() && !this->internal_elasticVelocity_is_v0() ? 1.0 : 0.0;
+                for ( auto dofid :  dofsBody )
+                    matP->set( dofIdToContainer_velocity_row[dofid],dofIdToContainer_velocity_col[dofid], val );
+            }
+
             if ( bbc.isInNBodyArticulated() )
                 continue;
+
             size_type startBlockIndexAngularVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bbc.name()+".angular-velocity");
             bbc.updateMatrixPTilde_angular( fluidToolbox, matP, startBlockIndexVelocity, startBlockIndexAngularVelocity );
         }
@@ -3523,7 +3532,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFac
     }
 
     // update explicit part of solution if we have an elastic velocity
-    if ( this->hasElasticVelocity() )
+    if ( this->hasElasticVelocity() && this->internal_elasticVelocity_is_v0() )
     {
         if ( !algebraicFactory->explictPartOfSolution() )
             algebraicFactory->initExplictPartOfSolution();
