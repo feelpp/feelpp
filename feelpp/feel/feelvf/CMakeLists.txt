@@ -25,6 +25,7 @@ SET( SRC
   exprbase.cpp
   expr.cpp
   ginac.cpp
+  ginacbase.cpp
   detail/ginacbuildlibrary.cpp
   bilinearformbase.cpp
   symbolsexpr.cpp
