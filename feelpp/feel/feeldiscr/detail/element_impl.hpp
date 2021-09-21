@@ -2666,9 +2666,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         }
     }
 
-    const size_type context = mpl::if_< mpl::or_<mpl::bool_<is_hdiv_conforming>, mpl::bool_<is_hcurl_conforming> >,
-                                        mpl::int_<ExprType::context|vm::POINT|vm::JACOBIAN>,
-                                        mpl::int_<ExprType::context|vm::POINT> >::type::value;
+    constexpr size_type context = (is_hdiv_conforming || is_hcurl_conforming)?ExprType::context|vm::POINT|vm::JACOBIAN:ExprType::context|vm::POINT;
+
     auto gmcRange = gmRange->template context<context,1>( eltConnectedToFirstFace, geopcRange, fid_in_element, ex.dynamicContext() );
     auto expr_evaluator = ex.evaluatorWithPermutation( vf::mapgmc(gmcRange) );
 
