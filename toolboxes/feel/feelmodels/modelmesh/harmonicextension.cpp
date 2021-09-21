@@ -32,6 +32,7 @@
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/unary.hpp>
 #include <feel/feelvf/one.hpp>
+#include <feel/feelvf/ones.hpp>
 #include <feel/feelvf/cst.hpp>
 #include <feel/feelvf/geometricdata.hpp>
 #include <feel/feelvf/operations.hpp>
@@ -46,6 +47,7 @@
 
 #include <feel/feelmodels/modelcore/log.hpp>
 
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
 
 namespace Feel
 {
@@ -53,7 +55,7 @@ namespace FeelModels
 {
 
 template< typename MeshType, int Order >
-HarmonicExtension<MeshType,Order>::HarmonicExtension( mesh_ptrtype mesh, backend_ptrtype const& backend, std::string prefix,
+HarmonicExtension<MeshType,Order>::HarmonicExtension( mesh_ptrtype mesh, backend_ptrtype const& backend, std::string const& prefix,
                                                       worldcomm_ptr_t const& worldcomm,
                                                       bool useGhostEltFromExtendedStencil,
                                                       ModelBaseRepository const& modelRep )
@@ -64,15 +66,15 @@ HarmonicExtension<MeshType,Order>::HarmonicExtension( mesh_ptrtype mesh, backend
     M_useAdaptPenal( option(_prefix=this->prefix(),_name="use_adaptive_penalisation").template as<bool>() )
 {
     this->setAlgebraicBackend( backend );
-    M_Xh = space_type::New(_mesh=this->mesh(),_worldscomm=makeWorldsComm(1,worldcomm),
+    M_Xh = space_type::New(_mesh=this->mesh(),
                            _extended_doftable=std::vector<bool>(1,useGhostEltFromExtendedStencil) );
     M_displacement = M_Xh->elementPtr();
     M_dispImposedOnBoundary = M_Xh->elementPtr();
-    M_XhP0 = space_P0_type::New( _mesh=this->mesh(),_worldscomm=makeWorldsComm(1,worldcomm) );
+    M_XhP0 = space_P0_type::New( _mesh=this->mesh() );
 }
 
 template< typename MeshType, int Order >
-HarmonicExtension<MeshType,Order>::HarmonicExtension( space_ptrtype space, backend_ptrtype const& backend, std::string prefix,
+HarmonicExtension<MeshType,Order>::HarmonicExtension( space_ptrtype space, backend_ptrtype const& backend, std::string const& prefix,
                                                       ModelBaseRepository const& modelRep )
     :
     super_type( prefix, space->worldCommPtr(),"",modelRep ),
@@ -84,7 +86,7 @@ HarmonicExtension<MeshType,Order>::HarmonicExtension( space_ptrtype space, backe
     this->setAlgebraicBackend( backend );
     M_displacement = M_Xh->elementPtr();
     M_dispImposedOnBoundary = M_Xh->elementPtr();
-    M_XhP0 = space_P0_type::New( _mesh=this->mesh(),_worldscomm=makeWorldsComm(1,this->worldCommPtr()) );
+    M_XhP0 = space_P0_type::New( _mesh=this->mesh(),_range=M_Xh->template meshSupport<0>() );
 }
 
 
@@ -103,33 +105,6 @@ HarmonicExtension<MeshType,Order>::displacement() const { return M_displacement;
 template< typename MeshType, int Order >
 typename HarmonicExtension<MeshType,Order>::element_ptrtype const&
 HarmonicExtension<MeshType,Order>::dispImposedOnBoundary() const { return M_dispImposedOnBoundary; }
-
-template< typename MeshType, int Order >
-typename HarmonicExtension<MeshType,Order>::flagSet_type const&
-HarmonicExtension<MeshType,Order>::flagSet() const { return M_flagSet; }
-
-template< typename MeshType, int Order >
-std::vector<flag_type> const&
-HarmonicExtension<MeshType,Order>::flagSet(std::string key) const
-{
-    CHECK( M_flagSet.find(key) != M_flagSet.end() ) << "the flag type " << key << " is unknown \n";
-    return M_flagSet.find(key)->second;
-}
-template< typename MeshType, int Order >
-flag_type
-HarmonicExtension<MeshType,Order>::flagSet(std::string key, int k) const
-{
-    CHECK( M_flagSet.find(key) != M_flagSet.end() ) << "the flag type " << key << " is unknown \n";
-    CHECK( M_flagSet.find(key)->second.size() > k ) << "the key " << k << " must be <  " <<  M_flagSet.find(key)->second.size() << "\n";
-    return M_flagSet.find(key)->second.at(k);
-}
-
-template< typename MeshType, int Order >
-void
-HarmonicExtension<MeshType,Order>::setflagSet( flagSet_type const & fl )
-{
-    M_flagSet=fl;
-}
 
 #if 0 // code for implement near null space
 namespace detail
@@ -217,24 +192,25 @@ HarmonicExtension<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) co
     vector_ptrtype& F = data.rhs();
     bool buildCstPart = data.buildCstPart();
 
-    auto u = this->displacement();
-    auto v = this->displacement();
+    auto const& u = this->displacement();
+    auto const& v = this->displacement();
 
     if ( buildCstPart )
     {
+        auto rangeElt = elements(support(M_Xh));
         if ( M_useAdaptPenal )
         {
             //std::cout << " harmonic : use_adaptive_penalisation \n";
             /* Calculate penalization term due to Masud and Hughes \tau_e = \frac{1-V_{min}/V_{max}}{V_e/V_{max}} */
             auto XhP0 = M_XhP0;
-            auto Volume = integrate( elements(this->mesh()), meas() ).broken( XhP0 );
+            auto Volume = integrate( rangeElt, meas() ).broken( XhP0 );
             double Vmin = Volume.min();
             double Vmax = Volume.max();
             auto tau = ((1.0 - Vmin/Vmax)/( idv(Volume)/Vmax ));
 
             form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
-                integrate( _range=elements(this->mesh()),
-                           _expr=val(1+tau)*trace( trans(gradt(u))*grad(v) ) );
+                integrate( _range=rangeElt,
+                           _expr=val(1+tau)*inner(gradt(u),grad(v)) );
 #if 0
             for ( uint16_type i=0; i < M_flagSet["free"].size(); ++i )
                 form1( _test=M_Xh, _vector=F ) +=
@@ -248,8 +224,8 @@ HarmonicExtension<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) co
         {
             //std::cout << " standart harmonic\n";
             form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
-                integrate( _range=elements(this->mesh()),
-                           _expr=trace( trans(gradt(u))*grad(v) ) );
+                integrate( _range=rangeElt,
+                           _expr=inner(gradt(u),grad(v)) );
 #if 0
             for ( uint16_type i=0; i < M_flagSet["free"].size(); ++i )
                 form1( _test=M_Xh, _vector=F ) +=
@@ -263,24 +239,32 @@ HarmonicExtension<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) co
 
     if ( !buildCstPart )
     {
-        for ( uint16_type i=0; i < this->flagSet("moving").size(); ++i )
+        if ( M_bcToMarkers.find("moving") != M_bcToMarkers.end() )
         {
-            //if (this->worldComm().isMasterRank() ) std::cout << "M_flagSet[moving][i]" << M_flagSet["moving"][i]<< std::endl;
-            form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
-                on( _range=markedfaces( this->mesh(), this->flagSet("moving",i) ),
-                    _element=*u,
-                    _rhs=F,
-                    _expr=idv( this->dispImposedOnBoundary() ) );
+            auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(this->mesh(), M_bcToMarkers.at("moving") );
+            auto const& faceMarkers = std::get<0>( dmlose );
+            if ( !faceMarkers.empty() )
+            {
+                form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
+                    on( _range=markedfaces( this->mesh(), faceMarkers ),
+                        _element=*u,
+                        _rhs=F,
+                        _expr=idv( this->dispImposedOnBoundary() ) );
+            }
         }
 
-        for ( uint16_type i=0; i < this->flagSet("fixed").size(); ++i )
+        if ( M_bcToMarkers.find("fixed") != M_bcToMarkers.end() )
         {
-            //if (this->worldComm().isMasterRank() ) std::cout << "M_flagSet[fixed][i]" << M_flagSet["fixed"][i]<< std::endl;
-            form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
-                on( _range=markedfaces(this->mesh(), this->flagSet("fixed",i) ),
-                    _element=*u,
-                    _rhs=F,
-                    _expr=0*one() );
+            auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(this->mesh(), M_bcToMarkers.at("fixed") );
+            auto const& faceMarkers = std::get<0>( dmlose );
+            if ( !faceMarkers.empty() )
+            {
+                form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
+                    on( _range=markedfaces(this->mesh(), faceMarkers ),
+                        _element=*u,
+                        _rhs=F,
+                        _expr=vf::zero<mesh_type::nRealDim,1>() );
+            }
         }
     }
 

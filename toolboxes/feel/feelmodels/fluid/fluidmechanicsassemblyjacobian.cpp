@@ -47,12 +47,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJaco
         if ( bpbc.hasTranslationalVelocityExpr() )
         {
             std::string spaceName = "body-bc."+bpbc.name()+".translational-velocity";
-            this->updateDofEliminationIds( spaceName, this->dofEliminationIds( "body-bc.translational-velocity" ), data );
+            //this->updateDofEliminationIds( spaceName, this->dofEliminationIds( "body-bc.translational-velocity" ), data );
+            this->updateDofEliminationIds( spaceName, data );
         }
         if ( bpbc.hasAngularVelocityExpr() )
         {
             std::string spaceName = "body-bc."+bpbc.name()+".angular-velocity";
-            this->updateDofEliminationIds( spaceName, this->dofEliminationIds( "body-bc.angular-velocity" ), data );
+            //this->updateDofEliminationIds( spaceName, this->dofEliminationIds( "body-bc.angular-velocity" ), data );
+            this->updateDofEliminationIds( spaceName, data );
         }
     }
 

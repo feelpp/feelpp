@@ -656,13 +656,13 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             M_functionLinearDofElimination( dataLinearPtAP );
             for ( auto const& func : M_addFunctionLinearDofElimination )
                 func.second( dataLinearPtAP );
-            // others dof eliminations (not need an expression)
+            // others dof eliminations (not need an expression,just for fix maybe the well posed system)
             if ( M_solverPtAP_dofEliminationIds )
             {
                 // we assume that all shared dofs are present, not need to appy a sync
                 std::vector<int> _dofs;_dofs.assign( M_solverPtAP_dofEliminationIds->begin(), M_solverPtAP_dofEliminationIds->end());
                 auto tmp = M_solverPtAP_backend->newVector( U->mapPtr() );
-                M_solverPtAP_matPtAP->zeroRows( _dofs, *tmp, *tmp, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
+                M_solverPtAP_matPtAP->zeroRows( _dofs, *tmp, *M_solverPtAP_PtF, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
             }
 
             // post-assembly

@@ -264,6 +264,8 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"pcd.apply-homogeneous-dirichlet-in-newton").c_str(), Feel::po::value<bool>()->default_value(false), "use-gravity-force")
 
         (prefixvm(prefix,"body.articulation.method").c_str(), Feel::po::value<std::string>()->default_value("lm"), "lm or p-matrix")
+
+        (prefixvm(prefix,"body.elastic-behavior.use-old-version").c_str(), Feel::po::value<bool>()->default_value(false), "use-gravity-force")
         ;
 
     fluidOptions
