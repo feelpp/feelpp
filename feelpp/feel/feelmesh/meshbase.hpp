@@ -342,6 +342,9 @@ public:
             M_smd = smd;
         }
 
+    //! return sub mesh data
+    smd_ptrtype subMeshData() const { return M_smd; }
+
     //! \return true if mesh holds sub mesh data
     bool hasSubMeshData() const { return M_smd.use_count() > 0; }
 
