@@ -26,13 +26,13 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
     ModelBase( prefix, wc, subPrefix, modelRep ),
     M_prefix( prefix ),
     M_useLagrangeP1iso( false ),
-    M_doUpdateGlobalLevelset( true ),
     M_doRebuildMatrixVector( false ),
     M_usePicardIterations( false ),
     M_hasInterfaceForcesModel( false ),
     M_enableInextensibility( false ),
     M_hasInextensibilityLM( false ),
-    M_doUpdateInextensibilityLM( false )
+    M_doUpdateInextensibilityLM( false ),
+    M_globalLevelset( [this]( element_levelset_scalar_ptrtype & globalLs ) { this->updateGlobalLevelset( globalLs ); } )
 {
     // Load parameters
     this->loadParametersFromOptionsVm();
@@ -65,15 +65,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::New(
 {
     self_ptrtype new_multifluid( new self_type(prefix, wc, subPrefix, modelRep ) );
     return new_multifluid;
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-std::string
-MULTIFLUID_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const& s )
-{
-    std::string res = s;
-    res = fluid_model_type::expandStringFromSpec( res );
-    return res;
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -151,7 +142,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_doRebuildMatrixVector = false;
 
     // "Deep" copy FluidMechanics materialProperties
-    M_fluidMaterialProperties.reset( new material_properties_type( this->fluidModel()->prefix() ) );
+    M_fluidMaterialProperties.reset( new materials_properties_type( this->fluidModel()->prefix() ) );
     // Create M_interfaceForces
     M_interfaceForces.reset( new element_levelset_vectorial_type(this->functionSpaceLevelsetVectorial(), "InterfaceForces") ); 
 
@@ -295,27 +286,22 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::functionSpaceInextensibilityLM() const
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-typename MULTIFLUID_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
-MULTIFLUID_CLASS_TEMPLATE_TYPE::globalLevelsetElt( bool update ) const
-{
-    if( !M_globalLevelsetElt )
-        M_globalLevelsetElt.reset( new element_levelset_type(this->functionSpaceLevelset(), "GlobalLevelset") );
-
-    if( update )
-        this->updateGlobalLevelsetElt();
-
-    return M_globalLevelsetElt;
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::updateGlobalLevelsetElt() const
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateGlobalLevelset( element_levelset_scalar_ptrtype & globalLevelset ) const
 {
-    M_globalLevelsetElt->on(
-            _range=elements( M_globalLevelsetElt->mesh() ),
+    this->log("MultiFluid", "updateGlobalLevelset", "start");
+    this->timerTool("UpdateLevelsetData").start();
+
+    if( !globalLevelset )
+        globalLevelset.reset( new element_levelset_scalar_type( this->functionSpaceLevelset(), "GlobalLevelset" ) );
+
+    globalLevelset->on(
+            _range=elements( globalLevelset->mesh() ),
             _expr=this->globalLevelsetExpr()
             );
-    M_doUpdateGlobalLevelset = false;
+
+    double timeElapsed = this->timerTool("UpdateLevelsetData").stop();
+    this->log("MultiFluid", "updateGlobalLevelset", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -1734,7 +1720,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::advectLevelsets()
         ls.second->advect( idv(u) );
     }
     // Request global levelset update
-    M_doUpdateGlobalLevelset = true;
+    M_globalLevelset.setDoUpdate( true );
 
     if( this->hasInextensibilityLM() )
     {

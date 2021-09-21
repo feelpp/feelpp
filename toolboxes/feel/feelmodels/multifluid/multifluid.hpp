@@ -6,6 +6,8 @@
 #include <feel/feelmodels/multifluid/interfaceforcesmodel.hpp>
 #include <feel/feelmodels/levelset/globallevelsetexpr.hpp>
 
+#include <feel/feelmodels/modelcore/modelfields.hpp>
+
 namespace Feel {
 namespace FeelModels {
 
@@ -19,9 +21,8 @@ public:
     //--------------------------------------------------------------------//
     // Class
     typedef ModelNumerical super_type;
-    using size_type = typename super_type::size_type;
-    typedef MultiFluid< FluidType, LevelSetType> self_type;
-    typedef std::shared_ptr<self_type> self_ptrtype;
+    typedef MultiFluid< FluidType, LevelSetType > self_type;
+    typedef std::shared_ptr< self_type > self_ptrtype;
 
     typedef FluidType fluid_model_type;
     typedef std::shared_ptr<fluid_model_type> fluid_model_ptrtype;
@@ -29,41 +30,47 @@ public:
     typedef LevelSetType levelset_model_type;
     typedef std::shared_ptr<levelset_model_type> levelset_model_ptrtype;
 
+    using size_type = typename super_type::size_type;
+
     //--------------------------------------------------------------------//
     // Mesh
-    typedef typename fluid_model_type::convex_type convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
-    typedef Mesh<convex_type> mesh_type;
+    typedef typename fluid_model_type::mesh_type mesh_fluid_type;
+    typedef typename levelset_model_type::mesh_type mesh_levelset_type;
+    typedef mesh_fluid_type mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
+    static const uint16_type nDim = mesh_type::nDim;
+    static const uint16_type nOrderGeo = mesh_type::nOrder;
+    static const uint16_type nRealDim = mesh_type::nRealDim;
 
     //--------------------------------------------------------------------//
-    // Range types
-    typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
-    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_type elements_reference_wrapper_type;
-    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
-    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+    // Materials properties
+    typedef MaterialsProperties<mesh_type::nRealDim> materialsproperties_type;
+    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
-    typedef typename MeshTraits<mesh_type>::face_reference_wrapper_const_iterator face_reference_wrapper_const_iterator;
-    typedef typename MeshTraits<mesh_type>::faces_reference_wrapper_type faces_reference_wrapper_type;
-    typedef typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype faces_reference_wrapper_ptrtype;
-    typedef faces_reference_wrapper_t<mesh_type> range_faces_type;
+    ////--------------------------------------------------------------------//
+    //// Range types
+    //typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
+    //typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_type elements_reference_wrapper_type;
+    //typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
+    //typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+
+    //typedef typename MeshTraits<mesh_type>::face_reference_wrapper_const_iterator face_reference_wrapper_const_iterator;
+    //typedef typename MeshTraits<mesh_type>::faces_reference_wrapper_type faces_reference_wrapper_type;
+    //typedef typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype faces_reference_wrapper_ptrtype;
+    //typedef faces_reference_wrapper_t<mesh_type> range_faces_type;
 
     //--------------------------------------------------------------------//
     // Function spaces
     typedef typename levelset_model_type::space_levelset_ptrtype space_levelset_ptrtype;
     typedef typename levelset_model_type::space_vectorial_ptrtype space_levelset_vectorial_ptrtype;
     typedef typename levelset_model_type::space_markers_ptrtype space_levelset_markers_ptrtype;
-    typedef typename levelset_model_type::space_advection_velocity_type space_levelset_advection_velocity_type;
-    typedef typename levelset_model_type::space_advection_velocity_ptrtype space_levelset_advection_velocity_ptrtype;
     typedef typename fluid_model_type::component_space_velocity_type component_space_fluid_velocity_type;
 
     typedef typename fluid_model_type::space_velocity_type space_fluid_velocity_type;
     typedef typename fluid_model_type::space_velocity_ptrtype space_fluid_velocity_ptrtype;
 
-    typedef typename levelset_model_type::element_levelset_type element_levelset_type;
-    typedef typename levelset_model_type::element_levelset_ptrtype element_levelset_ptrtype; 
+    typedef typename levelset_model_type::element_scalar_type element_levelset_scalar_type;
+    typedef typename levelset_model_type::element_scalar_ptrtype element_levelset_scalar_ptrtype; 
     typedef typename levelset_model_type::element_vectorial_type element_levelset_vectorial_type;
     typedef typename levelset_model_type::element_vectorial_ptrtype element_levelset_vectorial_ptrtype; 
 
@@ -74,33 +81,38 @@ public:
     typedef typename levelset_model_type::levelset_tool_manager_type levelset_tool_manager_type;
     typedef typename levelset_model_type::levelset_tool_manager_ptrtype levelset_tool_manager_ptrtype;
 
-    //--------------------------------------------------------------------//
-    // Lagrange P1 iso-Pn
-    typedef OperatorLagrangeP1<component_space_fluid_velocity_type> op_lagrangeP1_type;
-    typedef std::shared_ptr<op_lagrangeP1_type> op_lagrangeP1_ptrtype;
+    ////--------------------------------------------------------------------//
+    //// Lagrange P1 iso-Pn
+    //typedef OperatorLagrangeP1<component_space_fluid_velocity_type> op_lagrangeP1_type;
+    //typedef std::shared_ptr<op_lagrangeP1_type> op_lagrangeP1_ptrtype;
+
+    ////--------------------------------------------------------------------//
+    //// Density/viscosity
+    //typedef typename fluid_model_type::materialsproperties_type materials_properties_type;
+    //typedef typename fluid_model_type::materialsproperties_ptrtype materials_properties_ptrtype;
+    ////--------------------------------------------------------------------//
+    //// Interface forces model
+    //typedef InterfaceForcesModel<levelset_model_type, fluid_model_type> interfaceforces_model_type;
+    //typedef std::shared_ptr<interfaceforces_model_type> interfaceforces_model_ptrtype;
+    //typedef Singleton<Feel::Factory<interfaceforces_model_type, std::string>> interfaceforces_factory_type;
+
+    ////--------------------------------------------------------------------//
+    //// Inextensibility
+    //typedef typename fluid_model_type::basis_fluid_p_type basis_fluid_p_type;
+    //typedef FunctionSpace< mesh_type, bases<basis_fluid_p_type> > space_inextensibilitylm_type;
+    //typedef std::shared_ptr<space_inextensibilitylm_type> space_inextensibilitylm_ptrtype;
 
     //--------------------------------------------------------------------//
-    // Density/viscosity
-    typedef typename fluid_model_type::material_properties_type material_properties_type;
-    typedef typename fluid_model_type::material_properties_ptrtype material_properties_ptrtype;
-    //--------------------------------------------------------------------//
-    // Interface forces model
-    typedef InterfaceForcesModel<levelset_model_type, fluid_model_type> interfaceforces_model_type;
-    typedef std::shared_ptr<interfaceforces_model_type> interfaceforces_model_ptrtype;
-    typedef Singleton<Feel::Factory<interfaceforces_model_type, std::string>> interfaceforces_factory_type;
-
-    //--------------------------------------------------------------------//
-    // Inextensibility
-    typedef typename fluid_model_type::basis_fluid_p_type basis_fluid_p_type;
-    typedef FunctionSpace< mesh_type, bases<basis_fluid_p_type> > space_inextensibilitylm_type;
-    typedef std::shared_ptr<space_inextensibilitylm_type> space_inextensibilitylm_ptrtype;
+    // Cached fields
+    using cached_levelset_scalar_field_type = CachedModelField<element_levelset_scalar_type, InplaceUpdatePolicy>;
+    using cached_levelset_vectorial_field_type = CachedModelField<element_levelset_vectorial_type, InplaceUpdatePolicy>;
     //--------------------------------------------------------------------//
     // Exporter
     typedef Exporter<mesh_type, nOrderGeo> exporter_type;
     typedef std::shared_ptr<exporter_type> exporter_ptrtype;
 
     //--------------------------------------------------------------------//
-    // Exporter
+    // Algebraic factory
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
     typedef std::shared_ptr<model_algebraic_factory_type> model_algebraic_factory_ptrtype;
 
@@ -108,14 +120,12 @@ public:
     // Measures
     using force_type = Eigen::Matrix<typename fluid_model_type::value_type, nDim, 1, Eigen::ColMajor>;
 
-    //--------------------------------------------------------------------//
-    //--------------------------------------------------------------------//
-    //--------------------------------------------------------------------//
 public:
     //--------------------------------------------------------------------//
     // Constructor
     MultiFluid(
             std::string const& prefix,
+            std::string const& keyword = "multifluid",
             worldcomm_ptr_t const& wc = Environment::worldCommPtr(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
@@ -127,14 +137,12 @@ public:
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-    void loadParametersFromOptionsVm();
-
-    static std::string expandStringFromSpec( std::string const& expr );
-
     //--------------------------------------------------------------------//
     // Initialization
     void init( bool buildModelAlgebraicFactory = true );
     void initAlgebraicFactory();
+
+    void loadParametersFromOptionsVm();
 
     //--------------------------------------------------------------------//
     std::string globalLevelsetPrefix() const { return prefixvm( this->prefix(), "levelset"); }
@@ -150,8 +158,9 @@ public:
     space_inextensibilitylm_ptrtype const& functionSpaceInextensibilityLM() const;
     //--------------------------------------------------------------------//
     // Mesh
-    mesh_ptrtype const& mesh() const { return M_mesh; }
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"MultiFluidMesh.path"); }
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
+    //std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"MultiFluidMesh.path"); }
     //--------------------------------------------------------------------//
     // Operator Lagrange P1
     bool useLagrangeP1iso() const { return M_useLagrangeP1iso; }
@@ -168,53 +177,61 @@ public:
 
     // Global levelset
     auto globalLevelsetExpr() const {
-        std::vector< element_levelset_ptrtype > levelsets;
-        std::transform( M_levelsets.begin(), M_levelsets.end(), std::back_inserter(levelsets),
-                [](std::pair<std::string, levelset_model_ptrtype> const& l) { return l.second->phi(); }
+        std::vector< element_levelset_scalar_ptrtype > levelsets;
+        std::transform( this->levelsetModels().begin(), this->levelsetModels().end(), std::back_inserter(levelsets),
+                []( std::pair<std::string, levelset_model_ptrtype> const& l ) { return l.second->phi(); }
                 );
         return Feel::FeelModels::globalLevelsetExpr( levelsets );
     }
-    element_levelset_ptrtype const& globalLevelsetElt( bool update ) const;
-    element_levelset_ptrtype const& globalLevelsetElt() const { return this->globalLevelsetElt( M_doUpdateGlobalLevelset ); }
+    element_levelset_ptrtype globalLevelsetElt() const { return M_globalLevelset.fieldPtr(); }
 
-    // Fluid density-viscosity model
-    material_properties_ptrtype const& fluidMaterialProperties() const { return M_fluidMaterialProperties; }
-    material_properties_ptrtype const& levelsetMaterialProperties( std::string const& name ) const { return M_levelsetsMaterialProperties.at(name); }
+    // Physical parameters
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
+    //// Fluid density-viscosity model
+    //material_properties_ptrtype const& fluidMaterialProperties() const { return M_fluidMaterialProperties; }
+    //material_properties_ptrtype const& levelsetMaterialProperties( std::string const& name ) const { return M_levelsetsMaterialProperties.at(name); }
 
     //--------------------------------------------------------------------//
-    // Accessors interfaces
-    //decltype(auto) functionSpaceVelocityPressure() const { return this->fluidModel()->functionSpace(); }
-    decltype(auto) functionSpaceVelocity() const { return this->fluidModel()->functionSpaceVelocity(); }
-    decltype(auto) functionSpacePressure() const { return this->fluidModel()->functionSpacePressure(); }
-    //decltype(auto) fieldVelocityPressurePtr() const { return this->fluidModel()->fieldVelocityPressurePtr(); }
-    //decltype(auto) fieldVelocityPressure() const { return this->fluidModel()->fieldVelocityPressure(); }
-    decltype(auto) fieldVelocity() const { return this->fluidModel()->fieldVelocity(); }
-    decltype(auto) fieldPressure() const { return this->fluidModel()->fieldPressure(); }
+    // Time stepping
+    std::shared_ptr<TSBase> timeStepBase() { return this->fluidModel()->timeStepBase(); }
+    std::shared_ptr<TSBase> timeStepBase() const { return this->fluidModel()->timeStepBase(); }
+    void startTimeStep();
+    void updateTimeStep();
 
-    //___________________________________________________________________________________//
-    // toolbox fields
-    //___________________________________________________________________________________//
+    ////--------------------------------------------------------------------//
+    //// Accessors interfaces
+    //decltype(auto) functionSpaceVelocity() const { return this->fluidModel()->functionSpaceVelocity(); }
+    //decltype(auto) functionSpacePressure() const { return this->fluidModel()->functionSpacePressure(); }
+    //decltype(auto) fieldVelocity() const { return this->fluidModel()->fieldVelocity(); }
+    //decltype(auto) fieldPressure() const { return this->fluidModel()->fieldPressure(); }
 
+    //--------------------------------------------------------------------//
+    // Fields
     struct FieldTag
     {
         static auto globalLevelsetElt( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
     };
     auto modelFields( std::string const& prefix = "" ) const
     {
-        typedef element_levelset_ptrtype const& (self_type::*scalar_fc_type)() const;
-
-        auto mfieldsFluid = M_fluidModel->modelFields( prefixvm( prefix, M_fluidModel->keyword() ) );
-
-        using mfields_levelset_type = std::decay_t<decltype(M_levelsets.begin()->second->modelFields( "" ) )>;
+        using mfields_levelset_type = std::decay_t<decltype(this->levelsetModels().begin()->second->modelFields( "" ) )>;
         mfields_levelset_type mfieldsLevelsets;
-        // for ( auto const& [lsName,lsObject] : M_levelsets )
-        //     mfieldsLevelsets = Feel::FeelModels::modelFields( mfieldsLevelsets, lsObject->modelFields(  prefixvm( prefix,  lsObject->keyword() ) ) );
-        for ( auto it = M_levelsets.begin() ; it != M_levelsets.end() ; ++it )
-            mfieldsLevelsets = Feel::FeelModels::modelFields( mfieldsLevelsets, it->second->modelFields(  prefixvm( prefix,  it->second->keyword() ) ) );
+        //for ( auto it = M_levelsets.begin() ; it != M_levelsets.end() ; ++it )
+            //mfieldsLevelsets = Feel::FeelModels::modelFields( 
+                    //mfieldsLevelsets, 
+                    //it->second->modelFields(  prefixvm( prefix,  it->second->keyword() ) ) 
+                    //);
+         for ( auto const& [lsName,lsModel] : this->levelsetModels() )
+             mfieldsLevelsets = Feel::FeelModels::modelFields( 
+                     mfieldsLevelsets, 
+                     lsModel->modelFields( lsModel->keyword() )
+                     );
 
-        return Feel::FeelModels::modelFields( mfieldsFluid, mfieldsLevelsets,
-                modelField<FieldCtx::ID>( FieldTag::globalLevelsetElt(this), prefixvm( prefix, "global-levelset"), "phi", this->globalLevelsetElt(false), "phi", this->keyword(),
-                    std::bind<scalar_fc_type>( &self_type::globalLevelsetElt, this ) )
+        return Feel::FeelModels::modelFields( 
+                this->fluidModel()->modelFields( this->fluidModel()->keyword() ),
+                mfieldsLevelsets,
+                modelField<FieldCtx::ID>( FieldTag::globalLevelsetElt(this), prefix, "global-levelset", M_globalLevelset, "phi", this->keyword() )
                 );
     }
 
@@ -300,15 +317,6 @@ public:
     void updateParameterValues();
 
     //--------------------------------------------------------------------//
-    // Time step
-    std::shared_ptr<TSBase> timeStepBase() const { return M_fluidModel->timeStepBase(); }
-    std::shared_ptr<TSBase> fluidTimeStepBase() const { return this->timeStepBase(); }
-    std::shared_ptr<TSBase> levelsetTimeStepBase( std::string const& name) const { return this->levelsetModel(name)->timeStepBase(); }
-    //void updateTime( double time );
-    void startTimeStep();
-    void updateTimeStep();
-
-    //--------------------------------------------------------------------//
     // Export
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
@@ -327,7 +335,7 @@ protected:
     bool useImplicitCoupling() const;
 
     //--------------------------------------------------------------------//
-    void updateGlobalLevelsetElt() const;
+    void updateGlobalLevelset( element_levelset_scalar_ptrtype & globalLevelset ) const;
     void updateFluidDensityViscosity();
     void updateInterfaceForces();
     void solveFluid();
@@ -351,7 +359,7 @@ private:
     levelset_space_manager_ptrtype M_levelsetSpaceManager;
     levelset_tool_manager_ptrtype M_levelsetToolManager;
     std::map<std::string, levelset_model_ptrtype> M_levelsets;
-    mutable element_levelset_ptrtype M_globalLevelsetElt;
+    cached_levelset_scalar_field_type M_globalLevelset;
     mutable bool M_doUpdateGlobalLevelset;
     exporter_ptrtype M_globalLevelsetExporter;
 
