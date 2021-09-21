@@ -58,10 +58,11 @@
 #include <boost/parameter.hpp>
 #include <feel/feelcore/parameter.hpp>
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>
-#include <feel/feelts/tsbase.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feelts/tsbase.hpp>
 
 namespace Feel
 {
@@ -138,7 +139,36 @@ public:
 
     ~Bdf() override;
 
+    //! @return the FunctionSpace associated to BDF
+    space_ptrtype const& functionSpace() const { return M_space; }
 
+    /**
+     * @brief interpolate fields from another bdf possibly on a different mesh
+     * 
+     * @param otherbdf other bdf to interpolate data from
+     * @param markersInterpolate element markers set 
+     */
+    void interpolate( bdf_ptrtype const& otherbdf, std::vector<std::string> const& markersInterpolate )
+    {
+        auto submesh = createSubmesh( otherbdf->functionSpace()->mesh(), markedelements( otherbdf->functionSpace()->mesh(), markersInterpolate ) );
+        space_ptrtype Space_temp;
+        Space_temp = space_type::New( _mesh = submesh );
+        auto op_1 = opInterpolation( _domainSpace = otherbdf->functionSpace(), _imageSpace = Space_temp,
+                                     _backend = backend( _rebuild = true ) );
+        auto op_2 = opInterpolation( _domainSpace = Space_temp, //VelSpace_temp,
+                                     _imageSpace = this->functionSpace(),
+                                     _range = markedelements( this->functionSpace()->mesh(), markersInterpolate ),
+                                     _backend = backend( _name = "Iv", _rebuild = true ) );
+        // ------------------
+        for ( auto oldit = otherbdf->M_unknowns.begin(), olden = otherbdf->M_unknowns.end(),
+                   it = this->M_unknowns.begin(), en = this->M_unknowns.end();
+              oldit != olden; ++oldit, ++it )
+        {
+            auto temp = op_1->dualImageSpace()->elementPtr();
+            op_1->apply( unwrap_ptr( *oldit ), unwrap_ptr( *temp ) );
+            op_2->apply( unwrap_ptr( *temp ), unwrap_ptr( *it ) );
+        }
+    }
     //! return a deep copy of the bdf object
     bdf_ptrtype deepCopy() const
     {
