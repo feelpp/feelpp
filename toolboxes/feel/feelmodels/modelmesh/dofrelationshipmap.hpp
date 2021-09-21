@@ -67,8 +67,8 @@ public :
         :
         M_Xh1(__Xh1),
         M_Xh2(__Xh2),
-        M_dofRelMapRefToHo( M_Xh1->nLocalDof() ),
-        M_dofRelMapHoToRef( M_Xh2->nLocalDof() )
+        M_dofRelMapRefToHo( M_Xh1->nLocalDof(), invalid_v<size_type> ),
+        M_dofRelMapHoToRef( M_Xh2->nLocalDof(), invalid_v<size_type> )
         {
             buidGeoElementMap();
             buildDofRelMap();
@@ -190,11 +190,19 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buidGeoElementMap()
     std::set<size_type> elt1Done;
 
     CHECK ( M_Xh1->dof()->buildDofTableMPIExtended() == M_Xh2->dof()->buildDofTableMPIExtended() ) << "buildDofTableMPIExtended between space must be equal \n";
-
+#if 0
     bool upExtendedElt = M_Xh1->dof()->buildDofTableMPIExtended();
     EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
     auto rangeElt1 = elements( M_Xh1->mesh(), entityProcess );
     auto rangeElt2 = elements( M_Xh2->mesh(), entityProcess );
+#else
+    auto rangeElt1 = M_Xh1->template meshSupport<0>()->rangeElements();
+    auto rangeElt2 = M_Xh2->template meshSupport<0>()->rangeElements();
+#endif
+
+    auto dof1 = M_Xh1->dof();
+    auto dof2 = M_Xh2->dof();
+    bool isPartialSupport1 = dof1->hasMeshSupport() && dof1->meshSupport()->isPartialSupport();
 
     M_geoElementMap.clear();
 
@@ -207,6 +215,10 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buidGeoElementMap()
         if ( useSubMeshRelation )
         {
             size_type elt1Id = M_Xh1->mesh()->meshToSubMesh( elt2.id() );
+            if ( elt1Id == invalid_v<size_type> )
+                continue;
+            if ( isPartialSupport1 && !dof1->isElementDone( elt1Id ) )
+                continue;
             M_geoElementMap[elt1Id] = std::make_pair(elt2.id(),elt2.processId());
         }
         else
@@ -354,9 +366,12 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buildDofRelMap()
             else if (iloc1 < nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*numGeometricFaces + nDofPerVolume*numVolumes)
                 iloc2=iloc1;// we guess only one dof in volume ( 3d,order=4 only)
 
-
             for ( uint16_type comp = 0;comp < functionspace1_type::basis_type::nComponents;++comp )
             {
+#if 0
+                CHECK( dof1->isElementDone( elem1.id() ) ) << "dofTable1 not build this elt id : " << elem1.id();
+                CHECK( dof2->isElementDone( eltIdRelated ) ) << "dofTable2 not build this elt id : " << eltIdRelated;
+#endif
                 size_type i1 = dof1->localToGlobal( elem1.id(), iloc1 , comp ).index();
                 size_type i2 = dof2->localToGlobal( eltIdRelated , iloc2 , comp ).index();
 
@@ -364,6 +379,7 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buildDofRelMap()
                 M_dofRelMapHoToRef[i2]=i1;
 
             }
+
         }
 
     } //end it

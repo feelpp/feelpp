@@ -104,6 +104,7 @@ public :
         // space and element displacement with interaction 2d/2d or 3d/3d
     typedef typename fluid_type::mesh_ale_type::ale_map_functionspace_type space_fluid_disp_type;
     typedef typename fluid_type::mesh_ale_type::ale_map_element_type element_fluid_disp_type;
+    typedef typename fluid_type::mesh_ale_type::ale_map_element_ptrtype element_fluid_disp_ptrtype;
 
     typedef typename solid_type::space_displacement_type space_struct_disp_type;
     typedef typename solid_type::element_displacement_type element_struct_disp_type;
@@ -454,6 +455,7 @@ private :
 
     std::set<size_type> M_dofsMultiProcessVelocitySpaceOnFSI_fluid;
 
+    element_fluid_disp_ptrtype M_meshDisplacementOnInterface_fluid;
 };
 
 } // namespace FeelModels
