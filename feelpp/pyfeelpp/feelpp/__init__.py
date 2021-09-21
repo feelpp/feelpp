@@ -5,6 +5,7 @@ from ._alg import *
 from ._mesh import *
 from ._discr import *
 from ._exporter import  *
+from ._ls import *
 from ._ts import  *
 from ._vf import  *
 from ._models import *
