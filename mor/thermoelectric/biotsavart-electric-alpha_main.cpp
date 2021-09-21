@@ -27,12 +27,13 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feelopt/nlopt.hpp>
 
-#include "biotsavartbase.hpp"
-#include "biotsavart-electric-alpha.hpp"
 #include <electric-alpha.hpp>
 #include <feel/feelmodels/electric/electric.hpp>
+#include "biotsavartbase.hpp"
+#include "biotsavart-electric-alpha.hpp"
 
 int iter=0;
 
@@ -323,14 +324,20 @@ int main(int argc, char**argv )
     {
         auto tb = std::make_shared<electric_tb_type>("toolbox");
         auto bBg = BS->spaceMgn()->element();
+        auto XhJ = Pdhv<0>(BS->mesh(), tb->rangeMeshElements());
+        auto jBg = XhJ->element();
         if( boption("biotsavart.use-bg-field") )
         {
             tb->setMesh(BS->mesh());
             tb->init();
             tb->printAndSaveInfo();
             tb->solve();
-            auto jBg = tb->fieldCurrentDensity();
-            auto bsbg = BiotSavartBase(tb->spaceElectricField(), BS->spaceMgn());
+            for ( std::string const& matName : tb->materialsProperties()->physicToMaterials( tb->physicsAvailableFromCurrentType() ) )
+            {
+                auto const& range = tb->materialsProperties()->rangeMeshElementsByMaterial( tb->mesh(), matName );
+                jBg += vf::project(_space=XhJ, _range=range, _expr=tb->currentDensityExpr(matName, tb->symbolsExpr()) );
+            }
+            auto bsbg = BiotSavartBase(XhJ, BS->spaceMgn());
             bBg = bsbg.computeMagneticField(jBg);
         }
 
@@ -459,7 +466,7 @@ int main(int argc, char**argv )
         {
             eCM->add("Bbg", bBg);
             eCM->add("Vbg", tb->fieldElectricPotential());
-            eCM->add("jbg", tb->fieldCurrentDensity());
+            eCM->add("jbg", jBg);
         }
         eCM->save();
 

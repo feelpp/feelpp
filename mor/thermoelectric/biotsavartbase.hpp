@@ -23,6 +23,8 @@
 //!
 //!
 
+#include <feel/feelvf/vf.hpp>
+
 using namespace Feel;
 
 template<typename SpaceTypeConductor, typename SpaceTypeMag>
@@ -161,7 +163,7 @@ BiotSavartBase<SpaceTypeConductor, SpaceTypeMag>::computeMagneticField(element_c
 
                 std::vector<Eigen::Matrix<double,3,1> > mgnFields;
                 auto dist = inner( _e1v-P(), _e1v-P(),
-                                   mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
+                                   mpl::int_<vf::InnerProperties::IS_SAME|vf::InnerProperties::SQRT>() );
                 mgnFields = integrate(_range=M_XhC->dof()->meshSupport()->rangeElements(),
                                       _expr=-mu0*coeff*cross(idv(j),_e1v-P())/(dist*dist*dist)
                                       ).template evaluate(coords);
