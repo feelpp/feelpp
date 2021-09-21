@@ -235,38 +235,23 @@ public:
                 );
     }
 
-    //___________________________________________________________________________________//
-    // symbols expression
-    //___________________________________________________________________________________//
-
+    //--------------------------------------------------------------------//
+    // Symbols expression
     template <typename ModelFieldsType>
     auto symbolsExpr( ModelFieldsType const& mfields ) const
-        {
-            auto seFluid = this->fluidModel()->symbolsExprToolbox( mfields );
-            auto seParam = this->symbolsExprParameter();
-            //auto seMat = this->materialsProperties()->symbolsExpr();
-            auto seFields = mfields.symbolsExpr();
-            return Feel::vf::symbolsExpr( seFluid,seParam,seFields );
-        }
+    {
+        auto seFluid = this->fluidModel()->symbolsExprToolbox( mfields );
+        // TODO: add levelset symbols
+        //auto seLevelsets = this->levelsetModels()->symbolsExprToolbox( mfields );
+        auto seParam = this->symbolsExprParameter();
+        auto seMeshes = this->template symbolsExprMeshes<mesh_type>();
+        auto seMat = this->materialsProperties()->symbolsExpr();
+        auto seFields = mfields.symbolsExpr();
+        auto sePhysics = this->symbolsExprPhysics( this->physics() );
+        return Feel::vf::symbolsExpr( seFluid,seParam,seFields );
+    }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
-#if 0
-    //--------------------------------------------------------------------//
-    // Symbols expr
-    auto symbolsExpr() const { 
-        return this->symbolsExpr( M_fluidModel->fieldVelocity(), M_fluidModel->fieldPressure() ); 
-        // TODO add levelsets symbols
-    }
-
-    template <typename FieldVelocityType, typename FieldPressureType>
-    auto symbolsExpr( FieldVelocityType const& u, FieldPressureType const& p ) const
-    {
-        auto seFluid = this->fluidModel()->symbolsExprToolbox( u,p );
-        auto seParam = this->symbolsExprParameter();
-        //auto symbolExprMaterial = Feel::vf::symbolsExpr( M_fluidModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
-        return Feel::vf::symbolsExpr( seFluid, seParam );
-    }
-#endif
     //--------------------------------------------------------------------//
     // Algebraic data
     int nBlockMatrixGraph() const;
