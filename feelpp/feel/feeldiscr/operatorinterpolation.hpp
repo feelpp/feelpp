@@ -504,7 +504,7 @@ struct PrecomputeDomainBasisFunction
                     break;
                 }
             }
-            CHECK( find ) << "not find a compatible dof\n ";
+            CHECK( find ) << "[OperatorInterpolation::update] Compatible dof not found";
             return image_fe_changedim_type::nLocalDof * comp + thelocDofToFind;
 
         }
