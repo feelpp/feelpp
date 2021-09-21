@@ -10,8 +10,6 @@ foreach( _DIM 2 3)
             FLUID_U_ORDER ${_FLUID_U_ORDER}
             FLUID_P_ORDER ${_FLUID_P_ORDER}
             FLUID_P_CONTINUITY Continuous
-            FLUID_DENSITY_VISCOSITY_ORDER 1
-            FLUID_DENSITY_VISCOSITY_CONTINUITY Continuous
             LEVELSET_ORDER ${_LS_ORDER}
             LEVELSET_PN_ORDER ${FEELPP_MODELS_LEVELSET_PN_ORDER}
             GEO_ORDER  1
