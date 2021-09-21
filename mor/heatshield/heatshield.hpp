@@ -166,18 +166,18 @@ public:
             std::string symbol;
 
             ginac_expressionA[0].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } } );
-            this->M_betaAq[0] = ginac_expressionA[0].evaluate();
+            this->M_betaAq[0] = ginac_expressionA[0].evaluate()(0,0);
             ginac_expressionA[1].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } } );
-            this->M_betaAq[1] = ginac_expressionA[1].evaluate();
+            this->M_betaAq[1] = ginac_expressionA[1].evaluate()(0,0);
             ginac_expressionA[2].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } } );
-            this->M_betaAq[2] = ginac_expressionA[2].evaluate();
+            this->M_betaAq[2] = ginac_expressionA[2].evaluate()(0,0);
 
-            this->M_betaMq[0] = ginac_expressionM[0].evaluate();
+            this->M_betaMq[0] = ginac_expressionM[0].evaluate()(0,0);
 
             ginac_expressionF[0].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } , { "surface", surface } } );
-            this->M_betaFq[0][0] = ginac_expressionF[0].evaluate();
+            this->M_betaFq[0][0] = ginac_expressionF[0].evaluate()(0,0);
             ginac_expressionF[1].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } , { "surface", surface } } );
-            this->M_betaFq[1][0] = ginac_expressionF[1].evaluate();
+            this->M_betaFq[1][0] = ginac_expressionF[1].evaluate()(0,0);
 #if 0
             int idx=0;
             int nl = M_Nl;

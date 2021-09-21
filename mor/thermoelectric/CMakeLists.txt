@@ -33,9 +33,9 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
 endif()
 
 # how to FEELPP_INCLUDE_DIR
-if (EXISTS ${FEELPP_INSTALL_DIR}/include/feelpp/toolboxes)
-  MESSAGE(STATUS "Loading toolboxes headers from ${FEELPP_INSTALL_DIR}/include/feelpp/toolboxes")
-  include_directories(${FEELPP_INSTALL_DIR}/include/feelpp/toolboxes)
+if (EXISTS ${FEELPP_DIR}/include/feelpp/toolboxes)
+  MESSAGE(STATUS "Loading toolboxes headers from ${FEELPP_DIR}/include/feelpp/toolboxes")
+  include_directories(${FEELPP_DIR}/include/feelpp/toolboxes)
 else()
   MESSAGE(STATUS "Loading toolboxes headers from ${CMAKE_SOURCE_DIR}/toolboxes and ${CMAKE_BINARY_DIR}/toolboxes")
   include_directories(${CMAKE_SOURCE_DIR}/toolboxes)

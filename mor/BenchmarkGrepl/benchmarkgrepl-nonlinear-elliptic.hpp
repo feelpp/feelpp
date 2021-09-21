@@ -35,7 +35,7 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
-#include <BenchmarkGrepl/benchmarkgrepl-options.hpp>
+#include <benchmarkgrepl-options.hpp>
 
 namespace Feel
 {
