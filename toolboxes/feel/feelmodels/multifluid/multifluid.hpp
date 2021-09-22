@@ -213,7 +213,7 @@ public:
     {
         static auto globalLevelsetElt( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
     };
-    auto modelFields( std::string const& prefix = "" ) const
+    auto modelFieldsLevelsets( std::string const& prefix = "" ) const
     {
         using mfields_levelset_type = std::decay_t<decltype(this->levelsetModels().begin()->second->modelFields( "" ) )>;
         mfields_levelset_type mfieldsLevelsets;
@@ -222,16 +222,97 @@ public:
                     //mfieldsLevelsets, 
                     //it->second->modelFields(  prefixvm( prefix,  it->second->keyword() ) ) 
                     //);
-         for ( auto const& [lsName,lsModel] : this->levelsetModels() )
-             mfieldsLevelsets = Feel::FeelModels::modelFields( 
-                     mfieldsLevelsets, 
-                     lsModel->modelFields( lsModel->keyword() )
-                     );
+        for ( auto const& [lsName,lsModel] : this->levelsetModels() )
+            mfieldsLevelsets = Feel::FeelModels::modelFields( 
+                    mfieldsLevelsets, 
+                    lsModel->modelFields( lsModel->keyword() )
+                    );
 
+        //return Feel::FeelModels::modelFields( 
+                //mfieldsLevelsets,
+                //modelField<FieldCtx::ID>( FieldTag::globalLevelsetElt(this), prefix, "global-levelset", M_globalLevelset, "phi", this->keyword() )
+                //);
+        return mfieldsLevelsets;
+    }
+    auto modelFieldsLevelsets( vector_ptrtype sol, std::vector<size_type> rowStartInVectorLevelsets, std::string const& prefix = "" ) const
+    {
+        using mfields_levelset_type = std::decay_t<decltype(this->levelsetModels().begin()->second->modelFields( "" ) )>;
+        mfields_levelset_type mfieldsLevelsets;
+        for ( size_type i = 0; i < this->levelsetModels()->size(); ++i )
+            mfieldsLevelsets = Feel::FeelModels::modelFields(
+                    mfieldsLevelsets,
+                    this->levelsetModel(i)->modelFields( sol, rowStartInVectorLevelsets[i], this->levelsetModel(i)->keyword() )
+                    );
+
+        //return Feel::FeelModels::modelFields( 
+                //mfieldsLevelsets,
+                //modelField<FieldCtx::ID>( FieldTag::globalLevelsetElt(this), prefix, "global-levelset", M_globalLevelset, "phi", this->keyword() )
+                //);
+        return mfieldsLevelsets;
+    }
+    auto modelFieldsLevelsets( std::vector<vector_ptrtype> sols, std::vector<size_type> rowStartInVectorLevelsets, std::string const& prefix = "" ) const
+    {
+        using mfields_levelset_type = std::decay_t<decltype(this->levelsetModels().begin()->second->modelFields( "" ) )>;
+        mfields_levelset_type mfieldsLevelsets;
+        for ( size_type i = 0; i < this->levelsetModels()->size(); ++i )
+            mfieldsLevelsets = Feel::FeelModels::modelFields(
+                    mfieldsLevelsets,
+                    this->levelsetModel(i)->modelFields( sol[i], rowStartInVectorLevelsets[i], this->levelsetModel(i)->keyword() )
+                    );
+
+        //return Feel::FeelModels::modelFields( 
+                //mfieldsLevelsets,
+                //modelField<FieldCtx::ID>( FieldTag::globalLevelsetElt(this), prefix, "global-levelset", M_globalLevelset, "phi", this->keyword() )
+                //);
+        return mfieldsLevelsets;
+    }
+
+    auto modelFields( std::string const& prefix = "" ) const
+    {
         return Feel::FeelModels::modelFields( 
                 this->fluidModel()->modelFields( this->fluidModel()->keyword() ),
-                mfieldsLevelsets,
-                modelField<FieldCtx::ID>( FieldTag::globalLevelsetElt(this), prefix, "global-levelset", M_globalLevelset, "phi", this->keyword() )
+                this->modelFieldsLevelsets( prefix )
+                );
+    }
+    auto modelFields( vector_ptrtype sol, size_type rowStartInVectorFluid, std::vector<size_type> rowStartInVectorLevelsets, std::string const& prefix = "" ) const
+    {
+        return Feel::FeelModels::modelFields( 
+                this->fluidModel()->modelFields( sol, rowStartInVectorFluid, this->fluidModel()->keyword() ),
+                this->modelFieldsLevelsets( sol, rowStartInVectorLevelsets, prefix )
+                );
+    }
+    auto modelFields( vector_ptrtype solFluid, size_type rowStartInVectorFluid, std::vector<vector_ptrtype> solLevelsets, std::vector<size_type> rowStartInVectorLevelsets, std::string const& prefix = "" ) const
+    {
+        return Feel::FeelModels::modelFields( 
+                this->fluidModel()->modelFields( solFluid, rowStartInVectorFluid, this->fluidModel()->keyword() ),
+                this->modelFieldsLevelsets( solLevelsets, rowStartInVectorLevelsets, prefix )
+                );
+    }
+    //auto modelFields( 
+            //std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataFluid,
+            //std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataLevelsets,
+            //std::string const& prefix = "" ) const
+    //{
+        ////TODO
+    //}
+
+    auto trialSelectorModelFieldsLevelsets( std::vector<size_type> startBlockSpaceIndexLevelsets ) const
+    {
+        using tsmfields_levelset_type = std::decay_t<decltype(this->levelsetModel()->trialSelectorModelFields( "" ) )>;
+        tsmfields_levelset_type tsmfieldsLevelsets;
+        for ( size_type i = 0; i < this->levelsetModels()->size(); ++i )
+            tsmfieldsLevelsets = Feel::FeelModels::selectorModelFields(
+                    tsmfieldsLevelsets,
+                    this->levelsetModel(i)->trialSelectorModelFields( startBlockSpaceIndexLevelsets[i] )
+                    );
+
+        return tsmfieldsLevelsets;
+    }
+    auto trialSelectorModelFields( size_type startBlockSpaceIndexFluid, std::vector<size_type> startBlockSpaceIndexLevelsets ) const
+    {
+        return Feel::FeelModels::selectorModelFields( 
+                this->fluidModel()->trialSelectorModelFields( startBlockSpaceIndexFluid ),
+                this->trialSelectorModelFieldsLevelsets( startBlockSpaceIndexLevelsets )
                 );
     }
 
@@ -251,6 +332,51 @@ public:
         return Feel::vf::symbolsExpr( seFluid,seParam,seFields );
     }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+
+    //--------------------------------------------------------------------//
+    // Model context
+    auto modelContext( std::string const& prefix = "" ) const
+    {
+        auto mfields = this->modelFields( prefix );
+        auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+        return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
+    }
+    auto modelContext( vector_ptrtype sol, size_type startBlockSpaceIndexFluid, std::vector<size_type> startBlockSpaceIndexLevelsets, std::string const& prefix = "" ) const
+    {
+        return this->modelContext( sol, startBlockSpaceIndexFluid, sol, startBlockSpaceIndexLevelsets, prefix );
+    }
+    auto modelContext( vector_ptrtype solFluid, size_type startBlockSpaceIndexFluid, std::vector<vector_ptrtype> solLevelsets, std::vector<size_type> startBlockSpaceIndexLevelsets, std::string const& prefix = "" ) const
+    {
+        auto mfields = this->modelFields( solFluid, startBlockSpaceIndexFluid, solLevelsets, startBlockSpaceIndexLevelsets, prefix );
+        auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+        auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( startBlockSpaceIndexFluid, startBlockSpaceIndexLevelsets ) );
+        return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
+    }
+    auto modelContextNoTrialSymbolsExpr( vector_ptrtype sol, size_type startBlockSpaceIndexFluid, std::vector<size_type> startBlockSpaceIndexLevelsets, std::string const& prefix = "" ) const
+    {
+        return this->modelContextNoTrialSymbolsExpr( sol, startBlockSpaceIndexFluid, sol, startBlockSpaceIndexLevelsets, prefix );
+    }
+    auto modelContextNoTrialSymbolsExpr( vector_ptrtype solHeat, size_type startBlockSpaceIndexHeat, vector_ptrtype solFluid, size_type startBlockSpaceIndexFluid, std::string const& prefix = "" ) const
+    {
+        // auto mfields = this->modelFields( solHeat, startBlockSpaceIndexHeat, solFluid, startBlockSpaceIndexFluid, prefix );
+        // auto se = this->symbolsExpr( mfields );
+        // return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
+        return this->modelContextNoTrialSymbolsExpr( { { "solution", std::make_tuple( solHeat, startBlockSpaceIndexHeat ) } },
+                { { "solution", std::make_tuple( solFluid, startBlockSpaceIndexFluid ) } },
+                prefix );
+    }
+    auto modelContextNoTrialSymbolsExpr( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataHeat,
+                                         std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataFluid,
+                                         std::string const& prefix = "" ) const
+    {
+        auto mfields = this->modelFields( vectorDataHeat, vectorDataFluid, prefix );
+        auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+        return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
+    }
+    auto modelContext( vector_ptrtype sol, heat_model_ptrtype const& heatModel, fluid_model_ptrtype const& fluidModel, std::string const& prefix = "" ) const
+    {
+        return this->modelContext( sol, heatModel->startBlockSpaceIndexVector(), fluidModel->startBlockSpaceIndexVector(), prefix );
+    }
 
     //--------------------------------------------------------------------//
     // Algebraic data
@@ -278,9 +404,9 @@ public:
     std::map<std::string, interfaceforces_model_ptrtype> const& interfaceForces() const;
 
     //--------------------------------------------------------------------//
-    // Solve
+    // Assembly and solve
     void solve();
-    virtual void solveExplicitCoupling();
+    virtual void solveSemiImplicitCoupling();
     virtual void solveImplicitCoupling();
     void solvePicard();
 
@@ -323,7 +449,6 @@ protected:
     void updateGlobalLevelset( element_levelset_scalar_ptrtype & globalLevelset ) const;
     void updateFluidDensityViscosity();
     void updateInterfaceForces();
-    void solveFluid();
     void advectLevelsets();
 
     void setRebuildMatrixVector( bool b = true ) { M_doRebuildMatrixVector = b; }
@@ -331,6 +456,15 @@ protected:
 
     //--------------------------------------------------------------------//
     uint16_type M_nFluids;
+
+private:
+    void updateLinear_Fluid( DataUpdateLinear & data ) const;
+    void updateResidual_Fluid( DataUpdateResidual & data ) const;
+    void updateJacobian_Fluid( DataUpdateJacobian & data ) const;
+
+    void updateLinear_Levelset( levelset_model_ptrtype const& lsModel, DataUpdateLinear & data ) const;
+    void updateResidual_Levelset( levelset_model_ptrtype const& lsModel, DataUpdateResidual & data ) const;
+    void updateJacobian_Levelset( levelset_model_ptrtype const& lsModel, DataUpdateJacobian & data ) const;
 
 private:
     std::string M_prefix;
