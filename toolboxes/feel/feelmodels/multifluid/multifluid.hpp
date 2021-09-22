@@ -133,12 +133,6 @@ public:
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
     MultiFluid( self_type const& M ) = default;
 
-    static self_ptrtype New(
-            std::string const& prefix,
-            worldcomm_ptr_t const& wc = Environment::worldCommPtr(),
-            std::string const& subPrefix = "",
-            ModelBaseRepository const& modelRep = ModelBaseRepository() );
-
     //--------------------------------------------------------------------//
     // Initialization
     void init( bool buildModelAlgebraicFactory = true );
@@ -172,16 +166,16 @@ public:
     fluid_model_ptrtype const& fluidModel() const { return M_fluidModel; }
     fluid_model_ptrtype fluidModel() { return M_fluidModel; }
 
-    std::map<std::string, levelset_model_ptrtype> const& levelsetModels() const { return M_levelsets; }
-    std::map<std::string, levelset_model_ptrtype> & levelsetModels() { return M_levelsets; }
-    levelset_model_ptrtype const& levelsetModel(std::string const& name) const { return M_levelsets.at(name); }
-    uint16_type nLevelsets() const { return M_levelsets.size(); }
+    std::vector<levelset_model_ptrtype> const& levelsetModels() const { return M_levelsetModels; }
+    std::vector<levelset_model_ptrtype> & levelsetModels() { return M_levelsetModels; }
+    levelset_model_ptrtype const& levelsetModel( index_type i ) const { return M_levelsetModels.at(i); }
+    size_type nLevelsets() const { return M_levelsetModels.size(); }
 
     // Global levelset
     auto globalLevelsetExpr() const {
         std::vector< element_levelset_scalar_ptrtype > levelsets;
         std::transform( this->levelsetModels().begin(), this->levelsetModels().end(), std::back_inserter(levelsets),
-                []( std::pair<std::string, levelset_model_ptrtype> const& l ) { return l.second->phi(); }
+                []( levelset_model_ptrtype const& lsModel ) { return lsModel->phi(); }
                 );
         return Feel::FeelModels::globalLevelsetExpr( levelsets );
     }
@@ -217,14 +211,14 @@ public:
     };
     auto modelFieldsLevelsets( std::string const& prefix = "" ) const
     {
-        using mfields_levelset_type = std::decay_t<decltype(this->levelsetModels().begin()->second->modelFields( "" ) )>;
+        using mfields_levelset_type = std::decay_t<decltype(this->levelsetModel(0)->modelFields( "" ) )>;
         mfields_levelset_type mfieldsLevelsets;
-        //for ( auto it = M_levelsets.begin() ; it != M_levelsets.end() ; ++it )
+        //for ( auto it = M_levelsetModels.begin() ; it != M_levelsetModels.end() ; ++it )
             //mfieldsLevelsets = Feel::FeelModels::modelFields( 
                     //mfieldsLevelsets, 
                     //it->second->modelFields(  prefixvm( prefix,  it->second->keyword() ) ) 
                     //);
-        for ( auto const& [lsName,lsModel] : this->levelsetModels() )
+        for ( levelset_model_ptrtype const& lsModel : this->levelsetModels() )
             mfieldsLevelsets = Feel::FeelModels::modelFields( 
                     mfieldsLevelsets, 
                     lsModel->modelFields( lsModel->keyword() )
@@ -238,9 +232,9 @@ public:
     }
     auto modelFieldsLevelsets( vector_ptrtype sol, std::vector<size_type> rowStartInVectorLevelsets, std::string const& prefix = "" ) const
     {
-        using mfields_levelset_type = std::decay_t<decltype(this->levelsetModels().begin()->second->modelFields( "" ) )>;
+        using mfields_levelset_type = std::decay_t<decltype(this->levelsetModels(0)->modelFields( "" ) )>;
         mfields_levelset_type mfieldsLevelsets;
-        for ( size_type i = 0; i < this->levelsetModels()->size(); ++i )
+        for ( index_type i = 0; i < this->levelsetModels()->size(); ++i )
             mfieldsLevelsets = Feel::FeelModels::modelFields(
                     mfieldsLevelsets,
                     this->levelsetModel(i)->modelFields( sol, rowStartInVectorLevelsets[i], this->levelsetModel(i)->keyword() )
@@ -254,9 +248,9 @@ public:
     }
     auto modelFieldsLevelsets( std::vector<vector_ptrtype> sols, std::vector<size_type> rowStartInVectorLevelsets, std::string const& prefix = "" ) const
     {
-        using mfields_levelset_type = std::decay_t<decltype(this->levelsetModels().begin()->second->modelFields( "" ) )>;
+        using mfields_levelset_type = std::decay_t<decltype(this->levelsetModels(0)->modelFields( "" ) )>;
         mfields_levelset_type mfieldsLevelsets;
-        for ( size_type i = 0; i < this->levelsetModels()->size(); ++i )
+        for ( index_type i = 0; i < this->levelsetModels()->size(); ++i )
             mfieldsLevelsets = Feel::FeelModels::modelFields(
                     mfieldsLevelsets,
                     this->levelsetModel(i)->modelFields( sol[i], rowStartInVectorLevelsets[i], this->levelsetModel(i)->keyword() )
@@ -300,9 +294,9 @@ public:
 
     auto trialSelectorModelFieldsLevelsets( std::vector<size_type> startBlockSpaceIndexLevelsets ) const
     {
-        using tsmfields_levelset_type = std::decay_t<decltype(this->levelsetModel()->trialSelectorModelFields( "" ) )>;
+        using tsmfields_levelset_type = std::decay_t<decltype(this->levelsetModel(0)->trialSelectorModelFields( "" ) )>;
         tsmfields_levelset_type tsmfieldsLevelsets;
-        for ( size_type i = 0; i < this->levelsetModels()->size(); ++i )
+        for ( index_type i = 0; i < this->levelsetModels()->size(); ++i )
             tsmfieldsLevelsets = Feel::FeelModels::selectorModelFields(
                     tsmfieldsLevelsets,
                     this->levelsetModel(i)->trialSelectorModelFields( startBlockSpaceIndexLevelsets[i] )
@@ -481,7 +475,6 @@ private:
     void updateJacobian_Levelset( size_type lsModelIndex, DataUpdateJacobian & data ) const;
 
 private:
-    std::string M_prefix;
     //--------------------------------------------------------------------//
     // Lagrange P1 iso-Pn
     bool M_useLagrangeP1iso;
@@ -491,7 +484,7 @@ private:
     fluid_model_ptrtype M_fluidModel;
     levelset_space_manager_ptrtype M_levelsetSpaceManager;
     levelset_tool_manager_ptrtype M_levelsetToolManager;
-    std::map<std::string, levelset_model_ptrtype> M_levelsets;
+    std::vector<levelset_model_ptrtype> M_levelsetModels;
     cached_levelset_scalar_field_type M_globalLevelset;
     mutable bool M_doUpdateGlobalLevelset;
     exporter_ptrtype M_globalLevelsetExporter;

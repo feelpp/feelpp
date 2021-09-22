@@ -18,13 +18,13 @@ namespace FeelModels {
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
         std::string const& prefix,
+        std::string const& keyword,
         worldcomm_ptr_t const& wc,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 : 
-    super_type( prefix, wc, subPrefix, modelRep ),
-    ModelBase( prefix, wc, subPrefix, modelRep ),
-    M_prefix( prefix ),
+    super_type( prefix, keyword, wc, subPrefix, modelRep ),
+    ModelBase( prefix, keyword, wc, subPrefix, modelRep ),
     M_useLagrangeP1iso( false ),
     M_doRebuildMatrixVector( false ),
     M_usePicardIterations( false ),
@@ -34,8 +34,23 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
     M_doUpdateInextensibilityLM( false ),
     M_globalLevelset( [this]( element_levelset_scalar_ptrtype & globalLs ) { this->updateGlobalLevelset( globalLs ); } )
 {
-    // Load parameters
-    this->loadParametersFromOptionsVm();
+    this->log("MultiFluid","constructor", "start" );
+
+    // timers
+    std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".MultiFluidConstructor.data";
+    std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".MultiFluidSolve.data";
+    std::string nameFilePostProcessing = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".MultiFluidPostProcessing.data";
+    std::string nameFileTimeStepping = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".MultiFluidTimeStepping.data";
+    this->addTimerTool("Constructor", nameFileConstructor);
+    this->addTimerTool("Solve", nameFileSolve);
+    this->addTimerTool("PostProcessing", nameFilePostProcessing);
+    this->addTimerTool("TimeStepping", nameFileTimeStepping);
+
+    // option in cfg files
+    this->loadParameterFromOptionsVm();
+
+    this->log("MultiFluid","constructor", "finish");
+
     // Build backend
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
     // Build FluidMechanics model
@@ -56,25 +71,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-typename MULTIFLUID_CLASS_TEMPLATE_TYPE::self_ptrtype
-MULTIFLUID_CLASS_TEMPLATE_TYPE::New(
-        std::string const& prefix,
-        worldcomm_ptr_t const& wc,
-        std::string const& subPrefix,
-        ModelBaseRepository const& modelRep )
-{
-    self_ptrtype new_multifluid( new self_type(prefix, wc, subPrefix, modelRep ) );
-    return new_multifluid;
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::initMesh()
 {
     this->log("MultiFluid","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
     CHECK( M_mesh ) << "mesh generation fail";
 
     double tElapsed = this->timerTool("Constructor").stop("initMesh");
