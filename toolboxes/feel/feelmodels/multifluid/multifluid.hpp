@@ -1,6 +1,8 @@
 #ifndef _MULTIFLUID_HPP
 #define _MULTIFLUID_HPP 1
 
+#include <algorithm>
+
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 #include <feel/feelmodels/levelset/levelset.hpp>
 #include <feel/feelmodels/multifluid/interfaceforcesmodel.hpp>
@@ -474,9 +476,9 @@ private:
     void updateResidual_Fluid( DataUpdateResidual & data ) const;
     void updateJacobian_Fluid( DataUpdateJacobian & data ) const;
 
-    void updateLinear_Levelset( levelset_model_ptrtype const& lsModel, DataUpdateLinear & data ) const;
-    void updateResidual_Levelset( levelset_model_ptrtype const& lsModel, DataUpdateResidual & data ) const;
-    void updateJacobian_Levelset( levelset_model_ptrtype const& lsModel, DataUpdateJacobian & data ) const;
+    void updateLinear_Levelset( size_type lsModelIndex, DataUpdateLinear & data ) const;
+    void updateResidual_Levelset( size_type lsModelIndex, DataUpdateResidual & data ) const;
+    void updateJacobian_Levelset( size_type lsModelIndex, DataUpdateJacobian & data ) const;
 
 private:
     std::string M_prefix;

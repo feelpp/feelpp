@@ -551,7 +551,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
         if( M_usePicardIterations )
             this->solvePicard();
         else
-            this->solveExplicitCoupling();
+            this->solveSemiImplicitCoupling();
     }
 
     // Redistantiate
@@ -568,7 +568,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::solveExplicitCoupling()
+MULTIFLUID_CLASS_TEMPLATE_TYPE::solveSemiImplicitCoupling()
 {
     if ( this->hasInextensibilityLM() ) /* inextensibility-lm block in fluid */
     {
@@ -603,7 +603,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveExplicitCoupling()
     else
     {
         // Solve fluid equations (with direct assembly of interface forces)
-        this->solveFluid();
+        M_fluidModel->solve();
     }
     // Advect levelsets
     this->advectLevelsets();
@@ -632,7 +632,7 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::solvePicard()
 {
-    this->solveExplicitCoupling();
+    this->solveSemiImplicitCoupling();
 
     double errorVelocityL2 = 0.;
     int picardIter = 0;
@@ -644,7 +644,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solvePicard()
         // Sub-solves
         if( M_doUpdateInextensibilityLM )
             this->updateInextensibilityLM();
-        this->solveExplicitCoupling();
+        this->solveSemiImplicitCoupling();
         auto u = this->fieldVelocity();
 
         double uOldL2Norm = integrate(
@@ -1690,20 +1690,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
     double timeElapsed = this->timerTool("Solve").stop();
     this->log( "MultiFluid", "updateInterfaceForces", 
             "interface forces updated in "+(boost::format("%1% s") %timeElapsed).str() );
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::solveFluid()
-{
-    this->log("MultiFluid", "solveFluid", "start");
-    this->timerTool("Solve").start();
-
-    this->fluidModel()->solve();
-
-    double timeElapsed = this->timerTool("Solve").stop();
-    this->log( "MultiFluid", "solveFluid", 
-            "fluid problem solved in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
