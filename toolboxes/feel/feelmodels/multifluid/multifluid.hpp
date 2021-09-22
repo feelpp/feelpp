@@ -329,9 +329,15 @@ public:
         auto seMat = this->materialsProperties()->symbolsExpr();
         auto seFields = mfields.symbolsExpr();
         auto sePhysics = this->symbolsExprPhysics( this->physics() );
-        return Feel::vf::symbolsExpr( seFluid,seParam,seFields );
+        return Feel::vf::symbolsExpr( seFluid, seParam, seMeshes, seMat, seFields, sePhysics );
     }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+
+    template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
+    auto trialSymbolsExpr( ModelFieldsType const& mfields, TrialSelectorModelFieldsType const& tsmf ) const
+    {
+        return mfields.trialSymbolsExpr( tsmf );
+    }
 
     //--------------------------------------------------------------------//
     // Model context
@@ -343,7 +349,10 @@ public:
     }
     auto modelContext( vector_ptrtype sol, size_type startBlockSpaceIndexFluid, std::vector<size_type> startBlockSpaceIndexLevelsets, std::string const& prefix = "" ) const
     {
-        return this->modelContext( sol, startBlockSpaceIndexFluid, sol, startBlockSpaceIndexLevelsets, prefix );
+        auto mfields = this->modelFields( sol, startBlockSpaceIndexFluid, startBlockSpaceIndexLevelsets, prefix );
+        auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+        auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( startBlockSpaceIndexFluid, startBlockSpaceIndexLevelsets ) );
+        return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
     }
     auto modelContext( vector_ptrtype solFluid, size_type startBlockSpaceIndexFluid, std::vector<vector_ptrtype> solLevelsets, std::vector<size_type> startBlockSpaceIndexLevelsets, std::string const& prefix = "" ) const
     {
@@ -352,30 +361,33 @@ public:
         auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( startBlockSpaceIndexFluid, startBlockSpaceIndexLevelsets ) );
         return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
     }
-    auto modelContextNoTrialSymbolsExpr( vector_ptrtype sol, size_type startBlockSpaceIndexFluid, std::vector<size_type> startBlockSpaceIndexLevelsets, std::string const& prefix = "" ) const
+    //auto modelContextNoTrialSymbolsExpr( vector_ptrtype sol, size_type startBlockSpaceIndexFluid, std::vector<size_type> startBlockSpaceIndexLevelsets, std::string const& prefix = "" ) const
+    //{
+        //return this->modelContextNoTrialSymbolsExpr( sol, startBlockSpaceIndexFluid, sol, startBlockSpaceIndexLevelsets, prefix );
+    //}
+    //auto modelContextNoTrialSymbolsExpr( vector_ptrtype solHeat, size_type startBlockSpaceIndexHeat, vector_ptrtype solFluid, size_type startBlockSpaceIndexFluid, std::string const& prefix = "" ) const
+    //{
+        //// auto mfields = this->modelFields( solHeat, startBlockSpaceIndexHeat, solFluid, startBlockSpaceIndexFluid, prefix );
+        //// auto se = this->symbolsExpr( mfields );
+        //// return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
+        //return this->modelContextNoTrialSymbolsExpr( { { "solution", std::make_tuple( solHeat, startBlockSpaceIndexHeat ) } },
+                //{ { "solution", std::make_tuple( solFluid, startBlockSpaceIndexFluid ) } },
+                //prefix );
+    //}
+    //auto modelContextNoTrialSymbolsExpr( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataHeat,
+                                         //std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataFluid,
+                                         //std::string const& prefix = "" ) const
+    //{
+        //auto mfields = this->modelFields( vectorDataHeat, vectorDataFluid, prefix );
+        //auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
+        //return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
+    //}
+    auto modelContext( vector_ptrtype sol, fluid_model_ptrtype const& fluidModel, std::vector<levelset_model_ptrtype> const& levelsetModels, std::string const& prefix = "" ) const
     {
-        return this->modelContextNoTrialSymbolsExpr( sol, startBlockSpaceIndexFluid, sol, startBlockSpaceIndexLevelsets, prefix );
-    }
-    auto modelContextNoTrialSymbolsExpr( vector_ptrtype solHeat, size_type startBlockSpaceIndexHeat, vector_ptrtype solFluid, size_type startBlockSpaceIndexFluid, std::string const& prefix = "" ) const
-    {
-        // auto mfields = this->modelFields( solHeat, startBlockSpaceIndexHeat, solFluid, startBlockSpaceIndexFluid, prefix );
-        // auto se = this->symbolsExpr( mfields );
-        // return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
-        return this->modelContextNoTrialSymbolsExpr( { { "solution", std::make_tuple( solHeat, startBlockSpaceIndexHeat ) } },
-                { { "solution", std::make_tuple( solFluid, startBlockSpaceIndexFluid ) } },
-                prefix );
-    }
-    auto modelContextNoTrialSymbolsExpr( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataHeat,
-                                         std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataFluid,
-                                         std::string const& prefix = "" ) const
-    {
-        auto mfields = this->modelFields( vectorDataHeat, vectorDataFluid, prefix );
-        auto se = this->symbolsExpr( mfields ).template createTensorContext<mesh_type>();
-        return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
-    }
-    auto modelContext( vector_ptrtype sol, heat_model_ptrtype const& heatModel, fluid_model_ptrtype const& fluidModel, std::string const& prefix = "" ) const
-    {
-        return this->modelContext( sol, heatModel->startBlockSpaceIndexVector(), fluidModel->startBlockSpaceIndexVector(), prefix );
+        std::vector<size_type> startBlockSpaceIndexLevelsets;
+        std::transform( levelsetModels.begin(), levelsetModels.end(), std::back_inserter( startBlockSpaceIndexLevelsets ),
+                []( levelset_model_ptrtype const& lsModel ) { return lsModel->startBlockSpaceIndexVector(); } );
+        return this->modelContext( sol, fluidModel->startBlockSpaceIndexVector(), startBlockSpaceIndexLevelsets, prefix );
     }
 
     //--------------------------------------------------------------------//
