@@ -53,8 +53,11 @@ void defFM(py::module &m)
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize the fluid mechanics toolbox"
              )
-        .def("init",&fm_t::init, "initialize the fluid mechanics toolbox",py::arg("buildModelAlgebraicFactory")= true)
-
+        .def("init",static_cast<void (fm_t::*)(bool)>(&fm_t::init), "initialize the fluid mechanics toolbox",py::arg("buildModelAlgebraicFactory")= true)
+        self_ptrtype const& other_toolbox, std::vector<std::string> const& markersInterpolate,
+               bool buildModelAlgebraicFactory = true ); 
+        .def("init",static_cast<void (fm_t::*)(std::shared_ptr<fm_t> const&, std::vector<std::string> const&, bool)>(&fm_t::init), "initialize another toolbox and a set of markers",
+             py::arg("toolbox"),py::arg("markers"),py::arg("buildModelAlgebraicFactory")= true);
         // function spaces and elements
         .def("functionSpaceVelocity",&fm_t::functionSpaceVelocity, "get the velocity function space")
         .def("fieldVelocity",static_cast<typename fm_t::element_velocity_type& (fm_t::*)()>(&fm_t::fieldVelocity), "get the velocity field")

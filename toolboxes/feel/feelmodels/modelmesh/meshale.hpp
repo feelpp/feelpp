@@ -62,6 +62,7 @@ class MeshALE : public ModelBase
 public :
     typedef ModelBase super_type;
     using self_type = MeshALE<Convex>;
+    using self_ptrtype = std::shared_ptr<self_type>;
     using size_type = uint32_type;
     typedef Backend<double> backend_type;
     typedef std::shared_ptr<backend_type> backend_ptrtype;
@@ -121,6 +122,7 @@ public :
         ComputationalDomain( self_type const* meshALE, range_elements_type const& rangeElt );
 
         void init( bool M_isARestart );
+        void init( ComputationalDomain const& cd, std::vector<std::string> const& markersInterpolate, bool isARestart );
 
         void generateMap( ale_map_element_type const& displacementOnMovingBoundary_HO_ref );
 
@@ -165,6 +167,7 @@ public :
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     void init();
+    void init( self_ptrtype const& other, std::vector<std::string> const& markersInterpolate );
 
     std::shared_ptr<std::ostringstream> getInfo() const;
 
