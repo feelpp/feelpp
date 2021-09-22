@@ -59,22 +59,16 @@ void defToolbox(py::module &m)
         .def("init",&toolbox_t::init, "initialize the meshALE  toolbox")
 
         // mesh
-        .def( "addBoundaryFlags", (void (toolbox_t::*)(std::string const&,std::string const&)) &toolbox_t::addBoundaryFlags, py::arg("boundary"), py::arg("marker"), "add the boundary flags" )
+        .def( "addMarkerInBoundaryCondition", (void (toolbox_t::*)(std::string const&,std::string const&)) &toolbox_t::addMarkerInBoundaryCondition, py::arg("boundary"), py::arg("marker"), "add the boundary flags" )
         .def( "referenceMesh", &toolbox_t::referenceMesh, "get the reference mesh" )
         .def( "movingMesh", &toolbox_t::movingMesh, "get the moving mesh" )
         .def( "isOnReferenceMesh", &toolbox_t::isOnReferenceMesh, "return true if on reference mesh, false otherwise" )
         .def( "isOnMovingMesh", &toolbox_t::isOnMovingMesh, "return true if on moving mesh, false otherwise" )
-        
+
         // elements
         .def( "functionSpace", &toolbox_t::functionSpace, "get the ALE map function space")
-        .def( "functionSpaceInRef", &toolbox_t::functionSpaceInRef, "get the ALE map function space in Reference Mesh")
-        
-        .def( "mapInRef", &toolbox_t::mapInRef, "returns the ale map in reference domain" )
-        .def( "map", &toolbox_t::map, "returns the ale map" )
         .def( "identityALE", &toolbox_t::identityALE, "returns the identity ale map" )
         .def( "displacementOnMovingBoundary", &toolbox_t::displacementOnMovingBoundary, "returns the displacement on moving boundary" )
-        .def( "displacementOnMovingBoundaryInRef", &toolbox_t::displacementOnMovingBoundaryInRef, "returns the displacement on moving boundary in reference domain" )
-        .def( "displacementInRef", &toolbox_t::displacementInRef, "returns the displacement in reference domain" )
         .def( "displacement", &toolbox_t::displacement, "returns the displacement field" )
         .def( "velocity", &toolbox_t::velocity, "returns the velocity field" )
 
@@ -82,7 +76,7 @@ void defToolbox(py::module &m)
         .def( "revertMovingMesh", &toolbox_t::revertMovingMesh, py::arg("updateMeshMeasures") = true, "revert mesh in reference state" )
         .def( "updateTimeStep", &toolbox_t::updateTimeStep, "update time step" )
         .def( "exportResults", &toolbox_t::exportResults, py::arg("time")=0., "export results" );
-#endif        
+#endif
 }
 
 PYBIND11_MODULE(_modelmesh, m )
