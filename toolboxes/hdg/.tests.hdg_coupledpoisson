@@ -1,0 +1,1 @@
+linear --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/coupledpoisson/1-linear/linear.cfg --ts.time-final 0.25
