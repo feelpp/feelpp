@@ -191,11 +191,11 @@ public:
         ibcSpaces->setProperties( props );
     }
 
-    void updateLinearPDE( ModelAlgebraic::DataUpdateHDG& data ) const override {
+    void updateLinearPDE( ModelAlgebraic::DataUpdateLinear& data ) const override {
         super_type::updateLinearPDE( data );
 
-        condensed_matrix_ptr_t<double>& A = data.matrix();
-        condensed_vector_ptr_t<double>& F = data.rhs();
+        auto A = std::dynamic_pointer_cast<condensed_matrix_t<typename super_type::value_type>>(data.matrix());
+        auto F = std::dynamic_pointer_cast<condensed_vector_t<typename super_type::value_type>>(data.rhs());
         bool buildCstPart = data.buildCstPart();
         bool buildNonCstPart = !buildCstPart;
 
@@ -260,12 +260,16 @@ public:
     void solve() override {
         this->M_A->zero();
         this->M_F->zero();
-        ModelAlgebraic::DataUpdateHDG dataHDGCst(this->M_A, this->M_F, true);
-        this->updateLinearPDE(dataHDGCst);
+        auto A = std::dynamic_pointer_cast<typename super_type::super_type::backend_type::sparse_matrix_type>(this->M_A);
+        auto F = std::dynamic_pointer_cast<typename super_type::super_type::backend_type::vector_type>(this->M_F);
+        CHECK(A) << "A PAS BON !!!";
+        CHECK(F) << "F PAS BON !!!";
+        auto U = this->M_ps->element();
+        U.buildVector(this->backend());
+        this->algebraicFactory()->applyAssemblyLinear(U.vectorMonolithic(), A, F);
 
         auto bbf = blockform2( *this->M_ps, this->M_A);
         auto blf = blockform1( *this->M_ps, this->M_F);
-        auto U = this->M_ps->element();
 
         bbf.solve(_solution=U, _rhs=blf, _condense=this->M_useSC, _name=this->prefix());
 
