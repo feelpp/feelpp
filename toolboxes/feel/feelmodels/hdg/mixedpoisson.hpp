@@ -176,7 +176,6 @@ protected:
     MarkerManagementRobinBC M_bcRobinMarkerManagement;
     MarkerManagementIntegralBC M_bcIntegralMarkerManagement;
 
-    backend_ptrtype M_backend;
     condensed_matrix_ptr_t<value_type> M_A;
     condensed_vector_ptr_t<value_type> M_F;
     condensed_matrix_ptr_t<value_type> M_App;
@@ -252,10 +251,6 @@ public:
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
-    backend_ptrtype const& backend() { return M_backend; }
-    product2_space_ptrtype getPS() const { return M_ps; }
-    condensed_vector_ptr_t<value_type> getF() { return M_F; }
-
     double tauCst() const { return M_tauCst; }
     void setTauCst(double cst) { M_tauCst = cst; }
     bool useSC() const { return M_useSC; }
@@ -273,9 +268,9 @@ protected :
 
 public:
     void init( bool buildModelAlgebraicFactory = true );
-    // BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
-    // int nBlockMatrixGraph() const;
-    // void initAlgebraicFactory();
+    BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
+    int nBlockMatrixGraph() const;
+    void initAlgebraicFactory();
 
     void updateParameterValues();
     void setParameterValues( std::map<std::string,double> const& paramValues );
@@ -321,14 +316,14 @@ public:
     //___________________________________________________________________________________//
 
     virtual void solve();
-    virtual void updateLinearPDE( DataUpdateHDG& data ) const;
+    virtual void updateLinearPDE( DataUpdateLinear& data ) const override;
     template <typename ModelContextType>
-    void updateLinearPDE( DataUpdateHDG & data, ModelContextType const& mfields ) const;
+    void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
 
     void solvePostProcess();
-    void updatePostPDE( DataUpdateHDG& data ) const;
+    void updatePostPDE( DataUpdateLinear& data ) const;
     template <typename ModelContextType>
-    void updatePostPDE( DataUpdateHDG & data, ModelContextType const& mfields ) const;
+    void updatePostPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
 
     //___________________________________________________________________________________//
     // export expressions
@@ -347,9 +342,9 @@ public:
     auto modelFields( std::string const& prefix = "" ) const
         {
             return Feel::FeelModels::modelFields(
-                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::potential(this), prefix, M_physicMap.at("potentialK"), this->fieldPotential(), M_physicMap.at("potentialSymbol"), this->keyword() ),
-                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::postpotential(this), prefix, "post"+M_physicMap.at("potentialK"), this->fieldPostPotential(), M_physicMap.at("potentialSymbol")+"pp", this->keyword() ),
-                modelField<FieldCtx::ID>( FieldTag::flux(this), prefix, M_physicMap.at("fluxK"), this->fieldFlux(), M_physicMap.at("fluxSymbol"), this->keyword() )
+                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::potential(this), prefix, M_physicMap.at("potentialK"), this->fieldPotentialPtr(), M_physicMap.at("potentialSymbol"), this->keyword() ),
+                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::postpotential(this), prefix, "post"+M_physicMap.at("potentialK"), this->fieldPostPotentialPtr(), M_physicMap.at("potentialSymbol")+"pp", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::flux(this), prefix, M_physicMap.at("fluxK"), this->fieldFluxPtr(), M_physicMap.at("fluxSymbol"), this->keyword() )
                                                  );
         }
 

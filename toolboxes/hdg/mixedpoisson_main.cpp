@@ -1,4 +1,4 @@
-#include "../feel/feelmodels/hdg/mixedpoisson.hpp"
+#include <feel/feelmodels/hdg/mixedpoisson.hpp>
 #include <feel/feelmodels/modelcore/convergencemode.hpp>
 
 using namespace Feel;
