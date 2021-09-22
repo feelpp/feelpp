@@ -331,44 +331,6 @@ public :
         vector_ptrtype& M_initialGuess;
     };
 
-    class DataUpdateHDG : public DataUpdateBase
-    {
-    public:
-        DataUpdateHDG( // const vector_ptrtype& currentSolution,
-                       condensed_matrix_ptr_t<value_type> matrix, condensed_vector_ptr_t<value_type> rhs,
-                       bool buildCstPart )
-            :
-            DataUpdateBase(),
-            M_matrix( matrix ),
-            M_rhs( rhs ),
-            // M_currentSolution( currentSolution ),
-            M_buildCstPart( buildCstPart )//,
-            // M_doBCStrongDirichlet( true )
-            {}
-        DataUpdateHDG(DataUpdateHDG const& d) = default;
-        DataUpdateHDG(DataUpdateHDG && d) = default;
-
-        condensed_matrix_ptr_t<value_type>& matrix() { return M_matrix; }
-        condensed_vector_ptr_t<value_type>& rhs() { return M_rhs; }
-        // vector_ptrtype const& currentSolution() { return M_currentSolution; }
-        bool buildCstPart() const { return M_buildCstPart; }
-        std::map<Feel::MatrixStructure,std::pair<condensed_matrix_ptr_t<value_type>,double>> const& matrixToAdd() const { return M_matrixToAdd; }
-        std::vector<std::pair<condensed_matrix_ptr_t<value_type>,condensed_vector_ptr_t<value_type>>> const& rhsToAddFromMatrixVectorProduct() const { return M_rhsToAddFromMatrixVectorProduct; }
-
-        void setBuildCstPart( bool b ) { M_buildCstPart = b; }
-        void addMatrixToAdd( condensed_matrix_ptr_t<value_type> mat, Feel::MatrixStructure matStruc, double scaling ) { M_matrixToAdd[matStruc] = std::make_pair( mat, scaling ); }
-        void addRhsToAdd( condensed_matrix_ptr_t<value_type> mat, condensed_vector_ptr_t<value_type> vec ) { M_rhsToAddFromMatrixVectorProduct.push_back( std::make_pair(mat,vec) ); }
-    private :
-        condensed_matrix_ptr_t<value_type> M_matrix;
-        condensed_vector_ptr_t<value_type> M_rhs;
-        // const vector_ptrtype& M_currentSolution;
-
-        bool M_buildCstPart;
-
-        std::map<Feel::MatrixStructure,std::pair<condensed_matrix_ptr_t<value_type>,double>> M_matrixToAdd;
-        std::vector<std::pair<condensed_matrix_ptr_t<value_type>,condensed_vector_ptr_t<value_type>>> M_rhsToAddFromMatrixVectorProduct;
-    };
-
     ModelAlgebraic( std::string _theprefix, std::string const& keyword,
                     worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
                     std::string const& subPrefix="",

@@ -83,6 +83,35 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+int
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
+{
+    int nBlock = 1;
+    return nBlock;
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+BlocksBaseGraphCSR
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
+{
+    int nBlock = this->nBlockMatrixGraph();
+    BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
+    myblockGraph(0,0) = stencil(_test=this->spacePotential(),
+                                _trial=this->spacePotential() )->graph();
+    return myblockGraph;
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+void
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
+{
+    auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
+    this->setAlgebraicFactory( algebraicFactory );
+}
+
+
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
@@ -123,16 +152,20 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // post-process
     this->initPostProcess();
 
-    // backend : use worldComm of Xh
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
+    // backend
+    this->initAlgebraicBackend();
+
+    // algebraic solver
+    if ( buildModelAlgebraicFactory )
+        this->initAlgebraicFactory();
 
     solve::strategy s = M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
     auto pps = product( M_Whp );
 
-    M_A = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend, (s>=solve::strategy::static_condensation)?false:true );
-    M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);
-    M_App = makeSharedMatrixCondensed<value_type>(solve::strategy::local,  csrGraphBlocks(pps, Pattern::ZERO), backend(), false );
-    M_Fpp = makeSharedVectorCondensed<value_type>(solve::strategy::local, blockVector(pps), backend(), false);
+    M_A = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *this->backend(), (s>=solve::strategy::static_condensation)?false:true );
+    M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *this->backend(), false);
+    M_App = makeSharedMatrixCondensed<value_type>(solve::strategy::local,  csrGraphBlocks(pps, Pattern::ZERO), this->backend(), false );
+    M_Fpp = makeSharedVectorCondensed<value_type>(solve::strategy::local, blockVector(pps), this->backend(), false);
 
     this->setIsUpdatedForUse( true );
 
@@ -515,18 +548,21 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve()
 {
     M_A->zero();
     M_F->zero();
-    DataUpdateHDG dataHDGCst(M_A, M_F, true);
-    this->updateLinearPDE(dataHDGCst);
+    auto U = M_ps->element();
+    U.buildVector(this->backend());
+    auto A = std::dynamic_pointer_cast<typename super_type::backend_type::sparse_matrix_type>(M_A);
+    auto F = std::dynamic_pointer_cast<typename super_type::backend_type::vector_type>(M_F);
+    CHECK(A) << "A PAS BON !!!";
+    CHECK(F) << "F PAS BON !!!";
+    this->algebraicFactory()->applyAssemblyLinear(U.vectorMonolithic(), A, F);
 
     auto bbf = blockform2( *M_ps, M_A);
     auto blf = blockform1( *M_ps, M_F);
-    auto U = M_ps->element();
 
     bbf.solve(_solution=U, _rhs=blf, _condense=M_useSC, _name=this->prefix());
 
     M_up = std::make_shared<element_flux_type>( U(0_c) );
     M_pp = std::make_shared<element_potential_type>( U(1_c));
-
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
@@ -534,13 +570,16 @@ void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solvePostProcess()
 {
     Feel::cout << "solving post process" << std::endl;;
-    DataUpdateHDG dataHDGPost(M_App, M_Fpp, !M_postMatrixInit);
-    this->updatePostPDE(dataHDGPost);
-
     auto pps = product( M_Whp );
+    auto PP = pps.element();
+    PP.buildVector(this->backend());
+    auto App = std::dynamic_pointer_cast<typename super_type::backend_type::sparse_matrix_type>(M_App);
+    auto Fpp = std::dynamic_pointer_cast<typename super_type::backend_type::vector_type>(M_Fpp);
+    DataUpdateLinear dataPost(PP.vectorMonolithic(), App, Fpp, !M_postMatrixInit);
+    this->updatePostPDE(dataPost);
+
     auto bbf = blockform2( pps, M_App );
     auto blf = blockform1( pps, M_Fpp );
-    auto PP = pps.element();
     bbf.solve( _solution=PP, _rhs=blf, _name="sc.post", _local=true);
 
     M_ppp = std::make_shared<element_postpotential_type>( PP(0_c) );
