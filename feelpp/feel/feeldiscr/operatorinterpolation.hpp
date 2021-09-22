@@ -442,11 +442,26 @@ struct PrecomputeDomainBasisFunction
         M_XhImage( XhImage ),
         M_expr( expr )
     {
-        auto itElt = M_XhDomain->mesh()->firstElementIteratorWithProcessId();
-        if ( itElt == M_XhDomain->mesh()->endElement() )
+        geoelement_type const * eltInitPtr = nullptr;
+        if ( M_XhDomain->dof()->hasMeshSupport() && M_XhDomain->dof()->meshSupport()->isPartialSupport() )
+        {
+            for ( auto const& eltWrap : elements(support(M_XhDomain)) )
+            {
+                auto const& elt = unwrap_ref(eltWrap);
+                eltInitPtr = &elt;
+                break;
+            }
+        }
+        else
+        {
+            auto itElt = M_XhDomain->mesh()->firstElementIteratorWithProcessId();
+            if ( itElt != M_XhDomain->mesh()->endElement() )
+                eltInitPtr = &(itElt->second);
+        }
+        if ( !eltInitPtr )
             return;
 
-        this->init( itElt->second );
+        this->init( *eltInitPtr );
     }
 
 
@@ -787,13 +802,24 @@ private :
                 {
                     auto const& theface = M_meshDomain->face( M_meshImage->subMeshToMesh( imageEltId ) );
                     size_type domainEltId = invalid_v<size_type>;
-                    if ( !theface.element0().isGhostCell() )
-                        domainEltId = theface.element0().id();
-                    else if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
-                        domainEltId = theface.element1().id();
+                    if ( M_hasMeshSupportPartialDomain )
+                    {
+                        if ( M_meshSupportDomain->hasElement( theface.element0().id() ) && !M_meshSupportDomain->hasGhostElement( theface.element0().id() ) )
+                            domainEltId = theface.element0().id();
+                        else if ( theface.isConnectedTo1() && M_meshSupportDomain->hasElement( theface.element1().id() ) && !M_meshSupportDomain->hasGhostElement( theface.element1().id() ) )
+                            domainEltId = theface.element1().id();
+                        else
+                            CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
+                    }
                     else
-                        CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
-
+                    {
+                        if ( !theface.element0().isGhostCell() )
+                            domainEltId = theface.element0().id();
+                        else if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
+                            domainEltId = theface.element1().id();
+                        else
+                            CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
+                    }
                     VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
                     if ( domainEltId != invalid_v<size_type> ) idsFind.insert( domainEltId );
                 }

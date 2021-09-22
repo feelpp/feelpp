@@ -39,7 +39,6 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 |  `--L L`              | width of a fin | 2.5
 |  `--d D`              | distance between two fins | 0.5
 |  `--t T`              | thickness of a fin | 0.25
-|  `--P P`              | tickness of the thermal fin (only for 3D case)| 1
 |  `--dim DIM`          | dimension of the case (2 or 3) |  2
 | `--cylinder CYLINDER` | shape of fin and post (0=boxes, 1=box/cylinders, 2=cylinders) | 0
 |===

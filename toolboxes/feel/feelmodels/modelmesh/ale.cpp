@@ -25,14 +25,9 @@
  \date 2010-10-12
  */
 
-#include <boost/preprocessor/comparison/greater_equal.hpp>
 
 #include <feel/feelmodels/modelmesh/ale.hpp>
 #include <feel/feelmodels/modelmesh/ale_impl.hpp>
-
-
-#include <feel/feelfilters/gmsh.hpp>
-
 
 namespace Feel
 {
@@ -40,51 +35,44 @@ namespace FeelModels
 {
 
 template < class Convex, int Order >
-ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t const& worldcomm,
+ALE<Convex,Order>::ALE( std::string const& prefix, worldcomm_ptr_t const& worldcomm,
                         ModelBaseRepository const& modelRep )
     :
-    super_type( prefix/*prefixvm(prefix,"alemesh")*/, worldcomm,"",modelRep )
-    //super_type( mesh,prefix,worldcomm,moveGhostEltFromExtendedStencil ),
+    super_type( prefix, worldcomm,"",modelRep )
 {
-    M_flagSet["fixed"].clear();
-    M_flagSet["moving"].clear();
-    M_flagSet["free"].clear();
+    M_bcToMarkers["fixed"].clear();
+    M_bcToMarkers["moving"].clear();
+    M_bcToMarkers["free"].clear();
 }
 
 template< class Convex, int Order >
 typename ALE<Convex,Order>::self_ptrtype
-ALE<Convex,Order>::build( mesh_ptrtype mesh, std::string prefix,
+ALE<Convex,Order>::build( mesh_ptrtype mesh, std::string const& prefix,
                           worldcomm_ptr_t const& worldcomm,
                           ModelBaseRepository const& modelRep)
 {
     return self_ptrtype( new ALE_IMPL::ALE<Convex,Order>(mesh,prefix,worldcomm,modelRep ) );
 }
 
-
-
 template< class Convex, int Order >
-typename ALE<Convex,Order>::flagSet_type const&
-ALE<Convex,Order>::flagSet() const { return M_flagSet; }
+typename ALE<Convex,Order>::self_ptrtype
+ALE<Convex,Order>::build( mesh_ptrtype mesh, range_elements_type const& rangeElt, std::string const& prefix,
+                          worldcomm_ptr_t const& worldcomm,
+                          ModelBaseRepository const& modelRep)
+{
+    return self_ptrtype( new ALE_IMPL::ALE<Convex,Order>(mesh,rangeElt,prefix,worldcomm,modelRep ) );
+}
+
 
 template < class Convex, int Order >
 void
-ALE<Convex,Order>::addBoundaryFlags( std::string str, flag_type flag )
+ALE<Convex,Order>::addMarkerInBoundaryCondition( std::string const& bc, std::string const& marker )
 {
-    if ( str == "fixed" )
-        M_flagSet["fixed"].push_back(flag);
-    else if ( str == "moving" )
-        M_flagSet["moving"].push_back(flag);
-    else if ( str == "free" )
-        M_flagSet["free"].push_back(flag);
-    else
-        CHECK( false ) << "invalid flag type" << str << " with flag name " << flag;
+    CHECK( bc == "fixed" || bc == "moving" || bc == "free" ) << "invalid bc : " << bc;
+    M_bcToMarkers[bc].insert( marker );
 }
-template < class Convex, int Order >
-void
-ALE<Convex,Order>::addBoundaryFlags( flagSet_type flags )
-{
-    M_flagSet = flags;
-}
+
+#if 0
 template < class Convex, int Order >
 void
 ALE<Convex,Order>::clearFlagSet()
@@ -94,28 +82,7 @@ ALE<Convex,Order>::clearFlagSet()
     M_flagSet["moving"].clear();
     M_flagSet["free"].clear();
 }
-template < class Convex, int Order >
-std::vector<flag_type> const&
-ALE<Convex,Order>::flagSet(std::string key) const
-{
-    CHECK( M_flagSet.find(key) != M_flagSet.end() ) << "the flag type " << key << " is unknown \n";
-    return M_flagSet.find(key)->second;
-}
-template < class Convex, int Order >
-flag_type
-ALE<Convex,Order>::flagSet(std::string key, int k) const
-{
-    CHECK( M_flagSet.find(key) != M_flagSet.end() ) << "the flag type " << key << " is unknown \n";
-    CHECK( M_flagSet.find(key)->second.size() > k ) << "the key " << k << " must be <  " <<  M_flagSet.find(key)->second.size() << "\n";
-    return M_flagSet.find(key)->second.at(k);
-}
-template < class Convex, int Order >
-void
-ALE<Convex,Order>::setFlagSet( flagSet_type const & fl )
-{
-    M_flagSet=fl;
-}
-
+#endif
 } // namespace FeelModels
 } // namespace Feel
 
