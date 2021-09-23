@@ -335,8 +335,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
                                                  _range=M_rangeMeshElements );
     }
 
-    M_fieldVelocity.reset( new element_velocity_type(M_XhVelocity,"velocity") );
-    M_fieldPressure.reset( new element_pressure_type(M_XhPressure,"pressure") );
+
+    M_fieldVelocity = M_XhVelocity->elementPtr("velocity");
+    M_fieldPressure = M_XhPressure->elementPtr("pressure");
 
     double tElapsed = this->timerTool("Constructor").stop("initFunctionSpaces");
     this->log("FluidMechanics","createFunctionSpaces", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -667,7 +668,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
 
     //bool doExport = boption(_name="exporter.export");
     //auto const geoExportType = ExporterGeometry::EXPORTER_GEOMETRY_STATIC;//(this->isMoveDomain())?ExporterGeometry::EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY:ExporterGeometry::EXPORTER_GEOMETRY_STATIC;
+#if 0
     std::string geoExportType="static";//change_coords_only, change, static
+#else
+    bool useStaticExporter = boption(_name="exporter.use-static-mesh",_prefix=this->prefix());
+    std::string geoExportType = useStaticExporter? "static":"change";
+#endif
 
     if constexpr ( nOrderGeo <= 2 /*&& doExport*/ )
     {
@@ -1145,6 +1151,99 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 }
 
 //---------------------------------------------------------------------------------------------------------//
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
+{
+    mesh_ptrtype oldMesh = this->mesh();
+
+    // material prop
+    this->materialsProperties()->removeMesh( oldMesh );
+    this->materialsProperties()->addMesh( newMesh );
+
+    this->setMesh( newMesh );
+
+    // function space and fields
+    space_velocity_ptrtype old_spaceVelocity = M_XhVelocity;
+    space_pressure_ptrtype old_spacePressure = M_XhPressure;
+    element_velocity_ptrtype old_fieldVelocity = M_fieldVelocity;
+    element_pressure_ptrtype old_fieldPressure = M_fieldPressure;
+    this->initFunctionSpaces();
+
+    // createInterpolationOp
+    auto opI_velocity = opInterpolation(_domainSpace=old_spaceVelocity,
+                                        _imageSpace=M_XhVelocity,
+                                        _range=M_rangeMeshElements );
+    auto matrixInterpolation_velocity = opI_velocity->matPtr();
+    matrixInterpolation_velocity->multVector( *old_fieldVelocity, *M_fieldVelocity );
+    auto opI_pressure = opInterpolation(_domainSpace=old_spacePressure,
+                                        _imageSpace=M_XhPressure,
+                                        _range=M_rangeMeshElements );
+    auto matrixInterpolation_pressure = opI_pressure->matPtr();
+    matrixInterpolation_pressure->multVector( *old_fieldPressure, *M_fieldPressure );
+
+    // time stepping
+    M_bdfVelocity->applyRemesh( this->functionSpaceVelocity(), matrixInterpolation_velocity );
+    M_savetsPressure->applyRemesh( this->functionSpacePressure(), matrixInterpolation_pressure );
+
+    // velocity extrapolated
+    if ( M_vectorVelocityExtrapolated )
+    {
+        vector_ptrtype old_vectorVelocityExtrapolated = M_vectorVelocityExtrapolated;
+        M_vectorVelocityExtrapolated = this->algebraicBackend()->newVector( this->functionSpaceVelocity() );
+        M_fieldVelocityExtrapolated = this->functionSpaceVelocity()->elementPtr( *M_vectorVelocityExtrapolated, 0 );
+        matrixInterpolation_velocity->multVector( *old_vectorVelocityExtrapolated, *M_vectorVelocityExtrapolated );
+    }
+    if ( M_vectorPreviousVelocityExtrapolated )
+    {
+        vector_ptrtype old_vectorPreviousVelocityExtrapolated = M_vectorPreviousVelocityExtrapolated;
+        M_vectorPreviousVelocityExtrapolated = this->algebraicBackend()->newVector( this->functionSpaceVelocity() );
+        matrixInterpolation_velocity->multVector( *old_vectorPreviousVelocityExtrapolated, *M_vectorPreviousVelocityExtrapolated );
+    }
+
+
+
+    // TODO : stabilization gls
+
+    // TODO : post process ??
+
+    // reset algebraic data/tools
+    this->removeAllAlgebraicDataAndTools();
+    this->initAlgebraicModel();
+
+    this->initAlgebraicFactory(); // TODO : Theta time scheme 
+
+}
+
+//---------------------------------------------------------------------------------------------------------//
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicModel()
+{
+    // backend
+    this->initAlgebraicBackend();
+
+    // define start dof index ( lm , windkessel )
+    this->initStartBlockIndexFieldsInMatrix();
+
+    // build solution block vector
+    this->buildBlockVector();
+
+    // dof eliminitation ids
+    this->updateAlgebraicDofEliminationIds();
+
+    // InHousePreconditioner : operatorPCD
+    this->initInHousePreconditioner();
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateAlgebraicDofEliminationIds()
+{
+    this->updateBoundaryConditionsForUse();
+}
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void

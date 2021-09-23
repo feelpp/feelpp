@@ -1658,9 +1658,13 @@ private :
     void initUserFunctions();
     void initPostProcess() override;
     void createPostProcessExporters();
+
+    void initAlgebraicModel();
+    void updateAlgebraicDofEliminationIds();
 public :
     void init( bool buildModelAlgebraicFactory=true );
     void initAlgebraicFactory();
+    void applyRemesh( mesh_ptrtype const& newMesh );
 
     void createFunctionSpacesNormalStress();
     void createFunctionSpacesSourceAdded();
@@ -2865,6 +2869,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::exportResults( d
 
     if constexpr ( nOrderGeo <= 2 )
     {
+        if ( M_exporter && M_exporter->exporterGeometry() == EXPORTER_GEOMETRY_CHANGE ) // TODO mv this code
+            M_exporter->defaultTimeSet()->setMesh( this->mesh() );
         this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
         this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, mfields, symbolsExpr, exportsExpr );
     }
