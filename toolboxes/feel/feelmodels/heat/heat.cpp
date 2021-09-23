@@ -316,7 +316,8 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
 #if 0
         std::string geoExportType="static";//change_coords_only, change, static
 #else
-        std::string geoExportType="change";
+        bool useStaticExporter = boption(_name="exporter.use-static-mesh",_prefix=this->prefix());
+        std::string geoExportType = useStaticExporter? "static":"change";
 #endif
         M_exporter = exporter( _mesh=this->mesh(),
                                _name="Export",
