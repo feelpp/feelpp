@@ -22,12 +22,6 @@ def cfpdes( dim=2, worldComm=None ):
         raise RuntimeError('cfpde solver '+key+' not existing')
     return _cfpdes[key]( "cfpdes", "cfpdes", worldComm )
 
-def simulate(dim=2):
-    f=cfpdes(dim=dim)
-    f.init()
-    # f.printAndSaveInfo()
-    f.solve()
-    f.exportResults()
 
 
     
