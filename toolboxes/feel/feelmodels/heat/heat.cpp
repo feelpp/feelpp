@@ -119,7 +119,8 @@ HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
         M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
 
-    M_fieldTemperature.reset( new element_temperature_type(M_Xh,"temperature"));
+    //M_fieldTemperature.reset( new element_temperature_type(M_Xh,"temperature"));
+    M_fieldTemperature =  M_Xh->elementPtr( "temperature" );
 
     double tElpased = this->timerTool("Constructor").stop("initFunctionSpaces");
     this->log("Heat","initFunctionSpaces",(boost::format("finish in %1% s")%tElpased).str() );
@@ -187,18 +188,7 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // post-process
     this->initPostProcess();
 
-    // backend
-    this->initAlgebraicBackend();
-
-    // subspaces index
-    size_type currentStartIndex = 0;
-    this->setStartSubBlockSpaceIndex( "temperature", currentStartIndex++ );
-
-     // vector solution
-    auto bvs = this->initAlgebraicBlockVectorSolution( 1 );
-    bvs->operator()(0) = this->fieldTemperaturePtr();
-    // init petsc vector associated to the block
-    bvs->buildVector( this->backend() );
+    this->initAlgebraicModel();
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -209,6 +199,66 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
     this->log("Heat","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
+}
+
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicModel()
+{
+    // backend
+    this->initAlgebraicBackend();
+
+    // subspaces index
+    size_type currentStartIndex = 0;
+    this->setStartSubBlockSpaceIndex( "temperature", currentStartIndex++ );
+
+    this->updateAlgebraicDofEliminationIds();
+
+     // vector solution
+    auto bvs = this->initAlgebraicBlockVectorSolution( 1 );
+    bvs->operator()(0) = this->fieldTemperaturePtr();
+    // init petsc vector associated to the block
+    bvs->buildVector( this->backend() );
+}
+
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
+{
+    mesh_ptrtype oldMesh = this->mesh();
+
+    // material prop
+    this->materialsProperties()->removeMesh( oldMesh );
+    this->materialsProperties()->addMesh( newMesh );
+
+    this->setMesh( newMesh );
+
+    // function space and fields
+    space_temperature_ptrtype old_Xh = M_Xh;
+    element_temperature_ptrtype old_fieldTemperature = M_fieldTemperature;
+    this->initFunctionSpaces();
+
+    // createInterpolationOp
+    auto opI_temperature = opInterpolation(_domainSpace=old_Xh,
+                                           _imageSpace=M_Xh,
+                                           _range=M_rangeMeshElements );
+    auto matrixInterpolation_temperature = opI_temperature->matPtr();
+    matrixInterpolation_temperature->multVector( *old_fieldTemperature, *M_fieldTemperature );
+
+    // time stepping
+    if ( M_bdfTemperature )
+        M_bdfTemperature->applyRemesh( M_Xh, matrixInterpolation_temperature );
+
+    // TODO : stabilization gls
+
+    // TODO : post process ??
+
+    // reset algebraic data/tools
+    this->removeAllAlgebraicDataAndTools();
+    this->initAlgebraicModel();
+
+    this->initAlgebraicFactory(); // TODO : Theta time scheme
+
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -263,7 +313,11 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     if ( !this->postProcessExportsFields().empty() )
     {
+#if 0
         std::string geoExportType="static";//change_coords_only, change, static
+#else
+        std::string geoExportType="change";
+#endif
         M_exporter = exporter( _mesh=this->mesh(),
                                _name="Export",
                                _geo=geoExportType,
@@ -598,6 +652,12 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
 
+}
+
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::updateAlgebraicDofEliminationIds()
+{
     auto mesh = this->mesh();
     auto XhTemperature = this->spaceTemperature();
     std::set<std::string> temperatureMarkers;
@@ -614,7 +674,6 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     auto const& listMarkedFacesTemperature = std::get<0>( meshMarkersTemperatureByEntities );
     if ( !listMarkedFacesTemperature.empty() )
         this->updateDofEliminationIds( "temperature", XhTemperature, markedfaces( mesh,listMarkedFacesTemperature ) );
-
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
