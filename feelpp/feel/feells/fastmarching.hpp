@@ -135,8 +135,7 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
 
             public:
                 HeapMap( Cmp cmp = Cmp() ) : 
-                    M_data(), M_validEntriesPtr(),
-                    M_cmp( cmp ), M_size( 0 ) 
+                    M_data(), M_cmp( cmp ), M_validEntriesPtr(), M_size( 0 ) 
             {}
 
                 void insert( data_type const& data ) 
