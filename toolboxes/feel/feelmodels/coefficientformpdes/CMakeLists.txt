@@ -30,17 +30,19 @@ install(TARGETS feelpp_toolbox_coefficientformpdebase EXPORT feelpp-toolboxes-ta
 
 set( _UNKNOWN_BASIS_TYPE_LIST
   #"Lagrange<0,Scalar,Continuous,PointSetFekete>"
-  "Lagrange<1,Scalar,Continuous,PointSetFekete>" "Lagrange<2,Scalar,Continuous,PointSetFekete>"
-  "Lagrange<1,Vectorial,Continuous,PointSetFekete>" "Lagrange<2,Vectorial,Continuous,PointSetFekete>"
-  "Lagrange<1,Scalar,Discontinuous,PointSetFekete>"
-  "Nedelec<0,NedelecKind::NED1>"
+  "Lagrange<1,Scalar,Continuous,PointSetFekete>"
+  # "Lagrange<2,Scalar,Continuous,PointSetFekete>"
+  # "Lagrange<1,Vectorial,Continuous,PointSetFekete>" "Lagrange<2,Vectorial,Continuous,PointSetFekete>"
+  # "Lagrange<1,Scalar,Discontinuous,PointSetFekete>"
+  # "Nedelec<0,NedelecKind::NED1>"
   )
 set( _UNKNOWN_BASIS_TAG_LIST
   #"Pch0"
-  "Pch1" "Pch2"
-  "Pchv1" "Pchv2"
-  "Pdh1"
-  "Ned1h0"
+  "Pch1"
+  # "Pch2"
+  # "Pchv1" "Pchv2"
+  # "Pdh1"
+  # "Ned1h0"
   )
 
 unset( FEELPP_TOOLBOX_COEFFICIENTFORMPDES_REGISTER_ALL_ENTRIES_CLASS_TYPE )
