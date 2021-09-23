@@ -81,7 +81,8 @@ template<typename MeshT, int Order = 1>
 void defExporter(py::module &m)
 {
     using namespace Feel;
-    
+    using namespace hana::literals;
+
     using exporter_t = Exporter<MeshT,Order>;
     using exporter_ptr_t = std::shared_ptr<exporter_t>;
     using ts_t = typename exporter_t::timeset_type;
@@ -94,56 +95,48 @@ void defExporter(py::module &m)
 
     std::string suffix = std::to_string( MeshT::nDim ) + "D";
     pyclass_name = std::string( "TimeSet::Step" ) + suffix;
-    py::class_<step_t, step_ptr_t>( m, pyclass_name.c_str() )
+    py::class_<step_t, step_ptr_t> step_wrapper( m, pyclass_name.c_str() );
+
+    step_wrapper
         .def( "time", &step_t::time, "get time of the step" )
         .def( "index", &step_t::index, "get index of the step" )
         .def( "mesh", &step_t::mesh, "get the mesh of the step" )
-        .def( "setMesh", &step_t::setMesh, "set the mesh of the step" )
+        .def( "setMesh", &step_t::setMesh, "set the mesh of the step" );
+    
+    step_wrapper.def( "add", []( step_ptr_t& self, std::string const& n, typename Pdh_type<mesh_t, 0>::element_type const& v, std::string const& reps )
+                                { self->add( n, v, reps ); },
+                                fmt::format( "add P{} discontinuous scalar Lagrange function in {}D", 0, 0 ).c_str(),
+                                py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" )
+                .def( "add", []( step_ptr_t& self, std::string const& n, typename Pdhv_type<mesh_t, 0>::element_type const& v, std::string const& reps )
+                                { self->add( n, v, reps ); },
+                                fmt::format( "add P{} discontinuous vectorial Lagrange function in {}D", 0, 0 ).c_str(),
+                                py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" );
 
-        // continuous
-        .def(
-            "add", []( step_ptr_t& self, std::string const& n, typename Pch_type<mesh_t, 1>::element_type const& v, std::string const& reps )
-            { self->add( n, v, reps ); },
-            "add P1 continuous Lagrange function  to exported data",
-            py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" )
+    auto ordert = hana::make_tuple( 0_c, 1_c, 2_c, 3_c );
+    hana::for_each(ordert,
+                   [&step_wrapper]( auto const& d )
+                       {
+                            constexpr int _order = std::decay_t<decltype(d)>::value;
+                            constexpr int _dim = mesh_t::nDim;
+                            step_wrapper.def( "add", []( step_ptr_t& self, std::string const& n, typename Pch_type<mesh_t, _order>::element_type const& v, std::string const& reps )
+                                              { self->add( n, v, reps ); },
+                                              fmt::format( "add P{} continuous scalar Lagrange function in {}D", _order, _dim ).c_str(),
+                                              py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" )
+                                        .def( "add", []( step_ptr_t& self, std::string const& n, typename Pchv_type<mesh_t, _order>::element_type const& v, std::string const& reps )
+                                                 { self->add( n, v, reps ); },
+                                                 fmt::format( "add P{} continuous vectorial Lagrange function in {}D", _order, _dim ).c_str(),
+                                                 py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" );
+                            step_wrapper.def( "add", []( step_ptr_t& self, std::string const& n, typename Pdh_type<mesh_t, _order>::element_type const& v, std::string const& reps )
+                                            { self->add( n, v, reps ); },
+                                            fmt::format( "add P{} discontinuous scalar Lagrange function in {}D", _order, _dim ).c_str(),
+                                            py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" )
+                                        .def( "add", []( step_ptr_t& self, std::string const& n, typename Pdhv_type<mesh_t, _order>::element_type const& v, std::string const& reps )
+                                            { self->add( n, v, reps ); },
+                                            fmt::format( "add P{} discontinuous vectorial Lagrange function in {}D", _order, _dim ).c_str(),
+                                            py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" );
 
-        .def(
-            "add", []( step_ptr_t& self, std::string const& n, typename Pch_type<mesh_t, 2>::element_type const& v, std::string const& reps )
-            { self->add( n, v, reps ); },
-            "add P2 continuous Lagrange function  to exported data",
-            py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" )
+                       });
 
-        .def(
-            "add", []( step_ptr_t& self, std::string const& n, typename Pch_type<mesh_t, 3>::element_type const& v, std::string const& reps )
-            { self->add( n, v, reps ); },
-            "add P3 continuous Lagrange function  to exported data",
-            py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" )
-
-        .def(
-            "add", []( step_ptr_t& self, std::string const& n, typename Pdh_type<mesh_t, 0>::element_type const& v, std::string const& reps )
-            { self->add( n, v, reps ); },
-            "add P0 discontinuous Lagrange function  to exported data",
-            py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" )
-
-        .def(
-            "add", []( step_ptr_t& self, std::string const& n, typename Pdh_type<mesh_t, 1>::element_type const& v, std::string const& reps )
-            { self->add( n, v, reps ); },
-            "add P1 discontinuous Lagrange function  to exported data",
-            py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" )
-
-        .def(
-            "add", []( step_ptr_t& self, std::string const& n, typename Pdh_type<mesh_t, 2>::element_type const& v, std::string const& reps )
-            { self->add( n, v, reps ); },
-            "add P2 discontinuous Lagrange function  to exported data",
-            py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" )
-
-        .def(
-            "add", []( step_ptr_t& self, std::string const& n, typename Pdh_type<mesh_t, 3>::element_type const& v, std::string const& reps )
-            { self->add( n, v, reps ); },
-            "add P3 discontinuous Lagrange function  to exported data",
-            py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" )
-
-        ;
     pyclass_name = std::string("Exporter") + suffix;
     py::class_<exporter_t,PyExporter<MeshT,1>,exporter_ptr_t>(m,pyclass_name.c_str())
         .def(py::init<>() )
