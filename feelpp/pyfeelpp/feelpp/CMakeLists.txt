@@ -12,10 +12,11 @@ feelpp_add_pymodule(vf SRCS vf.cpp DESTINATION feelpp )
 feelpp_add_pymodule(measure SRCS measure.cpp DESTINATION feelpp )
 feelpp_add_pymodule(integrate SRCS integrate.cpp DESTINATION feelpp )
 feelpp_add_pymodule(models SRCS models.cpp DESTINATION feelpp )
+feelpp_add_pymodule(quality SRCS quality.cpp DESTINATION feelpp )
 
-foreach(MODULE IN ITEMS core feelpp alg mesh discr exporter ls ts vf measure models integrate)
+foreach(MODULE IN ITEMS core feelpp alg mesh discr exporter ls ts vf measure models integrate quality)
   add_dependencies(pyfeelpp _${MODULE})
 endforeach()
 
-set(PYFILES __init__.py integrate.py measure.py)
+set(PYFILES __init__.py integrate.py measure.py quality.py )
 install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp)
