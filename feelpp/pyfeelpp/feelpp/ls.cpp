@@ -29,6 +29,7 @@
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feells/distancetorange.hpp>
+#include <feel/feelvf/vf.hpp>
 
 namespace py = pybind11;
 
@@ -36,7 +37,7 @@ template<int Dim>
 void
 dist2range_inst( py::module &m )
 {
-    using namespace Feel;
+    using namespace Feel;using namespace Feel::vf;
     using mesh_t = Mesh < Simplex<Dim, 1>>;
     using mesh_ptr_t = std::shared_ptr<mesh_t>;
     m.def(
@@ -46,6 +47,22 @@ dist2range_inst( py::module &m )
         py::arg( "space" ),
         py::arg( "faces" ),
         fmt::format("compute the distance field in space to the range of faces in {}D",Dim).c_str() );
+    m.def(
+        "gradedls", []( Pch_ptrtype<mesh_t, 1> const& Xh, faces_reference_wrapper_t<mesh_ptr_t> const& facets, double hclose, double hfar )
+        { 
+            auto d = distanceToRange( Xh, facets ); 
+            d *= 1./d.max(); // max of d is 1
+            auto g = Xh->element();
+            CHECK( hclose > 0 && hfar > 0 ) << fmt::format("hclose({}) and/or hfar({}) must be stricly positive", hclose, hfar);
+            g.on(_range=elements(Xh->mesh()),_expr=hclose*(1-idv(d))+hfar*idv(d) );
+            return g;
+        },
+        py::return_value_policy::copy,
+        py::arg( "space" ),
+        py::arg( "faces" ),
+        py::arg( "hclose" ),
+        py::arg( "hfar" ),
+        fmt::format("compute the graded metric field with metric set to hclose on facets and hfar the farthest away from facets in {}D",Dim).c_str() );
 }
 PYBIND11_MODULE(_ls, m )
 {
