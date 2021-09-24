@@ -21,18 +21,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinear_Fluid( DataUpdateLinear & data ) co
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("MultiFluid","updateLinear_Fluid", "start"+sc);
 
-    // TODO: build vecSolsLevelsets and startBlockSpaceIndexLevelsets only once
-    std::vector<vector_ptrtype> vecSolsLevelsets;
-    std::transform( this->levelsetModels().begin(), this->levelsetModels().end(), std::back_inserter( vecSolsLevelsets ),
-            []( levelset_model_ptrtype const& lsModel ) { return lsModel->algebraicBlockVectorSolution()->vectorMonolithic(); } 
-            );
+    // TODO: build startBlockSpaceIndexLevelsets only once
     std::vector<size_type> startBlockSpaceIndexLevelsets;
-    std::transform( this->levelsetModels().begin(), this->levelsetModels().end(), std::back_inserter( startBlockSpaceIndexLevelsets ),
+    std::transform( M_levelsetModels.begin(), M_levelsetModels.end(), std::back_inserter( startBlockSpaceIndexLevelsets ),
             []( levelset_model_ptrtype const& lsModel ) { return lsModel->startBlockSpaceIndexVector(); } 
             );
 
-    auto mctx = this->modelContext( vecCurrentSolution, this->fluidModel()->startBlockSpaceIndexVector(),
-                                    vecSolsLevelsets, startBlockSpaceIndexLevelsets );
+    auto mctx = this->modelContext( vecCurrentSolution, M_fluidModel->startBlockSpaceIndexVector(),
+                                    M_algebraicBlockVectorSolutionLevelsets, startBlockSpaceIndexLevelsets );
     //if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
     //{
         //auto previousSolFluid = data.vectorInfo( "time-stepping.previous-solution");
@@ -62,20 +58,17 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinear_Levelset( size_type lsModelIndex, D
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("MultiFluid","updateLinear_Levelset", "start "+std::to_string(lsModelIndex)+sc);
 
-    // TODO: build vecSolsLevelsets and startBlockSpaceIndexLevelsets only once
-    std::vector<vector_ptrtype> vecSolsLevelsets;
-    std::transform( this->levelsetModels().begin(), this->levelsetModels().end(), std::back_inserter( vecSolsLevelsets ),
-            []( levelset_model_ptrtype const& lsModel ) { return lsModel->algebraicBlockVectorSolution()->vectorMonolithic(); } 
-            );
+    std::vector<vector_ptrtype> vecSolsLevelsets = M_algebraicBlockVectorSolutionLevelsets;
+    // TODO: build startBlockSpaceIndexLevelsets only once
     std::vector<size_type> startBlockSpaceIndexLevelsets;
-    std::transform( this->levelsetModels().begin(), this->levelsetModels().end(), std::back_inserter( startBlockSpaceIndexLevelsets ),
+    std::transform( M_levelsetModels.begin(), M_levelsetModels.end(), std::back_inserter( startBlockSpaceIndexLevelsets ),
             []( levelset_model_ptrtype const& lsModel ) { return lsModel->startBlockSpaceIndexVector(); } 
             );
     // Set current levelsetModel vector
     vecSolsLevelsets[lsModelIndex] = vecCurrentSolution;
 
     auto mctx = this->modelContext( 
-            this->fluidModel()->algebraicBlockVectorSolution()->vectorMonolithic(), this->fluidModel()->startBlockSpaceIndexVector(),
+            M_fluidModel->algebraicBlockVectorSolution()->vectorMonolithic(), M_fluidModel->startBlockSpaceIndexVector(),
             vecSolsLevelsets, startBlockSpaceIndexLevelsets 
             );
     //if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
@@ -90,7 +83,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinear_Levelset( size_type lsModelIndex, D
         //mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
     //}
 
-    this->levelsetModel( lsModelIndex )->updateLinearPDE( data, mctx );
+    M_levelsetModel[lsModelIndex]->updateLinearPDE( data, mctx );
 
     this->log("MultiFluid","updateLinear_Levelset", "finish "+std::to_string(lsModelIndex)+sc);
 }

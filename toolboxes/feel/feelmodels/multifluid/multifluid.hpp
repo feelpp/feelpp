@@ -420,7 +420,7 @@ public:
     void updateLinearPDEInextensibility( DataUpdateLinear & data ) const;
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
 
-    //void updateNewtonInitialGuess( vector_ptrtype& U ) const;
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
     void updateJacobian( DataUpdateJacobian & data ) const override;
     void updateJacobianInterfaceForces( DataUpdateJacobian & data ) const;
     void updateJacobianInextensibility( DataUpdateJacobian & data ) const;
@@ -471,6 +471,7 @@ private:
     op_lagrangeP1_ptrtype M_opLagrangeP1iso;
     //--------------------------------------------------------------------//
     mesh_ptrtype M_mesh;
+
     fluid_model_ptrtype M_fluidModel;
     size_type M_nLevelsets;
     std::vector<levelset_model_ptrtype> M_levelsetModels;
@@ -479,6 +480,7 @@ private:
     levelset_tool_manager_ptrtype M_levelsetToolManager;
     cached_levelset_scalar_field_type M_globalLevelset;
     mutable bool M_doUpdateGlobalLevelset;
+
     exporter_ptrtype M_globalLevelsetExporter;
 
     //--------------------------------------------------------------------//
@@ -516,6 +518,9 @@ private:
     //--------------------------------------------------------------------//
     // Redistanciation
     std::map<std::string, int> M_levelsetRedistEvery;
+
+    //--------------------------------------------------------------------//
+    std::vector<vector_ptrtype> M_algebraicBlockVectorSolutionLevelsets;
 
     //--------------------------------------------------------------------//
     // Post-process

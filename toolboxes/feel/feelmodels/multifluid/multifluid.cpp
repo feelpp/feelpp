@@ -160,6 +160,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // Block vector solution
     this->buildBlockVectorSolution();
 
+    // Cache levelset models block vector solutions
+    M_algebraicBlockVectorSolutionLevelsets.clear();
+    std::transform(
+            M_levelsetModels.begin(), M_levelsetModels.end(), 
+            std::back_inserter( M_algebraicBlockVectorSolutionLevelsets ),
+            []( levelset_model_ptrtype const& lsModel ) { return lsModel->algebraicBlockVectorSolution()->vectorMonolithic(); } 
+            );
+
     // Update inextensibility LM if needed
     if( this->M_hasInextensibilityLM )
         this->updateInextensibilityLM();
@@ -898,30 +906,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear 
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
-{
-    bool _BuildCstPart = data.buildCstPart();
-    std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("MultiFluid","updateJacobian", "start"+sc );
-    this->timerTool("Solve").start();
-
-    //const vector_ptrtype& XVec = data.currentSolution();
-    //sparse_matrix_ptrtype& J = data.jacobian();
-
-    //bool BuildNonCstPart = !_BuildCstPart;
-    //bool BuildCstPart = _BuildCstPart;
-
-    // Update interface forces
-    this->updateJacobianInterfaceForces( data );
-    // Update inextensibility
-    this->updateJacobianInextensibility( data );
-
-    double timeElapsed = this->timerTool("Solve").stop();
-    this->log("MultiFluid","updateJacobian","finish in "+(boost::format("%1% s") %timeElapsed).str() );
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInterfaceForces( DataUpdateJacobian & data ) const
 {
     if( this->hasInterfaceForces() )
@@ -1066,31 +1050,6 @@ void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
 {
     this->fluidModel()->updateJacobianDofElimination( data );
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
-{
-    bool _BuildCstPart = data.buildCstPart();
-    std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("MultiFluid","updateResidual", "start"+sc );
-    this->timerTool("Solve").start();
-
-    //const vector_ptrtype& XVec = data.currentSolution();
-    //vector_ptrtype& R = data.residual();
-    //bool BuildCstPart = _BuildCstPart;
-    //bool BuildNonCstPart = !BuildCstPart;
-    //bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
-
-    // Update interface forces
-    this->updateResidualInterfaceForces( data );
-
-    // Update inextensibility
-    this->updateResidualInextensibility( data );
-
-    double timeElapsed = this->timerTool("Solve").stop();
-    this->log("MultiFluid","updateResidual","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
