@@ -149,19 +149,10 @@ public:
     std::shared_ptr<std::ostringstream> getInfo() const override;
 
     //--------------------------------------------------------------------//
-    // Function spaces
-    space_levelset_ptrtype const& functionSpaceLevelset() const { return M_levelsetSpaceManager->functionSpaceScalar(); }
-    space_levelset_vectorial_ptrtype const& functionSpaceLevelsetVectorial() const { return M_levelsetSpaceManager->functionSpaceVectorial(); }
-    space_inextensibilitylm_ptrtype const& functionSpaceInextensibilityLM() const;
-    //--------------------------------------------------------------------//
     // Mesh
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
-    //std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"MultiFluidMesh.path"); }
-    //--------------------------------------------------------------------//
-    // Operator Lagrange P1
-    bool useLagrangeP1iso() const { return M_useLagrangeP1iso; }
-    op_lagrangeP1_ptrtype opLagrangeP1() const { return M_opLagrangeP1iso; }
+
     //--------------------------------------------------------------------//
     // Models
     fluid_model_ptrtype const& fluidModel() const { return M_fluidModel; }
@@ -181,6 +172,16 @@ public:
         return Feel::FeelModels::globalLevelsetExpr( levelsets );
     }
     element_levelset_ptrtype globalLevelsetElt() const { return M_globalLevelset.fieldPtr(); }
+
+    //--------------------------------------------------------------------//
+    // Function spaces
+    space_levelset_ptrtype const& functionSpaceLevelset() const { return M_levelsetSpaceManager->functionSpaceScalar(); }
+    space_levelset_vectorial_ptrtype const& functionSpaceLevelsetVectorial() const { return M_levelsetSpaceManager->functionSpaceVectorial(); }
+    space_inextensibilitylm_ptrtype const& functionSpaceInextensibilityLM() const;
+    //--------------------------------------------------------------------//
+    // Operator Lagrange P1
+    bool useLagrangeP1iso() const { return M_useLagrangeP1iso; }
+    op_lagrangeP1_ptrtype opLagrangeP1() const { return M_opLagrangeP1iso; }
 
     // Physical parameters
     materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
@@ -391,8 +392,6 @@ public:
     // Algebraic data
     int nBlockMatrixGraph() const;
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
-    size_type nLocalDof() const;
-    void buildBlockVectorSolution();
 
     //--------------------------------------------------------------------//
     double globalLevelsetThicknessInterface() const { return M_globalLevelsetThicknessInterface; }
@@ -447,7 +446,9 @@ protected:
     void initLevelsets();
     void initPostProcess() override;
 
+    void buildBlockVectorSolution();
     virtual int initBlockVectorSolution();
+
     bool useImplicitCoupling() const;
 
     //--------------------------------------------------------------------//

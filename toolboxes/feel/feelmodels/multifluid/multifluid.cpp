@@ -381,17 +381,13 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 int
 MULTIFLUID_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
-    int nBlocks = this->fluidModel()->nBlockMatrixGraph();
-    if( this->useImplicitCoupling() )
-    {
-        //for( auto const& ls: this->levelsetModels() )
-            //nBlocks += ls.second->nBlockMatrixGraph();
-        CHECK( false ) << "TODO: implicit coupling\n";
-    }
+    int nBlock = this->fluidModel()->nBlockMatrixGraph();
+    for( levelset_model_ptrtype const& lsModel: this->levelsetModels() )
+        nBlock += lsModel->nBlockMatrixGraph();
     if( this->hasInextensibilityLM() )
-        nBlocks += 1;
+        nBlock += 1;
 
-    return nBlocks;
+    return nBlock;
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -400,19 +396,19 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 {
     this->log("MultiFluid","buildBlockMatrixGraph", "start" );
 
-    int nBlocks = this->nBlockMatrixGraph();
-    BlocksBaseGraphCSR myBlockGraph(nBlocks, nBlocks);
+    int nBlock = this->nBlockMatrixGraph();
+    BlocksBaseGraphCSR myBlockGraph(nBlock, nBlock);
 
-    int nBlocksFluid = this->fluidModel()->nBlockMatrixGraph();
+    int nBlockFluid = this->fluidModel()->nBlockMatrixGraph();
 
     int startIndexBlockFluid = 0;
     int indexBlock = startIndexBlockFluid;
 
     auto blockMatFluid = this->fluidModel()->buildBlockMatrixGraph();
-    for (int tk1=0; tk1<nBlocksFluid; ++tk1 )
-        for (int tk2=0; tk2<nBlocksFluid; ++tk2 )
+    for (int tk1=0; tk1<nBlockFluid; ++tk1 )
+        for (int tk2=0; tk2<nBlockFluid; ++tk2 )
             myBlockGraph(startIndexBlockFluid+tk1,startIndexBlockFluid+tk2) = blockMatFluid(tk1,tk2);
-    indexBlock += nBlocksFluid;
+    indexBlock += nBlockFluid;
 
     if( this->useImplicitCoupling() )
     {
@@ -453,29 +449,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     this->log("MultiFluid","buildBlockMatrixGraph", "finish" );
 
     return myBlockGraph;
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-typename MULTIFLUID_CLASS_TEMPLATE_TYPE::size_type
-MULTIFLUID_CLASS_TEMPLATE_TYPE::nLocalDof() const
-{
-    auto res = this->fluidModel()->nLocalDof();
-    if( this->useImplicitCoupling() )
-    {
-        //res += std::accumulate( 
-            //this->levelsetModels().begin(), this->levelsetModels().end(), 0,
-            //[]( auto res, auto const& rhs ) {
-                //return res + rhs.second->nLocalDof();
-            //}
-            //);
-            CHECK( false ) << "TODO: implicit coupling\n";
-
-    }
-    if( this->hasInextensibilityLM() )
-    {
-        res += this->functionSpaceInextensibilityLM()->nLocalDofWithGhost();
-    }
-    return res;
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
