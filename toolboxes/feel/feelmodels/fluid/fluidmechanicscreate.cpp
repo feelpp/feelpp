@@ -1183,6 +1183,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     auto matrixInterpolation_pressure = opI_pressure->matPtr();
     matrixInterpolation_pressure->multVector( *old_fieldPressure, *M_fieldPressure );
 
+    if ( M_meshALE )
+    {
+        std::vector<std::tuple<std::string,elements_reference_wrapper_t<mesh_type>>> computationDomains;
+        if ( this->functionSpaceVelocity()->dof()->hasMeshSupport() && this->functionSpaceVelocity()->dof()->meshSupport()->isPartialSupport() )
+            computationDomains.push_back( std::make_tuple( this->keyword(), M_rangeMeshElements ) );
+        M_meshALE->applyRemesh( newMesh, computationDomains );
+    }
+
+
     // time stepping
     M_bdfVelocity->applyRemesh( this->functionSpaceVelocity(), matrixInterpolation_velocity );
     M_savetsPressure->applyRemesh( this->functionSpacePressure(), matrixInterpolation_pressure );

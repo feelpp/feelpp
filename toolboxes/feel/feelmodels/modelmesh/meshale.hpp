@@ -166,6 +166,8 @@ public :
 
     void init();
 
+    void applyRemesh( mesh_ptrtype const& newMesh, std::vector<std::tuple<std::string,range_elements_type>> const& rangeElt );
+
     std::shared_ptr<std::ostringstream> getInfo() const;
 
     //! defined the whole mesh as a computational domain (compute disp from boundary)
@@ -297,6 +299,7 @@ public :
 private :
 
     void updateIdentityMap();
+    void initFunctionSpaces();
     void initTimeStep();
     void updateImpl();
 
