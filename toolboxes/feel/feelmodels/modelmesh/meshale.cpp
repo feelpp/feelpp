@@ -44,18 +44,13 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
     M_referenceMesh( mesh_moving->createP1mesh() ),
     M_movingMesh(mesh_moving),
     M_isOnReferenceMesh( true ), M_isOnMovingMesh( true ),
-    M_Xhmove( ale_map_functionspace_type::New(_mesh=M_movingMesh ) ),
-    M_identity_ale(new ale_map_element_type( M_Xhmove) ),
-    M_displacementOnMovingBoundary_HO_ref(new ale_map_element_type( M_Xhmove) ),
-    M_displacement(new ale_map_element_type( M_Xhmove) ),
-    M_meshVelocity(new ale_map_element_type( M_Xhmove) ),
-    M_fieldTmp( new  ale_map_element_type( M_Xhmove) ),
     M_isARestart(boption(_name="ts.restart")),
     M_restartPath(soption(_name="ts.restart.path"))
     //M_doExport(option(_name="export",_prefix=prefixvm(prefix,"alemesh")).template as<bool>())
 {
     this->log(prefixvm(this->prefix(),"MeshALE"),"constructor", "start");
 
+    this->initFunctionSpaces();
     // update M_identity_ale
     this->updateIdentityMap();
 #if 0
@@ -71,6 +66,20 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
 
 
     this->log(prefixvm(this->prefix(),"MeshALE"),"constructor", "finish");
+}
+
+
+
+template< class Convex >
+void
+MeshALE<Convex>::initFunctionSpaces()
+{
+    M_Xhmove = ale_map_functionspace_type::New(_mesh=M_movingMesh );
+    M_identity_ale = M_Xhmove->elementPtr();
+    M_displacementOnMovingBoundary_HO_ref = M_Xhmove->elementPtr();
+    M_displacement = M_Xhmove->elementPtr();
+    M_meshVelocity = M_Xhmove->elementPtr();
+    M_fieldTmp = M_Xhmove->elementPtr();
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -127,6 +136,69 @@ MeshALE<Convex>::init()
     }
 
     this->log(prefixvm(this->prefix(),"MeshALE"),"init", "finish");
+}
+
+template< class Convex >
+void
+MeshALE<Convex>::applyRemesh( mesh_ptrtype const& newMesh, std::vector<std::tuple<std::string,range_elements_type>> const& computationDomainsDesc )
+{
+    M_movingMesh = newMesh;
+    M_referenceMesh = M_movingMesh->createP1mesh();
+
+    ale_map_functionspace_ptrtype old_spaceMove = M_Xhmove;
+    ale_map_element_ptrtype old_fieldMeshVelocity = M_meshVelocity;
+    this->initFunctionSpaces();
+
+    // createInterpolationOp
+    auto opI_move = opInterpolation(_domainSpace=old_spaceMove,
+                                    _imageSpace=M_Xhmove,
+                                    _range=elements(support(M_Xhmove) ) );
+    auto matrixInterpolation_move = opI_move->matPtr();
+
+    M_bdf_ale_identity->applyRemesh( M_Xhmove, matrixInterpolation_move );
+    M_isOnReferenceMesh = true;
+    M_isOnMovingMesh = true;
+
+    M_dofsMultiProcessOnMovingBoundary_HO.clear();
+
+    // up identity
+    this->updateIdentityMap();
+#if 0
+    // compute mesh velocity
+    *M_meshVelocity = *M_identity_ale;
+    M_meshVelocity->scale( M_bdf_ale_identity->polyDerivCoefficient(0) );
+    M_meshVelocity->add(-1.0,M_bdf_ale_identity->polyDeriv());
+#endif
+    matrixInterpolation_move->multVector( *old_fieldMeshVelocity, *M_meshVelocity );
+
+
+
+    // TODO : try a way to not use computationDomainsDesc
+    std::map<std::string,typename ale_map_type::bc_to_markers_type> saveBcMarker;
+    for ( auto const& [name,cd] : M_computationalDomains )
+        saveBcMarker[name] = cd.aleFactory()->bcToMarkers();
+
+    M_computationalDomains.clear();
+    if ( computationDomainsDesc.empty() )
+        this->setWholeMeshAsComputationalDomain( /*"default"*/ saveBcMarker.begin()->first );
+    else
+        for ( auto const& [name,range] : computationDomainsDesc )
+            this->setComputationalDomain( name, range );
+
+    for ( auto & [name,cd] : M_computationalDomains )
+        cd.init( false );
+
+    for ( auto & [name,cd] : M_computationalDomains )
+    {
+        auto itFindName = saveBcMarker.find( name );
+        if ( itFindName == saveBcMarker.end() )
+            continue;
+        for ( auto const& [bctype,markers] : itFindName->second )
+        {
+            for ( std::string const& marker : markers )
+                cd.addMarkerInBoundaryCondition( bctype, marker );
+        }
+    }
 }
 
 
@@ -345,7 +417,11 @@ MeshALE<Convex>::exportResults(double time)
         if (!M_exporter)
         {
             //auto const geoExportType = ExporterGeometry::EXPORTER_GEOMETRY_STATIC;
+#if 0
             std::string geoExportType="static";//change_coords_only, change, static
+#else
+            std::string geoExportType="change";//change_coords_only, change, static
+#endif
             M_exporter = exporter( _mesh=this->movingMesh(),
                                    //ame=prefixvm(this->prefix(), prefixvm(this->subPrefix(),"Export")),
                                    _name=prefixvm(this->prefix(),"exportMeshALE_ho"),
@@ -354,7 +430,9 @@ MeshALE<Convex>::exportResults(double time)
                                    _path=exportRepository );
         }
 
-        //M_exporter->step( time )->setMesh( M_movingMesh );
+        if ( M_exporter->exporterGeometry() == EXPORTER_GEOMETRY_CHANGE )
+            M_exporter->step( time )->setMesh( M_movingMesh );
+
         M_exporter->step( time )->add( prefixvm(this->prefix(),"moving_displacement"), *M_displacement );
         M_exporter->step( time )->add( prefixvm(this->prefix(),"moving_meshvelocity"), *M_meshVelocity );
         M_exporter->step( time )->add( prefixvm(this->prefix(),"moving_identity"), *M_identity_ale );
