@@ -140,10 +140,11 @@ public:
 
     void loadParametersFromOptionsVm();
 
+    template <typename SymbolsExprType>
+    void updateInitialConditions( SymbolsExprType const& se );
+
     //--------------------------------------------------------------------//
     std::string globalLevelsetPrefix() const { return prefixvm( this->prefix(), "levelset"); }
-
-    static std::string levelsetName( uint16_type n ) { return (boost::format( "levelset%1%" ) %(n+1)).str(); }
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
 
@@ -391,11 +392,7 @@ public:
     int nBlockMatrixGraph() const;
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     size_type nLocalDof() const;
-    void buildBlockVector();
-
-    backend_ptrtype const& backend() const { return M_backend; }
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
+    void buildBlockVectorSolution();
 
     //--------------------------------------------------------------------//
     double globalLevelsetThicknessInterface() const { return M_globalLevelsetThicknessInterface; }
@@ -450,20 +447,13 @@ protected:
     void initLevelsets();
     void initPostProcess() override;
 
-    virtual int initBlockVector();
+    virtual int initBlockVectorSolution();
     bool useImplicitCoupling() const;
 
     //--------------------------------------------------------------------//
     void updateGlobalLevelset( element_levelset_scalar_ptrtype & globalLevelset ) const;
-    void updateFluidDensityViscosity();
     void updateInterfaceForces();
     void advectLevelsets();
-
-    void setRebuildMatrixVector( bool b = true ) { M_doRebuildMatrixVector = b; }
-    bool rebuildMatrixVector() const { return M_doRebuildMatrixVector; }
-
-    //--------------------------------------------------------------------//
-    uint16_type M_nFluids;
 
 private:
     void updateLinear_Fluid( DataUpdateLinear & data ) const;
@@ -482,23 +472,18 @@ private:
     //--------------------------------------------------------------------//
     mesh_ptrtype M_mesh;
     fluid_model_ptrtype M_fluidModel;
+    size_type M_nLevelsets;
+    std::vector<levelset_model_ptrtype> M_levelsetModels;
+
     levelset_space_manager_ptrtype M_levelsetSpaceManager;
     levelset_tool_manager_ptrtype M_levelsetToolManager;
-    std::vector<levelset_model_ptrtype> M_levelsetModels;
     cached_levelset_scalar_field_type M_globalLevelset;
     mutable bool M_doUpdateGlobalLevelset;
     exporter_ptrtype M_globalLevelsetExporter;
 
     //--------------------------------------------------------------------//
     // Solve
-    bool M_doRebuildMatrixVector;
     bool M_usePicardIterations;
-
-    //--------------------------------------------------------------------//
-    // Algebraic data
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    BlocksBaseVector<double> M_blockVectorSolution;
 
     //--------------------------------------------------------------------//
     // Parameters
@@ -540,6 +525,16 @@ private:
     // levelset forces
     std::vector< std::string > M_postProcessMeasuresLevelsetForces;
 };
+
+template< typename FluidType, typename LevelSetType>
+template <typename SymbolsExprType>
+void
+MultiFluid<FluidType, LevelSetType>::updateInitialConditions( SymbolsExprType const& se )
+{
+    M_fluidModel->updateInitialConditions( se );
+    for( levelset_model_ptrtype const& lsModel: this->levelsetModels() )
+        lsModel->updateInitialConditions( se );
+}
         
 
 } // namespace FeelModels

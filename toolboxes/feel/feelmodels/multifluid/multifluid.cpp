@@ -1,5 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
  */
+#include <numerics>
+#include <fmt/core.h>
 
 #include <feel/feelmodels/multifluid/multifluid.hpp>
 
@@ -26,7 +28,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
     super_type( prefix, keyword, wc, subPrefix, modelRep ),
     ModelBase( prefix, keyword, wc, subPrefix, modelRep ),
     M_useLagrangeP1iso( false ),
-    M_doRebuildMatrixVector( false ),
     M_usePicardIterations( false ),
     M_hasInterfaceForcesModel( false ),
     M_enableInextensibility( false ),
@@ -50,24 +51,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
     this->loadParameterFromOptionsVm();
 
     this->log("MultiFluid","constructor", "finish");
-
-    // Build backend
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
-    // Build FluidMechanics model
-    M_fluidModel = std::make_shared<fluid_model_type>(
-            prefixvm(this->prefix(),"fluid"), "fluid", this->worldCommPtr(),
-            this->subPrefix(), this->repository() );
-    // Build LevelSet models
-    uint16_type nLevelsets = M_nFluids - 1;
-    for( uint16_type i = 0; i < nLevelsets; ++i )
-    {
-        std::string const lsName = levelsetName(i);
-        auto levelset_prefix = prefixvm(this->prefix(), lsName);
-        auto & levelset = M_levelsets[lsName];
-        M_levelsets[lsName] = std::make_shared<levelset_model_type>(
-                levelset_prefix, lsName, this->worldCommPtr(),
-                this->subPrefix(), this->repository() );
-    }
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -91,24 +74,92 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
-    CHECK( M_nFluids >= 2 ) << "Multifluid must contain at least 2 fluids.\n";
+    CHECK( M_nLevelsets >= 1 ) << "Multifluid must contain at least 1 levelset.\n";
     this->log("MultiFluid", "init", "start");
+    this->timerTool("Constructor").start();
+
+    M_fluidModel = std::make_shared<fluid_model_type>(
+            prefixvm(this->prefix(),"fluid"), "fluid", this->worldCommPtr(),
+            this->subPrefix(), this->repository() );
+    for( index_type i = 0; i < M_nLevelsets; ++i )
+    {
+        std::string const lsKeyword = fmt::format( "levelset{}", i );
+        std::string const lsPrefix = prefixvm( this->prefix(), lsKeyword );
+        M_levelsetModels.push_back( std::make_shared<levelset_model_type>(
+                lsPrefix, lsKeyword, this->worldCommPtr(),
+                this->subPrefix(), this->repository() )
+                );
+    }
+
+    //if ( this->physics().empty() )
+    //{
+        //typename ModelPhysics<mesh_type::nDim>::subphysic_description_type subPhyicsDesc;
+        //subPhyicsDesc[M_fluidModel->physicType()] = std::make_tuple( M_fluidModel->keyword(), M_fluidModel );
+        ////subPhyicsDesc[M_levelsetModel[0]->physicType()] = std::make_tuple( M_levelsetModel[0]->keyword(), M_levelsetModel[0] );
+        //this->initPhysics( this->keyword(), this->modelProperties().models(), subPhyicsDesc );
+    //}
+
+    // Physical properties
+    if ( !M_materialsProperties )
+    {
+        auto paramValues = this->modelProperties().parameters().toParameterValues();
+        this->modelProperties().materials().setParameterValues( paramValues );
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
+    }
 
     // Init mesh
-    this->initMesh();
-    // Init FluidMechanics
-    if( !M_fluidModel->modelPropertiesPtr() )
+    if ( !this->mesh() )
+        this->initMesh();
+
+    this->materialsProperties()->addMesh( this->mesh() );
+
+    // Init fluid toolbox
+    //M_fluidModel->setPhysics( this->physics( M_fluidModel->physicType() ), M_fluidModel->keyword() );
+    M_fluidModel->setManageParameterValues( false );
+    if ( !M_fluidModel->modelPropertiesPtr() )
+    {
         M_fluidModel->setModelProperties( this->modelPropertiesPtr() );
+        M_fluidModel->setManageParameterValuesOfModelProperties( false );
+    }
     M_fluidModel->setMesh( this->mesh() );
+    M_fluidModel->setMaterialsProperties( M_materialsProperties );
     M_fluidModel->init( false );
-    // Init LevelSets
+
+    // Init levelset toolboxes
     this->initLevelsets();
+
     // Update current time
     if ( !this->isStationary() )
     {
         this->updateTime( this->timeStepBase()->time() );
         this->setTimeInitial( this->timeStepBase()->timeInitial() );
     }
+
+    // Set advection velocity in levelset toolboxes
+    std::string fluidVelocitySymbolUsed = "U"; // TODO : get this info from fluid toolbox
+    std::string velConvExprStr = fmt::format( 
+            nDim==2 ? 
+            "{{ {0}_{1}_0, {0}_{1}_1 }}:{0}_{1}_0:{0}_{1}_1" : 
+            "{{ {0}_{1}_0, {0}_{1}_1, {0}_{1}_2 }}:{0}_{1}_0:{0}_{1}_1:{0}_{1}_2",
+            M_fluidModel->keyword(), fluidVelocitySymbolUsed 
+            );
+    auto velConvExpr = expr<nDim,1>( velConvExprStr, "",this->worldComm(),this->repository().expr() );
+    for( levelset_model_ptrtype const& lsModel: M_levelsetModels )
+        lsModel->setVelocityConvectionExpr( velConvExpr );
+
+    // Update constant parameters
+    this->updateParameterValues();
+
+    // Update initial conditions
+    this->updateInitialConditions( this->symbolsExpr() );
+
+    // Backend
+    this->initAlgebraicBackend();
+
+    // Block vector solution
+    this->buildBlockVectorSolution();
+
     // Update inextensibility LM if needed
     if( this->M_hasInextensibilityLM )
         this->updateInextensibilityLM();
@@ -121,65 +172,73 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     else
     {
         M_fluidModel->initAlgebraicFactory();
-        //for( auto const& lsModel: M_levelsets )
-            //lsModel.second->initAlgebraicFactory();
+        for( levelset_model_ptrtype const& lsModel: M_levelsetModels )
+            lsModel->initAlgebraicFactory();
         // Add specific multifluid terms into the matrix assembly
-        this->fluidModel()->algebraicFactory()->addFunctionLinearAssembly(
-                boost::bind( &self_type::updateLinearPDEInterfaceForces, this, _1 ), "InterfaceForces"
+        M_fluidModel->algebraicFactory()->setFunctionLinearAssembly(
+                [this]( DataUpdateLinear & data ) { updateLinear_Fluid( data ); }
                 );
-        this->fluidModel()->algebraicFactory()->addFunctionJacobianAssembly(
-                boost::bind( &self_type::updateJacobianInterfaceForces, this, _1 ), "InterfaceForces"
+        M_fluidModel->algebraicFactory()->setFunctionJacobianAssembly(
+                [this]( DataUpdateLinear & data ) { updateJacobian_Fluid( data ); }
                 );
-        this->fluidModel()->algebraicFactory()->addFunctionResidualAssembly(
-                boost::bind( &self_type::updateResidualInterfaceForces, this, _1 ), "InterfaceForces"
+        M_fluidModel->algebraicFactory()->setFunctionResidualAssembly(
+                [this]( DataUpdateLinear & data ) { updateResidual_Fluid( data ); }
                 );
-        this->fluidModel()->algebraicFactory()->addFunctionLinearAssembly(
-                boost::bind( &self_type::updateLinearPDEInextensibility, this, _1 ), "Inextensibility"
-                );
-        this->fluidModel()->algebraicFactory()->addFunctionJacobianAssembly(
-                boost::bind( &self_type::updateJacobianInextensibility, this, _1 ), "Inextensibility"
-                );
-        this->fluidModel()->algebraicFactory()->addFunctionResidualAssembly(
-                boost::bind( &self_type::updateResidualInextensibility, this, _1 ), "Inextensibility"
-                );
+        for( size_type i = 0; i < M_levelsetModels.size(); ++i )
+        {
+            M_levelsetModels[i]->algebraicFactory()->setFunctionLinearAssembly(
+                    [this, i]( DataUpdateLinear & data ) { updateLinear_Levelset( i, data ); }
+                    );
+            M_levelsetModels[i]->algebraicFactory()->setFunctionJacobianAssembly(
+                    [this, i]( DataUpdateLinear & data ) { updateJacobian_Levelset( i, data ); }
+                    );
+            M_levelsetModels[i]->algebraicFactory()->setFunctionResidualAssembly(
+                    [this, i]( DataUpdateLinear & data ) { updateResidual_Levelset( i, data ); }
+                    );
+        }
     }
-    this->buildBlockVector();
-    // Do not request matrix/vector update since they were just updated
-    M_doRebuildMatrixVector = false;
 
-    // "Deep" copy FluidMechanics materialProperties
-    M_fluidMaterialProperties.reset( new materials_properties_type( this->fluidModel()->prefix() ) );
-    // Create M_interfaceForces
-    M_interfaceForces.reset( new element_levelset_vectorial_type(this->functionSpaceLevelsetVectorial(), "InterfaceForces") ); 
+    //// "Deep" copy FluidMechanics materialProperties
+    //M_fluidMaterialProperties.reset( new materials_properties_type( this->fluidModel()->prefix() ) );
+    //// Create M_interfaceForces
+    //M_interfaceForces.reset( new element_levelset_vectorial_type(this->functionSpaceLevelsetVectorial(), "InterfaceForces") ); 
 
-    // Init FluidMechanics materialProperties
-    M_fluidMaterialProperties->updateForUse( this->fluidModel()->materialProperties()->dynamicViscositySpace(), this->fluidModel()->modelProperties().materials() );
-    // Init levelsets materialProperties and interfaceForcesModels
-    for( auto const& lsMaterialProperties: M_levelsetsMaterialProperties )
-    {
-        lsMaterialProperties.second->updateForUse(this->fluidModel()->materialProperties()->dynamicViscositySpace(), M_levelsets[lsMaterialProperties.first]->modelProperties().materials() );
-    }
+    //// Init FluidMechanics materialProperties
+    //M_fluidMaterialProperties->updateForUse( this->fluidModel()->materialProperties()->dynamicViscositySpace(), this->fluidModel()->modelProperties().materials() );
+    //// Init levelsets materialProperties and interfaceForcesModels
+    //for( auto const& lsMaterialProperties: M_levelsetsMaterialProperties )
+    //{
+        //lsMaterialProperties.second->updateForUse(this->fluidModel()->materialProperties()->dynamicViscositySpace(), M_levelsetModels[lsMaterialProperties.first]->modelProperties().materials() );
+    //}
     // Update density-viscosity
-    this->updateFluidDensityViscosity();
+    //this->updateFluidDensityViscosity();
 
     // Init post-process
     this->initPostProcess();
 
-    this->log("MultiFluid", "init", "finish");
+    // Mark as updated for use
+    this->setIsUpdatedForUse( true );
+
+    double tElapsedInit = this->timerTool("Constructor").stop("init");
+    if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
+    this->log("MultiFluid","init", fmt::format("finish in {} s", tElapsedInit ) );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
-    M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(), this->backend() ) );
+    auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(), this->backend() );
+    this->setAlgebraicFactory( algebraicFactory );
+    if ( M_fluidModel->hasOperatorPCD() )
+        algebraicFactory->preconditionerTool()->attachOperatorPCD( "pcd", M_fluidModel->operatorPCD() );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
-    M_nFluids = ioption( _name="nfluids", _prefix=this->prefix() );
+    M_nLevelsets = ioption( _name="nlevelsets", _prefix=this->prefix() );
 
     M_usePicardIterations = boption( _name="use-picard-iterations", _prefix=this->prefix() );
 
@@ -234,7 +293,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n   Prefix           : " << this->prefix()
            << "\n   Root Repository  : " << this->rootRepository()
-           << "\n   Number of fluids : " << M_nFluids;
+           << "\n   Number of levelsets : " << M_nLevelsets;
 
     *_ostr << "\n   Fluids Parameters";
     *_ostr << "\n     -- fluid 0 (outer fluid)"
@@ -270,7 +329,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
 
     *_ostr << "\n";
     *_ostr << this->fluidModel()->getInfo()->str();
-    for( auto const& levelset: M_levelsets )
+    for( auto const& levelset: M_levelsetModels )
     {
     *_ostr << levelset.second->getInfo()->str();
     }
@@ -436,7 +495,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInextensibilityLM()
 {
     this->log("MultiFluid", "updateInextensibilityLM", "start");
     M_inextensibleLevelsets.clear();
-    for( auto const& ls: M_levelsets )
+    for( auto const& ls: M_levelsetModels )
     {
         if( this->hasInextensibility(ls.first) )
         {
@@ -561,7 +620,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
     }
 
     // Redistantiate
-    for( auto const& ls: M_levelsets )
+    for( auto const& ls: M_levelsetModels )
     {
         if( M_levelsetRedistEvery.at(ls.first) > 0 
                 && (ls.second->iterSinceRedistanciation()+1) % M_levelsetRedistEvery.at(ls.first) == 0 )
@@ -590,10 +649,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveSemiImplicitCoupling()
             auto graph = this->buildMatrixGraph();
             M_algebraicFactory->rebuildMatrixVector( graph, graph->mapRow().indexSplit() );
             // Rebuild solution vector
-            this->buildBlockVector();
+            this->buildBlockVectorSolution();
             // Rebuild backend (required since PETSc stores the size of the matrix, 
             // which can change here because of the LM space support)
-            M_backend->clear();
+            this->backend()->clear();
 
             M_doRebuildMatrixVector = false;
         }
@@ -624,7 +683,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveImplicitCoupling()
     this->updateParameterValues();
 
     this->fluidModel()->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
-    //for( auto const& ls: M_levelsets )
+    //for( auto const& ls: M_levelsetModels )
     //{
         //ls.second->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex( ls.first ) );
     //}
@@ -762,7 +821,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEInextensibility( DataUpdateLinear
                     _colstart=this->fluidModel()->colStartInMatrix()
                     );
 
-            for( auto const& ls: M_levelsets )
+            for( auto const& ls: M_levelsetModels )
             {
                 std::string const& lsName = ls.first;
                 if( this->hasInextensibility(lsName) && this->inextensibilityMethod(lsName) == "penalty" )
@@ -931,7 +990,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInextensibility( DataUpdateJacobia
             auto const& v = this->fieldVelocity();
             auto Id = vf::Id<nDim, nDim>();
 
-            for( auto const& ls: M_levelsets )
+            for( auto const& ls: M_levelsetModels )
             {
                 std::string const& lsName = ls.first;
                 if( this->hasInextensibility(lsName) && this->inextensibilityMethod(lsName) == "penalty" )
@@ -1103,7 +1162,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualInextensibility( DataUpdateResidua
             auto const& v = this->fieldVelocity();
             auto Id = vf::Id<nDim, nDim>();
 
-            for( auto const& ls: M_levelsets )
+            for( auto const& ls: M_levelsetModels )
             {
                 std::string const& lsName = ls.first;
                 if( this->hasInextensibility(lsName) && this->inextensibilityMethod(lsName) == "penalty" )
@@ -1189,7 +1248,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateParameterValues()
 //MULTIFLUID_CLASS_TEMPLATE_TYPE::updateTime( double time )
 //{
     //// Levelsets
-    //for( auto const& ls: M_levelsets)
+    //for( auto const& ls: M_levelsetModels)
     //{
         //ls.second->updateTime(time);
     //}
@@ -1217,7 +1276,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
     // Fluid
     this->fluidModel()->updateTimeStep();
     // Levelsets
-    for( auto const& ls: M_levelsets)
+    for( auto const& ls: M_levelsetModels)
     {
         ls.second->updateTimeStep();
     }
@@ -1240,7 +1299,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
     auto const symbolsExpr = this->symbolsExpr();
     M_fluidModel->exportResults( time, symbolsExpr );
-    for( auto const& ls: M_levelsets)
+    for( auto const& ls: M_levelsetModels)
         ls.second->exportResults( time, symbolsExpr );
 
     std::map<std::string, typename interfaceforces_model_type::element_ptrtype> interfaceForcesFields;
@@ -1289,13 +1348,13 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
                     return std::map<key_type, value_type>( it1, it2 );
                 }
             },
-            boost::iterators::transform_iterator( M_levelsets.begin(), ls_fields{} ),
-            boost::iterators::transform_iterator( M_levelsets.end(), ls_fields{} )
+            boost::iterators::transform_iterator( M_levelsetModels.begin(), ls_fields{} ),
+            boost::iterators::transform_iterator( M_levelsetModels.end(), ls_fields{} )
             );
 
     auto fields = hana::flatten( hana::make_tuple( 
             M_fluidModel->allFields( M_fluidModel->keyword() ), 
-            //M_levelsets.begin()->second->allFields( M_levelsets.begin()->second->keyword() ), 
+            //M_levelsetModels.begin()->second->allFields( M_levelsetModels.begin()->second->keyword() ), 
             levelsetsFields,
             hana::make_tuple( 
                 std::make_pair( prefixvm(this->prefix(),"global-levelset.phi"), this->globalLevelsetElt() ),
@@ -1376,7 +1435,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initLevelsets()
     }
     // Build levelsets space manager
     M_levelsetSpaceManager = std::make_shared<levelset_space_manager_type>( mesh, this->globalLevelsetPrefix() );
-    // Temporary hack: ensures the defaults levelset spaces are built for interfaceForces
+    // TODO: Temporary hack: ensures the defaults levelset spaces are built for interfaceForces
     M_levelsetSpaceManager->createFunctionSpaceDefault();
     // Build levelsets tool manager
     M_levelsetToolManager = std::make_shared<levelset_tool_manager_type>( M_levelsetSpaceManager, this->globalLevelsetPrefix() );
@@ -1387,56 +1446,48 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initLevelsets()
         M_globalLevelsetThicknessInterface = 1.5 * M_levelsetSpaceManager->mesh()->hAverage();
 
     // Init levelsets
-    for( auto const& ls: M_levelsets )
+    for( levelset_model_ptrtype const& lsModel: M_levelsetModels )
     {
-        std::string const& lsName = ls.first;
-        auto const& levelset = ls.second;
-        auto levelset_prefix = prefixvm(this->prefix(), lsName);
-        levelset->setFunctionSpaceManager( M_levelsetSpaceManager );
-        levelset->setToolManager( M_levelsetToolManager );
-        hana::eval_if( std::is_same<space_levelset_advection_velocity_type, space_fluid_velocity_type>{},
-                    [&](auto _) {
-                        if( !_(levelset)->useSpaceIsoPN() )
-                        {
-                            Feel::cout << "Using fluid velocity function space\n";
-                            _(levelset)->setFunctionSpaceAdvectionVelocity( this->fluidModel()->functionSpaceVelocity() );
-                        }
-                    },
-                    [&] {}
-                );
-        // Set global options if unspecified otherwise
-        if( !Environment::vm().count( prefixvm(levelset_prefix,"thickness-interface").c_str() ) )
-            levelset->setThicknessInterface( this->globalLevelsetThicknessInterface() );
+        //// Set global options if unspecified otherwise
+        //if( !Environment::vm().count( prefixvm(levelset_prefix,"thickness-interface").c_str() ) )
+            //levelset->setThicknessInterface( this->globalLevelsetThicknessInterface() );
 
-        // Set modelProperties if not already provided
-        if( !levelset->modelPropertiesPtr() )
-            levelset->setModelProperties( this->modelPropertiesPtr() );
-        // Initialize LevelSets
-        levelset->init();
-
-        // Build levelsets materialProperties
-        M_levelsetsMaterialProperties[lsName].reset(
-                new material_properties_type( levelset_prefix )
-                );
-        // Build levelsets interfaceForcesModels
-        if( Environment::vm().count( prefixvm(levelset_prefix, "interface-forces-model").c_str() ) )
+        //lsModel->setPhysics( this->physics( lsModel->physicType() ), lsModel->keyword() );
+        lsModel->setManageParameterValues( false );
+        if ( !lsModel->modelPropertiesPtr() )
         {
-            std::vector<std::string> interfaceForcesModels = Environment::vm()[prefixvm(levelset_prefix, "interface-forces-model").c_str()].template as<std::vector<std::string>>();
-            // Remove (unwanted) duplicates
-            std::sort( interfaceForcesModels.begin(), interfaceForcesModels.end() );
-            interfaceForcesModels.erase( std::unique(interfaceForcesModels.begin(), interfaceForcesModels.end()), interfaceForcesModels.end() );
-
-            for( uint16_type n = 0; n < interfaceForcesModels.size(); ++n )
-            {
-                std::string const forceName = interfaceForcesModels[n];
-                M_levelsetInterfaceForcesModels[lsName][forceName] = interfaceforces_factory_type::instance().createObject( 
-                        forceName
-                        );
-                M_levelsetInterfaceForcesModels[lsName][forceName]->build( levelset_prefix, M_levelsets[lsName], this->fluidModel() );
-            }
-
-            M_hasInterfaceForcesModel = true;
+            lsModel->setModelProperties( this->modelPropertiesPtr() );
+            lsModel->setManageParameterValuesOfModelProperties( false );
         }
+        lsModel->setFunctionSpaceManager( M_levelsetSpaceManager );
+        lsModel->setToolManager( M_levelsetToolManager );
+        //lsModel->setMesh( this->mesh() );
+        //// Build levelsets materialProperties
+        //M_levelsetsMaterialProperties[lsName].reset(
+                //new material_properties_type( levelset_prefix )
+                //);
+        lsModel->setMaterialsProperties( M_materialsProperties );
+        lsModel->init( false );
+
+        // TODO:Build levelsets interfaceForcesModels
+        //if( Environment::vm().count( prefixvm(levelset_prefix, "interface-forces-model").c_str() ) )
+        //{
+            //std::vector<std::string> interfaceForcesModels = Environment::vm()[prefixvm(levelset_prefix, "interface-forces-model").c_str()].template as<std::vector<std::string>>();
+            //// Remove (unwanted) duplicates
+            //std::sort( interfaceForcesModels.begin(), interfaceForcesModels.end() );
+            //interfaceForcesModels.erase( std::unique(interfaceForcesModels.begin(), interfaceForcesModels.end()), interfaceForcesModels.end() );
+
+            //for( uint16_type n = 0; n < interfaceForcesModels.size(); ++n )
+            //{
+                //std::string const forceName = interfaceForcesModels[n];
+                //M_levelsetInterfaceForcesModels[lsName][forceName] = interfaceforces_factory_type::instance().createObject( 
+                        //forceName
+                        //);
+                //M_levelsetInterfaceForcesModels[lsName][forceName]->build( levelset_prefix, M_levelsetModels[lsName], this->fluidModel() );
+            //}
+
+            //M_hasInterfaceForcesModel = true;
+        //}
     }
 
     this->log("MultiFluid", "initLevelsets", "finish");
@@ -1452,7 +1503,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
     std::set<std::string> ppExportsAllFieldsAvailable;
     for ( auto const& s : M_fluidModel->postProcessExportsAllFieldsAvailable() )
         ppExportsAllFieldsAvailable.insert( prefixvm( M_fluidModel->keyword(), s ) );
-    for ( auto const& ls : M_levelsets )
+    for ( auto const& ls : M_levelsetModels )
         for ( auto const& s : ls.second->postProcessExportsAllFieldsAvailable() )
             ppExportsAllFieldsAvailable.insert( prefixvm( ls.second->keyword(), s ) );
     for( auto const& lsForces : M_levelsetInterfaceForcesModels )
@@ -1528,69 +1579,62 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockVector()
+MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockVectorSolution()
 {
-    this->initBlockVector();
-    M_blockVectorSolution.buildVector( this->backend() );
+    this->initBlockVectorSolution();
+    this->algebraicBlockVectorSolution()->buildVector( this->backend() );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 int
-MULTIFLUID_CLASS_TEMPLATE_TYPE::initBlockVector()
+MULTIFLUID_CLASS_TEMPLATE_TYPE::initBlockVectorSolution()
 {
-    auto const& blockVectorSolutionFluid = M_fluidModel->blockVectorSolution();
-    int nBlocksFluid = blockVectorSolutionFluid.size();
-    int nBlocks = nBlocksFluid;
-    if( this->useImplicitCoupling() )
-    {
-        //int nBlocksLevelsets = std::accumulate( 
-                //this->levelsetModels().begin(), this->levelsetModels().end(), 0,
-                //[]( auto res, auto const& rhs ) {
-                    //return res + rhs.second->blockVectorSolution().size();
-                //}
-                //);
-        //nBlocks += nBlocksLevelsets;
-        CHECK( false ) << "TODO: implicit coupling\n";
-    }
-    if( this->hasInextensibilityLM() )
-        nBlocks += 1;
+    auto const& blockVectorSolutionFluid = *(this->fluidModel()->algebraicBlockVectorSolution());
+    int nBlockFluid = blockVectorSolutionFluid.size();
+    int nBlockLevelsets = std::reduce( 
+            this->levelsetModels().begin(), this->levelsetModels().end(), 
+                []( int res, auto const& lsModel ) { return res + lsModel->algebraicBlockVectorSolution().size(); }
+            );
+    int nBlock = nBlockFluid + nBlockLevelsets;
 
-    M_blockVectorSolution.resize( nBlocks );
+    auto bvs = this->initAlgebraicBlockVectorSolution( nBlock );
 
-    size_type currentStartBlockSpaceIndex = this->startBlockSpaceIndexVector();
-    int indexBlock = 0;
+    int indexBlock=0;
+    size_type currentStartBlockSpaceIndex = 0;
 
     this->setStartSubBlockSpaceIndex( "fluid", currentStartBlockSpaceIndex );
-    for( int k = 0; k < nBlocksFluid; k++ )
+    int numberOfBlockSpaceFluid = 0;
+    for ( int k=0; k<nBlockFluid; ++k )
     {
-        M_blockVectorSolution(indexBlock + k) = blockVectorSolutionFluid(k);
-        currentStartBlockSpaceIndex += blockVectorSolutionFluid(k)->map().numberOfDofIdToContainerId();
+        bvs->operator()(indexBlock+k) = blockVectorSolutionFluid(k);
+        numberOfBlockSpaceFluid += blockVectorSolutionFluid(k)->map().numberOfDofIdToContainerId();
     }
-    indexBlock += nBlocksFluid;
+    indexBlock += nBlockFluid;
+    currentStartBlockSpaceIndex += numberOfBlockSpaceFluid;
 
-    if( this->useImplicitCoupling() )
+    for( levelset_model_ptrtype const& lsModel: this->levelsetModels() )
     {
-        //for( auto const& ls: M_levelsets )
-        //{
-            //this->setStartSubBlockSpaceIndex( ls.first, currentStartBlockSpaceIndex );
-            //currentStartBlockSpaceIndex += ls.second->blockVectorSolution().vectorMonolithic()->map().numberOfDofIdToContainerId();
-        //}
-        //for( auto const& ls: this->levelsetModels() )
-        //{
-            //auto const& blockVectorSolutionLevelset = ls.second->blockVectorSolution();
-            //for( int k = 0; k < blockVectorSolutionLevelset.size(); k++ )
-            //{
-                //M_blockVectorSolution(indexBlock + k) = blockVectorSolutionLevelset(k);
-            //}
-            //indexBlock += blockVectorSolutionLevelset.size();
-        //}
-        CHECK( false ) << "TODO: implicit coupling\n";
+        auto const& blockVectorSolutionLevelset = *(lsModel->algebraicBlockVectorSolution());
+        int nBlockLevelset = blockVectorSolutionLevelset.size();
+        this->setStartSubBlockSpaceIndex( lsModel->keyword(), currentStartBlockSpaceIndex );
+        int numberOfBlockSpaceLevelset = 0;
+        for ( int k=0; k<nBlockLevelset; ++k )
+        {
+            bvs->operator()(indexBlock+k) = blockVectorSolutionLevelset(k);
+            numberOfBlockSpaceLevelset += blockVectorSolutionLevelset(k)->map().numberOfDofIdToContainerId();
+        }
+        indexBlock += nBlockLevelset;
+        currentStartBlockSpaceIndex += numberOfBlockSpaceLevelset;
     }
+
+
     if( this->hasInextensibilityLM() )
     {
         this->setStartSubBlockSpaceIndex( "inextensibility-lm", currentStartBlockSpaceIndex );
-        M_blockVectorSolution(indexBlock) = this->backend()->newVector( this->functionSpaceInextensibilityLM() );
+        bvs->operator()(indexBlock) = this->backend()->newVector( this->functionSpaceInextensibilityLM() );
+        int numberOfBlockSpaceInextensibilityLM = bvs->operator()(indexBlock)->map().numberOfDofIdToContainerId();
         ++indexBlock;
+        currentStartBlockSpaceIndex += numberOfBlockSpaceInextensibilityLM;
     }
 
     return indexBlock;
@@ -1603,55 +1647,55 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::useImplicitCoupling() const
     return false;
 }
 
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
-{
-    this->log("MultiFluid", "updateFluidDensityViscosity", "start");
-    this->timerTool("Solve").start();
+//MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+//void
+//MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
+//{
+    //this->log("MultiFluid", "updateFluidDensityViscosity", "start");
+    //this->timerTool("Solve").start();
 
-    auto globalH = Feel::FeelModels::levelsetHeaviside( 
-            this->globalLevelsetExpr(),
-            cst( this->globalLevelsetThicknessInterface() )
-            );
+    //auto globalH = Feel::FeelModels::levelsetHeaviside( 
+            //this->globalLevelsetExpr(),
+            //cst( this->globalLevelsetThicknessInterface() )
+            //);
 
-    auto rho = vf::project( 
-        _space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
-        _range=elements(this->mesh()),
-        _expr=idv(M_fluidMaterialProperties->fieldRho())*globalH
-            );
+    //auto rho = vf::project( 
+        //_space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
+        //_range=elements(this->mesh()),
+        //_expr=idv(M_fluidMaterialProperties->fieldRho())*globalH
+            //);
 
-    auto mu = vf::project( 
-        _space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
-        _range=elements(this->mesh()),
-        _expr=idv(M_fluidMaterialProperties->fieldMu())*globalH
-            );
+    //auto mu = vf::project( 
+        //_space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
+        //_range=elements(this->mesh()),
+        //_expr=idv(M_fluidMaterialProperties->fieldMu())*globalH
+            //);
 
-    for( auto const& ls: M_levelsets )
-    {
-        auto Hi = Feel::FeelModels::levelsetHeaviside( 
-                idv( ls.second->phi() ),
-                cst( this->globalLevelsetThicknessInterface() )
-                );
-        rho += vf::project( 
-            _space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
-            _range=elements(this->mesh()),
-            _expr=idv(M_levelsetsMaterialProperties[ls.first]->fieldRho())*(1. - Hi)
-                );
-        mu += vf::project( 
-            _space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
-            _range=elements(this->mesh()),
-            _expr=idv(M_levelsetsMaterialProperties[ls.first]->fieldMu())*(1. - Hi)
-                );
-    }
+    //for( auto const& ls: M_levelsetModels )
+    //{
+        //auto Hi = Feel::FeelModels::levelsetHeaviside( 
+                //idv( ls.second->phi() ),
+                //cst( this->globalLevelsetThicknessInterface() )
+                //);
+        //rho += vf::project( 
+            //_space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
+            //_range=elements(this->mesh()),
+            //_expr=idv(M_levelsetsMaterialProperties[ls.first]->fieldRho())*(1. - Hi)
+                //);
+        //mu += vf::project( 
+            //_space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
+            //_range=elements(this->mesh()),
+            //_expr=idv(M_levelsetsMaterialProperties[ls.first]->fieldMu())*(1. - Hi)
+                //);
+    //}
 
-    this->fluidModel()->updateRho( idv(rho) );
-    this->fluidModel()->updateMu( idv(mu) );
+    //this->fluidModel()->updateRho( idv(rho) );
+    //this->fluidModel()->updateMu( idv(mu) );
 
-    double timeElapsed = this->timerTool("Solve").stop();
-    this->log( "MultiFluid", "updateFluidDensityViscosity", 
-            "fluid density/viscosity update in "+(boost::format("%1% s") %timeElapsed).str() );
-}
+    //double timeElapsed = this->timerTool("Solve").stop();
+    //this->log( "MultiFluid", "updateFluidDensityViscosity", 
+            //"fluid density/viscosity update in "+(boost::format("%1% s") %timeElapsed).str() );
+//}
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -1707,7 +1751,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::advectLevelsets()
 
     auto const& u = this->fieldVelocity();
     
-    for( auto const& ls: M_levelsets )
+    for( auto const& ls: M_levelsetModels )
     {
         ls.second->advect( idv(u) );
     }
