@@ -736,33 +736,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solvePicard()
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
-{
-    bool _BuildCstPart = data.buildCstPart();
-    std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("MultiFluid","updateLinearPDE", "start"+sc );
-    this->timerTool("Solve").start();
-
-    //sparse_matrix_ptrtype& A = data.matrix();
-    //vector_ptrtype& F = data.rhs();
-    //bool BuildNonCstPart = !_BuildCstPart;
-    //bool BuildCstPart = _BuildCstPart;
-
-    // Update fluid
-    this->fluidModel()->updateLinearPDE( data );
-
-    // Update interface forces
-    this->updateLinearPDEInterfaceForces( data );
-
-    // Update inextensibility
-    this->updateLinearPDEInextensibility( data );
-
-    double timeElapsed = this->timerTool("Solve").stop();
-    this->log("MultiFluid","updateLinearPDE","finish in "+(boost::format("%1% s") %timeElapsed).str() );
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEInterfaceForces( DataUpdateLinear & data ) const
 {
     // Update interface forces
@@ -895,13 +868,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEInextensibility( DataUpdateLinear
             }
         }
     }
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
-{
-    this->fluidModel()->updateLinearPDEDofElimination( data );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -1047,13 +1013,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInextensibility( DataUpdateJacobia
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
-{
-    this->fluidModel()->updateJacobianDofElimination( data );
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualInterfaceForces( DataUpdateResidual & data ) const
 {
     if( this->hasInterfaceForces() )
@@ -1186,13 +1145,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualInextensibility( DataUpdateResidua
             }
         }
     }
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
-{
-    this->fluidModel()->updateResidualDofElimination( data );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS

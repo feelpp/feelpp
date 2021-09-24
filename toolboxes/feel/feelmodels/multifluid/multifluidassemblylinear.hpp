@@ -11,6 +11,49 @@ namespace FeelModels {
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
+{
+    const vector_ptrtype& XVec = data.currentSolution();
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
+
+    std::string sc = (buildCstPart)?" (cst)":" (non cst)";
+    this->log("MultiFluid", "updateLinearPDE", "start"+sc);
+    this->timerTool("Solve").start();
+
+    // TODO: build startBlockSpaceIndexLevelsets only once
+    std::vector<size_type> startBlockSpaceIndexLevelsets;
+    std::transform( M_levelsetModels.begin(), M_levelsetModels.end(), std::back_inserter( startBlockSpaceIndexLevelsets ),
+            []( levelset_model_ptrtype const& lsModel ) { return lsModel->startBlockSpaceIndexVector(); } 
+            );
+
+    auto mctx = this->modelContext( XVec, M_fluidModel->startBlockSpaceIndexVector(), startBlockSpaceIndexLevelsets );
+
+    M_fluidModel->updateLinearPDE( data, mctx );
+    for( levelset_model_ptrtype const& lsModel: M_levelsetModels )
+        lsModel->updateLinearPDE( data, mctx );
+
+    //// Update interface forces
+    //this->updateLinearPDEInterfaceForces( data );
+
+    //// Update inextensibility
+    //this->updateLinearPDEInextensibility( data );
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("MultiFluid","updateLinearPDE","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
+{
+    M_fluidModel->updateLinearPDEDofElimination( data );
+    for( levelset_model_ptrtype const& lsModel: M_levelsetModels )
+        lsModel->updateLinearPDEDofElimination( data );
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinear_Fluid( DataUpdateLinear & data ) const
 {
     const vector_ptrtype& vecCurrentSolution = data.currentSolution();
