@@ -365,7 +365,7 @@ public:
         Body( Body && ) = default;
 
         void setup( pt::ptree const& p, ModelMaterials const& mats, mesh_ptrtype mesh );
-
+        void applyRemesh( mesh_ptrtype const& newMesh );
         void updateForUse();
 
         //! return the mesh containing the body mesh
@@ -2757,7 +2757,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
             this->meshALE()->revertReferenceMesh( false );
         for( auto const& d : M_bcMovingBoundaryImposed )
         {
-            this->meshALE()->updateDisplacementImposed( expression(d,se),markedfaces(this->mesh(),markers(d)) );
+            //this->meshALE()->updateDisplacementImposed( expression(d,se),markedfaces(this->mesh(),markers(d)) );
+            this->meshALE()->updateDisplacementImposedOnInitialDomain( this->keyword(), expression(d,se),markedfaces(this->mesh(),markers(d)) );
         }
         for ( auto & [bpname,bbc] : M_bodySetBC )
         {

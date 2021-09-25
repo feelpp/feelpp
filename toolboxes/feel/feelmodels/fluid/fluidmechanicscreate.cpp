@@ -1104,6 +1104,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         for ( auto const& [bcName,markers] : this->markerALEMeshBC() )
             M_meshALE->addMarkersInBoundaryCondition( bcName, markers );
 
+
+        std::set<std::string> markersbcMovingBoundaryImposed;
+        for( auto const& d : M_bcMovingBoundaryImposed )
+        {
+            auto bcmarkers = markers(d);
+            markersbcMovingBoundaryImposed.insert( bcmarkers.begin(), bcmarkers.end() );
+        }
+        M_meshALE->setDisplacementImposedOnInitialDomainOverFaces( this->keyword(), markersbcMovingBoundaryImposed );
+
         if ( this->doRestart() )
             M_meshALE->revertMovingMesh();
         this->log("FluidMechanics","finish init", "meshALE done" );
@@ -2652,6 +2661,49 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::setup( pt::ptree const& p, ModelMateri
 
     this->updateForUse();
 
+}
+
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::applyRemesh( mesh_ptrtype const& newMesh )
+{
+    if ( M_mesh )
+    {
+        mesh_ptrtype oldMesh = this->mesh();
+
+        // material prop
+        this->materialsProperties()->removeMesh( oldMesh );
+        this->materialsProperties()->addMesh( newMesh );
+
+        M_mesh = newMesh;
+
+        // function space and fields
+        space_displacement_ptrtype old_spaceDisplacement = M_spaceDisplacement;
+        element_displacement_ptrtype old_fieldDisplacement = M_fieldDisplacement;
+        element_displacement_ptrtype old_fieldElasticDisplacement = M_fieldElasticDisplacement;
+
+        auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
+        auto M_rangeMeshElements = markedelements(this->mesh(), mom->markers( M_modelPhysics->physicsAvailableFromCurrentType() ) );
+        M_spaceDisplacement = space_displacement_type::New(_mesh=M_mesh,_range=M_rangeMeshElements);
+        M_fieldDisplacement = M_spaceDisplacement->elementPtr();
+
+        // createInterpolationOp
+        auto opI_displacement = opInterpolation(_domainSpace=old_spaceDisplacement,
+                                                _imageSpace=M_spaceDisplacement,
+                                                _range=M_rangeMeshElements );
+        auto matrixInterpolation_displacement = opI_displacement->matPtr();
+        matrixInterpolation_displacement->multVector( *old_fieldDisplacement, *M_fieldDisplacement );
+
+        if ( old_fieldElasticDisplacement )
+        {
+            M_fieldElasticDisplacement = M_spaceDisplacement->elementPtr();
+            matrixInterpolation_displacement->multVector( *old_fieldElasticDisplacement, *M_fieldElasticDisplacement );
+        }
+        // TODO
+        // space_velocity_ptrtype M_spaceElasticVelocity;
+        // element_velocity_ptrtype M_fieldElasticVelocity;
+    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
