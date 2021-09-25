@@ -53,6 +53,7 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
     this->initFunctionSpaces();
     // update M_identity_ale
     this->updateIdentityMap();
+    *M_fieldInitialIdentity = *M_identity_ale;
 #if 0
     // compute dist between P1(ref) to Ho mesh
     if ( mesh_type::nOrder != mesh_ref_type::nOrder )
@@ -80,6 +81,7 @@ MeshALE<Convex>::initFunctionSpaces()
     M_displacement = M_Xhmove->elementPtr();
     M_meshVelocity = M_Xhmove->elementPtr();
     M_fieldTmp = M_Xhmove->elementPtr();
+    M_fieldInitialIdentity = M_Xhmove->elementPtr();
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -147,6 +149,7 @@ MeshALE<Convex>::applyRemesh( mesh_ptrtype const& newMesh, std::vector<std::tupl
 
     ale_map_functionspace_ptrtype old_spaceMove = M_Xhmove;
     ale_map_element_ptrtype old_fieldMeshVelocity = M_meshVelocity;
+    ale_map_element_ptrtype old_fieldInitialIdentity = M_fieldInitialIdentity;
     this->initFunctionSpaces();
 
     // createInterpolationOp
@@ -154,6 +157,9 @@ MeshALE<Convex>::applyRemesh( mesh_ptrtype const& newMesh, std::vector<std::tupl
                                     _imageSpace=M_Xhmove,
                                     _range=elements(support(M_Xhmove) ) );
     auto matrixInterpolation_move = opI_move->matPtr();
+
+    matrixInterpolation_move->multVector( *old_fieldMeshVelocity, *M_meshVelocity );
+    matrixInterpolation_move->multVector( *old_fieldInitialIdentity, *M_fieldInitialIdentity );
 
     M_bdf_ale_identity->applyRemesh( M_Xhmove, matrixInterpolation_move );
     M_isOnReferenceMesh = true;
@@ -163,15 +169,16 @@ MeshALE<Convex>::applyRemesh( mesh_ptrtype const& newMesh, std::vector<std::tupl
 
     // up identity
     this->updateIdentityMap();
-#if 0
-    // compute mesh velocity
-    *M_meshVelocity = *M_identity_ale;
-    M_meshVelocity->scale( M_bdf_ale_identity->polyDerivCoefficient(0) );
-    M_meshVelocity->add(-1.0,M_bdf_ale_identity->polyDeriv());
-#endif
-    matrixInterpolation_move->multVector( *old_fieldMeshVelocity, *M_meshVelocity );
 
 
+    //
+    std::map<std::string,std::set<std::string>> saveMarkersDisplacementImposedOnInitialDomainOverFaces;
+    for ( auto const& [name,dioidof] : M_displacementImposedOnInitialDomainOverFaces )
+        saveMarkersDisplacementImposedOnInitialDomainOverFaces[name] = dioidof.markers();
+
+    M_displacementImposedOnInitialDomainOverFaces.clear();
+    for ( auto const& [name,markers] : saveMarkersDisplacementImposedOnInitialDomainOverFaces )
+        this->setDisplacementImposedOnInitialDomainOverFaces( name, markers );
 
     // TODO : try a way to not use computationDomainsDesc
     std::map<std::string,typename ale_map_type::bc_to_markers_type> saveBcMarker;
@@ -304,6 +311,15 @@ MeshALE<Convex>::markers( std::string const& bc ) const
         }
     }
     return res;
+}
+
+
+template< class Convex >
+void
+MeshALE<Convex>::setDisplacementImposedOnInitialDomainOverFaces( std::string const& name, std::set<std::string> const& markers )
+{
+    DisplacementImposedOnInitialDomainOverFaces dioidof( this, markers );
+    M_displacementImposedOnInitialDomainOverFaces.emplace( std::make_pair( name, std::move( dioidof ) ) );
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -659,6 +675,130 @@ MeshALE<Convex>::ComputationalDomain::addMarkerInBoundaryCondition(std::string c
 {
     CHECK( M_meshALE->referenceMesh()->hasMarker(marker) ) << " marker " << marker << " is not define in reference mesh";
     M_aleFactory->addMarkerInBoundaryCondition( bctype, marker );
+}
+
+template< class Convex >
+MeshALE<Convex>::DisplacementImposedOnInitialDomainOverElements::DisplacementImposedOnInitialDomainOverElements( self_type const* meshALE, std::set<std::string> const& markers )
+    :
+    M_meshALE( meshALE )
+{
+    M_mesh = M_meshALE->movingMesh();
+    for ( std::string const& marker : markers )
+    {
+        if ( M_mesh->hasElementMarker( marker ) )
+            M_markers.insert( marker );
+    }
+    CHECK( !M_markers.empty() ) << "no marker";
+
+    //CHECK( M_meshALE->isOnReferenceMesh() ) << "this init is only implemented when mesh is on ref";
+}
+
+template< class Convex >
+void
+MeshALE<Convex>::DisplacementImposedOnInitialDomainOverElements::revertInitialDomain()
+{
+    CHECK( false ) << "TODO";
+}
+template< class Convex >
+void
+MeshALE<Convex>::DisplacementImposedOnInitialDomainOverElements::revertReferenceDomain()
+{
+    CHECK( false ) << "TODO";
+}
+
+template< class Convex >
+MeshALE<Convex>::DisplacementImposedOnInitialDomainOverFaces::DisplacementImposedOnInitialDomainOverFaces( self_type const* meshALE, std::set<std::string> const& markers )
+    :
+    M_meshALE( meshALE )
+{
+    auto aleMovingMesh = M_meshALE->movingMesh();
+    for ( std::string const& marker : markers )
+    {
+        if ( aleMovingMesh->hasFaceMarker( marker ) )
+            M_markers.insert( marker );
+    }
+    CHECK( !M_markers.empty() ) << "no marker";
+
+    CHECK( M_meshALE->isOnReferenceMesh() ) << "this init is only implemented when mesh is on ref";
+
+    //std::cout << "DisplacementImposedOnInitialDomainOverFaces M_markers=" << M_markers << std::endl;
+
+    auto rangeFaces = markedfaces(aleMovingMesh,M_markers);
+    M_mesh = createSubmesh( _mesh=aleMovingMesh, _range=rangeFaces, _view=true );
+    //std::cout << "DisplacementImposedOnInitialDomainOverFaces  M_mesh->numGlobalElements()=" << M_mesh->numGlobalElements() << std::endl;
+
+    M_spaceDisplacement = trace_functionspace_type::New(_mesh=M_mesh);
+    M_fieldDisplacementImposed =  M_spaceDisplacement->elementPtr();
+    M_fieldDisplacementRefToInitial = M_spaceDisplacement->elementPtr();
+
+    auto opI_move = opInterpolation(_domainSpace=M_spaceDisplacement,
+                                    _imageSpace=M_meshALE->functionSpace(),
+                                    _range=rangeFaces );
+    M_matrixInterpolationDisplacement = opI_move->matPtr();
+
+    M_fieldDisplacementRefToInitial->on(_range=elements(M_mesh), _expr=idv(M_meshALE->fieldInitialIdentity())-P());
+}
+
+
+template< class Convex >
+typename MeshALE<Convex>::DisplacementImposedOnInitialDomainOverFaces::trace_range_elements_type
+MeshALE<Convex>::DisplacementImposedOnInitialDomainOverFaces::transformFromRelation( range_faces_type const& rangeFaces ) const
+{
+    CHECK( M_mesh->isSubMeshFrom( M_meshALE->movingMesh() ) ) << "mesh should be a submesh of movingMesh";
+    typename MeshTraits<trace_mesh_type>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<trace_mesh_type>::elements_reference_wrapper_type );
+    for ( auto const& faceWrap : rangeFaces )
+    {
+        auto const& face = unwrap_ref( faceWrap );
+        size_type eltRelatedId = M_mesh->meshToSubMesh( face.id() );
+        if ( eltRelatedId == invalid_v<size_type> )
+            continue;
+        auto const& eltRelated = M_mesh->element( eltRelatedId );
+        myelts->push_back( boost::cref( eltRelated ) );
+    }
+    myelts->shrink_to_fit();
+    trace_range_elements_type res = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(),myelts->end(),myelts );
+    return res;
+}
+
+template< class Convex >
+void
+MeshALE<Convex>::DisplacementImposedOnInitialDomainOverFaces::revertInitialDomain()
+{
+    if ( M_isRevertInitialDomain )
+        return;
+
+    M_mesh_mover.setUpdateMeshMeasures( false /*updateMeshMeasures*/ );
+
+    if ( M_meshALE->isOnReferenceMesh() )
+    {
+        M_mesh_mover.apply(M_mesh, *M_fieldDisplacementRefToInitial );
+    }
+    else if ( M_meshALE->isOnMovingMesh() )
+    {
+        CHECK( false ) << "not implemented : only isOnReferenceMesh";
+        // auto M_fieldTmp = M_spaceDisplacement->elementPtr();
+        // *M_fieldTmp =  *M_fieldDisplacementRefToInitial;
+        // M_mesh_mover.apply(M_mesh, *M_fieldTmp );
+    }
+
+    M_mesh_mover.setUpdateMeshMeasures( true );
+    M_isRevertInitialDomain = true;
+}
+
+template< class Convex >
+void
+MeshALE<Convex>::DisplacementImposedOnInitialDomainOverFaces::revertReferenceDomain()
+{
+    if ( M_isRevertInitialDomain )
+    {
+        auto M_fieldTmp = M_spaceDisplacement->elementPtr();
+        *M_fieldTmp =  *M_fieldDisplacementRefToInitial;
+        M_fieldTmp->scale(-1.);
+        M_mesh_mover.setUpdateMeshMeasures( false /*updateMeshMeasures*/ );
+        M_mesh_mover.apply(M_mesh, *M_fieldTmp );
+        M_mesh_mover.setUpdateMeshMeasures( true );
+        M_isRevertInitialDomain = false;
+    }
 }
 
 } // namespace FeelModels
