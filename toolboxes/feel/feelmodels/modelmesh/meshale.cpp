@@ -172,10 +172,16 @@ MeshALE<Convex>::applyRemesh( mesh_ptrtype const& newMesh, std::vector<std::tupl
 
 
     //
+    std::map<std::string,std::set<std::string>> saveMarkersDisplacementImposedOnInitialDomainOverElements;
+    for ( auto const& [name,dioidoe] : M_displacementImposedOnInitialDomainOverElements )
+        saveMarkersDisplacementImposedOnInitialDomainOverElements[name] = dioidoe.markers();
     std::map<std::string,std::set<std::string>> saveMarkersDisplacementImposedOnInitialDomainOverFaces;
     for ( auto const& [name,dioidof] : M_displacementImposedOnInitialDomainOverFaces )
         saveMarkersDisplacementImposedOnInitialDomainOverFaces[name] = dioidof.markers();
 
+    M_displacementImposedOnInitialDomainOverElements.clear();
+    for ( auto const& [name,markers] : saveMarkersDisplacementImposedOnInitialDomainOverElements )
+        this->setDisplacementImposedOnInitialDomainOverElements( name, markers );
     M_displacementImposedOnInitialDomainOverFaces.clear();
     for ( auto const& [name,markers] : saveMarkersDisplacementImposedOnInitialDomainOverFaces )
         this->setDisplacementImposedOnInitialDomainOverFaces( name, markers );
@@ -314,6 +320,14 @@ MeshALE<Convex>::markers( std::string const& bc ) const
 }
 
 
+
+template< class Convex >
+void
+MeshALE<Convex>::setDisplacementImposedOnInitialDomainOverElements( std::string const& name, std::set<std::string> const& markers )
+{
+    DisplacementImposedOnInitialDomainOverElements dioidoe( this, markers );
+    M_displacementImposedOnInitialDomainOverElements.emplace( std::make_pair( name, std::move( dioidoe ) ) );
+}
 template< class Convex >
 void
 MeshALE<Convex>::setDisplacementImposedOnInitialDomainOverFaces( std::string const& name, std::set<std::string> const& markers )
@@ -364,6 +378,25 @@ template< class Convex >
 void
 MeshALE<Convex>::revertReferenceMesh( bool updateMeshMeasures )
 {
+    for ( auto & [name,dioidoe] : M_displacementImposedOnInitialDomainOverElements )
+    {
+        if ( !dioidoe.isOnInitialDomain() )
+            continue;
+        if ( this->isOnReferenceMesh() )
+            dioidoe.revertReferenceDomain();
+        else
+            CHECK( false ) << "TODO dioidoe.revertMovingMesh";
+    }
+    for ( auto & [name,dioidof] : M_displacementImposedOnInitialDomainOverFaces )
+    {
+        if ( !dioidof.isOnInitialDomain() )
+            continue;
+        if ( this->isOnReferenceMesh() )
+            dioidof.revertReferenceDomain();
+        else
+            CHECK( false ) << "TODO dioidof.revertMovingMesh";
+    }
+
     if ( !this->isOnReferenceMesh() )
     {
         *M_fieldTmp =  *M_displacement;
@@ -391,6 +424,25 @@ MeshALE<Convex>::revertMovingMesh( bool updateMeshMeasures )
         M_isOnMovingMesh = true;
     }
 }
+
+template< class Convex >
+void
+MeshALE<Convex>::revertInitialDomain( bool updateMeshMeasures )
+{
+    for ( auto & [name,dioidoe] : M_displacementImposedOnInitialDomainOverElements )
+    {
+        if ( dioidoe.isOnInitialDomain() )
+            continue;
+        dioidoe.revertInitialDomain();
+    }
+    for ( auto & [name,dioidof] : M_displacementImposedOnInitialDomainOverFaces )
+    {
+        if ( dioidof.isOnInitialDomain() )
+            continue;
+        dioidof.revertInitialDomain();
+    }
+}
+
 
 //------------------------------------------------------------------------------------------------//
 
@@ -697,13 +749,52 @@ template< class Convex >
 void
 MeshALE<Convex>::DisplacementImposedOnInitialDomainOverElements::revertInitialDomain()
 {
-    CHECK( false ) << "TODO";
+    if ( M_isRevertInitialDomain )
+        return;
+    MeshMover<mesh_type> M_mesh_mover;
+    M_mesh_mover.setUpdateMeshMeasures( false /*updateMeshMeasures*/ );
+
+    auto disp = M_meshALE->functionSpace()->element();
+    // idv(M_fieldTmp)  - ( idv(M_identity_ale) - idv(M_displacement) - idv(M_fieldInitialIdentity) ), ra
+
+
+
+    if ( M_meshALE->isOnReferenceMesh() )
+    {
+        disp.on( _range=markedelements( disp.mesh(), M_markers ),
+                 _expr= idv( M_meshALE->fieldInitialIdentity() ) -  ( idv( M_meshALE->identityALE() ) - idv( M_meshALE->displacement() ) ) );
+    }
+    else if ( M_meshALE->isOnMovingMesh() )
+    {
+        CHECK( false ) << "TODO";
+    }
+
+    M_mesh_mover.apply(M_mesh, disp );
+    M_mesh_mover.setUpdateMeshMeasures( true );
+    M_isRevertInitialDomain = true;
 }
 template< class Convex >
 void
 MeshALE<Convex>::DisplacementImposedOnInitialDomainOverElements::revertReferenceDomain()
 {
-    CHECK( false ) << "TODO";
+    if ( M_meshALE->isOnReferenceMesh() && !M_isRevertInitialDomain )
+        return;
+
+    MeshMover<mesh_type> M_mesh_mover;
+    M_mesh_mover.setUpdateMeshMeasures( false /*updateMeshMeasures*/ );
+    auto disp = M_meshALE->functionSpace()->element();
+
+    if ( M_isRevertInitialDomain )
+    {
+        disp.on( _range=markedelements( disp.mesh(), M_markers ),
+                 _expr=  ( idv( M_meshALE->identityALE() ) - idv( M_meshALE->displacement() ) ) - idv( M_meshALE->fieldInitialIdentity() ) );
+    }
+    else
+        CHECK( false ) << "TODO";
+
+    M_mesh_mover.apply(M_mesh, disp );
+    M_mesh_mover.setUpdateMeshMeasures( true );
+    M_isRevertInitialDomain = false;
 }
 
 template< class Convex >
