@@ -28,6 +28,7 @@
 #include <feel/feelmesh/meshsupportbase.hpp>
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feeldiscr/localization.hpp>
 
 namespace Feel
 {
@@ -71,7 +72,9 @@ public :
             for (auto const& eltWrap : M_rangeElements )
                 M_rangeMeshElementsIdsPartialSupport.insert( unwrap_ref(eltWrap).id() );
 
-            
+            M_localizationToolPartialSupport = std::make_shared<Localization<mesh_type>>();
+            M_localizationToolPartialSupport->setMesh( M_mesh,false );
+            M_localizationToolPartialSupport->/*init*/reset( M_rangeElements );
         }
 
     ~MeshSupport() override = default;
@@ -81,6 +84,8 @@ public :
 
     bool isFullSupport() const override { return M_isFullSupport; }
     bool isPartialSupport() const override { return !M_isFullSupport; }
+
+    std::shared_ptr<Localization<mesh_type>> tool_localization() const { return this->isPartialSupport()? M_localizationToolPartialSupport : M_mesh->tool_localization(); }
 
     range_elements_type const& rangeElements() const { return M_rangeElements; }
     range_faces_type const& rangeInterProcessFaces() const { this->updateParallelData(); return M_rangeInterProcessFaces; }
@@ -400,6 +405,8 @@ private :
 private :
     mesh_ptrtype M_mesh;
     range_elements_type M_rangeElements;
+    std::shared_ptr<Localization<mesh_type>> M_localizationToolPartialSupport;
+
     mutable range_faces_type M_rangeInterProcessFaces;
     mutable range_faces_type M_rangeBoundaryFaces;
     mutable range_faces_type M_rangeInternalFaces;
