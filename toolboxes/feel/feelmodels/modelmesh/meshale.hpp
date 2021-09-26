@@ -163,15 +163,21 @@ public :
     public:
         DisplacementImposedOnInitialDomainOverElements( self_type const* meshALE, std::set<std::string> const& markers );
 
+        std::set<std::string> const& markers() const { return M_markers; }
+        void revertInitialDomain();
+        void revertReferenceDomain();
+        bool isOnInitialDomain() const { return M_isRevertInitialDomain; }
+
         template <typename ExprType>
         void updateDisplacementImposed( ale_map_element_type & outputField, ExprType const& expr, range_elements_type const& range )
             {
-                this->revertInitialDomain();
-                outputField->on(_range=range, _expr=expr );
-                this->revertReferenceDomain();
+                bool meshIsOnInitialDomainAtBegin = this->isOnInitialDomain();
+                if ( !meshIsOnInitialDomainAtBegin )
+                    this->revertInitialDomain();
+                outputField.on(_range=range, _expr=expr );
+                if ( !meshIsOnInitialDomainAtBegin )
+                    this->revertReferenceDomain();
             }
-        void revertInitialDomain();
-        void revertReferenceDomain();
     private :
         self_type const* M_meshALE;
         std::set<std::string> M_markers;
@@ -196,14 +202,19 @@ public :
 
         void revertInitialDomain();
         void revertReferenceDomain();
+        bool isOnInitialDomain() const { return M_isRevertInitialDomain; }
+
 
         template <typename ExprType>
         void updateDisplacementImposed( ale_map_element_type & outputField, ExprType const& expr, range_faces_type const& range )
             {
                 auto rangeElt = this->transformFromRelation( range );
-                this->revertInitialDomain();
+                bool meshIsOnInitialDomainAtBegin = this->isOnInitialDomain();
+                if ( !meshIsOnInitialDomainAtBegin )
+                    this->revertInitialDomain();
                 M_fieldDisplacementImposed->on(_range=rangeElt, _expr=expr ); // close?
-                this->revertReferenceDomain();
+                if ( !meshIsOnInitialDomainAtBegin )
+                    this->revertReferenceDomain();
                 M_matrixInterpolationDisplacement->multVector( *M_fieldDisplacementImposed, outputField );
             }
 
@@ -252,6 +263,8 @@ public :
     //! return set of markers associated to boundary condition type \bc
     std::set<std::string> markers( std::string const& bc ) const;
 
+    //! defined element markers where disp imposed is given on initial mesh (not necessarly equal to ref mesh when we apply remesh)
+    void setDisplacementImposedOnInitialDomainOverElements( std::string const& name, std::set<std::string> const& markers );
     //! defined face markers where disp imposed is given on initial mesh (not necessarly equal to ref mesh when we apply remesh)
     void setDisplacementImposedOnInitialDomainOverFaces( std::string const& name, std::set<std::string> const& markers );
 
@@ -346,6 +359,8 @@ public :
      * \Revert mesh in moving state, \updateMeshMeasures boolean put to false avoid to recompute some mesh measure as the aera,...
      */
     void revertMovingMesh( bool updateMeshMeasures = true );
+
+    void revertInitialDomain( bool updateMeshMeasures = true );
 
     /**
      * update meshale object to the next time step
