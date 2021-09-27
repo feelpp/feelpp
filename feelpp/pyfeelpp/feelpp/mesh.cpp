@@ -151,11 +151,21 @@ void defMesh(py::module &m)
     m.def( "markedelements", []( mesh_ptr_t const& r, std::string const& m ) {
             return markedelements(r,m);
         },py::arg("range"), py::arg("marker"), "return the range of elements of the mesh with marker" );
+    m.def( "markedelements", []( mesh_ptr_t const& r, std::vector<std::string> const& m ) {
+            return markedelements(r,m);
+        },py::arg("range"), py::arg("markers"), "return the range of elements of the mesh with markers" );
+
+
     m.def(
         "markedfaces", []( mesh_ptr_t const& r, std::string const& m ) {
             return markedfaces( r, m );
         },
         py::arg( "range" ), py::arg( "marker" ), "return the range of facets of the mesh with marker" );
+    m.def(
+        "markedfaces", []( mesh_ptr_t const& r, std::vector<std::string> const& m ) {
+            return markedfaces( r, m );
+        },
+        py::arg( "range" ), py::arg( "markers" ), "return the range of facets of the mesh with marker" );
     if constexpr ( mesh_t::nDim == 3 )
     {
         m.def(
