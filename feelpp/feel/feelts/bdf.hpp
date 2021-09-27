@@ -141,7 +141,7 @@ public:
 
     //! @return the FunctionSpace associated to BDF
     space_ptrtype const& functionSpace() const { return M_space; }
-
+#if 0
     /**
      * @brief interpolate fields from another bdf possibly on a different mesh
      * 
@@ -169,6 +169,27 @@ public:
             op_2->apply( unwrap_ptr( *temp ), unwrap_ptr( *it ) );
         }
     }
+#endif
+
+
+    void applyRemesh( space_ptrtype const& space, std::shared_ptr<MatrixSparse<double>> const& matInterp )
+        {
+            //! change space/fields and interpolate
+            M_space = space;
+            unknowns_type oldUnknowns = M_unknowns;
+            for ( int k=0;k< M_unknowns.size();++k )
+            {
+                M_unknowns[k] = M_space->elementPtr();
+                matInterp->multVector( unwrap_ptr(oldUnknowns[k]), unwrap_ptr(M_unknowns[k]) );
+            }
+
+            //! recompute poly and polyDeriv
+            M_poly.reset();
+            M_polyDeriv.reset();
+            this->computePolyAndPolyDeriv();
+
+            // TODO : change repository where fields are saved
+        }
     //! return a deep copy of the bdf object
     bdf_ptrtype deepCopy() const
     {

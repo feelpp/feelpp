@@ -365,8 +365,10 @@ public:
         Body( Body && ) = default;
 
         void setup( pt::ptree const& p, ModelMaterials const& mats, mesh_ptrtype mesh );
-
+        void applyRemesh( mesh_ptrtype const& newMesh );
         void updateForUse();
+
+        std::shared_ptr<ModelPhysics<nRealDim>> const& modelPhysics() const { return M_modelPhysics; }
 
         //! return the mesh containing the body mesh
         mesh_ptrtype mesh() const { return M_mesh; }
@@ -967,6 +969,7 @@ public:
 
         void setup( std::string const& bodyName, pt::ptree const& p, self_type const& fluidToolbox );
         void init( self_type const& fluidToolbox );
+        void applyRemesh( self_type const& fluidToolbox );
         void updateForUse( self_type const& fluidToolbox );
 
         void updateInformationObject( nl::json & p ) const;
@@ -1296,6 +1299,8 @@ public:
                 }
 #endif
             }
+    private:
+        void initFunctionSpaces();
 
     private :
         std::string M_name;
@@ -1381,6 +1386,13 @@ public:
             }
 
         void init( self_type const& fluidToolbox );
+        void applyRemesh( self_type const& fluidToolbox )
+            {
+                for ( auto & [name,bpbc] : *this )
+                    bpbc.applyRemesh( fluidToolbox );
+                // for (auto & nba : M_nbodyArticulated )
+                //     nba.applyRemesh();
+            }
         void updateForUse( self_type const& fluidToolbox );
         void initAlgebraicFactory( self_type const& fluidToolbox, model_algebraic_factory_ptrtype algebraicFactory );
         void updateAlgebraicFactoryForUse( self_type const& fluidToolbox, model_algebraic_factory_ptrtype algebraicFactory );
@@ -1658,11 +1670,15 @@ private :
     void initUserFunctions();
     void initPostProcess() override;
     void createPostProcessExporters();
+
+    void initAlgebraicModel();
+    void updateAlgebraicDofEliminationIds();
 public :
     void init( bool buildModelAlgebraicFactory=true );
     void init( self_ptrtype const& other_toolbox, std::vector<std::string> const& markersInterpolate,
                bool buildModelAlgebraicFactory = true ); 
     void initAlgebraicFactory();
+    void applyRemesh( mesh_ptrtype const& newMesh );
 
     void createFunctionSpacesNormalStress();
     void createFunctionSpacesSourceAdded();
@@ -2755,8 +2771,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
             this->meshALE()->revertReferenceMesh( false );
         for( auto const& d : M_bcMovingBoundaryImposed )
         {
-            this->meshALE()->updateDisplacementImposed( expression(d,se),markedfaces(this->mesh(),markers(d)) );
+            //this->meshALE()->updateDisplacementImposed( expression(d,se),markedfaces(this->mesh(),markers(d)) );
+            this->meshALE()->updateDisplacementImposedOnInitialDomain( this->keyword(), expression(d,se),markedfaces(this->mesh(),markers(d)) );
         }
+
+        
+        this->meshALE()->revertInitialDomain( false );
+        
         for ( auto & [bpname,bbc] : M_bodySetBC )
         {
             if ( bbc.hasElasticBehaviorFromExpr() )
@@ -2783,10 +2804,14 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
 
         for ( auto & [bpname,bbc] : M_bodySetBC )
         {
-            this->meshALE()->updateDisplacementImposed( idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
+            //this->meshALE()->updateDisplacementImposed( idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
+            this->meshALE()->updateDisplacementImposedOnInitialDomain( this->keyword(), idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
+            
             if ( bbc.hasElasticVelocity() )
                 bbc.updateElasticVelocityWithRotation();
         }
+
+        this->meshALE()->revertReferenceMesh( false );
 
         if ( !meshIsOnRefAtBegin )
             this->meshALE()->revertMovingMesh( false );
@@ -2867,6 +2892,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::exportResults( d
 
     if constexpr ( nOrderGeo <= 2 )
     {
+        if ( M_exporter && M_exporter->exporterGeometry() == EXPORTER_GEOMETRY_CHANGE ) // TODO mv this code
+            M_exporter->defaultTimeSet()->setMesh( this->mesh() );
         this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
         this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, mfields, symbolsExpr, exportsExpr );
     }
