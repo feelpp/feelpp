@@ -42,7 +42,18 @@ def test_fluid_remesh():
     e.step(0.).add("pressure", f.fieldPressure())
     e.save()
     f.startTimeStep()
-    while f.time() < f.timeFinal()/2:
+    while not f.timeStepBase().isFinished():
+
+        if f.timeStepBase().iteration() % 4:
+            hclose=0.005
+            hfar=0.07
+            Xh = feelpp.functionSpace(mesh=f.mesh())
+            metric = feelpp.gradedls(Xh, feelpp.markedfaces(Xh.mesh(),["wall2","wake"]), hclose, hfar)
+            R = feelpp.remesher(mesh=f.mesh())
+            R.setMetric(metric)
+            new_mesh = R.execute()
+            f.applyMesh(new_mesh)
+
         if feelpp.Environment.isMasterRank():
             print("============================================================\n")
             print("time simulation: ", f.time(), "s \n")
@@ -54,45 +65,4 @@ def test_fluid_remesh():
         e.save()
         f.updateTimeStep()
 
-    hclose=0.005
-    hfar=0.07
-    Xh = feelpp.functionSpace(mesh=f.mesh())
-    metric = feelpp.gradedls(Xh, feelpp.markedfaces(Xh.mesh(),["wall2","wake"]), hclose, hfar)
-
-    R = feelpp.remesher(mesh=f.mesh())
-    R.setMetric(metric)
-    new_mesh = R.execute()
-
-    f2 = fluid(dim=2, orderVelocity=2, orderPressure=1)
-    f2.setMesh(new_mesh)
-    f2.setTimeInitial(f.time()-f2.timeStep())
-    f2.init()
-    f2.init(f,["Fluid"])
-    f2.setTimeInitial(f.time()-f2.timeStep())
-    #OIv = I.interpolator(domain=f.functionSpaceVelocity(), image=f2.functionSpaceVelocity(), range=feelpp.elements(f2.mesh()))
-    #f2.setFieldVelocity(OIv.interpolate(domain=f.fieldVelocity()))
-    #OIp = I.interpolator(domain=f.functionSpacePressure(), image=f2.functionSpacePressure(), range=feelpp.elements(f2.mesh()))
-    #f2.setFieldPressure(OIp.interpolate(domain=f.fieldPressure()))
-    print("time: {} step: {} initial: {}".format(f2.time(), f2.timeStep(), f2.timeInitial()))
-    
-    #e.step(f2.time()+f2.timeStep()).setMesh(f2.mesh())
-    #e.step(f2.time()+f2.timeStep()).add("velocity", f2.fieldVelocity())
-    #e.step(f2.time()+f2.timeStep()).add("pressure", f2.fieldPressure())
-    #e.save()
-    #return
-    f2.startTimeStep()
-
-    print("time: {} step: {} initial: {}".format(
-        f2.time(), f2.timeStep(), f2.timeInitial()))
-    while not f2.timeStepBase().isFinished():
-        if feelpp.Environment.isMasterRank():
-            print("============================================================\n")
-            print("time simulation: ", f2.time(), "s \n")
-            print("============================================================\n")
-        f2.solve()
-        e.step(f2.time()).setMesh(f2.mesh())
-        e.step(f2.time()).add("velocity",f2.fieldVelocity())
-        e.step(f2.time()).add("pressure", f2.fieldPressure())
-        e.save()
-        f2.updateTimeStep()
     
