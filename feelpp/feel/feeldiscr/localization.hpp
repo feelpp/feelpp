@@ -99,7 +99,7 @@ public:
             M_resultAnalysis.clear();
             DVLOG(2) << "[Mesh::Localization] create Localization tool done\n";
         }
-    
+#if 0
     Localization( std::shared_ptr<mesh_type> m, bool init_b = true ) :
             M_mesh ( m ),
             M_isInit( init_b ),
@@ -109,7 +109,7 @@ public:
             M_barycentersWorld()
         {
             if ( this->isInit() )
-                this->init();
+                this->init( elements(mesh) );
 
             int optNbNeighbor = ioption( _name=(boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % nDim).str() );
             int usedNbNeighbor = ( optNbNeighbor < 0 )? 2*mesh_type::element_type::numPoints : optNbNeighbor;
@@ -117,7 +117,7 @@ public:
 
             M_resultAnalysis.clear();
         }
-
+#endif
         Localization( Localization const & L ) :
             M_mesh( L.M_mesh ),
             M_kd_tree( new kdtree_type( *( L.M_kd_tree ) ) ),
@@ -140,7 +140,7 @@ public:
             M_mesh=m;
 
             if ( b )
-                this->init();
+                this->init( elements(m) );
 
             else M_isInit=b;
 
@@ -161,8 +161,12 @@ public:
          //!
         void updateForUse()
         {
-            if ( !this->isInit() )
-                this->init();
+            if ( this->isInit() )
+                return;
+            auto mesh = M_mesh.lock();
+            if ( !mesh )
+                return;
+            this->init( elements(mesh) );
         }
 
         //! --------------------------------------------------------------
@@ -315,7 +319,13 @@ public:
         {
             M_isInit=false;
             M_isInitBoundaryFaces=false;
-            this->init();
+            this->updateForUse();//init(element(M_mesh));
+        }
+        void reset( elements_reference_wrapper_t<mesh_type> const& range )
+        {
+            M_isInit=false;
+            M_isInitBoundaryFaces=false;
+            this->init(range);
         }
 
         void resetBoundaryFaces()
@@ -330,7 +340,7 @@ public:
         //! ---------------------------------------------------------------
         //! initializes the kd tree and the map between node and list elements(all elements)
         //!
-        FEELPP_NO_EXPORT void init();
+        FEELPP_NO_EXPORT void init( elements_reference_wrapper_t<mesh_type> const& range );
 
         //! ---------------------------------------------------------------
         //! initializes the kd tree and the map between node and list elements(only on boundary)
@@ -380,7 +390,7 @@ const uint16_type Localization<MeshType>::nOrder;
 
 template<typename MeshType>
 void
-Localization<MeshType>::init()
+Localization<MeshType>::init( elements_reference_wrapper_t<mesh_type> const& range )
 {
     auto mesh = M_mesh.lock();
     if ( !mesh ) return;
@@ -391,7 +401,7 @@ Localization<MeshType>::init()
     //clear data
     M_geoGlob_Elts.clear();
     M_kd_tree->clear();
-
+#if 0
     auto rangeElements = mesh->elementsWithProcessId();
     auto el_it = std::get<0>( rangeElements );
     auto el_en = std::get<1>( rangeElements );
@@ -414,6 +424,34 @@ Localization<MeshType>::init()
             }
 
             boost::get<1>( M_geoGlob_Elts[elt.point( i ).id()] ).push_back( elt.id() );
+        }
+    }
+#endif
+    for ( auto const& eltWrap : range )
+    {
+        auto const& elt = unwrap_ref( eltWrap );
+        M_gic.reset( new gmc_inverse_type( mesh->gm(), elt, mesh->worldComm().subWorldCommSeqPtr() ) );
+        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), elt, mpl::int_<1>(), mesh->worldComm().subWorldCommSeqPtr() ) );
+        break;
+    }
+    for ( auto const& eltWrap : range )
+    {
+        auto const& elt = unwrap_ref( eltWrap );
+        index_type eltId = elt.id();
+        for ( int i=0; i<elt.nPoints(); ++i )
+        {
+            auto const& thePoint = elt.point( i );
+            index_type thePointId = thePoint.id();
+
+            auto itFindPoint = M_geoGlob_Elts.find( thePointId );
+            if ( itFindPoint == M_geoGlob_Elts.end() )
+            {
+                node_elem_type theData = boost::make_tuple( thePoint.node(), std::list<size_type>( {eltId} ) );
+                M_geoGlob_Elts.emplace( std::make_pair( thePointId, std::move( theData ) ) );
+                M_kd_tree->addPoint( thePoint.node(), thePointId );
+            }
+            else
+                boost::get<1>( itFindPoint->second ).push_back( eltId );
         }
     }
 
@@ -662,8 +700,12 @@ Localization<MeshType>::run_analysis( const matrix_node_type & m,
                                       const size_type & eltHypothetical )
 {
     // if no init then init with all geo point
+#if 0
     if ( !( this->isInit() || this->isInitBoundaryFaces() ) )
         this->init();
+#else
+    CHECK( this->isInit() || this->isInitBoundaryFaces() ) << "localization tool not init";
+#endif
 
     bool find_x;
     size_type cv_id=eltHypothetical;
