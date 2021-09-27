@@ -29,6 +29,7 @@
 #ifndef FEELPP_PCHM_H
 #define FEELPP_PCHM_H 1
 
+#include <boost/mp11/utility.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
 namespace Feel {
@@ -42,11 +43,9 @@ template<typename MeshType,
          int Tag = 0>
 struct Pchmg
 {
-    typedef FunctionSpace<MeshType,
-                          bases<Lagrange<Order,Pset,Continuous,Pts,Tag>>,
-                          T,
-                          Periodicity <NoPeriodicity>,
-                          mortars<NoMortar>> type;
+    using type = boost::mp11::mp_if_c<Tag == 0 && std::is_same_v<T, double>,
+                                      FunctionSpace<MeshType, bases<Lagrange<Order, Pset, Continuous, Pts>>>,
+                                      FunctionSpace<MeshType, bases<Lagrange<Order, Pset, Continuous, Pts, Tag>>, T>>;
     typedef std::shared_ptr<type> ptrtype;
 };
 
