@@ -123,7 +123,6 @@ public :
         ComputationalDomain( self_type const* meshALE, range_elements_type const& rangeElt );
 
         void init( bool M_isARestart );
-        void init( ComputationalDomain const& cd, std::vector<std::string> const& markersInterpolate, bool isARestart );
 
         void generateMap( ale_map_element_type const& displacementOnMovingBoundary_HO_ref );
 
