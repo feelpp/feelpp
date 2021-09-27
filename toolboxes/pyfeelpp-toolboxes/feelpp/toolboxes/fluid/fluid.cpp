@@ -89,6 +89,9 @@ void defFM(py::module &m)
         .def("solve",&fm_t::solve, "solve the fluid mechanics problem")
         .def("exportResults",static_cast<void (fm_t::*)()>(&fm_t::exportResults), "export the results of the fluid mechanics problem")
         .def("exportResults",static_cast<void (fm_t::*)( double )>(&fm_t::exportResults), "export the results of the fluid mechanics problem", py::arg("time"))
+
+        // remesh
+        .def("applyRemesh",&fm_t::applyRemesh, "apply remesh to toolbox and regenerate the necessary data structure")
         ;
         
 }
