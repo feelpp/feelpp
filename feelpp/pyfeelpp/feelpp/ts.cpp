@@ -72,7 +72,8 @@ void defBDF( py::module& m )
         .def ("priorTimes", &bdf_t::priorTimes, "get the times prior to time initial")
         .def ("initialize", static_cast<void (bdf_t::*)( typename bdf_t::element_type const& )>(&bdf_t::initialize), py::arg("field"), "Initialize all the entries of the unknown vector to be derived with the vector u0")
         .def ("initialize", static_cast<void (bdf_t::*)( typename bdf_t::unknowns_type const& )>(&bdf_t::initialize), py::arg("fields"), "Initialize all the entries of the unknown vector to be derived with the vector set")
-        .def("isFinished", &bdf_t::isFinished, "return if time stepping is finished, false otherwise");
+        .def ("isFinished", &bdf_t::isFinished, "return if time stepping is finished, false otherwise")
+        .def ("iteration", &bdf_t::iteration, "return the iteration");
 
     m.def(
         "bdf", []( space_ptr_t const& space, std::string const& name, std::string const& prefix )
