@@ -29,6 +29,7 @@
 #if !defined(FEELPP_PCHV_HPP)
 #define FEELPP_PCHV_HPP 1
 
+#include <boost/mp11/utility.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
 namespace Feel
@@ -43,11 +44,7 @@ template<typename MeshType,
          int Tag = 0>
 struct Pchv
 {
-    typedef FunctionSpace<MeshType,
-                          bases<Lagrange<Order,Vectorial,Continuous,Pts,Tag>>,
-                          double,
-                          Periodicity <NoPeriodicity>,
-                          mortars<NoMortar>> type;
+    using type = FunctionSpace<MeshType, bases<Lagrange<Order, Vectorial, Continuous, Pts, Tag>>>;
     typedef std::shared_ptr<type> ptrtype;
 };
 
