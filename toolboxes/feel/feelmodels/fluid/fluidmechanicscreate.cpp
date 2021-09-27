@@ -1156,7 +1156,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( self_ptrtype const& other_toolbox,
 
     // this is important otherwise fieldVelocity does not get the proper initialisation
     *M_fieldVelocity = this->M_bdfVelocity->unknown(0);
-    this->meshALE()->init( other_toolbox->meshALE(),markersInterpolate );
+    if ( this->meshALE() )
+        this->meshALE()->init( other_toolbox->meshALE(),markersInterpolate );
     
     for ( auto & [name,bpbc] : this->bodySetBC() )
     {
