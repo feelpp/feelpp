@@ -158,12 +158,13 @@ void defDiscr(py::module &m, std::string const& suffix = "")
              py::arg("range"), py::arg("expr"), py::arg("prefix")="",
              py::arg("geomap")=GeomapStrategyType::GEOMAP_OPT, py::arg("accumulate")=false, py::arg("verbose")=false, "build the interpolant of the expression expr on a range of elements");
             }
-
+#if 0
     std::string I_pyclass_name = std::string("I_") + pyclass_name;
     py::class_<I_t<space_t,space_t>,std::shared_ptr<I_t<space_t,space_t>>>(m,I_pyclass_name.c_str())
         .def(py::init<>())
         //.def(py::init<std::shared_ptr<space_t> const&, std::shared_ptr<space_t> const&>())
         ;
+#endif        
     m.def( "normL2", static_cast<double (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_norml2<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute L2 norm of function over a range of elements", py::arg("range"), py::arg("expr") );
     m.def( "normH1", static_cast<double (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_normh1<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute H1 norm of function over a range of elements", py::arg("range"), py::arg("expr") );
     m.def( "mean", static_cast<eigen_v_t (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_mean<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute mean of function over a range of elements", py::arg("range"), py::arg("expr") );
