@@ -674,24 +674,6 @@ MeshALE<Convex>::ComputationalDomain::init( bool M_isARestart )
 
 template< class Convex >
 void
-MeshALE<Convex>::ComputationalDomain::init( MeshALE<Convex>::ComputationalDomain const& other, std::vector<std::string> const& markersInterpolate, bool isARestart )
-{
-    this->init( isARestart );
-    // reset the ref domain to last time
-    for ( int i = other.M_bdf_ale_displacement_ref->timeOrder() + 1; i >= 0; --i )
-    {
-        auto temp = other.M_bdf_ale_displacement_ref->functionSpace()->elementPtr();
-        temp->zero();
-        temp->add( 1.0, other.M_bdf_ale_displacement_ref->unknown( i ) );
-        temp->add( -1.0, other.M_bdf_ale_displacement_ref->unknown( 0 ) );
-        other.M_bdf_ale_displacement_ref->setUnknown( i, *temp );
-    }
-    M_bdf_ale_displacement_ref->interpolate( other.M_bdf_ale_displacement_ref, markersInterpolate );
-     *M_displacement_ref = M_bdf_ale_displacement_ref->unknown(0);
-    M_exporter_ref = other.M_exporter_ref;
-}
-template< class Convex >
-void
 MeshALE<Convex>::ComputationalDomain::generateMap( ale_map_element_type const& displacementOnMovingBoundary_HO_ref )
 {
     // transform disp imposed into ref mesh
