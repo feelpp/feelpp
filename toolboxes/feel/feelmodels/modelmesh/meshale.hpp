@@ -241,7 +241,6 @@ public :
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     void init();
-    void init( self_ptrtype const& other, std::vector<std::string> const& markersInterpolate );
 
     void applyRemesh( mesh_ptrtype const& newMesh, std::vector<std::tuple<std::string,range_elements_type>> const& rangeElt );
 

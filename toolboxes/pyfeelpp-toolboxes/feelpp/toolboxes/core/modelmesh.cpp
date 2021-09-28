@@ -57,7 +57,7 @@ void defToolbox(py::module &m)
              "Initialize the meshALE mechanics toolbox"
              )
         .def("init",static_cast<void (toolbox_t::*)()>(&toolbox_t::init), "initialize the meshALE  toolbox")
-        .def("init",static_cast<void (toolbox_t::*)(std::shared_ptr<toolbox_t> const&,std::vector<std::string> const&)>(&toolbox_t::init), "initialize from another meshALE  toolbox and a set of markers")
+
         // mesh
         .def( "addMarkerInBoundaryCondition", (void (toolbox_t::*)(std::string const&,std::string const&)) &toolbox_t::addMarkerInBoundaryCondition, py::arg("boundary"), py::arg("marker"), "add the boundary flags" )
         .def( "referenceMesh", &toolbox_t::referenceMesh, "get the reference mesh" )
