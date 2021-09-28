@@ -98,6 +98,107 @@ auto toExpr( eigen_matrix_type<RowDim, RowCol> const& em )
 
 }
 
+
+
+
+class RemeshInterpolation
+{
+public:
+    using functionspace_base_ptrtype = std::shared_ptr<FunctionSpaceBase>;
+    using sparse_matrix_ptrtype = std::shared_ptr<MatrixSparse<double>>;
+    using vector_type = Vector<double>;
+    using vector_ptrtype = std::shared_ptr<vector_type>;
+
+    sparse_matrix_ptrtype matrixInterpolation( functionspace_base_ptrtype domainSpace, functionspace_base_ptrtype imageSpace ) const
+        {
+            auto itFind = M_matrixInterpolations.find( std::make_pair(domainSpace, imageSpace) );
+            if ( itFind != M_matrixInterpolations.end() )
+                return itFind->second;
+            return sparse_matrix_ptrtype{};
+        }
+
+    template <typename DomainSpaceType, typename ImageSpaceType, typename RangeType>
+    sparse_matrix_ptrtype computeMatrixInterpolation( std::shared_ptr<DomainSpaceType> domainSpace, std::shared_ptr<ImageSpaceType> imageSpace, RangeType const& range )
+        {
+            auto opI = opInterpolation(_domainSpace=domainSpace,
+                                       _imageSpace=imageSpace,
+                                       //_range=elements(support( imageSpace ) )
+                                       _range=range );
+            auto [it, success] = M_matrixInterpolations.insert( { std::make_pair(domainSpace,imageSpace), opI->matPtr() } );
+            return it->second;
+        }
+    template <typename DomainSpaceType, typename ImageSpaceType>
+    sparse_matrix_ptrtype computeMatrixInterpolation( std::shared_ptr<DomainSpaceType> domainSpace, std::shared_ptr<ImageSpaceType> imageSpace )
+        {
+            return this->computeMatrixInterpolation( domainSpace,imageSpace,elements(support( imageSpace ) ) );
+        }
+
+    template <typename DomainElementType, typename ImageElementType>
+    bool interpolate( DomainElementType const& u, ImageElementType & v ) const
+        {
+            auto domainSpace = unwrap_ptr( u ).functionSpace();
+            auto imageSpace = unwrap_ptr( v ).functionSpace();
+            auto matInterp = this->matrixInterpolation( domainSpace, imageSpace );
+            if ( !matInterp )
+                return false;
+            matInterp->multVector( unwrap_ptr( u ),  unwrap_ptr( v ) );
+            return true;
+        }
+
+    bool interpolateBlockVector( std::string const& name, vector_ptrtype oldVecMonolithic, vector_ptrtype newVecMonolithic,  BlocksBaseVector<double> const& bvs, bool close = true ) const
+        {
+            auto thebackend = Feel::backend();
+            auto itFindName = M_blockIndexToSpace.find( name );
+            if ( itFindName == M_blockIndexToSpace.end() )
+                return false;
+            auto const& blockIndexToSpace = itFindName->second;
+
+            auto const& old_dm = oldVecMonolithic->map();
+            auto const& new_dm = newVecMonolithic->map();
+            CHECK( old_dm.numberOfDofIdToContainerId() == new_dm.numberOfDofIdToContainerId() ) << "vectors not compatible";
+            for ( size_type tag=0 ; tag<old_dm.numberOfDofIdToContainerId() ; ++tag )
+            {
+                auto matInterp = this->matrixInterpolation( blockIndexToSpace, tag );
+                CHECK( matInterp ) << "missing block index or interpolation matrix";
+
+                auto oldBlockField = thebackend->newVector( matInterp->mapColPtr() );
+                auto newBlockField = thebackend->newVector( matInterp->mapRowPtr() );
+
+                bvs.setSubVector( *oldBlockField, *oldVecMonolithic, tag );
+
+                matInterp->multVector( unwrap_ptr( oldBlockField ),  unwrap_ptr( newBlockField ) );
+
+                bvs.setVector( *newVecMonolithic, *newBlockField, tag, false );
+            }
+            if ( close )
+                newVecMonolithic->close();
+            return true;
+        }
+
+    void registeringBlockIndex( std::string const& name, size_type blockIndex, functionspace_base_ptrtype domainSpace, functionspace_base_ptrtype imageSpace )
+        {
+            M_blockIndexToSpace[name].insert( { blockIndex, std::make_pair(domainSpace,imageSpace) } );
+        }
+private :
+    sparse_matrix_ptrtype matrixInterpolation( std::map<size_type,std::pair<functionspace_base_ptrtype,functionspace_base_ptrtype> > const& blockIndexToSpace, size_type blockIndex ) const
+        {
+            auto itFindBlockIndex = blockIndexToSpace.find( blockIndex );
+            if ( itFindBlockIndex == blockIndexToSpace.end() )
+                return sparse_matrix_ptrtype{};
+            auto const& spacesRelated = itFindBlockIndex->second;
+            return this->matrixInterpolation( spacesRelated.first, spacesRelated.second );
+        }
+
+private:
+    std::map<std::pair<functionspace_base_ptrtype,functionspace_base_ptrtype>, sparse_matrix_ptrtype > M_matrixInterpolations;
+    std::map<std::string,std::map<size_type,std::pair<functionspace_base_ptrtype,functionspace_base_ptrtype> > > M_blockIndexToSpace;
+};
+
+
+
+
+
+
 namespace FeelModels
 {
 
@@ -969,7 +1070,7 @@ public:
 
         void setup( std::string const& bodyName, pt::ptree const& p, self_type const& fluidToolbox );
         void init( self_type const& fluidToolbox );
-        void applyRemesh( self_type const& fluidToolbox );
+        void applyRemesh( self_type const& fluidToolbox, RemeshInterpolation & remeshInterp );
         void updateForUse( self_type const& fluidToolbox );
 
         void updateInformationObject( nl::json & p ) const;
@@ -1386,10 +1487,10 @@ public:
             }
 
         void init( self_type const& fluidToolbox );
-        void applyRemesh( self_type const& fluidToolbox )
+        void applyRemesh( self_type const& fluidToolbox, RemeshInterpolation & remeshInterp )
             {
                 for ( auto & [name,bpbc] : *this )
-                    bpbc.applyRemesh( fluidToolbox );
+                    bpbc.applyRemesh( fluidToolbox, remeshInterp );
                 // for (auto & nba : M_nbodyArticulated )
                 //     nba.applyRemesh();
             }
@@ -1673,6 +1774,9 @@ private :
 
     void initAlgebraicModel();
     void updateAlgebraicDofEliminationIds();
+
+    void updateMarkedZonesInMesh();
+    void updateStabilizationGLSRange();
 public :
     void init( bool buildModelAlgebraicFactory=true );
     void initAlgebraicFactory();
@@ -1682,8 +1786,6 @@ public :
     void createFunctionSpacesSourceAdded();
 
     FEELPP_DEPRECATED void loadMesh(mesh_ptrtype __mesh );
-
-    void updateMarkedZonesInMesh();
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
     void updateInformationObject( nl::json & p ) const override;
