@@ -1675,8 +1675,6 @@ private :
     void updateAlgebraicDofEliminationIds();
 public :
     void init( bool buildModelAlgebraicFactory=true );
-    void init( self_ptrtype const& other_toolbox, std::vector<std::string> const& markersInterpolate,
-               bool buildModelAlgebraicFactory = true ); 
     void initAlgebraicFactory();
     void applyRemesh( mesh_ptrtype const& newMesh );
 

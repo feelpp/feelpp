@@ -1183,36 +1183,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("FluidMechanics","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
 }
 
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( self_ptrtype const& other_toolbox,
-                                          std::vector<std::string> const& markersInterpolate,
-                                          bool buildModelAlgebraicFactory )        
-{
-    this->setTimeInitial(other_toolbox->time()-other_toolbox->timeStep());
-    this->init(buildModelAlgebraicFactory);
-    this->M_bdfVelocity->interpolate(other_toolbox->M_bdfVelocity,markersInterpolate);
-
-    // this is important otherwise fieldVelocity does not get the proper initialisation
-    *M_fieldVelocity = this->M_bdfVelocity->unknown(0);
-    if ( this->meshALE() )
-        this->meshALE()->init( other_toolbox->meshALE(),markersInterpolate );
-    
-    for ( auto & [name,bpbc] : this->bodySetBC() )
-    {
-        for(auto const& [name2,bpbc2] : other_toolbox->bodySetBC() )
-        {
-            if( bpbc.name()==bpbc2.name() )
-            {
-                *( bpbc.fieldTranslationalVelocityPtr() )= bpbc2.bdfTranslationalVelocity()->unknown(0);
-                *( bpbc.fieldAngularVelocityPtr() ) = bpbc2.bdfAngularVelocity()->unknown(0);
-            }
-        }
-    }
-    
-    // Copy exporter
-    this->M_exporter=other_toolbox->M_exporter;
-}
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

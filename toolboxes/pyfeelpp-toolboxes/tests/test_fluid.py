@@ -32,7 +32,11 @@ def test_fluid():
 
 
 def test_fluid_remesh():
-    feelpp.Environment.setConfigFile('fluid/TurekHron/cfd3.cfg')
+#    feelpp.Environment.setConfigFile('fluid/TurekHron/cfd3.cfg')
+    #feelpp.Environment.setConfigFile('fluid/swimmers/3-sphere/2d/three_sphere_2D.cfg')
+    #feelpp.Environment.setConfigFile('fluid/moving_body/gravity/cfd.cfg')
+    feelpp.Environment.setConfigFile(
+        'fluid/moving_body/gravity/cylinder_under_gravity/cylinder_under_gravity.cfg')
     f = fluid(dim=2, orderVelocity=2, orderPressure=1)
     f.init()
 
@@ -44,15 +48,16 @@ def test_fluid_remesh():
     f.startTimeStep()
     while not f.timeStepBase().isFinished():
 
-        if f.timeStepBase().iteration() % 4:
-            hclose=0.005
-            hfar=0.07
+        if f.timeStepBase().iteration() % 4 == 0:
+            hfar=0.1
+            hclose=0.02
             Xh = feelpp.functionSpace(mesh=f.mesh())
-            metric = feelpp.gradedls(Xh, feelpp.markedfaces(Xh.mesh(),["wall2","wake"]), hclose, hfar)
-            R = feelpp.remesher(mesh=f.mesh())
+            metric = feelpp.gradedls(Xh, feelpp.markedfaces(
+                Xh.mesh(), ["CylinderSurface"]), hclose, hfar)
+            R = feelpp.remesher(mesh=f.mesh(),required_elts="CylinderVolume",required_facets="CylinderSurface")
             R.setMetric(metric)
             new_mesh = R.execute()
-            f.applyMesh(new_mesh)
+            f.applyRemesh(new_mesh)
 
         if feelpp.Environment.isMasterRank():
             print("============================================================\n")
@@ -60,6 +65,7 @@ def test_fluid_remesh():
             print("============================================================\n")
 
         f.solve()
+        e.step(f.time()).setMesh(f.mesh())
         e.step(f.time()).add("velocity", f.fieldVelocity())
         e.step(f.time()).add("pressure", f.fieldPressure())
         e.save()
