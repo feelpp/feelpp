@@ -1057,29 +1057,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             M_stabilizationGLSParameterPressure.reset( new stab_gls_parameter_pressure_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
             M_stabilizationGLSParameterPressure->init();
         }
-        if ( Environment::vm().count( prefixvm(this->prefix(),"stabilization-gls.convection-diffusion.location.expressions" ) ) )
-        {
-            std::string locationExpression = soption(_prefix=this->prefix(),_name="stabilization-gls.convection-diffusion.location.expressions");
-            auto rangeStab = elements(this->mesh(),expr(locationExpression));
-            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
-            {
-                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
-                M_stabilizationGLSEltRangeConvectionDiffusion[matName] = intersect( rangeStab, range );
-            }
-        }
-        else
-        {
-            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
-            {
-                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
-                M_stabilizationGLSEltRangeConvectionDiffusion[matName] = range;
-            }
-        }
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
-        {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
-            M_stabilizationGLSEltRangePressure[matName] = range;
-        }
+        this->updateStabilizationGLSRange();
     }
 
     //-------------------------------------------------//
@@ -1189,6 +1167,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
 {
+    RemeshInterpolation remeshInterp;
+
     this->log("FluidMechanics","applyRemesh", "start" );
     mesh_ptrtype oldMesh = this->mesh();
 
@@ -1208,16 +1188,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     this->log("FluidMechanics","applyRemesh", "functionspace done" );
 
     // createInterpolationOp
-    auto opI_velocity = opInterpolation(_domainSpace=old_spaceVelocity,
-                                        _imageSpace=M_XhVelocity,
-                                        _range=M_rangeMeshElements );
-    auto matrixInterpolation_velocity = opI_velocity->matPtr();
-    matrixInterpolation_velocity->multVector( *old_fieldVelocity, *M_fieldVelocity );
-    auto opI_pressure = opInterpolation(_domainSpace=old_spacePressure,
-                                        _imageSpace=M_XhPressure,
-                                        _range=M_rangeMeshElements );
-    auto matrixInterpolation_pressure = opI_pressure->matPtr();
-    matrixInterpolation_pressure->multVector( *old_fieldPressure, *M_fieldPressure );
+    auto matrixInterpolation_velocity = remeshInterp.computeMatrixInterpolation( old_spaceVelocity, M_XhVelocity, M_rangeMeshElements );
+    remeshInterp.registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("velocity"), old_spaceVelocity, M_XhVelocity );
+    remeshInterp.interpolate( old_fieldVelocity, M_fieldVelocity );
+
+    auto matrixInterpolation_pressure = remeshInterp.computeMatrixInterpolation( old_spacePressure, M_XhPressure, M_rangeMeshElements );
+    remeshInterp.registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("pressure"), old_spacePressure, M_XhPressure );
+    remeshInterp.interpolate( old_fieldPressure, M_fieldPressure );
+
     this->log("FluidMechanics","applyRemesh", "interpolation velocity/pressure done" );
 
     if ( M_meshALE )
@@ -1237,7 +1215,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     this->log("FluidMechanics","applyRemesh", "time stepping done" );
 
     // body bc
-    M_bodySetBC.applyRemesh( *this );
+    M_bodySetBC.applyRemesh( *this, remeshInterp );
     this->log("FluidMechanics","applyRemesh", "body bc done" );
 
     // velocity extrapolated
@@ -1255,17 +1233,38 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
         matrixInterpolation_velocity->multVector( *old_vectorPreviousVelocityExtrapolated, *M_vectorPreviousVelocityExtrapolated );
     }
 
+    // stabilization GLS familily
+    if ( M_stabilizationGLSParameterConvectionDiffusion )
+    {
+        M_stabilizationGLSParameterConvectionDiffusion->applyRemesh( this->mesh() );
+        if ( M_stabilizationGLSParameterPressure != M_stabilizationGLSParameterConvectionDiffusion )
+            M_stabilizationGLSParameterPressure->applyRemesh( this->mesh() );
+        this->updateStabilizationGLSRange();
+    }
 
-
-    // TODO : stabilization gls
 
     // TODO : post process ??
 
-    // reset algebraic data/tools
+    // algebraic data/tools
+    vector_ptrtype old_vectorPreviousSolution = M_vectorPreviousSolution;
+    vector_ptrtype old_timeStepThetaSchemePreviousContrib = M_timeStepThetaSchemePreviousContrib;
     this->removeAllAlgebraicDataAndTools();
     this->initAlgebraicModel();
+    this->initAlgebraicFactory();
 
-    this->initAlgebraicFactory(); // TODO : Theta time scheme 
+    if ( old_timeStepThetaSchemePreviousContrib )
+    {
+        remeshInterp.interpolateBlockVector( this->keyword(), old_timeStepThetaSchemePreviousContrib, M_timeStepThetaSchemePreviousContrib, *this->algebraicBlockVectorSolution() );
+        this->log("FluidMechanics","applyRemesh", "timeStepThetaSchemePreviousContrib done" );
+    }
+
+    if ( old_vectorPreviousSolution )
+    {
+        remeshInterp.interpolateBlockVector( this->keyword(), old_vectorPreviousSolution, M_vectorPreviousSolution, *this->algebraicBlockVectorSolution() );
+        this->log("FluidMechanics","applyRemesh", "vectorPreviousSolution done" );
+    }
+
+
     this->log("FluidMechanics","applyRemesh", "finish" );
 
 }
@@ -1337,7 +1336,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
     if ( this->hasOperatorPCD() )
         this->algebraicFactory()->attachOperatorPCD("pcd", this->operatorPCD());
 
-    if ( M_timeStepping == "Theta" )
+    if ( this->timeStepping() == "Theta" )
     {
         M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(this->algebraicBlockVectorSolution()->vectorMonolithic()->mapPtr() );
         algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
@@ -1404,6 +1403,36 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateMarkedZonesInMesh()
     this->log("FluidMechanics","updateMarkedZonesInMesh", "finish" );
 }
 
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStabilizationGLSRange()
+{
+    if ( Environment::vm().count( prefixvm(this->prefix(),"stabilization-gls.convection-diffusion.location.expressions" ) ) )
+    {
+        std::string locationExpression = soption(_prefix=this->prefix(),_name="stabilization-gls.convection-diffusion.location.expressions");
+        auto rangeStab = elements(this->mesh(),expr(locationExpression));
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
+        {
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            M_stabilizationGLSEltRangeConvectionDiffusion[matName] = intersect( rangeStab, range );
+        }
+    }
+    else
+    {
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
+        {
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            M_stabilizationGLSEltRangeConvectionDiffusion[matName] = range;
+        }
+    }
+    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
+    {
+        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+        M_stabilizationGLSEltRangePressure[matName] = range;
+    }
+
+}
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -2706,13 +2735,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::applyRemesh( mesh_ptrtype const& newMe
 {
     if ( M_mesh )
     {
-        std::cout << "Body applyRemesh--1--"<<std::endl;
         mesh_ptrtype oldMesh = this->mesh();
 
         // material prop
         this->materialsProperties()->removeMesh( oldMesh );
         this->materialsProperties()->addMesh( newMesh );
-        std::cout << "Body applyRemesh--1a--"<<std::endl;
 
         M_mesh = newMesh;
 
@@ -2725,10 +2752,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::applyRemesh( mesh_ptrtype const& newMe
         auto M_rangeMeshElements = markedelements(this->mesh(), mom->markers( M_modelPhysics->physicsAvailableFromCurrentType() ) );
         M_spaceDisplacement = space_displacement_type::New(_mesh=M_mesh,_range=M_rangeMeshElements);
         M_fieldDisplacement = M_spaceDisplacement->elementPtr();
-        std::cout << "Body applyRemesh--1b--"<<std::endl;
-
-        std::cout << "M_spaceDisplacement->nDof()="<<M_spaceDisplacement->nDof()<< std::endl;
-        std::cout << "old_spaceDisplacement->nDof()="<<old_spaceDisplacement->nDof()<< std::endl;
 
         // createInterpolationOp
         auto opI_displacement = opInterpolation(_domainSpace=old_spaceDisplacement,
@@ -2736,11 +2759,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::applyRemesh( mesh_ptrtype const& newMe
                                                 _range=M_rangeMeshElements/*,
                                                                            _type=InterpolationConforme()*/ // QUICK FIX ( but loc tool should use messh support, this is not the case)
                                                 );
-        std::cout << "Body applyRemesh--1c--"<<std::endl;
 
         auto matrixInterpolation_displacement = opI_displacement->matPtr();
         matrixInterpolation_displacement->multVector( *old_fieldDisplacement, *M_fieldDisplacement );
-        std::cout << "Body applyRemesh--1d--"<<std::endl;
 
 
         if ( old_fieldElasticDisplacement )
@@ -2748,11 +2769,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::applyRemesh( mesh_ptrtype const& newMe
             M_fieldElasticDisplacement = M_spaceDisplacement->elementPtr();
             matrixInterpolation_displacement->multVector( *old_fieldElasticDisplacement, *M_fieldElasticDisplacement );
         }
-        std::cout << "Body applyRemesh--2--"<<std::endl;
 
-        // TODO
-        // space_velocity_ptrtype M_spaceElasticVelocity;
-        // element_velocity_ptrtype M_fieldElasticVelocity;
+        if ( M_fieldElasticVelocity )
+        {
+            space_velocity_ptrtype old_spaceElasticVelocity = M_spaceElasticVelocity;
+            element_velocity_ptrtype old_fieldElasticVelocity = M_fieldElasticVelocity;
+            M_fieldElasticVelocity.reset();
+            this->initElasticVelocity();
+
+            auto opI_elasticVelocity = opInterpolation(_domainSpace=old_spaceElasticVelocity,
+                                                       _imageSpace=M_spaceElasticVelocity,
+                                                       _range=M_rangeMeshElements );
+
+            auto matrixInterpolation_elasticVelocity = opI_elasticVelocity->matPtr();
+            matrixInterpolation_elasticVelocity->multVector( *old_fieldElasticVelocity, *M_fieldElasticVelocity );
+
+        }
+
     }
 }
 
@@ -3174,13 +3207,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::applyRemesh( self_type const& fluidToolbox/*, mesh_ptrtype const& newMesh*/ )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::applyRemesh( self_type const& fluidToolbox/*, mesh_ptrtype const& newMesh*/ ,RemeshInterpolation & remeshInterp )
 {
-    std::cout << "BodyBoundaryCondition applyRemesh--1--" << std::endl;
+    if ( M_body )
+        M_body->applyRemesh( fluidToolbox.mesh() );
+
     auto rangeBodyBoundary = markedfaces(fluidToolbox.mesh(), std::set<std::string>(M_markers) );
     M_rangeMarkedFacesOnFluid = rangeBodyBoundary;
     M_mesh = createSubmesh(_mesh=/*fluidToolbox.mesh()*/fluidToolbox.functionSpaceVelocity()->template meshSupport<0>(),_range=rangeBodyBoundary,_view=true );
-    std::cout << "BodyBoundaryCondition applyRemesh--2--" << std::endl;
 
 
     typename Body::translational_velocity_type translationalVelocity = Body::translational_velocity_type::Zero();
@@ -3193,9 +3227,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::applyRemesh( self_typ
     space_trace_p0c_vectorial_ptrtype old_spaceTranslationalVelocity = M_spaceTranslationalVelocity;
     space_trace_angular_velocity_ptrtype old_spaceAngularVelocity = M_spaceAngularVelocity;
     this->initFunctionSpaces();
-
-    std::cout << "BodyBoundaryCondition applyRemesh--3--" << std::endl;
-
 
     if ( M_fieldTranslationalVelocity )
     {
@@ -3214,28 +3245,40 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::applyRemesh( self_typ
     // time stepping
     if ( M_bdfTranslationalVelocity )
     {
+#if 0
         auto opI_translationalVelocity = opInterpolation(_domainSpace=old_spaceTranslationalVelocity,
                                                          _imageSpace=M_spaceTranslationalVelocity/*,
-<                                                                                  _range=M_rangeMeshElements*/ );
+                                                                                                  _range=M_rangeMeshElements*/ );
         //auto matrixInterpolation_pressure = opI_pressure->matPtr();
-
         M_bdfTranslationalVelocity->applyRemesh( M_spaceTranslationalVelocity, opI_translationalVelocity->matPtr() );
+#else
+        auto matrixInterpolation_translationalVelocity = remeshInterp.computeMatrixInterpolation( old_spaceTranslationalVelocity,M_spaceTranslationalVelocity );
+        remeshInterp.registeringBlockIndex( fluidToolbox.keyword(), fluidToolbox.startSubBlockSpaceIndex( "body-bc."+this->name()+".translational-velocity" ), old_spaceTranslationalVelocity, M_spaceTranslationalVelocity );
+        M_bdfTranslationalVelocity->applyRemesh( M_spaceTranslationalVelocity, matrixInterpolation_translationalVelocity );
+#endif
     }
     if ( M_bdfAngularVelocity )
     {
+#if 0
         auto opI_angularVelocity = opInterpolation(_domainSpace=old_spaceAngularVelocity,
                                                    _imageSpace=M_spaceAngularVelocity );
         M_bdfAngularVelocity->applyRemesh( M_spaceAngularVelocity, opI_angularVelocity->matPtr() );
+#else
+        auto matrixInterpolation_angularVelocity = remeshInterp.computeMatrixInterpolation( old_spaceAngularVelocity, M_spaceAngularVelocity );
+        remeshInterp.registeringBlockIndex( fluidToolbox.keyword(), fluidToolbox.startSubBlockSpaceIndex( "body-bc."+this->name()+".angular-velocity" ), old_spaceAngularVelocity, M_spaceAngularVelocity );
+        M_bdfAngularVelocity->applyRemesh( M_spaceAngularVelocity, matrixInterpolation_angularVelocity );
+#endif
     }
 
-    std::cout << "BodyBoundaryCondition applyRemesh--4--" << std::endl;
-    if ( M_body )
-        M_body->applyRemesh( fluidToolbox.mesh() );
-    std::cout << "BodyBoundaryCondition applyRemesh--5--" << std::endl;
 
+    if ( M_fieldElasticVelocity )
+    {
+        M_fieldElasticVelocity.reset();
+        this->initElasticBehavior();
+        // TODO : check if we need to init ElasticVelocity from ElasticVelocity of the body
+    }
 
     auto XhV = fluidToolbox.functionSpaceVelocity();
-
     XhV->rebuildDofPoints(); // TODO REMOVE this line, interpolation operator must not use dofPoint!!!
 
     // matrix interpolation of translational velocity
