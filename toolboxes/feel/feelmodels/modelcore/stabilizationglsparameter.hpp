@@ -39,8 +39,9 @@ public :
         {}
 
     virtual ~StabilizationGLSParameter() = default;
-    
+
     void init();
+    void applyRemesh( mesh_ptr_t const& newMesh );
 
     template<bool HasConvectionExpr=true, bool HasCoeffDiffusionExpr=true, typename ExprConvectiontype, typename ExprCoeffDiffusionType, typename RangeType>
     void updateTau( ExprConvectiontype const& exprConvection, ExprCoeffDiffusionType const& exprCoeffDiffusion, RangeType const& RangeStab )
@@ -188,6 +189,18 @@ StabilizationGLSParameter<MeshType,OrderPoly>::init()
             }
         }
     }
+}
+
+
+template<typename MeshType, uint16_type OrderPoly>
+void
+StabilizationGLSParameter<MeshType,OrderPoly>::applyRemesh( mesh_ptr_t const& newMesh )
+{
+    this->M_mesh = newMesh;
+    this->M_spaceTau.reset();
+    this->M_fieldTau.reset();
+    M_spaceEigenValuesProblem.reset();
+    this->init();
 }
 
 
