@@ -127,36 +127,37 @@ void defDiscr(py::module &m, std::string const& suffix = "")
     // Element
     std::string e_pyclass_name = std::string("Element_") + pyclass_name;
     py::class_<element_t,std::shared_ptr<element_t>,VectorUblas<double>> elt(m,e_pyclass_name.c_str());
-    elt.def(py::init<>())
-        .def(py::init<std::shared_ptr<space_t> const&, std::string const&, std::string const&, size_type, ComponentType>(),py::arg("space"), py::arg("name"), py::arg("desc"), py::arg("start")=0, py::arg("ct")= ComponentType::NO_COMPONENT)
-        .def("functionSpace",static_cast<space_ptr_t const&(element_t::*)() const>(&element_t::functionSpace), "Get funtion space from element")
-        .def("size", static_cast< size_type (element_t::*)() const>(&element_t::size), "Get size of element")
-        
-        .def("save", &element_t::saveImpl, py::arg("path"), py::arg("name"), py::arg("type")="default", py::arg("suffix")="", py::arg("sep")="", "save functionspace element in file ")
-        .def("load", &element_t::loadImpl, py::arg("path"), py::arg("name"), py::arg("type")="default", py::arg("suffix")="", py::arg("sep")="", "load functionspace element from file ")
-        .def(py::self + py::self )
-        .def(py::self - py::self)
-        .def(double() + py::self)
-        .def(double() - py::self)
-        .def(py::self + double())
-        .def(py::self - double())
-        .def(py::self * double())
-        .def(double() * py::self)
+    elt.def( py::init<>() )
+        .def( py::init<std::shared_ptr<space_t> const&, std::string const&, std::string const&, size_type, ComponentType>(), py::arg( "space" ), py::arg( "name" ), py::arg( "desc" ), py::arg( "start" ) = 0, py::arg( "ct" ) = ComponentType::NO_COMPONENT )
+        .def( "functionSpace", static_cast<space_ptr_t const& (element_t::*)() const>( &element_t::functionSpace ), "Get funtion space from element" )
+        .def( "size", static_cast<size_type ( element_t::* )() const>( &element_t::size ), "Get size of element" )
+        .def( "min", static_cast<double ( element_t::* )() const>( &element_t::min ), "get the minimum of the element vector representation" )
+        .def( "max", static_cast<double ( element_t::* )() const>( &element_t::max ), "get the maximum of the element vector representation" )
+        .def( "save", &element_t::saveImpl, py::arg( "path" ), py::arg( "name" ), py::arg( "type" ) = "default", py::arg( "suffix" ) = "", py::arg( "sep" ) = "", "save functionspace element in file " )
+        .def( "load", &element_t::loadImpl, py::arg( "path" ), py::arg( "name" ), py::arg( "type" ) = "default", py::arg( "suffix" ) = "", py::arg( "sep" ) = "", "load functionspace element from file " )
+        .def( py::self + py::self )
+        .def( py::self - py::self )
+        .def( double() + py::self )
+        .def( double() - py::self )
+        .def( py::self + double() )
+        .def( py::self - double() )
+        .def( py::self * double() )
+        .def( double() * py::self )
         //.def(double() / py::self)
-        .def(py::self += py::self)
-        .def(py::self -= py::self)
-        .def(py::self *= double())
-        .def(-py::self)
-//        .def(py::self /= double())
-//        .def(py::self *= py::self)
-//        .def(py::self /= py::self)
+        .def( py::self += py::self )
+        .def( py::self -= py::self )
+        .def( py::self *= double() )
+        .def( -py::self )
+        //        .def(py::self /= double())
+        //        .def(py::self *= py::self)
+        //        .def(py::self /= py::self)
         ;
 
-        if constexpr( space_t::is_scalar )
-            {
-                elt.def("on", static_cast<void (element_t::*)( elements_reference_wrapper_t<mesh_ptr_t> const&, Expr<GinacEx<2>> const&, std::string const&, GeomapStrategyType, bool, bool)>(&element_t::template onImpl<elements_reference_wrapper_t<mesh_ptr_t>,Expr<GinacEx<2>>>),
-             py::arg("range"), py::arg("expr"), py::arg("prefix")="",
-             py::arg("geomap")=GeomapStrategyType::GEOMAP_OPT, py::arg("accumulate")=false, py::arg("verbose")=false, "build the interpolant of the expression expr on a range of elements");
+    if constexpr ( space_t::is_scalar )
+    {
+        elt.def( "on", static_cast<void ( element_t::* )( elements_reference_wrapper_t<mesh_ptr_t> const&, Expr<GinacEx<2>> const&, std::string const&, GeomapStrategyType, bool, bool )>( &element_t::template onImpl<elements_reference_wrapper_t<mesh_ptr_t>, Expr<GinacEx<2>>> ),
+                 py::arg( "range" ), py::arg( "expr" ), py::arg( "prefix" ) = "",
+                 py::arg( "geomap" ) = GeomapStrategyType::GEOMAP_OPT, py::arg( "accumulate" ) = false, py::arg( "verbose" ) = false, "build the interpolant of the expression expr on a range of elements" );
             }
 #if 0
     std::string I_pyclass_name = std::string("I_") + pyclass_name;
