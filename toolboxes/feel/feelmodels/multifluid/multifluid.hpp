@@ -46,20 +46,20 @@ public:
 
     //--------------------------------------------------------------------//
     // Materials properties
-    typedef MaterialsProperties<mesh_type::nRealDim> materialsproperties_type;
-    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
+    typedef MaterialsProperties<mesh_type::nRealDim> materials_properties_type;
+    typedef std::shared_ptr<materials_properties_type> materials_properties_ptrtype;
 
-    ////--------------------------------------------------------------------//
-    //// Range types
-    //typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
-    //typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_type elements_reference_wrapper_type;
-    //typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
-    //typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+    //--------------------------------------------------------------------//
+    // Range types
+    typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
+    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_type elements_reference_wrapper_type;
+    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
+    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
 
-    //typedef typename MeshTraits<mesh_type>::face_reference_wrapper_const_iterator face_reference_wrapper_const_iterator;
-    //typedef typename MeshTraits<mesh_type>::faces_reference_wrapper_type faces_reference_wrapper_type;
-    //typedef typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype faces_reference_wrapper_ptrtype;
-    //typedef faces_reference_wrapper_t<mesh_type> range_faces_type;
+    typedef typename MeshTraits<mesh_type>::face_reference_wrapper_const_iterator face_reference_wrapper_const_iterator;
+    typedef typename MeshTraits<mesh_type>::faces_reference_wrapper_type faces_reference_wrapper_type;
+    typedef typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype faces_reference_wrapper_ptrtype;
+    typedef faces_reference_wrapper_t<mesh_type> range_faces_type;
 
     //--------------------------------------------------------------------//
     // Function spaces
@@ -83,26 +83,26 @@ public:
     typedef typename levelset_model_type::levelset_tool_manager_type levelset_tool_manager_type;
     typedef typename levelset_model_type::levelset_tool_manager_ptrtype levelset_tool_manager_ptrtype;
 
-    ////--------------------------------------------------------------------//
-    //// Lagrange P1 iso-Pn
-    //typedef OperatorLagrangeP1<component_space_fluid_velocity_type> op_lagrangeP1_type;
-    //typedef std::shared_ptr<op_lagrangeP1_type> op_lagrangeP1_ptrtype;
+    //--------------------------------------------------------------------//
+    // Lagrange P1 iso-Pn
+    typedef OperatorLagrangeP1<component_space_fluid_velocity_type> op_lagrangeP1_type;
+    typedef std::shared_ptr<op_lagrangeP1_type> op_lagrangeP1_ptrtype;
 
     ////--------------------------------------------------------------------//
     //// Density/viscosity
     //typedef typename fluid_model_type::materialsproperties_type materials_properties_type;
     //typedef typename fluid_model_type::materialsproperties_ptrtype materials_properties_ptrtype;
-    ////--------------------------------------------------------------------//
-    //// Interface forces model
-    //typedef InterfaceForcesModel<levelset_model_type, fluid_model_type> interfaceforces_model_type;
-    //typedef std::shared_ptr<interfaceforces_model_type> interfaceforces_model_ptrtype;
-    //typedef Singleton<Feel::Factory<interfaceforces_model_type, std::string>> interfaceforces_factory_type;
+    //--------------------------------------------------------------------//
+    // Interface forces model
+    typedef InterfaceForcesModel<levelset_model_type, fluid_model_type> interfaceforces_model_type;
+    typedef std::shared_ptr<interfaceforces_model_type> interfaceforces_model_ptrtype;
+    typedef Singleton<Feel::Factory<interfaceforces_model_type, std::string>> interfaceforces_factory_type;
 
-    ////--------------------------------------------------------------------//
-    //// Inextensibility
-    //typedef typename fluid_model_type::basis_fluid_p_type basis_fluid_p_type;
-    //typedef FunctionSpace< mesh_type, bases<basis_fluid_p_type> > space_inextensibilitylm_type;
-    //typedef std::shared_ptr<space_inextensibilitylm_type> space_inextensibilitylm_ptrtype;
+    //--------------------------------------------------------------------//
+    // Inextensibility
+    typedef typename fluid_model_type::basis_fluid_p_type basis_fluid_p_type;
+    typedef FunctionSpace< mesh_type, bases<basis_fluid_p_type> > space_inextensibilitylm_type;
+    typedef std::shared_ptr<space_inextensibilitylm_type> space_inextensibilitylm_ptrtype;
 
     //--------------------------------------------------------------------//
     // Cached fields
@@ -171,7 +171,7 @@ public:
                 );
         return Feel::FeelModels::globalLevelsetExpr( levelsets );
     }
-    element_levelset_ptrtype globalLevelsetElt() const { return M_globalLevelset.fieldPtr(); }
+    element_levelset_scalar_ptrtype globalLevelsetElt() const { return M_globalLevelset.fieldPtr(); }
 
     //--------------------------------------------------------------------//
     // Function spaces
@@ -184,9 +184,9 @@ public:
     op_lagrangeP1_ptrtype opLagrangeP1() const { return M_opLagrangeP1iso; }
 
     // Physical parameters
-    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
-    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
-    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
+    materials_properties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materials_properties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materials_properties_ptrtype mp ) { M_materialsProperties = mp; }
     //// Fluid density-viscosity model
     //material_properties_ptrtype const& fluidMaterialProperties() const { return M_fluidMaterialProperties; }
     //material_properties_ptrtype const& levelsetMaterialProperties( std::string const& name ) const { return M_levelsetsMaterialProperties.at(name); }
@@ -255,7 +255,7 @@ public:
         for ( index_type i = 0; i < this->levelsetModels()->size(); ++i )
             mfieldsLevelsets = Feel::FeelModels::modelFields(
                     mfieldsLevelsets,
-                    this->levelsetModel(i)->modelFields( sol[i], rowStartInVectorLevelsets[i], this->levelsetModel(i)->keyword() )
+                    this->levelsetModel(i)->modelFields( sols[i], rowStartInVectorLevelsets[i], this->levelsetModel(i)->keyword() )
                     );
 
         //return Feel::FeelModels::modelFields( 
@@ -396,8 +396,8 @@ public:
     //--------------------------------------------------------------------//
     double globalLevelsetThicknessInterface() const { return M_globalLevelsetThicknessInterface; }
     //--------------------------------------------------------------------//
-    bool hasInextensibility( std::string const& name ) const { return M_hasInextensibility.at(name); }
-    std::string const& inextensibilityMethod( std::string const& name ) const { return M_inextensibilityMethods.at(name); }
+    bool hasInextensibility( index_type i ) const { return M_hasInextensibility.at(i); }
+    std::string const& inextensibilityMethod( index_type i ) const { return M_inextensibilityMethod.at(i); }
     bool hasInextensibilityLM() const;
     void updateInextensibilityLM();
     //--------------------------------------------------------------------//
@@ -479,6 +479,11 @@ private:
 
     levelset_space_manager_ptrtype M_levelsetSpaceManager;
     levelset_tool_manager_ptrtype M_levelsetToolManager;
+
+    //--------------------------------------------------------------------//
+    materials_properties_ptrtype M_materialsProperties;
+
+    //--------------------------------------------------------------------//
     cached_levelset_scalar_field_type M_globalLevelset;
     mutable bool M_doUpdateGlobalLevelset;
 
@@ -490,8 +495,8 @@ private:
 
     //--------------------------------------------------------------------//
     // Parameters
-    material_properties_ptrtype M_fluidMaterialProperties;
-    std::map<std::string, material_properties_ptrtype> M_levelsetsMaterialProperties;
+    materials_properties_ptrtype M_fluidMaterialProperties;
+    std::map<std::string, materials_properties_ptrtype> M_levelsetsMaterialProperties;
     std::map<std::string, std::map<std::string, interfaceforces_model_ptrtype>> M_levelsetInterfaceForcesModels;
     std::map<std::string, interfaceforces_model_ptrtype> M_additionalInterfaceForcesModel;
     //--------------------------------------------------------------------//
@@ -506,19 +511,19 @@ private:
     //--------------------------------------------------------------------//
     // Inextensibility
     bool M_enableInextensibility;
-    std::map<std::string, bool> M_hasInextensibility;
+    std::vector<bool> M_hasInextensibility;
     bool M_hasInextensibilityLM;
-    std::map<std::string, std::string> M_inextensibilityMethods;
-    std::vector<element_levelset_ptrtype> M_inextensibleLevelsets;
+    std::vector<std::string> M_inextensibilityMethod;
+    std::vector<element_levelset_scalar_ptrtype> M_inextensibleLevelsets;
 
     mutable range_elements_type M_rangeInextensibilityLM;
     mutable space_inextensibilitylm_ptrtype M_spaceInextensibilityLM;
     mutable bool M_doUpdateInextensibilityLM;
     // Penalty method gamma
-    std::map<std::string, double> M_inextensibilityGamma;
+    std::vector<double> M_inextensibilityGamma;
     //--------------------------------------------------------------------//
     // Redistanciation
-    std::map<std::string, int> M_levelsetRedistEvery;
+    std::vector<int> M_levelsetRedistEvery;
 
     //--------------------------------------------------------------------//
     std::vector<vector_ptrtype> M_algebraicBlockVectorSolutionLevelsets;

@@ -1,6 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
  */
-#include <numerics>
+
+#include <numeric>
 #include <fmt/core.h>
 
 #include <feel/feelmodels/multifluid/multifluid.hpp>
@@ -104,7 +105,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     {
         auto paramValues = this->modelProperties().parameters().toParameterValues();
         this->modelProperties().materials().setParameterValues( paramValues );
-        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties.reset( new materials_properties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
@@ -257,33 +258,33 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     // Global levelset parameters
     // TODO
 
-    uint16_type nLevelSets = M_nFluids - 1;
-
     M_enableInextensibility = false;
-    for( uint16_type n = 0; n < nLevelSets; ++n )
+    for( index_type i = 0; i < M_nLevelsets; ++i )
     {
-        std::string const lsName = levelsetName(n);
-        auto levelset_prefix = prefixvm(this->prefix(), lsName);
+        std::string const lsKeyword = fmt::format( "levelset{}", i );
+        std::string const lsPrefix = prefixvm( this->prefix(), lsKeyword );
 
-        M_hasInextensibility[lsName] = boption( _name="enable-inextensibility", _prefix=levelset_prefix );
-        if( M_hasInextensibility[lsName] ) M_enableInextensibility = true;
+        // Inextensibility
+        bool hasInextensibility = boption( _name="enable-inextensibility", _prefix=lsPrefix );
+        M_hasInextensibility.push_back( hasInextensibility );
 
-        M_inextensibilityMethods[lsName] = soption( _name="inextensibility-method", _prefix=levelset_prefix );
-        CHECK( M_inextensibilityMethods[lsName] == "penalty" || M_inextensibilityMethods[lsName] == "lagrange-multiplier" ) 
-            << "invalid inextensiblity-method " << M_inextensibilityMethods[lsName]
+        if( hasInextensibility ) M_enableInextensibility = true;
+
+        std::string inextensibilityMethod = soption( _name="inextensibility-method", _prefix=lsPrefix );
+        CHECK( inextensibilityMethod == "penalty" || inextensibilityMethod == "lagrange-multiplier" ) 
+            << "invalid inextensiblity-method " << inextensibilityMethod
             << ", should be \"penalty\" or \"lagrange-multiplier\"" << std::endl;
+        M_inextensibilityMethod.push_back( inextensibilityMethod );
 
-        if( M_hasInextensibility[lsName] && M_inextensibilityMethods[lsName] == "lagrange-multiplier" )
+        if( hasInextensibility && inextensibilityMethod == "lagrange-multiplier" )
             M_hasInextensibilityLM = true;
 
-        M_inextensibilityGamma[lsName] = doption( _name="inextensibility-gamma", _prefix=levelset_prefix );
-    }
+        double inextensibilityGamma = doption( _name="inextensibility-gamma", _prefix=lsPrefix );
+        M_inextensibilityGamma.push_back( inextensibilityGamma );
 
-    for( uint16_type n = 0; n < nLevelSets; ++n )
-    {
-        std::string const lsName = levelsetName(n);
-        auto levelset_prefix = prefixvm(this->prefix(), lsName);
-        M_levelsetRedistEvery[lsName] = ioption( _name="redist-every", _prefix=levelset_prefix );
+        // Redistanciation
+        int redistEvery = ioption( _name="redist-every", _prefix=lsPrefix );
+        M_levelsetRedistEvery.push_back( redistEvery );
     }
 }
 
@@ -317,10 +318,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
     }
 
     *_ostr << "\n   Level Sets Parameters";
-    for( auto const& lsRedistEvery: M_levelsetRedistEvery )
+    for( index_type i = 0; i < M_nLevelsets; ++i )
     {
-    *_ostr << "\n     -- level set " << "\"" << lsRedistEvery.first << "\""
-           << "\n       * redist every : " << lsRedistEvery.second;
+    *_ostr << "\n     -- level set " << "\"" << i << "\""
+           << "\n       * redist every : " << M_levelsetRedistEvery[i];
     }
 
     *_ostr << "\n   Forces Parameters";
@@ -339,7 +340,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << this->fluidModel()->getInfo()->str();
     for( auto const& levelset: M_levelsetModels )
     {
-    *_ostr << levelset.second->getInfo()->str();
+    *_ostr << levelset->getInfo()->str();
     }
 
     *_ostr << "\n||==============================================||"
@@ -455,19 +456,7 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 bool
 MULTIFLUID_CLASS_TEMPLATE_TYPE::hasInextensibilityLM() const
 {
-    bool hasInextensibilityLM = false;
-    if( this->M_enableInextensibility )
-    {
-        for( auto const& inextmethod: M_inextensibilityMethods )
-        {
-            if( inextmethod.second == "lagrange-multiplier" )
-            {
-                hasInextensibilityLM = true;
-                break;
-            }
-        }
-    }
-    return hasInextensibilityLM;
+    return M_hasInextensibilityLM;
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -476,13 +465,13 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInextensibilityLM()
 {
     this->log("MultiFluid", "updateInextensibilityLM", "start");
     M_inextensibleLevelsets.clear();
-    for( auto const& ls: M_levelsetModels )
+    for( size_type i = 0; i < M_nLevelsets; ++i )
     {
-        if( this->hasInextensibility(ls.first) )
+        if( this->hasInextensibility(i) )
         {
-            if( this->inextensibilityMethod(ls.first) == "lagrange-multiplier" )
+            if( this->inextensibilityMethod(i) == "lagrange-multiplier" )
             {
-                M_inextensibleLevelsets.push_back( ls.second->phi() );
+                M_inextensibleLevelsets.push_back( this->levelsetModel(i)->phi() );
             }
         }
     }
@@ -623,28 +612,28 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveSemiImplicitCoupling()
         // Update inextensibility LM if requested
         if( M_doUpdateInextensibilityLM )
             this->updateInextensibilityLM();
-        // Rebuild matrix and vector
-        if( this->M_doRebuildMatrixVector )
-        {
-            // Rebuild algebraic matrix and vector
-            auto graph = this->buildMatrixGraph();
-            M_algebraicFactory->rebuildMatrixVector( graph, graph->mapRow().indexSplit() );
-            // Rebuild solution vector
-            this->buildBlockVectorSolution();
-            // Rebuild backend (required since PETSc stores the size of the matrix, 
-            // which can change here because of the LM space support)
-            this->backend()->clear();
+        //// Rebuild matrix and vector
+        //if( this->M_doRebuildMatrixVector )
+        //{
+            //// Rebuild algebraic matrix and vector
+            //auto graph = this->buildMatrixGraph();
+            //M_algebraicFactory->rebuildMatrixVector( graph, graph->mapRow().indexSplit() );
+            //// Rebuild solution vector
+            //this->buildBlockVectorSolution();
+            //// Rebuild backend (required since PETSc stores the size of the matrix, 
+            //// which can change here because of the LM space support)
+            //this->backend()->clear();
 
-            M_doRebuildMatrixVector = false;
-        }
+            //M_doRebuildMatrixVector = false;
+        //}
 
         this->fluidModel()->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
 
-        M_blockVectorSolution.updateVectorFromSubVectors();
+        this->algebraicBlockVectorSolution().updateVectorFromSubVectors();
 
         // Solve fluid
-        M_algebraicFactory->solve( this->fluidModel()->solverName(), M_blockVectorSolution.vectorMonolithic() );
-        M_blockVectorSolution.localize();
+        M_algebraicFactory->solve( this->fluidModel()->solverName(), this->algebraicBlockVectorSolution()->vectorMonolithic() );
+        this->algebraicBlockVectorSolution().localize();
     }
     else
     {
@@ -653,8 +642,13 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveSemiImplicitCoupling()
     }
     // Advect levelsets
     this->advectLevelsets();
-    // Update density and viscosity
-    this->updateFluidDensityViscosity();
+    // Request global levelset update
+    M_globalLevelset.setDoUpdate( true );
+    // Possibly request inextensiblity LM update
+    if( this->hasInextensibilityLM() )
+        M_doUpdateInextensibilityLM = true;
+    //// Update density and viscosity
+    //this->updateFluidDensityViscosity();
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -670,7 +664,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveImplicitCoupling()
     //}
     CHECK(false) << "TODO: implicit coupling\n";
 
-    M_blockVectorSolution.updateVectorFromSubVectors();
+    this->algebraicBlockVectorSolution().updateVectorFromSubVectors();
     //TODO
 }
 
