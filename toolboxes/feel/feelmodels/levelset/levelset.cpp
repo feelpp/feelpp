@@ -72,7 +72,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::New(
 //----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::init()
+LEVELSET_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
     this->log("LevelSet", "init", "start");
 
@@ -92,7 +92,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
 
     // Init advection toolbox
     M_advectionToolbox->setSpaceUnknown( this->functionSpace() );
-    M_advectionToolbox->init();
+    M_advectionToolbox->init( buildModelAlgebraicFactory );
     // Set transient coefficient d=1
     for( std::string const& matName : M_advectionToolbox->materialsProperties()->physicToMaterials( M_advectionToolbox->physicDefault() ) )
     {

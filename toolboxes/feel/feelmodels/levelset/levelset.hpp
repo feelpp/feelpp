@@ -247,6 +247,13 @@ public:
     using exporter_ptrtype = typename super_type::exporter_ptrtype;
 
     //--------------------------------------------------------------------//
+    // Algebraic data
+    using ModelAlgebraic::DataUpdateLinear;
+    using ModelAlgebraic::DataNewtonInitialGuess;
+    using ModelAlgebraic::DataUpdateJacobian;
+    using ModelAlgebraic::DataUpdateResidual;
+
+    //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
 
@@ -277,7 +284,8 @@ public:
 
     //--------------------------------------------------------------------//
     // Initialization
-    void init();
+    void init( bool buildModelAlgebraicFactory=true );
+    void initAlgebraicFactory() { M_advectionToolbox->initAlgebraicFactory(); }
     void initPostProcess() override;
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
@@ -351,13 +359,41 @@ public:
     element_markers_ptrtype const& markerCrossedElements() const;
 
     //--------------------------------------------------------------------//
-    // Advection
+    // Assembly and solve
     bool hasSourceTerm() const { return false; }
     void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const {}
     void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
 
     void solve();
 
+    // Assembly: forward CFPDE assembly
+    void updateLinearPDE( DataUpdateLinear & data ) const { M_advectionToolbox->updateLinearPDE( data ); }
+    template <typename ModelContextType>
+    void updateLinearPDE( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx ) const { M_advectionToolbox->updateLinearPDE( data, mctx ); }
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const { M_advectionToolbox->updateLinearPDEDofElimination( data ); }
+    template <typename ModelContextType>
+    void updateLinearPDEDofElimination( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx ) const { M_advectionToolbox->updateLinearPDEDofElimination( data, mctx ); }
+    template <typename ModelContextType,typename RangeType>
+    void updateLinearPDEStabilizationGLS( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const { M_advectionToolbox->updateLinearPDEStabilizationGLS( data, mctx, matName, range ); }
+
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override { M_advectionToolbox->updateNewtonInitialGuess( data ); }
+    template <typename ModelContextType>
+    void updateNewtonInitialGuess( ModelAlgebraic::DataNewtonInitialGuess & data, ModelContextType const& mctx ) const { M_advectionToolbox->updateNewtonInitialGuess( data, mctx ); }
+    void updateJacobian( DataUpdateJacobian & data ) const override { M_advectionToolbox->updateJacobian( data ); }
+    template <typename ModelContextType>
+    void updateJacobian( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx ) const { M_advectionToolbox->updateJacobian( data, mctx ); }
+    template <typename ModelContextType,typename RangeType>
+    void updateJacobianStabilizationGLS( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const { M_advectionToolbox->updateJacobianStabilizationGLS( data, mctx, matName, range ); }
+    void updateJacobianDofElimination( ModelAlgebraic::DataUpdateJacobian & data ) const override { M_advectionToolbox->updateJacobianDofElimination( data ); }
+    void updateResidual( DataUpdateResidual & data ) const override { M_advectionToolbox->updateResidual( data ); }
+    template <typename ModelContextType>
+    void updateResidual( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx ) const { M_advectionToolbox->updateResidual( data, mctx ); }
+    template <typename ModelContextType,typename RangeType>
+    void updateResidualStabilizationGLS( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const { M_advectionToolbox->updateResidualStabilizationGLS( data, mctx, matName, range ); }
+    void updateResidualDofElimination( ModelAlgebraic::DataUpdateResidual & data ) const override { M_advectionToolbox->updateResidualDofElimination( data ); }
+
+    //--------------------------------------------------------------------//
+    // Time stepping
     void startTimeStep();
     void updateTimeStep();
 
