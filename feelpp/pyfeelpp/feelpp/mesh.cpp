@@ -181,6 +181,11 @@ void defMesh(py::module &m)
         py::class_<Remesh<mesh_t>, std::shared_ptr<Remesh<mesh_t>>>( m, pyclass_name.c_str() )
             .def( py::init<mesh_ptr_t const&, std::vector<std::string> const&, std::vector<std::string> const&>(),
                   py::arg( "mesh" ), py::arg( "required_elts" ) = std::vector<std::string>{}, py::arg( "required_facets" ) = std::vector<std::string>{}, "Initialize a remesher" )
+            .def( py::init<mesh_ptr_t const&, std::vector<std::string> const&, std::vector<std::string> const&,mesh_ptr_t const&>(), 
+                  py::arg( "mesh" ), py::arg( "required_elts" ) = std::vector<std::string>{}, 
+                  py::arg( "required_facets" ) = std::vector<std::string>{}, 
+                  py::arg( "parent" ),
+                  "Initialize a remesher" )
             .def( "execute", &Remesh<mesh_t>::execute, py::arg( "run" ) = true, "execute remesh task" )
             .def( "setMetric", &Remesh<mesh_t>::setMetric, py::arg( "metric" ), "set the metric" );
         m.def(
@@ -198,6 +203,13 @@ void defMesh(py::module &m)
                 return std::make_shared<Remesh<mesh_t>>(  r, req_elts, req_facets );
             },
             py::return_value_policy::copy,py::arg( "mesh" ), py::arg( "required_elts" )=std::vector<std::string>{},  py::arg( "required_facets" )=std::vector<std::string>{}, 
+            "create a Remesher data structure" );
+        m.def(
+            "remesher", []( mesh_ptr_t const& r, std::vector<std::string> const& req_elts, std::vector<std::string> const& req_facets, mesh_ptr_t  const& parent ) {
+                return std::make_shared<Remesh<mesh_t>>(  r, req_elts, req_facets, parent );
+            },
+            py::return_value_policy::copy,py::arg( "mesh" ), py::arg( "required_elts" )=std::vector<std::string>{},  
+            py::arg( "required_facets" )=std::vector<std::string>{}, py::arg( "parent" ),
             "create a Remesher data structure" );
     }
 }
