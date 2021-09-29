@@ -73,11 +73,17 @@ public :
                 M_rangeMeshElementsIdsPartialSupport.insert( unwrap_ref(eltWrap).id() );
 
             M_localizationToolPartialSupport = std::make_shared<Localization<mesh_type>>();
-            M_localizationToolPartialSupport->setMesh( M_mesh,false );
-            M_localizationToolPartialSupport->/*init*/reset( M_rangeElements );
+            M_localizationToolPartialSupport->setMesh( M_mesh, M_rangeElements, false );
+            //M_localizationToolPartialSupport->/*init*/reset( M_rangeElements );
+
+            M_mesh->attachMeshSupport( this );
         }
 
-    ~MeshSupport() override = default;
+    ~MeshSupport() override
+        {
+            if ( M_mesh )
+                M_mesh->detachMeshSupport( this );
+        }
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
     worldcomm_ptr_t const& worldCommPtr() const { return M_mesh->worldCommPtr(); }
@@ -402,6 +408,13 @@ private :
             M_rangeBoundaryFaces = boost::make_tuple( mpl::size_t<MESH_FACES>(),mybfaces->begin(),mybfaces->end(),mybfaces );
             M_rangeInternalFaces = boost::make_tuple( mpl::size_t<MESH_FACES>(),myifaces->begin(),myifaces->end(),myifaces );
         }
+
+    void resetLocalizationTool() override
+        {
+            if ( M_localizationToolPartialSupport )
+                M_localizationToolPartialSupport->reset();
+        }
+
 private :
     mesh_ptrtype M_mesh;
     range_elements_type M_rangeElements;
