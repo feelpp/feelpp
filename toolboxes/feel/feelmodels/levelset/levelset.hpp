@@ -367,10 +367,10 @@ public:
     void solve();
 
     // Assembly: forward CFPDE assembly
-    void updateLinearPDE( DataUpdateLinear & data ) const { M_advectionToolbox->updateLinearPDE( data ); }
+    void updateLinearPDE( DataUpdateLinear & data ) const override { M_advectionToolbox->updateLinearPDE( data ); }
     template <typename ModelContextType>
     void updateLinearPDE( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx ) const { M_advectionToolbox->updateLinearPDE( data, mctx ); }
-    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const { M_advectionToolbox->updateLinearPDEDofElimination( data ); }
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override { M_advectionToolbox->updateLinearPDEDofElimination( data ); }
     template <typename ModelContextType>
     void updateLinearPDEDofElimination( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx ) const { M_advectionToolbox->updateLinearPDEDofElimination( data, mctx ); }
     template <typename ModelContextType,typename RangeType>
@@ -403,25 +403,21 @@ public:
     element_vectorial_type extensionVelocity( vf::Expr<ExprT> const& u ) const;
 
     //--------------------------------------------------------------------//
-    // Symbols expressions
-    using super_type::symbolsExpr;
-    // Fields
-#if 0
-    auto allFields( std::string const& prefix = "" ) const
-    {
-        return hana::concat( super_type::allFields( prefix ), hana::make_tuple(
-                std::make_pair( prefixvm( prefix, "advection-velocity" ), M_advectionToolbox->fieldAdvectionVelocityPtr() ),
-                this->optionalScalarFields( prefix ),
-                this->optionalVectorialFields( prefix )
-                ) );
-    }
-#else
+    // Model fields
     auto modelFields( std::string const& prefix = "" ) const
-        {
-            return super_type::modelFields( prefix );
-        }
+    {
+        return super_type::modelFields( prefix );
+    }
+    template <typename LevelsetFieldType>
+    auto modelFields( LevelsetFieldType const& phi, std::string const& prefix = "" ) const
+    {
+        return super_type::modelFields( phi, prefix );
+    }
+    auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+    {
+        return super_type::modelFields( sol, rowStartInVector, prefix );
+    }
 
-#endif
     auto optionalScalarFields( std::string const& prefix = "" ) const
     {
         std::map<std::string, element_scalar_ptrtype> fields;
@@ -445,6 +441,8 @@ public:
         }
         return fields;
     }
+    // Symbols expressions
+    using super_type::symbolsExpr;
     // Measures quantities
     auto allMeasuresQuantities( std::string const& prefix = "" ) const
     {

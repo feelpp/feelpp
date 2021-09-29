@@ -369,10 +369,8 @@ public:
         static auto levelset_vectorial( self_type const* t ) { return ModelFieldTag<self_type,1>( t ); }
     };
 
-    //___________________________________________________________________________________//
-    // toolbox fields
-    //___________________________________________________________________________________//
-
+    //--------------------------------------------------------------------//
+    // Model fields
     auto modelFields( std::string const& prefix = "" ) const
     {
         // Cached model fields are optimized in this specific case where phi is the current levelset value
@@ -389,21 +387,12 @@ public:
                 modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "distance-curvature", M_distanceCurvature, "distance-curvature", this->keyword() )
                 );
     }
-#if 0
-    auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
-        {
-            auto field_t = this->functionSpace()->elementPtr( *sol, rowStartInVector /*+ this->startSubBlockSpaceIndex( "field" )*/ );
-            return this->modelFields( field_t, prefix );
-        }
-#endif
-    template <typename PhiFieldType>
-    auto modelFields( PhiFieldType const& field_phi, std::string const& prefix = "" ) const
+    template <typename LevelsetFieldType>
+    auto modelFields( LevelsetFieldType const& phi, std::string const& prefix = "" ) const
     {
         // TODO: dont use current cached field but create new ones
-        typedef element_levelset_ptrtype const& (self_type::*scalar_fc_type)() const;
-        typedef element_vectorial_ptrtype const& (self_type::*vec_fc_type)() const;
         return Feel::FeelModels::modelFields( 
-                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::levelset_scalar(this), prefix, "phi", field_phi, "phi", this->keyword() ),
+                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::levelset_scalar(this), prefix, "phi", phi, "phi", this->keyword() ),
                 modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "dirac", M_dirac, "dirac", this->keyword() ),
                 modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "heaviside", M_heaviside, "heaviside", this->keyword() ),
                 modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "normal", M_levelsetNormal, "normal", this->keyword() ),
@@ -414,6 +403,11 @@ public:
                 modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "distance-normal", M_distanceNormal, "distance-normal", this->keyword() ),
                 modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "distance-curvature", M_distanceCurvature, "distance-curvature", this->keyword() )
                 );
+    }
+    auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+    {
+        auto field_phi = this->functionSpace()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( this->keyword() ) );
+        return this->modelFields( field_phi, prefix );
     }
     //___________________________________________________________________________________//
     // symbols expressions
