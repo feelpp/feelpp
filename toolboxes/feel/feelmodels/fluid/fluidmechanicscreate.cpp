@@ -1214,6 +1214,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
         M_savetsPressure->applyRemesh( this->functionSpacePressure(), matrixInterpolation_pressure );
     this->log("FluidMechanics","applyRemesh", "time stepping done" );
 
+    // update definePressureCst respect to the method choosen
+    if ( this->definePressureCst() )
+        this->updateDefinePressureCst();
+
     // body bc
     M_bodySetBC.applyRemesh( *this, remeshInterp );
     this->log("FluidMechanics","applyRemesh", "body bc done" );
@@ -2756,8 +2760,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::applyRemesh( mesh_ptrtype const& newMe
         // createInterpolationOp
         auto opI_displacement = opInterpolation(_domainSpace=old_spaceDisplacement,
                                                 _imageSpace=M_spaceDisplacement,
-                                                _range=M_rangeMeshElements/*,
-                                                                           _type=InterpolationConforme()*/ // QUICK FIX ( but loc tool should use messh support, this is not the case)
+                                                _range=M_rangeMeshElements
                                                 );
 
         auto matrixInterpolation_displacement = opI_displacement->matPtr();
@@ -3233,41 +3236,26 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::applyRemesh( self_typ
         for (int i=0;i<M_fieldTranslationalVelocity->functionSpace()->nLocalDofWithGhost();++i)
             M_fieldTranslationalVelocity->set( i, translationalVelocity(i) );
     }
+
     if ( M_fieldAngularVelocity )
     {
         for (int i=0;i<M_fieldAngularVelocity->functionSpace()->nLocalDofWithGhost();++i)
             M_fieldAngularVelocity->set( i, angularVelocity(i) );
     }
 
-
-
-
     // time stepping
     if ( M_bdfTranslationalVelocity )
     {
-#if 0
-        auto opI_translationalVelocity = opInterpolation(_domainSpace=old_spaceTranslationalVelocity,
-                                                         _imageSpace=M_spaceTranslationalVelocity/*,
-                                                                                                  _range=M_rangeMeshElements*/ );
-        //auto matrixInterpolation_pressure = opI_pressure->matPtr();
-        M_bdfTranslationalVelocity->applyRemesh( M_spaceTranslationalVelocity, opI_translationalVelocity->matPtr() );
-#else
         auto matrixInterpolation_translationalVelocity = remeshInterp.computeMatrixInterpolation( old_spaceTranslationalVelocity,M_spaceTranslationalVelocity );
         remeshInterp.registeringBlockIndex( fluidToolbox.keyword(), fluidToolbox.startSubBlockSpaceIndex( "body-bc."+this->name()+".translational-velocity" ), old_spaceTranslationalVelocity, M_spaceTranslationalVelocity );
         M_bdfTranslationalVelocity->applyRemesh( M_spaceTranslationalVelocity, matrixInterpolation_translationalVelocity );
-#endif
     }
     if ( M_bdfAngularVelocity )
     {
-#if 0
-        auto opI_angularVelocity = opInterpolation(_domainSpace=old_spaceAngularVelocity,
-                                                   _imageSpace=M_spaceAngularVelocity );
-        M_bdfAngularVelocity->applyRemesh( M_spaceAngularVelocity, opI_angularVelocity->matPtr() );
-#else
         auto matrixInterpolation_angularVelocity = remeshInterp.computeMatrixInterpolation( old_spaceAngularVelocity, M_spaceAngularVelocity );
+        //if ( !this->isInNBodyArticulated() ) // maybe
         remeshInterp.registeringBlockIndex( fluidToolbox.keyword(), fluidToolbox.startSubBlockSpaceIndex( "body-bc."+this->name()+".angular-velocity" ), old_spaceAngularVelocity, M_spaceAngularVelocity );
         M_bdfAngularVelocity->applyRemesh( M_spaceAngularVelocity, matrixInterpolation_angularVelocity );
-#endif
     }
 
 
@@ -3463,6 +3451,33 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyArticulation::initLagrangeMultiplier( se
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyArticulation::applyRemesh( self_type const& fluidToolbox, RemeshInterpolation & remeshInterp )
+{
+    if ( M_vectorLagrangeMultiplierTranslationalVelocity )
+    {
+        vector_ptrtype old_vectorLagrangeMultiplierTranslationalVelocity = M_vectorLagrangeMultiplierTranslationalVelocity;
+        this->initLagrangeMultiplier( fluidToolbox );
+
+        sparse_matrix_ptrtype matInterp;
+        if ( M_vectorLagrangeMultiplierTranslationalVelocity->mapPtr()->worldComm().localSize() == 1 )
+            matInterp = fluidToolbox.backend()->newZeroMatrix( old_vectorLagrangeMultiplierTranslationalVelocity->mapPtr(), M_vectorLagrangeMultiplierTranslationalVelocity->mapPtr() );
+        else
+        {
+            // TODO : create the interpolation matrix in // (put some one in the matrix)
+            matInterp = fluidToolbox.backend()->newZeroMatrix( old_vectorLagrangeMultiplierTranslationalVelocity->mapPtr(), M_vectorLagrangeMultiplierTranslationalVelocity->mapPtr() );
+        }
+
+        std::string subBlockSpaceName = "body-bc.articulation-lm."+this->name()+".translational-velocity";
+        std::string interpName = prefixvm(fluidToolbox.keyword(),subBlockSpaceName);
+        remeshInterp.setMatrixInterpolation( interpName, matInterp );
+        remeshInterp.registeringBlockIndex( fluidToolbox.keyword(), fluidToolbox.startSubBlockSpaceIndex(subBlockSpaceName), interpName );
+        remeshInterp.interpolate( interpName, old_vectorLagrangeMultiplierTranslationalVelocity, M_vectorLagrangeMultiplierTranslationalVelocity );
+    }
+
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 eigen_vector_type<FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nRealDim>
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyArticulation::unitDirBetweenMassCenters() const
 {
@@ -3504,6 +3519,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::init( self_type const& flu
     // std::cout << "this->bodyList().size()="<< this->bodyList().size() << std::endl;
     // std::cout << "this->bodyList(false).size()="<< this->bodyList(false).size() << std::endl;
 
+
+    std::set<std::string> M_markers;
+    for ( auto bbc : this->bodyList() )
+        M_markers.insert( bbc->markers().begin(), bbc->markers().end() );
+    M_rangeMarkedFacesOnFluid = markedfaces(fluidToolbox.mesh(), M_markers );
+
+
     if ( this->articulationMethod() == "lm" )
     {
         for ( auto & ba : M_articulations )
@@ -3519,14 +3541,50 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::init( self_type const& flu
     }
 
 
+    auto M_mesh = createSubmesh(_mesh=/*fluidToolbox.mesh()*/fluidToolbox.functionSpaceVelocity()->template meshSupport<0>(),_range=M_rangeMarkedFacesOnFluid,_view=true );
+    M_spaceAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
+    M_fieldAngularVelocity = M_spaceAngularVelocity->elementPtr();
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::applyRemesh( self_type const& fluidToolbox, RemeshInterpolation & remeshInterp )
+{
     std::set<std::string> M_markers;
     for ( auto bbc : this->bodyList() )
         M_markers.insert( bbc->markers().begin(), bbc->markers().end() );
-    auto rangeBodyBoundary = markedfaces(fluidToolbox.mesh(), M_markers );
-    M_rangeMarkedFacesOnFluid = rangeBodyBoundary;
-    auto M_mesh = createSubmesh(_mesh=/*fluidToolbox.mesh()*/fluidToolbox.functionSpaceVelocity()->template meshSupport<0>(),_range=rangeBodyBoundary,_view=true );
+    M_rangeMarkedFacesOnFluid = markedfaces(fluidToolbox.mesh(), M_markers );
+
+    for ( auto & ba : M_articulations )
+        ba.applyRemesh( fluidToolbox, remeshInterp );
+
+    if ( M_dataMapPMatrixTranslationalVelocity )
+    {
+        // create datamap shared on all processess where a body bc is defined (active dofs use the master body)
+        std::vector<std::shared_ptr<datamap_t<>>> datamaps = { this->masterBodyBC().spaceTranslationalVelocity()->mapPtr() };
+        for ( auto const& bbcPtr : this->bodyList(false) )
+            datamaps.push_back( bbcPtr->spaceTranslationalVelocity()->mapPtr() );
+        M_dataMapPMatrixTranslationalVelocity = utility_constant_functionspace::aggregateParallelSupport( datamaps, fluidToolbox.worldCommPtr() );
+    }
+
+
+    auto M_mesh = createSubmesh(_mesh=/*fluidToolbox.mesh()*/fluidToolbox.functionSpaceVelocity()->template meshSupport<0>(),_range=M_rangeMarkedFacesOnFluid,_view=true );
+
+    space_trace_angular_velocity_ptrtype old_spaceAngularVelocity = M_spaceAngularVelocity;
+    element_trace_angular_velocity_ptrtype old_fieldAngularVelocity = M_fieldAngularVelocity;
     M_spaceAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
     M_fieldAngularVelocity = M_spaceAngularVelocity->elementPtr();
+
+    auto matrixInterpolation_angularVelocity = remeshInterp.computeMatrixInterpolation( old_spaceAngularVelocity,M_spaceAngularVelocity );
+    remeshInterp.registeringBlockIndex( fluidToolbox.keyword(), fluidToolbox.startSubBlockSpaceIndex( "body-bc."+this->name()+".angular-velocity" ), old_spaceAngularVelocity, M_spaceAngularVelocity );
+    remeshInterp.interpolate( old_fieldAngularVelocity, M_fieldAngularVelocity );
+    M_bdfAngularVelocity->applyRemesh( M_spaceAngularVelocity, matrixInterpolation_angularVelocity );
+
+    if ( M_matrixPTilde_angular )
+    {
+        M_matrixPTilde_angular.reset();
+        this->updateMatrixPTilde_angular( fluidToolbox, M_matrixPTilde_angular );
+    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
