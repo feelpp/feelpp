@@ -1130,7 +1130,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
 #endif
     }
     // check if the bimap is empty. If so, there is no submesh link between meshes
-    if ( !M_smd->bm.empty() )
+    if ( !M_smd->bm.empty() && M_parent_mesh )
     {
         out->setSubMeshData( M_smd );
     }
