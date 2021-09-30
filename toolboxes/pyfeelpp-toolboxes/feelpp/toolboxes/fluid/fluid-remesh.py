@@ -12,28 +12,42 @@ e = feelpp.Environment(
     config=feelpp.globalRepository("fluid-remesh"))
 
 #    feelpp.Environment.setConfigFile('fluid/TurekHron/cfd3.cfg')
-#feelpp.Environment.setConfigFile('fluid/swimmers/3-sphere/2d/three_sphere_2D.cfg')
+feelpp.Environment.setConfigFile('cases/swimmers/3-sphere/2d/three_sphere_2D.cfg')
 #feelpp.Environment.setConfigFile('fluid/moving_body/gravity/cfd.cfg')
-feelpp.Environment.setConfigFile(
-    'cases/moving_body/gravity/cylinder_under_gravity/cylinder_under_gravity.cfg')
+#feelpp.Environment.setConfigFile(
+#    'cases/moving_body/gravity/cylinder_under_gravity/cylinder_under_gravity.cfg')
 f = fluid(dim=2, orderVelocity=2, orderPressure=1)
 f.init()
 
-hfar = 0.1
-hclose = 0.02
-def remesh_toolbox(f, hclose, hfar):
+hfar = 3
+hclose = hfar/10
+def remesh_toolbox(f, hclose, hfar, parent_mesh):
+    required_facets=["CircleLeft","CircleCenter","CircleRight"]
+    required_elts=["CirLeft","CirCenter","CirRight"]
     Xh = feelpp.functionSpace(mesh=f.mesh())
-    metric = feelpp.gradedls(Xh, feelpp.markedfaces(Xh.mesh(), ["CylinderSurface"]), hclose, hfar)
-    R = feelpp.remesher(mesh=f.mesh(), required_elts="CylinderVolume", required_facets="CylinderSurface")
+    n_required_elts_before=feelpp.nelements(feelpp.markedelements(f.mesh(),required_elts))
+    n_required_facets_before=feelpp.nfaces(feelpp.markedfaces(f.mesh(),required_facets))
+    print(" . [before remesh]   n required elts: {}".format(n_required_elts_before))
+    print(" . [before remesh] n required facets: {}".format(n_required_facets_before))
+    metric = feelpp.gradedls(Xh, feelpp.markedfaces(Xh.mesh(), required_facets), hclose, hfar)
+    R = feelpp.remesher(mesh=f.mesh(), required_elts=required_elts, required_facets=required_facets, parent=parent_mesh)
     R.setMetric(metric)
     new_mesh = R.execute()
+    n_required_elts_after=feelpp.nelements(feelpp.markedelements(new_mesh,required_elts))
+    n_required_facets_after=feelpp.nfaces(feelpp.markedfaces(new_mesh,required_facets))
+    print(" . [after remesh]  n required elts: {}".format(n_required_elts_after))
+    print(" . [after remesh] n required facets: {}".format(n_required_facets_after))
+    assert(n_required_elts_before==n_required_elts_after)
+    assert(n_required_facets_before==n_required_facets_after)
     f.applyRemesh(new_mesh)
 
+parent_mesh=f.mesh()
 remesh_toolbox(f, hclose, hfar )
 f.startTimeStep()
 while not f.timeStepBase().isFinished():
-    if q.etaQ(f.mesh()).min() < 0.6:
-        remesh_toolbox( f, hclose, hfar )
+#    if q.etaQ(f.mesh()).min() < 0.6:
+    if f.timeStepBase().iteration()%1 == 0:
+        remesh_toolbox( f, hclose, hfar, parent_mesh )
     if feelpp.Environment.isMasterRank():
         print("============================================================\n")
         print("time simulation: ", f.time(), "s \n")
