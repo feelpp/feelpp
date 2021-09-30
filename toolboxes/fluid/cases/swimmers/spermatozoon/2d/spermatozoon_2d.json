@@ -87,7 +87,7 @@
                         {
                             //"expr":"{(1-exp(-t))*A_max^2*(x-head_junct)^2/(tail_L^2)*(pi^2/lambda)/period*cos(4*pi*(t/period-(x+offset)/lambda)),(1-exp(-t))*A_max*(x-head_junct)/tail_L*2*pi/period*cos(2*pi*(t/period-(x+offset)/lambda))}:x:t:lambda:period:pi:tail_L:head_junct:A_max:offset",// t*(x-head_junct)^2/tail_L^2*(pi/lambda)*1/4*sin(4*pi*(t/period-x/lambda)), t*(x-head_junct)/tail_L*sin(2*pi*(t/period-x/lambda))}:t:x:period:lambda:head_junct:tail_L",
 
-                            "expr":"{ud_0,ud_1}:ud_0:ud_1",
+                            "expr":"{udxt_0,udxt_1}:udxt_0:udxt_1",
                             "markers":"Tail"
                         }
                 //"Head":{"expr":"{dx,dy}:dx:dy"},
