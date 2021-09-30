@@ -108,10 +108,23 @@ public:
     using sparse_matrix_ptrtype = std::shared_ptr<MatrixSparse<double>>;
     using vector_type = Vector<double>;
     using vector_ptrtype = std::shared_ptr<vector_type>;
+private:
+    using key_functionspaces_type = std::pair<functionspace_base_ptrtype,functionspace_base_ptrtype>;
+    using key_name_type = std::string;
+    using matrix_interpolation_key_type = std::variant<key_functionspaces_type,key_name_type>;
+public:
 
     sparse_matrix_ptrtype matrixInterpolation( functionspace_base_ptrtype domainSpace, functionspace_base_ptrtype imageSpace ) const
         {
-            auto itFind = M_matrixInterpolations.find( std::make_pair(domainSpace, imageSpace) );
+            auto itFind = M_matrixInterpolations.find( matrix_interpolation_key_type{std::make_pair(domainSpace, imageSpace)} );
+            if ( itFind != M_matrixInterpolations.end() )
+                return itFind->second;
+            return sparse_matrix_ptrtype{};
+        }
+
+    sparse_matrix_ptrtype matrixInterpolation( key_name_type const& name ) const
+        {
+            auto itFind = M_matrixInterpolations.find( matrix_interpolation_key_type{ name } );
             if ( itFind != M_matrixInterpolations.end() )
                 return itFind->second;
             return sparse_matrix_ptrtype{};
@@ -124,7 +137,7 @@ public:
                                        _imageSpace=imageSpace,
                                        //_range=elements(support( imageSpace ) )
                                        _range=range );
-            auto [it, success] = M_matrixInterpolations.insert( { std::make_pair(domainSpace,imageSpace), opI->matPtr() } );
+            auto [it, success] = M_matrixInterpolations.insert( { matrix_interpolation_key_type{std::make_pair(domainSpace,imageSpace)}, opI->matPtr() } );
             return it->second;
         }
     template <typename DomainSpaceType, typename ImageSpaceType>
@@ -133,12 +146,26 @@ public:
             return this->computeMatrixInterpolation( domainSpace,imageSpace,elements(support( imageSpace ) ) );
         }
 
+    void setMatrixInterpolation( std::string const& name, sparse_matrix_ptrtype mat )
+        {
+            if ( mat )
+                M_matrixInterpolations[matrix_interpolation_key_type{name}] = mat;
+        }
+
     template <typename DomainElementType, typename ImageElementType>
     bool interpolate( DomainElementType const& u, ImageElementType & v ) const
         {
             auto domainSpace = unwrap_ptr( u ).functionSpace();
             auto imageSpace = unwrap_ptr( v ).functionSpace();
             auto matInterp = this->matrixInterpolation( domainSpace, imageSpace );
+            if ( !matInterp )
+                return false;
+            matInterp->multVector( unwrap_ptr( u ),  unwrap_ptr( v ) );
+            return true;
+        }
+    bool interpolate( key_name_type const& name, vector_ptrtype const& u, vector_ptrtype & v ) const
+        {
+            auto matInterp = this->matrixInterpolation( name );
             if ( !matInterp )
                 return false;
             matInterp->multVector( unwrap_ptr( u ),  unwrap_ptr( v ) );
@@ -177,21 +204,29 @@ public:
 
     void registeringBlockIndex( std::string const& name, size_type blockIndex, functionspace_base_ptrtype domainSpace, functionspace_base_ptrtype imageSpace )
         {
-            M_blockIndexToSpace[name].insert( { blockIndex, std::make_pair(domainSpace,imageSpace) } );
+            M_blockIndexToSpace[name].insert( { blockIndex, matrix_interpolation_key_type{std::make_pair(domainSpace,imageSpace)} } );
+        }
+    void registeringBlockIndex( std::string const& name, size_type blockIndex, key_name_type const& matInterpName )
+        {
+            M_blockIndexToSpace[name].insert( { blockIndex, matrix_interpolation_key_type{matInterpName} } );
         }
 private :
-    sparse_matrix_ptrtype matrixInterpolation( std::map<size_type,std::pair<functionspace_base_ptrtype,functionspace_base_ptrtype> > const& blockIndexToSpace, size_type blockIndex ) const
+    sparse_matrix_ptrtype matrixInterpolation( std::map<size_type,matrix_interpolation_key_type> const& blockIndexToSpace, size_type blockIndex ) const
         {
             auto itFindBlockIndex = blockIndexToSpace.find( blockIndex );
             if ( itFindBlockIndex == blockIndexToSpace.end() )
                 return sparse_matrix_ptrtype{};
-            auto const& spacesRelated = itFindBlockIndex->second;
-            return this->matrixInterpolation( spacesRelated.first, spacesRelated.second );
+            auto const& keyRelated = itFindBlockIndex->second;
+            if ( const key_functionspaces_type* spacesRelated = std::get_if<key_functionspaces_type>(&keyRelated) )
+                return this->matrixInterpolation( spacesRelated->first, spacesRelated->second );
+            else if ( const key_name_type* nameRelated = std::get_if<key_name_type>(&keyRelated) )
+                return this->matrixInterpolation( *nameRelated );
+            return sparse_matrix_ptrtype{};
         }
 
 private:
-    std::map<std::pair<functionspace_base_ptrtype,functionspace_base_ptrtype>, sparse_matrix_ptrtype > M_matrixInterpolations;
-    std::map<std::string,std::map<size_type,std::pair<functionspace_base_ptrtype,functionspace_base_ptrtype> > > M_blockIndexToSpace;
+    std::map<matrix_interpolation_key_type, sparse_matrix_ptrtype > M_matrixInterpolations;
+    std::map<std::string,std::map<size_type,matrix_interpolation_key_type> > M_blockIndexToSpace;
 };
 
 
@@ -805,6 +840,10 @@ public:
             M_body1( b1 ),
             M_body2( b2 )
             {}
+
+
+        void applyRemesh( self_type const& fluidToolbox, RemeshInterpolation & remeshInterp );
+
         BodyBoundaryCondition const& body1() const { return *M_body1; }
         BodyBoundaryCondition const& body2() const { return *M_body2; }
         datamap_ptr_t<> dataMapLagrangeMultiplierTranslationalVelocity() const { return M_dataMapLagrangeMultiplierTranslationalVelocity; }
@@ -911,6 +950,7 @@ public:
             }
 
         void init( self_type const& fluidToolbox );
+        void applyRemesh( self_type const& fluidToolbox, RemeshInterpolation & remeshInterp );
 
         //! set parameter values with symbolic expression
         void setParameterValues( std::map<std::string,double> const& mp )
@@ -1491,8 +1531,8 @@ public:
             {
                 for ( auto & [name,bpbc] : *this )
                     bpbc.applyRemesh( fluidToolbox, remeshInterp );
-                // for (auto & nba : M_nbodyArticulated )
-                //     nba.applyRemesh();
+                for (auto & nba : M_nbodyArticulated )
+                    nba.applyRemesh( fluidToolbox, remeshInterp );
             }
         void updateForUse( self_type const& fluidToolbox );
         void initAlgebraicFactory( self_type const& fluidToolbox, model_algebraic_factory_ptrtype algebraicFactory );
