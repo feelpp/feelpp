@@ -1,3 +1,5 @@
+*.ts/
+*.exports/
 downloads/
 build*/
 *.bak
@@ -150,3 +152,6 @@ toolboxes/pyfeelpp-toolboxes/tests/*.csv
 toolboxes/pyfeelpp-toolboxes/tests/*.h5
 toolboxes/pyfeelpp-toolboxes/Testing/
 feelpp/pyfeelpp/pytest-3.json
+nohup.out
+*.mesh.path
+*.measures.csv
