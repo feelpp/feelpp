@@ -2,6 +2,7 @@
 #define _MULTIFLUID_HPP 1
 
 #include <algorithm>
+#include <fmt/core.h>
 
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 #include <feel/feelmodels/levelset/levelset.hpp>

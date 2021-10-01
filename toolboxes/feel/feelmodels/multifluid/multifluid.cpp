@@ -69,7 +69,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initMesh()
     CHECK( M_mesh ) << "mesh generation fail";
 
     double tElapsed = this->timerTool("Constructor").stop("initMesh");
-    this->log("MultiFluid","initMesh", (boost::format("finish in %1% s") %tElapsed).str() );
+    this->log("MultiFluid","initMesh", fmt::format( "finish in {} s", tElapsed ) );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -376,7 +376,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateGlobalLevelset( element_levelset_scalar_pt
             );
 
     double timeElapsed = this->timerTool("UpdateLevelsetData").stop();
-    this->log("MultiFluid", "updateGlobalLevelset", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("MultiFluid", "updateGlobalLevelset", fmt::format( "finish in {} s", timeElapsed ) );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -541,7 +541,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::addInterfaceForce( interfaceforces_model_ptrtype
     std::string forceName;
     if( name.empty() )
     {
-        forceName = ( boost::format("force%1%" ) %(M_additionalInterfaceForcesModel.size()) ).str();
+        forceName = fmt::format( "force{}", M_additionalInterfaceForcesModel.size() );
     }
     else
     {
@@ -600,7 +600,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
     }
 
     double timeElapsed = this->timerTool("Solve").stop();
-    this->log("MultiFluid","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("MultiFluid", "solve", fmt::format( "finish in {} s", timeElapsed ) );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -729,7 +729,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEInterfaceForces( DataUpdateLinear
             }
 
             double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
-            this->log("MultiFluid", "updateLinearPDEInterfaceForces", "update interface (model) forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+            this->log("MultiFluid", "updateLinearPDEInterfaceForces", fmt::format( "update interface (model) forces in {} s", timeElapsedInterfaceForces ) );
         }
 
         if( M_additionalInterfaceForcesModel.size() > 0 )
@@ -739,12 +739,12 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEInterfaceForces( DataUpdateLinear
                 f.second->updateFluidInterfaceForcesLinearPDE( data );
 
             double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
-            this->log("MultiFluid", "updateLinearPDEInterfaceForces", "update additional interface forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+            this->log("MultiFluid", "updateLinearPDEInterfaceForces", fmt::format( "update additional interface forces in {} s", timeElapsedInterfaceForces ) );
         }
 
         double timeElapsed = this->timerTool("Solve").stop();
         this->log( "MultiFluid", "updateLinearPDEInterfaceForces", 
-                "interface forces updated in "+(boost::format("%1% s") %timeElapsed).str() );
+                fmt::format( "interface forces updated in {} s", timeElapsed ) );
     }
 }
 
@@ -791,8 +791,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEInextensibility( DataUpdateLinear
 
                     double timeElapsedInextensibility_Penalty = this->timerTool("Solve").stop();
                     this->log("MultiFluid","updateLinearPDEInextensibility",
-                            "assembly inextensibility (penalty) in "+(boost::format("%1% s") 
-                                %timeElapsedInextensibility_Penalty).str() );
+                            fmt::format( "assembly inextensibility (penalty) in {} s", timeElapsedInextensibility_Penalty ) );
                 }
             }
 
@@ -833,8 +832,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEInextensibility( DataUpdateLinear
 
                 double timeElapsedInextensibility_LagrangeMult = this->timerTool("Solve").stop();
                 this->log("MultiFluid","updateLinearPDEInextensibility",
-                        "assembly inextensibility (lagrange-multiplier) in "+(boost::format("%1% s") 
-                            %timeElapsedInextensibility_LagrangeMult).str() );
+                        fmt::format( "assembly inextensibility (lagrange-multiplier) in {} s", timeElapsedInextensibility_LagrangeMult ) );
             }
         }
     }
@@ -863,7 +861,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInterfaceForces( DataUpdateJacobia
             }
 
             double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
-            this->log("MultiFluid", "updateJacobianInterfaceForces", "update interface (model) forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+            this->log("MultiFluid", "updateJacobianInterfaceForces", fmt::format( "update interface (model) forces in {} s", timeElapsedInterfaceForces ) );
         }
 
         if( M_additionalInterfaceForcesModel.size() > 0 )
@@ -873,12 +871,12 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInterfaceForces( DataUpdateJacobia
                 f.second->updateFluidInterfaceForcesJacobian( data );
 
             double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
-            this->log("MultiFluid", "updateJacobianInterfaceForces", "update additional interface forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+            this->log("MultiFluid", "updateJacobianInterfaceForces", fmt::format( "update additional interface forces in {} s", timeElapsedInterfaceForces ) );
         }
 
         double timeElapsed = this->timerTool("Solve").stop();
         this->log( "MultiFluid", "updateJacobianInterfaceForces", 
-                "interface forces updated in "+(boost::format("%1% s") %timeElapsed).str() );
+                fmt::format( "interface forces updated in {} s", timeElapsed ) );
     }
 }
 
@@ -931,8 +929,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInextensibility( DataUpdateJacobia
 
                     double timeElapsedInextensibility_Penalty = this->timerTool("Solve").stop();
                     this->log("MultiFluid","updateJacobianInextensibility",
-                            "assembly inextensibility (penalty) in "+(boost::format("%1% s") 
-                                %timeElapsedInextensibility_Penalty).str() );
+                            fmt::format( "assembly inextensibility (penalty) in {} s", timeElapsedInextensibility_Penalty ) );
                 }
             }
 
@@ -973,8 +970,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInextensibility( DataUpdateJacobia
 
                 double timeElapsedInextensibility_LagrangeMult = this->timerTool("Solve").stop();
                 this->log("MultiFluid","updateJacobianInextensibility",
-                        "assembly inextensibility (lagrange-multiplier) in "+(boost::format("%1% s") 
-                            %timeElapsedInextensibility_LagrangeMult).str() );
+                        fmt::format( "assembly inextensibility (lagrange-multiplier) in {} s", timeElapsedInextensibility_LagrangeMult ) );
             }
         }
     }
@@ -1003,7 +999,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualInterfaceForces( DataUpdateResidua
             }
 
             double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
-            this->log("MultiFluid", "updateResidualInterfaceForces", "update interface (model) forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+            this->log("MultiFluid", "updateResidualInterfaceForces", fmt::format( "update interface (model) forces in {} s", timeElapsedInterfaceForces ) );
         }
 
         if( M_additionalInterfaceForcesModel.size() > 0 )
@@ -1013,12 +1009,12 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualInterfaceForces( DataUpdateResidua
                 f.second->updateFluidInterfaceForcesResidual( data );
 
             double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
-            this->log("MultiFluid", "updateResidualInterfaceForces", "update additional interface forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+            this->log("MultiFluid", "updateResidualInterfaceForces", fmt::format( "update additional interface forces in {} s", timeElapsedInterfaceForces ) );
         }
 
         double timeElapsed = this->timerTool("Solve").stop();
         this->log( "MultiFluid", "updateResidualInterfaceForces", 
-                "interface forces updated in "+(boost::format("%1% s") %timeElapsed).str() );
+                fmt::format( "interface forces updated in {} s", timeElapsed ) );
     }
 }
 
@@ -1070,8 +1066,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualInextensibility( DataUpdateResidua
 
                     double timeElapsedInextensibility_Penalty = this->timerTool("Solve").stop();
                     this->log("MultiFluid","updateResidualInextensibility",
-                            "assembly inextensibility (penalty) in "+(boost::format("%1% s") 
-                                %timeElapsedInextensibility_Penalty).str() );
+                            fmt::format( "assembly inextensibility (penalty) in {} s", timeElapsedInextensibility_Penalty ) );
                 }
             }
 
@@ -1108,8 +1103,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualInextensibility( DataUpdateResidua
 
                 double timeElapsedInextensibility_LagrangeMult = this->timerTool("Solve").stop();
                 this->log("MultiFluid","updateResidualInextensibility",
-                        "assembly inextensibility (lagrange-multiplier) in "+(boost::format("%1% s") 
-                            %timeElapsedInextensibility_LagrangeMult).str() );
+                        fmt::format( "assembly inextensibility (lagrange-multiplier) in {} s", timeElapsedInextensibility_LagrangeMult ) );
             }
         }
     }
@@ -1456,8 +1450,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
             this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just to have time in the first column
     }
 
-    double tElpased = this->timerTool("Constructor").stop("initPostProcess");
-    this->log("MultiFluid","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
+    double tElapsed = this->timerTool("Constructor").stop("initPostProcess");
+    this->log("MultiFluid","initPostProcess",fmt::format("finish in {} s", tElapsed ) );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -1605,7 +1599,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
         }
 
         double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
-        this->log("MultiFluid", "updateInterfaceForces", "update interface (model) forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+        this->log("MultiFluid", "updateInterfaceForces", fmt::format( "update interface (model) forces in {} s", timeElapsedInterfaceForces ) );
     }
 
     if( M_additionalInterfaceForcesModel.size() > 0 )
@@ -1615,14 +1609,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
             f.second->updateInterfaceForces( M_interfaceForces, false );
 
         double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
-        this->log("MultiFluid", "updateInterfaceForces", "update additional interface forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+        this->log("MultiFluid", "updateInterfaceForces", fmt::format( "update additional interface forces in {} s", timeElapsedInterfaceForces ) );
     }
 
     this->fluidModel()->updateSourceAdded( idv(M_interfaceForces) );
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log( "MultiFluid", "updateInterfaceForces", 
-            "interface forces updated in "+(boost::format("%1% s") %timeElapsed).str() );
+            fmt::format( "interface forces updated in {} s", timeElapsed ) );
 }
 
 } // namespace FeelModels
