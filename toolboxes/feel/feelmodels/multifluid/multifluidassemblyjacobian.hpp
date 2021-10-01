@@ -120,6 +120,144 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobian_Levelset( size_type lsModelIndex,
     M_levelsetModels[lsModelIndex]->updateJacobian( data, mctx );
 }
 
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInterfaceForces( DataUpdateJacobian & data ) const
+{
+    if( this->hasInterfaceForces() )
+    {
+        this->log("MultiFluid", "updateJacobianInterfaceForces", "start: update interface forces");
+        this->timerTool("Solve").start();
+        if( M_hasInterfaceForcesModel )
+        {
+            this->timerTool("Solve").start();
+            for( auto const& lsInterfaceForces: M_levelsetInterfaceForcesModels )
+            {
+                for( auto const& force: lsInterfaceForces.second )
+                {
+                    if( force.second )
+                    {
+                        force.second->updateFluidInterfaceForcesJacobian( data );
+                    }
+                }
+            }
+
+            double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
+            this->log("MultiFluid", "updateJacobianInterfaceForces", fmt::format( "update interface (model) forces in {} s", timeElapsedInterfaceForces ) );
+        }
+
+        if( M_additionalInterfaceForcesModel.size() > 0 )
+        {
+            this->timerTool("Solve").start();
+            for( auto const& f: M_additionalInterfaceForcesModel )
+                f.second->updateFluidInterfaceForcesJacobian( data );
+
+            double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
+            this->log("MultiFluid", "updateJacobianInterfaceForces", fmt::format( "update additional interface forces in {} s", timeElapsedInterfaceForces ) );
+        }
+
+        double timeElapsed = this->timerTool("Solve").stop();
+        this->log( "MultiFluid", "updateJacobianInterfaceForces", 
+                fmt::format( "interface forces updated in {} s", timeElapsed ) );
+    }
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInextensibility( DataUpdateJacobian & data ) const
+{
+    const vector_ptrtype& XVec = data.currentSolution();
+    sparse_matrix_ptrtype& J = data.jacobian();
+
+    bool BuildCstPart = data.buildCstPart();
+    bool BuildNonCstPart = !BuildCstPart;
+
+    if( this->M_enableInextensibility )
+    {
+        if( BuildNonCstPart )
+        {
+            auto mesh = this->mesh();
+            auto XhV = this->fluidModel()->functionSpaceVelocity();
+
+            auto myBfV = form2(
+                    _test=XhV,_trial=XhV,_matrix=J,
+                    //_pattern=size_type(Pattern::COUPLED),
+                    _rowstart=this->fluidModel()->rowStartInMatrix(),
+                    _colstart=this->fluidModel()->colStartInMatrix()
+                    );
+
+            auto u = XhV->element(XVec, this->fluidModel()->rowStartInVector());
+            auto const& v = this->fluidModel()->fieldVelocity();
+            auto Id = vf::Id<nDim, nDim>();
+
+            for( size_type i = 0; i < M_levelsetModels.size(); ++i )
+            {
+                if( this->hasInextensibility(i) && this->inextensibilityMethod(i) == "penalty" )
+                {
+                    auto N = this->levelsetModel(i)->N();
+                    auto NxN = idv(N)*trans(idv(N));
+                    auto D = this->levelsetModel(i)->D();
+
+                    this->timerTool("Solve").start();
+
+                    if( BuildNonCstPart )
+                    {
+                        myBfV += integrate(
+                                _range=elements(mesh),
+                                _expr=this->M_inextensibilityGamma[i]*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
+                                _geomap=this->geomap()
+                                );
+                    }
+
+                    double timeElapsedInextensibility_Penalty = this->timerTool("Solve").stop();
+                    this->log("MultiFluid","updateJacobianInextensibility",
+                            fmt::format( "assembly inextensibility (penalty) in {} s", timeElapsedInextensibility_Penalty ) );
+                }
+            }
+
+            if( this->hasInextensibilityLM() )
+            {
+                CHECK( this->hasStartSubBlockSpaceIndex("inextensibility-lm") ) << " start dof index for inextensibility-lm is not present\n";
+                this->timerTool("Solve").start();
+
+                size_type startBlockIndexInextensibilityLM = this->startSubBlockSpaceIndex("inextensibility-lm");
+                auto lambda = this->functionSpaceInextensibilityLM()->element();
+
+                auto inextensibleLevelsetsExpr = Feel::FeelModels::globalLevelsetExpr( M_inextensibleLevelsets );
+                auto inextensibleLevelsets = vf::project(
+                        _space=this->M_levelsetSpaceManager->functionSpaceScalar(), 
+                        _range=this->M_levelsetSpaceManager->rangeMeshElements(),
+                        _expr=inextensibleLevelsetsExpr
+                        );
+                auto inextensibleLevelsetsDeltaExpr = Feel::FeelModels::levelsetDelta( inextensibleLevelsets, M_globalLevelsetThicknessInterface );
+                auto N = trans(gradv(inextensibleLevelsets)) / sqrt( gradv(inextensibleLevelsets)*trans(gradv(inextensibleLevelsets)) );
+                auto NxN = N*trans(N);
+
+                form2( _trial=this->functionSpaceInextensibilityLM(), _test=this->fluidModel()->functionSpaceVelocity(), 
+                        _matrix=J,
+                        _rowstart=this->fluidModel()->rowStartInMatrix(),
+                        _colstart=startBlockIndexInextensibilityLM ) +=
+                    integrate( _range=this->M_rangeInextensibilityLM,
+                            _expr=idt(lambda)*trace((Id-NxN)*grad(v))*inextensibleLevelsetsDeltaExpr,
+                            _geomap=this->geomap()
+                            );
+                form2( _trial=this->fluidModel()->functionSpaceVelocity(), _test=this->functionSpaceInextensibilityLM(), 
+                        _matrix=J,
+                        _rowstart=startBlockIndexInextensibilityLM,
+                        _colstart=this->fluidModel()->colStartInMatrix() ) +=
+                    integrate( _range=this->M_rangeInextensibilityLM,
+                            _expr=id(lambda)*trace((Id-NxN)*gradt(u))*inextensibleLevelsetsDeltaExpr,
+                            _geomap=this->geomap()
+                            );
+
+                double timeElapsedInextensibility_LagrangeMult = this->timerTool("Solve").stop();
+                this->log("MultiFluid","updateJacobianInextensibility",
+                        fmt::format( "assembly inextensibility (lagrange-multiplier) in {} s", timeElapsedInextensibility_LagrangeMult ) );
+            }
+        }
+    }
+}
+
 } // namespace FeelModels
 } // namespace Feel
 

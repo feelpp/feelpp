@@ -193,6 +193,9 @@ public:
     //material_properties_ptrtype const& fluidMaterialProperties() const { return M_fluidMaterialProperties; }
     //material_properties_ptrtype const& levelsetMaterialProperties( std::string const& name ) const { return M_levelsetsMaterialProperties.at(name); }
 
+    void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
+
     //--------------------------------------------------------------------//
     // Time stepping
     std::shared_ptr<TSBase> timeStepBase() { return this->fluidModel()->timeStepBase(); }
@@ -431,8 +434,6 @@ public:
     void updateResidualInextensibility( DataUpdateResidual & data ) const;
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
     
-    void updateParameterValues();
-
     //--------------------------------------------------------------------//
     // Export
     void exportResults() { this->exportResults( this->currentTime() ); }
@@ -483,6 +484,7 @@ private:
 
     //--------------------------------------------------------------------//
     materials_properties_ptrtype M_materialsProperties;
+    std::map<std::string,double> M_currentParameterValues;
 
     //--------------------------------------------------------------------//
     cached_levelset_scalar_field_type M_globalLevelset;
