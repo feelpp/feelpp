@@ -16,6 +16,7 @@ namespace FeelModels {
 template< typename FluidType, typename LevelSetType>
 class MultiFluid : 
     public ModelNumerical,
+    public ModelPhysics<FluidType::convex_type::nDim>,
     public std::enable_shared_from_this< MultiFluid<FluidType, LevelSetType> >
 {
 public:
@@ -206,14 +207,14 @@ public:
     //decltype(auto) fieldPressure() const { return this->fluidModel()->fieldPressure(); }
 
     //--------------------------------------------------------------------//
-    // Fields
+    // Model fields
     struct FieldTag
     {
         static auto globalLevelsetElt( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
     };
     auto modelFieldsLevelsets( std::string const& prefix = "" ) const
     {
-        using mfields_levelset_type = std::decay_t<decltype(this->levelsetModel(0)->modelFields( "" ) )>;
+        using mfields_levelset_type = std::decay_t<decltype(this->levelsetModel(0)->modelFields() )>;
         mfields_levelset_type mfieldsLevelsets;
         //for ( auto it = M_levelsetModels.begin() ; it != M_levelsetModels.end() ; ++it )
             //mfieldsLevelsets = Feel::FeelModels::modelFields( 
@@ -234,9 +235,9 @@ public:
     }
     auto modelFieldsLevelsets( vector_ptrtype sol, std::vector<size_type> rowStartInVectorLevelsets, std::string const& prefix = "" ) const
     {
-        using mfields_levelset_type = std::decay_t<decltype(this->levelsetModels(0)->modelFields( "" ) )>;
+        using mfields_levelset_type = std::decay_t<decltype(this->levelsetModel(0)->modelFields( sol ) )>;
         mfields_levelset_type mfieldsLevelsets;
-        for ( index_type i = 0; i < this->levelsetModels()->size(); ++i )
+        for ( index_type i = 0; i < this->levelsetModels().size(); ++i )
             mfieldsLevelsets = Feel::FeelModels::modelFields(
                     mfieldsLevelsets,
                     this->levelsetModel(i)->modelFields( sol, rowStartInVectorLevelsets[i], this->levelsetModel(i)->keyword() )
@@ -250,9 +251,9 @@ public:
     }
     auto modelFieldsLevelsets( std::vector<vector_ptrtype> sols, std::vector<size_type> rowStartInVectorLevelsets, std::string const& prefix = "" ) const
     {
-        using mfields_levelset_type = std::decay_t<decltype(this->levelsetModels(0)->modelFields( "" ) )>;
+        using mfields_levelset_type = std::decay_t<decltype(this->levelsetModel(0)->modelFields( sols[0] ) )>;
         mfields_levelset_type mfieldsLevelsets;
-        for ( index_type i = 0; i < this->levelsetModels()->size(); ++i )
+        for ( index_type i = 0; i < this->levelsetModels().size(); ++i )
             mfieldsLevelsets = Feel::FeelModels::modelFields(
                     mfieldsLevelsets,
                     this->levelsetModel(i)->modelFields( sols[i], rowStartInVectorLevelsets[i], this->levelsetModel(i)->keyword() )
@@ -296,9 +297,9 @@ public:
 
     auto trialSelectorModelFieldsLevelsets( std::vector<size_type> startBlockSpaceIndexLevelsets ) const
     {
-        using tsmfields_levelset_type = std::decay_t<decltype(this->levelsetModel(0)->trialSelectorModelFields( "" ) )>;
+        using tsmfields_levelset_type = std::decay_t<decltype(this->levelsetModel(0)->trialSelectorModelFields() )>;
         tsmfields_levelset_type tsmfieldsLevelsets;
-        for ( index_type i = 0; i < this->levelsetModels()->size(); ++i )
+        for ( index_type i = 0; i < this->levelsetModels().size(); ++i )
             tsmfieldsLevelsets = Feel::FeelModels::selectorModelFields(
                     tsmfieldsLevelsets,
                     this->levelsetModel(i)->trialSelectorModelFields( startBlockSpaceIndexLevelsets[i] )
@@ -454,7 +455,6 @@ protected:
     //--------------------------------------------------------------------//
     void updateGlobalLevelset( element_levelset_scalar_ptrtype & globalLevelset ) const;
     void updateInterfaceForces();
-    void advectLevelsets();
 
 private:
     void updateLinear_Fluid( DataUpdateLinear & data ) const;
@@ -544,7 +544,7 @@ MultiFluid<FluidType, LevelSetType>::updateInitialConditions( SymbolsExprType co
 {
     M_fluidModel->updateInitialConditions( se );
     for( levelset_model_ptrtype const& lsModel: this->levelsetModels() )
-        lsModel->updateInitialConditions( se );
+        lsModel->updateInitialConditions( /*se*/ );
 }
         
 

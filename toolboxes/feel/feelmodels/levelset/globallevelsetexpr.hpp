@@ -82,7 +82,7 @@ public:
         // fe levelset context
         typedef typename fe_levelset_type::PreCompute pc_levelset_type;
         typedef std::shared_ptr<pc_levelset_type> pc_levelset_ptrtype;
-        typedef typename fe_levelset_type::template Context<expr_type::context_levelset, fe_levelset_type, gm_type, geoelement_type, gmc_type::context> ctx_levelset_type;
+        typedef typename fe_levelset_type::template Context<expr_type::context_levelset, fe_levelset_type, gm_type, geoelement_type, 0, gmc_type::subEntityCoDim> ctx_levelset_type;
         typedef std::shared_ptr<ctx_levelset_type> ctx_levelset_ptrtype;
 
         typedef typename matrix_node<value_type>::type matrix_node_type;

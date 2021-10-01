@@ -30,12 +30,12 @@ public:
     // fe normal context
     typedef typename fe_normal_type::PreCompute pc_normal_type;
     typedef std::shared_ptr<pc_normal_type> pc_normal_ptrtype;
-    typedef typename fe_normal_type::template Context<expr_type::context_normal, fe_normal_type, gm_type,geoelement_type,gmc_type::context> ctx_normal_type;
+    typedef typename fe_normal_type::template Context<expr_type::context_normal, fe_normal_type, gm_type, geoelement_type, 0, gmc_type::subEntityCoDim> ctx_normal_type;
     typedef std::shared_ptr<ctx_normal_type> ctx_normal_ptrtype;
     // fe curvature context
     typedef typename fe_curvature_type::PreCompute pc_curvature_type;
     typedef std::shared_ptr<pc_curvature_type> pc_curvature_ptrtype;
-    typedef typename fe_curvature_type::template Context<expr_type::context_curvature, fe_curvature_type, gm_type,geoelement_type,gmc_type::context> ctx_curvature_type;
+    typedef typename fe_curvature_type::template Context<expr_type::context_curvature, fe_curvature_type, gm_type, geoelement_type, 0, gmc_type::subEntityCoDim> ctx_curvature_type;
     typedef std::shared_ptr<ctx_curvature_type> ctx_curvature_ptrtype;
 
     // Shapes types
@@ -243,7 +243,7 @@ public:
     typedef typename expr_type::fe_modgradphi_type fe_modgradphi_type;
     typedef typename fe_modgradphi_type::PreCompute pc_modgradphi_type;
     typedef std::shared_ptr<pc_modgradphi_type> pc_modgradphi_ptrtype;
-    typedef typename fe_modgradphi_type::template Context<expr_type::context_modgradphi, fe_modgradphi_type, gm_type,geoelement_type,gmc_type::context> ctx_modgradphi_type;
+    typedef typename fe_modgradphi_type::template Context<expr_type::context_modgradphi, fe_modgradphi_type, gm_type, geoelement_type, 0, gmc_type::subEntityCoDim> ctx_modgradphi_type;
     typedef std::shared_ptr<ctx_modgradphi_type> ctx_modgradphi_ptrtype;
 
     // array
@@ -365,7 +365,7 @@ public:
     typedef typename expr_type::fe_modgradphi_type fe_modgradphi_type;
     typedef typename fe_modgradphi_type::PreCompute pc_modgradphi_type;
     typedef std::shared_ptr<pc_modgradphi_type> pc_modgradphi_ptrtype;
-    typedef typename fe_modgradphi_type::template Context<expr_type::context_modgradphi, fe_modgradphi_type, gm_type,geoelement_type,gmc_type::context> ctx_modgradphi_type;
+    typedef typename fe_modgradphi_type::template Context<expr_type::context_modgradphi, fe_modgradphi_type, gm_type, geoelement_type, 0, gmc_type::subEntityCoDim> ctx_modgradphi_type;
     typedef std::shared_ptr<ctx_modgradphi_type> ctx_modgradphi_ptrtype;
 
     // array

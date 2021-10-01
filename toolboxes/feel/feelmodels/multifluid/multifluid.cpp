@@ -27,6 +27,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
         ModelBaseRepository const& modelRep )
 : 
     super_type( prefix, keyword, wc, subPrefix, modelRep ),
+    ModelPhysics<mesh_type::nDim>( "multifluid" ),
     ModelBase( prefix, keyword, wc, subPrefix, modelRep ),
     M_useLagrangeP1iso( false ),
     M_usePicardIterations( false ),
@@ -49,7 +50,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
     this->addTimerTool("TimeStepping", nameFileTimeStepping);
 
     // option in cfg files
-    this->loadParameterFromOptionsVm();
+    this->loadParametersFromOptionsVm();
 
     this->log("MultiFluid","constructor", "finish");
 }
@@ -147,7 +148,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             );
     auto velConvExpr = expr<nDim,1>( velConvExprStr, "",this->worldComm(),this->repository().expr() );
     for( levelset_model_ptrtype const& lsModel: M_levelsetModels )
-        lsModel->setVelocityConvectionExpr( velConvExpr );
+        lsModel->setAdvectionVelocityExpr( velConvExpr );
 
     // Update constant parameters
     this->updateParameterValues();
@@ -188,10 +189,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                 [this]( DataUpdateLinear & data ) { updateLinear_Fluid( data ); }
                 );
         M_fluidModel->algebraicFactory()->setFunctionJacobianAssembly(
-                [this]( DataUpdateLinear & data ) { updateJacobian_Fluid( data ); }
+                [this]( DataUpdateJacobian & data ) { updateJacobian_Fluid( data ); }
                 );
         M_fluidModel->algebraicFactory()->setFunctionResidualAssembly(
-                [this]( DataUpdateLinear & data ) { updateResidual_Fluid( data ); }
+                [this]( DataUpdateResidual & data ) { updateResidual_Fluid( data ); }
                 );
         for( size_type i = 0; i < M_levelsetModels.size(); ++i )
         {
@@ -199,10 +200,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                     [this, i]( DataUpdateLinear & data ) { updateLinear_Levelset( i, data ); }
                     );
             M_levelsetModels[i]->algebraicFactory()->setFunctionJacobianAssembly(
-                    [this, i]( DataUpdateLinear & data ) { updateJacobian_Levelset( i, data ); }
+                    [this, i]( DataUpdateJacobian & data ) { updateJacobian_Levelset( i, data ); }
                     );
             M_levelsetModels[i]->algebraicFactory()->setFunctionResidualAssembly(
-                    [this, i]( DataUpdateLinear & data ) { updateResidual_Levelset( i, data ); }
+                    [this, i]( DataUpdateResidual & data ) { updateResidual_Levelset( i, data ); }
                     );
         }
     }
@@ -304,44 +305,44 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n   Root Repository  : " << this->rootRepository()
            << "\n   Number of levelsets : " << M_nLevelsets;
 
-    *_ostr << "\n   Fluids Parameters";
-    *_ostr << "\n     -- fluid 0 (outer fluid)"
-           << "\n       * rho : " << this->M_fluidMaterialProperties->cstDensity()
-           << "\n       * mu  : " << this->M_fluidMaterialProperties->cstMu();
-    *_ostr << this->M_fluidMaterialProperties->getInfo()->str();
-    for( auto const& lsMaterialProperty: M_levelsetsMaterialProperties )
-    {
-    *_ostr << "\n     -- fluid " << "\"" << lsMaterialProperty.first << "\""
-           << "\n       * rho : " << lsMaterialProperty.second->cstDensity()
-           << "\n       * mu  : " << lsMaterialProperty.second->cstMu();
-    *_ostr << lsMaterialProperty.second->getInfo()->str();
-    }
+    //*_ostr << "\n   Fluids Parameters";
+    //*_ostr << "\n     -- fluid 0 (outer fluid)"
+           //<< "\n       * rho : " << this->M_fluidMaterialProperties->cstDensity()
+           //<< "\n       * mu  : " << this->M_fluidMaterialProperties->cstMu();
+    //*_ostr << this->M_fluidMaterialProperties->getInfo()->str();
+    //for( auto const& lsMaterialProperty: M_levelsetsMaterialProperties )
+    //{
+    //*_ostr << "\n     -- fluid " << "\"" << lsMaterialProperty.first << "\""
+           //<< "\n       * rho : " << lsMaterialProperty.second->cstDensity()
+           //<< "\n       * mu  : " << lsMaterialProperty.second->cstMu();
+    //*_ostr << lsMaterialProperty.second->getInfo()->str();
+    //}
 
-    *_ostr << "\n   Level Sets Parameters";
-    for( index_type i = 0; i < M_nLevelsets; ++i )
-    {
-    *_ostr << "\n     -- level set " << "\"" << i << "\""
-           << "\n       * redist every : " << M_levelsetRedistEvery[i];
-    }
+    //*_ostr << "\n   Level Sets Parameters";
+    //for( index_type i = 0; i < M_nLevelsets; ++i )
+    //{
+    //*_ostr << "\n     -- level set " << "\"" << i << "\""
+           //<< "\n       * redist every : " << M_levelsetRedistEvery[i];
+    //}
 
-    *_ostr << "\n   Forces Parameters";
-    *_ostr << "\n     -- has interface forces : " << std::boolalpha << this->M_hasInterfaceForcesModel;
-    if( this->M_hasInterfaceForcesModel )
-    {
-        for( auto const& lsInterfaceForces: M_levelsetInterfaceForcesModels )
-        {
-    *_ostr << "\n     -- level set " << "\"" << lsInterfaceForces.first << "\"";
-            for( auto const& force: lsInterfaceForces.second )
-    *_ostr << "\n       * force model : " << force.second->getInfo()->str();
-        }
-    }
+    //*_ostr << "\n   Forces Parameters";
+    //*_ostr << "\n     -- has interface forces : " << std::boolalpha << this->M_hasInterfaceForcesModel;
+    //if( this->M_hasInterfaceForcesModel )
+    //{
+        //for( auto const& lsInterfaceForces: M_levelsetInterfaceForcesModels )
+        //{
+    //*_ostr << "\n     -- level set " << "\"" << lsInterfaceForces.first << "\"";
+            //for( auto const& force: lsInterfaceForces.second )
+    //*_ostr << "\n       * force model : " << force.second->getInfo()->str();
+        //}
+    //}
 
-    *_ostr << "\n";
-    *_ostr << this->fluidModel()->getInfo()->str();
-    for( auto const& levelset: M_levelsetModels )
-    {
-    *_ostr << levelset->getInfo()->str();
-    }
+    //*_ostr << "\n";
+    //*_ostr << this->fluidModel()->getInfo()->str();
+    //for( auto const& levelset: M_levelsetModels )
+    //{
+    //*_ostr << levelset->getInfo()->str();
+    //}
 
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
@@ -431,11 +432,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         //patCouplingLM(0,0) = size_type(Pattern::COUPLED);
 
         myBlockGraph(startIndexBlockInextensibility,startIndexBlockFluid) = stencil(
-                _test=this->functionSpaceInextensibilityLM(), _trial=this->functionSpaceVelocity(),
+                _test=this->functionSpaceInextensibilityLM(), _trial=this->fluidModel()->functionSpaceVelocity(),
                 //_pattern_block=patCouplingLM,
                 _diag_is_nonzero=false,_close=false)->graph();
         myBlockGraph(startIndexBlockFluid,startIndexBlockInextensibility) = stencil(
-                _test=this->functionSpaceVelocity(), _trial=this->functionSpaceInextensibilityLM(),
+                _test=this->fluidModel()->functionSpaceVelocity(), _trial=this->functionSpaceInextensibilityLM(),
                 //_pattern_block=patCouplingLM.transpose(),
                 _diag_is_nonzero=false,_close=false)->graph();
         myBlockGraph(startIndexBlockInextensibility,startIndexBlockInextensibility) = stencil(
@@ -522,7 +523,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInextensibilityLM()
             );
 
     M_doUpdateInextensibilityLM = false;
-    M_doRebuildMatrixVector = true;
+    //TODO:M_doRebuildMatrixVector = true;
     this->log("MultiFluid", "updateInextensibilityLM", "finish");
 }
 
@@ -591,10 +592,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
 
     // Redistantiate
     for( auto const& ls: M_levelsetModels )
+    for( size_type i = 0; i < this->levelsetModels().size(); ++i )
     {
-        if( M_levelsetRedistEvery.at(ls.first) > 0 
-                && (ls.second->iterSinceRedistanciation()+1) % M_levelsetRedistEvery.at(ls.first) == 0 )
-            ls.second->redistanciate();
+        if( M_levelsetRedistEvery[i] > 0 
+                && (this->levelsetModel(i)->iterSinceRedistanciation()+1) % M_levelsetRedistEvery[i] == 0 )
+            this->levelsetModel(i)->redistanciate();
     }
 
     double timeElapsed = this->timerTool("Solve").stop();
@@ -629,19 +631,21 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveSemiImplicitCoupling()
 
         this->fluidModel()->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
 
-        this->algebraicBlockVectorSolution().updateVectorFromSubVectors();
+        this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
 
         // Solve fluid
-        M_algebraicFactory->solve( this->fluidModel()->solverName(), this->algebraicBlockVectorSolution()->vectorMonolithic() );
-        this->algebraicBlockVectorSolution().localize();
+        this->algebraicFactory()->solve( this->fluidModel()->solverName(), this->algebraicBlockVectorSolution()->vectorMonolithic() );
+        this->algebraicBlockVectorSolution()->localize();
     }
     else
     {
         // Solve fluid equations (with direct assembly of interface forces)
         M_fluidModel->solve();
+        for( auto const& lsModel: M_levelsetModels )
+            lsModel->solve();
+
+        this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
     }
-    // Advect levelsets
-    this->advectLevelsets();
     // Request global levelset update
     M_globalLevelset.setDoUpdate( true );
     // Possibly request inextensiblity LM update
@@ -664,7 +668,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveImplicitCoupling()
     //}
     CHECK(false) << "TODO: implicit coupling\n";
 
-    this->algebraicBlockVectorSolution().updateVectorFromSubVectors();
+    this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
     //TODO
 }
 
@@ -680,12 +684,12 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solvePicard()
     do
     {
         picardIter++;
-        u_old = this->fieldVelocity();
+        u_old = this->fluidModel()->fieldVelocity();
         // Sub-solves
         if( M_doUpdateInextensibilityLM )
             this->updateInextensibilityLM();
         this->solveSemiImplicitCoupling();
-        auto u = this->fieldVelocity();
+        auto u = this->fluidModel()->fieldVelocity();
 
         double uOldL2Norm = integrate(
                 _range=elements(this->mesh()),
@@ -757,9 +761,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEInextensibility( DataUpdateLinear
         if( BuildNonCstPart )
         {
             auto mesh = this->mesh();
-            auto XhV = this->functionSpaceVelocity();
+            auto XhV = this->fluidModel()->functionSpaceVelocity();
 
-            auto const& u = this->fieldVelocity();
+            auto const& u = this->fluidModel()->fieldVelocity();
             auto const& v = u;
             auto Id = vf::Id<nDim, nDim>();
 
@@ -769,20 +773,19 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEInextensibility( DataUpdateLinear
                     _colstart=this->fluidModel()->colStartInMatrix()
                     );
 
-            for( auto const& ls: M_levelsetModels )
+            for( size_type i = 0; i < M_levelsetModels.size(); ++i )
             {
-                std::string const& lsName = ls.first;
-                if( this->hasInextensibility(lsName) && this->inextensibilityMethod(lsName) == "penalty" )
+                if( this->hasInextensibility(i) && this->inextensibilityMethod(i) == "penalty" )
                 {
-                    auto N = ls.second->N();
+                    auto N = this->levelsetModel(i)->N();
                     auto NxN = idv(N)*trans(idv(N));
-                    auto D = ls.second->D();
+                    auto D = this->levelsetModel(i)->D();
 
                     this->timerTool("Solve").start();
 
                     myBfV += integrate(
                             _range=elements(mesh),
-                            _expr=this->M_inextensibilityGamma.at(lsName)*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
+                            _expr=this->M_inextensibilityGamma[i]*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
                             _geomap=this->geomap()
                             );
 
@@ -894,7 +897,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInextensibility( DataUpdateJacobia
         if( BuildNonCstPart )
         {
             auto mesh = this->mesh();
-            auto XhV = this->functionSpaceVelocity();
+            auto XhV = this->fluidModel()->functionSpaceVelocity();
 
             auto myBfV = form2(
                     _test=XhV,_trial=XhV,_matrix=J,
@@ -904,17 +907,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInextensibility( DataUpdateJacobia
                     );
 
             auto u = XhV->element(XVec, this->fluidModel()->rowStartInVector());
-            auto const& v = this->fieldVelocity();
+            auto const& v = this->fluidModel()->fieldVelocity();
             auto Id = vf::Id<nDim, nDim>();
 
-            for( auto const& ls: M_levelsetModels )
+            for( size_type i = 0; i < M_levelsetModels.size(); ++i )
             {
-                std::string const& lsName = ls.first;
-                if( this->hasInextensibility(lsName) && this->inextensibilityMethod(lsName) == "penalty" )
+                if( this->hasInextensibility(i) && this->inextensibilityMethod(i) == "penalty" )
                 {
-                    auto N = ls.second->N();
+                    auto N = this->levelsetModel(i)->N();
                     auto NxN = idv(N)*trans(idv(N));
-                    auto D = ls.second->D();
+                    auto D = this->levelsetModel(i)->D();
 
                     this->timerTool("Solve").start();
 
@@ -922,7 +924,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInextensibility( DataUpdateJacobia
                     {
                         myBfV += integrate(
                                 _range=elements(mesh),
-                                _expr=this->M_inextensibilityGamma.at(lsName)*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
+                                _expr=this->M_inextensibilityGamma[i]*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
                                 _geomap=this->geomap()
                                 );
                     }
@@ -952,7 +954,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInextensibility( DataUpdateJacobia
                 auto N = trans(gradv(inextensibleLevelsets)) / sqrt( gradv(inextensibleLevelsets)*trans(gradv(inextensibleLevelsets)) );
                 auto NxN = N*trans(N);
 
-                form2( _trial=this->functionSpaceInextensibilityLM(), _test=this->functionSpaceVelocity(), 
+                form2( _trial=this->functionSpaceInextensibilityLM(), _test=this->fluidModel()->functionSpaceVelocity(), 
                         _matrix=J,
                         _rowstart=this->fluidModel()->rowStartInMatrix(),
                         _colstart=startBlockIndexInextensibilityLM ) +=
@@ -960,7 +962,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInextensibility( DataUpdateJacobia
                             _expr=idt(lambda)*trace((Id-NxN)*grad(v))*inextensibleLevelsetsDeltaExpr,
                             _geomap=this->geomap()
                             );
-                form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceInextensibilityLM(), 
+                form2( _trial=this->fluidModel()->functionSpaceVelocity(), _test=this->functionSpaceInextensibilityLM(), 
                         _matrix=J,
                         _rowstart=startBlockIndexInextensibilityLM,
                         _colstart=this->fluidModel()->colStartInMatrix() ) +=
@@ -1035,7 +1037,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualInextensibility( DataUpdateResidua
         if( BuildNonCstPart )
         {
             auto mesh = this->mesh();
-            auto XhV = this->functionSpaceVelocity();
+            auto XhV = this->fluidModel()->functionSpaceVelocity();
 
             auto myLV = form1( 
                     _test=XhV,_vector=R,
@@ -1044,17 +1046,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualInextensibility( DataUpdateResidua
                     );
 
             auto u = XhV->element(XVec, this->fluidModel()->rowStartInVector());
-            auto const& v = this->fieldVelocity();
+            auto const& v = this->fluidModel()->fieldVelocity();
             auto Id = vf::Id<nDim, nDim>();
 
-            for( auto const& ls: M_levelsetModels )
+            for( size_type i = 0; i < M_levelsetModels.size(); ++i )
             {
-                std::string const& lsName = ls.first;
-                if( this->hasInextensibility(lsName) && this->inextensibilityMethod(lsName) == "penalty" )
+                if( this->hasInextensibility(i) && this->inextensibilityMethod(i) == "penalty" )
                 {
-                    auto N = ls.second->N();
+                    auto N = this->levelsetModel(i)->N();
                     auto NxN = idv(N)*trans(idv(N));
-                    auto D = ls.second->D();
+                    auto D = this->levelsetModel(i)->D();
 
                     this->timerTool("Solve").start();
 
@@ -1062,7 +1063,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualInextensibility( DataUpdateResidua
                     {
                         myLV += integrate(
                                 _range=elements(mesh),
-                                _expr=this->M_inextensibilityGamma.at(lsName)*trace((Id-NxN)*gradv(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
+                                _expr=this->M_inextensibilityGamma[i]*trace((Id-NxN)*gradv(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
                                 _geomap=this->geomap()
                                 );
                     }
@@ -1092,7 +1093,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualInextensibility( DataUpdateResidua
                 auto N = trans(gradv(inextensibleLevelsets)) / sqrt( gradv(inextensibleLevelsets)*trans(gradv(inextensibleLevelsets)) );
                 auto NxN = N*trans(N);
 
-                form1( _test=this->functionSpaceVelocity(), _vector=R,
+                form1( _test=this->fluidModel()->functionSpaceVelocity(), _vector=R,
                         _rowstart=this->fluidModel()->rowStartInVector() ) +=
                     integrate( _range=this->M_rangeInextensibilityLM,
                             _expr=idv(lambda)*trace((Id-NxN)*grad(v))*inextensibleLevelsetsDeltaExpr,
@@ -1154,9 +1155,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
     // Fluid
     this->fluidModel()->updateTimeStep();
     // Levelsets
-    for( auto const& ls: M_levelsetModels)
+    for( auto const& lsModel: this->levelsetModels() )
     {
-        ls.second->updateTimeStep();
+        lsModel->updateTimeStep();
     }
     // Self
     this->updateTime( this->timeStepBase()->time() );
@@ -1177,8 +1178,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
     auto const symbolsExpr = this->symbolsExpr();
     M_fluidModel->exportResults( time, symbolsExpr );
-    for( auto const& ls: M_levelsetModels)
-        ls.second->exportResults( time, symbolsExpr );
+    for( auto const& lsModel: M_levelsetModels)
+        lsModel->exportResults( time, symbolsExpr );
 
     std::map<std::string, typename interfaceforces_model_type::element_ptrtype> interfaceForcesFields;
     for( auto const& lsInterfaceForces: M_levelsetInterfaceForcesModels )
@@ -1280,10 +1281,11 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 typename MULTIFLUID_CLASS_TEMPLATE_TYPE::force_type
 MULTIFLUID_CLASS_TEMPLATE_TYPE::computeLevelsetForce( std::string const& name ) const
 {
-    auto const& u = this->fieldVelocity();
-    auto const& p = this->fieldPressure();
-    std::string matName = this->fluidModel()->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-    auto sigmav = Feel::FeelModels::fluidMecStressTensor(gradv(u),idv(p),*this->fluidModel()->materialProperties(),matName,true,2*fluid_model_type::nOrderVelocity,true);
+#if 0
+    auto const& u = this->fluidModel()->fieldVelocity();
+    auto const& p = this->fluidModel()->fieldPressure();
+    std::string matName = *(this->fluidModel()->materialsProperties()->physicToMaterials( this->fluidModel()->physicType() ).begin());
+    auto sigmav = Feel::FeelModels::fluidMecStressTensor(gradv(u),idv(p),*this->fluidModel()->materialsProperties(),matName,true,2*fluid_model_type::nOrderVelocity,true);
 
     auto const& phi = this->levelsetModel(name)->phi();
     auto N_expr = trans(gradv(phi)) / sqrt( gradv(phi) * trans(gradv(phi)) );
@@ -1291,6 +1293,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::computeLevelsetForce( std::string const& name ) 
     return integrate(_range=elements(this->mesh()),
                      _expr= - sigmav * N_expr * D_expr,
                      _geomap=this->geomap() ).evaluate();
+#endif
+    CHECK( false ) << "TODO\n";
+    return force_type();
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -1314,7 +1319,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initLevelsets()
     // Build levelsets space manager
     M_levelsetSpaceManager = std::make_shared<levelset_space_manager_type>( mesh, this->globalLevelsetPrefix() );
     // TODO: Temporary hack: ensures the defaults levelset spaces are built for interfaceForces
-    M_levelsetSpaceManager->createFunctionSpaceDefault();
+    M_levelsetSpaceManager->initFunctionSpaceDefault();
     // Build levelsets tool manager
     M_levelsetToolManager = std::make_shared<levelset_tool_manager_type>( M_levelsetSpaceManager, this->globalLevelsetPrefix() );
     // Update global levelset thickness interface
@@ -1381,9 +1386,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
     std::set<std::string> ppExportsAllFieldsAvailable;
     for ( auto const& s : M_fluidModel->postProcessExportsAllFieldsAvailable() )
         ppExportsAllFieldsAvailable.insert( prefixvm( M_fluidModel->keyword(), s ) );
-    for ( auto const& ls : M_levelsetModels )
-        for ( auto const& s : ls.second->postProcessExportsAllFieldsAvailable() )
-            ppExportsAllFieldsAvailable.insert( prefixvm( ls.second->keyword(), s ) );
+    for ( auto const& lsModel : M_levelsetModels )
+        for ( auto const& s : lsModel->postProcessExportsAllFieldsAvailable() )
+            ppExportsAllFieldsAvailable.insert( prefixvm( lsModel->keyword(), s ) );
     for( auto const& lsForces : M_levelsetInterfaceForcesModels )
         for( auto const& f : lsForces.second )
             ppExportsAllFieldsAvailable.insert( prefixvm( lsForces.first, f.first ) );
@@ -1470,8 +1475,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initBlockVectorSolution()
     auto const& blockVectorSolutionFluid = *(this->fluidModel()->algebraicBlockVectorSolution());
     int nBlockFluid = blockVectorSolutionFluid.size();
     int nBlockLevelsets = std::reduce( 
-            this->levelsetModels().begin(), this->levelsetModels().end(), 
-                []( int res, auto const& lsModel ) { return res + lsModel->algebraicBlockVectorSolution().size(); }
+            this->levelsetModels().begin(), this->levelsetModels().end(), 0,
+                []( int res, auto const& lsModel ) { return res + lsModel->algebraicBlockVectorSolution()->size(); }
             );
     int nBlock = nBlockFluid + nBlockLevelsets;
 
@@ -1618,32 +1623,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
     double timeElapsed = this->timerTool("Solve").stop();
     this->log( "MultiFluid", "updateInterfaceForces", 
             "interface forces updated in "+(boost::format("%1% s") %timeElapsed).str() );
-}
-
-MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::advectLevelsets()
-{
-    this->log("MultiFluid", "advectLevelsets", "start");
-    this->timerTool("Solve").start();
-
-    auto const& u = this->fieldVelocity();
-    
-    for( auto const& ls: M_levelsetModels )
-    {
-        ls.second->advect( idv(u) );
-    }
-    // Request global levelset update
-    M_globalLevelset.setDoUpdate( true );
-
-    if( this->hasInextensibilityLM() )
-    {
-        M_doUpdateInextensibilityLM = true;
-    }
-
-    double timeElapsed = this->timerTool("Solve").stop();
-    this->log( "MultiFluid", "advectLevelsets", 
-            "level-sets advection done in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 } // namespace FeelModels

@@ -95,7 +95,7 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::build( std::string const& 
     // Ensures levelset curvature diffusion is built if needed
     if( M_helfrichForceMethod == HelfrichMethod::DIFFUSION )
     {
-        this->levelset()->toolManager()->createCurvatureDiffusion();
+        this->levelset()->toolManager()->initCurvatureDiffusion();
     }
 }
 
