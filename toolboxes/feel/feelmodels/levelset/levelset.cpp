@@ -323,6 +323,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateParameterValues()
         return;
 
     super_type::updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->materialsProperties()->updateParameterValues( paramValues );
     M_advectionToolbox->updateParameterValues();
 }
 
@@ -331,6 +333,10 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
 {
     super_type::setParameterValues( paramValues );
+    if ( this->manageParameterValuesOfModelProperties() )
+    {
+        this->materialsProperties()->setParameterValues( paramValues );
+    }
     M_advectionToolbox->setParameterValues( paramValues );
 }
 

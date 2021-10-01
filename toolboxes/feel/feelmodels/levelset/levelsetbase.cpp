@@ -1917,7 +1917,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateParameterValues()
 
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->materialsProperties()->updateParameterValues( paramValues );
 
     this->setParameterValues( paramValues );
 }
@@ -1934,7 +1933,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,doubl
         this->modelProperties().parameters().setParameterValues( paramValues );
         this->modelProperties().postProcess().setParameterValues( paramValues );
         this->modelProperties().initialConditions().setParameterValues( paramValues );
-        this->materialsProperties()->setParameterValues( paramValues );
     }
 }
 
