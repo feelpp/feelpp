@@ -111,6 +111,7 @@ PYBIND11_MODULE(_ts, m )
         // 3D
         std::cout << fmt::format("-- BDF Pch 3D P{}", _order ) << std::endl;
         defBDF<Pch_type<Mesh<Simplex<3>>, _order>>( m );
+        defBDF<Pchv_type<Mesh<Simplex<3>>, _order>>( m );
     });
 
 }
