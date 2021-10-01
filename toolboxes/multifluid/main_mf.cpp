@@ -12,19 +12,17 @@ runApplicationMultiFluid()
     typedef Simplex<FEELPP_DIM,FEELPP_GEO_ORDER> convex_type;
     typedef FeelModels::FluidMechanics< convex_type,
                                         Lagrange<OrderVelocity, Vectorial, Continuous, PointSetFekete>,
-                                        Lagrange<OrderPressure, Scalar, Continuous, PointSetFekete>,
-                                        Lagrange<1, Scalar, Continuous>
+                                        Lagrange<OrderPressure, Scalar, Continuous, PointSetFekete>
                                             > model_fluid_type;
     typedef FeelModels::LevelSet< convex_type, 
                                   Lagrange<OrderLevelset, Scalar, Continuous, PointSetFekete>,
                                   NoPeriodicity,
-                                  typename model_fluid_type::space_velocity_type,
                                   Lagrange<OrderPNLevelset, Scalar, Continuous, PointSetFekete>
                                   > model_levelset_type;
 
     typedef FeelModels::MultiFluid< model_fluid_type, model_levelset_type > model_multifluid_type;
 
-    auto MFModel = model_multifluid_type::New( "multifluid" );
+    std::shared_ptr<model_multifluid_type> MFModel( new model_multifluid_type( "multifluid" ) );
 
     MFModel->init();
     MFModel->printAndSaveInfo();
@@ -76,16 +74,12 @@ main( int argc, char** argv )
     {
         if( levelset_feapprox == "P1" )
             runApplicationMultiFluid<2,1,1>();
-        else if( levelset_feapprox == "P2" )
-            runApplicationMultiFluid<2,1,2>();
+        //else if( levelset_feapprox == "P2" )
+            //runApplicationMultiFluid<2,1,2>();
         //else if( levelset_feapprox == "P3" )
             //runApplicationMultiFluid<2,1,3>();
         else CHECK( false ) << "invalid levelset-feapprox " << levelset_feapprox;
     }
-    /*#if FEELPP_DIM == 2
-      else if ( feapprox == "P1P1" )
-      runApplicationFSI<1,1>();
-#endif*/
     else CHECK( false ) << "invalid fluid-feapprox " << fluid_feapprox;
 
     return 0;
