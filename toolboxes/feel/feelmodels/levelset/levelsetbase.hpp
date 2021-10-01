@@ -409,6 +409,11 @@ public:
         auto field_phi = this->functionSpace()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( this->keyword() ) );
         return this->modelFields( field_phi, prefix );
     }
+
+    auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
+    {
+        return Feel::FeelModels::selectorModelFields( selectorModelField( FieldTag::levelset_scalar(this), "phi", startBlockSpaceIndex ) );
+    }
     //___________________________________________________________________________________//
     // symbols expressions
     //___________________________________________________________________________________//

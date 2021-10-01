@@ -89,6 +89,11 @@ public:
     typedef mesh_type mymesh_type;
 
     //--------------------------------------------------------------------//
+    // materials properties
+    typedef MaterialsProperties<nRealDim> materialsproperties_type;
+    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
+
+    //--------------------------------------------------------------------//
     // Periodicity
     typedef PeriodicityType periodicity_type;
     //--------------------------------------------------------------------//
@@ -295,14 +300,19 @@ public:
     void updateInitialConditions();
 
     //--------------------------------------------------------------------//
+    // Physical parameters
+    materialsproperties_ptrtype const& materialsProperties() const { return M_advectionToolbox->materialsProperties(); }
+    materialsproperties_ptrtype & materialsProperties() { return M_advectionToolbox->materialsProperties(); }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_advectionToolbox->setMaterialsProperties( mp ); }
+
+    //--------------------------------------------------------------------//
     // Advection data
     typename cfpde_toolbox_type::bdf_unknown_ptrtype /*const&*/ timeStepBDF() const { return M_advectionToolbox->timeStepBdfUnknown(); }
     std::shared_ptr<TSBase> timeStepBase() { return M_advectionToolbox->timeStepBase(); }
     std::shared_ptr<TSBase> timeStepBase() const { return M_advectionToolbox->timeStepBase(); }
     template<typename ExprT>
-    void updateAdvectionVelocity(vf::Expr<ExprT> const& v_expr) 
+    void setAdvectionVelocityExpr( vf::Expr<ExprT> const& v_expr )
     { 
-        //M_advectionToolbox->updateAdvectionVelocity( v_expr );
         ModelExpression velocityExpr;
         if constexpr ( nDim == 2 )
             velocityExpr.setExprVectorial2( v_expr );
@@ -311,9 +321,8 @@ public:
 
         for( std::string const& matName : M_advectionToolbox->materialsProperties()->physicToMaterials( M_advectionToolbox->physicDefault() ) )
         {
-            M_advectionToolbox->materialsProperties()->materialProperty( matName )->add( "levelset_beta", velocityExpr );
+            M_advectionToolbox->materialsProperties()->materialProperties( matName ).add( "levelset_beta", velocityExpr );
         }
-        //M_advectionToolbox->materialsProperties()
     }
     //void updateAdvectionVelocity( element_advection_velocity_ptrtype const& velocity ) { [>return M_advectionToolbox->updateAdvectionVelocity( velocity );<] }
     //void updateAdvectionVelocity( element_advection_velocity_type const& velocity ) { [>return M_advectionToolbox->updateAdvectionVelocity( velocity );<] }
@@ -360,6 +369,8 @@ public:
 
     //--------------------------------------------------------------------//
     // Assembly and solve
+    int nBlockMatrixGraph() const { return 1; }
+
     bool hasSourceTerm() const { return false; }
     void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const {}
     void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
@@ -416,6 +427,10 @@ public:
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
     {
         return super_type::modelFields( sol, rowStartInVector, prefix );
+    }
+    auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
+    {
+        return super_type::trialSelectorModelFields( startBlockSpaceIndex );
     }
 
     auto optionalScalarFields( std::string const& prefix = "" ) const
