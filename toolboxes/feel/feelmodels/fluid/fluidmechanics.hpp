@@ -137,8 +137,9 @@ public:
                                        _imageSpace=imageSpace,
                                        //_range=elements(support( imageSpace ) )
                                        _range=range );
-            auto [it, success] = M_matrixInterpolations.insert( { matrix_interpolation_key_type{std::make_pair(domainSpace,imageSpace)}, opI->matPtr() } );
-            return it->second;
+            sparse_matrix_ptrtype matInterp = opI->matPtr();
+            this->setMatrixInterpolation( domainSpace, imageSpace, matInterp );
+            return matInterp;
         }
     template <typename DomainSpaceType, typename ImageSpaceType>
     sparse_matrix_ptrtype computeMatrixInterpolation( std::shared_ptr<DomainSpaceType> domainSpace, std::shared_ptr<ImageSpaceType> imageSpace )
@@ -146,10 +147,14 @@ public:
             return this->computeMatrixInterpolation( domainSpace,imageSpace,elements(support( imageSpace ) ) );
         }
 
+    void setMatrixInterpolation( functionspace_base_ptrtype domainSpace, functionspace_base_ptrtype imageSpace, sparse_matrix_ptrtype mat )
+        {
+            M_matrixInterpolations[matrix_interpolation_key_type{std::make_pair(domainSpace,imageSpace)}] = mat;
+        }
+
     void setMatrixInterpolation( std::string const& name, sparse_matrix_ptrtype mat )
         {
-            if ( mat )
-                M_matrixInterpolations[matrix_interpolation_key_type{name}] = mat;
+            M_matrixInterpolations[matrix_interpolation_key_type{name}] = mat;
         }
 
     template <typename DomainElementType, typename ImageElementType>
