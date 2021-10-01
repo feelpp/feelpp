@@ -315,6 +315,25 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initTools()
     }
 }
 
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS 
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateParameterValues()
+{
+    if ( !this->manageParameterValues() )
+        return;
+
+    super_type::updateParameterValues();
+    M_advectionToolbox->updateParameterValues();
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS 
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
+{
+    super_type::setParameterValues( paramValues );
+    M_advectionToolbox->setParameterValues( paramValues );
+}
+
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_stretch_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::stretch() const

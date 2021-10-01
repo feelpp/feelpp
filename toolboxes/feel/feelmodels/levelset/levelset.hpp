@@ -305,6 +305,9 @@ public:
     materialsproperties_ptrtype & materialsProperties() { return M_advectionToolbox->materialsProperties(); }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_advectionToolbox->setMaterialsProperties( mp ); }
 
+    void updateParameterValues() override;
+    void setParameterValues( std::map<std::string,double> const& paramValues ) override;
+
     //--------------------------------------------------------------------//
     // Advection data
     typename cfpde_toolbox_type::bdf_unknown_ptrtype /*const&*/ timeStepBDF() const { return M_advectionToolbox->timeStepBdfUnknown(); }

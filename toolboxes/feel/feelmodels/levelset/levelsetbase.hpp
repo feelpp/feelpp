@@ -269,6 +269,11 @@ public:
     std::shared_ptr<std::ostringstream> getInfo() const override;
 
     //--------------------------------------------------------------------//
+    // Parameters
+    virtual void updateParameterValues();
+    virtual void setParameterValues( std::map<std::string,double> const& paramValues );
+
+    //--------------------------------------------------------------------//
     // Spaces
     levelset_space_manager_ptrtype const& functionSpaceManager() const { return M_spaceManager; }
     void setFunctionSpaceManager( levelset_space_manager_ptrtype const& manager ) { M_spaceManager = manager; }
@@ -737,6 +742,10 @@ protected:
     mutable bool M_doUpdateSmootherInterfaceVectorial;
     mutable bool M_doUpdatePhiPN;
     mutable bool M_doUpdateMarkers;
+
+    //--------------------------------------------------------------------//
+    // Export
+    std::map<std::string,double> M_currentParameterValues;
 
     //--------------------------------------------------------------------//
     // Export
