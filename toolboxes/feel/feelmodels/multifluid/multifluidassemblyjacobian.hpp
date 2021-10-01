@@ -117,7 +117,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobian_Levelset( size_type lsModelIndex,
             vecSolsLevelsets, startBlockSpaceIndexLevelsets 
             );
 
-    M_levelsetModel[lsModelIndex]->updateJacobian( data, mctx );
+    M_levelsetModels[lsModelIndex]->updateJacobian( data, mctx );
 }
 
 } // namespace FeelModels

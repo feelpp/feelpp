@@ -126,7 +126,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinear_Levelset( size_type lsModelIndex, D
         //mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
     //}
 
-    M_levelsetModel[lsModelIndex]->updateLinearPDE( data, mctx );
+    M_levelsetModels[lsModelIndex]->updateLinearPDE( data, mctx );
 
     this->log("MultiFluid","updateLinear_Levelset", "finish "+std::to_string(lsModelIndex)+sc);
 }

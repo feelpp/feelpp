@@ -92,7 +92,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidual_Levelset( size_type lsModelIndex,
             vecSolsLevelsets, startBlockSpaceIndexLevelsets 
             );
 
-    M_levelsetModel[lsModelIndex]->updateResidual( data, mctx );
+    M_levelsetModels[lsModelIndex]->updateResidual( data, mctx );
 }
 
 } // namespace FeelModels

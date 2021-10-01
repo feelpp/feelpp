@@ -890,9 +890,15 @@ macro(genLibMultiFluid)
     set(MULTIFLUID_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/multifluid/${MULTIFLUID_LIB_VARIANTS})
     set(MULTIFLUID_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/multifluid/multifluid_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/multifluid/multifluidassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/multifluid/multifluidassemblyjacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/multifluid/multifluidassemblyresidual_inst.cpp
       )
     set(MULTIFLUID_CODEGEN_SOURCES
       ${MULTIFLUID_LIB_DIR}/multifluid_inst.cpp
+      ${MULTIFLUID_LIB_DIR}/multifluidassemblylinear_inst.cpp
+      ${MULTIFLUID_LIB_DIR}/multifluidassemblyjacobian_inst.cpp
+      ${MULTIFLUID_LIB_DIR}/multifluidassemblyresidual_inst.cpp
       )
     set(MULTIFLUID_LIB_DEPENDS ${FLUIDMECHANICS_LIB_NAME} ${LEVELSET_LIB_NAME})
     # generate the lib target
