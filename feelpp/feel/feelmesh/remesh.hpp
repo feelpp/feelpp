@@ -823,7 +823,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
     int nTriangles = 0;
     int nEdges = 0;
 
-    std::shared_ptr<MeshType> out = std::make_shared<MeshType>();
+    std::shared_ptr<MeshType> out = std::make_shared<MeshType>(M_mesh->worldCommPtr());
 
     if ( std::holds_alternative<MMG5_pMesh>( mesh ) )
     {

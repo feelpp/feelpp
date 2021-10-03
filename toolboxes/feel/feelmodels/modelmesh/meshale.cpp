@@ -506,6 +506,7 @@ MeshALE<Convex>::exportResults(double time)
         M_exporter->step( time )->add( prefixvm(this->prefix(),"moving_identity"), *M_identity_ale );
         //M_exporter->step( time )->add( prefixvm(this->prefix(),"moving_identitypolyderiv"), M_bdf_ale_identity->polyDeriv() );
         M_exporter->step( time )->add( prefixvm(this->prefix(),"moving_dispOnMovingBoundary"), *M_displacementOnMovingBoundary_HO_ref );
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"fieldInitialIdentity"), *M_fieldInitialIdentity );
         M_exporter->save();
     }
 
