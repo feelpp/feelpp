@@ -3483,9 +3483,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyArticulation::unitDirBetweenMassCenters(
 {
     auto mc1 = this->body1().body().massCenter();
     auto mc2 = this->body2().body().massCenter();
-    eigen_vector_type<nRealDim> /*auto*/ unitDir = (mc2-mc1);
-    unitDir.normalize();
-    return unitDir;
+    return this->unitDirBetweenMassCenters( mc1, mc2 );
 }
 
 
@@ -3634,6 +3632,39 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::updateForUse()
     for ( auto const& bbc : allbbc )
         bbc->body().computeMomentOfInertia_bodyFrame( this->massCenterExpr(), this->rigidRotationMatrix(), M_momentOfInertia_bodyFrame, true );
 }
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+eigen_vector_type<FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nRealDim>
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::evaluateRelativeRigidTranslation( BodyBoundaryCondition const& bbc, BodyBoundaryCondition const& bbcMaster ) const
+{
+    bool findBA = false;
+    double coeff = 1;
+    for ( BodyArticulation const& ba : this->articulations() )
+    {
+        if ( ba.body1().name() == bbc.name() && ba.body2().name() == bbcMaster.name() )
+        {
+            coeff = 1;
+            findBA = true;
+        }
+        else if ( ba.body2().name() == bbc.name() && ba.body1().name() == bbcMaster.name() )
+        {
+            coeff = -1;
+            findBA = true;
+        }
+
+        if ( !findBA )
+            continue;
+
+        auto [newMass1,newMassCenter1] = ba.body1().body().computeMassAndMassCenterFromDisplacementField( ba.body1().body().fieldDisplacement() );
+        auto [newMass2,newMassCenter2] = ba.body2().body().computeMassAndMassCenterFromDisplacementField( ba.body2().body().fieldDisplacement() );
+
+        return coeff*ba.relativeTranslationVector(newMassCenter1,newMassCenter2);
+    }
+
+    CHECK( false ) << "not found BodyArticulation related";
+    return eigen_vector_type<nRealDim>::Zero();
+}
+
 
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

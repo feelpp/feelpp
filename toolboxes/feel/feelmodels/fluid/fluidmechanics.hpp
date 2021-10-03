@@ -594,6 +594,9 @@ public:
                 M_fieldDisplacement->on(_range=range,_expr=e);
             }
 
+        //! return the current translation
+        eigen_vector_type<nRealDim> const& rigidTranslation() const { return M_rigidTranslationDisplacement; }
+
         //! return the current translation as an expression
         auto rigidTranslationExpr() const { return Feel::vf::toExpr( M_rigidTranslationDisplacement ); }
 
@@ -638,11 +641,18 @@ public:
                                                   angular_velocity_type const& angularVelocity,
                                                   double dt )
             {
-                // WARNING : only valid if evaluated in reference mesh
-
                 // get translation disp and angles from Euler time scheme
-                M_rigidTranslationDisplacement = dt*translationVelocity + M_rigidTranslationDisplacementAtPreviousTime;
-                M_rigidRotationAngles = dt*angularVelocity + M_rigidRotationAnglesAtPreviousTime;
+                eigen_vector_type<nRealDim> rigidTranslationDisplacement = dt*translationVelocity + M_rigidTranslationDisplacementAtPreviousTime;
+                rotation_angles_type rigidRotationAngles = dt*angularVelocity + M_rigidRotationAnglesAtPreviousTime;
+                this->updateDisplacementFromRigidDisplacement( rigidTranslationDisplacement,rigidRotationAngles );
+            }
+
+        void updateDisplacementFromRigidDisplacement( eigen_vector_type<nRealDim> const& rigidTranslation, rotation_angles_type const& rigidRotationAngles )
+            {
+                // WARNING : only valid if evaluated in initial domain
+
+                M_rigidTranslationDisplacement = rigidTranslation;
+                M_rigidRotationAngles = rigidRotationAngles;
 
                 auto dispByTranslationExpr = this->rigidTranslationExpr();
                 auto R = this->rigidRotationMatrixExpr();
@@ -665,6 +675,12 @@ public:
                 }
             }
 
+        void addRigidTranslationToCurrentDisplacement( eigen_vector_type<nRealDim> const& rigidTranslation )
+            {
+                auto tmp = M_spaceDisplacement->element();
+                tmp = this->fieldDisplacement();
+                this->updateDisplacement( elements(support(M_spaceDisplacement)), idv( tmp ) + Feel::vf::toExpr(rigidTranslation) );
+            }
 
         template <typename ExpRotationMatrixType,typename ExprMassCenterType>
         void applyRotationToCurrentDisplacement( Expr<ExpRotationMatrixType> const& R, Expr<ExprMassCenterType> const& massCenter )
@@ -794,7 +810,6 @@ public:
                 massCenter /= mass;
                 return std::make_tuple( mass, std::move( massCenter ) );
             }
-
         template <typename MassCenterExprType>
         void computeMomentOfInertia_inertialFrame( MassCenterExprType const& massCenterExpr, moment_of_inertia_type & momentOfInertia, bool addValue = false ) const
             {
@@ -900,6 +915,9 @@ public:
         datamap_ptr_t<> dataMapLagrangeMultiplierTranslationalVelocity() const { return M_dataMapLagrangeMultiplierTranslationalVelocity; }
         vector_ptrtype vectorLagrangeMultiplierTranslationalVelocity() const { return M_vectorLagrangeMultiplierTranslationalVelocity; }
 
+        //double relativeTranslation() const { return M_relativeTranslation; }
+        eigen_vector_type<nRealDim> relativeTranslationVector( eigen_vector_type<nRealDim> const& mc1, eigen_vector_type<nRealDim> const& mc2 ) const { return M_relativeTranslation*this->unitDirBetweenMassCenters(mc1,mc2); }
+
         //! return the name this articulation
         std::string name() const;
 
@@ -931,7 +949,31 @@ public:
                 M_exprTranslationalVelocity.setParameterValues( mp );
             }
 
+        void updateTimeStep()
+            {
+                M_relativeTranslationAtPreviousTime = M_relativeTranslation;
+            }
+
+        template <typename SymbolsExprType>
+        void updateDisplacement( double dt, SymbolsExprType const& se )
+            {
+#if 0
+                auto translationalVelocity1 = idv(bbc.fieldTranslationalVelocityPtr()).evaluate();
+                auto translationalVelocity2 = idv(bbcMaster.fieldTranslationalVelocityPtr()).evaluate();
+                eigen_vector_type<nRealDim> relativeTranslationalVelocity = translationalVelocity2 - translationalVelocity1;
+                M_relativeTranslation = dt*relativeTranslationalVelocity + M_relativeTranslationAtPreviousTime;
+#endif
+                double relativeTranslationalVelocity = expr( M_exprTranslationalVelocity.template expr<1,1>(), se ).evaluate(false)(0,0);
+                M_relativeTranslation = dt*relativeTranslationalVelocity + M_relativeTranslationAtPreviousTime;
+            }
+
     private:
+        eigen_vector_type<nRealDim> unitDirBetweenMassCenters( eigen_vector_type<nRealDim> const& mc1, eigen_vector_type<nRealDim> const& mc2 ) const
+            {
+                    eigen_vector_type<nRealDim> unitDir = (mc2-mc1);
+                    unitDir.normalize();
+                    return unitDir;
+            }
         eigen_vector_type<nRealDim> unitDirBetweenMassCenters() const;
 
     private :
@@ -940,6 +982,8 @@ public:
         ModelExpression M_exprTranslationalVelocity;
         datamap_ptr_t<> M_dataMapLagrangeMultiplierTranslationalVelocity;
         vector_ptrtype M_vectorLagrangeMultiplierTranslationalVelocity;
+
+        double M_relativeTranslation = 0, M_relativeTranslationAtPreviousTime = 0;
     };
 
     class NBodyArticulated
@@ -1081,15 +1125,23 @@ public:
             {
                 M_bdfAngularVelocity->next( *M_fieldAngularVelocity );
                 M_rigidRotationAnglesAtPreviousTime = M_rigidRotationAngles;
+                for ( BodyArticulation & ba : M_articulations )
+                    ba.updateTimeStep();
             }
 
 
         //! update displacement (only angles)
-        void updateDisplacement( double dt )
+        template <typename SymbolsExprType>
+        void updateDisplacement( double dt, SymbolsExprType const& se )
             {
                 typename Body::angular_velocity_type angularVelocity = idv(M_fieldAngularVelocity).evaluate();
                 M_rigidRotationAngles = dt*angularVelocity + M_rigidRotationAnglesAtPreviousTime;
+                for ( BodyArticulation & ba : M_articulations )
+                    ba.updateDisplacement( dt,se );
             }
+
+        //! return the relative rigid translation (computed from translational velocity fields)
+        eigen_vector_type<nRealDim> evaluateRelativeRigidTranslation( BodyBoundaryCondition const& bbc, BodyBoundaryCondition const& bbcMaster ) const;
 
         std::tuple<double,eigen_vector_type<nRealDim> >
         computeMassAndMassCenterFromDisplacementFieldOfBodies()
@@ -1457,6 +1509,7 @@ public:
                     else
                         angularVelocity = idv(M_fieldAngularVelocity).evaluate();
                 }
+
                 this->body().updateDisplacementFromRigidVelocity( translationalVelocity,angularVelocity,dt );
             }
 
@@ -1690,6 +1743,55 @@ public:
                     res = Feel::FeelModels::modelMeasuresQuantities( res, bbc.modelMeasuresQuantities( currentPrefix ) );
                 }
                 return res;
+            }
+
+        template <typename SymbolsExprType>
+        void updateDisplacement( double dt, SymbolsExprType const& se )
+            {
+                for ( auto & [bpname,bbc] : *this )
+                {
+#if 0
+                    if ( bbc.hasElasticBehaviorFromExpr() )
+                    {
+                        auto hola = bbc.createElasticBehavior( se );
+                        bbc.updateElasticBehavior( hola, *this );
+                    }
+#endif
+                    if ( !bbc.isInNBodyArticulated() || ( bbc.getNBodyArticulated().masterBodyBC().name() == bbc.name() ) )
+                        bbc.updateDisplacement( dt );
+                }
+
+                for ( auto & nba : this->nbodyArticulated() )
+                {
+                    nba.updateDisplacement( dt,se ); // get rotation matrix
+                    auto const& bbcMaster = nba.masterBodyBC();
+                    auto rigidTranslationOfMaster = bbcMaster.body().rigidTranslation();
+                    for ( auto & [bpname,bbc] : *this )
+                    {
+                        if ( !nba.has( bbc ) || (bbcMaster.name() == bbc.name()) )
+                            continue;
+                        // start by imposed the same translation for all body on this nbodyArticulated
+                        bbc.body().updateDisplacementFromRigidDisplacement( rigidTranslationOfMaster, Body::rotation_angles_type::Zero() );
+                        // compute the relative rigid translation with bbcMaster (by using mass centers as axis)
+                        auto relativeTranslation = nba.evaluateRelativeRigidTranslation( bbc,bbcMaster );
+                        // add s relative translation to disp of body
+                        bbc.body().addRigidTranslationToCurrentDisplacement( relativeTranslation );
+                    }
+                }
+
+                for ( auto & nba : this->nbodyArticulated() )
+                {
+                    //nba.updateDisplacement( dt ); // get rotation matrix
+                    auto R = nba.rigidRotationMatrixExpr();
+                    auto [mass,massCenter] = nba.computeMassAndMassCenterFromDisplacementFieldOfBodies();
+                    for ( auto & [bpname,bbc] : *this )
+                    {
+                        if ( !nba.has( bbc ) )
+                            continue;
+                        bbc.body().applyRotationToCurrentDisplacement( R, Feel::vf::toExpr(massCenter) );
+                    }
+                }
+
             }
     private:
 
@@ -2960,15 +3062,14 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
         bool meshIsOnRefAtBegin = this->meshALE()->isOnReferenceMesh();
         if ( !meshIsOnRefAtBegin )
             this->meshALE()->revertReferenceMesh( false );
-        for( auto const& d : M_bcMovingBoundaryImposed )
-        {
-            //this->meshALE()->updateDisplacementImposed( expression(d,se),markedfaces(this->mesh(),markers(d)) );
-            this->meshALE()->updateDisplacementImposedOnInitialDomain( this->keyword(), expression(d,se),markedfaces(this->mesh(),markers(d)) );
-        }
 
-        
+
         this->meshALE()->revertInitialDomain( false );
-        
+
+        for( auto const& d : M_bcMovingBoundaryImposed )
+            this->meshALE()->updateDisplacementImposedOnInitialDomain( this->keyword(), expression(d,se),markedfaces(this->mesh(),markers(d)) );
+
+
         for ( auto & [bpname,bbc] : M_bodySetBC )
         {
             if ( bbc.hasElasticBehaviorFromExpr() )
@@ -2976,28 +3077,15 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
                 auto hola = bbc.createElasticBehavior( se );
                 bbc.updateElasticBehavior( hola, *this );
             }
-
-            bbc.updateDisplacement( this->timeStep() );
         }
 
-        for ( auto & nba : M_bodySetBC.nbodyArticulated() )
-        {
-            nba.updateDisplacement( this->timeStep() );
-            auto R = nba.rigidRotationMatrixExpr();
-            auto [mass,massCenter] = nba.computeMassAndMassCenterFromDisplacementFieldOfBodies();
-            for ( auto & [bpname,bbc] : M_bodySetBC )
-            {
-                if ( !nba.has( bbc ) )
-                    continue;
-                bbc.body().applyRotationToCurrentDisplacement( R, Feel::vf::toExpr(massCenter) );
-            }
-        }
+        M_bodySetBC.updateDisplacement( this->timeStep(), se );
 
         for ( auto & [bpname,bbc] : M_bodySetBC )
         {
             //this->meshALE()->updateDisplacementImposed( idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
             this->meshALE()->updateDisplacementImposedOnInitialDomain( this->keyword(), idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
-            
+
             if ( bbc.hasElasticVelocity() )
                 bbc.updateElasticVelocityWithRotation();
         }
