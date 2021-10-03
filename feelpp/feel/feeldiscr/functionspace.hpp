@@ -5150,7 +5150,7 @@ public:
     /**
      \return the degrees of freedom
      */
-    datamap_ptrtype mapPtr() const
+    datamap_ptrtype mapPtr() const override
         {
             return M_dof;
         }
