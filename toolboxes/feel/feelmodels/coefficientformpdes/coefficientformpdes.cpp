@@ -112,25 +112,27 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
 
     // backend
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr(), this->clovm() );
+    this->initAlgebraicBackend();
 
     int nBlock = 0;
     for ( auto const& cfpdeBase : M_coefficientFormPDEs )
-        nBlock += cfpdeBase->blockVectorSolution().size();
-    M_blockVectorSolution.resize( nBlock );
+        nBlock += cfpdeBase->algebraicBlockVectorSolution()->size();
+    auto bvs = this->initAlgebraicBlockVectorSolution( nBlock );
     int indexBlock = 0, startBlockSpace = 0;
     for ( auto const& cfpdeBase : M_coefficientFormPDEs )
     {
         this->setStartSubBlockSpaceIndex( cfpdeBase->physicDefault(), startBlockSpace );
-        auto const& blockVectorSolutionPDE = cfpdeBase->blockVectorSolution();
+        auto const& blockVectorSolutionPDE = *(cfpdeBase->algebraicBlockVectorSolution());
         int nBlockPDE = blockVectorSolutionPDE.size();
         for ( int k=0;k<nBlockPDE ;++k )
         {
-            M_blockVectorSolution(indexBlock+k) = blockVectorSolutionPDE(k);
+            bvs->operator()(indexBlock+k) = blockVectorSolutionPDE(k);
             startBlockSpace += blockVectorSolutionPDE(k)->map().numberOfDofIdToContainerId();
         }
         indexBlock += nBlockPDE;
     }
+    // init petsc vector associated to the block
+    bvs->buildVector( this->backend() );
 
     if ( M_solverName == "automatic" )
         this->updateAutomaticSolverSelection();
@@ -227,10 +229,8 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
-    // init petsc vector associated to the block
-    M_blockVectorSolution.buildVector( this->backend() );
-
-    M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+    auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
+    this->setAlgebraicFactory( algebraicFactory );
 
     bool hasTimeSteppingTheta = false;
     for (auto & cfpde : M_coefficientFormPDEs )
@@ -244,9 +244,9 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 
     if ( hasTimeSteppingTheta )
     {
-        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
-        M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
-        M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector( this->algebraicBlockVectorSolution()->vectorMonolithic()->mapPtr() );
+        algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+        algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
 
         bool hasStabilizationGLS = false;
         for (auto const& cfpde : M_coefficientFormPDEs )
@@ -258,7 +258,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
             }
         }
         if ( hasStabilizationGLS )
-            M_algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() ) );
+            algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", this->backend()->newVector( this->algebraicBlockVectorSolution()->vectorMonolithic()->mapPtr() ) );
     }
 
 }
@@ -286,8 +286,15 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                             if ( !cfpde ) CHECK( false ) << "failure in dynamic_pointer_cast";
 
                             int rowId = this->startSubBlockSpaceIndex( cfpde->physicDefault() );
+#if 0
                             myblockGraph(rowId,rowId) = stencil(_test=cfpde->spaceUnknown(),
                                                                 _trial=cfpde->spaceUnknown() )->graph();
+#else
+                            auto blockGraph = cfpde->buildBlockMatrixGraph();
+                            for (int bg1 = 0 ; bg1< blockGraph.nRow() ; ++bg1)
+                                for (int bg2 = 0 ; bg2< blockGraph.nCol() ; ++bg2)
+                                    myblockGraph(rowId+bg1,rowId+bg2) = blockGraph(bg1,bg2);
+#endif
 
                             // maybe coupling with other equation in the row
                             for ( int k2=0;k2<nEq;++k2 )
@@ -399,8 +406,8 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p )
 
     this->modelFields().updateInformationObject( p["Fields"] );
 
-    if ( M_algebraicFactory )
-        M_algebraicFactory->updateInformationObject( p["Algebraic Solver"] );
+    if ( this->algebraicFactory() )
+        this->algebraicFactory()->updateInformationObject( p["Algebraic Solver"] );
 
     if ( this->hasModelProperties() )
         this->modelProperties().parameters().updateInformationObject( p["Parameters"] );
@@ -501,7 +508,8 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
 {
     if ( this->isStationary() )
         return;
-    if ( !M_algebraicFactory )
+    auto algebraicFactory = this->algebraicFactory();
+    if ( !algebraicFactory )
         return;
 
     bool hasTimeSteppingTheta = false;
@@ -517,12 +525,12 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
     if ( hasTimeSteppingTheta )
     {
         M_timeStepThetaSchemePreviousContrib->zero();
-        M_blockVectorSolution.updateVectorFromSubVectors();
-        ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
+        this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
+        ModelAlgebraic::DataUpdateResidual dataResidual( this->algebraicBlockVectorSolution()->vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
         dataResidual.addInfo( "time-stepping.evaluate-residual-without-time-derivative" );
-        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
-        M_algebraicFactory->evaluateResidual( dataResidual );
-        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+        algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+        algebraicFactory->evaluateResidual( dataResidual );
+        algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
 
         bool hasStabilizationGLS = false;
         for (auto const& cfpde : M_coefficientFormPDEs )
@@ -535,8 +543,8 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
         }
         if ( hasStabilizationGLS )
         {
-            auto & dataInfos = M_algebraicFactory->dataInfos();
-            *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *M_blockVectorSolution.vectorMonolithic();
+            auto & dataInfos = algebraicFactory->dataInfos();
+            *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *this->algebraicBlockVectorSolution()->vectorMonolithic();
             dataInfos.addParameterValuesInfo( "time-stepping.previous-parameter-values", M_currentParameterValues );
         }
     }
@@ -600,14 +608,14 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::solve()
 
     this->setStartBlockSpaceIndex( 0 );
 
-    M_blockVectorSolution.updateVectorFromSubVectors();
+    this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
 
     for (auto & cfpdeBase : M_coefficientFormPDEs )
         cfpdeBase->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex( cfpdeBase->physicDefault() ) );
 
-    M_algebraicFactory->solve( M_solverName, M_blockVectorSolution.vectorMonolithic() );
+    this->algebraicFactory()->solve( M_solverName, this->algebraicBlockVectorSolution()->vectorMonolithic() );
 
-    M_blockVectorSolution.localize();
+    this->algebraicBlockVectorSolution()->localize();
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )

@@ -34,7 +34,7 @@ runALEMesh()
            {
                for ( auto s : Environment::vm()[opt].as<std::vector<std::string> >() )
                    std::cout << "Registering boundary flag " << s  << " to " << bctype << std::endl;
-               alemesh->addBoundaryFlags( bctype,  Environment::vm()[opt].as<std::vector<std::string> >() );
+               alemesh->addMarkersInBoundaryCondition( bctype,  Environment::vm()[opt].as<std::vector<std::string> >() );
            } 
        }
        alemesh->init();
@@ -46,8 +46,8 @@ runALEMesh()
     auto exSave = [&ex]( double t, auto alemesh, auto disp ) {
 
                       auto Xh = Pch<1>( alemesh->movingMesh() );
-                      auto phi = distToEntityRange( Xh, markedfaces( Xh->mesh(), alemesh->aleFactory()->flagSet("moving")) );
-                      
+                      auto phi = distToEntityRange( Xh, markedfaces( Xh->mesh(), alemesh->markers("moving")) );
+
                       ex->step( t )->setMesh( alemesh->movingMesh() );
                       ex->step( t )->add( "disp", idv(*disp) );
                       ex->step( t )->add( "etaQ", etaQ( alemesh->movingMesh() ) );
@@ -63,8 +63,8 @@ runALEMesh()
     auto updateDisp = []( auto alemesh, auto disp, auto dexpr, double t, double T0, double dt )
                           {
                               dexpr.setParameterValues( { {"t", t }, {"T0", T0 }, {"dt",dt } } );
-                              disp->on(_range=elements(alemesh->referenceMesh()),_expr=dexpr);
-                              alemesh->update( *disp );
+                              alemesh->updateDisplacementImposed( dexpr, elements(alemesh->movingMesh()) );
+                              alemesh->updateMovingMesh();
                           };
     double dt = doption("dt");
     double T = doption("Tfinal");
@@ -99,8 +99,8 @@ runALEMesh()
                 // apply remesh
 
                 // define distance function from moving boundary to adapt the metric
-                auto phi = distToEntityRange( Xh, markedfaces( Xh->mesh(), alemesh->aleFactory()->flagSet("moving")) );
-                auto [ havg, hmin, hmax ] = hMeasures( moving_mesh, markedfaces( Xh->mesh(), alemesh->aleFactory()->flagSet("moving"))  );
+                auto phi = distToEntityRange( Xh, markedfaces( Xh->mesh(), alemesh->markers("moving")) );
+                auto [ havg, hmin, hmax ] = hMeasures( moving_mesh, markedfaces( Xh->mesh(), alemesh->markers("moving"))  );
 
                 if ( !soption( "remesh.metric" ).empty() )
                 {
@@ -111,7 +111,7 @@ runALEMesh()
                 {
                     met.on( _range=elements(moving_mesh), _expr=cst(havg)  );
                 }
-                    auto r =  remesher( moving_mesh, std::vector<int>{}, alemesh->aleFactory()->flagSet("moving") );
+                    auto r =  remesher( moving_mesh, std::vector<int>{}, alemesh->markers("moving") );
     
                 r.setMetric( met );
                 auto out = r.execute();

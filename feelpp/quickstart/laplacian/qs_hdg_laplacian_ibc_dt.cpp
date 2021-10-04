@@ -49,6 +49,7 @@ inline
 po::options_description
 makeOptions()
 {
+    // clang-format off
     po::options_description hdgoptions( "HDG options" );
     hdgoptions.add_options()
         ( "k", po::value<std::string>()->default_value( "1" ), "diffusion coefficient" )
@@ -72,6 +73,7 @@ makeOptions()
         ( "time-final", po::value<double>()->default_value( 10. ), "final time" )
         ( "initial-condition", po::value<std::string>()->default_value( "0" ), "initial condition")
         ;
+    // clang-format on
     return hdgoptions;
 }
  
@@ -116,10 +118,7 @@ int hdg_laplacian()
 
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
-    
-    auto K = expr(soption("k"));
-    auto lambda = cst(1.)/K;
-    
+
 #if defined(FEELPP_HAS_SYMPY)
 
     std::map<std::string,std::string> inputs{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("checker.solution")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"g",""}, {"J",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
@@ -137,12 +136,27 @@ int hdg_laplacian()
     auto p_exact = expr( p_exact_str );
     auto u_exact = expr<FEELPP_DIM,1>( u_exact_str );
     auto k = expr( locals.at("k") );
+    auto lambda = cst(1.)/k;
     auto un = expr( locals.at("un") );
     auto f = expr( locals.at("f") );
     auto g = expr( locals.at("g") );
     auto r_1 = expr( locals.at("r_1") );
     auto r_2 = expr( locals.at("r_2") ); 
     auto J_exact = expr( locals.at("J") );
+#else
+    std::string p_exact_str = soption("solution.p");
+    std::string u_exact_str = soption("solution.u");
+    auto p_exact = expr(p_exact_str);
+    auto u_exact = expr<Dim,1>(u_exact_str);
+    auto k = expr(soption("k"));
+    auto lambda = cst(1.)/k;
+    auto un = trans(u_exact)*N();
+    auto f = expr( soption( "functions.f") );
+    auto g = p_exact;
+    auto r_1 = cst(0.);
+    auto r_2 = un;
+    auto J_exact = inner(u_exact)/k;
+#endif
 
     std::map<std::string,double> ibc_exact_map;
     for( auto const& [ibc_type, ibc_data ] : ibcs )
@@ -150,16 +164,6 @@ int hdg_laplacian()
             ibc_exact_map[ibc_type] = 0;
         else
             ibc_exact_map[ibc_type] = integrate(markedfaces(mesh,ibc_data.second), un).evaluate()(0,0);
-
-#else
-    std::string p_exact_str = soption("solution.p");
-    std::string u_exact_str = soption("solution.u");
-    auto p_exact = expr(p_exact_str);
-    auto u_exact = expr<Dim,1>(u_exact_str);
-    auto un_exact = trans(u_exact)*N();
-    auto f_exact = expr( soption( "functions.f") );
-    auto ibc_exact = expr( soption("functions.i") );
-#endif
 
     // ****** Hybrid-mixed formulation ******
     // We treat Vh, Wh, and Mh separately
@@ -223,13 +227,15 @@ int hdg_laplacian()
     {
         auto cgXh = Pch<OrderP+1>(mesh);
         Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
-        auto u = cgLaplacian( cgXh, std::tuple{K,f,p_exact,un,r_1,r_2} );
+        auto u = cgLaplacian( cgXh, std::tuple{k,f,p_exact,un,r_1,r_2} );
+#if defined(FEELPP_HAS_SYMPY)
         if ( u )        
             status_cg = check( checker( _name= "L2/H1 convergence cG", 
                                         _solution_key="p",
                                         _gradient_key="grad_p",
                                         _inputs=locals
                                        ), *u );
+#endif
     }
 
     auto u = Vh->element( "u" );
@@ -270,10 +276,13 @@ int hdg_laplacian()
 
     auto pn = Wh->element( "p" );
     auto pnm1 = Wh->element( "p" );
+    auto e = exporter( _mesh = mesh );
+    e->setMesh( mesh );
+    auto pinit = expr( soption( "initial-condition" ) );
+    pinit.setParameterValues( { "t", t } );
+    pnm1.on( _range = elements( mesh ), _expr = pinit );
 
-    pnm1 = expr( boption( "initial-condition" )); //( _range=mesh, _expr=boption( "initial-condition" ) );
-
-    for (; t < tmax; t += dt)
+    for (t=dt; t < tmax+dt; t += dt)
     {
         if( Environment::worldComm().isMasterRank() )
         {
@@ -281,6 +290,18 @@ int hdg_laplacian()
             Feel::cout << "Time : " << t << " s (over " << tmax << " s)" << std::endl;
             Feel::cout << "============================================" << std::endl;
         }
+        rhs.zero();
+        a.zero();
+
+        p_exact.setParameterValues({"t",t});
+        u_exact.setParameterValues({"t",t});
+        k.setParameterValues({"t",t});
+        un.setParameterValues({"t",t});
+        f.setParameterValues({"t",t});
+        g.setParameterValues({"t",t});
+        r_1.setParameterValues({"t",t}); 
+        r_2.setParameterValues({"t",t}); 
+        J_exact.setParameterValues({"t",t});
 
         tic();
         // Building the RHS
@@ -288,10 +309,11 @@ int hdg_laplacian()
         // This is only a part of the RHS - how to build the whole RHS? Is it right to
         // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
         // How to identify Dirichlet/Neumann boundaries?
+        
         rhs(1_c) += integrate( _range=elements(mesh),
                                _expr=f*id(w));
         rhs(1_c) += integrate( _range=elements(mesh),
-                               _expr=pnm1*id(w));
+                               _expr=idv(pnm1)/dt*id(w));
 
         rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                             _expr=id(l)*un );
@@ -485,7 +507,7 @@ int hdg_laplacian()
         auto up = U(0_c);
         auto pp = U(1_c);
 
-        pnm1 = pn;
+        pnm1 = pp;
         pn = pp;
 
         
@@ -528,11 +550,11 @@ int hdg_laplacian()
         q.on( _range=elements(mesh), _expr=p_exact );
 
         
-        double I1 = integrate( _range=elements(mesh), _expr=K*gradv(pp)*trans(gradv(pp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-        double I2 = integrate( _range=elements(mesh), _expr=inner(idv(up))/K, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-        double I3 = integrate( _range=elements(mesh), _expr=inner(u_exact)/K, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-        double I4 = integrate( _range=elements(mesh), _expr=K*inner(gradv(q)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-        double I5 = integrate( _range=elements(mesh), _expr=K*inner(gradv(ppp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+        double I1 = integrate( _range=elements(mesh), _expr=k*gradv(pp)*trans(gradv(pp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+        double I2 = integrate( _range=elements(mesh), _expr=inner(idv(up))/k, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+        double I3 = integrate( _range=elements(mesh), _expr=inner(u_exact)/k, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+        double I4 = integrate( _range=elements(mesh), _expr=k*inner(gradv(q)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+        double I5 = integrate( _range=elements(mesh), _expr=k*inner(gradv(ppp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
         double I6 = integrate( _range=elements(mesh), _expr=J_exact, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
 
         std::vector<double> J = {I1,I2,I5,I3,I4,I6};
@@ -554,40 +576,43 @@ int hdg_laplacian()
         Feel::cout << "pmin= " << pmin << ", pmax=" << pmax << " qmin= " << qmin << ", qmax=" << qmax << std::endl;
 
         
-        auto e = exporter( _mesh=mesh );
-        e->setMesh( mesh );
-        e->addRegions();
-        e->add( "flux", U(0_c) );
-        e->add( "potential", U(1_c) );
-        e->add( "potentialpp", PP(0_c) );
-        e->add( "flux.exact", v );
-        e->add( "potential.exact", q );
+        
+        e->step(t)->addRegions();
+        e->step(t)->add( "flux", U(0_c) );
+        e->step(t)->add( "potential", U(1_c) );
+        e->step(t)->add( "potentialpp", PP(0_c) );
+        e->step(t)->add( "flux.exact", v );
+        e->step(t)->add( "potential.exact", q );
         e->save();
         toc("export");
 
         tic();
 
+#if defined(FEELPP_HAS_SYMPY)
         // tag::check[]
         bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
         solution_t s_t = has_dirichlet?solution_t::unique:solution_t::up_to_a_constant;
-        int status1 = check( checker( _name= "L2/H1 convergence of potential", 
-                                    _solution_key="p",
-                                    _gradient_key="grad_p",
-                                    _inputs=locals
-                                    ), pp, s_t );
-        int status2 = check( checker( _name= "L2 convergence of the flux", 
-                                    _solution_key="u",
-                                    _inputs=locals
-                                    ), up );
+        int status1 = check( checker( _name = "L2/H1 convergence of potential",
+                                      _solution_key = "p",
+                                      _gradient_key = "grad_p",
+                                      _inputs = locals,
+                                      _parameter_values = std::map<std::string, double>{ { "t", t } } ),
+                             pp, s_t );
+        int status2 = check( checker( _name = "L2 convergence of the flux",
+                                      _solution_key = "u",
+                                      _inputs = locals,
+                                      _parameter_values = std::map<std::string, double>{ { "t", t } } ),
+                             up );
         int status3 = check( checker( _name= "L2/H1 convergence of postprocessed potential", 
                                     _solution_key="p",
                                     _gradient_key="grad_p",
-                                    _inputs=locals
+                                    _inputs=locals,
+                                    _parameter_values=std::map<std::string,double>{{"t",t}}
                                     ), ppp, s_t );
         status_time |= (status1 || status2 || status3);
+        // end::check[]
+#endif
     }
-    
-    // end::check[]
 
     return status_cg || status_time;
 }
@@ -609,9 +634,10 @@ int main( int argc, char** argv )
     // end::env[]
     if ( ioption( "order" ) == 1 )
         return hdg_laplacian<FEELPP_DIM,1>();
+#if 0
     if ( ioption( "order" ) == 2 )
         return hdg_laplacian<FEELPP_DIM,2>();
-#if 0
+
 
     if ( ioption( "order" ) == 3 )
         return !hdg_laplacian<FEELPP_DIM,3>();

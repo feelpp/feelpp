@@ -697,7 +697,11 @@ SolverLinearPetsc<T>::getResidualHistory( std::vector<double>& hist )
     // methods, the number of residuals returned in the history
     // vector may be different from what you are expecting.  For
     // example, TFQMR returns two residual values per iteration step.
+#if PETSC_VERSION_LESS_THAN(3,15,0)
     double* p;
+#else
+    const double* p;
+#endif
     ierr = KSPGetResidualHistory( M_ksp, &p, &its );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
@@ -731,7 +735,11 @@ SolverLinearPetsc<T>::getInitialResidual()
     // methods, the number of residuals returned in the history
     // vector may be different from what you are expecting.  For
     // example, TFQMR returns two residual values per iteration step.
+#if PETSC_VERSION_LESS_THAN(3,15,0)
     double* p;
+#else
+    const double* p;
+#endif
     ierr = KSPGetResidualHistory( M_ksp, &p, &its );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 

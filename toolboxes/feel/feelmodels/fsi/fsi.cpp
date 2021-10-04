@@ -168,6 +168,7 @@ FSI<FluidType,SolidType>::createMesh()
     fsimeshTool.setForceRebuild( boption(_prefix=this->prefix(),_name="mesh-save.force-rebuild" ) );
 
 
+    this->modelMesh( this->keyword() ).importConfig().setStraightenMesh( false );
     this->modelMesh( this->keyword() ).importConfig().setupSequentialAndLoadByMasterRankOnly();
     this->modelMesh( this->keyword() ).importConfig().setMeshComponents( MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES );
     if ( !fs::exists( M_mshfilepathFluidPart1 ) || !fs::exists( M_mshfilepathSolidPart1 ) || fsimeshTool.forceRebuild() )
@@ -344,6 +345,7 @@ FSI<FluidType,SolidType>::init()
     // mesh velocity only on moving interface
     M_meshVelocityInterface.reset(new element_fluid_meshvelocityonboundary_type( M_XhMeshVelocityInterface ) );
 
+    M_meshDisplacementOnInterface_fluid = this->fluidModel()->meshALE()->displacement()->functionSpace()->elementPtr();
 
     this->fluidModel()->updateRangeDistributionByMaterialName( "interface_fsi", M_rangeFSI_fluid );
 
@@ -692,7 +694,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
             myblockGraphTimeDerivative(0,0) = mygraphTimeDerivative;
             for ( int k=1;k<nBlock;++k )
             {
-                auto mapPtr = this->fluidModel()->blockVectorSolution()(k)->mapPtr();
+                auto mapPtr = this->fluidModel()->algebraicBlockVectorSolution()->operator()(k)->mapPtr();
                 graph_ptrtype zeroGraph = std::make_shared<graph_type>( mapPtr,mapPtr );
                 zeroGraph->zero();
                 myblockGraphTimeDerivative(k,k) = zeroGraph;
@@ -717,7 +719,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         myblockGraph(0,0) = mygraph;
         for ( int k=1;k<nBlock;++k )
         {
-            auto mapPtr = this->fluidModel()->blockVectorSolution()(k)->mapPtr();
+            auto mapPtr = this->fluidModel()->algebraicBlockVectorSolution()->operator()(k)->mapPtr();
             graph_ptrtype zeroGraph = std::make_shared<graph_type>( mapPtr,dofStress );
             zeroGraph->zero();
             myblockGraph(k,0) = zeroGraph;

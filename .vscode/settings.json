@@ -104,7 +104,10 @@
         "hash_set": "cpp",
         "slist": "cpp",
         "future": "cpp",
-        "csignal": "cpp"
+        "csignal": "cpp",
+        "format": "cpp",
+        "*.in": "cpp",
+        "texture": "cpp"
     },
     "C_Cpp.configurationWarnings": "Disabled",
     "C_Cpp.loggingLevel": "Debug",
@@ -115,6 +118,6 @@
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
     
     ],
-    "cmake.buildDirectory": "${workspaceFolder}/build-${variant:cpp}-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}-${variant:matplot}",
+    "cmake.buildDirectory": "${workspaceFolder}/build-${buildKitVendor}${buildKitVersionMajor}-${variant:cpp}-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}-${variant:matplot}",
     "cmake.parallelJobs": 5
 }

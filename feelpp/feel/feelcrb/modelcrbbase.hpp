@@ -1108,6 +1108,19 @@ public :
         return boost::make_tuple( M_Aqm , M_Fqm );
     }
 
+    std::vector< std::vector<sparse_matrix_ptrtype> > getMqm()
+    {
+        return M_Mqm;
+    }
+    std::vector< std::vector<sparse_matrix_ptrtype> > getAqm()
+    {
+        return M_Aqm;
+    }
+    std::vector< std::vector<std::vector<vector_ptrtype> > > getFqm()
+    {
+        return M_Fqm;
+    }
+
     virtual affine_decomposition_type computePicardAffineDecomposition()
     {
         if( this->worldComm().isMasterRank() && M_serErrorEstimation && M_crbUseNewton )

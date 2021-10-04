@@ -181,6 +181,8 @@ protected:
     using parameterspace_ptrtype = typename super::parameterspace_ptrtype;
     using parameterelement_type = typename super::parameterelement_type;
 
+    using ExpressionEvaluator<EltT, ExprT>::update;
+
 public:
     ExpressionEvaluatorParam( range_type const& r, expr_type const& ex,
                               parameterelement_type& mu, int comp = 0 ):
@@ -224,6 +226,8 @@ public:
 
     using function_element_type = FctT;
     using update_function_type = std::function<bool(parameterelement_type const&, function_element_type&)>;
+
+    using ExpressionEvaluator<EltT, ExprT>::update;
 
 public:
     ExpressionEvaluatorNonLinear( range_type const& r, expr_type const& ex,

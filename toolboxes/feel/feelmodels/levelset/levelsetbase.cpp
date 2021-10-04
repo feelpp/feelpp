@@ -1180,7 +1180,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::smootherInterface() const
                 );
         M_smootherInterface = Feel::projector( 
                 spaceInterface, spaceInterface,
-                backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldCommPtr(), _rebuild=true), 
+                Feel::backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldCommPtr(), _rebuild=true), 
                 DIFF,
                 this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother"))/Order,
                 30);
@@ -1202,7 +1202,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::smootherInterfaceVectorial() const
                 );
         M_smootherInterfaceVectorial = Feel::projector(
                 spaceInterfaceVectorial, spaceInterfaceVectorial,
-                backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldCommPtr(), _rebuild=true),
+                Feel::backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldCommPtr(), _rebuild=true),
                 DIFF, 
                 this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother-vec"))/Order,
                 30);
