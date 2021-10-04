@@ -27,20 +27,21 @@
 
 namespace Feel {
 
-ThermoElectricNL::sparse_matrix_ptrtype
-ThermoElectricNL::assembleForMDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::sparse_matrix_ptrtype
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::assembleForMDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
 {
     auto bdConditions = M_modelProps->boundaryConditions2();
     auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
     auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
 
-    auto mesh = Xh->mesh();
+    auto mesh = this->Xh->mesh();
     auto u1 = u.template element<0>();
     auto u2 = u.template element<1>();
     auto uOld1 = u.template element<0>();
     auto uOld2 = u.template element<1>();
 
-    auto a = form2(_test=Xh, _trial=Xh);
+    auto a = form2(_test=this->Xh, _trial=this->Xh);
     for( auto const& [key,mat] : M_therMaterials )
     {
         auto sigma0 = mu.parameterNamed(mat.getString("misc.sigmaKey"));
@@ -88,20 +89,21 @@ ThermoElectricNL::assembleForMDEIMnl( parameter_type const& mu, element_type con
     return am;
 }
 
-ThermoElectricNL::vector_ptrtype
-ThermoElectricNL::assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::vector_ptrtype
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
 {
     auto bdConditions = M_modelProps->boundaryConditions2();
     auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
     auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
 
-    auto mesh = Xh->mesh();
+    auto mesh = this->Xh->mesh();
     auto u1 = u.template element<0>();
     auto u2 = u.template element<1>();
     auto uOld1 = u.template element<0>();
     auto uOld2 = u.template element<1>();
 
-    auto f = form1(_test=Xh);
+    auto f = form1(_test=this->Xh);
     for( auto const& [key,mat] : M_elecMaterials )
     {
         auto sigma0 = mu.parameterNamed(mat.getString("misc.sigmaKey"));
@@ -142,15 +144,16 @@ ThermoElectricNL::assembleForDEIMnl( parameter_type const& mu, element_type cons
     return fv;
 }
 
-ThermoElectricNL::element_type
-ThermoElectricNL::solve(parameter_type const& mu)
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::element_type
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::solve(parameter_type const& mu)
 {
     tic();
 
-    auto U = Xh->element();
+    auto U = this->Xh->element();
     auto u1 = U.template element<0>();
     auto u2 = U.template element<1>();
-    auto UOld = Xh->element();
+    auto UOld = this->Xh->element();
     auto uOld1 = UOld.template element<0>();
     auto uOld2 = UOld.template element<1>();
     uOld1 = M_InitialGuess[0][0]->template element<0>();
@@ -162,9 +165,9 @@ ThermoElectricNL::solve(parameter_type const& mu)
     do
     {
         auto am = this->assembleForMDEIMnl(mu, UOld, 0);
-        auto a = form2(_test=Xh, _trial=Xh, _matrix=am);
+        auto a = form2(_test=this->Xh, _trial=this->Xh, _matrix=am);
         auto fv = this->assembleForDEIMnl(mu, UOld, 0);
-        auto f = form1(_test=Xh, _vector=fv);
+        auto f = form1(_test=this->Xh, _vector=fv);
         a.solve(_solution=U, _rhs=f, _name="thermo-electro");
 
         increment = normL2(_range=elements(M_mesh), _expr=idv(u2)-idv(uOld2)) / normL2(_range=elements(M_mesh), _expr=idv(uOld2));
@@ -185,17 +188,18 @@ ThermoElectricNL::solve(parameter_type const& mu)
     return U;
 }
 
-ThermoElectricNL::element_type
-ThermoElectricNL::solveLinear(parameter_type const& mu)
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::element_type
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::solveLinear(parameter_type const& mu)
 {
     tic();
     auto bdConditions = M_modelProps->boundaryConditions2();
     auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
     auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
 
-    auto XhV = Xh->template functionSpace<0>();
-    auto XhT = Xh->template functionSpace<1>();
-    auto U = Xh->element();
+    auto XhV = this->Xh->template functionSpace<0>();
+    auto XhT = this->Xh->template functionSpace<1>();
+    auto U = this->Xh->element();
     auto u1 = U.template element<0>();
     auto u2 = U.template element<1>();
 
@@ -275,7 +279,9 @@ ThermoElectricNL::solveLinear(parameter_type const& mu)
     return U;
 }
 
-double ThermoElectricNL::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve)
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+double
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve)
 {
     if ( need_to_solve )
         u = this->solve( mu );
@@ -290,10 +296,10 @@ double ThermoElectricNL::output( int output_index, parameter_type const& mu , el
         {
             for( int m = 0; m < mMaxF(output_index, q); ++m )
             {
-                element_ptrtype eltF( new element_type( Xh ) );
-                *eltF = *M_Fqm[output_index][q][m];
-                output += M_betaFqm[output_index][q][m]*dot( *eltF, u );
-                // output += M_betaFqm[output_index][q][m]*dot( M_Fqm[output_index][q][m], u );
+                element_ptrtype eltF( new element_type( this->Xh ) );
+                *eltF = *this->M_Fqm[output_index][q][m];
+                output += this->M_betaFqm[output_index][q][m]*dot( *eltF, u );
+                // output += this->M_betaFqm[output_index][q][m]*dot( this->M_Fqm[output_index][q][m], u );
             }
         }
     }
@@ -302,10 +308,12 @@ double ThermoElectricNL::output( int output_index, parameter_type const& mu , el
     return output;
 }
 
-ThermoElectricNL::parameter_type ThermoElectricNL::parameterProperties() const
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::parameter_type
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::parameterProperties() const
 {
     auto parameters = M_modelProps->parameters();
-    auto mu = Dmu->element();
+    auto mu = this->Dmu->element();
     int i = 0;
     for( auto const& [key,parameter] : parameters )
         if( parameter.hasMinMax() )
@@ -313,21 +321,25 @@ ThermoElectricNL::parameter_type ThermoElectricNL::parameterProperties() const
     return mu;
 }
 
-int ThermoElectricNL::mMaxSigma( std::string mat)
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+int
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::mMaxSigma( std::string mat)
 {
     auto eim_sigma = this->scalarContinuousEim()[M_elecEimIndex[mat]];
     return eim_sigma->mMax();
 }
 
-ThermoElectricNL::q_sigma_element_type
-ThermoElectricNL::eimSigmaQ(std::string mat, int m)
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::q_sigma_element_type
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::eimSigmaQ(std::string mat, int m)
 {
     auto eim_sigma = this->scalarContinuousEim()[M_elecEimIndex[mat]];
     return eim_sigma->q(m);
 }
 
-ThermoElectricNL::vectorN_type
-ThermoElectricNL::eimSigmaBeta(std::string mat, parameter_type const& mu, vectorN_type const& vtN)
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::vectorN_type
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::eimSigmaBeta(std::string mat, parameter_type const& mu, vectorN_type const& vtN)
 {
     auto eim_sigma = this->scalarContinuousEim()[M_elecEimIndex[mat]];
     return eim_sigma->beta(mu, vtN);

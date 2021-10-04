@@ -28,7 +28,10 @@ endif()
 
 
 project(mor)
-  
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.mor.macros.cmake)
+INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.mor.macros.cmake DESTINATION share/feelpp/mor/cmake COMPONENT Devel)
+
 
 set(FEELPP_MOR_SOURCE_DIR ${PROJECT_SOURCE_DIR})
 set(FEELPP_MOR_BINARY_DIR ${PROJECT_BINARY_DIR})

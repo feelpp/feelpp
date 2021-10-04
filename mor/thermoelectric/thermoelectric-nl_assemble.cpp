@@ -27,7 +27,9 @@
 
 namespace Feel {
 
-void ThermoElectricNL::assemble()
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::assemble()
 {
     if ( M_useDEIM )
         this->assembleWithDEIM();
@@ -35,12 +37,13 @@ void ThermoElectricNL::assemble()
         this->assembleWithEIM();
 }
 
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
 void
-ThermoElectricNL::assembleWithEIM()
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::assembleWithEIM()
 {
     this->resize();
 
-    auto U = Xh->element();
+    auto U = this->Xh->element();
     auto u1 = U.template element<0>();
     auto u2 = U.template element<1>();
     auto bdConditions = M_modelProps->boundaryConditions2();
@@ -54,10 +57,10 @@ ThermoElectricNL::assembleWithEIM()
         auto eim_k = this->scalarContinuousEim()[i];
         for( int m = 0; m < eim_k->mMax(); ++m )
         {
-            auto a0 = form2(_test=Xh, _trial=Xh);
+            auto a0 = form2(_test=this->Xh, _trial=this->Xh);
             a0 = integrate( markedelements(M_mesh, mat.meshMarkers()),
                             idv(eim_k->q(m))*inner(gradt(u2),grad(u2)) );
-            M_Aqm[i][m] = a0.matrixPtr();
+            this->M_Aqm[i][m] = a0.matrixPtr();
         }
         ++i;
     }
@@ -68,10 +71,10 @@ ThermoElectricNL::assembleWithEIM()
         auto eim_sigma = this->scalarContinuousEim()[i];
         for( int m = 0; m < eim_sigma->mMax(); ++m )
         {
-            auto a1 = form2( _test=Xh, _trial=Xh );
+            auto a1 = form2( _test=this->Xh, _trial=this->Xh );
             a1 = integrate( markedelements(M_mesh, mat.meshMarkers()),
                             idv(eim_sigma->q(m))*inner(gradt(u1),grad(u1)) );
-            M_Aqm[i][m] = a1.matrixPtr();
+            this->M_Aqm[i][m] = a1.matrixPtr();
         }
         ++i;
     }
@@ -82,12 +85,12 @@ ThermoElectricNL::assembleWithEIM()
         auto eim_sigma = this->scalarContinuousEim()[M_elecEimIndex[bd.material()]];
         for( int m = 0; m < eim_sigma->mMax(); ++m )
         {
-            auto a2 = form2( _test=Xh, _trial=Xh );
+            auto a2 = form2( _test=this->Xh, _trial=this->Xh );
             a2 = integrate( markedfaces(M_mesh,bd.markers()),
                             idv(eim_sigma->q(m))*(M_gamma/hFace()*inner(idt(u1),id(u1))
                                                   -inner(gradt(u1)*N(),id(u1))
                                                   -inner(grad(u1)*N(),idt(u1)) ) );
-            M_Aqm[i][m] = a2.matrixPtr();
+            this->M_Aqm[i][m] = a2.matrixPtr();
         }
         ++i;
     }
@@ -95,9 +98,9 @@ ThermoElectricNL::assembleWithEIM()
     // Robin
     for( auto const&[bdName, bd] : temperatureRobin )
     {
-        auto a3 = form2(_test=Xh, _trial=Xh);
+        auto a3 = form2(_test=this->Xh, _trial=this->Xh);
         a3 = integrate( markedfaces(M_mesh, bd.markers()), inner(idt(u2),id(u2)) );
-        M_Aqm[i][0] = a3.matrixPtr();
+        this->M_Aqm[i][0] = a3.matrixPtr();
         ++i;
     }
 
@@ -112,10 +115,10 @@ ThermoElectricNL::assembleWithEIM()
         {
             for( int mm = 0; mm < eim_grad->mMax(); ++mm )
             {
-                auto f0 = form1(_test=Xh);
+                auto f0 = form1(_test=this->Xh);
                 f0 = integrate( markedelements(M_mesh, mat.meshMarkers()),
                                 M_sigmaMax*idv(eim_sigma->q(m))*idv(eim_grad->q(mm))*id(u2) );
-                M_Fqm[0][i][M++] = f0.vectorPtr();
+                this->M_Fqm[0][i][M++] = f0.vectorPtr();
             }
         }
         ++i;
@@ -127,10 +130,10 @@ ThermoElectricNL::assembleWithEIM()
         auto eim_sigma = this->scalarContinuousEim()[M_elecEimIndex[bd.material()]];
         for( int m = 0; m < eim_sigma->mMax(); ++m )
         {
-            auto f1 = form1(_test=Xh);
+            auto f1 = form1(_test=this->Xh);
             f1 = integrate( markedfaces(M_mesh, bd.markers()),
                             idv(eim_sigma->q(m))*(M_gamma/hFace()*id(u1) - grad(u1)*N() ) );
-            M_Fqm[0][i][m] = f1.vectorPtr();
+            this->M_Fqm[0][i][m] = f1.vectorPtr();
         }
         ++i;
     }
@@ -138,9 +141,9 @@ ThermoElectricNL::assembleWithEIM()
     // Robin
     for( auto const&[bdName, bd] : temperatureRobin )
     {
-        auto f2 = form1(_test=Xh);
+        auto f2 = form1(_test=this->Xh);
         f2 = integrate( markedfaces(M_mesh,bd.markers()), id(u2) );
-        M_Fqm[0][i][0] = f2.vectorPtr();
+        this->M_Fqm[0][i][0] = f2.vectorPtr();
         ++i;
     }
 
@@ -152,20 +155,20 @@ ThermoElectricNL::assembleWithEIM()
         if( output.type() == "averageTemp" )
         {
             auto dim = output.dim();
-            auto fAvgT = form1(_test=Xh);
-            if( dim == 3 )
+            auto fAvgT = form1(_test=this->Xh);
+            if( dim == Dim )
             {
                 auto range = markedelements(M_mesh, output.markers());
                 double area = integrate(_range=range, _expr=cst(1.)).evaluate()(0,0);
                 fAvgT = integrate( _range=range, _expr=id(u2)/cst(area) );
             }
-            else if( dim == 2 )
+            else if( dim == Dim-1 )
             {
                 auto range = markedfaces(M_mesh, output.markers() );
                 double area = integrate(_range=range, _expr=cst(1.)).evaluate()(0,0);
                 fAvgT = integrate( _range=range, _expr=id(u2)/cst(area) );
             }
-            M_Fqm[i++][0][0] = fAvgT.vectorPtr();
+            this->M_Fqm[i++][0][0] = fAvgT.vectorPtr();
         }
         else if( output.type() == "intensity" )
         {
@@ -173,18 +176,19 @@ ThermoElectricNL::assembleWithEIM()
             auto eimSigma = this->scalarContinuousEim()[M_elecEimIndex[mat]];
             for( int m = 0; m < eimSigma->mMax(); ++m )
             {
-                auto fI = form1(_test=Xh);
+                auto fI = form1(_test=this->Xh);
                 fI = integrate( markedfaces(M_mesh,output.markers() ),
                                 -idv(eimSigma->q(m))*grad(u1)*N() );
-                M_Fqm[i][0][m] = fI.vectorPtr();
+                this->M_Fqm[i][0][m] = fI.vectorPtr();
             }
             ++i;
         }
     }
 }
 
-ThermoElectricNL::betaqm_type
-ThermoElectricNL::computeBetaQm( parameter_type const& mu )
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::betaqm_type
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::computeBetaQm( parameter_type const& mu )
 {
     if( M_useDEIM )
     {
@@ -204,11 +208,12 @@ ThermoElectricNL::computeBetaQm( parameter_type const& mu )
         this->fillBetaQm(mu, betaEimGrad, betaEimK, betaEimSigma);
     }
 
-    return boost::make_tuple( M_betaAqm, M_betaFqm );
+    return boost::make_tuple( this->M_betaAqm, this->M_betaFqm );
 }
 
-ThermoElectricNL::betaqm_type
-ThermoElectricNL::computeBetaQm( element_type const& u, parameter_type const& mu)
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::betaqm_type
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::computeBetaQm( element_type const& u, parameter_type const& mu)
 {
     if( M_useDEIM )
     {
@@ -224,15 +229,18 @@ ThermoElectricNL::computeBetaQm( element_type const& u, parameter_type const& mu
         std::vector<vectorN_type> betaEimSigma(M_nbElecMat);
         for( int i = 0; i < M_nbElecMat; ++i )
             betaEimSigma[i] = this->scalarContinuousEim()[i+M_nbTherMat]->beta(mu, u);
+        Feel::cout << "using betaEimGrad(u, mu)" << std::endl;
+        // vectorN_type betaEimGrad (M_eimGradSize);
         vectorN_type betaEimGrad = this->scalarDiscontinuousEim()[0]->beta(mu, u);
         this->fillBetaQm(mu, betaEimGrad, betaEimK, betaEimSigma);
     }
 
-    return boost::make_tuple( M_betaAqm, M_betaFqm );
+    return boost::make_tuple( this->M_betaAqm, this->M_betaFqm );
 }
 
-ThermoElectricNL::betaqm_type
-ThermoElectricNL::computeBetaQm( vectorN_type const& urb, parameter_type const& mu)
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::betaqm_type
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::computeBetaQm( vectorN_type const& urb, parameter_type const& mu)
 {
     if( M_useDEIM )
     {
@@ -252,10 +260,15 @@ ThermoElectricNL::computeBetaQm( vectorN_type const& urb, parameter_type const& 
         this->fillBetaQm(mu, betaEimGrad, betaEimK, betaEimSigma);
     }
 
-    return boost::make_tuple( M_betaAqm, M_betaFqm );
+    return boost::make_tuple( this->M_betaAqm, this->M_betaFqm );
 }
 
-void ThermoElectricNL::fillBetaQm( parameter_type const& mu, vectorN_type const& betaGrad, std::vector<vectorN_type> const& betaK, std::vector<vectorN_type> const& betaSigma )
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::fillBetaQm( parameter_type const& mu,
+                                                   vectorN_type const& betaGrad,
+                                                   std::vector<vectorN_type> const& betaK,
+                                                   std::vector<vectorN_type> const& betaSigma )
 {
     // Feel::cout << "betaGrad:\n" << betaGrad << std::endl;
     // Feel::cout << "betaK:\n" << betaK << std::endl;
@@ -266,16 +279,16 @@ void ThermoElectricNL::fillBetaQm( parameter_type const& mu, vectorN_type const&
     /**********  left hand side *********/
     int i = 0;
     for( i = 0; i < M_nbTherMat; ++i )
-        for( int m = 0; m < M_betaAqm[i].size(); ++m )
-            M_betaAqm[i][m] = betaK[i](m);
+        for( int m = 0; m < this->M_betaAqm[i].size(); ++m )
+            this->M_betaAqm[i][m] = betaK[i](m);
     for( i = M_nbTherMat; i < M_nbTherMat+M_nbElecMat; ++i )
-        for( int m = 0; m < M_betaAqm[i].size(); ++m )
-            M_betaAqm[i][m] = betaSigma[i-M_nbTherMat](m);
+        for( int m = 0; m < this->M_betaAqm[i].size(); ++m )
+            this->M_betaAqm[i][m] = betaSigma[i-M_nbTherMat](m);
     for( auto const&[bdName, bd] : potentialDirichlet )
     {
         int idx = M_elecEimIndex[bd.material()]-M_nbTherMat;
-        for( int m = 0; m < M_betaAqm[i].size(); ++m )
-            M_betaAqm[i][m] = betaSigma[idx](m);
+        for( int m = 0; m < this->M_betaAqm[i].size(); ++m )
+            this->M_betaAqm[i][m] = betaSigma[idx](m);
         ++i;
     }
     for( auto const&[bdName, bd] : temperatureRobin )
@@ -284,7 +297,7 @@ void ThermoElectricNL::fillBetaQm( parameter_type const& mu, vectorN_type const&
         for( auto const& param : M_modelProps->parameters() )
             if( e.expression().hasSymbol(param.first) )
                 e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
-        M_betaAqm[i][0] = e.evaluate()(0,0);
+        this->M_betaAqm[i][0] = e.evaluate()(0,0);
         ++i;
     }
 
@@ -293,9 +306,9 @@ void ThermoElectricNL::fillBetaQm( parameter_type const& mu, vectorN_type const&
     for( i = 0; i < M_nbElecMat; ++i )
     {
         int M = 0;
-        for( int m = 0; m < M_betaFqm[0][i].size()/M_eimGradSize; ++m )
+        for( int m = 0; m < this->M_betaFqm[0][i].size()/M_eimGradSize; ++m )
             for( int mm = 0; mm < M_eimGradSize; ++mm )
-                M_betaFqm[0][i][M++] = betaSigma[i](m)*betaGrad(mm);
+                this->M_betaFqm[0][i][M++] = betaSigma[i](m)*betaGrad(mm);
     }
     for( auto const&[bdName, bd] : potentialDirichlet )
     {
@@ -304,8 +317,8 @@ void ThermoElectricNL::fillBetaQm( parameter_type const& mu, vectorN_type const&
             if( e.expression().hasSymbol(param.first) )
                 e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
         int idx = M_elecEimIndex[bd.material()]-M_nbTherMat;
-        for( int m = 0; m < M_betaFqm[0][i].size(); ++m )
-            M_betaFqm[0][i][m] = e.evaluate()(0,0)*betaSigma[idx](m);
+        for( int m = 0; m < this->M_betaFqm[0][i].size(); ++m )
+            this->M_betaFqm[0][i][m] = e.evaluate()(0,0)*betaSigma[idx](m);
         ++i;
     }
     for( auto const&[bdName, bd] : temperatureRobin )
@@ -314,7 +327,7 @@ void ThermoElectricNL::fillBetaQm( parameter_type const& mu, vectorN_type const&
         for( auto const& param : M_modelProps->parameters() )
             if( e.expression().hasSymbol(param.first) )
                 e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
-        M_betaFqm[0][i][0] = e.evaluate()(0,0);
+        this->M_betaFqm[0][i][0] = e.evaluate()(0,0);
         ++i;
     }
 
@@ -325,51 +338,57 @@ void ThermoElectricNL::fillBetaQm( parameter_type const& mu, vectorN_type const&
     {
         if( output.type() == "averageTemp" )
         {
-            M_betaFqm[i][0][0] = 1;
+            this->M_betaFqm[i][0][0] = 1;
             ++i;
         }
         else if( output.type() == "intensity" )
         {
             auto mat = output.getString("material");
             int idx = M_elecEimIndex[mat] - M_nbTherMat;
-            for( int m = 0; m < M_betaFqm[i][0].size(); ++m )
-                M_betaFqm[i][0][m] = betaSigma[idx](m);
+            for( int m = 0; m < this->M_betaFqm[i][0].size(); ++m )
+                this->M_betaFqm[i][0][m] = betaSigma[idx](m);
             ++i;
         }
     }
 }
 
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
 void
-ThermoElectricNL::fillBetaQmWithDEIM( parameter_type const& mu, vectorN_type const& betaDEIM, vectorN_type const& betaMDEIM )
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::fillBetaQmWithDEIM( parameter_type const& mu,
+                                                           vectorN_type const& betaDEIM,
+                                                           vectorN_type const& betaMDEIM )
 {
     int A = this->mdeim()->size();
     for( int i = 0; i < A; ++i )
-        M_betaAqm[0][i] = betaMDEIM(i);
+        this->M_betaAqm[0][i] = betaMDEIM(i);
 
     int F = this->deim()->size();
     for( int i = 0; i < F; ++i )
-        M_betaFqm[0][0][i] = betaDEIM(i);
+        this->M_betaFqm[0][0][i] = betaDEIM(i);
 
 }
 
-std::vector<std::vector<ThermoElectricNL::element_ptrtype> >
-ThermoElectricNL::computeInitialGuessAffineDecomposition()
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+std::vector<std::vector<typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::element_ptrtype> >
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::computeInitialGuessAffineDecomposition()
 {
     return M_InitialGuess;
 }
 
-ThermoElectricNL::beta_vector_type
-ThermoElectricNL::computeBetaInitialGuess( parameter_type const& mu)
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::beta_vector_type
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::computeBetaInitialGuess( parameter_type const& mu)
 {
-    M_betaInitialGuess[0][0] = 1;
-    M_betaInitialGuess[1][0] = 1;
+    this->M_betaInitialGuess[0][0] = 1;
+    this->M_betaInitialGuess[1][0] = 1;
     return this->M_betaInitialGuess;
 }
 
-std::vector< std::vector<ThermoElectricNL::sparse_matrix_ptrtype> >
-ThermoElectricNL::computeLinearDecompositionA()
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+std::vector< std::vector<typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::sparse_matrix_ptrtype> >
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::computeLinearDecompositionA()
 {
-    auto U = Xh->element();
+    auto U = this->Xh->element();
     auto u1 = U.template element<0>();
     auto u2 = U.template element<1>();
 
@@ -382,7 +401,7 @@ ThermoElectricNL::computeLinearDecompositionA()
     int i = 0;
     for( auto const& [name,mat] : M_therMaterials )
     {
-        auto a0 = form2(_test=Xh, _trial=Xh);
+        auto a0 = form2(_test=this->Xh, _trial=this->Xh);
         a0 = integrate( markedelements(M_mesh,mat.meshMarkers()),
                         inner(gradt(u2),grad(u2)) );
         aqm[i][0] = a0.matrixPtr();
@@ -390,7 +409,7 @@ ThermoElectricNL::computeLinearDecompositionA()
     }
     for( auto const& [name,mat] : M_elecMaterials )
     {
-        auto a1 = form2(_test=Xh, _trial=Xh);
+        auto a1 = form2(_test=this->Xh, _trial=this->Xh);
         a1 = integrate( markedelements(M_mesh, mat.meshMarkers()),
                         inner(gradt(u1),grad(u1)) );
         aqm[i][0] = a1.matrixPtr();
@@ -398,7 +417,7 @@ ThermoElectricNL::computeLinearDecompositionA()
     }
     for( auto const&[bdName, bd] : potentialDirichlet )
     {
-        auto a2 = form2(_test=Xh, _trial=Xh);
+        auto a2 = form2(_test=this->Xh, _trial=this->Xh);
         a2 = integrate( markedfaces(M_mesh, bd.markers()),
                         M_gamma/hFace()*inner(idt(u1),id(u1))
                         -inner(gradt(u1)*N(),id(u1))
@@ -409,7 +428,7 @@ ThermoElectricNL::computeLinearDecompositionA()
 
     for( auto const&[bdName, bd] : temperatureRobin )
     {
-        auto a3 = form2(_test=Xh, _trial=Xh);
+        auto a3 = form2(_test=this->Xh, _trial=this->Xh);
         a3 = integrate( markedfaces(M_mesh, bd.markers()), inner(idt(u2),id(u2)) );
         aqm[i][0] = a3.matrixPtr();
         ++i;
@@ -418,8 +437,9 @@ ThermoElectricNL::computeLinearDecompositionA()
     return aqm;
 }
 
-ThermoElectricNL::beta_vector_type
-ThermoElectricNL::computeBetaLinearDecompositionA( parameter_type const& mu, double time )
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::beta_vector_type
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::computeBetaLinearDecompositionA( parameter_type const& mu, double time )
 {
     beta_vector_type beta(Qa(true), std::vector<double>(1));
     auto bdConditions = M_modelProps->boundaryConditions2();
@@ -444,19 +464,21 @@ ThermoElectricNL::computeBetaLinearDecompositionA( parameter_type const& mu, dou
     return beta;
 }
 
-void ThermoElectricNL::assembleWithDEIM()
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::assembleWithDEIM()
 {
     this->resize();
 
     int A = this->mdeim()->size();
     auto qa = this->mdeim()->q();
     for( int i = 0; i < A; ++i )
-        M_Aqm[0][i] = qa[i];
+        this->M_Aqm[0][i] = qa[i];
 
     int F = this->deim()->size();
     auto qf = this->deim()->q();
     for( int i = 0; i < F; ++i )
-        M_Fqm[0][0][i] = qf[i];
+        this->M_Fqm[0][0][i] = qf[i];
 
 #if 0
     /********* Outputs ********/
@@ -467,7 +489,7 @@ void ThermoElectricNL::assembleWithDEIM()
         if( output.type() == "averageTemp" )
         {
             auto dim = output.dim();
-            auto fAvgT = form1(_test=Xh);
+            auto fAvgT = form1(_test=this->Xh);
             if( dim == 3 )
             {
                 auto range = markedelements(M_mesh, output.markers());
@@ -480,7 +502,7 @@ void ThermoElectricNL::assembleWithDEIM()
                 double area = integrate(_range=range, _expr=cst(1.)).evaluate()(0,0);
                 fAvgT = integrate( _range=range, _expr=id(u2)/cst(area) );
             }
-            M_Fqm[i++][0][0] = fAvgT.vectorPtr();
+            this->M_Fqm[i++][0][0] = fAvgT.vectorPtr();
         }
         else if( output.type() == "intensity" )
         {
@@ -488,10 +510,10 @@ void ThermoElectricNL::assembleWithDEIM()
             auto eimSigma = this->scalarContinuousEim()[M_elecEimIndex[mat]];
             for( int m = 0; m < eimSigma->mMax(); ++m )
             {
-                auto fI = form1(_test=Xh);
+                auto fI = form1(_test=this->Xh);
                 fI = integrate( markedfaces(M_mesh,output.markers() ),
                                 -idv(eimSigma->q(m))*grad(u1)*N() );
-                M_Fqm[i][0][m] = fI.vectorPtr();
+                this->M_Fqm[i][0][m] = fI.vectorPtr();
             }
             ++i;
         }

@@ -70,9 +70,10 @@ void printStats(fs::ofstream& out, std::vector<double > const& min, std::vector<
                    << std::setw(25) << mean[n] << std::endl;
 }
 
-int main( int argc, char** argv)
+template<int Dim, int Order, int G_Order>
+int runApplicationThermoElectricNL()
 {
-    using rb_model_type = ThermoElectricNL;
+    using rb_model_type = ThermoElectricNL<Dim, Order, G_Order>;
     using rb_model_ptrtype = std::shared_ptr<rb_model_type>;
     using crb_model_type = CRBModel<rb_model_type>;
     using crb_model_ptrtype = std::shared_ptr<crb_model_type>;
@@ -83,26 +84,6 @@ int main( int argc, char** argv)
     using sampling_type = typename crb_type::sampling_type;
     using sampling_ptrtype = std::shared_ptr<sampling_type>;
     using vectorN_type = Eigen::VectorXd;
-
-    auto opt = rb_model_type::makeOptions();
-    opt.add_options()
-        ( "online.dbid", po::value<std::string>()->default_value(""), "id of the db to load" )
-        ( "online.sampling-size", po::value<int>()->default_value(1), "number of parameters" )
-        ( "online.do-cvg", po::value<bool>()->default_value(true), "" )
-        ( "online.biotsavart.center", po::value<std::vector<double>>()->default_value({{0,0,0}}),"")
-        ( "online.biotsavart.radius", po::value<double>()->default_value(1), "")
-        ;
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=opt
-                     .add(crbOptions())
-                     .add(crbSEROptions())
-                     .add(eimOptions())
-                     .add(podOptions())
-                     .add(biotsavart_options())
-                     .add(backend_options("backend-primal"))
-                     .add(backend_options("backend-dual"))
-                     .add(backend_options("backend-l2"))
-                     .add(bdf_options("PoissonCRB")) );
 
     auto crb = crb_type::New(soption("thermoelectric.basename"), crb::stage::offline);
     auto crbmodel = crb->model();
@@ -137,7 +118,7 @@ int main( int argc, char** argv)
     auto center = vdoption("online.biotsavart.center");
     GeoTool::Node c(center[0],center[1],center[2]);
     auto radius = doption("online.biotsavart.radius");
-    auto BS = BiotSavart<3>(model->mesh(), c, radius);
+    auto BS = BiotSavart<Dim>(model->mesh(), c, radius);
     BS.init();
     std::vector<decltype(BS)::magneticfield_element_type> bn;
     Feel::cout << "computing " << N << " times " << M << " reduced basis for BS" << std::endl;
@@ -245,21 +226,23 @@ int main( int argc, char** argv)
         sampling->clear();
         sampling->randomize( size, true );
 
-        auto modelOutputs = model->modelProperties()->outputs().outputsOfType("point");
+        auto modelOutputs = model->modelProperties()->outputs();
+        auto modelOutputsPoints = modelOutputs.outputsOfType("point");
         auto ctxFeV = Xh->template functionSpace<0>()->context();
         auto ctxFeT = Xh->template functionSpace<1>()->context();
-        for( auto const& [name,output] : modelOutputs )
+        for( auto const& [name,output] : modelOutputsPoints )
         {
-            node_type t(3);
-            auto coord = expr<3,1>(output.getString("coord")).evaluate();
-            t(0) = coord(0); t(1) = coord(1); t(2) = coord(2);
+            node_type t(Dim);
+            auto coord = expr<Dim,1>(output.getString("coord")).evaluate();
+            for(int i = 0; i < Dim; ++i )
+                t(i) = coord(i);
             if( output.getString("field") == "electric-potential" )
                 ctxFeV.add( t );
             else if( output.getString("field") == "temperature" )
                 ctxFeT.add( t );
         }
 
-        int nbErr = 2 + modelOutputs.size() + (ioption("crb.output-index") != 0 ? 1 : 0);
+        int nbErr = 2 + modelOutputsPoints.size() + (ioption("crb.output-index") != 0 ? 1 : 0);
 #if USE_BS
         nbErr += 1;
 #endif
@@ -269,12 +252,45 @@ int main( int argc, char** argv)
         int i = 0;
         for( auto const& mu : *sampling )
         {
-            Feel::cout << "solving for mu = " << mu.toString() << std::endl;
+            Feel::cout << i << ": solving for mu = " << mu.toString() << std::endl;
             VTFE = model->solve(mu);
             auto evV = evaluateFromContext( _context=ctxFeV, _expr=idv(VFE));
             auto evT = evaluateFromContext( _context=ctxFeT, _expr=idv(TFE));
             if( ioption("crb.output-index") != 0 )
-                outFE = model->output(ioption("crb.output-index"), mu, VTFE);
+            {
+                int j = 1;
+                for( auto const& [key, output] : modelOutputs )
+                {
+                    if( output.type() == "averageTemp" )
+                    {
+                        if( j == ioption("crb.output-index") )
+                        {
+                            if( output.dim() == Dim )
+                                outFE = mean(_range=markedelements(model->mesh(), output.markers()),
+                                             _expr=idv(TFE) )(0,0);
+                            else if( output.dim() == Dim-1)
+                                outFE = mean(_range=markedfaces(model->mesh(), output.markers()),
+                                             _expr=idv(TFE) )(0,0);
+                            break;
+                        }
+                        ++j;
+                    }
+                    else if( output.type() == "intensity" )
+                    {
+                        if( j == ioption("crb.output-index") )
+                        {
+                            auto mat = model->elecMaterials().at(output.getString("material"));
+                            auto sigma0 = mu.parameterNamed(mat.getString("misc.sigmaKey"));
+                            auto alpha = mu.parameterNamed(mat.getString("misc.alphaKey"));
+                            auto sigma = sigma0/(cst(1.)+alpha*(idv(TFE)-cst(293.)));
+                            outFE = integrate( _range=markedfaces(model->mesh(), output.markers()),
+                                               _expr=-sigma*gradv(VFE)*vf::N()).evaluate()(0,0);
+                            break;
+                        }
+                        ++j;
+                    }
+                }
+            }
             auto normV = normL2( rangeU, idv(VFE) );
             auto normT = normL2( rangeU, idv(TFE) );
 
@@ -315,18 +331,18 @@ int main( int argc, char** argv)
                 for( int k = 0; k < evRbV.size(); ++k,++j )
                 {
                     errs[j][n][i] = std::abs(evV(k)-evRbV(k));
-                    errsRel[j][n][i] = errs[j][n][i]/std::abs(evV(k));
+                    errsRel[j][n][i] = std::abs(evV(k)) < 1e-7 ? errs[j][n][i] : errs[j][n][i]/std::abs(evV(k));
                 }
                 for( int k = 0; k < evRbT.size(); ++k,++j )
                 {
                     errs[j][n][i] = std::abs(evT(k)-evRbT(k));
-                    errsRel[j][n][i] = errs[j][n][i]/std::abs(evT(k));
+                    errsRel[j][n][i] = std::abs(evT(k)) < 1e-7 ? errs[j][n][i] : errs[j][n][i]/std::abs(evT(k));
                 }
                 if( ioption("crb.output-index") != 0 )
                 {
                     outRB = outputs[0];
                     errs[j][n][i] = std::abs(outFE-outRB);
-                    errsRel[j][n][i] = errs[j][n][i]/std::abs(outFE);
+                    errsRel[j][n][i] = std::abs(outFE) < 1e-7 ? errs[j][n][i] : errs[j][n][i]/std::abs(outFE);
                 }
             }
             ++i;
@@ -348,7 +364,7 @@ int main( int argc, char** argv)
 #if USE_BS
         values.push_back("B");
 #endif
-        for( auto const& [name,o] : modelOutputs )
+        for( auto const& [name,o] : modelOutputsPoints )
             values.push_back("P_"+name);
         if( ioption("crb.output-index") != 0 )
             values.push_back("O");
@@ -380,7 +396,56 @@ int main( int argc, char** argv)
         e2->add("BRB",BRB);
         e2->save();
 #endif
+        double maxErr = 0;
+        for( int i = 0; i < nbErr; ++i )
+            if( mean[i][N-1] > maxErr )
+                maxErr = mean[i][N-1];
+        return maxErr > 1e-4;
     }
-
     return 0;
+}
+
+
+int main( int argc, char** argv)
+{
+    auto opt = ThermoElectricNLBase::makeOptions();
+    opt.add_options()
+        ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
+        ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1 ")
+        ( "online.dbid", po::value<std::string>()->default_value(""), "id of the db to load" )
+        ( "online.sampling-size", po::value<int>()->default_value(1), "number of parameters" )
+        ( "online.do-cvg", po::value<bool>()->default_value(true), "" )
+        ( "online.biotsavart.center", po::value<std::vector<double>>()->default_value({{0,0,0}}),"")
+        ( "online.biotsavart.radius", po::value<double>()->default_value(1), "")
+        ;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=opt
+                     .add(crbOptions())
+                     .add(crbSEROptions())
+                     .add(eimOptions())
+                     .add(podOptions())
+                     .add(biotsavart_options())
+                     .add(backend_options("backend-primal"))
+                     .add(backend_options("backend-dual"))
+                     .add(backend_options("backend-l2"))
+                     .add(bdf_options("PoissonCRB")) );
+
+    int dimension = ioption(_name="case.dimension");
+    std::string discretization = soption(_name="case.discretization");
+
+    auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1>, hana::int_c<1> ));
+    int status = 1;
+    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)),
+                    [&discretization,&dimension,&status]( auto const& d )
+                        {
+                            constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
+                            std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
+                            constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
+                            constexpr int _gorder = std::decay_t<decltype(hana::at_c<2>( hana::at_c<1>(d) ))>::value;
+                            if ( dimension == _dim && discretization == _discretization )
+                                status = runApplicationThermoElectricNL<_dim,_torder,_gorder>();
+                        } );
+
+    return status;
 }

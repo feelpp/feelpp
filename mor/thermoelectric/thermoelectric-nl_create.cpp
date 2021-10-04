@@ -28,7 +28,7 @@
 namespace Feel {
 
 po::options_description
-ThermoElectricNL::makeOptions()
+ThermoElectricNLBase::makeOptions()
 {
     FEELPP_EXPORT po::options_description options( "Thermoelectric" );
     options.add_options()
@@ -50,7 +50,7 @@ ThermoElectricNL::makeOptions()
 }
 
 AboutData
-ThermoElectricNL::makeAbout( std::string const& str )
+ThermoElectricNLBase::makeAbout( std::string const& str )
 {
     AboutData about( str.c_str() );
     return about;
@@ -58,7 +58,8 @@ ThermoElectricNL::makeAbout( std::string const& str )
 
 
 
-ThermoElectricNL::ThermoElectricNL( std::string prefix ) :
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::ThermoElectricNL( std::string prefix ) :
     super_type(soption("thermoelectric.basename"), Environment::worldCommPtr(), prefix),
     M_propertyPath( Environment::expand( soption("thermoelectric.filename")) ),
     M_gamma(doption("thermoelectric.gamma")),
@@ -100,7 +101,9 @@ ThermoElectricNL::ThermoElectricNL( std::string prefix ) :
     Feel::cout << "sigmaMax=" << M_sigmaMax << std::endl;
 }
 
-int ThermoElectricNL::Qa( bool isLinear )
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+int
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::Qa( bool isLinear )
 {
     if( M_useDEIM && !isLinear )
         return 1;
@@ -112,7 +115,9 @@ int ThermoElectricNL::Qa( bool isLinear )
     return M_nbTherMat + M_nbElecMat + potentialDirichlet.size() + temperatureRobin.size();
 }
 
-int ThermoElectricNL::mMaxA(int q)
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+int
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::mMaxA(int q)
 {
     if( M_useDEIM )
         return this->mdeim()->size();
@@ -136,7 +141,9 @@ int ThermoElectricNL::mMaxA(int q)
         return 0;
 }
 
-int ThermoElectricNL::Nl()
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+int
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::Nl()
 {
     if( M_useDEIM )
         return 1;
@@ -145,7 +152,9 @@ int ThermoElectricNL::Nl()
     return 1 + outputs.size();
 }
 
-int ThermoElectricNL::Ql( int l)
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+int
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::Ql( int l)
 {
     if( l == 0 )
     {
@@ -173,7 +182,9 @@ int ThermoElectricNL::Ql( int l)
         return 0;
 }
 
-int ThermoElectricNL::mMaxF(int l, int q)
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+int
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::mMaxF(int l, int q)
 {
     if( l == 0 )
     {
@@ -211,57 +222,68 @@ int ThermoElectricNL::mMaxF(int l, int q)
         return 0;
 }
 
-int ThermoElectricNL::QIntensity( ModelOutput const& out ) const
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+int
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::QIntensity( ModelOutput const& out ) const
 {
     return 1;
 }
 
-int ThermoElectricNL::QAverageTemp( ModelOutput const& out ) const
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+int
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::QAverageTemp( ModelOutput const& out ) const
 {
     return 1;
 }
 
-int ThermoElectricNL::mMaxIntensity(int q, ModelOutput const& out ) const
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+int
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::mMaxIntensity(int q, ModelOutput const& out ) const
 {
     auto mat = out.getString("material");
     auto eimSigma = this->scalarContinuousEim()[M_elecEimIndex.at(mat)];
     return eimSigma->mMax();
 }
 
-int ThermoElectricNL::mMaxAverageTemp(int q, ModelOutput const& out ) const
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+int
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::mMaxAverageTemp(int q, ModelOutput const& out ) const
 {
     return 1;
 }
 
-void ThermoElectricNL::resize()
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::resize()
 {
     if( !M_useDEIM )
         M_eimGradSize = this->scalarDiscontinuousEim()[0]->mMax();
-    M_Aqm.resize(Qa());
-    M_betaAqm.resize(Qa());
+    this->M_Aqm.resize(Qa());
+    this->M_betaAqm.resize(Qa());
     for( int q = 0; q < Qa(); ++q)
     {
-        M_Aqm[q].resize(mMaxA(q), backend()->newMatrix(Xh, Xh ) );
-        M_betaAqm[q].resize(mMaxA(q));
+        this->M_Aqm[q].resize(mMaxA(q), backend()->newMatrix(this->Xh, this->Xh ) );
+        this->M_betaAqm[q].resize(mMaxA(q));
     }
-    M_Fqm.resize(Nl());
-    M_betaFqm.resize(Nl());
+    this->M_Fqm.resize(Nl());
+    this->M_betaFqm.resize(Nl());
     for( int l = 0; l < Nl(); ++l )
     {
-        M_Fqm[l].resize(Ql(l));
-        M_betaFqm[l].resize(Ql(l));
+        this->M_Fqm[l].resize(Ql(l));
+        this->M_betaFqm[l].resize(Ql(l));
         for( int q = 0; q < Ql(l); ++q )
         {
-            M_Fqm[l][q].resize(mMaxF(l,q), backend()->newVector(Xh) );
-            M_betaFqm[l][q].resize(mMaxF(l,q));
+            this->M_Fqm[l][q].resize(mMaxF(l,q), backend()->newVector(this->Xh) );
+            this->M_betaFqm[l][q].resize(mMaxF(l,q));
         }
     }
 }
 
 
 /*************************** mesh support of functionspace **********************/
-ThermoElectricNL::functionspace_type::mesh_support_vector_type
-ThermoElectricNL::functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::functionspace_type::mesh_support_vector_type
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
 {
     auto elecDomain = markedelements(mesh, M_materials.markersWithPhysic("electric"));
     auto therDomain = markedelements(mesh, M_materials.markersWithPhysic("thermic"));
@@ -270,7 +292,9 @@ ThermoElectricNL::functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
     return fusion::make_vector(suppElec,suppTher);
 }
 
-void ThermoElectricNL::initModel()
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::initModel()
 {
     Feel::cout << "init model" << std::endl;
     auto parameters = M_modelProps->parameters();
@@ -278,9 +302,9 @@ void ThermoElectricNL::initModel()
                                    {
                                        return p.second.hasMinMax();
                                    });
-    Dmu->setDimension(nbCrbParameters);
-    auto mu_min = Dmu->element();
-    auto mu_max = Dmu->element();
+    this->Dmu->setDimension(nbCrbParameters);
+    auto mu_min = this->Dmu->element();
+    auto mu_max = this->Dmu->element();
     int i = 0;
     for( auto const& [key,parameter] : parameters )
     {
@@ -290,27 +314,27 @@ void ThermoElectricNL::initModel()
             mu_max(i) = parameter.max();
             Feel::cout << "Found parameter " << key
                        << " with min/max : " << mu_min(i) << "/" << mu_max(i) << std::endl;
-            Dmu->setParameterName(i++, key );
+            this->Dmu->setParameterName(i++, key );
         }
     }
-    Dmu->setMin(mu_min);
-    Dmu->setMax(mu_max);
-    M_mu = Dmu->element();
+    this->Dmu->setMin(mu_min);
+    this->Dmu->setMax(mu_max);
+    M_mu = this->Dmu->element();
 
     if( !M_mesh )
         M_mesh = loadMesh( new mesh_type );
     this->setFunctionSpaces(functionspace_type::New( _mesh=M_mesh, _range=this->functionspaceMeshSupport( M_mesh ) ) );
-    Feel::cout << "Potential nDof  : " << Xh->template functionSpace<0>()->nDof() << std::endl
-               << "Temperature nDof: " << Xh->template functionSpace<1>()->nDof() << std::endl;
+    Feel::cout << "Potential nDof  : " << this->Xh->template functionSpace<0>()->nDof() << std::endl
+               << "Temperature nDof: " << this->Xh->template functionSpace<1>()->nDof() << std::endl;
 
-    M_u = Xh->element();
+    M_u = this->Xh->element();
 
     auto mu = this->Dmu->min();
     M_InitialGuess.resize(QInitialGuess());
     this->M_betaInitialGuess.resize(2);
     for( int q = 0; q < QInitialGuess(); ++q )
     {
-        M_InitialGuess[q].resize(mMaxInitialGuess(q), Xh->elementPtr());
+        M_InitialGuess[q].resize(mMaxInitialGuess(q), this->Xh->elementPtr());
         this->M_betaInitialGuess[q].resize(mMaxInitialGuess(q));
     }
     auto VTInit = this->solveLinear(mu);
@@ -352,11 +376,11 @@ void ThermoElectricNL::initModel()
         Feel::cout << tc::green << "MDEIM construction finished!!" << tc::reset << std::endl;
         if( boption("thermoelectric.test-deim") )
         {
-            auto musV = deim()->mus();
-            auto musM = mdeim()->mus();
+            auto musV = this->deim()->mus();
+            auto musM = this->mdeim()->mus();
             musV.insert(musV.end(), musM.begin(), musM.end());
-            auto qa = mdeim()->q();
-            auto qf = deim()->q();
+            auto qa = this->mdeim()->q();
+            auto qf = this->deim()->q();
             for( auto const& mu : musV )
             {
                 auto VTFE = this->solve(mu);
@@ -364,23 +388,23 @@ void ThermoElectricNL::initModel()
                 auto F = this->assembleForDEIMnl(mu, VTFE, 0 );
 
                 auto betaA = this->mdeim()->beta(mu, VTFE);
-                auto betaF = deim()->beta(mu, VTFE);
-                auto Am = backend()->newMatrix(Xh,Xh);
+                auto betaF = this->deim()->beta(mu, VTFE);
+                auto Am = backend()->newMatrix(this->Xh,this->Xh);
                 Am->zero();
-                for( int m = 0; m < mdeim()->size(); ++m )
+                for( int m = 0; m < this->mdeim()->size(); ++m )
                 {
                     Am->addMatrix( betaA(m), qa[m]);
                     Feel::cout << "betaA(" << m << ") = " << betaA(m) << std::endl;
                 }
-                auto Fm = backend()->newVector(Xh);
+                auto Fm = backend()->newVector(this->Xh);
                 Fm->zero();
-                for( int m = 0; m < deim()->size(); ++m )
+                for( int m = 0; m < this->deim()->size(); ++m )
                 {
                     Fm->add( betaF(m), qf[m]);
                     Feel::cout << "betaF(" << m << ") = " << betaF(m) << std::endl;
                 }
 
-                auto VTEIM = Xh->element();
+                auto VTEIM = this->Xh->element();
                 backend()->solve( _matrix=Am, _rhs=Fm, _solution=VTEIM);
 
                 auto VEIM = VTEIM.template element<0>();
@@ -462,7 +486,7 @@ void ThermoElectricNL::initModel()
         auto name = "eim_grad";
         auto gradgrad = _e2v*trans(_e2v);
         auto Jh = eimd_space_type::New( _mesh=M_mesh,
-                                        _range=elements(support(Xh->template functionSpace<0>())));
+                                        _range=elements(support(this->Xh->template functionSpace<0>())));
         auto eim_grad = eim( _model=std::dynamic_pointer_cast<ThermoElectricNL>(this->shared_from_this() ),
                              _element=M_u.template element<1>(),
                              _element2=M_u.template element<0>(),
@@ -476,29 +500,31 @@ void ThermoElectricNL::initModel()
         Feel::cout << tc::green << name << " dimension: " << eim_grad->mMax() << tc::reset << std::endl;
     }
 
-    auto U = Xh->element();
+    auto U = this->Xh->element();
     auto u1 = U.template element<0>();
     auto u2 = U.template element<1>();
 
     // Energy matrix
-    auto m = form2(_test=Xh, _trial=Xh);
-    m = integrate( elements(support(Xh->template functionSpace<0>())),
+    auto m = form2(_test=this->Xh, _trial=this->Xh);
+    m = integrate( elements(support(this->Xh->template functionSpace<0>())),
                    inner(gradt(u1),grad(u1)) );
-    m += integrate( elements(support(Xh->template functionSpace<1>())),
+    m += integrate( elements(support(this->Xh->template functionSpace<1>())),
                     inner(gradt(u2),grad(u2)) );
-    M_energy_matrix = m.matrixPtr();
+    this->M_energy_matrix = m.matrixPtr();
 
-    auto mm = form2(_test=Xh, _trial=Xh);
-    mm = integrate( elements(support(Xh->template functionSpace<0>())),
+    auto mm = form2(_test=this->Xh, _trial=this->Xh);
+    mm = integrate( elements(support(this->Xh->template functionSpace<0>())),
                     inner(idt(u1),id(u1)) );
-    mm += integrate( elements(support(Xh->template functionSpace<1>())),
+    mm += integrate( elements(support(this->Xh->template functionSpace<1>())),
                      inner(idt(u2),id(u2)) );
-    M_mass_matrix = mm.matrixPtr();
+    this->M_mass_matrix = mm.matrixPtr();
 
     this->assemble();
 }
 
-void ThermoElectricNL::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
 {
     Feel::cout << "setup specificity model" << std::endl;
     auto const& ptreeEim = ptree.get_child( "eim" );
@@ -586,7 +612,7 @@ void ThermoElectricNL::setupSpecificityModel( boost::property_tree::ptree const&
     }
     if( hasCtxElectro )
     {
-        fs::path dbdir(M_crbModelDb.dbRepository());
+        fs::path dbdir(this->M_crbModelDb.dbRepository());
         std::string filename = ( dbdir / "ctxelectro.crbdb").string();
         if ( this->worldComm().isMasterRank() )
         {
@@ -601,7 +627,7 @@ void ThermoElectricNL::setupSpecificityModel( boost::property_tree::ptree const&
     }
     if( hasCtxThermo )
     {
-        fs::path dbdir(M_crbModelDb.dbRepository());
+        fs::path dbdir(this->M_crbModelDb.dbRepository());
         std::string filename = ( dbdir / "ctxthermo.crbdb").string();
         if ( this->worldComm().isMasterRank() )
         {
@@ -616,7 +642,9 @@ void ThermoElectricNL::setupSpecificityModel( boost::property_tree::ptree const&
     }
 }
 
-void ThermoElectricNL::initOutputsPoints()
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::initOutputsPoints()
 {
     Feel::cout << "init output points" << std::endl;
     auto outputs = M_modelProps->outputs().outputsOfType("point");
@@ -625,9 +653,10 @@ void ThermoElectricNL::initOutputsPoints()
     bool hasCtxElectro = false, hasCtxThermo = false;
     for( auto const& [name,output] : outputs )
     {
-        node_type t(3);
-        auto coord = expr<3,1>(output.getString("coord")).evaluate();
-        t(0) = coord(0); t(1) = coord(1); t(2) = coord(2);
+        node_type t(Dim);
+        auto coord = expr<Dim,1>(output.getString("coord")).evaluate();
+        for( int i = 0; i < Dim; ++i )
+            t(i) = coord(i);
         if( output.getString("field") == "electric-potential" )
         {
             hasCtxElectro = true;
@@ -643,7 +672,7 @@ void ThermoElectricNL::initOutputsPoints()
     {
         M_ctxElectro.update();
 
-        fs::path dbdir(M_crbModelDb.dbRepository());
+        fs::path dbdir(this->M_crbModelDb.dbRepository());
         std::string filename = ( dbdir / "ctxelectro.crbdb").string();
         this->addModelFile("context-points-electro", filename);
         if ( this->worldComm().isMasterRank() )
@@ -660,7 +689,7 @@ void ThermoElectricNL::initOutputsPoints()
     {
         M_ctxThermo.update();
 
-        fs::path dbdir(M_crbModelDb.dbRepository());
+        fs::path dbdir(this->M_crbModelDb.dbRepository());
         std::string filename = ( dbdir / "ctxthermo.crbdb").string();
         this->addModelFile("context-points-thermo", filename);
         if ( this->worldComm().isMasterRank() )
@@ -675,7 +704,9 @@ void ThermoElectricNL::initOutputsPoints()
     }
 }
 
-ThermoElectricNL::vectorN_type ThermoElectricNL::computeOutputsPointsElectro( vectorN_type const& urb )
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::vectorN_type
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::computeOutputsPointsElectro( vectorN_type const& urb )
 {
     auto VRbElt = M_ctxElectro.rbFunctionSpace()->element();
     int dimRb = std::min((int)VRbElt.size(),(int)urb.size());
@@ -685,7 +716,9 @@ ThermoElectricNL::vectorN_type ThermoElectricNL::computeOutputsPointsElectro( ve
     return evaluations;
 }
 
-ThermoElectricNL::vectorN_type ThermoElectricNL::computeOutputsPointsThermo( vectorN_type const& urb )
+THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
+typename THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::vectorN_type
+THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::computeOutputsPointsThermo( vectorN_type const& urb )
 {
     auto TRbElt = M_ctxThermo.rbFunctionSpace()->element();
     int dimRb = std::min((int)TRbElt.size(),(int)urb.size());

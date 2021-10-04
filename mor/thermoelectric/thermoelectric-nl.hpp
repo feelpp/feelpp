@@ -39,12 +39,12 @@ public:
     using parameterspace_type = ParameterSpaceX;
 };
 
+template<int Dim, int Order, int G_Order>
 class FunctionSpaceDefinition
 {
 public:
     using value_type = double;
-    static const uint16_type Order = 1;
-    using convex_type =  Simplex<3>;
+    using convex_type = Simplex<Dim, G_Order>;
     using mesh_type = Mesh<convex_type>;
 
     using fct_base_type = Lagrange<Order,Scalar>;
@@ -54,7 +54,7 @@ public:
     using space_type = FunctionSpace<mesh_type, basis_type, value_type>;
     using element_type = typename space_type::element_type;
 
-    using basisd_type = bases<Lagrange<0, Scalar, Discontinuous> >;
+    using basisd_type = bases<Lagrange<Order-1, Scalar, Discontinuous> >;
     using spaced_type = FunctionSpace<mesh_type, basisd_type, Discontinuous, value_type>;
 };
 
@@ -75,23 +75,33 @@ public :
 
 };
 
-class FEELPP_EXPORT ThermoElectricNL : public ModelCrbBase<ParameterDefinition,
-                                                    FunctionSpaceDefinition,
-                                                    NonLinear,
-                                                    EimDefinition<ParameterDefinition,
-                                                                  FunctionSpaceDefinition> >
+class ThermoElectricNLBase
+{
+public:
+    static po::options_description makeOptions();
+    static AboutData makeAbout( std::string const& str = "thermoelectricnlcrbmodel" );
+};
+
+template<int Dim, int Order, int G_Order>
+class FEELPP_EXPORT ThermoElectricNL
+    : public ModelCrbBase<ParameterDefinition,
+                          FunctionSpaceDefinition<Dim, Order, G_Order>,
+                          NonLinear,
+                          EimDefinition<ParameterDefinition,
+                                        FunctionSpaceDefinition<Dim, Order, G_Order>> >,
+      public ThermoElectricNLBase
 {
 public:
     using super_type = ModelCrbBase<ParameterDefinition,
-                                    FunctionSpaceDefinition,
+                                    FunctionSpaceDefinition<Dim, Order, G_Order>,
                                     NonLinear,
                                     EimDefinition<ParameterDefinition,
-                                                  FunctionSpaceDefinition> >;
-    using self_type = ThermoElectricNL;
+                                                  FunctionSpaceDefinition<Dim, Order, G_Order>> >;
+    using self_type = ThermoElectricNL<Dim, Order, G_Order>;
 
     using parameter_space_type = ParameterDefinition;
-    using function_space_type = FunctionSpaceDefinition;
-    using eim_definition_type = EimDefinition<ParameterDefinition, FunctionSpaceDefinition>;
+    using function_space_type = FunctionSpaceDefinition<Dim, Order, G_Order>;
+    using eim_definition_type = EimDefinition<ParameterDefinition, FunctionSpaceDefinition<Dim, Order, G_Order>>;
 
     using eim_space_type = typename eim_definition_type::space1_type;
     using eim_space_ptrtype = std::shared_ptr<eim_space_type>;
@@ -100,20 +110,27 @@ public:
     using eimd_space_ptrtype = std::shared_ptr<eimd_space_type>;
     using map_eim_type = std::map<std::string, int>;
     using value_type = double;
-    using element_type = super_type::element_type;
+    using element_type = typename super_type::element_type;
     using element_ptrtype = std::shared_ptr<element_type>;
-    using parameter_type = super_type::parameter_type;
-    using mesh_type = super_type::mesh_type;
-    using mesh_ptrtype = super_type::mesh_ptrtype;
+    using parameter_type = typename super_type::parameter_type;
+    using mesh_type = typename super_type::mesh_type;
+    using mesh_ptrtype = typename super_type::mesh_ptrtype;
     using prop_type = ModelProperties;
     using prop_ptrtype = std::shared_ptr<prop_type>;
     using materials_type = ModelMaterials;
     using mat_type = ModelMaterial;
     using map_mat_type = std::map<std::string, mat_type>;
 
+    using functionspace_type = typename super_type::functionspace_type;
+    using betaqm_type = typename super_type::betaqm_type;
+    using beta_vector_type = typename super_type::beta_vector_type;
+    using vectorN_type = typename super_type::vectorN_type;
+    using sparse_matrix_ptrtype = typename super_type::sparse_matrix_ptrtype;
+    using vector_ptrtype = typename super_type::vector_ptrtype;
+
     using rb_space_type = typename super_type::rbfunctionspace_type;
-    using ctx_electro_type = rb_space_type::template sub_rbfunctionspace<0>::type::ctxrbset_type;
-    using ctx_thermo_type = rb_space_type::template sub_rbfunctionspace<1>::type::ctxrbset_type;
+    using ctx_electro_type = typename rb_space_type::template sub_rbfunctionspace<0>::type::ctxrbset_type;
+    using ctx_thermo_type = typename rb_space_type::template sub_rbfunctionspace<1>::type::ctxrbset_type;
 
     using mdeim_type = MDEIM<self_type>;
     using mdeim_ptrtype = std::shared_ptr<mdeim_type>;
@@ -154,8 +171,6 @@ private:
     bool M_useDEIM;
 
 public:
-    static po::options_description makeOptions();
-    static AboutData makeAbout( std::string const& str = "poissonnlcrbmodel" );
     explicit ThermoElectricNL( std::string prefix = "" );
     prop_ptrtype modelProperties() const { return M_modelProps; }
     parameter_type parameterProperties() const;
@@ -171,8 +186,10 @@ public:
     int QInitialGuess() const override { return 2; }
     int mMaxInitialGuess(int q) const override { return 1; }
     void resize();
+    map_mat_type const& elecMaterials() const { return M_elecMaterials; }
+    map_mat_type const& therMaterials() const { return M_therMaterials; }
 
-    functionspace_type::mesh_support_vector_type functionspaceMeshSupport( mesh_ptrtype const& mesh ) const override;
+    typename functionspace_type::mesh_support_vector_type functionspaceMeshSupport( mesh_ptrtype const& mesh ) const override;
     void initModel() override;
     void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
     void initOutputsPoints();
