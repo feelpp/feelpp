@@ -287,10 +287,5 @@ const uint16_type Hypercube<Dim, Order, RDim>::topological_dimension;
 template<uint16_type Dim, uint16_type Order, uint16_type RDim >
 const uint16_type Hypercube<Dim, Order, RDim>::nOrder;
 
-template<int Dim, int Order, int RealDim>
-struct ReduceDim<Hypercube<Dim, Order, RealDim>> {
-    static const uint16_type newDim = Dim - 1;
-    using type = Hypercube<newDim, Order, RealDim>;
-};
 }
 #endif /* __Hypercube_H */
