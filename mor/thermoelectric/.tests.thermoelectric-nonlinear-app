@@ -1,0 +1,1 @@
+quarterturn2d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/crb-thermoelectric-nonlinear/quarterturn2D.cfg --thermoelectric.basename quarterturn2d-nonlinear-np$np --crb.rebuild-database 1 --eim.rebuild-database 1

@@ -60,7 +60,7 @@ ThermoElectricNLBase::makeAbout( std::string const& str )
 
 THERMOELECTRICNL_CLASS_TEMPLATE_DECLARATIONS
 THERMOELECTRICNL_CLASS_TEMPLATE_TYPE::ThermoElectricNL( std::string prefix ) :
-    super_type(soption("thermoelectric.basename"), Environment::worldCommPtr(), prefix),
+    super_type(Environment::expand(soption("thermoelectric.basename")), Environment::worldCommPtr(), prefix),
     M_propertyPath( Environment::expand( soption("thermoelectric.filename")) ),
     M_gamma(doption("thermoelectric.gamma")),
     M_tolerance(doption("thermoelectric.tolerance")),
