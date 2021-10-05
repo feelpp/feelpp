@@ -393,11 +393,6 @@ template<int Dim> struct Line : public Simplex<1, Dim> {};
 template<int Dim> struct Triangle : public Simplex<2, Dim> {};
 template<int Dim> struct Tetrahedron : public Simplex<3, Dim> {};
 
-template<int Dim, int Order, int RealDim>
-struct ReduceDim<Simplex<Dim, Order, RealDim>> {
-    static const uint16_type newDim = Dim - 1;
-    using type = Simplex<newDim, Order, RealDim>;
-};
 
 }
 

@@ -77,8 +77,7 @@ public:
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
     // face mesh
-    using face_convex_type = typename ReduceDim<convex_type>::type;
-    using face_mesh_type = Mesh<face_convex_type>;
+    using face_mesh_type = typename mesh_type::trace_mesh_type;
     using face_mesh_ptrtype = std::shared_ptr<face_mesh_type>;
 
     static const uint16_type expr_order = (Order+E_Order)*nOrderGeo;
