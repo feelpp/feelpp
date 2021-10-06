@@ -621,9 +621,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     }
 
     // Dirichlet bc using a lagrange multiplier
-    if (this->hasMarkerDirichletBClm())
+    if ( this->hasMarkerDirichletBClm() )
     {
-        //std::cout << "createTraceMesh\n"<<std::endl;
         bool useSubMeshRelation = boption(_name="dirichletbc.lm.use-submesh-relation",_prefix=this->prefix());
         size_type useSubMeshRelationKey = (useSubMeshRelation)? EXTRACTION_KEEP_MESH_RELATION : 0;
         M_meshDirichletLM = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),this->markerDirichletBClm()), _context=useSubMeshRelationKey,_view=true );
@@ -632,19 +631,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
             std::string nameMeshDirichletLM = "nameMeshDirichletLM.msh";
             saveGMSHMesh(_mesh=M_meshDirichletLM,_filename=nameMeshDirichletLM);
         }
-
-        M_XhDirichletLM = space_trace_velocity_type::New( _mesh=M_meshDirichletLM, _worldscomm=this->localNonCompositeWorldsComm() );
-        //std::cout << "M_XhDirichletLM->nDof()"<< M_XhDirichletLM->nDof() <<std::endl;
+        M_XhDirichletLM = space_trace_velocity_type::New( _mesh=M_meshDirichletLM );
+        M_fieldDirichletLM = M_XhDirichletLM->elementPtr();
     }
 
     // lagrange multiplier for pressure bc
     if ( this->hasMarkerPressureBC() )
     {
         M_meshLagrangeMultiplierPressureBC = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),this->markerPressureBC()),_view=true );
-        M_spaceLagrangeMultiplierPressureBC = space_trace_velocity_component_type::New( _mesh=M_meshLagrangeMultiplierPressureBC, _worldscomm=this->localNonCompositeWorldsComm() );
-        M_fieldLagrangeMultiplierPressureBC1.reset( new element_trace_velocity_component_type( M_spaceLagrangeMultiplierPressureBC ) );
-        if ( nDim == 3 )
-            M_fieldLagrangeMultiplierPressureBC2.reset( new element_trace_velocity_component_type( M_spaceLagrangeMultiplierPressureBC ) );
+        M_spaceLagrangeMultiplierPressureBC = space_trace_velocity_component_type::New( _mesh=M_meshLagrangeMultiplierPressureBC );
+        M_fieldLagrangeMultiplierPressureBC1 = M_spaceLagrangeMultiplierPressureBC->elementPtr();
+        if constexpr ( nDim == 3 )
+            M_fieldLagrangeMultiplierPressureBC2 =  M_spaceLagrangeMultiplierPressureBC->elementPtr();
     }
 
     // init fluid outlet
@@ -1221,6 +1219,45 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     // body bc
     M_bodySetBC.applyRemesh( *this, remeshInterp );
     this->log("FluidMechanics","applyRemesh", "body bc done" );
+
+    // velocity imposed by using a lagrange multiplier
+    if ( M_meshDirichletLM )
+    {
+        M_meshDirichletLM = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),this->markerDirichletBClm())/*, _context=useSubMeshRelationKey*/,_view=true );
+        space_trace_velocity_ptrtype old_XhDirichletLM = M_XhDirichletLM;
+        element_trace_velocity_ptrtype old_fieldDirichletLM = M_fieldDirichletLM;
+        M_XhDirichletLM = space_trace_velocity_type::New( _mesh=M_meshDirichletLM );
+        M_fieldDirichletLM = M_XhDirichletLM->elementPtr();
+
+        auto matrixInterpolation_lmvelocitybc = remeshInterp.computeMatrixInterpolation( old_XhDirichletLM, M_XhDirichletLM );
+        remeshInterp.registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("dirichletlm"), old_XhDirichletLM, M_XhDirichletLM );
+        remeshInterp.interpolate( old_fieldDirichletLM, M_fieldDirichletLM );
+    }
+
+    // pressure bc
+    if ( M_meshLagrangeMultiplierPressureBC )
+    {
+        M_meshLagrangeMultiplierPressureBC = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),this->markerPressureBC()),_view=true );
+        space_trace_velocity_component_ptrtype old_spaceLagrangeMultiplierPressureBC = M_spaceLagrangeMultiplierPressureBC;
+        element_trace_velocity_component_ptrtype old_fieldLagrangeMultiplierPressureBC1 = M_fieldLagrangeMultiplierPressureBC1;
+        element_trace_velocity_component_ptrtype old_fieldLagrangeMultiplierPressureBC2 = M_fieldLagrangeMultiplierPressureBC2;
+        M_spaceLagrangeMultiplierPressureBC = space_trace_velocity_component_type::New( _mesh=M_meshLagrangeMultiplierPressureBC );
+        M_fieldLagrangeMultiplierPressureBC1 = M_spaceLagrangeMultiplierPressureBC->elementPtr();
+        if constexpr ( nDim == 3 )
+            M_fieldLagrangeMultiplierPressureBC2 = M_spaceLagrangeMultiplierPressureBC->elementPtr();
+
+        auto matrixInterpolation_lmpressurebc = remeshInterp.computeMatrixInterpolation( old_spaceLagrangeMultiplierPressureBC, M_spaceLagrangeMultiplierPressureBC );
+        remeshInterp.registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("pressurelm1"), old_spaceLagrangeMultiplierPressureBC, M_spaceLagrangeMultiplierPressureBC );
+        remeshInterp.interpolate( old_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC1 );
+        if constexpr ( nDim == 3 )
+        {
+            remeshInterp.registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("pressurelm2"), old_spaceLagrangeMultiplierPressureBC, M_spaceLagrangeMultiplierPressureBC );
+            remeshInterp.interpolate( old_fieldLagrangeMultiplierPressureBC2, M_fieldLagrangeMultiplierPressureBC2 );
+        }
+    }
+
+    // fluid inlet bc
+    this->initFluidInlet();
 
     // velocity extrapolated
     if ( M_vectorVelocityExtrapolated )
@@ -2077,7 +2114,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
     // lagrange multiplier for Dirichlet BC
     if (this->hasMarkerDirichletBClm())
     {
-        bvs->operator()(cptBlock) = this->backend()->newVector( this->XhDirichletLM() );
+        bvs->operator()(cptBlock) = M_fieldDirichletLM;//this->backend()->newVector( this->XhDirichletLM() );
         ++cptBlock;
     }
     if ( this->hasMarkerPressureBC() )
