@@ -21,16 +21,17 @@
 //! @date 15 Jun 2017
 //! @copyright 2017 Feel++ Consortium
 //!
+
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feells/distancetorange.hpp>
+#include <feel/feelmesh/metric.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <pybind11/pybind11.h>
 
 #include <fmt/core.h>
 #include <mpi4py/mpi4py.h>
-
-#include <feel/feeldiscr/mesh.hpp>
-#include <feel/feeldiscr/pch.hpp>
-#include <feel/feells/distancetorange.hpp>
-#include <feel/feelvf/vf.hpp>
-
 namespace py = pybind11;
 
 template<int Dim>
@@ -50,12 +51,7 @@ dist2range_inst( py::module &m )
     m.def(
         "gradedls", []( Pch_ptrtype<mesh_t, 1> const& Xh, faces_reference_wrapper_t<mesh_ptr_t> const& facets, double hclose, double hfar )
         { 
-            auto d = distanceToRange( Xh, facets ); 
-            d *= 1./d.max(); // max of d is 1
-            auto g = Xh->element();
-            CHECK( hclose > 0 && hfar > 0 ) << fmt::format("hclose({}) and/or hfar({}) must be stricly positive", hclose, hfar);
-            g.on(_range=elements(Xh->mesh()),_expr=hclose*(1-idv(d))+hfar*idv(d) );
-            return g;
+            return gradedfromls( Xh, facets, hclose, hfar);
         },
         py::return_value_policy::copy,
         py::arg( "space" ),
@@ -63,6 +59,15 @@ dist2range_inst( py::module &m )
         py::arg( "hclose" ),
         py::arg( "hfar" ),
         fmt::format("compute the graded metric field with metric set to hclose on facets and hfar the farthest away from facets in {}D",Dim).c_str() );
+    m.def(
+        "expr", []( Pch_ptrtype<mesh_t, 1> const& Xh, std::string const& e )
+        { 
+            return expr( Xh, expr(e) );
+        },
+        py::return_value_policy::copy,
+        py::arg( "space" ),
+        py::arg( "expr" ),
+        fmt::format("compute the  metric field with metric set from expression in {}D",Dim).c_str() );
 }
 PYBIND11_MODULE(_ls, m )
 {
