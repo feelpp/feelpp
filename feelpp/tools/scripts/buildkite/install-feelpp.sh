@@ -45,7 +45,7 @@ if [ "${component}" = "feelpp" ] ; then
     CTEST_FLAGS="-R python-mpi  -T test --no-compress-output -V"
     #CTEST_FLAGS="-R feelpp_qs_ -T test --no-compress-output -V"
 elif [ "${component}" = "toolboxes" ] ; then
-    CTEST_FLAGS="-R feelpp_toolbox_ -T test --no-compress-output"
+    CTEST_FLAGS="-R feelpp_toolbox_ -T test --no-compress-output -VV"
 elif [ "${component}" = "testsuite" ] ; then
     CTEST_FLAGS="-R feelpp_test_ -T test --no-compress-output"
 else
