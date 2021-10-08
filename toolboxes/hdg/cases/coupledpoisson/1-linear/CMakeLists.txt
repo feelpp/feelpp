@@ -22,4 +22,4 @@
 #
 #
 
-feelpp_add_fmu( test3d0d_linear CLASS test3d0d SRCS test3d0d.mo nonlinearResistor.mo voltageTest3d0d.mo )
+feelpp_add_fmu( test3d0d_linear CLASS test3d0d SRCS test3d0d.mo nonlinearResistor.mo voltageTest3d0d.mo CATEGORY toolboxes/hdg/cases/coupledpoisson/1-linear)
