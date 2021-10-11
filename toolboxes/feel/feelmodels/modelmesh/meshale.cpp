@@ -53,18 +53,8 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
     this->initFunctionSpaces();
     // update M_identity_ale
     this->updateIdentityMap();
+    // save initial idendity (initial domain)
     *M_fieldInitialIdentity = *M_identity_ale;
-#if 0
-    // compute dist between P1(ref) to Ho mesh
-    if ( mesh_type::nOrder != mesh_ref_type::nOrder )
-    {
-        M_dispP1ToHO_ref->on(_range=elements(M_referenceMesh),
-                             _expr=vf::P() );
-        for (size_type i=0;i<M_dispP1ToHO_ref->nLocalDof();++i)
-            (*M_dispP1ToHO_ref)(i) = (*M_identity_ale)(M_drm->dofRelMap()[i]) - (*M_dispP1ToHO_ref)(i);
-    }
-#endif
-
 
     this->log(prefixvm(this->prefix(),"MeshALE"),"constructor", "finish");
 }
@@ -104,12 +94,12 @@ MeshALE<Convex>::init()
     {
         //this->updateIdentityMap();
         M_bdf_ale_identity->start(*M_identity_ale);
-        M_bdf_ale_velocity->start(*M_meshVelocity);
+        //M_bdf_ale_velocity->start(*M_meshVelocity);
     }
     else
     {
         M_bdf_ale_identity->restart();
-        M_bdf_ale_velocity->restart();
+        //M_bdf_ale_velocity->restart();
 
 #if 0
         // transfert displacement on the mobile mesh
@@ -132,7 +122,8 @@ MeshALE<Convex>::init()
         this->updateIdentityMap();
 #endif
         *M_identity_ale = M_bdf_ale_identity->unknown(0);
-        *M_meshVelocity = M_bdf_ale_velocity->unknown(0);
+        //*M_meshVelocity = M_bdf_ale_velocity->unknown(0);
+        M_bdf_ale_identity->updateDerivative( *M_meshVelocity );
         M_isOnReferenceMesh = true;
         M_isOnMovingMesh = false;
     }
@@ -242,7 +233,8 @@ MeshALE<Convex>::initTimeStep()
                               _format=myFileFormat
                               );
     M_bdf_ale_identity->setPathSave( ( saveTsDir/"identity" ).string() );
-
+    M_bdf_ale_identity->setNumberOfConsecutiveSave( M_bdf_ale_identity->bdfOrder()+1 ); // necessary for compute mesh velocity with a restart
+#if 0
     M_bdf_ale_velocity = bdf( _space=M_Xhmove,
                               _name="velocity"+suffixName,
                               _prefix=this->prefix(),
@@ -256,6 +248,7 @@ MeshALE<Convex>::initTimeStep()
                               _format=myFileFormat
                               );
     M_bdf_ale_velocity->setPathSave( ( saveTsDir/"velocity" ).string() );
+#endif
 }
 
 template< class Convex >
@@ -451,7 +444,7 @@ void
 MeshALE<Convex>::updateTimeStep()
 {
     M_bdf_ale_identity->next( *M_identity_ale );
-    M_bdf_ale_velocity->next( *M_meshVelocity );
+    //M_bdf_ale_velocity->next( *M_meshVelocity );
     for ( auto & [name,cd] : M_computationalDomains )
         cd.updateTimeStep();
 }
