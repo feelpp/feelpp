@@ -91,6 +91,8 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         ( prefixvm( prefix, "ts.order" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "time order" )
 
         ( prefixvm( prefix, "checker" ).c_str(), Feel::po::value<bool>()->default_value( true ), "use checker" )
+
+        ( prefixvm( prefix, "exporter.use-static-mesh" ).c_str(), Feel::po::value<bool>()->default_value( true ), "exporter.use-static-mesh" )
         ;
 
     return appliBaseOptions

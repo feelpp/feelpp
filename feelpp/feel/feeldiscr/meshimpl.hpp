@@ -417,6 +417,10 @@ void Mesh<Shape, T, Tag, IndexT>::updateForUseAfterMovingNodes( bool upMeasures 
     // reset localisation tool
     this->tool_localization()->reset();
 
+    for ( MeshSupportBase* ms : this->meshSupportsAttached() )
+        ms->resetLocalizationTool();
+
+
 #if !defined( __INTEL_COMPILER )
     // notify observers that the mesh has changed
     LOG(INFO) << "Notify observers that the mesh has changed\n";
