@@ -150,7 +150,7 @@ pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  ../${COMPONENT}_${v
 echo "+++ uploading ${PBUILDER_RESULTS} to bintray $COMPONENT $FLAVOR/$DIST"
 ls  -1 ${PBUILDER_RESULTS}
 aptly repo add -force-replace feelpp-$DIST-$CHANNEL ${PBUILDER_RESULTS}
-aptly publish update ${DIST} s3:apt.feelpp.org:${FLAVOR}
+aptly publish update -passphrase="$BUILDKITE_PASSPHRASE" -force-overwrite ${DIST} s3:apt.feelpp.org:${FLAVOR}
 #echo "$scriptdir/publish.sh $main_version ${PBUILDER_RESULTS} $HOME/debian $DIST $CHANNEL $COMPONENT"
 #$scriptdir/publish.sh  $main_version ${PBUILDER_RESULTS} $HOME/debian $DIST $CHANNEL $COMPONENT
 #repreprocmd=reprepro -Vb $HOME/debian/$DIST -C $COMPONENT 
