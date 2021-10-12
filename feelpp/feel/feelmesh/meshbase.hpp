@@ -25,13 +25,15 @@
 #ifndef FEELPP_MESHBASE_HPP
 #define FEELPP_MESHBASE_HPP 1
 
+#include <unordered_map>
+
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/context.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feeltiming/tic.hpp>
 #include <feel/feelmesh/submeshdata.hpp>
-#include <unordered_map>
+#include <feel/feelmesh/meshsupportbase.hpp>
 
 #if defined(FEELPP_HAS_VTK)
 #include <feel/feelcore/disablewarnings.hpp>
@@ -583,6 +585,15 @@ public:
         return ret;
     }
 
+    //! attach a mesh support
+    void attachMeshSupport( MeshSupportBase* ms ) const;
+
+    //! detach a mesh support
+    void detachMeshSupport( MeshSupportBase* ms ) const;
+
+    //! return all mesh supports attached
+    std::vector<MeshSupportBase*> const& meshSupportsAttached() const { return M_meshSupportsAttached; }
+
     //!
     //! @return true if the list strings are all  mesh marker
     //!
@@ -895,6 +906,8 @@ private:
     //! meshes with nodes shared
     std::vector<std::weak_ptr<MeshBase<IndexT>>> M_meshesWithNodesShared;
 
+    //! mesh supports attached
+    mutable std::vector<MeshSupportBase*> M_meshSupportsAttached;
 
 };
 #if !defined(FEELPP_INSTANTIATE_NOEXTERN_MESHBASE)

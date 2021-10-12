@@ -224,7 +224,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
 
 
             //! gravity force
-            if ( physicFluidData->gravityForceEnabled() )
+            if ( physicFluidData->gravityForceEnabled() && false )
             {
                 auto const& gravityForce = physicFluidData->gravityForceExpr();
                 bool assembleGravityTerm = gravityForce.expression().isNumericExpression()? BuildCstPart : BuildNonCstPart;
