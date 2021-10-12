@@ -1134,6 +1134,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
     {
         auto p = this->functionSpacePressure()->element();
 
+        M_definePressureCstAlgebraicOperatorMeanPressure.clear();
         M_definePressureCstAlgebraicOperatorMeanPressure.resize(M_definePressureCstMeshRanges.size());
         auto dofTablePressure = this->functionSpacePressure()->dof();
         for ( int k=0;k<M_definePressureCstMeshRanges.size();++k )

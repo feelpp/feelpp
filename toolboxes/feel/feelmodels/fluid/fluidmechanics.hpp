@@ -98,6 +98,193 @@ auto toExpr( eigen_matrix_type<RowDim, RowCol> const& em )
 
 }
 
+
+
+
+class RemeshInterpolation
+{
+public:
+    using functionspace_base_ptrtype = std::shared_ptr<FunctionSpaceBase>;
+    using sparse_matrix_ptrtype = std::shared_ptr<MatrixSparse<double>>;
+    using vector_type = Vector<double>;
+    using vector_ptrtype = std::shared_ptr<vector_type>;
+    using datamap_ptrtype = datamap_ptr_t<>;
+private:
+    using key_functionspaces_type = std::pair<functionspace_base_ptrtype,functionspace_base_ptrtype>;
+    using key_datamaps_type = std::tuple<std::string,datamap_ptrtype,datamap_ptrtype>;
+    using matrix_interpolation_key_type = std::variant<key_functionspaces_type,key_datamaps_type>;
+public:
+
+    sparse_matrix_ptrtype matrixInterpolation( functionspace_base_ptrtype domainSpace, functionspace_base_ptrtype imageSpace ) const
+        {
+            auto itFind = M_matrixInterpolations.find( matrix_interpolation_key_type{std::make_pair(domainSpace, imageSpace)} );
+            if ( itFind != M_matrixInterpolations.end() )
+                return itFind->second;
+            return sparse_matrix_ptrtype{};
+        }
+
+    sparse_matrix_ptrtype matrixInterpolation( std::string const& name, datamap_ptrtype const& domainDataMap, datamap_ptrtype const& imageDataMap ) const
+        {
+            return this->matrixInterpolation( std::make_tuple( name,domainDataMap, imageDataMap ) );
+        }
+
+    sparse_matrix_ptrtype matrixInterpolation( std::string const& name ) const
+        {
+            auto itFind = std::find_if(M_matrixInterpolations.begin(),M_matrixInterpolations.end(),
+                                       [&name]( auto const& keyRelated ) {
+                                           if ( const key_datamaps_type* dmRelated = std::get_if<key_datamaps_type>(&keyRelated.first) )
+                                               return std::get<0>( *dmRelated ) == name;
+                                           return false;
+                                       });
+            if ( itFind != M_matrixInterpolations.end() )
+                return itFind->second;
+            return sparse_matrix_ptrtype{};
+        }
+
+    template <typename DomainSpaceType, typename ImageSpaceType, typename RangeType>
+    sparse_matrix_ptrtype computeMatrixInterpolation( std::shared_ptr<DomainSpaceType> domainSpace, std::shared_ptr<ImageSpaceType> imageSpace, RangeType const& range )
+        {
+            auto opI = opInterpolation(_domainSpace=domainSpace,
+                                       _imageSpace=imageSpace,
+                                       //_range=elements(support( imageSpace ) )
+                                       _range=range );
+            sparse_matrix_ptrtype matInterp = opI->matPtr();
+            this->setMatrixInterpolation( domainSpace, imageSpace, matInterp );
+            return matInterp;
+        }
+    template <typename DomainSpaceType, typename ImageSpaceType>
+    sparse_matrix_ptrtype computeMatrixInterpolation( std::shared_ptr<DomainSpaceType> domainSpace, std::shared_ptr<ImageSpaceType> imageSpace )
+        {
+            return this->computeMatrixInterpolation( domainSpace,imageSpace,elements(support( imageSpace ) ) );
+        }
+
+    void setMatrixInterpolation( functionspace_base_ptrtype domainSpace, functionspace_base_ptrtype imageSpace, sparse_matrix_ptrtype mat )
+        {
+            M_matrixInterpolations[matrix_interpolation_key_type{std::make_pair(domainSpace,imageSpace)}] = mat;
+        }
+
+    void setMatrixInterpolation( std::string const& name, datamap_ptrtype domainDataMap, datamap_ptrtype imageDataMap, sparse_matrix_ptrtype mat )
+        {
+            M_matrixInterpolations[matrix_interpolation_key_type{std::make_tuple(name,domainDataMap,imageDataMap)}] = mat;
+        }
+
+    template <typename DomainElementType, typename ImageElementType>
+    bool interpolate( DomainElementType const& u, ImageElementType & v ) const
+        {
+            auto domainSpace = unwrap_ptr( u ).functionSpace();
+            auto imageSpace = unwrap_ptr( v ).functionSpace();
+            auto matInterp = this->matrixInterpolation( domainSpace, imageSpace );
+            if ( !matInterp )
+                return false;
+            matInterp->multVector( unwrap_ptr( u ),  unwrap_ptr( v ) );
+            return true;
+        }
+    bool interpolate( std::string const& name, vector_ptrtype const& u, vector_ptrtype & v ) const
+        {
+            auto matInterp = this->matrixInterpolation( name );
+            if ( !matInterp )
+                return false;
+            matInterp->multVector( unwrap_ptr( u ),  unwrap_ptr( v ) );
+            return true;
+        }
+
+    bool interpolateBlockVector( std::string const& name, vector_ptrtype oldVecMonolithic, vector_ptrtype newVecMonolithic,  BlocksBaseVector<double> const& bvs, bool close = true ) const
+        {
+            auto thebackend = Feel::backend();
+            auto itFindName = M_blockIndexToSpace.find( name );
+            if ( itFindName == M_blockIndexToSpace.end() )
+                return false;
+            auto const& blockIndexToSpace = itFindName->second;
+
+            auto const& old_dm = oldVecMonolithic->map();
+            auto const& new_dm = newVecMonolithic->map();
+            CHECK( old_dm.numberOfDofIdToContainerId() == new_dm.numberOfDofIdToContainerId() ) << "vectors not compatible";
+            for ( size_type tag=0 ; tag<old_dm.numberOfDofIdToContainerId() ; ++tag )
+            {
+                auto matInterp = this->matrixInterpolation( blockIndexToSpace, tag );
+                CHECK( matInterp ) << "missing block index or interpolation matrix";
+#if 0
+                auto oldBlockField = thebackend->newVector( matInterp->mapColPtr() );
+                auto newBlockField = thebackend->newVector( matInterp->mapRowPtr() );
+#else
+                auto [mapDomainPtr,mapImagePtr] = this->dataMap( blockIndexToSpace, tag );
+                auto oldBlockField = thebackend->newVector( mapDomainPtr );
+                auto newBlockField = thebackend->newVector( mapImagePtr );
+#endif
+
+                bvs.setSubVector( *oldBlockField, *oldVecMonolithic, tag );
+
+                matInterp->multVector( unwrap_ptr( oldBlockField ),  unwrap_ptr( newBlockField ) );
+
+                bvs.setVector( *newVecMonolithic, *newBlockField, tag, false );
+            }
+            if ( close )
+                newVecMonolithic->close();
+            return true;
+        }
+
+    //! registering a the link between a \blockUndex (of block vector called \nameOfBlockVector) and interpolation matrix (represented by \domainSpace and \nameOfBlockVector)
+    void registeringBlockIndex( std::string const& nameOfBlockVector, size_type blockIndex, functionspace_base_ptrtype domainSpace, functionspace_base_ptrtype imageSpace )
+        {
+            M_blockIndexToSpace[nameOfBlockVector].insert( { blockIndex, matrix_interpolation_key_type{std::make_pair(domainSpace,imageSpace)} } );
+        }
+    //! registering a the link between a \blockUndex (of block vector called \nameOfBlockVector) and interpolation matrix (called matInterpName)
+    void registeringBlockIndex( std::string const& nameOfBlockVector, size_type blockIndex, std::string const& matInterpName )
+        {
+            auto itFind = std::find_if(M_matrixInterpolations.begin(),M_matrixInterpolations.end(),
+                                       [&matInterpName]( auto const& keyRelated ) {
+                                           if ( const key_datamaps_type* dmRelated = std::get_if<key_datamaps_type>(&keyRelated.first) )
+                                               return std::get<0>( *dmRelated ) == matInterpName;
+                                           return false;
+                                       });
+            CHECK( itFind != M_matrixInterpolations.end() ) << "no matrix interpolation with name" << matInterpName;
+            auto const& datmapsRelated = std::get<key_datamaps_type>( itFind->first );
+            M_blockIndexToSpace[nameOfBlockVector].insert( { blockIndex, matrix_interpolation_key_type{std::make_tuple(matInterpName,std::get<1>(datmapsRelated),std::get<2>(datmapsRelated))} } );
+        }
+private :
+    sparse_matrix_ptrtype matrixInterpolation( key_datamaps_type const& datamaps ) const
+        {
+            auto itFind = M_matrixInterpolations.find( matrix_interpolation_key_type{datamaps} );
+            if ( itFind != M_matrixInterpolations.end() )
+                return itFind->second;
+            return sparse_matrix_ptrtype{};
+        }
+    sparse_matrix_ptrtype matrixInterpolation( std::map<size_type,matrix_interpolation_key_type> const& blockIndexToSpace, size_type blockIndex ) const
+        {
+            auto itFindBlockIndex = blockIndexToSpace.find( blockIndex );
+            if ( itFindBlockIndex == blockIndexToSpace.end() )
+                return sparse_matrix_ptrtype{};
+            auto const& keyRelated = itFindBlockIndex->second;
+            if ( const key_functionspaces_type* spacesRelated = std::get_if<key_functionspaces_type>(&keyRelated) )
+                return this->matrixInterpolation( spacesRelated->first, spacesRelated->second );
+            else if ( const key_datamaps_type* datamapsRelated = std::get_if<key_datamaps_type>(&keyRelated) )
+                return this->matrixInterpolation( *datamapsRelated );
+            return sparse_matrix_ptrtype{};
+        }
+
+    std::pair<datamap_ptr_t<>,datamap_ptr_t<>> dataMap( std::map<size_type,matrix_interpolation_key_type> const& blockIndexToSpace, size_type blockIndex ) const
+        {
+            auto itFindBlockIndex = blockIndexToSpace.find( blockIndex );
+            if ( itFindBlockIndex == blockIndexToSpace.end() )
+                return {};
+            auto const& keyRelated = itFindBlockIndex->second;
+            if ( const key_functionspaces_type* spacesRelated = std::get_if<key_functionspaces_type>(&keyRelated) )
+                return std::make_pair( spacesRelated->first->mapPtr(), spacesRelated->second->mapPtr() );
+            else if ( const key_datamaps_type* datamapsRelated = std::get_if<key_datamaps_type>(&keyRelated) )
+                return std::make_pair( std::get<1>( *datamapsRelated ), std::get<2>( *datamapsRelated ) );
+            return {};
+        }
+
+private:
+    std::map<matrix_interpolation_key_type, sparse_matrix_ptrtype > M_matrixInterpolations;
+    std::map<std::string,std::map<size_type,matrix_interpolation_key_type> > M_blockIndexToSpace;
+};
+
+
+
+
+
+
 namespace FeelModels
 {
 
@@ -365,8 +552,10 @@ public:
         Body( Body && ) = default;
 
         void setup( pt::ptree const& p, ModelMaterials const& mats, mesh_ptrtype mesh );
-
+        void applyRemesh( mesh_ptrtype const& newMesh );
         void updateForUse();
+
+        std::shared_ptr<ModelPhysics<nRealDim>> const& modelPhysics() const { return M_modelPhysics; }
 
         //! return the mesh containing the body mesh
         mesh_ptrtype mesh() const { return M_mesh; }
@@ -404,6 +593,9 @@ public:
                     M_fieldDisplacement = M_spaceDisplacement->elementPtr();
                 M_fieldDisplacement->on(_range=range,_expr=e);
             }
+
+        //! return the current translation
+        eigen_vector_type<nRealDim> const& rigidTranslation() const { return M_rigidTranslationDisplacement; }
 
         //! return the current translation as an expression
         auto rigidTranslationExpr() const { return Feel::vf::toExpr( M_rigidTranslationDisplacement ); }
@@ -449,11 +641,18 @@ public:
                                                   angular_velocity_type const& angularVelocity,
                                                   double dt )
             {
-                // WARNING : only valid if evaluated in reference mesh
-
                 // get translation disp and angles from Euler time scheme
-                M_rigidTranslationDisplacement = dt*translationVelocity + M_rigidTranslationDisplacementAtPreviousTime;
-                M_rigidRotationAngles = dt*angularVelocity + M_rigidRotationAnglesAtPreviousTime;
+                eigen_vector_type<nRealDim> rigidTranslationDisplacement = dt*translationVelocity + M_rigidTranslationDisplacementAtPreviousTime;
+                rotation_angles_type rigidRotationAngles = dt*angularVelocity + M_rigidRotationAnglesAtPreviousTime;
+                this->updateDisplacementFromRigidDisplacement( rigidTranslationDisplacement,rigidRotationAngles );
+            }
+
+        void updateDisplacementFromRigidDisplacement( eigen_vector_type<nRealDim> const& rigidTranslation, rotation_angles_type const& rigidRotationAngles )
+            {
+                // WARNING : only valid if evaluated in initial domain
+
+                M_rigidTranslationDisplacement = rigidTranslation;
+                M_rigidRotationAngles = rigidRotationAngles;
 
                 auto dispByTranslationExpr = this->rigidTranslationExpr();
                 auto R = this->rigidRotationMatrixExpr();
@@ -476,6 +675,12 @@ public:
                 }
             }
 
+        void addRigidTranslationToCurrentDisplacement( eigen_vector_type<nRealDim> const& rigidTranslation )
+            {
+                auto tmp = M_spaceDisplacement->element();
+                tmp = this->fieldDisplacement();
+                this->updateDisplacement( elements(support(M_spaceDisplacement)), idv( tmp ) + Feel::vf::toExpr(rigidTranslation) );
+            }
 
         template <typename ExpRotationMatrixType,typename ExprMassCenterType>
         void applyRotationToCurrentDisplacement( Expr<ExpRotationMatrixType> const& R, Expr<ExprMassCenterType> const& massCenter )
@@ -605,7 +810,6 @@ public:
                 massCenter /= mass;
                 return std::make_tuple( mass, std::move( massCenter ) );
             }
-
         template <typename MassCenterExprType>
         void computeMomentOfInertia_inertialFrame( MassCenterExprType const& massCenterExpr, moment_of_inertia_type & momentOfInertia, bool addValue = false ) const
             {
@@ -702,10 +906,17 @@ public:
             M_body1( b1 ),
             M_body2( b2 )
             {}
+
+
+        void applyRemesh( self_type const& fluidToolbox, RemeshInterpolation & remeshInterp );
+
         BodyBoundaryCondition const& body1() const { return *M_body1; }
         BodyBoundaryCondition const& body2() const { return *M_body2; }
         datamap_ptr_t<> dataMapLagrangeMultiplierTranslationalVelocity() const { return M_dataMapLagrangeMultiplierTranslationalVelocity; }
         vector_ptrtype vectorLagrangeMultiplierTranslationalVelocity() const { return M_vectorLagrangeMultiplierTranslationalVelocity; }
+
+        //double relativeTranslation() const { return M_relativeTranslation; }
+        eigen_vector_type<nRealDim> relativeTranslationVector( eigen_vector_type<nRealDim> const& mc1, eigen_vector_type<nRealDim> const& mc2 ) const { return M_relativeTranslation*this->unitDirBetweenMassCenters(mc1,mc2); }
 
         //! return the name this articulation
         std::string name() const;
@@ -738,7 +949,31 @@ public:
                 M_exprTranslationalVelocity.setParameterValues( mp );
             }
 
+        void updateTimeStep()
+            {
+                M_relativeTranslationAtPreviousTime = M_relativeTranslation;
+            }
+
+        template <typename SymbolsExprType>
+        void updateDisplacement( double dt, SymbolsExprType const& se )
+            {
+#if 0
+                auto translationalVelocity1 = idv(bbc.fieldTranslationalVelocityPtr()).evaluate();
+                auto translationalVelocity2 = idv(bbcMaster.fieldTranslationalVelocityPtr()).evaluate();
+                eigen_vector_type<nRealDim> relativeTranslationalVelocity = translationalVelocity2 - translationalVelocity1;
+                M_relativeTranslation = dt*relativeTranslationalVelocity + M_relativeTranslationAtPreviousTime;
+#endif
+                double relativeTranslationalVelocity = expr( M_exprTranslationalVelocity.template expr<1,1>(), se ).evaluate(false)(0,0);
+                M_relativeTranslation = dt*relativeTranslationalVelocity + M_relativeTranslationAtPreviousTime;
+            }
+
     private:
+        eigen_vector_type<nRealDim> unitDirBetweenMassCenters( eigen_vector_type<nRealDim> const& mc1, eigen_vector_type<nRealDim> const& mc2 ) const
+            {
+                    eigen_vector_type<nRealDim> unitDir = (mc2-mc1);
+                    unitDir.normalize();
+                    return unitDir;
+            }
         eigen_vector_type<nRealDim> unitDirBetweenMassCenters() const;
 
     private :
@@ -747,6 +982,8 @@ public:
         ModelExpression M_exprTranslationalVelocity;
         datamap_ptr_t<> M_dataMapLagrangeMultiplierTranslationalVelocity;
         vector_ptrtype M_vectorLagrangeMultiplierTranslationalVelocity;
+
+        double M_relativeTranslation = 0, M_relativeTranslationAtPreviousTime = 0;
     };
 
     class NBodyArticulated
@@ -808,6 +1045,7 @@ public:
             }
 
         void init( self_type const& fluidToolbox );
+        void applyRemesh( self_type const& fluidToolbox, RemeshInterpolation & remeshInterp );
 
         //! set parameter values with symbolic expression
         void setParameterValues( std::map<std::string,double> const& mp )
@@ -887,15 +1125,23 @@ public:
             {
                 M_bdfAngularVelocity->next( *M_fieldAngularVelocity );
                 M_rigidRotationAnglesAtPreviousTime = M_rigidRotationAngles;
+                for ( BodyArticulation & ba : M_articulations )
+                    ba.updateTimeStep();
             }
 
 
         //! update displacement (only angles)
-        void updateDisplacement( double dt )
+        template <typename SymbolsExprType>
+        void updateDisplacement( double dt, SymbolsExprType const& se )
             {
                 typename Body::angular_velocity_type angularVelocity = idv(M_fieldAngularVelocity).evaluate();
                 M_rigidRotationAngles = dt*angularVelocity + M_rigidRotationAnglesAtPreviousTime;
+                for ( BodyArticulation & ba : M_articulations )
+                    ba.updateDisplacement( dt,se );
             }
+
+        //! return the relative rigid translation (computed from translational velocity fields)
+        eigen_vector_type<nRealDim> evaluateRelativeRigidTranslation( BodyBoundaryCondition const& bbc, BodyBoundaryCondition const& bbcMaster ) const;
 
         std::tuple<double,eigen_vector_type<nRealDim> >
         computeMassAndMassCenterFromDisplacementFieldOfBodies()
@@ -967,6 +1213,7 @@ public:
 
         void setup( std::string const& bodyName, pt::ptree const& p, self_type const& fluidToolbox );
         void init( self_type const& fluidToolbox );
+        void applyRemesh( self_type const& fluidToolbox, RemeshInterpolation & remeshInterp );
         void updateForUse( self_type const& fluidToolbox );
 
         void updateInformationObject( nl::json & p ) const;
@@ -1262,6 +1509,7 @@ public:
                     else
                         angularVelocity = idv(M_fieldAngularVelocity).evaluate();
                 }
+
                 this->body().updateDisplacementFromRigidVelocity( translationalVelocity,angularVelocity,dt );
             }
 
@@ -1296,6 +1544,8 @@ public:
                 }
 #endif
             }
+    private:
+        void initFunctionSpaces();
 
     private :
         std::string M_name;
@@ -1381,6 +1631,13 @@ public:
             }
 
         void init( self_type const& fluidToolbox );
+        void applyRemesh( self_type const& fluidToolbox, RemeshInterpolation & remeshInterp )
+            {
+                for ( auto & [name,bpbc] : *this )
+                    bpbc.applyRemesh( fluidToolbox, remeshInterp );
+                for (auto & nba : M_nbodyArticulated )
+                    nba.applyRemesh( fluidToolbox, remeshInterp );
+            }
         void updateForUse( self_type const& fluidToolbox );
         void initAlgebraicFactory( self_type const& fluidToolbox, model_algebraic_factory_ptrtype algebraicFactory );
         void updateAlgebraicFactoryForUse( self_type const& fluidToolbox, model_algebraic_factory_ptrtype algebraicFactory );
@@ -1486,6 +1743,55 @@ public:
                     res = Feel::FeelModels::modelMeasuresQuantities( res, bbc.modelMeasuresQuantities( currentPrefix ) );
                 }
                 return res;
+            }
+
+        template <typename SymbolsExprType>
+        void updateDisplacement( double dt, SymbolsExprType const& se )
+            {
+                for ( auto & [bpname,bbc] : *this )
+                {
+#if 0
+                    if ( bbc.hasElasticBehaviorFromExpr() )
+                    {
+                        auto hola = bbc.createElasticBehavior( se );
+                        bbc.updateElasticBehavior( hola, *this );
+                    }
+#endif
+                    if ( !bbc.isInNBodyArticulated() || ( bbc.getNBodyArticulated().masterBodyBC().name() == bbc.name() ) )
+                        bbc.updateDisplacement( dt );
+                }
+
+                for ( auto & nba : this->nbodyArticulated() )
+                {
+                    nba.updateDisplacement( dt,se ); // get rotation matrix
+                    auto const& bbcMaster = nba.masterBodyBC();
+                    auto rigidTranslationOfMaster = bbcMaster.body().rigidTranslation();
+                    for ( auto & [bpname,bbc] : *this )
+                    {
+                        if ( !nba.has( bbc ) || (bbcMaster.name() == bbc.name()) )
+                            continue;
+                        // start by imposed the same translation for all body on this nbodyArticulated
+                        bbc.body().updateDisplacementFromRigidDisplacement( rigidTranslationOfMaster, Body::rotation_angles_type::Zero() );
+                        // compute the relative rigid translation with bbcMaster (by using mass centers as axis)
+                        auto relativeTranslation = nba.evaluateRelativeRigidTranslation( bbc,bbcMaster );
+                        // add s relative translation to disp of body
+                        bbc.body().addRigidTranslationToCurrentDisplacement( relativeTranslation );
+                    }
+                }
+
+                for ( auto & nba : this->nbodyArticulated() )
+                {
+                    //nba.updateDisplacement( dt ); // get rotation matrix
+                    auto R = nba.rigidRotationMatrixExpr();
+                    auto [mass,massCenter] = nba.computeMassAndMassCenterFromDisplacementFieldOfBodies();
+                    for ( auto & [bpname,bbc] : *this )
+                    {
+                        if ( !nba.has( bbc ) )
+                            continue;
+                        bbc.body().applyRotationToCurrentDisplacement( R, Feel::vf::toExpr(massCenter) );
+                    }
+                }
+
             }
     private:
 
@@ -1658,16 +1964,21 @@ private :
     void initUserFunctions();
     void initPostProcess() override;
     void createPostProcessExporters();
+
+    void initAlgebraicModel();
+    void updateAlgebraicDofEliminationIds();
+
+    void updateMarkedZonesInMesh();
+    void updateStabilizationGLSRange();
 public :
     void init( bool buildModelAlgebraicFactory=true );
     void initAlgebraicFactory();
+    void applyRemesh( mesh_ptrtype const& newMesh );
 
     void createFunctionSpacesNormalStress();
     void createFunctionSpacesSourceAdded();
 
     FEELPP_DEPRECATED void loadMesh(mesh_ptrtype __mesh );
-
-    void updateMarkedZonesInMesh();
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
     void updateInformationObject( nl::json & p ) const override;
@@ -2515,17 +2826,6 @@ private :
     bool M_useVelocityExtrapolated;
     vector_ptrtype M_vectorVelocityExtrapolated, M_vectorPreviousVelocityExtrapolated;
     element_velocity_external_storage_ptrtype M_fieldVelocityExtrapolated; // view on M_vectorVelocityExtrapolated
-    // lagrange multiplier space for mean pressure
-    std::vector<space_meanpressurelm_ptrtype> M_XhMeanPressureLM;
-    // trace mesh and space
-    trace_mesh_ptrtype M_meshDirichletLM;
-    space_trace_velocity_ptrtype M_XhDirichletLM;
-    // lagrange multiplier for impose pressure bc
-    trace_mesh_ptrtype M_meshLagrangeMultiplierPressureBC;
-    space_trace_velocity_component_ptrtype M_spaceLagrangeMultiplierPressureBC;
-    element_trace_velocity_component_ptrtype M_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC2;
-    // body bc
-    BodySetBoundaryCondition M_bodySetBC;
     // time discrtisation fluid
     std::string M_timeStepping;
     bdf_velocity_ptrtype M_bdfVelocity;
@@ -2601,6 +2901,7 @@ private :
     // bool M_doStabDivDiv;
     bool M_doStabConvectionEnergy; // see Nobile thesis
     //----------------------------------------------------
+    // add constraint that mean pressure is equal to a constant (typically 0)
     bool M_definePressureCst;
     bool M_definePressureCstOnlyOneZoneAppliedOnWholeMesh;
     std::vector<std::set<std::string> > M_definePressureCstMarkers;
@@ -2608,7 +2909,19 @@ private :
     std::string M_definePressureCstMethod;
     double M_definePressureCstPenalisationBeta;
     std::vector<std::pair<vector_ptrtype,std::set<size_type> > > M_definePressureCstAlgebraicOperatorMeanPressure;
+    // lagrange multiplier space for mean pressure
+    std::vector<space_meanpressurelm_ptrtype> M_XhMeanPressureLM;
     //----------------------------------------------------
+    // bc : velocity imposed by using a lagrange multiplier
+    trace_mesh_ptrtype M_meshDirichletLM;
+    space_trace_velocity_ptrtype M_XhDirichletLM;
+    element_trace_velocity_ptrtype M_fieldDirichletLM;
+    // lagrange multiplier for impose pressure bc
+    trace_mesh_ptrtype M_meshLagrangeMultiplierPressureBC;
+    space_trace_velocity_component_ptrtype M_spaceLagrangeMultiplierPressureBC;
+    element_trace_velocity_component_ptrtype M_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC2;
+    // body bc
+    BodySetBoundaryCondition M_bodySetBC;
     // fluid inlet bc
     std::vector< std::tuple<std::string,std::string, scalar_field_expression<2> > > M_fluidInletDesc; // (marker,type,vmax expr)
     std::map<std::string,trace_mesh_ptrtype> M_fluidInletMesh;
@@ -2617,7 +2930,6 @@ private :
     std::map<std::string,std::tuple<component_element_velocity_ptrtype,
                                     op_interpolation_fluidinlet_ptrtype > > M_fluidInletVelocityInterpolated;
     std::map<std::string,std::tuple<element_fluidinlet_ptrtype,double,double> > M_fluidInletVelocityRef;//marker->(uRef,maxURef,flowRateRef)
-    //----------------------------------------------------
     // fluid outlet 0d (free, windkessel)
     std::vector< std::tuple<std::string,std::string, std::tuple<std::string,double,double,double> > > M_fluidOutletsBCType;
     mutable std::map<int,double> M_fluidOutletWindkesselPressureDistal,M_fluidOutletWindkesselPressureProximal;
@@ -2751,10 +3063,14 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
         bool meshIsOnRefAtBegin = this->meshALE()->isOnReferenceMesh();
         if ( !meshIsOnRefAtBegin )
             this->meshALE()->revertReferenceMesh( false );
+
+
+        this->meshALE()->revertInitialDomain( false );
+
         for( auto const& d : M_bcMovingBoundaryImposed )
-        {
-            this->meshALE()->updateDisplacementImposed( expression(d,se),markedfaces(this->mesh(),markers(d)) );
-        }
+            this->meshALE()->updateDisplacementImposedOnInitialDomain( this->keyword(), expression(d,se),markedfaces(this->mesh(),markers(d)) );
+
+
         for ( auto & [bpname,bbc] : M_bodySetBC )
         {
             if ( bbc.hasElasticBehaviorFromExpr() )
@@ -2762,29 +3078,20 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
                 auto hola = bbc.createElasticBehavior( se );
                 bbc.updateElasticBehavior( hola, *this );
             }
-
-            bbc.updateDisplacement( this->timeStep() );
         }
 
-        for ( auto & nba : M_bodySetBC.nbodyArticulated() )
-        {
-            nba.updateDisplacement( this->timeStep() );
-            auto R = nba.rigidRotationMatrixExpr();
-            auto [mass,massCenter] = nba.computeMassAndMassCenterFromDisplacementFieldOfBodies();
-            for ( auto & [bpname,bbc] : M_bodySetBC )
-            {
-                if ( !nba.has( bbc ) )
-                    continue;
-                bbc.body().applyRotationToCurrentDisplacement( R, Feel::vf::toExpr(massCenter) );
-            }
-        }
+        M_bodySetBC.updateDisplacement( this->timeStep(), se );
 
         for ( auto & [bpname,bbc] : M_bodySetBC )
         {
-            this->meshALE()->updateDisplacementImposed( idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
+            //this->meshALE()->updateDisplacementImposed( idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
+            this->meshALE()->updateDisplacementImposedOnInitialDomain( this->keyword(), idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
+
             if ( bbc.hasElasticVelocity() )
                 bbc.updateElasticVelocityWithRotation();
         }
+
+        this->meshALE()->revertReferenceMesh( false );
 
         if ( !meshIsOnRefAtBegin )
             this->meshALE()->revertMovingMesh( false );
@@ -2865,6 +3172,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::exportResults( d
 
     if constexpr ( nOrderGeo <= 2 )
     {
+        if ( M_exporter && M_exporter->exporterGeometry() == EXPORTER_GEOMETRY_CHANGE ) // TODO mv this code
+            M_exporter->defaultTimeSet()->setMesh( this->mesh() );
         this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
         this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, mfields, symbolsExpr, exportsExpr );
     }
