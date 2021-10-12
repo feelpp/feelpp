@@ -7,6 +7,7 @@
 #include <feel/feelfilters/databymeshentity.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 
+#include <feel/feeldiscr/geometricspace.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelmodels/modelcore/modelfields.hpp>
 
