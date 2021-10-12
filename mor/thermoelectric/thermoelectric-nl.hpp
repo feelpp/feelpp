@@ -82,7 +82,7 @@ public:
     static AboutData makeAbout( std::string const& str = "thermoelectricnlcrbmodel" );
 };
 
-template<int Dim, int Order, int G_Order>
+template<int Dim, int Order = 1, int G_Order = 1>
 class FEELPP_EXPORT ThermoElectricNL
     : public ModelCrbBase<ParameterDefinition,
                           FunctionSpaceDefinition<Dim, Order, G_Order>,

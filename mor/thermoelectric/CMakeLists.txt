@@ -137,7 +137,7 @@ feelpp_add_application( electric-alpha-app
                         )
 feelpp_add_application( biotsavart-app
                         SRCS thermoelectric-nl.hpp biotsavart.hpp biotsavart_main.cpp
-                        LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} INSTALL )
+                        LINK_LIBRARIES LINK_LIBRARIES ${FEELPP_MOR_LIBRARIES_THERMOELECTRIC_NL} INSTALL )
 if (FEELPP_HAS_GLPK)
   feelpp_add_application( biotsavart-electric-alpha-app
     SRCS electric-alpha.hpp biotsavart-electric-alpha.hpp biotsavart-electric-alpha_main.cpp

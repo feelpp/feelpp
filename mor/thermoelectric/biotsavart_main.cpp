@@ -32,7 +32,7 @@ using namespace Feel;
 
 int main( int argc, char** argv )
 {
-    using te_type = ThermoElectricNL;
+    using te_type = ThermoElectricNL<3>;
     using BSModel_type = BiotSavart<te_type>;
     using BSRB_type = BiotSavartRB<BSModel_type>;
     using BSRB_ptrtype = boost::shared_ptr<BSRB_type>;

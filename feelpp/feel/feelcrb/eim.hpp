@@ -1834,7 +1834,7 @@ public:
         M_offline_error(),
         M_eim(),
         M_write_nl_solutions( boption(_prefix=this->M_prefix, _name="eim.elements.write") ),
-        M_write_nl_directory( soption(_prefix=this->M_prefix, _name="eim.elements.directory") )
+        M_write_nl_directory( Environment::expand(soption(_prefix=this->M_prefix, _name="eim.elements.directory")) )
         {
             if ( model )
                 M_eimFeSpaceDb.setModel( model );
