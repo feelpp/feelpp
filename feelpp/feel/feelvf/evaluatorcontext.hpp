@@ -267,20 +267,15 @@ EvaluatorContext<CTX, ExprT, CTX2>::operator()() const
         {
             auto const& ctx = std::get<0>( it->second );
             auto const& curCtxIdToPointIds = std::get<1>( it->second );
+            int curCtxIndex = it->first;
 
-            int global_p = it->first;
-
-            //int global_p_BIS = M_ctx.ctxIdToPointIds().find( global_p )->second[0];
             std::vector<std::tuple<uint16_type,index_type,index_type>> gmcNodesUsed;
-            std::cout << "evaluator ctxId " << global_p <<  " vv="<<curCtxIdToPointIds.size() << std::endl; 
             for ( uint16_type q=0;q<curCtxIdToPointIds.size();++q )
             {
                 index_type nodeId = curCtxIdToPointIds[q];
-                std::cout << "evaluator nodeId " << nodeId << std::endl;
                 if ( M_pointsUsed )
                     if ( M_pointsUsed->get().find( nodeId ) == M_pointsUsed->get().end() )
                         continue;
-                std::cout << "evaluator nodeId " << nodeId << "OK"<< std::endl;
                 index_type nidUsed = nodeIdCtxToNodeIdUsed[nodeId];
                 if( nidUsed < global_max_size )
                     gmcNodesUsed.push_back( std::make_tuple(q,nodeId,nidUsed ) );
@@ -289,41 +284,32 @@ EvaluatorContext<CTX, ExprT, CTX2>::operator()() const
             if ( gmcNodesUsed.empty() )
                 continue;
 
-            std::cout << "evaluator ctx compute " << p << std::endl;
 #if 1
             // TODO VINCENT : really rebuild tensor or reuse-it (warning in GinacMatrix updateContext(..) called update(geom))
             // maybe with geometric space call directly update(geom)
             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >(ctx->gmContext() ) );
             t_expr_type tensor_expr( M_expr, mapgmc );
 #endif
-            //if( global_p < global_max_size )
+            if ( !M_ctx2.empty() && M_ctx2.find( curCtxIndex ) != M_ctx2.end() )
             {
-                if ( !M_ctx2.empty() && M_ctx2.find( global_p ) != M_ctx2.end() )
-                {
-                    //auto const& ctx2 = *M_ctx2.find( global_p );
-                    auto const& ctx2 = std::get<0>( M_ctx2.find( global_p )->second );
-                    //tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ), Xh2->contextBasis( ctx2, M_ctx2 ) );
-                    tensor_expr.updateContext( ctx, ctx2 );
-                }
-                else
-                    tensor_expr.updateContext( ctx );//Xh->contextBasis( ctx, M_ctx ) );
+                auto const& ctx2 = std::get<0>( M_ctx2.find( curCtxIndex )->second );
+                tensor_expr.updateContext( ctx, ctx2 );
+            }
+            else
+                tensor_expr.updateContext( ctx );
 
-                //LOG( INFO ) << "Xh->contextBasis returns a context of type \n"<< typeid( decltype( Xh->contextBasis( ctx, M_ctx ) )  ).name();
+            //LOG( INFO ) << "Xh->contextBasis returns a context of type \n"<< typeid( decltype( Xh->contextBasis( ctx, M_ctx ) )  ).name();
 
-                for ( auto const& [q,global_p_BIS,nidUsed] : gmcNodesUsed )
+            for ( auto const& [q,global_p_BIS,nidUsed] : gmcNodesUsed )
+            {
+                for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
                 {
-                    //index_type nid = nodeIdCtxToNodeIdUsed[global_p_BIS];
-                    for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+                    for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                     {
-                        for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
-                        {
-                            //__localv(shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
-                            __localv(/*global_p*//*global_p_BIS*/nidUsed*shape::M*shape::N+c1+c2*shape::M) = tensor_expr.evalq( c1, c2, q );
-                            //LOG( INFO ) << "__localv("<<shape::M*p+c1<<") = "<<tensor_expr.evalq( c1, 0, 0 )<<" and global p = "<<global_p;
-                        }
+                        __localv(nidUsed*shape::M*shape::N+c1+c2*shape::M) = tensor_expr.evalq( c1, c2, q );
                     }
                 }
-            }//only if globalp < max_size
+            }
 
         }//loop over local points
     }
