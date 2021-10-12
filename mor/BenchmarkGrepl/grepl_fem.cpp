@@ -35,6 +35,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
 using namespace Feel;
 

@@ -32,8 +32,10 @@ public :
         }
 
     virtual ~StabilizationGLSParameterBase() = default;
-    
+
     virtual void init() = 0;
+
+    virtual void applyRemesh( mesh_ptr_t const& newMesh ) = 0;
 
     double hSize( size_type eltId ) const
         {
