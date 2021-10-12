@@ -112,15 +112,21 @@ public :
     }
     bool isConstant() const { return this->isEvaluable(); }
 
-    evaluate_type evaluate() const
+    template <typename TheSymbolExprType = symbols_expression_empty_t>
+    evaluate_type evaluate( TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
     {
         evaluate_type res;
-        hana::for_each( expr_shapes, [this,&res]( auto const& e_ij )
+        hana::for_each( expr_shapes, [this,&res,&se]( auto const& e_ij )
                         {
                             constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
                             constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
                             if ( this->hasExpr<ni,nj>() )
-                                res = this->expr<ni,nj>().evaluate();
+                            {
+                                if constexpr ( is_symbols_expression_empty_v<TheSymbolExprType> )
+                                    res = this->expr<ni,nj>().evaluate();
+                                else
+                                    res = Feel::vf::expr( this->expr<ni,nj>(), se ).evaluate();
+                            }
                         });
         return res;
     }
