@@ -124,7 +124,9 @@ public :
 
         coord_value_type const& coordinatesEvaluated() const { return M_coordinatesEvaluated; }
 
-        void setExpression( ModelExpression && mexpr ) { M_coordinatesExpr = mexpr; this->updateForUse(); }
+        void setup( nl::json const& jData, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes );
+
+        void setExpression( ModelExpression && mexpr ) { M_coordinatesExpr = mexpr/*; this->updateForUse()*/; }
         void setMeshMarker( std::string const& s ) { M_meshMarker = s; }
 
         void setParameterValues( std::map<std::string,double> const& mp )
@@ -132,19 +134,56 @@ public :
                 if ( !M_coordinatesExpr.hasAtLeastOneExpr() )
                     return;
                 M_coordinatesExpr.setParameterValues( mp );
-                this->updateForUse();
+                //this->updateForUse();
             }
 
-        void updateForUse()
+        template <typename SymbolsExprType>
+        void updateForUse( SymbolsExprType const& se )
             {
                 if ( !M_coordinatesExpr.hasAtLeastOneExpr() )
                     return;
-                M_coordinatesEvaluated = M_coordinatesExpr.evaluate();
+                M_coordinatesEvaluated = M_coordinatesExpr.evaluate( se );
             }
     private:
         coord_value_type M_coordinatesEvaluated;
         ModelExpression M_coordinatesExpr;
         std::string M_meshMarker;
+    };
+
+    struct PointsOverLine
+    {
+        using coord_value_type = typename PointPosition::coord_value_type;
+
+        PointsOverLine() : M_nPoints( 10 ) {}
+
+        std::vector<coord_value_type> const& pointsSampling() const { return M_pointsSampling; }
+
+        //bool isInit();
+
+        void setup( nl::json const& jData, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes );
+
+        void setParameterValues( std::map<std::string,double> const& mp )
+            {
+                M_point1.setParameterValues( mp );
+                M_point2.setParameterValues( mp );
+            }
+
+        template <typename SymbolsExprType>
+        void updateForUse( SymbolsExprType const& se )
+            {
+                M_point1.updateForUse( se );
+                M_point2.updateForUse( se );
+                auto const& pt1 = M_point1.coordinatesEvaluated();
+                auto const& pt2 = M_point2.coordinatesEvaluated();
+
+                this->updatePointsSampling( pt1, pt2 );
+            }
+    private:
+        void updatePointsSampling( coord_value_type const& pt1, coord_value_type const& pt2 );
+    private:
+        PointPosition M_point1, M_point2;
+        int M_nPoints;
+        std::vector<coord_value_type> M_pointsSampling;
     };
 
     ModelPostprocessPointPosition( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
@@ -160,7 +199,7 @@ public :
     std::vector<PointPosition> const& pointsSampling() const { return M_pointsSampling; }
 
     std::set<std::string> const& fields() const { return M_fields; }
-    std::set<std::string> & fields() { return M_fields; }
+    //std::set<std::string> & fields() { return M_fields; }
 
     std::map<std::string,std::tuple<ModelExpression,std::string> > const& expressions() const { return M_exprs; }
 
@@ -169,13 +208,24 @@ public :
     void setFields( std::set<std::string> const& fields ) { M_fields = fields; }
     void addFields( std::string const& field ) { M_fields.insert( field ); }
     void setParameterValues( std::map<std::string,double> const& mp );
-private:
+
+    template <typename SymbolsExprType>
+    void updateForUse( SymbolsExprType const& se )
+    {
+        for ( auto & ptPos : M_pointsSampling )
+            ptPos.updateForUse( se );
+        for ( auto & pointsOverLine : M_pointsOverLines )
+            pointsOverLine.updateForUse( se );
+    }
+
+  private:
     void setup( std::string const& name, ModelIndexes const& indexes );
-private:
+  private:
     std::string M_name;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
     std::vector<PointPosition> M_pointsSampling;
+    std::vector<PointsOverLine> M_pointsOverLines;
     std::set<std::string> M_fields;
     std::map<std::string,std::tuple<ModelExpression,std::string> > M_exprs; // name -> ( expr, tag )
 };
@@ -349,9 +399,9 @@ public:
     pt::ptree & pTree() { return M_p; }
     pt::ptree pTree( std::string const& name ) const;
     bool useModelName() const { return M_useModelName; }
-    std::map<std::string,ModelPostprocessExports> allExports() const { return M_exports; }
-    std::map<std::string,ModelPostprocessSave> allSave() const { return M_save; }
-    std::map<std::string,ModelPostprocessQuantities> allMeasuresQuantities() const { return M_measuresQuantities; }
+    std::map<std::string,ModelPostprocessExports> const& allExports() const { return M_exports; }
+    std::map<std::string,ModelPostprocessSave> const& allSave() const { return M_save; }
+    std::map<std::string,ModelPostprocessQuantities> const& allMeasuresQuantities() const { return M_measuresQuantities; }
     std::map<std::string,std::vector<ModelPostprocessPointPosition> > const& allMeasuresPoint() const { return M_measuresPoint; }
     std::map<std::string,std::vector<ModelPostprocessNorm> > const& allMeasuresNorm() const { return M_measuresNorm; }
     std::map<std::string,std::vector<ModelPostprocessStatistics> > const& allMeasuresStatistics() const { return M_measuresStatistics; }
@@ -367,6 +417,7 @@ public:
     ModelPostprocessSave const& save( std::string const& name = "" ) const;
     ModelPostprocessQuantities const& measuresQuantities( std::string const& name = "" ) const;
     std::vector<ModelPostprocessPointPosition> const& measuresPoint( std::string const& name = "" ) const;
+    std::vector<ModelPostprocessPointPosition> & measuresPoint( std::string const& name = "" );
     std::vector<ModelPostprocessNorm> const& measuresNorm( std::string const& name = "" ) const;
     std::vector<ModelPostprocessStatistics> const& measuresStatistics( std::string const& name = "" ) const;
     std::vector<ModelPostprocessCheckerMeasure> const& checkersMeasure( std::string const& name = "" ) const;

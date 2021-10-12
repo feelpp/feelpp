@@ -216,6 +216,50 @@ ModelPostprocessSave::setup( pt::ptree const& p )
     }
 }
 
+void
+ModelPostprocessPointPosition::PointPosition::setup( nl::json const& jData, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes )
+{
+    CHECK( jData.is_string() ) << "PointPosition json should be a string";
+    std::string coordExpr = indexes.replace( jData.get<std::string>() );
+
+    ModelExpression mexpr;
+    mexpr.setExpr( coordExpr, world, directoryLibExpr/*,indexes*/ );
+    CHECK( mexpr.isScalar() || mexpr.isVector() ) << "wrong kind of expression with coord";
+
+    this->setExpression( std::move( mexpr ) );
+}
+
+void
+ModelPostprocessPointPosition::PointsOverLine::setup( nl::json const& jData, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes )
+{
+    CHECK( jData.contains( "point1") ) << "PointsOverLine json should be have entry : point1";
+    M_point1.setup( jData.at( "point1"), world, directoryLibExpr, indexes );
+    CHECK( jData.contains( "point2") ) << "PointsOverLine json should be have entry : point2";
+    M_point2.setup( jData.at( "point2"), world, directoryLibExpr, indexes );
+
+    if ( jData.contains( "n_points" ) )
+    {
+        auto const& jNPoints = jData.at( "n_points" );
+        if ( jNPoints.is_string() )
+            M_nPoints = std::stoi( jNPoints.get<std::string>() );
+        else if ( jNPoints.is_number_integer() )
+            M_nPoints = jNPoints.get<int>();
+    }
+}
+
+void
+ModelPostprocessPointPosition::PointsOverLine::updatePointsSampling( coord_value_type const& pt1, coord_value_type const& pt2 )
+{
+    M_pointsSampling.resize( M_nPoints );
+
+    coord_value_type vec12 = pt2-pt1;
+
+    for (int k=0;k<M_nPoints;++k)
+    {
+        M_pointsSampling[k] = pt1 + (((double)k)/(M_nPoints-1))*vec12;
+        //std::cout << "pt["<<k<<"] = "<<M_pointsSampling[k] << std::endl;
+    }
+}
 
 void
 ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes const& indexes )
@@ -229,10 +273,11 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
     bool hasCoord = jData.contains( "coord" );
     bool hasMarker = jData.contains( "marker" );
 
+#if 0
     // coord or marker is necessary
     if ( !hasCoord && !hasMarker )
         return;
-
+#endif
     M_name = name;
     if ( hasMarker )
     {
@@ -274,6 +319,25 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
             M_pointsSampling.push_back( std::move( ptPos ) );
         }
     } // hasCoord
+
+    bool hasOverGeo = jData.contains( "over_geometry" );
+    if ( hasOverGeo )
+    {
+        auto const& jOverGeo = jData.at( "over_geometry" );
+        for ( auto const& el : jOverGeo.items() )
+        {
+            std::cout << "el.keyy() " << el.key() << std::endl;
+            if ( el.key() == "line" )
+            {
+                CHECK( el.value().is_object() ) << "line item should be an object";
+                PointsOverLine pol;
+                pol.setup( el.value(), this->worldComm(), M_directoryLibExpr, indexes );
+                // TODO check if pol is operational
+                if ( true )
+                    M_pointsOverLines.push_back( std::move( pol ) );
+            }
+        }
+    }
 
     if ( jData.contains( "fields" ) )
     {
@@ -737,6 +801,16 @@ ModelPostprocess::measuresQuantities( std::string const& name ) const
 }
 std::vector<ModelPostprocessPointPosition> const&
 ModelPostprocess::measuresPoint( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    //CHECK( this->hasMeasuresPoint( nameUsed ) ) << "no measures point with name:"<<name;
+    if ( this->hasMeasuresPoint( nameUsed ) )
+        return M_measuresPoint.find( nameUsed )->second;
+    else
+        return M_emptyMeasuresPoint;
+}
+std::vector<ModelPostprocessPointPosition> &
+ModelPostprocess::measuresPoint( std::string const& name )
 {
     std::string nameUsed = (M_useModelName)? name : "";
     //CHECK( this->hasMeasuresPoint( nameUsed ) ) << "no measures point with name:"<<name;
