@@ -6,25 +6,8 @@ set -eo pipefail
 # this script must be executed at the top level of the Feel++ directories
 
 scriptdir=$PWD/$(dirname $0)
-BUILDKITE_AGENT_NAME=${BUILDKITE_AGENT_NAME:-default}
-# default values
-CHANNEL=latest
-if [ "$BUILDKITE_BRANCH" = "develop" -o  "$BRANCH" = "develop" ]; then
-    CHANNEL=latest
-fi
-if [ "$BUILDKITE_BRANCH" = "master" -o  "$BRANCH" = "master" ]; then
-    CHANNEL=stable
-fi 
-DIST=${DIST:-focal}
-if [ "$DIST" = "bionic" -o "$DIST" = "eoan" -o "$DIST" = "focal"  -o "$DIST" = "groovy"  -o "$DIST" = "hirsute"  ]; then
-   FLAVOR=ubuntu
-elif [ "$DIST" = "buster" -o "$DIST" = "bullseye" -o "$DIST" = "sid" ]; then
-    FLAVOR=debian
-fi
+source $(dirname $0)/common.sh
 
-
-
-COMPONENT=${COMPONENT:-feelpp}
 #OTHERMIRROR=
 #if [ "$COMPONENT" = "feelpp-toolboxes" ]; then
 #    OTHERMIRROR="deb https://dl.bintray.com/feelpp/ubuntu $DIST $CHANNEL"
@@ -149,14 +132,6 @@ pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  ../${COMPONENT}_${v
 
 echo "+++ uploading ${PBUILDER_RESULTS} to bintray $COMPONENT $FLAVOR/$DIST"
 ls  -1 ${PBUILDER_RESULTS}
+
+echo "upload to local repo: aptly repo add -force-replace feelpp-$DIST-$CHANNEL ${PBUILDER_RESULTS}..."
 aptly repo add -force-replace feelpp-$DIST-$CHANNEL ${PBUILDER_RESULTS}
-echo $BUILDKITE_PASSPHRASE > pp
-aptly publish update -passphrase-file=pp -force-overwrite ${DIST} s3:apt.feelpp.org:${FLAVOR}
-rm pp
-#echo "$scriptdir/publish.sh $main_version ${PBUILDER_RESULTS} $HOME/debian $DIST $CHANNEL $COMPONENT"
-#$scriptdir/publish.sh  $main_version ${PBUILDER_RESULTS} $HOME/debian $DIST $CHANNEL $COMPONENT
-#repreprocmd=reprepro -Vb $HOME/debian/$DIST -C $COMPONENT 
-
-## echo "../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT"
-## ../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT
-
