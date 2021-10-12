@@ -97,7 +97,7 @@ class Heat : public ModelNumerical,
         typedef std::shared_ptr<export_type> export_ptrtype;
 
         // measure tools for points evaluation
-        typedef MeasurePointsEvaluation< hana::tuple<GeometricSpace<mesh_type>>, space_temperature_type> measure_points_evaluation_type;
+        typedef MeasurePointsEvaluation< hana::tuple<GeometricSpace<mesh_type>> > measure_points_evaluation_type;
         typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
         struct FieldTag
