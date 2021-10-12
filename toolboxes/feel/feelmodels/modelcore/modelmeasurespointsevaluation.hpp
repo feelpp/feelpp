@@ -87,17 +87,17 @@ class MeasurePointsEvaluation
 public :
 
     using tuple_mesh_type = TupleMeshType;
-    using spaces_tuple_type = hana::tuple<SpacesType...>;
-    using fieldnames_space_tuple_type = std::decay_t<decltype( hana::transform( spaces_tuple_type{}, TransformSpaceToFieldNamesAndSpace{} ) ) >;
-    using context_fields_tuple_type = std::decay_t<decltype( hana::transform( fieldnames_space_tuple_type{}, TransformSpaceToContext{} ) ) >;
+    //using spaces_tuple_type = hana::tuple<SpacesType...>;
+    //using fieldnames_space_tuple_type = std::decay_t<decltype( hana::transform( spaces_tuple_type{}, TransformSpaceToFieldNamesAndSpace{} ) ) >;
+    //using context_fields_tuple_type = std::decay_t<decltype( hana::transform( fieldnames_space_tuple_type{}, TransformSpaceToContext{} ) ) >;
 
     using tuple_geospaces_with_names_type = std::decay_t<decltype( hana::transform( tuple_mesh_type{}, TransformSpaceToFieldNamesAndSpace{} ) ) >;
     using tuple_geocontext_type = std::decay_t<decltype( hana::transform( tuple_geospaces_with_names_type{}, TransformGeometricSpaceToContext{} ) ) >;
 
-    MeasurePointsEvaluation( tuple_geospaces_with_names_type const& geospaces, fieldnames_space_tuple_type const& fieldNamesSpaces )
+    MeasurePointsEvaluation( tuple_geospaces_with_names_type const& geospaces/*, fieldnames_space_tuple_type const& fieldNamesSpaces*/ )
         :
-        M_geoContexts( hana::transform( geospaces, TransformGeometricSpaceToContext{} ) ),
-        M_contextFields( hana::transform( fieldNamesSpaces, TransformSpaceToContext{} ) )
+        M_geoContexts( hana::transform( geospaces, TransformGeometricSpaceToContext{} ) )
+        //M_contextFields( hana::transform( fieldNamesSpaces, TransformSpaceToContext{} ) )
         {}
 
     void
@@ -236,25 +236,7 @@ public :
                                 }
                                 std::get<0>( x )->template updateGmcContext<vm::DYNAMIC>( dynctx );
                             });
-#if 0
-            hana::for_each( M_contextFields,
-                            [this,&fieldTuple,&res](auto const& x) {
-                                hana::for_each( fieldTuple.tuple(),
-                                                [this,&x,&res](auto const& y) {
-                                                    if constexpr ( is_iterable_v<decltype(y)> )
-                                                    {
-                                                        for ( auto const& mfield : y )
-                                                        {
-                                                            this->evalFieldImpl( x, mfield, res );
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        //this->evalFieldImpl( x,y.first,y.second,res );
-                                                    }
-                                                }); // for_each fieldTuple
-                            }); // for_each M_contextFields
-#endif
+
             hana::for_each( M_geoContexts,
                             [this,&se,&fieldTuple,&res](auto const& x) {
                                 auto const& geoctx = std::get<0>( x );
@@ -268,9 +250,6 @@ public :
                                                     {
                                                     for ( auto const& mfield : y )
                                                     {
-#if 0
-                                                        this->evalFieldImpl( x, mfield, res );
-#else
                                                         if ( fieldName != mfield.nameWithPrefix() )
                                                             continue;
                                                         //std::string fieldName = mfield.nameWithPrefix();
@@ -289,6 +268,7 @@ public :
                                                         if constexpr( std::is_same_v< typename Feel::decay_type<FieldType>::functionspace_type::mesh_type,
                                                                       typename std::decay_t<decltype(*geoctx)>::functionspace_type::mesh_type > )
                                                         {
+                                                            mfield.applyUpdateFunction();
                                                             //std::set<index_type> nodeIds;
                                                             for ( std::string const& ptPosName : ptPosSet )
                                                             {
@@ -300,7 +280,6 @@ public :
                                                                 this->evalImpl( geoctx, nodeIds, idv(fieldFunc), outputNameBase, res );
                                                             }
                                                         }
-#endif
                                                     }
                                                     }); // for_each fieldTuple
                                 }
@@ -396,12 +375,12 @@ private :
     void
     evalImpl( ContextDataType const& ctx, std::set<index_type> const& nodeIds, ExprType const& theExpr, std::string const& outputNameBase, std::map<std::string,double> & res )
         {
-            std::cout << "ModelMeasurePointEval evalImpl " << outputNameBase << " nodeIds " << nodeIds << std::endl;
+            //std::cout << "ModelMeasurePointEval evalImpl " << outputNameBase << " nodeIds " << nodeIds << std::endl;
             auto evalAtNodes = evaluateFromContext( _context=*ctx,
                                                     _expr=theExpr,
                                                     _points_used=nodeIds );
 
-            std::cout << "evalAtNodes=\n" << evalAtNodes << std::endl;
+            //std::cout << "evalAtNodes=\n" << evalAtNodes << std::endl;
 
             typedef typename ExprTraitsFromContext<std::decay_t<decltype(*ctx)>,std::decay_t<decltype(theExpr)>>::shape shape_type;
 
@@ -431,7 +410,7 @@ private :
 
 private :
     tuple_geocontext_type M_geoContexts;
-    context_fields_tuple_type M_contextFields;
+    //context_fields_tuple_type M_contextFields;
 };
 
 } // namespace FeelModels
