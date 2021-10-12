@@ -35,6 +35,7 @@ public :
             :
             M_generatePartitioning( false ),
             M_numberOfPartition( 1 ),
+            M_straightenMesh( true ),
             M_meshComponents( MESH_UPDATE_FACES|MESH_UPDATE_EDGES ),
             M_loadByMasterRankOnly( false )
             {}
@@ -48,9 +49,11 @@ public :
         bool generatePartitioning() const { return M_generatePartitioning; }
         int numberOfPartition() const { return M_numberOfPartition; }
         double meshSize() const { return M_meshSize; }
+        bool straightenMesh() const { return M_straightenMesh; }
         size_type meshComponents() const { return M_meshComponents; }
         bool loadByMasterRankOnly() const { return M_loadByMasterRankOnly; }
 
+        void setStraightenMesh( bool b ) { M_straightenMesh = b; }
         void setMeshComponents( size_type c ) { M_meshComponents = c; }
 
         bool hasMeshFilename() const { return !M_meshFilename.empty(); }
@@ -70,6 +73,7 @@ public :
         bool M_generatePartitioning;
         int M_numberOfPartition;
         double M_meshSize;
+        bool M_straightenMesh;
         size_type M_meshComponents;
         bool M_loadByMasterRankOnly;
     };

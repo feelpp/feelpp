@@ -2,7 +2,6 @@ SetFactory("OpenCASCADE");
 //+
 h = 0.05;
 
-P = DefineNumber[ {{ P }}, Name "Parameters/P" ];
 N = DefineNumber[ {{ N }}, Name "Parameters/N" ];
 L = DefineNumber[ {{ L }}, Name "Parameters/L" ];
 t = DefineNumber[ {{ t }}, Name "Parameters/t" ];
@@ -22,11 +21,11 @@ Characteristic Length{ PointsOf{ Surface{ : }; } } = h;
 //+
 // Physical {{ eltDim }} (Sprintf("fin-%g",r)) = r+1;
 
-Physical {{ eltDim }}("Post") = {1:2*{{ Elt }}};
+Physical {{ eltDim }}("Post") = {1:2*N};
 finid = 1;
-For r In {2*{{ Elt }}+1:#S[]:2}
+For r In {2*N+1:#S[]:{{ step }} }
     Printf("Fin number %g %g ", r, finid);
-    Physical {{ eltDim }}(Sprintf("Fin_%g",finid)) = {r,r+1};
+    Physical {{ eltDim }}(Sprintf("Fin_%g",finid)) = {{ physicalArg }};
     finid += 1;
 EndFor
 
@@ -43,5 +42,5 @@ For ii In { 1 : (#bdy[]-1) }
     EndIf
 EndFor
 
-Mesh 2; //+//+
-Show "*";
+// Mesh 2;
+// Show "*";
