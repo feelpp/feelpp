@@ -1,17 +1,90 @@
 {
+    "env": {
+        "myDefaultIncludePath": [
+            "${workspaceFolder}/feelpp/contrib/eigen",
+            "${workspaceFolder}/feelpp/contrib/eigen/unsupported",
+            "${workspaceFolder}/feelpp/contrib/tabulate",
+            "${workspaceFolder}/feelpp/contrib/glog/src",
+            "${workspaceFolder}/feelpp/contrib/gflags/src",
+            "${workspaceFolder}/feelpp",
+            "${workspaceFolder}/toolboxes",
+            "${workspaceFolder}/mor"
+        ]
+    },
     "configurations": [
         {
-            "name": "Linux",
+            "name": "Mac",
             "includePath": [
+                "/usr/local/include",
+                "/usr/include",
                 "${workspaceFolder}/**"
             ],
             "defines": [],
-            "compilerPath": "/usr/bin/clang",
+            "intelliSenseMode": "clang-x64",
+            "browse": {
+                "path": [
+                    "/usr/local/include",
+                    "/usr/include",
+                    "${workspaceFolder}/**"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            },
+            "macFrameworkPath": [
+                "/System/Library/Frameworks",
+                "/Library/Frameworks"
+            ],
+            "compilerPath": "/usr/bin/clang++",
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "intelliSenseMode": "clang-x64",
-            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
             "configurationProvider": "vector-of-bool.cmake-tools"
+        },
+        {
+            "name": "Linux",
+            "includePath": [
+                "/usr/include",
+                "/usr/local/include",
+                "/usr/lib/x86_64-linux-gnu/openmpi/include",
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "FEELPP_HAS_PETSC=1",
+                "FEELPP_HAS_PETSC4PY=1",
+            ],
+            "intelliSenseMode": "clang-x64",
+            "browse": {
+                "path": [
+                    "/usr/include",
+                    "/usr/local/include",
+                    "${workspaceFolder}/**"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            },
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "compileCommands": "${workspaceFolder}/build-${buildKitVendor}${buildKitVersionMajor}-${variant:cpp}-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}-${variant:matplot}/compile_commands.json",
+            "configurationProvider": "ms-vscode.cmake-tools"
+        },
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE"
+            ],
+            "intelliSenseMode": "msvc-x64",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/**"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            },
+            "cStandard": "c11",
+            "cppStandard": "c++17"
         }
     ],
     "version": 4

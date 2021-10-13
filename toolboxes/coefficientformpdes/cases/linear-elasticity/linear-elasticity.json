@@ -1,0 +1,60 @@
+{
+    "Name": "Elasticity",
+    "ShortName": "Elasticity",
+    "Models":
+    {
+        "equations":[
+            {
+                "name":"elas",
+                "unknown":
+                {
+                    "basis":"Pchv1",
+                    "name":"eta",
+                    "symbol":"eta"
+                }
+            }
+        ]
+    },
+    "Parameters": {
+        "E": 204e6,
+        "nu": 0.29,
+        "mu": "E/(2*(1+nu)):E:nu",
+        "lambda":"E*nu/((1+nu)*(1-2*nu)):E:nu"
+    },
+    "Materials":
+    {
+        "Iron":
+        {
+            "markers":"Omega",
+            "elas_c":0,
+            "elas_gamma":"{-lambda*(elas_grad_eta_00+elas_grad_eta_11) - 2*mu*elas_grad_eta_00,-mu*(elas_grad_eta_01+elas_grad_eta_10),-mu*(elas_grad_eta_10+elas_grad_eta_01),-lambda*(elas_grad_eta_00+elas_grad_eta_11) - 2*mu*elas_grad_eta_11}:lambda:mu:elas_div_eta:elas_grad_eta_00:elas_grad_eta_01:elas_grad_eta_10:elas_grad_eta_11",
+            //"elas_gamma":"{-1*elas_grad_eta_00,-1*elas_grad_eta_01,-1*elas_grad_eta_10,-1*elas_grad_eta_11}:elas_grad_eta_00:elas_grad_eta_01:elas_grad_eta_10:elas_grad_eta_11",
+            "elas_f": "{0.,-9.81}"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "elas":
+        {
+            "Dirichlet":
+            {
+                "mybc":
+                {
+                    "markers":"Dirichlet",
+                    "expr":"{0.,0.}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["all"]
+            }
+        }
+    }
+}

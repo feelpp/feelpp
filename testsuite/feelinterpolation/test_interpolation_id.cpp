@@ -21,9 +21,13 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#include <feel/feel.hpp>
-#include <feel/feeldiscr/ned1h.hpp>
+#include <feel/feelcore/testsuite.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feelvf/vf.hpp>
 
 /** use Feel namespace */
 using namespace Feel;

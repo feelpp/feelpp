@@ -128,7 +128,7 @@ class ImporterAcusimRawMesh : public Importer<MeshType>
 
     ImporterAcusimRawMesh( ImporterAcusimRawMesh const& ) = default;
 
-    void visit( mesh_type* mesh );
+    void visit( mesh_type* mesh ) override;
 
     std::string const& filenameNodes() const { return M_filenameNodes; }
 

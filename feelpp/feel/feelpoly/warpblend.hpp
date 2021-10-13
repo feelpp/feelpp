@@ -137,7 +137,7 @@ public :
         this->setName( "warpblend", Order );
     }
 
-    ~PointSetWarpBlend() {}
+    ~PointSetWarpBlend() override {}
 
 private :
 

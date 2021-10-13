@@ -166,10 +166,10 @@ public:
     /**
      * default constructor
      */
-    explicit Mesh0D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    explicit Mesh0D( std::string const& name = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         super_visitable(),
-        super( 0, nRealDim, worldComm ),
+        super( name, 0, nRealDim, worldComm ),
         super_elements( worldComm ),
         super_points( worldComm )
         {}
@@ -177,7 +177,7 @@ public:
     Mesh0D( Mesh0D const& m ) = default;
     Mesh0D( Mesh0D && m ) = default;
 
-    ~Mesh0D()
+    ~Mesh0D() override
         {}
 
     //@}

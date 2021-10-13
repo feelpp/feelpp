@@ -1,0 +1,11 @@
+#include <feel/feelmesh/geoelement.hpp>
+
+int main( int argc, char** argv )
+{
+    using namespace Feel;
+    
+#if defined(METABENCH)
+    GeoElement<%= n %>D<<%= n %>,Simplex<<%= n %>>> T;
+#endif
+
+}

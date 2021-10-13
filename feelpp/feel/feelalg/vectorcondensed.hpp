@@ -86,7 +86,7 @@ public:
 #endif
     VectorCondensed( VectorCondensed const& ) = default;
     VectorCondensed& operator=( VectorCondensed const& ) = default;
-    ~VectorCondensed() = default;
+    ~VectorCondensed() override = default;
 
     //!
     //! @return true if strategy is monolithic, false otherwise
@@ -115,7 +115,7 @@ public:
     //!
     //! add local vector according to strategy
     //!
-    virtual void addVector ( int* rows, int nrows,
+    void addVector ( int* rows, int nrows,
                              value_type* data,
                              size_type K, size_type K2
                              ) override

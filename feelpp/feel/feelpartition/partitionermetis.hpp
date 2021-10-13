@@ -46,12 +46,19 @@ public:
     /**
      * Constructor.
      */
-    PartitionerMetis () {}
+    PartitionerMetis() = default;
+
+    /**
+     * @brief Construct a new Partitioner Metis object
+     * 
+     * @param j json data
+     */
+    PartitionerMetis ( json const& j ): super(j) {}
 
     /**
      * Creates a new partitioner of this type 
      */
-    virtual clone_ptrtype clone () const override
+    clone_ptrtype clone () const override
         {
             return std::make_unique<PartitionerMetis<mesh_type>>();
         }

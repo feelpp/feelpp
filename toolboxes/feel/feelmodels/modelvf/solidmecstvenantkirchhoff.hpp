@@ -181,12 +181,12 @@ public:
         // fe context
         typedef typename fe_type::PreCompute pc_type;
         typedef std::shared_ptr<pc_type> pc_ptrtype;
-        typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context> ctx_type;
+        typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context,0, gmc_type::subEntityCoDim> ctx_type;
         typedef std::shared_ptr<ctx_type> ctx_ptrtype;
         // fe lamecoeff context
         typedef typename fe_lamecoeff_type::PreCompute pc_lamecoeff_type;
         typedef std::shared_ptr<pc_lamecoeff_type> pc_lamecoeff_ptrtype;
-        typedef typename fe_lamecoeff_type::template Context<context_lamecoeff, fe_lamecoeff_type, gm_type,geoelement_type,gmc_type::context> ctx_lamecoeff_type;
+        typedef typename fe_lamecoeff_type::template Context<context_lamecoeff, fe_lamecoeff_type, gm_type,geoelement_type,0, gmc_type::subEntityCoDim> ctx_lamecoeff_type;
         typedef std::shared_ptr<ctx_lamecoeff_type> ctx_lamecoeff_ptrtype;
 
 

@@ -467,7 +467,7 @@ public:
         // std::cout << "[LagrangeDual] points= " << M_pts << "\n";
     }
 
-    virtual ~Lagrange() {}
+    ~Lagrange() override {}
 
     //@}
 
@@ -835,6 +835,9 @@ template<typename P>
 using is_lagrange_polynomialset = std::is_base_of<fem::LagrangePolynomialSet,P>;
 template<typename P>
 constexpr bool is_lagrange_polynomialset_v = boost::is_base_of<fem::LagrangePolynomialSet,P>::value;
+
+template<typename P>
+constexpr bool is_lagrange_polynomialset_P0d_v = is_lagrange_polynomialset_v<P> && (P::nOrder == 0) && !P::continuity_type::is_continuous;
 
 } // namespace Feel
 #endif /* __lagrange_H */

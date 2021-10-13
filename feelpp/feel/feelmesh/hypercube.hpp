@@ -79,7 +79,7 @@ public:
     static const size_type Shape = mpl::at<shapes_t, mpl::int_<Dim> >::type::value;
     static const size_type Geometry = mpl::at<geometries_t, mpl::int_<Dim> >::type::value;
 
-    static const uint16_type nDim = Dim;
+    inline static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
     static const uint16_type nRealDim = RDim;
 

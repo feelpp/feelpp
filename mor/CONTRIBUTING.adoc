@@ -1,0 +1,95 @@
+= Contributing
+// settings:
+:idprefix:
+:idseparator: -
+:source-language: cpp
+:language: {source-language}
+:toc: left
+ifdef::env-github,env-browser[:outfilesuffix: .adoc]
+ifndef::env-github[:icons: font]
+ifdef::env-github[]
+:status:
+:outfilesuffix: .adoc
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+// URIs:
+:uri-repo: https://github.com/feelpp/feelpp
+:uri-help-base: https://help.github.com/articles
+:uri-issues: {uri-repo}/issues
+:uri-fork-help: {uri-help-base}/fork-a-repo
+:uri-branch-help: {uri-fork-help}#create-branches
+:uri-pr-help: {uri-help-base}/using-pull-requests
+:uri-gist: https://gist.github.com
+//
+:feelpp: Feel++
+:cpp: C++
+
+== License Agreement
+
+By contributing changes to this repository, you agree to license your contributions under the <<LICENSE#,LGPL or GPL license>>.
+This ensures your contributions have the same license as the project and that the community is free to use your contributions.
+You also assert that you are the original author of the work that you are contributing and that any change to your work will have to be contributed back to the community.
+
+== Submitting an Issue
+
+We use the {uri-issues}[issue tracker on GitHub] associated with this project to track bugs and features.
+Before submitting a bug report or feature request, check to make sure it hasn't already been submitted.
+When submitting a bug report, please include a {uri-gist}[Gist] that includes any details that may help reproduce the bug, including your {cpp} compiler and operating system.
+
+Most importantly, since {feelpp} provides a DSEL based on the embedded Galerkin type language,  provide as short as possible testcase to replicate the issue and using the {feelpp} mathematical concepts.
+
+An ideal bug report would include a pull request with failing specs.
+
+== Submitting a Pull Request
+
+. {uri-fork-help}[Fork the repository].
+
+NOTE: missing bits here, documentation pending
+
+If your tests pass, return to step 4.
+
+. Implement your feature or bug fix.
+. Run `ctest` to run the tests.
+If your tests fail, return to step 1.
+. Add documentation for your feature or bug fix.
+. If your changes are not 100% documented, go back to step 3.
+. Add, commit, and push your changes.
+. {uri-pr-help}[Submit a pull request].
+
+For ideas about how to use pull requests, see the post http://blog.quickpeople.co.uk/2013/07/10/useful-github-patterns[Useful GitHub Patterns].
+
+=== Background Knowledge
+
+As {Feelpp} is built using {cpp}, it requires some knowledge about {cpp} and some libraries and tools it uses such as Boost, PETSc or Gmsh.
+The following resources provide a good starting point for contributors who may not be completely comfortable with these tools:
+
+* link:http://book.feelpp.org/math[The Mathematics of {feelpp}] provides the mathematical background of {feelpp} and in particular the
+** link:http://book.feelpp.org/math/fem[{feelpp} Finite Element manual]
+* link:http://gmsh.info[Gmsh Web site] provides a lot of information regarding Gmsh and in particular
+** An extensive link:http://gmsh.info/doc/texinfo/gmsh.html[Documentation]
+** A link:http://gmsh.info/doc/texinfo/gmsh.html#Tutorial[Tutorial]
+** link:http://gmsh.info/screencasts/[Screencasts] showing how to use the graphical user interface
+* link:https://www.mcs.anl.gov/petsc/[PETSc Web site] provides a lot of material regarding PETSc (pronounced PET-see) which is the main library {feelpp} use for solving (non-)linear systems
+** An extensive link:https://www.mcs.anl.gov/petsc/documentation/index.html[Documentation]
+** link:https://www.mcs.anl.gov/petsc/documentation/tutorials/index.html[Tutorials]
+
+
+While these resources don't cover everything needed they serve as a good starting off point for beginners.
+
+=== Writing and Executing Tests
+
+{feelpp} provides a large testsuite.
+
+NOTE: Documentation pending
+
+=== Running {feelpp} in Development Mode
+
+NOTE: Documentation pending.
+{feelpp} is designed so that you can run in Debug mode.
+
+
+== Supporting {feelpp} on supercomputers

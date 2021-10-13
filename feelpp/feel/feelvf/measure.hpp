@@ -56,7 +56,8 @@ BOOST_PARAMETER_FUNCTION(
                              _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                              _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
     DLOG(INFO) << "[mean] measure = " << meas << "\n";
-    CHECK( math::abs(meas) > 1e-13 ) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
+    if ( math::abs(meas) < 1e-13 ) 
+      LOG(WARNING) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
     return meas;
 }
 

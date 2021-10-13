@@ -24,8 +24,15 @@
 #define BOOST_TEST_MODULE test_interpolation_grad
 #include <feel/feelcore/testsuite.hpp>
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/testsuite.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
+#include <feel/feeldiscr/dh.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
 
 /** use Feel namespace */
 using namespace Feel;

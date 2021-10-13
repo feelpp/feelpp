@@ -29,8 +29,6 @@
    \author Cecile Daversin <cecile.daversin@lncmi.cnrs.fr>
    \date 2011-12-07
  */
-#define USE_BOOST_TEST 1
-
 // make sure that the init_unit_test function is defined by UTF
 //#define BOOST_TEST_MAIN
 // give a name to the testsuite
@@ -73,10 +71,10 @@ makeOptions()
 {
     po::options_description testhcurloptions( "test h_curl options" );
     testhcurloptions.add_options()
-        ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
-        ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
-        ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
-        ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
+        //( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
+        //( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
+        //( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
+        //( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
         ( "tol", po::value<double>()->default_value( 2.5e-1 ), "tolerance for the solution" )
         ( "u_exact_2d", po::value<std::string>()->default_value("{1-y^2,1-x^2}:x:y"), "exact solution" )
         ( "f_exact_2d", po::value<std::string>()->default_value("{3-y^2,3-x^2}:x:y"), "exact rhs" )
@@ -85,7 +83,7 @@ makeOptions()
     ;
     return testhcurloptions.add( Feel::feel_options() );
 }
-
+#if 0
 inline
 AboutData
 makeAbout()
@@ -101,7 +99,7 @@ makeAbout()
     return about;
 
 }
-
+#endif
 using namespace Feel;
 
 template<int Dim>
@@ -217,7 +215,7 @@ TestHCurl<Dim>::exampleProblem1()
     auto phi = M_Xh->element();
 
     //auto u_exact = expr<2,1>( "{1-y*y,1-x*x}:x:y" );
-    auto v = Vh->element();
+    //auto v = Vh->element();
 
     auto a = form2( _test=M_Xh, _trial=M_Xh, _matrix=M_a );
     auto l = form1( _test=M_Xh, _vector=M_f );
@@ -230,16 +228,19 @@ TestHCurl<Dim>::exampleProblem1()
 
     l = integrate( _range=elements(mesh), _expr=inner(f,id(phi)) );
     //Dirichlet bc on weak form
-    l += integrate(boundaryfaces(mesh), - inner(curl(phi),cross(u_exact,N()))
-                   + M_penaldir*trans( cross(u_exact,N()) )*cross(id(phi),N())/hFace() );
+    l += integrate( _range=boundaryfaces(mesh),
+                    _expr=- inner(curl(phi),cross(u_exact,N()))
+                    + M_penaldir*trans( cross(u_exact,N()) )*cross(id(phi),N())/hFace() );
 
-    a = integrate(elements(mesh), inner(curlt(u),curl(phi)) + inner(idt(u),id(phi)) );
+    a = integrate(_range=elements(mesh),
+                  _expr=inner(curlt(u),curl(phi)) + inner(idt(u),id(phi)) );
     //a += on( _range=boundaryfaces( mesh ),_element=u, _rhs=l, _expr=cst(0.) );
 
     //Dirichlet bc on weak form
-    a += integrate(boundaryfaces(mesh), -inner(curlt(u),cross(id(phi),N()))
+    a += integrate(_range=boundaryfaces(mesh),
+                   _expr=-inner(curlt(u),cross(id(phi),N()))
                    - inner(curl(phi),cross(idt(u),N()))
-        + M_penaldir*trans( cross(idt(u),N()) )*cross(id(phi),N())/hFace() );
+                   + M_penaldir*trans( cross(idt(u),N()) )*cross(id(phi),N())/hFace() );
 
     a.solve( _solution=u, _rhs=l, _rebuild=true);
 
@@ -270,9 +271,10 @@ TestHCurl<Dim>::exampleProblem1()
                                  % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
                                  % pro1_name ).str();
     auto exporter_pro1 = exporter(_mesh=mesh,_name=exporterName );
-    exporter_pro1->step( 0 )->add( "u", u );
-    exporter_pro1->step( 0 )->add( "proj_L2_u", u );
-    exporter_pro1->step( 0 )->add( "u_exact", v );
+    exporter_pro1->addRegions();
+    exporter_pro1->add( "u", u );
+    exporter_pro1->add( "proj_L2_u", u_L2proj );
+    exporter_pro1->add( "u_exact", u_exact );
     exporter_pro1->save();
 
 }
@@ -361,9 +363,8 @@ TestHCurl::testProjector()
 #endif
 }
 
-#if USE_BOOST_TEST
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAboutDefault("test_hcurl"), Feel::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( space )
 
@@ -394,18 +395,3 @@ BOOST_AUTO_TEST_CASE( test_hcurl_example_3d )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-#else
-
-int
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc,argv,
-                           makeAbout(), makeOptions() );
-
-    Feel::TestHCurl app_hcurl;
-
-    app_hcurl.testProjector();
-    app_hcurl.exampleProblem1();
-}
-
-#endif

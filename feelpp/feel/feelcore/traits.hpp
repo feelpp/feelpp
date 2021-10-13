@@ -3,6 +3,7 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+             Thibaut Metivet <thibaut.metivet@inria.fr>
        Date: 2005-07-28
 
   Copyright (C) 2007,2009 Université de Grenoble 1
@@ -33,6 +34,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/typetraits.hpp>
 
+#include <Eigen/Core>
 
 namespace Feel
 {
@@ -78,6 +80,34 @@ decltype(auto) remove_shared_ptr_f( T&& e )
 
 }
 
+template< typename T >
+struct type_identity
+{
+    using type = T;
+};
+template< typename T>
+using type_identity_t = typename type_identity<T>::type;
+
+
+template <typename T, typename = void>
+struct is_iterable : std::false_type {};
+template <typename T>
+struct is_iterable<T, std::void_t<decltype(std::declval<T>().begin()),decltype(std::declval<T>().end())>>
+    : std::true_type {};
+template <typename T>
+constexpr bool is_iterable_v = is_iterable<T>::value;
+
+
+template <typename T, typename V, typename = void>
+struct is_iterable_of : std::false_type {};
+template <typename T, typename V>
+struct is_iterable_of< T, V, std::void_t<
+        decltype(std::declval<T>().begin()), decltype(std::declval<T>().end()), 
+        std::is_same<decltype(*std::declval<T>().begin()), V>
+    > > : std::true_type {};
+template <typename T, typename V>
+constexpr bool is_iterable_of_v = is_iterable_of<T, V>::value;
+
 template <class T>
 struct is_std_vector : std::bool_constant<false> {};
 template <class T>
@@ -99,6 +129,14 @@ struct remove_std_vector<std::vector<T> >
 };
 template<typename T>
 using remove_std_vector_t = typename remove_std_vector<T>::type;
+
+
+template <typename T, typename = void>
+struct is_eigen_matrix : std::false_type {};
+template <typename T>
+struct is_eigen_matrix<T, std::void_t<Eigen::MatrixBase<T>> > : std::true_type {};
+template <typename T>
+inline constexpr bool is_eigen_matrix_v = is_eigen_matrix<T>::value;
 
 } // namespace Feel
 #endif

@@ -25,7 +25,7 @@
 #include <feel/feelmodels/modelmesh/winslow.hpp>
 
 #include <feel/feelvf/vf.hpp>
-
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
 //#define FSI_WINSLOW_USE_OPT_EXPR 0
 
 namespace Feel
@@ -39,12 +39,14 @@ Winslow<MeshType,Order>::Winslow( mesh_ptrtype mesh, std::string const& prefix,
                                   ModelBaseRepository const& modelRep )
     :
     super_type( prefix, mesh->worldCommPtr(),"", modelRep ),
-    M_backend( backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() ) ),
+    ModelBase( prefix, mesh->worldCommPtr(),"", modelRep ),
+    //M_backend( backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() ) ),
     M_solverType( soption(_prefix=this->prefix(),_name="solver") ),
     M_mesh(mesh),
-    M_flagSet(/*flagSet*/),
     M_Xh( space_type::New(_mesh=mesh ) )
-{}
+{
+    this->initAlgebraicBackend();
+}
 
 //----------------------------------------------------------------------------//
 
@@ -53,12 +55,13 @@ Winslow<MeshType,Order>::Winslow( space_ptrtype const& space, std::string const&
                                   ModelBaseRepository const& modelRep )
     :
     super_type( prefix, space->worldCommPtr(),"",modelRep ),
-    M_backend( backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() ) ),
+    ModelBase( prefix, space->worldCommPtr(),"",modelRep ),
     M_solverType( soption(_prefix=this->prefix(),_name="solver") ),
     M_mesh(space->mesh()),
-    M_flagSet(/*flagSet*/),
     M_Xh(space)
-{}
+{
+    this->initAlgebraicBackend();
+}
 
 //----------------------------------------------------------------------------//
 
@@ -81,24 +84,33 @@ Winslow<MeshType,Order>::init()
     M_l2projector = opProjection(_domainSpace=this->functionSpaceScalM1(),
                                  _imageSpace=this->functionSpaceScalM1(),
                                  _backend=backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"l2proj"), this->worldCommPtr() ),
-                                 _type=Feel::L2 ) );
+                                 _type=Feel::L2 );
 #endif
 
 
     // update dofsWithValueImposed
-    std::set<flag_type> flagsMovingAndFixed;
-    if ( this->hasFlagSet("moving" ) )
-        flagsMovingAndFixed.insert( this->flagSet("moving").begin(), this->flagSet("moving").end() );
-    if ( this->hasFlagSet("fixed" ) )
-        flagsMovingAndFixed.insert( this->flagSet("fixed").begin(), this->flagSet("fixed").end() );
     M_dofsWithValueImposed.clear();
-    for ( auto const& faceWrap : markedfaces(M_Xh->mesh(), flagsMovingAndFixed ) )
+    std::set<std::string> markersMovingAndFixed;
+    for ( std::string bctype : { "moving","fixed" } )
     {
-        auto const& face = unwrap_ref( faceWrap );
-        auto facedof = M_Xh->dof()->faceLocalDof( face.id() );
-        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+        auto itFindMarkers = M_bcToMarkers.find(bctype);
+        if ( itFindMarkers != M_bcToMarkers.end() )
+            markersMovingAndFixed.insert( itFindMarkers->second.begin(), itFindMarkers->second.end() );
+    }
+    auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(M_Xh->mesh(), markersMovingAndFixed );
+    auto const& faceMarkers = std::get<0>( dmlose );
+
+    if ( !faceMarkers.empty() )
+    {
+        // TODO : use dofs method of FunctionSpace
+        for ( auto const& faceWrap : markedfaces(M_Xh->mesh(), faceMarkers ) )
         {
-            M_dofsWithValueImposed.insert( it->index() );
+            auto const& face = unwrap_ref( faceWrap );
+            auto facedof = M_Xh->dof()->faceLocalDof( face.id() );
+            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            {
+                M_dofsWithValueImposed.insert( it->index() );
+            }
         }
     }
 
@@ -110,9 +122,10 @@ Winslow<MeshType,Order>::init()
 
     auto Xh = this->functionSpace();
     auto mesh = this->functionSpace()->mesh();
+    auto rangeElt = elements(support(Xh));
     auto const& u = *M_displacement;
     form2( _trial=Xh, _test=Xh,_matrix=M_matrixMetricDerivative)
-        += integrate(_range=elements(mesh),
+    += integrate(_range=rangeElt,
                      _expr=inner(idt(u),id(u)) );
     M_matrixMetricDerivative->close();
 
@@ -265,6 +278,8 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
     if ( buildCstPart )
         return;
 
+    auto rangeElt = elements(support(Xh));
+    auto rangeBoundaryFaces = boundaryfaces(support(Xh));
 #if 0
     const vector_ptrtype& vecCurrentPicardSolution = data.currentSolution();
     auto u = Xh->element( vecCurrentPicardSolution, 0 );
@@ -309,9 +324,9 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
 
     M_vectorMetricDerivative->zero();
     auto lf = form1( _test=Xh,_vector=M_vectorMetricDerivative );
-    lf += integrate(_range=elements(mesh),
+    lf += integrate(_range=rangeElt,
                     _expr=inner(invG, grad(u)) );
-    lf += integrate(_range=boundaryfaces(mesh),
+    lf += integrate(_range=rangeBoundaryFaces,//boundaryfaces(mesh),
                     _expr=-inner(invG*N(), id(u)) );
     //M_vectorMetricDerivative->close();
     M_backendMetricDerivative->solve(_matrix=M_matrixMetricDerivative,_solution=*M_fieldMetricDerivative,_rhs=M_vectorMetricDerivative);
@@ -322,10 +337,10 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
 #if 0
         auto tau = idv(M_weightFunctionTensor2);
         form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= inner(invG*trans(tau*gradt(u)),trans(grad(u))) );
         form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr=-inner(tau*gradt(u)*idv(M_fieldMetricDerivative),id(u)) );
 #else
         CHECK( false ) << "not work";
@@ -335,10 +350,10 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
     {
         auto tau = idv( M_weightFunctionScalar );
         form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= (tau)*inner(invG*trans(gradt(u)),trans(grad(u))) );
         form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr=-(tau)*inner(gradt(u)*idv(M_fieldMetricDerivative),id(u)) );
     }
 #endif
@@ -355,22 +370,32 @@ Winslow<MeshType,Order>::updateLinearPDEDofElimination( DataUpdateLinear & data 
     auto mesh = this->functionSpace()->mesh();
     auto const& u = *M_displacement;
 
-    if ( this->hasFlagSet("moving" ) )
+    if ( M_bcToMarkers.find("moving") != M_bcToMarkers.end() )
     {
-        auto aux_pol = idv( this->dispImposedOnBoundary() ) + idv(this->identity());
-        form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-            on( _range=markedfaces( mesh, this->flagSet("moving") ),
-                _element=u, _rhs=F,
-                _expr=aux_pol/*, ON_ELIMINATION*/ );
+        auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(mesh, M_bcToMarkers.at("moving") );
+        auto const& faceMarkers = std::get<0>( dmlose );
+        if ( !faceMarkers.empty() )
+        {
+            auto aux_pol = idv( this->dispImposedOnBoundary() ) + idv(this->identity());
+            form2( _test=Xh, _trial=Xh, _matrix=A ) +=
+                on( _range=markedfaces( mesh, faceMarkers ),
+                    _element=u, _rhs=F,
+                    _expr=aux_pol/*, ON_ELIMINATION*/ );
+        }
     }
 
-    if ( this->hasFlagSet("fixed" ) )
+    if ( M_bcToMarkers.find("fixed") != M_bcToMarkers.end() )
     {
-        form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-            on( _range=markedfaces(mesh, this->flagSet("fixed") ),
-                _element=u, _rhs=F,
-                _expr=idv(this->identity())/*, ON_ELIMINATION*/ );
+        auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(mesh, M_bcToMarkers.at("fixed") );
+        auto const& faceMarkers = std::get<0>( dmlose );
+        if ( !faceMarkers.empty() )
+        {
+            form2( _test=Xh, _trial=Xh, _matrix=A ) +=
+                on( _range=markedfaces(mesh, faceMarkers ),
+                    _element=u, _rhs=F,
+                    _expr=idv(this->identity())/*, ON_ELIMINATION*/ );
 
+        }
     }
 }
 
@@ -387,10 +412,22 @@ Winslow<MeshType,Order>::updateNewtonInitialGuess( DataNewtonInitialGuess & data
     auto mesh = Xh->mesh();
     auto u = Xh->element( U );
 
-    u.on(_range=markedfaces(mesh, this->flagSet("moving") ),
-         _expr=idv(M_dispImposedOnBoundary)+idv(M_identity) );
-    u.on(_range=markedfaces(mesh, this->flagSet("fixed") ),
-         _expr=idv(M_identity) );
+    if ( M_bcToMarkers.find("moving") != M_bcToMarkers.end() )
+    {
+        auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(mesh, M_bcToMarkers.at("moving") );
+        auto const& faceMarkers = std::get<0>( dmlose );
+        if ( !faceMarkers.empty() )
+            u.on(_range=markedfaces(mesh, faceMarkers ),
+                 _expr=idv(M_dispImposedOnBoundary)+idv(M_identity) );
+    }
+    if ( M_bcToMarkers.find("fixed") != M_bcToMarkers.end() )
+    {
+        auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(mesh, M_bcToMarkers.at("fixed") );
+        auto const& faceMarkers = std::get<0>( dmlose );
+        if ( !faceMarkers.empty() )
+            u.on(_range=markedfaces(mesh, faceMarkers ),
+                 _expr=idv(M_identity) );
+    }
 
     sync( u, "=", M_dofsWithValueImposed );
 
@@ -422,15 +459,18 @@ Winslow<MeshType,Order>::updateResidual( DataUpdateResidual & data ) const
     auto linearFormMapping = form1( _test=Xh, _vector=R,_rowstart=0 );
     auto linearFormLagMult = form1( _test=Xh, _vector=R,_rowstart=1 );
 
+    auto rangeElt = elements(support(Xh));
+    auto rangeBoundaryFaces = boundaryfaces(support(Xh));
+
     if ( false/*M_useMeshAdapation && !M_useMeshAdapationScalar*/ )
     {
 #if 0
         auto tau = idv(M_weightFunctionTensor2);
         linearFormMapping +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= inner(invG*trans(tau*gradv(u)),trans(grad(u))) );
         linearFormMapping +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= -inner( tau*gradv(u)*idv(alpha), id(u) ) );
 #else
         CHECK( false ) << "not work";
@@ -440,20 +480,20 @@ Winslow<MeshType,Order>::updateResidual( DataUpdateResidual & data ) const
     {
         auto tau = idv( M_weightFunctionScalar );
         linearFormMapping +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= tau*inner(invG*trans(gradv(u)),trans(grad(u))) );
         linearFormMapping +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= -tau*inner( gradv(u)*idv(alpha), id(u) ) );
     }
     linearFormLagMult +=
-        integrate( _range=elements(mesh),
+        integrate( _range=rangeElt,
                    _expr= inner( idv(alpha), id(alpha) ) );
     linearFormLagMult +=
-        integrate( _range=elements(mesh),
+        integrate( _range=rangeElt,
                    _expr= -inner( invG, grad(alpha) ) );
     linearFormLagMult +=
-        integrate( _range=boundaryfaces(mesh),
+        integrate( _range=rangeBoundaryFaces,//boundaryfaces(mesh),
                    _expr= inner( invG*N(), id(alpha) ) );
 
     this->log("Winslow","updateResidual", "finish" );
@@ -516,6 +556,8 @@ Winslow<MeshType,Order>::updateJacobian( DataUpdateJacobian & data ) const
     this->log("Winslow","updateJacobian", "start" );
     auto Xh = this->functionSpace();
     auto mesh = Xh->mesh();
+    auto rangeElt = elements(support(Xh));
+    auto rangeBoundaryFaces = boundaryfaces(support(Xh));
 
     auto u = Xh->element( XVec, 0 );
     auto alpha = Xh->element( XVec, 1 );
@@ -530,20 +572,20 @@ Winslow<MeshType,Order>::updateJacobian( DataUpdateJacobian & data ) const
         auto tau = idv(M_weightFunctionTensor2);
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=0 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= inner(invG*trans(tau*gradt(u)),trans(grad(u))) );
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=0 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= inner(invGt*trans(tau*gradv(u)),trans(grad(u))) );
 
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=0 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= -inner( tau*gradt(u)*idv(alpha), id(u) ) );
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=1 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= -inner( tau*gradv(u)*idt(alpha), id(u) ) );
 #else
         CHECK( false ) << "not work";
@@ -554,35 +596,35 @@ Winslow<MeshType,Order>::updateJacobian( DataUpdateJacobian & data ) const
         auto tau = idv( M_weightFunctionScalar );
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=0 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= tau*inner(invG*trans(gradt(u)),trans(grad(u))) );
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=0 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= tau*inner(invGt*trans(gradv(u)),trans(grad(u))) );
 
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=0 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= -tau*inner( gradt(u)*idv(alpha), id(u) ) );
         form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=0,_colstart=1 ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeElt,
                        _expr= -tau*inner( gradv(u)*idt(alpha), id(u) ) );
     }
 
     form2( _test=Xh, _trial=Xh, _matrix=J,
            _rowstart=1,_colstart=1 ) +=
-        integrate( _range=elements(mesh),
+        integrate( _range=rangeElt,
                    _expr= inner( idt(alpha), id(alpha) ) );
 
     form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=1,_colstart=0 ) +=
-        integrate( _range=elements(mesh),
+        integrate( _range=rangeElt,
                    _expr= -inner( invGt*eye<mesh_type::nDim,mesh_type::nDim>(), grad(alpha) ) );
     form2( _test=Xh, _trial=Xh, _matrix=J,
                _rowstart=1,_colstart=0 ) +=
-        integrate( _range=boundaryfaces(mesh),
+        integrate( _range=rangeBoundaryFaces,
                    _expr= inner( invGt*N(), id(alpha) ) );
 
 
@@ -601,17 +643,19 @@ Winslow<MeshType,Order>::updateJacobianDofElimination( DataUpdateJacobian & data
     auto mesh = Xh->mesh();
     auto const& u = *M_displacement;
 
-    if ( this->hasFlagSet("moving" ) )
+    for ( std::string bctype : { "moving","fixed" } )
     {
-        form2( _test=Xh, _trial=Xh, _matrix=J ) +=
-            on( _range=markedfaces( mesh, this->flagSet("moving") ),
-                _element=u, _rhs=RBis, _expr=vf::zero<mesh_type::nDim,1>() );
-    }
-    if ( this->hasFlagSet("fixed" ) )
-    {
-        form2( _test=Xh, _trial=Xh, _matrix=J ) +=
-            on( _range=markedfaces(mesh, this->flagSet("fixed") ),
-                _element=u, _rhs=RBis, _expr=vf::zero<mesh_type::nDim,1>() );
+        if ( M_bcToMarkers.find(bctype) != M_bcToMarkers.end() )
+        {
+            auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(mesh, M_bcToMarkers.at(bctype) );
+            auto const& faceMarkers = std::get<0>( dmlose );
+            if ( !faceMarkers.empty() )
+            {
+                form2( _test=Xh, _trial=Xh, _matrix=J ) +=
+                    on( _range=markedfaces( mesh, faceMarkers ),
+                        _element=u, _rhs=RBis, _expr=vf::zero<mesh_type::nDim,1>() );
+            }
+        }
     }
 
     this->log("Winslow","updateJacobianDofElimination", "finish" );

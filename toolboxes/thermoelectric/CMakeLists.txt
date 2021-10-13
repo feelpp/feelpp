@@ -6,7 +6,7 @@ feelpp_add_application( thermoelectric SRCS main_thermoelectric.cpp
   INSTALL TESTS
   MAN thermoelectric
   )
-
+if ( 0 )
 feelpp_add_application( cvg_thermoelectric_2d SRCS cvg_thermoelectric.cpp
   LINK_LIBRARIES
   feelpp_toolbox_thermoelectric_lib
@@ -22,7 +22,6 @@ feelpp_add_application( cvg_thermoelectric_3d SRCS cvg_thermoelectric.cpp
   DEFS FEELPP_DIM=3
   INSTALL
   )
+endif()
 
-foreach( _testcase IN ITEMS "test" "ElectroMagnets" "cvg" )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_thermoelectric CATEGORY toolboxes/thermoelectric)
-endforeach()
+feelpp_add_testcase(cases PREFIX feelpp_toolbox_thermoelectric CATEGORY toolboxes/thermoelectric)

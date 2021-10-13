@@ -30,41 +30,9 @@
 #include <feel/feelvf/geometricdata.hpp>
 #include <boost/hana/tuple.hpp>
 #include <boost/hana/pair.hpp>
+#include "dump.hpp"
 
-template<typename MeshT>
-void printMeshInfo( std::shared_ptr<MeshT> const& mesh )
-{
-    using namespace Feel;
-    std::cout << "========================================" << std::endl;
-    std::cout << "Information about the mesh:";
-    std::cout << "      number of elements in memory : " << mesh->numGlobalElements() << std::endl;
-    std::cout << "      number of faces in memory : " << mesh->numGlobalFaces() << std::endl;
-    if ( dimension_v<MeshT> == 3 )
-        std::cout << "      number of edges in memory : " << mesh->numGlobalEdges() << std::endl;
-    std::cout << "      number of points  in memory : " << mesh->numGlobalPoints() << std::endl;
-    for( auto marker: mesh->markerNames() )
-    {
-        auto [name,data] = marker;
 
-        if ( data[1] == mesh->dimension() )
-        {
-            size_type nelts = nelements( markedelements(mesh, name ), true );
-            std::cout << "      number of marked elements " << name << " with tag " << data[0] << " : " << nelts << std::endl;
-        }
-    }
-    for( auto marker: mesh->markerNames() )
-    {
-        auto name = marker.first;
-        auto data = marker.second;
-        
-        if ( data[1] == mesh->dimension()-1 )
-        {
-            size_type nelts = nelements( markedfaces(mesh, name ), true );
-            std::cout << "      number of marked faces " << name << " with tag " << data[0] << " : " << nelts << std::endl;
-        }
-    }
-    std::cout << "========================================" << std::endl;
-}
 
 template<typename mesh_t>
 void
@@ -72,7 +40,7 @@ doExport()
 {
     using namespace Feel;
     auto mesh = loadMesh( _mesh = new mesh_t );
-    printMeshInfo( mesh );
+    dump( mesh );
     auto ex = exporter( _mesh=mesh );
 
     auto getfns = [=]( std::string const& sexpr ) {

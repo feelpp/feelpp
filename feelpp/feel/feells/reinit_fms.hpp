@@ -40,6 +40,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feelmesh/filters.hpp>
 
 #include <feel/feells/fmsheap.hpp>
 #include <feel/feells/fmspoint.hpp>
@@ -79,11 +80,17 @@ public:
     typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
     typedef std::shared_ptr<element_type> element_ptrtype;
+    using size_type = typename functionspace_type::size_type;
     typedef typename functionspace_type::value_type value_type;
 
     typedef typename functionspace_type::mesh_type mesh_type;
     typedef typename mesh_type::element_type geoelement_type;
     static const uint16_type Dim = geoelement_type::nDim;
+
+    typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
+    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_type elements_reference_wrapper_type;
+    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
+    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
 
     typedef typename periodicity_type::node_type node_type;
 
@@ -101,14 +108,21 @@ public:
     virtual ~ReinitializerFMS() {}
 
 
-    element_type operator() ( element_type const& phi, bool useMarker2AsDoneMarker=false );
+    //element_type operator() ( element_type const& phi, bool useMarker2AsDoneMarker=false );
+    element_type operator() ( element_type const& phi, range_elements_type const& rangeInitialElts );
+    element_type operator() ( element_type const& phi );
 
     // same as operator()
-    element_type march ( element_type const& phi, bool useMarker2AsDoneMarker=false )
-    { return this->operator()( phi, useMarker2AsDoneMarker) ; }
-
-    element_type march ( element_ptrtype phi, bool useMarker2AsDoneMarker=false )
-    { return this->operator()( *phi, useMarker2AsDoneMarker) ; }
+    //element_type march ( element_type const& phi, bool useMarker2AsDoneMarker=false )
+    //{ return this->operator()( phi, useMarker2AsDoneMarker) ; }
+    element_type march ( element_type const& phi, range_elements_type const& rangeInitialElts )
+    { return this->operator()( phi, rangeInitialElts) ; }
+    element_type march ( element_ptrtype phi, range_elements_type const& rangeInitialElts )
+    { return this->operator()( *phi, rangeInitialElts) ; }
+    element_type march ( element_type const& phi )
+    { return this->operator()( phi ) ; }
+    element_type march ( element_ptrtype phi )
+    { return this->operator()( *phi ) ; }
 
 
 private:

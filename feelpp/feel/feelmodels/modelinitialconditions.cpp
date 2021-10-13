@@ -29,6 +29,7 @@ namespace Feel {
 void
 ModelInitialCondition::setup( pt::ptree const& p, std::string const& typeIC )
 {
+    M_p = p;
     if ( typeIC == "Expression" )
     {
         M_modelExpr.setExpr( "expr", p, this->worldComm(), M_directoryLibExpr );
@@ -38,8 +39,7 @@ ModelInitialCondition::setup( pt::ptree const& p, std::string const& typeIC )
         if ( auto ptmarkers = p.get_child_optional("markers") )
             M_markers.setPTree(*ptmarkers);
     }
-
-    if ( typeIC == "File" )
+    else if ( typeIC == "File" )
     {
         if ( auto itFileName = p.get_optional<std::string>("filename") )
             M_fileName = *itFileName;
@@ -49,6 +49,11 @@ ModelInitialCondition::setup( pt::ptree const& p, std::string const& typeIC )
             M_fileDirectory = *itDir;
         M_isExpression = false;
         M_isFile = true;
+    }
+    else // default case: we just store the ptree
+    {
+        M_isExpression = false;
+        M_isFile = false;
     }
 
 }
@@ -66,22 +71,20 @@ void
 ModelInitialConditionTimeSet::setup( pt::ptree const& p )
 {
     M_p = p;
-    for ( std::string const& typeIC : std::vector<std::string>({ "Expression","File" }) )
+    for ( auto const& icAllExprPtree : p )
     {
-        if ( auto icAllExprPtree = p.get_child_optional( typeIC ) )
+        std::string const typeIC = icAllExprPtree.first; // typeIC = Expression, File, ...
+        for ( auto const& icExprPtree : icAllExprPtree.second )
         {
-            for ( auto const& icExprPtree : *icAllExprPtree )
-            {
-                std::string icName = icExprPtree.first;
-                double time = 0;
-                if( boost::optional<double> ittime = icExprPtree.second.get_optional<double>( "time" ) )
-                    time = *ittime;
+            std::string icName = icExprPtree.first;
+            double time = 0;
+            if( boost::optional<double> ittime = icExprPtree.second.get_optional<double>( "time" ) )
+                time = *ittime;
 
-                ModelInitialCondition mic( this->worldCommPtr(), M_directoryLibExpr );
-                mic.setName( icName );
-                mic.setup( icExprPtree.second, typeIC );
-                this->operator[]( time )[typeIC].push_back( mic );
-            }
+            ModelInitialCondition mic( this->worldCommPtr(), M_directoryLibExpr );
+            mic.setName( icName );
+            mic.setup( icExprPtree.second, typeIC );
+            this->operator[]( time )[typeIC].push_back( mic );
         }
     }
 }

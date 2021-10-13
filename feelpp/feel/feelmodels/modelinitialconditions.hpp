@@ -49,6 +49,8 @@ class FEELPP_EXPORT ModelInitialCondition : public CommObject
     std::string const& name() const { return M_name; }
     void setName( std::string const& name ) { M_name = name; }
 
+    pt::ptree const& pTree() const { return M_p; }
+
     bool isExpression() const { return M_isExpression; }
     bool isFile() const { return M_isFile; }
 
@@ -62,6 +64,7 @@ class FEELPP_EXPORT ModelInitialCondition : public CommObject
     void setup( pt::ptree const& p, std::string const& typeIC );
   private :
     std::string M_name;
+    pt::ptree M_p;
     bool M_isExpression, M_isFile;
 
     std::string M_directoryLibExpr;

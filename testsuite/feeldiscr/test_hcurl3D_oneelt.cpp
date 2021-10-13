@@ -8,6 +8,7 @@
 
   Copyright (C) 2011 UJF
   Copyright (C) 2011 CNRS
+  Copyright (C) 2011-present Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -39,9 +40,14 @@
 //#define BOOST_TEST_NO_MAIN
 
 #include <feel/feelcore/testsuite.hpp>
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feeldiscr/projector.hpp>
 #include <feel/feelvf/print.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpoly/nedelec.hpp>
 
 /**
@@ -294,6 +300,28 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
     auto t5 = vec(cst(1.),cst(0.),cst(0.));
     std::vector< decltype(t0) > tangentRef{t0,t1,t2,t3,t4,t5};
 
+    // Tangents orientations
+    std::map<std::string,int> edgeMarkerToTangentOrientation;
+    for( std::string const& edge : edges )
+    {
+        auto re = markededges(oneelement_mesh,edge);
+        auto const& theEdge = unwrap_ref( *Feel::begin(re) );
+        auto const& theElt = oneelement_mesh->beginElement()->second;
+        int orientVal = 0;
+        for (uint16_type ed=0;ed<theElt.numEdges;++ed )
+        {
+            if ( theElt.edge(ed).id() != theEdge.id() )
+                continue;
+
+            if ( theElt.edgePermutation(ed).value() == mesh_type::element_type::edge_permutation_type::IDENTITY )
+                orientVal = 1;
+            else if ( theElt.edgePermutation(ed).value() == mesh_type::element_type::edge_permutation_type::REVERSE_PERMUTATION )
+                orientVal = -1;
+            break;
+        }
+        edgeMarkerToTangentOrientation[edge] = orientVal;
+    }
+
     // Jacobian of geometrical transforms
     std::string jac;
     std::string jac_name = "jac_"+ mesh_path.stem().string();
@@ -318,8 +346,10 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
             BOOST_CHECK_MESSAGE( (decltype(idv( u_vec[i] ))::context & vm::KB) != 0, "invalid context " << decltype(idv( u_vec[i] ))::context << " should be " << vm::KB );
             BOOST_CHECK_MESSAGE( ( decltype(trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*idv( u_vec[i] ))::context & vm::KB ) != 0, "invalid context " << decltype(trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*idv( u_vec[i] ))::context << " should have " << vm::KB );
             //BOOST_CHECK( decltype(trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid]))::context == vm::DYNAMIC, "invalid context " << decltype(idv( u_vec[i] ))::context << " should be " << vm::KB );
+
+            int tangentOrientation = edgeMarkerToTangentOrientation.find(edge)->second;
             auto int_u_t = integrate( _range=markedelements(edgeMesh, edge),
-                                      _expr=trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*idv( u_vec[i] ) ).evaluate()(0,0);
+                                      _expr=tangentOrientation*trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*idv( u_vec[i] ) ).evaluate()(0,0);
 
             if ( edgeid == i )
                 BOOST_CHECK_CLOSE( int_u_t, 1, 1e-13 );
@@ -328,8 +358,8 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
 
             checkidv[Xh->nLocalDof()*i+edgeid] = int_u_t;
 
-            form1( _test=Xh, _vector=F, _init=true ) = integrate( _range=markedelements(edgeMesh, edge),
-                                                                  _expr=trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*id( V_ref ) );
+            form1( _test=Xh, _vector=F ) = integrate( _range=markedelements(edgeMesh, edge),
+                                                      _expr=tangentOrientation*trans(expr<3,3>(jac,jac_name)*tangentRef[edgeid])*id( V_ref ) );
             auto form_v_t = inner_product( u_vec[i], *F );
 
             if ( edgeid == i )
@@ -347,15 +377,15 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
         int_curlv += integrate( elements( oneelement_mesh ), curlv( u_vec[i] ) ).evaluate()(1,0);
         int_curlv += integrate( elements( oneelement_mesh ), curlv( u_vec[i] ) ).evaluate()(2,0);
 
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( elements( oneelement_mesh ), trans(one())*curl( V_ref ) );
+        form1( _test=Xh, _vector=F ) = integrate( _range=elements( oneelement_mesh ), _expr=trans(one())*curl( V_ref ) );
         auto form_curlv = inner_product( u_vec[i], *F );
 
         auto int_vn = integrate(boundaryfaces(oneelement_mesh), -cross( idv(u_vec[i]),N() )).evaluate()(0,0);
         int_vn += integrate(boundaryfaces(oneelement_mesh), -cross( idv(u_vec[i]),N() )).evaluate()(1,0);
         int_vn += integrate(boundaryfaces(oneelement_mesh), -cross( idv(u_vec[i]),N() )).evaluate()(2,0);
 
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( boundaryfaces( oneelement_mesh ),
-                                                              -trans(one())*cross( idv(u_vec[i]),N() ) );
+        form1( _test=Xh, _vector=F ) = integrate( _range=boundaryfaces( oneelement_mesh ),
+                                                  _expr=-trans(one())*cross( id(u_vec[i]),N() ) );
         auto form_vn = inner_product( u_vec[i], *F );
 
         BOOST_CHECK_SMALL( int_curlv - int_vn, 1e-13 );
@@ -378,7 +408,7 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
         BOOST_FOREACH( std::string edge, edges )
         {
             BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << edge << " edge) *** \n"
-                                << "alpha_"<< edgeid << "(N_"<<i<<") = " << checkidv[3*i+edgeid] << "\n" );
+                                << "alpha_"<< edgeid << "(N_"<<i<<") = " << checkidv[Xh->nLocalDof()*i+edgeid] << "\n" );
             ++edgeid;
         }
         BOOST_TEST_MESSAGE( "*********************************************** \n" );
@@ -395,7 +425,7 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
         BOOST_FOREACH( std::string edge, edges )
         {
             BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << edge << " edge) *** \n"
-                                << "alpha_"<< edgeid << "(N_"<<i<<") = " << checkform1[3*i+edgeid] << "\n" );
+                                << "alpha_"<< edgeid << "(N_"<<i<<") = " << checkform1[Xh->nLocalDof()*i+edgeid] << "\n" );
             ++edgeid;
         }
         BOOST_TEST_MESSAGE( "*********************************************** \n" );

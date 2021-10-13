@@ -114,14 +114,13 @@ class CoupledMixedPoisson : public MixedPoisson<Dim, Order, G_Order, E_Order>
     std::shared_ptr<FMU> M_circuit;
 
   public:
-    CoupledMixedPoisson()
-        : super_type() {}
-
-    CoupledMixedPoisson( std::string const& prefix,
+    CoupledMixedPoisson( std::string const& prefix = "hdg.poisson",
                          worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                          std::string const& subPrefix = "",
                          ModelBaseRepository const& modelRep = ModelBaseRepository() )
-        : super_type( prefix, MixedPoissonPhysics::None, worldComm, subPrefix, modelRep ) {}
+        : super_type( prefix, MixedPoissonPhysics::None, worldComm, subPrefix, modelRep ),
+          ModelBase( prefix, MixedPoissonPhysicsMap[MixedPoissonPhysics::None]["keyword"], worldComm, subPrefix, modelRep )
+        {}
 
     static self_ptrtype New( std::string const& prefix = "hdg.poisson",
                              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),

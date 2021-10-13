@@ -13,10 +13,13 @@ using namespace Feel;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_hbf, T, types )
 {
-    holo3_image<T> x (2,2);
-    x=holo3_image<T>::Ones(2,2);
-    writeHBF("test.hbf", x);
-    holo3_image<T> y = readHBF<T>("test.hbf");
-    BOOST_CHECK_EQUAL(x,y);
+    for(int n = 2; n <= 6; n +=2)
+    {
+        holo3_image<T> x (n,n+1);
+        x=holo3_image<T>::Random(n,n+1);
+        writeHBF("test.hbf", x);
+        holo3_image<T> y = readHBF<T>("test.hbf");
+        BOOST_CHECK_EQUAL(x,y);
+    }
 }
 BOOST_AUTO_TEST_SUITE_END()
