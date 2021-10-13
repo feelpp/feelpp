@@ -2,29 +2,41 @@ steps:
  - trigger: "pkg-feelpp-focal"
    label: ":package: :ubuntu: focal Feel++ ${BUILDKITE_BRANCH}"
    async: true
+   build:
+     branch: "${BUILDKITE_BRANCH}"
    if: pipeline.slug=="pkg-feelpp" && ( build.branch == "develop" || build.branch == "master" )
  - wait
  - trigger: "pkg-feelpp-eoan"
    label: ":package: :ubuntu: eoan Feel++ ${BUILDKITE_BRANCH}"
    async: true
+   build:
+     branch: "${BUILDKITE_BRANCH}"
    if: pipeline.slug=="pkg-feelpp" && ( build.branch == "develop" || build.branch == "master" )   
  - wait
  - trigger: "pkg-feelpp-buster"
    label: ":package: :debian: buster Feel++  ${BUILDKITE_BRANCH}"
    async: true
+   build:
+     branch: "${BUILDKITE_BRANCH}"
    if: pipeline.slug=="pkg-feelpp" && ( build.branch == "develop" || build.branch == "master" )
  - wait
  - trigger: "pkg-feelpp-toolboxes-focal"
    label: ":package: :ubuntu: focal Feel++ Toolboxes ${BUILDKITE_BRANCH}"
    async: true
+   build:
+     branch: "${BUILDKITE_BRANCH}"
    if: pipeline.slug=="pkg-feelpp-toolboxes" && ( build.branch == "develop" || build.branch == "master" )
  - wait
  - trigger: "pkg-feelpp-toolboxes-eoan"
    label: ":package: :ubuntu: eoan Feel++ Toolboxes ${BUILDKITE_BRANCH}"
    async: true
+   build:
+     branch: "${BUILDKITE_BRANCH}"
    if: pipeline.slug=="pkg-feelpp-toolboxes" && ( build.branch == "develop" || build.branch == "master" )   
  - wait
  - trigger: "pkg-feelpp-toolboxes-buster"
    label: ":package: :debian: buster Feel++ Toolboxes  ${BUILDKITE_BRANCH}"
    async: true
+   build:
+     branch: "${BUILDKITE_BRANCH}"
    if: pipeline.slug=="pkg-feelpp-toolboxes" && ( build.branch == "develop" || build.branch == "master" )
