@@ -66,7 +66,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initMesh()
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
 
-    CHECK( M_mesh ) << "mesh generation fail";
+    CHECK( this->mesh() ) << "mesh generation failed";
 
     double tElapsed = this->timerTool("Constructor").stop("initMesh");
     this->log("MultiFluid","initMesh", fmt::format( "finish in {} s", tElapsed ) );

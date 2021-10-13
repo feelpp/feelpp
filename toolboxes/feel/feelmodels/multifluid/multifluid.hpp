@@ -473,8 +473,6 @@ private:
     bool M_useLagrangeP1iso;
     op_lagrangeP1_ptrtype M_opLagrangeP1iso;
     //--------------------------------------------------------------------//
-    mesh_ptrtype M_mesh;
-
     fluid_model_ptrtype M_fluidModel;
     size_type M_nLevelsets;
     std::vector<levelset_model_ptrtype> M_levelsetModels;
