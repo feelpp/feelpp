@@ -29,14 +29,15 @@
 #ifndef _LEVELSET_HPP
 #define _LEVELSET_HPP 1
 
+#include <fmt/core.h>
+
 #include <feel/feeldiscr/functionspace.hpp>
 
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/projector.hpp>
 
-#if 0
-#include <feel/feelmodels/advection/advection.hpp>
-#endif
+#include <feel/feelmodels/modelcore/modelphysics.hpp>
+#include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 #include <feel/feelmodels/coefficientformpdes/coefficientformpde.hpp>
 
 #include <feel/feelmodels/levelset/levelsetbase.hpp>
@@ -67,8 +68,10 @@ template<
     typename ConvexType, typename BasisType, typename PeriodicityType = NoPeriodicity, 
     typename BasisPnType = BasisType
     >
-class LevelSet : public LevelSetBase<ConvexType, BasisType, PeriodicityType, BasisPnType>,
-                 public std::enable_shared_from_this< LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType> >
+class LevelSet: 
+    public LevelSetBase<ConvexType, BasisType, PeriodicityType, BasisPnType>,
+    public ModelPhysics<ConvexType::nDim>,
+    public std::enable_shared_from_this< LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType> >
 {
     typedef LevelSetBase<ConvexType, BasisType, PeriodicityType, BasisPnType> super_type;
 public:
@@ -301,9 +304,9 @@ public:
 
     //--------------------------------------------------------------------//
     // Physical parameters
-    materialsproperties_ptrtype const& materialsProperties() const { return M_advectionToolbox->materialsProperties(); }
-    materialsproperties_ptrtype & materialsProperties() { return M_advectionToolbox->materialsProperties(); }
-    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_advectionToolbox->setMaterialsProperties( mp ); }
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
     void updateParameterValues() override;
     void setParameterValues( std::map<std::string,double> const& paramValues ) override;
@@ -535,15 +538,15 @@ protected:
 private:
     //--------------------------------------------------------------------//
     // Advection toolbox
-#if 0
-    advection_toolbox_ptrtype M_advectionToolbox;
-#endif
     cfpde_toolbox_ptrtype M_advectionToolbox;
     bool M_doExportAdvection;
     //--------------------------------------------------------------------//
     // Spaces
     space_vectorial_ptrtype M_spaceAdvectionVelocity;
     space_tensor2symm_ptrtype M_spaceTensor2Symm;
+    //--------------------------------------------------------------------//
+    // Materials properties
+    materialsproperties_ptrtype M_materialsProperties;
 
     //--------------------------------------------------------------------//
     // Markers

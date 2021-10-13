@@ -28,9 +28,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
         ModelBaseRepository const& modelRep ) 
 :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    ModelPhysics<nDim>( "levelset" ),
     ModelBase( prefix, keyword, worldComm, subPrefix, modelRep ),
     M_advectionToolbox( new cfpde_toolbox_type( 
-                typename FeelModels::ModelGenericPDE<nDim>::infos_type( "levelset_phi", "phi", "phi", (boost::format("Pch%1%")%Order).str() ),
+                typename FeelModels::ModelGenericPDE<nDim>::infos_type( "levelset_phi", "phi", "phi", fmt::format("Pch{}", Order) ),
                 prefix, keyword, worldComm, subPrefix, modelRep ) ),
     M_doUpdateCauchyGreenTensor(true),
     M_doUpdateCauchyGreenInvariant1(true),
@@ -90,7 +91,29 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->initInterfaceQuantities();
     this->initTools();
 
+    // Physics
+    if ( this->physics().empty() )
+        this->initPhysics( this->keyword(), this->modelProperties().models() );
+
+    // Materials properties
+    if ( !M_materialsProperties )
+    {
+        auto paramValues = this->modelProperties().parameters().toParameterValues();
+        this->modelProperties().materials().setParameterValues( paramValues );
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
+    }
+
     // Init advection toolbox
+    M_advectionToolbox->setPhysics( this->physics( this->physicType() ), this->keyword() );
+    M_advectionToolbox->setManageParameterValues( false );
+    if ( !M_advectionToolbox->modelPropertiesPtr() )
+    {
+        M_advectionToolbox->setModelProperties( this->modelPropertiesPtr() );
+        M_advectionToolbox->setManageParameterValuesOfModelProperties( false );
+    }
+    M_advectionToolbox->setMesh( this->mesh() );
+    M_advectionToolbox->setMaterialsProperties( M_materialsProperties );
     M_advectionToolbox->setSpaceUnknown( this->functionSpace() );
     M_advectionToolbox->init( buildModelAlgebraicFactory );
     // Set transient coefficient d=1
