@@ -7,6 +7,7 @@
 #include <feel/feelvf/cst.hpp>
 #include <feel/feelvf/ones.hpp>
 #include <feel/feelmodels/modelexpression.hpp>
+#include <feel/feelmodels/modelmaterials.hpp>
 #include <feel/feelmodels/modelvf/exprselectorbymeshelement.hpp>
 #include <feel/feelmodels/modelcore/modelphysics.hpp>
 
