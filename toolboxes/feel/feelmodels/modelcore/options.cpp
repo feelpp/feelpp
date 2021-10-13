@@ -623,7 +623,7 @@ interfaceforces_options(std::string const& prefix)
 }
 
 Feel::po::options_description
-multifluid_options(std::string const& prefix, uint16_type nls = 3)
+multifluid_options(std::string const& prefix, unsigned int nls)
 {
     Feel::po::options_description multifluidOptions("MultiFluid options");
     multifluidOptions.add_options()
@@ -641,7 +641,7 @@ multifluid_options(std::string const& prefix, uint16_type nls = 3)
         ;
     for( uint16_type n = 0; n < nls; ++n )
     {
-        std::string levelset_prefix = prefixvm(prefix, (boost::format( "levelset%1%" ) %(n+1)).str());
+        std::string levelset_prefix = prefixvm(prefix, (boost::format( "levelset%1%" ) %(n)).str());
         multifluidOptions.add( levelset_options( levelset_prefix ) );
         multifluidOptions.add( densityviscosity_options( levelset_prefix ) );
         multifluidOptions.add( interfaceforces_options( levelset_prefix ) );

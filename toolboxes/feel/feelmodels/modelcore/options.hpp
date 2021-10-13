@@ -45,6 +45,8 @@ Feel::po::options_description advection_options(std::string const& prefix);
 Feel::po::options_description redistanciation_fm_options(std::string const& prefix, bool addProjectorsOpts = true );
 Feel::po::options_description redistanciation_hj_options(std::string const& prefix );
 Feel::po::options_description levelset_options(std::string const& prefix);
+Feel::po::options_description interfaceforces_options(std::string const& prefix);
+Feel::po::options_description multifluid_options(std::string const& prefix, unsigned int nls = 3);
 Feel::po::options_description coefficientformpde_options(std::string const& prefix);
 Feel::po::options_description coefficientformpdes_options(std::string const& prefix);
 
