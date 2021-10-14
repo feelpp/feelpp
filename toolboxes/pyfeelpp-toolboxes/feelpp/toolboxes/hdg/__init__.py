@@ -1,9 +1,9 @@
 import feelpp
-
+from feelpp.toolboxes.core import *
 has_hdg = False
 _hdgs = None
 try:
-    from _hdg import *
+    from ._hdg import *
 
     _hdgs={
         'hdg(2,1)':HDGPoisson_2DP1,
@@ -16,7 +16,8 @@ except ImportError as e:
     print('Import feelpp.toolboxes.hdg failed: Feel++ Toolbox HDG is not available')
     pass  # module doesn't exist, deal with it.
 
-def hdgpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", worldComm=None ):
+
+def hdgpoisson(dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", physic=None, worldComm=None, subprefix="", modelRep=None):
     """create a hdg toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -34,4 +35,8 @@ def hdgpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", worldCo
     if key not in _hdgs:
         raise RuntimeError('HDG solver '+key+' not existing')
     _prefix= prefix_toolbox+"."+prefix if prefix else prefix_toolbox
-    return _hdgs[key]( _prefix, worldComm )
+    if modelRep is None:
+        modelRep = ModelBaseRepository()
+    if physic is None:
+        physic = MixedPoissonPhysics.none
+    return _hdgs[key](prefix=_prefix, physic=physic, worldComm=worldComm, subprefix="", modelRep=modelRep)

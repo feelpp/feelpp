@@ -18,7 +18,8 @@ except ImportError as e:
     print('Import feelpp.toolboxes.heat failed: Feel++ Toolbox Heat is not available')
     pass  # module doesn't exist, deal with it.
 
-def heat( dim=2, order=1, worldComm=None ):
+
+def heat(dim=2, order=1, worldComm=None, keyword="heat", subprefix="", modelRep=None):
     """create a heat toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -34,4 +35,6 @@ def heat( dim=2, order=1, worldComm=None ):
         print(key)
     if key not in _heats:
         raise RuntimeError('Heat solver '+key+' not existing')
-    return _heats[key]( "heat", "heat", worldComm )
+    if modelRep is None:
+        modelRep = ModelBaseRepository()
+    return _heats[key](prefix="heat", keyword=keyword, worldComm=worldComm, subprefix="", modelRep=modelRep)
