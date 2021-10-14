@@ -1888,9 +1888,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     {
         this->addPostProcessExportsAllFieldsAvailable( "trace_mesh", { (boost::format("body.%1%.translational-velocity")%bname).str(), (boost::format("body.%1%.angular-velocity")%bname).str() } );
         this->addPostProcessMeasuresQuantitiesAllNamesAvailable( { (boost::format("body_%1%.mass_center")%bname).str(),
-                    (boost::format("body_%1%.moment_of_inertia")%bname).str(),
-                    (boost::format("body_%1%.moment_of_inertia_body_frame")%bname).str(),
-                    (boost::format("body_%1%.fluid_forces")%bname).str(), (boost::format("body_%1%.fluid_torques")%bname).str() } );
+                                                                   (boost::format("body_%1%.rigid_rotation_angles")%bname).str(),
+                                                                   (boost::format("body_%1%.moment_of_inertia")%bname).str(),
+                                                                   (boost::format("body_%1%.moment_of_inertia_body_frame")%bname).str(),
+                                                                   (boost::format("body_%1%.fluid_forces")%bname).str(), (boost::format("body_%1%.fluid_torques")%bname).str() } );
     }
     this->setPostProcessExportsPidName( "trace_mesh", "trace.pid" );
     this->setPostProcessSaveAllFieldsAvailable( {"velocity","pressure","vorticity","displacement"} );
