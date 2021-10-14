@@ -40,11 +40,7 @@ def test_fluid_remesh():
     f = fluid(dim=2, orderVelocity=2, orderPressure=1)
     f.init()
 
-    e = feelpp.exporter(mesh=f.mesh(), name="turek-hron", geo="change")
-    e.step(0.).setMesh(f.mesh())
-    e.step(0.).add("velocity",f.fieldVelocity())
-    e.step(0.).add("pressure", f.fieldPressure())
-    e.save()
+    f.exportResults()
     f.startTimeStep()
     while not f.timeStepBase().isFinished():
 
@@ -65,10 +61,8 @@ def test_fluid_remesh():
             print("============================================================\n")
 
         f.solve()
-        e.step(f.time()).setMesh(f.mesh())
-        e.step(f.time()).add("velocity", f.fieldVelocity())
-        e.step(f.time()).add("pressure", f.fieldPressure())
-        e.save()
+        f.exportResults()
         f.updateTimeStep()
+
 
     
