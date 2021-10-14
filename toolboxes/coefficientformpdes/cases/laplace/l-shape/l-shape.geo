@@ -1,6 +1,6 @@
 SetFactory("OpenCASCADE");
 
-h = 0.2; // or whatever
+h = 0.5; // or whatever
 Mesh.CharacteristicLengthMin = h;
 Mesh.CharacteristicLengthMax = h;
 
