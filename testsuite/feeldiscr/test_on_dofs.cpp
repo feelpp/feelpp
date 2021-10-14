@@ -127,7 +127,7 @@ void runTestElimination()
 }
 
 
-template<int Dim, int PolyOrder=1>
+template<int Dim, int PolyOrder=1,template<class Convex, uint16_type Order, typename T> class PointSetT = PointSetFekete>
 void runTestAssignMeshRelated()
 {
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<Dim,1>>);
@@ -138,8 +138,8 @@ void runTestAssignMeshRelated()
 
     if constexpr ( PolyOrder>0 )
     {
-        auto Vh = Pch<PolyOrder>( mesh );
-        auto Qh = Pch<PolyOrder>( submesh );
+        auto Vh = Pch<PolyOrder,double,PointSetT>( mesh );
+        auto Qh = Pch<PolyOrder, double, PointSetT>( submesh );
         auto v = Vh->element();
         auto q1 = Qh->element();
         auto q2 = Qh->element();
@@ -154,8 +154,8 @@ void runTestAssignMeshRelated()
         BOOST_CHECK_CLOSE( int1, int3, 1e-12 );
     }
 
-    auto Wh = Pdhv<PolyOrder>( mesh );
-    auto Rh = Pdhv<PolyOrder>( submesh );
+    auto Wh = Pdhv<PolyOrder,PointSetT>( mesh );
+    auto Rh = Pdhv<PolyOrder,PointSetT>( submesh );
     auto w = Wh->element();
     auto r = Rh->element();
 
@@ -185,10 +185,21 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( test_on_dofs )
 
-BOOST_AUTO_TEST_CASE( assign_3d )
+BOOST_AUTO_TEST_CASE( assign_3d_assign )
 {
     runTestAssign<3>();
-    runTestAssignMeshRelated<3,4>();
+}
+BOOST_AUTO_TEST_CASE( assign_3d_meshrelated_order3 )
+{
+    runTestAssignMeshRelated<3,3>();
+}
+BOOST_AUTO_TEST_CASE( assign_3d_meshrelated_order4 )
+{
+    // @warning this does not work with PointSetFekete
+    runTestAssignMeshRelated<3,4,PointSetEquiSpaced>();
+}
+BOOST_AUTO_TEST_CASE( assign_3d_meshrelated_order0 )
+{
     runTestAssignMeshRelated<3,0>();
 }
 

@@ -346,7 +346,10 @@ public:
     element_ptrtype const& polyPtr() const { return M_poly; }
 
     //! Return a vector with the last n state vectors
-    unknowns_type const& unknowns() const;
+    unknowns_type const& unknowns() const { return M_unknowns; }
+
+    //! Return a vector with the last n state vectors
+    unknowns_type& unknowns() { return M_unknowns; }
 
     //! Return the previous element at previous time i-1
     element_type& unknown( int i );
@@ -757,14 +760,6 @@ Bdf<SpaceType>::restart()
     double ti = super::restart();
 
     return ti;
-}
-
-template <typename SpaceType>
-const
-typename Bdf<SpaceType>::unknowns_type&
-Bdf<SpaceType>::unknowns() const
-{
-    return M_unknowns;
 }
 
 template <typename SpaceType>

@@ -22,7 +22,8 @@
 //! @copyright 2018 Feel++ Consortium
 //!
 #include <pybind11/pybind11.h>
-
+#include <pybind11/stl.h>
+#include <pybind11/functional.h>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
@@ -53,23 +54,41 @@ void defFM(py::module &m)
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize the fluid mechanics toolbox"
              )
-        .def("init",&fm_t::init, "initialize the fluid mechanics toolbox",py::arg("buildModelAlgebraicFactory")= true)
-
+        .def("init",static_cast<void (fm_t::*)(bool)>(&fm_t::init), "initialize the fluid mechanics toolbox",py::arg("buildModelAlgebraicFactory")= true)
+        .def("mesh",static_cast<typename fm_t::mesh_ptrtype  (fm_t::*)() const>(&fm_t::mesh), "get the mesh")
+        .def("setMesh",static_cast<void (fm_t::*)(typename fm_t::mesh_ptrtype const&)>(&fm_t::setMesh), "set the mesh of the toolbox",py::arg("mesh"))
         // function spaces and elements
         .def("functionSpaceVelocity",&fm_t::functionSpaceVelocity, "get the velocity function space")
-        .def("fieldVelocity",static_cast<typename fm_t::element_velocity_type& (fm_t::*)()>(&fm_t::fieldVelocity), "get the velocity field")
-
+        //.def("fieldVelocity",static_cast<typename fm_t::element_velocity_ptrtype& (fm_t::*)()>(&fm_t::fieldVelocityPtr), "get the velocity field")
+        .def("fieldVelocity", []( std::shared_ptr<fm_t>& self ) {
+            self->fieldVelocityPtr()->printMatlab("velocityptr.m");
+            return self->fieldVelocityPtr();
+        } )
+        .def("setFieldVelocity",
+            []( std::shared_ptr<fm_t>& self, typename fm_t::element_velocity_ptrtype& v ) {
+                v->printMatlab("v.m");
+                self->fieldVelocity() = *v;
+                self->fieldVelocityPtr()->printMatlab("velocity.m");
+            }, "set the velocity field", py::arg("field"))
+        .def("setFieldPressure",
+            []( std::shared_ptr<fm_t>& self, typename fm_t::element_pressure_ptrtype& p ) {
+                self->fieldPressure() = *p;
+            }, "set the pressure field", py::arg("field"))
         .def("functionSpacePressure",&fm_t::functionSpacePressure, "get the pressure function space")
-        .def("fieldPressure",static_cast<typename fm_t::element_pressure_type& (fm_t::*)()>(&fm_t::fieldPressure), "get the pressure field")
+        .def("fieldPressure",static_cast<typename fm_t::element_pressure_ptrtype const& (fm_t::*)() const>(&fm_t::fieldPressurePtr), "get the pressure field")
 
         // time stepping
         .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (fm_t::*)() const>(&fm_t::timeStepBase), "get time stepping base")
+        .def("startTimeStep",static_cast<void (fm_t::*)( bool )>(&fm_t::startTimeStep), "start time stepping", py::arg("preprocess")=true )
         .def("updateTimeStep",&fm_t::updateTimeStep, "update time stepping")
 
         // solve
         .def("solve",&fm_t::solve, "solve the fluid mechanics problem")
         .def("exportResults",static_cast<void (fm_t::*)()>(&fm_t::exportResults), "export the results of the fluid mechanics problem")
         .def("exportResults",static_cast<void (fm_t::*)( double )>(&fm_t::exportResults), "export the results of the fluid mechanics problem", py::arg("time"))
+
+        // remesh
+        .def("applyRemesh",&fm_t::applyRemesh, "apply remesh to toolbox and regenerate the necessary data structure")
         ;
         
 }
