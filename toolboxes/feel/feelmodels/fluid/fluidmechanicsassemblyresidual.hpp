@@ -203,7 +203,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
 
             //------------------------------------------------------------------------------------//
             //! gravity force
-            if ( doAssemblyRhs && physicFluidData->gravityForceEnabled() )
+            if ( doAssemblyRhs && physicFluidData->gravityForceEnabled() && false )
             {
                 auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
                 auto const& gravityForce = physicFluidData->gravityForceExpr();

@@ -489,8 +489,19 @@ if ( FEELPP_ENABLE_MATPLOT )
       set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
     endif()
     message( STATUS "matplot++ CMAKE_INSTALL_INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
+    set( BUILD_SHARED_LIBS ON )
+    set( BUILD_INSTALLER ON )
+    set(OPTIMIZATION_FLAG_IS_SET ON)
     add_subdirectory( matplot )
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_MATPLOT )
+    set_target_properties(matplot PROPERTIES OUTPUT_NAME "feelpp_matplot")
+    target_link_libraries( feelpp_contrib INTERFACE matplot )
+    install(TARGETS matplot EXPORT feelpp-contrib-export-targets
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
 #    target_link_libraries(feelpp_contrib INTERFACE matplot )
     target_include_directories(feelpp_contrib INTERFACE
       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/matplot/source/>
