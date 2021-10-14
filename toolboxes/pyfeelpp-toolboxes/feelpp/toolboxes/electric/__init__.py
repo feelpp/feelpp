@@ -1,5 +1,5 @@
 import feelpp
-
+from feelpp.toolboxes.core import *
 has_electric = False
 _electrics = None
 try:
@@ -16,7 +16,8 @@ except ImportError as e:
     print('Import feelpp.toolboxes.electric failed: Feel++ Toolbox electric is not available')
     pass  # module doesn't exist, deal with it.
 
-def electric( dim=2, orderPotential=1, worldComm=None ):
+
+def electric(dim=2, orderPotential=1, worldComm=None, subprefix="", modelRep=None ):
     """create a electric toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -32,4 +33,6 @@ def electric( dim=2, orderPotential=1, worldComm=None ):
         print(key)
     if key not in _electrics:
         raise RuntimeError('Electric solver '+key+' not existing')
-    return _electrics[key]( "electric", "electric", worldComm )
+    if modelRep is None:
+        modelRep = ModelBaseRepository()
+    return _electrics[key]( "electric", "electric", worldComm, "", modelRep  )

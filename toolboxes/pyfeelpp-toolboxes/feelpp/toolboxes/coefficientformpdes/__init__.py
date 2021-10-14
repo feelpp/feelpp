@@ -1,5 +1,5 @@
 import feelpp
-from feelpp.toolboxes import *
+from feelpp.toolboxes.core import *
 
 has_cfpde = False
 _cfpdes = None
