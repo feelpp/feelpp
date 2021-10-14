@@ -62,6 +62,7 @@ class MeshALE : public ModelBase
 public :
     typedef ModelBase super_type;
     using self_type = MeshALE<Convex>;
+    using self_ptrtype = std::shared_ptr<self_type>;
     using size_type = uint32_type;
     typedef Backend<double> backend_type;
     typedef std::shared_ptr<backend_type> backend_ptrtype;

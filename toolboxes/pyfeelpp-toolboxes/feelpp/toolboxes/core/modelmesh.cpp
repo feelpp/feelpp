@@ -56,7 +56,7 @@ void defToolbox(py::module &m)
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize the meshALE mechanics toolbox"
              )
-        .def("init",&toolbox_t::init, "initialize the meshALE  toolbox")
+        .def("init",static_cast<void (toolbox_t::*)()>(&toolbox_t::init), "initialize the meshALE  toolbox")
 
         // mesh
         .def( "addMarkerInBoundaryCondition", (void (toolbox_t::*)(std::string const&,std::string const&)) &toolbox_t::addMarkerInBoundaryCondition, py::arg("boundary"), py::arg("marker"), "add the boundary flags" )

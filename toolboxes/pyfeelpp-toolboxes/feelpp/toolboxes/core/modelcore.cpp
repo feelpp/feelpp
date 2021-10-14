@@ -33,6 +33,14 @@
 namespace py = pybind11;
 using namespace Feel;
 
+#if 0
+class PyModelBase : public Feel::FeelModels::ModelBase
+{
+public:
+    using Feel::FeelModels::ModelBase;
+
+};
+#endif
 
 PYBIND11_MODULE(_modelcore, m )
 {
@@ -57,7 +65,7 @@ PYBIND11_MODULE(_modelcore, m )
     py::class_<ModelBase, std::shared_ptr<ModelBase>>(m,"ModelBase")
         .def(py::init<std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
-             py::arg("worldComm")=Environment::worldCommPtr(),
+             py::arg("worldComm"),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize ModelBase base class"
@@ -91,7 +99,7 @@ PYBIND11_MODULE(_modelcore, m )
     py::class_<ModelAlgebraic, std::shared_ptr<ModelAlgebraic>, ModelBase>(m,"ModelAlgebraic")
         .def(py::init<std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
-             py::arg("worldComm")=Environment::worldCommPtr(),
+             py::arg("worldComm"),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize ModelAlgebraic"
@@ -103,7 +111,7 @@ PYBIND11_MODULE(_modelcore, m )
     py::class_<ModelNumerical, std::shared_ptr<ModelNumerical>, ModelAlgebraic>( m, "ModelNumerical" )
         .def( py::init<std::string const&, worldcomm_ptr_t const&, std::string const&, ModelBaseRepository const&>(),
               py::arg( "prefix" ),
-              py::arg( "worldComm" ) = Environment::worldCommPtr(),
+              py::arg( "worldComm" ),
               py::arg( "subprefix" ) = std::string( "" ),
               py::arg( "modelRep" ) = ModelBaseRepository(),
               "Initialize ModelNumerical" )
