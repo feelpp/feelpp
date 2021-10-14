@@ -15,7 +15,7 @@ try:
     }
     has_heat = True
 except ImportError as e:
-    print('has_heat:', has_heat)
+    print('Import feelpp.toolboxes.heat failed: Feel++ Toolbox Heat is not available')
     pass  # module doesn't exist, deal with it.
 
 def heat( dim=2, order=1, worldComm=None ):

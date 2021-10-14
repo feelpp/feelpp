@@ -58,3 +58,7 @@ if ( FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
   add_dependencies(pyfeelpptoolboxes _fluid)
 endif()
 
+if ( FEELPP_TOOLBOXES_ENABLE_HDG )
+  add_subdirectory( hdg )
+  add_dependencies(pyfeelpptoolboxes _hdg)
+endif()
