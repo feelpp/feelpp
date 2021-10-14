@@ -415,7 +415,6 @@ private :
     ale_map_element_ptrtype M_fieldInitialIdentity;
 
     bdf_ale_displacement_ptrtype M_bdf_ale_identity;
-    bdf_ale_displacement_ptrtype M_bdf_ale_velocity;
 
     exporter_ptrtype M_exporter;
 

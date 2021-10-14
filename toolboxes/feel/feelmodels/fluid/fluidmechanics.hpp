@@ -2826,17 +2826,6 @@ private :
     bool M_useVelocityExtrapolated;
     vector_ptrtype M_vectorVelocityExtrapolated, M_vectorPreviousVelocityExtrapolated;
     element_velocity_external_storage_ptrtype M_fieldVelocityExtrapolated; // view on M_vectorVelocityExtrapolated
-    // lagrange multiplier space for mean pressure
-    std::vector<space_meanpressurelm_ptrtype> M_XhMeanPressureLM;
-    // trace mesh and space
-    trace_mesh_ptrtype M_meshDirichletLM;
-    space_trace_velocity_ptrtype M_XhDirichletLM;
-    // lagrange multiplier for impose pressure bc
-    trace_mesh_ptrtype M_meshLagrangeMultiplierPressureBC;
-    space_trace_velocity_component_ptrtype M_spaceLagrangeMultiplierPressureBC;
-    element_trace_velocity_component_ptrtype M_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC2;
-    // body bc
-    BodySetBoundaryCondition M_bodySetBC;
     // time discrtisation fluid
     std::string M_timeStepping;
     bdf_velocity_ptrtype M_bdfVelocity;
@@ -2912,6 +2901,7 @@ private :
     // bool M_doStabDivDiv;
     bool M_doStabConvectionEnergy; // see Nobile thesis
     //----------------------------------------------------
+    // add constraint that mean pressure is equal to a constant (typically 0)
     bool M_definePressureCst;
     bool M_definePressureCstOnlyOneZoneAppliedOnWholeMesh;
     std::vector<std::set<std::string> > M_definePressureCstMarkers;
@@ -2919,7 +2909,19 @@ private :
     std::string M_definePressureCstMethod;
     double M_definePressureCstPenalisationBeta;
     std::vector<std::pair<vector_ptrtype,std::set<size_type> > > M_definePressureCstAlgebraicOperatorMeanPressure;
+    // lagrange multiplier space for mean pressure
+    std::vector<space_meanpressurelm_ptrtype> M_XhMeanPressureLM;
     //----------------------------------------------------
+    // bc : velocity imposed by using a lagrange multiplier
+    trace_mesh_ptrtype M_meshDirichletLM;
+    space_trace_velocity_ptrtype M_XhDirichletLM;
+    element_trace_velocity_ptrtype M_fieldDirichletLM;
+    // lagrange multiplier for impose pressure bc
+    trace_mesh_ptrtype M_meshLagrangeMultiplierPressureBC;
+    space_trace_velocity_component_ptrtype M_spaceLagrangeMultiplierPressureBC;
+    element_trace_velocity_component_ptrtype M_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC2;
+    // body bc
+    BodySetBoundaryCondition M_bodySetBC;
     // fluid inlet bc
     std::vector< std::tuple<std::string,std::string, scalar_field_expression<2> > > M_fluidInletDesc; // (marker,type,vmax expr)
     std::map<std::string,trace_mesh_ptrtype> M_fluidInletMesh;
@@ -2928,7 +2930,6 @@ private :
     std::map<std::string,std::tuple<component_element_velocity_ptrtype,
                                     op_interpolation_fluidinlet_ptrtype > > M_fluidInletVelocityInterpolated;
     std::map<std::string,std::tuple<element_fluidinlet_ptrtype,double,double> > M_fluidInletVelocityRef;//marker->(uRef,maxURef,flowRateRef)
-    //----------------------------------------------------
     // fluid outlet 0d (free, windkessel)
     std::vector< std::tuple<std::string,std::string, std::tuple<std::string,double,double,double> > > M_fluidOutletsBCType;
     mutable std::map<int,double> M_fluidOutletWindkesselPressureDistal,M_fluidOutletWindkesselPressureProximal;
