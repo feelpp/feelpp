@@ -13,7 +13,7 @@ try:
     }
     has_fluid=True
 except ImportError as e:
-    print('has_fluid', has_fluid)
+    print('Import feelpp.toolboxes.fluid failed: Feel++ Toolbox Fluid is not available')
     pass  # module doesn't exist, deal with it.
 
 def fluid( dim=2, orderVelocity=2, orderPressure=1, orderGeometry=1, worldComm=None ):
@@ -34,4 +34,4 @@ def fluid( dim=2, orderVelocity=2, orderPressure=1, orderGeometry=1, worldComm=N
         print(key)
     if key not in _cfds:
         raise RuntimeError('Fluid solver '+key+' not existing')
-    return _cfds[key]( "fluid", "fluid", worldComm )
+    return _cfds[key]( prefix="fluid", keyword="fluid", worldComm=worldComm )
