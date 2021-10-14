@@ -30,6 +30,8 @@ class InitFeelpp:
                                 .add(tb.toolboxes_options("electric"))
                                 .add(tb.toolboxes_options("fluid"))
                                 .add(tb.toolboxes_options("heat"))
+                                .add(tb.toolboxes_options("solid"))
+                                .add(tb.toolboxes_options("solid"))
                                 .add(tb.toolboxes_options("coefficient-form-pdes", "cfpdes")),
                 config=config
                                 )

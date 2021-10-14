@@ -8,7 +8,8 @@ import feelpp.interpolation as I
 from feelpp.toolboxes.fluid import *
 
 
-def test_fluid():
+@pytest.mark.order("first")
+def test_fluid1():
     feelpp.Environment.setConfigFile('fluid/TurekHron/cfd3.cfg')
     # 2D fluid solver using P2P1G1 approximation
     f = fluid(dim=2, orderVelocity=2, orderPressure=1,worldComm=feelpp.Environment.worldCommPtr())
@@ -31,7 +32,8 @@ def test_fluid():
             f.updateTimeStep()
 
 
-def test_fluid_remesh():
+@pytest.mark.order("second")
+def test_fluid2_remesh():
 #    feelpp.Environment.setConfigFile('fluid/TurekHron/cfd3.cfg')
     #feelpp.Environment.setConfigFile('fluid/swimmers/3-sphere/2d/three_sphere_2D.cfg')
     #feelpp.Environment.setConfigFile('fluid/moving_body/gravity/cfd.cfg')
