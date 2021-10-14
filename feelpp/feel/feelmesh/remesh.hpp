@@ -58,12 +58,22 @@ remesh( std::shared_ptr<MeshT> const& r,
         auto R = std::make_shared<Remesh<mesh_t>>( r, req_elts, req_facets );
         auto P1h = Pch<1>( r );
 
-        if ( std::smatch sm; std::regex_match( metric_expr, sm, std::regex( "gradedls\\((.*),(.*)\\)" ) ) )
+        if ( std::smatch sm; 
+             std::regex_match( metric_expr, sm, std::regex( "gradedls\\((.*),(.*)\\)" ) )  )
         {
             double hclose = std::stod( sm[1] );
             double hfar = std::stod( sm[2] );
-            std::cout << fmt::format( "hclose={} hfar={}", hclose, hfar ) << std::endl;
-            R->setMetric( gradedfromls( P1h, markedfaces( r, req_facets ), hclose, hfar ) );
+            LOG(INFO) << fmt::format( "[remesh] gradedfromls hclose={} hfar={}", hclose, hfar, 0. ) << std::endl;
+            R->setMetric( gradedfromls( P1h, markedfaces( r, req_facets ), hclose, hfar, 0. ) );
+        }
+        else if ( std::smatch sm; 
+             std::regex_match( metric_expr, sm, std::regex( "gradedls\\((.*),(.*),(.*)\\)" ) )  )
+        {
+            double hclose = std::stod( sm[1] );
+            double hfar = std::stod( sm[2] );
+            double cst = std::stod( sm[3] );
+            LOG(INFO) << fmt::format( "[remesh] gradedfromls hclose={} hfar={} percent={}", hclose, hfar, cst ) << std::endl;
+            R->setMetric( gradedfromls( P1h, markedfaces( r, req_facets ), hclose, hfar, cst ) );
         }
         else
         {
