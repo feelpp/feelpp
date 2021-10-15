@@ -5,6 +5,7 @@ from ._alg import *
 from ._mesh import *
 from ._discr import *
 from ._exporter import  *
+from ._ls import *
 from ._ts import  *
 from ._vf import  *
 from ._models import *
@@ -84,6 +85,19 @@ _spaces={
     'Pch(3,1)':Pch_3D_P1,
     'Pch(3,2)':Pch_3D_P2,
     'Pch(3,3)':Pch_3D_P3,
+
+    # Pchv
+    'Pchv(1,1)': Pchv_1D_P1,
+    'Pchv(1,2)': Pchv_1D_P2,
+    'Pchv(1,3)': Pchv_1D_P3,
+
+    'Pchv(2,1)': Pchv_2D_P1,
+    'Pchv(2,2)': Pchv_2D_P2,
+    'Pchv(2,3)': Pchv_2D_P3,
+
+    'Pchv(3,1)': Pchv_3D_P1,
+    'Pchv(3,2)': Pchv_3D_P2,
+    'Pchv(3,3)': Pchv_3D_P3,
 
     # Pdh
     #'Pdh(1,0)':Pdh_1D_P0,

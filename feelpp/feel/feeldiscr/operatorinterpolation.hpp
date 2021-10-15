@@ -519,7 +519,7 @@ struct PrecomputeDomainBasisFunction
                     break;
                 }
             }
-            CHECK( find ) << "not find a compatible dof\n ";
+            CHECK( find ) << "[OperatorInterpolation::update] Compatible dof not found";
             return image_fe_changedim_type::nLocalDof * comp + thelocDofToFind;
 
         }
@@ -1712,12 +1712,19 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     //-----------------------------------------
     //init the localization tool
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
-    if ( this->interpolationType().onlyLocalizeOnBoundary() ) locTool->updateForUseBoundaryFaces();
-    else locTool->updateForUse();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
+    if ( this->interpolationType().onlyLocalizeOnBoundary() )
+        locTool->updateForUseBoundaryFaces();
+    else
+        locTool->updateForUse();
     // kdtree parameter
     locTool->kdtree()->nbNearNeighbor(this->interpolationType().nbNearNeighborInKdTree());
+#if 0
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
+#else
+    bool notUseOptLocTest = true;
+#endif
     //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
     //locTool->kdtree()->nbNearNeighbor(3);
@@ -1736,7 +1743,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     std::vector< std::list<std::pair<size_type,double> > > memory_valueInMatrix( this->dualImageSpace()->nLocalDof() );
 
     //-----------------------------------------
-    size_type eltIdLocalised = 0;
+    size_type eltIdLocalised = invalid_v<size_type>;
 
     // for each element in range
     auto itListRange = M_listRange.begin();
@@ -1769,11 +1776,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     ublas::column(ptsReal,0 ) = boost::get<0>(imagedof->dofPoint(gdof));
                                     //------------------------
                                     // localisation process
-                                    if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
+                                    //if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
                                     auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,theImageElt.vertices()/*theImageElt.G()*/,mpl::int_<interpolation_type::isConforming()>());
                                     for ( bool hasFindPtLocalised : resLocalisation.template get<0>()  )
                                          LOG_IF(ERROR, !hasFindPtLocalised ) << "OperatorInterpolation::updateNoRelationMesh : point localisation fail!\n";
-                                    eltIdLocalised = resLocalisation.template get<1>();
+                                    if ( !notUseOptLocTest )
+                                        eltIdLocalised = resLocalisation.template get<1>();
                                     //------------------------
                                     // for each localised points
                                     itanal = locTool->result_analysis_begin();
@@ -2037,7 +2045,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     extrapolation_memory_type dof_extrapolationData(this->dualImageSpace()->nLocalDof());
 
     //init the localization tool
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
     bool doExtrapolationAtStart = locTool->doExtrapolation();
     // kdtree parameter
     locTool->kdtree()->nbNearNeighbor(this->interpolationType().nbNearNeighborInKdTree());
@@ -2048,7 +2057,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     if ( doExtrapolationAtStart && this->interpolationType().searchWithCommunication() ) locTool->setExtrapolation(false);
 
 
+#if 0
     uint16_type nMPIsearch=15;//5;
+#else
+    // TODO : put 15 not work when a partition is not gather in one group.
+    // we should compute these group and compute barycenter in each of them
+    uint16_type nMPIsearch = this->domainSpace()->mesh()->worldCommPtr()->localSize();
+#endif
     if( InterpType::isConforming()) nMPIsearch=this->domainSpace()->mesh()->worldCommPtr()->localSize();
     else if (this->domainSpace()->mesh()->worldCommPtr()->localSize()<nMPIsearch) nMPIsearch=this->domainSpace()->mesh()->worldCommPtr()->localSize();
    // only one int this case
@@ -2391,7 +2406,8 @@ OperatorInterpolation<DomainSpaceType,
     auto const* domaindof = this->domainSpace()->dof().get();
     auto const* domainbasis = this->domainSpace()->basis().get();
 
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
     //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
@@ -2633,7 +2649,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     const size_type nProc_domain = this->domainSpace()->mesh()->worldCommPtr()->localSize();
 
     // localisation tool with matrix node
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
     //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
@@ -3096,7 +3113,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     const size_type nProc_domain = this->domainSpace()->mesh()->worldCommPtr()->localSize();
 
     // localisation tool with matrix node
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
     //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
@@ -3490,7 +3508,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     auto const* imagedof = this->dualImageSpace()->dof().get();
     //iterator_type it, en;
 
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
     std::vector< std::list<boost::tuple<size_type,uint16_type> > > memSetGdofAndComp( nProc_domain );

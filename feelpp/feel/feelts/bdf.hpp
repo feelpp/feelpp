@@ -142,33 +142,32 @@ public:
     //! @return the FunctionSpace associated to BDF
     space_ptrtype const& functionSpace() const { return M_space; }
 
-    /**
-     * @brief interpolate fields from another bdf possibly on a different mesh
-     * 
-     * @param otherbdf other bdf to interpolate data from
-     * @param markersInterpolate element markers set 
-     */
-    void interpolate( bdf_ptrtype const& otherbdf, std::vector<std::string> const& markersInterpolate )
-    {
-        auto submesh = createSubmesh( otherbdf->functionSpace()->mesh(), markedelements( otherbdf->functionSpace()->mesh(), markersInterpolate ) );
-        space_ptrtype Space_temp;
-        Space_temp = space_type::New( _mesh = submesh );
-        auto op_1 = opInterpolation( _domainSpace = otherbdf->functionSpace(), _imageSpace = Space_temp,
-                                     _backend = backend( _rebuild = true ) );
-        auto op_2 = opInterpolation( _domainSpace = Space_temp, //VelSpace_temp,
-                                     _imageSpace = this->functionSpace(),
-                                     _range = markedelements( this->functionSpace()->mesh(), markersInterpolate ),
-                                     _backend = backend( _name = "Iv", _rebuild = true ) );
-        // ------------------
-        for ( auto oldit = otherbdf->M_unknowns.begin(), olden = otherbdf->M_unknowns.end(),
-                   it = this->M_unknowns.begin(), en = this->M_unknowns.end();
-              oldit != olden; ++oldit, ++it )
+    //! apply a remesh by given the new functionspace and the interpolation matrix between previous and new function space
+    void applyRemesh( space_ptrtype const& space, std::shared_ptr<MatrixSparse<double>> const& matInterp )
         {
-            auto temp = op_1->dualImageSpace()->elementPtr();
-            op_1->apply( unwrap_ptr( *oldit ), unwrap_ptr( *temp ) );
-            op_2->apply( unwrap_ptr( *temp ), unwrap_ptr( *it ) );
+            //! change space/fields and interpolate
+            M_space = space;
+
+            // not yet init : do nothing
+            if ( M_unknowns.empty() )
+                return;
+
+            // interpolate unknown fields
+            unknowns_type oldUnknowns = M_unknowns;
+            for ( int k=0;k< M_unknowns.size();++k )
+            {
+                M_unknowns[k] = M_space->elementPtr();
+                matInterp->multVector( unwrap_ptr(oldUnknowns[k]), unwrap_ptr(M_unknowns[k]) );
+            }
+
+            //! recompute poly and polyDeriv
+            M_poly.reset();
+            M_polyDeriv.reset();
+            this->computePolyAndPolyDeriv();
+
+            // TODO : change repository where fields are saved
         }
-    }
+
     //! return a deep copy of the bdf object
     bdf_ptrtype deepCopy() const
     {
@@ -228,11 +227,11 @@ public:
     //! return number of consecutive save
     int numberOfConsecutiveSave() const { return M_numberOfConsecutiveSave; }
 
-    //! set number of consecutive save (max is BDF_MAX_ORDER)
+    //! set number of consecutive save
     void setNumberOfConsecutiveSave( int n )
     {
         if ( n > 0 )
-            M_numberOfConsecutiveSave = std::min( n,(int)BDF_MAX_ORDER );
+            M_numberOfConsecutiveSave = n;
     }
 
     //! return a vector of the times prior to timeInitial() (included)
@@ -347,13 +346,19 @@ public:
     element_ptrtype const& polyPtr() const { return M_poly; }
 
     //! Return a vector with the last n state vectors
-    unknowns_type const& unknowns() const;
+    unknowns_type const& unknowns() const { return M_unknowns; }
+
+    //! Return a vector with the last n state vectors
+    unknowns_type& unknowns() { return M_unknowns; }
 
     //! Return the previous element at previous time i-1
     element_type& unknown( int i );
 
     //! Return the previous element at previous time i-1
     element_ptrtype unknownPtr( int i );
+
+    //! update field \u with derivative at previous time indexed by \i (i.e. curent_time - i - 1)
+    void updateDerivative( element_type & u, int i = 0 ) const;
 
     element_type const& prior() const { return *M_unknowns[0]; }
 
@@ -451,18 +456,21 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
     M_beta( BDF_MAX_ORDER ),
-    M_poly( M_space->elementPtr() ),
-    M_polyDeriv( M_space->elementPtr() ),
     M_numberOfConsecutiveSave( M_order )
 {
-    M_unknowns.resize( BDF_MAX_ORDER );
+    computeCoefficients();
 
-    for ( uint8_type __i = 0; __i < ( uint8_type )BDF_MAX_ORDER; ++__i )
+    CHECK( this->numberOfConsecutiveSave() >= this->bdfOrder() ) << "numberOfConsecutiveSave is too small, should be >= bdfOrder";
+    M_unknowns.resize( std::max(this->bdfOrder(), this->numberOfConsecutiveSave()) );
+    for ( uint8_type __i = 0; __i < M_unknowns.size(); ++__i )
     {
         M_unknowns[__i] = element_ptrtype( new element_type( M_space ) );
         M_unknowns[__i]->zero();
     }
-    computeCoefficients();
+
+    this->computePolyAndPolyDeriv();
+
+
 }
 
 //! copy operator
@@ -540,6 +548,22 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::init()
 {
+
+    CHECK( this->numberOfConsecutiveSave() >= this->bdfOrder() ) << "numberOfConsecutiveSave is too small, should be >= bdfOrder";
+    int sizeUnknowns = std::max(this->bdfOrder(), this->numberOfConsecutiveSave());
+    if ( M_unknowns.size() != sizeUnknowns )
+    {
+        M_unknowns.resize( sizeUnknowns );
+        for ( uint8_type __i = 0; __i < M_unknowns.size(); ++__i )
+        {
+            if ( !M_unknowns[__i] )
+            {
+                M_unknowns[__i] = M_space->elementPtr();
+                M_unknowns[__i]->zero();
+            }
+        }
+    }
+
     if ( this->path().empty() )
     {
         this->setPathSave( (boost::format("%3%bdf_o_%1%_dt_%2%")
@@ -739,14 +763,6 @@ Bdf<SpaceType>::restart()
 }
 
 template <typename SpaceType>
-const
-typename Bdf<SpaceType>::unknowns_type&
-Bdf<SpaceType>::unknowns() const
-{
-    return M_unknowns;
-}
-
-template <typename SpaceType>
 typename Bdf<SpaceType>::element_type&
 Bdf<SpaceType>::unknown( int i )
 {
@@ -928,6 +944,16 @@ Bdf<SpaceType>::computePolyAndPolyDeriv()
         M_polyDeriv->add( this->polyDerivCoefficient( i+1 ), *M_unknowns[i] );
 }
 
+template <typename SpaceType>
+void
+Bdf<SpaceType>::updateDerivative( element_type & u, int i ) const
+{
+    CHECK( M_unknowns.size() >= (this->timeOrder()+1+i) );
+    u.zero();
+    u.add( this->polyDerivCoefficient( 0 ), *M_unknowns[i] );
+    for ( uint8_type k = 0; k < this->timeOrder(); ++k )
+        u.add( -this->polyDerivCoefficient( k+1 ), *M_unknowns[i+k+1] );
+}
 
 BOOST_PARAMETER_FUNCTION(
     ( std::shared_ptr<Bdf<typename meta::remove_all<typename parameter::binding<Args, tag::space>::type>::type::element_type> > ),

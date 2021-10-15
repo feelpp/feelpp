@@ -61,4 +61,3 @@ if ( FEELPP_TOOLBOXES_ENABLE_HDG AND ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang
   add_subdirectory( hdg )
   add_dependencies(pyfeelpptoolboxes _hdgpoisson)
 endif()
-

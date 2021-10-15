@@ -534,20 +534,17 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
             size_type startBlockIndexDirichletLM = this->startSubBlockSpaceIndex("dirichletlm");
 
             auto lambdaBC = this->XhDirichletLM()->element();
-            std::cout << "----lm-1-----"<<std::endl;
             form2( _test=XhV,_trial=this->XhDirichletLM(),_matrix=J,_pattern=size_type(Pattern::COUPLED),
                    _rowstart=rowStartInMatrix,
                    _colstart=colStartInMatrix+startBlockIndexDirichletLM )+=
                 integrate( _range=elements(this->meshDirichletLM()),
                            _expr= inner( idt(lambdaBC),id(u) ) );
 
-            std::cout << "----lm-2-----"<<std::endl;
             form2( _test=this->XhDirichletLM(),_trial=XhV,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                    _rowstart=rowStartInMatrix+startBlockIndexDirichletLM,
                    _colstart=colStartInMatrix ) +=
                 integrate( _range=elements(this->meshDirichletLM()),
                            _expr= inner( idt(u),id(lambdaBC) ) );
-            std::cout << "----lm-3-----"<<std::endl;
         }
     }
     //--------------------------------------------------------------------------------------------------//

@@ -280,6 +280,8 @@ gmsh_options( std::string const& prefix )
 
 
 }
+
+
 po::options_description
 gmsh_domain_options( std::string const& prefix )
 {
@@ -313,6 +315,7 @@ gmsh_domain_options( std::string const& prefix )
 
 }
 
+po::options_description remesh_options( std::string const& prefix = "" );
 
 po::options_description
 arm_options( std::string const& prefix )
@@ -1145,94 +1148,94 @@ po::options_description
 feel_options( std::string const& prefix  )
 {
     auto opt = benchmark_options( prefix )
-        .add( mesh_options( 1, prefix ) )
-        .add( mesh_options( 2, prefix ) )
-        .add( mesh_options( 3, prefix ) )
-        /* alg options */
-        .add( backend_options() )
+                   .add( mesh_options( 1, prefix ) )
+                   .add( mesh_options( 2, prefix ) )
+                   .add( mesh_options( 3, prefix ) )
+                   /* alg options */
+                   .add( backend_options() )
 #if defined(FEELPP_HAS_PETSC_H)
-        .add( backendpetsc_options( prefix ) )
+                   .add( backendpetsc_options( prefix ) )
 #endif
-        .add( solvereigen_options( prefix ) )
+                   .add( solvereigen_options( prefix ) )
 #if defined( FEELPP_HAS_TRILINOS_EPETRA )
-        .add( backendtrilinos_options( prefix ) )
+                   .add( backendtrilinos_options( prefix ) )
 #endif
-        .add( backend_options("Ap") )
-        .add( backend_options("Fp") )
-        .add( backend_options("Mp") )
-        .add( backend_options("Fu") )
-        .add( backend_options("Bt") )
-        .add( blockns_options( prefix ) )
-        .add( sc_options( prefix ) )
-        //.add( blockms_options( prefix ) )
+                   .add( backend_options( "Ap" ) )
+                   .add( backend_options( "Fp" ) )
+                   .add( backend_options( "Mp" ) )
+                   .add( backend_options( "Fu" ) )
+                   .add( backend_options( "Bt" ) )
+                   .add( blockns_options( prefix ) )
+                   .add( sc_options( prefix ) )
+                   //.add( blockms_options( prefix ) )
 
-        /* nonlinear solver options */
-        .add( nlsolver_options() )
+                   /* nonlinear solver options */
+                   .add( nlsolver_options() )
 
-        /* discr options */
-        .add( ts_options( prefix ) )
-        .add( bdf_options( prefix ) )
-        .add( cnab2_options( prefix ) )
+                   /* discr options */
+                   .add( ts_options( prefix ) )
+                   .add( bdf_options( prefix ) )
+                   .add( cnab2_options( prefix ) )
 
-        /* exporter options */
-        .add( exporter_options( prefix ) )
+                   /* exporter options */
+                   .add( exporter_options( prefix ) )
 
         /* nlopt options */
 #if defined(FEELPP_HAS_NLOPT)
-        .add( nlopt_options( prefix ) )
+                   .add( nlopt_options( prefix ) )
 #endif
         /* glpk options */
 #if defined(FEELPP_HAS_GLPK_H)
-        .add( glpk_options( prefix ) )
+                   .add( glpk_options( prefix ) )
 #endif
 
-        .add( mesh_options( prefix ) )
-        /* arm options */
-        .add( arm_options( prefix ) )
-        /* gmsh options */
-        .add( gmsh_options( prefix ) )
-
-        /* gmsh domain options */
-        .add( gmsh_domain_options( prefix ) )
+                   .add( mesh_options( prefix ) )
+                   /* arm options */
+                   .add( arm_options( prefix ) )
+                   /* gmsh options */
+                   .add( gmsh_options( prefix ) )
+                   /* remeshing options */
+                   .add( remesh_options( prefix ) )
+                   /* gmsh domain options */
+                   .add( gmsh_domain_options( prefix ) )
         #
 #if defined(FEELPP_HAS_HARTS)
-        .add( parallel_options( prefix ) )
+                   .add( parallel_options( prefix ) )
 #endif
 
-        /* ginac options */
-        .add( ginac_options( prefix ) )
+                   /* ginac options */
+                   .add( ginac_options( prefix ) )
 
-        /* material options */
-        .add( material_options( prefix ) )
+                   /* material options */
+                   .add( material_options( prefix ) )
 
-        /* error options */
-        .add( error_options( prefix ) )
+                   /* error options */
+                   .add( error_options( prefix ) )
 
-        /* functions options */
-        .add( functions_options( prefix ) )
+                   /* functions options */
+                   .add( functions_options( prefix ) )
 
-        /* parameters options */
-        .add( parameters_options( prefix ) )
+                   /* parameters options */
+                   .add( parameters_options( prefix ) )
 
-        /* functions options */
-        .add( on_options( prefix ) )
+                   /* functions options */
+                   .add( on_options( prefix ) )
 
-        /* onelab options */
-        .add( onelab_options( prefix ) )
+                   /* onelab options */
+                   .add( onelab_options( prefix ) )
 
         /* function space options */
 #if !defined( FEELPP_HAS_TRILINOS_EPETRA )
-        .add( functionspace_options( prefix ) )
+                   .add( functionspace_options( prefix ) )
 #endif
-        .add( aitken_options( prefix ) )
+                   .add( aitken_options( prefix ) )
 
-        .add( msi_options(prefix) )
-        .add( fit_options(prefix) )
-        .add( checker_options(prefix) )
-        .add( journal_options(prefix) )
-        .add( fmu_options(prefix) )
-        .add( ptree_options( prefix ) )
-        ;
+                   .add( msi_options( prefix ) )
+                   .add( fit_options( prefix ) )
+                   .add( checker_options( prefix ) )
+                   .add( journal_options( prefix ) )
+                   .add( fmu_options( prefix ) )
+                   .add( ptree_options( prefix ) );
 
     return opt;
 
