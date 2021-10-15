@@ -24,7 +24,7 @@
 #pragma once
 
 #include <fmt/core.h>
-
+#include <regex>
 #include <feel/feelmesh/remesher.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelmesh/metric.hpp>
