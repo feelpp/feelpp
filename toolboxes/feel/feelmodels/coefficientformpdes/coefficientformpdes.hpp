@@ -218,6 +218,30 @@ public :
             return std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
         }
 
+    /**
+     * @brief apply  a functor F on all or specific solutions of concrete cfpdes
+     * 
+     * @param nameEq name of the equations
+     * @param F functor to apply
+     */
+    template<typename Functor>
+    void apply( Functor F, std::string const& nameEq = std::string{} ) const
+    {
+            hana::for_each( tuple_type_unknown_basis, 
+                            [this,&nameEq,&F]( auto & e )
+                            {
+                                for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+                                {
+                                    if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                        continue;
+                                    if ( !nameEq.empty() && cfpdeBase->equationName() != nameEq )
+                                        continue;
+                                    using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                                    auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+                                    F(cfpde);
+                                }
+                            });
+    }
     //___________________________________________________________________________________//
     // mesh
     mesh_ptrtype /*const&*/ mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }

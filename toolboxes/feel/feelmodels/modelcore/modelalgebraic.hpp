@@ -531,6 +531,13 @@ public :
             return std::get<2>( itFind->second );
         }
 
+    void removeAllAlgebraicDataAndTools()
+        {
+            M_algebraicDataAndTools.clear();
+            M_dofEliminationIds.clear();
+            M_startSubBlockSpaceIndex.clear();
+        }
+
 private :
     // verbose
     bool M_verboseSolverTimer,M_verboseSolverTimerAllProc;

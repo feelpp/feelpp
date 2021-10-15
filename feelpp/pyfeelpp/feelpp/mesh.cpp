@@ -21,8 +21,9 @@
 //! @date 15 Jun 2017
 //! @copyright 2017 Feel++ Consortium
 //!
+#include <regex>
 #include <pybind11/pybind11.h>
-
+#include <pybind11/stl.h>
 
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feeldiscr/mesh.hpp>
@@ -38,6 +39,8 @@
 #include <boost/mpl/vector.hpp>
 
 #include<feel/feelcore/environment.hpp>
+#include <feel/feelmesh/remesh.hpp>
+#include <feel/feelmesh/metric.hpp>
 namespace py = pybind11;
 
 using namespace Feel;
@@ -150,11 +153,21 @@ void defMesh(py::module &m)
     m.def( "markedelements", []( mesh_ptr_t const& r, std::string const& m ) {
             return markedelements(r,m);
         },py::arg("range"), py::arg("marker"), "return the range of elements of the mesh with marker" );
+    m.def( "markedelements", []( mesh_ptr_t const& r, std::vector<std::string> const& m ) {
+            return markedelements(r,m);
+        },py::arg("range"), py::arg("markers"), "return the range of elements of the mesh with markers" );
+
+
     m.def(
         "markedfaces", []( mesh_ptr_t const& r, std::string const& m ) {
             return markedfaces( r, m );
         },
         py::arg( "range" ), py::arg( "marker" ), "return the range of facets of the mesh with marker" );
+    m.def(
+        "markedfaces", []( mesh_ptr_t const& r, std::vector<std::string> const& m ) {
+            return markedfaces( r, m );
+        },
+        py::arg( "range" ), py::arg( "markers" ), "return the range of facets of the mesh with marker" );
     if constexpr ( mesh_t::nDim == 3 )
     {
         m.def(
@@ -163,6 +176,56 @@ void defMesh(py::module &m)
             },
             py::arg( "range" ), py::arg( "marker" ), "return the range of facets of the mesh with marker" );
 
+    }
+    if constexpr ( mesh_t::nDim >= 2 && !is_hypercube_v<typename MeshT::element_type> )
+    {
+        pyclass_name = std::string("remesher_")+suffix;
+        py::class_<Remesh<mesh_t>, std::shared_ptr<Remesh<mesh_t>>>( m, pyclass_name.c_str() )
+            //            .def( py::init<mesh_ptr_t const&, std::vector<std::string> const&, std::vector<std::string> const&>(),
+            //                  py::arg( "mesh" ), py::arg( "required_elts" ) = std::vector<std::string>{}, py::arg( "required_facets" ) = std::vector<std::string>{}, "Initialize a remesher" )
+            .def( py::init<mesh_ptr_t const&, std::vector<std::string> const&, std::vector<std::string> const&, mesh_ptr_t const&, std::string const&>(),
+                  py::arg( "mesh" ), py::arg( "required_elts" ) = std::vector<std::string>{},
+                  py::arg( "required_facets" ) = std::vector<std::string>{},
+                  py::arg( "parent" )= static_cast<mesh_ptr_t const&>(nullptr), py::arg( "prefix" ) = std::string{},
+                  "Initialize a remesher" )
+            .def( "execute", &Remesh<mesh_t>::execute, py::arg( "run" ) = true, "execute remesh task" )
+            .def( "setMetric", &Remesh<mesh_t>::setMetric, py::arg( "metric" ), "set the metric" );
+        m.def(
+            "remesher", []( mesh_ptr_t const& r ) {
+                return std::make_shared<Remesh<mesh_t>>( r );
+            },
+            py::arg( "mesh" ), "create a Remesher data structure", py::return_value_policy::copy );
+        m.def(
+            "remesher", []( mesh_ptr_t const& r, std::vector<std::string> const& req_elts ) {
+                return std::make_shared<Remesh<mesh_t>>( r, req_elts );
+            },
+            py::return_value_policy::copy,py::arg( "mesh" ), py::arg( "required_elts" ), "create a Remesher data structure" );
+#if 0            
+        m.def(
+            "remesher", []( mesh_ptr_t const& r, std::vector<std::string> const& req_elts, std::vector<std::string> const& req_facets ) {
+                return std::make_shared<Remesh<mesh_t>>(  r, req_elts, req_facets );
+            },
+            py::return_value_policy::copy,py::arg( "mesh" ), py::arg( "required_elts" )=std::vector<std::string>{},  py::arg( "required_facets" )=std::vector<std::string>{}, 
+            "create a Remesher data structure" );
+#endif            
+        m.def(
+            "remesher", []( mesh_ptr_t const& r, std::vector<std::string> const& req_elts, std::vector<std::string> const& req_facets, mesh_ptr_t  const& parent ) {
+                //return std::make_shared<Remesh<mesh_t>>(  r, req_elts, req_facets, parent );
+                return std::make_shared<Remesh<mesh_t>>(  r, req_elts, req_facets );
+            },
+            py::return_value_policy::copy,py::arg( "mesh" ), py::arg( "required_elts" )=std::vector<std::string>{},  
+            py::arg( "required_facets" )=std::vector<std::string>{}, py::arg( "parent" ) = static_cast<mesh_ptr_t>(nullptr),
+            "create a Remesher data structure" );
+        m.def(
+            "remesh", []( mesh_ptr_t const& r, std::string const& metric_expr, std::vector<std::string> const& req_elts, std::vector<std::string> const& req_facets, mesh_ptr_t  const& parent ) {
+                return remesh( r, metric_expr, req_elts, req_facets, parent );
+            },
+            py::return_value_policy::copy,
+            py::arg( "mesh" ), 
+            py::arg( "metric" ), 
+            py::arg( "required_elts" )=std::vector<std::string>{},  
+            py::arg( "required_facets" )=std::vector<std::string>{}, py::arg( "parent" ) = static_cast<mesh_ptr_t>(nullptr),
+            "create a Remesher data structure" );
     }
 }
     

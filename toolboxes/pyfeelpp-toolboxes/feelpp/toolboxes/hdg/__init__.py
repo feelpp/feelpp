@@ -15,17 +15,23 @@ try:
     }
     has_hdg = True
 except ImportError as e:
-    print('has_hdg:', has_hdg)
-    pass
+    print('Import feelpp.toolboxes.hdg failed: Feel++ Toolbox HDG is not available')
+    pass  # module doesn't exist, deal with it.
 
-def mixedpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", worldComm=None ):
+def mixedpoisson(dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", physic=None, worldComm=None, subprefix="", modelRep=None):
     """create a hdg toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
     order -- the polynomial order for the fields : potential, flux, displacement, stress and associated traces (default: 1)
     prefix -- application prefix for the HDG poisson
+    prefix_toolbox -- toolbox prefix
+    physic -- physic to use
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
+    subprefix -- subprefix
+    modelRep -- model repository
     """
+    if not has_hdg:
+        raise Exception('HDG toolbox is not enabled in Feel++')
     if worldComm is None:
         worldComm=feelpp.Environment.worldCommPtr()
     key='mixedpoisson('+str(dim)+','+str(order)+')'
@@ -34,4 +40,8 @@ def mixedpoisson( dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", world
     if key not in _hdgs:
         raise RuntimeError('HDG solver '+key+' not existing')
     _prefix= prefix_toolbox+"."+prefix if prefix else prefix_toolbox
-    return _hdgs[key]( _prefix, worldComm=worldComm )
+    if modelRep is None:
+        modelRep = ModelBaseRepository()
+    if physic is None:
+        physic = MixedPoissonPhysics.none
+    return _hdgs[key](prefix=_prefix, physic=physic, worldComm=worldComm, subprefix="", modelRep=modelRep)

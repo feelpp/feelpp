@@ -21,15 +21,19 @@ def has_mpi4py():
 
 
 class InitFeelpp:
-    def __init__(self):
+    def __init__(self,config):
         try:
             print('xxx call init_feelpp;', __file__)
             sys.argv=['test_pyfeelpptoolboxes']
             self.e = feelpp.Environment(
-                sys.argv, opts=tb.toolboxes_options("electric")
+                sys.argv, opts= feelpp.backend_options("Iv")
+                                .add(tb.toolboxes_options("electric"))
                                 .add(tb.toolboxes_options("fluid"))
                                 .add(tb.toolboxes_options("heat"))
-                                .add(tb.toolboxes_options("coefficient-form-pdes", "cfpdes"))
+                                .add(tb.toolboxes_options("solid"))
+                                .add(tb.toolboxes_options("solid"))
+                                .add(tb.toolboxes_options("coefficient-form-pdes", "cfpdes")),
+                config=config
                                 )
             print('is master? ', feelpp.Environment.worldCommPtr().isMasterRank())
         except Exception as err:
@@ -39,4 +43,4 @@ class InitFeelpp:
 
 @pytest.fixture(scope="session", autouse=True)
 def init_feelpp():
-    return InitFeelpp()
+    return InitFeelpp(feelpp.globalRepository("pyfeelpptoolboxes-tests"))
