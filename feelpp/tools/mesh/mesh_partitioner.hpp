@@ -68,7 +68,7 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
         //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
         toc("loading mesh done",FLAGS_v>0);
 
-        if constexpr ( is_simplex_v<ShapeType> )
+        if constexpr ( is_simplex_v<ShapeType> && ShapeType::nDim > 1 )
         {
             
             if ( boption( "remesh" ) )
