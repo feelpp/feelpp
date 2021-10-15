@@ -66,12 +66,12 @@ runALEMesh()
         auto out = r.execute();
         out->updateForUse();
         auto ein = exporter( _mesh=mesh, _name="meshin" );
-        ein->add( "etaQ", etaQ(mesh) );
-        ein->add( "nsrQ", nsrQ(mesh) );
+        ein->add( "etaQ", *etaQ(mesh) );
+        ein->add( "nsrQ", *nsrQ(mesh) );
         ein->save();
         auto eout = exporter( _mesh=out, _name="remeshed" );
-        eout->add( "etaQ", etaQ( out ) );
-        eout->add( "nsrQ", nsrQ( out ) );
+        eout->add( "etaQ", *etaQ( out ) );
+        eout->add( "nsrQ", *nsrQ( out ) );
         eout->save();
     }
 }
