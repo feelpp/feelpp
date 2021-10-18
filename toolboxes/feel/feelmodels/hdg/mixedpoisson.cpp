@@ -546,14 +546,20 @@ MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve()
 {
-    M_A->zero();
-    M_F->zero();
+    solve::strategy s = M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
+    M_A = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *this->backend(), (s>=solve::strategy::static_condensation)?false:true );
+    M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *this->backend(), false);
+
+    // M_A->zero();
+    // M_F->zero();
+
     auto U = M_ps->element();
     U.buildVector(this->backend());
+
     auto A = std::dynamic_pointer_cast<typename super_type::backend_type::sparse_matrix_type>(M_A);
     auto F = std::dynamic_pointer_cast<typename super_type::backend_type::vector_type>(M_F);
-    CHECK(A) << "A PAS BON !!!";
-    CHECK(F) << "F PAS BON !!!";
+    CHECK(A) << "Dynamic cast for M_A not ok !!!";
+    CHECK(F) << "Dynamic cast for M_F not ok !!!";
     this->algebraicFactory()->applyAssemblyLinear(U.vectorMonolithic(), A, F);
 
     auto bbf = blockform2( *M_ps, M_A);
