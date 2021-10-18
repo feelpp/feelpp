@@ -36,8 +36,6 @@
 #include "boost/tuple/tuple_io.hpp"
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
-#include <boost/bimap.hpp>
-#include <boost/bimap/support/lambda.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
@@ -111,7 +109,7 @@ public:
     typedef typename parameterspace_type::sampling_type sampling_type;
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
-    typedef boost::bimap< int, boost::tuple<double,double,double> > convergence_type;
+    typedef typename super_crb::convergence_type convergence_type;
 
     typedef double value_type;
 

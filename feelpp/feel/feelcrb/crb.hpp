@@ -37,8 +37,6 @@
 #include <boost/tuple/tuple_io.hpp>
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
-#include <boost/bimap.hpp>
-#include <boost/bimap/support/lambda.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
@@ -214,7 +212,7 @@ public:
     typedef boost::tuple<std::vector<double>, std::vector< std::vector<double> > , std::vector< std::vector<double> >, double, double > error_estimation_type;
     typedef boost::tuple<double, std::vector<double> > residual_error_type;
 
-    typedef boost::bimap< int, boost::tuple<double,double,double> > convergence_type;
+    typedef std::map< int, boost::tuple<double,double,double> > convergence_type;
 
     typedef typename convergence_type::value_type convergence;
 
@@ -2555,7 +2553,7 @@ CRB<TruthModelType>::offline()
                 if( i==number_of_elem_to_remove-1 )
                     mu = M_WNmu->lastElement();
                 M_WNmu->pop_back();
-                M_rbconv.left.erase( M_N-i );
+                M_rbconv.erase( M_N-i );
             }
 
             M_model->rBFunctionSpace()->deleteLastPrimalBasisElements( number_of_elem_to_remove );
@@ -9229,15 +9227,14 @@ CRB<TruthModelType>::printErrorsDuringRbConstruction( void )
 
     std::ofstream conv;
     std::string file_name = "crb-offline-error.dat";
-    typedef convergence_type::left_map::const_iterator iterator;
 
     if( this->worldComm().isMasterRank() )
     {
         conv.open(file_name, std::ios::app);
         conv << "NbBasis" << "\t" << "output" << "\t" << "primal" << "\t" << "dual\n";
 
-        for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
-            conv<<it->first<<"\t"<<it->second.template get<0>()<<"\t"<<it->second.template get<1>()<<"\t"<<it->second.template get<2>()<<"\n";
+        for( auto const& [n,errors] : M_rbconv )
+            conv<< n <<"\t"<< std::get<0>(errors) <<"\t"<< std::get<1>(errors) <<"\t"<< std::get<2>(errors) <<"\n";
         //for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
         //    LOG(INFO)<<"N : "<<it->first<<"  -  delta_du : "<<it->second.template get<2>()<<"\n";
     }
@@ -10689,7 +10686,6 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     }
 #endif
 
-    typedef boost::bimap< int, double > old_convergence_type;
     ar & boost::serialization::base_object<super>( *this );
     ar & BOOST_SERIALIZATION_NVP( M_output_index );
     ar & BOOST_SERIALIZATION_NVP( M_N );

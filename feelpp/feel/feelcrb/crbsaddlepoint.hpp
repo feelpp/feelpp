@@ -67,9 +67,6 @@ public:
     typedef typename parameterspace_type::element_type parameter_type;
     //@}
 
-    typedef boost::bimap< int, boost::tuple<double,double,double> > convergence_type;
-    typedef typename convergence_type::value_type convergence;
-
     using self_type = CRBSaddlePoint;
     using self_ptrtype = std::shared_ptr<self_type>;
 
