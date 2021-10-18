@@ -33,6 +33,8 @@
 #ifndef FEELPP_MODELNUMERICAL_HPP
 #define FEELPP_MODELNUMERICAL_HPP 1
 
+#include <boost/range/adaptor/reversed.hpp>
+
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 #include <feel/feelmodels/modelcore/modelmeshes.hpp>
 
@@ -348,11 +350,13 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
     if ( icts.empty() )
         return;
 
-    CHECK( icts.size() == 1 ) << "TODO";
     CHECK( !dataToUpdate.empty() ) << "require a non empty vector";
-    for( auto const& [time,icByType] : icts )
+    int i = 0;
+    for( auto const& [time,icByType] : boost::adaptors::reverse(icts) )
     {
-        auto & u = *dataToUpdate[0];
+        if( i == dataToUpdate.size() ) // if more ic than necessary, stop
+            break;
+        auto & u = *dataToUpdate[i++];
         bool needToSyncValues = false;
         auto itFindIcFile = icByType.find( "File" );
         if ( itFindIcFile != icByType.end() )
@@ -419,8 +423,8 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
             sync( u, "=" );
     } // for( auto const& [time,icByType] : icts )
 
-    for (int k=1;k<dataToUpdate.size();++k)
-        *dataToUpdate[k] = *dataToUpdate[0];
+    for( int k = i; k < dataToUpdate.size(); ++k )
+        *dataToUpdate[k] = *dataToUpdate[i-1];
 }
 
 template <typename ExporterType,typename ModelFieldsType,typename SymbolsExpr,typename TupleExprOnRangeType>
