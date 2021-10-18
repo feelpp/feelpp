@@ -45,6 +45,7 @@ public:
     using super2_type = ModelNumerical;
     using self_type = CoupledMixedPoisson<ConvexType, Order>;
     using self_ptrtype = std::shared_ptr<self_type>;
+    using value_type = double;
 
     using space_constant_type = typename super_type::space_traceibc_type;
     using space_constant_ptrtype = std::shared_ptr<space_constant_type>;
@@ -258,12 +259,15 @@ public:
     }
 
     void solve() override {
-        this->M_A->zero();
-        this->M_F->zero();
+        solve::strategy s = this->M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
+        this->M_A = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*this->M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *this->backend(), (s>=solve::strategy::static_condensation)?false:true );
+        this->M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*this->M_ps), *this->backend(), false);
+        // this->M_A->zero();
+        // this->M_F->zero();
         auto A = std::dynamic_pointer_cast<typename super_type::super_type::backend_type::sparse_matrix_type>(this->M_A);
         auto F = std::dynamic_pointer_cast<typename super_type::super_type::backend_type::vector_type>(this->M_F);
-        CHECK(A) << "A PAS BON !!!";
-        CHECK(F) << "F PAS BON !!!";
+        CHECK(A) << "Dynamic cast for M_A not ok !!!";
+        CHECK(F) << "Dynamic cast for M_F not ok !!!";
         auto U = this->M_ps->element();
         U.buildVector(this->backend());
         this->algebraicFactory()->applyAssemblyLinear(U.vectorMonolithic(), A, F);

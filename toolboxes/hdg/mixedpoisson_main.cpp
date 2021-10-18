@@ -72,7 +72,9 @@ int main(int argc, char *argv[])
     std::string discretization = soption(_name="case.discretization");
 
     auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
+                                             hana::make_tuple("P2", hana::int_c<2> ),
+                                             hana::make_tuple("P3", hana::int_c<3> ));
     int status = 1;
 
     if ( mode == "simulation" || mode == "h-convergence" )
