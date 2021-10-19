@@ -19,7 +19,13 @@
                 "myic1":
                 {
                     "markers":"omega",
-					"expr":"t+x:x:t"
+					"expr":"t*t:x:t"
+                },
+                "myic2":
+                {
+                    "markers":"omega",
+					"expr":"0.0001:x:t",
+                    "time":-0.01
                 }
             }
         }
@@ -32,7 +38,7 @@
             {
                 "omega":
                 {
-					"expr":"1:x:y:t"
+					"expr":"2*t:x:y:t"
                 }
             },
             "Dirichlet":
@@ -40,7 +46,7 @@
                 "bc":
 				{
                     "markers":["bottom","top","lateral"],
-					"expr":"t+x:x:t"
+					"expr":"t*t:x:t"
 				}
             }
         }
@@ -59,14 +65,14 @@
                 {
                     "type":"L2-error",
                     "field":"potential",
-                    "solution":"t+x:x:t",
+                    "solution":"t*t:x:t",
                     "markers":"omega"
                 },
                 "flux_error":
                 {
                     "type":"L2-error",
                     "field":"flux",
-                    "solution":"{-1,0}:x:t",
+                    "solution":"{0,0}:x:t",
                     "markers":"omega"
                 }
             }
@@ -78,12 +84,12 @@
                 "Norm_potential_error_L2-error":
                 {
                     "value":0,
-                    "tolerance":1e-7
+                    "tolerance":1e-8
                 },
                 "Norm_flux_error_L2-error":
                 {
                     "value":0,
-                    "tolerance":1e-7
+                    "tolerance":1e-8
                 }
             }
         }
