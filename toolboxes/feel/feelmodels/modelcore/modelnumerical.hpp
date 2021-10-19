@@ -299,17 +299,18 @@ class ModelNumerical : virtual public ModelBase,
         template <typename ElementType, typename RangeType, typename SymbolsExpr>
         void
         updateInitialConditions( std::string const& fieldName,  RangeType const& defaultRange, SymbolsExpr const& symbolsExpr,
-                                 std::vector< std::shared_ptr<ElementType> > & dataToUpdate )
+                                 std::vector< std::shared_ptr<ElementType> > & dataToUpdate,
+                                 std::map<int, double> const& priorTimes = {{0,0}} )
             {
                 ModelNumerical::updateInitialConditions( this->modelProperties().initialConditions().get( fieldName ),
-                                                         defaultRange, symbolsExpr, this->geomap(), dataToUpdate );
+                                                         defaultRange, symbolsExpr, this->geomap(), dataToUpdate, priorTimes );
             }
     private :
         template <typename ElementType, typename RangeType, typename SymbolsExpr>
         static
         void
         updateInitialConditions( ModelInitialConditionTimeSet const& icts, RangeType const& defaultRange, SymbolsExpr const& symbolsExpr,
-                                 GeomapStrategyType geomapStrategy, std::vector< std::shared_ptr<ElementType> > & dataToUpdate );
+                                 GeomapStrategyType geomapStrategy, std::vector< std::shared_ptr<ElementType> > & dataToUpdate, std::map<int, double> const& priorTimes );
 
     private :
 
@@ -345,18 +346,23 @@ class ModelNumerical : virtual public ModelBase,
 template <typename ElementType, typename RangeType, typename SymbolsExpr>
 void
 ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& icts, RangeType const& defaultRange, SymbolsExpr const& symbolsExpr,
-                                         GeomapStrategyType geomapStrategy, std::vector< std::shared_ptr<ElementType> > & dataToUpdate )
+                                         GeomapStrategyType geomapStrategy, std::vector< std::shared_ptr<ElementType> > & dataToUpdate, std::map<int, double> const& priorTimes )
 {
     if ( icts.empty() )
         return;
 
     CHECK( !dataToUpdate.empty() ) << "require a non empty vector";
-    int i = 0;
-    for( auto const& [time,icByType] : boost::adaptors::reverse(icts) )
+
+    for( auto const& [id, time] : priorTimes )
     {
-        if( i == dataToUpdate.size() ) // if more ic than necessary, stop
-            break;
-        auto & u = *dataToUpdate[i++];
+        auto it = icts.lower_bound(time); // first icts for which the time is greater
+        ModelInitialConditionTimeSet::mapped_type icByType;
+        if( it != icts.end() )
+            icByType = it->second;
+        else
+            icByType = icts.rbegin()->second;
+
+        auto& u = *dataToUpdate[id];
         bool needToSyncValues = false;
         auto itFindIcFile = icByType.find( "File" );
         if ( itFindIcFile != icByType.end() )
@@ -390,6 +396,7 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
                 if ( !ic.expression().template hasExpr<ElementType::nComponents1,ElementType::nComponents2>() )
                     CHECK( false ) << "must be a scalar expression";
                 auto theExpr = expr( ic.expression().template expr<ElementType::nComponents1,ElementType::nComponents2>(), symbolsExpr );
+                theExpr.setParameterValues({"t", time});
 
                 if ( ic.markers().empty() )
                     u.on(_range=defaultRange,_expr=theExpr,_geomap=geomapStrategy);
@@ -423,8 +430,8 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
             sync( u, "=" );
     } // for( auto const& [time,icByType] : icts )
 
-    for( int k = i; k < dataToUpdate.size(); ++k )
-        *dataToUpdate[k] = *dataToUpdate[i-1];
+    // for( int k = i; k < dataToUpdate.size(); ++k )
+    //     *dataToUpdate[k] = *dataToUpdate[i-1];
 }
 
 template <typename ExporterType,typename ModelFieldsType,typename SymbolsExpr,typename TupleExprOnRangeType>
