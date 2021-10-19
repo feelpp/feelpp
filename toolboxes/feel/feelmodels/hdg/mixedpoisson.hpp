@@ -445,12 +445,19 @@ MixedPoisson<ConvexType,Order, E_Order>::updateInitialConditions( SymbolsExprTyp
     if ( !this->doRestart() )
     {
         std::vector<element_potential_ptrtype> icPotentialFields;
+        std::map<int, double> icPriorTimes;
         if ( this->isStationary() )
+        {
             icPotentialFields = { this->fieldPotentialPtr() };
+            icPriorTimes = {{0,0}};
+        }
         else
+        {
             icPotentialFields = M_bdfPotential->unknowns();
+            icPriorTimes = M_bdfPotential->priorTimes();
+        }
 
-        super_type::updateInitialConditions( M_potentialKey, M_rangeMeshElements, se, icPotentialFields );
+        super_type::updateInitialConditions( M_potentialKey, M_rangeMeshElements, se, icPotentialFields, icPriorTimes );
 
         if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.potential").c_str() ) )
         {
