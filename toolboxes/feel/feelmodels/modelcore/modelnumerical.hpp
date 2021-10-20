@@ -33,8 +33,6 @@
 #ifndef FEELPP_MODELNUMERICAL_HPP
 #define FEELPP_MODELNUMERICAL_HPP 1
 
-#include <boost/range/adaptor/reversed.hpp>
-
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 #include <feel/feelmodels/modelcore/modelmeshes.hpp>
 
@@ -352,6 +350,7 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
         return;
 
     CHECK( !dataToUpdate.empty() ) << "require a non empty vector";
+    CHECK( dataToUpdate.size() == priorTimes.size() ) << "priorTimes size is not the same as ts unknowns";
 
     for( auto const& [id, time] : priorTimes )
     {
