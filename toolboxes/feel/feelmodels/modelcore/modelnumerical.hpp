@@ -354,7 +354,14 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
 
     for( auto const& [id, time] : priorTimes )
     {
-        auto it = icts.lower_bound(time); // first icts for which the time is greater
+        // if several icts, take the first icts for which the time is greater or equal
+        // ie: priorTimes = {-1.5,-0.75,0}, icts time={-1,0},
+        // we take icts[-1] for priorTimes[-1.5] and icts[0] for priorTimes[-0.75] and priorTimes[0]
+        // if only one icts or priorTimes greater than all icts, we take the greater icts
+        // for priorTimes = {0} if icts time={-1} we take it
+        // if only one icts the following lines are equivalent to
+        // ModelInitialConditionTimeSet::mapped_type icByType = icts.begin()->second;
+        auto it = icts.lower_bound(time);
         ModelInitialConditionTimeSet::mapped_type icByType;
         if( it != icts.end() )
             icByType = it->second;
