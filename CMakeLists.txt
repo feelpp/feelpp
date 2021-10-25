@@ -29,6 +29,7 @@ if ( FEELPP_COMPONENT STREQUAL "toolboxes" OR
       FEELPP_COMPONENT STREQUAL "toolboxes/pyfeelpp-toolboxes" OR
       FEELPP_COMPONENT STREQUAL "mor/pyfeelpp-mor"   )
 
+      message(STATUS "[component] ${FEELPP_COMPONENT}")
       add_subdirectory(${FEELPP_COMPONENT})
       
 else()
