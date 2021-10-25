@@ -23,4 +23,4 @@
 #
 
 configure_file(feelpp_pkg.sh ${CMAKE_CURRENT_BINARY_DIR}/feelpp_pkg.sh @ONLY)
-install(PROGRAMS  ${CMAKE_CURRENT_BINARY_DIR}/feelpp_pkg.sh   DESTINATION bin COMPONENT Bin)
+install(PROGRAMS  feelpp_pkg_publish.sh feelpp_pkg_common.sh ${CMAKE_CURRENT_BINARY_DIR}/feelpp_pkg.sh   DESTINATION bin COMPONENT Bin)
