@@ -25,9 +25,11 @@ cmake_minimum_required (VERSION 3.13.0)
 
 if ( FEELPP_COMPONENT STREQUAL "toolboxes" OR 
       FEELPP_COMPONENT STREQUAL "mor" OR
+      FEELPP_COMPONENT STREQUAL "testsuite" OR
       FEELPP_COMPONENT STREQUAL "feelpp/pyfeelpp" OR
       FEELPP_COMPONENT STREQUAL "toolboxes/pyfeelpp-toolboxes" OR
-      FEELPP_COMPONENT STREQUAL "mor/pyfeelpp-mor"   )
+      FEELPP_COMPONENT STREQUAL "mor/pyfeelpp-mor" OR
+      FEELPP_COMPONENT STREQUAL "pyfeelpp-all"   )
 
       message(STATUS "[component] ${FEELPP_COMPONENT}")
       add_subdirectory(${FEELPP_COMPONENT})

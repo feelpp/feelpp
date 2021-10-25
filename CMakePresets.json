@@ -94,6 +94,16 @@
             }
         },
         {
+            "name": "pyfeelpp-all",
+            "inherits": "default",
+            "displayName": "pyfeelpp-all",
+            "description": "Build only the Feel++ pyfeelpp-all Component",
+            "binaryDir": "${sourceDir}/build/pyfeelpp-all",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "pyfeelpp-all"
+            }
+        },
+        {
             "name": "testsuite",
             "inherits": "default",
             "displayName": "testsuite",
@@ -150,6 +160,11 @@
             "name": "pyfeelpp-mor",
             "inherits": "default",
             "configurePreset": "pyfeelpp-mor"
+        },
+        {
+            "name": "pyfeelpp-all",
+            "inherits": "default",
+            "configurePreset": "pyfeelpp-all"
         }
     ],
     "testPresets": [
