@@ -94,6 +94,16 @@
             }
         },
         {
+            "name": "testsuite",
+            "inherits": "default",
+            "displayName": "testsuite",
+            "description": "Build only the Feel++ testsuite Component",
+            "binaryDir": "${sourceDir}/build/testsuite",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "testsuite"
+            }
+        },
+        {
             "name": "windows-only",
             "inherits": "default",
             "displayName": "Windows-only configuration",
