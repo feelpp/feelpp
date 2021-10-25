@@ -58,7 +58,7 @@ if ( TARGET  Feelpp::feelpp_toolbox_fluid_lib )
   add_dependencies(pyfeelpptoolboxes _fluid)
 endif()
 
-if ( TARGET  Feelpp::feelpp_toolbox_hdgpoisson_lib )
+if ( TARGET  Feelpp::feelpp_toolbox_hdg_poisson_lib )
   add_subdirectory( hdg )
   add_dependencies(pyfeelpptoolboxes _hdg)
 endif()
