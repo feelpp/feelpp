@@ -23,6 +23,29 @@
 #
 #
 # setup pyfeelpp-mor
+cmake_minimum_required(VERSION 3.13)
+project(pyfeelpp-mor)
+
+if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STREQUAL "mor/pyfeelpp-mor" )
+  find_package(Feel++ COMPONENTS Toolboxes MOR PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
+  if(NOT FEELPP_FOUND)
+    message(FATAL_ERROR "[pyfeelpp-mor] Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+  else()
+    message(STATUS "[pyfeelpp-mor] found Feel++ library")
+  endif()
+  if (NOT FEELPP_TOOLBOXES_FOUND)
+    message(WARNING "[pyfeelpp-mor] Feel++ was not installed with toolboxes component")
+  else()
+    message(STATUS "[pyfeelpp-mor] found Feel++ toolboxes")
+  endif()
+  if (NOT FEELPP_MOR_FOUND)
+    message(WARNING "[pyfeelpp-mor] Feel++ was not installed with mor component")
+  else()
+    message(STATUS "[pyfeelpp-mor] found Feel++ mor")
+  endif()
+else()
+  set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
+endif()
 
 OPTION(FEELPP_ENABLE_PYFEELPP_MOR "Enable PyFeel++ MOR" ON  )
 if (FEELPP_ENABLE_PYFEELPP_MOR)

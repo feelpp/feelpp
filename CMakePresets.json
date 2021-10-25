@@ -48,7 +48,6 @@
             "inherits": "default",
             "displayName": "toolboxes",
             "description": "Build only the Feel++ Toolboxes Component",
-            "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build/toolboxes",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "toolboxes"
@@ -59,7 +58,6 @@
             "inherits": "default",
             "displayName": "mor",
             "description": "Build only the Feel++ MOR Component",
-            "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build/mor",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "mor"
@@ -70,7 +68,6 @@
             "inherits": "default",
             "displayName": "pyfeelpp",
             "description": "Build only the Feel++ pyfeelpp Component",
-            "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build/pyfeelpp",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "feelpp/pyfeelpp"
@@ -81,7 +78,6 @@
             "inherits": "default",
             "displayName": "pyfeelpp-toolboxes",
             "description": "Build only the Feel++ pyfeelpp-toolboxes Component",
-            "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build/pyfeelpp-toolboxes",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "toolboxes/pyfeelpp-toolboxes"
@@ -92,7 +88,6 @@
             "inherits": "default",
             "displayName": "pyfeelpp-mor",
             "description": "Build only the Feel++ pyfeelpp-mor Component",
-            "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build/pyfeelpp-mor",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "mor/pyfeelpp-mor"
