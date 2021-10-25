@@ -47,6 +47,11 @@ if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STRE
   else()
     message(STATUS "[mor] found Feel++ toolboxes")
   endif()
+  if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "install prefix" FORCE)
+    # SKIP RPATH if we set CMAKE_INSTALL_PREFIX
+    SET(CMAKE_SKIP_RPATH ON)
+  endif()
 else()
   feelpp_get_environment()
   # useful for pyfeelpp-toolboxes
