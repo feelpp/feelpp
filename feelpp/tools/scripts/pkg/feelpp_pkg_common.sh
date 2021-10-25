@@ -3,6 +3,11 @@
 set -eo pipefail
 
 BUILDKITE_AGENT_NAME=${BUILDKITE_AGENT_NAME:-default}
+if [ -z "$BUILDKITE_BRANCH" -a -z "$BRANCH" ]; then
+    BRANCH=develop
+    CHANNEL=latest
+    DIST=focal
+fi
 # default values
 CHANNEL=latest
 if [ "$BUILDKITE_BRANCH" = "develop" -o  "$BRANCH" = "develop" ]; then

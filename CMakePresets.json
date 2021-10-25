@@ -1,0 +1,168 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "displayName": "Default Config",
+            "description": "Default build using Ninja generator",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/default",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_BUILD_TYPE": "Release",
+                "FEELPP_ENABLE_TOOLBOXES": {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
+                "FEELPP_ENABLE_MOR": "ON"
+            },
+            "environment": {
+                "MY_ENVIRONMENT_VARIABLE": "Test"
+            },
+            "vendor": {
+                "example.com/ExampleIDE/1.0": {
+                    "autoFormat": true
+                }
+            }
+        },
+        {
+            "name": "feelpp",
+            "inherits": "default",
+            "displayName": "feelpp",
+            "description": "Build only the Feel++ library Component",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/feelpp",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "feelpp",
+                "FEELPP_ENABLE_MOR": "OFF",
+                "FEELPP_ENABLE_TOOLBOXES": "OFF"
+            }
+        },
+        {
+            "name": "toolboxes",
+            "inherits": "default",
+            "displayName": "toolboxes",
+            "description": "Build only the Feel++ Toolboxes Component",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/toolboxes",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "toolboxes"
+            }
+        },
+        {
+            "name": "mor",
+            "inherits": "default",
+            "displayName": "mor",
+            "description": "Build only the Feel++ MOR Component",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/mor",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "mor"
+            }
+        },
+        {
+            "name": "pyfeelpp",
+            "inherits": "default",
+            "displayName": "pyfeelpp",
+            "description": "Build only the Feel++ pyfeelpp Component",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/pyfeelpp",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "feelpp/pyfeelpp"
+            }
+        },
+        {
+            "name": "pyfeelpp-toolboxes",
+            "inherits": "default",
+            "displayName": "pyfeelpp-toolboxes",
+            "description": "Build only the Feel++ pyfeelpp-toolboxes Component",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/pyfeelpp-toolboxes",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "toolboxes/pyfeelpp-toolboxes"
+            }
+        },
+        {
+            "name": "pyfeelpp-mor",
+            "inherits": "default",
+            "displayName": "pyfeelpp-mor",
+            "description": "Build only the Feel++ pyfeelpp-mor Component",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/pyfeelpp-mor",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "mor/pyfeelpp-mor"
+            }
+        },
+        {
+            "name": "windows-only",
+            "inherits": "default",
+            "displayName": "Windows-only configuration",
+            "description": "This build is only available on Windows",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "jobs": 10
+        },
+        {
+            "name": "feelpp",
+            "configurePreset": "feelpp",
+            "inherits": "default"
+        },
+        {
+            "name": "toolboxes",
+            "inherits": "default",
+            "configurePreset": "toolboxes"
+        },
+        {
+            "name": "mor",
+            "inherits": "default",
+            "configurePreset": "mor"
+        },
+        {
+            "name": "pyfeelpp",
+            "inherits": "default",
+            "configurePreset": "pyfeelpp"
+        },
+        {
+            "name": "pyfeelpp-toolboxes",
+            "inherits": "default",
+            "configurePreset": "pyfeelpp-toolboxes"
+        },
+        {
+            "name": "pyfeelpp-mor",
+            "inherits": "default",
+            "configurePreset": "pyfeelpp-mor"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": true
+            }
+        }
+    ],
+    "vendor": {
+        "example.com/ExampleIDE/1.0": {
+            "autoFormat": false
+        }
+    }
+}
