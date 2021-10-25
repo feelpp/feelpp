@@ -131,6 +131,7 @@ macro(crb_add_library)
     set( ${CRB_LIB_EXEC} ${execname} )
   endif()
   add_library(${execname}  SHARED  ${CRB_LIB_SRCS} )
+  set_target_properties(${execname} PROPERTIES VERSION 1 SOVERSION 1)
   target_compile_options(${execname} PRIVATE -fvisibility=hidden)
   target_include_directories( ${execname} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
