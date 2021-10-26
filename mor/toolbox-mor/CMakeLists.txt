@@ -1,6 +1,6 @@
 add_custom_target(toolbox-mor)
 
-crb_add_library( toolbox-mor SRCS toolboxmor.cpp EXEC CRB_LIB_TOOLBOXMOR EXPORT feelpp-mor-export-targets )
+crb_add_library( toolbox-mor SRCS toolboxmor.cpp EXEC CRB_LIB_TOOLBOXMOR EXPORT feelpp-mor-export-targets NOHEADER)
 
 set(FEELPP_CRB_toolboxmor_LIBRARIES ${CRB_LIB_TOOLBOXMOR} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_toolboxmor_LIBRARIES PARENT_SCOPE)
