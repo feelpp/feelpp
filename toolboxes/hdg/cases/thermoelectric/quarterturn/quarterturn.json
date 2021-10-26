@@ -178,12 +178,12 @@
                 {
                     "Statistics_Intentsity0_integrate_0":
                     {
-                        "value":3.8259449308790261e+00,
+                        "value":800,
                         "tolerance":1e-3
                     },
                     "Statistics_Intentsity1_integrate_1":
                     {
-                        "value":-3.8259597824576987e+00,
+                        "value":-800,
                         "tolerance":1e-3
                     }
                 }
@@ -229,17 +229,17 @@
                 {
                     "Statistics_MeantT_max":
                     {
-                        "value":2.9317652783551296e+02,
+                        "value":2.770551e+02,
                         "tolerance":1e-3
                     },
                     "Statistics_MeantT_mean":
                     {
-                        "value":2.9251722700280368e+02,
+                        "value":2.751334e+02,
                         "tolerance":1e-3
                     },
                     "Statistics_MeantT_min":
                     {
-                        "value":2.9105040906377974e+02,
+                        "value":2.741112e+02,
                         "tolerance":1e-3
                     }
                 }
