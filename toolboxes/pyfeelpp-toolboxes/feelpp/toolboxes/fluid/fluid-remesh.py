@@ -19,6 +19,7 @@ e = feelpp.Environment(
 #feelpp.Environment.setConfigFile('cases/moving_body/gravity/cylinder_under_gravity/cylinder_under_gravity.cfg')
 feelpp.Environment.setConfigFile('cases/moving_body/gravity/shape_under_gravity/2d/shape_under_gravity.cfg')
 #feelpp.Environment.setConfigFile('cases/moving_body/gravity/shape_under_gravity/3d/shape_under_gravity.cfg')
+#feelpp.Environment.setConfigFile('cases/moving_body/gravity/shape_under_gravity/3d/pc.cfg')
 f = fluid(dim=2, orderVelocity=2, orderPressure=1)
 f.init()
 
@@ -31,8 +32,8 @@ hclose=0.02
 hfar=0.2
 hclose=hfar/4
 ## gravity 3D
-hfar=1.
-#hclose=0.1
+#hfar=1.
+#hclose=0.2
 # swimmer spermatozzon
 #hfar=1
 #hclose=0.75
@@ -68,13 +69,13 @@ def remesh_toolbox(f, hclose, hfar, parent_mesh):
     f.applyRemesh(new_mesh)
 
 parent_mesh=f.mesh()
-#remesh_toolbox(f, hclose, hfar, None )
+remesh_toolbox(f, hclose, hfar, None )
 #remesh_toolbox(f, hclose, hfar, None)
 #f.exportResults()
 f.startTimeStep()
 while not f.timeStepBase().isFinished():
     min_etaq = q.etaQ(f.mesh()).min()
-    if min_etaq < 0.72:
+    if min_etaq < 0.4:
 #    if f.timeStepBase().iteration() % 10 == 0:
         remesh_toolbox(f, hclose, hfar, None)
     if feelpp.Environment.isMasterRank():

@@ -15,7 +15,8 @@ except ImportError as e:
     print('Import feelpp.toolboxes.cfpde failed: Feel++ Toolbox cfpde is not available')
     pass  # module doesn't exist, deal with it.
 
-def cfpdes( dim=2, worldComm=None ):
+
+def cfpdes(dim=2, worldComm=None, keyword="cfpdes", subprefix="", modelRep=None ):
     """create a cfpde toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -26,11 +27,11 @@ def cfpdes( dim=2, worldComm=None ):
     if worldComm is None:
         worldComm = feelpp.Environment.worldCommPtr()
     key='cfpdes('+str(dim)+')'
-    if worldComm.isMasterRank():
-        print(key)
     if key not in _cfpdes:
         raise RuntimeError('cfpde solver '+key+' not existing')
-    return _cfpdes[key]( "cfpdes", "cfpdes", worldComm=worldComm )
+    if modelRep is None:
+        modelRep = ModelBaseRepository()
+    return _cfpdes[key](prefix="cfpdes", keyword=keyword, worldComm=worldComm, subprefix="", modelRep=modelRep)
 
 
 
