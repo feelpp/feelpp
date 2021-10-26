@@ -95,15 +95,15 @@ PYBIND11_MODULE( _interpolation, m )
     hana::for_each( ordert, [&m](auto const& o ){
         constexpr int _order = std::decay_t<decltype(o)>::value;
         // 1D
-        std::cout << fmt::format("-- Pch 1D P{}", _order ) << std::endl;
+        //std::cout << fmt::format("-- Pch 1D P{}", _order ) << std::endl;
         defInterpolate<Pch_type<Mesh<Simplex<1>>, _order>>( m );
         // 2D
-        std::cout << fmt::format("-- Pch 2D P{}", _order ) << std::endl;
+        //std::cout << fmt::format("-- Pch 2D P{}", _order ) << std::endl;
         defInterpolate<Pch_type<Mesh<Simplex<2>>, _order>>( m );
-        std::cout << fmt::format("-- Pchv 2D P{}", _order ) << std::endl;
+        //std::cout << fmt::format("-- Pchv 2D P{}", _order ) << std::endl;
         defInterpolate<Pchv_type<Mesh<Simplex<2>>, _order>>( m );
         // 3D
-        std::cout << fmt::format("-- Pch 3D P{}", _order ) << std::endl;
+        //std::cout << fmt::format("-- Pch 3D P{}", _order ) << std::endl;
         defInterpolate<Pch_type<Mesh<Simplex<3>>, _order>>( m );
     });
     

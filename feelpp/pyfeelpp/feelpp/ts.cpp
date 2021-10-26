@@ -60,7 +60,8 @@ void defBDF( py::module& m )
     if ( !space_t::is_continuous && space_t::is_vectorial )
         suffix = std::string( "Pdhv" );
     std::string pyclass_name = fmt::format( "BDF_{}_{}D_P{}", suffix, Dim, Order );
-    // std::cout << fmt::format( "class name: {}", pyclass_name ) << std::endl;
+    VLOG(2) << fmt::format( "[wrapper BDF] class name: {}", pyclass_name );
+
     using bdf_t = Bdf<space_t>;
     using bdf_ptr_t = std::shared_ptr<bdf_t>;
 
@@ -101,15 +102,15 @@ PYBIND11_MODULE(_ts, m )
     hana::for_each( ordert, [&m](auto const& o ){
         constexpr int _order = std::decay_t<decltype(o)>::value;
         // 1D
-        // std::cout << fmt::format("-- BDF Pch 1D P{}", _order ) << std::endl;
+        //std::cout << fmt::format("-- BDF Pch 1D P{}", _order ) << std::endl;
         defBDF<Pch_type<Mesh<Simplex<1>>, _order>>( m );
         // 2D
-        // std::cout << fmt::format("-- BDF Pch 2D P{}", _order ) << std::endl;
+        //std::cout << fmt::format("-- BDF Pch 2D P{}", _order ) << std::endl;
         defBDF<Pch_type<Mesh<Simplex<2>>, _order>>( m );
-        // std::cout << fmt::format("-- BDF Pchv 2D P{}", _order ) << std::endl;
+        //std::cout << fmt::format("-- BDF Pchv 2D P{}", _order ) << std::endl;
         defBDF<Pchv_type<Mesh<Simplex<2>>, _order>>( m );
         // 3D
-        // std::cout << fmt::format("-- BDF Pch 3D P{}", _order ) << std::endl;
+        //std::cout << fmt::format("-- BDF Pch 3D P{}", _order ) << std::endl;
         defBDF<Pch_type<Mesh<Simplex<3>>, _order>>( m );
         defBDF<Pchv_type<Mesh<Simplex<3>>, _order>>( m );
     });

@@ -23,6 +23,19 @@
 #
 cmake_minimum_required (VERSION 3.13.0)
 
+if ( FEELPP_COMPONENT STREQUAL "toolboxes" OR 
+      FEELPP_COMPONENT STREQUAL "mor" OR
+      FEELPP_COMPONENT STREQUAL "testsuite" OR
+      FEELPP_COMPONENT STREQUAL "feelpp/pyfeelpp" OR
+      FEELPP_COMPONENT STREQUAL "toolboxes/pyfeelpp-toolboxes" OR
+      FEELPP_COMPONENT STREQUAL "mor/pyfeelpp-mor" OR
+      FEELPP_COMPONENT STREQUAL "pyfeelpp-all"   )
+
+      message(STATUS "[component] ${FEELPP_COMPONENT}")
+      add_subdirectory(${FEELPP_COMPONENT})
+      
+else()
+
 if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
   message(STATUS "[feelpp] use new policy CMP0022" )
   cmake_policy(SET CMP0022 NEW)
@@ -308,3 +321,4 @@ include(feelpp.directive)
 
 
 feelpp_message( INFO ${FEELPP_MESSAGE_INFO_END} )
+endif()
