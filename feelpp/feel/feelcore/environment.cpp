@@ -548,8 +548,8 @@ Environment::Environment( int argc, char** argv,
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
 
     // Enable auto mode for all observers.
-    Environment::setJournalEnable( boption("journal") );
-    Environment::setJournalAutoMode( boption("journal.auto") );
+    Environment::setJournalEnable( boption(_name="journal") );
+    Environment::setJournalAutoMode( boption(_name="journal.auto") );
 
     // Force environment to connect to the journal.
     S_informationObject = std::make_unique<JournalWatcher>( std::bind( &Environment::updateInformationObject, this, std::placeholders::_1 ), "Environment", "", false );
@@ -745,7 +745,7 @@ Environment::clearSomeMemory()
 // Destructor.
 Environment::~Environment()
 {
-    if ( boption( "display-stats" ) )
+    if ( boption( _name="display-stats" ) )
         Environment::saveTimers( true );
 
     double t = toc("env");
@@ -1415,7 +1415,7 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 
     po::store( *parsed, S_vm );
 
-    if ( boption( "fail-on-unknown-option" ) && S_to_pass_further.size() )
+    if ( boption( _name="fail-on-unknown-option" ) && S_to_pass_further.size() )
     {
         std::stringstream ostr;
 
@@ -2486,7 +2486,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "${appdir}", Environment::appRepository() );
     boost::replace_all( res, "${datadir}", dataDir );
     boost::replace_all( res, "${exprdbdir}", exprdbDir );
-    boost::replace_all( res, "${h}", std::to_string(doption("gmsh.hsize") ) );
+    boost::replace_all( res, "${h}", std::to_string(doption(_name="gmsh.hsize") ) );
 
     boost::replace_all( res, "$feelpp_srcdir", topSrcDir );
     boost::replace_all( res, "$feelpp_builddir", topBuildDir );
@@ -2500,7 +2500,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$appdir", Environment::appRepository() );
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );
-    boost::replace_all( res, "$h", std::to_string(doption("gmsh.hsize") ) );
+    boost::replace_all( res, "$h", std::to_string(doption(_name="gmsh.hsize") ) );
     boost::replace_all( res, "$np", std::to_string(Environment::numberOfProcessors()) );
 
     typedef std::vector< std::string > split_vector_type;

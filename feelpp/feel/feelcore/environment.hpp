@@ -257,7 +257,7 @@ public:
     Environment( pybind11::list arg );
 #endif
 
-
+#if 0
     template <class ArgumentPack>
     Environment( ArgumentPack const& args )
         :
@@ -299,7 +299,61 @@ public:
           ( subdir,*( boost::is_convertible<mpl::_,bool> ) )
           ) ) // no semicolon
 #endif
+#endif
+        Environment( NA::arguments<
+                     typename na::argc::template required_as_t<int>,
+                     typename na::argv::template required_as_t<char**>,
+                     typename na::threading::template required_as_t<mpi::threading::level>,
+                     typename na::desc::template required_as_t<po::options_description const&>,
+                     typename na::desc_lib::template required_as_t<po::options_description const&>,
+                     typename na::about::template required_as_t<AboutData const&>,
+                     typename na::config::template required_as_t<Repository::Config const&>
+                     > && args )
+        :
+        Environment( args.get(_argc), args.get(_argv), args.get(_threading),
+                     args.get(_desc), args.get(_desc_lib),
+                     args.get(_about), args.get(_config)
+                     ) {}
 
+    // template <typename ... Ts>
+    //     Environment( NA::arguments<Ts...> && args )
+    //     :
+    //     Environment( arg )
+    // {}
+
+    template <typename ... Ts>
+        decltype(auto) make_args_env_constructor( Ts && ... v )
+    {
+        auto args0 = NA::make_arguments( std::forward<Ts>(v)... )
+            .add_default_arguments( NA::make_default_argument( _threading, mpi::threading::funneled ),
+                                    NA::make_default_argument( _desc, feel_nooptions() ),
+                                    NA::make_default_argument( _desc_lib, feel_options() )
+                                    );
+        char** argv = args0.get(_argv);
+        return std::move(args0).add_default_arguments( NA::make_default_argument( _about, makeAboutDefault( argv[0] ) ),
+                                                       NA::make_default_argument( _config, globalRepository(makeAboutDefault( argv[0] ).appName()) )
+                                                       );
+    }
+
+    template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
+        Environment( Ts && ... v )
+            :
+            Environment( make_args_env_constructor( std::forward<Ts>(v)... ) )
+        {}
+
+#if 0
+    template <typename ... Ts>
+        Environment( Ts && ... v )
+            :
+            Environment( NA::make_arguments( std::forward<Ts>(v)... )
+                         .add_default_arguments( NA::make_default_argument( _threading, mpi::threading::funneled] ),
+                                                 NA::make_default_argument( _desc, feel_nooptions() ),
+                                                 NA::make_default_argument( _desc_lib, feel_options() ),
+                                                 NA::make_default_argument( _about, makeAboutDefault( args[_argv][0] ) ),
+                                                 NA::make_default_argument( _config, globalRepository(makeAboutDefault( args[_argv][0] ).appName()) )
+                                                 )
+                         ) {}
+#endif
     /** Shuts down the Feel environment.
      *
      *  If this @c Environment object was used to initialize the Feel
@@ -604,7 +658,7 @@ public:
 
     //! @name directories
     //! @{
-
+#if 0
     BOOST_PARAMETER_MEMBER_FUNCTION(
         ( void ), static changeRepository, tag,
         ( required
@@ -618,6 +672,19 @@ public:
         {
             changeRepositoryImpl( directory, filename, subdir, worldcomm, remove );
         }
+#endif
+
+template <typename ... Ts>
+static void changeRepository( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    boost::format directory = args.get(_directory);
+    std::string const& filename = args.get_else(_filename, "logfile" );
+    bool subdir = args.get_else(_subdir, S_vm["npdir"].as<bool>()  );
+    WorldComm const& worldcomm = args.get_else(_worldcomm, Environment::worldComm() );
+    bool remove = args.get_else(_remove, false );
+    changeRepositoryImpl( directory, filename, subdir, worldcomm, remove );
+}
 
     //! \return the root repository (default: \c $HOME/feel)
     static std::string const& rootRepository();
@@ -696,7 +763,7 @@ public:
     static uuids::uuid nameUUID( uuids::uuid const& dns_namespace_uuid, std::string const& name );
 
     //! @}
-
+#if 0
     BOOST_PARAMETER_MEMBER_FUNCTION(
         ( po::variable_value ), static vm, tag,
         ( required
@@ -744,7 +811,35 @@ public:
         CHECK( it != vm.end() ) << "Invalid option " << os.str() << "\n";
         return *it;
     }
+#endif
+template <typename ... Ts>
+static std::pair<std::string,po::variable_value> option( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    std::string const& name  = args.get(_name);
+    std::string const& sub = args.get_else(_sub, "" );
+    std::string const& prefix = args.get_else(_prefix, "" );
+    po::variables_map const& vm = args.get_else(_vm, Environment::vm() );
 
+    std::ostringstream os;
+
+    if ( !prefix.empty() )
+        os << prefix << ".";
+
+    if ( !sub.empty() )
+        os << sub << "-";
+
+    os << name;
+    auto it = vm.find( os.str() );
+    CHECK( it != vm.end() ) << "Invalid option " << os.str() << "\n";
+    return *it;
+}
+
+template <typename ... Ts>
+static po::variable_value vm( Ts && ... v )
+{
+    return option( std::forward<Ts>(v)... ).second;
+}
     /**
      * print resident memory usage as well as PETSc malloc usage in log file
      * \param message message to print to identity the associated memory operation
@@ -949,6 +1044,7 @@ private:
     static std::unique_ptr<JournalWatcher> S_informationObject;
 };
 
+#if 0
 BOOST_PARAMETER_FUNCTION(
     ( po::variable_value ), option, tag,
     ( required
@@ -1174,6 +1270,73 @@ BOOST_PARAMETER_FUNCTION(
 
     return opt;
 }
+
+#endif
+
+template <typename ... Ts>
+po::variable_value option( Ts && ... v )
+{
+    return Environment::vm( std::forward<Ts>(v)... );
+}
+
+template <typename ... Ts>
+int countoption( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    po::variables_map const& vm = args.get_else(_vm, Environment::vm() );
+    return vm.count( Environment::option( std::forward<Ts>(v)... ).first );
+    //return vm.count(Environment::option( _name=name,_sub=sub,_prefix=prefix, _vm=vm ).first);
+}
+
+
+template <typename T,typename ... Ts>
+T optionT( Ts && ... v )
+{
+    try
+    {
+        return Environment::vm( std::forward<Ts>(v)... ).template as<T>();
+    }
+    catch ( boost::bad_any_cast const& bac )
+    {
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        std::string const& name  = args.get(_name);
+        CHECK( false ) <<"Option "<< name << "  either does not exist or is not a double" <<std::endl;
+    }
+}
+
+template <typename ... Ts>
+double doption( Ts && ... v )
+{
+    return optionT<double>( std::forward<Ts>(v)... );
+}
+template <typename ... Ts>
+bool boption( Ts && ... v )
+{
+    return optionT<bool>( std::forward<Ts>(v)... );
+}
+template <typename ... Ts>
+int ioption( Ts && ... v )
+{
+    return optionT<int>( std::forward<Ts>(v)... );
+}
+template <typename ... Ts>
+std::string soption( Ts && ... v )
+{
+    return optionT<std::string>( std::forward<Ts>(v)... );
+}
+template <typename ... Ts>
+std::vector<std::string> vsoption( Ts && ... v )
+{
+    return optionT<std::vector<std::string>>( std::forward<Ts>(v)... );
+}
+template <typename ... Ts>
+std::vector<double> vdoption( Ts && ... v )
+{
+    return optionT<std::vector<double>>( std::forward<Ts>(v)... );
+}
+
+
+
 
 } // Feel
 
