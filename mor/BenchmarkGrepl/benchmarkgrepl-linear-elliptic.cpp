@@ -57,9 +57,9 @@ void BenchmarkGreplLinearElliptic<Order>::initModel()
     }
     else
     {
-        mesh = loadMesh( _mesh=new mesh_type,
-                         _filename=mshfile_name,
-                         _update=MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+        mesh = loadMesh( na::_mesh=new mesh_type,
+                         na::_filename=mshfile_name,
+                         na::_update=MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
         // mesh = loadGMSHMesh( _mesh=new mesh_type,
         //                      _filename=option("mshfile").as<std::string>(),
         //                      _update=MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
