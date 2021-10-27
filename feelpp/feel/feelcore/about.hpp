@@ -503,6 +503,7 @@ private:
  */
 FEELPP_EXPORT std::ostream& operator<<( std::ostream& os, AboutData const& about );
 
+#if 0
 BOOST_PARAMETER_FUNCTION(
     (AboutData), about, tag,
     ( required (name, *  ) )
@@ -523,6 +524,29 @@ BOOST_PARAMETER_FUNCTION(
     a.addAuthor( author, task, email, home );
     return a;
 }
+#endif
+
+template <typename ... Ts>
+AboutData about( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    std::string const& name = args.get(_name );
+    std::string const& author = args.get_else( _author, "Feel++ Consortium" );
+    std::string const& task = args.get_else( _task, "developer" );
+    std::string const& email = args.get_else( _email, "feelpp-devel@feelpp.org" );
+    std::string const& desc = args.get_else( _desc, "Feel++ application" );
+    int license = args.get_else( _license, AboutData::License_GPL_V3 );
+    std::string const& copyright = args.get_else( _copyright, "Copyright (C) Feel++ Consortium" );
+    std::string const& home = args.get_else( _home, "http://www.feelpp.org" );
+    std::string const& bugs = args.get_else( _bugs, "feelpp-devel@feelpp.org" );
+    std::string const& version = args.get_else( _version, "Feel::Info::versionString()" );
+
+     AboutData a( name, name, version, desc,
+                 license, copyright, "", home, bugs );
+    a.addAuthor( author, task, email, home );
+    return a;
+}
+
 
 }
 #endif /* __about_H */
