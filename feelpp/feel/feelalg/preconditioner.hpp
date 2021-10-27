@@ -29,7 +29,6 @@
 #ifndef FEELPP_PRECONDITIONER_HPP
 #define FEELPP_PRECONDITIONER_HPP 1
 
-#include <boost/parameter.hpp>
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/traits.hpp>
@@ -438,13 +437,14 @@ Preconditioner<T,SizeT>::~Preconditioner ()
 typedef Preconditioner<double,uint32_type> preconditioner_type;
 typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
-
+#if 0
 template<typename Args>
 struct compute_prec_return
 {
     typedef typename parameter::value_type<Args, tag::backend>::type::element_type::value_type value_type;
     typedef std::shared_ptr<Preconditioner<value_type>> type;
 };
+
 
 BOOST_PARAMETER_FUNCTION( ( std::shared_ptr<Preconditioner<double> > ),
                           preconditioner,
@@ -471,7 +471,30 @@ BOOST_PARAMETER_FUNCTION( ( std::shared_ptr<Preconditioner<double> > ),
     }
     return p;
 }
+#else
+template <typename ... Ts>
+std::shared_ptr<Preconditioner<double>> preconditioner( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    PreconditionerType pc = args.get(_pc );
+    auto && backend = args.get(_backend );
+    std::string const& prefix = args.get_else( _prefix, "" );
+    d_sparse_matrix_ptrtype matrix = args.get_else( _matrix, d_sparse_matrix_ptrtype{} );
+    MatSolverPackageType pcfactormatsolverpackage = args.get_else( _pcfactormatsolverpackage, MATSOLVER_DEFAULT );
+    bool rebuild = args.get_else( _rebuild, false );
 
+    using value_type = typename std::decay_t<decltype(unwrap_ptr(backend))>::value_type;
+    preconditioner_ptrtype p = Preconditioner<value_type>::build( prefix, backend->type(), backend->worldCommPtr() );
+    p->setType( pc );
+    p->setMatSolverPackageType( pcfactormatsolverpackage );
+
+    if ( matrix )
+    {
+        p->setMatrix( matrix );
+    }
+    return p;
+}
+#endif
 /**
  * FEELPP_INSTANTIATE_PRECONDITIONER is never defined except in preconditioner.cpp
  * where we do the instantiate. This allows to reduce the Preconditioner
