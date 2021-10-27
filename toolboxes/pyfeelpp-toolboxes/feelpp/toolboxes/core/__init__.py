@@ -1,6 +1,6 @@
 from ._modelcore import *
 from ._modelmesh import *
-
+import feelpp
 
 def simulate(toolbox,export=True):
     """simulate a toolbox
@@ -25,7 +25,7 @@ def simulate(toolbox,export=True):
         if not toolbox.doRestart():
             toolbox.exportResults(toolbox.timeInitial())
         while not toolbox.timeStepBase().isFinished():
-            if toolbox.worldComm().isMasterRank():
+            if feelpp.Environment.isMasterRank():
                 print("============================================================\n")
                 print("time simulation: ", toolbox.time(), "s \n")
                 print("============================================================\n")
