@@ -177,6 +177,7 @@ public:
      * set tolerances: relative tolerance \p rtol, divergence tolerance \p dtol
      * and absolute tolerance \p atol
      */
+#if 0
     BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
                                      setTolerances,
                                      tag,
@@ -194,6 +195,20 @@ public:
         M_atolerance = atolerance;
         M_maxit=maxit;
     }
+#endif
+    template <typename ... Ts>
+    void setTolerances( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            double rtolerance = args.get(_rtolerance );
+            size_type maxit = args.get_else(_maxit,1000);
+            double atolerance = args.get_else(_atolerance,1e-50 );
+            double dtolerance = args.get_else(_dtolerance,1e5 );
+            M_rtolerance = rtolerance;
+            M_dtolerance = dtolerance;
+            M_atolerance = atolerance;
+            M_maxit=maxit;
+        }
 
     /**
      * Sets the type of solver to use.
