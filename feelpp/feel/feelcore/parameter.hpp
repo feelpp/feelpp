@@ -30,6 +30,8 @@
 #define __feelcore_parameter_H 1
 
 
+#include "/nvme0/chabannes/Feelpp/work_develop/vincentchabannes/napp/include/napp/na.hpp"
+
 #if !defined(BOOST_PARAMETER_MAX_ARITY)
 #define BOOST_PARAMETER_MAX_ARITY 10
 #endif
@@ -51,6 +53,70 @@
 
 namespace Feel
 {
+
+namespace na {
+
+using mesh = NA::named_argument_t<struct mesh_tag>;
+using prefix = NA::named_argument_t<struct prefix_tag>;
+using vm = NA::named_argument_t<struct vm_tag>;
+using filename = NA::named_argument_t<struct filename_tag>;
+using desc = NA::named_argument_t<struct desc_tag>;
+using h = NA::named_argument_t<struct h_tag>;
+using scale = NA::named_argument_t<struct scale_tag>;
+using straighten = NA::named_argument_t<struct straighten_tag>;
+using refine = NA::named_argument_t<struct refine_tag>;
+using update = NA::named_argument_t<struct update_tag>;
+using physical_are_elementary_regions = NA::named_argument_t<struct physical_are_elementary_regions_tag>;
+using worldcomm = NA::named_argument_t<struct worldcomm_tag>;
+using force_rebuild = NA::named_argument_t<struct force_rebuild_tag>;
+using respect_partition = NA::named_argument_t<struct respect_partition_tag>;
+using rebuild_partitions = NA::named_argument_t<struct rebuild_partitions_tag>;
+using rebuild_partitions_filename = NA::named_argument_t<struct rebuild_partitions_filename_tag>;
+using partitions = NA::named_argument_t<struct partitions_tag>;
+using partitioner = NA::named_argument_t<struct partitioner_tag>;
+using savehdf5 = NA::named_argument_t<struct savehdf5_tag>;
+using partition_file = NA::named_argument_t<struct partition_file_tag>;
+using depends = NA::named_argument_t<struct depends_tag>;
+using verbose = NA::named_argument_t<struct verbose_tag>;
+
+
+inline constexpr auto& _mesh = NA::identifier<na::mesh>;
+inline constexpr auto& _prefix = NA::identifier<na::prefix>;
+inline constexpr auto& _vm = NA::identifier<na::vm>;
+inline constexpr auto& _filename = NA::identifier<na::filename>;
+inline constexpr auto& _desc = NA::identifier<na::desc>;
+inline constexpr auto& _h = NA::identifier<na::h>;
+inline constexpr auto& _scale = NA::identifier<na::scale>;
+inline constexpr auto& _straighten = NA::identifier<na::straighten>;
+inline constexpr auto& _refine = NA::identifier<na::refine>;
+inline constexpr auto& _update = NA::identifier<na::update>;
+inline constexpr auto& _physical_are_elementary_regions = NA::identifier<na::physical_are_elementary_regions>;
+inline constexpr auto& _worldcomm = NA::identifier<na::worldcomm>;
+inline constexpr auto& _force_rebuild = NA::identifier<na::force_rebuild>;
+inline constexpr auto& _respect_partition = NA::identifier<na::respect_partition>;
+inline constexpr auto& _rebuild_partitions = NA::identifier<na::rebuild_partitions>;
+inline constexpr auto& _rebuild_partitions_filename = NA::identifier<na::rebuild_partitions_filename>;
+inline constexpr auto& _partitions = NA::identifier<na::partitions>;
+inline constexpr auto& _partitioner = NA::identifier<na::partitioner>;
+inline constexpr auto& _savehdf5 = NA::identifier<na::savehdf5>;
+inline constexpr auto& _partition_file = NA::identifier<na::partition_file>;
+inline constexpr auto& _depends = NA::identifier<na::depends>;
+inline constexpr auto& _verbose = NA::identifier<na::verbose>;
+
+} // namespace na
+
+
+
+
+
+
+
+
+
+
+
+
+
 namespace parameter = boost::parameter;
 
 BOOST_PARAMETER_NAME( vm )  // Note: no semicolon
