@@ -409,8 +409,8 @@ public :
             auto meshCtxInPtree = ptree.template get_optional<size_type>("mesh-context");
             if ( meshCtxInPtree )
                 meshUpdateContext = *meshCtxInPtree;
-            auto mesh = loadMesh(_mesh=new mesh_type(this->worldCommPtr()),_filename=meshFilename,
-                                 _update=meshUpdateContext );
+            auto mesh = loadMesh(na::_mesh=new mesh_type(this->worldCommPtr()),na::_filename=meshFilename,
+                                 na::_update=meshUpdateContext );
                                  //_update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
                                  //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
                                  //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));

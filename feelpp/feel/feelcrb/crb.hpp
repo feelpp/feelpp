@@ -32,6 +32,8 @@
 #ifndef __CRB_H
 #define __CRB_H 1
 
+
+#if 0
 #include <boost/multi_array.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_io.hpp>
@@ -43,6 +45,7 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <boost/algorithm/string.hpp>
+
 #include <fstream>
 
 
@@ -51,6 +54,7 @@
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/split_member.hpp>
+#endif
 
 #include <vector>
 
@@ -60,13 +64,13 @@
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/solvereigen.hpp>
-#include <feel/feelcore/feel.hpp>
+//#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
-#include <feel/feelcore/parameter.hpp>
+//#include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/serialization.hpp>
 
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/subelements.hpp>
+//#include <feel/feeldiscr/subelements.hpp>
 #include <feel/feeldiscr/expansion.hpp>
 #include <feel/feelts/bdf.hpp>
 
@@ -79,7 +83,7 @@
 #include <feel/feelcrb/crbelementsdb.hpp>
 #include <feel/feelcrb/pod.hpp>
 
-#include <feel/feelfilters/exporter.hpp>
+//#include <feel/feelfilters/exporter.hpp>
 
 #include <feel/feelcore/pslogger.hpp>
 
