@@ -134,11 +134,9 @@ macro(crb_add_library)
   set_target_properties(${execname} PROPERTIES VERSION 1 SOVERSION 1)
   target_compile_options(${execname} PRIVATE -fvisibility=hidden)
   
-  if ( NOT CRB_LIB_NOHEADER )
   target_include_directories( ${execname} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/feelpp/mor/${CRB_LIB_NAME}>  )
-  endif( NOT CRB_LIB_NOHEADER )
 
   target_link_libraries( ${execname} PUBLIC ${CRB_LIB_LINK_LIBRARIES} Feelpp::feelpp   )
   set_property(TARGET ${execname} PROPERTY LABELS crb)
