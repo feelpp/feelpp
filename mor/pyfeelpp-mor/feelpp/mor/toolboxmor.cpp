@@ -71,7 +71,7 @@ void defToolboxMor(py::module &m)
                      auto Mqm = AF.template get<0>();
                      auto Aqm = AF.template get<1>();
                      auto Fqm = AF.template get<2>();
-                     return std::make_tuple(Mqm, Aqm, Fqm);
+                     return std::make_tuple(Aqm, Fqm, Mqm);
                  } else {
                      auto Aqm = AF.template get<0>();
                      auto Fqm = AF.template get<1>();
@@ -84,7 +84,7 @@ void defToolboxMor(py::module &m)
                                      auto betaMqm = betaB.template get<0>();
                                      auto betaAqm = betaB.template get<1>();
                                      auto betaFqm = betaB.template get<2>();
-                                     return std::make_tuple(betaMqm, betaAqm, betaFqm);
+                                     return std::make_tuple(betaAqm, betaFqm, betaMqm);
                                  } else {
                                      auto betaAqm = betaB.template get<0>();
                                      auto betaFqm = betaB.template get<1>();
@@ -97,7 +97,7 @@ void defToolboxMor(py::module &m)
                                      auto betaMqm = betaB.template get<0>();
                                      auto betaAqm = betaB.template get<1>();
                                      auto betaFqm = betaB.template get<2>();
-                                     return std::make_tuple(betaMqm, betaAqm, betaFqm);
+                                     return std::make_tuple(betaAqm, betaFqm, betaMqm);
                                  } else {
                                      auto betaAqm = betaB.template get<0>();
                                      auto betaFqm = betaB.template get<1>();
