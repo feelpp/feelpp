@@ -1117,8 +1117,8 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
 template<typename T, typename IndexT>
 StaticCondensation<T,IndexT>::StaticCondensation()
     :
-    M_condense{ boption("sc.condense.parallel" ), ioption("sc.condense.parallel.n") },
-    M_localsolve{ boption("sc.localsolve.parallel" ), ioption("sc.localsolve.parallel.n") }
+    M_condense{ boption(_name="sc.condense.parallel" ), ioption(_name="sc.condense.parallel.n") },
+    M_localsolve{ boption(_name="sc.localsolve.parallel" ), ioption(_name="sc.localsolve.parallel.n") }
 {}
 template<typename T, typename IndexT>
 template<typename E, typename M_ptrtype, typename V_ptrtype>
