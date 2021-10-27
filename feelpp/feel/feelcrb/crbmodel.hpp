@@ -29,14 +29,14 @@
 #ifndef __CRBModel_H
 #define __CRBModel_H 1
 
-#include <boost/shared_ptr.hpp>
+//#include <boost/shared_ptr.hpp>
 
 #include <vector>
 
 
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelts/bdf.hpp>
-#include <feel/feelvf/vf.hpp>
+//#include <feel/feelvf/vf.hpp>
 
 #include <feel/feeldiscr/operatorlinearfree.hpp>
 #include <feel/feeldiscr/operatorlinearcomposite.hpp>
@@ -44,10 +44,10 @@
 #include <feel/feeldiscr/fsfunctionallinearcomposite.hpp>
 
 #include <feel/feelcrb/parameterspace.hpp>
-#include <feel/feelcore/pslogger.hpp>
+//#include <feel/feelcore/pslogger.hpp>
 #include <feel/feelalg/aitken.hpp>
 
-#include <feel/feelfilters/gmsh.hpp>
+//#include <feel/feelfilters/gmsh.hpp>
 
 #include <feel/feelcrb/crbmodelbase.hpp>
 

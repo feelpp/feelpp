@@ -42,7 +42,7 @@
 #include <boost/type_traits.hpp>
 #include <boost/tuple/tuple.hpp>
 #if BOOST_VERSION >= 104700
-#include <boost/math/special_functions/nonfinite_num_facets.hpp>
+//#include <boost/math/special_functions/nonfinite_num_facets.hpp>
 #endif
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/string.hpp>
@@ -52,14 +52,14 @@
 #include <feel/feelcrb/crbdb.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 
-#include <feel/feelvf/vf.hpp>
+//#include <feel/feelvf/vf.hpp>
 
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
 #include <feel/feeldiscr/geometricspace.hpp>
 
-#include <Eigen/Core>
+//#include <Eigen/Core>
 
 namespace Feel
 {

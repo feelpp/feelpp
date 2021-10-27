@@ -1095,9 +1095,9 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::loadDB()
         auto filename = this->dbLocalPath() / mesh_name;
         if ( fs::exists( filename ))
         {
-            auto seqmesh = loadMesh( _mesh=new mesh_type,
-                                     _filename=filename.string(),
-                                     _worldcomm= Environment::worldCommSeqPtr() );
+            auto seqmesh = loadMesh( na::_mesh=new mesh_type,
+                                     na::_filename=filename.string(),
+                                     na::_worldcomm= Environment::worldCommSeqPtr() );
             Rh = newInterpolationSpace(seqmesh);
         }
 
