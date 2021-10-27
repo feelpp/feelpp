@@ -220,7 +220,7 @@ getOption( std::string const& name, std::string const& prefix, std::string const
 template <typename T>
 struct getOptionIfAvalaible
 {
-
+#if 0
     BOOST_PARAMETER_MEMBER_FUNCTION(
         ( std::optional<T> ), static apply, tag,
         ( required
@@ -231,7 +231,17 @@ struct getOptionIfAvalaible
           ( prefix_overload, *, std::vector<std::string>() )
           ( vm, ( po::variables_map const& ), Environment::vm() )
           ) )
+#endif
+    template <typename ... Ts>
+    static std::optional<T> apply( Ts && ... v )
         {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            std::string const& name = args.get(_name);
+            std::string const& sub = args.get_else(_sub, "" );
+            std::string const& prefix = args.get_else(_prefix, "" );
+            std::vector<std::string> const& prefix_overload = args.get_else(_prefix_overload, std::vector<std::string>{} );
+            po::variables_map const& vm = args.get_else(_vm, Environment::vm() );
+
             std::optional<T> res;
             std::string optctx = (sub.empty())? "": sub+"-";
             if ( vm.count( prefixvm(prefix,optctx+name) ) )

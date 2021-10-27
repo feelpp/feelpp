@@ -32,6 +32,7 @@
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/traits.hpp>
+#include <feel/feelcore/unwrapptr.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vector.hpp>
 

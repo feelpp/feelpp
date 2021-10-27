@@ -30,7 +30,6 @@
 #define __SolverEigen_H 1
 
 #include <boost/tuple/tuple.hpp>
-#include <boost/parameter.hpp>
 #include <feel/feelcore/parameter.hpp>
 
 #include <feel/feelalg/enums.hpp>
@@ -390,6 +389,7 @@ public:
     virtual void init () = 0;
 
 
+#if 0
     BOOST_PARAMETER_MEMBER_FUNCTION( ( solve_return_type ),
                                      solve,
                                      tag,
@@ -407,6 +407,21 @@ public:
         solve_return_type ret =  solve( matrixA, matrixB, M_nev, M_ncv, this->tolerance(), this->maxIterations() );
         return ret;
     }
+#endif
+    template <typename ... Ts>
+    solve_return_type solve( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            sparse_matrix_ptrtype matrixA = args.get(_matrixA);
+            sparse_matrix_ptrtype matrixB = args.get(_matrixB);
+            size_type maxit = args.get_else(_maxit,1000);
+            double tolerance = args.get_else(_tolerance,1e-11 );
+            this->setMaxIterations( maxit );
+            this->setTolerance( tolerance );
+            solve_return_type ret =  solve( matrixA, matrixB, M_nev, M_ncv, this->tolerance(), this->maxIterations() );
+            return ret;
+        }
+
 
     /**
      * Solves the standard eigen problem and returns the
@@ -540,6 +555,7 @@ protected:
  *
  * \return eigen modes
  */
+#if 0
 BOOST_PARAMETER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type ),
                                  eigs,
                                  tag,
@@ -562,7 +578,27 @@ BOOST_PARAMETER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type ),
                                    ( verbose,( bool ), boption(_name="solvereigen.verbose") )
                                  )
                                )
+#endif
+template <typename ... Ts>
+typename SolverEigen<double>::eigenmodes_type eigs( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    d_sparse_matrix_ptrtype matrixA = args.get(_matrixA);
+    d_sparse_matrix_ptrtype matrixB = args.get(_matrixB);
+    int nev = args.get_else(_nev,ioption(_name="solvereigen.nev") );
+    int ncv = args.get_else(_ncv,ioption(_name="solvereigen.ncv") );
+    int mpd = args.get_else(_mpd,ioption(_name="solvereigen.mpd") );
+    double interval_a = args.get_else(_interval_a,doption(_name="solvereigen.interval-a") );
+    double interval_b = args.get_else(_interval_b,doption(_name="solvereigen.interval-b") );
+    BackendType backend = args.get_else(_backend,BACKEND_DEFAULT);
+    EigenSolverType solver = args.get_else(_solver,KRYLOVSCHUR);
+    EigenProblemType problem = args.get_else(_problem,GHEP);
+    SpectralTransformType transform = args.get_else(_transform,SHIFT);
+    PositionOfSpectrum spectrum = args.get_else(_spectrum,LARGEST_MAGNITUDE);
+    int maxit = args.get_else(_maxit,ioption(_name="solvereigen.maxiter") );
+    double tolerance = args.get_else(_tolerance,doption(_name="solvereigen.tolerance") );
+    bool verbose = args.get_else(_verbose,boption(_name="solvereigen.verbose") );
+
     typedef std::shared_ptr<Vector<double> > vector_ptrtype;
     //std::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );
     std::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build();
@@ -606,6 +642,7 @@ BOOST_PARAMETER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type ),
     return eigen->eigenModes();
 }
 
+#if 0
 template<typename Args>
 struct compute_eigs_return_type
 {
@@ -638,7 +675,27 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_eigs_return_type<Args>::type ),
                                    ( verbose,( bool ), boption(_name="solvereigen.verbose") )
                                  )
                                )
+#endif
+template <typename ... Ts>
+auto eigs( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && formA = args.get(_formA);
+    auto && formB = args.get(_formB);
+    int nev = args.get_else(_nev,ioption(_name="solvereigen.nev") );
+    int ncv = args.get_else(_ncv,ioption(_name="solvereigen.ncv") );
+    int mpd = args.get_else(_mpd,ioption(_name="solvereigen.mpd") );
+    double interval_a = args.get_else(_interval_a,doption(_name="solvereigen.interval-a") );
+    double interval_b = args.get_else(_interval_b,doption(_name="solvereigen.interval-b") );
+
+    std::string const& solver = args.get_else(_solver,soption(_name="solvereigen.solver") );
+    std::string const& problem = args.get_else(_problem,soption(_name="solvereigen.problem") );
+    std::string const& transform = args.get_else(_transform,soption(_name="solvereigen.transform") );
+    std::string const& spectrum = args.get_else(_spectrum,soption(_name="solvereigen.spectrum") );
+    int maxit = args.get_else(_maxit,ioption(_name="solvereigen.maxiter") );
+    double tolerance = args.get_else(_tolerance,doption(_name="solvereigen.tolerance") );
+    bool verbose = args.get_else(_verbose,boption(_name="solvereigen.verbose") );
+
     typedef std::shared_ptr<Vector<double> > vector_ptrtype;
     //std::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );
     using size_type = typename SolverEigen<double>::size_type;

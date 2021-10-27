@@ -484,7 +484,7 @@ public:
         return mat;
     }
 
-    template <typename ... Ts>
+    template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
         sparse_matrix_ptrtype newMatrix( Ts && ... v )
     {
         auto args = NA::make_arguments( std::forward<Ts>(v)... )
@@ -645,7 +645,7 @@ public:
         return this->newZeroMatrix( trial->dofOnOff(), test->dofOn() );
     }
 #endif
-    template <typename ... Ts>
+    template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) == 2 && ( NA::is_named_argument_v<Ts> && ...) > >
     sparse_matrix_ptrtype newZeroMatrix( Ts && ... v )
     {
         auto args = NA::make_arguments( std::forward<Ts>(v)... );
@@ -681,7 +681,7 @@ public:
         return this->newVector( test->dof() );
     }
 #endif
-    template <typename ... Ts>
+    template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
     vector_ptrtype newVector( Ts && ... v )
     {
         auto args = NA::make_arguments( std::forward<Ts>(v)... );
@@ -1798,6 +1798,8 @@ backend_impl( std::string const& name, std::string const& kind, bool rebuild, wo
 
 } // detail
 
+
+#if 0
 BOOST_PARAMETER_FUNCTION(
                          ( backend_ptrtype ), // return type
                          backend,           // 2. function name
@@ -1827,6 +1829,28 @@ BOOST_PARAMETER_FUNCTION(
                            ( worldcomm,      (worldcomm_ptr_t), Environment::worldCommPtr() )
                            ) )
 {
+    return Feel::detail::backend_impl<std::complex<double>>( name, kind, rebuild, worldcomm);
+}
+#endif
+
+template <typename ... Ts>
+backend_ptrtype backend( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    std::string const& name = args.get_else(_name,"");
+    std::string const& kind = args.get_else(_kind,soption(_prefix=name,_name="backend"));
+    bool rebuild = args.get_else(_rebuild,boption(_prefix=name,_name="backend.rebuild"));
+    worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
+    return Feel::detail::backend_impl<double>( name, kind, rebuild, worldcomm);
+}
+template <typename ... Ts>
+c_backend_ptrtype cbackend( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    std::string const& name = args.get_else(_name,"");
+    std::string const& kind = args.get_else(_kind,soption(_prefix=name,_name="backend"));
+    bool rebuild = args.get_else(_rebuild,boption(_prefix=name,_name="backend.rebuild"));
+    worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
     return Feel::detail::backend_impl<std::complex<double>>( name, kind, rebuild, worldcomm);
 }
 
