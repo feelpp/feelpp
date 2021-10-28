@@ -4102,6 +4102,7 @@ public:
             //super::init( M_functionspace->nDof(),  M_functionspace->nLocalDof() );
         }
 
+#if 0
         BOOST_PARAMETER_CONST_MEMBER_FUNCTION( ( void ),
                                          save,
                                          tag,
@@ -4119,6 +4120,18 @@ public:
 #endif
             saveImpl( Environment::expand( path ), name, type, suffix, sep );
         }
+#endif
+        template <typename ... Ts>
+        void save( Ts && ... v ) const
+            {
+                auto args = NA::make_arguments( std::forward<Ts>(v)... );
+                auto && path = args.get(_path);
+                std::string const& name = args.get_else(_name,M_name);
+                std::string const& type = args.get_else(_name,"default");
+                std::string const& suffix = args.get_else(_suffix,"");
+                std::string const& sep = args.get_else(_sep,"");
+                saveImpl( Environment::expand( path ), name, type, suffix, sep );
+            }
 
         //!
         //! save function space element in file
@@ -4192,6 +4205,8 @@ public:
 #endif
             }
         }
+
+#if 0
         BOOST_PARAMETER_MEMBER_FUNCTION(
             ( bool ),
             load,
@@ -4211,6 +4226,19 @@ public:
 #endif
             return loadImpl( Environment::expand( path ), name, type, suffix, sep );
         }
+#endif
+        template <typename ... Ts>
+        bool load( Ts && ... v )
+            {
+                auto args = NA::make_arguments( std::forward<Ts>(v)... );
+                auto && path = args.get(_path);
+                std::string const& name = args.get_else(_name,M_name);
+                std::string const& type = args.get_else(_name,"default");
+                std::string const& suffix = args.get_else(_suffix,"");
+                std::string const& sep = args.get_else(_sep,"");
+                return loadImpl( Environment::expand( path ), name, type, suffix, sep );
+            }
+
         //!
         //! load function space element from file
         //! @param path path to file
@@ -4355,6 +4383,7 @@ public:
                 return v;
             }
 
+#if 0
         BOOST_PARAMETER_MEMBER_FUNCTION( (void),
                                          on,
                                          tag,
@@ -4392,6 +4421,40 @@ public:
                                            ( close,  (bool), false )
                                            ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
             {
+                this->on(_range=range,_expr=expr,_prefix=prefix,_geomap=geomap,_accumulate=true,_close=close, _verbose=verbose );
+            }
+#endif
+        template <typename ... Ts>
+        void on( Ts && ... v )
+            {
+                auto args = NA::make_arguments( std::forward<Ts>(v)... );
+                auto && expr = args.get(_expr);
+                auto && range = args.get_else_invocable(_range, [this]() { return elements(this->functionSpace()->template meshSupport<0>()); } );
+                std::string const& prefix = args.get_else(_prefix,"");
+                GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT);
+                bool accumulate = args.get_else(_accumulate,false);
+                bool close = args.get_else(_close,false);
+                bool verbose = args.get_else(_verbose,boption(_prefix=prefix,_name="on.verbose") );
+
+                onImpl( range, expr, prefix, Feel::detail::geomapStrategy(range,geomap), accumulate, verbose );
+                if ( close )
+                {
+                    std::string opUsed = ( accumulate )? "+" : "=";
+                    sync( *this, opUsed, this->functionSpace()->dofs( range, ComponentType::NO_COMPONENT, true ) );
+                }
+            }
+
+        template <typename ... Ts>
+        void plus( Ts && ... v )
+            {
+                auto args = NA::make_arguments( std::forward<Ts>(v)... );
+                auto && expr = args.get(_expr);
+                auto && range = args.get_else_invocable(_range, [this]() { return elements(this->functionSpace()->template meshSupport<0>()); } );
+                std::string const& prefix = args.get_else(_prefix,"");
+                GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT);
+                bool close = args.get_else(_close,false);
+                bool verbose = args.get_else(_verbose,boption(_prefix=prefix,_name="on.verbose") );
+
                 this->on(_range=range,_expr=expr,_prefix=prefix,_geomap=geomap,_accumulate=true,_close=close, _verbose=verbose );
             }
 
@@ -4645,7 +4708,9 @@ public:
     {
         return pointer_type( new functionspace_type( __m, dofindices ) );
     }
-#endif    
+#endif
+
+#if 0
     BOOST_PARAMETER_MEMBER_FUNCTION( ( pointer_type ),
                                      static New,
                                      tag,
@@ -4660,11 +4725,24 @@ public:
                                        ( range, * , mesh_support_vector_type())
                                      )
                                    )
+#endif
+    template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
+    static pointer_type New( Ts && ... v )
     {
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        auto && mesh = args.get(_mesh);
+        worldscomm_ptr_t worldscomm = args.get_else(_worldscomm,Feel::detail::createWorldsComm<functionspace_type>(mesh).worldsComm() );
+        size_type components = args.get_else(_components, MESH_RENUMBER | MESH_CHECK);
+        auto && periodicity = args.get_else(_periodicity,periodicity_type());
+        std::vector<bool> const& extended_doftable = args.get_else(_extended_doftable,std::vector<bool>(nSpaces,false) );
+        auto && range = args.get_else(_range,mesh_support_vector_type());
+
         auto cms = Feel::detail::createMeshSupport<functionspace_type>( mesh, range );
         std::vector<bool> edt = Feel::detail::createInfoExtendedDofTable<functionspace_type>( extended_doftable );
         return NewImpl( mesh, cms.M_meshSupportVector, worldscomm, components, periodicity, edt );
     }
+
+    static pointer_type New( mesh_ptrtype const& m ) { return New(_mesh=m); }
 
     static pointer_type NewImpl( mesh_ptrtype const& __m,
                                  mesh_support_vector_type const& meshSupport,
@@ -6010,7 +6088,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 
 #if !defined( __INTEL_COMPILER )
-        if ( boption( "connect" ) )
+        if ( boption( _name="connect" ) )
             M_mesh->addObserver( *this );
 #endif
     }

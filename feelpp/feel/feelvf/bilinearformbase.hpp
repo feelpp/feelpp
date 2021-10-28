@@ -406,6 +406,7 @@ public:
     {
         return (bool)M_matrix;
     }
+#if 0
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
                                      solve,
                                      tag,
@@ -450,6 +451,46 @@ public:
             return backend->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
                                    _solution=solution, _prec = prec );
         }
+#endif
+    template <typename ... Ts>
+    typename Backend<value_type>::solve_return_type solve( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && solution = args.get(_solution);
+            auto && rhs = args.get(_rhs);
+            std::string const& name = args.get_else(_name,"");
+            std::string const& kind = args.get_else(_name,soption(_prefix=name,_name="backend"));
+            bool rebuild = args.get_else(_rebuild,boption(_prefix=name,_name="backend.rebuild"));
+            pre_solve_type pre = args.get_else(_pre,pre_solve_type());
+            post_solve_type post = args.get_else(_post,post_solve_type());
+
+            this->close();
+            return Feel::backend( _name=name, _kind=kind, _rebuild=rebuild,
+                                  _worldcomm=this->worldCommPtr() )->solve( _matrix=this->matrixPtr(),
+                                                                            _rhs=rhs.vectorPtr(),
+                                                                            _solution=solution,
+                                                                            _pre=pre,
+                                                                            _post=post
+                                                                            );
+        }
+
+    template <typename ... Ts>
+    typename Backend<value_type>::solve_return_type solveb( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && solution = args.get(_solution);
+            auto && rhs = args.get(_rhs);
+            auto && backend = args.get(_backend);
+            preconditioner_ptrtype prec = args.get_else(_prec,  preconditioner( _prefix=backend->prefix(),
+                                                                                _matrix=this->matrixPtr(),
+                                                                                _pc=backend->pcEnumType()/*LU_PRECOND*/,
+                                                                                _pcfactormatsolverpackage=backend->matSolverPackageEnumType(),
+                                                                                _backend=backend ) );
+            this->close();
+            return backend->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
+                                   _solution=solution, _prec = prec );
+        }
+
 
     //@}
 
