@@ -32,5 +32,4 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
 endif()
 
 feelpp_add_pymodule(hdg SRCS hdg.cpp LINK_LIBRARIES Feelpp::feelpp_toolbox_hdg_poisson_lib DESTINATION feelpp/toolboxes/hdg )
-feelpp_add_pymodule(hdgpoisson SRCS mixedpoisson.cpp DESTINATION feelpp/toolboxes/hdg LINK_LIBRARIES Feelpp::feelpp_toolbox_hdg_poisson_lib)
 install(FILES  __init__.py hdg_poisson.py mixedpoisson.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/hdg)

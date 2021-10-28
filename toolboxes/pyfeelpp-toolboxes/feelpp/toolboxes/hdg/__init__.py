@@ -5,7 +5,7 @@ from feelpp.toolboxes.core import *
 has_hdg = False
 _hdgs = None
 try:
-    from ._hdgpoisson import *
+    from ._hdg import *
 
     _hdgs={
         'mixedpoisson(2,1)':mixedpoisson_2DP1,
