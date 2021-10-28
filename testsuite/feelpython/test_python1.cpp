@@ -21,11 +21,11 @@
 //! @date 17 Sep 2017
 //! @copyright 2017 Feel++ Consortium
 //!
-
+#define BOOST_TEST_MODULE python testsuite
+#include <feel/feelcore/testsuite.hpp>
+#include <fmt/core.h>
 #include <pybind11/embed.h>
-#include <iostream>
-#include <sstream>
-#define BOOST_TEST_MODULE submesh testsuite
+
 #include <feel/feelcore/testsuite.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelpython/pyexpr.hpp>
@@ -40,13 +40,16 @@ BOOST_AUTO_TEST_CASE( t1 )
 {
     py::module::import("sys").attr("path").cast<py::list>().append(Feel::Environment::expand("$top_srcdir/feelpp/feel/feelpython/"));
     auto locals = py::dict("f"_a="[x**2,y**2,z**2]");
-    std::ostringstream ostr;
-    ostr <<  "from sympy2ginac import *\n"
-         << "f=[x**2,y**2,z**2];\n"
-         << "laplacian_f=toginac(laplacian(f,[x,y,z]),[x,y,z]);\n"
-         << "print('lap(f)=', laplacian_f)\n";
-    
-    py::exec(ostr.str().c_str(), py::globals(), locals);
+    std::string code = fmt::format(
+        "try:\n"
+        "   from sympy2ginac import *\n"
+        "except ImportError:\n"
+        "   from feelpp.sympy2ginac import *\n"
+        "f=[x**2,y**2,z**2];\n"
+        "laplacian_f=toginac(laplacian(f,[x,y,z]),[x,y,z]);\n"
+        "print('lap(f)=', laplacian_f)\n" );
+
+    py::exec(code.c_str(), py::globals(), locals);
 
     
     auto laplacian_f = locals["laplacian_f"].cast<std::string>();
@@ -56,17 +59,19 @@ BOOST_AUTO_TEST_CASE( t1 )
 
 BOOST_AUTO_TEST_CASE( t2 )
 {
-    std::ostringstream ostr;
-    ostr <<  "from sympy2ginac import *\n"
-         << "f=[x**2,y**2,z**2];\n"
-         << "k=4;\n"
-         << "kgrad_f=k*grad(f,[x,y,z]);\n"
-         << "print('k*grad(f)=', kgrad_f)\n"
-         << "div_kgrad_f=div(k*grad(f,[x,y,z]),[x,y,z]);\n"
-         << "print('div(k*grad(f))=', div_kgrad_f)\n";
-
+    std::string code = fmt::format(
+        "try:\n"
+        "   from sympy2ginac import *\n"
+        "except ImportError:\n"
+        "   from feelpp.sympy2ginac import *\n"
+        "f=[x**2,y**2,z**2];\n"
+        "k=4;\n"
+        "kgrad_f=k*grad(f,[x,y,z]);\n"
+        "print('k*grad(f)=', kgrad_f)\n"
+        "div_kgrad_f=div(k*grad(f,[x,y,z]),[x,y,z]);\n"
+        "print('div(k*grad(f))=', div_kgrad_f)\n");
     std::map<std::string,std::string> locals;
-    auto m = Feel::pyexpr( ostr.str(), {"kgrad_f","div_kgrad_f"}, locals );
+    auto m = Feel::pyexpr( code, {"kgrad_f","div_kgrad_f"}, locals );
 
     BOOST_CHECK_EQUAL( m.at("kgrad_f"), "{8*x,0,0,0,8*y,0,0,0,8*z}:x:y:z" );
     BOOST_CHECK_EQUAL( m.at("div_kgrad_f"), "{8,8,8}" );
