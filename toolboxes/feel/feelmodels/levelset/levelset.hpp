@@ -293,7 +293,7 @@ public:
     //--------------------------------------------------------------------//
     // Initialization
     void init( bool buildModelAlgebraicFactory=true );
-    void initAlgebraicFactory() { M_advectionToolbox->initAlgebraicFactory(); }
+    void initAlgebraicFactory() { M_advectionToolbox->initAlgebraicFactory(); this->setAlgebraicFactory( M_advectionToolbox->algebraicFactory() ); }
     void initPostProcess() override;
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
@@ -327,7 +327,7 @@ public:
 
         for( std::string const& matName : M_advectionToolbox->materialsProperties()->physicToMaterials( M_advectionToolbox->physicDefault() ) )
         {
-            M_advectionToolbox->materialsProperties()->materialProperties( matName ).add( "levelset_beta", velocityExpr );
+            M_advectionToolbox->materialsProperties()->materialProperties( matName ).add( M_advectionToolbox->convectionCoefficientName(), velocityExpr );
         }
     }
     //void updateAdvectionVelocity( element_advection_velocity_ptrtype const& velocity ) { [>return M_advectionToolbox->updateAdvectionVelocity( velocity );<] }
@@ -383,6 +383,9 @@ public:
 
     void solve();
 
+    // Vector solution: forward to CFPDE
+    ModelAlgebraic::block_vector_ptrtype algebraicBlockVectorSolution( std::string const& name = "" ) const { return M_advectionToolbox->algebraicBlockVectorSolution( name ); }
+
     // Assembly: forward CFPDE assembly
     void updateLinearPDE( DataUpdateLinear & data ) const override { M_advectionToolbox->updateLinearPDE( data ); }
     template <typename ModelContextType>
@@ -423,20 +426,32 @@ public:
     // Model fields
     auto modelFields( std::string const& prefix = "" ) const
     {
-        return super_type::modelFields( prefix );
+        return Feel::FeelModels::modelFields( 
+                super_type::modelFields( prefix ),
+                M_advectionToolbox->modelFields( prefix )
+                );
     }
     template <typename LevelsetFieldType>
     auto modelFields( LevelsetFieldType const& phi, std::string const& prefix = "" ) const
     {
-        return super_type::modelFields( phi, prefix );
+        return Feel::FeelModels::modelFields( 
+                super_type::modelFields( phi, prefix ),
+                M_advectionToolbox->modelFields( phi, prefix )
+                );
     }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
     {
-        return super_type::modelFields( sol, rowStartInVector, prefix );
+        return Feel::FeelModels::modelFields( 
+                super_type::modelFields( sol, rowStartInVector, prefix ),
+                M_advectionToolbox->modelFields( sol, rowStartInVector, prefix )
+                );
     }
     auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
     {
-        return super_type::trialSelectorModelFields( startBlockSpaceIndex );
+        return Feel::FeelModels::selectorModelFields( 
+                super_type::trialSelectorModelFields( startBlockSpaceIndex ),
+                M_advectionToolbox->trialSelectorModelFields( startBlockSpaceIndex )
+                );
     }
 
     auto optionalScalarFields( std::string const& prefix = "" ) const
