@@ -1278,14 +1278,16 @@ public:
     //!
     void decode();
 
-    BOOST_PARAMETER_MEMBER_FUNCTION( (void),
-                                     save,
-                                     tag,
-                                     ( required( name, ( std::string ) )( path, * ) )( optional( type, ( std::string ), std::string( "binary" ) )( suffix, ( std::string ), std::string( "" ) )( sep, ( std::string ), std::string( "" ) ) ) )
+    template <typename ... Ts>
+    void save( Ts && ... v ) const
     {
-#if BOOST_VERSION < 105900
-        Feel::detail::ignore_unused_variable_warning( args );
-#endif
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        std::string const& name = args.get(_name);
+        auto && path = args.get(_path);
+        std::string const& type = args.get_else(_name,"binary");
+        std::string const& suffix = args.get_else(_suffix,"");
+        std::string const& sep = args.get_else(_sep,"");
+
 
         if ( !fs::exists( fs::path( path ) ) )
         {
@@ -1315,15 +1317,17 @@ public:
             //! oa << *this;
         }
     }
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        (bool),
-        load,
-        tag,
-        ( required( name, ( std::string ) )( path, * ) )( optional( update, ( size_type ), MESH_CHECK | MESH_UPDATE_EDGES | MESH_UPDATE_FACES )( type, ( std::string ), std::string( "binary" ) )( suffix, ( std::string ), std::string( "" ) )( sep, ( std::string ), std::string( "" ) ) ) )
+    template <typename ... Ts>
+    bool load( Ts && ... v )
     {
-#if BOOST_VERSION < 105900
-        Feel::detail::ignore_unused_variable_warning( args );
-#endif
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        std::string const& name = args.get(_name );
+        auto && path = args.get(_path);
+        size_type update = args.get_else(_update,MESH_CHECK | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
+        std::string const& type = args.get_else(_name,"binary");
+        std::string const& suffix = args.get_else(_suffix,"");
+        std::string const& sep = args.get_else(_sep,"");
+
         std::ostringstream os1;
         os1 << name << sep << suffix << "-" << MeshBase<>::worldComm().globalSize() << "." << MeshBase<>::worldComm().globalRank() << ".fdb";
         fs::path p = fs::path( path ) / os1.str();

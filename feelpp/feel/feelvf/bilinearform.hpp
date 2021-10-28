@@ -37,7 +37,6 @@
 #include <set>
 
 #include <boost/smart_ptr/make_shared.hpp>
-#include <boost/parameter.hpp>
 #include <boost/fusion/support/pair.hpp>
 #include <boost/fusion/container.hpp>
 #include <boost/fusion/sequence.hpp>

@@ -766,6 +766,7 @@ private:
 };
 namespace detail
 {
+#if 0
 template<typename Args>
 struct compute_stencil_type
 {
@@ -774,6 +775,18 @@ struct compute_stencil_type
     typedef typename remove_pointer_const_reference_default_type<Args,tag::range, StencilRangeMap0Type >::type _range_type;
     typedef typename remove_pointer_const_reference_default_type<Args,tag::range_extended, StencilRangeMap0Type >::type _range_extended_type;
     typedef typename remove_pointer_const_reference_default_type<Args,tag::quad, stencilQuadSet<> >::type _quad_type;
+    typedef Stencil<_test_type, _trial_type, _range_type, _range_extended_type, _quad_type> type;
+    typedef std::shared_ptr<type> ptrtype;
+};
+#endif
+template<typename ArgTestType,typename ArgTrialType,typename ArgRangeType, typename ArgRangeExtendedType, typename ArgQuadType>
+struct compute_stencil_type
+{
+    using _test_type = Feel::remove_shared_ptr_type<std::decay_t<ArgTestType>>;
+    using _trial_type = Feel::remove_shared_ptr_type<std::decay_t<ArgTrialType>>;
+    using _range_type = std::decay_t<ArgRangeType>;
+    using _range_extended_type = std::decay_t<ArgRangeExtendedType>;
+    using _quad_type = std::decay_t<ArgQuadType>;
     typedef Stencil<_test_type, _trial_type, _range_type, _range_extended_type, _quad_type> type;
     typedef std::shared_ptr<type> ptrtype;
 };
@@ -816,6 +829,7 @@ void stencilManagerPrint();
 
 extern BlocksStencilPattern default_block_pattern;
 
+#if 0
 BOOST_PARAMETER_FUNCTION(
     ( typename Feel::detail::compute_stencil_type<Args>::ptrtype ), // 1. return type
     stencil,                                       // 2. name of the function template
@@ -835,18 +849,33 @@ BOOST_PARAMETER_FUNCTION(
       ( quad,             *( boost::is_convertible<mpl::_, stencilQuadSetBase>), stencilQuadSet<>() )
     )
 )
+#endif
+template <typename ... Ts>
+auto stencil( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && test = args.get(_test );
+    auto && trial = args.get(_trial );
+    uint32_type pattern = args.get_else( _pattern, Pattern::COUPLED );
+    auto && pattern_block = args.get_else( _pattern, default_block_pattern );
+    bool diag_is_nonzero =  args.get_else( _diag_is_nonzero, false );
+    bool collect_garbage =  args.get_else( _collect_garbage, true );
+    bool close = args.get_else( _close, true );
+    auto && range = args.get_else( _range, StencilRangeMap0Type() );
+    auto && range_extended = args.get_else( _range_extended, StencilRangeMap0Type() );
+    auto && quad = args.get_else( _quad, stencilQuadSet<>() );
+
     using size_type = uint32_type;
     if ( collect_garbage )
     {
         // cleanup memory before doing anything
         stencilManagerGarbageCollect();
     }
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
-    typedef typename Feel::detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
-    typedef typename Feel::detail::compute_stencil_type<Args>::type stencil_type;
+
+    //typedef typename Feel::detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
+    //typedef typename Feel::detail::compute_stencil_type<Args>::type stencil_type;
+    using stencil_type = typename Feel::detail::compute_stencil_type<decltype(test),decltype(trial),decltype(range),decltype(range_extended),decltype(quad)>::type;
+    using stencil_ptrtype = std::shared_ptr<stencil_type>;
 
     // we look into the spaces dictionary for existing graph
     auto git = StencilManager::instance().find(

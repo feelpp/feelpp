@@ -6298,7 +6298,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
              return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
          }
  };
-
+#if 0
  template<typename Args>
  struct integrate_type
  {
@@ -6335,6 +6335,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      typedef std::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
 
  };
+ #endif
  } // detail
 
  /// \endcond
