@@ -62,7 +62,7 @@
             {
                 "top-buffer":
                 {
-					"expr":"10-pi*cos(2*pi*t)+0.5*sin(2*pi*t):t"
+					"expr":"10+(2+1*1*1*1)*0.5*t:t"
                 }
             }
         },
