@@ -93,13 +93,22 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                 );
     }
 
-    //if ( this->physics().empty() )
-    //{
-        //typename ModelPhysics<mesh_type::nDim>::subphysic_description_type subPhyicsDesc;
-        //subPhyicsDesc[M_fluidModel->physicType()] = std::make_tuple( M_fluidModel->keyword(), M_fluidModel );
-        ////subPhyicsDesc[M_levelsetModel[0]->physicType()] = std::make_tuple( M_levelsetModel[0]->keyword(), M_levelsetModel[0] );
-        //this->initPhysics( this->keyword(), this->modelProperties().models(), subPhyicsDesc );
-    //}
+    // Init physics
+    if ( this->physics().empty() )
+        this->initPhysics( this->keyword(), this->modelProperties().models() );
+    // fluid
+    M_fluidModel->initPhysics( M_fluidModel->keyword(), this->modelProperties().models() );
+    this->M_physics.insert( M_fluidModel->physics().begin(), M_fluidModel->physics().end() );
+    for( auto const& subPhysic: M_fluidModel->physics() )
+        this->M_physics[this->physicDefault()]->addSubphysic( subPhysic.second );
+    // levelsets
+    for( auto const& lsModel: M_levelsetModels )
+    {
+        lsModel->initPhysics( lsModel->keyword(), this->modelProperties().models() );
+        this->M_physics.insert( lsModel->physics().begin(), lsModel->physics().end() );
+        for( auto const& subPhysic: lsModel->physics() )
+            this->M_physics[this->physicDefault()]->addSubphysic( subPhysic.second );
+    }
 
     // Physical properties
     if ( !M_materialsProperties )
