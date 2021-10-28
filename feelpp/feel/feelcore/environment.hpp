@@ -1289,7 +1289,7 @@ int countoption( Ts && ... v )
 }
 
 
-template <typename T,typename ... Ts>
+template <typename T,typename ... Ts,typename = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
 T optionT( Ts && ... v )
 {
     try
@@ -1300,8 +1300,15 @@ T optionT( Ts && ... v )
     {
         auto args = NA::make_arguments( std::forward<Ts>(v)... );
         std::string const& name  = args.get(_name);
-        CHECK( false ) <<"Option "<< name << "  either does not exist or is not a double" <<std::endl;
+        //CHECK( false ) <<"Option "<< name << "  either does not exist or is not a double" <<std::endl;
+        CHECK( false ) <<"problem in conversion type of argument "<< name << " : check the option type"<<std::endl;
     }
+}
+
+template <typename T>
+T optionT( std::string const& name )
+{
+    return optionT<T>(_name=name);
 }
 
 template <typename ... Ts>
