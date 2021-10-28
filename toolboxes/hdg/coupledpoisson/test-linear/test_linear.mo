@@ -26,7 +26,7 @@ model test_linear
         rotation=270,
         origin={40,-16})));
   Modelica.Blocks.Sources.RealExpression expressionPi_out(y=M_alpha + M_beta*(
-        M_H*time + (M_Rb - M_Rout)*M_L*M_L*M_k*time - M_Cb*M_Rout*(M_H + M_Rb*
+        M_H*time + (M_Rb + M_Rout)*M_L*M_L*M_k*time + M_Cb*M_Rout*(M_H + M_Rb*
         M_L*M_L*M_k)))
     annotation (Placement(transformation(extent={{26,28},{48,54}})));
 equation
