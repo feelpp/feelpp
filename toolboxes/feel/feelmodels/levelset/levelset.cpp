@@ -125,6 +125,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_advectionToolbox->materialsProperties()->addProperty( matProp, M_advectionToolbox->firstTimeDerivativeCoefficientName(), firstTimeDerivativeCoefficientExpr, true );
     }
 
+    // Subspaces indices
+    size_type currentStartIndex = 0;
+    this->setStartSubBlockSpaceIndex( "phi", currentStartIndex++ );
+
     if ( !this->isStationary() )
     {
         this->setTimeInitial( M_advectionToolbox->timeInitial() );
