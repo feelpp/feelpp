@@ -691,6 +691,9 @@ public:
         return this->newVector( test->dof() );
     }
 
+    template <typename SpaceType,typename = typename std::enable_if_t< std::is_base_of_v<FunctionSpaceBase,SpaceType>>>
+    vector_ptrtype newVector( std::shared_ptr<SpaceType> space ) { return this->newVector(_test=space ); }
+
     //@}
 
     /** @name Operator overloads
@@ -1203,7 +1206,7 @@ public:
                                      )
                                    )
 #endif
-    template <typename ... Ts>
+    template <typename ... Ts,typename = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
     solve_return_type solve( Ts && ... v )
     {
         auto args = NA::make_arguments( std::forward<Ts>(v)... );
@@ -1408,7 +1411,7 @@ public:
                                      )
                                    )
 #endif
-    template <typename ... Ts>
+    template <typename ... Ts,typename = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
     nl_solve_return_type nlSolve( Ts && ... v )
     {
         auto args = NA::make_arguments( std::forward<Ts>(v)... );

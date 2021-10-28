@@ -58,6 +58,7 @@ namespace Feel {
  * enter the parameter in any order.
  *
  */
+#if 0
 BOOST_PARAMETER_FUNCTION(
     ( gmsh_ptrtype ), // return type
     domain,    // 2. function name
@@ -88,7 +89,35 @@ BOOST_PARAMETER_FUNCTION(
       ( ny,             *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.domain.ny") )
       ( nz,             *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.domain.ny") )
       ( substructuring, *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.domain.substructuring") ) ) )
+#endif
+template <typename ... Ts>
+gmsh_ptrtype domain( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    std::string const& name = args.get(_name );
+    std::string const& prefix = args.get_else( _prefix, "" );
+    worldcomm_ptr_t worldcomm = args.get_else( _worldcomm, Environment::worldCommPtr() );
+    std::string const& shape = args.get_else( _shape, soption(_prefix=prefix,_name="gmsh.domain.shape") );
+    double shear = args.get_else( _shear, doption(_prefix=prefix,_name="gmsh.domain.shear") );
+    bool recombine = args.get_else( _recombine, boption(_prefix=prefix,_name="gmsh.domain.recombine") );
+    int dim = args.get_else( _dim, 3);
+    int order = args.get_else( _order, 1);
+    auto && geo_parameters = args.get_else( _geo_parameters, Gmsh::gpstr2map("") );
+    double h = args.get_else(_h, doption(_prefix=prefix,_name="gmsh.hsize") );
+    std::string const& convex = args.get_else(_convex, soption(_prefix=prefix,_name="gmsh.domain.convex") );
+    bool addmidpoint = args.get_else( _addmidpoint, boption(_prefix=prefix,_name="gmsh.domain.addmidpoint") );
+    bool usenames = args.get_else( _usenames, boption(_prefix=prefix,_name="gmsh.domain.usenames") );
+    double xmin = args.get_else( _xmin, doption(_prefix=prefix,_name="gmsh.domain.xmin") );
+    double xmax = args.get_else( _xmax, doption(_prefix=prefix,_name="gmsh.domain.xmax") );
+    double ymin = args.get_else( _ymin, doption(_prefix=prefix,_name="gmsh.domain.ymin") );
+    double ymax = args.get_else( _ymax, doption(_prefix=prefix,_name="gmsh.domain.ymax") );
+    double zmin = args.get_else( _zmin, doption(_prefix=prefix,_name="gmsh.domain.zmin") );
+    double zmax = args.get_else( _zmax, doption(_prefix=prefix,_name="gmsh.domain.zmax") );
+    double nx = args.get_else( _nx, doption(_prefix=prefix,_name="gmsh.domain.nx") );
+    double ny = args.get_else( _ny, doption(_prefix=prefix,_name="gmsh.domain.ny") );
+    double nz = args.get_else( _nz, doption(_prefix=prefix,_name="gmsh.domain.ny") );
+    bool substructuring = args.get_else( _substructuring, boption(_prefix=prefix,_name="gmsh.domain.substructuring") );
+
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex, worldcomm );
     gmsh_ptr->setPrefix( name );
     //gmsh_ptr->addGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ) );

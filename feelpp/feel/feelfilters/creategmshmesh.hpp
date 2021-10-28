@@ -55,6 +55,7 @@ namespace Feel {
  * \arg force_rebuild boolean (boolean, optional, default = 0)
  * \arg physical_are_elementary_regions change file format (optional, default = false)
  */
+#if 0
 BOOST_PARAMETER_FUNCTION(
     ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
     createGMSHMesh,    // 2. function name
@@ -93,9 +94,72 @@ BOOST_PARAMETER_FUNCTION(
       ( directory,(std::string), "" )
         )
     )
+#endif
+template <typename T>
+using args_createGMSHMesh_type = NA::arguments<
+    typename na::mesh::template required_as_t<std::shared_ptr<T>>,
+    typename na::desc::template required_as_t<std::shared_ptr<gmsh_type>>,
+    typename na::prefix::template required_as_t<std::string const&>,
+    typename na::vm::template required_as_t<po::variables_map const&>,
+    typename na::format::template required_as_t<int>,
+    typename na::h::template required_as_t<double>,
+    typename na::scale::template required_as_t<double>,
+    typename na::parametricnodes::template required_as_t<bool>,
+    typename na::in_memory::template required_as_t<bool>,
+    typename na::straighten::template required_as_t<bool>,
+    typename na::refine::template required_as_t<int>,
+    typename na::structured::template required_as_t<int>,
+    typename na::update::template required_as_t<size_type>,
+    typename na::force_rebuild::template required_as_t<bool>,
+    typename na::physical_are_elementary_regions::template required_as_t<bool>,
+    typename na::periodic::template required_as_t<PeriodicEntities const&>,
+    typename na::respect_partition::template required_as_t<bool>,
+    typename na::rebuild_partitions::template required_as_t<bool>,
+    typename na::rebuild_partitions_filename::template required_as_t<std::string const&>,
+    typename na::worldcomm::template required_as_t<worldcomm_ptr_t>,
+    typename na::partitions::template required_as_t<rank_type>,
+    typename na::partition_file::template required_as_t<int>,
+    typename na::partitioner::template required_as_t<int>,
+    typename na::verbose::template required_as_t<int>,
+    typename na::directory::template required_as_t<std::string const&>
+    >;
+
+template <typename MeshType>
+std::shared_ptr<MeshType>
+createGMSHMesh( args_createGMSHMesh_type<MeshType> && args )
 {
-    typedef typename Feel::detail::mesh<Args>::type _mesh_type;
-    typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
+    auto && mesh = args.get( _mesh );
+    std::shared_ptr<gmsh_type> desc = args.get(_desc);
+    std::string const& prefix = args.get( _prefix );
+    po::variables_map const& vm = args.get( _vm );
+    int format = args.get( _format );
+    double h = args.get( _h );
+    double scale = args.get( _scale );
+    bool parametricnodes = args.get(_parametricnodes);
+    bool in_memory = args.get(_in_memory);
+    bool straighten = args.get( _straighten );
+    int refine = args.get( _refine );
+    int structured = args.get( _structured );
+    size_type update = args.get( _update );
+    bool force_rebuild = args.get( _force_rebuild );
+    bool physical_are_elementary_regions = args.get( _physical_are_elementary_regions );
+    PeriodicEntities const& periodic = args.get( _periodic );
+    bool respect_partition = args.get( _respect_partition );
+    bool rebuild_partitions = args.get( _rebuild_partitions );
+    std::string const& rebuild_partitions_filename = args.get( _rebuild_partitions_filename );
+    auto && worldcomm = args.get( _worldcomm );
+    rank_type partitions = args.get( _partitions );
+    int partition_file = args.get( _partition_file );
+    int partitioner = args.get( _partitioner );
+    int verbose = args.get( _verbose );
+    std::string const& directory = args.get( _directory );
+
+    using _mesh_type = unwrap_ptr_t<std::decay_t<decltype(mesh)>>;
+    using _mesh_ptrtype = std::shared_ptr<_mesh_type>;
+
+
+    // typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+    // typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh{ mesh };
     _mesh->setWorldComm( worldcomm );
@@ -185,6 +249,48 @@ BOOST_PARAMETER_FUNCTION(
             return straightenMesh( _mesh, worldcomm->subWorldCommPtr() );
     }
     return _mesh;
+}
+
+template <typename ... Ts>
+auto
+createGMSHMesh( Ts && ... v )
+{
+    auto args0 = NA::make_arguments( std::forward<Ts>(v)... )
+        .add_default_arguments( NA::make_default_argument( _prefix, "" ),
+                                NA::make_default_argument( _vm, Environment::vm() ),
+                                NA::make_default_argument( _parametricnodes, 0 ),
+                                NA::make_default_argument( _update, MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK ),
+                                NA::make_default_argument( _force_rebuild, false ),
+                                NA::make_default_argument( _periodic, PeriodicEntities() ),
+                                NA::make_default_argument( _rebuild_partitions_filename, "" ),
+                                NA::make_default_argument( _partition_file, false ),
+                                NA::make_default_argument( _directory, "" )
+                                );
+
+    auto && mesh = args0.get(_mesh);
+    std::string const& prefix = args0.get(_prefix );
+    po::variables_map const& vm = args0.get(_vm );
+
+    auto args1 = std::move( args0 ).add_default_arguments( NA::make_default_argument( _format, ioption(_prefix=prefix,_name="gmsh.format",_vm=vm) ),
+                                                           NA::make_default_argument( _h, doption(_prefix=prefix,_name="gmsh.hsize",_vm=vm) ),
+                                                           NA::make_default_argument( _scale, doption(_prefix=prefix,_name="mesh.scale",_vm=vm) ),
+                                                           NA::make_default_argument( _in_memory, boption(_prefix=prefix,_name="gmsh.in-memory",_vm=vm) ),
+                                                           NA::make_default_argument( _straighten, boption(_prefix=prefix,_name="gmsh.straighten",_vm=vm) ),
+                                                           NA::make_default_argument( _refine, ioption(_prefix=prefix,_name="gmsh.refine",_vm=vm) ),
+                                                           NA::make_default_argument( _structured, ioption(_prefix=prefix,_name="gmsh.structured",_vm=vm) ),
+                                                           NA::make_default_argument( _physical_are_elementary_regions, boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm) ),
+                                                           NA::make_default_argument( _respect_partition, boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm) ),
+                                                           NA::make_default_argument( _rebuild_partitions, boption(_prefix=prefix,_name="gmsh.partition",_vm=vm) ),
+                                                           NA::make_default_argument( _worldcomm, mesh->worldCommPtr() ),
+                                                           NA::make_default_argument( _partitioner, ioption(_prefix=prefix,_name="gmsh.partitioner",_vm=vm) ),
+                                                           NA::make_default_argument( _verbose, ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm) )
+                                                           );
+    auto && worldcomm = args1.get( _worldcomm );
+
+    auto args = std::move( args1 ).add_default_arguments( NA::make_default_argument( _partitions, (worldcomm)?worldcomm->globalSize():1 ) );
+
+    using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
+    return createGMSHMesh<mesh_type>( std::move( args ) );
 }
 
 }

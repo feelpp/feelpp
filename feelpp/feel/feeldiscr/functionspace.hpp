@@ -4734,7 +4734,7 @@ public:
         worldscomm_ptr_t worldscomm = args.get_else(_worldscomm,Feel::detail::createWorldsComm<functionspace_type>(mesh).worldsComm() );
         size_type components = args.get_else(_components, MESH_RENUMBER | MESH_CHECK);
         auto && periodicity = args.get_else(_periodicity,periodicity_type());
-        std::vector<bool> const& extended_doftable = args.get_else(_extended_doftable,std::vector<bool>(nSpaces,false) );
+        auto && extended_doftable = args.get_else(_extended_doftable,std::vector<bool>(nSpaces,false) );
         auto && range = args.get_else(_range,mesh_support_vector_type());
 
         auto cms = Feel::detail::createMeshSupport<functionspace_type>( mesh, range );

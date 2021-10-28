@@ -45,6 +45,7 @@ namespace Feel {
  * \arg update update the mesh data structure (build internal faces and edges) (default : true)
  * \arg physical_are_elementary_regions boolean to load specific meshes formats (default : false)
  */
+#if 0
 BOOST_PARAMETER_FUNCTION(
     ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
     loadGMSHMesh,    // 2. function name
@@ -74,9 +75,18 @@ BOOST_PARAMETER_FUNCTION(
       ( verbose,   (int), ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm) )
       )
                          )
+#endif
+
+template <typename MeshType>
+std::shared_ptr<MeshType>
+loadGMSHMeshImpl( std::shared_ptr<MeshType> mesh, std::string const& filename, std::string const& prefix, po::variables_map const& vm,
+                  double scale, bool straighten, int refine, size_type update, bool physical_are_elementary_regions, worldcomm_ptr_t const& worldcomm,
+                  bool respect_partition, bool rebuild_partitions, std::string const& rebuild_partitions_filename, int partitions,int partitioner, int partition_file, int verbose )
 {
-    typedef typename Feel::detail::mesh<Args>::type _mesh_type;
-    typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
+    using _mesh_type = MeshType;
+    using _mesh_ptrtype = std::shared_ptr<_mesh_type>;
+    //typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+    //typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh( mesh );
     _mesh->setWorldComm( worldcomm );
@@ -186,6 +196,35 @@ BOOST_PARAMETER_FUNCTION(
 
     return _mesh;
 }
+
+template <typename ... Ts>
+auto loadGMSHMesh( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && mesh = args.get(_mesh);
+    std::string const& filename = args.get( _filename );
+    std::string const& prefix = args.get_else( _prefix, "" );
+    po::variables_map const& vm = args.get_else( _vm, Environment::vm() );
+    double scale = args.get_else( _scale, doption(_prefix=prefix,_name="mesh.scale",_vm=vm) );
+    bool straighten = args.get_else( _straighten, boption(_prefix=prefix,_name="gmsh.straighten",_vm=vm) );
+    int refine = args.get_else( _refine, ioption(_prefix=prefix,_name="gmsh.refine",_vm=vm) );
+    size_type update = args.get_else( _update, MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+    bool physical_are_elementary_regions = args.get_else( _physical_are_elementary_regions, boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm) );
+    worldcomm_ptr_t worldcomm = args.get_else( _worldcomm, mesh->worldCommPtr() );
+    bool respect_partition = args.get_else(_respect_partition, boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm) );
+    bool rebuild_partitions = args.get_else(_rebuild_partitions, boption(_prefix=prefix,_name="gmsh.partition",_vm=vm) );
+    std::string const& rebuild_partitions_filename = args.get_else(_rebuild_partitions_filename, "");
+    int partitions = args.get_else(_partitions, worldcomm->globalSize() );
+    int partitioner = args.get_else(_partitioner, ioption(_prefix=prefix,_name="gmsh.partitioner",_vm=vm) );
+    int partition_file = args.get_else(_partition_file, 0 );
+    int verbose = args.get_else(_verbose,ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm) );
+
+    using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
+    return loadGMSHMeshImpl( std::shared_ptr<mesh_type>( mesh ), filename, prefix, vm,
+                             scale, straighten, refine, update, physical_are_elementary_regions, worldcomm,
+                             respect_partition, rebuild_partitions, rebuild_partitions_filename, partitions, partitioner, partition_file, verbose );
+}
+
 
 }
 #endif /* FEELPP_LOADGMSHMESH_HPP */

@@ -81,7 +81,7 @@ form( std::string name,
 
 
 
-
+#if 0
 /// \cond detail
 template<typename Args>
 struct compute_form1_return
@@ -101,13 +101,14 @@ struct compute_form1_return
     typedef vf::detail::LinearForm<test_type,vector_type,vector_type> type;
 #endif
 };
-
+#endif
 /// \endcond
 
 /**
  * @addtogroup FreeFunction
  * @{
  */
+#if 0
 BOOST_PARAMETER_FUNCTION(
     ( typename compute_form1_return<Args>::type ), // 1. return type
     form1,                                       // 2. name of the function template
@@ -153,10 +154,29 @@ BOOST_PARAMETER_FUNCTION(
     //return form( test, *vector, init, false, 1e-16 );
     return form( test, *vector, rowstart, init, do_threshold, threshold );
 } // form
+#endif
+
+template <typename ... Ts>
+auto form1( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && test = args.get(_test );
+    auto && backend = args.get_else(_backend, Feel::backend(_worldcomm=test->worldCommPtr() ) );
+    auto && vector = args.get_else(_vector, backend->newVector( _test=test ) );
+    bool init = args.get_else(_init, false );
+    bool do_threshold = args.get_else(_do_threshold, false );
+    double threshold = args.get_else(_threshold, type_traits<double>::epsilon() );
+    size_type rowstart = args.get_else(_rowstart, 0 );
+    std::string const& name = args.get(_name, "linearform.f" );
+
+    return form( name, test, vector, rowstart, init, do_threshold, threshold );
+}
+
+
 /**
  * @}
  */
-
+#if 0
 /// \cond detail
 template<typename Args, typename T>
 struct compute_form2_return
@@ -181,7 +201,9 @@ struct compute_form2_return<Args, mpl::true_>
             VectorUblas<value_type> > type;
 };
 /// \endcond
+#endif
 
+#if 0
 BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost::is_same<typename parameter::value_type<Args, tag::trial>::type, boost::parameter::void_>::value> >::type ), // 1. return type
                           form2,                                       // 2. name of the function template
                           tag,                                        // 3. namespace of tag types
@@ -215,6 +237,27 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
     //return form( test, trial, *matrix, init, false, threshold, pattern );
     //return form( test, trial, *matrix, init, false, threshold, 0 );
 } //
+#endif
+
+template <typename ... Ts>
+auto form2( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && test = args.get(_test );
+    auto && trial = args.get(_trial );
+    bool init = args.get_else(_init, false );
+    size_type properties = args.get_else(_properties, NON_HERMITIAN );
+    size_type pattern = args.get_else(_pattern,Pattern::COUPLED );
+    auto && backend = args.get_else(_backend, Feel::backend(_worldcomm=test->worldCommPtr() ) );
+    std::shared_ptr<MatrixSparse<double>> matrix = args.get_else(_matrix, backend->newMatrix( _test=test, _trial=trial, _pattern=pattern, _properties=properties ) );
+    size_type rowstart = args.get_else(_rowstart, 0 );
+    size_type colstart = args.get_else(_colstart, 0 );
+    std::string const& name = args.get(_name, "bilinearform.a" );
+
+    bool do_threshold = false;
+    double threshold = 1e-16;
+    return form( name, test, trial, matrix, rowstart, colstart, init, do_threshold, threshold, pattern );
+}
 
 
 #if 0
