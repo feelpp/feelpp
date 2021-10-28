@@ -8,7 +8,7 @@
         {
             "equations":"Navier-Stokes"
         },
-        "levelset1":
+        "levelset0":
         {
             "equations":"Advection"
         }
@@ -30,7 +30,7 @@
     },
     "InitialConditions":
     {
-        "multifluid.levelset1":
+        "multifluid.levelset0":
         {
             "Expression":
             {
