@@ -411,7 +411,7 @@ public:
     }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
     {
-        auto field_phi = this->functionSpace()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( this->keyword() ) );
+        auto field_phi = this->functionSpace()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "phi" ) );
         return this->modelFields( field_phi, prefix );
     }
 
