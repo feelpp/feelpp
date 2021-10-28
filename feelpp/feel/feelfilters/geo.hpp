@@ -41,6 +41,7 @@ namespace Feel {
  * \arg order (optional, default = 1)
  * \arg h (optional, default = 0.1 )
  */
+#if 0
 BOOST_PARAMETER_FUNCTION(
     ( gmsh_ptrtype ), // return type
     geo,    // 2. function name
@@ -59,8 +60,23 @@ BOOST_PARAMETER_FUNCTION(
       ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.depends",_vm=vm) )
       ( worldcomm,       (worldcomm_ptr_t), Environment::worldCommPtr() ) )
     )
-
+#endif
+template <typename ... Ts>
+gmsh_ptrtype geo( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    std::string const& filename = args.get(_filename );
+    std::string const& prefix = args.get_else(_prefix,"" );
+    po::variables_map const& vm = args.get_else( _vm, Environment::vm() );
+    std::string const& desc = args.get_else( _desc, "" );
+    double h = args.get_else( _h, doption(_prefix=prefix,_name="gmsh.hsize",_vm=vm) );
+    auto && geo_parameters = args.get_else( _geo_parameters, Gmsh::gpstr2map( soption(_prefix=prefix,_name="gmsh.geo-variables-list",_vm=vm) ) );
+    int dim = args.get_else( _dim, 3 );
+    int order = args.get_else( _order, 1 );
+    auto && files_path = args.get_else( _files_path, Environment::localGeoRepository() );
+    std::string const& depends = args.get_else(_depends, soption(_prefix=prefix,_name="gmsh.depends",_vm=vm) );
+    worldcomm_ptr_t worldcomm = args.get_else(_worldcomm, Environment::worldCommPtr() );
+
     gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1, worldcomm ) );
 
     gmsh_ptr->setCharacteristicLength( h );
