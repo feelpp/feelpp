@@ -677,7 +677,7 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_eigs_return_type<Args>::type ),
                                )
 #endif
 template <typename ... Ts>
-auto eigs( Ts && ... v )
+auto veigs( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && formA = args.get(_formA);

@@ -409,8 +409,8 @@ public :
             auto meshCtxInPtree = ptree.template get_optional<size_type>("mesh-context");
             if ( meshCtxInPtree )
                 meshUpdateContext = *meshCtxInPtree;
-            auto mesh = loadMesh(na::_mesh=new mesh_type(this->worldCommPtr()),na::_filename=meshFilename,
-                                 na::_update=meshUpdateContext );
+            auto mesh = loadMesh(_mesh=new mesh_type(this->worldCommPtr()),_filename=meshFilename,
+                                 _update=meshUpdateContext );
                                  //_update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
                                  //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
                                  //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
@@ -691,7 +691,7 @@ public :
     void visualize ()
         {
         }
-
+#if à
     BOOST_PARAMETER_MEMBER_FUNCTION( ( this_ptrtype ),
                                      static New,
                                      tag,
@@ -699,6 +699,14 @@ public :
                                        ( space, *) ) )
         {
             //LOG( INFO ) << "ReducedBasis NEW (new impl)";
+            return NewImpl( space );
+        }
+#endif
+    template <typename ... Ts>
+    static this_ptrtype New( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && space = args.get(_space);
             return NewImpl( space );
         }
 

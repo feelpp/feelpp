@@ -116,7 +116,7 @@ ToolboxMor<SpaceType, Options>::resizeQm( bool resizeMat )
     for( int q = 0; q < Qa(); ++q )
     {
         if( resizeMat )
-            this->M_Aqm[q].resize(mQA(q), backend()->newMatrix(this->Xh, this->Xh ) );
+            this->M_Aqm[q].resize(mQA(q), backend()->newMatrix(_test=this->Xh, _trial=this->Xh ) );
         this->M_betaAqm[q].resize(mQA(q));
     }
 
@@ -298,7 +298,7 @@ ToolboxMor<SpaceType, Options>::assembleData()
     // M_heatBox->updateFieldVelocityConvection();
     // M_heatBox->algebraicFactory()->assembleLinear(M_heatBox->blockVectorSolution().vectorMonolithic());
     // auto m = M_heatBox->algebraicFactory()->matrix();
-    this->M_energy_matrix = backend()->newMatrix(this->Xh, this->Xh );
+    this->M_energy_matrix = backend()->newMatrix(_test=this->Xh, _trial=this->Xh );
     m->symmetricPart(this->M_energy_matrix);
 
 }

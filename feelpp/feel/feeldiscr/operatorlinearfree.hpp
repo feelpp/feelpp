@@ -424,6 +424,7 @@ private:
 };//OperatorLinearFree
 
 
+#if 0
 namespace detail
 {
 
@@ -464,6 +465,23 @@ BOOST_PARAMETER_FUNCTION(
     return oplinfree_ptrtype ( new oplinfree_type( domainSpace,imageSpace,backend,expr ) );
 
 } // opLinearFree
+#endif
+template <typename ... Ts>
+auto opLinearFree( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && domainSpace = args.get(_domainSpace);
+    auto && imageSpace = args.get(_imageSpace);
+    auto && expr = args.get(_expr);
+    auto && backend = args.get_else( _backend, Feel::backend() );
+    size_type pattern = args.get_else( _pattern, Pattern::COUPLED );
+
+    using domain_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(domainSpace)>>>;
+    using image_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(imageSpace)>>>;
+    using expr_type = std::decay_t<decltype(expr)>;
+    return std::make_shared<OperatorLinearFree<domain_space_type, image_space_type, expr_type>>( domainSpace,imageSpace,backend,expr );
+}
+
 
 }//namespace Feel
 #endif

@@ -167,7 +167,7 @@ auto form1( Ts && ... v )
     bool do_threshold = args.get_else(_do_threshold, false );
     double threshold = args.get_else(_threshold, type_traits<double>::epsilon() );
     size_type rowstart = args.get_else(_rowstart, 0 );
-    std::string const& name = args.get(_name, "linearform.f" );
+    std::string const& name = args.get_else(_name, "linearform.f" );
 
     return form( name, test, vector, rowstart, init, do_threshold, threshold );
 }
@@ -252,7 +252,7 @@ auto form2( Ts && ... v )
     std::shared_ptr<MatrixSparse<double>> matrix = args.get_else(_matrix, backend->newMatrix( _test=test, _trial=trial, _pattern=pattern, _properties=properties ) );
     size_type rowstart = args.get_else(_rowstart, 0 );
     size_type colstart = args.get_else(_colstart, 0 );
-    std::string const& name = args.get(_name, "bilinearform.a" );
+    std::string const& name = args.get_else(_name, "bilinearform.a" );
 
     bool do_threshold = false;
     double threshold = 1e-16;

@@ -122,7 +122,7 @@ private :
     using super_type::Rh;
 };
 
-
+#if 0
 namespace detail
 {
 template <typename Args>
@@ -156,6 +156,21 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename Feel::detail::compute_deim_return<Args>::type deim_type;
     return std::make_shared<deim_type>( model, sampling, prefix, filename, directory, tag );
 }
+#endif
+template <typename ... Ts>
+auto deim( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && model = args.get(_model);
+    auto && sampling = args.get_else(_sampling, nullptr);
+    std::string const& prefix = args.get_else(_prefix,"");
+    std::string const& filename = args.get_else(_filename,"");
+    std::string const& directory = args.get_else(_directory,"");
+    int tag = args.get_else(_tag,0);
+    using model_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(model)>>>;
+    return std::make_shared<DEIM<model_type>>( model, sampling, prefix, filename, directory, tag );
+}
+
 
 
 po::options_description deimOptions( std::string const& prefix ="");

@@ -128,6 +128,7 @@ private:
 };//FsFunctionalLinearFree
 
 
+#if 0
 namespace detail
 {
 
@@ -163,6 +164,19 @@ BOOST_PARAMETER_FUNCTION(
     return functionalfree_ptrtype ( new functionalfree_type( space , backend , expr ) );
 
 } // functionalLinearFree
+#endif
+template <typename ... Ts>
+auto functionalLinearFree( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && space = args.get(_space);
+    auto && expr = args.get(_expr);
+    auto && backend = args.get_else( _backend, Feel::backend() );
+    using space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(space)>>>;
+    using expr_type = std::decay_t<decltype(expr)>;
+    return std::make_shared<FsFunctionalLinearFree<space_type,expr_type>>( space , backend , expr );
+}
+
 
 }//Feel
 

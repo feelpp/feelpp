@@ -1060,13 +1060,14 @@ struct v_ptr2
     typedef typename T::vector_ptrtype type;
 };
 
-template<typename Args>
+
+template<typename ArgRangeType,typename ArgRhsType,typename ArgElementType,typename ArgExprType>
 struct integratoron_type
 {
-    typedef clean_type<Args,tag::range> _range_base_type;
-    typedef clean_type<Args,tag::rhs> _rhs_type;
-    typedef clean_type<Args,tag::element> _element_type;
-    typedef clean_type<Args,tag::expr> _expr_type;
+    using _range_base_type = std::decay_t<ArgRangeType>;
+    using _rhs_type = std::decay_t<ArgRhsType>;
+    using _element_type = std::decay_t<ArgElementType>;
+    using _expr_type = std::decay_t<ArgExprType>;
 
     typedef typename mpl::if_< boost::is_std_list<_range_base_type>,
                                mpl::identity<_range_base_type>,
@@ -1122,6 +1123,7 @@ getRhsVector( V const&  v )
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
  * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
  */
+#if 0
 BOOST_PARAMETER_FUNCTION(
     ( typename vf::detail::integratoron_type<Args>::expr_type ), // return type
     on,    // 2. function name
@@ -1142,13 +1144,28 @@ BOOST_PARAMETER_FUNCTION(
       ( value_on_diagonal,   ( double ), doption(_prefix=prefix,_name="on.value_on_diagonal") )
         )
     )
+#endif
+template <typename ... Ts>
+auto on( Ts && ... v )
 {
-    typename vf::detail::integratoron_type<Args>::type ion( range,
-                                                            element,
-                                                            Feel::vf::detail::getRhsVector(rhs),
-                                                            expr,
-                                                            size_type(ContextOnMap[type]),
-                                                            value_on_diagonal );
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && range = args.get(_range);
+    auto && element = args.get(_element);
+    auto && rhs = args.get(_rhs);
+    auto && expr = args.get(_expr);
+    std::string const& prefix = args.get_else(_prefix,"");
+    std::string const& type = args.get_else(_type, soption(_prefix=prefix,_name="on.type") );
+    bool verbose = args.get_else(_verbose,boption(_prefix=prefix,_name="on.verbose") );
+    double value_on_diagonal = args.get_else(_value_on_diagonal,doption(_prefix=prefix,_name="on.value_on_diagonal") );
+
+    using integratoron_helper_type = vf::detail::integratoron_type<decltype(range),decltype(rhs),decltype(element),decltype(expr)>;
+
+    typename integratoron_helper_type::type ion( range,
+                                                 element,
+                                                 Feel::vf::detail::getRhsVector(rhs),
+                                                 expr,
+                                                 size_type(ContextOnMap[type]),
+                                                 value_on_diagonal );
     if ( verbose )
     {
         LOG(INFO) << "Dirichlet condition over : "<< nelements(range) << " faces";
@@ -1174,7 +1191,7 @@ BOOST_PARAMETER_FUNCTION(
         }
     }
     //typename vf::detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type );
-    return typename vf::detail::integratoron_type<Args>::expr_type( ion );
+    return typename integratoron_helper_type::expr_type( ion );
 }
 
 

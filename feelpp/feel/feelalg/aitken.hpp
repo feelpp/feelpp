@@ -163,6 +163,7 @@ public:
     /**
      * initiliaze the aitken algorithm
      */
+#if 0
     BOOST_PARAMETER_MEMBER_FUNCTION(
         ( void ),
         initialize,
@@ -173,10 +174,20 @@ public:
     {
         initializeimpl( residual,currentElt );
     }
+#endif
+    template <typename ... Ts>
+    void initialize( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && residual = args.get(_residual);
+            auto && currentElt = args.get(_currentElt);
+            initializeimpl( residual,currentElt );
+        }
 
     /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
+#if 0
     BOOST_PARAMETER_MEMBER_FUNCTION(
         ( element_type ),
         apply,
@@ -194,6 +205,19 @@ public:
         applyimpl( newElt,residual,currentElt,forceRelaxation );
         return newElt;
     }
+#endif
+    template <typename ... Ts>
+    element_type apply( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && residual = args.get(_residual);
+            auto && currentElt = args.get(_currentElt);
+            bool forceRelaxation = args.get_else(_forceRelaxation,false);
+
+            element_type newElt( M_Xh );
+            applyimpl( newElt,residual,currentElt,forceRelaxation );
+            return newElt;
+        }
 
     /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
@@ -209,6 +233,7 @@ public:
     /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
+#if 0
     BOOST_PARAMETER_MEMBER_FUNCTION(
         ( void ),
         apply2,
@@ -225,6 +250,18 @@ public:
     {
         applyimpl( newElt,residual,currentElt,forceRelaxation );
     }
+#endif
+    template <typename ... Ts>
+    void apply2( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && newElt = args.get(_newElt);
+            auto && residual = args.get(_residual);
+            auto && currentElt = args.get(_currentElt);
+            bool forceRelaxation = args.get_else(_forceRelaxation,false);
+
+            applyimpl( newElt,residual,currentElt,forceRelaxation );
+        }
 
     //! set Aitken method type
     void setType( AitkenType t )
@@ -795,7 +832,7 @@ aitkenImpl( std::shared_ptr<SpaceType> const& _space,
 }
 
 
-
+#if 0
 template<typename Args>
 struct compute_aitken_return
 {
@@ -844,6 +881,29 @@ BOOST_PARAMETER_FUNCTION(
 )
 {
     return aitkenImpl( space,type,initial_theta,tolerance,min_theta,maxit );
+}
+
+#endif
+
+template <typename ... Ts>
+auto aitkenPtr( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && space = args.get(_space);
+    std::string const& prefix = args.get_else(_prefix,"");
+    std::string const& type = args.get_else( _type, soption(_prefix=prefix,_name="aitken.type") /* AITKEN_STANDARD*/ );
+    double initial_theta = args.get_else( _initial_theta, doption(_prefix=prefix,_name="aitken.initial_theta") /*1.0*/  );
+    double min_theta = args.get_else( _min_theta, doption(_prefix=prefix,_name="aitken.min_theta") /*1e-4*/  );
+    double tolerance = args.get_else( _tolerance, doption(_prefix=prefix,_name="aitken.tol") /*1.0e-6*/  );
+    size_type maxit = args.get_else( _maxit, ioption(_prefix=prefix,_name="aitken.maxit") );
+
+    return aitkenImpl( space,type,initial_theta,tolerance,min_theta,maxit );
+}
+
+template <typename ... Ts>
+auto aitken( Ts && ... v )
+{
+    return *aitkenPtr( std::forward<Ts>(v)... );
 }
 
 

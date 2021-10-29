@@ -579,6 +579,7 @@ private:
 
 
 
+#if 0
 template<typename Args>
 struct compute_opLinear_return
 {
@@ -613,7 +614,20 @@ BOOST_PARAMETER_FUNCTION(
     return opI;
 
 } // opLinear
+#endif
+template <typename ... Ts>
+auto opLinear( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && domainSpace = args.get(_domainSpace);
+    auto && imageSpace = args.get(_imageSpace);
+    using domain_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(domainSpace)>>>;
+    using image_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(imageSpace)>>>;
+    auto && backend = args.get_else(_backend,Backend<typename domain_space_type::value_type>::build( soption( _name="backend" ) ) );
+    size_type pattern = args.get_else(_pattern,Pattern::COUPLED );
 
+    return std::make_shared<OperatorLinear<domain_space_type,image_space_type>>( domainSpace,imageSpace,backend,pattern );
+}
 
 
 

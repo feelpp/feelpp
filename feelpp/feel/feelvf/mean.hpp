@@ -30,6 +30,7 @@
 
 namespace Feel {
 
+#if 0
 BOOST_PARAMETER_FUNCTION(
     ( typename vf::detail::integrate_type<Args>::expr_type::expression_type::matrix_type ), // return type
     mean,    // 2. function name
@@ -54,7 +55,24 @@ BOOST_PARAMETER_FUNCTION(
       ( worldcomm,       (worldcomm_ptr_t), Environment::worldCommPtr() )
     )
 )
+#endif
+template <typename ... Ts>
+auto mean( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && range = args.get(_range);
+    auto && expr = args.get(_expr);
+    bool parallel = args.get_else( _parallel, true );
+    auto && quad = args.get_else( _quad, quad_order_from_expression );
+    auto && quad1 = args.get_else( _quad1, quad_order_from_expression );
+    GeomapStrategyType geomap = args.get_else( _geomap,GeomapStrategyType::GEOMAP_OPT );
+    bool use_tbb = args.get_else( _use_tbb, false );
+    bool use_harts = args.get_else( _use_harts, false );
+    int grainsize = args.get_else( _grainsize, 100 );
+    std::string const& partitioner = args.get_else( _partitioner, "auto");
+    bool verbose = args.get_else( _verbose, false );
+    worldcomm_ptr_t worldcomm = args.get_else( _worldcomm, Environment::worldCommPtr() );
+
     double meas = integrate( _range=range, _expr=cst(1.0), _quad=quad, _quad1=quad1, _geomap=geomap,
                              _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                              _partitioner=partitioner, _verbose=verbose ).evaluate( parallel,worldcomm )( 0, 0 );
@@ -69,6 +87,7 @@ BOOST_PARAMETER_FUNCTION(
     return eint/meas;
 }
 
+#if 0
 BOOST_PARAMETER_FUNCTION(
     ( typename compute_form1_return<Args>::type ), // return type
     form1_mean,    // 2. function name
@@ -94,7 +113,25 @@ BOOST_PARAMETER_FUNCTION(
       ( worldcomm,       (worldcomm_ptr_t), Environment::worldCommPtr() )
     )
 )
+#endif
+template <typename ... Ts>
+auto form1_mean( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && test = args.get(_test);
+    auto && range = args.get(_range);
+    auto && expr = args.get(_expr);
+    bool parallel = args.get_else( _parallel, true );
+    auto && quad = args.get_else( _quad, quad_order_from_expression );
+    auto && quad1 = args.get_else( _quad1, quad_order_from_expression );
+    GeomapStrategyType geomap = args.get_else( _geomap,GeomapStrategyType::GEOMAP_OPT );
+    bool use_tbb = args.get_else( _use_tbb, false );
+    bool use_harts = args.get_else( _use_harts, false );
+    int grainsize = args.get_else( _grainsize, 100 );
+    std::string const& partitioner = args.get_else( _partitioner, "auto");
+    bool verbose = args.get_else( _verbose, false );
+    worldcomm_ptr_t worldcomm = args.get_else( _worldcomm, Environment::worldCommPtr() );
+
     double meas = integrate( _range=range, _expr=cst(1.0), _quad=quad, _quad1=quad1, _geomap=geomap,
                              _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                              _partitioner=partitioner, _verbose=verbose ).evaluate( parallel,worldcomm )( 0, 0 );

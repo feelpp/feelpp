@@ -54,7 +54,6 @@
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 
-#include <boost/parameter.hpp>
 #include <feel/feelcore/parameter.hpp>
 
 #include <feel/feelcore/feel.hpp>

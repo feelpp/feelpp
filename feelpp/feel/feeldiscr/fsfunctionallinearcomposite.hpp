@@ -371,6 +371,8 @@ private:
     std::vector< std::vector<double> > M_scalars2;
 };
 
+
+#if 0
 namespace detail
 {
 
@@ -404,6 +406,17 @@ BOOST_PARAMETER_FUNCTION(
     return functionalcomposite_ptrtype ( new functionalcomposite_type( space , backend ) );
 
 } // functionalLinearComposite
+#endif
+
+template <typename ... Ts>
+auto functionalLinearComposite( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && space = args.get(_space);
+    auto && backend = args.get_else( _backend, Feel::backend() );
+    using space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(space)>>>;
+    return std::make_shared<FsFunctionalLinearComposite<space_type>>( space , backend );
+}
 
 }//Feel
 

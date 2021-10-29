@@ -613,7 +613,7 @@ private :
     std::vector< std::vector<double> > M_scalars2;
 };//class OperatorLinearComposite
 
-
+#if 0
 namespace detail
 {
 
@@ -652,6 +652,22 @@ BOOST_PARAMETER_FUNCTION(
     return oplincomposite_ptrtype ( new oplincomposite_type( domainSpace,imageSpace,backend,pattern) );
 
 } // opLinearComposite
+#endif
+
+template <typename ... Ts>
+auto opLinearComposite( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && domainSpace = args.get(_domainSpace);
+    auto && imageSpace = args.get(_imageSpace);
+    auto && backend = args.get_else( _backend, Feel::backend() );
+    size_type pattern = args.get_else( _pattern, Pattern::COUPLED );
+
+    using domain_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(domainSpace)>>>;
+    using image_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(imageSpace)>>>;
+    return std::make_shared<OperatorLinearComposite<domain_space_type, image_space_type>>( domainSpace,imageSpace,backend,pattern );
+}
+
 
 }//namespace Feel
 #endif

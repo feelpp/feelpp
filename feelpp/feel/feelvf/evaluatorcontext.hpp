@@ -412,6 +412,7 @@ EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection( mpl::bool_<false> ) cons
 }
 /// \endcond
 
+#if 0
 /// \cond DETAIL
 namespace detail
 {
@@ -426,6 +427,7 @@ struct evaluate_context
 };
 }
 /// \endcond
+#endif
 
 
 template<typename Ctx, typename ExprT, typename Ctx2>
@@ -456,6 +458,7 @@ evaluatecontext_impl( Ctx const& ctx,
  * \arg mpi_communications a bool that indicates if all proc communicate or not
  * \arg projection a bool that indicates if we project the expression on function space or not (usefull for EIM)
  */
+#if 0
 BOOST_PARAMETER_FUNCTION(
     ( typename vf::detail::evaluate_context<Args>::element_type ), // return type
     evaluateFromContext,    // 2. function name
@@ -476,7 +479,20 @@ BOOST_PARAMETER_FUNCTION(
       ( worldcomm,  (worldcomm_ptr_t), (mpi_communications && !context.ctxHaveBeenMpiBroadcasted() )? context.functionSpace()->worldCommPtr() : context.functionSpace()->worldComm().subWorldCommSeqPtr() )
     )
 )
+#endif
+template <typename ... Ts>
+auto evaluateFromContext( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && context = args.get(_context);
+    auto && expr = args.get(_expr);
+    auto && context2 = args.get_else(_context2,context.functionSpace()->context());
+    int max_points_used = args.get_else(_max_points_used,-1);
+    GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT );
+    bool mpi_communications = args.get_else(_mpi_communications,true);
+    bool projection = args.get_else(_projection,false);
+    worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,(mpi_communications && !context.ctxHaveBeenMpiBroadcasted() )? context.functionSpace()->worldCommPtr() : context.functionSpace()->worldComm().subWorldCommSeqPtr() );
+
     bool doMpiComm = mpi_communications && !context.ctxHaveBeenMpiBroadcasted();
     //LOG(INFO) << "evaluate expression..." << std::endl;
     return evaluatecontext_impl( context, context2, expr, max_points_used, geomap , doMpiComm/*mpi_communications*/, projection, worldcomm );
