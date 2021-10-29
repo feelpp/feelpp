@@ -301,6 +301,14 @@ ToolboxMor<SpaceType, Options>::assembleData()
     this->M_energy_matrix = backend()->newMatrix(_test=this->Xh, _trial=this->Xh );
     m->symmetricPart(this->M_energy_matrix);
 
+    auto u = this->Xh->element();
+
+    this->M_Mqm.resize( 1 );
+    this->M_Mqm[0].resize( 1 );
+    this->M_Mqm[0][0] = backend()->newMatrix(this->Xh, this->Xh);
+    form2(_test=this->Xh, _trial=this->Xh, _matrix=this->M_Mqm[0][0])
+        = integrate(_range=elements(this->Xh->mesh()), _expr=inner(id(u),idt(u)));
+
 }
 
 // ToolboxMor<SpaceType, Options>::element_type
