@@ -184,7 +184,7 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
   include(feelpp.host)
   include(feelpp.macros)
   include(feelpp.version)
-
+  include(feelpp.directive)
   include(CMakeFindDependencyMacro)
 
   find_dependency(MPI REQUIRED)

@@ -3,12 +3,12 @@ import feelpp
 from feelpp.toolboxes.core import *
 from feelpp.toolboxes.heat import *
 
-#def test_heat():
-#    feelpp.Environment.setConfigFile(
-#        'heat/Building/ThermalBridgesENISO10211/thermo2dCase2.cfg')
-#    f = heat(dim=2, order=1)
-#    simulate(f)
-#    return not f.checkResults()
+def test_heat():
+    feelpp.Environment.setConfigFile(
+        'heat/Building/ThermalBridgesENISO10211/thermo2dCase2.cfg')
+    f = heat(dim=2, order=1)
+    simulate(f)
+    return not f.checkResults()
 #
 
 #def test_heat_alg():
