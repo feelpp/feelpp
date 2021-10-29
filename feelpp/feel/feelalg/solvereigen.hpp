@@ -408,7 +408,7 @@ public:
         return ret;
     }
 #endif
-    template <typename ... Ts>
+    template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
     solve_return_type solve( Ts && ... v )
         {
             auto args = NA::make_arguments( std::forward<Ts>(v)... );
