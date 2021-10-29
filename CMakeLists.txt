@@ -318,7 +318,7 @@ include(feelpp.package)
 # Post-config message
 ################################################################################
 include(feelpp.directive)
-
+feelpp_print_directive()
 
 feelpp_message( INFO ${FEELPP_MESSAGE_INFO_END} )
 endif()
