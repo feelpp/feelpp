@@ -165,6 +165,8 @@ private:
     std::string M_name;
 }; // class FsFunctionalLinear
 
+
+#if 0
 namespace detail
 {
 
@@ -199,6 +201,20 @@ BOOST_PARAMETER_FUNCTION(
     return functional_ptrtype ( new functional_type( space , backend ) );
 
 } // functionalLinear
+#endif
+
+template <typename ... Ts>
+auto functionalLinear( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && space = args.get(_space);
+    using space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(space)>>>;
+    auto && backend = args.get_else(_backend, Backend<typename space_type::value_type>::build( soption( _name="backend" ) ) );
+
+    return std::make_shared<FsFunctionalLinear<space_type>>( space , backend );
+}
+
+
 
 } // Feel
 

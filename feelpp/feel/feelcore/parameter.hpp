@@ -343,6 +343,10 @@ using use_script = NA::named_argument_t<struct use_script_tag>;
 using compute_pde_coefficients = NA::named_argument_t<struct compute_pde_coefficients_tag>;
 
 
+using keyword = NA::named_argument_t<struct keyword_tag>;
+using repository = NA::named_argument_t<struct repository_tag>;
+
+
 } // namespace na
 
 
@@ -650,7 +654,8 @@ inline constexpr auto& _script = NA::identifier<na::script>;
 inline constexpr auto& _use_script = NA::identifier<na::use_script>;
 inline constexpr auto& _compute_pde_coefficients = NA::identifier<na::compute_pde_coefficients>;
 
-
+inline constexpr auto& _keyword =NA::identifier<na::keyword>;
+inline constexpr auto& _repository =NA::identifier<na::repository>;
 
 
 

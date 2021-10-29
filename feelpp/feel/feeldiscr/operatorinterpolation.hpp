@@ -3747,7 +3747,7 @@ using Div_ptr_t = std::shared_ptr<Div_t<DomainSpaceType,
                                           ImageSpaceType,
                                           IteratorRange,
                                           InterpType>>;
-
+#if 0
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
 decltype(auto)
 opInterp( std::shared_ptr<DomainSpaceType> const& domainspace,
@@ -3770,7 +3770,7 @@ opInterp( std::shared_ptr<DomainSpaceType> const& domainspace,
                                    ddmethod );
     return o;
 }
-
+#endif
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
 decltype(auto)
 opInterpPtr( std::shared_ptr<DomainSpaceType> const& domainspace,
@@ -3798,7 +3798,7 @@ opInterpPtr( std::shared_ptr<DomainSpaceType> const& domainspace,
 }
 
 
-
+#if 0
 template<typename Args,typename DefaultType = InterpolationNonConforming>
 struct compute_opInterpolation_return
 {
@@ -3822,6 +3822,7 @@ struct compute_opInterpolation_return
     typedef OperatorInterpolation<domain_space_type, image_space_type,iterator_range_type,std::remove_const_t<interpolation_type>> type;
     typedef std::shared_ptr<OperatorInterpolation<domain_space_type, image_space_type,iterator_range_type,std::remove_const_t<interpolation_type>> > ptrtype;
 };
+
 
 BOOST_PARAMETER_FUNCTION(
     ( typename compute_opInterpolation_return<Args>::ptrtype ), // 1. return type
@@ -3847,7 +3848,40 @@ BOOST_PARAMETER_FUNCTION(
     return opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod,matrix );
 
 } // opInterpolation
+#endif
 
+template <typename ... Ts>
+auto opInterpolation( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && domainSpace = args.get(_domainSpace);
+    auto && imageSpace = args.get(_imageSpace);
+    auto && range = args.get_else_invocable(_range, [&imageSpace]() { return elements(support(imageSpace)); } );
+    using domain_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(domainSpace)>>>;
+    using image_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(imageSpace)>>>;
+    auto && backend = args.get_else(_backend, Feel::backend() );//Backend<typename domain_space_type::value_type>::build( soption( _name="backend" ) ) );
+    auto && type = args.get_else(_type,InterpolationNonConforming() );
+    bool ddmethod = args.get_else(_ddmethod,false);
+    auto && matrix = args.get_else(_matrix, OperatorInterpolationMatrixSetup<typename image_space_type::value_type>{});
+
+    std::decay_t<decltype(type)> t( type );
+    return opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod,matrix );
+}
+
+template <typename ... Ts>
+auto IPtr( Ts && ... v )
+{
+    return opInterpolation( std::forward<Ts>(v)... );
+}
+template <typename ... Ts>
+auto I( Ts && ... v )
+{
+    return *opInterpolation( std::forward<Ts>(v)... );
+}
+
+
+
+#if 0
 BOOST_PARAMETER_FUNCTION(
     ( typename compute_opInterpolation_return<Args>::type ), // 1. return type
     I,                        // 2. name of the function template
@@ -3871,7 +3905,6 @@ BOOST_PARAMETER_FUNCTION(
     return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
 
 } // opInterpolation
-
 
 
 BOOST_PARAMETER_FUNCTION(
@@ -3973,6 +4006,7 @@ BOOST_PARAMETER_FUNCTION(
 
 } // opInterpolation
 
+#endif
 
 
 

@@ -28,8 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2004-11-09
  */
-#ifndef __Exporter_H
-#define __Exporter_H 1
+#ifndef FEELPP_FILTERS_EXPORTER_H
+#define FEELPP_FILTERS_EXPORTER_H 1
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/visitor.hpp>
@@ -562,7 +562,7 @@ protected:
 
 
 
-
+#if 0
 namespace detail
 {
 template<typename Args>
@@ -584,6 +584,8 @@ struct compute_exporter_return
 
 };
 }
+#endif
+#if 0
 using namespace std::string_literals;
 BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>::ptrtype ),
                           exporter,                                       // 2. name of the function template
@@ -598,8 +600,21 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                             ( geo,   *, soption(_name="exporter.geometry") )
                             ( path, *( boost::is_convertible<mpl::_,std::string> ), (fs::path(Environment::exportsRepository())/fs::path(soption("exporter.format"))/name).string() )
                           ) )
+#endif
+
+template <typename ... Ts>
+auto exporter( Ts && ... v )
 {
-    typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && mesh = args.get(_mesh);
+    bool fileset = args.get_else(_fileset,boption(_name="exporter.fileset") );
+    std::string const& name = args.get_else(_name,Environment::about().appName() );
+    std::string const& geo = args.get_else(_geo, soption(_name="exporter.geometry") );
+    auto && path = args.get_else(_path,(fs::path(Environment::exportsRepository())/fs::path(soption("exporter.format"))/name).string() );
+
+    using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
+    using exporter_type = Exporter<mesh_type,mesh_type::nOrder>;
+
     auto e =  exporter_type::New( name,mesh->worldCommPtr() );
     e->setPrefix( name );
     e->setUseSingleTransientFile( fileset );

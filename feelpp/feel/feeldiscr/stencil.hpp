@@ -356,10 +356,14 @@ template<typename X1, typename X2,
 class Stencil
 {
 public:
-    typedef X1 test_space_ptrtype;
-    typedef X2 trial_space_ptrtype;
-    typedef typename X1::element_type test_space_type;
-    typedef typename X2::element_type trial_space_type;
+    using test_space_type = X1;
+    using trial_space_type = X2;
+    using test_space_ptrtype = std::shared_ptr<test_space_type>;
+    using trial_space_ptrtype = std::shared_ptr<trial_space_type>;
+    // typedef X1 test_space_ptrtype;
+    // typedef X2 trial_space_ptrtype;
+    // typedef typename X1::element_type test_space_type;
+    // typedef typename X2::element_type trial_space_type;
     typedef GraphCSR graph_type;
     typedef std::shared_ptr<graph_type> graph_ptrtype;
     typedef Stencil<X1,X2,RangeIteratorTestType,RangeExtendedIteratorType,QuadSetType> self_type;
@@ -857,7 +861,7 @@ auto stencil( Ts && ... v )
     auto && test = args.get(_test );
     auto && trial = args.get(_trial );
     uint32_type pattern = args.get_else( _pattern, Pattern::COUPLED );
-    auto && pattern_block = args.get_else( _pattern, default_block_pattern );
+    auto && pattern_block = args.get_else( _pattern_block, default_block_pattern );
     bool diag_is_nonzero =  args.get_else( _diag_is_nonzero, false );
     bool collect_garbage =  args.get_else( _collect_garbage, true );
     bool close = args.get_else( _close, true );
