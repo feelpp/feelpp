@@ -39,4 +39,4 @@ endif()
 add_subdirectory(pyfeelpp)
 add_subdirectory(pyfeelpp-toolboxes)
 add_subdirectory(pyfeelpp-mor)
-
+add_subdirectory(research)

@@ -191,41 +191,6 @@ add_custom_target(install-testcase
 
 add_custom_target(check-full COMMAND "ctest")
 
-#
-# list of sub-directories of curdir
-MACRO(project_list_subdir result curdir)
-  FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
-  FOREACH(child ${children})
-    IF(IS_DIRECTORY ${curdir}/${child})
-      LIST(APPEND dirlist ${child})
-    ENDIF()
-  ENDFOREACH()
-  SET(${result} ${dirlist})
-ENDMACRO()
-
-# Load documented project for Doxygen
-# it assumes that a project is valid if :
-#   there is README.{md,adoc} file in the directory
-#   that the directory path include "research"
-# for each detected project it creates an FEELPP_ENABLE_RESEARCH_${PROJECT} and FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION
-# option which are set to OFF by default
-MESSAGE(STATUS "[feelpp] Feel++ projects :")
-project_list_subdir(projects ${CMAKE_CURRENT_SOURCE_DIR}/research)
-foreach(project ${projects})
-  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md OR 
-      EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.adoc  )
-    string(TOUPPER ${project} PROJECT)
-    if ( ${PROJECT} STREQUAL "EYE2BRAIN" OR ${PROJECT} STREQUAL "BRAIN" OR ${PROJECT} STREQUAL "SWIMMER"  )
-      option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)
-    else()
-      option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)
-    endif()
-    option(FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${project}" OFF)
-		SET(FEELPP_ENABLED_PROJECTS "${FEELPP_ENABLED_PROJECTS} ${project}" )
-		MESSAGE(STATUS "[feelpp] ${project}\t-- Compile : ${FEELPP_ENABLE_RESEARCH_${PROJECT}} ")
-		MESSAGE(STATUS "        \t\t-- Doc :     ${FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION}" )
-  endif()
-endforeach()
 
 
 ################################################################################
