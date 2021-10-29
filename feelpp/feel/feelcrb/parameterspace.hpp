@@ -335,7 +335,7 @@ public:
 
     typedef Element element_type;
     typedef std::shared_ptr<Element> element_ptrtype;
-    element_type element( bool broadcast = true, bool apply_log = false )
+    element_type element( bool broadcast = true, bool apply_log = true )
     {
 #if 0
         //first, pick a random element, then
