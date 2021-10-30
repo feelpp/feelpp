@@ -123,7 +123,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     auto Pi = M_PI;
     
     tic();
-    auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
     toc("mesh",true);
 
     // ****** Hybrid-mixed formulation ******
