@@ -343,6 +343,7 @@ public :
     sparse_matrix_ptrtype matrixPtr() { return M_matrix; }
     using pre_solve_type = typename Backend<value_type>::pre_solve_type;
     using post_solve_type = typename Backend<value_type>::post_solve_type;
+#if 0
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<double>::solve_return_type ),
                                      solve,
                                      tag,
@@ -359,7 +360,22 @@ public :
                                        ( pre, (pre_solve_type), pre_solve_type() )
                                        ( post, (post_solve_type), post_solve_type() )
                                        ) )
+#endif
+    template <typename ... Ts>
+    typename Backend<double>::solve_return_type solve( Ts && ... v )
         {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && solution = args.get(_solution);
+            auto && rhs = args.get(_rhs);
+            bool condense = args.get_else(_condense,false);
+            auto && condenser = args.get_else(_condenser,condenser_poisson() );
+            bool local = args.get_else(_local,false);
+            std::string const& name = args.get_else(_name,"" );
+            std::string const& kind = args.get_else(_kind,soption(_prefix=name,_name="backend") );
+            bool rebuild = args.get_else(_rebuild,boption(_prefix=name,_name="backend.rebuild") );
+            pre_solve_type pre = args.get_else(_pre, pre_solve_type() );
+            post_solve_type post = args.get_else(_post,post_solve_type() );
+
             if constexpr ( std::is_same_v<decay_type<decltype(condenser)>,condenser_stokes> )
                 return solveImpl( solution, rhs, name, kind, rebuild, pre, post );
             else
