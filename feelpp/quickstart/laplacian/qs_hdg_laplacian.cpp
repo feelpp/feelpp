@@ -138,7 +138,7 @@ int hdg_laplacian()
     auto r_2 = un;
 #endif
     tic();
-    auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
     toc("mesh",true);
 
     // ****** Hybrid-mixed formulation ******

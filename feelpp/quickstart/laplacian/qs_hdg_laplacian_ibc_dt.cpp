@@ -101,7 +101,7 @@ int hdg_laplacian()
     int tau_order =  ioption("hdg.tau.order");
 
     tic();
-    auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
     int nbIbc = nelements(markedfaces(mesh,"Ibc"),true) >= 1 ? 1 : 0;
     int nbIbcOde = nelements(markedfaces(mesh,"IbcOde"),true) >= 1 ? 2 : 0;
     std::map<std::string,std::pair<int,std::string>> ibcs;
@@ -163,7 +163,7 @@ int hdg_laplacian()
         if ( ibc_data.second == "IbcOde" && ibc_type == "Ibc" )
             ibc_exact_map[ibc_type] = 0;
         else
-            ibc_exact_map[ibc_type] = integrate(markedfaces(mesh,ibc_data.second), un).evaluate()(0,0);
+            ibc_exact_map[ibc_type] = integrate(_range=markedfaces(mesh,ibc_data.second), _expr=un).evaluate()(0,0);
 
     // ****** Hybrid-mixed formulation ******
     // We treat Vh, Wh, and Mh separately
