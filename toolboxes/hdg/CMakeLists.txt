@@ -76,7 +76,7 @@ if ( FEELPP_HAS_FMILIB )
     INSTALL MAN hdg_coupledpoisson
      )
 
-    if ( FEELPP_HAS_OMC )
+    if ( FEELPP_HAS_OMC OR OMC_FOUND )  
       message(STATUS "[toolbox] has test feelpp_toolbox_hdg_coupledpoisson-linear")
       add_test( NAME feelpp_toolbox_hdg_coupledpoisson-linear COMMAND feelpp_toolbox_hdg_coupledpoisson --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/coupledpoisson/1-linear/linear.cfg --ts.time-final 0.25 --hdg.poisson.json-editions BoundaryConditions.flux.Coupling.buffer.circuit:${CMAKE_CURRENT_BINARY_DIR}/cases/coupledpoisson/1-linear/test3d0d_linear/test3d0d_linear.fmu)
     endif()
