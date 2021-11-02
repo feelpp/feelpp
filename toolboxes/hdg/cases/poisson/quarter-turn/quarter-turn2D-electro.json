@@ -3,9 +3,7 @@
     "ShortName":"MP",
     "Models":
     {
-        "equations":"hdg",
-        "p_expr":"2*dif/Pi*atan2(y,x):x:y:z:dif",
-        "u_expr":"{2*dif*sigma/Pi*y/(x*x+y*y),-2*dif*sigma/Pi*x/(x*x+y*y)}:x:y:z:dif:sigma"
+        "equations":"hdg"
     },
     "Parameters":
     {
@@ -20,21 +18,14 @@
         "omega":
         {
             "name":"copper",
-            "cond":"58e3",
-            "k":58e3
-            // "alpha":"3.35e-3",
-            // "T0":"293",
-            // "sigma0":"50",
-            // "k0":"300",
-            // "sigma":"sigma0/(1+alpha*(T-T0)):sigma0:alpha:T:T0",
-            // "k":"k0*T/((1+alpha*(T-T0))*T0):k0:T:alpha:T0"
+            "cond":"58e3"
         }
     },
     "BoundaryConditions":
     {
         "potential":
         {
-            "SourceTerm":
+            "VolumicForces":
             {
                 "": {"expr":"0"}
             },
@@ -57,30 +48,13 @@
                     "expr":"2*dif*sigma/Pi*y/(x*x+y*y)*nx-2*dif*sigma/Pi*x/(x*x+y*y)*ny:x:y:nx:ny:dif:sigma"                               
                 }
             }
-        },
-	    "Exact solution":
-	    {
-	        "p_exact":
-	        {
-		        "omega":
-		        {
-		            "expr":"2*dif/Pi*atan2(y,x):x:y:z:dif"
-		        }
-	        },
-            "u_exact":
-            {
-                "omega":
-                {
-                    "expr":"{2*dif*sigma/Pi*y/(x*x+y*y),-2*dif*sigma/Pi*x/(x*x+y*y)}:x:y:z:dif:sigma"
-                }
-            }
-	    }
+        }
     },
     "PostProcess":
     {
         "Exports":
         {
-            "fields":["potential","flux"]
+            "fields":["potential","flux","postpotential"]
         },
         "Measures":
         {
@@ -143,16 +117,6 @@
                     "value":7.9980410297979074e+02,
                     "tolerance":1e-1
                 },
-                "Statistics_Intensity0_integrate_1":
-                {
-                    "value":-1.2114711823724064e-01,
-                    "tolerance":1e-1
-                },
-                "Statistics_Intensity1_integrate_0":
-                {
-                    "value":1.1954814928181956e-01,
-                    "tolerance":1e-1
-                },
                 "Statistics_Intensity1_integrate_1":
                 {
                     "value":-7.9980410056333255e+02,
@@ -165,13 +129,13 @@
                 },
                 "Points_V0_potential":
                 {
-                    "value":3.1256783010645731e-02,
+                    "value":3.125e-02,
                     "tolerance":1e-1
                 },
                 "Points_V1_potential":
                 {
-                    "value":6.1011953469842531e-06,
-                    "tolerance":1e-1
+                    "value":0,
+                    "tolerance":1e-4
                 },
                 "Norm_potential_error_L2-error":
                 {

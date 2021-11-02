@@ -36,6 +36,8 @@
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelmesh/enums.hpp>
 #include <feel/feeldiscr/enums.hpp>
+#include <feel/feelalg/matrixcondensed.hpp>
+#include <feel/feelalg/vectorcondensed.hpp>
 
 namespace Feel
 {

@@ -7,69 +7,43 @@
         "omega":
         {
             "name":"simulation_domain",
-            "k":"1"
+            "cond":"1"
+        }
+    },
+    "InitialConditions":
+    {
+        "potential":
+        {
+            "Expression":
+            {
+                "myic1":
+                {
+                    "markers":"omega",
+					"expr":"t+x:x:t"
+                }
+            }
         }
     },
     "BoundaryConditions":
     {
         "potential":
         {
-			"InitialSolution":
-			{
-				"omega":
-				{
-					"expr":"-3*x*(10-t):x:t"
-				}
-			},
-            "SourceTerm":
+            "VolumicForces":
             {
                 "omega":
                 {
-					"expr":"3*x:x:y:t"
+					"expr":"1:x:y:t"
                 }
             },
             "Dirichlet":
             {
-                "bottom":
+                "bc":
 				{
-					"expr":"-3*x*(10-t):x:t"
+                    "markers":["bottom","top","lateral"],
+					"expr":"t+x:x:t"
 				}
-            },
-			"Neumann":
-			{
-                "lateral":
-				{
-					"expr":"0.0"
-				}
-			}
-        },
-        "flux":
-        {
-            "Integral":
-            {
-                "top":
-                {
-                    "expr":"3*(10-t):t"
-                }
             }
-        },
-		"Exact solution":
-		{
-	    	"p_exact":
-	    	{
-				"omega":
-				{
-					"expr":"-3*x*(10-t):x:t"
-				}
-	    	},
-	    	"u_exact":
-	    	{
-				"omega":
-				{
-					"expr":"{3*(10-t),0}:x:t"
-				}
-	    	}
-		}
+        }
     },
     "PostProcess":
     {
@@ -85,14 +59,14 @@
                 {
                     "type":"L2-error",
                     "field":"potential",
-                    "solution":"-3*x*(10-0.5):x:t",
+                    "solution":"t+x:x:t",
                     "markers":"omega"
                 },
                 "flux_error":
                 {
                     "type":"L2-error",
                     "field":"flux",
-                    "solution":"{3*(10-0.5),0}:x:t",
+                    "solution":"{-1,0}:x:t",
                     "markers":"omega"
                 }
             }
@@ -104,12 +78,12 @@
                 "Norm_potential_error_L2-error":
                 {
                     "value":0,
-                    "tolerance":1
+                    "tolerance":1e-7
                 },
                 "Norm_flux_error_L2-error":
                 {
                     "value":0,
-                    "tolerance":2
+                    "tolerance":1e-7
                 }
             }
         }
