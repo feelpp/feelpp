@@ -30,7 +30,8 @@
 #define FEELPP_FEELCORE_PARAMETER_H 1
 
 
-#include "/nvme0/chabannes/Feelpp/work_develop/vincentchabannes/napp/include/napp/na.hpp"
+//#include "/nvme0/chabannes/Feelpp/work_develop/vincentchabannes/napp/include/napp/na.hpp"
+#include <napp/na.hpp>
 
 namespace Feel
 {
