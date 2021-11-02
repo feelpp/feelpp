@@ -146,7 +146,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::init( mesh_ptrtype const& mesh )
     if( mesh )
         M_mesh = mesh;
     else
-        M_mesh = loadMesh( new mesh_type );
+        M_mesh = loadMesh( _mesh=new mesh_type );
     M_thermo->init( M_mesh );
     M_electro->init( M_mesh );
     toc("init");
@@ -329,10 +329,10 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
     // double normT = normL2( rangeT, idv(M_temperature) );
     // double incrV = normL2( rangeV, idv(M_potential) - idv(oldPotential) );
     // double incrT = normL2( rangeT, idv(M_temperature) - idv(oldTemperature) );
-    double normV = normL2( elements(M_mesh), idv(M_potential) );
-    double normT = normL2( elements(M_mesh), idv(M_temperature) );
-    double incrV = normL2( elements(M_mesh), idv(M_potential) - idv(oldPotential) );
-    double incrT = normL2( elements(M_mesh), idv(M_temperature) - idv(oldTemperature) );
+    double normV = normL2( _range=elements(M_mesh), _expr=idv(M_potential) );
+    double normT = normL2( _range=elements(M_mesh), _expr=idv(M_temperature) );
+    double incrV = normL2( _range=elements(M_mesh), _expr=idv(M_potential) - idv(oldPotential) );
+    double incrT = normL2( _range=elements(M_mesh), _expr=idv(M_temperature) - idv(oldTemperature) );
     double relV = incrV/normV;
     double relT = incrT/normT;
 
@@ -474,10 +474,10 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
             M_temperature = M_thermo->potentialField();
             M_tempflux = M_thermo->fluxField();
 
-            incrV = normL2( elements(M_mesh), idv(M_potential) - idv(oldPotential) );
-            incrT = normL2( elements(M_mesh), idv(M_temperature) - idv(oldTemperature) );
-            normV = normL2( elements(M_mesh), idv(oldPotential) );
-            normT = normL2( elements(M_mesh), idv(oldTemperature) );
+            incrV = normL2( _range=elements(M_mesh), _expr=idv(M_potential) - idv(oldPotential) );
+            incrT = normL2( _range=elements(M_mesh), _expr=idv(M_temperature) - idv(oldTemperature) );
+            normV = normL2( _range=elements(M_mesh), _expr=idv(oldPotential) );
+            normT = normL2( _range=elements(M_mesh), _expr=idv(oldTemperature) );
             relV = incrV/normV;
             relT = incrT/normT;
 
@@ -496,7 +496,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::exportResults()
 {
     M_electro->exportResults();
     M_thermo->exportResults();
-    auto e = exporter( M_mesh );
+    auto e = exporter( _mesh=M_mesh );
     e->add("potential", M_potential);
     e->add("current", M_current);
     e->add("temperature", M_temperature);
