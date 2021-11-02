@@ -815,7 +815,7 @@ opLagrangeP1_impl( std::shared_ptr<space_type> const& Xh,
     return std::shared_ptr<OperatorLagrangeP1<space_type> >( new OperatorLagrangeP1<space_type>( Xh,backend,pathMeshLagP1,prefix,rebuild,parallel,meshUpdate ) );
 }
 
-
+#if 0
 template<typename Args>
 struct compute_opLagrangeP1_return
 {
@@ -846,7 +846,21 @@ BOOST_PARAMETER_FUNCTION(
 #endif
     return opLagrangeP1_impl(space,backend,path,prefix,rebuild,parallel,update);
 }
+#endif
 
+template <typename ... Ts>
+auto lagrangeP1( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && space = args.get(_space);
+    auto && backend = args.get_else(_backend, Feel::backend() );
+    std::string const& path = args.get_else(_path,".");
+    std::string const& prefix = args.get_else(_prefix,"");
+    bool rebuild = args.get_else(_rebuild, true );
+    bool parallel = args.get_else(_parallel, true );
+    size_type update = args.get_else(_update, /*MESH_RENUMBER|*/MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    return opLagrangeP1_impl(space,backend,path,prefix,rebuild,parallel,update);
+}
 
 
 
