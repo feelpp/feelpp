@@ -157,13 +157,13 @@ int runSimulation()
         // heatBox->updateFieldVelocityConvection();
         heatBox->solve();
         TFE = heatBox->fieldTemperature();
-        auto normT = normL2( rangeT, idv(TFE) );
+        auto normT = normL2( _range=rangeT, _expr=idv(TFE) );
         for(int n = 0; n < N; ++n)
         {
             crb->fixedPointPrimal(n+1, mu, uNs, uNolds, outputs);
             vectorN_type uN = uNs[0];
             TRB = crb->expansion( uN, n+1 );
-            errs[n][j] = normL2( rangeT, idv(TRB)-idv(TFE) );
+            errs[n][j] = normL2( _range=rangeT, _expr=idv(TRB)-idv(TFE) );
             errsRel[n][j] = errs[n][j]/normT;
         }
         ++j;
@@ -203,7 +203,7 @@ int runSimulation()
         Feel::cout << std::setw(5) << n+1 << std::setw(25) << min[n] << std::setw(25) << max[n]
                    << std::setw(25) << mean[n] << std::setw(25) << stdev[n] << std::endl;
 
-    auto e = exporter(mesh);
+    auto e = exporter(_mesh=mesh);
     e->add("TFE", TFE);
     e->add("TRB", TRB);
     e->save();
