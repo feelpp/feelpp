@@ -1,0 +1,87 @@
+// -*- mode: javascript -*-
+{
+    "Name": "Test heat toolbox",
+    "ShortName":"TestHeat",
+    "Parameters":
+    {
+        "k":"1.15",
+        "Cp":"880",
+        "rho":"2300"
+    },
+    "Materials":
+    {
+        "omega":
+        {
+            "k":"1.15",//[ W/(m*K) ]
+            "Cp":"880", //[ J/(kg*K) ]
+            "rho":"2300" //[ kg/(m^3) ]
+        }
+    },
+    "BoundaryConditions":
+    {
+        "temperature":
+        {
+            "VolumicForces":
+            {
+                "omega":
+                {
+                    "expr":"20*880*2300*t:t"
+                }
+            },
+            "Dirichlet":
+            {
+                "gamma":
+                {
+                    "markers":["gamma1","gamma2","gamma3","gammb1"],
+                    "expr":"293+10*t*t:t"
+                }
+            }
+        }
+    },
+    "InitialConditions":
+    {
+        "temperature":
+        {
+            "Expression":
+            {
+                "myic1":
+                {
+                    "markers":"omega",
+                    "expr":"293+10*t*t:t"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["temperature"]
+        },
+        "Measures":
+        {
+            "Norm":
+            {
+                "error":
+                {
+                    "markers":"omega",
+                    "type":"L2-error",
+                    "field":"temperature",
+                    "solution":"293+10*t*t:t"
+                }
+            }
+        },
+        "Checkers":
+        {
+            "Measures":
+            {
+                "Norm_error_L2-error":
+                {
+                    "value":0,
+                    "tolerance":1e-9
+                }
+            }
+        }
+    }
+
+}
