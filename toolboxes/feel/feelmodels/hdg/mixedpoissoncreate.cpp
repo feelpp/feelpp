@@ -80,7 +80,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::init( mesh_ptrtype mesh, mesh_ptrtype meshVisu
 {
     tic();
     if ( !mesh )
-        M_mesh = loadMesh( new mesh_type);
+        M_mesh = loadMesh( _mesh=new mesh_type);
     else
         M_mesh = mesh;
     toc("mesh", FLAGS_v > 0);
