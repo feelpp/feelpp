@@ -28,8 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-01-20
  */
-#ifndef FEELPP_INTEGRATORS_HPP
-#define FEELPP_INTEGRATORS_HPP 1
+#ifndef FEELPP_VF_INTEGRATORS_HPP
+#define FEELPP_VF_INTEGRATORS_HPP 1
 
 #include <cxxabi.h>
 #include <typeinfo>
@@ -523,7 +523,7 @@ public:
     evaluate( bool parallel=true,
               worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
      {
-        typename eval::matrix_type loc =  evaluate( mpl::int_<iDim>() );
+         typename eval::matrix_type loc = this->evaluateImpl();
 
         if ( !parallel )
             return loc;
@@ -839,9 +839,12 @@ private:
     template<typename P0hType>
     typename P0hType::element_type  broken( std::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const;
 
-    typename eval::matrix_type evaluate( mpl::int_<MESH_ELEMENTS> ) const;
-    typename eval::matrix_type evaluate( mpl::int_<MESH_FACES> ) const;
-    typename eval::matrix_type evaluate( mpl::int_<MESH_POINTS> ) const;
+    template <int iDimDummy=iDim,std::enable_if_t< iDimDummy == MESH_ELEMENTS , bool> = true>
+    typename eval::matrix_type evaluateImpl() const;
+    template <int iDimDummy=iDim,std::enable_if_t< iDimDummy == MESH_FACES /*|| ( iDimDummy == MESH_EDGES && eval::gm_type::nDim == 2)*/ , bool> = true>
+    typename eval::matrix_type evaluateImpl() const;
+    template <int iDimDummy=iDim,std::enable_if_t< iDimDummy == MESH_POINTS , bool> = true>
+    typename eval::matrix_type evaluateImpl() const;
 
 private:
 
@@ -5055,8 +5058,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
 
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
+template <int iDimDummy,std::enable_if_t< iDimDummy == MESH_ELEMENTS , bool> >
 typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
-Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
+Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 {
     DLOG(INFO)  << "integrating over "
                 << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
@@ -5710,8 +5714,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 }
 }
 template<typename Elements, typename Im, typename Expr, typename Im2>
-    typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
-    Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
+template <int iDimDummy,std::enable_if_t< iDimDummy == MESH_FACES /*|| ( iDimDummy == MESH_EDGES && Integrator<Elements, Im, Expr, Im2>::eval::gm_type::nDim == 2)*/ , bool> >
+typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
+Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 {
     DLOG(INFO) << "integrating over "
                << std::distance( this->beginElement(), this->endElement() )  << "faces\n";
@@ -5914,8 +5919,9 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
 }
 
  template<typename Elements, typename Im, typename Expr, typename Im2>
-     typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
-     Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_POINTS> ) const
+ template <int iDimDummy,std::enable_if_t< iDimDummy == MESH_POINTS , bool> >
+ typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
+ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
  {
      DLOG(INFO)  << "integrating over "
                  << std::distance( this->beginElement(), this->endElement() )  << " points\n";
