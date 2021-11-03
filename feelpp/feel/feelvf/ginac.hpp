@@ -48,9 +48,9 @@ extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_
 // #endif
 // #endif
 
-#include <boost/fusion/container/vector.hpp>
+//#include <boost/fusion/container/vector.hpp>
 
-#include <boost/parameter/preprocessor.hpp>
+//#include <boost/parameter/preprocessor.hpp>
 
 #include <boost/foreach.hpp>
 #include <boost/range/algorithm/for_each.hpp>
@@ -161,6 +161,7 @@ public:
     Symbols(std::vector<std::string> const& s ):std::vector<symbol>(symbols(s)) {}
 };
 
+#if 0
 template<typename... Args>
 class Fields
     :
@@ -173,7 +174,7 @@ public:
     Fields( super const& m) : super( m ) {}
 
 };
-
+#endif
 } // Feel namespace
 
 

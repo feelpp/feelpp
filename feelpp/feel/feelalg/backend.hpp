@@ -57,17 +57,6 @@
 #include <feel/feelalg/matrixshell.hpp>
 #include <feel/feelalg/matrixshellsparse.hpp>
 
-
-
-//#include <feel/feelvf/vf.hpp>
-//#include <boost/fusion/support/pair.hpp>
-//#include <boost/fusion/container.hpp>
-//#include <boost/fusion/sequence.hpp>
-//#include <boost/fusion/algorithm.hpp>
-
-//namespace fusion = boost::fusion;
-
-//#include <feel/feelvf/bilinearform.hpp>
 #include <feel/feelvf/pattern.hpp>
 #include <feel/feelvf/block.hpp>
 
