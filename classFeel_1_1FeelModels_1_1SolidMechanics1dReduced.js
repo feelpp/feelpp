@@ -1,8 +1,6 @@
 var classFeel_1_1FeelModels_1_1SolidMechanics1dReduced =
 [
     [ "FieldTag", "structFeel_1_1FeelModels_1_1SolidMechanics1dReduced_1_1FieldTag.html", "structFeel_1_1FeelModels_1_1SolidMechanics1dReduced_1_1FieldTag" ],
-    [ "blockVectorSolution", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html#aee1fb0ac801b25455997d23c228e1604", null ],
-    [ "blockVectorSolution", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html#a14171cf737607d63614abe802b85d31c", null ],
     [ "buildBlockMatrixGraph", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html#a9240fdb92feff87bc18941c9908f964c", null ],
     [ "exportResults", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html#a8258196ed9632a9d8fbbbd414abf8b91", null ],
     [ "exportResults", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html#a93b9c627c8d615a3fb5bc4399a984562", null ],

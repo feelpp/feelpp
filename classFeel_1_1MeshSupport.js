@@ -18,6 +18,7 @@ var classFeel_1_1MeshSupport =
     [ "rangeMarkedFaces", "classFeel_1_1MeshSupport.html#ac243bd90267e1aef5a1e4fb441e24864", null ],
     [ "rangeMeshElementsGhostIdsPartialSupport", "classFeel_1_1MeshSupport.html#a273ede2d7db0679686d2ca89d1b7306a", null ],
     [ "rangeMeshElementsIdsPartialSupport", "classFeel_1_1MeshSupport.html#a773d3c36ffbec94317f8a1278851cac7", null ],
+    [ "tool_localization", "classFeel_1_1MeshSupport.html#a0a0b5be61793a7248a4ce1d11cfa6199", null ],
     [ "updateBoundaryInternalFaces", "classFeel_1_1MeshSupport.html#a4fa39ad24a6b59ff0d572e2a3d8f68ce", null ],
     [ "updateParallelData", "classFeel_1_1MeshSupport.html#a462a77a64d759f9391582fe2ff4cbfdc", null ],
     [ "worldCommPtr", "classFeel_1_1MeshSupport.html#aaf317c15d98ea8c25df1d3782b1d6bff", null ],
@@ -32,5 +33,5 @@ var classFeel_1_1MeshSupport =
     [ "MeshSupport", "classFeel_1_1MeshSupport.html#abb069b61e55c78628ac0464629ee8fc4", null ],
     [ "MeshSupport", "classFeel_1_1MeshSupport.html#a5fd38afff24408df6f67696addd033b4", null ],
     [ "MeshSupport", "classFeel_1_1MeshSupport.html#aa661feb2d5eb799b9fe82048ba20efe8", null ],
-    [ "~MeshSupport", "classFeel_1_1MeshSupport.html#a3d9e15a819a89a22075e9a123362c2aa", null ]
+    [ "~MeshSupport", "classFeel_1_1MeshSupport.html#ae0c3d730ab7f34aaf13bfa7f7bf8559b", null ]
 ];

@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -115,8 +115,8 @@ struct Feel::vf::map_vector_field&lt; M, N, Order &gt;</h3>
 
 <p>defines a dictionary of vector fields </p>
 <p>this data structure creates a dictionary of fields, it associates a string to a Ginac Expr of rank 1 and a set of vector. In the case of vector fields the size of the vector field must be given</p>
-<div class="fragment"><div class="line"><span class="keyword">auto</span> e = <a class="code" href="ginac_8hpp.html#a5665b51d80042bfc7cbd5ab049d1e3d2">expr</a>(<span class="stringliteral">&quot;{x,y}:x:y&quot;</span>);</div>
-<div class="line"><span class="keyword">auto</span> z = <a class="code" href="ginac_8hpp.html#a5665b51d80042bfc7cbd5ab049d1e3d2">expr</a>(<span class="stringliteral">&quot;{0,0}:x:y&quot;</span>);</div>
+<div class="fragment"><div class="line"><span class="keyword">auto</span> e = <a class="code" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>(<span class="stringliteral">&quot;{x,y}:x:y&quot;</span>);</div>
+<div class="line"><span class="keyword">auto</span> z = <a class="code" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>(<span class="stringliteral">&quot;{0,0}:x:y&quot;</span>);</div>
 <div class="line">map_vector_field&lt;2&gt; m { { <span class="stringliteral">&quot;inlet&quot;</span>, e }, { <span class="stringliteral">&quot;wall&quot;</span>, z } };</div>
 </div><!-- fragment --> </div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::vf::map_vector_field&lt; M, N, Order &gt;:</div>
@@ -162,7 +162,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setParameterValues</b
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="aginac_8hpp_html_a5665b51d80042bfc7cbd5ab049d1e3d2"><div class="ttname"><a href="ginac_8hpp.html#a5665b51d80042bfc7cbd5ab049d1e3d2">Feel::vf::expr</a></div><div class="ttdeci">Expr&lt; GinacEx&lt; 2 &gt; &gt; expr(GiNaC::ex const &amp;f, std::vector&lt; GiNaC::symbol &gt; const &amp;lsym, std::string filename=&quot;&quot;, WorldComm const &amp;world=Environment::worldComm(), std::string const &amp;dirLibExpr=&quot;&quot;)</div><div class="ttdoc">functor enabling ginac</div><div class="ttdef"><b>Definition:</b> ginac.hpp:230</div></div>
+<div class="ttc" id="anamespaceFeel_html_a338e05dd5e37f3594666f0a00e029d3d"><div class="ttname"><a href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">Feel::expr</a></div><div class="ttdeci">SpaceT::element_type expr(std::shared_ptr&lt; SpaceT &gt; const &amp;Xh, ExprT const &amp;e)</div><div class="ttdoc">create an isotropic metric field based on a scalar expression</div><div class="ttdef"><b>Definition:</b> metric.hpp:73</div></div>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>

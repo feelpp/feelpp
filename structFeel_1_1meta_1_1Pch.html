@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -112,11 +112,11 @@ $(document).ready(function(){initNavTree('structFeel_1_1meta_1_1Pch.html',''); i
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a21d9399c99b364c6c127374962a0fecc"><td class="memItemLeft" align="right" valign="top"><a id="a21d9399c99b364c6c127374962a0fecc"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>ptrtype</b></td></tr>
+typedef std::shared_ptr&lt; type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>ptrtype</b></td></tr>
 <tr class="separator:a21d9399c99b364c6c127374962a0fecc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5156d5fc6883fa0042f0b0ada7066ed8"><td class="memItemLeft" align="right" valign="top"><a id="a5156d5fc6883fa0042f0b0ada7066ed8"></a>
-typedef <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; MeshType, <a class="el" href="structFeel_1_1bases.html">bases</a>&lt; Lagrange&lt; <a class="el" href="structFeel_1_1Order.html">Order</a>, Scalar, Continuous, Pts, <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt; &gt;, T, <a class="el" href="structFeel_1_1Periodicity.html">Periodicity</a>&lt; <a class="el" href="classFeel_1_1NoPeriodicity.html">NoPeriodicity</a> &gt;, <a class="el" href="structFeel_1_1mortars.html">mortars</a>&lt; <a class="el" href="classFeel_1_1NoMortar.html">NoMortar</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>type</b></td></tr>
-<tr class="separator:a5156d5fc6883fa0042f0b0ada7066ed8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4922f6cdb51b381a7b91a33c6db00cf8"><td class="memItemLeft" align="right" valign="top"><a id="a4922f6cdb51b381a7b91a33c6db00cf8"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>type</b> = boost::mp11::mp_if_c&lt; <a class="el" href="structFeel_1_1Tag.html">Tag</a>==0 &amp;&amp;std::is_same_v&lt; T, double &gt;, <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; MeshType, <a class="el" href="structFeel_1_1bases.html">bases</a>&lt; Lagrange&lt; <a class="el" href="structFeel_1_1Order.html">Order</a>, Scalar, Continuous, Pts &gt; &gt;&gt;, <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; MeshType, <a class="el" href="structFeel_1_1bases.html">bases</a>&lt; Lagrange&lt; <a class="el" href="structFeel_1_1Order.html">Order</a>, Scalar, Continuous, Pts, <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt; &gt;, T &gt; &gt;</td></tr>
+<tr class="separator:a4922f6cdb51b381a7b91a33c6db00cf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -121,6 +121,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::BodyBoundaryCondition</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1ElasticBehavior.html">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::BodyBoundaryCondition::ElasticBehavior&lt; ExprVelocityType, ExprDisplacementType &gt;</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1FieldTag.html">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::BodyBoundaryCondition::FieldTag</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::BodySetBoundaryCondition</a></td></tr>
@@ -139,6 +141,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1FeelModels_1_1FluidMechanics_1_1TurbulenceModelBoundaryConditions_1_1Wall.html">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::TurbulenceModelBoundaryConditions::Wall</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1RemeshInterpolation.html">Feel::RemeshInterpolation</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
@@ -152,6 +156,14 @@ Functions</h2></td></tr>
 template&lt;typename MeshType , typename RangeType &gt; </td></tr>
 <tr class="memitem:a4667c08272624f9e5bb368ce58fc6463"><td class="memTemplItemLeft" align="right" valign="top">faces_reference_wrapper_t&lt; MeshType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::FeelModels::FluidToolbox_detail::removeBadFace</b> (std::shared_ptr&lt; MeshSupport&lt; MeshType &gt;&gt; const &amp;ms, RangeType const &amp;r)</td></tr>
 <tr class="separator:a4667c08272624f9e5bb368ce58fc6463"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af0d38e3915be182bd049fbc8d307f649"><td class="memTemplParams" colspan="2"><a id="af0d38e3915be182bd049fbc8d307f649"></a>
+template&lt;int RowDim, int RowCol&gt; </td></tr>
+<tr class="memitem:af0d38e3915be182bd049fbc8d307f649"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::vf::toExpr</b> (eigen_matrix_type&lt; RowDim, RowCol &gt; const &amp;em)</td></tr>
+<tr class="separator:af0d38e3915be182bd049fbc8d307f649"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f25e34923872c2a5668c87bf6580937"><td class="memTemplParams" colspan="2"><a id="a8f25e34923872c2a5668c87bf6580937"></a>
+template&lt;int Dim&gt; </td></tr>
+<tr class="memitem:a8f25e34923872c2a5668c87bf6580937"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::vf::toExpr</b> (eigen_vector_type&lt; Dim &gt; const &amp;ev)</td></tr>
+<tr class="separator:a8f25e34923872c2a5668c87bf6580937"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><dl class="section author"><dt>Author</dt><dd>Vincent Chabannes <a href="#" onclick="location.href='mai'+'lto:'+'vin'+'ce'+'nt.'+'ch'+'aba'+'nn'+'es@'+'fe'+'elp'+'p.'+'org'; return false;">vince<span style="display: none;">.nosp@m.</span>nt.c<span style="display: none;">.nosp@m.</span>haban<span style="display: none;">.nosp@m.</span>nes@<span style="display: none;">.nosp@m.</span>feelp<span style="display: none;">.nosp@m.</span>p.or<span style="display: none;">.nosp@m.</span>g</a> </dd></dl>

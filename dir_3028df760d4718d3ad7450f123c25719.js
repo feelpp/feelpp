@@ -21,9 +21,7 @@ var dir_3028df760d4718d3ad7450f123c25719 =
     [ "expr.cpp", "expr_8cpp.html", "expr_8cpp" ],
     [ "expr.hpp", "expr_8hpp.html", null ],
     [ "exprbase.cpp", "exprbase_8cpp.html", null ],
-    [ "exprbase.hpp", "exprbase_8hpp.html", [
-      [ "ExprBase", "classFeel_1_1ExprBase.html", "classFeel_1_1ExprBase" ]
-    ] ],
+    [ "exprbase.hpp", "exprbase_8hpp.html", "exprbase_8hpp" ],
     [ "eye.hpp", "eye_8hpp.html", "eye_8hpp" ],
     [ "fec.hpp", "fec_8hpp.html", null ],
     [ "flat.hpp", "flat_8hpp.html", "flat_8hpp" ],

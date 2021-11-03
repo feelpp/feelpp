@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -164,6 +164,9 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>space_tau_t</b> = <a
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a8611160c88fe4ae2a2d1d7d0ffaf815e"><td class="memItemLeft" align="right" valign="top"><a id="a8611160c88fe4ae2a2d1d7d0ffaf815e"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>applyRemesh</b> (mesh_ptr_t const &amp;newMesh)</td></tr>
+<tr class="separator:a8611160c88fe4ae2a2d1d7d0ffaf815e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ac01f57c3f57a9939a71cb7ebd78ff4"><td class="memItemLeft" align="right" valign="top"><a id="a7ac01f57c3f57a9939a71cb7ebd78ff4"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> ()</td></tr>
 <tr class="separator:a7ac01f57c3f57a9939a71cb7ebd78ff4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -175,6 +178,9 @@ template&lt;bool HasConvectionExpr = true, bool HasCoeffDiffusionExpr = true, ty
 <tr class="memitem:ada94d2bebd09ea76d08164941fd35187"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateTau</b> (ExprConvectiontype const &amp;exprConvection, ExprCoeffDiffusionType const &amp;exprCoeffDiffusion, RangeType const &amp;RangeStab)</td></tr>
 <tr class="separator:ada94d2bebd09ea76d08164941fd35187"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase.html">Feel::FeelModels::StabilizationGLSParameterBase&lt; MeshType &gt;</a></td></tr>
+<tr class="memitem:a9e08f9c85b7a44654418b843fc00542f inherit pub_methods_classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase"><td class="memItemLeft" align="right" valign="top"><a id="a9e08f9c85b7a44654418b843fc00542f"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>applyRemesh</b> (mesh_ptr_t const &amp;newMesh)=0</td></tr>
+<tr class="separator:a9e08f9c85b7a44654418b843fc00542f inherit pub_methods_classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a103e7bd99428a0764282325cd110188b inherit pub_methods_classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase"><td class="memItemLeft" align="right" valign="top"><a id="a103e7bd99428a0764282325cd110188b"></a>
 element_tau_t const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>fieldTau</b> () const</td></tr>
 <tr class="separator:a103e7bd99428a0764282325cd110188b inherit pub_methods_classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase"><td class="memSeparator" colspan="2">&#160;</td></tr>

@@ -12,6 +12,10 @@ var dir_dea2f840933db37d8d7fe2fd193f98c8 =
       [ "DataUpdateLinear", "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateLinear.html", "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateLinear" ],
       [ "DataUpdateResidual", "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateResidual.html", "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateResidual" ]
     ] ],
+    [ "modelalgebraicfactory.cpp", "modelalgebraicfactory_8cpp.html", null ],
+    [ "modelalgebraicfactory.hpp", "modelalgebraicfactory_8hpp.html", [
+      [ "ModelAlgebraicFactory", "classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html", "classFeel_1_1FeelModels_1_1ModelAlgebraicFactory" ]
+    ] ],
     [ "modelbase.cpp", "modelbase_8cpp.html", "modelbase_8cpp" ],
     [ "modelbase.hpp", "modelbase_8hpp.html", "modelbase_8hpp" ],
     [ "modelcore.hpp", "modelcore_8hpp.html", null ],

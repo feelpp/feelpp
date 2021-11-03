@@ -1,6 +1,7 @@
 var classFeel_1_1FunctionSpaceBase =
 [
     [ "ElementBase", "classFeel_1_1FunctionSpaceBase_1_1ElementBase.html", null ],
+    [ "mapPtr", "classFeel_1_1FunctionSpaceBase.html#a773aeaed0a25da4bd6e4f53ed371b9bd", null ],
     [ "operator=", "classFeel_1_1FunctionSpaceBase.html#a592b636f02e7d745a7170a3e6591c816", null ],
     [ "super", "classFeel_1_1FunctionSpaceBase.html#ac1f9f6d414447408c1dbf9ed24b09b88", null ],
     [ "super2", "classFeel_1_1FunctionSpaceBase.html#af475ab6fa8d18fb25b79216015cbee62", null ],

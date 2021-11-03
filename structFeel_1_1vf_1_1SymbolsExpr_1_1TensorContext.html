@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -147,9 +147,10 @@ symbols_expr_type &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>sy
 <tr class="memitem:a205acdabbc33d460fc91e6006e03c3ec"><td class="memItemLeft" align="right" valign="top"><a id="a205acdabbc33d460fc91e6006e03c3ec"></a>
 symbols_expr_type const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>symbolsExpression</b> () const</td></tr>
 <tr class="separator:a205acdabbc33d460fc91e6006e03c3ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2fd0c839fea370c1df288b1ac34ca9c7"><td class="memItemLeft" align="right" valign="top"><a id="a2fd0c839fea370c1df288b1ac34ca9c7"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>TensorContext</b> (std::shared_ptr&lt; symbols_expr_type &gt; const &amp;se, map_expr_tensor_type const &amp;met)</td></tr>
-<tr class="separator:a2fd0c839fea370c1df288b1ac34ca9c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee4595931902e7fd5860171f2e1b2ced"><td class="memTemplParams" colspan="2"><a id="aee4595931902e7fd5860171f2e1b2ced"></a>
+template&lt;typename TheMetType , std::enable_if_t&lt; std::is_same_v&lt; std::decay_t&lt; TheMetType &gt;, map_expr_tensor_type &gt;, bool &gt;  = true&gt; </td></tr>
+<tr class="memitem:aee4595931902e7fd5860171f2e1b2ced"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>TensorContext</b> (std::shared_ptr&lt; symbols_expr_type &gt; const &amp;se, TheMetType &amp;&amp;met)</td></tr>
+<tr class="separator:aee4595931902e7fd5860171f2e1b2ced"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd907cb9ca842419f586dd37dd9105d6"><td class="memItemLeft" align="right" valign="top"><a id="acd907cb9ca842419f586dd37dd9105d6"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>TensorContext</b> (<a class="el" href="structFeel_1_1vf_1_1SymbolsExpr_1_1TensorContext.html">TensorContext</a> &amp;&amp;)=default</td></tr>
 <tr class="separator:acd907cb9ca842419f586dd37dd9105d6"><td class="memSeparator" colspan="2">&#160;</td></tr>

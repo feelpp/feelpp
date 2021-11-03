@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -161,6 +161,15 @@ $(document).ready(function(){initNavTree('functions_f.html',''); initResizable()
 <li>fe()
 : <a class="el" href="classFeel_1_1FunctionSpace.html#a66d356490e90052f91d2006d28e425b0">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;</a>
 </li>
+<li>fieldDisplacement()
+: <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a12443a29e39d6c267ed3ae02107c97f7">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::Body</a>
+</li>
+<li>fieldElasticDisplacement()
+: <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#aec009c16d675e81d3e18cd7beb86f1ad">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::Body</a>
+</li>
+<li>fieldElasticVelocity()
+: <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a150aa06d83ca2618526383466811862c">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::Body</a>
+</li>
 <li>fieldMu()
 : <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanicsMaterialProperties.html#ae39116d60711a7c3ad50edac8bb81fe6">Feel::FeelModels::FluidMechanicsMaterialProperties&lt; SpaceType &gt;</a>
 </li>
@@ -198,13 +207,13 @@ $(document).ready(function(){initNavTree('functions_f.html',''); initResizable()
 : <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aa003b48fab512a7579a5bea4433dd32b">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::BodyBoundaryCondition</a>
 </li>
 <li>format()
-: <a class="el" href="classFeel_1_1Table.html#a633aa9f099c6e613539513ecb44530d2">Feel::Table</a>
+: <a class="el" href="classFeel_1_1Table.html#a85473fa27c2de2c23cec0cc62285fe10">Feel::Table</a>
 </li>
 <li>from_bson()
 : <a class="el" href="classnlohmann_1_1basic__json.html#a762575d801739791547f0b2d41b5709e">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
 </li>
 <li>from_cbor()
-: <a class="el" href="classnlohmann_1_1basic__json.html#ae46bc5ea053874a8378cc21395d3ca70">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
+: <a class="el" href="classnlohmann_1_1basic__json.html#a68927a008d0685b9b85662150cccc5a1">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
 </li>
 <li>from_json()
 : <a class="el" href="structnlohmann_1_1adl__serializer.html#a2c544585b8b1828a0f1eecd831d0496e">nlohmann::adl_serializer&lt; typename, typename &gt;</a>
@@ -213,7 +222,7 @@ $(document).ready(function(){initNavTree('functions_f.html',''); initResizable()
 : <a class="el" href="classnlohmann_1_1basic__json.html#ab669dec06789cc8048359a21237c9290">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
 </li>
 <li>from_ubjson()
-: <a class="el" href="classnlohmann_1_1basic__json.html#a7e6e221dbb54b3595d5b335027101f8b">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
+: <a class="el" href="classnlohmann_1_1basic__json.html#a026ed8aeabf7d15b826861640c74fcd8">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
 </li>
 <li>front()
 : <a class="el" href="classnlohmann_1_1basic__json.html#a5ac8f974c178cf9326b6765e22f50eb6">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
@@ -226,14 +235,15 @@ $(document).ready(function(){initNavTree('functions_f.html',''); initResizable()
 , <a class="el" href="classFeel_1_1GeoND.html#a443b41e6995c629dad55d2f717db2ef6">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;</a>
 </li>
 <li>functionSpace()
-: <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#aafd14a28372e92023fdeb0b391253380">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;</a>
+: <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a1de482d337c6ce8cee8bdb1c1e80090c">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;</a>
 , <a class="el" href="classFeel_1_1FunctionSpace.html#a01bd72de2c3a37321e444e5afaca1f06">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;</a>
 </li>
 <li>FunctionSpace()
 : <a class="el" href="classFeel_1_1FunctionSpace.html#af2618e53afbe69e6545ac510882006fa">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;</a>
 </li>
 <li>functionSpace()
-: <a class="el" href="classFeel_1_1ReducedBasisSpace_1_1Element.html#a12280ce0480899fb48df2bec324cdcda">Feel::ReducedBasisSpace&lt; SpaceType &gt;::Element&lt; T, Cont &gt;</a>
+: <a class="el" href="classFeel_1_1FunctionSpace.html#a5ffd7ab6be49fdf2f8b109a8f9645b29">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;</a>
+, <a class="el" href="classFeel_1_1ReducedBasisSpace_1_1Element.html#a12280ce0480899fb48df2bec324cdcda">Feel::ReducedBasisSpace&lt; SpaceType &gt;::Element&lt; T, Cont &gt;</a>
 </li>
 <li>functionSpaces()
 : <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a0d1d6efa42a9567a4db2165ea58bb386">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;</a>

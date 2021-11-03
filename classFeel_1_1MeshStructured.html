@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: Feel::MeshStructured Class Reference</title>
+<title>Feel++: Feel::MeshStructured&lt; GeoShape, T, IndexT &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -104,47 +104,54 @@ $(document).ready(function(){initNavTree('classFeel_1_1MeshStructured.html','');
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="classFeel_1_1MeshStructured-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">Feel::MeshStructured Class Reference</div>  </div>
+<div class="title">Feel::MeshStructured&lt; GeoShape, T, IndexT &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><p>Structured mesh class. </p>
-<p>A structured mesh is such that points and elements can be located with a simple index pair (i,j)</p>
-<div class="fragment"><div class="line">TODO add code example here</div>
-</div><!-- fragment --> </div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::MeshStructured:</div>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::MeshStructured&lt; GeoShape, T, IndexT &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
  <div class="center">
-  <img src="classFeel_1_1MeshStructured.png" usemap="#Feel::MeshStructured_map" alt=""/>
-  <map id="Feel::MeshStructured_map" name="Feel::MeshStructured_map">
-<area href="classFeel_1_1Mesh.html" alt="Feel::Mesh&lt; Hypercube&lt; 2 &gt; &gt;" shape="rect" coords="0,0,192,24"/>
+  <img src="classFeel_1_1MeshStructured.png" usemap="#Feel::MeshStructured_3C_20GeoShape_2C_20T_2C_20IndexT_20_3E_map" alt=""/>
+  <map id="Feel::MeshStructured_3C_20GeoShape_2C_20T_2C_20IndexT_20_3E_map" name="Feel::MeshStructured_3C_20GeoShape_2C_20T_2C_20IndexT_20_3E_map">
+<area href="classFeel_1_1Mesh.html" alt="Feel::Mesh&lt; GeoShape, double, 0, uint32_type &gt;" shape="rect" coords="0,0,294,24"/>
+<area href="structFeel_1_1MeshStructuredBase.html" title="Structured mesh class." alt="Feel::MeshStructuredBase" shape="rect" coords="304,0,598,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a20968e96a9a569a2996ce8ec398b5b18"><td class="memItemLeft" align="right" valign="top"><a id="a20968e96a9a569a2996ce8ec398b5b18"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>element_type</b> = super::element_type</td></tr>
-<tr class="separator:a20968e96a9a569a2996ce8ec398b5b18"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a163602be38ecdff98963e744bdeb1b62"><td class="memItemLeft" align="right" valign="top"><a id="a163602be38ecdff98963e744bdeb1b62"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>face_type</b> = super::face_type</td></tr>
-<tr class="separator:a163602be38ecdff98963e744bdeb1b62"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a461243dc31a77407b12e2d80322b814a"><td class="memItemLeft" align="right" valign="top"><a id="a461243dc31a77407b12e2d80322b814a"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>node_type</b> = super::node_type</td></tr>
-<tr class="separator:a461243dc31a77407b12e2d80322b814a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d4e90c753b073b125277e470b6f6d06"><td class="memItemLeft" align="right" valign="top"><a id="a0d4e90c753b073b125277e470b6f6d06"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>point_type</b> = super::point_type</td></tr>
-<tr class="separator:a0d4e90c753b073b125277e470b6f6d06"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a764659b12759e8b99f1afe9e27a19902"><td class="memItemLeft" align="right" valign="top"><a id="a764659b12759e8b99f1afe9e27a19902"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>super</b> = <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a>&lt; 2, 1, 2 &gt; &gt;</td></tr>
-<tr class="separator:a764659b12759e8b99f1afe9e27a19902"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_types_classFeel_1_1Mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1Mesh')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1Mesh.html">Feel::Mesh&lt; Hypercube&lt; 2 &gt; &gt;</a></td></tr>
+<tr class="memitem:a9d5568b2cb414c51a8232ce278c58aa8"><td class="memItemLeft" align="right" valign="top"><a id="a9d5568b2cb414c51a8232ce278c58aa8"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>element_type</b> = typename super::element_type</td></tr>
+<tr class="separator:a9d5568b2cb414c51a8232ce278c58aa8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa09d9d6804ecdf461106cd75974a90e0"><td class="memItemLeft" align="right" valign="top"><a id="aa09d9d6804ecdf461106cd75974a90e0"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>face_type</b> = typename super::face_type</td></tr>
+<tr class="separator:aa09d9d6804ecdf461106cd75974a90e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10ac7e52c8393a92723a028769d076b1"><td class="memItemLeft" align="right" valign="top"><a id="a10ac7e52c8393a92723a028769d076b1"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>index_type</b> = typename super::index_type</td></tr>
+<tr class="separator:a10ac7e52c8393a92723a028769d076b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac754a137d80c7f5028087ef6d2222ec"><td class="memItemLeft" align="right" valign="top"><a id="aac754a137d80c7f5028087ef6d2222ec"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>node_type</b> = typename super::node_type</td></tr>
+<tr class="separator:aac754a137d80c7f5028087ef6d2222ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af5ff4ce3fbabbfa868b3efec3f43d7fc"><td class="memItemLeft" align="right" valign="top"><a id="af5ff4ce3fbabbfa868b3efec3f43d7fc"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>point_type</b> = typename super::point_type</td></tr>
+<tr class="separator:af5ff4ce3fbabbfa868b3efec3f43d7fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad093c728589c0a25675a524a901396ed"><td class="memItemLeft" align="right" valign="top"><a id="ad093c728589c0a25675a524a901396ed"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>setup_type</b> = <a class="el" href="classFeel_1_1MeshStructuredSetup.html">MeshStructuredSetup</a>&lt; nDim, nRealDim, T, index_type &gt;</td></tr>
+<tr class="separator:ad093c728589c0a25675a524a901396ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a917fd6c9686c870252a6b5db0dc52580"><td class="memItemLeft" align="right" valign="top"><a id="a917fd6c9686c870252a6b5db0dc52580"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b> = typename super::size_type</td></tr>
+<tr class="separator:a917fd6c9686c870252a6b5db0dc52580"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b7751cc551d98d19d9c45d91da33448"><td class="memItemLeft" align="right" valign="top"><a id="a8b7751cc551d98d19d9c45d91da33448"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>super</b> = <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; GeoShape, T, 0, IndexT &gt;</td></tr>
+<tr class="separator:a8b7751cc551d98d19d9c45d91da33448"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_types_classFeel_1_1Mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1Mesh')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1Mesh.html">Feel::Mesh&lt; GeoShape, double, 0, uint32_type &gt;</a></td></tr>
 <tr class="memitem:a583e07007027163a736c8dc6511e8f4d inherit pub_types_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="a583e07007027163a736c8dc6511e8f4d"></a>
-typedef <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a>&lt; 2 &gt;, double, 0, uint32_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>type</b></td></tr>
+typedef <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; GeoShape, double, <a class="el" href="structFeel_1_1Tag.html">Tag</a>, uint32_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>type</b></td></tr>
 <tr class="separator:a583e07007027163a736c8dc6511e8f4d inherit pub_types_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0fa3abe69110a66712978258778f6135 inherit pub_types_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="a0fa3abe69110a66712978258778f6135"></a>
 typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1Mesh.html">type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>ptrtype</b></td></tr>
@@ -159,7 +166,7 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>index_type</b> = typ
 using&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b> = typename super::size_type</td></tr>
 <tr class="separator:a856f2927a5e24bc5d702e3e31ad8a611 inherit pub_types_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4f78b59dfd67facba7bbeebc1d8af283 inherit pub_types_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="a4f78b59dfd67facba7bbeebc1d8af283"></a>
-typedef <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a>&lt; 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>shape_type</b></td></tr>
+typedef GeoShape&#160;</td><td class="memItemRight" valign="bottom"><b>shape_type</b></td></tr>
 <tr class="separator:a4f78b59dfd67facba7bbeebc1d8af283 inherit pub_types_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa5a8cee85adc1ef3bde057d9b56ec0c3 inherit pub_types_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="aa5a8cee85adc1ef3bde057d9b56ec0c3"></a>
 typedef super::return_type&#160;</td><td class="memItemRight" valign="bottom"><b>return_type</b></td></tr>
@@ -225,7 +232,7 @@ typedef element_type::gm1_type&#160;</td><td class="memItemRight" valign="bottom
 typedef std::shared_ptr&lt; gm1_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>gm1_ptrtype</b></td></tr>
 <tr class="separator:a72cfb014fb4f6212e250ea2707ed86b2 inherit pub_types_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a03901f0d3d0d7cc2c7d6ec55a0d655eb inherit pub_types_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="a03901f0d3d0d7cc2c7d6ec55a0d655eb"></a>
-typedef <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Hypercube.html">shape_type</a>, double, 0, uint32_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>self_type</b></td></tr>
+typedef <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; shape_type, double, <a class="el" href="structFeel_1_1Tag.html">Tag</a>, uint32_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>self_type</b></td></tr>
 <tr class="separator:a03901f0d3d0d7cc2c7d6ec55a0d655eb inherit pub_types_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abdff5bd23d2a1433aad6283ecf1c70bd inherit pub_types_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="abdff5bd23d2a1433aad6283ecf1c70bd"></a>
 typedef <a class="el" href="classFeel_1_1Mesh.html">self_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_type</b></td></tr>
@@ -247,57 +254,60 @@ typedef super::face_processor_type&#160;</td><td class="memItemRight" valign="bo
 typedef super::face_processor_type&#160;</td><td class="memItemRight" valign="bottom"><b>element_edge_type</b></td></tr>
 <tr class="separator:a10e02df77be1a4b5599efff44ab6b409 inherit pub_types_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:affa3d3019d6468c236f122a9b35830ab inherit pub_types_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="affa3d3019d6468c236f122a9b35830ab"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>P1_mesh_type</b> = typename mpl::if_&lt; <a class="el" href="structFeel_1_1is__simplex.html">is_simplex</a>&lt; <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a>&lt; 2 &gt; &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Simplex.html">Simplex</a>&lt; <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a>&lt; 2 &gt; ::nDim, 1, <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a>&lt; 2 &gt; ::nRealDim &gt;, value_type, 0 &gt; &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a>&lt; <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a>&lt; 2 &gt; ::nDim, 1, <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a>&lt; 2 &gt; ::nRealDim &gt;, value_type, 0 &gt; &gt;&gt;::<a class="el" href="classFeel_1_1Mesh.html">type::type</a></td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>P1_mesh_type</b> = typename mpl::if_&lt; <a class="el" href="structFeel_1_1is__simplex.html">is_simplex</a>&lt; GeoShape &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Simplex.html">Simplex</a>&lt; GeoShape::nDim, 1, GeoShape::nRealDim &gt;, value_type, <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt; &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a>&lt; GeoShape::nDim, 1, GeoShape::nRealDim &gt;, value_type, <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt; &gt;&gt;::<a class="el" href="classFeel_1_1Mesh.html">type::type</a></td></tr>
 <tr class="separator:affa3d3019d6468c236f122a9b35830ab inherit pub_types_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaf810a1f3ad5173623cfd6cd6b3d20f8 inherit pub_types_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="aaf810a1f3ad5173623cfd6cd6b3d20f8"></a>
 typedef std::shared_ptr&lt; P1_mesh_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>P1_mesh_ptrtype</b></td></tr>
 <tr class="separator:aaf810a1f3ad5173623cfd6cd6b3d20f8 inherit pub_types_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abcd1895b2b6bf7cbeecb1ed245494b52 inherit pub_types_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="abcd1895b2b6bf7cbeecb1ed245494b52"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>parent_mesh_type</b> = typename parent_mesh&lt; 0 &gt;::<a class="el" href="classFeel_1_1Mesh.html">type</a></td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>parent_mesh_type</b> = typename parent_mesh&lt; <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt;::<a class="el" href="classFeel_1_1Mesh.html">type</a></td></tr>
 <tr class="separator:abcd1895b2b6bf7cbeecb1ed245494b52 inherit pub_types_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb1da0c574e011563a4a4377e4de1ecc inherit pub_types_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="afb1da0c574e011563a4a4377e4de1ecc"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>parent_mesh_ptrtype</b> = typename parent_mesh&lt; 0 &gt;::ptrtype</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>parent_mesh_ptrtype</b> = typename parent_mesh&lt; <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt;::ptrtype</td></tr>
 <tr class="separator:afb1da0c574e011563a4a4377e4de1ecc inherit pub_types_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad5fcf18ced87093cb4d7d172d837a1f8 inherit pub_types_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="ad5fcf18ced87093cb4d7d172d837a1f8"></a>
-typedef trace_mesh&lt; 0 &gt;::<a class="el" href="classFeel_1_1Mesh.html">type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>trace_mesh_type</b></td></tr>
+typedef trace_mesh&lt; <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt;::<a class="el" href="classFeel_1_1Mesh.html">type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>trace_mesh_type</b></td></tr>
 <tr class="separator:ad5fcf18ced87093cb4d7d172d837a1f8 inherit pub_types_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa865332f1e3c4617e6c508455f3325b0 inherit pub_types_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="aa865332f1e3c4617e6c508455f3325b0"></a>
-typedef trace_mesh&lt; 0 &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>trace_mesh_ptrtype</b></td></tr>
+typedef trace_mesh&lt; <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>trace_mesh_ptrtype</b></td></tr>
 <tr class="separator:aa865332f1e3c4617e6c508455f3325b0 inherit pub_types_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab3ee9ee307bafa9076797f896fce7c24 inherit pub_types_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="ab3ee9ee307bafa9076797f896fce7c24"></a>
-typedef trace_trace_mesh&lt; 0 &gt;::<a class="el" href="classFeel_1_1Mesh.html">type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>trace_trace_mesh_type</b></td></tr>
+typedef trace_trace_mesh&lt; <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt;::<a class="el" href="classFeel_1_1Mesh.html">type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>trace_trace_mesh_type</b></td></tr>
 <tr class="separator:ab3ee9ee307bafa9076797f896fce7c24 inherit pub_types_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc2fca6f250634bf9862f47da4c11726 inherit pub_types_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="adc2fca6f250634bf9862f47da4c11726"></a>
-typedef trace_trace_mesh&lt; 0 &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>trace_trace_mesh_ptrtype</b></td></tr>
+typedef trace_trace_mesh&lt; <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>trace_trace_mesh_ptrtype</b></td></tr>
 <tr class="separator:adc2fca6f250634bf9862f47da4c11726 inherit pub_types_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a153945a7d33504cb7f71242916e416e5"><td class="memItemLeft" align="right" valign="top"><a id="a153945a7d33504cb7f71242916e416e5"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>MeshStructured</b> (<a class="el" href="classint.html">int</a> nx, <a class="el" href="classint.html">int</a> ny, double pixelsize, std::optional&lt; holo3_image&lt; float &gt;&gt; const &amp;cx, std::optional&lt; holo3_image&lt; float &gt;&gt; const &amp;cy, <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;=<a class="el" href="classFeel_1_1Environment.html#a3ffa1e65a0e0cf627d2187173c7feebb">Environment::worldCommPtr</a>(), <a class="el" href="classbool.html">bool</a> withCoord=false, std::string pathPoly=&quot;&quot;, <a class="el" href="classbool.html">bool</a> withPoly=false)</td></tr>
-<tr class="separator:a153945a7d33504cb7f71242916e416e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad9eb907f99e67b1aadee27a104b1d35a"><td class="memItemLeft" align="right" valign="top"><a id="ad9eb907f99e67b1aadee27a104b1d35a"></a>
+<tr class="memitem:a7f75a4d524067899c64a1da585c73ef8"><td class="memItemLeft" align="right" valign="top"><a id="a7f75a4d524067899c64a1da585c73ef8"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>MeshStructured</b> (holo3_image&lt; float &gt; const &amp;cx, holo3_image&lt; float &gt; const &amp;cy, <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;wc=<a class="el" href="classFeel_1_1Environment.html#a3ffa1e65a0e0cf627d2187173c7feebb">Environment::worldCommPtr</a>())</td></tr>
+<tr class="separator:a7f75a4d524067899c64a1da585c73ef8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f2fe7245510c251e6ec551a5c79c9e7"><td class="memItemLeft" align="right" valign="top"><a id="a6f2fe7245510c251e6ec551a5c79c9e7"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>MeshStructured</b> (<a class="el" href="classFeel_1_1MeshStructured.html">MeshStructured</a> &amp;&amp;)=delete</td></tr>
-<tr class="separator:ad9eb907f99e67b1aadee27a104b1d35a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac64f155a30ace5c4ae2b026cbdfa354c"><td class="memItemLeft" align="right" valign="top"><a id="ac64f155a30ace5c4ae2b026cbdfa354c"></a>
+<tr class="separator:a6f2fe7245510c251e6ec551a5c79c9e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab1f0806f545ff3e87dfbfcdbe9f2adc6"><td class="memItemLeft" align="right" valign="top"><a id="ab1f0806f545ff3e87dfbfcdbe9f2adc6"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>MeshStructured</b> (<a class="el" href="classFeel_1_1MeshStructured.html">MeshStructured</a> const &amp;)=delete</td></tr>
-<tr class="separator:ac64f155a30ace5c4ae2b026cbdfa354c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abef0c98ac8d7207dfa382fa50d5f3399"><td class="memItemLeft" align="right" valign="top"><a id="abef0c98ac8d7207dfa382fa50d5f3399"></a>
+<tr class="separator:ab1f0806f545ff3e87dfbfcdbe9f2adc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77f0cb39bc47811461002254aeb62dbd"><td class="memItemLeft" align="right" valign="top"><a id="a77f0cb39bc47811461002254aeb62dbd"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>MeshStructured</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;jDesc, <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;wc=<a class="el" href="classFeel_1_1Environment.html#a3ffa1e65a0e0cf627d2187173c7feebb">Environment::worldCommPtr</a>())</td></tr>
+<tr class="separator:a77f0cb39bc47811461002254aeb62dbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab16a1bc6810ad018e1cf4dada5cd29f6"><td class="memItemLeft" align="right" valign="top"><a id="ab16a1bc6810ad018e1cf4dada5cd29f6"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>MeshStructured</b> (std::array&lt; index_type, nDim &gt; const &amp;indexes, <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;wc=<a class="el" href="classFeel_1_1Environment.html#a3ffa1e65a0e0cf627d2187173c7feebb">Environment::worldCommPtr</a>())</td></tr>
+<tr class="separator:ab16a1bc6810ad018e1cf4dada5cd29f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a863cc15b82f5c6af992c373e07d85253"><td class="memItemLeft" align="right" valign="top"><a id="a863cc15b82f5c6af992c373e07d85253"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>MeshStructured</b> (std::shared_ptr&lt; <a class="el" href="classFeel_1_1MeshStructuredSetup.html">setup_type</a> &gt; const &amp;setup, <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;=<a class="el" href="classFeel_1_1Environment.html#a3ffa1e65a0e0cf627d2187173c7feebb">Environment::worldCommPtr</a>())</td></tr>
+<tr class="separator:a863cc15b82f5c6af992c373e07d85253"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26b6778151e91142efd481f1af0095af"><td class="memItemLeft" align="right" valign="top"><a id="a26b6778151e91142efd481f1af0095af"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>MeshStructured</b> (<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;wc=<a class="el" href="classFeel_1_1Environment.html#a3ffa1e65a0e0cf627d2187173c7feebb">Environment::worldCommPtr</a>())</td></tr>
-<tr class="separator:abef0c98ac8d7207dfa382fa50d5f3399"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5aec7ae60f371dc14d5bc6dcbc17d87"><td class="memItemLeft" align="right" valign="top"><a id="ae5aec7ae60f371dc14d5bc6dcbc17d87"></a>
-element_type&#160;</td><td class="memItemRight" valign="bottom"><b>newElement</b> (<a class="el" href="classint.html">int</a> g_i, <a class="el" href="classint.html">int</a> g_j)</td></tr>
-<tr class="separator:ae5aec7ae60f371dc14d5bc6dcbc17d87"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5e1af944a1c6616d4952518bf200737f"><td class="memItemLeft" align="right" valign="top"><a id="a5e1af944a1c6616d4952518bf200737f"></a>
+<tr class="separator:a26b6778151e91142efd481f1af0095af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a684c980964b624c9f8c959996b66d880"><td class="memItemLeft" align="right" valign="top"><a id="a684c980964b624c9f8c959996b66d880"></a>
 <a class="el" href="classFeel_1_1MeshStructured.html">MeshStructured</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1MeshStructured.html">MeshStructured</a> &amp;&amp;)=delete</td></tr>
-<tr class="separator:a5e1af944a1c6616d4952518bf200737f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad70284e97c5ca57f719ab9527e4c7a35"><td class="memItemLeft" align="right" valign="top"><a id="ad70284e97c5ca57f719ab9527e4c7a35"></a>
+<tr class="separator:a684c980964b624c9f8c959996b66d880"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf1567686b99c1710ecbd2a7bc5b8e23"><td class="memItemLeft" align="right" valign="top"><a id="abf1567686b99c1710ecbd2a7bc5b8e23"></a>
 <a class="el" href="classFeel_1_1MeshStructured.html">MeshStructured</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1MeshStructured.html">MeshStructured</a> const &amp;)=delete</td></tr>
-<tr class="separator:ad70284e97c5ca57f719ab9527e4c7a35"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae1b8f061a6829a578541914f73e388a5"><td class="memItemLeft" align="right" valign="top"><a id="ae1b8f061a6829a578541914f73e388a5"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>updateGhostCellInfoByUsingNonBlockingComm</b> (std::unordered_map&lt; <a class="el" href="classint.html">int</a>, <a class="el" href="classint.html">int</a> &gt; const &amp;idStructuredMeshToFeelMesh, std::unordered_map&lt; <a class="el" href="classint.html">int</a>, boost::tuple&lt; <a class="el" href="classint.html">int</a>, <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt;&gt; const &amp;mapGhostElt, std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;nbMsgToRecv)</td></tr>
-<tr class="separator:ae1b8f061a6829a578541914f73e388a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_methods_classFeel_1_1Mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1Mesh')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1Mesh.html">Feel::Mesh&lt; Hypercube&lt; 2 &gt; &gt;</a></td></tr>
+<tr class="separator:abf1567686b99c1710ecbd2a7bc5b8e23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classFeel_1_1Mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1Mesh')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1Mesh.html">Feel::Mesh&lt; GeoShape, double, 0, uint32_type &gt;</a></td></tr>
 <tr class="memitem:a1dde9018ac511872477f144b35ff9a4b inherit pub_methods_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="a1dde9018ac511872477f144b35ff9a4b"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((<a class="el" href="classbool.html">bool</a>), load, tag,(required(name,(std::string))(path, *))(optional(update,(size_type), MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES)(<a class="el" href="classFeel_1_1Mesh.html">type</a>,(std::string), std::string(&quot;binary&quot;))(suffix,(std::string), std::string(&quot;&quot;))(sep,(std::string), std::string(&quot;&quot;))))</td></tr>
 <tr class="separator:a1dde9018ac511872477f144b35ff9a4b inherit pub_methods_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -367,10 +377,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memdesc:a85b1320c69de76241668007069d01111 inherit pub_methods_classFeel_1_1Mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the periodic entities <br /></td></tr>
 <tr class="separator:a85b1320c69de76241668007069d01111 inherit pub_methods_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a098bb3c6fbc10660146c74cb76d306d6 inherit pub_methods_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="a098bb3c6fbc10660146c74cb76d306d6"></a>
-<a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, double, 0, uint32_type &gt;::template trace_mesh&lt; 0 &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>trace</b> (RangeT const &amp;range) const</td></tr>
+<a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, double, <a class="el" href="structFeel_1_1Tag.html">Tag</a>, uint32_type &gt;::template trace_mesh&lt; <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>trace</b> (RangeT const &amp;range) const</td></tr>
 <tr class="separator:a098bb3c6fbc10660146c74cb76d306d6 inherit pub_methods_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f85429b323bed81ca361b5c7ba20468 inherit pub_methods_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="a2f85429b323bed81ca361b5c7ba20468"></a>
-<a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, double, 0, uint32_type &gt;::template trace_mesh&lt; TheTag &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>trace</b> (RangeT const &amp;range, mpl::int_&lt; TheTag &gt;) const</td></tr>
+<a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, double, <a class="el" href="structFeel_1_1Tag.html">Tag</a>, uint32_type &gt;::template trace_mesh&lt; TheTag &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>trace</b> (RangeT const &amp;range, mpl::int_&lt; TheTag &gt;) const</td></tr>
 <tr class="separator:a2f85429b323bed81ca361b5c7ba20468 inherit pub_methods_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f6d6ac7647f0faaa249e123c9ceffe1 inherit pub_methods_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="a9f6d6ac7647f0faaa249e123c9ceffe1"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>updateCommonDataInEntities</b> (std::enable_if_t&lt; TheShape::nDim==0 &gt; *)</td></tr>
@@ -396,10 +406,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memdesc:a4b7b9fa1df79b6105cfdf74e0b9c11ab inherit pub_methods_classFeel_1_1Mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">update hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh <br /></td></tr>
 <tr class="separator:a4b7b9fa1df79b6105cfdf74e0b9c11ab inherit pub_methods_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac84eb7f95fdfe3c31c90f14a47ebbb14 inherit pub_methods_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="ac84eb7f95fdfe3c31c90f14a47ebbb14"></a>
-<a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, double, 0, uint32_type &gt;::template trace_trace_mesh&lt; 0 &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>wireBasket</b> (RangeT const &amp;range) const</td></tr>
+<a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, double, <a class="el" href="structFeel_1_1Tag.html">Tag</a>, uint32_type &gt;::template trace_trace_mesh&lt; <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>wireBasket</b> (RangeT const &amp;range) const</td></tr>
 <tr class="separator:ac84eb7f95fdfe3c31c90f14a47ebbb14 inherit pub_methods_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe48eb74d93bc1fc55fa523a321e7b29 inherit pub_methods_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="abe48eb74d93bc1fc55fa523a321e7b29"></a>
-<a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, double, 0, uint32_type &gt;::template trace_trace_mesh&lt; TheTag &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>wireBasket</b> (RangeT const &amp;range, mpl::int_&lt; TheTag &gt;) const</td></tr>
+<a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, double, <a class="el" href="structFeel_1_1Tag.html">Tag</a>, uint32_type &gt;::template trace_trace_mesh&lt; TheTag &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>wireBasket</b> (RangeT const &amp;range, mpl::int_&lt; TheTag &gt;) const</td></tr>
 <tr class="separator:abe48eb74d93bc1fc55fa523a321e7b29 inherit pub_methods_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abebbfdc153c88dbab322a01899d42d14 inherit pub_methods_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="abebbfdc153c88dbab322a01899d42d14"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#abebbfdc153c88dbab322a01899d42d14">Mesh</a> (std::string const &amp;name, <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;worldComm=Environment::worldCommPtr(), std::string const &amp;props=&quot;00001&quot;)</td></tr>
@@ -596,7 +606,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memdesc:af134bb7fee64ca40ded6c7a56edaa114 inherit pub_methods_classFeel_1_1Mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">creates a mesh by iterating over the elements between <code>begin_elt</code> and and <code>end_elt</code> and adding them the the mesh <code>mesh</code>  <a href="classFeel_1_1Mesh.html#af134bb7fee64ca40ded6c7a56edaa114">More...</a><br /></td></tr>
 <tr class="separator:af134bb7fee64ca40ded6c7a56edaa114 inherit pub_methods_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a037759a518251e7ba30bd68daee6f5e0 inherit pub_methods_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="a037759a518251e7ba30bd68daee6f5e0"></a>
-trace_mesh&lt; 0 &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>trace</b> (RangeT const &amp;range) const</td></tr>
+trace_mesh&lt; <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>trace</b> (RangeT const &amp;range) const</td></tr>
 <tr class="separator:a037759a518251e7ba30bd68daee6f5e0 inherit pub_methods_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae66d277d78b9c0c9650593bc14438355 inherit pub_methods_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="ae66d277d78b9c0c9650593bc14438355"></a>
 trace_mesh&lt; TheTag &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>wireBasket</b> () const</td></tr>
@@ -605,7 +615,7 @@ trace_mesh&lt; TheTag &gt;::ptrtype&#160;</td><td class="memItemRight" valign="b
 trace_trace_mesh&lt; TheTag &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>wireBasket</b> (RangeT const &amp;range, mpl::int_&lt; TheTag &gt;) const</td></tr>
 <tr class="separator:ad635078ed3569c8f2688c4d6a962fcb3 inherit pub_methods_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a55e0c78a5f823c533c570ef68a78f786 inherit pub_methods_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="a55e0c78a5f823c533c570ef68a78f786"></a>
-trace_trace_mesh&lt; 0 &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>wireBasket</b> (RangeT const &amp;range) const</td></tr>
+trace_trace_mesh&lt; <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt;::ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>wireBasket</b> (RangeT const &amp;range) const</td></tr>
 <tr class="separator:a55e0c78a5f823c533c570ef68a78f786 inherit pub_methods_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79f3289d24b1e78135f1a3d4dc50f22e inherit pub_methods_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="a79f3289d24b1e78135f1a3d4dc50f22e"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>createSubmesh</b> (<a class="el" href="classFeel_1_1Mesh.html">self_type</a> &amp;mesh, Iterator const &amp;begin_elt, Iterator const &amp;end_elt, size_type extraction_policies=EXTRACTION_KEEP_ALL_IDS) const</td></tr>
@@ -676,18 +686,15 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><b>saveMD</b> (std::ostream &amp;out)</td></tr>
 <tr class="separator:a6ec40611d3bfb0a373de7742a0d561c8 inherit pub_methods_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
-Additional Inherited Members</h2></td></tr>
-<tr class="inherit_header pub_static_methods_classFeel_1_1Mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_static_methods_classFeel_1_1Mesh')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classFeel_1_1Mesh.html">Feel::Mesh&lt; Hypercube&lt; 2 &gt; &gt;</a></td></tr>
-<tr class="memitem:aeacf5f701ef16dca9b447134aab73edb inherit pub_static_methods_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top">static mesh_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#aeacf5f701ef16dca9b447134aab73edb">New</a> (<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;worldComm=Environment::worldCommPtr())</td></tr>
-<tr class="memdesc:aeacf5f701ef16dca9b447134aab73edb inherit pub_static_methods_classFeel_1_1Mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">allocate a new Mesh  <a href="classFeel_1_1Mesh.html#aeacf5f701ef16dca9b447134aab73edb">More...</a><br /></td></tr>
-<tr class="separator:aeacf5f701ef16dca9b447134aab73edb inherit pub_static_methods_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_attribs_classFeel_1_1Mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classFeel_1_1Mesh')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classFeel_1_1Mesh.html">Feel::Mesh&lt; Hypercube&lt; 2 &gt; &gt;</a></td></tr>
-<tr class="memitem:aa45d0a74151105c40d518a1cb59e5d10 inherit pub_attribs_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="aa45d0a74151105c40d518a1cb59e5d10"></a>
-boost::signals2::signal&lt; void(MESH_CHANGES)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#aa45d0a74151105c40d518a1cb59e5d10">meshChanged</a></td></tr>
-<tr class="memdesc:aa45d0a74151105c40d518a1cb59e5d10 inherit pub_attribs_classFeel_1_1Mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">mesh changed its connectivity <br /></td></tr>
-<tr class="separator:aa45d0a74151105c40d518a1cb59e5d10 inherit pub_attribs_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_static_attribs_classFeel_1_1Mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_static_attribs_classFeel_1_1Mesh')"><img src="closed.png" alt="-"/>&#160;Static Public Attributes inherited from <a class="el" href="classFeel_1_1Mesh.html">Feel::Mesh&lt; Hypercube&lt; 2 &gt; &gt;</a></td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
+Static Public Attributes</h2></td></tr>
+<tr class="memitem:a1fc44ff677f76b75344ccfe19102b91d"><td class="memItemLeft" align="right" valign="top"><a id="a1fc44ff677f76b75344ccfe19102b91d"></a>
+static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nDim</b> = super::nDim</td></tr>
+<tr class="separator:a1fc44ff677f76b75344ccfe19102b91d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4975acf29558b70eaa6f97e10e3907d4"><td class="memItemLeft" align="right" valign="top"><a id="a4975acf29558b70eaa6f97e10e3907d4"></a>
+static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nRealDim</b> = super::nRealDim</td></tr>
+<tr class="separator:a4975acf29558b70eaa6f97e10e3907d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_static_attribs_classFeel_1_1Mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_static_attribs_classFeel_1_1Mesh')"><img src="closed.png" alt="-"/>&#160;Static Public Attributes inherited from <a class="el" href="classFeel_1_1Mesh.html">Feel::Mesh&lt; GeoShape, double, 0, uint32_type &gt;</a></td></tr>
 <tr class="memitem:a79e3b181267e2935bafae0d26555297d inherit pub_static_attribs_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="a79e3b181267e2935bafae0d26555297d"></a>
 static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nDim</b></td></tr>
 <tr class="separator:a79e3b181267e2935bafae0d26555297d inherit pub_static_attribs_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -703,7 +710,19 @@ static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>n
 <tr class="memitem:a60e218a432aeb647c819a51f704797b8 inherit pub_static_attribs_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="a60e218a432aeb647c819a51f704797b8"></a>
 static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>tag</b></td></tr>
 <tr class="separator:a60e218a432aeb647c819a51f704797b8 inherit pub_static_attribs_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pro_methods_classFeel_1_1Mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classFeel_1_1Mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classFeel_1_1Mesh.html">Feel::Mesh&lt; Hypercube&lt; 2 &gt; &gt;</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
+Additional Inherited Members</h2></td></tr>
+<tr class="inherit_header pub_static_methods_classFeel_1_1Mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_static_methods_classFeel_1_1Mesh')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classFeel_1_1Mesh.html">Feel::Mesh&lt; GeoShape, double, 0, uint32_type &gt;</a></td></tr>
+<tr class="memitem:aeacf5f701ef16dca9b447134aab73edb inherit pub_static_methods_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top">static mesh_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#aeacf5f701ef16dca9b447134aab73edb">New</a> (<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;worldComm=Environment::worldCommPtr())</td></tr>
+<tr class="memdesc:aeacf5f701ef16dca9b447134aab73edb inherit pub_static_methods_classFeel_1_1Mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">allocate a new Mesh  <a href="classFeel_1_1Mesh.html#aeacf5f701ef16dca9b447134aab73edb">More...</a><br /></td></tr>
+<tr class="separator:aeacf5f701ef16dca9b447134aab73edb inherit pub_static_methods_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_attribs_classFeel_1_1Mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classFeel_1_1Mesh')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classFeel_1_1Mesh.html">Feel::Mesh&lt; GeoShape, double, 0, uint32_type &gt;</a></td></tr>
+<tr class="memitem:aa45d0a74151105c40d518a1cb59e5d10 inherit pub_attribs_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="aa45d0a74151105c40d518a1cb59e5d10"></a>
+boost::signals2::signal&lt; void(MESH_CHANGES)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#aa45d0a74151105c40d518a1cb59e5d10">meshChanged</a></td></tr>
+<tr class="memdesc:aa45d0a74151105c40d518a1cb59e5d10 inherit pub_attribs_classFeel_1_1Mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">mesh changed its connectivity <br /></td></tr>
+<tr class="separator:aa45d0a74151105c40d518a1cb59e5d10 inherit pub_attribs_classFeel_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pro_methods_classFeel_1_1Mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classFeel_1_1Mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classFeel_1_1Mesh.html">Feel::Mesh&lt; GeoShape, double, 0, uint32_type &gt;</a></td></tr>
 <tr class="memitem:a5128e9a88c09dbaa672bd3f717ed5a7f inherit pro_methods_classFeel_1_1Mesh"><td class="memItemLeft" align="right" valign="top"><a id="a5128e9a88c09dbaa672bd3f717ed5a7f"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#a5128e9a88c09dbaa672bd3f717ed5a7f">check</a> () const override</td></tr>
 <tr class="memdesc:a5128e9a88c09dbaa672bd3f717ed5a7f inherit pro_methods_classFeel_1_1Mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">check mesh connectivity <br /></td></tr>

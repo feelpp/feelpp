@@ -1,11 +1,6 @@
 var classFeel_1_1FeelModels_1_1Electric =
 [
     [ "FieldTag", "structFeel_1_1FeelModels_1_1Electric_1_1FieldTag.html", "structFeel_1_1FeelModels_1_1Electric_1_1FieldTag" ],
-    [ "algebraicFactory", "classFeel_1_1FeelModels_1_1Electric.html#aa18efa1f49026b11f00c39eadc6bf759", null ],
-    [ "algebraicFactory", "classFeel_1_1FeelModels_1_1Electric.html#a2cd09fd0c10c24ae824fae8daf32b8bb", null ],
-    [ "backend", "classFeel_1_1FeelModels_1_1Electric.html#aa90c03c51954ec014b1d05d31055ba79", null ],
-    [ "blockVectorSolution", "classFeel_1_1FeelModels_1_1Electric.html#a2d3adac83eabe4267af4ad2a4c1ec7e5", null ],
-    [ "blockVectorSolution", "classFeel_1_1FeelModels_1_1Electric.html#a895165029187b075977c9d43bc3870ac", null ],
     [ "buildBlockMatrixGraph", "classFeel_1_1FeelModels_1_1Electric.html#ac7f789a493129bd00bc3ac367ed68f69", null ],
     [ "currentDensityExpr", "classFeel_1_1FeelModels_1_1Electric.html#a941e000ba62e93bb34eb069167063539", null ],
     [ "currentDensityExpr", "classFeel_1_1FeelModels_1_1Electric.html#aee3eb394ba2c8ae56e00dba6eea4223e", null ],
@@ -79,8 +74,6 @@ var classFeel_1_1FeelModels_1_1Electric =
     [ "mesh_electric_type", "classFeel_1_1FeelModels_1_1Electric.html#aa1ca6c3a9e409cb4933940446606f70a", null ],
     [ "mesh_ptrtype", "classFeel_1_1FeelModels_1_1Electric.html#a9fc3346d230c4da1a9174b0a91f6579b", null ],
     [ "mesh_type", "classFeel_1_1FeelModels_1_1Electric.html#a246aa97f2eb8c83e8706f69bc0f8ac94", null ],
-    [ "model_algebraic_factory_ptrtype", "classFeel_1_1FeelModels_1_1Electric.html#ae38d98656a71d62146e50a5780a05c76", null ],
-    [ "model_algebraic_factory_type", "classFeel_1_1FeelModels_1_1Electric.html#a7fd6c893f1c93b9d85a201490aba8483", null ],
     [ "self_ptrtype", "classFeel_1_1FeelModels_1_1Electric.html#ae8eee4dfe37cabaf49a3dfedcb188416", null ],
     [ "self_type", "classFeel_1_1FeelModels_1_1Electric.html#a7de88e435acb13f7f5a9f83b2c86fe8a", null ],
     [ "space_electricpotential_ptrtype", "classFeel_1_1FeelModels_1_1Electric.html#a637cc108c685ae4af2edd4608ca8dcb9", null ],

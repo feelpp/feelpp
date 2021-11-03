@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -394,6 +394,10 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>meshModified<
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a6022ee3336e507d7360475c1aa647d58">setSubMeshData</a> (smd_ptrtype smd)</td></tr>
 <tr class="memdesc:a6022ee3336e507d7360475c1aa647d58 inherit pub_methods_classFeel_1_1MeshBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">set sub mesh data <br /></td></tr>
 <tr class="separator:a6022ee3336e507d7360475c1aa647d58 inherit pub_methods_classFeel_1_1MeshBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aabe6d77059eb86618499bba56c6024d5 inherit pub_methods_classFeel_1_1MeshBase"><td class="memItemLeft" align="right" valign="top"><a id="aabe6d77059eb86618499bba56c6024d5"></a>
+smd_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#aabe6d77059eb86618499bba56c6024d5">subMeshData</a> () const</td></tr>
+<tr class="memdesc:aabe6d77059eb86618499bba56c6024d5 inherit pub_methods_classFeel_1_1MeshBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">return sub mesh data <br /></td></tr>
+<tr class="separator:aabe6d77059eb86618499bba56c6024d5 inherit pub_methods_classFeel_1_1MeshBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15d03f9d57b1d9b128e97f9178c3392c inherit pub_methods_classFeel_1_1MeshBase"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a15d03f9d57b1d9b128e97f9178c3392c">hasSubMeshData</a> () const</td></tr>
 <tr class="separator:a15d03f9d57b1d9b128e97f9178c3392c inherit pub_methods_classFeel_1_1MeshBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f2464c872044b5217f634e69bdc9552 inherit pub_methods_classFeel_1_1MeshBase"><td class="memItemLeft" align="right" valign="top">smd_type::mesh_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a2f2464c872044b5217f634e69bdc9552">subMesh</a> () const</td></tr>
@@ -452,6 +456,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 std::vector&lt; std::shared_ptr&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt; uint32_type &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a6b41e7f4ea04327f05933d9fdaa5f6ab">meshesWithNodesShared</a> () const</td></tr>
 <tr class="memdesc:a6b41e7f4ea04327f05933d9fdaa5f6ab inherit pub_methods_classFeel_1_1MeshBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">get all meshes which share the nodes with the current mesh (current mesh is also include) <br /></td></tr>
 <tr class="separator:a6b41e7f4ea04327f05933d9fdaa5f6ab inherit pub_methods_classFeel_1_1MeshBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa8badecfd3b09f4794e88fc746f93321 inherit pub_methods_classFeel_1_1MeshBase"><td class="memItemLeft" align="right" valign="top"><a id="aa8badecfd3b09f4794e88fc746f93321"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#aa8badecfd3b09f4794e88fc746f93321">attachMeshSupport</a> (<a class="el" href="classFeel_1_1MeshSupportBase.html">MeshSupportBase</a> *ms) const</td></tr>
+<tr class="memdesc:aa8badecfd3b09f4794e88fc746f93321 inherit pub_methods_classFeel_1_1MeshBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">attach a mesh support <br /></td></tr>
+<tr class="separator:aa8badecfd3b09f4794e88fc746f93321 inherit pub_methods_classFeel_1_1MeshBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a45c2e3552981134c219e6c16a50a2115 inherit pub_methods_classFeel_1_1MeshBase"><td class="memItemLeft" align="right" valign="top"><a id="a45c2e3552981134c219e6c16a50a2115"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a45c2e3552981134c219e6c16a50a2115">detachMeshSupport</a> (<a class="el" href="classFeel_1_1MeshSupportBase.html">MeshSupportBase</a> *ms) const</td></tr>
+<tr class="memdesc:a45c2e3552981134c219e6c16a50a2115 inherit pub_methods_classFeel_1_1MeshBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">detach a mesh support <br /></td></tr>
+<tr class="separator:a45c2e3552981134c219e6c16a50a2115 inherit pub_methods_classFeel_1_1MeshBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ce6c15c2ed12bcfb22a6103b0938758 inherit pub_methods_classFeel_1_1MeshBase"><td class="memItemLeft" align="right" valign="top"><a id="a7ce6c15c2ed12bcfb22a6103b0938758"></a>
+std::vector&lt; <a class="el" href="classFeel_1_1MeshSupportBase.html">MeshSupportBase</a> * &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a7ce6c15c2ed12bcfb22a6103b0938758">meshSupportsAttached</a> () const</td></tr>
+<tr class="memdesc:a7ce6c15c2ed12bcfb22a6103b0938758 inherit pub_methods_classFeel_1_1MeshBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">return all mesh supports attached <br /></td></tr>
+<tr class="separator:a7ce6c15c2ed12bcfb22a6103b0938758 inherit pub_methods_classFeel_1_1MeshBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a37df0550fef79c9019519b8573aeb8 inherit pub_methods_classFeel_1_1MeshBase"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a1a37df0550fef79c9019519b8573aeb8">hasAllMarkers</a> (std::initializer_list&lt; std::string &gt; l)</td></tr>
 <tr class="separator:a1a37df0550fef79c9019519b8573aeb8 inherit pub_methods_classFeel_1_1MeshBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab3256562efee3e4dd2e8537fa9ae9ca3 inherit pub_methods_classFeel_1_1MeshBase"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#ab3256562efee3e4dd2e8537fa9ae9ca3">hasAnyMarker</a> (std::initializer_list&lt; std::string &gt; l)</td></tr>

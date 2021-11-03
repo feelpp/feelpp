@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -111,8 +111,12 @@ $(document).ready(function(){initNavTree('classFeel_1_1FeelModels_1_1FluidMechan
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a4e64a95a46f262963b822aa3a34dab22"><td class="memItemLeft" align="right" valign="top"><a id="a4e64a95a46f262963b822aa3a34dab22"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>applyRemesh</b> (<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html">self_type</a> const &amp;fluidToolbox, <a class="el" href="classFeel_1_1RemeshInterpolation.html">RemeshInterpolation</a> &amp;remeshInterp)</td></tr>
+<tr class="separator:a4e64a95a46f262963b822aa3a34dab22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff587054b1e88180e261b93c4bfdea96"><td class="memItemLeft" align="right" valign="top"><a id="aff587054b1e88180e261b93c4bfdea96"></a>
-<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>areConnected</b> (<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyArticulation.html">BodyArticulation</a> const &amp;ba) const</td></tr>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyArticulation.html#aff587054b1e88180e261b93c4bfdea96">areConnected</a> (<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyArticulation.html">BodyArticulation</a> const &amp;ba) const</td></tr>
+<tr class="memdesc:aff587054b1e88180e261b93c4bfdea96"><td class="mdescLeft">&#160;</td><td class="mdescRight">return true if this articulation is connected to \ba <br /></td></tr>
 <tr class="separator:aff587054b1e88180e261b93c4bfdea96"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a54e4edf05d94ccb2bc822a9dadd0f46d"><td class="memItemLeft" align="right" valign="top"><a id="a54e4edf05d94ccb2bc822a9dadd0f46d"></a>
 <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html">BodyBoundaryCondition</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>body1</b> () const</td></tr>
@@ -127,24 +131,39 @@ Public Member Functions</h2></td></tr>
 datamap_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>dataMapLagrangeMultiplierTranslationalVelocity</b> () const</td></tr>
 <tr class="separator:a1adf2f88410322bb0475e2977dae9f3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18a7bf7f3db1478c5eee769a635cc984"><td class="memItemLeft" align="right" valign="top"><a id="a18a7bf7f3db1478c5eee769a635cc984"></a>
-<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>has</b> (<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html">BodyBoundaryCondition</a> const &amp;bbc) const</td></tr>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyArticulation.html#a18a7bf7f3db1478c5eee769a635cc984">has</a> (<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html">BodyBoundaryCondition</a> const &amp;bbc) const</td></tr>
+<tr class="memdesc:a18a7bf7f3db1478c5eee769a635cc984"><td class="mdescLeft">&#160;</td><td class="mdescRight">return true if this articulation has the <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html">BodyBoundaryCondition</a> \bbc <br /></td></tr>
 <tr class="separator:a18a7bf7f3db1478c5eee769a635cc984"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6c21ed8176e00124db1c8ff69f37c08"><td class="memItemLeft" align="right" valign="top"><a id="ad6c21ed8176e00124db1c8ff69f37c08"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>initLagrangeMultiplier</b> (<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html">self_type</a> const &amp;fluidToolbox)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyArticulation.html#ad6c21ed8176e00124db1c8ff69f37c08">initLagrangeMultiplier</a> (<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html">self_type</a> const &amp;fluidToolbox)</td></tr>
+<tr class="memdesc:ad6c21ed8176e00124db1c8ff69f37c08"><td class="mdescLeft">&#160;</td><td class="mdescRight">init LagrangeMultiplier <br /></td></tr>
 <tr class="separator:ad6c21ed8176e00124db1c8ff69f37c08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84d9abddacc52b552889a55ceee2b33b"><td class="memItemLeft" align="right" valign="top"><a id="a84d9abddacc52b552889a55ceee2b33b"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>name</b> () const</td></tr>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyArticulation.html#a84d9abddacc52b552889a55ceee2b33b">name</a> () const</td></tr>
+<tr class="memdesc:a84d9abddacc52b552889a55ceee2b33b"><td class="mdescLeft">&#160;</td><td class="mdescRight">return the name this articulation <br /></td></tr>
 <tr class="separator:a84d9abddacc52b552889a55ceee2b33b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd9958f3979356f5b89eb8d341e0d0a3"><td class="memItemLeft" align="right" valign="top"><a id="afd9958f3979356f5b89eb8d341e0d0a3"></a>
+eigen_vector_type&lt; nRealDim &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>relativeTranslationVector</b> (eigen_vector_type&lt; nRealDim &gt; const &amp;mc1, eigen_vector_type&lt; nRealDim &gt; const &amp;mc2) const</td></tr>
+<tr class="separator:afd9958f3979356f5b89eb8d341e0d0a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9099c7cbaa4b5aae8e209584b38c8d90"><td class="memItemLeft" align="right" valign="top"><a id="a9099c7cbaa4b5aae8e209584b38c8d90"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setParameterValues</b> (std::map&lt; std::string, double &gt; const &amp;mp)</td></tr>
 <tr class="separator:a9099c7cbaa4b5aae8e209584b38c8d90"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab420095f73ebf0c693f7c1f130cfaa24"><td class="memItemLeft" align="right" valign="top"><a id="ab420095f73ebf0c693f7c1f130cfaa24"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setTranslationalVelocityExpr</b> (<a class="el" href="classModelExpression.html">ModelExpression</a> const &amp;e)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyArticulation.html#ab420095f73ebf0c693f7c1f130cfaa24">setTranslationalVelocityExpr</a> (<a class="el" href="classModelExpression.html">ModelExpression</a> const &amp;e)</td></tr>
+<tr class="memdesc:ab420095f73ebf0c693f7c1f130cfaa24"><td class="mdescLeft">&#160;</td><td class="mdescRight">set setTranslationalVelocityExpr <br /></td></tr>
 <tr class="separator:ab420095f73ebf0c693f7c1f130cfaa24"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af25f44c155dd82ad76c44b0f93bed14e"><td class="memTemplParams" colspan="2"><a id="af25f44c155dd82ad76c44b0f93bed14e"></a>
 template&lt;typename SymbolsExprType &gt; </td></tr>
-<tr class="memitem:af25f44c155dd82ad76c44b0f93bed14e"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>translationalVelocityExpr</b> (SymbolsExprType const &amp;se) const</td></tr>
+<tr class="memitem:af25f44c155dd82ad76c44b0f93bed14e"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyArticulation.html#af25f44c155dd82ad76c44b0f93bed14e">translationalVelocityExpr</a> (SymbolsExprType const &amp;se) const</td></tr>
+<tr class="memdesc:af25f44c155dd82ad76c44b0f93bed14e"><td class="mdescLeft">&#160;</td><td class="mdescRight">return the translationalVelocityExpr between mass center of 2 bodies <br /></td></tr>
 <tr class="separator:af25f44c155dd82ad76c44b0f93bed14e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4daeabf5b3c0d1d8c8274c42e92c47a9"><td class="memTemplParams" colspan="2"><a id="a4daeabf5b3c0d1d8c8274c42e92c47a9"></a>
+template&lt;typename SymbolsExprType &gt; </td></tr>
+<tr class="memitem:a4daeabf5b3c0d1d8c8274c42e92c47a9"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateDisplacement</b> (double dt, SymbolsExprType const &amp;se)</td></tr>
+<tr class="separator:a4daeabf5b3c0d1d8c8274c42e92c47a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab63d47a86e8cfc3f41d584feeefa3ae0"><td class="memItemLeft" align="right" valign="top"><a id="ab63d47a86e8cfc3f41d584feeefa3ae0"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>updateTimeStep</b> ()</td></tr>
+<tr class="separator:ab63d47a86e8cfc3f41d584feeefa3ae0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea8f9ef208b2d18dd063d53d2b9fc3ef"><td class="memItemLeft" align="right" valign="top"><a id="aea8f9ef208b2d18dd063d53d2b9fc3ef"></a>
 vector_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>vectorLagrangeMultiplierTranslationalVelocity</b> () const</td></tr>
 <tr class="separator:aea8f9ef208b2d18dd063d53d2b9fc3ef"><td class="memSeparator" colspan="2">&#160;</td></tr>

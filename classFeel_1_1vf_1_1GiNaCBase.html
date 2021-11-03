@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -118,7 +118,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1vf_1_1GiNaCBase.html','')
  <div class="center">
   <img src="classFeel_1_1vf_1_1GiNaCBase.png" usemap="#Feel::vf::GiNaCBase_map" alt=""/>
   <map id="Feel::vf::GiNaCBase_map" name="Feel::vf::GiNaCBase_map">
-<area href="classFeel_1_1vf_1_1ExprDynamicBase.html" alt="ExprDynamicBase" shape="rect" coords="0,0,334,24"/>
+<area href="classFeel_1_1vf_1_1ExprDynamicBase.html" alt="Feel::vf::ExprDynamicBase" shape="rect" coords="0,0,334,24"/>
 <area href="classFeel_1_1vf_1_1GinacMatrix.html" title="Handle Ginac matrix expression." alt="Feel::vf::GinacMatrix&lt; M, N, Order, SymbolsExprType &gt;" shape="rect" coords="0,112,334,136"/>
   </map>
 </div></div>
@@ -146,6 +146,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>eraseParameterValues<
 <tr class="memitem:a2b1b66807e53887074bbad092d36af74"><td class="memItemLeft" align="right" valign="top"><a id="a2b1b66807e53887074bbad092d36af74"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>GiNaCBase</b> (std::vector&lt; GiNaC::symbol &gt; const &amp;syms)</td></tr>
 <tr class="separator:a2b1b66807e53887074bbad092d36af74"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c4e20447d00ab1a9ed6a35f6ab3ab5b"><td class="memItemLeft" align="right" valign="top"><a id="a5c4e20447d00ab1a9ed6a35f6ab3ab5b"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasAnySymbolGeom</b> () const</td></tr>
+<tr class="separator:a5c4e20447d00ab1a9ed6a35f6ab3ab5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9c5c0a21382ca32b910a6bc1a02ef304"><td class="memItemLeft" align="right" valign="top"><a id="a9c5c0a21382ca32b910a6bc1a02ef304"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasAnySymbolN</b> () const</td></tr>
 <tr class="separator:a9c5c0a21382ca32b910a6bc1a02ef304"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -158,6 +161,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>eraseParameterValues<
 <tr class="memitem:a6fefe56fd18695595624ba13877146d3"><td class="memItemLeft" align="right" valign="top"><a id="a6fefe56fd18695595624ba13877146d3"></a>
 uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>index</b> (std::string const &amp;sname) const</td></tr>
 <tr class="separator:a6fefe56fd18695595624ba13877146d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3b76cbaf7884fb18f88ab7ed5fa776e"><td class="memItemLeft" align="right" valign="top"><a id="ac3b76cbaf7884fb18f88ab7ed5fa776e"></a>
+std::set&lt; std::pair&lt; uint16_type, uint16_type &gt; &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>indexSymbolGeom</b> () const</td></tr>
+<tr class="separator:ac3b76cbaf7884fb18f88ab7ed5fa776e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a29c0379c2d1b009e34bbae2012714215"><td class="memItemLeft" align="right" valign="top"><a id="a29c0379c2d1b009e34bbae2012714215"></a>
 std::set&lt; std::pair&lt; uint16_type, uint16_type &gt; &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>indexSymbolN</b> () const</td></tr>
 <tr class="separator:a29c0379c2d1b009e34bbae2012714215"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -186,12 +192,22 @@ std::map&lt; std::string, value_type &gt; const  &amp;&#160;</td><td class="memI
 <tr class="memitem:abee1865348dbf36159a50fa00168fd62"><td class="memItemLeft" align="right" valign="top"><a id="abee1865348dbf36159a50fa00168fd62"></a>
 const std::vector&lt; GiNaC::symbol &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>symbols</b> () const</td></tr>
 <tr class="separator:abee1865348dbf36159a50fa00168fd62"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classFeel_1_1vf_1_1ExprDynamicBase"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1vf_1_1ExprDynamicBase')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1vf_1_1ExprDynamicBase.html">Feel::vf::ExprDynamicBase</a></td></tr>
+<tr class="memitem:a905660499cc220a80a0de4d23a504b4b inherit pub_methods_classFeel_1_1vf_1_1ExprDynamicBase"><td class="memItemLeft" align="right" valign="top"><a id="a905660499cc220a80a0de4d23a504b4b"></a>
+<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>dynamicContext</b> () const</td></tr>
+<tr class="separator:a905660499cc220a80a0de4d23a504b4b inherit pub_methods_classFeel_1_1vf_1_1ExprDynamicBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a20492c77a500be232c290961470e9e56 inherit pub_methods_classFeel_1_1vf_1_1ExprDynamicBase"><td class="memItemLeft" align="right" valign="top"><a id="a20492c77a500be232c290961470e9e56"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>ExprDynamicBase</b> (<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> c)</td></tr>
+<tr class="separator:a20492c77a500be232c290961470e9e56 inherit pub_methods_classFeel_1_1vf_1_1ExprDynamicBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:a0c1c3a8444320ace775d5b8ddb2454af"><td class="memItemLeft" align="right" valign="top"><a id="a0c1c3a8444320ace775d5b8ddb2454af"></a>
 <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>M_context</b></td></tr>
 <tr class="separator:a0c1c3a8444320ace775d5b8ddb2454af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c5e655cf84946d8e91248164a14bb08"><td class="memItemLeft" align="right" valign="top"><a id="a3c5e655cf84946d8e91248164a14bb08"></a>
+std::set&lt; std::pair&lt; uint16_type, uint16_type &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>M_indexSymbolGeom</b></td></tr>
+<tr class="separator:a3c5e655cf84946d8e91248164a14bb08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a88c2588095ab213fd5c779f20e3e4df6"><td class="memItemLeft" align="right" valign="top"><a id="a88c2588095ab213fd5c779f20e3e4df6"></a>
 std::set&lt; std::pair&lt; uint16_type, uint16_type &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>M_indexSymbolN</b></td></tr>
 <tr class="separator:a88c2588095ab213fd5c779f20e3e4df6"><td class="memSeparator" colspan="2">&#160;</td></tr>

@@ -29,6 +29,7 @@ var classFeel_1_1Localization =
     [ "searchElements", "classFeel_1_1Localization.html#a42d4c883941874d69eebb92c6932a3fe", null ],
     [ "setExtrapolation", "classFeel_1_1Localization.html#a9fd7402b56538a07eaa0644b2c49c128", null ],
     [ "setMesh", "classFeel_1_1Localization.html#afb07ebe36fbcc5c9fd926641dd108d58", null ],
+    [ "setMesh", "classFeel_1_1Localization.html#a1b2d5348acb00bbb52447baf2cb961bd", null ],
     [ "updateForUse", "classFeel_1_1Localization.html#a7d54fa323c45777c5484ff5b0b9c1ce6", null ],
     [ "updateForUseBoundaryFaces", "classFeel_1_1Localization.html#a4208e73dd4d017e2ba913d5af68700f6", null ],
     [ "nDim", "classFeel_1_1Localization.html#a1a20ccceeb84cf9b85b6777b0b6e411a", null ],
@@ -53,11 +54,11 @@ var classFeel_1_1Localization =
     [ "mesh_type", "classFeel_1_1Localization.html#a62d688ccd56667ece7f9824077f85c54", null ],
     [ "node_elem_type", "classFeel_1_1Localization.html#a92fb12ada0ef90d4a206111c768a19df", null ],
     [ "node_type", "classFeel_1_1Localization.html#a2d766255243dca0e11c77620aa9d5ecb", null ],
+    [ "range_elements_type", "classFeel_1_1Localization.html#a6e7391e3d525c751c9dd45949ec5aa48", null ],
     [ "ref_convex1_type", "classFeel_1_1Localization.html#a350bfd7f124c9d0620b2621f4e8187e1", null ],
     [ "ref_convex_type", "classFeel_1_1Localization.html#a1642b7fbdbc8b01c701a6d4b510d3d58", null ],
     [ "size_type", "classFeel_1_1Localization.html#a3d2bd36eb007f27aac074201ebd17c4e", null ],
     [ "value_type", "classFeel_1_1Localization.html#aa6c7656e026298b1c5d44f110bae3f32", null ],
     [ "Localization", "classFeel_1_1Localization.html#a2ffa68fd27d8b9d9a9c61ceb1f3a1c99", null ],
-    [ "Localization", "classFeel_1_1Localization.html#acc1ad77ee38818abb6a7d8e47c6e64e8", null ],
     [ "Localization", "classFeel_1_1Localization.html#aaa82890cce8fc97987040882fe3b4fd7", null ]
 ];

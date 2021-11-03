@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -133,6 +133,11 @@ $(document).ready(function(){initNavTree('functions_u.html',''); initResizable()
 <li>updateDensityField()
 : <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanicsMaterialProperties.html#a10e35c05577ffc5de37e5fd17c72f02c">Feel::FeelModels::FluidMechanicsMaterialProperties&lt; SpaceType &gt;</a>
 </li>
+<li>updateDisplacement()
+: <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a6b9a85cb615bcc2fe169de96c6235c91">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::Body</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a75ad83a6c90c90f91d681fda2c45d7fc">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::BodyBoundaryCondition</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#a57c3753245fbc82d15fdadc374010109">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::NBodyArticulated</a>
+</li>
 <li>updateDofEliminationIds()
 : <a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic.html#a302fe60300f06f2e69b8f4956219d5b8">Feel::FeelModels::ModelAlgebraic</a>
 </li>
@@ -141,6 +146,15 @@ $(document).ready(function(){initNavTree('functions_u.html',''); initResizable()
 </li>
 <li>updateDynamicViscosityField()
 : <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanicsMaterialProperties.html#a3f8edcf358623365953eed74f7c9d2e9">Feel::FeelModels::FluidMechanicsMaterialProperties&lt; SpaceType &gt;</a>
+</li>
+<li>updateElasticDisplacement()
+: <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#adafd511ba262673c9ac5ede54c34d31d">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::Body</a>
+</li>
+<li>updateElasticVelocity()
+: <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a8774588822a96a5c2673b402b077ee0c">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::Body</a>
+</li>
+<li>updateElasticVelocityWithRotation()
+: <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a8f36d61ff85979a4178036813657c689">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::BodyBoundaryCondition</a>
 </li>
 <li>updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
 : <a class="el" href="classFeel_1_1Mesh.html#a8bc3c90ca198089f69499db669566944">Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;</a>
@@ -166,9 +180,10 @@ $(document).ready(function(){initNavTree('functions_u.html',''); initResizable()
 , <a class="el" href="classFeel_1_1MeshBase.html#ab0cf2123d72d496a88e0a394971f9c3a">Feel::MeshBase&lt; IndexT &gt;</a>
 </li>
 <li>updateForUse()
-: <a class="el" href="classFeel_1_1Localization.html#a7d54fa323c45777c5484ff5b0b9c1ce6">Feel::Localization&lt; MeshType &gt;</a>
+: <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#a62f0cb1b19a8c789a16e56ccdd667be7">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::NBodyArticulated</a>
+, <a class="el" href="classFeel_1_1Localization.html#a7d54fa323c45777c5484ff5b0b9c1ce6">Feel::Localization&lt; MeshType &gt;</a>
 , <a class="el" href="classFeel_1_1Mesh.html#af07637d935948d0e46f5064cacd5efaf">Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;</a>
-, <a class="el" href="classFeel_1_1MeshBase.html#a1c6f515280960aa9996b3c04abc4d461">Feel::MeshBase&lt; IndexT &gt;</a>
+, <a class="el" href="classFeel_1_1MeshBase.html#a031d7a0207fb7fa156aa1063f9c872b8">Feel::MeshBase&lt; IndexT &gt;</a>
 </li>
 <li>updateForUseAfterMovingNodes()
 : <a class="el" href="classFeel_1_1Mesh.html#a017da014dbc9de5c81eea1d569de9135">Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;</a>
@@ -188,7 +203,7 @@ $(document).ready(function(){initNavTree('functions_u.html',''); initResizable()
 : <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html#a4cabed5d4b203439d5f3a7c0e9190bf5">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;</a>
 </li>
 <li>updateMarker2WithRange()
-: <a class="el" href="classFeel_1_1Mesh.html#acd8ef3533011cbf0d316b164cdf76f5f">Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;</a>
+: <a class="el" href="classFeel_1_1Mesh.html#a6a6926710e9a7ffb59c3a756c91488a3">Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;</a>
 </li>
 <li>updateMarker3WithRange()
 : <a class="el" href="classFeel_1_1Mesh.html#a5451d289057f3e09f20eb6b058dd080a">Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;</a>
@@ -207,6 +222,9 @@ $(document).ready(function(){initNavTree('functions_u.html',''); initResizable()
 </li>
 <li>updateRegionTree()
 : <a class="el" href="classFeel_1_1FunctionSpace.html#ac74c0f102bfac545277b068319dad437">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;</a>
+</li>
+<li>updateTimeStep()
+: <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#ae0c5b2be42459111e46b07e82fa7ac74">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::NBodyArticulated</a>
 </li>
 <li>updateVertices()
 : <a class="el" href="classFeel_1_1GeoND.html#a7243938877695f057a4bc2bcc6c2d315">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;</a>

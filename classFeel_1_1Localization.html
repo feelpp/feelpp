@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -173,6 +173,9 @@ typedef boost::tuple&lt; node_type, std::list&lt; size_type &gt; &gt;&#160;</td>
 <tr class="memitem:a2d766255243dca0e11c77620aa9d5ecb"><td class="memItemLeft" align="right" valign="top"><a id="a2d766255243dca0e11c77620aa9d5ecb"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>node_type</b> = typename MeshType::node_type</td></tr>
 <tr class="separator:a2d766255243dca0e11c77620aa9d5ecb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e7391e3d525c751c9dd45949ec5aa48"><td class="memItemLeft" align="right" valign="top"><a id="a6e7391e3d525c751c9dd45949ec5aa48"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>range_elements_type</b> = elements_reference_wrapper_t&lt; mesh_type &gt;</td></tr>
+<tr class="separator:a6e7391e3d525c751c9dd45949ec5aa48"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a350bfd7f124c9d0620b2621f4e8187e1"><td class="memItemLeft" align="right" valign="top"><a id="a350bfd7f124c9d0620b2621f4e8187e1"></a>
 typedef mesh_type::gm1_type::reference_convex_type&#160;</td><td class="memItemRight" valign="bottom"><b>ref_convex1_type</b></td></tr>
 <tr class="separator:a350bfd7f124c9d0620b2621f4e8187e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -231,9 +234,6 @@ kdtree_ptrtype const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><
 <tr class="memitem:aaa82890cce8fc97987040882fe3b4fd7"><td class="memItemLeft" align="right" valign="top"><a id="aaa82890cce8fc97987040882fe3b4fd7"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>Localization</b> (<a class="el" href="classFeel_1_1Localization.html">Localization</a> const &amp;L)</td></tr>
 <tr class="separator:aaa82890cce8fc97987040882fe3b4fd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acc1ad77ee38818abb6a7d8e47c6e64e8"><td class="memItemLeft" align="right" valign="top"><a id="acc1ad77ee38818abb6a7d8e47c6e64e8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Localization</b> (std::shared_ptr&lt; mesh_type &gt; m, <a class="el" href="classbool.html">bool</a> init_b=true)</td></tr>
-<tr class="separator:acc1ad77ee38818abb6a7d8e47c6e64e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acb42130a77f8f4e6d89a51f4011f02f8"><td class="memItemLeft" align="right" valign="top"><a id="acb42130a77f8f4e6d89a51f4011f02f8"></a>
 mesh_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>mesh</b> ()</td></tr>
 <tr class="separator:acb42130a77f8f4e6d89a51f4011f02f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -272,6 +272,9 @@ container_search_iterator_type&#160;</td><td class="memItemRight" valign="bottom
 <tr class="separator:a9fd7402b56538a07eaa0644b2c49c128"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb07ebe36fbcc5c9fd926641dd108d58"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#afb07ebe36fbcc5c9fd926641dd108d58">setMesh</a> (std::shared_ptr&lt; mesh_type &gt; m, <a class="el" href="classbool.html">bool</a> b=true)</td></tr>
 <tr class="separator:afb07ebe36fbcc5c9fd926641dd108d58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1b2d5348acb00bbb52447baf2cb961bd"><td class="memItemLeft" align="right" valign="top"><a id="a1b2d5348acb00bbb52447baf2cb961bd"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setMesh</b> (std::shared_ptr&lt; mesh_type &gt; m, range_elements_type const &amp;<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, <a class="el" href="classbool.html">bool</a> b=true)</td></tr>
+<tr class="separator:a1b2d5348acb00bbb52447baf2cb961bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d54fa323c45777c5484ff5b0b9c1ce6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a7d54fa323c45777c5484ff5b0b9c1ce6">updateForUse</a> ()</td></tr>
 <tr class="separator:a7d54fa323c45777c5484ff5b0b9c1ce6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4208e73dd4d017e2ba913d5af68700f6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a4208e73dd4d017e2ba913d5af68700f6">updateForUseBoundaryFaces</a> ()</td></tr>

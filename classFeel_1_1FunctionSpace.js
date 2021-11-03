@@ -73,7 +73,7 @@ var classFeel_1_1FunctionSpace =
     [ "map", "classFeel_1_1FunctionSpace.html#a084151f7c3341c44a1751d113fc4b20a", null ],
     [ "mapOn", "classFeel_1_1FunctionSpace.html#ae516fb32506eca8718a5e5ff180198e5", null ],
     [ "mapOnOff", "classFeel_1_1FunctionSpace.html#af32ef62ef75c15d9df5fb9ece0b7c252", null ],
-    [ "mapPtr", "classFeel_1_1FunctionSpace.html#a1e59e20e3e9b4fd9373234cae8ad06d5", null ],
+    [ "mapPtr", "classFeel_1_1FunctionSpace.html#a938084c2fc8a23feef6a626a8e472239", null ],
     [ "mesh", "classFeel_1_1FunctionSpace.html#a536e15615750d176c1875faac3ecd29c", null ],
     [ "mesh", "classFeel_1_1FunctionSpace.html#a3ce415b4a66a1fb4b3fa2c4eab67ca7a", null ],
     [ "mesh", "classFeel_1_1FunctionSpace.html#a15a5341291162fc426b372189fc98c02", null ],

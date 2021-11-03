@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -147,6 +147,10 @@ std::map&lt; std::string, <a class="el" href="classFeel_1_1CollectionOfDataByMes
 template&lt;typename MeshType  = mesh_base_type&gt; </td></tr>
 <tr class="memitem:a0e822472ef3a51fb8da4347189d3086d"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>mesh</b> () const</td></tr>
 <tr class="separator:a0e822472ef3a51fb8da4347189d3086d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac85a96f6868d64a9f47cc02ef9bd678e"><td class="memTemplParams" colspan="2"><a id="ac85a96f6868d64a9f47cc02ef9bd678e"></a>
+template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:ac85a96f6868d64a9f47cc02ef9bd678e"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>modelFields</b> (std::string const &amp;prefix_symbol=&quot;&quot;) const</td></tr>
+<tr class="separator:ac85a96f6868d64a9f47cc02ef9bd678e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9adb74dc7afeaa4da40783f86462583f"><td class="memItemLeft" align="right" valign="top"><a id="a9adb74dc7afeaa4da40783f86462583f"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ModelMesh</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html">ModelMesh</a> &amp;&amp;)=default</td></tr>
 <tr class="separator:a9adb74dc7afeaa4da40783f86462583f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -168,9 +172,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setup</b> (pt::ptree 
 <tr class="memitem:a38d26afb6966c45674a11dd28a181a52"><td class="memItemLeft" align="right" valign="top"><a id="a38d26afb6966c45674a11dd28a181a52"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setupRestart</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelMeshes.html">ModelMeshes</a>&lt; IndexType &gt; const &amp;mMeshes)</td></tr>
 <tr class="separator:a38d26afb6966c45674a11dd28a181a52"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7944ceda168fbb601ffdf16ab54632ff"><td class="memItemLeft" align="right" valign="top"><a id="a7944ceda168fbb601ffdf16ab54632ff"></a>
-auto&#160;</td><td class="memItemRight" valign="bottom"><b>symbolsExpr</b> (std::string const &amp;prefix_symbol=&quot;&quot;) const</td></tr>
-<tr class="separator:a7944ceda168fbb601ffdf16ab54632ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a302a4b6ba274b4bb908ca739094ab6bb"><td class="memTemplParams" colspan="2"><a id="a302a4b6ba274b4bb908ca739094ab6bb"></a>
+template&lt;typename MeshType  = mesh_base_type, bool AddFields = true&gt; </td></tr>
+<tr class="memitem:a302a4b6ba274b4bb908ca739094ab6bb"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>symbolsExpr</b> (std::string const &amp;prefix_symbol=&quot;&quot;) const</td></tr>
+<tr class="separator:a302a4b6ba274b4bb908ca739094ab6bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a62f4ab9ce6aac11d50fa34d8bafe3d5f"><td class="memTemplParams" colspan="2"><a id="a62f4ab9ce6aac11d50fa34d8bafe3d5f"></a>
 template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:a62f4ab9ce6aac11d50fa34d8bafe3d5f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateForUse</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelMeshes.html">ModelMeshes</a>&lt; IndexType &gt; const &amp;mMeshes)</td></tr>

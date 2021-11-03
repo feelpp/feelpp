@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -626,8 +626,8 @@ std::vector&lt; <a class="el" href="classint.html">int</a> &gt;&#160;</td><td cl
 <tr class="separator:a3e545aa4b398558d510a32e5055a16bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a084151f7c3341c44a1751d113fc4b20a"><td class="memItemLeft" align="right" valign="top">DataMap&lt; size_type &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#a084151f7c3341c44a1751d113fc4b20a">map</a> () const</td></tr>
 <tr class="separator:a084151f7c3341c44a1751d113fc4b20a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e59e20e3e9b4fd9373234cae8ad06d5"><td class="memItemLeft" align="right" valign="top">datamap_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#a1e59e20e3e9b4fd9373234cae8ad06d5">mapPtr</a> () const</td></tr>
-<tr class="separator:a1e59e20e3e9b4fd9373234cae8ad06d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a938084c2fc8a23feef6a626a8e472239"><td class="memItemLeft" align="right" valign="top">datamap_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#a938084c2fc8a23feef6a626a8e472239">mapPtr</a> () const override</td></tr>
+<tr class="separator:a938084c2fc8a23feef6a626a8e472239"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae516fb32506eca8718a5e5ff180198e5"><td class="memItemLeft" align="right" valign="top">DataMap&lt; size_type &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#ae516fb32506eca8718a5e5ff180198e5">mapOn</a> () const</td></tr>
 <tr class="separator:ae516fb32506eca8718a5e5ff180198e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af32ef62ef75c15d9df5fb9ece0b7c252"><td class="memItemLeft" align="right" valign="top">DataMap&lt; size_type &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#af32ef62ef75c15d9df5fb9ece0b7c252">mapOnOff</a> () const</td></tr>
@@ -1937,13 +1937,16 @@ template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parame
 
 </div>
 </div>
-<a id="a1e59e20e3e9b4fd9373234cae8ad06d5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1e59e20e3e9b4fd9373234cae8ad06d5">&#9670;&nbsp;</a></span>mapPtr()</h2>
+<a id="a938084c2fc8a23feef6a626a8e472239"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a938084c2fc8a23feef6a626a8e472239">&#9670;&nbsp;</a></span>mapPtr()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parameter::void_, typename A3  = parameter::void_, typename A4  = parameter::void_&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">datamap_ptrtype <a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::mapPtr </td>
@@ -1952,8 +1955,15 @@ template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parame
           <td> const</td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the degrees of freedom </dd></dl>
+
+<p>Implements <a class="el" href="classFeel_1_1FunctionSpaceBase.html">Feel::FunctionSpaceBase</a>.</p>
 
 </div>
 </div>

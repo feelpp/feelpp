@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -160,9 +160,9 @@ typedef std::vector&lt; edge_type * &gt;::const_iterator&#160;</td><td class="me
 <tr class="memitem:a098587d8690cebd7b8a89f9cbb134135"><td class="memItemLeft" align="right" valign="top"><a id="a098587d8690cebd7b8a89f9cbb134135"></a>
 typedef std::vector&lt; edge_type * &gt;::iterator&#160;</td><td class="memItemRight" valign="bottom"><b>face_iterator</b></td></tr>
 <tr class="separator:a098587d8690cebd7b8a89f9cbb134135"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afcdb53eff526d5ae0dbc4bfe4cb4f00d"><td class="memItemLeft" align="right" valign="top"><a id="afcdb53eff526d5ae0dbc4bfe4cb4f00d"></a>
-typedef super::face_permutation_type&#160;</td><td class="memItemRight" valign="bottom"><b>face_permutation_type</b></td></tr>
-<tr class="separator:afcdb53eff526d5ae0dbc4bfe4cb4f00d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a76bb1d623083b6660f93a379faf3ca9b"><td class="memItemLeft" align="right" valign="top"><a id="a76bb1d623083b6660f93a379faf3ca9b"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>face_permutation_type</b> = edge_permutation_type</td></tr>
+<tr class="separator:a76bb1d623083b6660f93a379faf3ca9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab35c3893a658aedc2f85890ed8b58378"><td class="memItemLeft" align="right" valign="top"><a id="ab35c3893a658aedc2f85890ed8b58378"></a>
 typedef GEOSHAPE&#160;</td><td class="memItemRight" valign="bottom"><b>GeoShape</b></td></tr>
 <tr class="separator:ab35c3893a658aedc2f85890ed8b58378"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -409,6 +409,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setEdgePermutation</b
 <tr class="memitem:a889057da13c772c3d999a1c1f0ef264d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoElement2D.html#a889057da13c772c3d999a1c1f0ef264d">setFace</a> (uint16_type const i, edge_type const &amp;p)</td></tr>
 <tr class="memdesc:a889057da13c772c3d999a1c1f0ef264d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inserts an edge.  <a href="classFeel_1_1GeoElement2D.html#a889057da13c772c3d999a1c1f0ef264d">More...</a><br /></td></tr>
 <tr class="separator:a889057da13c772c3d999a1c1f0ef264d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae48ad24edd8bbdb9d2889d1b157c5916"><td class="memItemLeft" align="right" valign="top"><a id="ae48ad24edd8bbdb9d2889d1b157c5916"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setFacePermutation</b> (uint16_type i, edge_permutation_type o)</td></tr>
+<tr class="separator:ae48ad24edd8bbdb9d2889d1b157c5916"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b9bc1128d0d09d14bfe40fa1b17084f"><td class="memItemLeft" align="right" valign="top"><a id="a5b9bc1128d0d09d14bfe40fa1b17084f"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoElement2D.html#a5b9bc1128d0d09d14bfe40fa1b17084f">~GeoElement2D</a> () override</td></tr>
 <tr class="memdesc:a5b9bc1128d0d09d14bfe40fa1b17084f"><td class="mdescLeft">&#160;</td><td class="mdescRight">destructor <br /></td></tr>
@@ -1062,6 +1065,8 @@ template&lt;uint16_type Dim, typename GEOSHAPE , typename SubFace  = SubFaceOfNo
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>maximum <code>dimension</code> of the sub-entity touching the boundary of the element </dd></dl>
 
+<p class="reference">References <a class="el" href="classFeel_1_1GeoElement1D.html#a4c8922a43d9fd9f7df672b366cd43b78">Feel::GeoElement1D&lt; Dim, GEOSHAPE, SubFace, T, IndexT, PointTypeIsSubFaceOf, UseMeasuresStorage &gt;::id()</a>.</p>
+
 </div>
 </div>
 <a id="aa7a5eda83d297fd5ce26664a1904e057"></a>
@@ -1189,8 +1194,6 @@ template&lt;uint16_type Dim, typename GEOSHAPE , typename SubFace  = SubFaceOfNo
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the iterator pair (begin,end) of faces </dd></dl>
 
-<p class="reference">References <a class="el" href="classFeel_1_1GeoEntity.html#a99e704e32aae12ed505b812861c7b5d8">Feel::GeoEntity&lt; GEOSHAPE, double &gt;::processId()</a>.</p>
-
 </div>
 </div>
 <a id="a5f5ae5bb50bd7702da3ef04bbf7e4b33"></a>
@@ -1272,8 +1275,6 @@ template&lt;uint16_type Dim, typename GEOSHAPE , typename SubFace  = SubFaceOfNo
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> if on the boundary, <code>false</code> otherwise </dd></dl>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1GeoElement3D.html#a4504219dc10abfa1a2fc2a9819d81ef8">Feel::GeoElement3D&lt; Dim, GEOSHAPE, T, IndexT, UseMeasuresStorage &gt;::GeoElement3D()</a>.</p>
 
 </div>
 </div>

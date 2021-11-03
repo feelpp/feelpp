@@ -3,6 +3,7 @@ var markermanagement_8hpp =
     [ "MarkerManagementALEMeshBC", "classFeel_1_1FeelModels_1_1MarkerManagementALEMeshBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementALEMeshBC" ],
     [ "MarkerManagementDirichletBC", "classFeel_1_1FeelModels_1_1MarkerManagementDirichletBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementDirichletBC" ],
     [ "MarkerManagementFluidStructureInterfaceBC", "classFeel_1_1FeelModels_1_1MarkerManagementFluidStructureInterfaceBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementFluidStructureInterfaceBC" ],
+    [ "MarkerManagementIntegralBC", "classFeel_1_1FeelModels_1_1MarkerManagementIntegralBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementIntegralBC" ],
     [ "MarkerManagementNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC" ],
     [ "MarkerManagementNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC" ],
     [ "MarkerManagementPressureBC", "classFeel_1_1FeelModels_1_1MarkerManagementPressureBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementPressureBC" ],

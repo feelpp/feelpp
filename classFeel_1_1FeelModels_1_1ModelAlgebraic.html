@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -156,6 +156,12 @@ typedef Backend&lt; value_type, size_type &gt;&#160;</td><td class="memItemRight
 <tr class="memitem:ac9d7402ed50e77d1898bf5fa698a5779"><td class="memItemLeft" align="right" valign="top"><a id="ac9d7402ed50e77d1898bf5fa698a5779"></a>
 typedef <a class="el" href="structFeel_1_1vf_1_1BlocksBase.html">vf::BlocksBase</a>&lt; size_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>block_pattern_type</b></td></tr>
 <tr class="separator:ac9d7402ed50e77d1898bf5fa698a5779"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acba2c9118709607f0f46f1f9fc236a42"><td class="memItemLeft" align="right" valign="top"><a id="acba2c9118709607f0f46f1f9fc236a42"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>block_vector_ptrtype</b> = std::shared_ptr&lt; <a class="el" href="classBlocksBaseVector.html">block_vector_type</a> &gt;</td></tr>
+<tr class="separator:acba2c9118709607f0f46f1f9fc236a42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea19b0ecdd065ed66aa8b51b9c76be8b"><td class="memItemLeft" align="right" valign="top"><a id="aea19b0ecdd065ed66aa8b51b9c76be8b"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>block_vector_type</b> = <a class="el" href="classBlocksBaseVector.html">BlocksBaseVector</a>&lt; double &gt;</td></tr>
+<tr class="separator:aea19b0ecdd065ed66aa8b51b9c76be8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab492e70215c2638da540ea1234ef103c"><td class="memItemLeft" align="right" valign="top"><a id="ab492e70215c2638da540ea1234ef103c"></a>
 typedef backend_type::graph_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>graph_ptrtype</b></td></tr>
 <tr class="separator:ab492e70215c2638da540ea1234ef103c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -171,6 +177,12 @@ typedef backend_type::indexsplit_ptrtype&#160;</td><td class="memItemRight" vali
 <tr class="memitem:a3c98b8f654a3eda5626e3f578bd217d4"><td class="memItemLeft" align="right" valign="top"><a id="a3c98b8f654a3eda5626e3f578bd217d4"></a>
 typedef backend_type::indexsplit_type&#160;</td><td class="memItemRight" valign="bottom"><b>indexsplit_type</b></td></tr>
 <tr class="separator:a3c98b8f654a3eda5626e3f578bd217d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42ba0d9b37adb4156a68442fc505ec48"><td class="memItemLeft" align="right" valign="top"><a id="a42ba0d9b37adb4156a68442fc505ec48"></a>
+typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html">model_algebraic_factory_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>model_algebraic_factory_ptrtype</b></td></tr>
+<tr class="separator:a42ba0d9b37adb4156a68442fc505ec48"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14994482b7e8ddcede698cff1df8ba15"><td class="memItemLeft" align="right" valign="top"><a id="a14994482b7e8ddcede698cff1df8ba15"></a>
+typedef <a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html">ModelAlgebraicFactory</a>&#160;</td><td class="memItemRight" valign="bottom"><b>model_algebraic_factory_type</b></td></tr>
+<tr class="separator:a14994482b7e8ddcede698cff1df8ba15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aada28675b26e19199bd85e615e141704"><td class="memItemLeft" align="right" valign="top"><a id="aada28675b26e19199bd85e615e141704"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b> = index_type</td></tr>
 <tr class="separator:aada28675b26e19199bd85e615e141704"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -206,6 +218,18 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:aea3e7a83137495886ac7698bcd564319"><td class="memItemLeft" align="right" valign="top"><a id="aea3e7a83137495886ac7698bcd564319"></a>
+backend_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>algebraicBackend</b> (std::string const &amp;name=&quot;&quot;) const</td></tr>
+<tr class="separator:aea3e7a83137495886ac7698bcd564319"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22c58c33510401bf5cc425565b76577d"><td class="memItemLeft" align="right" valign="top"><a id="a22c58c33510401bf5cc425565b76577d"></a>
+block_vector_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>algebraicBlockVectorSolution</b> (std::string const &amp;name=&quot;&quot;) const</td></tr>
+<tr class="separator:a22c58c33510401bf5cc425565b76577d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a208c5c6e9affaf22d1bd40ebeca1e764"><td class="memItemLeft" align="right" valign="top"><a id="a208c5c6e9affaf22d1bd40ebeca1e764"></a>
+model_algebraic_factory_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>algebraicFactory</b> (std::string const &amp;name=&quot;&quot;) const</td></tr>
+<tr class="separator:a208c5c6e9affaf22d1bd40ebeca1e764"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a297e3f4eb682a7ab7d0521964ff78576"><td class="memItemLeft" align="right" valign="top"><a id="a297e3f4eb682a7ab7d0521964ff78576"></a>
+backend_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>backend</b> () const</td></tr>
+<tr class="separator:a297e3f4eb682a7ab7d0521964ff78576"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a07cb4ccea23ef3fbfc8006da05af9e"><td class="memItemLeft" align="right" valign="top"><a id="a7a07cb4ccea23ef3fbfc8006da05af9e"></a>
 virtual <a class="el" href="structFeel_1_1vf_1_1BlocksBase.html">block_pattern_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic.html#a7a07cb4ccea23ef3fbfc8006da05af9e">blockPattern</a> () const</td></tr>
 <tr class="memdesc:a7a07cb4ccea23ef3fbfc8006da05af9e"><td class="mdescLeft">&#160;</td><td class="mdescRight">return an empty blockPattern if not overhead <br /></td></tr>
@@ -240,6 +264,12 @@ std::set&lt; size_type &gt; &amp;&#160;</td><td class="memItemRight" valign="bot
 <tr class="memitem:ad98e7ffaa4e1e8feab85cd5383ca3119"><td class="memItemLeft" align="right" valign="top"><a id="ad98e7ffaa4e1e8feab85cd5383ca3119"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasStartSubBlockSpaceIndex</b> (std::string const &amp;name) const</td></tr>
 <tr class="separator:ad98e7ffaa4e1e8feab85cd5383ca3119"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72f94c1c8999c4230bfefc6ad14b1839"><td class="memItemLeft" align="right" valign="top"><a id="a72f94c1c8999c4230bfefc6ad14b1839"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>initAlgebraicBackend</b> (std::string const &amp;name=&quot;&quot;)</td></tr>
+<tr class="separator:a72f94c1c8999c4230bfefc6ad14b1839"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4daf43f44f40d50cb1dad81d84d3f23f"><td class="memItemLeft" align="right" valign="top"><a id="a4daf43f44f40d50cb1dad81d84d3f23f"></a>
+block_vector_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>initAlgebraicBlockVectorSolution</b> (<a class="el" href="classint.html">int</a> nBlock, std::string const &amp;name=&quot;&quot;)</td></tr>
+<tr class="separator:a4daf43f44f40d50cb1dad81d84d3f23f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0cb1ab72f83d8cb5c976cb2c540c6e55"><td class="memItemLeft" align="right" valign="top"><a id="a0cb1ab72f83d8cb5c976cb2c540c6e55"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ModelAlgebraic</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic.html">ModelAlgebraic</a> const &amp;app)=default</td></tr>
 <tr class="separator:a0cb1ab72f83d8cb5c976cb2c540c6e55"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -285,6 +315,9 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>printGraphFile
 <tr class="memitem:abd89c522817e0cbfb4a3ba6cf8f4ca31"><td class="memItemLeft" align="right" valign="top"><a id="abd89c522817e0cbfb4a3ba6cf8f4ca31"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>rebuildLinearPartInJacobian</b> () const</td></tr>
 <tr class="separator:abd89c522817e0cbfb4a3ba6cf8f4ca31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42f03f61e6d181ed4762542ad0243d54"><td class="memItemLeft" align="right" valign="top"><a id="a42f03f61e6d181ed4762542ad0243d54"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>removeAllAlgebraicDataAndTools</b> ()</td></tr>
+<tr class="separator:a42f03f61e6d181ed4762542ad0243d54"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5044f0eaee9dd16db9f8e607cf86eb61"><td class="memItemLeft" align="right" valign="top"><a id="a5044f0eaee9dd16db9f8e607cf86eb61"></a>
 size_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic.html#a5044f0eaee9dd16db9f8e607cf86eb61">rowStartInMatrix</a> () const</td></tr>
 <tr class="memdesc:a5044f0eaee9dd16db9f8e607cf86eb61"><td class="mdescLeft">&#160;</td><td class="mdescRight">index start of (sub-)block <br /></td></tr>
@@ -292,6 +325,18 @@ size_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href=
 <tr class="memitem:a1abeccc863151bfdceb4824b9598d340"><td class="memItemLeft" align="right" valign="top"><a id="a1abeccc863151bfdceb4824b9598d340"></a>
 size_type&#160;</td><td class="memItemRight" valign="bottom"><b>rowStartInVector</b> () const</td></tr>
 <tr class="separator:a1abeccc863151bfdceb4824b9598d340"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90c88f486665ddf373be7869ca574a3f"><td class="memItemLeft" align="right" valign="top"><a id="a90c88f486665ddf373be7869ca574a3f"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setAlgebraicBackend</b> (backend_ptrtype backend)</td></tr>
+<tr class="separator:a90c88f486665ddf373be7869ca574a3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa30740cea64af6aeceb6afa80908b7f"><td class="memItemLeft" align="right" valign="top"><a id="aaa30740cea64af6aeceb6afa80908b7f"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setAlgebraicBackend</b> (std::string const &amp;name, backend_ptrtype backend)</td></tr>
+<tr class="separator:aaa30740cea64af6aeceb6afa80908b7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a30707af4ddb867b7ec4d850e58750b60"><td class="memItemLeft" align="right" valign="top"><a id="a30707af4ddb867b7ec4d850e58750b60"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setAlgebraicFactory</b> (model_algebraic_factory_ptrtype algFact)</td></tr>
+<tr class="separator:a30707af4ddb867b7ec4d850e58750b60"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9021d4d11ccd92fa8e04459655bcade0"><td class="memItemLeft" align="right" valign="top"><a id="a9021d4d11ccd92fa8e04459655bcade0"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setAlgebraicFactory</b> (std::string const &amp;name, model_algebraic_factory_ptrtype algFact)</td></tr>
+<tr class="separator:a9021d4d11ccd92fa8e04459655bcade0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06c30def38b4afae677fa0d475f5f852"><td class="memItemLeft" align="right" valign="top"><a id="a06c30def38b4afae677fa0d475f5f852"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setErrorIfSolverNotConverged</b> (<a class="el" href="classbool.html">bool</a> b)</td></tr>
 <tr class="separator:a06c30def38b4afae677fa0d475f5f852"><td class="memSeparator" colspan="2">&#160;</td></tr>

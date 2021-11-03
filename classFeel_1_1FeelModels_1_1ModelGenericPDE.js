@@ -4,6 +4,7 @@ var classFeel_1_1FeelModels_1_1ModelGenericPDE =
     [ "conservativeFluxConvectionCoefficientName", "classFeel_1_1FeelModels_1_1ModelGenericPDE.html#ad497811bebcd1e1a3e6bd0c4fcd0cf9f", null ],
     [ "conservativeFluxSourceCoefficientName", "classFeel_1_1FeelModels_1_1ModelGenericPDE.html#a96655df11b9f467b94af69bdd4fd9d26", null ],
     [ "convectionCoefficientName", "classFeel_1_1FeelModels_1_1ModelGenericPDE.html#a4addacb49a916839c7331f164447f181", null ],
+    [ "curlCurlCoefficientName", "classFeel_1_1FeelModels_1_1ModelGenericPDE.html#ad1cae3b4326f22fd52af54906634ea49", null ],
     [ "diffusionCoefficientName", "classFeel_1_1FeelModels_1_1ModelGenericPDE.html#a87f79ca029baba129aa42aea3812b617", null ],
     [ "equationName", "classFeel_1_1FeelModels_1_1ModelGenericPDE.html#a44c29f5aa32ac8ed4e03ee6486132777", null ],
     [ "firstTimeDerivativeCoefficientName", "classFeel_1_1FeelModels_1_1ModelGenericPDE.html#a9ef384cb50b3f3ac545f5b37f8cec47d", null ],

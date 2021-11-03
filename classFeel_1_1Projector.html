@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -182,14 +182,14 @@ Constructors, destructor</h2></td></tr>
 Methods</h2></td></tr>
 <tr class="memitem:a5d25ec4afea5c7d81f7373a6cf34c469"><td class="memTemplParams" colspan="2"><a id="a5d25ec4afea5c7d81f7373a6cf34c469"></a>
 template&lt;typename Range , typename Expr , typename Elem &gt; </td></tr>
-<tr class="memitem:a5d25ec4afea5c7d81f7373a6cf34c469"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>applyOn</b> (Range <a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, Expr const &amp;expr, Elem const &amp;de)</td></tr>
+<tr class="memitem:a5d25ec4afea5c7d81f7373a6cf34c469"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>applyOn</b> (Range <a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, Expr const &amp;<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>, Elem const &amp;de)</td></tr>
 <tr class="separator:a5d25ec4afea5c7d81f7373a6cf34c469"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1975a91503f50f447540dfac426b9947"><td class="memTemplParams" colspan="2"><a id="a1975a91503f50f447540dfac426b9947"></a>
 template&lt;typename RangeT , typename ExprT &gt; </td></tr>
-<tr class="memitem:a1975a91503f50f447540dfac426b9947"><td class="memTemplItemLeft" align="right" valign="top">dual_image_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>projectL2</b> (RangeT <a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, ExprT const &amp;expr)</td></tr>
+<tr class="memitem:a1975a91503f50f447540dfac426b9947"><td class="memTemplItemLeft" align="right" valign="top">dual_image_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>projectL2</b> (RangeT <a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, ExprT const &amp;<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>)</td></tr>
 <tr class="separator:a1975a91503f50f447540dfac426b9947"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1682189785aaeae3c602e2734d0283a9"><td class="memItemLeft" align="right" valign="top"><a id="a1682189785aaeae3c602e2734d0283a9"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((dual_image_element_type), project, tag,(required(expr, *))(optional(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *, self_type::rangeElements(this-&gt;domainSpace(), this-&gt;dualImageSpace()))(quad, *, <a class="el" href="namespaceFeel.html#a1d9f0d87bd325ffed641f92f6d12c3c8">quad_order_from_expression</a>)(quad1, *, <a class="el" href="namespaceFeel.html#a1d9f0d87bd325ffed641f92f6d12c3c8">quad_order_from_expression</a>)(geomap, *, GeomapStrategyType::GEOMAP_OPT)(grad_expr, *,(vf::zero&lt; domain_space_type::nComponents, domain_space_type::nDim &gt;()))(div_expr, *, cst(0.))(curl_expr, *,(vf::zero&lt; mpl::if_&lt; mpl::equal_to&lt; mpl::int_&lt; domain_space_type::nComponents &gt;, mpl::int_&lt; 1 &gt; &gt;, mpl::int_&lt; 1 &gt;, typename mpl::if_&lt; mpl::equal_to&lt; mpl::int_&lt; domain_space_type::nDim &gt;, mpl::int_&lt; 3 &gt; &gt;, mpl::int_&lt; 3 &gt;, mpl::int_&lt; 1 &gt; &gt;::type &gt;::type::value, 1 &gt;()))))</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((dual_image_element_type), project, tag,(required(<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>, *))(optional(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *, self_type::rangeElements(this-&gt;domainSpace(), this-&gt;dualImageSpace()))(quad, *, <a class="el" href="namespaceFeel.html#a1d9f0d87bd325ffed641f92f6d12c3c8">quad_order_from_expression</a>)(quad1, *, <a class="el" href="namespaceFeel.html#a1d9f0d87bd325ffed641f92f6d12c3c8">quad_order_from_expression</a>)(geomap, *, GeomapStrategyType::GEOMAP_OPT)(grad_expr, *,(vf::zero&lt; domain_space_type::nComponents, domain_space_type::nDim &gt;()))(div_expr, *, cst(0.))(curl_expr, *,(vf::zero&lt; mpl::if_&lt; mpl::equal_to&lt; mpl::int_&lt; domain_space_type::nComponents &gt;, mpl::int_&lt; 1 &gt; &gt;, mpl::int_&lt; 1 &gt;, typename mpl::if_&lt; mpl::equal_to&lt; mpl::int_&lt; domain_space_type::nDim &gt;, mpl::int_&lt; 3 &gt; &gt;, mpl::int_&lt; 3 &gt;, mpl::int_&lt; 1 &gt; &gt;::type &gt;::type::value, 1 &gt;()))))</td></tr>
 <tr class="separator:a1682189785aaeae3c602e2734d0283a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb455429f276e9f2a60c96f147038018"><td class="memTemplParams" colspan="2"><a id="abb455429f276e9f2a60c96f147038018"></a>
 template&lt;typename RhsExpr &gt; </td></tr>
@@ -207,7 +207,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>operator()</b> (domai
 <tr class="separator:ad0fed4bcef46c842fdee2847ae1593a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a48ba3c1828ab7decebc463da29bef8cd"><td class="memTemplParams" colspan="2"><a id="a48ba3c1828ab7decebc463da29bef8cd"></a>
 template&lt;typename Range , typename Expr &gt; </td></tr>
-<tr class="memitem:a48ba3c1828ab7decebc463da29bef8cd"><td class="memTemplItemLeft" align="right" valign="top">dual_image_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>operator()</b> (Range const &amp;<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, Expr const &amp;expr)</td></tr>
+<tr class="memitem:a48ba3c1828ab7decebc463da29bef8cd"><td class="memTemplItemLeft" align="right" valign="top">dual_image_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>operator()</b> (Range const &amp;<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, Expr const &amp;<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>)</td></tr>
 <tr class="separator:a48ba3c1828ab7decebc463da29bef8cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a51e4f20a5a515e064e2991f4d1084c15"><td class="memItemLeft" align="right" valign="top"><a id="a51e4f20a5a515e064e2991f4d1084c15"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>apply</b> (domain_element_type const &amp;de, dual_image_element_type &amp;ie) override</td></tr>
@@ -218,7 +218,7 @@ template&lt;typename RhsExpr &gt; </td></tr>
 <tr class="separator:a817b859a31389e14228018d9c1d075d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26dbf28a7df39fddc12edacc39be16a8"><td class="memTemplParams" colspan="2"><a id="a26dbf28a7df39fddc12edacc39be16a8"></a>
 template&lt;typename Expr &gt; </td></tr>
-<tr class="memitem:a26dbf28a7df39fddc12edacc39be16a8"><td class="memTemplItemLeft" align="right" valign="top">dual_image_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>derivate</b> (Expr const &amp;expr)</td></tr>
+<tr class="memitem:a26dbf28a7df39fddc12edacc39be16a8"><td class="memTemplItemLeft" align="right" valign="top">dual_image_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>derivate</b> (Expr const &amp;<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>)</td></tr>
 <tr class="separator:a26dbf28a7df39fddc12edacc39be16a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2aef30466c3e43dc7fc5865d228e0a81"><td class="memItemLeft" align="right" valign="top"><a id="a2aef30466c3e43dc7fc5865d228e0a81"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>epsilon</b> () const</td></tr>

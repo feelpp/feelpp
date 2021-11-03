@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -169,6 +169,10 @@ template&lt;size_type Ctx&gt; </td></tr>
 template&lt;size_type Ctx&gt; </td></tr>
 <tr class="memitem:a8462a4dceb87e9c719b931b74dffa932"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>symbolExpr1</b> (std::enable_if_t&lt; Ctx==FieldCtx::CURL_MAGNITUDE &gt; *=nullptr) const</td></tr>
 <tr class="separator:a8462a4dceb87e9c719b931b74dffa932"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5b31bb2545047d4a61aed939fecf498"><td class="memTemplParams" colspan="2"><a id="ad5b31bb2545047d4a61aed939fecf498"></a>
+template&lt;size_type Ctx&gt; </td></tr>
+<tr class="memitem:ad5b31bb2545047d4a61aed939fecf498"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>symbolExpr1</b> (std::enable_if_t&lt; Ctx==FieldCtx::DIV &gt; *=nullptr) const</td></tr>
+<tr class="separator:ad5b31bb2545047d4a61aed939fecf498"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a272637b56e4358fde0cbb25df02163b6"><td class="memTemplParams" colspan="2"><a id="a272637b56e4358fde0cbb25df02163b6"></a>
 template&lt;size_type Ctx&gt; </td></tr>
 <tr class="memitem:a272637b56e4358fde0cbb25df02163b6"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>symbolExpr1</b> (std::enable_if_t&lt; Ctx==FieldCtx::GRAD &gt; *=nullptr) const</td></tr>
@@ -188,6 +192,22 @@ template&lt;size_type Ctx&gt; </td></tr>
 <tr class="memitem:a2fc09dc463ae5c93dd203bbb139785ca"><td class="memItemLeft" align="right" valign="top"><a id="a2fc09dc463ae5c93dd203bbb139785ca"></a>
 tag_type const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>tag</b> () const</td></tr>
 <tr class="separator:a2fc09dc463ae5c93dd203bbb139785ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a351f92ad162b0a649df565a7ba144b57"><td class="memTemplParams" colspan="2"><a id="a351f92ad162b0a649df565a7ba144b57"></a>
+template&lt;size_type Ctx&gt; </td></tr>
+<tr class="memitem:a351f92ad162b0a649df565a7ba144b57"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>trialSymbolExpr1</b> (<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> blockSpaceIndex, std::enable_if_t&lt; Ctx==FieldCtx::CURL &gt; *=nullptr) const</td></tr>
+<tr class="separator:a351f92ad162b0a649df565a7ba144b57"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8694db5eb20eddb3bfe24545c03482c1"><td class="memTemplParams" colspan="2"><a id="a8694db5eb20eddb3bfe24545c03482c1"></a>
+template&lt;size_type Ctx&gt; </td></tr>
+<tr class="memitem:a8694db5eb20eddb3bfe24545c03482c1"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>trialSymbolExpr1</b> (<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> blockSpaceIndex, std::enable_if_t&lt; Ctx==FieldCtx::DIV &gt; *=nullptr) const</td></tr>
+<tr class="separator:a8694db5eb20eddb3bfe24545c03482c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adfc0f8451ca2a27c1aaa4d76457cb70a"><td class="memTemplParams" colspan="2"><a id="adfc0f8451ca2a27c1aaa4d76457cb70a"></a>
+template&lt;size_type Ctx&gt; </td></tr>
+<tr class="memitem:adfc0f8451ca2a27c1aaa4d76457cb70a"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>trialSymbolExpr1</b> (<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> blockSpaceIndex, std::enable_if_t&lt; Ctx==FieldCtx::GRAD &gt; *=nullptr) const</td></tr>
+<tr class="separator:adfc0f8451ca2a27c1aaa4d76457cb70a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d233de582ce9bcce4e397133ed37f66"><td class="memTemplParams" colspan="2"><a id="a8d233de582ce9bcce4e397133ed37f66"></a>
+template&lt;size_type Ctx&gt; </td></tr>
+<tr class="memitem:a8d233de582ce9bcce4e397133ed37f66"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>trialSymbolExpr1</b> (<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> blockSpaceIndex, std::enable_if_t&lt; Ctx==FieldCtx::ID &gt; *=nullptr) const</td></tr>
+<tr class="separator:a8d233de582ce9bcce4e397133ed37f66"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39485058521ba251288e82c66347aa88"><td class="memItemLeft" align="right" valign="top"><a id="a39485058521ba251288e82c66347aa88"></a>
 SymbolExprUpdateFunction&#160;</td><td class="memItemRight" valign="bottom"><b>updateFunctionSymbolExpr</b> () const</td></tr>
 <tr class="separator:a39485058521ba251288e82c66347aa88"><td class="memSeparator" colspan="2">&#160;</td></tr>

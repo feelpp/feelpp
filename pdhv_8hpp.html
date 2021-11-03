@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -125,31 +125,31 @@ Namespaces</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
 <tr class="memitem:a10d96b998ac35401f2ea2889cec73daa"><td class="memTemplParams" colspan="2"><a id="a10d96b998ac35401f2ea2889cec73daa"></a>
-template&lt;typename MeshType , int Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetEquiSpaced&gt; </td></tr>
+template&lt;typename MeshType , int Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetFekete&gt; </td></tr>
 <tr class="memitem:a10d96b998ac35401f2ea2889cec73daa"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::Pdhv_element_t</b> = typename Pdhv_type&lt; MeshType, Order, Pts &gt;::element_type</td></tr>
 <tr class="separator:a10d96b998ac35401f2ea2889cec73daa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e00b39d5ac8f6cdbd13d4dd8aae7e46"><td class="memTemplParams" colspan="2"><a id="a2e00b39d5ac8f6cdbd13d4dd8aae7e46"></a>
-template&lt;typename MeshType , int Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetEquiSpaced&gt; </td></tr>
+template&lt;typename MeshType , int Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetFekete&gt; </td></tr>
 <tr class="memitem:a2e00b39d5ac8f6cdbd13d4dd8aae7e46"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::Pdhv_element_type</b> = Pdhv_element_t&lt; MeshType, Order, Pts &gt;</td></tr>
 <tr class="separator:a2e00b39d5ac8f6cdbd13d4dd8aae7e46"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8eb3edbb481ca16373558e18bc2b7fb5"><td class="memTemplParams" colspan="2"><a id="a8eb3edbb481ca16373558e18bc2b7fb5"></a>
-template&lt;typename MeshType , int Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetEquiSpaced, int Tag = 0&gt; </td></tr>
+template&lt;typename MeshType , int Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetFekete, int Tag = 0&gt; </td></tr>
 <tr class="memitem:a8eb3edbb481ca16373558e18bc2b7fb5"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::Pdhv_ptrtype</b> = typename meta::Pdhv&lt; MeshType, Order, Pts, Tag &gt;::ptrtype</td></tr>
 <tr class="separator:a8eb3edbb481ca16373558e18bc2b7fb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5d53e007359fef05231e645b10a77141"><td class="memTemplParams" colspan="2"><a id="a5d53e007359fef05231e645b10a77141"></a>
-template&lt;typename MeshType , int Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetEquiSpaced, int Tag = 0&gt; </td></tr>
+template&lt;typename MeshType , int Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetFekete, int Tag = 0&gt; </td></tr>
 <tr class="memitem:a5d53e007359fef05231e645b10a77141"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::Pdhv_type</b> = typename meta::Pdhv&lt; MeshType, Order, Pts, Tag &gt;::type</td></tr>
 <tr class="separator:a5d53e007359fef05231e645b10a77141"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ae7af58fd90da17489daace913d3ccb99"><td class="memTemplParams" colspan="2"><a id="ae7af58fd90da17489daace913d3ccb99"></a>
-template&lt;int Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetEquiSpaced, typename MeshType , int Tag = 0&gt; </td></tr>
+template&lt;int Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetFekete, typename MeshType , int Tag = 0&gt; </td></tr>
 <tr class="memitem:ae7af58fd90da17489daace913d3ccb99"><td class="memTemplItemLeft" align="right" valign="top">Pdhv_ptrtype&lt; MeshType, Order, Pts, Tag &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#ae7af58fd90da17489daace913d3ccb99">Feel::Pdhv</a> (std::shared_ptr&lt; MeshType &gt; mesh, <a class="el" href="classbool.html">bool</a> buildExtendedDofTable=false)</td></tr>
 <tr class="memdesc:ae7af58fd90da17489daace913d3ccb99"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a <code>mesh</code>, build a function space of vectorial discontinuous function which are piecewise polynomial of degree (total or in each variable) less than k using Lagrange basis functions. <br /></td></tr>
 <tr class="separator:ae7af58fd90da17489daace913d3ccb99"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab682d6426dbe98f887955488c293e65c"><td class="memTemplParams" colspan="2"><a id="ab682d6426dbe98f887955488c293e65c"></a>
-template&lt;int Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetEquiSpaced, typename MeshType , int Tag = 0&gt; </td></tr>
+template&lt;int Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetFekete, typename MeshType , int Tag = 0&gt; </td></tr>
 <tr class="memitem:ab682d6426dbe98f887955488c293e65c"><td class="memTemplItemLeft" align="right" valign="top">Pdhv_ptrtype&lt; MeshType, Order, Pts, Tag &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#ab682d6426dbe98f887955488c293e65c">Feel::Pdhv</a> (std::shared_ptr&lt; MeshType &gt; mesh, elements_reference_wrapper_t&lt; MeshType &gt; const &amp;rangeElt, <a class="el" href="classbool.html">bool</a> buildExtendedDofTable=false)</td></tr>
 <tr class="memdesc:ab682d6426dbe98f887955488c293e65c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a <code>mesh</code>, build a function space of vectorial discontinuous function which are piecewise polynomial of degree (total or in each variable) less than k using Lagrange basis functions. <br /></td></tr>
 <tr class="separator:ab682d6426dbe98f887955488c293e65c"><td class="memSeparator" colspan="2">&#160;</td></tr>

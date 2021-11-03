@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -254,12 +254,6 @@ typedef std::shared_ptr&lt; exporter_type &gt;&#160;</td><td class="memItemRight
 <tr class="memitem:ae13e029ffc7a87d0ed8e392f534d8496"><td class="memItemLeft" align="right" valign="top"><a id="ae13e029ffc7a87d0ed8e392f534d8496"></a>
 typedef Exporter&lt; <a class="el" href="classFeel_1_1Mesh.html">mesh_type</a>, nOrderGeo &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>exporter_type</b></td></tr>
 <tr class="separator:ae13e029ffc7a87d0ed8e392f534d8496"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abeda2c246d46bfea9f1834fd034cc02d"><td class="memItemLeft" align="right" valign="top"><a id="abeda2c246d46bfea9f1834fd034cc02d"></a>
-typedef model_algebraic_factory_type::graph_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>graph_ptrtype</b></td></tr>
-<tr class="separator:abeda2c246d46bfea9f1834fd034cc02d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44bdc7d59dc76aa1a5c0bcfcce79f981"><td class="memItemLeft" align="right" valign="top"><a id="a44bdc7d59dc76aa1a5c0bcfcce79f981"></a>
-typedef model_algebraic_factory_type::graph_type&#160;</td><td class="memItemRight" valign="bottom"><b>graph_type</b></td></tr>
-<tr class="separator:a44bdc7d59dc76aa1a5c0bcfcce79f981"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc432920b51a82e4a37d6ca1122e388e"><td class="memItemLeft" align="right" valign="top"><a id="acc432920b51a82e4a37d6ca1122e388e"></a>
 typedef std::shared_ptr&lt; materialsproperties_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>materialsproperties_ptrtype</b></td></tr>
 <tr class="separator:acc432920b51a82e4a37d6ca1122e388e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -281,12 +275,6 @@ typedef <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; convex_type &gt
 <tr class="memitem:a456ba0af11f4927198ca71cfbd3440e8"><td class="memItemLeft" align="right" valign="top"><a id="a456ba0af11f4927198ca71cfbd3440e8"></a>
 typedef <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Simplex.html">Simplex</a>&lt; nDim, 1, nDim &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_visu_ho_type</b></td></tr>
 <tr class="separator:a456ba0af11f4927198ca71cfbd3440e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab285894d45cc77980afe3c19509d5e15"><td class="memItemLeft" align="right" valign="top"><a id="ab285894d45cc77980afe3c19509d5e15"></a>
-typedef std::shared_ptr&lt; model_algebraic_factory_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>model_algebraic_factory_ptrtype</b></td></tr>
-<tr class="separator:ab285894d45cc77980afe3c19509d5e15"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae80ca1e350d0e689a5ebe99df6356128"><td class="memItemLeft" align="right" valign="top"><a id="ae80ca1e350d0e689a5ebe99df6356128"></a>
-typedef ModelAlgebraicFactory&#160;</td><td class="memItemRight" valign="bottom"><b>model_algebraic_factory_type</b></td></tr>
-<tr class="separator:ae80ca1e350d0e689a5ebe99df6356128"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20274d75c3e126165edc4fd4611a0084"><td class="memItemLeft" align="right" valign="top"><a id="a20274d75c3e126165edc4fd4611a0084"></a>
 typedef std::shared_ptr&lt; newmark_displacement_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>newmark_displacement_ptrtype</b></td></tr>
 <tr class="separator:a20274d75c3e126165edc4fd4611a0084"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -474,6 +462,12 @@ typedef Backend&lt; value_type, size_type &gt;&#160;</td><td class="memItemRight
 <tr class="memitem:ac9d7402ed50e77d1898bf5fa698a5779 inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="ac9d7402ed50e77d1898bf5fa698a5779"></a>
 typedef <a class="el" href="structFeel_1_1vf_1_1BlocksBase.html">vf::BlocksBase</a>&lt; size_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>block_pattern_type</b></td></tr>
 <tr class="separator:ac9d7402ed50e77d1898bf5fa698a5779 inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acba2c9118709607f0f46f1f9fc236a42 inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="acba2c9118709607f0f46f1f9fc236a42"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>block_vector_ptrtype</b> = std::shared_ptr&lt; <a class="el" href="classBlocksBaseVector.html">block_vector_type</a> &gt;</td></tr>
+<tr class="separator:acba2c9118709607f0f46f1f9fc236a42 inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea19b0ecdd065ed66aa8b51b9c76be8b inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="aea19b0ecdd065ed66aa8b51b9c76be8b"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>block_vector_type</b> = <a class="el" href="classBlocksBaseVector.html">BlocksBaseVector</a>&lt; double &gt;</td></tr>
+<tr class="separator:aea19b0ecdd065ed66aa8b51b9c76be8b inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab492e70215c2638da540ea1234ef103c inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="ab492e70215c2638da540ea1234ef103c"></a>
 typedef backend_type::graph_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>graph_ptrtype</b></td></tr>
 <tr class="separator:ab492e70215c2638da540ea1234ef103c inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -489,6 +483,12 @@ typedef backend_type::indexsplit_ptrtype&#160;</td><td class="memItemRight" vali
 <tr class="memitem:a3c98b8f654a3eda5626e3f578bd217d4 inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a3c98b8f654a3eda5626e3f578bd217d4"></a>
 typedef backend_type::indexsplit_type&#160;</td><td class="memItemRight" valign="bottom"><b>indexsplit_type</b></td></tr>
 <tr class="separator:a3c98b8f654a3eda5626e3f578bd217d4 inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42ba0d9b37adb4156a68442fc505ec48 inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a42ba0d9b37adb4156a68442fc505ec48"></a>
+typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html">model_algebraic_factory_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>model_algebraic_factory_ptrtype</b></td></tr>
+<tr class="separator:a42ba0d9b37adb4156a68442fc505ec48 inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14994482b7e8ddcede698cff1df8ba15 inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a14994482b7e8ddcede698cff1df8ba15"></a>
+typedef <a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html">ModelAlgebraicFactory</a>&#160;</td><td class="memItemRight" valign="bottom"><b>model_algebraic_factory_type</b></td></tr>
+<tr class="separator:a14994482b7e8ddcede698cff1df8ba15 inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aada28675b26e19199bd85e615e141704 inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="aada28675b26e19199bd85e615e141704"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b> = index_type</td></tr>
 <tr class="separator:aada28675b26e19199bd85e615e141704 inherit pub_types_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -523,24 +523,9 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>subphysic_descriptio
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a1b4d195275c6073f1bd0567ad2df5b8c"><td class="memItemLeft" align="right" valign="top"><a id="a1b4d195275c6073f1bd0567ad2df5b8c"></a>
-model_algebraic_factory_ptrtype &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>algebraicFactory</b> ()</td></tr>
-<tr class="separator:a1b4d195275c6073f1bd0567ad2df5b8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad8f8be5d8395c86471940d0c3669b14b"><td class="memItemLeft" align="right" valign="top"><a id="ad8f8be5d8395c86471940d0c3669b14b"></a>
-model_algebraic_factory_ptrtype const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>algebraicFactory</b> () const</td></tr>
-<tr class="separator:ad8f8be5d8395c86471940d0c3669b14b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a373bb3a4cc0fd7c58f6ec7d3adb68093"><td class="memItemLeft" align="right" valign="top"><a id="a373bb3a4cc0fd7c58f6ec7d3adb68093"></a>
-backend_ptrtype const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>backend</b> () const</td></tr>
-<tr class="separator:a373bb3a4cc0fd7c58f6ec7d3adb68093"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e05a396470a2b2f66ee369b6855a98d"><td class="memItemLeft" align="right" valign="top"><a id="a8e05a396470a2b2f66ee369b6855a98d"></a>
 <a class="el" href="structFeel_1_1vf_1_1BlocksBase.html">block_pattern_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>blockPattern</b> () const override</td></tr>
 <tr class="separator:a8e05a396470a2b2f66ee369b6855a98d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aead3b8dba31bcb9e1ab7859e7ed612f8"><td class="memItemLeft" align="right" valign="top"><a id="aead3b8dba31bcb9e1ab7859e7ed612f8"></a>
-BlocksBaseVector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>blockVectorSolution</b> ()</td></tr>
-<tr class="separator:aead3b8dba31bcb9e1ab7859e7ed612f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a27ebb48d83ff8b5efb937f6946ac92e0"><td class="memItemLeft" align="right" valign="top"><a id="a27ebb48d83ff8b5efb937f6946ac92e0"></a>
-BlocksBaseVector&lt; double &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>blockVectorSolution</b> () const</td></tr>
-<tr class="separator:a27ebb48d83ff8b5efb937f6946ac92e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3b5b3dfec73525af42aacb5afe85519e"><td class="memItemLeft" align="right" valign="top"><a id="a3b5b3dfec73525af42aacb5afe85519e"></a>
 BlocksBaseGraphCSR&#160;</td><td class="memItemRight" valign="bottom"><b>buildBlockMatrixGraph</b> () const override</td></tr>
 <tr class="separator:a3b5b3dfec73525af42aacb5afe85519e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1335,6 +1320,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memdesc:ac4fe7b05debcbc3fd43502d47dddb589 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">finalize journal publication <br /></td></tr>
 <tr class="separator:ac4fe7b05debcbc3fd43502d47dddb589 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic.html">Feel::FeelModels::ModelAlgebraic</a></td></tr>
+<tr class="memitem:aea3e7a83137495886ac7698bcd564319 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="aea3e7a83137495886ac7698bcd564319"></a>
+backend_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>algebraicBackend</b> (std::string const &amp;name=&quot;&quot;) const</td></tr>
+<tr class="separator:aea3e7a83137495886ac7698bcd564319 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22c58c33510401bf5cc425565b76577d inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a22c58c33510401bf5cc425565b76577d"></a>
+block_vector_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>algebraicBlockVectorSolution</b> (std::string const &amp;name=&quot;&quot;) const</td></tr>
+<tr class="separator:a22c58c33510401bf5cc425565b76577d inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a208c5c6e9affaf22d1bd40ebeca1e764 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a208c5c6e9affaf22d1bd40ebeca1e764"></a>
+model_algebraic_factory_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>algebraicFactory</b> (std::string const &amp;name=&quot;&quot;) const</td></tr>
+<tr class="separator:a208c5c6e9affaf22d1bd40ebeca1e764 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a297e3f4eb682a7ab7d0521964ff78576 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a297e3f4eb682a7ab7d0521964ff78576"></a>
+backend_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>backend</b> () const</td></tr>
+<tr class="separator:a297e3f4eb682a7ab7d0521964ff78576 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a65790db6031015a1950ceb7d013d48cf inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a65790db6031015a1950ceb7d013d48cf"></a>
 virtual graph_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>buildMatrixGraph</b> () const</td></tr>
 <tr class="separator:a65790db6031015a1950ceb7d013d48cf inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1362,6 +1359,12 @@ std::set&lt; size_type &gt; &amp;&#160;</td><td class="memItemRight" valign="bot
 <tr class="memitem:ad98e7ffaa4e1e8feab85cd5383ca3119 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="ad98e7ffaa4e1e8feab85cd5383ca3119"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasStartSubBlockSpaceIndex</b> (std::string const &amp;name) const</td></tr>
 <tr class="separator:ad98e7ffaa4e1e8feab85cd5383ca3119 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72f94c1c8999c4230bfefc6ad14b1839 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a72f94c1c8999c4230bfefc6ad14b1839"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>initAlgebraicBackend</b> (std::string const &amp;name=&quot;&quot;)</td></tr>
+<tr class="separator:a72f94c1c8999c4230bfefc6ad14b1839 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4daf43f44f40d50cb1dad81d84d3f23f inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a4daf43f44f40d50cb1dad81d84d3f23f"></a>
+block_vector_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>initAlgebraicBlockVectorSolution</b> (<a class="el" href="classint.html">int</a> nBlock, std::string const &amp;name=&quot;&quot;)</td></tr>
+<tr class="separator:a4daf43f44f40d50cb1dad81d84d3f23f inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0cb1ab72f83d8cb5c976cb2c540c6e55 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a0cb1ab72f83d8cb5c976cb2c540c6e55"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ModelAlgebraic</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic.html">ModelAlgebraic</a> const &amp;app)=default</td></tr>
 <tr class="separator:a0cb1ab72f83d8cb5c976cb2c540c6e55 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1407,6 +1410,9 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>printGraphFile
 <tr class="memitem:abd89c522817e0cbfb4a3ba6cf8f4ca31 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="abd89c522817e0cbfb4a3ba6cf8f4ca31"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>rebuildLinearPartInJacobian</b> () const</td></tr>
 <tr class="separator:abd89c522817e0cbfb4a3ba6cf8f4ca31 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42f03f61e6d181ed4762542ad0243d54 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a42f03f61e6d181ed4762542ad0243d54"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>removeAllAlgebraicDataAndTools</b> ()</td></tr>
+<tr class="separator:a42f03f61e6d181ed4762542ad0243d54 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5044f0eaee9dd16db9f8e607cf86eb61 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a5044f0eaee9dd16db9f8e607cf86eb61"></a>
 size_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic.html#a5044f0eaee9dd16db9f8e607cf86eb61">rowStartInMatrix</a> () const</td></tr>
 <tr class="memdesc:a5044f0eaee9dd16db9f8e607cf86eb61 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="mdescLeft">&#160;</td><td class="mdescRight">index start of (sub-)block <br /></td></tr>
@@ -1414,6 +1420,18 @@ size_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href=
 <tr class="memitem:a1abeccc863151bfdceb4824b9598d340 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a1abeccc863151bfdceb4824b9598d340"></a>
 size_type&#160;</td><td class="memItemRight" valign="bottom"><b>rowStartInVector</b> () const</td></tr>
 <tr class="separator:a1abeccc863151bfdceb4824b9598d340 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90c88f486665ddf373be7869ca574a3f inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a90c88f486665ddf373be7869ca574a3f"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setAlgebraicBackend</b> (backend_ptrtype backend)</td></tr>
+<tr class="separator:a90c88f486665ddf373be7869ca574a3f inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa30740cea64af6aeceb6afa80908b7f inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="aaa30740cea64af6aeceb6afa80908b7f"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setAlgebraicBackend</b> (std::string const &amp;name, backend_ptrtype backend)</td></tr>
+<tr class="separator:aaa30740cea64af6aeceb6afa80908b7f inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a30707af4ddb867b7ec4d850e58750b60 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a30707af4ddb867b7ec4d850e58750b60"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setAlgebraicFactory</b> (model_algebraic_factory_ptrtype algFact)</td></tr>
+<tr class="separator:a30707af4ddb867b7ec4d850e58750b60 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9021d4d11ccd92fa8e04459655bcade0 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a9021d4d11ccd92fa8e04459655bcade0"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setAlgebraicFactory</b> (std::string const &amp;name, model_algebraic_factory_ptrtype algFact)</td></tr>
+<tr class="separator:a9021d4d11ccd92fa8e04459655bcade0 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06c30def38b4afae677fa0d475f5f852 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memItemLeft" align="right" valign="top"><a id="a06c30def38b4afae677fa0d475f5f852"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setErrorIfSolverNotConverged</b> (<a class="el" href="classbool.html">bool</a> b)</td></tr>
 <tr class="separator:a06c30def38b4afae677fa0d475f5f852 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1544,9 +1562,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setup</b> (pt::ptree 
 <tr class="memitem:aa8f7427b409cf7838b70144b4749672d inherit pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td class="memItemLeft" align="right" valign="top"><a id="aa8f7427b409cf7838b70144b4749672d"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setupRestart</b> (std::string const &amp;meshName)</td></tr>
 <tr class="separator:aa8f7427b409cf7838b70144b4749672d inherit pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8e89de0ad0386718d4e4dd139ebfdf1a inherit pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td class="memItemLeft" align="right" valign="top"><a id="a8e89de0ad0386718d4e4dd139ebfdf1a"></a>
+<tr class="memitem:aad5989ed3df16ce3e3c176f4b37ef420 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td class="memItemLeft" align="right" valign="top"><a id="aad5989ed3df16ce3e3c176f4b37ef420"></a>
 auto&#160;</td><td class="memItemRight" valign="bottom"><b>symbolsExpr</b> (std::string const &amp;prefix_symbol=&quot;meshes&quot;) const</td></tr>
-<tr class="separator:a8e89de0ad0386718d4e4dd139ebfdf1a inherit pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:aad5989ed3df16ce3e3c176f4b37ef420 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a99915ddbb6a3b1cd242292ecb9c79c inherit pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td class="memItemLeft" align="right" valign="top"><a id="a5a99915ddbb6a3b1cd242292ecb9c79c"></a>
 tabulate_informations_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>tabulateInformations</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;jsonInfo, <a class="el" href="classFeel_1_1TabulateInformationProperties.html">TabulateInformationProperties</a> const &amp;tabInfoProp) const override</td></tr>
 <tr class="separator:a5a99915ddbb6a3b1cd242292ecb9c79c inherit pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1627,7 +1645,7 @@ auto&#160;</td><td class="memItemRight" valign="bottom"><b>symbolsExprPhysicsFro
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:adfa7d1f87f8819e33432c27a52b8b416"><td class="memItemLeft" align="right" valign="top"><a id="adfa7d1f87f8819e33432c27a52b8b416"></a>
-static std::string&#160;</td><td class="memItemRight" valign="bottom"><b>expandStringFromSpec</b> (std::string const &amp;expr)</td></tr>
+static std::string&#160;</td><td class="memItemRight" valign="bottom"><b>expandStringFromSpec</b> (std::string const &amp;<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>)</td></tr>
 <tr class="separator:adfa7d1f87f8819e33432c27a52b8b416"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af2f1b0a6bcbb2aae20cd77c6db548096"><td class="memItemLeft" align="right" valign="top"><a id="af2f1b0a6bcbb2aae20cd77c6db548096"></a>
 static self_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>New</b> (std::string const &amp;prefix, std::string const &amp;<a class="el" href="classFeel_1_1FeelModels_1_1ModelBase.html#a729c9408ed1183fa635bbba738829ac2">keyword</a>=&quot;solid&quot;, worldcomm_ptr_t const &amp;worldComm=<a class="el" href="classFeel_1_1Environment.html#a3ffa1e65a0e0cf627d2187173c7feebb">Environment::worldCommPtr</a>(), std::string const &amp;subPrefix=&quot;&quot;, <a class="el" href="structFeel_1_1FeelModels_1_1ModelBaseRepository.html">ModelBaseRepository</a> const &amp;modelRep=<a class="el" href="structFeel_1_1FeelModels_1_1ModelBaseRepository.html">ModelBaseRepository</a>())</td></tr>
@@ -1695,16 +1713,17 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setPostProcessMeasure
 <tr class="memitem:a47395ed71fadf937067366287bd13426 inherit pro_methods_classFeel_1_1FeelModels_1_1ModelNumerical"><td class="memItemLeft" align="right" valign="top"><a id="a47395ed71fadf937067366287bd13426"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setPostProcessSaveAllFieldsAvailable</b> (std::set&lt; std::string &gt; const &amp;ifields)</td></tr>
 <tr class="separator:a47395ed71fadf937067366287bd13426 inherit pro_methods_classFeel_1_1FeelModels_1_1ModelNumerical"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae603a4d782e08a5bd01ab6445a53b876 inherit pro_methods_classFeel_1_1FeelModels_1_1ModelNumerical"><td class="memItemLeft" align="right" valign="top"><a id="ae603a4d782e08a5bd01ab6445a53b876"></a>
-auto&#160;</td><td class="memItemRight" valign="bottom"><b>symbolsExprMeshes</b> () const</td></tr>
-<tr class="separator:ae603a4d782e08a5bd01ab6445a53b876 inherit pro_methods_classFeel_1_1FeelModels_1_1ModelNumerical"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f079301f4091edba1ff469f3acb599e inherit pro_methods_classFeel_1_1FeelModels_1_1ModelNumerical"><td class="memTemplParams" colspan="2"><a id="a7f079301f4091edba1ff469f3acb599e"></a>
+template&lt;typename MeshType , bool AddFields = true&gt; </td></tr>
+<tr class="memitem:a7f079301f4091edba1ff469f3acb599e inherit pro_methods_classFeel_1_1FeelModels_1_1ModelNumerical"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>symbolsExprMeshes</b> () const</td></tr>
+<tr class="separator:a7f079301f4091edba1ff469f3acb599e inherit pro_methods_classFeel_1_1FeelModels_1_1ModelNumerical"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a130fc9ebcf4d173cafea590cdbacfeb9 inherit pro_methods_classFeel_1_1FeelModels_1_1ModelNumerical"><td class="memItemLeft" align="right" valign="top"><a id="a130fc9ebcf4d173cafea590cdbacfeb9"></a>
 auto&#160;</td><td class="memItemRight" valign="bottom"><b>symbolsExprParameter</b> () const</td></tr>
 <tr class="separator:a130fc9ebcf4d173cafea590cdbacfeb9 inherit pro_methods_classFeel_1_1FeelModels_1_1ModelNumerical"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0fa3f7e738343682b99bce97c33160e3 inherit pro_methods_classFeel_1_1FeelModels_1_1ModelNumerical"><td class="memTemplParams" colspan="2"><a id="a0fa3f7e738343682b99bce97c33160e3"></a>
+<tr class="memitem:a596e334cca5afa3fa6e2327f801c7632 inherit pro_methods_classFeel_1_1FeelModels_1_1ModelNumerical"><td class="memTemplParams" colspan="2"><a id="a596e334cca5afa3fa6e2327f801c7632"></a>
 template&lt;typename ElementType , typename RangeType , typename SymbolsExpr &gt; </td></tr>
-<tr class="memitem:a0fa3f7e738343682b99bce97c33160e3 inherit pro_methods_classFeel_1_1FeelModels_1_1ModelNumerical"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateInitialConditions</b> (std::string const &amp;fieldName, RangeType const &amp;defaultRange, <a class="el" href="structFeel_1_1vf_1_1SymbolsExpr.html">SymbolsExpr</a> const &amp;symbolsExpr, std::vector&lt; std::shared_ptr&lt; ElementType &gt; &gt; &amp;dataToUpdate)</td></tr>
-<tr class="separator:a0fa3f7e738343682b99bce97c33160e3 inherit pro_methods_classFeel_1_1FeelModels_1_1ModelNumerical"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a596e334cca5afa3fa6e2327f801c7632 inherit pro_methods_classFeel_1_1FeelModels_1_1ModelNumerical"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateInitialConditions</b> (std::string const &amp;fieldName, RangeType const &amp;defaultRange, <a class="el" href="structFeel_1_1vf_1_1SymbolsExpr.html">SymbolsExpr</a> const &amp;symbolsExpr, std::vector&lt; std::shared_ptr&lt; ElementType &gt; &gt; &amp;dataToUpdate, std::map&lt; <a class="el" href="classint.html">int</a>, double &gt; const &amp;priorTimes={{0, 0}})</td></tr>
+<tr class="separator:a596e334cca5afa3fa6e2327f801c7632 inherit pro_methods_classFeel_1_1FeelModels_1_1ModelNumerical"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classFeel_1_1JournalWatcher"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classFeel_1_1JournalWatcher')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classFeel_1_1JournalWatcher.html">Feel::JournalWatcher</a></td></tr>
 <tr class="memitem:ace7e1916b49e2d851c7253f6c79347b7 inherit pro_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="ace7e1916b49e2d851c7253f6c79347b7"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalWatcher.html#ace7e1916b49e2d851c7253f6c79347b7">applyUpdateInformationObject</a> ()</td></tr>

@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -138,6 +138,12 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>mmg_mesh_t</b> = std
 <tr class="memitem:a372d53184584384932de6c19bfbff43f"><td class="memItemLeft" align="right" valign="top"><a id="a372d53184584384932de6c19bfbff43f"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_metric_t</b> = typename Pch_type&lt; mesh_t, 1 &gt;::element_type</td></tr>
 <tr class="separator:a372d53184584384932de6c19bfbff43f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c5d16dc10ff4f881012aa7e5380fe80"><td class="memItemLeft" align="right" valign="top"><a id="a5c5d16dc10ff4f881012aa7e5380fe80"></a>
+typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1SubMeshData.html">smd_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>smd_ptrtype</b></td></tr>
+<tr class="separator:a5c5d16dc10ff4f881012aa7e5380fe80"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a262c82d669fa971521d17e35365d2845"><td class="memItemLeft" align="right" valign="top"><a id="a262c82d669fa971521d17e35365d2845"></a>
+typedef <a class="el" href="classFeel_1_1SubMeshData.html">SubMeshData</a>&lt; index_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>smd_type</b></td></tr>
+<tr class="separator:a262c82d669fa971521d17e35365d2845"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -159,9 +165,21 @@ mesh_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>mmg2Mesh</b> 
 mesh_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Remesh.html#a4df78040aa842de793577cee1e513921">mmg2Mesh</a> (mmg_mesh_t const &amp;m_in)</td></tr>
 <tr class="memdesc:a4df78040aa842de793577cee1e513921"><td class="mdescLeft">&#160;</td><td class="mdescRight">convert a Mmg mesh into a Feel++ <code>mesh</code> <br /></td></tr>
 <tr class="separator:a4df78040aa842de793577cee1e513921"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a83a6008f6000009ae53dfdfccadd4eac"><td class="memItemLeft" align="right" valign="top"><a id="a83a6008f6000009ae53dfdfccadd4eac"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Remesh</b> (std::shared_ptr&lt; MeshType &gt; const &amp;mesh, boost::any const &amp;required_element_markers, boost::any const &amp;required_facet_markers)</td></tr>
-<tr class="separator:a83a6008f6000009ae53dfdfccadd4eac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0fd7992a5429be765307b0266f4d15c1"><td class="memItemLeft" align="right" valign="top"><a id="a0fd7992a5429be765307b0266f4d15c1"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Remesh</b> (<a class="el" href="classFeel_1_1Remesh.html">Remesh</a> &amp;&amp;r)=default</td></tr>
+<tr class="separator:a0fd7992a5429be765307b0266f4d15c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c1cdf14670945804850423e379cde2b"><td class="memItemLeft" align="right" valign="top"><a id="a4c1cdf14670945804850423e379cde2b"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Remesh</b> (<a class="el" href="classFeel_1_1Remesh.html">Remesh</a> const &amp;r)=default</td></tr>
+<tr class="separator:a4c1cdf14670945804850423e379cde2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24ae9d5d25c2b299d82f9513b83d1e38"><td class="memItemLeft" align="right" valign="top"><a id="a24ae9d5d25c2b299d82f9513b83d1e38"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Remesh</b> (std::shared_ptr&lt; MeshType &gt; const &amp;mesh)</td></tr>
+<tr class="separator:a24ae9d5d25c2b299d82f9513b83d1e38"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c4ce48358f8e4ec9facc7cd60950842"><td class="memItemLeft" align="right" valign="top"><a id="a5c4ce48358f8e4ec9facc7cd60950842"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Remesh</b> (std::shared_ptr&lt; MeshType &gt; const &amp;mesh, boost::any const &amp;required_element_markers)</td></tr>
+<tr class="separator:a5c4ce48358f8e4ec9facc7cd60950842"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d97a277cf5e51a718058c33cc8d77e7"><td class="memItemLeft" align="right" valign="top"><a id="a7d97a277cf5e51a718058c33cc8d77e7"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Remesh</b> (std::shared_ptr&lt; MeshType &gt; const &amp;mesh, boost::any const &amp;required_element_markers, boost::any const &amp;required_facet_markers, std::shared_ptr&lt; MeshType &gt; const &amp;parent=nullptr, std::string const &amp;prefix={})</td></tr>
+<tr class="separator:a7d97a277cf5e51a718058c33cc8d77e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa4c11a2dcfe1fb66807260770f7d0038"><td class="memItemLeft" align="right" valign="top"><a id="aa4c11a2dcfe1fb66807260770f7d0038"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Remesh.html#aa4c11a2dcfe1fb66807260770f7d0038">setMetric</a> (scalar_metric_t const &amp;)</td></tr>
 <tr class="memdesc:aa4c11a2dcfe1fb66807260770f7d0038"><td class="mdescLeft">&#160;</td><td class="mdescRight">set scalar metric <br /></td></tr>

@@ -7,5 +7,6 @@ var classFeel_1_1MeshSupportBase =
     [ "numElements", "classFeel_1_1MeshSupportBase.html#a6d6405dc660b497629b643def9ba5751", null ],
     [ "rangeMeshElementsGhostIdsPartialSupport", "classFeel_1_1MeshSupportBase.html#a161cc26980ec257aba2ad6021b0e94d7", null ],
     [ "rangeMeshElementsIdsPartialSupport", "classFeel_1_1MeshSupportBase.html#a9b1ddd969df20b98791ec2c45b806ae9", null ],
+    [ "resetLocalizationTool", "classFeel_1_1MeshSupportBase.html#adbe4600dfea99f4b6b45d4a80bef71f2", null ],
     [ "~MeshSupportBase", "classFeel_1_1MeshSupportBase.html#a8729d03282d66e4ef8831f4fd9cbb5e6", null ]
 ];

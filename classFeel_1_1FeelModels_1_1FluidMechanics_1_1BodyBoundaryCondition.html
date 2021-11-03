@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0-rc.1</span>
+   &#160;<span id="projectnumber">0.109.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -113,6 +113,8 @@ $(document).ready(function(){initNavTree('classFeel_1_1FeelModels_1_1FluidMechan
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Instances and minimal complete definitions</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1ElasticBehavior.html">ElasticBehavior</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1FieldTag.html">FieldTag</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -134,6 +136,9 @@ typedef space_trace_angular_velocity_type::element_type&#160;</td><td class="mem
 using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a90b39f93b054fd60fefc72ae3a53692a">evaluate_torques_type</a> = typename mpl::if_&lt; mpl::equal_to&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 3 &gt; &gt;, eigen_vector_type&lt; nDim &gt;, eigen_matrix_type&lt; 1, 1 &gt; &gt;::type</td></tr>
 <tr class="memdesc:a90b39f93b054fd60fefc72ae3a53692a"><td class="mdescLeft">&#160;</td><td class="mdescRight">fluid torques <br /></td></tr>
 <tr class="separator:a90b39f93b054fd60fefc72ae3a53692a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac7032d7f22f7d8e636ce62d0502052b5"><td class="memItemLeft" align="right" valign="top"><a id="ac7032d7f22f7d8e636ce62d0502052b5"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>moment_of_inertia_type</b> = typename Body::moment_of_inertia_type</td></tr>
+<tr class="separator:ac7032d7f22f7d8e636ce62d0502052b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc41e7822445eb3a9f3b1e698e885f9a"><td class="memItemLeft" align="right" valign="top"><a id="adc41e7822445eb3a9f3b1e698e885f9a"></a>
 typedef std::shared_ptr&lt; space_trace_angular_velocity_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>space_trace_angular_velocity_ptrtype</b></td></tr>
 <tr class="separator:adc41e7822445eb3a9f3b1e698e885f9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -146,15 +151,25 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae7506e18bc99a7990049896993593349"><td class="memItemLeft" align="right" valign="top"><a id="ae7506e18bc99a7990049896993593349"></a>
 auto const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>angularVelocityExpr</b> () const</td></tr>
 <tr class="separator:ae7506e18bc99a7990049896993593349"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa0210a9cb8ae0336fac909c0d1590a28"><td class="memItemLeft" align="right" valign="top"><a id="aa0210a9cb8ae0336fac909c0d1590a28"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>applyRemesh</b> (<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html">self_type</a> const &amp;fluidToolbox, <a class="el" href="classFeel_1_1RemeshInterpolation.html">RemeshInterpolation</a> &amp;remeshInterp)</td></tr>
+<tr class="separator:aa0210a9cb8ae0336fac909c0d1590a28"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c99aebb2f0f235882f17493487eb9c5"><td class="memItemLeft" align="right" valign="top"><a id="a4c99aebb2f0f235882f17493487eb9c5"></a>
 std::map&lt; std::string, <a class="el" href="classModelExpression.html">ModelExpression</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>articulationTranslationalVelocityExpr</b> () const</td></tr>
 <tr class="separator:a4c99aebb2f0f235882f17493487eb9c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3f201316c82d15ef7d0430bb8db6a8b"><td class="memItemLeft" align="right" valign="top"><a id="af3f201316c82d15ef7d0430bb8db6a8b"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#af3f201316c82d15ef7d0430bb8db6a8b">attachToNBodyArticulated</a> (<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html">NBodyArticulated</a> const &amp;nba)</td></tr>
+<tr class="memdesc:af3f201316c82d15ef7d0430bb8db6a8b"><td class="mdescLeft">&#160;</td><td class="mdescRight">attach a <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html">NBodyArticulated</a> to this object <br /></td></tr>
+<tr class="separator:af3f201316c82d15ef7d0430bb8db6a8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2cd074714d825e47b4626fe80568344c"><td class="memItemLeft" align="right" valign="top"><a id="a2cd074714d825e47b4626fe80568344c"></a>
 bdf_trace_angular_velocity_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>bdfAngularVelocity</b> () const</td></tr>
 <tr class="separator:a2cd074714d825e47b4626fe80568344c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac010431b94f361475ec74754de435b98"><td class="memItemLeft" align="right" valign="top"><a id="ac010431b94f361475ec74754de435b98"></a>
 bdf_trace_p0c_vectorial_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>bdfTranslationalVelocity</b> () const</td></tr>
 <tr class="separator:ac010431b94f361475ec74754de435b98"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9657e6a80b1f1c730bc61899a5cf4585"><td class="memItemLeft" align="right" valign="top"><a id="a9657e6a80b1f1c730bc61899a5cf4585"></a>
+<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html">Body</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>body</b> ()</td></tr>
+<tr class="separator:a9657e6a80b1f1c730bc61899a5cf4585"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7f1f6d17d07d3ee54e6b83781540dc2"><td class="memItemLeft" align="right" valign="top"><a id="aa7f1f6d17d07d3ee54e6b83781540dc2"></a>
 <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html">Body</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>body</b> () const</td></tr>
 <tr class="separator:aa7f1f6d17d07d3ee54e6b83781540dc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -167,12 +182,19 @@ bdf_trace_p0c_vectorial_ptrtype&#160;</td><td class="memItemRight" valign="botto
 <tr class="memitem:ab913e3edf1e0831154d40e8d7debc044"><td class="memItemLeft" align="right" valign="top"><a id="ab913e3edf1e0831154d40e8d7debc044"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>BodyBoundaryCondition</b> (<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html">self_type</a> const &amp;fluidToolbox)</td></tr>
 <tr class="separator:ab913e3edf1e0831154d40e8d7debc044"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab368c6284c86cf2cd7246129f4e18f5d"><td class="memTemplParams" colspan="2"><a id="ab368c6284c86cf2cd7246129f4e18f5d"></a>
+template&lt;typename SymbolsExprType &gt; </td></tr>
+<tr class="memitem:ab368c6284c86cf2cd7246129f4e18f5d"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>createElasticBehavior</b> (SymbolsExprType const &amp;se) const</td></tr>
+<tr class="separator:ab368c6284c86cf2cd7246129f4e18f5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5542ed806828924fc825ce2d8da3efe6"><td class="memItemLeft" align="right" valign="top"><a id="a5542ed806828924fc825ce2d8da3efe6"></a>
 auto&#160;</td><td class="memItemRight" valign="bottom"><b>elasticVelocityExpr</b> () const</td></tr>
 <tr class="separator:a5542ed806828924fc825ce2d8da3efe6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2c699e27dce569a37393e4f21beae35c"><td class="memItemLeft" align="right" valign="top"><a id="a2c699e27dce569a37393e4f21beae35c"></a>
 element_trace_angular_velocity_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>fieldAngularVelocityPtr</b> () const</td></tr>
 <tr class="separator:a2c699e27dce569a37393e4f21beae35c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0571a197e97438e08ec99b9f403228ab"><td class="memItemLeft" align="right" valign="top"><a id="a0571a197e97438e08ec99b9f403228ab"></a>
+element_trace_velocity_ptrtype &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>fieldElasticVelocityPtr</b> ()</td></tr>
+<tr class="separator:a0571a197e97438e08ec99b9f403228ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa0511313e33368f37d87fdb130f687a2"><td class="memItemLeft" align="right" valign="top"><a id="aa0511313e33368f37d87fdb130f687a2"></a>
 element_trace_velocity_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>fieldElasticVelocityPtr</b> () const</td></tr>
 <tr class="separator:aa0511313e33368f37d87fdb130f687a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -186,6 +208,10 @@ eigen_vector_type&lt; nRealDim &gt;&#160;</td><td class="memItemRight" valign="b
 <tr class="memitem:a7702ba539cc38a916ff028d914bf1fc5"><td class="memItemLeft" align="right" valign="top"><a id="a7702ba539cc38a916ff028d914bf1fc5"></a>
 <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a90b39f93b054fd60fefc72ae3a53692a">evaluate_torques_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>fluidTorques</b> () const</td></tr>
 <tr class="separator:a7702ba539cc38a916ff028d914bf1fc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4617e1087c073c1cfcbd53581454e9d9"><td class="memItemLeft" align="right" valign="top"><a id="a4617e1087c073c1cfcbd53581454e9d9"></a>
+<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html">NBodyArticulated</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a4617e1087c073c1cfcbd53581454e9d9">getNBodyArticulated</a> () const</td></tr>
+<tr class="memdesc:a4617e1087c073c1cfcbd53581454e9d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">return <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html">NBodyArticulated</a> object related if inside (else assert failed) <br /></td></tr>
+<tr class="separator:a4617e1087c073c1cfcbd53581454e9d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe20b457aa92347bc64f49210d7b3064"><td class="memItemLeft" align="right" valign="top"><a id="abe20b457aa92347bc64f49210d7b3064"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>gravityForceEnabled</b> () const</td></tr>
 <tr class="separator:abe20b457aa92347bc64f49210d7b3064"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -195,6 +221,12 @@ eigen_vector_type&lt; nRealDim &gt; const  &amp;&#160;</td><td class="memItemRig
 <tr class="memitem:af3a14476538d621ce792a680b8a6672d"><td class="memItemLeft" align="right" valign="top"><a id="af3a14476538d621ce792a680b8a6672d"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasAngularVelocityExpr</b> () const</td></tr>
 <tr class="separator:af3a14476538d621ce792a680b8a6672d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c3c771f183b1f6c9e9d46c2c91d92a3"><td class="memItemLeft" align="right" valign="top"><a id="a5c3c771f183b1f6c9e9d46c2c91d92a3"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasElasticBehaviorFromExpr</b> () const</td></tr>
+<tr class="separator:a5c3c771f183b1f6c9e9d46c2c91d92a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa453bcdd1cb81cd7044d93c7fd263ef1"><td class="memItemLeft" align="right" valign="top"><a id="aa453bcdd1cb81cd7044d93c7fd263ef1"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasElasticDisplacementFromExpr</b> () const</td></tr>
+<tr class="separator:aa453bcdd1cb81cd7044d93c7fd263ef1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a819a02d58ccf33da4ecfe8ed8ceaf8d7"><td class="memItemLeft" align="right" valign="top"><a id="a819a02d58ccf33da4ecfe8ed8ceaf8d7"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasElasticVelocity</b> () const</td></tr>
 <tr class="separator:a819a02d58ccf33da4ecfe8ed8ceaf8d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -207,18 +239,23 @@ eigen_vector_type&lt; nRealDim &gt; const  &amp;&#160;</td><td class="memItemRig
 <tr class="memitem:a05b207a4b5a74a0f60b7c4f36cc04446"><td class="memItemLeft" align="right" valign="top"><a id="a05b207a4b5a74a0f60b7c4f36cc04446"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html">self_type</a> const &amp;fluidToolbox)</td></tr>
 <tr class="separator:a05b207a4b5a74a0f60b7c4f36cc04446"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a583db70510fde08ce62b50375db658fb"><td class="memItemLeft" align="right" valign="top"><a id="a583db70510fde08ce62b50375db658fb"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>initElasticBehavior</b> ()</td></tr>
+<tr class="separator:a583db70510fde08ce62b50375db658fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adbecdf50491d6c45684402d0c4d7074c"><td class="memItemLeft" align="right" valign="top"><a id="adbecdf50491d6c45684402d0c4d7074c"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>initTimeStep</b> (<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html">self_type</a> const &amp;fluidToolbox, <a class="el" href="classint.html">int</a> bdfOrder, <a class="el" href="classint.html">int</a> nConsecutiveSave, std::string const &amp;myFileFormat)</td></tr>
 <tr class="separator:adbecdf50491d6c45684402d0c4d7074c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0cb54e3b79eb18c41769b9c583b55ec3"><td class="memItemLeft" align="right" valign="top"><a id="a0cb54e3b79eb18c41769b9c583b55ec3"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a0cb54e3b79eb18c41769b9c583b55ec3">isInNBodyArticulated</a> () const</td></tr>
+<tr class="memdesc:a0cb54e3b79eb18c41769b9c583b55ec3"><td class="mdescLeft">&#160;</td><td class="mdescRight">return true if this object is in <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html">NBodyArticulated</a> <br /></td></tr>
+<tr class="separator:a0cb54e3b79eb18c41769b9c583b55ec3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a403d38290b390d38c4eb777a8cb3131d"><td class="memItemLeft" align="right" valign="top"><a id="a403d38290b390d38c4eb777a8cb3131d"></a>
 std::set&lt; std::string &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>markers</b> () const</td></tr>
 <tr class="separator:a403d38290b390d38c4eb777a8cb3131d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74f5f3c380a7e395f077266667e65774"><td class="memItemLeft" align="right" valign="top"><a id="a74f5f3c380a7e395f077266667e65774"></a>
-auto&#160;</td><td class="memItemRight" valign="bottom"><b>massCenterExpr</b> () const</td></tr>
+auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a74f5f3c380a7e395f077266667e65774">massCenterExpr</a> () const</td></tr>
+<tr class="memdesc:a74f5f3c380a7e395f077266667e65774"><td class="mdescLeft">&#160;</td><td class="mdescRight">return center of mass expression <br /></td></tr>
 <tr class="separator:a74f5f3c380a7e395f077266667e65774"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aedbb6cea230929b81d144b4d94cf199b"><td class="memItemLeft" align="right" valign="top"><a id="aedbb6cea230929b81d144b4d94cf199b"></a>
-auto&#160;</td><td class="memItemRight" valign="bottom"><b>massExpr</b> () const</td></tr>
-<tr class="separator:aedbb6cea230929b81d144b4d94cf199b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff815fb1cacf26d0e352ee503bbb73f7"><td class="memItemLeft" align="right" valign="top"><a id="aff815fb1cacf26d0e352ee503bbb73f7"></a>
 sparse_matrix_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>matrixPTilde_angular</b> () const</td></tr>
 <tr class="separator:aff815fb1cacf26d0e352ee503bbb73f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -231,15 +268,23 @@ trace_mesh_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>mesh</b
 <tr class="memitem:afebdd030ae62996f2082f1cd28dddb77"><td class="memItemLeft" align="right" valign="top"><a id="afebdd030ae62996f2082f1cd28dddb77"></a>
 auto&#160;</td><td class="memItemRight" valign="bottom"><b>modelMeasuresQuantities</b> (std::string const &amp;prefix) const</td></tr>
 <tr class="separator:afebdd030ae62996f2082f1cd28dddb77"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a08f55cfcc1fbf4f0ee26a5e6140e0580"><td class="memItemLeft" align="right" valign="top"><a id="a08f55cfcc1fbf4f0ee26a5e6140e0580"></a>
-auto&#160;</td><td class="memItemRight" valign="bottom"><b>momentOfInertiaExpr</b> () const</td></tr>
-<tr class="separator:a08f55cfcc1fbf4f0ee26a5e6140e0580"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af564b3ae2b2014e12a5debc614cc46c0"><td class="memItemLeft" align="right" valign="top"><a id="af564b3ae2b2014e12a5debc614cc46c0"></a>
+moment_of_inertia_type const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#af564b3ae2b2014e12a5debc614cc46c0">momentOfInertia_bodyFrame</a> () const</td></tr>
+<tr class="memdesc:af564b3ae2b2014e12a5debc614cc46c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">return moment of inertia related to body frame <br /></td></tr>
+<tr class="separator:af564b3ae2b2014e12a5debc614cc46c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e28ec256147103939120c97ef800393"><td class="memItemLeft" align="right" valign="top">moment_of_inertia_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a2e28ec256147103939120c97ef800393">momentOfInertia_inertialFrame</a> () const</td></tr>
+<tr class="memdesc:a2e28ec256147103939120c97ef800393"><td class="mdescLeft">&#160;</td><td class="mdescRight">return moment of inertia related to body frame as an expression  <a href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a2e28ec256147103939120c97ef800393">More...</a><br /></td></tr>
+<tr class="separator:a2e28ec256147103939120c97ef800393"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae6ea5c219aa9adc79a702ac0b80b25d7"><td class="memItemLeft" align="right" valign="top"><a id="ae6ea5c219aa9adc79a702ac0b80b25d7"></a>
 std::string const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>name</b> () const</td></tr>
 <tr class="separator:ae6ea5c219aa9adc79a702ac0b80b25d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac167007a2b1adb6d4e8f95b526535259"><td class="memItemLeft" align="right" valign="top"><a id="ac167007a2b1adb6d4e8f95b526535259"></a>
 range_faces_type const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>rangeMarkedFacesOnFluid</b> () const</td></tr>
 <tr class="separator:ac167007a2b1adb6d4e8f95b526535259"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2758d674bdbf5def1a34e3d744c12b8"><td class="memItemLeft" align="right" valign="top"><a id="ad2758d674bdbf5def1a34e3d744c12b8"></a>
+eigen_matrix_type&lt; nRealDim, nRealDim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#ad2758d674bdbf5def1a34e3d744c12b8">rigidRotationMatrix</a> () const</td></tr>
+<tr class="memdesc:ad2758d674bdbf5def1a34e3d744c12b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">return the current rotation matrix <br /></td></tr>
+<tr class="separator:ad2758d674bdbf5def1a34e3d744c12b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab4e6264a2d4d1a6d2f129bc6d4878be3"><td class="memItemLeft" align="right" valign="top"><a id="ab4e6264a2d4d1a6d2f129bc6d4878be3"></a>
 auto&#160;</td><td class="memItemRight" valign="bottom"><b>rigidVelocityExpr</b> () const</td></tr>
 <tr class="separator:ab4e6264a2d4d1a6d2f129bc6d4878be3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -255,6 +300,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setup</b> (std::strin
 <tr class="memitem:ad2608eaea79bc4e3d4b169bdd0ff7859"><td class="memItemLeft" align="right" valign="top"><a id="ad2608eaea79bc4e3d4b169bdd0ff7859"></a>
 space_trace_angular_velocity_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>spaceAngularVelocity</b> () const</td></tr>
 <tr class="separator:ad2608eaea79bc4e3d4b169bdd0ff7859"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26ec006543400282458dc7abbe8529da"><td class="memItemLeft" align="right" valign="top"><a id="a26ec006543400282458dc7abbe8529da"></a>
+space_trace_velocity_ptrtype const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>spaceElasticVelocityPtr</b> () const</td></tr>
+<tr class="separator:a26ec006543400282458dc7abbe8529da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2c6e3dcb64a16bd53b59f242cf39483"><td class="memItemLeft" align="right" valign="top"><a id="aa2c6e3dcb64a16bd53b59f242cf39483"></a>
 space_trace_p0c_vectorial_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>spaceTranslationalVelocity</b> () const</td></tr>
 <tr class="separator:aa2c6e3dcb64a16bd53b59f242cf39483"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -264,13 +312,24 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>startTimeStep</b> ()<
 <tr class="memitem:ad71688352909e2461ba085be66790e46"><td class="memItemLeft" align="right" valign="top"><a id="ad71688352909e2461ba085be66790e46"></a>
 tabulate_informations_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>tabulateInformations</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;jsonInfo, <a class="el" href="classFeel_1_1TabulateInformationProperties.html">TabulateInformationProperties</a> const &amp;tabInfoProp, std::map&lt; std::string, uint16_type &gt; &amp;jsonPtrFunctionSpacesToLevel) const</td></tr>
 <tr class="separator:ad71688352909e2461ba085be66790e46"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4313211d5282ed1e827854fa98b0a9fb"><td class="memItemLeft" align="right" valign="top"><a id="a4313211d5282ed1e827854fa98b0a9fb"></a>
+moment_of_inertia_type&#160;</td><td class="memItemRight" valign="bottom"><b>timeDerivativeOfMomentOfInertia_bodyFrame</b> (double dt) const</td></tr>
+<tr class="separator:a4313211d5282ed1e827854fa98b0a9fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa0b3204a1cd6b667ea7fd72bad231d6c"><td class="memItemLeft" align="right" valign="top"><a id="aa0b3204a1cd6b667ea7fd72bad231d6c"></a>
 auto const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>translationalVelocityExpr</b> () const</td></tr>
 <tr class="separator:aa0b3204a1cd6b667ea7fd72bad231d6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9dffcc58d819d034c4d2b995edad8c9b"><td class="memTemplParams" colspan="2"><a id="a9dffcc58d819d034c4d2b995edad8c9b"></a>
-template&lt;typename SymbolsExprType &gt; </td></tr>
-<tr class="memitem:a9dffcc58d819d034c4d2b995edad8c9b"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateElasticVelocityFromExpr</b> (<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html">self_type</a> const &amp;fluidToolbox, SymbolsExprType const &amp;se)</td></tr>
-<tr class="separator:a9dffcc58d819d034c4d2b995edad8c9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a75ad83a6c90c90f91d681fda2c45d7fc"><td class="memItemLeft" align="right" valign="top"><a id="a75ad83a6c90c90f91d681fda2c45d7fc"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a75ad83a6c90c90f91d681fda2c45d7fc">updateDisplacement</a> (double dt)</td></tr>
+<tr class="memdesc:a75ad83a6c90c90f91d681fda2c45d7fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">update displacement of body <br /></td></tr>
+<tr class="separator:a75ad83a6c90c90f91d681fda2c45d7fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7b974aa1087b2033cc429fb25553ad3e"><td class="memTemplParams" colspan="2"><a id="a7b974aa1087b2033cc429fb25553ad3e"></a>
+template&lt;typename ElasticBehaviorType &gt; </td></tr>
+<tr class="memitem:a7b974aa1087b2033cc429fb25553ad3e"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateElasticBehavior</b> (ElasticBehaviorType const &amp;elasticBehavior, <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html">self_type</a> const &amp;fluidToolbox)</td></tr>
+<tr class="separator:a7b974aa1087b2033cc429fb25553ad3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f36d61ff85979a4178036813657c689"><td class="memItemLeft" align="right" valign="top"><a id="a8f36d61ff85979a4178036813657c689"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a8f36d61ff85979a4178036813657c689">updateElasticVelocityWithRotation</a> ()</td></tr>
+<tr class="memdesc:a8f36d61ff85979a4178036813657c689"><td class="mdescLeft">&#160;</td><td class="mdescRight">update the elastic velocty with the rotation applied to the body <br /></td></tr>
+<tr class="separator:a8f36d61ff85979a4178036813657c689"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a713cf8857b6a49d73afa9ed93bdd0d59"><td class="memItemLeft" align="right" valign="top"><a id="a713cf8857b6a49d73afa9ed93bdd0d59"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>updateForUse</b> (<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html">self_type</a> const &amp;fluidToolbox)</td></tr>
 <tr class="separator:a713cf8857b6a49d73afa9ed93bdd0d59"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -287,6 +346,29 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>updateParameterValues
 void&#160;</td><td class="memItemRight" valign="bottom"><b>updateTimeStep</b> ()</td></tr>
 <tr class="separator:abbabbd37bc809639d7f9bd379c2c1d58"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a2e28ec256147103939120c97ef800393"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2e28ec256147103939120c97ef800393">&#9670;&nbsp;</a></span>momentOfInertia_inertialFrame()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ConvexType , typename BasisVelocityType , typename BasisPressureType  = Lagrange&lt; (BasisVelocityType::nOrder&gt;1)? (BasisVelocityType::nOrder-1):BasisVelocityType::nOrder, Scalar,Continuous,PointSetFekete&gt;&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">moment_of_inertia_type <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html">Feel::FeelModels::FluidMechanics</a>&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::BodyBoundaryCondition::momentOfInertia_inertialFrame </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>return moment of inertia related to body frame as an expression </p>
+<p>return the moment of inertia related to inertial frame </p>
+
+</div>
+</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
