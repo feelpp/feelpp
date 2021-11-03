@@ -41,14 +41,14 @@
 #else
 #include <boost/fusion/container/vector.hpp>
 #endif
-#include <boost/fusion/container/generation/make_vector.hpp>
+//#include <boost/fusion/container/generation/make_vector.hpp>
 
-#include <boost/mpl/at.hpp>
-#include <boost/mpl/vector.hpp>
+//#include <boost/mpl/at.hpp>
+//#include <boost/mpl/vector.hpp>
 #include <boost/mpl/transform.hpp>
 #include <boost/fusion/support/pair.hpp>
-#include <boost/fusion/support/is_sequence.hpp>
-#include <boost/fusion/sequence.hpp>
+//#include <boost/fusion/support/is_sequence.hpp>
+//#include <boost/fusion/sequence.hpp>
 #include <boost/fusion/algorithm.hpp>
 #include <boost/fusion/adapted/mpl.hpp>
 #include <boost/mpl/range_c.hpp>

@@ -48,10 +48,6 @@ extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_
 // #endif
 // #endif
 
-//#include <boost/fusion/container/vector.hpp>
-
-//#include <boost/parameter/preprocessor.hpp>
-
 #include <boost/foreach.hpp>
 #include <boost/range/algorithm/for_each.hpp>
 

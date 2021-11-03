@@ -29,15 +29,6 @@
 #ifndef FEELPP_VF_MATVEC_H
 #define FEELPP_VF_MATVEC_H 1
 
-// #include <boost/fusion/container/vector.hpp>
-// #include <boost/fusion/algorithm/iteration.hpp>
-// #include <boost/mpl/bitor.hpp>
-// #include <boost/mpl/bitwise.hpp>
-// #include <boost/mpl/transform.hpp>
-
-// #include <boost/mpl/plus.hpp>
-// #include <boost/mpl/arithmetic.hpp>
-
 #include <boost/mp11.hpp>
 
 namespace Feel

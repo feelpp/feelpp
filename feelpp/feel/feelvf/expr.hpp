@@ -31,14 +31,13 @@
 #define FEELPP_EXPR_HPP 1
 
 #undef max
-#include <boost/version.hpp>
-#include <boost/none.hpp>
 #include <algorithm>
+
+//#include <boost/version.hpp>
+#include <boost/none.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/foreach.hpp>
-#include <boost/fusion/sequence.hpp>
-#include <boost/fusion/container/map.hpp>
-#include <boost/fusion/support/pair.hpp>
+
 #include <boost/multi_array.hpp>
 
 #include <Eigen/Core>
