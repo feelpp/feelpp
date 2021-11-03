@@ -28,7 +28,7 @@ jobs:
         sudo apt install -y gpg
         wget -qO - http://apt.feelpp.org/apt.gpg | gpg --dearmor > feelpp.gpg
         sudo install -o root -g root -m 644 feelpp.gpg /etc/apt/trusted.gpg.d
-        echo "deb [signed-by=/etc/apt/trusted.gpg.d/feelpp.gpg] http://apt.feelpp.org/ubuntu focal ${CHANNEL}" | sudo tee -a /etc/apt/sources.list.d/feelpp.list
+        echo "deb [signed-by=/etc/apt/trusted.gpg.d/feelpp.gpg] http://apt.feelpp.org/ubuntu focal latest" | sudo tee -a /etc/apt/sources.list.d/feelpp.list
         rm -f feelpp.gpg 
         sudo apt update
         sudo apt --reinstall install -y libfeelpp1 libfeelpp-dev feelpp-tools doxygen
