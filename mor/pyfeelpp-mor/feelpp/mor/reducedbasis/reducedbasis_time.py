@@ -1,4 +1,4 @@
-from .reducedbasisPETSc import *
+from .reducedbasis import *
 import warnings
 import scipy.sparse as spsp
 
@@ -9,7 +9,7 @@ def taille_dict(d):
         n += len(d[k])
     return n
 
-class reducedBasisTime(reducedBasis):
+class reducedBasisTime(reducedbasis):
 
     def __init__(self, Aq, Fp, model, mubar, alphaLB, Mr, tf, K) -> None:
         """Initialise the object

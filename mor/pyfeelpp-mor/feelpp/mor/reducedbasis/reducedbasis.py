@@ -12,7 +12,7 @@ from scipy.sparse.linalg import splu, spsolve
 # from reducedBasis.reducedBasis import ReducedBasis
 
 
-class reducedBasis():
+class reducedbasis():
     """ Reduced basis for stationnary problem
     """
 
@@ -90,7 +90,7 @@ class reducedBasis():
         Returns:
             reducedBasis: an object with W as basis
         """
-        rb = reducedBasis(self.Aq, self.Fq, self.model, self.mubar, self.alphaLB)
+        rb = reducedbasis(self.Aq, self.Fq, self.model, self.mubar, self.alphaLB)
         self.Z = W
         self.N = len(W)
 
@@ -782,7 +782,7 @@ class reducedBasis():
             print(f"[reducedBasis] Error : could not find {path}/offline")
             return None
         
-        rbLoaded = reducedBasis(None, None, model, None, None)
+        rbLoaded = reducedbasis(None, None, model, None, None)
         rbLoaded.Qa = len(os.listdir(path+'/ANq'))
         rbLoaded.Qf = len(os.listdir(path+'/FNp'))
         rbLoaded.ANq = []
