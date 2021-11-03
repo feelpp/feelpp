@@ -82,8 +82,8 @@ BOOST_AUTO_TEST_CASE( binary_test_matrix )
     auto Xh = Pch<1>( mesh );
     auto v = Xh->element();
 
-    auto m1 = backend()->newMatrix( Xh, Xh );
-    auto m2 = backend()->newMatrix( Xh, Xh );
+    auto m1 = backend()->newMatrix( _test=Xh, _trial=Xh );
+    auto m2 = backend()->newMatrix( _test=Xh, _trial=Xh );
 
     form2( _test=Xh, _trial=Xh, _matrix=m1) =
         integrate( _range=elements(mesh), _expr=vf::sin(Px())*id(v)*idt(v) );

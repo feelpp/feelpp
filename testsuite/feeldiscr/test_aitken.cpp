@@ -220,7 +220,7 @@ runTestAitken()
                                 _type=( relaxmethod == 0 ) ? "standard" : "method1",
                                 _initial_theta=theta,
                                 _tolerance=tol );
-    aitkenRelax.initialize( residual, lambda );
+    aitkenRelax.initialize( _residual=residual, _currentElt=lambda );
 
     double pi = M_PI;
 
@@ -266,7 +266,7 @@ runTestAitken()
                 BOOST_TEST_MESSAGE( "test_aiken multiplicative method" );
         }
 
-        Ih21->apply( u2, uu );
+        Ih21->apply( _residual=u2, _currentElt=uu );
 
         lp1.solve( u1,
                    dirichletFlags1, /*dirichlet*/g,
@@ -287,7 +287,7 @@ runTestAitken()
 
         residual = u2-lambda;
 
-        u2 = aitkenRelax.apply( residual, u2  );
+        u2 = aitkenRelax.apply( _residual=residual, _currentElt=u2  );
 
         aitkenRelax.printInfo();
 

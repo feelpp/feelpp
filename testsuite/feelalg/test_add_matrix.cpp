@@ -27,7 +27,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
     typedef Mesh<Simplex<1,1,2> > face_mesh_type;
     typedef std::shared_ptr<face_mesh_type> face_mesh_ptrtype;
 
-    auto mesh = loadMesh( new mesh_type);
+    auto mesh = loadMesh( _mesh=new mesh_type);
     auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh), _update=0 );
 
     auto Vh = Pdh<1>( mesh, true );
@@ -48,8 +48,8 @@ BOOST_AUTO_TEST_CASE( test_0 )
     auto phat = Mh->element( "phat" );
     auto a13 = form2( _trial=Mh, _test=Vh,_matrix=A,
                       _rowstart=0, _colstart=1);
-    a13 += integrate( internalfaces(mesh),
-                      idt(phat)*id(v) );
+    a13 += integrate( _range=internalfaces(mesh),
+                      _expr=idt(phat)*id(v) );
 
     A2->addMatrix(1.,A);
 }

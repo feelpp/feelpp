@@ -116,10 +116,10 @@ BOOST_AUTO_TEST_CASE( test_lambda_int_cst )
     using namespace Feel;
     auto mesh = unitSquare();
     BOOST_TEST_MESSAGE( "test_lambda_int_cst mesh generated" );
-    auto I = integrate( elements(mesh), _expr=_e1, _verbose=true );
+    auto I = integrate( _range=elements(mesh), _expr=_e1, _verbose=true );
     BOOST_TEST_MESSAGE( "test_lambda_int_cst integral defined" );
 
-    auto I1 = integrate( elements(mesh), cst(1.) );
+    auto I1 = integrate( _range=elements(mesh), _expr=cst(1.) );
     auto Xh = Pch<1>( mesh );
     auto u = project( _space=Xh, _range=elements(mesh), _expr=cst(1.) );
 
@@ -136,11 +136,11 @@ BOOST_AUTO_TEST_CASE( test_lambda_int_cst2 )
     using namespace Feel;
     auto mesh = unitSquare();
     BOOST_TEST_MESSAGE( "test_lambda_int_cst2 mesh generated" );
-    auto I = integrate( elements(mesh), _expr=_e1*_e2, _verbose=true );
-    auto I3 = integrate( elements(mesh), _expr=_e1*_e2*_e3, _verbose=true );
+    auto I = integrate( _range=elements(mesh), _expr=_e1*_e2, _verbose=true );
+    auto I3 = integrate( _range=elements(mesh), _expr=_e1*_e2*_e3, _verbose=true );
     BOOST_TEST_MESSAGE( "test_lambda_int_cst2 integral defined" );
 
-    auto I1 = integrate( elements(mesh), cst(1.) );
+    auto I1 = integrate( _range=elements(mesh), _expr=cst(1.) );
     auto Xh = Pch<1>( mesh );
     auto u = project( _space=Xh, _range=elements(mesh), _expr=cst(.5) );
     auto w = project( _space=Xh, _range=elements(mesh), _expr=Px()+1 );
@@ -161,10 +161,10 @@ BOOST_AUTO_TEST_CASE( test_lambda_int )
     using namespace Feel;
     auto mesh = unitSquare();
     BOOST_TEST_MESSAGE( "test_lambda_int mesh generated" );
-    auto I = integrate( elements(mesh), _expr=_e1, _verbose=true );
+    auto I = integrate( _range=elements(mesh), _expr=_e1, _verbose=true );
     BOOST_TEST_MESSAGE( "test_lambda_int integral defined" );
 
-    auto I1 = integrate( elements(mesh), Px()*Px()+Py()*Py() );
+    auto I1 = integrate( _range=elements(mesh), _expr=Px()*Px()+Py()*Py() );
     auto Xh = Pch<2>( mesh );
     auto u = project( _space=Xh, _range=elements(mesh), _expr=Px()*Px()+Py()*Py() );
 
@@ -181,10 +181,10 @@ BOOST_AUTO_TEST_CASE( test_lambda_op )
     using namespace Feel;
     auto mesh = unitSquare();
     BOOST_TEST_MESSAGE( "test_lambda_op mesh generated" );
-    auto I = integrate( elements(mesh), _expr=0.1*_e1, _verbose=true );
+    auto I = integrate( _range=elements(mesh), _expr=0.1*_e1, _verbose=true );
     BOOST_TEST_MESSAGE( "test_lambda_op integral defined" );
 
-    auto I1 = integrate( elements(mesh), Px()*Px()+Py()*Py() );
+    auto I1 = integrate( _range=elements(mesh), _expr=Px()*Px()+Py()*Py() );
     auto Xh = Pch<2>( mesh );
     auto u = project( _space=Xh, _range=elements(mesh), _expr=Px()*Px()+Py()*Py() );
 
@@ -202,12 +202,12 @@ BOOST_AUTO_TEST_CASE( test_lambda_2 )
     using namespace Feel;
     auto mesh = unitSquare();
     BOOST_TEST_MESSAGE( "test_lambda_2 mesh generated" );
-    auto I = integrate( elements(mesh), _expr=_e1, _verbose=true );
+    auto I = integrate( _range=elements(mesh), _expr=_e1, _verbose=true );
     BOOST_TEST_MESSAGE( "test_lambda_2 integral defined" );
 
     auto Xh = Pch<2>( mesh );
     auto u = project( _space=Xh, _range=elements(mesh), _expr=Px() );
-    auto I1 = integrate( elements(mesh), idv(u) * idv(u) );
+    auto I1 = integrate( _range=elements(mesh), _expr=idv(u) * idv(u) );
 
     BOOST_CHECK_CLOSE( I1.evaluate()( 0, 0 ), I( idv(u) * idv(u) ).evaluate()( 0, 0 ) , 1e-10 );
     BOOST_CHECK_CLOSE( I( Px()*Px() ).evaluate()( 0, 0 ), 1./3., 1e-10 );
@@ -228,7 +228,7 @@ BOOST_AUTO_TEST_CASE( test_lambda_div )
     auto I = integrate( _range=elements(mesh), _expr=cst(1.)/(1+_e1), _verbose=true );
     BOOST_TEST_MESSAGE( "test_lambda_div integral defined" );
 
-    auto I1 = integrate( elements(mesh), cst(1.)/(1.+Px()) );
+    auto I1 = integrate( _range=elements(mesh), _expr=cst(1.)/(1.+Px()) );
     auto Xh = Pch<1>( mesh );
     auto u = project( _space=Xh, _range=elements(mesh), _expr=Px() );
 
