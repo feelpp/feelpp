@@ -3,7 +3,7 @@ name: Deploy Doxygen
 on: 
   push:
     branches:
-      - develop 
+    - develop 
 
 jobs:
 #  docs:
@@ -32,12 +32,10 @@ jobs:
         sudo mv feelpp.list /etc/apt/sources.list.d/
         sudo apt update
         sudo apt --reinstall install -y libfeelpp1 libfeelpp-dev feelpp-tools doxygen
-    - name: Configure Feelpp
-      run: |
-        cmake --preset doxygen
+    - name: Configure Doxygen Preset
+      run: cmake --preset doxygen
     - name: Build Doxygen
-      run: make doxygen
-      working-directory: build
+      run: cmake --build --preset doxygen
     - name: Deploy
       uses: JamesIves/github-pages-deploy-action@4.1.1
       with:
