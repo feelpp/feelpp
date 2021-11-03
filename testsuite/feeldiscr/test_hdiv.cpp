@@ -199,7 +199,7 @@ TestHDiv<Dim,Order>::exampleProblem1()
     darcyL_rhs += integrate( _range=elements(mesh), _expr=g*id(q_l) );
     F_l->close();
 
-    auto M_l = M_backend->newMatrix( Xh, Xh );
+    auto M_l = M_backend->newMatrix( _test=Xh, _trial=Xh );
     auto darcyL = form2( _test=Xh, _trial=Xh, _matrix=M_l);
     // K \grap p \grad q
     darcyL += integrate( _range=elements(mesh), _expr=gradt(p_l)*K*trans(grad(q_l)) );
@@ -228,7 +228,7 @@ TestHDiv<Dim,Order>::exampleProblem1()
     darcyRT_rhs += integrate( _range=elements(mesh), _expr=-1.*g*id(q_rt) );
     darcyRT_rhs += integrate( _range=elements(mesh), _expr=trans(f)*id(v_rt) );
     darcyRT_rhs += integrate( _range=boundaryfaces(mesh), _expr = -1.*pbdy*trans(id(v_rt))*N() );
-    auto M_rt = M_backend->newMatrix( Yh, Yh );
+    auto M_rt = M_backend->newMatrix( _test=Yh, _trial=Yh );
     auto darcyRT = form2( _test=Yh, _trial=Yh, _matrix=M_rt);
     // Lambda u v
     darcyRT += integrate( _range=elements(mesh), _expr = trans(idt(u_rt))*id(v_rt) );

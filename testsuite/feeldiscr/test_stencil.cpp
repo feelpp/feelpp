@@ -146,10 +146,10 @@ public:
             auto Xh = space_type::New( mesh );
             stencilManagerPrint();
             {
-                auto M = M_backend->newMatrix( Xh, Xh );
+                auto M = M_backend->newMatrix( _test=Xh, _trial=Xh );
                 stencilManagerPrint();
                 {
-                    auto P = M_backend->newMatrix( Xh, Xh );
+                    auto P = M_backend->newMatrix( _test=Xh, _trial=Xh );
                     stencilManagerPrint();
                 }
             }
@@ -159,10 +159,10 @@ public:
             stencilManagerGarbageCollect();
             BOOST_CHECK_EQUAL( StencilManager::instance().size(), 0 );
 
-            auto M = M_backend->newMatrix( Xh, Xh );
+            auto M = M_backend->newMatrix( _test=Xh, _trial=Xh );
             BOOST_CHECK_EQUAL( StencilManager::instance().size(), 1 );
 
-            auto P = M_backend->newMatrix( Xh, Xh );
+            auto P = M_backend->newMatrix( _test=Xh, _trial=Xh );
             BOOST_CHECK_EQUAL( StencilManager::instance().size(), 1 );
 
             stencilManagerPrint();
@@ -266,7 +266,7 @@ BOOST_AUTO_TEST_CASE( test_stencil_zero )
 {
     using namespace Feel;
     using mesh_t = Mesh<Simplex<2>>;
-    auto mesh = loadMesh( new mesh_t );
+    auto mesh = loadMesh( _mesh=new mesh_t );
 
     auto Vh = Pchv<1>( mesh, true );
     auto Wh = Pch<1>( mesh, true );
