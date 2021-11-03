@@ -155,11 +155,12 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     auto nDofuhat  = uhat.functionSpace()->nDof();
 
     solve::strategy strategy = boption("sc.condense")?solve::strategy::static_condensation:solve::strategy::monolithic;
-	double sc_param = 1;
-    if( boption("sc.condense") )
-        sc_param = 0.5;
+    double sc_param = 1;
 
-	tic();
+    if ( boption("sc.condense") )
+         sc_param = 0.5;
+
+    tic();
     auto ps = product( Vh, Wh, Mh );
 	auto a = blockform2( ps, strategy , backend() );
 	auto rhs = blockform1( ps, strategy , backend() );
