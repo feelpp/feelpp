@@ -36,11 +36,12 @@
 #include <boost/static_assert.hpp>
 
 #include <boost/version.hpp>
-#if BOOST_VERSION >= 106700
+#if BOOST_VERSION >= 106700 && BOOST_VERSION < 107100
 #include <contrib/boost/fusion/include/boost/fusion/container/vector/vector.hpp>
 #else
 #include <boost/fusion/container/vector.hpp>
 #endif
+#include <boost/fusion/container/generation/make_vector.hpp>
 
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/vector.hpp>
