@@ -610,7 +610,7 @@ auto exporter( Ts && ... v )
     bool fileset = args.get_else(_fileset,boption(_name="exporter.fileset") );
     std::string const& name = args.get_else(_name,Environment::about().appName() );
     std::string const& geo = args.get_else(_geo, soption(_name="exporter.geometry") );
-    auto && path = args.get_else(_path,(fs::path(Environment::exportsRepository())/fs::path(soption("exporter.format"))/name).string() );
+    auto && path = args.get_else(_path, std::string((fs::path(Environment::exportsRepository())/fs::path(soption("exporter.format"))/name).string()) );
 
     using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
     using exporter_type = Exporter<mesh_type,mesh_type::nOrder>;
