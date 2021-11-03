@@ -3,7 +3,7 @@ name: Deploy Doxygen
 on: 
   push:
     branches:
-    - develop 
+      - develop 
 
 jobs:
 #  docs:
