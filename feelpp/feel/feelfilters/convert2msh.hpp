@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_CONVERT2MSH_HPP)
-#define FEELPP_CONVERT2MSH_HPP 1
+#if !defined(FEELPP_FILTERS_CONVERT2MSH_HPP)
+#define FEELPP_FILTERS_CONVERT2MSH_HPP 1
 
 #include <feel/feelfilters/gmsh.hpp>
 
@@ -40,6 +40,7 @@ namespace Feel {
  * \arg dim (optional, default = 3)
  * \arg order (optional, default = 1)
  */
+#if 0
 BOOST_PARAMETER_FUNCTION(
     ( gmsh_ptrtype ), // return type
     convert2msh,    // 2. function name
@@ -50,7 +51,16 @@ BOOST_PARAMETER_FUNCTION(
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 ) )
     )
+#endif
+
+template <typename ... Ts>
+gmsh_ptrtype convert2msh( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    std::string const& filename = args.get(_filename );
+    int dim = args.get_else(_dim,3);
+    int order = args.get_else(_order,3);
+
     gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1 ) );
 #if BOOST_FILESYSTEM_VERSION == 3
     gmsh_ptr->setPrefix( fs::path( filename ).stem().string() );

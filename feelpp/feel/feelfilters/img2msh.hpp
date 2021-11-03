@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_IMG2MSH_HPP)
-#define FEELPP_IMG2MSH_HPP 1
+#if !defined(FEELPP_FILTERS_IMG2MSH_HPP)
+#define FEELPP_FILTERS_IMG2MSH_HPP 1
 
 #include <feel/feelfilters/gmsh.hpp>
 
@@ -37,6 +37,7 @@ namespace Feel {
  *
  * \arg filename
  */
+#if 0
 BOOST_PARAMETER_FUNCTION(
     ( std::string ), // return type
     img2msh,    // 2. function name
@@ -46,7 +47,15 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( prefix,       *( boost::is_convertible<mpl::_,std::string> ), fs::path( filename ).stem() ) )
     )
+#endif
+
+template <typename ... Ts>
+std::string img2msh( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    std::string const& filename = args.get(_filename );
+    std::string const& prefix = args.get_else(_prefix, fs::path( filename ).stem() );
+
     gmsh_ptrtype gmsh_ptr( new Gmsh( 2, 1 ) );
     gmsh_ptr->setPrefix( prefix );
     std::string meshname = ( boost::format( "%1%-0.msh" ) % prefix ).str();
