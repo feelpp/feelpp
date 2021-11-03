@@ -3,7 +3,7 @@ name: Deploy Doxygen
 on: 
   push:
     branches:
-      - develop
+      - develop 
 
 jobs:
 #  docs:
@@ -26,16 +26,15 @@ jobs:
     - name: Update Dependencies
       run: |
         sudo apt install -y gnupg
-        wget -qO - https://feelpp.jfrog.io/artifactory/api/security/keypair/gpg-debian/public | gpg --dearmor > feelpp.gpg
+        wget -qO - http://apt.feelpp.org/apt.gpg | gpg --dearmor > feelpp.gpg
         sudo mv feelpp.gpg /etc/apt/trusted.gpg.d
-        echo "deb [signed-by=/etc/apt/trusted.gpg.d/feelpp.gpg] https://feelpp.jfrog.io/artifactory/ubuntu focal ${CHANNEL}" | tee -a feelpp.list
+        echo "deb [signed-by=/etc/apt/trusted.gpg.d/feelpp.gpg] http://apt.feelpp.org/ubuntu focal ${CHANNEL}" | tee -a feelpp.list
         sudo mv feelpp.list /etc/apt/sources.list.d/
         sudo apt update
         sudo apt --reinstall install -y libfeelpp1 libfeelpp-dev feelpp-tools doxygen
     - name: Configure Feelpp
       run: |
-        mkdir build && cd build
-        CXX=clang++ cmake -DFEELPP_ENABLE_DOXYGEN=ON ..
+        cmake --preset doxygen
     - name: Build Doxygen
       run: make doxygen
       working-directory: build

@@ -147,6 +147,16 @@
                 "lhs": "${hostSystemName}",
                 "rhs": "Windows"
             }
+        },
+        {
+            "name": "doxygen",
+            "inherits": "default",
+            "displayName": "doxygen",
+            "description": "Build Feel++ doxygen documentation",
+            "binaryDir": "${sourceDir}/build/doxygen",
+            "cacheVariables": {
+                "FEELPP_ENABLE_DOXYGEN": "ON"
+            }
         }
     ],
     "buildPresets": [
@@ -194,6 +204,11 @@
             "name": "pyfeelpp-all",
             "inherits": "default",
             "configurePreset": "pyfeelpp-all"
+        },
+        {
+            "name": "doxygen",
+            "configurePreset": "doxygen",
+            "targets": ["doxygen"]
         }
     ],
     "testPresets": [
