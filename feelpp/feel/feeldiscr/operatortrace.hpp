@@ -77,7 +77,7 @@ public :
     /** @name  Methods
      */
     //@{
-
+#if 0
     BOOST_PARAMETER_MEMBER_FUNCTION( ( trace_element_type ),
                                      trace,
                                      tag,
@@ -87,19 +87,19 @@ public :
                                      ( optional
                                        ( range,  *, boundaryfaces( M_domainSpace->mesh() ) )
                                      ) )
+#endif
+    template <typename ... Ts>
+    trace_element_type trace( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && expr = args.get(_expr);
+            auto && range = args.get_else_invocable(_range, [this](){ return boundaryfaces( M_domainSpace->mesh() ); } );
 
-    {
-        using namespace vf;
-
-
-        auto Th = M_domainSpace->trace( range ) ;
-
-        trace_element_type te = Th->element();
-
-        te = vf::project( _space=Th, _range=elements( Th->mesh() ), _expr=expr );
-
-        return te;
-    }
+            auto Th = M_domainSpace->trace( range ) ;
+            //trace_element_type te = Th->element();
+            trace_element_type te = vf::project( _space=Th, _range=elements( Th->mesh() ), _expr=expr );
+            return te;
+        }
 
     //@}
 
