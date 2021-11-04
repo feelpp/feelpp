@@ -25,10 +25,12 @@
 #define FEELPP_CONVOLVE_HPP 1
 
 #include <feel/feelvf/expr.hpp>
-#include <feel/feelvf/integrator.hpp>
+//#include <feel/feelvf/integrator.hpp>
+#include <feel/feelvf/integrate.hpp>
 
 namespace Feel {
 
+#if 0
 namespace detail
 {
 template<typename Args>
@@ -63,7 +65,28 @@ BOOST_PARAMETER_FUNCTION(
       ( quadptloc, *, typename vf::detail::integrate_type<Args>::_quadptloc_ptrtype() )
     )
 )
+#endif
+template <typename ... Ts>
+auto convolve( Ts && ... varg )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(varg)... );
+    auto && range = args.get(_range);
+    auto && expr = args.get(_expr);
+    auto && space = args.get(_space);
+    auto && quad = args.get_else( _quad, quad_order_from_expression );
+    auto && quad1 = args.get_else( _quad1, quad_order_from_expression );
+    GeomapStrategyType geomap = args.get_else( _geomap,GeomapStrategyType::GEOMAP_OPT );
+    bool use_tbb = args.get_else( _use_tbb, false );
+    bool use_harts = args.get_else( _use_harts, false );
+    int grainsize = args.get_else( _grainsize, 100 );
+    std::string const& partitioner = args.get_else( _partitioner, "auto");
+    bool verbose = args.get_else( _verbose, false );
+
+    using _integrate_helper_type = Feel::detail::integrate_type<decltype(expr),decltype(range),decltype(quad),decltype(quad1)>;
+    auto && quadptloc = args.get_else(_quadptloc, typename _integrate_helper_type::_quadptloc_ptrtype{});
+
+    using space_type = std::decay_t<decltype(space)>;
+
     using T = double;
     constexpr int nDim = decay_type<space_type>::nDim;
     std::vector<Eigen::Matrix<T, nDim,1>> X,Z;
