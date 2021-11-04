@@ -280,7 +280,7 @@ TestHDiv3DOneElt::shape_functions( std::string one_element_mesh )
     std::string shape_name = "shape_functions";
     std::string exporter_shape_name = ( boost::format( "%1%-%2%-%3%" )
                                         % this->about().appName()
-                                        % mesh_path.stem()
+                                        % mesh_path.stem().string()
                                         % shape_name ).str();
     auto exporter_shape = exporter( _mesh=mesh,_name=exporter_shape_name );
 
@@ -293,7 +293,7 @@ TestHDiv3DOneElt::shape_functions( std::string one_element_mesh )
             u_vec[i] = U_ref;
 
             std::ostringstream ostr;
-            ostr << mesh_path.stem() << "-" << Xh->basis()->familyName() << "-" << i;
+            ostr << mesh_path.stem().string() << "-" << Xh->basis()->familyName() << "-" << i;
             exporter_shape->step( 0 )->add( ostr.str(), U_ref );
         }
 
