@@ -3879,6 +3879,59 @@ auto I( Ts && ... v )
     return *opInterpolation( std::forward<Ts>(v)... );
 }
 
+template <typename ... Ts>
+auto Grad( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && domainSpace = args.get(_domainSpace);
+    auto && imageSpace = args.get(_imageSpace);
+    auto && range = args.get_else_invocable(_range, [&imageSpace]() { return elements(support(imageSpace)); } );
+    using domain_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(domainSpace)>>>;
+    using image_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(imageSpace)>>>;
+    auto && backend = args.get_else(_backend, Feel::backend() );//Backend<typename domain_space_type::value_type>::build( soption( _name="backend" ) ) );
+    auto && type = args.get_else(_type, makeGradientInterpolation<nonconforming_t>( nonconforming_t() ) );
+    bool ddmethod = args.get_else(_ddmethod,false);
+    auto && matrix = args.get_else(_matrix, OperatorInterpolationMatrixSetup<typename image_space_type::value_type>{});
+
+    std::decay_t<decltype(type)> t( type );
+    return *opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod,matrix );
+}
+
+template <typename ... Ts>
+auto Curl( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && domainSpace = args.get(_domainSpace);
+    auto && imageSpace = args.get(_imageSpace);
+    auto && range = args.get_else_invocable(_range, [&imageSpace]() { return elements(support(imageSpace)); } );
+    using domain_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(domainSpace)>>>;
+    using image_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(imageSpace)>>>;
+    auto && backend = args.get_else(_backend, Feel::backend() );//Backend<typename domain_space_type::value_type>::build( soption( _name="backend" ) ) );
+    auto && type = args.get_else(_type, makeCurlInterpolation<nonconforming_t>( nonconforming_t() ) );
+    bool ddmethod = args.get_else(_ddmethod,false);
+    auto && matrix = args.get_else(_matrix, OperatorInterpolationMatrixSetup<typename image_space_type::value_type>{});
+
+    std::decay_t<decltype(type)> t( type );
+    return *opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod,matrix );
+}
+
+template <typename ... Ts>
+auto Div( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && domainSpace = args.get(_domainSpace);
+    auto && imageSpace = args.get(_imageSpace);
+    auto && range = args.get_else_invocable(_range, [&imageSpace]() { return elements(support(imageSpace)); } );
+    using domain_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(domainSpace)>>>;
+    using image_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(imageSpace)>>>;
+    auto && backend = args.get_else(_backend, Feel::backend() );//Backend<typename domain_space_type::value_type>::build( soption( _name="backend" ) ) );
+    auto && type = args.get_else(_type, makeDivInterpolation<nonconforming_t>( nonconforming_t() ) );
+    bool ddmethod = args.get_else(_ddmethod,false);
+    auto && matrix = args.get_else(_matrix, OperatorInterpolationMatrixSetup<typename image_space_type::value_type>{});
+
+    std::decay_t<decltype(type)> t( type );
+    return *opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod,matrix );
+}
 
 
 #if 0

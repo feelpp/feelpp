@@ -3374,7 +3374,7 @@ struct compute_eim_return
     // typedef typename boost::remove_reference<typename parameter::binding<Args, tag::element2,element_type>::type>::type element2_type;
     using model_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<ArgModelType>>>;
     using expr_type = std::decay_t<ArgExprType>;
-    using space_type = std::decay_t<ArgSpaceType>;
+    using space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<ArgSpaceType>>>;
     using element_type = std::decay_t<ArgElementType>;
     using element2_type = std::decay_t<ArgElement2Type>;
     static const int subspaceid = mpl::if_< mpl::bool_< model_type::functionspace_type::is_composite>,

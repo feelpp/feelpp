@@ -702,19 +702,21 @@ public :
             return NewImpl( space );
         }
 #endif
-    template <typename ... Ts>
+    template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
     static this_ptrtype New( Ts && ... v )
         {
             auto args = NA::make_arguments( std::forward<Ts>(v)... );
             auto && space = args.get(_space);
-            return NewImpl( space );
+            return std::make_shared<this_type>( space );
         }
+    static this_ptrtype New( fespace_ptrtype const& space ) { return New(_space=space); }
 
-    static this_ptrtype NewImpl( fespace_ptrtype const& Xh )
-        {
 
-            return this_ptrtype( new this_type( Xh ) );
-        }
+    // static this_ptrtype NewImpl( fespace_ptrtype const& Xh )
+    //     {
+
+    //         return this_ptrtype( new this_type( Xh ) );
+    //     }
 
     /*
      * Get the FEM functionspace

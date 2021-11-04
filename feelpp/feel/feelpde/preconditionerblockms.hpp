@@ -244,8 +244,8 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
         M_pin( M_backend->newVector( M_Qh )  ),
         M_pout( M_backend->newVector( M_Qh )  ),
         U( M_Xh, "U" ),
-        M_mass(M_backend->newMatrix(M_Vh,M_Vh)),
-        M_L(M_backend->newMatrix(M_Qh,M_Qh)),
+        M_mass(M_backend->newMatrix(_test=M_Vh,_trial=M_Vh)),
+        M_L(M_backend->newMatrix(_test=M_Qh,_trial=M_Qh)),
         M_er( 1. ),
         M_model( model ),
         M_prefix( p ),
@@ -481,7 +481,7 @@ PreconditionerBlockMS<space_type>::applyInverse ( const vector_type& X, vector_t
     toc("[PreconditionerBlockMS] applyInverse update solution",FLAGS_v>0);
     return 0;
 }
-
+#if 0
 namespace meta
 {
 template< typename space_type >
@@ -511,5 +511,20 @@ BOOST_PARAMETER_FUNCTION( ( typename meta::blockms<
     pblockms_t p( new blockms_t( space, model, prefix, matrix ) );
     return p;
 } // blockms
+#endif
+template <typename ... Ts>
+auto blockms( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && space = args.get(_space);
+    auto && matrix = args.get(_matrix);
+    auto && model = args.get(_model);
+    std::string const& prefix = args.get_else(_prefix, "blockms" );
+
+    using space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(space)>>>;
+    return std::make_shared<PreconditionerBlockMS<space_type>>( space, model, prefix, matrix );
+}
+
+
 } // Feel
 #endif
