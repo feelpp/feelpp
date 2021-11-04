@@ -266,7 +266,7 @@ runTestAitken()
                 BOOST_TEST_MESSAGE( "test_aiken multiplicative method" );
         }
 
-        Ih21->apply( _residual=u2, _currentElt=uu );
+        Ih21->apply( u2, uu );
 
         lp1.solve( u1,
                    dirichletFlags1, /*dirichlet*/g,

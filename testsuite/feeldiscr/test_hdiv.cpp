@@ -348,7 +348,7 @@ using namespace Feel;
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_hdiv_proj, T, types )
 {
     Feel::TestHDiv<T::first::value,T::second::value> t;
-    Feel::Environment::changeRepository( boost::format( "%1%/test_projection_%2%D_RT%3%/" )
+    Feel::Environment::changeRepository( _directory=boost::format( "%1%/test_projection_%2%D_RT%3%/" )
                                          % Feel::Environment::about().appName() 
                                          % T::first::value % T::second::value  );
     t.testProjector();

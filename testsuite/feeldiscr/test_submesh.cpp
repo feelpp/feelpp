@@ -233,7 +233,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
     auto u2 = Yh->element();
     opI->apply( u1, u2 );
 
-    auto l2error = normL2( boundaryelements(mesh), idv(u1)-idv(u2) );
+    auto l2error = normL2( _range=boundaryelements(mesh), _expr=idv(u1)-idv(u2) );
     BOOST_CHECK_SMALL( l2error, 1e-14 );
     auto t1 = t.elapsed();t.restart();
     BOOST_TEST_MESSAGE( "Test submesh : elapsed time for optimized version : " << t1 << "s\n" );
@@ -249,7 +249,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
     auto u3 = Yh->element();
     opI2->apply( u1, u3 );
 
-    auto l2error2 = normL2( boundaryelements(mesh), idv(u1)-idv(u3) );
+    auto l2error2 = normL2( _range=boundaryelements(mesh), _expr=idv(u1)-idv(u3) );
     BOOST_CHECK_SMALL( l2error2, 1e-14 );
 
     auto t2 = t.elapsed();t.restart();
@@ -265,7 +265,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
     opI3->apply( u2, u4 );
 
     t1 = t.elapsed();t.restart();
-    l2error = normL2( boundaryelements(mesh), idv(u4)-idv(u2) );
+    l2error = normL2( _range=boundaryelements(mesh), _expr=idv(u4)-idv(u2) );
     BOOST_CHECK_SMALL( l2error, 1e-14 );
     BOOST_TEST_MESSAGE( "Test submesh : elapsed time for optimized version (transpose) : " << t1 << "s\n" );
 
@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
     opI4->apply( u3, u5 );
 
     t2 = t.elapsed();t.restart();
-    l2error2 = normL2( boundaryelements(mesh), idv(u5)-idv(u3) );
+    l2error2 = normL2( _range=boundaryelements(mesh), _expr=idv(u5)-idv(u3) );
     BOOST_CHECK_SMALL( l2error2, 1e-14 );
     BOOST_TEST_MESSAGE( "Test submesh : elapsed time for non-optimized version (transpose) : " << t2 << "s\n" );
 
