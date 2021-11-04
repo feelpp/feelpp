@@ -1284,7 +1284,7 @@ public:
         auto args = NA::make_arguments( std::forward<Ts>(v)... );
         std::string const& name = args.get(_name);
         auto && path = args.get(_path);
-        std::string const& type = args.get_else(_name,"binary");
+        std::string const& type = args.get_else(_type,"binary");
         std::string const& suffix = args.get_else(_suffix,"");
         std::string const& sep = args.get_else(_sep,"");
 
@@ -1324,7 +1324,7 @@ public:
         std::string const& name = args.get(_name );
         auto && path = args.get(_path);
         size_type update = args.get_else(_update,MESH_CHECK | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
-        std::string const& type = args.get_else(_name,"binary");
+        std::string const& type = args.get_else(_type,"binary");
         std::string const& suffix = args.get_else(_suffix,"");
         std::string const& sep = args.get_else(_sep,"");
 
