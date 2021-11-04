@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
   auto e=exporter(_mesh = mesh );
 
   auto a = form2(_test=Xh, _trial=Xh);
-  auto l = form1( Xh );
+  auto l = form1( _test=Xh );
   
   ModelProperties model;
   map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { model.boundaryConditions().getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" )};

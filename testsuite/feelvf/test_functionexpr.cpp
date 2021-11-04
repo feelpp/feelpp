@@ -51,26 +51,26 @@ BOOST_AUTO_TEST_CASE( test1 )
     // Identity function expr
     auto f1expr = functionExpr( []( double p ) { return p; }, idv(u) );
     auto f1elt = vf::project( _space=Xh, _range=rangeMeshElements, _expr=f1expr );
-    auto f1err = normL2( elements( mesh ), idv(u) - f1expr );
+    auto f1err = normL2( _range=elements( mesh ), _expr=idv(u) - f1expr );
     BOOST_CHECK_SMALL( f1err, 1e-10 );
 
     // Vectorial function expr (with Order=4)
     auto vecExpr = vec( cos( M_PI * Px() ), sin( M_PI * Py() ) );
     auto f2expr = functionExpr<4>( []( auto const& x ) { return 2.*x; }, vecExpr );
     auto f2elt = vf::project( _space=Xhv, _range=rangeMeshElements, _expr=f2expr );
-    auto f2err = normL2( elements( mesh ), cst(2.)*vecExpr - f2expr );
+    auto f2err = normL2( _range=elements( mesh ), _expr=cst(2.)*vecExpr - f2expr );
     BOOST_CHECK_SMALL( f2err, 1e-10 );
 
     // Mix scalar-gradient
     auto f3expr = functionExpr( []( auto const& p, auto const& x ) { return p*p + x.norm(); }, idv(u), vecExpr );
     auto f3elt = vf::project( _space=Xh, _range=rangeMeshElements, _expr=f3expr );
-    auto f3err = normL2( elements( mesh ), idv(u)*idv(u) + norm2(vecExpr) - f3expr );
+    auto f3err = normL2( _range=elements( mesh ), _expr=idv(u)*idv(u) + norm2(vecExpr) - f3expr );
     BOOST_CHECK_SMALL( f3err, 1e-10 );
 
     // Tensor
     auto f4expr = functionExpr( []( auto const& x ) { return x * x.transpose(); }, vecExpr );
     auto f4elt = vf::project( _space=Xht, _range=rangeMeshElements, _expr=f4expr );
-    auto f4err = normL2( elements( mesh ), vecExpr*trans(vecExpr) - f4expr );
+    auto f4err = normL2( _range=elements( mesh ), _expr=vecExpr*trans(vecExpr) - f4expr );
     BOOST_CHECK_SMALL( f4err, 1e-10 );
 }
 
