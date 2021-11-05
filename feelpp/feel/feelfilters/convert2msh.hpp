@@ -40,18 +40,6 @@ namespace Feel {
  * \arg dim (optional, default = 3)
  * \arg order (optional, default = 1)
  */
-#if 0
-BOOST_PARAMETER_FUNCTION(
-    ( gmsh_ptrtype ), // return type
-    convert2msh,    // 2. function name
-    tag,           // 3. namespace of tag types
-    ( required
-      ( filename,       *( boost::is_convertible<mpl::_,std::string> ) ) )
-    ( optional
-      ( dim,              *( boost::is_integral<mpl::_> ), 3 )
-      ( order,              *( boost::is_integral<mpl::_> ), 1 ) )
-    )
-#endif
 
 template <typename ... Ts>
 gmsh_ptrtype convert2msh( Ts && ... v )

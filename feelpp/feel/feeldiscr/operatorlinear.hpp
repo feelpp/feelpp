@@ -27,8 +27,8 @@
    \date 2006-11-16
  */
 
-#ifndef _OPERATORLINEAR_HPP_
-#define _OPERATORLINEAR_HPP_
+#ifndef FEELPP_DISCR_OPERATORLINEAR_H
+#define FEELPP_DISCR_OPERATORLINEAR_H
 
 #include <feel/feeldiscr/operator.hpp>
 
@@ -578,43 +578,6 @@ private:
 }; // class Operator
 
 
-
-#if 0
-template<typename Args>
-struct compute_opLinear_return
-{
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::domainSpace>::type>::type::element_type domain_space_type;
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::imageSpace>::type>::type::element_type image_space_type;
-
-    typedef std::shared_ptr<OperatorLinear<domain_space_type, image_space_type> > type;
-};
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_opLinear_return<Args>::type ), // 1. return type
-    opLinear,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    ) // required
-    ( optional
-      ( backend,        *, Backend<typename compute_opLinear_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
-      ( pattern,        *, (size_type)Pattern::COUPLED  )
-    ) // optionnal
-)
-{
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
-    typedef OperatorLinear<typename compute_opLinear_return<Args>::domain_space_type,
-            typename compute_opLinear_return<Args>::image_space_type> operatorlinear_type;
-
-    std::shared_ptr<operatorlinear_type> opI( new operatorlinear_type( domainSpace,imageSpace,backend,pattern ) );
-
-    return opI;
-
-} // opLinear
-#endif
 template <typename ... Ts>
 auto opLinear( Ts && ... v )
 {
@@ -623,7 +586,7 @@ auto opLinear( Ts && ... v )
     auto && imageSpace = args.get(_imageSpace);
     using domain_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(domainSpace)>>>;
     using image_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(imageSpace)>>>;
-    auto && backend = args.get_else(_backend,Backend<typename domain_space_type::value_type>::build( soption( _name="backend" ) ) );
+    auto && backend = args.get_else_invocable(_backend,[](){ return Backend<typename domain_space_type::value_type>::build( soption( _name="backend" ) ); } );
     size_type pattern = args.get_else(_pattern,Pattern::COUPLED );
 
     return std::make_shared<OperatorLinear<domain_space_type,image_space_type>>( domainSpace,imageSpace,backend,pattern );
