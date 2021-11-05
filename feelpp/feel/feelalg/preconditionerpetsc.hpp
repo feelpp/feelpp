@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-16
  */
-#ifndef __PreconditionerPetsc_H
-#define __PreconditionerPetsc_H 1
+#ifndef FEELPP_ALG_PRECONDITIONERPETSC_H
+#define FEELPP_ALG_PRECONDITIONERPETSC_H
 
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/preconditioner.hpp>
@@ -220,18 +220,6 @@ getOption( std::string const& name, std::string const& prefix, std::string const
 template <typename T>
 struct getOptionIfAvalaible
 {
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( std::optional<T> ), static apply, tag,
-        ( required
-          ( name,( std::string ) ) )
-        ( optional
-          ( sub,( std::string ),std::string() )
-          ( prefix,( std::string ),std::string() )
-          ( prefix_overload, *, std::vector<std::string>() )
-          ( vm, ( po::variables_map const& ), Environment::vm() )
-          ) )
-#endif
     template <typename ... Ts>
     static std::optional<T> apply( Ts && ... v )
         {

@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-12-23
  */
-#ifndef Backend_H
-#define Backend_H 1
+#ifndef FEELPP_ALG_BACKEND_H
+#define FEELPP_ALG_BACKEND_H 1
 
 #include <functional>
 #include <boost/timer.hpp>
@@ -361,25 +361,7 @@ public:
     /**
      * helper function
      */
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( sparse_matrix_ptrtype ),
-                                     newMatrix,
-                                     tag,
-                                     ( required
-                                       ( trial,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-                                       ( test,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) ) )
-                                     ( optional
-                                       ( pattern,( size_type ),Pattern::COUPLED )
-                                       ( properties,( size_type ),NON_HERMITIAN )
-                                       ( buildGraphWithTranspose, ( bool ),false )
-                                       ( pattern_block,    *, ( BlocksStencilPattern(1,1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
-                                       ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
-                                       ( verbose,   ( bool ), M_verbose )
-                                       ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
-                                     ) )
-
-#endif
-        template <typename TrialType,typename TestType>
+    template <typename TrialType,typename TestType>
         sparse_matrix_ptrtype newMatrix( NA::arguments<
                                          typename na::trial::template required_as_t<std::shared_ptr<TrialType>>,
                                          typename na::test::template required_as_t<std::shared_ptr<TestType>>,
@@ -553,22 +535,6 @@ public:
     /**
      * instantiate a new block matrix sparse
      */
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( sparse_matrix_ptrtype ),
-                                     newBlockMatrix,
-                                     tag,
-                                     ( required
-                                       ( block,* )
-                                     )
-                                     ( optional
-                                       ( copy_values,*( boost::is_integral<mpl::_> ),true )
-                                       ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
-                                     )
-                                   )
-    {
-        return newBlockMatrixImpl( block,copy_values,diag_is_nonzero );
-    }
-#endif
     template <typename ... Ts>
     sparse_matrix_ptrtype newBlockMatrix( Ts && ... v )
     {
@@ -593,21 +559,6 @@ public:
     /**
      * instantiate a new block matrix sparse
      */
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( vector_ptrtype ),
-                                     newBlockVector,
-                                     tag,
-                                     ( required
-                                       ( block,* )
-                                     )
-                                     ( optional
-                                       ( copy_values,*( boost::is_integral<mpl::_> ),true )
-                                     )
-                                   )
-    {
-        return newBlockVectorImpl( block,copy_values );
-    }
-#endif
     template <typename ... Ts>
     vector_ptrtype newBlockVector( Ts && ... v )
     {
@@ -621,19 +572,6 @@ public:
     /**
      * instantiate a new zero matrix
      */
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( sparse_matrix_ptrtype ),
-                                     newZeroMatrix,
-                                     tag,
-                                     ( required
-                                       ( test,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> >) )
-                                       ( trial,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> >) )
-                                     )
-                                   )
-    {
-        return this->newZeroMatrix( trial->dofOnOff(), test->dofOn() );
-    }
-#endif
     template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) == 2 && ( NA::is_named_argument_v<Ts> && ...) > >
     sparse_matrix_ptrtype newZeroMatrix( Ts && ... v )
     {
@@ -656,20 +594,6 @@ public:
     /**
      * helper function
      */
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( vector_ptrtype ),
-                                     newVector,
-                                     tag,
-                                     ( required
-                                       ( test,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> >) )
-                                     )
-                                   )
-    {
-        if ( !this->comm().isActive() ) return vector_ptrtype();
-
-        return this->newVector( test->dof() );
-    }
-#endif
     template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
     vector_ptrtype newVector( Ts && ... v )
     {
@@ -927,25 +851,6 @@ public:
      * set tolerances: relative tolerance \p rtol, divergence tolerance \p dtol
      * and absolute tolerance \p atol
      */
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
-                                     setTolerances,
-                                     tag,
-                                     ( required
-                                       ( rtolerance, ( real_type ) )
-                                     )
-                                     ( optional
-                                       ( maxit,      ( size_type ), 1000 )
-                                       ( atolerance, ( real_type ),    1e-50 )
-                                       ( dtolerance, ( real_type ),    1e5 )
-                                     ) )
-    {
-        M_rtolerance = rtolerance;
-        M_dtolerance = dtolerance;
-        M_atolerance = atolerance;
-        M_maxitKSP = maxit;
-    }
-#endif
     template <typename ... Ts>
     void setTolerances( Ts && ... v )
     {
@@ -959,25 +864,7 @@ public:
         M_atolerance = atolerance;
         M_maxitKSP = maxit;
     }
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
-                                     setTolerancesSNES,
-                                     tag,
-                                     ( required
-                                       ( rtolerance, ( double ) )
-                                     )
-                                     ( optional
-                                       ( maxit,      ( size_type ), 50 )
-                                       ( atolerance, ( double ),    1e-50 )
-                                       ( stolerance, ( double ),    1e-8 )
-                                     ) )
-    {
-        M_rtoleranceSNES = rtolerance;
-        M_stoleranceSNES = stolerance;
-        M_atoleranceSNES = atolerance;
-        M_maxitSNES = maxit;
-    }
-#endif
+
     template <typename ... Ts>
     void setTolerancesSNES( Ts && ... v )
     {
@@ -995,25 +882,6 @@ public:
     /**
      * set solver: krylov subspace method and preconditioners
      */
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
-                                     setSolverType,
-                                     tag,
-                                     ( required
-                                       ( ksp, ( std::string ) )
-                                     )
-                                     ( optional
-                                       ( pc,      ( std::string ), "lu" )
-                                       ( constant_null_space,      ( bool ), false )
-                                       ( pcfactormatsolverpackage,  ( std::string ), "petsc" )
-                                     ) )
-    {
-        M_ksp = ksp;
-        M_pc = pc;
-        M_pcFactorMatSolverPackage = pcfactormatsolverpackage;
-        M_constant_null_space = constant_null_space;
-    }
-#endif
     template <typename ... Ts>
     void setSolverType( Ts && ... v )
     {
@@ -1163,38 +1031,6 @@ public:
      *
      * \warning some parameter may not be meaningful for all backends
      */
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( solve_return_type ),
-                                     solve,
-                                     tag,
-                                     ( required
-                                       //( matrix,*(mpl::or_<sparse_matrix_ptrtype,shell_matrix_ptrtype>) )
-                                       ( matrix,(sparse_matrix_ptrtype) )
-                                       //( in_out( solution ),*( mpl::or_<mpl::or_<boost::is_convertible<mpl::_,vector_type&>,boost::is_convertible<mpl::_,vector_type> >,boost::is_convertible<mpl::_,vector_ptrtype> > ) )
-                                       ( in_out( solution ),* )
-                                       ( rhs,( vector_ptrtype ) ) )
-                                     ( optional
-                                       //(prec,(sparse_matrix_ptrtype), matrix )
-                                       ( prec,( preconditioner_ptrtype ), preconditioner_ptrtype() )
-                                       ( null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
-                                       ( near_null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
-                                       ( maxit,( size_type ), M_maxitKSP/*1000*/ )
-                                       ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
-                                       ( atolerance,( double ), M_atolerance/*1e-50*/ )
-                                       ( dtolerance,( double ), M_dtolerance/*1e5*/ )
-                                       ( reuse_prec,( bool ), M_reuse_prec )
-                                       ( transpose,( bool ), false )
-                                       ( close,( bool ), true )
-                                       ( constant_null_space,( bool ), M_constant_null_space/*false*/ )
-                                       ( pre, (pre_solve_type), pre_solve_type() )
-                                       ( post, (post_solve_type), post_solve_type() )
-                                       ( pc,( std::string ),M_pc/*"lu"*/ )
-                                       ( ksp,( std::string ),M_ksp/*"gmres"*/ )
-                                       ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
-                                       ( verbose,   ( bool ), M_verbose )
-                                     )
-                                   )
-#endif
     template <typename ... Ts,typename = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
     solve_return_type solve( Ts && ... v )
     {
@@ -1203,8 +1039,8 @@ public:
         auto && solution = args.get(_solution);
         vector_ptrtype rhs = args.get(_rhs);
         preconditioner_ptrtype prec = args.get_else(_prec,preconditioner_ptrtype{});
-        NullSpace<value_type> const& null_space = args.get_else(_null_space,NullSpace<value_type>{} );
-        NullSpace<value_type> const& near_null_space = args.get_else(_near_null_space,NullSpace<value_type>{} );
+        NullSpace<value_type> const& null_space = args.get_else_invocable(_null_space,[](){ return NullSpace<value_type>{}; } );
+        NullSpace<value_type> const& near_null_space = args.get_else_invocable(_near_null_space,[](){ return NullSpace<value_type>{}; } );
         size_type maxit = args.get_else(_maxit,M_maxitKSP );
         double rtolerance = args.get_else(_rtolerance,M_rtolerance );
         double atolerance = args.get_else(_atolerance,M_atolerance );
@@ -1369,37 +1205,6 @@ public:
     /**
      * solve for \f$P F(x)=0 b\f$
      */
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( nl_solve_return_type ),
-                                     nlSolve,
-                                     tag,
-                                     ( required
-                                       //( in_out( solution ),*( mpl::or_<boost::is_convertible<mpl::_,vector_type&>,boost::is_convertible<mpl::_,vector_ptrtype> > ) ) )
-                                       ( in_out( solution ),*))
-                                     ( optional
-                                       ( jacobian,( sparse_matrix_ptrtype ), sparse_matrix_ptrtype() )
-                                       ( residual,( vector_ptrtype ), vector_ptrtype() )
-                                       //(prec,(sparse_matrix_ptrtype), jacobian )
-                                       ( prec,( preconditioner_ptrtype ), preconditioner_ptrtype() )
-                                       ( null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
-                                       ( near_null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
-                                       ( maxit,( size_type ), M_maxitSNES/*50*/ )
-                                       ( rtolerance,( double ), M_rtoleranceSNES/*1e-8*/ )
-                                       ( atolerance,( double ), M_atoleranceSNES/*1e-50*/ )
-                                       ( stolerance,( double ), M_stoleranceSNES/*1e-8*/ )
-                                       ( reuse_prec,( bool ), M_reuse_prec )
-                                       ( reuse_jac,( bool ), M_reuse_jac )
-                                       ( transpose,( bool ), false )
-                                       ( pre, (pre_solve_type), pre_solve_type() )
-                                       ( post, (post_solve_type), post_solve_type() )
-                                       ( update, (update_nlsolve_type), update_nlsolve_type() )
-                                       ( pc,( std::string ),M_pc/*"lu"*/ )
-                                       ( ksp,( std::string ),M_ksp/*"gmres"*/ )
-                                       ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
-                                       ( verbose,   ( bool ), M_verbose )
-                                     )
-                                   )
-#endif
     template <typename ... Ts,typename = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
     nl_solve_return_type nlSolve( Ts && ... v )
     {
@@ -1408,8 +1213,8 @@ public:
         sparse_matrix_ptrtype jacobian = args.get_else(_jacobian,sparse_matrix_ptrtype{});
         vector_ptrtype residual = args.get_else(_residual,vector_ptrtype{});
         preconditioner_ptrtype prec = args.get_else(_prec,preconditioner_ptrtype{});
-        NullSpace<value_type> const& null_space = args.get_else(_null_space,NullSpace<value_type>{} );
-        NullSpace<value_type> const& near_null_space = args.get_else(_near_null_space,NullSpace<value_type>{} );
+        NullSpace<value_type> const& null_space = args.get_else_invocable(_null_space,[](){ return NullSpace<value_type>{}; } );
+        NullSpace<value_type> const& near_null_space = args.get_else_invocable(_near_null_space,[](){ return NullSpace<value_type>{}; } );
         size_type maxit = args.get_else(_maxit,M_maxitSNES );
         double rtolerance = args.get_else(_rtolerance,M_rtoleranceSNES );
         double atolerance = args.get_else(_atolerance,M_atoleranceSNES );
@@ -1791,47 +1596,13 @@ backend_impl( std::string const& name, std::string const& kind, bool rebuild, wo
 } // detail
 
 
-#if 0
-BOOST_PARAMETER_FUNCTION(
-                         ( backend_ptrtype ), // return type
-                         backend,           // 2. function name
-                         tag,               // 3. namespace of tag types
-                         ( optional
-                           ( name,           ( std::string ), "" )
-                           ( kind,           ( std::string ), soption(_prefix=name,_name="backend"))
-                           ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                           ( worldcomm,      (worldcomm_ptr_t), Environment::worldCommPtr() )
-                           ) )
-{
-    return Feel::detail::backend_impl<double>( name, kind, rebuild, worldcomm);
-}
-
-
-/*
- * Complex backend
- */
-BOOST_PARAMETER_FUNCTION(
-                         ( c_backend_ptrtype ), // return type
-                         cbackend,           // 2. function name
-                         tag,               // 3. namespace of tag types
-                         ( optional
-                           ( name,           ( std::string ), "" )
-                           ( kind,           ( std::string ), soption(_prefix=name,_name="backend"))
-                           ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                           ( worldcomm,      (worldcomm_ptr_t), Environment::worldCommPtr() )
-                           ) )
-{
-    return Feel::detail::backend_impl<std::complex<double>>( name, kind, rebuild, worldcomm);
-}
-#endif
-
 template <typename ... Ts>
 backend_ptrtype backend( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     std::string const& name = args.get_else(_name,"");
-    std::string const& kind = args.get_else(_kind,soption(_prefix=name,_name="backend"));
-    bool rebuild = args.get_else(_rebuild,boption(_prefix=name,_name="backend.rebuild"));
+    std::string const& kind = args.get_else_invocable(_kind,[&name](){ return soption(_prefix=name,_name="backend"); });
+    bool rebuild = args.get_else_invocable(_rebuild,[&name](){ return boption(_prefix=name,_name="backend.rebuild"); });
     worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
     return Feel::detail::backend_impl<double>( name, kind, rebuild, worldcomm);
 }
@@ -1840,8 +1611,8 @@ c_backend_ptrtype cbackend( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     std::string const& name = args.get_else(_name,"");
-    std::string const& kind = args.get_else(_kind,soption(_prefix=name,_name="backend"));
-    bool rebuild = args.get_else(_rebuild,boption(_prefix=name,_name="backend.rebuild"));
+    std::string const& kind = args.get_else_invocable(_kind,[&name](){ return soption(_prefix=name,_name="backend"); });
+    bool rebuild = args.get_else_invocable(_rebuild,[&name](){ return boption(_prefix=name,_name="backend.rebuild"); });
     worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
     return Feel::detail::backend_impl<std::complex<double>>( name, kind, rebuild, worldcomm);
 }

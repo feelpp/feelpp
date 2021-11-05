@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-16
  */
-#ifndef FEELPP_PRECONDITIONER_HPP
-#define FEELPP_PRECONDITIONER_HPP 1
+#ifndef FEELPP_ALG_PRECONDITIONER_H
+#define FEELPP_ALG_PRECONDITIONER_H 1
 
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/parameter.hpp>
@@ -438,41 +438,6 @@ Preconditioner<T,SizeT>::~Preconditioner ()
 typedef Preconditioner<double,uint32_type> preconditioner_type;
 typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
-#if 0
-template<typename Args>
-struct compute_prec_return
-{
-    typedef typename parameter::value_type<Args, tag::backend>::type::element_type::value_type value_type;
-    typedef std::shared_ptr<Preconditioner<value_type>> type;
-};
-
-
-BOOST_PARAMETER_FUNCTION( ( std::shared_ptr<Preconditioner<double> > ),
-                          preconditioner,
-                          tag,
-                          ( required
-                            ( pc,( PreconditionerType ) )
-                            ( backend, *(boost::is_convertible<mpl::_, std::shared_ptr<BackendBase>>) ) )
-                          ( optional
-                            ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
-                            ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
-                            ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_DEFAULT )
-                            ( rebuild,      (bool), false )
-                            )
-                          )
-{
-    using value_type = typename compute_prec_return<Args>::value_type;
-    preconditioner_ptrtype p = Preconditioner<value_type>::build( prefix, backend->type(), backend->worldCommPtr() );
-    p->setType( pc );
-    p->setMatSolverPackageType( pcfactormatsolverpackage );
-
-    if ( matrix )
-    {
-        p->setMatrix( matrix );
-    }
-    return p;
-}
-#else
 template <typename ... Ts>
 std::shared_ptr<Preconditioner<double>> preconditioner( Ts && ... v )
 {
@@ -495,7 +460,7 @@ std::shared_ptr<Preconditioner<double>> preconditioner( Ts && ... v )
     }
     return p;
 }
-#endif
+
 /**
  * FEELPP_INSTANTIATE_PRECONDITIONER is never defined except in preconditioner.cpp
  * where we do the instantiate. This allows to reduce the Preconditioner

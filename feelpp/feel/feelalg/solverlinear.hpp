@@ -17,8 +17,8 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-#ifndef __linear_solver_h__
-#define __linear_solver_h__
+#ifndef FEELPP_ALG_SOLVERLINEAR_H
+#define FEELPP_ALG_SOLVERLINEAR_H
 
 #include <boost/mpi/communicator.hpp>
 
@@ -177,25 +177,6 @@ public:
      * set tolerances: relative tolerance \p rtol, divergence tolerance \p dtol
      * and absolute tolerance \p atol
      */
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
-                                     setTolerances,
-                                     tag,
-                                     ( required
-                                       ( rtolerance,( double ) )
-                                     )
-                                     ( optional
-                                       ( maxit,( size_type ), 1000 )
-                                       ( atolerance,( double ), 1e-50 )
-                                       ( dtolerance,( double ), 1e5 )
-                                     ) )
-    {
-        M_rtolerance = rtolerance;
-        M_dtolerance = dtolerance;
-        M_atolerance = atolerance;
-        M_maxit=maxit;
-    }
-#endif
     template <typename ... Ts>
     void setTolerances( Ts && ... v )
         {
