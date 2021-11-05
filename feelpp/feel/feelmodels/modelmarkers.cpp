@@ -65,5 +65,14 @@ ModelMarkers::setPTree( pt::ptree const& p, ModelIndexes const& indexes )
     }
 }
 
+bool
+ModelMarkers::empty() const
+{
+    if( this->size() > 1 )
+        return false;
+    if( this->size() == 0 )
+        return true;
+    return this->begin()->empty();
+}
 
 }

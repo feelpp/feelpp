@@ -2,3 +2,6 @@ quarter-turn-2d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/quarter-
 quarter-turn-2d-int --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/quarter-turn/quarter-turn2D-int.cfg
 quarter-turn-3d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/quarter-turn/quarter-turn3D.cfg
 quarter-turn-3d-int --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/quarter-turn/quarter-turn3D-int.cfg
+linear-time --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linearT.json
+quadratic-time --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/quadraticT.json --hdg.poisson.bdf.order 2
+cubic-time --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/cubicT.json --hdg.poisson.bdf.order 3

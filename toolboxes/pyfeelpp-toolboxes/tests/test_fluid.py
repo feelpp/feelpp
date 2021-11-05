@@ -10,27 +10,10 @@ from feelpp.toolboxes.fluid import *
 
 @pytest.mark.order("first")
 def test_fluid1():
-    feelpp.Environment.setConfigFile('fluid/TurekHron/cfd3.cfg')
+    feelpp.Environment.setConfigFile('fluid/TurekHron/cfd1.cfg')
     # 2D fluid solver using P2P1G1 approximation
     f = fluid(dim=2, orderVelocity=2, orderPressure=1,worldComm=feelpp.Environment.worldCommPtr())
-    f.init()
-    #f.printAndSaveInfo()
-    if f.isStationary():
-        f.solve()
-        f.exportResults()
-    else:
-        if not f.doRestart():
-            f.exportResults(f.timeInitial())
-        f.startTimeStep()
-        while not f.timeStepBase().isFinished():
-            if feelpp.Environment.isMasterRank(): #.worldComm().isMasterRank():
-                print("============================================================\n")
-                print("time simulation: ", f.time(), " - ", "s \n")
-                print("============================================================\n")
-            f.solve()
-            f.exportResults()
-            f.updateTimeStep()
-
+    simulate(f)
 
 #@pytest.mark.order("second")
 #def test_fluid2_remesh():

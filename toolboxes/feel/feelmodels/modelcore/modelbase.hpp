@@ -45,8 +45,9 @@
 namespace Feel
 {
 
-// BOOST_PARAMETER_NAME( keyword )
-// BOOST_PARAMETER_NAME( repository )
+BOOST_PARAMETER_NAME( keyword )
+BOOST_PARAMETER_NAME( repository )
+BOOST_PARAMETER_NAME( physic )
 
 namespace TabulateInformationTools
 {

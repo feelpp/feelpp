@@ -695,6 +695,18 @@ alemesh_options(std::string const& prefix)
         .add( backend_options( prefixvm(prefix,"alemesh.ho") ) );
 }
 
+Feel::po::options_description
+mixedpoisson_options( std::string const& prefix )
+{
+    po::options_description desc_options("mixedpoisson options");
+    desc_options.add_options()
+        ( prefixvm( prefix, "tau_constant" ).c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
+        ( prefixvm( prefix, "use-sc" ).c_str(), po::value<bool>()->default_value( true ), "use static condensation" )
+        ( prefixvm( prefix, "time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
+        ( prefixvm( prefix, "time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+        ;
+    return desc_options.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).add( backend_options( prefix+".sc" ) );
+}
 
 Feel::po::options_description
 toolboxes_options( std::string const& type, std::string const& prefix )
@@ -728,8 +740,10 @@ toolboxes_options( std::string const& type, std::string const& prefix )
         toolboxesOptions.add(maxwell_options(prefix));
     else if (type == "coefficient-form-pdes")
         toolboxesOptions.add(coefficientformpdes_options(prefix));
+    else if (type == "mixedpoisson")
+        toolboxesOptions.add(mixedpoisson_options(prefix));
     else
-        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric, heat-fluid, heat-fluid, coefficient-form-pdes";
+        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric, heat-fluid, heat-fluid, coefficient-form-pdes, mixedpoisson";
 
     return toolboxesOptions;
 }
