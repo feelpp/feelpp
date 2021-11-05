@@ -40,11 +40,10 @@ if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STRE
   endif()
 else()
   feelpp_get_environment()
+  set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 endif()
 
 enable_testing()
-
-set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 add_custom_target( testsuite )
 

@@ -45,7 +45,7 @@
         },
         "potential":
         {
-            "SourceTerm":
+            "VolumicForces":
             {
                 "":{"expr":"0"}
             },
@@ -153,16 +153,6 @@
                     "value":800,
                     "tolerance":1e-8
                 },
-                "Statistics_Intensity0_integrate_1":
-                {
-                    "value":-8.343084e-01,
-                    "tolerance":1e-1
-                },
-                "Statistics_Intensity1_integrate_0":
-                {
-                    "value":8.227654e-01,
-                    "tolerance":1e-1
-                },
                 "Statistics_Intensity1_integrate_1":
                 {
                     "value":-800,
@@ -180,8 +170,8 @@
                 },
                 "Points_V1_potential":
                 {
-                    "value":6.1011953469842531e-06,
-                    "tolerance":1e-1
+                    "value":0,
+                    "tolerance":1e-4
                 },
                 "Norm_potential_error_L2-error":
                 {

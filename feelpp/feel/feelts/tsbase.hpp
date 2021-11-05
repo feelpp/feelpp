@@ -447,6 +447,13 @@ public:
         M_fileFormat = s;
     }
 
+    virtual std::map<int, double> priorTimes() const
+    {
+        std::map<int,double> prior;
+        prior[0] = this->timeInitial();
+        return prior;
+    }
+
     virtual void print() const
     {
         LOG(INFO) << "============================================================\n";

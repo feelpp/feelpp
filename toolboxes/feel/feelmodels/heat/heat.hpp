@@ -507,12 +507,19 @@ Heat<ConvexType,BasisTemperatureType>::updateInitialConditions( SymbolsExprType 
     if ( !this->doRestart() )
     {
         std::vector<element_temperature_ptrtype> icTemperatureFields;
+        std::map<int, double> icPriorTimes;
         if ( this->isStationary() )
+        {
             icTemperatureFields = { this->fieldTemperaturePtr() };
+            icPriorTimes = {{0,0}};
+        }
         else
+        {
             icTemperatureFields = M_bdfTemperature->unknowns();
+            icPriorTimes = M_bdfTemperature->priorTimes();
+        }
 
-        super_type::updateInitialConditions( "temperature", M_rangeMeshElements, se, icTemperatureFields );
+        super_type::updateInitialConditions( "temperature", M_rangeMeshElements, se, icTemperatureFields, icPriorTimes );
 
         if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
         {

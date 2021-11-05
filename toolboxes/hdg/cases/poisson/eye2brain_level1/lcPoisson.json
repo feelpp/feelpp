@@ -7,7 +7,21 @@
         "Lamina":
         {
             "name":"copper",
-            "k":"0.015192"
+            "cond":"0.015192"
+        }
+    },
+    "InitialConditions":
+    {
+        "potential":
+        {
+            "Expression":
+            {
+                "myic1":
+                {
+                    "markers":"Lamina",
+					"expr":"0.25"
+                }
+            }
         }
     },
     "BoundaryConditions":
@@ -21,7 +35,7 @@
 					"expr":"0.25"
 				}
 			},
-            "SourceTerm":
+            "VolumicForces":
             {
                 "Lamina":
                 {
