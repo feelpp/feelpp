@@ -31,7 +31,6 @@
 #include <feel/feeldiscr/check.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <tabulate/table.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/print.hpp>
