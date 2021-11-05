@@ -102,27 +102,28 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
     for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "VolumicForces") )
     {
         auto range = bc.emptyMarkers() ? elements(support(M_Wh)) : markedelements(support(M_Wh), bc.markers());
-        if constexpr( is_scalar ) {
-            auto g = expr(bc.expr(), symbolsExpr);
-            blf(1_c) += integrate(_range=range, _expr=inner(id(p),g));
-        } else {
-            auto g = expr(bc.template expr<nDim>(), symbolsExpr);
-            blf(1_c) += integrate(_range=range, _expr=inner(id(p),g));
-        }
+        auto g = [&bc = bc,&symbolsExpr]() -> decltype(auto) {
+                     if constexpr( is_scalar ) {
+                         return expr(bc.expr(), symbolsExpr);
+                     } else {
+                         return expr(bc.template expr<nDim>(), symbolsExpr);
+                     }
+                 }();
+        blf(1_c) += integrate(_range=range, _expr=inner(id(p),g));
     }
     for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Dirichlet") )
     {
         bbf(2_c, 2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
                                    _expr=inner(idt(phat),id(phat)) );
-        if constexpr( is_scalar ) {
-            auto g = expr(bc.expr(), symbolsExpr);
-            blf(2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                  _expr=inner(id(phat),g));
-        } else {
-            auto g = expr(bc.template expr<nDim>(), symbolsExpr);
-            blf(2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                  _expr=inner(id(phat),g));
-        }
+        auto g = [&bc = bc,&symbolsExpr]() -> decltype(auto) {
+                     if constexpr( is_scalar ) {
+                         return expr(bc.expr(), symbolsExpr);
+                     } else {
+                         return expr(bc.template expr<nDim>(), symbolsExpr);
+                     }
+                 }();
+        blf(2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
+                              _expr=inner(id(phat),g));
     }
     for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Neumann") )
     {
@@ -135,15 +136,15 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
         // <-tau phat, mu>_Gamma_N
         bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
                                      _expr=-tau_constant*inner(idt(phat), id(phat)) );
-        if constexpr( is_scalar ) {
-            auto g = expr(bc.expr(), symbolsExpr);
-            blf(2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                  _expr=inner(id(phat),g));
-        } else {
-            auto g = expr(bc.template expr<nDim>(), symbolsExpr);
-            blf(2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                  _expr=inner(id(phat),g));
-        }
+        auto g = [&bc = bc,&symbolsExpr]() -> decltype(auto) {
+                     if constexpr( is_scalar ) {
+                         return expr(bc.expr(), symbolsExpr);
+                     } else {
+                         return expr(bc.template expr<nDim>(), symbolsExpr);
+                     }
+                 }();
+        blf(2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
+                              _expr=inner(id(phat),g));
     }
     for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Robin") )
     {
@@ -160,15 +161,15 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
         auto g1 = expr(bc.expr1(), symbolsExpr);
         bbf(2_c, 2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
                                    _expr=g1*inner(idt(phat),id(phat)) );
-        if constexpr( is_scalar ) {
-            auto g2 = expr(bc.expr2(), symbolsExpr);
-            blf(2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                  _expr=inner(id(phat),g2));
-        } else {
-            auto g2 = expr(bc.template expr2<nDim>(), symbolsExpr);
-            blf(2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                  _expr=inner(id(phat),g2));
-        }
+        auto g2 = [&bc = bc,&symbolsExpr]() -> decltype(auto) {
+                      if constexpr( is_scalar ) {
+                          return expr(bc.expr2(), symbolsExpr);
+                      } else {
+                          return expr(bc.template expr2<nDim>(), symbolsExpr);
+                      }
+                 }();
+        blf(2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
+                              _expr=inner(id(phat),g2));
     }
     int i = 0;
     for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_fluxKey, "Integral") )
@@ -195,28 +196,28 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
 
         double meas = integrate( _range=markedfaces(support(M_Wh), bc.markers()),
                                  _expr=cst(1.)).evaluate()(0,0);
-        if constexpr( is_scalar ) {
-            auto g = expr(bc.expr(), symbolsExpr);
-            blf(3_c, i) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
-                                      _expr=inner(g,id(l))/meas);
-        } else {
-            auto g = expr(bc.template expr<nDim>(), symbolsExpr);
-            blf(3_c, i) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
-                                      _expr=inner(g,id(l))/meas);
-        }
+        auto g = [&bc = bc,&symbolsExpr]() -> decltype(auto) {
+                     if constexpr( is_scalar ) {
+                         return expr(bc.expr(), symbolsExpr);
+                     } else {
+                         return expr(bc.template expr<nDim>(), symbolsExpr);
+                     }
+                 }();
+        blf(3_c, i) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+                                  _expr=inner(g,id(l))/meas);
         i++;
     }
     for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_fluxKey, "Interface") )
     {
-        if constexpr( is_scalar ) {
-            auto g = expr(bc.expr(), symbolsExpr);
-            blf(2_c) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
-                                   _expr=inner(id(phat),g) );
-        } else {
-            auto g = expr(bc.template expr<nDim>(), symbolsExpr);
-            blf(2_c) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
-                                   _expr=inner(id(phat),g) );
-        }
+        auto g = [&bc = bc,&symbolsExpr]() -> decltype(auto) {
+                     if constexpr( is_scalar ) {
+                         return expr(bc.expr(), symbolsExpr);
+                     } else {
+                         return expr(bc.template expr<nDim>(), symbolsExpr);
+                     }
+                 }();
+        blf(2_c) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+                               _expr=inner(id(phat),g) );
     }
 }
 

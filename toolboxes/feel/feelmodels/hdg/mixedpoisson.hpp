@@ -480,15 +480,17 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateInitialConditions( 
 
         if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.potential").c_str() ) )
         {
-            if constexpr( is_scalar ) {
-                auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.potential"),
-                                    "",this->worldComm(),this->repository().expr() );
-                icPotentialFields[0]->on(_range=M_rangeMeshElements,_expr=myexpr);
-            } else {
-                auto myexpr = expr<nDim,1>( soption(_prefix=this->prefix(),_name="initial-solution.potential"),
-                                            "",this->worldComm(),this->repository().expr() );
-                icPotentialFields[0]->on(_range=M_rangeMeshElements,_expr=myexpr);
-            }
+            // myexpr result of a lambda which return type depends on template
+            auto myexpr = [this]() -> decltype(auto) {
+                              if constexpr( is_scalar ) {
+                                  return expr( soption(_prefix=this->prefix(),_name="initial-solution.potential"),
+                                               "",this->worldComm(),this->repository().expr() );
+                              } else {
+                                  return expr<nDim,1>( soption(_prefix=this->prefix(),_name="initial-solution.potential"),
+                                                       "",this->worldComm(),this->repository().expr() );
+                              }
+                          }();
+            icPotentialFields[0]->on(_range=M_rangeMeshElements,_expr=myexpr);
             for ( int k=1;k<icPotentialFields.size();++k )
                 *icPotentialFields[k] = *icPotentialFields[0];
         }
