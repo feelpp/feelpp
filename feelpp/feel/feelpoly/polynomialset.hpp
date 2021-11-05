@@ -1707,6 +1707,11 @@ public:
             {
                 return M_normal_component[i][q]( c1,c2 );
             }
+        normal_component_type const& normalComponent( uint32_type i,
+                                                      uint32_type q ) const
+            {
+                return M_normal_component[i][q];
+            }
         value_type const& trace( uint32_type i,
                                  uint16_type c1,
                                  uint16_type c2,
