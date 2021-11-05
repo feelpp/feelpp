@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-03-17
  */
-#ifndef __about_H
-#define __about_H 1
+#ifndef FEELPP_CORE_ABOUT_H
+#define FEELPP_CORE_ABOUT_H 1
 
 #include <vector>
 #include <string>
@@ -502,29 +502,6 @@ private:
  * @return the ostream
  */
 FEELPP_EXPORT std::ostream& operator<<( std::ostream& os, AboutData const& about );
-
-#if 0
-BOOST_PARAMETER_FUNCTION(
-    (AboutData), about, tag,
-    ( required (name, *  ) )
-    ( optional
-      ( author,  *, "Feel++ Consortium"  )
-      ( task,  *, "developer"  )
-      ( email,  *, "feelpp-devel@feelpp.org"  )
-      ( desc, *, "Feel++ application" )
-      ( license, (int), AboutData::License_GPL_V3 )
-      ( copyright, *, "Copyright (C) Feel++ Consortium" )
-      ( home, *, "http://www.feelpp.org" )
-      ( bugs, *, "feelpp-devel@feelpp.org" )
-      ( version, *, Feel::Info::versionString() )
-        ))
-{
-    AboutData a( name, name, version, desc,
-                 license, copyright, "", home, bugs );
-    a.addAuthor( author, task, email, home );
-    return a;
-}
-#endif
 
 template <typename ... Ts>
 AboutData about( Ts && ... v )
