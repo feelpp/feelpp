@@ -57,15 +57,15 @@ namespace FeelModels
  * Toolbox MixedPoisson
  * @ingroup Toolboxes
  */
-template<typename ConvexType, int Order, int E_Order = 4>
+template<typename ConvexType, int Order, template<uint16_type> class PolySetType = Scalar, int E_Order = 4>
 class MixedPoisson : public ModelNumerical,
                      public ModelPhysics<ConvexType::nDim>,
-                     public std::enable_shared_from_this<MixedPoisson<ConvexType, Order, E_Order> >
+                     public std::enable_shared_from_this<MixedPoisson<ConvexType, Order, PolySetType, E_Order> >
 {
 
 public:
     using super_type = ModelNumerical;
-    using self_type = MixedPoisson<ConvexType, Order, E_Order>;
+    using self_type = MixedPoisson<ConvexType, Order, PolySetType, E_Order>;
     using self_ptrtype = std::shared_ptr<self_type>;
 
     // mesh
@@ -82,29 +82,46 @@ public:
 
     static const uint16_type expr_order = (Order+E_Order)*nOrderGeo;
 
+    template<uint16_type Dim>
+    using polyset_potential_type = PolySetType<Dim>;
+
+    template<uint16_type Dim, class P>
+    struct RankUp;
+    template<uint16_type Dim>
+    struct RankUp<Dim, Scalar<Dim>> { using type = Vectorial<Dim>; };
+    template<uint16_type Dim>
+    struct RankUp<Dim, Vectorial<Dim>> { using type = Tensor2Symm<Dim>; };
+    template<uint16_type Dim>
+    using polyset_flux_type = typename RankUp<Dim, polyset_potential_type<Dim>>::type;
+
     // Vh
-    using space_flux_type = Pdhv_type<mesh_type,Order>;
-    using space_flux_ptrtype = Pdhv_ptrtype<mesh_type,Order>;
+    using basis_flux_type = Lagrange<Order, polyset_flux_type, Discontinuous>;
+    using space_flux_type = FunctionSpace<mesh_type, bases<basis_flux_type>>;
+    using space_flux_ptrtype = std::shared_ptr<space_flux_type>;
     using element_flux_type = typename space_flux_type::element_type;
     using element_flux_ptrtype = typename space_flux_type::element_ptrtype;
     // Wh
-    using space_potential_type = Pdh_type<mesh_type,Order>;
-    using space_potential_ptrtype = Pdh_ptrtype<mesh_type,Order>;
+    using basis_potential_type = Lagrange<Order, polyset_potential_type, Discontinuous>;
+    using space_potential_type = FunctionSpace<mesh_type, bases<basis_potential_type>>;
+    using space_potential_ptrtype = std::shared_ptr<space_potential_type>;
     using element_potential_type = typename space_potential_type::element_type;
     using element_potential_ptrtype = typename space_potential_type::element_ptrtype;
     // Whp
-    using space_postpotential_type = Pdh_type<mesh_type,Order+1>;
-    using space_postpotential_ptrtype = Pdh_ptrtype<mesh_type,Order+1>;
+    using basis_postpotential_type = Lagrange<Order+1, polyset_potential_type, Discontinuous>;
+    using space_postpotential_type = FunctionSpace<mesh_type, bases<basis_postpotential_type>>;
+    using space_postpotential_ptrtype = std::shared_ptr<space_postpotential_type>;
     using element_postpotential_type = typename space_postpotential_type::element_type;
     using element_postpotential_ptrtype = typename space_postpotential_type::element_ptrtype;
     // Mh
-    using space_trace_type = Pdh_type<face_mesh_type,Order>;
-    using space_trace_ptrtype = Pdh_ptrtype<face_mesh_type,Order>;
+    using basis_trace_type = Lagrange<Order, polyset_potential_type, Discontinuous>;
+    using space_trace_type = FunctionSpace<face_mesh_type, bases<basis_trace_type>>;
+    using space_trace_ptrtype = std::shared_ptr<space_trace_type>;
     using element_trace_type = typename space_trace_type::element_type;
     using element_trace_ptrtype = typename space_trace_type::element_ptrtype;
     // Ch
-    using space_traceibc_type = Pch_type<face_mesh_type,0>;
-    using space_traceibc_ptrtype = Pch_ptrtype<face_mesh_type,0>;
+    using basis_traceibc_type = Lagrange<0, polyset_potential_type, Continuous>;
+    using space_traceibc_type = FunctionSpace<face_mesh_type, bases<basis_traceibc_type>>;
+    using space_traceibc_ptrtype = std::shared_ptr<space_traceibc_type>;
     using element_traceibc_type = typename space_traceibc_type::element_type;
     using element_traceibc_ptrtype = typename space_traceibc_type::element_ptrtype;
     using element_traceibc_vector_type = std::vector<element_traceibc_ptrtype>;
@@ -119,6 +136,8 @@ public:
                                                space_potential_ptrtype,
                                                space_trace_ptrtype>;
     using product2_space_ptrtype = std::shared_ptr<product2_space_type>;
+
+    static constexpr bool is_scalar = space_potential_type::is_scalar;
 
     // materials properties
     typedef MaterialsProperties<nRealDim> materialsproperties_type;
@@ -394,10 +413,10 @@ public:
     //___________________________________________________________________________________//
 };
 
-template< typename ConvexType, int Order, int E_Order>
+template<typename ConvexType, int Order, template<uint16_type> class PolySetType, int E_Order>
 template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprType>
 void
-MixedPoisson<ConvexType,Order, E_Order>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
+MixedPoisson<ConvexType, Order, PolySetType, E_Order>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
 {
     this->log("MixedPoisson","exportResults", "start");
     this->timerTool("PostProcessing").start();
@@ -416,10 +435,10 @@ MixedPoisson<ConvexType,Order, E_Order>::exportResults( double time, ModelFields
     this->log("MixedPoisson","exportResults", "finish");
 }
 
-template< typename ConvexType, int Order, int E_Order>
+template<typename ConvexType, int Order, template<uint16_type> class PolySetType, int E_Order>
 template <typename ModelFieldsType, typename SymbolsExpr>
 void
-MixedPoisson<ConvexType,Order, E_Order>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
+MixedPoisson<ConvexType, Order, PolySetType, E_Order>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
 {
     bool hasMeasure = false;
     bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
@@ -437,10 +456,10 @@ MixedPoisson<ConvexType,Order, E_Order>::executePostProcessMeasures( double time
     }
 }
 
-template< typename ConvexType, int Order, int E_Order>
+template<typename ConvexType, int Order, template<uint16_type> class PolySetType, int E_Order>
 template <typename SymbolsExprType>
 void
-MixedPoisson<ConvexType,Order, E_Order>::updateInitialConditions( SymbolsExprType const& se )
+MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateInitialConditions( SymbolsExprType const& se )
 {
     if ( !this->doRestart() )
     {
@@ -461,9 +480,15 @@ MixedPoisson<ConvexType,Order, E_Order>::updateInitialConditions( SymbolsExprTyp
 
         if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.potential").c_str() ) )
         {
-            auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.potential"),
-                                "",this->worldComm(),this->repository().expr() );
-            icPotentialFields[0]->on(_range=M_rangeMeshElements,_expr=myexpr);
+            if constexpr( is_scalar ) {
+                auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.potential"),
+                                    "",this->worldComm(),this->repository().expr() );
+                icPotentialFields[0]->on(_range=M_rangeMeshElements,_expr=myexpr);
+            } else {
+                auto myexpr = expr<nDim,1>( soption(_prefix=this->prefix(),_name="initial-solution.potential"),
+                                            "",this->worldComm(),this->repository().expr() );
+                icPotentialFields[0]->on(_range=M_rangeMeshElements,_expr=myexpr);
+            }
             for ( int k=1;k<icPotentialFields.size();++k )
                 *icPotentialFields[k] = *icPotentialFields[0];
         }
