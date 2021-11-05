@@ -28,8 +28,8 @@
  */
 
 
-#ifndef FEELPP_GEOTOOL_HPP
-#define FEELPP_GEOTOOL_HPP 1
+#ifndef FEELPP_FILTERS_GEOTOOL_H
+#define FEELPP_FILTERS_GEOTOOL_H
 
 #include <iostream>
 #include <string>
@@ -1190,37 +1190,13 @@ public :
         CHECK( false ) << "not implemented in GeoGMSHTool class, but in shape class";
     }
 
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
-        createMesh, // function name
-        tag,
-        ( required
-          ( mesh, * )
-          ( name, ( std::string ) )
-          ) //required
-        ( optional
-          ( format,         *, ioption(_name="gmsh.format") )
-          ( straighten,     *( boost::is_integral<mpl::_> ), 1 )
-          ( refine,          *( boost::is_integral<mpl::_> ), 0 )
-          ( worldcomm,       (worldcomm_ptr_t), mesh->worldCommPtr() )
-          ( partitions,   *( boost::is_integral<mpl::_> ), worldcomm->size() )
-          ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
-          ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
-          ( hmin,     ( double ), 0 )
-          ( hmax,     ( double ), 1e22 )
-          ( optimize3d_netgen, *( boost::is_integral<mpl::_> ), true )
-          ( update,          *( boost::is_integral<mpl::_> ), MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
-          ) //optional
-                                    )
-#endif
     template <typename ... Ts>
     auto createMesh( Ts && ... v )
         {
             auto args = NA::make_arguments( std::forward<Ts>(v)... );
             auto && mesh = args.get(_mesh);
             std::string const& name = args.get(_name);
-            int format = args.get_else( _format, ioption(_name="gmsh.format") );
+            int format = args.get_else_invocable( _format, [](){ return ioption(_name="gmsh.format"); } );
             bool straighten = args.get_else( _straighten, true );
             int refine = args.get_else( _refine, 0 );
             worldcomm_ptr_t worldcomm = args.get_else( _worldcomm, mesh->worldCommPtr() );

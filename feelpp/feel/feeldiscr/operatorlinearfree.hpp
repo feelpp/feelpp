@@ -27,8 +27,8 @@
    \author Stephane Veys <stephane.veys@imag.fr>
    \date 2013-04-26
  */
-#ifndef __OperatorLinearFree_H
-#define __OperatorLinearFree_H 1
+#ifndef FEELPP_DISCR_OPERATORLINEARFREE_H
+#define FEELPP_DISCR_OPERATORLINEARFREE_H 1
 
 #include <boost/ref.hpp>
 #include <boost/next_prior.hpp>
@@ -424,48 +424,6 @@ private:
 };//OperatorLinearFree
 
 
-#if 0
-namespace detail
-{
-
-template<typename Args>
-struct compute_opLinearFree_return
-{
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::domainSpace>::type>::type::element_type domain_space_type;
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::imageSpace>::type>::type::element_type image_space_type;
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::expr>::type>::type expr_type;
-
-    typedef OperatorLinearFree<domain_space_type, image_space_type, expr_type> type;
-    typedef std::shared_ptr<OperatorLinearFree<domain_space_type, image_space_type, expr_type> > ptrtype;
-};
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::compute_opLinearFree_return<Args>::ptrtype ), // 1. return type
-    opLinearFree,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( expr ,   * )
-    ) // required
-    ( optional
-      //( backend,        *, Backend<typename Feel::detail::compute_opLinearFree_return<Args>::domain_space_type::value_type>::build() )
-      ( backend,        *, backend() )
-      ( pattern,        *, (size_type)Pattern::COUPLED  )
-    ) // optionnal
-)
-{
-
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
-    typedef typename Feel::detail::compute_opLinearFree_return<Args>::type oplinfree_type;
-    typedef typename Feel::detail::compute_opLinearFree_return<Args>::ptrtype oplinfree_ptrtype;
-    return oplinfree_ptrtype ( new oplinfree_type( domainSpace,imageSpace,backend,expr ) );
-
-} // opLinearFree
-#endif
 template <typename ... Ts>
 auto opLinearFree( Ts && ... v )
 {
@@ -473,7 +431,7 @@ auto opLinearFree( Ts && ... v )
     auto && domainSpace = args.get(_domainSpace);
     auto && imageSpace = args.get(_imageSpace);
     auto && expr = args.get(_expr);
-    auto && backend = args.get_else( _backend, Feel::backend() );
+    auto && backend = args.get_else_invocable(_backend, [](){ return Feel::backend(); } );
     size_type pattern = args.get_else( _pattern, Pattern::COUPLED );
 
     using domain_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(domainSpace)>>>;

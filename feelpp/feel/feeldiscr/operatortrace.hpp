@@ -26,8 +26,8 @@
    \author Abdoulaye Samake <abdoulaye.samake@e.ujf-grenoble.fr>
    \date 2011-08-18
  */
-#ifndef _OPERATORTRACE_HPP_
-#define _OPERATORTRACE_HPP_
+#ifndef FEELPP_DISCR_OPERATORTRACE_H
+#define FEELPP_DISCR_OPERATORTRACE_H
 
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feelvf/vf.hpp>
@@ -77,17 +77,6 @@ public :
     /** @name  Methods
      */
     //@{
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( trace_element_type ),
-                                     trace,
-                                     tag,
-                                     ( required
-                                       ( expr,   * )
-                                     )
-                                     ( optional
-                                       ( range,  *, boundaryfaces( M_domainSpace->mesh() ) )
-                                     ) )
-#endif
     template <typename ... Ts>
     trace_element_type trace( Ts && ... v )
         {

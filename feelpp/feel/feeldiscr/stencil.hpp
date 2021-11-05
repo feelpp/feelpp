@@ -22,8 +22,8 @@
 //! License along with this library; if not, write to the Free Software
 //! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 //!
-#ifndef __galerkingraph_H
-#define __galerkingraph_H 1
+#ifndef FEELPP_DISCR_STENCIL_H
+#define FEELPP_DISCR_STENCIL_H 1
 
 #define FEELPP_EXPORT_GRAPH 0
 #if FEELPP_EXPORT_GRAPH
@@ -833,33 +833,12 @@ void stencilManagerPrint();
 
 extern BlocksStencilPattern default_block_pattern;
 
-#if 0
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::compute_stencil_type<Args>::ptrtype ), // 1. return type
-    stencil,                                       // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required                                  // 4. one required parameter, and
-      ( test,             *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( trial,            *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    )
-    ( optional                                  //    four optional parameters, with defaults
-      ( pattern,          ( uint32_type ), Pattern::COUPLED )
-      ( pattern_block,    *, default_block_pattern )
-      ( diag_is_nonzero,  ( bool ), false )
-      ( collect_garbage,  ( bool ), true )
-      ( close,            ( bool ), true )
-      ( range,            *( boost::is_convertible<mpl::_, StencilRangeMapTypeBase>) , StencilRangeMap0Type() )
-      ( range_extended,   *( boost::is_convertible<mpl::_, StencilRangeMapTypeBase>) , StencilRangeMap0Type() )
-      ( quad,             *( boost::is_convertible<mpl::_, stencilQuadSetBase>), stencilQuadSet<>() )
-    )
-)
-#endif
 template <typename ... Ts>
 auto stencil( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
-    auto && test = args.get(_test );
-    auto && trial = args.get(_trial );
+    auto && test = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_test);
+    auto && trial = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_trial);
     uint32_type pattern = args.get_else( _pattern, Pattern::COUPLED );
     auto && pattern_block = args.get_else( _pattern_block, default_block_pattern );
     bool diag_is_nonzero =  args.get_else( _diag_is_nonzero, false );

@@ -27,8 +27,8 @@
    \author Vincent Chabannes <vincent.chabannes@imag.fr>
    \date 2011-07-21
  */
-#ifndef FEELPP_CREATESUBMESH_HPP
-#define FEELPP_CREATESUBMESH_HPP 1
+#ifndef FEELPP_DISCR_CREATESUBMESH_HPP
+#define FEELPP_DISCR_CREATESUBMESH_HPP 1
 
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/identity.hpp>
@@ -1348,45 +1348,6 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
     }
 #endif
 }
-
-
-#if 0
-namespace detail
-{
-template<typename Args>
-struct createSubmesh
-{
-    using mesh_or_support_type = typename Feel::remove_shared_ptr< typename Feel::meta::remove_all< typename parameter::binding<Args, tag::mesh>::type >::type >::type;
-    using mesh_type = typename mpl::if_c< is_mesh_v<mesh_or_support_type>, mesh_or_support_type, typename mesh_or_support_type::mesh_type>::type;
-    using range_type = typename Feel::meta::remove_all< typename parameter::binding<Args, tag::range>::type >::type;
-    using builder_type = CreateSubmeshTool<mesh_type,typename Feel::detail::submeshrangetype<range_type>::type,mesh_type::tag>;
-    using ptrtype = typename builder_type::mesh_build_ptrtype;
-};
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::createSubmesh< Args>::ptrtype ), // return type
-    createSubmesh,    // 2. function name
-    tag,           // 3. namespace of tag types
-    ( required
-      ( mesh, *)
-      ( range, *)
-      ) // 4. one required parameter, and
-    ( optional
-      ( worldcomm,  *, mesh->worldCommPtr() )
-      ( context,    *(boost::is_integral<mpl::_>), EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT )
-      ( update,     *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
-      ( only_on_boundary_faces, (bool), false )
-      ( view, (bool), false )
-      )
-                         )
-{
-    typename Feel::detail::createSubmesh< Args>::builder_type t( mesh,range,worldcomm,update );
-    t.subMeshIsOnBoundaryFaces( only_on_boundary_faces );
-    t.setIsView( view );
-    return t.build(context);
-}
-#endif
 
 
 namespace detail

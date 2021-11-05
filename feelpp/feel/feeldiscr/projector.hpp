@@ -262,27 +262,6 @@ public :
         return sol;
     }
 
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( dual_image_element_type ),
-                                     project,
-                                     tag,
-                                     ( required
-                                       ( expr,   * )
-                                     )
-                                     ( optional
-                                       ( range,   *, self_type::rangeElements(this->domainSpace(), this->dualImageSpace())  )
-                                       ( quad,   *, quad_order_from_expression )
-                                       ( quad1,   *, quad_order_from_expression )
-                                       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-                                       (grad_expr, *, ( vf::zero<domain_space_type::nComponents,domain_space_type::nDim>() ))
-                                       (div_expr, *, cst(0.) )
-                                       (curl_expr, *, ( vf::zero< mpl::if_<mpl::equal_to<mpl::int_<domain_space_type::nComponents>, mpl::int_<1> >,
-                                                                           mpl::int_<1>,
-                                                                           typename mpl::if_<mpl::equal_to<mpl::int_<domain_space_type::nDim>, mpl::int_<3> >,
-                                                                                             mpl::int_<3>, mpl::int_<1> >::type >::type::value, 1>() ) )
-                                       )
-                                   )
-#endif
     template <typename ... Ts>
     dual_image_element_type project( Ts && ... v )
     {
@@ -737,45 +716,13 @@ projector( std::shared_ptr<TDomainSpace> const& domainspace,
     return std::make_shared<Proj_type>( domainspace, imagespace, abackend, proj_type, epsilon, gamma, dirichlet_type ) ;
 }
 
-#if 0
-BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::projector_args<Args>::return_type ),
-                          opProjection,
-                          tag,
-                          ( required
-                            ( domainSpace,   *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-                            ( imageSpace,   *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-                          )
-                          ( optional
-                            ( type, (ProjectorType), L2 )
-                            ( penaldir, *( boost::is_arithmetic<mpl::_> ), 20. )
-                            ( backend, *, Backend<double>::build( soption( _name="backend" ) ) )
-                          ) )
-{
-    return projector( domainSpace,imageSpace, backend, type, 0.01, penaldir );
-}
-
-BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::lift_args<Args>::lift_return_type ),
-                          opLift,
-                          tag,
-                          ( required
-                            ( domainSpace,   *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-                          )
-                          ( optional
-                            ( type, (DirichletType), WEAK )
-                            ( penaldir, *( boost::is_arithmetic<mpl::_> ), 20. )
-                            ( backend, *, Backend<double>::build( soption( _name="backend" ) ) )
-                            ) )
-{
-    return projector( domainSpace, domainSpace, backend, ProjectorType::LIFT, 0.01 , penaldir, type );
-}
-#endif
 
 template <typename ... Ts>
 auto opProjection( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
-    auto && domainSpace = args.get(_domainSpace);
-    auto && imageSpace = args.get(_imageSpace);
+    auto && domainSpace = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_domainSpace);
+    auto && imageSpace = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_imageSpace);
     ProjectorType type = args.get_else(_type,L2);
     double penaldir = args.get_else(_penaldir,20.);
     auto && backend = args.get_else(_backend, Backend<double>::build( soption( _name="backend" ) ) );
@@ -787,10 +734,10 @@ template <typename ... Ts>
 auto opLift( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
-    auto && domainSpace = args.get(_domainSpace);
+    auto && domainSpace = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_domainSpace);
     DirichletType type = args.get_else(_type,WEAK);
     double penaldir = args.get_else(_penaldir,20.);
-    auto && backend = args.get_else(_backend, Backend<double>::build( soption( _name="backend" ) ) );
+    auto && backend = args.get_else_invocable(_backend, [](){ return Backend<double>::build( soption( _name="backend" ) ); } );
 
     return projector( domainSpace, domainSpace, backend, ProjectorType::LIFT, 0.01 , penaldir, type );
 }

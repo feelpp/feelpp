@@ -27,8 +27,8 @@
    \author Stephane Veys <stephane.veys@imag.fr>
    \date 2013-04-07
 */
-#ifndef __ReducedBasisSpace_H
-#define __ReducedBasisSpace_H 1
+#ifndef FEELPP_DISCR_REDUCEDBASISSPACE_H
+#define FEELPP_DISCR_REDUCEDBASISSPACE_H 1
 
 #include <feel/feelcrb/crb.hpp>
 
@@ -691,17 +691,6 @@ public :
     void visualize ()
         {
         }
-#if à
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( this_ptrtype ),
-                                     static New,
-                                     tag,
-                                     ( required
-                                       ( space, *) ) )
-        {
-            //LOG( INFO ) << "ReducedBasis NEW (new impl)";
-            return NewImpl( space );
-        }
-#endif
     template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
     static this_ptrtype New( Ts && ... v )
         {

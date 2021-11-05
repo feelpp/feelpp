@@ -27,8 +27,8 @@
    \author Stephane Veys <stephane.veys@imag.fr>
    \date 2013-04-26
  */
-#ifndef __FSFUNCTIONALLINEARCOMPOSITE_H
-#define __FSFUNCTIONALLINEARCOMPOSITE_H 1
+#ifndef  FEELPP_DISCR_FSFUNCTIONALLINEARCOMPOSITE_H
+#define FEELPP_DISCR_FSFUNCTIONALLINEARCOMPOSITE_H 1
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/fsfunctional.hpp>
@@ -372,48 +372,12 @@ private:
 };
 
 
-#if 0
-namespace detail
-{
-
-template<typename Args>
-struct compute_functionalLinearComposite_return
-{
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
-
-    typedef FsFunctionalLinearComposite<space_type> type;
-    typedef std::shared_ptr<FsFunctionalLinearComposite<space_type> > ptrtype;
-};
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::compute_functionalLinearComposite_return<Args>::ptrtype ), // 1. return type
-    functionalLinearComposite,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( space,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    ) // required
-    ( optional
-      ( backend,        *, backend() )
-    ) // optionnal
-)
-{
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
-    typedef typename Feel::detail::compute_functionalLinearComposite_return<Args>::type functionalcomposite_type;
-    typedef typename Feel::detail::compute_functionalLinearComposite_return<Args>::ptrtype functionalcomposite_ptrtype;
-    return functionalcomposite_ptrtype ( new functionalcomposite_type( space , backend ) );
-
-} // functionalLinearComposite
-#endif
-
 template <typename ... Ts>
 auto functionalLinearComposite( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
-    auto && space = args.get(_space);
-    auto && backend = args.get_else( _backend, Feel::backend() );
+    auto && space = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_space);
+    auto && backend = args.get_else_invocable( _backend, [](){ return Feel::backend(); } );
     using space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(space)>>>;
     return std::make_shared<FsFunctionalLinearComposite<space_type>>( space , backend );
 }

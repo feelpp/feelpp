@@ -27,8 +27,8 @@
    \author Stephane Veys <stephane.veys@imag.fr>
    \date 2013-04-26
  */
-#ifndef __FSFUNCTIONALLINEARFREE_H
-#define __FSFUNCTIONALLINEARFREE_H 1
+#ifndef FEELPP_DISCR_FSFUNCTIONALLINEARFREE_H
+#define FEELPP_DISCR_FSFUNCTIONALLINEARFREE_H 1
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/fsfunctionallinear.hpp>
@@ -128,50 +128,13 @@ private:
 };//FsFunctionalLinearFree
 
 
-#if 0
-namespace detail
-{
-
-template<typename Args>
-struct compute_functionalLinearFree_return
-{
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::expr>::type>::type expr_type;
-
-    typedef FsFunctionalLinearFree<space_type, expr_type> type;
-    typedef std::shared_ptr<FsFunctionalLinearFree<space_type,expr_type> > ptrtype;
-};
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::compute_functionalLinearFree_return<Args>::ptrtype ), // 1. return type
-    functionalLinearFree,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( space,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( expr ,   * )
-    ) // required
-    ( optional
-      ( backend,        *, backend() )
-    ) // optionnal
-)
-{
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
-    typedef typename Feel::detail::compute_functionalLinearFree_return<Args>::type functionalfree_type;
-    typedef typename Feel::detail::compute_functionalLinearFree_return<Args>::ptrtype functionalfree_ptrtype;
-    return functionalfree_ptrtype ( new functionalfree_type( space , backend , expr ) );
-
-} // functionalLinearFree
-#endif
 template <typename ... Ts>
 auto functionalLinearFree( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
-    auto && space = args.get(_space);
+    auto && space = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_space);
     auto && expr = args.get(_expr);
-    auto && backend = args.get_else( _backend, Feel::backend() );
+    auto && backend = args.get_else_invocable( _backend, [](){ return Feel::backend(); } );
     using space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(space)>>>;
     using expr_type = std::decay_t<decltype(expr)>;
     return std::make_shared<FsFunctionalLinearFree<space_type,expr_type>>( space , backend , expr );

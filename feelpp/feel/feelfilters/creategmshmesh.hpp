@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_CREATEGMSHMESH_HPP)
-#define FEELPP_CREATEGMSHMESH_HPP 1
+#ifndef FEELPP_FILTERS_CREATEGMSHMESH_H
+#define FEELPP_FILTERS_CREATEGMSHMESH_H
 
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feeldiscr/mesh.hpp>
