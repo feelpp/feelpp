@@ -23,8 +23,8 @@
 */
 
 
-#ifndef __AitkenExtrapolation
-#define __AitkenExtrapolation 1
+#ifndef FEELPP_ALG_AITKEN_H
+#define FEELPP_ALG_AITKEN_H 1
 
 #include <string>
 #include <vector>
@@ -163,18 +163,6 @@ public:
     /**
      * initiliaze the aitken algorithm
      */
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( void ),
-        initialize,
-        tag,
-        ( required
-          ( residual, */*(element_type const&)*/ )
-          ( currentElt,*/*(element_type const& )*/ ) ) )
-    {
-        initializeimpl( residual,currentElt );
-    }
-#endif
     template <typename ... Ts>
     void initialize( Ts && ... v )
         {
@@ -187,25 +175,6 @@ public:
     /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( element_type ),
-        apply,
-        tag,
-        ( required
-          ( residual, * )
-          ( currentElt,* )
-        ) //required
-        ( optional
-          ( forceRelaxation, ( bool ), false  )
-        )//optional
-    )
-    {
-        element_type newElt( M_Xh );
-        applyimpl( newElt,residual,currentElt,forceRelaxation );
-        return newElt;
-    }
-#endif
     template <typename ... Ts>
     element_type apply( Ts && ... v )
         {
@@ -233,24 +202,6 @@ public:
     /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( void ),
-        apply2,
-        tag,
-        ( required
-          ( newElt, * )
-          ( residual, * )
-          ( currentElt,* )
-        ) //required
-        ( optional
-          ( forceRelaxation, ( bool ), false  )
-        ) //optional
-    )
-    {
-        applyimpl( newElt,residual,currentElt,forceRelaxation );
-    }
-#endif
     template <typename ... Ts>
     void apply2( Ts && ... v )
         {
@@ -832,70 +783,17 @@ aitkenImpl( std::shared_ptr<SpaceType> const& _space,
 }
 
 
-#if 0
-template<typename Args>
-struct compute_aitken_return
-{
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
-
-    typedef Aitken<space_type> type;
-    typedef std::shared_ptr<type> ptrtype;
-};
-
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_aitken_return<Args>::type ),
-    aitken,
-    tag,
-    ( required
-      ( space,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    )//required
-    ( optional
-      ( prefix,*,"" )
-      ( type, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="aitken.type") /* AITKEN_STANDARD*/ )
-      ( initial_theta, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.initial_theta") /*1.0*/  )
-      ( min_theta, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.min_theta") /*1e-4*/  )
-      ( tolerance, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.tol") /*1.0e-6*/  )
-      ( maxit,      ( size_type ), ioption(_prefix=prefix,_name="aitken.maxit") )
-    )//optional
-)
-{
-    return *aitkenImpl( space,type,initial_theta,tolerance,min_theta,maxit );
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_aitken_return<Args>::ptrtype ),
-    aitkenPtr,
-    tag,
-    ( required
-      ( space,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    )//required
-    ( optional
-      ( prefix,*,"" )
-      ( type, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="aitken.type") /* AITKEN_STANDARD*/ )
-      ( initial_theta, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.initial_theta") /*1.0*/  )
-      ( min_theta, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.min_theta") /*1e-4*/  )
-      ( tolerance, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.tol") /*1.0e-6*/  )
-      ( maxit,      ( size_type ), ioption(_prefix=prefix,_name="aitken.maxit") )
-    )//optional
-)
-{
-    return aitkenImpl( space,type,initial_theta,tolerance,min_theta,maxit );
-}
-
-#endif
-
 template <typename ... Ts>
 auto aitkenPtr( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && space = args.get(_space);
     std::string const& prefix = args.get_else(_prefix,"");
-    std::string const& type = args.get_else( _type, soption(_prefix=prefix,_name="aitken.type") /* AITKEN_STANDARD*/ );
-    double initial_theta = args.get_else( _initial_theta, doption(_prefix=prefix,_name="aitken.initial_theta") /*1.0*/  );
-    double min_theta = args.get_else( _min_theta, doption(_prefix=prefix,_name="aitken.min_theta") /*1e-4*/  );
-    double tolerance = args.get_else( _tolerance, doption(_prefix=prefix,_name="aitken.tol") /*1.0e-6*/  );
-    size_type maxit = args.get_else( _maxit, ioption(_prefix=prefix,_name="aitken.maxit") );
+    std::string const& type = args.get_else_invocable( _type, [&prefix](){ return soption(_prefix=prefix,_name="aitken.type"); } );
+    double initial_theta = args.get_else_invocable<std::is_arithmetic>( _initial_theta, [&prefix](){ return doption(_prefix=prefix,_name="aitken.initial_theta"); }  );
+    double min_theta = args.get_else_invocable<std::is_arithmetic>( _min_theta, [&prefix](){ return doption(_prefix=prefix,_name="aitken.min_theta"); }  );
+    double tolerance = args.get_else_invocable<std::is_arithmetic>( _tolerance, [&prefix](){ return doption(_prefix=prefix,_name="aitken.tol"); }  );
+    size_type maxit = args.get_else_invocable<std::is_arithmetic>( _maxit, [&prefix](){ return ioption(_prefix=prefix,_name="aitken.maxit"); } );
 
     return aitkenImpl( space,type,initial_theta,tolerance,min_theta,maxit );
 }
