@@ -161,8 +161,8 @@ auto form1( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && test = args.get(_test );
-    auto && backend = args.get_else(_backend, Feel::backend(_worldcomm=test->worldCommPtr() ) );
-    auto && vector = args.get_else(_vector, backend->newVector( _test=test ) );
+    auto && backend = args.get_else_invocable(_backend, [&test](){ return Feel::backend(_worldcomm=test->worldCommPtr()); } );
+    auto && vector = args.get_else_invocable(_vector, [&test,&backend](){ return backend->newVector( _test=test ); } );
     bool init = args.get_else(_init, false );
     bool do_threshold = args.get_else(_do_threshold, false );
     double threshold = args.get_else(_threshold, type_traits<double>::epsilon() );
@@ -248,8 +248,8 @@ auto form2( Ts && ... v )
     bool init = args.get_else(_init, false );
     size_type properties = args.get_else(_properties, NON_HERMITIAN );
     size_type pattern = args.get_else(_pattern,Pattern::COUPLED );
-    auto && backend = args.get_else(_backend, Feel::backend(_worldcomm=test->worldCommPtr() ) );
-    std::shared_ptr<MatrixSparse<double>> matrix = args.get_else(_matrix, backend->newMatrix( _test=test, _trial=trial, _pattern=pattern, _properties=properties ) );
+    auto && backend = args.get_else_invocable(_backend, [&test](){ return Feel::backend(_worldcomm=test->worldCommPtr() ); } );
+    std::shared_ptr<MatrixSparse<double>> matrix = args.get_else_invocable(_matrix, [&backend,&test,&trial,&pattern,&properties](){ return backend->newMatrix( _test=test, _trial=trial, _pattern=pattern, _properties=properties ); } );
     size_type rowstart = args.get_else(_rowstart, 0 );
     size_type colstart = args.get_else(_colstart, 0 );
     std::string const& name = args.get_else(_name, "bilinearform.a" );
