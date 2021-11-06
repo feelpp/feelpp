@@ -350,6 +350,8 @@ public:
             }
             mpi::wait_all(reqs, reqs + nbRequest);
 
+            delete [] reqs;
+
             // update local matrix
             for ( auto const& dataRecvByProcess : dataToRecv )
             {
