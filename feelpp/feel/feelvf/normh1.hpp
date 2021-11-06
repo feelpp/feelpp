@@ -26,39 +26,14 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2014-01-04
  */
-#ifndef FEELPP_VF_NORMH1_HPP
-#define FEELPP_VF_NORMH1_HPP 1
+#ifndef FEELPP_VF_NORMH1_H
+#define FEELPP_VF_NORMH1_H
 
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/integrator.hpp>
 
 namespace Feel  {
 
-#if 0
-BOOST_PARAMETER_FUNCTION(
-    ( double ), // return type
-    normH1,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( expr,   * )
-      ( grad_expr, *)
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( quad,   *, quad_order_from_expression )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,  *, quad_order_from_expression )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-    )
-)
-#endif
 template <typename ... Ts>
 double normH1( Ts && ... v )
 {

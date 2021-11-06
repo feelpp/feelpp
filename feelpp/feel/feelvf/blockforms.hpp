@@ -15,8 +15,8 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef FEELPP_BLOCKFORMS_HPP
-#define FEELPP_BLOCKFORMS_HPP 1
+#ifndef FEELPP_VF_BLOCKFORMS_H
+#define FEELPP_VF_BLOCKFORMS_H
 
 #include <feel/feelvf/form.hpp>
 #include <feel/feelalg/vectorblock.hpp>
@@ -343,24 +343,7 @@ public :
     sparse_matrix_ptrtype matrixPtr() { return M_matrix; }
     using pre_solve_type = typename Backend<value_type>::pre_solve_type;
     using post_solve_type = typename Backend<value_type>::post_solve_type;
-#if 0
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<double>::solve_return_type ),
-                                     solve,
-                                     tag,
-                                     ( required
-                                       ( in_out( solution ),* )
-                                       ( rhs, * ) )
-                                     ( optional
-                                       ( condense,           ( bool ), false )
-                                       ( condenser,     (*), condenser_poisson() )
-                                       ( local,          ( bool ), false )
-                                       ( name,           ( std::string ), "" )
-                                       ( kind,           ( std::string ), soption(_prefix=name,_name="backend") )
-                                       ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                                       ( pre, (pre_solve_type), pre_solve_type() )
-                                       ( post, (post_solve_type), post_solve_type() )
-                                       ) )
-#endif
+
     template <typename ... Ts>
     typename Backend<double>::solve_return_type solve( Ts && ... v )
         {

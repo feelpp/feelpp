@@ -28,10 +28,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-03-15
  */
-#ifndef FEELPP_INTEGRATORON_HPP
-#define FEELPP_INTEGRATORON_HPP 1
+#ifndef FEELPP_VF_ON_H
+#define FEELPP_VF_ON_H
 
-#include <boost/timer.hpp>
 #include <boost/foreach.hpp>
 
 #include <feel/feelalg/enums.hpp>
@@ -479,7 +478,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     // start
     //
     DVLOG(2)  << "assembling Dirichlet conditions\n";
-    boost::timer __timer;
 
     std::vector<int> dofs;
     std::vector<value_type> values;
@@ -723,7 +721,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     // start
     //
     DVLOG(2)  << "assembling Dirichlet conditions\n";
-    boost::timer __timer;
 
     std::vector<int> dofs;
     std::vector<value_type> values;
@@ -1123,28 +1120,6 @@ getRhsVector( V const&  v )
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
  * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
  */
-#if 0
-BOOST_PARAMETER_FUNCTION(
-    ( typename vf::detail::integratoron_type<Args>::expr_type ), // return type
-    on,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( element, *  )
-      ( rhs, *  )
-      ( expr,   * )
-        ) // 4. one required parameter, and
-
-    ( optional
-      ( prefix,   ( std::string ), "" )
-      ( type,   ( std::string ), soption(_prefix=prefix,_name="on.type") )
-      ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )
-      ( value_on_diagonal,   ( double ), doption(_prefix=prefix,_name="on.value_on_diagonal") )
-        )
-    )
-#endif
 template <typename ... Ts>
 auto on( Ts && ... v )
 {
@@ -1154,9 +1129,9 @@ auto on( Ts && ... v )
     auto && rhs = args.get(_rhs);
     auto && expr = args.get(_expr);
     std::string const& prefix = args.get_else(_prefix,"");
-    std::string const& type = args.get_else(_type, soption(_prefix=prefix,_name="on.type") );
-    bool verbose = args.get_else(_verbose,boption(_prefix=prefix,_name="on.verbose") );
-    double value_on_diagonal = args.get_else(_value_on_diagonal,doption(_prefix=prefix,_name="on.value_on_diagonal") );
+    std::string const& type = args.get_else_invocable(_type,[&prefix](){ return soption(_prefix=prefix,_name="on.type"); } );
+    bool verbose = args.get_else_invocable(_verbose,[&prefix](){ return boption(_prefix=prefix,_name="on.verbose"); } );
+    double value_on_diagonal = args.get_else_invocable(_value_on_diagonal,[&prefix](){ return doption(_prefix=prefix,_name="on.value_on_diagonal"); } );
 
     using integratoron_helper_type = vf::detail::integratoron_type<decltype(range),decltype(rhs),decltype(element),decltype(expr)>;
 

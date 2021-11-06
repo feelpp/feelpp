@@ -21,8 +21,8 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef FEELPP_CONVOLVE_HPP
-#define FEELPP_CONVOLVE_HPP 1
+#ifndef FEELPP_VF_CONVOLVE_H
+#define FEELPP_VF_CONVOLVE_H
 
 #include <feel/feelvf/expr.hpp>
 //#include <feel/feelvf/integrator.hpp>
@@ -30,42 +30,6 @@
 
 namespace Feel {
 
-#if 0
-namespace detail
-{
-template<typename Args>
-struct convolve_type
-{
-    using space_type = decay_type<typename parameter::binding<Args,tag::space>::type>;
-    using element_type =  typename space_type::element_type;
-};
-} // detail
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::convolve_type<Args>::element_type ), // return type
-    convolve,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( expr,   * )
-      ( space, *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( quad,   *, quad_order_from_expression )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, quad_order_from_expression )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-      ( quadptloc, *, typename vf::detail::integrate_type<Args>::_quadptloc_ptrtype() )
-    )
-)
-#endif
 template <typename ... Ts>
 auto convolve( Ts && ... varg )
 {

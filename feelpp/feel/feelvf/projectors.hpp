@@ -28,7 +28,7 @@
    \date 2005-05-31
  */
 #ifndef FEELPP_VF_PROJECTORS_H
-#define FEELPP_VF_PROJECTORS_H 1
+#define FEELPP_VF_PROJECTORS_H
 
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
@@ -385,40 +385,6 @@ struct project
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
  * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
  */
-#if 0
-BOOST_PARAMETER_FUNCTION(
-    ( typename vf::detail::project<Args>::element_type ), // return type
-    project,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( space, *( boost::is_convertible<mpl::_,std::shared_ptr<Feel::FunctionSpaceBase> > ) )
-      ( expr, * )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( range,          *, elements( space->mesh() )  )
-      ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
-      ( accumulate,     *( boost::is_integral<mpl::_> ), false )
-    )
-)
-{
-#if 0
-    typedef typename vf::detail::project<Args>::_space_type _space_type;
-    typedef typename vf::detail::project<Args>::_range_type _range_type;
-    typedef typename vf::detail::project<Args>::_expr_type _expr_type;
-
-    typedef details::Projector<NODAL, _space_type, _range_type, Expr<_expr_type> > proj_t;
-    proj_t p( space, range, expr,geomap );
-    return p( sum );
-#else
-    //    if ( accumulate  )
-    //return sum( space, range, expr, geomap );
-    return project_impl( space, range, expr, geomap );
-#endif
-}
-#endif
 
 template <typename ... Ts>
 auto project( Ts && ... v )
