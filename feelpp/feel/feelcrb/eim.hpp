@@ -3366,12 +3366,6 @@ namespace detail
 template<typename ArgModelType,typename ArgExprType,typename ArgSpaceType,typename ArgElementType,typename ArgElement2Type>
 struct compute_eim_return
 {
-    // typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type::element_type model1_type;
-    // typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
-    // typedef typename boost::remove_reference<typename parameter::binding<Args, tag::expr>::type>::type expr_type;
-    // typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
-    // typedef typename boost::remove_reference<typename parameter::binding<Args, tag::element>::type>::type element_type;
-    // typedef typename boost::remove_reference<typename parameter::binding<Args, tag::element2,element_type>::type>::type element2_type;
     using model_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<ArgModelType>>>;
     using expr_type = std::decay_t<ArgExprType>;
     using space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<ArgSpaceType>>>;
@@ -3389,31 +3383,6 @@ struct compute_eim_return
 };
 }
 
-#if 0
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::compute_eim_return<Args>::ptrtype ), // 1. return type
-    eim,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( in_out(model),          * )
-      ( in_out(element),        * )
-      ( in_out(parameter),        * )
-      ( in_out(expr),          * )
-      ( name, * )
-      ( space, *)
-        ) // required
-    ( optional
-      ( in_out(element2),        *, element )
-      //( space, *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ), model->functionSpace() )
-      //( space, *, model->functionSpace() )
-      ( sampling, *, model->parameterSpace()->sampling() )
-      ( verbose, (int), 0 )
-      ( filename, *( boost::is_convertible<mpl::_,std::string> ), "" )
-      ( directory, *( boost::is_convertible<mpl::_,std::string> ), "" )
-      ( prefix, (std::string), "")
-        ) // optionnal
-)
-#endif
 template <typename ... Ts>
 auto eim( Ts && ... v )
 {
@@ -3425,7 +3394,7 @@ auto eim( Ts && ... v )
     std::string const& name = args.get(_name);
     auto && space = args.get(_space);
     auto && element2 = args.get_else(_element2,element);
-    auto && sampling = args.get_else(_sampling,model->parameterSpace()->sampling() );
+    auto && sampling = args.get_else_invocable(_sampling,[&model](){ return model->parameterSpace()->sampling(); } );
     std::string const& filename = args.get_else(_filename,"");
     std::string const& directory = args.get_else(_directory,"");
     std::string const& prefix = args.get_else(_prefix,"");

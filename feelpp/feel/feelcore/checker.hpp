@@ -21,8 +21,8 @@
 //! @date 23 Jul 2017
 //! @copyright 2017 Feel++ Consortium
 //!
-#ifndef FEELPP_CHECKER_HPP
-#define FEELPP_CHECKER_HPP 1
+#ifndef FEELPP_CORE_CHECKER_H
+#define FEELPP_CORE_CHECKER_H
 
 #include <optional>
 #include <feel/feelcore/environment.hpp>
@@ -274,50 +274,6 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
 //! @param gradient optional expression for the gradient, if empty use checker.gradient
 //! if @p gradient and option checker.gradient are empty then we do not set the gradient expression
 //!
-#if 0
-BOOST_PARAMETER_FUNCTION(
-    ( Checker ), // return type
-    checker,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( name, (std::string))
-      ( solution_key, (std::string))
-      ) // 4. one required parameter, and
-
-    ( optional
-      ( inputs,(std::map<std::string,std::string>), (std::map<std::string,std::string>{})  )
-      ( parameter_values,(std::map<std::string,double>), (std::map<std::string,double>{})  )
-      ( solution, (std::string), inputs.count(solution_key)?inputs.at(solution_key):soption("checker.solution"))
-      ( gradient_key, (std::string), std::string{"grad_"}+solution_key)
-      ( gradient, (std::string), inputs.count(gradient_key)?inputs.at(gradient_key):soption("checker.gradient"))
-      ( script,(std::string), soption("checker.script"))    
-      ( compute_pde_coefficients, (bool), boption("checker.compute-pde-coefficients") )
-      ( prefix, (std::string), "" )
-      ( verbose,   (bool), boption(_prefix=prefix,_name="checker.verbose") )
-      )
-    )
-{
-    using Feel::cout;
-    
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunsequenced"
-#endif
-    //if ( solution.empty() && soption("checker.solution" ).empty() )
-    //    throw std::logic_error("Invalid setup of Checker system, no solution provided");
-    Checker c{name};
-    c.setVerbose( verbose );
-    c.setSolution( solution, solution_key );
-    if ( !gradient.empty() )
-        c.setGradient( gradient, gradient_key );
-    else
-        c.setGradientKey( gradient_key );
-    c.setScript( script, inputs, parameter_values, compute_pde_coefficients ); 
-    return c;
-}
-#endif
 
 template <typename ... Ts>
 Checker checker( Ts && ... v )
@@ -328,13 +284,13 @@ Checker checker( Ts && ... v )
 
     std::map<std::string,std::string> const& inputs = args.get_else(_inputs,std::map<std::string,std::string>{});
     std::map<std::string,double> const& parameter_values = args.get_else(_parameter_values,std::map<std::string,double>{});
-    std::string const& solution = args.get_else(_solution,inputs.count(solution_key)?inputs.at(solution_key):soption(_name="checker.solution"));
+    std::string const& solution = args.get_else_invocable(_solution,[&inputs,&solution_key](){ return inputs.count(solution_key)?inputs.at(solution_key):soption(_name="checker.solution"); } );
     std::string const& gradient_key = args.get_else(_gradient_key,std::string{"grad_"}+solution_key);
-    std::string const& gradient = args.get_else(_gradient,inputs.count(gradient_key)?inputs.at(gradient_key):soption("checker.gradient"));
-    std::string const& script = args.get_else(_script,soption(_name="checker.script"));
-    bool compute_pde_coefficients = args.get_else(_compute_pde_coefficients,boption(_name="checker.compute-pde-coefficients"));
+    std::string const& gradient = args.get_else_invocable(_gradient,[&inputs,&gradient_key](){ return inputs.count(gradient_key)?inputs.at(gradient_key):soption("checker.gradient"); } );
+    std::string const& script = args.get_else_invocable(_script,[](){ return soption(_name="checker.script"); } );
+    bool compute_pde_coefficients = args.get_else_invocable(_compute_pde_coefficients,[](){ return boption(_name="checker.compute-pde-coefficients"); });
     std::string const& prefix =args.get_else(_prefix,"");
-    bool verbose = args.get_else(_verbose,boption(_prefix=prefix,_name="checker.verbose"));
+    bool verbose = args.get_else_invocable(_verbose,[&prefix](){ return boption(_prefix=prefix,_name="checker.verbose"); } );
 
 
     //if ( solution.empty() && soption("checker.solution" ).empty() )
