@@ -790,10 +790,10 @@ auto aitkenPtr( Ts && ... v )
     auto && space = args.get(_space);
     std::string const& prefix = args.get_else(_prefix,"");
     std::string const& type = args.get_else_invocable( _type, [&prefix](){ return soption(_prefix=prefix,_name="aitken.type"); } );
-    double initial_theta = args.get_else_invocable<std::is_arithmetic>( _initial_theta, [&prefix](){ return doption(_prefix=prefix,_name="aitken.initial_theta"); }  );
-    double min_theta = args.get_else_invocable<std::is_arithmetic>( _min_theta, [&prefix](){ return doption(_prefix=prefix,_name="aitken.min_theta"); }  );
-    double tolerance = args.get_else_invocable<std::is_arithmetic>( _tolerance, [&prefix](){ return doption(_prefix=prefix,_name="aitken.tol"); }  );
-    size_type maxit = args.get_else_invocable<std::is_arithmetic>( _maxit, [&prefix](){ return ioption(_prefix=prefix,_name="aitken.maxit"); } );
+    double initial_theta = args.template get_else_invocable<std::is_arithmetic>( _initial_theta, [&prefix](){ return doption(_prefix=prefix,_name="aitken.initial_theta"); }  );
+    double min_theta = args.template get_else_invocable<std::is_arithmetic>( _min_theta, [&prefix](){ return doption(_prefix=prefix,_name="aitken.min_theta"); }  );
+    double tolerance = args.template get_else_invocable<std::is_arithmetic>( _tolerance, [&prefix](){ return doption(_prefix=prefix,_name="aitken.tol"); }  );
+    size_type maxit = args.template get_else_invocable<std::is_integral>( _maxit, [&prefix](){ return ioption(_prefix=prefix,_name="aitken.maxit"); } );
 
     return aitkenImpl( space,type,initial_theta,tolerance,min_theta,maxit );
 }
