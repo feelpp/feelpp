@@ -26,8 +26,8 @@
    \author JB Wahl
    \date 2018-03-27
  */
-#ifndef _FEELPP_MDEIM_HPP
-#define _FEELPP_MDEIM_HPP 1
+#ifndef FEELPP_CRB_MDEIM_H
+#define FEELPP_CRB_MDEIM_H
 
 #include <feel/feelcrb/deimmodel.hpp>
 
@@ -132,43 +132,6 @@ private :
 }; // class MDEIM
 
 
-
-#if 0
-namespace detail
-{
-template <typename Args>
-struct compute_mdeim_return
-{
-    typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type::element_type model1_type;
-    typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
-
-    typedef MDEIM<model_type> type;
-    typedef std::shared_ptr<type> ptrtype;
-};
-} // namespace detail
-
-
-BOOST_PARAMETER_FUNCTION(
-                         ( typename Feel::detail::compute_mdeim_return<Args>::ptrtype ), // 1. return type
-                         mdeim,                        // 2. name of the function template
-                         tag,                                        // 3. namespace of tag types
-                         ( required
-                           ( in_out(model),          * )
-                           ) // required
-                         ( optional
-                           ( sampling, *, nullptr )
-                           ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
-                           ( filename, *( boost::is_convertible<mpl::_,std::string> ), "" )
-                           ( directory, *( boost::is_convertible<mpl::_,std::string> ), "" )
-                           ( tag, *( boost::is_convertible<mpl::_,int> ), 0 )
-                           ) // optionnal
-                         )
-{
-    typedef typename Feel::detail::compute_mdeim_return<Args>::type mdeim_type;
-    return std::make_shared<mdeim_type>( model, sampling, prefix, filename, directory, tag );
-}
-
-#endif
 
 template <typename ... Ts>
 auto mdeim( Ts && ... v )
