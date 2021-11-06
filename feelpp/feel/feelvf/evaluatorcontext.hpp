@@ -26,11 +26,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-03-20
  */
-#ifndef __FEELPP_EVALUATORCONTEXT_H
-#define __FEELPP_EVALUATORCONTEXT_H 1
+#ifndef FEELPP_VF_EVALUATORCONTEXT_H
+#define FEELPP_VF_EVALUATORCONTEXT_H
 
-#include <boost/timer.hpp>
-#include <boost/signals2/signal.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
@@ -458,28 +456,7 @@ evaluatecontext_impl( Ctx const& ctx,
  * \arg mpi_communications a bool that indicates if all proc communicate or not
  * \arg projection a bool that indicates if we project the expression on function space or not (usefull for EIM)
  */
-#if 0
-BOOST_PARAMETER_FUNCTION(
-    ( typename vf::detail::evaluate_context<Args>::element_type ), // return type
-    evaluateFromContext,    // 2. function name
 
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( context, *  )
-      ( expr, * )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( context2, *, context.functionSpace()->context() )
-      ( max_points_used, (int), -1 )
-      ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
-      ( mpi_communications, (bool), true )
-      ( projection, (bool), false )
-      ( worldcomm,  (worldcomm_ptr_t), (mpi_communications && !context.ctxHaveBeenMpiBroadcasted() )? context.functionSpace()->worldCommPtr() : context.functionSpace()->worldComm().subWorldCommSeqPtr() )
-    )
-)
-#endif
 template <typename ... Ts>
 auto evaluateFromContext( Ts && ... v )
 {
@@ -491,7 +468,8 @@ auto evaluateFromContext( Ts && ... v )
     GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT );
     bool mpi_communications = args.get_else(_mpi_communications,true);
     bool projection = args.get_else(_projection,false);
-    worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,(mpi_communications && !context.ctxHaveBeenMpiBroadcasted() )? context.functionSpace()->worldCommPtr() : context.functionSpace()->worldComm().subWorldCommSeqPtr() );
+    worldcomm_ptr_t worldcomm = args.get_else_invocable(_worldcomm,[&mpi_communications,&context](){
+         return (mpi_communications && !context.ctxHaveBeenMpiBroadcasted() )? context.functionSpace()->worldCommPtr() : context.functionSpace()->worldComm().subWorldCommSeqPtr(); } );
 
     bool doMpiComm = mpi_communications && !context.ctxHaveBeenMpiBroadcasted();
     //LOG(INFO) << "evaluate expression..." << std::endl;

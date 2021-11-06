@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2014-01-04
  */
-#ifndef FEELPP_VF_NORML2_HPP
-#define FEELPP_VF_NORML2_HPP 1
+#ifndef FEELPP_VF_NORML2_H
+#define FEELPP_VF_NORML2_H
 
 #include <feel/feelvf/inner.hpp>
 

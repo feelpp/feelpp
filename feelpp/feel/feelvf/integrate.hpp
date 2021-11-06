@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2014-01-04
  */
-#ifndef FEELPP_VF_INTEGRATE_HPP
-#define FEELPP_VF_INTEGRATE_HPP 1
+#ifndef FEELPP_VF_INTEGRATE_H
+#define FEELPP_VF_INTEGRATE_H
 
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/integrator.hpp>
@@ -64,33 +64,25 @@ struct integrate_type
 } // detail
 
 
-
-#if 0
-BOOST_PARAMETER_FUNCTION(
-    ( typename vf::detail::integrate_type<Args>::expr_type ), // return type
-    integrate,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( expr,   * )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( quad,   *, quad_order_from_expression )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, quad_order_from_expression )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-      ( quadptloc, *, typename vf::detail::integrate_type<Args>::_quadptloc_ptrtype() )
-    )
-)
+template <typename ... Ts>
+auto integrate( Ts && ... v )
 {
-    auto the_ims = vf::detail::integrate_type<Args>::_im_type::im( quad,quad1,expr );
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && range = args.get(_range);
+    auto && expr = args.get(_expr);
+    auto && quad = args.get_else(_quad,quad_order_from_expression );
+    auto && quad1 = args.get_else(_quad1,quad_order_from_expression );
+    GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT);
+    bool use_tbb = args.get_else(_use_tbb,false);
+    bool use_harts = args.get_else(_use_harts,false);
+    int grainsize = args.get_else(_grainsize,100);
+    std::string const& partitioner = args.get_else(_partitioner, "auto");
+    bool verbose = args.get_else(_verbose,false);
+
+    using _integrate_helper_type = Feel::detail::integrate_type<decltype(expr),decltype(range),decltype(quad),decltype(quad1)>;
+    auto && quadptloc = args.get_else(_quadptloc, typename _integrate_helper_type::_quadptloc_ptrtype{});
+
+    auto the_ims = _integrate_helper_type::_im_type::im( quad,quad1,expr );
     auto const& the_im = the_ims.first;
     auto const& the_im1 = the_ims.second;
 
@@ -99,7 +91,7 @@ BOOST_PARAMETER_FUNCTION(
     if ( verbose )
     {
         std::cout << " -- integrate: size(range) = " << std::distance( ret.expression().beginElement(),
-                  ret.expression().endElement() ) << "\n";
+                                                                       ret.expression().endElement() ) << "\n";
         std::cout << " -- integrate: quad = " << ret.expression().im().nPoints() << "\n";
         std::cout << " -- integrate: quad1 = " << ret.expression().im2().nPoints() << "\n";
         //std::cout << " -- integrate: geomap = " << geomap << "\n";
@@ -107,45 +99,7 @@ BOOST_PARAMETER_FUNCTION(
 
     return ret;
 }
-#endif
-    template <typename ... Ts>
-    auto integrate( Ts && ... v )
-        {
-            auto args = NA::make_arguments( std::forward<Ts>(v)... );
-            auto && range = args.get(_range);
-            auto && expr = args.get(_expr);
-            auto && quad = args.get_else(_quad,quad_order_from_expression );
-            auto && quad1 = args.get_else(_quad1,quad_order_from_expression );
-            GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT);
-            bool use_tbb = args.get_else(_use_tbb,false);
-            bool use_harts = args.get_else(_use_harts,false);
-            int grainsize = args.get_else(_grainsize,100);
-            std::string const& partitioner = args.get_else(_partitioner, "auto");
-            bool verbose = args.get_else(_verbose,false);
 
-            using _integrate_helper_type = Feel::detail::integrate_type<decltype(expr),decltype(range),decltype(quad),decltype(quad1)>;
-            auto && quadptloc = args.get_else(_quadptloc, typename _integrate_helper_type::_quadptloc_ptrtype{});
-
-            auto the_ims = _integrate_helper_type::_im_type::im( quad,quad1,expr );
-            auto const& the_im = the_ims.first;
-            auto const& the_im1 = the_ims.second;
-
-            auto ret =  integrate_impl( range, the_im , expr,  Feel::detail::geomapStrategy(range,geomap), the_im1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
-
-            if ( verbose )
-            {
-                std::cout << " -- integrate: size(range) = " << std::distance( ret.expression().beginElement(),
-                                                                               ret.expression().endElement() ) << "\n";
-                std::cout << " -- integrate: quad = " << ret.expression().im().nPoints() << "\n";
-                std::cout << " -- integrate: quad1 = " << ret.expression().im2().nPoints() << "\n";
-                //std::cout << " -- integrate: geomap = " << geomap << "\n";
-            }
-
-            return ret;
-        }
-
-
-
-}
+} // namespace Feel
 
 #endif

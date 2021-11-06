@@ -481,37 +481,7 @@ PreconditionerBlockMS<space_type>::applyInverse ( const vector_type& X, vector_t
     toc("[PreconditionerBlockMS] applyInverse update solution",FLAGS_v>0);
     return 0;
 }
-#if 0
-namespace meta
-{
-template< typename space_type >
-    struct blockms
-{
-    typedef PreconditionerBlockMS<space_type> type;
-    typedef std::shared_ptr<type> ptrtype;
-};
-}
-BOOST_PARAMETER_FUNCTION( ( typename meta::blockms<
-                                   typename parameter::value_type<Args, tag::space >::type::element_type
-                                   >::ptrtype ),
-                                 blockms,
-                                 tag,
-                                 ( required
-                                   ( space, *)
-                                   ( matrix, *)
-                                   ( model, *)
-                                 )
-                                 ( optional
-                                   ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "blockms" )
-                                 )
-                               )
-{
-    typedef typename meta::blockms<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype pblockms_t;
-    typedef typename meta::blockms<typename parameter::value_type<Args, tag::space>::type::element_type>::type blockms_t;
-    pblockms_t p( new blockms_t( space, model, prefix, matrix ) );
-    return p;
-} // blockms
-#endif
+
 template <typename ... Ts>
 auto blockms( Ts && ... v )
 {
