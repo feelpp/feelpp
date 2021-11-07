@@ -431,8 +431,8 @@ BenchmarkGreplNonLinearParabolic<Order>::computeLinearDecompositionA()
     this->M_linearAqm[0].resize( 1 );
     this->M_linearAqm[1].resize( 1 );
     tic();
-    this->M_linearAqm[0][0] = backend()->newMatrix( Xh, Xh );
-    this->M_linearAqm[1][0] = backend()->newMatrix( Xh, Xh );
+    this->M_linearAqm[0][0] = backend()->newMatrix( _test=Xh, _trial=Xh );
+    this->M_linearAqm[1][0] = backend()->newMatrix( _test=Xh, _trial=Xh );
     toc("CreateMatrices", FLAGS_v>0);
     tic();
     // Evolution
@@ -466,7 +466,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::assemble()
     // Mass Matrix
     this->M_Mqm.resize( 1 );
     this->M_Mqm[0].resize( 1 );
-    this->M_Mqm[0][0] = backend()->newMatrix(Xh, Xh);
+    this->M_Mqm[0][0] = backend()->newMatrix(_test=Xh, _trial=Xh);
     form2(_test=Xh, _trial=Xh, _matrix=this->M_Mqm[0][0])
       = integrate(_range=elements(mesh), _expr=inner(id(u),idt(u)));
     toc("MassMatrix", FLAGS_v>0);
@@ -475,8 +475,8 @@ void BenchmarkGreplNonLinearParabolic<Order>::assemble()
     this->M_Aqm.resize( 2 );
     this->M_Aqm[0].resize( 1 );
     this->M_Aqm[1].resize( 1 );
-    this->M_Aqm[0][0] = backend()->newMatrix( Xh, Xh );
-    this->M_Aqm[1][0] = backend()->newMatrix( Xh, Xh );
+    this->M_Aqm[0][0] = backend()->newMatrix( _test=Xh, _trial=Xh );
+    this->M_Aqm[1][0] = backend()->newMatrix( _test=Xh, _trial=Xh );
     toc("CreateMatrices", FLAGS_v>0);
     tic();
 
@@ -536,7 +536,7 @@ double BenchmarkGreplNonLinearParabolic<Order>::output( int output_index, parame
     }
     if( output_index==1 )
     {
-        s = integrate( elements( mesh ), idv( solution ) ).evaluate()( 0,0 );
+        s = integrate( _range=elements( mesh ), _expr=idv( solution ) ).evaluate()( 0,0 );
     }
 
     return s ;
