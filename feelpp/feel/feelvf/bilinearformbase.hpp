@@ -414,7 +414,7 @@ public:
             auto && solution = args.get(_solution);
             auto && rhs = args.get(_rhs);
             std::string const& name = args.get_else(_name,"");
-            std::string const& kind = args.get_else_invocable(_name,[&name]() { return soption(_prefix=name,_name="backend"); } );
+            std::string const& kind = args.get_else_invocable(_kind,[&name]() { return soption(_prefix=name,_name="backend"); } );
             bool rebuild = args.get_else_invocable(_rebuild,[&name]() { return boption(_prefix=name,_name="backend.rebuild"); } );
             pre_solve_type pre = args.get_else(_pre,pre_solve_type());
             post_solve_type post = args.get_else(_post,post_solve_type());
