@@ -152,13 +152,13 @@ int runSimulation(std::shared_ptr<FeelModels::coefficient_form_PDEs_t<ConvexType
         cfpdes->updateParameterValues();
         cfpdes->solve();
         UFE = cfpde->fieldUnknown();
-        auto normU = normL2( rangeU, idv(UFE) );
+        auto normU = normL2( _range=rangeU, _expr=idv(UFE) );
         for(int n = 0; n < N; ++n)
         {
             crb->fixedPointPrimal(n+1, mu, uNs, uNolds, outputs);
             vectorN_type uN = uNs[0];
             URB = crb->expansion( uN, n+1 );
-            errs[n][j] = normL2( rangeU, idv(URB)-idv(UFE) );
+            errs[n][j] = normL2( _range=rangeU, _expr=idv(URB)-idv(UFE) );
             errsRel[n][j] = errs[n][j]/normU;
         }
         ++j;
@@ -198,7 +198,7 @@ int runSimulation(std::shared_ptr<FeelModels::coefficient_form_PDEs_t<ConvexType
         Feel::cout << std::setw(5) << n+1 << std::setw(25) << min[n] << std::setw(25) << max[n]
                    << std::setw(25) << mean[n] << std::setw(25) << stdev[n] << std::endl;
 
-    auto e = exporter(mesh);
+    auto e = exporter(_mesh=mesh);
     e->add("UFE", UFE);
     e->add("URB", URB);
     e->save();
