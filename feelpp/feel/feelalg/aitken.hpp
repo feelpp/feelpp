@@ -32,7 +32,7 @@
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assert.hpp>
-#include <boost/timer.hpp>
+#include <feel/feeltiming/timer.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelalg/vector.hpp>
@@ -398,7 +398,7 @@ private:
     convergence_type M_convergence;
 
 
-    mutable boost::timer M_timer;
+    Feel::Timer M_timer;
 };
 
 
@@ -567,7 +567,7 @@ Aitken<fs_type>::shiftRight()
         ( "time", M_timer.elapsed() )
         ( "relaxation_parameter",  M_previousParameter );
     M_convergence.insert( std::make_pair( M_cptIteration, cit ) );
-    M_timer.restart();
+    M_timer.start();
 
     M_previousResidual = M_currentResidual;
     M_previousElement = M_currentElement;
@@ -612,7 +612,7 @@ Aitken<fs_type>::restart()
     M_cptIteration=1;
     M_hasConverged=false;
     M_convergence.clear();
-    M_timer.restart();
+    M_timer.start();
 }
 
 //-----------------------------------------------------------------------------------------//

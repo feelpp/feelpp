@@ -33,7 +33,6 @@
 
 #include <cxxabi.h>
 #include <typeinfo>
-#include <boost/timer.hpp>
 
 #include <Eigen/Eigen>
 
@@ -968,7 +967,6 @@ template<typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> /**/, bool /*hasRelation*/ ) const
 {
-    //boost::timer __timer;
     tic();
     LOG(INFO) << "[integrator::assemble FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true>\n";
 
@@ -1071,7 +1069,6 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 }
 
                 //int nelt = std::distance( this->beginElement(), this->endElement() );
-                boost::timer ti0,ti1, ti2, ti3;
 
                 //
                 // start the real intensive job:
@@ -1200,7 +1197,6 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 } // end loop on elements
             } // end loop on list of elements
 
-            //DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
             toc("Integrator::assemble form MESH_ELEMENTS", FLAGS_v>1);
         }
 
@@ -3237,8 +3233,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 {
     //DLOG(INFO) << "integrating over "
     //              << std::distance( this->beginElement(), this->endElement() )  << " faces\n";
-    boost::timer __timer;
-
+    tic();
     //
     // some typedefs
     //
@@ -3444,7 +3439,6 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             isInitConnectionTo0=true;
         }
 
-        boost::timer ti0,ti1, ti2, ti3;
         //double t0 = 0, t1 = 0,t2 = 0,t3 = 0;
         DLOG(INFO) << "[Integrator::faces/forms] starting...\n";
 
@@ -3692,8 +3686,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     DLOG(INFO) << "[faces] Overall local assembly time : " << t2 << "\n";
     DLOG(INFO) << "[faces] Overall global assembly time : " << t3 << "\n";
 #endif
-    DLOG(INFO) << "integrating over faces done in " << __timer.elapsed() << "s\n";
-    //std::cout << "integrating over faces done in " << __timer.elapsed() << "s\n";
+    toc("integrating over faces", FLAGS_v>1);
 }
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
@@ -5064,7 +5057,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 {
     DLOG(INFO)  << "integrating over "
                 << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
-    boost::timer __timer;
+    tic();
 
 #if defined(FEELPP_HAS_TBB)
     if ( boption(_name="parallel.cpu.enable") && M_use_tbb )
@@ -5353,7 +5346,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                       << perf_mng.getValueInSeconds("init2.2.2") << " "
                       << perf_mng.getValueInSeconds("init2.2.3") << std::endl;
 
-            DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+            toc("integrating over elements", FLAGS_v>1);
             return res;
         }
         else
@@ -5550,7 +5543,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                           << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
 #endif
 
-                DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+                toc("integrating over elements", FLAGS_v>1);
                 return res;
             }
             else
@@ -5709,7 +5702,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                     std::cout << Environment::worldComm().rank() <<  " Total: " << perf_mng.getValueInSeconds("total") << std::endl;
 #endif
 
-                    DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+                    toc("integrating over elements", FLAGS_v>1);
                     return res;
                 }
 }
@@ -5720,8 +5713,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 {
     DLOG(INFO) << "integrating over "
                << std::distance( this->beginElement(), this->endElement() )  << "faces\n";
-    boost::timer __timer;
-
+    tic();
     //
     // some typedefs
     //
@@ -5914,7 +5906,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
     }
     //std::cout << "res=" << res << "\n";
     //std::cout << "res1=" << res1 << "\n";
-    DLOG(INFO) << "integrating over faces done in " << __timer.elapsed() << "s\n";
+    toc("integrating over faces", FLAGS_v>1);
     return res;
 }
 
@@ -5939,7 +5931,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
  {
      DLOG(INFO) << "integrating over "
                 << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
-     boost::timer __timer;
+
+     tic();
 
      //
      // some typedefs
@@ -6008,7 +6001,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
              }
          }
      }
-     DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+     toc("integrating [broken] over elements", FLAGS_v>1);
 
      return p0;
  }
@@ -6019,7 +6012,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
  {
      DLOG(INFO) << "integrating over "
                 << std::distance( this->beginElement(), this->endElement() )  << "faces\n";
-     boost::timer __timer;
+     tic();
 
      //
      // some typedefs
@@ -6207,7 +6200,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
      }
      //std::cout << "res=" << res << "\n";
      //std::cout << "res1=" << res1 << "\n";
-     DLOG(INFO) << "integrating over faces done in " << __timer.elapsed() << "s\n";
+     toc("integrating [broken] over faces", FLAGS_v>1);
      return p0;
  }
  /// \endcond

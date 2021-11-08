@@ -552,7 +552,7 @@ template <typename T, typename SizeT>
 void
 Backend<T,SizeT>::start()
 {
-    M_timer.restart();
+    M_timer.start();
 }
 
 template <typename T, typename SizeT>

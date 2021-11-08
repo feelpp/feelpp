@@ -496,7 +496,6 @@ BilinearFormBase<T>::BilinearFormBase( std::string name,
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
-    boost::timer tim;
     DVLOG(2) << "begin constructor with default listblock\n";
 
     if ( !Xh->worldComm().isActive() ) return;
@@ -509,7 +508,6 @@ BilinearFormBase<T>::BilinearFormBase( std::string name,
     this->setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_row_startInMatrix ) );
     this->setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_col_startInMatrix ) );
 
-    DVLOG(2) << " - form init in " << tim.elapsed() << "\n";
     DVLOG(2) << "begin constructor with default listblock done\n";
 }
 
