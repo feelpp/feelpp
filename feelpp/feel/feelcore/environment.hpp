@@ -949,6 +949,7 @@ T optionT( Ts && ... v )
         std::string const& name  = args.get(_name);
         //CHECK( false ) <<"Option "<< name << "  either does not exist or is not a double" <<std::endl;
         CHECK( false ) <<"problem in conversion type of argument "<< name << " : check the option type"<<std::endl;
+        return {};
     }
 }
 

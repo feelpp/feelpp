@@ -42,7 +42,6 @@
 
 #include <feel/feelcore/testsuite.hpp>
 
-#include <boost/timer.hpp>
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -204,7 +203,7 @@ public:
                         all_file_name.push_back( "EimConvergenceLINFratio.dat");
                         fun->studyConvergence( p , *solution , all_file_name );
                     }
-                    boost::mpi::timer timer;
+                    Feel::Timer timer;
                     auto w = fun->interpolant( p );
                     double t=timer.elapsed();
                     e->add( (boost::format( "%1%-eim(%2%)" ) % fun->name() % p(0) ).str(), w );

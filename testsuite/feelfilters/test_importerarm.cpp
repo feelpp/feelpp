@@ -23,7 +23,6 @@
  */
 #include <sstream>
 
-#include <boost/timer.hpp>
 // Boost.Test
 // make sure that the init_unit_test function is defined by UTF
 //#define BOOST_TEST_MAIN

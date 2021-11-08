@@ -27,16 +27,17 @@
    \date 2011-12-11
  */
 // Boost.Test
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
-#include <boost/test/test_case_template.hpp>
-#include <boost/mpl/list.hpp>
-using boost::unit_test::test_suite;
+// #define BOOST_TEST_MAIN
+// #include <boost/test/unit_test.hpp>
+// #include <boost/test/test_case_template.hpp>
+// #include <boost/mpl/list.hpp>
+// using boost::unit_test::test_suite;
 
 #include <boost/numeric/ublas/banded.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 
-#include <fstream>
+// #include <fstream>
+#include <feel/feelcore/testsuite.hpp>
 #include <feel/feelpoly/moment.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelpoly/crouzeixraviart.hpp>

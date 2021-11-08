@@ -34,16 +34,17 @@
 **/
 
 // Boost.Test
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
-#include <boost/test/test_case_template.hpp>
-#include <boost/mpl/list.hpp>
-using boost::unit_test::test_suite;
+// #define BOOST_TEST_MAIN
+// #include <boost/test/unit_test.hpp>
+// #include <boost/test/test_case_template.hpp>
+// #include <boost/mpl/list.hpp>
+// using boost::unit_test::test_suite;
 
 #include <boost/numeric/ublas/banded.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 
 #include <fstream>
+#include <feel/feelcore/testsuite.hpp>
 #include <feel/feelpoly/im.hpp>
 
 

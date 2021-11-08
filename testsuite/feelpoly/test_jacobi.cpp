@@ -27,19 +27,19 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-07-28
  */
-#define CHAR_BIT 8
-#include <boost/timer.hpp>
-// Boost.Test
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
-#include <boost/test/test_case_template.hpp>
-#include <boost/mpl/list.hpp>
+// #define CHAR_BIT 8
+// // Boost.Test
+// //#define BOOST_TEST_MAIN
+// #include <boost/test/unit_test.hpp>
+// #include <boost/test/test_case_template.hpp>
+// #include <boost/mpl/list.hpp>
 
 
-using boost::unit_test::test_suite;
+// using boost::unit_test::test_suite;
 
-
+#include <feel/feelcore/testsuite.hpp>
 #include <feel/feelcore/feel.hpp>
+#include <feel/feeltiming/timer.hpp>
 #include <feel/feelpoly/jacobi.hpp>
 #include <feel/feelpoly/expansions.hpp>
 #include <feel/feelpoly/dubiner.hpp>
@@ -73,7 +73,7 @@ public:
     {
         using namespace Feel;
 
-        boost::timer __timer;
+        Feel::Timer __timer;
 
         for ( int n = 0; n < 10000; ++n )
         {
@@ -96,7 +96,7 @@ public:
         }
 
         std::cout << "meta::jacobi test done in " << __timer.elapsed()/1000 << "\n";
-        __timer.restart();
+        __timer.start();
 
         for ( int n = 0; n < 10000; ++n )
         {
