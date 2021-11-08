@@ -83,7 +83,7 @@ checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simp
     typedef Mesh<Entity<Dim,1,Dim> > mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef Mesh<Simplex<3>> mesh_type;
+    //typedef Mesh<Simplex<3>> mesh_type;
     //size_type updateComponentsMesh = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES;
     size_type updateComponentsMesh = MESH_UPDATE_FACES_MINIMAL;
     //size_type updateComponentsMesh = MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES;
