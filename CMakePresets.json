@@ -64,7 +64,8 @@
             "cacheVariables": {
                 "FEELPP_COMPONENT": "feelpp",
                 "FEELPP_ENABLE_MOR": "OFF",
-                "FEELPP_ENABLE_TOOLBOXES": "OFF"
+                "FEELPP_ENABLE_TOOLBOXES": "OFF",
+                "FEELPP_ENABLE_FMILIB": "OFF"
             }
         },
         {
@@ -168,7 +169,12 @@
         {
             "name": "dbg",
             "configurePreset": "dbg",
-            "jobs": 10
+            "jobs": 10,
+            "targets": [
+                "feelpp",
+                "pyfeelpp",
+                "install"
+            ]
         },
         {
             "name": "feelpp",
@@ -203,7 +209,11 @@
         {
             "name": "pyfeelpp-all",
             "inherits": "default",
-            "configurePreset": "pyfeelpp-all"
+            "configurePreset": "pyfeelpp-all",
+            "targets": [
+                "all",
+                "install"
+            ]
         },
         {
             "name": "doxygen",
