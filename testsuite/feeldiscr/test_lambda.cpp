@@ -39,8 +39,6 @@
 
 #include <feel/feelcore/testsuite.hpp>
 
-#include <boost/timer.hpp>
-
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
