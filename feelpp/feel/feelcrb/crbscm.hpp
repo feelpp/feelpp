@@ -31,7 +31,6 @@
 
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
-#include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
@@ -999,7 +998,7 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
       typename CRBSCM<TruthModelType>::value_type>
       CRBSCM<TruthModelType>::ex( parameter_type const& mu ) const
 {
-    boost::timer ti;
+    Feel::Timer ti;
     sparse_matrix_ptrtype Matrix,symmMatrix;
     sparse_matrix_ptrtype M ;
     std::vector<vector_ptrtype> F;
@@ -1090,7 +1089,7 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type, double>
 CRBSCM<TruthModelType>::lbNoSCM( parameter_type const& mu ,size_type K ,int indexmu ) const
 {
 
-    boost::mpi::timer ti;
+    Feel::Timer ti;
 
     vector_type vec_min_coeff;
     auto all_beta = M_model->computeBetaQm( mu );
@@ -1140,7 +1139,7 @@ CRBSCM<TruthModelType>::lbSCM( parameter_type const& mu ,size_type K ,int indexm
 
     if ( K > this->KMax() ) K = this->KMax();
 
-    boost::mpi::timer ti;
+    Feel::Timer ti;
 
     // value if K==0
     if ( K <= 0 ) return boost::make_tuple(0., 0.);
@@ -1391,7 +1390,7 @@ CRBSCM<TruthModelType>::lbSCM( parameter_type const& mu ,size_type K ,int indexm
 #else // FEELPP_HAS_GLPK_H
 
     double Jobj = 0;
-    boost::timer ti;
+    Feel:Timer ti;
 #endif /* FEELPP_HAS_GLPK_H */
 
     return boost::make_tuple( Jobj, ti.elapsed() );
@@ -1407,7 +1406,7 @@ CRBSCM<TruthModelType>::ub( parameter_type const& mu ,size_type K ) const
 
     if ( K > this->KMax() ) K = this->KMax();
 
-    boost::timer ti;
+    Feel::Timer ti;
     beta_vector_type beta_qm;
 
     if ( M_scm_for_mass_matrix )

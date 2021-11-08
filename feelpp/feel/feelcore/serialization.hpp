@@ -32,6 +32,7 @@
 
 #include <feel/feelcore/disablewarnings.hpp>
 #include <Eigen/Core>
+#include <Eigen/Dense>
 #include <Eigen/CXX11/Tensor>
 #include <feel/feelcore/reenablewarnings.hpp>
 
