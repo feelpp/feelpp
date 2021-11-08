@@ -31,7 +31,6 @@
 #define FEELPP_ALG_BACKEND_H 1
 
 #include <functional>
-#include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 #include <boost/fusion/include/fold.hpp>
@@ -1490,7 +1489,7 @@ private:
     bool   M_reusePC;
     bool   M_reusedPC;
     bool   M_reuseFailed;
-    boost::timer M_timer;
+    Feel::Timer M_timer;
     bool   M_transpose;
     size_type    M_maxitKSP, M_maxitKSPinSNES, M_maxitSNES;
     size_type    M_maxitKSPReuse, M_maxitKSPinSNESReuse, M_maxitSNESReuse;

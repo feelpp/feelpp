@@ -1043,7 +1043,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     if( this->worldComm().isMasterRank() )
     {
         memset(buffer, '\0', sizeof(buffer));
-        strncpy( buffer, this->elementType().c_str(), 80);
+        strncpy( buffer, this->elementType().c_str(), 80-1);
         MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
         //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status );
     }
@@ -1319,7 +1319,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
     if( this->worldComm().isMasterRank() )
     {
         memset(buffer, '\0', sizeof(buffer));
-        strncpy( buffer, this->elementType().c_str(), 80);
+        strncpy( buffer, this->elementType().c_str(), 80-1);
         MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
         //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status );
     }
@@ -1559,7 +1559,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
         if( this->worldComm().isMasterRank() )
         {
             memset(buffer, '\0', sizeof(buffer));
-            strncpy(buffer, field00.name().c_str(), 80);
+            strncpy(buffer, field00.name().c_str(), 80-1);
             MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
         }
         posInFile+=80;
@@ -1694,7 +1694,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                 else
                 {
                     memset(buffer, '\0', sizeof(buffer));
-                    strncpy(buffer, this->elementType().c_str(), 80);
+                    strncpy(buffer, this->elementType().c_str(), 80-1);
                 }
                 MPI_File_write_at(fh, posInFile+80+sizeOfInt32_t, buffer, sizeof(buffer), MPI_CHAR, &status);
             }
