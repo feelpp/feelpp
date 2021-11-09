@@ -33,7 +33,6 @@
 #ifndef FEELPP_BENCHMARKGREPLNONLINEARELLIPTIC_HPP
 #define FEELPP_BENCHMARKGREPLNONLINEARELLIPTIC_HPP 1
 
-#include <boost/timer.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <feel/options.hpp>
