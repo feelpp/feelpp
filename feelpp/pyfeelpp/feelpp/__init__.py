@@ -127,14 +127,19 @@ def functionSpace( mesh, space="Pch", order=1, worldscomm=None):
     return _spaces[key]( mesh=mesh, worldsComm=worldscomm )
 
 
-def expr(e,filename=None,worldComm=None,directory=None):
+def expr(e,dim=1,filename=None,worldComm=None,directory=None):
     if filename is None:
         filename=""
     if directory is None:
         directory=""
     if worldComm is None:
         worldComm=Environment.worldComm()
-    return expr_(e,filename=filename,dir=directory,worldComm=worldComm)
+    if dim==1:
+        return expr_(e,filename=filename,dir=directory,worldComm=worldComm)
+    elif dim==2:
+        return exprv2_(e,filename=filename,dir=directory,worldComm=worldComm)
+    elif dim == 3:
+        return exprv3_(e, filename=filename, dir=directory, worldComm=worldComm)
 
 def gmshGenerate(dim, fname):
     mshname = '{}-{}.msh'.format(fname,
