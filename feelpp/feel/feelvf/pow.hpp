@@ -340,11 +340,10 @@ auto
 pow( ExprT1 && __e1, ExprT2 && __e2 )
 {
     auto arg_to_expr = []( auto && b ) -> decltype(auto) {
-                           using _the_type = std::decay_t<decltype(b)>;
                            if constexpr ( std::is_arithmetic_v<std::decay_t<decltype(b)>> )
-                               return cst( b );
+                               return cst( std::forward<decltype(b)>( b ) );
                            else
-                               return b;
+                               return std::forward<decltype(b)>( b );
                        };
     decltype(auto) e1 = arg_to_expr( std::forward<ExprT1>( __e1 ) );
     decltype(auto) e2 = arg_to_expr( std::forward<ExprT2>( __e2 ) );
