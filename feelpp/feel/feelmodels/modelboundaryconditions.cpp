@@ -53,6 +53,15 @@ ModelBoundaryCondition::ModelBoundaryCondition( pt::ptree const& p, std::string 
         M_modelExpr2.setExpr( M_expr2 );
 }
 
+void
+ModelBoundaryCondition::setParameterValues( std::map<std::string,double> const& mp )
+{
+    if ( this->hasExpression() )
+        M_modelExpr1.setParameterValues( mp );
+    if ( this->hasExpression2() )
+        M_modelExpr2.setParameterValues( mp );
+}
+
 ModelBoundaryConditions::ModelBoundaryConditions( worldcomm_ptr_t const& worldComm )
     : super( worldComm )
 {
@@ -107,6 +116,21 @@ void ModelBoundaryConditions::setup()
     }
 }
 
+void
+ModelBoundaryConditions::setParameterValues( std::map<std::string,double> const& mp )
+{
+    for( auto& [field, mapf] : *this )
+    {
+        for( auto& [type, mapt] : mapf )
+        {
+            for( auto& [name, bc] : mapt )
+            {
+                bc.setParameterValues( mp );
+            }
+        }
+    }
+}
+
 std::map<ModelBoundaryId, ModelBoundaryCondition>
 ModelBoundaryConditions::flatten() const
 {
@@ -129,4 +153,28 @@ ModelBoundaryConditions::flatten() const
     }
     return f_;
 }
+
+std::map<std::string,std::map<std::string,ModelBoundaryCondition> > const&
+ModelBoundaryConditions::byField( std::string const& field ) const
+{
+    auto it = this->find(field);
+    if( it != this->end() )
+        return it->second;
+    else
+        return M_emptyField;
+}
+
+std::map<std::string,ModelBoundaryCondition> const&
+ModelBoundaryConditions::byFieldType( std::string const& field, std::string const& type ) const
+{
+    auto it = this->find(field);
+    if( it == this->end() )
+        return M_emptyFieldType;
+    auto it2 = it->second.find(type);
+    if( it2 != it->second.end() )
+        return it2->second;
+    else
+        return M_emptyFieldType;
+}
+
 } // namespace Feel

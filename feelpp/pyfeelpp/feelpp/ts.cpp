@@ -61,6 +61,7 @@ void defBDF( py::module& m )
         suffix = std::string( "Pdhv" );
     std::string pyclass_name = fmt::format( "BDF_{}_{}D_P{}", suffix, Dim, Order );
     VLOG(2) << fmt::format( "[wrapper BDF] class name: {}", pyclass_name );
+
     using bdf_t = Bdf<space_t>;
     using bdf_ptr_t = std::shared_ptr<bdf_t>;
 

@@ -235,7 +235,7 @@ public:
     }
 
     //! return a vector of the times prior to timeInitial() (included)
-    std::map<int,double> priorTimes() const
+    std::map<int,double> priorTimes() const override
         {
             std::map<int,double> prior;
             for( int i = 0; i < this->M_order; ++i )

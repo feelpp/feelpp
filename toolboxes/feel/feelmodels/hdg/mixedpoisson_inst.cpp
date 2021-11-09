@@ -1,6 +1,6 @@
 
 #include "mixedpoissonconfig.h"
-#include <feel/feelmodels/hdg/mixedpoissoncreate.cpp>
+#include <feel/feelmodels/hdg/mixedpoisson.cpp>
 
 namespace Feel {
 namespace FeelModels {

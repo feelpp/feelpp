@@ -22,4 +22,4 @@
 #
 #
 
-feelpp_add_fmu( test3d0d_nonlinearC CLASS test3d0d_nonlinearC SRCS test3d0d_nonlinearC.mo nonlinearResistor.mo nonlinearCapacitor.mo voltage_nonlinearC.mo )
+feelpp_add_fmu( test3d0d_nonlinearC CLASS test3d0d_nonlinearC SRCS test3d0d_nonlinearC.mo nonlinearResistor.mo nonlinearCapacitor.mo voltage_nonlinearC.mo CATEGORY toolboxes/hdg/cases/coupledpoisson/3-nonlinearC )
