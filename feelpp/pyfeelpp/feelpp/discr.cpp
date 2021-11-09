@@ -158,7 +158,13 @@ void defDiscr(py::module &m, std::string const& suffix = "")
         elt.def( "on", static_cast<void ( element_t::* )( elements_reference_wrapper_t<mesh_ptr_t> const&, Expr<GinacEx<2>> const&, std::string const&, GeomapStrategyType, bool, bool )>( &element_t::template onImpl<elements_reference_wrapper_t<mesh_ptr_t>, Expr<GinacEx<2>>> ),
                  py::arg( "range" ), py::arg( "expr" ), py::arg( "prefix" ) = "",
                  py::arg( "geomap" ) = GeomapStrategyType::GEOMAP_OPT, py::arg( "accumulate" ) = false, py::arg( "verbose" ) = false, "build the interpolant of the expression expr on a range of elements" );
-            }
+    }
+    elt.def( "on", []( element_t& element, elements_reference_wrapper_t<mesh_ptr_t> const& r, 
+                        Expr<GinacMatrix<element_t::nComponents1,element_t::nComponents2,2>> const& e, std::string const& p, GeomapStrategyType g, bool a, bool v ){
+                            element.on( _range=r, _expr=e );
+                    },
+            py::arg( "range" ), py::arg( "expr" ), py::arg( "prefix" ) = "",
+            py::arg( "geomap" ) = GeomapStrategyType::GEOMAP_OPT, py::arg( "accumulate" ) = false, py::arg( "verbose" ) = false, "build the interpolant of the expression expr on a range of elements" );
 #if 0
     std::string I_pyclass_name = std::string("I_") + pyclass_name;
     py::class_<I_t<space_t,space_t>,std::shared_ptr<I_t<space_t,space_t>>>(m,I_pyclass_name.c_str())
