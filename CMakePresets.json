@@ -64,7 +64,8 @@
             "cacheVariables": {
                 "FEELPP_COMPONENT": "feelpp",
                 "FEELPP_ENABLE_MOR": "OFF",
-                "FEELPP_ENABLE_TOOLBOXES": "OFF"
+                "FEELPP_ENABLE_TOOLBOXES": "OFF",
+                "FEELPP_ENABLE_FMILIB": "OFF"
             }
         },
         {
@@ -147,6 +148,16 @@
                 "lhs": "${hostSystemName}",
                 "rhs": "Windows"
             }
+        },
+        {
+            "name": "doxygen",
+            "inherits": "default",
+            "displayName": "doxygen",
+            "description": "Build Feel++ doxygen documentation",
+            "binaryDir": "${sourceDir}/build/doxygen",
+            "cacheVariables": {
+                "FEELPP_ENABLE_DOXYGEN": "ON"
+            }
         }
     ],
     "buildPresets": [
@@ -158,7 +169,12 @@
         {
             "name": "dbg",
             "configurePreset": "dbg",
-            "jobs": 10
+            "jobs": 10,
+            "targets": [
+                "feelpp",
+                "pyfeelpp",
+                "install"
+            ]
         },
         {
             "name": "feelpp",
@@ -193,7 +209,16 @@
         {
             "name": "pyfeelpp-all",
             "inherits": "default",
-            "configurePreset": "pyfeelpp-all"
+            "configurePreset": "pyfeelpp-all",
+            "targets": [
+                "all",
+                "install"
+            ]
+        },
+        {
+            "name": "doxygen",
+            "configurePreset": "doxygen",
+            "targets": ["doxygen"]
         }
     ],
     "testPresets": [

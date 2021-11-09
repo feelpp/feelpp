@@ -7,52 +7,47 @@
         "OmegaG":
         {
             "name":"oxide",
-	    	"k":"3.9 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
+	    	"cond":"3.9 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
             "scale_flux":"1e-4 / (3.9 * 8.854^(-12))" // E = D/(epsR*eps0) 
         },
         "OmegaS":
         {
             "name":"silicium",
-	    	"k":"11.7 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
+	    	"cond":"11.7 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
             "scale_flux":"1e-4 / (11.7 * 8.854^(-12))" // E = D/(epsR*eps0) 
         },
         "OmegaD":
         {
             "name":"silicium",
-	    	"k":"11.7 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
+	    	"cond":"11.7 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
             "scale_flux":"1e-4 / (11.7 * 8.854^(-12))" // E = D/(epsR*eps0) 
         },
         "OmegaB":
         {
             "name":"silicium",
-	    	"k":"11.7 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
+	    	"cond":"11.7 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
             "scale_flux":"1e-4 / (11.7 * 8.854^(-12))" // E = D/(epsR*eps0) 
+        }
+    },
+    "InitialConditions":
+    {
+        "potential":
+        {
+            "Expression":
+            {
+                "OmegaG":
+                {
+                    "markers":["omegaG","omegaS","omegaB","omegaD",],
+                    "expr":"0.0"
+                }
+            }
         }
     },
     "BoundaryConditions":
     {
         "potential":
         {
-            "InitialSolution":
-            {
-                "OmegaG":
-                {
-                    "expr":"0.0"
-                },
-                "OmegaS":
-                {
-                    "expr":"0.0"
-                },
-                "OmegaB":
-                {
-                    "expr":"0.0"
-                },
-                "OmegaD":
-                {
-                    "expr":"0.0"
-                }
-            },
-            "SourceTerm":
+            "VolumicForces":
             {
                 "OmegaG":
                 {
@@ -130,29 +125,7 @@
                     "expr":"0.0011 * 10^4" //"7.0995e15" // "0.0011"
                 }
             }
-    	}/*,
-		"Exact solution":
-		{
-	    	"p_exact":
-	    	{
-				"OmegaG":
-				{
-                	"expr":"0.0:x:y:z" 
-				},
-				"OmegaD":
-				{
-                	"expr":"0.0:x:y:z" 
-				},
-				"OmegaB":
-				{
-                	"expr":"0.0:x:y:z" 
-				},
-				"OmegaS":
-				{
-                	"expr":"0.0:x:y:z" 
-				}
-	    	}
-		}*/
+    	}
      },
     "PostProcess":
     {
