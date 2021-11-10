@@ -152,6 +152,7 @@ using pre = NA::named_argument_t<struct pre_tag>;
 using post = NA::named_argument_t<struct post_tag>;
 
 // parameter for adapt
+using metric = NA::named_argument_t<struct metric_tag>;
 using model = NA::named_argument_t<struct model_tag>;
 using geotracking = NA::named_argument_t<struct geotracking_tag>;
 using snapthickness = NA::named_argument_t<struct snapthickness_tag>;
@@ -438,6 +439,7 @@ inline constexpr auto& _pre = NA::identifier<na::pre>;
 inline constexpr auto& _post = NA::identifier<na::post>;
 
 // parameter for adapt
+inline constexpr auto& _metric = NA::identifier<na::metric>;
 inline constexpr auto& _model = NA::identifier<na::model>;
 inline constexpr auto& _geotracking = NA::identifier<na::geotracking>;
 inline constexpr auto& _snapthickness = NA::identifier<na::snapthickness>;
