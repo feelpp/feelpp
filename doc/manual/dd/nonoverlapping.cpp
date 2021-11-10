@@ -155,7 +155,7 @@ private:
     export_ptrtype M_firstExporter;
     export_ptrtype M_secondExporter;
 
-    std::map<std::string, std::pair<boost::timer, double> > timers;
+    std::map<std::string, std::pair<Feel::Timer, double> > timers;
     std::map<std::string,double> stats;
 
     std::vector<int> dirichletFlags1;
@@ -182,9 +182,9 @@ ddmethod<Dim>::init( element_type& u, RhsExpr f, sparse_matrix_ptrtype& A, vecto
     auto mesh = Xh->mesh();
     auto v = Xh->element();
 
-    timers["assembly"].first.restart();
+    timers["assembly"].first.start();
     form1( _test=Xh,_vector=F ) =
-        integrate( elements( mesh ), f*id( v ) );
+        integrate( _range=elements( mesh ), _expr=f*id( v ) );
 
     F->close();
 
@@ -192,9 +192,9 @@ ddmethod<Dim>::init( element_type& u, RhsExpr f, sparse_matrix_ptrtype& A, vecto
     timers["assembly_F"].second = timers["assembly"].first.elapsed();
 
 
-    timers["assembly"].first.restart();
+    timers["assembly"].first.start();
     form2( _test=Xh, _trial=Xh, _matrix=A ) =
-        integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
+        integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) );
 
     timers["assembly"].second += timers["assembly"].first.elapsed();
     timers["assembly_A"].second = timers["assembly"].first.elapsed();
@@ -219,14 +219,14 @@ ddmethod<Dim>::localProblem( element_type& u,
     auto mesh = Xh->mesh();
     auto v = Xh->element();
 
-    timers["update"].first.restart();
+    timers["update"].first.start();
     auto Ffull = M_backend->newVector( Xh );
     Ffull->add(1.,*F);
 
     BOOST_FOREACH( int marker, interfaceFlags )
     {
         form1( _test=Xh,_vector=Ffull ) +=
-            integrate( markedfaces( mesh, marker ), w*id( v ) );
+            integrate( _range=markedfaces( mesh, marker ), _expr=w*id( v ) );
     }
     Ffull->close();
 
@@ -234,21 +234,21 @@ ddmethod<Dim>::localProblem( element_type& u,
     timers["update_F"].second = timers["update"].first.elapsed();
 
 
-    timers["update"].first.restart();
-    auto Afull = M_backend->newMatrix( Xh, Xh );
+    timers["update"].first.start();
+    auto Afull = M_backend->newMatrix( _test=Xh, _trial=Xh );
     Afull->addMatrix(1.,*A);
 
     BOOST_FOREACH( int marker, dirichletFlags )
     {
-        form2( Xh, Xh, _matrix=Afull ) +=
-            on( markedfaces( mesh, marker ) ,	u, Ffull, gD );
+        form2( _test=Xh, _trial=Xh, _matrix=Afull ) +=
+            on( _range=markedfaces( mesh, marker ), _element=u, _rhs=Ffull, _expr=gD );
     }
 
     timers["update"].second = timers["update"].first.elapsed();
     timers["update_A"].second = timers["update"].first.elapsed();
 
 
-    timers["solver"].first.restart();
+    timers["solver"].first.start();
     backend_type::build(soption("backend"))->solve( _matrix=Afull, _solution=u, _rhs=Ffull, _reuse_prec=true );
     timers["solver"].second = timers["solver"].first.elapsed();
 
@@ -270,12 +270,12 @@ ddmethod<Dim>::exportResults( element_type& u, element_type& v, double time )
     using namespace vf;
     auto g = sin( pi*Px() )*cos( pi*Py() );
 
-    auto proj1 = vf::project( Xh1, elements(mesh1), g );
-    auto proj2 = vf::project( Xh2, elements(mesh2), g );
+    auto proj1 = vf::project( _space=Xh1, _range=elements(mesh1), _expr=g );
+    auto proj2 = vf::project( _space=Xh2, _range=elements(mesh2), _expr=g );
 
 
     LOG(INFO) << "exportResults starts\n";
-    timers["export"].first.restart();
+    timers["export"].first.start();
 
     M_firstExporter->step( time )->setMesh(mesh1);
     M_firstExporter->step( time )->add( "solution", ( boost::format( "solution-%1%" ) % int( 1 ) ).str(), u );
@@ -320,7 +320,7 @@ ddmethod<Dim>::run()
     value_type tol = doption("tol");
     value_type imax = doption("imax");
 
-    Environment::changeRepository( boost::format( "doc/manual/dd/%1%/%2%-%3%/P%4%/h_%5%/" )
+    Environment::changeRepository( _directory=boost::format( "doc/manual/dd/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()
                                    % this->shape
                                    % Dim
@@ -367,8 +367,8 @@ ddmethod<Dim>::run()
     F1 = M_backend->newVector( Xh1 );
     F2 = M_backend->newVector( Xh2 );
 
-    A1 = M_backend->newMatrix( Xh1, Xh1 );
-    A2 = M_backend->newMatrix( Xh2, Xh2 );
+    A1 = M_backend->newMatrix( _test=Xh1, _trial=Xh1 );
+    A2 = M_backend->newMatrix( _test=Xh2, _trial=Xh2 );
 
     auto lambda = Xh1->element();
     auto lambdaold = Xh1->element();
@@ -432,18 +432,18 @@ ddmethod<Dim>::run()
         lambdaold = lambda;
 
         // compute L2error;
-        double  L2error2u1 =integrate( elements( mesh1 ), ( idv( u1 )-g )*( idv( u1 )-g ) ).evaluate()( 0,0 );
-        double L2error2u2 =integrate( elements( mesh2 ), ( idv( u2 )-g )*( idv( u2 )-g ) ).evaluate()( 0,0 );
+        double  L2error2u1 =integrate( _range=elements( mesh1 ), _expr=( idv( u1 )-g )*( idv( u1 )-g ) ).evaluate()( 0,0 );
+        double L2error2u2 =integrate( _range=elements( mesh2 ), _expr=( idv( u2 )-g )*( idv( u2 )-g ) ).evaluate()( 0,0 );
 
         L2erroru1 = math::sqrt( L2error2u1 );
         L2erroru2 = math::sqrt( L2error2u2 );
 
         // compute H1error;
-        double semi_H1error1 =integrate( elements( mesh1 ),
-                                         ( gradv( u1 )-gradg )*trans( ( gradv( u1 )-gradg ) ) ).evaluate()( 0,0 );
+        double semi_H1error1 =integrate( _range=elements( mesh1 ),
+                                         _expr=( gradv( u1 )-gradg )*trans( ( gradv( u1 )-gradg ) ) ).evaluate()( 0,0 );
 
-        double semi_H1error2 =integrate( elements( mesh2 ),
-                                         ( gradv( u2 )-gradg )*trans( ( gradv( u2 )-gradg ) ) ).evaluate()( 0,0 );
+        double semi_H1error2 =integrate( _range=elements( mesh2 ),
+                                         _expr=( gradv( u2 )-gradg )*trans( ( gradv( u2 )-gradg ) ) ).evaluate()( 0,0 );
 
 
         H1erroru1 = math::sqrt( L2error2u1 + semi_H1error1 );
