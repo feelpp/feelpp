@@ -127,7 +127,7 @@ private:
 
     std::shared_ptr<export_type> exporter;
 
-    std::map<std::string,std::pair<mpi::timer,double> > timers;
+    std::map<std::string,std::pair<Feel::Timer,double> > timers;
 }; // Beam
 
 template<int nDim, int nOrder>
@@ -158,7 +158,7 @@ Beam<nDim,nOrder>::run()
     /*
      * The function space and some associate elements are then defined
      */
-    timers["init"].first.restart();
+    timers["init"].first.start();
     space_ptrtype Xh = space_type::New( mesh );
     Xh->printInfo();
 
@@ -188,44 +188,45 @@ Beam<nDim,nOrder>::run()
      */
     auto F = backend()->newVector( Xh );
     F->zero();
-    timers["assembly"].first.restart();
+    timers["assembly"].first.start();
 
     if ( Dim == 3 )
-        form1( _test=Xh, _vector=F ) = integrate( elements( mesh ), trans( gravity.value()*oneZ() )*id( v ) );
+        form1( _test=Xh, _vector=F ) = integrate( _range=elements( mesh ), _expr=trans( gravity.value()*oneZ() )*id( v ) );
     else
-        form1( _test=Xh, _vector=F ) = integrate( elements( mesh ), trans( gravity.value()*oneY() )*id( v ) );
+        form1( _test=Xh, _vector=F ) = integrate( _range=elements( mesh ), _expr=trans( gravity.value()*oneY() )*id( v ) );
 
     timers["assembly"].second = timers["assembly"].first.elapsed();
 
     /*
      * Construction of the left hand side
      */
-    auto D = backend()->newMatrix( Xh, Xh );
-    timers["assembly"].first.restart();
+    auto D = backend()->newMatrix( _test=Xh, _trial=Xh );
+    timers["assembly"].first.start();
     auto deft = sym(gradt(u));
     auto def = sym(grad(u));
     auto a = form2( _test=Xh, _trial=Xh, _matrix=D );
-    a = integrate( elements( mesh ),
-                   lambda.value()*divt( u )*div( v )  +
+    a = integrate( _range=elements( mesh ),
+                   _expr=lambda.value()*divt( u )*div( v )  +
                    2.*mu.value()*trace( trans( deft )*def ) );
 
     if ( M_bctype == 1 ) // weak Dirichlet bc
     {
         auto Id = eye<nDim>();
-        a += integrate( markedfaces( mesh, "clamped" ),
+        a += integrate( _range=markedfaces( mesh, "clamped" ),
+                        _expr=
                         - trans( ( 2.*mu.value()*deft+lambda.value()*trace( deft )*Id )*N() )*id( v )
                         - trans( ( 2.*mu.value()*def+lambda.value()*trace( def )*Id )*N() )*idt( u )
                         + bcCoeff*std::max(2.*mu.value(),lambda.value())*trans( idt( u ) )*id( v )/hFace() );
     }
 
     if ( M_bctype == 0 )
-        a += on( markedfaces( mesh, "clamped" ), u, F, zero<nDim,1>() );
+        a += on( _range=markedfaces( mesh, "clamped" ), _element=u, _rhs=F, _expr=zero<nDim,1>() );
 
     timers["assembly"].second += timers["assembly"].first.elapsed();
 
     backend(_rebuild=true)->solve( _matrix=D, _solution=u, _rhs=F );
 
-    v = vf::project( Xh, elements( Xh->mesh() ), P() );
+    v.on(_range=elements( Xh->mesh() ), _expr=P() );
     this->exportResults( 0, u, v );
 
     auto i1 = mean( _range=markedfaces( mesh, "tip"  ), _expr=idv( u ) );
@@ -237,7 +238,7 @@ template<int nDim, int nOrder>
 void
 Beam<nDim,nOrder>::exportResults( double time, element_type const& u, element_type const &v  )
 {
-    timers["export"].first.restart();
+    timers["export"].first.start();
 
     exporter->step( time )->setMesh( u.functionSpace()->mesh() );
     exporter->step( time )->add( "displ", u );
