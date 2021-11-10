@@ -56,7 +56,7 @@ makeOptions()
 
 namespace Feel
 {
-	class normal : public Application{
+	class Normal : public Application{
 
 		public:
 			typedef Application super;
@@ -86,17 +86,17 @@ namespace Feel
 			typedef std::shared_ptr<backend_type> backend_ptrtype;
 			backend_ptrtype M_proj_backend;
 
-			normal();
+			Normal();
 			void run();
 	};
 
-	normal::normal()
+	Normal::Normal()
 		: super(),
 		M_proj_backend(backend_type::build("petsc"))
 	{
 	}
 
-	void normal::run()
+	void Normal::run()
 	{
 
 		auto mesh = loadMesh( _mesh=new mesh_type );
@@ -113,8 +113,8 @@ namespace Feel
 		 */
 		auto thefms = fms( XhP1 );
 		auto phio = XhP1->element();
-		phio = vf::project(XhP1, elements(mesh), h() );
-		phio +=vf::project(XhP1, boundaryfaces(mesh), -idv(phio) - h()/100. );
+		phio = vf::project(_space=XhP1, _range=elements(mesh), _expr=h() );
+		phio +=vf::project(_space=XhP1, _range=boundaryfaces(mesh), _expr=-idv(phio) - h()/100. );
 		auto phi_P1 = thefms->march(phio);
 
 		/*
@@ -145,9 +145,9 @@ namespace Feel
 				doption("gamma"));
 		auto n_phi_p   = vf::project(_space=XhV, _range=boundaryfaces(mesh), _expr=trans(gradv(phi_P2))/sqrt( gradv(phi_P2) * trans(gradv(phi_P2))));
 		auto n_phi_s = l2pv->project(_space=XhV, _range=boundaryfaces(mesh), _expr=trans(gradv(phi_P2)));
-		n_phi_s = vf::project(XhV, boundaryfaces(mesh),idv(n_phi_s)/sqrt(idv(n_phi_s[Component::X])*idv(n_phi_s[Component::X])+idv(n_phi_s[Component::Y])*idv(n_phi_s[Component::Y])));
+		n_phi_s = vf::project(_space=XhV, _range=boundaryfaces(mesh),_expr=idv(n_phi_s)/sqrt(idv(n_phi_s[Component::X])*idv(n_phi_s[Component::X])+idv(n_phi_s[Component::Y])*idv(n_phi_s[Component::Y])));
 
-		auto Nmesh = vf::project(XhV, boundaryfaces(mesh),-N());
+		auto Nmesh = vf::project(_space=XhV, _range=boundaryfaces(mesh),_expr=-N());
 		auto Nexact = vf::project( _space=XhV, _range=boundaryfaces(mesh), _expr=vec(Px(),Py())/sqrt(Px()*Px()+Py()*Py()));
 
 		auto err_phi_p = normL2( _range=markedfaces(mesh,"surface"), _expr=idv(n_phi_p)-idv(Nexact))/normL2( _range=markedfaces(mesh,"surface"), _expr=idv(Nexact));
@@ -179,7 +179,7 @@ int main( int argc, char** argv )
 			_about=about(_name="NormalToBoundary",
 				_author="Feel++ Consortium",
 				_email="feelpp-devel@feelpp.org"));
-	normal n;
+	::Normal n;
 	n.run();
 	return 0;
 }
