@@ -252,6 +252,16 @@ ToolboxMor<SpaceType, Options>::updateBetaQ_impl( parameter_type const& mu , dou
     for( int i = 0; i < M_F; ++i )
         this->M_betaFqm[0][0][i] = betaF(i);
 
+
+    this->M_betaMqm.resize( 1 );
+    Feel::cout << this->M_betaMqm.size() << std::endl;
+
+    // for now, only with M independant on mu
+    int M_M = 1;
+    this->M_betaMqm[0].resize( M_M );
+    for ( int i = 0; i < M_M; ++i )
+        this->M_betaMqm[0][i] = 1;
+
     // this->M_betaFqm[1][0][0] = 1./M_measureMarkedSurface["IC2"];
 }
 
@@ -301,6 +311,7 @@ ToolboxMor<SpaceType, Options>::assembleData()
     this->M_energy_matrix = backend()->newMatrix(this->Xh, this->Xh );
     m->symmetricPart(this->M_energy_matrix);
 
+    // for now, only with M independant of mu
     auto u = this->Xh->element();
 
     this->M_Mqm.resize( 1 );
