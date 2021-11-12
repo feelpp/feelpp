@@ -54,46 +54,6 @@ namespace Feel {
  * \arg update update the mesh data structure (build internal faces and edges) (default : true)
  * \arg physical_are_elementary_regions boolean to load specific meshes formats (default : false)
  */
-#if 0
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
-    loadMesh,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( mesh, *)
-      ) // 4. one required parameter, and
-
-    ( optional
-      ( prefix,(std::string), "" )
-      ( vm, ( po::variables_map const& ), Environment::vm() )
-      ( filename, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.filename",_vm=vm) )
-      ( desc, *,std::shared_ptr<gmsh_type>() )  // geo() can't be used here as default !!
-
-      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize",_vm=vm) )
-      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="mesh.scale",_vm=vm) )
-      ( straighten,          (bool), boption(_prefix=prefix,_name="gmsh.straighten",_vm=vm) )
-      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine",_vm=vm) )
-      ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
-      ( physical_are_elementary_regions,		   (bool), boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm) )
-      ( worldcomm,       *, mesh->worldCommPtr() )
-#if 1
-      ( force_rebuild,   *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.rebuild",_vm=vm) )
-      ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm) )
-      ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition",_vm=vm) )
-      ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, "" )
-      ( partitions,      *( boost::is_integral<mpl::_> ), (worldcomm)?worldcomm->globalSize():1 )
-      ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner",_vm=vm) )
-      ( savehdf5,        *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.savehdf5",_vm=vm) )
-      ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
-      ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.depends",_vm=vm) )
-      ( verbose,   (int), ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm) )
-#endif
-      )
-                         )
-#endif
-
 
 template <typename T>
 using args_loadMesh_type = NA::arguments<
@@ -122,51 +82,20 @@ using args_loadMesh_type = NA::arguments<
     typename na::verbose::template required_as_t<int>
     >;
 
-
-// template <typename ... TT>
-// auto
-// loadMesh( NA::arguments<TT...> && args )
-// {
-//     auto && mesh = args.get( na::_mesh );
-//     std::string && prefix = args.get_else( na::_prefix, "" );
-//     po::variables_map const& vm = args.get_else( na::_vm, Environment::vm() );
 template <typename MeshType>
 std::shared_ptr<MeshType>
 loadMeshImpl( args_loadMesh_type<MeshType> && args )
 {
-    auto && mesh = args.get( _mesh );
-    std::string const& prefix = args.get( _prefix );
-    po::variables_map const& vm = args.get( _vm );
-    std::string const& filename = args.get( _filename );
-    auto && desc = args.get( _desc );
-    double h = args.get( _h );
-    double scale = args.get( _scale );
-    bool straighten = args.get( _straighten );
-    int refine = args.get( _refine );
-    size_type update = args.get( _update );
-    bool physical_are_elementary_regions = args.get( _physical_are_elementary_regions );
-    auto && worldcomm = args.get( _worldcomm );
-    bool force_rebuild = args.get( _force_rebuild );
-    bool respect_partition = args.get( _respect_partition );
-    bool rebuild_partitions = args.get( _rebuild_partitions );
-    std::string const& rebuild_partitions_filename = args.get( _rebuild_partitions_filename );
-    rank_type partitions = args.get( _partitions );
-    int partitioner = args.get( _partitioner );
-    bool savehdf5 = args.get( _savehdf5 );
-    int partition_file = args.get( _partition_file );
-    std::string const& depends = args.get( _depends );
-    int verbose = args.get( _verbose );
-
-    // typedef typename Feel::detail::mesh<Args>::type _mesh_type;
-    // typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
-    // return _mesh_ptrtype{};// m( mesh );
+    auto && [mesh,prefix,vm,filename,desc,h,scale,straighten,refine,update,
+             physical_are_elementary_regions,worldcomm,force_rebuild,
+             respect_partition,rebuild_partitions,rebuild_partitions_filename,
+             partitions,partitioner,savehdf5,partition_file,depends,verbose] = args.get_all();
 
     using _mesh_type = unwrap_ptr_t<std::decay_t<decltype(mesh)>>;
     using _mesh_ptrtype = std::shared_ptr<_mesh_type>;
-    //return _mesh_ptrtype{};
-#if 1
+
     using Feel::cout;
-    
+
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunsequenced"
@@ -387,7 +316,6 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
-#endif
 } // loadMesh
 
 template <typename ... Ts>
@@ -409,20 +337,20 @@ loadMesh( Ts && ... v )
     auto args1 = std::move( args0 ).add_default_arguments( NA::make_default_argument( _worldcomm, mesh->worldCommPtr() ) );
     auto && worldcomm = args1.get( _worldcomm );
 
-    auto args = std::move( args1 ).add_default_arguments( NA::make_default_argument( _filename, soption(_prefix=prefix,_name="gmsh.filename",_vm=vm) ),
-                                                          NA::make_default_argument( _h, doption(_prefix=prefix,_name="gmsh.hsize",_vm=vm) ),
-                                                          NA::make_default_argument( _scale, doption(_prefix=prefix,_name="mesh.scale",_vm=vm) ),
-                                                          NA::make_default_argument( _straighten, boption(_prefix=prefix,_name="gmsh.straighten",_vm=vm) ),
-                                                          NA::make_default_argument( _refine, ioption(_prefix=prefix,_name="gmsh.refine",_vm=vm) ),
-                                                          NA::make_default_argument( _physical_are_elementary_regions, boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm) ),
-                                                          NA::make_default_argument( _force_rebuild, boption(_prefix=prefix,_name="gmsh.rebuild",_vm=vm) ),
-                                                          NA::make_default_argument( _respect_partition, boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm) ),
-                                                          NA::make_default_argument( _rebuild_partitions, boption(_prefix=prefix,_name="gmsh.partition",_vm=vm) ),
+    auto args = std::move( args1 ).add_default_arguments( NA::make_default_argument_invocable( _filename, [&prefix,&vm](){ return soption(_prefix=prefix,_name="gmsh.filename",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _h, [&prefix,&vm](){ return doption(_prefix=prefix,_name="gmsh.hsize",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _scale, [&prefix,&vm](){ return doption(_prefix=prefix,_name="mesh.scale",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _straighten, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.straighten",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _refine, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.refine",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _physical_are_elementary_regions, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _force_rebuild, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.rebuild",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _respect_partition, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _rebuild_partitions, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.partition",_vm=vm); } ),
                                                           NA::make_default_argument( _partitions, (worldcomm)?worldcomm->globalSize():1  ), //aiue
-                                                          NA::make_default_argument( _partitioner, ioption(_prefix=prefix,_name="gmsh.partitioner",_vm=vm) ),
-                                                          NA::make_default_argument( _savehdf5, boption(_prefix=prefix,_name="gmsh.savehdf5",_vm=vm) ),
-                                                          NA::make_default_argument( _depends, soption(_prefix=prefix,_name="gmsh.depends",_vm=vm) ),
-                                                          NA::make_default_argument( _verbose, ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm) )
+                                                          NA::make_default_argument_invocable( _partitioner, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.partitioner",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _savehdf5, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.savehdf5",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _depends, [&prefix,&vm](){ return soption(_prefix=prefix,_name="gmsh.depends",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _verbose, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm); } )
                                                           );
     using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
 

@@ -55,46 +55,6 @@ namespace Feel {
  * \arg force_rebuild boolean (boolean, optional, default = 0)
  * \arg physical_are_elementary_regions change file format (optional, default = false)
  */
-#if 0
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
-    createGMSHMesh,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( mesh, * )
-      ( desc, * )
-        ) // 4. one required parameter, and
-
-    ( optional
-      ( prefix,(std::string), "" )
-      ( vm, ( po::variables_map const& ), Environment::vm() )
-      ( format,         *, ioption(_prefix=prefix,_name="gmsh.format",_vm=vm) )
-      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize",_vm=vm) )
-      //( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
-      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="mesh.scale",_vm=vm) )
-      ( parametricnodes, *( boost::is_integral<mpl::_> ), 0 )
-      ( in_memory,       *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.in-memory",_vm=vm) )
-      ( straighten,      *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.straighten",_vm=vm) )
-      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine",_vm=vm) )
-      ( structured,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.structured",_vm=vm) )
-      ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
-      ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
-      ( physical_are_elementary_regions,           *,boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm))
-      ( periodic,        *, PeriodicEntities() )
-      ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm) )
-      ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition",_vm=vm) )
-      ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, "" )
-      ( worldcomm,      (worldcomm_ptr_t), mesh->worldCommPtr() )
-      ( partitions,   *( boost::is_integral<mpl::_> ), worldcomm->localSize() )
-      ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
-      ( partitioner,   *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner",_vm=vm) )
-      ( verbose,   (int), ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm) )
-      ( directory,(std::string), "" )
-        )
-    )
-#endif
 template <typename T>
 using args_createGMSHMesh_type = NA::arguments<
     typename na::mesh::template required_as_t<std::shared_ptr<T>>,
@@ -128,38 +88,13 @@ template <typename MeshType>
 std::shared_ptr<MeshType>
 createGMSHMesh( args_createGMSHMesh_type<MeshType> && args )
 {
-    auto && mesh = args.get( _mesh );
-    std::shared_ptr<gmsh_type> desc = args.get(_desc);
-    std::string const& prefix = args.get( _prefix );
-    po::variables_map const& vm = args.get( _vm );
-    int format = args.get( _format );
-    double h = args.get( _h );
-    double scale = args.get( _scale );
-    bool parametricnodes = args.get(_parametricnodes);
-    bool in_memory = args.get(_in_memory);
-    bool straighten = args.get( _straighten );
-    int refine = args.get( _refine );
-    int structured = args.get( _structured );
-    size_type update = args.get( _update );
-    bool force_rebuild = args.get( _force_rebuild );
-    bool physical_are_elementary_regions = args.get( _physical_are_elementary_regions );
-    PeriodicEntities const& periodic = args.get( _periodic );
-    bool respect_partition = args.get( _respect_partition );
-    bool rebuild_partitions = args.get( _rebuild_partitions );
-    std::string const& rebuild_partitions_filename = args.get( _rebuild_partitions_filename );
-    auto && worldcomm = args.get( _worldcomm );
-    rank_type partitions = args.get( _partitions );
-    int partition_file = args.get( _partition_file );
-    int partitioner = args.get( _partitioner );
-    int verbose = args.get( _verbose );
-    std::string const& directory = args.get( _directory );
+    auto && [mesh,desc,prefix,vm,format,h,scale,parametricnodes,in_memory,
+             straighten,refine,structured,update,force_rebuild,physical_are_elementary_regions,
+             periodic,respect_partition,rebuild_partitions,rebuild_partitions_filename,
+             worldcomm,partitions,partition_file,partitioner,verbose,directory] = args.get_all();
 
     using _mesh_type = unwrap_ptr_t<std::decay_t<decltype(mesh)>>;
     using _mesh_ptrtype = std::shared_ptr<_mesh_type>;
-
-
-    // typedef typename Feel::detail::mesh<Args>::type _mesh_type;
-    // typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh{ mesh };
     _mesh->setWorldComm( worldcomm );
@@ -271,19 +206,19 @@ createGMSHMesh( Ts && ... v )
     std::string const& prefix = args0.get(_prefix );
     po::variables_map const& vm = args0.get(_vm );
 
-    auto args1 = std::move( args0 ).add_default_arguments( NA::make_default_argument( _format, ioption(_prefix=prefix,_name="gmsh.format",_vm=vm) ),
-                                                           NA::make_default_argument( _h, doption(_prefix=prefix,_name="gmsh.hsize",_vm=vm) ),
-                                                           NA::make_default_argument( _scale, doption(_prefix=prefix,_name="mesh.scale",_vm=vm) ),
-                                                           NA::make_default_argument( _in_memory, boption(_prefix=prefix,_name="gmsh.in-memory",_vm=vm) ),
-                                                           NA::make_default_argument( _straighten, boption(_prefix=prefix,_name="gmsh.straighten",_vm=vm) ),
-                                                           NA::make_default_argument( _refine, ioption(_prefix=prefix,_name="gmsh.refine",_vm=vm) ),
-                                                           NA::make_default_argument( _structured, ioption(_prefix=prefix,_name="gmsh.structured",_vm=vm) ),
-                                                           NA::make_default_argument( _physical_are_elementary_regions, boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm) ),
-                                                           NA::make_default_argument( _respect_partition, boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm) ),
-                                                           NA::make_default_argument( _rebuild_partitions, boption(_prefix=prefix,_name="gmsh.partition",_vm=vm) ),
+    auto args1 = std::move( args0 ).add_default_arguments( NA::make_default_argument_invocable( _format, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.format",_vm=vm); } ),
+                                                           NA::make_default_argument_invocable( _h, [&prefix,&vm](){ return doption(_prefix=prefix,_name="gmsh.hsize",_vm=vm); } ),
+                                                           NA::make_default_argument_invocable( _scale, [&prefix,&vm](){ return doption(_prefix=prefix,_name="mesh.scale",_vm=vm); } ),
+                                                           NA::make_default_argument_invocable( _in_memory, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.in-memory",_vm=vm); } ),
+                                                           NA::make_default_argument_invocable( _straighten, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.straighten",_vm=vm); } ),
+                                                           NA::make_default_argument_invocable( _refine, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.refine",_vm=vm); } ),
+                                                           NA::make_default_argument_invocable( _structured, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.structured",_vm=vm); } ),
+                                                           NA::make_default_argument_invocable( _physical_are_elementary_regions, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm); } ),
+                                                           NA::make_default_argument_invocable( _respect_partition, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm); } ),
+                                                           NA::make_default_argument_invocable( _rebuild_partitions, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.partition",_vm=vm); } ),
                                                            NA::make_default_argument( _worldcomm, mesh->worldCommPtr() ),
-                                                           NA::make_default_argument( _partitioner, ioption(_prefix=prefix,_name="gmsh.partitioner",_vm=vm) ),
-                                                           NA::make_default_argument( _verbose, ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm) )
+                                                           NA::make_default_argument_invocable( _partitioner, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.partitioner",_vm=vm); } ),
+                                                           NA::make_default_argument_invocable( _verbose, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm); } )
                                                            );
     auto && worldcomm = args1.get( _worldcomm );
 
