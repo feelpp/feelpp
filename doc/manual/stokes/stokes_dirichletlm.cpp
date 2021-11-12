@@ -10,7 +10,7 @@ std::shared_ptr<Mesh<Simplex<2,OrderGeo> > >
 createMeshStokesDirichletLM( mpl::int_<2> /**/ )
 {
     typedef Mesh<Simplex<2,OrderGeo> > mesh_type;
-    double meshSize = option("gmsh.hsize").as<double>();
+    double meshSize = doption(_name="gmsh.hsize");
 
     GeoTool::Node x1(0,-0.5);
     GeoTool::Special_1b R( meshSize,"unrectangle",x1);
@@ -30,7 +30,7 @@ std::shared_ptr<Mesh<Simplex<3,OrderGeo> > >
 createMeshStokesDirichletLM( mpl::int_<3> /**/ )
 {
     typedef Mesh<Simplex<3,OrderGeo> > mesh_type;
-    double meshSize = option("gmsh.hsize").as<double>();
+    double meshSize = doption(_name="gmsh.hsize");
 
     GeoTool::Node Centre(0,0,0.205);
     GeoTool::Node Rayon( 0.205);
@@ -77,7 +77,7 @@ void runStokesDirichletLM()
 
     auto mesh = createMeshStokesDirichletLM<OrderGeo>( mpl::int_<Dim>() );
     std::list<std::string> listMarker{"inlet","wall"};
-    auto submesh = createSubmesh(mesh,markedfaces(mesh,listMarker));
+    auto submesh = createSubmesh(_mesh=mesh,_range=markedfaces(mesh,listMarker));
 
     auto Vh1 = THch<OrderGeo>(mesh);
     auto Vh2 = Pchv<2>(submesh);
