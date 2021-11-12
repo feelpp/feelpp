@@ -254,7 +254,6 @@ ToolboxMor<SpaceType, Options>::updateBetaQ_impl( parameter_type const& mu , dou
 
 
     this->M_betaMqm.resize( 1 );
-    Feel::cout << this->M_betaMqm.size() << std::endl;
 
     // for now, only with M independant on mu
     int M_M = 1;
