@@ -277,12 +277,12 @@ public:
     {
         auto args0 = NA::make_arguments( std::forward<Ts>(v)... )
             .add_default_arguments( NA::make_default_argument( _threading, mpi::threading::funneled ),
-                                    NA::make_default_argument( _desc, feel_nooptions() ), // TODO : use invocable defualt arg
-                                    NA::make_default_argument( _desc_lib, feel_options() )
+                                    NA::make_default_argument_invocable( _desc, [](){ return feel_nooptions(); } ),
+                                    NA::make_default_argument_invocable( _desc_lib, [](){ return feel_options(); } )
                                     );
         char** argv = args0.get(_argv);
-        return std::move(args0).add_default_arguments( NA::make_default_argument( _about, makeAboutDefault( argv[0] ) ),
-                                                       NA::make_default_argument( _config, globalRepository(makeAboutDefault( argv[0] ).appName()) )
+        return std::move(args0).add_default_arguments( NA::make_default_argument_invocable( _about, [&argv](){ return makeAboutDefault( argv[0] ); } ),
+                                                       NA::make_default_argument_invocable( _config, [&argv](){ return globalRepository(makeAboutDefault( argv[0] ).appName()); } )
                                                        );
     }
   public:
