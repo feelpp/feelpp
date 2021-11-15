@@ -277,8 +277,10 @@ Remesh<MeshType>::Remesh( std::shared_ptr<MeshType> const& mesh,
       M_required_facet_markers( required_facet_markers ),
       M_smd( new smd_type( M_parent_mesh ? M_parent_mesh : M_mesh ) )
 {
-    if ( M_parent_mesh && M_parent_mesh->isParentMeshOf( M_mesh ) == false )
+    if ( M_parent_mesh && M_parent_mesh->isRelatedTo( M_mesh ) == false )
         throw std::logic_error( "invalid parent mesh" );
+    else if ( M_parent_mesh && M_parent_mesh->isRelatedTo( M_mesh ) )
+        VLOG(2) << fmt::format("-- remesh use parent mesh") << std::endl;
 
     if ( mesh->worldCommPtr()->localSize() == 1 && M_mode == RemeshMode::MMG )
     {
@@ -578,7 +580,16 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                 if ( M_parent_mesh )
                 {
                     // id_in_parent_mesh
-                    M_id2tag[id_elt].second = M_mesh->subMeshToMesh( elt.id() );
+                    if ( M_mesh->isSubMeshFrom( M_parent_mesh ) )
+                    {
+                        // get parent id from submesh id
+                        M_id2tag[id_elt].second = M_mesh->subMeshToMesh( M_parent_mesh, elt.id() );
+                    }
+                    else if ( M_parent_mesh->isSubMeshFrom( M_mesh ) )
+                    {
+                        // get submesh id from parent id
+                        M_id2tag[id_elt].second = M_parent_mesh->meshToSubMesh( M_mesh, elt.id() );
+                    }
                 }
                 else
                 {
@@ -646,7 +657,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                 if ( M_parent_mesh )
                 {
                     // id_in_parent_mesh
-                    M_id2tag_face[id_elt].second = M_mesh->subMeshToMesh( face.id() );
+                    M_id2tag_face[id_elt].second = M_mesh->subMeshToMesh( M_parent_mesh, face.id() );
                 }
                 else
                 {
