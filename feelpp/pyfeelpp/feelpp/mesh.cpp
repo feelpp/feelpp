@@ -108,13 +108,21 @@ void defMesh(py::module &m)
         .def_static("create",&mesh_t::New,"Construct a new shared_ptr mesh")
         .def("dimension",&mesh_t::dimension,"get topological dimension")
         .def("realDimension",&mesh_t::realDimension,"get real dimension")
-
-
+        .def("isRelatedTo",[]( mesh_ptr_t const& self, mesh_ptr_t const& other ) { return self->isRelatedTo(other); },"is the mesh related to another mesh")
+        .def("isSubMeshFrom",[]( mesh_ptr_t const& self, mesh_ptr_t const& other ) { return self->isSubMeshFrom(other); },"is the mesh a sub mesh of another mesh")
+        .def("isParentMeshOf",[]( mesh_ptr_t const& self, mesh_ptr_t const& other ) { return self->isParentMeshOf(other); },"is the mesh the parent mesh of another mesh")
+        .def("isSiblingOf",[]( mesh_ptr_t const& self, mesh_ptr_t const& other ) { return self->isSiblingOf(other); },"is the mesh a sibling of another mesh")
         // elements counts
         .def("numGlobalElements",&mesh_t::numGlobalElements,"get the number of elements over the whole mesh, requires communication if the mesh is parallel")
         .def("numGlobalFaces",&mesh_t::numGlobalFaces,"get the number of faces over the whole mesh, requires communication if the mesh is parallel")
         .def("numGlobalEdges",&mesh_t::numGlobalEdges,"get the number of edges over the whole mesh, requires communication if the mesh is parallel") 
         .def("numGlobalPoints",&mesh_t::numGlobalPoints,"get the number of points over the whole mesh, requires communication if the mesh is parallel") 
+        .def("saveHDF5",[]( mesh_ptr_t const& self, std::string const& fname ) {
+            return self->saveHDF5(fname);
+        }, py::arg("name"), "save mesh to H5 file" )
+        .def("loadHDF5",[]( mesh_ptr_t const& self, std::string const& fname ) {
+            return self->loadHDF5(fname);
+        }, py::arg("name"), "load mesh from H5 file"  )
         // measures
         .def("hAverage",&mesh_t::hAverage,"get the average edge length of the mesh")
         .def("hMin",&mesh_t::hMin,"get the minimum edge length of the mesh")
