@@ -9,7 +9,7 @@ def taille_dict(d):
         n += len(d[k])
     return n
 
-class reducedBasisTime(reducedbasis):
+class reducedbasis_time(reducedbasis):
 
     def __init__(self, Aq, Fp, model, mubar, alphaLB, Mr, tf, K) -> None:
         """Initialise the object
@@ -22,7 +22,7 @@ class reducedBasisTime(reducedbasis):
             alphaLB (func)               : function mu ↦ alphaLB(mu)
             Mr (list of PETSc.Mat)       : matrices Mq of mass for the scalar product
             tf (float)                   : final time
-            K (int)                      : number of iteration
+            K (int)                      : number of time iterations
         """
         super().__init__(Aq, Fp, model, mubar, alphaLB)
         self.Mr = Mr
@@ -43,6 +43,11 @@ class reducedBasisTime(reducedbasis):
         self.FL : np.ndarray    # shape (K, Qf, Qa, N)    FL[k,p,q,n]   = (Lnq, Fkp)X
         self.ML : np.ndarray    # shape (Qm, N, Qa, N)    ML[r,n,q,n_]  = (Lnq, Mrn_)X
         self.MM : np.ndarray    # shape (Qm, N, Qm, N)    MM[q,n,q_,n_] = (Mrn, Mr_n_)X
+
+        # quantities depending on mu, but stored to avoid re-computation
+        self.err = np.zeros(K)          # online error
+        self.DeltaN = np.zeros(K)       # error bound using offline / online computation
+        self.EnNorm = np.zeros(K)       # energy norm, filled as the resolution goes
 
 
     def assembleM(self, beta):
@@ -76,7 +81,7 @@ class reducedBasisTime(reducedbasis):
 
         MN = spsp.csc_matrix(self.MNr[0].shape)
         for r in range(0, self.Qm):
-            MN += self.Aq[r] * beta[r]
+            MN += self.MNr[r] * beta[r]
         return MN
 
 
@@ -206,6 +211,7 @@ class reducedBasisTime(reducedbasis):
     """
     def computeDirectError(self, mu, precalc=None):
         # TODO
+        warnings.warn("The function computeDirectError has not yet been implemented")
         return super().computeDirectError(mu, precalc=precalc)
 
     def computeOfflineError(self, g):
@@ -223,16 +229,16 @@ class reducedBasisTime(reducedbasis):
         pc.setType(self.PC_TYPE)
         self.ksp.setOperators(self.Abar)
         sol = self.Fq[0].duplicate()
-        
+
         for k in range(self.K):
             for p in range(self.Qf):
-                rhs = g[k+1] * self.Fq[p]
+                rhs = self.Fq[p] * g[k+1]
                 self.reshist = {}
                 self.ksp.solve(rhs, sol)
                 self.Fkp[k, p] = sol.copy()
         
         for n, ksi in enumerate(self.Z):
-            for r, Mr in enumerate(self.MNr):
+            for r, Mr in enumerate(self.Mr):
                 self.reshist = {}
                 self.ksp.solve( Mr * ksi, sol)
                 self.Mnr[n, r] = sol.copy()
@@ -263,7 +269,6 @@ class reducedBasisTime(reducedbasis):
                         self.MM[r,n,r_,n_] = self.scalarA(self.Mnr[n,r], self.Mnr[n_,r_])
 
     def expandOffline(self):
-        # TODO
         super().expandOffline()
         # self.Fkp and self.FF are independant of N, so they don't change
         self.FM = np.concatenate( (self.FM, np.zeros(self.K, self.Qf, self.Qm, 1)), axis=3 )
@@ -299,7 +304,7 @@ class reducedBasisTime(reducedbasis):
                     self.MM[-1,r,n,r_] = self.scalarA(self.Mnr[self.N,r], self.Mnr[n,r_])
 
 
-    def computeOnlineError_k(self, mu, uk, ukm1, k, precalc=None):
+    def computeOnlineError_k(self, mu, uN, uNm1, k, precalc=None):
         """Computes the online error SQUARED, for a parameter mu
 
         Args:
@@ -324,18 +329,87 @@ class reducedBasisTime(reducedbasis):
         else:
             betaA = precalc["betaA"]
             betaF = precalc["betaF"]
+            betaM = precalc["betaM"]
             uN = precalc["uN"]
+            uNm1 = precalc["uNm1"]
 
-        diff = (uk - ukm1) / self.dt
+        diff = ((uN.flatten() - uNm1.flatten()) / self.dt).T
 
-        s1 = 0
+        s1 = betaF @ self.FF[k] @ betaF
         s2 = 0
         s3 = 0
         s4 = 0
         s5 = 0
         s6 = 0
 
-        # TODO
+        for p in range(self.Qf):
+            for n in range(self.N):
+                for r in range(self.Qm):
+                    s2 += betaF[p] * betaM[r] * diff[n] * self.FM[k,p,r,n]
+                for q in range(self.Qa):
+                    s3 += betaF[p] * betaA[q] * uN[n] * self.FL[k,p,q,n]
+
+        for n in range(self.N):
+            for n_ in range(self.N):
+                for r in range(self.Qm):
+                    for q in range(self.Qa):
+                        s4 += diff[n] * uN[n_] * betaM[r] * betaA[q] * self.ML[r,n,q,n_]
+                    for r_ in range(self.Qm):
+                        s5 += betaM[r] * betaM[r_] * diff[n] * diff[n_] * self.MM[r,n,r_,n_]
+                for q in range(self.Qa):
+                    for q_ in range(self.Qa):
+                        s6 += betaA[q] * betaA[q_] * uN[n] * uN[n_] * self.LL[q,n,q_,n_]
 
         return s1 + 2 * (s2 + s3 + s4) + s5 + s6
+
+
+    def computeOnlineError(self, mu, g, computeEnergyNorm=False):
+        """Computes online bound error
+
+        Args:
+            mu (ParameterSpaceElement): parameter
+            g (np.ndarray): right-hand side time-dependant function
+            computeEnergyNorm (bool): computes the energy normsuring the resolution (stroed in self.EnNorm). Dafault to False
+
+        Returns:
+            float: Δ_N^k
+        """
+        beta_ = self.model.computeBetaQm(mu)
+        betaA = beta_[0][0]
+        betaF = beta_[1][0][0]
+        betaM = beta_[2][0]
+        ANmu = self.assembleAN(betaA)
+        FNmu = self.assembleFN(betaF)
+        MNmu = self.assembleMN(betaM)
+        precalc = {
+            "betaA": betaA,
+            "betaF": betaF,
+            "betaM": betaM
+        }
+
+        matN = splu(MNmu + self.dt * spsp.csc_matrix(ANmu))
+        alpm1 = 1 / np.sqrt(self.alphaLB(mu))
+
+        aNorm = np.zeros(self.K)
+        self.err[:] = 0
+        self.DeltaN[:] = 0
+
+        u = np.zeros(self.N)    # initial condition
+        if computeEnergyNorm:
+            self.EnNorm[:] = 0
+        
+        for k in tqdm(range(1, self.K+1)):
+            u_tmp = matN.solve( (g[k] * self.dt * FNmu + MNmu @ u).T )#.reshape(self.N)
+            precalc["uN"] = u_tmp
+            precalc["uNm1"] = u
+            self.err[k-1] = self.computeOnlineError_k(mu, u_tmp, u, k-1, precalc=precalc)
+            u = np.array(u_tmp).flatten()
+
+            self.DeltaN[k-1] = alpm1 * np.sqrt(self.dt * self.err[:k].sum())
+
+            if computeEnergyNorm:
+                aNorm[k-1] = u.T @ ANmu @ u
+                self.EnNorm[k-1] = np.sqrt( u.T @ MNmu @ u + self.dt * aNorm.sum() )
+
+        return self.DeltaN[-1]
 

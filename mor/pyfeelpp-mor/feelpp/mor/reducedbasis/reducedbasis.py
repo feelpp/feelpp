@@ -57,7 +57,7 @@ class reducedbasis():
             A_tmp = self.assembleA(self.betaA_bar[0])
             AT_tmp = A_tmp.copy()
             AT_tmp.transpose()
-            self.Abar = 0.5*(A_tmp + AT_tmp)
+            self.Abar = 0.5*(A_tmp + AT_tmp) 
 
         # KSP to solve
         self.KSP_TYPE = PETSc.KSP.Type.GMRES
