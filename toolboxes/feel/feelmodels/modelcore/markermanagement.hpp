@@ -225,6 +225,25 @@ private :
     std::set<std::string> M_listMarkerEmpty;
 };
 
+class MarkerManagementIntegralBC
+{
+public :
+
+    MarkerManagementIntegralBC();
+    MarkerManagementIntegralBC( MarkerManagementIntegralBC const& op ) = default;
+    void clearMarkerIntegralBC();
+    void setMarkerIntegralBC( std::string const& name, std::set<std::string> const& markers );
+    void addMarkerIntegralBC( std::string const& name, std::string const& marker );
+    void addMarkerIntegralBC( std::string const& name, std::set<std::string> const& markers );
+    std::map<std::string,std::set<std::string> > const& markerIntegralBC() const;
+    std::set<std::string> const& markerIntegralBC( std::string const& markerNameId ) const;
+    std::string getInfoIntegralBC() const;
+    void updateInformationObjectIntegralBC( pt::ptree & p ) const;
+private :
+    std::map<std::string,std::set<std::string> > M_containerMarkers;
+    std::set<std::string> M_listMarkerEmpty;
+};
+
 
 namespace detail
 {

@@ -600,6 +600,9 @@ public:
         //! return the current translation as an expression
         auto rigidTranslationExpr() const { return Feel::vf::toExpr( M_rigidTranslationDisplacement ); }
 
+        //! return the current rotation angles
+        rotation_angles_type const& rigidRotationAngles() const { return M_rigidRotationAngles; }
+
         //! return rotation matrix from angles
         static eigen_matrix_type<nRealDim, nRealDim> rigidRotationMatrix( rotation_angles_type const& rigidRotationAngles )
             {
@@ -862,6 +865,7 @@ public:
         auto modelMeasuresQuantities( std::string const& prefix ) const
             {
                 return Feel::FeelModels::modelMeasuresQuantities( modelMeasuresQuantity( prefix, "mass_center", std::bind( &self_type::massCenter, this ) ),
+                                                                  modelMeasuresQuantity( prefix, "rigid_rotation_angles", std::bind( &self_type::rigidRotationAngles, this ) ),
                                                                   modelMeasuresQuantity( prefix, "moment_of_inertia", std::bind( &self_type::momentOfInertia_inertialFrame, this ) ),
                                                                   modelMeasuresQuantity( prefix, "moment_of_inertia_body_frame", std::bind( &self_type::momentOfInertia_bodyFrame, this ) )
                                                                   );

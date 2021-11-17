@@ -109,7 +109,7 @@ runApplicationThermoElectric()
         normT[2*i+1] = normH1( _range=Th->template rangeElements<0>(),
                                _expr=idv(T_h), _grad_expr=gradv(T_h),
                                _quad=quadError, _quad1=quadError );
-        errT[2*i+1] = normH1( Th->template rangeElements<0>(),
+        errT[2*i+1] = normH1( _range=Th->template rangeElements<0>(),
                               _expr=idv(T_h)-tExpr,
                               _grad_expr=gradv(T_h)-grad<mesh_type::nRealDim>(tExpr),
                               _quad=quadError, _quad1=quadError );

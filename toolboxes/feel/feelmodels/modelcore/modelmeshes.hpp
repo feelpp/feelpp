@@ -4,11 +4,11 @@
 
 #include <feel/feelmesh/meshbase.hpp>
 #include <feel/feelmesh/enums.hpp>
-#include <feel/feelfilters/databymeshentity.hpp>
-#include <feel/feelmodels/modelcore/modelbase.hpp>
-
 #include <feel/feeldiscr/geometricspace.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelfilters/databymeshentity.hpp>
+#include <feel/feelmodels/modelcore/modelbase.hpp>
+#include <feel/feelmodels/modelmarkers.hpp>
 #include <feel/feelmodels/modelcore/modelfields.hpp>
 
 namespace Feel
@@ -59,7 +59,7 @@ public :
         bool hasMeshFilename() const { return !M_meshFilename.empty(); }
         bool hasGeoFilename() const { return !M_geoFilename.empty(); }
 
-        void setup( pt::ptree const& pt, ModelMeshes<IndexType> const& mMeshes );
+        void setup( nl::json const& jarg, ModelMeshes<IndexType> const& mMeshes );
         void updateForUse( ModelMeshes<IndexType> const& mMeshes );
 
         void setupInputMeshFilenameWithoutApplyPartitioning( std::string const& filename );
@@ -86,7 +86,7 @@ public :
     ModelMesh( ModelMesh const& ) = default;
     ModelMesh( ModelMesh && ) = default;
 
-    void setup( pt::ptree const& pt, ModelMeshes<IndexType> const& mMeshes );
+    void setup( nl::json const& jarg, ModelMeshes<IndexType> const& mMeshes );
 
     void setupRestart( ModelMeshes<IndexType> const& mMeshes );
 
@@ -121,7 +121,7 @@ public :
 
             std::string prefix = prefix_symbol;
 
-            auto mfields = hana::fold( tuple_t_basis, model_fields_empty_t{}, [this,prefix,prefix_symbol]( auto const& r, auto const& cur )
+            auto mf_fields = hana::fold( tuple_t_basis, model_fields_empty_t{}, [this,prefix,prefix_symbol]( auto const& r, auto const& cur )
                                        {
                                            using basis_type = typename std::decay_t<decltype(cur)>::type;
                                            using space_type = FunctionSpace<MeshType, bases<basis_type> >;
@@ -138,7 +138,20 @@ public :
                                            }
                                            return Feel::FeelModels::modelFields( r,mf );
                                        });
-            return mfields;
+
+            // distance to range
+            using distange_to_range_space_type = FunctionSpace<MeshType, bases<Lagrange<MeshType::nOrder,Scalar,Continuous,PointSetFekete>>>;
+            using distange_to_range_field_type = typename distange_to_range_space_type::element_type;
+            using distange_to_range_field_ptrtype = std::shared_ptr<distange_to_range_field_type>;
+            auto mftag_distToRange = ModelFieldTag< ModelMesh<index_type>,1>( this );
+            auto mf_distToRange = modelField<FieldCtx::ID,distange_to_range_field_ptrtype>( mftag_distToRange );
+            for ( auto const& [name,fieldBase] : M_distanceToRanges )
+            {
+                if ( auto u = std::dynamic_pointer_cast<distange_to_range_field_type>( fieldBase ) )
+                    mf_distToRange.add( mftag_distToRange, prefix, name, u, name, prefixvm( prefix_symbol, "distanceToRange", "_" ) );
+            }
+
+            return Feel::FeelModels::modelFields( std::move(mf_fields), std::move(mf_distToRange) );
         }
 
     template <typename MeshType = mesh_base_type, bool AddFields = true>
@@ -184,18 +197,19 @@ private:
 
     struct FieldsSetup
     {
-        FieldsSetup( std::string const& name, pt::ptree const& pt )
+        FieldsSetup( std::string const& name, nl::json const& jarg )
             :
             M_name( name )
             {
-                if ( auto filenameOpt = pt.template get_optional<std::string>( "filename" ) )
-                    M_filename = Environment::expand( *filenameOpt );
+                if ( jarg.contains("filename") )
+                    M_filename = Environment::expand( jarg.at("filename") );
                 else
                     CHECK( false ) << "filename required";
-                if ( auto basisOpt = pt.template get_optional<std::string>( "basis" ) )
-                    M_basis = Environment::expand( *basisOpt );
+
+                if ( jarg.contains("basis") )
+                    M_basis = Environment::expand( jarg.at("basis") );
                 else
-                    CHECK( false ) << "filename required";
+                    CHECK( false ) << "basis required";
             }
         std::string const& name() const { return M_name; }
         std::string const& filename() const { return M_filename; }
@@ -206,9 +220,34 @@ private:
         std::string M_basis;
     };
 
+    struct DistanceToRangeSetup
+    {
+        DistanceToRangeSetup( std::string const& name, nl::json const& jarg )
+            :
+            M_name( name )
+            {
+                auto itFind = jarg.find("markers");
+                if ( itFind == jarg.end() )
+                    itFind = jarg.find("marker");
+                if ( itFind != jarg.end() )
+                {
+                    ModelMarkers mm;
+                    mm.setup( *itFind );
+                    M_markers = mm;
+                }
+            }
+        std::string const& name() const { return M_name; }
+        std::set<std::string> const& markers() const { return M_markers; }
+    private :
+        std::string M_name;
+        std::set<std::string> M_markers;
+    };
+
     std::vector<FieldsSetup> M_fieldsSetup;
+    std::vector<DistanceToRangeSetup> M_distanceToRangeSetup;
     std::map<std::string, std::shared_ptr<FunctionSpaceBase> > M_functionSpaces;
     std::map<std::string, std::shared_ptr<Vector<double>> > M_fields;
+    std::map<std::string, std::shared_ptr<Vector<double>> > M_distanceToRanges;
 };
 
 template <typename IndexType>

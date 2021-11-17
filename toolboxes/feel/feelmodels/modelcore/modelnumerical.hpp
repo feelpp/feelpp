@@ -297,17 +297,18 @@ class ModelNumerical : virtual public ModelBase,
         template <typename ElementType, typename RangeType, typename SymbolsExpr>
         void
         updateInitialConditions( std::string const& fieldName,  RangeType const& defaultRange, SymbolsExpr const& symbolsExpr,
-                                 std::vector< std::shared_ptr<ElementType> > & dataToUpdate )
+                                 std::vector< std::shared_ptr<ElementType> > & dataToUpdate,
+                                 std::map<int, double> const& priorTimes = {{0,0}} )
             {
                 ModelNumerical::updateInitialConditions( this->modelProperties().initialConditions().get( fieldName ),
-                                                         defaultRange, symbolsExpr, this->geomap(), dataToUpdate );
+                                                         defaultRange, symbolsExpr, this->geomap(), dataToUpdate, priorTimes );
             }
     private :
         template <typename ElementType, typename RangeType, typename SymbolsExpr>
         static
         void
         updateInitialConditions( ModelInitialConditionTimeSet const& icts, RangeType const& defaultRange, SymbolsExpr const& symbolsExpr,
-                                 GeomapStrategyType geomapStrategy, std::vector< std::shared_ptr<ElementType> > & dataToUpdate );
+                                 GeomapStrategyType geomapStrategy, std::vector< std::shared_ptr<ElementType> > & dataToUpdate, std::map<int, double> const& priorTimes );
 
     private :
 
@@ -343,16 +344,31 @@ class ModelNumerical : virtual public ModelBase,
 template <typename ElementType, typename RangeType, typename SymbolsExpr>
 void
 ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& icts, RangeType const& defaultRange, SymbolsExpr const& symbolsExpr,
-                                         GeomapStrategyType geomapStrategy, std::vector< std::shared_ptr<ElementType> > & dataToUpdate )
+                                         GeomapStrategyType geomapStrategy, std::vector< std::shared_ptr<ElementType> > & dataToUpdate, std::map<int, double> const& priorTimes )
 {
     if ( icts.empty() )
         return;
 
-    CHECK( icts.size() == 1 ) << "TODO";
     CHECK( !dataToUpdate.empty() ) << "require a non empty vector";
-    for( auto const& [time,icByType] : icts )
+    CHECK( dataToUpdate.size() == priorTimes.size() ) << "priorTimes size is not the same as ts unknowns";
+
+    for( auto const& [id, time] : priorTimes )
     {
-        auto & u = *dataToUpdate[0];
+        // if several icts, take the first icts for which the time is greater or equal
+        // ie: priorTimes = {-1.5,-0.75,0}, icts time={-1,0},
+        // we take icts[-1] for priorTimes[-1.5] and icts[0] for priorTimes[-0.75] and priorTimes[0]
+        // if only one icts or priorTimes greater than all icts, we take the greater icts
+        // for priorTimes = {0} if icts time={-1} we take it
+        // if only one icts the following lines are equivalent to
+        // ModelInitialConditionTimeSet::mapped_type icByType = icts.begin()->second;
+        auto it = icts.lower_bound(time);
+        ModelInitialConditionTimeSet::mapped_type icByType;
+        if( it != icts.end() )
+            icByType = it->second;
+        else
+            icByType = icts.rbegin()->second;
+
+        auto& u = *dataToUpdate[id];
         bool needToSyncValues = false;
         auto itFindIcFile = icByType.find( "File" );
         if ( itFindIcFile != icByType.end() )
@@ -386,6 +402,7 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
                 if ( !ic.expression().template hasExpr<ElementType::nComponents1,ElementType::nComponents2>() )
                     CHECK( false ) << "must be a scalar expression";
                 auto theExpr = expr( ic.expression().template expr<ElementType::nComponents1,ElementType::nComponents2>(), symbolsExpr );
+                theExpr.setParameterValues({"t", time});
 
                 if ( ic.markers().empty() )
                     u.on(_range=defaultRange,_expr=theExpr,_geomap=geomapStrategy);
@@ -400,10 +417,14 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
                         u.on(_range=markedelements(u.mesh(),listMarkerElements),_expr=theExpr,_geomap=geomapStrategy);
                     if ( !listMarkerFaces.empty() )
                         u.on(_range=markedfaces(u.mesh(),listMarkerFaces),_expr=theExpr,_geomap=geomapStrategy);
+
                     if constexpr ( !is_hcurl_conforming_v<typename std::decay_t<decltype(u)>::functionspace_type::fe_type> )
                     {
-                        if ( !listMarkerEdges.empty() )
-                            u.on(_range=markededges(u.mesh(),listMarkerEdges),_expr=theExpr,_geomap=geomapStrategy);
+                        if constexpr (RangeTraits<RangeType>::element_type::nDim > 2 )
+                        {
+                            if ( !listMarkerEdges.empty() )
+                                u.on(_range=markededges(u.mesh(),listMarkerEdges),_expr=theExpr,_geomap=geomapStrategy);
+                        }
                         if ( !listMarkerPoints.empty() )
                             u.on(_range=markedpoints(u.mesh(),listMarkerPoints),_expr=theExpr,_geomap=geomapStrategy);
                     }
@@ -415,8 +436,8 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
             sync( u, "=" );
     } // for( auto const& [time,icByType] : icts )
 
-    for (int k=1;k<dataToUpdate.size();++k)
-        *dataToUpdate[k] = *dataToUpdate[0];
+    // for( int k = i; k < dataToUpdate.size(); ++k )
+    //     *dataToUpdate[k] = *dataToUpdate[i-1];
 }
 
 template <typename ExporterType,typename ModelFieldsType,typename SymbolsExpr,typename TupleExprOnRangeType>

@@ -21,6 +21,7 @@
 //! @date 25 Jul 2018
 //! @copyright 2018 Feel++ Consortium
 //!
+#include <fmt/core.h>
 #include <feel/feelmodels/coefficientformpdes/coefficientformpdes.hpp>
 #include <feel/feelmodels/coefficientformpdes/coefficientformpdes_registered_type.hpp>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
@@ -35,6 +36,11 @@ void defSM(py::module &m)
     using namespace Feel;
     using namespace Feel::FeelModels;
     using toolbox_t = FeelModels::coefficient_form_PDEs_t<Simplex<nDim, 1>>;
+    
+    using exporter_t = Exporter<typename toolbox_t::mesh_type,1>;
+    using exporter_ptr_t = std::shared_ptr<exporter_t>;
+    using step_t = typename exporter_t::step_type;
+    using step_ptr_t = typename exporter_t::step_ptrtype;
 
     std::string pyclass_name = std::string("cfpdes_") + std::to_string(nDim) + std::string("D");
     py::class_<toolbox_t, std::shared_ptr<toolbox_t>, ModelNumerical>( m, pyclass_name.c_str() )
@@ -49,6 +55,15 @@ void defSM(py::module &m)
 
         // mesh
         .def( "mesh", &toolbox_t::mesh, "get the mesh" )
+        .def( "setMesh", &toolbox_t::setMesh, "set the mesh" )
+        .def( "exportSolutionToStep", []( std::shared_ptr<toolbox_t> const& t, step_ptr_t& s) { 
+            
+            t->apply( [&s]( auto const& cfpde ) { 
+                std::cout << fmt::format("[cfpde] exporting {}_{} ...",cfpde->equationName(),cfpde->unknownName()) << std::endl;
+                s->add( fmt::format("{}_{}",cfpde->equationName(),cfpde->unknownName()), cfpde->fieldUnknown() ); 
+                } );
+            }, "apply external exporter on solution" )
+
         //.def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
 
         // elements

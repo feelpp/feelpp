@@ -84,7 +84,7 @@ int main(int argc, char**argv )
 
     auto k = Vh->element();
 
-    auto e = exporter( mesh );
+    auto e = exporter( _mesh=mesh );
     int iter=0;
     bool isGradAlloc=false;
 

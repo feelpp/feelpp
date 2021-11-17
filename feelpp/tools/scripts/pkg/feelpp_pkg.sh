@@ -6,7 +6,7 @@ set -eo pipefail
 # this script must be executed at the top level of the Feel++ directories
 
 scriptdir=$PWD/$(dirname $0)
-source $(dirname $0)/common.sh
+source $(dirname $0)/feelpp_pkg_common.sh
 
 #OTHERMIRROR=
 #if [ "$COMPONENT" = "feelpp-toolboxes" ]; then

@@ -1070,13 +1070,16 @@ if ( FEELPP_ENABLE_VTK )
     # # endif()
     # MESSAGE("CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
 
+    option( FEELPP_ENABLE_VTK_FROM_PARAVIEW "Enable VTK Support" ON ) #${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+    if ( FEELPP_ENABLE_VTK_FROM_PARAVIEW )
     # First try to find ParaView
     # FIND_PACKAGE(ParaView QUIET
     #    COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
     #    PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR})
 
     FIND_PACKAGE(ParaView QUIET NO_MODULE
-        PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} )
+      PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} )
+    endif()
 
     if(ParaView_FOUND)
       if ( PARAVIEW_USE_FILE )

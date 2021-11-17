@@ -31,7 +31,6 @@
 
 #include <feel/feelcore/testsuite.hpp>
 
-#include <boost/timer.hpp>
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -147,7 +146,7 @@ public:
             mu.check();
 
             auto Pset = Dmu->sampling();
-            int sampling_size = option(_name="eim.sampling-size").as<int>();
+            int sampling_size = ioption(_name="eim.sampling-size");
             Pset->randomize( sampling_size );
 
             BOOST_TEST_MESSAGE( "Allocation done" );
@@ -180,7 +179,7 @@ public:
                            _name="mu0" );
             BOOST_TEST_MESSAGE( "create e1 done" );
             M_funs.push_back( e1 );
-            if ( ! option("eim.use-dimension-max-functions").as<bool>() )
+            if ( ! boption(_name="eim.use-dimension-max-functions") )
                 BOOST_CHECK_EQUAL( e1->mMax(), 1 );
 
             LOG(INFO) << "=== mu(0) x === \n";
@@ -249,10 +248,10 @@ public:
 
             auto e = exporter( _mesh=mesh, _name=Environment::about().appName() );
             auto S = Dmu->sampling();
-            int n = option("n-eval").as<int>();
+            int n = ioption("n-eval");
             LOG(INFO)<<"will compute "<<n<<" evaluations\n";
-            bool chrono = option("chrono-online-step").as<bool>();
-            bool cvg_study = option("cvg-study").as<bool>();
+            bool chrono = boption("chrono-online-step");
+            bool cvg_study = boption("cvg-study");
             S->logEquidistribute(n);
             int fun_number=0;
             std::vector<vectorN_type> time_vector( M_funs.size() );
@@ -281,7 +280,7 @@ public:
                         all_file_name.push_back( "EimConvergenceLINFratio.dat");
                         fun->studyConvergence( p , *solution , all_file_name );
                     }
-                    boost::mpi::timer timer;
+                    Feel::Timer timer;
                     auto w = fun->interpolant( p );
                     double t=timer.elapsed();
                     e->add( (boost::format( "%1%-eim(%2%)" ) % fun->name() % p(0) ).str(), w );
@@ -294,8 +293,8 @@ public:
 
             //some statistics
             LOG(INFO)<<"Computational time during online step ( "<<n<<" evaluations )\n";
-            if( option("eim.use-dimension-max-functions").as<bool>() )
-                LOG(INFO)<<option("eim.dimension-max").as<int>()<<" eim basis functions were used\n";
+            if( boption(_name="eim.use-dimension-max-functions") )
+                LOG(INFO)<<boption(_name="eim.dimension-max")<<" eim basis functions were used\n";
             Eigen::MatrixXf::Index index;
             for(int expression=0; expression<time_vector.size(); expression++)
             {

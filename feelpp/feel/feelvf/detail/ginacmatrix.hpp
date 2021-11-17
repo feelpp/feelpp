@@ -24,7 +24,8 @@
 #ifndef FEELPP_DETAIL_GINACMATRIX_HPP
 #define FEELPP_DETAIL_GINACMATRIX_HPP 1
 
-
+#include <fmt/core.h>
+#include <fmt/ranges.h>
 #include <any>
 
 namespace Feel
@@ -659,7 +660,7 @@ public:
     //! return true if the expression can be evaluated (TODO : iterate over symbols expression)
     bool isEvaluable() const
     {
-        return M_isNumericExpression || ( M_indexSymbolXYZ.empty() && M_indexSymbolN.empty() && (M_syms.size() == M_symbolNameToValue.size()) );
+        return M_isNumericExpression || ( M_indexSymbolXYZ.empty() && M_indexSymbolN.empty() & M_indexSymbolGeom.empty()&& (M_syms.size() == M_symbolNameToValue.size()) );
     }
     bool isConstant() const { return this->isEvaluable(); }
 
@@ -897,6 +898,27 @@ public:
 
                 int no = M*N;
                 int ni = M_nsyms;//gmc_type::nDim;
+                for ( auto const& comp : exprExpanded.indexSymbolGeom() )
+                {
+                    switch ( comp.first )
+                    {
+                        case 6:
+                            M_x[comp.second] = M_gmc->h();
+                            break;
+                        case 7:
+                            M_x[comp.second] = M_gmc->meas();
+                            break;
+                        case 8:
+                            M_x[comp.second] = M_gmc->measPEN();
+                            break;
+                        case 9:
+                            M_x[comp.second] = M_gmc->nPEN();
+                            break;
+                        case 10:
+                            M_x[comp.second] = M_gmc->emarker();
+                            break;
+                    }
+                }
                 for(int q = 0; q < M_gmc->nPoints();++q )
                 {
                     for ( auto const& comp : exprExpanded.indexSymbolXYZ() )
@@ -951,6 +973,28 @@ public:
 
                 int no = M*N;
                 int ni = M_nsyms;//gmc_type::nDim;
+                for ( auto const& comp : M_expr.indexSymbolGeom() )
+                {
+                    switch ( comp.first )
+                    {
+                        case 6:
+                            M_x[comp.second] = M_gmc->h();
+                            
+                            break;
+                        case 7:
+                            M_x[comp.second] = M_gmc->meas();
+                            break;
+                        case 8:
+                            M_x[comp.second] = M_gmc->measurePointElementNeighbors();
+                            break;
+                        case 9:
+                            M_x[comp.second] = M_gmc->element().numberOfPointElementNeighbors();
+                            break;
+                        case 10:
+                            M_x[comp.second] = M_gmc->marker().value();
+                            break;
+                    }
+                }
                 for(int q = 0; q < M_gmc->nPoints();++q )
                 {
                     for ( auto const& comp : M_expr/*exprExpanded*/.indexSymbolXYZ() )

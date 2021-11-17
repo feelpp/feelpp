@@ -45,9 +45,6 @@
 namespace Feel
 {
 
-BOOST_PARAMETER_NAME( keyword )
-BOOST_PARAMETER_NAME( repository )
-
 namespace TabulateInformationTools
 {
 namespace FromJSON
