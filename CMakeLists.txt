@@ -23,6 +23,19 @@
 #
 cmake_minimum_required (VERSION 3.13.0)
 
+if ( FEELPP_COMPONENT STREQUAL "toolboxes" OR 
+      FEELPP_COMPONENT STREQUAL "mor" OR
+      FEELPP_COMPONENT STREQUAL "testsuite" OR
+      FEELPP_COMPONENT STREQUAL "feelpp/pyfeelpp" OR
+      FEELPP_COMPONENT STREQUAL "toolboxes/pyfeelpp-toolboxes" OR
+      FEELPP_COMPONENT STREQUAL "mor/pyfeelpp-mor" OR
+      FEELPP_COMPONENT STREQUAL "pyfeelpp-all"   )
+
+      message(STATUS "[component] ${FEELPP_COMPONENT}")
+      add_subdirectory(${FEELPP_COMPONENT})
+      
+else()
+
 if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
   message(STATUS "[feelpp] use new policy CMP0022" )
   cmake_policy(SET CMP0022 NEW)
@@ -178,41 +191,6 @@ add_custom_target(install-testcase
 
 add_custom_target(check-full COMMAND "ctest")
 
-#
-# list of sub-directories of curdir
-MACRO(project_list_subdir result curdir)
-  FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
-  FOREACH(child ${children})
-    IF(IS_DIRECTORY ${curdir}/${child})
-      LIST(APPEND dirlist ${child})
-    ENDIF()
-  ENDFOREACH()
-  SET(${result} ${dirlist})
-ENDMACRO()
-
-# Load documented project for Doxygen
-# it assumes that a project is valid if :
-#   there is README.{md,adoc} file in the directory
-#   that the directory path include "research"
-# for each detected project it creates an FEELPP_ENABLE_RESEARCH_${PROJECT} and FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION
-# option which are set to OFF by default
-MESSAGE(STATUS "[feelpp] Feel++ projects :")
-project_list_subdir(projects ${CMAKE_CURRENT_SOURCE_DIR}/research)
-foreach(project ${projects})
-  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md OR 
-      EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.adoc  )
-    string(TOUPPER ${project} PROJECT)
-    if ( ${PROJECT} STREQUAL "EYE2BRAIN" OR ${PROJECT} STREQUAL "BRAIN" OR ${PROJECT} STREQUAL "SWIMMER"  )
-      option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)
-    else()
-      option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)
-    endif()
-    option(FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${project}" OFF)
-		SET(FEELPP_ENABLED_PROJECTS "${FEELPP_ENABLED_PROJECTS} ${project}" )
-		MESSAGE(STATUS "[feelpp] ${project}\t-- Compile : ${FEELPP_ENABLE_RESEARCH_${PROJECT}} ")
-		MESSAGE(STATUS "        \t\t-- Doc :     ${FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION}" )
-  endif()
-endforeach()
 
 
 ################################################################################
@@ -305,6 +283,7 @@ include(feelpp.package)
 # Post-config message
 ################################################################################
 include(feelpp.directive)
-
+feelpp_print_directive()
 
 feelpp_message( INFO ${FEELPP_MESSAGE_INFO_END} )
+endif()

@@ -74,10 +74,10 @@ testOperatorLinearFree()
     opfree->apply( vector , result );
     double norm_opfree = result.l2Norm();
 
-    auto matrix_op = backend->newMatrix( Xh , Xh );
+    auto matrix_op = backend->newMatrix( _test=Xh , _trial=Xh );
     *matrix_op=op->mat();
 
-    auto matrix_opfree = backend->newMatrix( Xh , Xh );
+    auto matrix_opfree = backend->newMatrix( _test=Xh , _trial=Xh );
     opfree->matPtr(matrix_opfree);
 
     double mat = matrix_op->l1Norm();

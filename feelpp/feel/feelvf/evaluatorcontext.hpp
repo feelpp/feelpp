@@ -26,11 +26,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-03-20
  */
-#ifndef __FEELPP_EVALUATORCONTEXT_H
-#define __FEELPP_EVALUATORCONTEXT_H 1
+#ifndef FEELPP_VF_EVALUATORCONTEXT_H
+#define FEELPP_VF_EVALUATORCONTEXT_H
 
-//#include <boost/timer.hpp>
-//#include <boost/signals2/signal.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
@@ -448,6 +446,7 @@ EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection( mpl::bool_<false> ) cons
 }
 /// \endcond
 
+#if 0
 /// \cond DETAIL
 namespace detail
 {
@@ -462,6 +461,7 @@ struct evaluate_context
 };
 }
 /// \endcond
+#endif
 
 
 template<typename Ctx, typename ExprT, typename Ctx2>
@@ -494,28 +494,21 @@ evaluatecontext_impl( Ctx const& ctx,
  * \arg mpi_communications a bool that indicates if all proc communicate or not
  * \arg projection a bool that indicates if we project the expression on function space or not (usefull for EIM)
  */
-BOOST_PARAMETER_FUNCTION(
-    ( typename vf::detail::evaluate_context<Args>::element_type ), // return type
-    evaluateFromContext,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( context, *  )
-      ( expr, * )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( context2, *, context.functionSpace()->context() )
-      ( max_points_used, (int), -1 )
-      ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
-      ( mpi_communications, (bool), true )
-      ( projection, (bool), false )
-      ( worldcomm,  (worldcomm_ptr_t), (mpi_communications && !context.ctxHaveBeenMpiBroadcasted() )? context.functionSpace()->worldCommPtr() : context.functionSpace()->worldComm().subWorldCommSeqPtr() )
-      ( points_used, */*(std::shared_ptr<std::set<int>>)*/, std::nullopt/*std::set<index_type>{}*//*nullptr*//*std::shared_ptr<std::set<int>>{}*/ )
-    )
-)
+template <typename ... Ts>
+auto evaluateFromContext( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && context = args.get(_context);
+    auto && expr = args.get(_expr);
+    auto && context2 = args.get_else(_context2,context.functionSpace()->context());
+    int max_points_used = args.get_else(_max_points_used,-1);
+    auto && points_used = args.get_else(_points_used,std::nullopt );
+    GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT );
+    bool mpi_communications = args.get_else(_mpi_communications,true);
+    bool projection = args.get_else(_projection,false);
+    worldcomm_ptr_t worldcomm = args.get_else_invocable(_worldcomm,[&mpi_communications,&context](){
+         return (mpi_communications && !context.ctxHaveBeenMpiBroadcasted() )? context.functionSpace()->worldCommPtr() : context.functionSpace()->worldComm().subWorldCommSeqPtr(); } );
+
     std::optional<std::reference_wrapper<const std::set<index_type>>> optional_points_used{ points_used };
 
     bool doMpiComm = mpi_communications && !context.ctxHaveBeenMpiBroadcasted();

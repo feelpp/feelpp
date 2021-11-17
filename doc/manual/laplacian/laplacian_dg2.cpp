@@ -73,8 +73,8 @@ int main(int argc, char**argv )
     auto c = form2( _trial=Vh, _test=Vh,
                     _pattern=size_type(Pattern::EXTENDED) );
     //int ninternalfaces = nelements(internalfaces(mesh));
-    c =integrate( internalfaces( mesh ),
-                  + trans( jumpt( cst(1.0)/4 ) )*jump( cst( 1.0 )/4 ) / measFace() );
+    c =integrate( _range=internalfaces( mesh ),
+                  _expr=+ trans( jumpt( cst(1.0)/4 ) )*jump( cst( 1.0 )/4 ) / measFace() );
     // \int_Fint [ mean(u) ] \cdot [ mean(v) ] = \int_Fint [ 1/4 ] \cdot [ 1/4 ] / | F |
     // \int_Fint 1 / |F| = 1 ! = \sum_{F \in Fint} \int_F 1/|F|  = #{F\in Fint}
     if ( Environment::numberOfProcessors() == 1 )
@@ -83,14 +83,14 @@ int main(int argc, char**argv )
                     _pattern=size_type(Pattern::EXTENDED) );
     a = integrate(_range=elements(mesh),
                   _expr=gradt(u)*trans(grad(v)) );
-    a +=integrate( internalfaces( mesh ),
-                   + trans( jumpt( cst(1.0)/4 ) )*jump( cst( 1.0 )/4 ) / (measFace()) );
+    a +=integrate( _range=internalfaces( mesh ),
+                   _expr=+ trans( jumpt( cst(1.0)/4 ) )*jump( cst( 1.0 )/4 ) / (measFace()) );
     a += on( _range=boundaryfaces(mesh), _element=u, _rhs=l, _expr=cst(0.));
 
     a.solve(_rhs=l,_solution=u);
 
     auto p = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=L2 );
-    auto uc = p->project( idv(u) );
+    auto uc = p->project( _expr=idv(u) );
 
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );

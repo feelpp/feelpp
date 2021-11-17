@@ -363,15 +363,22 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateInitialConditions( Symbol
     if ( !this->doRestart() )
     {
         std::vector<element_unknown_ptrtype> icFields;
+        std::map<int, double> icPriorTimes;
         if ( this->isStationary() )
+        {
             icFields = { this->fieldUnknownPtr() };
+            icPriorTimes = {{0,0}};
+        }
         else
+        {
             icFields = this->timeStepBdfUnknown()->unknowns();
+            icPriorTimes = this->timeStepBdfUnknown()->priorTimes();
+        }
 
         // auto paramValues = this->modelProperties().parameters().toParameterValues();
         // this->modelProperties().initialConditions().setParameterValues( paramValues );
 
-        super_type::updateInitialConditions( this->unknownName(), this->rangeMeshElements(), se, icFields );
+        super_type::updateInitialConditions( this->unknownName(), this->rangeMeshElements(), se, icFields, icPriorTimes );
 
         if ( !this->isStationary() )
             *this->fieldUnknownPtr() = this->timeStepBdfUnknown()->unknown(0);

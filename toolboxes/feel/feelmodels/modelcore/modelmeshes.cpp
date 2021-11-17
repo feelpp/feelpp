@@ -5,6 +5,7 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feells/distancetorange.hpp>
 
 namespace Feel
 {
@@ -28,22 +29,39 @@ ModelMesh<IndexType>::ImportConfig::ImportConfig( ModelMeshes<IndexType> const& 
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::ImportConfig::setup( pt::ptree const& pt, ModelMeshes<IndexType> const& mMeshes )
+ModelMesh<IndexType>::ImportConfig::setup( nl::json const& jarg, ModelMeshes<IndexType> const& mMeshes )
 {
-    if ( auto filenameOpt = pt.template get_optional<std::string>( "filename" ) )
-        M_inputFilename = Environment::expand( *filenameOpt );
-
-    if ( auto generatePartitioningOpt = pt.template get_optional<bool>( "partition" ) )
-        M_generatePartitioning = *generatePartitioningOpt;
-
-    if ( auto nPartitionOpt = pt.template get_optional<int>( "number-of-partition" ) )
+    if ( jarg.contains("filename") )
     {
-        CHECK( *nPartitionOpt > 0 && *nPartitionOpt <= mMeshes.worldComm().localSize() ) << "invalid number of partition : " << *nPartitionOpt;
-        M_numberOfPartition = *nPartitionOpt;
+        auto const& j_filename = jarg.at("filename");
+        if ( j_filename.is_string() )
+            M_inputFilename = Environment::expand( j_filename.template get<std::string>() );
     }
-
-    if ( auto hsizeOpt = pt.template get_optional<double>( "hsize" ) )
-        M_meshSize = *hsizeOpt;
+    if ( jarg.contains("partition") )
+    {
+        auto const& j_partition = jarg.at("partition");
+        if ( j_partition.is_boolean() )
+            M_generatePartitioning = j_partition.template get<bool>();
+        else if ( j_partition.is_string() )
+            M_generatePartitioning = boost::lexical_cast<bool>( j_partition.template get<std::string>() );
+    }
+    if ( jarg.contains("number-of-partition") )
+    {
+        auto const& j_nparts = jarg.at("number-of-partition");
+        if ( j_nparts.is_number_integer() )
+            M_numberOfPartition = j_nparts.template get<int>();
+        else if ( j_nparts.is_string() )
+            M_numberOfPartition = std::stoi( j_nparts.template get<std::string>() );
+        CHECK( M_numberOfPartition > 0 && M_numberOfPartition <= mMeshes.worldComm().localSize() ) << "invalid number of partition : " << M_numberOfPartition;
+    }
+    if ( jarg.contains("hsize") )
+    {
+        auto const& j_hsize = jarg.at("hsize");
+        if ( j_hsize.is_number() )
+            M_meshSize = j_hsize.template get<double>();
+        else if ( j_hsize.is_string() )
+            M_meshSize = std::stod( j_hsize.template get<std::string>() );
+    }
 }
 
 template <typename IndexType>
@@ -140,33 +158,42 @@ ModelMesh<IndexType>::ModelMesh( std::string const& name, ModelMeshes<IndexType>
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::setup( pt::ptree const& pt, ModelMeshes<IndexType> const& mMeshes )
+ModelMesh<IndexType>::setup( nl::json const& jarg, ModelMeshes<IndexType> const& mMeshes )
 {
-    if ( auto importPtree = pt.get_child_optional("Import") )
+    if ( jarg.contains("Import") )
+         M_importConfig.setup( jarg.at("Import"), mMeshes );
+
+    if ( jarg.contains("Data") )
     {
-        M_importConfig.setup( *importPtree, mMeshes );
+        for ( auto const& el : jarg.at("Data").items() )
+         {
+             std::string const& dataName = el.key();
+             collection_data_by_mesh_entity_type c;
+             c.setup( el.value() );
+             M_codbme.emplace( std::make_pair( dataName, std::move( c ) ) );
+         }
     }
 
-    if ( auto dataPtree = pt.get_child_optional("Data") )
+    if ( jarg.contains("Fields") )
     {
-        for ( auto const& item : *dataPtree )
+        for ( auto const& el : jarg.at("Fields").items() )
         {
-            std::string dataName = item.first;
-            collection_data_by_mesh_entity_type c;
-            c.setup( item.second );
-            M_codbme.emplace( std::make_pair( dataName, std::move( c ) ) );
-        }
-    }
-
-    if ( auto fieldsPtree = pt.get_child_optional("Fields") )
-    {
-        for ( auto const& item : *fieldsPtree )
-        {
-            std::string dataName = item.first;
-            FieldsSetup fs(dataName,item.second );
+            std::string const& dataName = el.key();
+            FieldsSetup fs(dataName,el.value() );
             M_fieldsSetup.push_back( std::move( fs ) );
         }
     }
+
+    if ( jarg.contains("DistanceToRange") )
+    {
+        for ( auto const& el : jarg.at("DistanceToRange").items() )
+        {
+            std::string const& dataName = el.key();
+            DistanceToRangeSetup dtrs(dataName,el.value() );
+            M_distanceToRangeSetup.push_back( std::move( dtrs ) );
+        }
+    }
+
 }
 
 template <typename IndexType>
@@ -316,6 +343,22 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                             }
                         });
     }
+
+    // distance to range
+    for ( auto const& dtrs : M_distanceToRangeSetup )
+    {
+        auto themesh = this->mesh<MeshType>();
+        std::string basis = fmt::format( "Pch{}", MeshType::nOrder );
+        std::cout << "distance to range  create basis " << basis << std::endl;
+        using distange_to_range_space_type = FunctionSpace<MeshType, bases<Lagrange<MeshType::nOrder,Scalar,Continuous,PointSetFekete>>>;
+        if ( M_functionSpaces.find( basis ) == M_functionSpaces.end() )
+            M_functionSpaces[basis] = distange_to_range_space_type::New(_mesh=themesh);
+        auto Vh = std::dynamic_pointer_cast<distange_to_range_space_type>( M_functionSpaces[basis] );
+        auto u = Vh->elementPtr();
+        auto rangeFaces = dtrs.markers().empty()? boundaryfaces(themesh) : markedfaces( themesh, dtrs.markers() );
+        *u = distanceToRange( Vh, rangeFaces );
+        M_distanceToRanges[dtrs.name()] = u;
+    }
 }
 
 
@@ -428,15 +471,21 @@ template <typename IndexType>
 void
 ModelMeshes<IndexType>::setup( pt::ptree const& pt )
 {
-    for ( auto const& item : pt )
+    std::ostringstream pt_ostr;
+    write_json( pt_ostr, pt );
+    std::istringstream pt_istream( pt_ostr.str() );
+    nl::json jarg;
+    pt_istream >> jarg;
+
+    for ( auto const& el : jarg.items() )
     {
-        std::string meshName = item.first;
-        if ( this->hasModelMesh( meshName ) )
-            this->at( meshName )->setup( item.second, *this );
+         std::string const& meshName = el.key();
+         if ( this->hasModelMesh( meshName ) )
+            this->at( meshName )->setup( el.value(), *this );
         else
         {
             auto me = std::make_shared<ModelMesh<IndexType>>( meshName );
-            me->setup( item.second, *this );
+            me->setup( el.value(), *this );
             this->emplace( std::make_pair( meshName, std::move( me ) ) );
         }
     }

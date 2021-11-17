@@ -109,6 +109,15 @@ if( FEELPP_NAME_ATLAS )
   endif()
 endif()
 
+STRING(REGEX MATCH "gaya*" FEELPP_NAME_GAYA ${FEELPP_MACHINE_NAME} )
+if( FEELPP_NAME_GAYA )
+  message(STATUS "Using irma-gaya config")
+  if ( EXISTS ${FEELPP_MACHINES_DIR}/feelpp.machines.irma-gaya.cmake )
+      message( STATUS "[Feel++] Configuration found for : irma-atlas" )
+      include( feelpp.machines.irma-gaya )
+  endif()
+endif()
+
 
 if( FEELPP_ENABLE_HOMEBREW AND EXISTS /usr/local/bin/brew )
   if ( EXISTS ${FEELPP_MACHINES_DIR}/feelpp.machines.homebrew.cmake )

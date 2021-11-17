@@ -33,22 +33,22 @@
 
 namespace Feel {
 
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
 using Pdh_type=FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,Pts>>>;
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
 using Pdh_ptrtype=std::shared_ptr<Pdh_type<MeshType,Order,Pts>>;
     
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
 using Pdh_element_t=typename Pdh_type<MeshType,Order,Pts>::element_type;
 
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
 using Pdh_element_type=Pdh_element_t<MeshType,Order,Pts>;
 
 /**
    Given a \p mesh, build a function space of discontinuous function which are
    piecewise polynomial of degree (total or in each variable) less than k.
 */
-template<int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType>
+template<int Order,template<class, uint16_type, class> class Pts = PointSetFekete,typename MeshType>
 inline
 Pdh_ptrtype<MeshType,Order,Pts>
 Pdh( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
@@ -62,7 +62,7 @@ Pdh( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
  Given a \p mesh, build a function space of discontinuous function which are
  piecewise polynomial of degree (total or in each variable) less than k.
  */
-template<int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType>
+template<int Order,template<class, uint16_type, class> class Pts = PointSetFekete,typename MeshType>
 inline
 Pdh_ptrtype<MeshType,Order,Pts>
 Pdh( std::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, bool buildExtendedDofTable=false )

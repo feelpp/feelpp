@@ -162,10 +162,8 @@ Sound<Dim, Order>::run()
     //! eigen solver
     auto eigen = SolverEigen<value_type>::build( this->vm() );
 
-    //! exporter to paraview or gmsh
-    auto exporter = Exporter<mesh_type>::New( this->vm(), this->about().appName() );
 
-    boost::timer t;
+    Feel::Timer t;
 
     /*
      * First we create the mesh
@@ -176,7 +174,7 @@ Sound<Dim, Order>::run()
     M_stats.put( "h",this->meshSize() );
     M_stats.put( "n.space.nelts",mesh->numElements() );
     M_stats.put( "t.init.mesh",t.elapsed() );
-    t.restart();
+    t.start();
 
     /*
      * The function space and some associate elements are then defined
@@ -187,50 +185,60 @@ Sound<Dim, Order>::run()
 
     M_stats.put( "n.space.ndof",Xh->nLocalDof() );
     M_stats.put( "t.init.space",t.elapsed() );
-    t.restart();
+    t.start();
 
     auto F = backend->newVector( Xh );
 
     if ( Dim == 2 )
-        form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces( mesh,2 ), _expr=val( Py()*( 1-Py() ) )*id( v ) );
+        form1( _test=Xh, _vector=F ) =
+            integrate( _range=markedfaces( mesh,2 ),
+                       _expr=val( Py()*( 1-Py() ) )*id( v ) );
 
     else
-        form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces( mesh,51 ),  _expr=val( Py()*( 1-Py() )*Pz()*( 1-Pz() ) )*id( v ) );
+        form1( _test=Xh, _vector=F ) =
+            integrate( _range=markedfaces( mesh,51 ),
+                       _expr=val( Py()*( 1-Py() )*Pz()*( 1-Pz() ) )*id( v ) );
 
     M_stats.put( "t.assembly.vector.total",t.elapsed() );
-    t.restart();
+    t.start();
 
     /*
      * Construction of the left hand side
      */
-    auto D = backend->newMatrix( Xh, Xh );
+    auto D = backend->newMatrix( _test=Xh, _trial=Xh );
 
     double kc2 = doption("kc2");
 
-    form2( _test=Xh, _trial=Xh, _matrix=D,_init=true ) = integrate( _range=elements( mesh ),  _expr=( kc2*idt( u )*id( v )-gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=D ) =
+        integrate( _range=elements( mesh ),
+                   _expr=( kc2*idt( u )*id( v )-gradt( u )*trans( grad( v ) ) ) );
     D->close();
 
     M_stats.put( "t.assembly.matrix.total",t.elapsed() );
 
-    t.restart();
+    t.start();
 
     backend->solve( _matrix=D, _solution=u, _rhs=F );
 
     M_stats.put( "t.solver.total",t.elapsed() );
-    t.restart();
+    t.start();
 
     // eigen modes
     double sigma = doption("sigma");
-    auto S = backend->newMatrix( Xh, Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=S, _init=true ) = integrate( _range=elements( mesh ),  _expr=gradt( u )*trans( grad( v ) ) );
+    auto S = backend->newMatrix( _test=Xh, _trial=Xh );
+    form2( _test=Xh, _trial=Xh, _matrix=S ) =
+        integrate( _range=elements( mesh ),
+                   _expr=gradt( u )*trans( grad( v ) ) );
 
     M_stats.put( "t.assembly.matrix.A",t.elapsed() );
-    t.restart();
+    t.start();
 
-    auto M = backend->newMatrix( Xh, Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=M, _init=true ) = integrate( _range=elements( mesh ),  _expr=idt( u )*id( v ) );
+    auto M = backend->newMatrix( _test=Xh, _trial=Xh );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) =
+        integrate( _range=elements( mesh ),
+                   _expr=idt( u )*id( v ) );
     M_stats.put( "t.assembly.matrix.B",t.elapsed() );
-    t.restart();
+    t.start();
 
 
     int maxit = ioption("solvereigen.maxiter");
@@ -271,13 +279,13 @@ Sound<Dim, Order>::run()
     //    LOG(INFO) << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
     //    LOG(INFO) << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
     M_stats.put( "t.eigensolver.total",t.elapsed() );
-    t.restart();
+    t.start();
 
-    exporter->step( 0. )->setMesh( u.functionSpace()->mesh() );
-
-    exporter->step( 0. )->add( "p", u );
-    exporter->step( 0. )->add( "mode", mode );
-    exporter->save();
+    //! exporter to paraview or gmsh
+    auto e = exporter(_mesh=u.functionSpace()->mesh());
+    e->step( 0. )->add( "p", u );
+    e->step( 0. )->add( "mode", mode );
+    e->save();
 } // Sound::run
 } // Feel
 

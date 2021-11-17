@@ -374,7 +374,7 @@ CRBTrilinear<TruthModelType>::offline()
     bool rebuild_database = boption(_prefix=this->M_prefix,_name="crb.rebuild-database") ;
     bool orthonormalize_primal = boption(_prefix=this->M_prefix,_name="crb.orthonormalize-primal") ;
 
-    boost::timer ti;
+    Feel::Timer ti;
     if( this->worldComm().isMasterRank() )
         std::cout << "Offline CRBTrilinear starts, this may take a while until Database is computed..."<<std::endl;
     LOG(INFO) << "[CRBTrilinear::offline] Starting offline for output " << this->M_output_index << "\n";
@@ -391,7 +391,7 @@ CRBTrilinear<TruthModelType>::offline()
     if ( rebuild_database || this->M_N == 0)
     {
 
-        ti.restart();
+        ti.start();
 
         LOG(INFO) << "[CRBTrilinear::offline] compute random sampling\n";
 
@@ -436,7 +436,7 @@ CRBTrilinear<TruthModelType>::offline()
         LOG( INFO )<<"[CRBTrilinear offline] M_error_type = "<<this->M_error_type<<std::endl;
 
         LOG(INFO) << " -- sampling init done in " << ti.elapsed() << "s";
-        ti.restart();
+        ti.start();
 
         // empty sets
         this->M_WNmu->clear();
@@ -601,7 +601,7 @@ CRBTrilinear<TruthModelType>::offline()
     while ( this->M_maxerror > this->M_tolerance && this->M_N < this->M_iter_max )
     {
 
-        boost::timer timer, timer2;
+        Feel::Timer timer, timer2;
         LOG(INFO) <<"========================================"<<"\n";
         if( proc_number == this->worldComm().masterRank() )
             std::cout<<"construction of "<<this->M_N<<"/"<<this->M_iter_max<<" basis "<<std::endl;
@@ -613,13 +613,13 @@ CRBTrilinear<TruthModelType>::offline()
         mu.check();
         u->zero();
 
-        timer2.restart();
+        timer2.start();
 
         LOG(INFO) << "[CRB::offline] solving primal" << "\n";
         *u = this->M_model->solve( mu );
 
         //if( proc_number == this->worldComm().masterRank() ) std::cout << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
-        timer2.restart();
+        timer2.start();
 
 
         if( ! use_predefined_WNmu )
@@ -713,7 +713,7 @@ CRBTrilinear<TruthModelType>::offline()
             }//k
         }// q
 
-        timer2.restart();
+        timer2.start();
 
         if ( ! use_predefined_WNmu )
         {
@@ -746,7 +746,7 @@ CRBTrilinear<TruthModelType>::offline()
 
         this->M_rbconv.insert( convergence( this->M_N, boost::make_tuple(this->M_maxerror,delta_pr,delta_du) ) );
 
-        timer2.restart();
+        timer2.start();
         LOG(INFO) << "time: " << timer.elapsed() << "\n";
         LOG(INFO) <<"========================================"<<"\n";
 

@@ -62,6 +62,7 @@ class MeshALE : public ModelBase
 public :
     typedef ModelBase super_type;
     using self_type = MeshALE<Convex>;
+    using self_ptrtype = std::shared_ptr<self_type>;
     using size_type = uint32_type;
     typedef Backend<double> backend_type;
     typedef std::shared_ptr<backend_type> backend_ptrtype;
@@ -486,7 +487,7 @@ MeshALE<Convex>::updateDisplacementImposedOnInitialDomain( std::string const& na
 
 
 
-
+#if 0
 template<typename Args>
 struct compute_meshale_return
 {
@@ -515,7 +516,20 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename compute_meshale_return<Args>::type meshale_type;
     return meshale_ptrtype( new meshale_type(mesh,prefix,worldcomm,directory) );
 }
+#endif
+template <typename ... Ts>
+auto meshale( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && mesh = args.get(_mesh);
+    std::string const& prefix = args.get_else(_prefix,"");
+    worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,mesh->worldCommPtr() );
+    auto && directory = args.get_else(_directory,ModelBaseRepository() );
 
+    using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
+    using convex_type = typename mesh_type::shape_type;
+    return std::make_shared<MeshALE<convex_type>>( mesh,prefix,worldcomm,directory );
+}
 
 } // namespace FeelModels
 } // namespace Feel

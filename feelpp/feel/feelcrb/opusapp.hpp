@@ -505,7 +505,7 @@ private:
     }
     double l2Norm( element_type const& u, mpl::bool_<false> )
     {
-        return math::sqrt( integrate( u.functionSpace()->template rangeElements<0>(), (vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0) );
+        return math::sqrt( integrate( _range=u.functionSpace()->template rangeElements<0>(), _expr=(vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0) );
     }
     double l2Norm( element_type const& u, mpl::bool_<true>)
     {
@@ -521,16 +521,16 @@ private:
     double h1Norm( element_type const& u, mpl::bool_<false> )
     {
         auto mesh = model->functionSpace()->mesh();
-        double l22 = integrate( u.functionSpace()->template rangeElements<0>(), (vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0);
-        double semih12 = integrate( u.functionSpace()->template rangeElements<0>(), (vf::gradv(u))*trans(vf::gradv(u)) ).evaluate()(0,0);
+        double l22 = integrate( _range=u.functionSpace()->template rangeElements<0>(), _expr=(vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0);
+        double semih12 = integrate( _range=u.functionSpace()->template rangeElements<0>(), _expr=(vf::gradv(u))*trans(vf::gradv(u)) ).evaluate()(0,0);
         return math::sqrt( l22+semih12 );
     }
     double h1Norm( element_type const& u, mpl::bool_<true>)
     {
         auto mesh = model->functionSpace()->mesh();
         auto u_femT = u.template element<1>();
-        double l22 = integrate( u.functionSpace()->template rangeElements<0>(), (vf::idv(u_femT))*(vf::idv(u_femT)) ).evaluate()(0,0);
-        double semih12 = integrate( u_femT.functionSpace()->template rangeElements<0>(), (vf::gradv(u_femT))*trans(vf::gradv(u_femT))).evaluate()(0,0);
+        double l22 = integrate( _range=u.functionSpace()->template rangeElements<0>(), _expr=(vf::idv(u_femT))*(vf::idv(u_femT)) ).evaluate()(0,0);
+        double semih12 = integrate( _range=u_femT.functionSpace()->template rangeElements<0>(), _expr=(vf::gradv(u_femT))*trans(vf::gradv(u_femT))).evaluate()(0,0);
         return math::sqrt( l22+semih12 );
     }
 

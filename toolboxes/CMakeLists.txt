@@ -32,10 +32,17 @@ set(FEELPP_TOOLBOXES_SHARED_SOVERSION 1.0)
 
 # with this it is possible to compile applications/models from an installed
 # version of feel++. This is useful also for staged compilation for docker
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STREQUAL "toolboxes")
   find_package(Feel++ PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
   if(NOT FEELPP_FOUND)
       message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+  else()
+    message(STATUS "[feelpp-toolboxes] found Feel++ library")
+  endif()
+  if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "install prefix" FORCE)
+    # SKIP RPATH if we set CMAKE_INSTALL_PREFIX
+    SET(CMAKE_SKIP_RPATH ON)
   endif()
 else()
   feelpp_get_environment()

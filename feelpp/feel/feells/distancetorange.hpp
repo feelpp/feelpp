@@ -37,9 +37,10 @@
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feeldiscr/syncdofs.hpp>
 #include <feel/feelcore/traits.hpp>
+#include <feel/feelvf/cst.hpp>
 
-#include "geometryconceptwrappers.hpp"
-#include "distancepointtoface.hpp"
+#include <feel/feells/geometryconceptwrappers.hpp>
+#include <feel/feells/distancepointtoface.hpp>
 
 namespace Feel {
 

@@ -33,6 +33,21 @@ if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
 endif()
 
 message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring NAPP")
+set(FETCHCONTENT_SOURCE_DIR_NAPP ${CMAKE_CURRENT_SOURCE_DIR}/napp)
+FetchContent_Declare(napp GIT_REPOSITORY https://github.com/vincentchabannes/napp.git GIT_TAG 1cba0026b9ea7581902017074071a0da1a2e7a94) #v0.1.0 )
+set(NAPP_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+FetchContent_MakeAvailable(napp)
+target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_NAPP )
+target_link_libraries( feelpp_contrib INTERFACE napp )
+install(TARGETS napp EXPORT feelpp-contrib-export-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring FMT")
 set(FETCHCONTENT_SOURCE_DIR_FMT ${CMAKE_CURRENT_SOURCE_DIR}/fmt)
 FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/feelpp/fmt.git GIT_TAG 7bdf0628b1276379886c7f6dda2cef2b3b374f0b) 

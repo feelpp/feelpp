@@ -105,6 +105,7 @@ class Heat : public ModelNumerical,
             static auto temperature( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
         };
 
+#if 0
         BOOST_PARAMETER_MEMBER_FUNCTION(
             ( self_ptrtype ), static New, tag,
             ( required
@@ -116,7 +117,15 @@ class Heat : public ModelNumerical,
               ( worldcomm, *, Environment::worldCommPtr() )
               ( repository, *, ModelBaseRepository() )
               ) )
+#endif
+        template <typename ... Ts>
+        static self_ptrtype New( Ts && ... v )
             {
+                auto args = NA::make_arguments( std::forward<Ts>(v)... );
+                std::string const& prefix = args.get(_prefix);
+                std::string const& keyword = args.get_else(_keyword,"heat");
+                worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
+                auto && repository = args.get_else(_repository,ModelBaseRepository{});
                 return std::make_shared<self_type>( prefix, keyword, worldcomm, "", repository );
             }
 
@@ -500,12 +509,19 @@ Heat<ConvexType,BasisTemperatureType>::updateInitialConditions( SymbolsExprType 
     if ( !this->doRestart() )
     {
         std::vector<element_temperature_ptrtype> icTemperatureFields;
+        std::map<int, double> icPriorTimes;
         if ( this->isStationary() )
+        {
             icTemperatureFields = { this->fieldTemperaturePtr() };
+            icPriorTimes = {{0,0}};
+        }
         else
+        {
             icTemperatureFields = M_bdfTemperature->unknowns();
+            icPriorTimes = M_bdfTemperature->priorTimes();
+        }
 
-        super_type::updateInitialConditions( "temperature", M_rangeMeshElements, se, icTemperatureFields );
+        super_type::updateInitialConditions( "temperature", M_rangeMeshElements, se, icTemperatureFields, icPriorTimes );
 
         if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
         {

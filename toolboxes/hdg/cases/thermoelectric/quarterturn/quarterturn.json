@@ -20,7 +20,31 @@
     {
         "omega":
         {
-            "filename":"$cfgdir/omega.json"
+            "physics":["heat","electric"],
+            "alpha":"3.6e-3",
+            "T0":"293",
+            "sigma0":"58e3",
+            "Lorentz":2.47e-8,
+            // "sigma":"sigma0:sigma0",
+            "sigma":"sigma0/(1+alpha*(heat_T-T0)):sigma0:alpha:heat_T:T0",
+            "k0":"0.380",
+            // "k":"sigma0*Lorentz*heat_T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:heat_T"
+            "k":"k0*heat_T/((1+alpha*(heat_T-T0))*T0):k0:heat_T:alpha:T0"
+            // "k":"k0:k0"
+        }
+    },
+    "InitialConditions":
+    {
+        "temperature":
+        {
+            "Expression":
+            {
+                "myic1":
+                {
+                    "markers":"omega",
+                    "expr": "58e3"
+                }
+            }
         }
     },
     "BoundaryConditions":
@@ -109,6 +133,10 @@
         "use-model-name":1,
         "electric":
         {
+            "Exports":
+            {
+                "fields": ["all"]
+            },
             "Measures":
             {
                 "Points":
@@ -143,10 +171,30 @@
                         "markers":"omega"
                     }
                 }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Statistics_Intentsity0_integrate_0":
+                    {
+                        "value":800,
+                        "tolerance":1e-3
+                    },
+                    "Statistics_Intentsity1_integrate_1":
+                    {
+                        "value":-800,
+                        "tolerance":1e-3
+                    }
+                }
             }
         },
         "heat":
         {
+            "Exports":
+            {
+                "fields": ["all"]
+            },
             "Measures":
             {
                 "Points":
@@ -172,6 +220,27 @@
 			            "index1":[ ["Rext", "h", "Tw"],
 				                   ["Rint", "h", "Tw"]
                                  ]
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Statistics_MeantT_max":
+                    {
+                        "value":2.770551e+02,
+                        "tolerance":1e-3
+                    },
+                    "Statistics_MeantT_mean":
+                    {
+                        "value":2.751334e+02,
+                        "tolerance":1e-3
+                    },
+                    "Statistics_MeantT_min":
+                    {
+                        "value":2.741112e+02,
+                        "tolerance":1e-3
                     }
                 }
             }

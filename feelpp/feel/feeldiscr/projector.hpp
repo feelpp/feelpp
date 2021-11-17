@@ -26,8 +26,8 @@
    \author Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
    \date 2011-04-25
  */
-#ifndef _PROJECTOR_HPP_
-#define _PROJECTOR_HPP_
+#ifndef FEELPP_DISCR_PROJECTOR_H
+#define FEELPP_DISCR_PROJECTOR_H
 
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -53,6 +53,7 @@ namespace Feel
 {
     template<class DomainSpace, class DualImageSpace> class Projector;
 
+#if 0
 namespace detail
 {
 template<typename Args>
@@ -71,6 +72,7 @@ struct lift_args
 };
 
 } // detail
+#endif
 /**
  * \class Projector
  * \brief Projection made easy
@@ -109,7 +111,7 @@ public :
 
     typedef elements_reference_wrapper_t<typename dual_image_space_type::mesh_type> range_elements_type;
     typedef faces_reference_wrapper_t<typename dual_image_space_type::mesh_type> range_faces_type;
-
+#if 0
     template<typename Args,typename IntEltsDefault>
     struct integrate_type
     {
@@ -130,7 +132,7 @@ public :
         //typedef vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > > _quad_type;
         //typedef vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > > _quad1_type;
     };
-
+#endif
     //@}
     /** @name Constructors, destructor
      */
@@ -260,34 +262,37 @@ public :
         return sol;
     }
 
-
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( dual_image_element_type ),
-                                     project,
-                                     tag,
-                                     ( required
-                                       ( expr,   * )
-                                     )
-                                     ( optional
-                                       ( range,   *, self_type::rangeElements(this->domainSpace(), this->dualImageSpace())  )
-                                       ( quad,   *, quad_order_from_expression )
-                                       ( quad1,   *, quad_order_from_expression )
-                                       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-                                       (grad_expr, *, ( vf::zero<domain_space_type::nComponents,domain_space_type::nDim>() ))
-                                       (div_expr, *, cst(0.) )
-                                       (curl_expr, *, ( vf::zero< mpl::if_<mpl::equal_to<mpl::int_<domain_space_type::nComponents>, mpl::int_<1> >,
-                                                                           mpl::int_<1>,
-                                                                           typename mpl::if_<mpl::equal_to<mpl::int_<domain_space_type::nDim>, mpl::int_<3> >,
-                                                                                             mpl::int_<3>, mpl::int_<1> >::type >::type::value, 1>() ) )
-                                       )
-                                   )
+    template <typename ... Ts>
+    dual_image_element_type project( Ts && ... v )
     {
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        auto && expr = args.get(_expr);
+        auto && range = args.get_else_invocable(_range, [this]() { return self_type::rangeElements(this->domainSpace(), this->dualImageSpace()); } );
+        auto && quad = args.get_else(_quad,quad_order_from_expression );
+        auto && quad1 = args.get_else(_quad1,quad_order_from_expression );
+        GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT);
+        auto && grad_expr = args.get_else(_grad_expr, vf::zero<domain_space_type::nComponents,domain_space_type::nDim>() );
+        auto && div_expr = args.get_else(_div_expr,cst(0.) );
+        auto && curl_expr = args.get_else(_curl_expr,vf::zero< mpl::if_<mpl::equal_to<mpl::int_<domain_space_type::nComponents>, mpl::int_<1> >,
+                                          mpl::int_<1>,
+                                          typename mpl::if_<mpl::equal_to<mpl::int_<domain_space_type::nDim>, mpl::int_<3> >,
+                                          mpl::int_<3>, mpl::int_<1> >::type >::type::value, 1>() );
+
+
+
         using namespace vf;
 
-
-        auto the_ims = integrate_type<Args,range_elements_type>::_im_type::im( quad,quad1,expr );
+        using _integrate_helper_type = Feel::detail::integrate_type<decltype(expr),decltype(range),decltype(quad),decltype(quad1)>;
+        auto the_ims = _integrate_helper_type::_im_type::im( quad,quad1,expr );
         auto const& the_im = the_ims.first;
         auto const& the_im1 = the_ims.second;
 
+
+#if 0
+        auto the_ims = integrate_type<Args,range_elements_type>::_im_type::im( quad,quad1,expr );
+        auto const& the_im = the_ims.first;
+        auto const& the_im1 = the_ims.second;
+#endif
         //typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad)>::type >::type thequad_type;
         //typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad1)>::type >::type thequad1_type;
         typedef typename boost::remove_reference<typename boost::remove_const< decltype(range)>::type >::type therange_type;
@@ -318,13 +323,13 @@ public :
     dual_image_element_type
     operator()( RhsExpr const& rhs_expr )
     {
-        return this->project( rhs_expr );
+        return this->project( _expr=rhs_expr );
     }
     template<typename RhsExpr>
     void
     operator()( dual_image_element_type& de, RhsExpr const& rhs_expr )
     {
-        de = this->project( rhs_expr );
+        de = this->project( _expr=rhs_expr );
     }
 
     dual_image_element_type
@@ -345,14 +350,14 @@ public :
     dual_image_element_type
     operator()( Range const& range ,Expr const& expr )
     {
-        return this->project( expr, range );
+        return this->project( _expr=expr, _range=range );
     }
 
     void
     apply( domain_element_type const& de,
            dual_image_element_type& ie ) override
     {
-        this->backend()->solve( M_matrixFull, ie, this->backend()->toBackendVectorPtr( de ) );
+        this->backend()->solve( _matrix=M_matrixFull, _solution=ie, _rhs=this->backend()->toBackendVectorPtr( de ) );
     }
 
     template<typename RhsExpr>
@@ -360,7 +365,7 @@ public :
     apply( RhsExpr const& rhs_expr,
            dual_image_element_type& ie )
     {
-        ie = this->project( rhs_expr );
+        ie = this->project( _expr=rhs_expr );
     }
 
 
@@ -647,7 +652,7 @@ private :
             integrate(_range = boundaryfaces( this->dualImageSpace()->mesh() ),
                       _expr =  trans( id( uDomain ) ) * expr * vf::N() );
 
-        this->backend()->solve( M_matrixFull, uImage, M_ie );
+        this->backend()->solve( _matrix=M_matrixFull, _solution=uImage, _rhs=M_ie );
         return uImage;
     }
 
@@ -711,34 +716,29 @@ projector( std::shared_ptr<TDomainSpace> const& domainspace,
     return std::make_shared<Proj_type>( domainspace, imagespace, abackend, proj_type, epsilon, gamma, dirichlet_type ) ;
 }
 
-BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::projector_args<Args>::return_type ),
-                          opProjection,
-                          tag,
-                          ( required
-                            ( domainSpace,   *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-                            ( imageSpace,   *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-                          )
-                          ( optional
-                            ( type, (ProjectorType), L2 )
-                            ( penaldir, *( boost::is_arithmetic<mpl::_> ), 20. )
-                            ( backend, *, Backend<double>::build( soption( _name="backend" ) ) )
-                          ) )
+
+template <typename ... Ts>
+auto opProjection( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && domainSpace = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_domainSpace);
+    auto && imageSpace = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_imageSpace);
+    ProjectorType type = args.get_else(_type,L2);
+    double penaldir = args.get_else(_penaldir,20.);
+    auto && backend = args.get_else(_backend, Backend<double>::build( soption( _name="backend" ) ) );
+
     return projector( domainSpace,imageSpace, backend, type, 0.01, penaldir );
 }
 
-BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::lift_args<Args>::lift_return_type ),
-                          opLift,
-                          tag,
-                          ( required
-                            ( domainSpace,   *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-                          )
-                          ( optional
-                            ( type, (DirichletType), WEAK )
-                            ( penaldir, *( boost::is_arithmetic<mpl::_> ), 20. )
-                            ( backend, *, Backend<double>::build( soption( _name="backend" ) ) )
-                            ) )
+template <typename ... Ts>
+auto opLift( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && domainSpace = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_domainSpace);
+    DirichletType type = args.get_else(_type,WEAK);
+    double penaldir = args.get_else(_penaldir,20.);
+    auto && backend = args.get_else_invocable(_backend, [](){ return Backend<double>::build( soption( _name="backend" ) ); } );
+
     return projector( domainSpace, domainSpace, backend, ProjectorType::LIFT, 0.01 , penaldir, type );
 }
 

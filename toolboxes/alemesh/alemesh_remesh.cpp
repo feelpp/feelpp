@@ -88,7 +88,7 @@ runALEMesh()
             auto const& moving_mesh = alemesh->movingMesh();
             auto Xh = Pch<1>( moving_mesh );
             auto met = Xh->element();
-            auto etaqmin = etaQ( moving_mesh ).min();
+            auto etaqmin = etaQ( moving_mesh )->min();
             
             if ( etaqmin < doption("etaqtol") )
             {

@@ -77,7 +77,7 @@ Laplacian<Dim,POrder,GOrder>::run()
     LOG(INFO) << "------------------------------------------------------------\n";
     LOG(INFO) << "Execute Laplacian<" << Dim << ">\n";
 
-    Environment::changeRepository( boost::format( "doc/manual/laplacian_bean/%1%/D%2%/P%3%/G%4%/h_%5%/" )
+    Environment::changeRepository( _directory=boost::format( "doc/manual/laplacian_bean/%1%/D%2%/P%3%/G%4%/h_%5%/" )
                                    % this->about().appName()
                                    % Dim
                                    % POrder
@@ -98,7 +98,7 @@ Laplacian<Dim,POrder,GOrder>::run()
     auto exact = expr(soption(_name="exact"));
     std::string rhs_str = soption(_name="rhs");
     auto f = -nu*laplacian(exact);
-    auto gradg = grad<Dim,2>(exact);
+    auto gradg = grad<Dim>(exact);
     if ( Environment::isMasterRank() )
     {
         std::cout << "Looking for u such that -Delta u = f on Omega\n"

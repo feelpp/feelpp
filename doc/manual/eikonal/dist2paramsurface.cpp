@@ -65,13 +65,13 @@ int main( int argc, char** argv )
     auto ellipse = disttocurve->fromParametrizedCurve(x_ell, y_ell, z_ell,
                                                       0,
                                                       6.29,
-                                                      option("gmsh.hsize").as<double>() / 10.,
+                                                      doption(_name="gmsh.hsize") / 10.,
                                                       -3.14159/2,
                                                       3.14159/2,
-                                                      option("gmsh.hsize").as<double>() / 16.,
-                                                      true,option("gmsh.hsize").as<double>() / 2,true,"ellipses");
+                                                      doption(_name="gmsh.hsize") / 16.,
+                                                      true,doption(_name="gmsh.hsize") / 2,true,"ellipses");
 
-    *ellipse = fm->march( ellipse, true );
+    *ellipse = fm->march( ellipse );
 
 #endif
 
@@ -83,7 +83,7 @@ int main( int argc, char** argv )
 
 
     const double t2max=asin(H/(2*R));
-    const double l=option("gmsh.hsize").as<double>()*2.;
+    const double l=doption(_name="gmsh.hsize")*2.;
     const double dt2=l/R;
 
 
@@ -92,7 +92,7 @@ int main( int argc, char** argv )
             return  (r * sin((t2+t2max)*3.14159/(2*t2max)) * cos(t1)) + 2*R * (cos(-t2max+dt2) - cos(t2max)) +0.5 ;
         else if ((-t2max+dt2<=t2)&&(t2<t2max-dt2))
             return  (r * sin((t2+t2max)*3.14159/(2*t2max)) * cos(t1)) + 2*R * (cos(t2) - cos(t2max)) +0.5 ;
-        else if((t2max-dt2<t2)&&(t2<=t2max))
+        else //if((t2max-dt2<t2)&&(t2<=t2max))
             return (r * sin((t2+t2max)*3.14159/(2*t2max)) * cos(t1)) + 2*R * (cos(t2max-dt2) - cos(t2max)) +0.5 ;
     };
 
@@ -103,7 +103,7 @@ int main( int argc, char** argv )
             return  (R * sin(-t2max+dt2)) + 0.5;
         else if ((-t2max+dt2<=t2)&&(t2<t2max-dt2))
             return  (R * sin(t2)) + 0.5;
-        else if((t2max-dt2<t2)&&(t2<=t2max))
+        else //if((t2max-dt2<t2)&&(t2<=t2max))
             return  (R * sin(t2max-dt2)) + 0.5;
     };
 
@@ -111,16 +111,16 @@ int main( int argc, char** argv )
     auto sickle_cell = disttocurve->fromParametrizedCurve(x_scell, y_scell, z_scell,
                                                           0,
                                                           6.29,
-                                                          option("gmsh.hsize").as<double>() / 8.,
+                                                          doption(_name="gmsh.hsize") / 8.,
                                                           -t2max,
                                                           t2max,
-                                                          option("gmsh.hsize").as<double>() / 16.,
-                                                          true,option("gmsh.hsize").as<double>() / 3,true,"cell");
+                                                          doption(_name="gmsh.hsize") / 16.,
+                                                          true,doption(_name="gmsh.hsize") / 3,true,"cell");
 
-    *sickle_cell = fm->march( sickle_cell, true );
+    *sickle_cell = fm->march( sickle_cell );
   // ------------------------------------
 
-    auto mark2=vf::project(Xh0,marked2elements(mesh,1),cst(1));
+    auto mark2=vf::project(_space=Xh0,_range=marked2elements(mesh,1),_expr=cst(1));
 
     auto exp = exporter(_mesh=mesh, _name="dist2paramcurve");
     //    exp->step(0)->add("ellipse", *ellipse);

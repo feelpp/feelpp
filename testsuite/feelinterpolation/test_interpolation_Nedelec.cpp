@@ -167,7 +167,7 @@ TestInterpolationHCurl::testInterpolation( std::string one_element_mesh )
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
         {
             CHECK( oneelement_mesh->hasMarkers( {edges[i]} ) );
-            U_h_int(i) = integrate( markedfaces( oneelement_mesh, edges[i] ), trans( T() )*myexpr ).evaluate()(0,0);
+            U_h_int(i) = integrate( _range=markedfaces( oneelement_mesh, edges[i] ), _expr=trans( T() )*myexpr ).evaluate()(0,0);
         }
 
     // nedelec interpolant using on
