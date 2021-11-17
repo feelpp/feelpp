@@ -292,6 +292,7 @@ using home = NA::named_argument_t<struct home_tag>;
 using bugs = NA::named_argument_t<struct bugs_tag>;
 using version = NA::named_argument_t<struct version_tag>;
 
+using points_used = NA::named_argument_t<struct points_used_tag>;
 using max_points_used = NA::named_argument_t<struct max_points_used_tag>;
 using projection = NA::named_argument_t<struct projection_tag>;
 
@@ -579,6 +580,7 @@ inline constexpr auto& _home = NA::identifier<na::home>;
 inline constexpr auto& _bugs = NA::identifier<na::bugs>;
 inline constexpr auto& _version = NA::identifier<na::version>;
 
+inline constexpr auto& _points_used = NA::identifier<na::points_used>;
 inline constexpr auto& _max_points_used = NA::identifier<na::max_points_used>;
 inline constexpr auto& _projection = NA::identifier<na::projection>;
 

@@ -29,6 +29,9 @@
 #ifndef FEELPP_GEOMETRIC_SPACE_HPP
 #define FEELPP_GEOMETRIC_SPACE_HPP 1
 
+#include <feel/feelalg/glas.hpp>
+#include <feel/feelpoly/context.hpp>
+
 namespace Feel
 {
 
