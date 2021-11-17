@@ -114,7 +114,7 @@ class reducedbasis_time(reducedbasis):
         """
 
         self.N = taille_dict(musk)
-        Xn = []
+        self.Z = []
 
         def g(k): return 1 if k == 0 else 0
 
@@ -140,14 +140,14 @@ class reducedbasis_time(reducedbasis):
                 u = sol.copy()
 
                 if k+1 == musk[mu][cur]:
-                    Xn.append(sol.copy())
+                    self.Z.append(sol.copy())
                     cur += 1
 
-            self.orthonormalizeZ()
-            self.generateANq()
-            self.generateFNp()
-            self.generateLNp()
-            self.generateMNr()
+        self.orthonormalizeZ()
+        self.generateANq()
+        self.generateFNp()
+        self.generateLNp()
+        self.generateMNr()
 
 
     """Solve for a given parameter
