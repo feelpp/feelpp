@@ -138,10 +138,10 @@ public :
 #endif
 
 
-            std::map<int,int> nodeAddedInGeoCtx;
-            int ctxId = 0;
+            //std::map<int,int> nodeAddedInGeoCtx;
+            //int ctxId = 0;
             hana::for_each( M_geoContexts,
-                            [&evalPoints,&fields/*,&ptPos,&ptCoord*/,&nodeAddedInGeoCtx,&ctxId](auto & x) {
+                            [&evalPoints,&fields/*,&ptPos,&ptCoord*//*,&nodeAddedInGeoCtx*/ /*,&ctxId*/](auto & x) {
                                 auto & geoctx = std::get<0>( x );
                                 auto & ptPosNameToNodeIds = std::get<1>( x );
                                 auto & fieldsInCtx = std::get<2>( x );
@@ -182,23 +182,30 @@ public :
                                     std::set<index_type> & nodeIds = ptPosNameToNodeIds[evalPoints.name()];
                                     //std::set<index_type> nodeIds;
                                         //if ( true )//nodeAddedInGeoCtx.find( ctxId ) == nodeAddedInGeoCtx.end() )
-                                    for ( auto const& ptPos : evalPoints.pointsSampling() )
+                                    //for ( auto const& ptPos : evalPoints.pointsSampling() )
+                                    for ( auto const& ptOverGeometry : evalPoints.pointsOverAllGeometry() )
                                     {
-                                        int nodeIdInCtx = geoctx->nPoints();
-                                        node_type ptCoord(3);
-                                        auto const& ptCoordEig = ptPos.coordinatesEvaluated();
-                                        for ( int c=0;c</*3*/ptCoordEig.size();++c )
-                                            ptCoord[c]=ptCoordEig(c);
-                                        geoctx->add( ptCoord,false );
-                                        nodeIds.insert( nodeIdInCtx );
-                                        nodeAddedInGeoCtx[ ctxId ] = nodeIdInCtx;
+                                        //auto const& ptCoordEig = ptOverAny->coordinates();
+                                        for ( auto const& ptCoordEig : ptOverGeometry->coordinates() )
+                                        {
+                                            int nodeIdInCtx = geoctx->nPoints();
+                                            node_type ptCoord(3);
+                                            //auto const& ptCoordEig = ptPos.coordinatesEvaluated();
+                                            for ( int c=0;c</*3*/ptCoordEig.size();++c )
+                                                ptCoord[c]=ptCoordEig(c);
+                                            geoctx->add( ptCoord,false );
+                                            nodeIds.insert( nodeIdInCtx );
+                                            //nodeAddedInGeoCtx[ ctxId ] = nodeIdInCtx;
+                                        }
                                     }
+
+
                                     for ( std::string const& field : fieldsUsed )
                                         fieldsInCtx[field].insert( evalPoints.name() );
                                     if ( !mapExprNameToExpr.empty() )
                                         exprInCtx[evalPoints.name()] = std::make_tuple( std::move(mapExprNameToExpr)/*, std::move( nodeIds )*/ );
                                 }
-                                ++ctxId;
+                                //++ctxId;
                             });
 
 
