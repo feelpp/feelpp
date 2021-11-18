@@ -112,6 +112,21 @@ class FEELPP_EXPORT ModelPostprocessPointPosition : public CommObject
     using super_type = CommObject;
 public :
 
+    struct PointsOverGeometry
+    {
+        using coord_value_type = Eigen::MatrixXd;
+
+        virtual ~PointsOverGeometry() {}
+
+        virtual void setParameterValues( std::map<std::string,double> const& mp ) = 0;
+
+        //! return the coordinates of all points (as a vector of coord)
+        std::vector<coord_value_type> const& coordinates() const { return M_coordinates; }
+
+    protected :
+        std::vector<coord_value_type> M_coordinates;
+    };
+
     struct PointPosition
     {
         using coord_value_type = Eigen::MatrixXd;
@@ -124,6 +139,7 @@ public :
 
         coord_value_type const& coordinatesEvaluated() const { return M_coordinatesEvaluated; }
 
+        void setup( std::string const& coordExprStr, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes );
         void setup( nl::json const& jData, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes );
 
         void setExpression( ModelExpression && mexpr ) { M_coordinatesExpr = mexpr/*; this->updateForUse()*/; }
@@ -150,19 +166,45 @@ public :
         std::string M_meshMarker;
     };
 
-    struct PointsOverLine
+    struct PointsOverCoordinates : PointsOverGeometry
     {
-        using coord_value_type = typename PointPosition::coord_value_type;
+        PointsOverCoordinates() = default;
+        PointsOverCoordinates( PointsOverCoordinates const& ) = default;
+        PointsOverCoordinates( PointsOverCoordinates && ) = default;
 
-        PointsOverLine() : M_nPoints( 10 ) {}
+        void setup( nl::json const& jarg, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes );
 
-        std::vector<coord_value_type> const& pointsSampling() const { return M_pointsSampling; }
+        void setParameterValues( std::map<std::string,double> const& mp ) override
+            {
+                for (auto & ptPos : M_pointPositions )
+                    ptPos.setParameterValues( mp );
+            }
 
-        //bool isInit();
+        template <typename SymbolsExprType>
+        void updateForUse( SymbolsExprType const& se )
+            {
+                this->M_coordinates.resize( M_pointPositions.size() );
+                int k=0;
+                for (auto & ptPos : M_pointPositions )
+                {
+                    ptPos.updateForUse( se );
+                    this->M_coordinates[k++] = ptPos.coordinatesEvaluated();
+                }
+            }
+    private :
+        std::vector<PointPosition> M_pointPositions;
+    };
 
-        void setup( nl::json const& jData, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes );
 
-        void setParameterValues( std::map<std::string,double> const& mp )
+    struct PointsOverSegment : PointsOverGeometry
+    {
+        PointsOverSegment() : M_nPoints( 10 ) {}
+        PointsOverSegment( PointsOverSegment const& ) = default;
+        PointsOverSegment( PointsOverSegment && ) = default;
+
+        void setup( nl::json const& jarg, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes );
+
+        void setParameterValues( std::map<std::string,double> const& mp ) override
             {
                 M_point1.setParameterValues( mp );
                 M_point2.setParameterValues( mp );
@@ -183,7 +225,6 @@ public :
     private:
         PointPosition M_point1, M_point2;
         int M_nPoints;
-        std::vector<coord_value_type> M_pointsSampling;
     };
 
     ModelPostprocessPointPosition( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
@@ -196,7 +237,8 @@ public :
     ModelPostprocessPointPosition& operator=( ModelPostprocessPointPosition && ) = default;
 
     std::string const& name() const { return M_name; }
-    std::vector<PointPosition> const& pointsSampling() const { return M_pointsSampling; }
+
+    std::vector<std::shared_ptr<PointsOverGeometry>> const& pointsOverAllGeometry() const { return M_pointsOverAllGeometry; }
 
     std::set<std::string> const& fields() const { return M_fields; }
     //std::set<std::string> & fields() { return M_fields; }
@@ -212,10 +254,15 @@ public :
     template <typename SymbolsExprType>
     void updateForUse( SymbolsExprType const& se )
     {
-        for ( auto & ptPos : M_pointsSampling )
-            ptPos.updateForUse( se );
-        for ( auto & pointsOverLine : M_pointsOverLines )
-            pointsOverLine.updateForUse( se );
+         for ( auto & pointsOverGeometry : M_pointsOverAllGeometry )
+         {
+             if ( !pointsOverGeometry )
+                 continue;
+             if ( auto pointsOverCoordinates = std::dynamic_pointer_cast<PointsOverCoordinates>( pointsOverGeometry ) )
+                 pointsOverCoordinates->updateForUse( se );
+             if ( auto pointsOverSegment = std::dynamic_pointer_cast<PointsOverSegment>( pointsOverGeometry ) )
+                 pointsOverSegment->updateForUse( se );
+         }
     }
 
   private:
@@ -224,8 +271,7 @@ public :
     std::string M_name;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
-    std::vector<PointPosition> M_pointsSampling;
-    std::vector<PointsOverLine> M_pointsOverLines;
+    std::vector<std::shared_ptr<PointsOverGeometry>> M_pointsOverAllGeometry;
     std::set<std::string> M_fields;
     std::map<std::string,std::tuple<ModelExpression,std::string> > M_exprs; // name -> ( expr, tag )
 };
