@@ -216,8 +216,10 @@ public :
         }
 
 
+        //! add a node
+        //! param applyUpdateForUse : call updateForUse (default is true to keep same behavior with previous version)
         std::pair<iterator, bool>
-        add( node_type const& t )
+        add( node_type const& t, bool applyUpdateForUse = true )
         {
             int ptIdInCtx = M_t.size();
             M_t.push_back( t );
@@ -322,9 +324,10 @@ public :
                 }
             }
             CHECK( found_on_a_proc ) << "the point " << t << " was not found ! \n";
-            
-            //this->updateForUse();// TODO!!!!
-            
+
+            if ( applyUpdateForUse )
+                this->updateForUse();
+
             // update geo context for each process + define context mesh
             if ( false )
             {
