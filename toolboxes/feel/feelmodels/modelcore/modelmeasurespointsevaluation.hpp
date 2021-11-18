@@ -189,7 +189,7 @@ public :
                                         auto const& ptCoordEig = ptPos.coordinatesEvaluated();
                                         for ( int c=0;c</*3*/ptCoordEig.size();++c )
                                             ptCoord[c]=ptCoordEig(c);
-                                        geoctx->add( ptCoord );
+                                        geoctx->add( ptCoord,false );
                                         nodeIds.insert( nodeIdInCtx );
                                         nodeAddedInGeoCtx[ ctxId ] = nodeIdInCtx;
                                     }
