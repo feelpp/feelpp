@@ -108,6 +108,9 @@ public :
     //! number of column in table
     int nCol() const { return M_nCol; }
 
+    //! return true if the table is empty (i.e. nRow*nCol==0)
+    bool empty() const { return this->nRow()*this->nCol() == 0; }
+
     //! resize the table
     void resize( int nRow, int nCol )
         {
@@ -123,12 +126,22 @@ public :
     //! get cell at indices i,j in table
     TableImpl::Cell & operator()(int i,int j) { return M_cells[i*M_nCol+j]; }
 
-    //! add row in table
-    void add_row( std::initializer_list<variant_value_type> const& rowValues ) { this->add_row<std::initializer_list<variant_value_type>>( rowValues ); }
+    //! add row in table ( size of \rowValues should be equal to M_nCol if table is non empty)
+    //void add_row( std::initializer_list<variant_value_type> const& rowValues ) { this->add_row<std::initializer_list<variant_value_type>>( rowValues ); }
+    void add_row( std::initializer_list<variant_value_type> && rowValues ) { this->add_row<std::initializer_list<variant_value_type>>( std::forward<std::initializer_list<variant_value_type>>( rowValues ) ); }
 
-    template <typename T>
+    template <typename T,std::enable_if_t< is_iterable_v<T>, bool> = true >
     void
-    add_row( T const& rowValues, std::enable_if_t< is_iterable_v<T> >* = nullptr );
+    add_row( T && rowValues );
+
+    //! set row at index \i in table from initializer_list \rowValues (i should be less than M_nRow, size of rowValues should be equal to M_nCol )
+    //void set_row( int i, std::initializer_list<variant_value_type> const& rowValues ) { this->set_row<std::initializer_list<variant_value_type>>( i,rowValues ); }
+    void set_row( int i, std::initializer_list<variant_value_type> && rowValues ) { this->set_row<std::initializer_list<variant_value_type>>( i,std::forward<std::initializer_list<variant_value_type>>( rowValues ) ); }
+
+    //! set row at index \i in table from an iterable data \rowValues (i should be less than M_nRow, size of rowValues should be equal to M_nCol )
+    template <typename T,std::enable_if_t< is_iterable_v<T>, bool> = true >
+    void
+    set_row( int i, T && rowValues );
 
     //! get table format
     TableImpl::Format& format() { return *M_format; }
@@ -144,6 +157,9 @@ public :
 
     //! export into stream \o the asciidoc representation of the table
     void exportAsciiDoc( std::ostream &o ) const { this->exportAsciiDocImpl( o ); }
+
+    //! export into stream \o the csv representation of the table (not work with nested table)
+    void exportCSV( std::ostream &o ) const;
 
     //friend void updateOutputStreamOfCellUsingAsciiDoc( std::ostream &o, TableImpl::Cell const& c, TableImpl::Cell::Format const& format, std::string const& tableSeparator, int nestedTableLevel = 0 );
     //private :
@@ -196,6 +212,8 @@ public:
 
         Font::FloatingPoint floatingPoint() const { return M_fontFloatingPoint? *M_fontFloatingPoint : Font::FloatingPoint::scientific; }
         Format& setFloatingPoint( Font::FloatingPoint a ) { M_fontFloatingPoint = a; return *this; }
+        int floatingPointPrecision() const { return M_fontFloatingPointPrecision? * M_fontFloatingPointPrecision : 6; }
+        Format& setFloatingPointPrecision( int n ) { M_fontFloatingPointPrecision = n; return *this; }
 
         int widthMax() const { return M_widthMax? *M_widthMax : -1; }
         Format& setWidthMax( int i ) { M_widthMax = i; return *this; }
@@ -206,6 +224,7 @@ public:
         std::optional<Font::Align> M_fontAlign;
         std::optional<Font::Color> M_fontColor;
         std::optional<Font::FloatingPoint> M_fontFloatingPoint;
+        std::optional<int> M_fontFloatingPointPrecision;
         std::optional<int> M_paddingLeft, M_paddingRight;
 
         std::optional<int> M_widthMax;
@@ -219,6 +238,9 @@ public:
 
     Cell& operator=( Cell const& ) = default;
     Cell& operator=( Cell && ) = default;
+
+    template <typename T, std::enable_if_t< !std::is_same_v<std::decay_t<T>,Cell>, bool> = true >
+    Cell& operator=(T && v) { M_value = std::forward<T>( v ); return *this; }
 
     Format& format() { return M_format; }
     Format const& format() const { return M_format; }
@@ -295,6 +317,7 @@ struct Format : public Cell::Format
     Format& setPaddingRight( int v ) { Cell::Format::setPaddingRight( v ); return *this; }
     Format& setAllPadding( int v ) { Cell::Format::setAllPadding( v ); return *this; }
     Format& setFloatingPoint( Font::FloatingPoint a ) { Cell::Format::setFloatingPoint( a ); return *this; }
+    Format& setFloatingPointPrecision( int n ) { Cell::Format::setFloatingPointPrecision( n ); return *this; }
     Format& setWidthMax( int i ) { Cell::Format::setWidthMax( i ); return *this; }
 private :
 
@@ -316,21 +339,34 @@ void updateOutputStreamOfCellUsingAsciiDoc( std::ostream &o, Cell const& c, Cell
 } // namespace TableImpl
 
 
-template <typename T>
+template <typename T, std::enable_if_t< is_iterable_v<T>, bool> >
 void
-Table::add_row( T const& rowValues, std::enable_if_t< is_iterable_v<T> >* )
+Table::add_row( T && rowValues)
 {
     size_t containerSize = std::distance( rowValues.begin(), rowValues.end() ); // rowValues.size()
     //size_t containerSize = std::distance( std::begin(rowValues), std::end( rowValues ) ); // rowValues.size()
     if ( M_nRow > 0 && containerSize != M_nCol )
         return;
-
     this->resize( M_nRow+1, containerSize );
     int j = 0, i= M_nRow-1;
-    for ( auto const& rowValue : rowValues )
-        this->operator()(i,j++) = TableImpl::Cell(rowValue);
+    for ( auto && rowValue : std::forward<T>( rowValues ) )
+        this->operator()(i,j++) = std::forward<decltype(rowValue)>(rowValue);//TableImpl::Cell(rowValue);
 }
 
+template <typename T, std::enable_if_t< is_iterable_v<T>, bool> >
+void
+Table::set_row( int i, T && rowValues )
+{
+    if ( i >= M_nRow )
+        return;
+    size_t containerSize = std::distance( rowValues.begin(), rowValues.end() );
+    if ( M_nRow > 0 && containerSize != M_nCol )
+        return;
+
+    int j = 0;
+    for ( auto && rowValue : std::forward<T>( rowValues ) )
+        this->operator()(i,j++) = std::forward<decltype(rowValue)>(rowValue);// TableImpl::Cell(rowValue);
+}
 
 
 } // namespace Feel
