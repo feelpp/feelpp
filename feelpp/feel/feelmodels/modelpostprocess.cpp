@@ -220,7 +220,12 @@ void
 ModelPostprocessPointPosition::PointPosition::setup( nl::json const& jData, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes )
 {
     CHECK( jData.is_string() ) << "PointPosition json should be a string";
-    std::string coordExpr = indexes.replace( jData.get<std::string>() );
+    this->setup( jData.get<std::string>(), world, directoryLibExpr, indexes );
+}
+void
+ModelPostprocessPointPosition::PointPosition::setup( std::string const& coordExprStr, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes )
+{
+    std::string coordExpr = indexes.replace( coordExprStr );
 
     ModelExpression mexpr;
     mexpr.setExpr( coordExpr, world, directoryLibExpr/*,indexes*/ );
@@ -230,16 +235,41 @@ ModelPostprocessPointPosition::PointPosition::setup( nl::json const& jData, worl
 }
 
 void
-ModelPostprocessPointPosition::PointsOverLine::setup( nl::json const& jData, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes )
+ModelPostprocessPointPosition::PointsOverCoordinates::setup( nl::json const& jarg, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes )
 {
-    CHECK( jData.contains( "point1") ) << "PointsOverLine json should be have entry : point1";
-    M_point1.setup( jData.at( "point1"), world, directoryLibExpr, indexes );
-    CHECK( jData.contains( "point2") ) << "PointsOverLine json should be have entry : point2";
-    M_point2.setup( jData.at( "point2"), world, directoryLibExpr, indexes );
-
-    if ( jData.contains( "n_points" ) )
+    std::vector<std::string> coordExprs;
+    if ( jarg.is_string() )
     {
-        auto const& jNPoints = jData.at( "n_points" );
+        coordExprs.push_back( jarg.get<std::string>() );
+    }
+    else if ( jarg.is_array() )
+    {
+        for ( auto const& el : jarg.items() )
+        {
+            CHECK( el.value().is_string() ) << "coord item should be a string";
+            coordExprs.push_back( el.value() );
+        }
+    }
+
+    for ( std::string coordExprBase : coordExprs )
+    {
+        PointPosition ptPos;
+        ptPos.setup( coordExprBase, world, directoryLibExpr, indexes );
+        M_pointPositions.push_back( std::move( ptPos ) );
+    }
+}
+
+void
+ModelPostprocessPointPosition::PointsOverSegment::setup( nl::json const& jarg, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes )
+{
+    CHECK( jarg.contains( "point1") ) << "PointsOverSegment json should be have entry : point1";
+    M_point1.setup( jarg.at( "point1"), world, directoryLibExpr, indexes );
+    CHECK( jarg.contains( "point2") ) << "PointsOverSegment json should be have entry : point2";
+    M_point2.setup( jarg.at( "point2"), world, directoryLibExpr, indexes );
+
+    if ( jarg.contains( "n_points" ) )
+    {
+        auto const& jNPoints = jarg.at( "n_points" );
         if ( jNPoints.is_string() )
             M_nPoints = std::stoi( jNPoints.get<std::string>() );
         else if ( jNPoints.is_number_integer() )
@@ -248,15 +278,15 @@ ModelPostprocessPointPosition::PointsOverLine::setup( nl::json const& jData, wor
 }
 
 void
-ModelPostprocessPointPosition::PointsOverLine::updatePointsSampling( coord_value_type const& pt1, coord_value_type const& pt2 )
+ModelPostprocessPointPosition::PointsOverSegment::updatePointsSampling( coord_value_type const& pt1, coord_value_type const& pt2 )
 {
-    M_pointsSampling.resize( M_nPoints );
+    this->M_coordinates.resize( M_nPoints );
 
     coord_value_type vec12 = pt2-pt1;
 
     for (int k=0;k<M_nPoints;++k)
     {
-        M_pointsSampling[k] = pt1 + (((double)k)/(M_nPoints-1))*vec12;
+        this->M_coordinates[k] = pt1 + (((double)k)/(M_nPoints-1))*vec12;
         //std::cout << "pt["<<k<<"] = "<<M_pointsSampling[k] << std::endl;
     }
 }
@@ -291,33 +321,11 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
     {
         nl::json const& jCoord = jData.at( "coord" );
 
-        std::vector<std::string> coordExprs;
-        if ( jCoord.is_string() )
-        {
-            coordExprs.push_back( jCoord.get<std::string>() );
-        }
-        else if ( jCoord.is_array() )
-        {
-            for ( auto const& el : jCoord.items() )
-            {
-                CHECK( el.value().is_string() ) << "coord item should be a string";
-                coordExprs.push_back( el.value() );
-            }
-        }
+        auto poc = std::make_shared<PointsOverCoordinates>();
+        poc->setup( jCoord, this->worldComm(), M_directoryLibExpr, indexes );
+        if ( true ) // TODO : check if poc is good
+            M_pointsOverAllGeometry.push_back( std::move( poc ) );
 
-        for ( std::string coordExprBase : coordExprs )
-        {
-            std::string coordExpr = indexes.replace( coordExprBase );
-
-            ModelExpression mexpr;
-            mexpr.setExpr( coordExpr, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
-            CHECK( mexpr.isScalar() || mexpr.isVector() ) << "wrong kind of expression with coord";
-
-            PointPosition ptPos;
-            ptPos.setExpression( std::move( mexpr ) );
-
-            M_pointsSampling.push_back( std::move( ptPos ) );
-        }
     } // hasCoord
 
     bool hasOverGeo = jData.contains( "over_geometry" );
@@ -326,15 +334,15 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
         auto const& jOverGeo = jData.at( "over_geometry" );
         for ( auto const& el : jOverGeo.items() )
         {
-            std::cout << "el.keyy() " << el.key() << std::endl;
-            if ( el.key() == "line" )
+            //std::cout << "el.key() " << el.key() << std::endl;
+            if ( el.key() == "segment" )
             {
-                CHECK( el.value().is_object() ) << "line item should be an object";
-                PointsOverLine pol;
-                pol.setup( el.value(), this->worldComm(), M_directoryLibExpr, indexes );
+                CHECK( el.value().is_object() ) << "segment item should be an object";
+                auto pol = std::make_shared<PointsOverSegment>();
+                pol->setup( el.value(), this->worldComm(), M_directoryLibExpr, indexes );
                 // TODO check if pol is operational
                 if ( true )
-                    M_pointsOverLines.push_back( std::move( pol ) );
+                    M_pointsOverAllGeometry.push_back( std::move( pol ) );
             }
         }
     }
@@ -375,7 +383,7 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
             ModelExpression mexpr;
             mexpr.setExpr( exprStr, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
             CHECK( mexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
-            std::cout << "MYEXPR " << exprName << " : " << mexpr.exprToString() << std::endl;
+            //std::cout << "MYEXPR " << exprName << " : " << mexpr.exprToString() << std::endl;
             M_exprs.emplace( exprName, std::make_tuple( std::move( mexpr ), "" ) );
         }
     }
@@ -385,11 +393,15 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
 void
 ModelPostprocessPointPosition::setParameterValues( std::map<std::string,double> const& mp )
 {
-    //this->pointPosition().setParameterValues( mp );
-    for ( auto & ptPos : M_pointsSampling )
-        ptPos.setParameterValues( mp );
     for ( auto & [name,exprData] : M_exprs )
         std::get<0>( exprData ).setParameterValues( mp );
+
+    for ( auto & pointsOverGeometry : M_pointsOverAllGeometry )
+    {
+        if ( !pointsOverGeometry )
+            continue;
+        pointsOverGeometry->setParameterValues( mp );
+    }
 }
 
 void
@@ -586,14 +598,14 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
         ppexports.setDirectoryLibExpr( M_directoryLibExpr );
         ppexports.setup( *exports );
         if ( !ppexports.fields().empty() || !ppexports.expressions().empty() )
-            M_exports[name] = ppexports;
+            M_exports.emplace( std::make_pair(name, std::move( ppexports ) ) );
     }
     if ( auto save = p.get_child_optional("Save") )
     {
         ModelPostprocessSave ppsave;
         ppsave.setup( *save );
         if ( !ppsave.fieldsNames().empty() )
-            M_save[name] = ppsave;
+            M_save.emplace( std::make_pair(name, std::move( ppsave ) ) );
     }
 
     if ( auto measures = p.get_child_optional("Measures") )
@@ -605,7 +617,7 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
                 ppquantities.setDirectoryLibExpr( M_directoryLibExpr );
                 ppquantities.setup( *quantities );
                 if( !ppquantities.quantities().empty() || !ppquantities.expressions().empty() )
-                    M_measuresQuantities[name] = ppquantities;
+                    M_measuresQuantities.emplace( std::make_pair( name, std::move( ppquantities ) ) );
                 break;
             }
 
@@ -621,7 +633,7 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
                     myPpPtPos.setDirectoryLibExpr( M_directoryLibExpr );
                     myPpPtPos.setPTree( evalPoint.second, indexes.replace( evalPoint.first ), indexes );
                     if ( !myPpPtPos.fields().empty() || !myPpPtPos.expressions().empty() )
-                        M_measuresPoint[name].push_back( myPpPtPos );
+                        M_measuresPoint[name].push_back( std::move(myPpPtPos) );
                 }
             }
         }
@@ -638,7 +650,7 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
                     ppNorm.setDirectoryLibExpr( M_directoryLibExpr );
                     ppNorm.setPTree( ptreeNorm.second, indexes.replace( ptreeNorm.first ), indexes );
                     if ( ppNorm.hasField() || ppNorm.hasExpr() )
-                        M_measuresNorm[name].push_back( ppNorm );
+                        M_measuresNorm[name].push_back( std::move( ppNorm ) );
                 }
             }
         }
@@ -654,7 +666,7 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
                     ppStatistics.setDirectoryLibExpr( M_directoryLibExpr );
                     ppStatistics.setPTree( ptreeStatistic.second, indexes.replace( ptreeStatistic.first ), indexes );
                     if ( ppStatistics.hasField() || ppStatistics.hasExpr() )
-                        M_measuresStatistics[name].push_back( ppStatistics );
+                        M_measuresStatistics[name].push_back( std::move( ppStatistics ) );
                 }
             }
         }
@@ -672,7 +684,7 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
                     ModelPostprocessCheckerMeasure ppCheckerMeasure( this->worldCommPtr() );
                     ppCheckerMeasure.setDirectoryLibExpr( M_directoryLibExpr );
                     ppCheckerMeasure.setPTree( ptreeCheckerMeasure.second, indexes.replace( ptreeCheckerMeasure.first ), indexes );
-                    M_checkersMeasure[name].push_back( ppCheckerMeasure );
+                    M_checkersMeasure[name].push_back( std::move(ppCheckerMeasure) );
                 }
             }
         }
