@@ -250,6 +250,9 @@ class ModelNumerical : virtual public ModelBase,
 
         ModelMeasuresIO const& postProcessMeasuresIO() const { return M_postProcessMeasuresIO; }
         ModelMeasuresIO & postProcessMeasuresIO() { return M_postProcessMeasuresIO; }
+
+        ModelMeasuresStorage const& postProcessMeasures() const { return M_postProcessMeasures; }
+        ModelMeasuresStorage & postProcessMeasures() { return M_postProcessMeasures; }
         ModelMeasuresEvaluatorContext const& postProcessMeasuresEvaluatorContext() const { return M_postProcessMeasuresEvaluatorContext; }
         ModelMeasuresEvaluatorContext & postProcessMeasuresEvaluatorContext() { return M_postProcessMeasuresEvaluatorContext; }
 
@@ -333,6 +336,7 @@ class ModelNumerical : virtual public ModelBase,
         fs::path M_postProcessSaveRepository;
         std::set<std::string> M_postProcessMeasuresQuantitiesNames, M_postProcessMeasuresQuantitiesAllNamesAvailable;
         ModelMeasuresIO M_postProcessMeasuresIO;
+        ModelMeasuresStorage M_postProcessMeasures;
         ModelMeasuresEvaluatorContext M_postProcessMeasuresEvaluatorContext;
 
         GeomapStrategyType M_geomap;
@@ -717,7 +721,7 @@ ModelNumerical::updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEval
         return false;
     bool hasMeasure = false;
     std::map<std::string,double> resPpPoints;
-    measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, se, mfields );
+    measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), M_postProcessMeasures/*resPpPoints*/, se, mfields );
     for ( auto const& resPpPoint : resPpPoints )
     {
         this->postProcessMeasuresIO().setMeasure( resPpPoint.first, resPpPoint.second );

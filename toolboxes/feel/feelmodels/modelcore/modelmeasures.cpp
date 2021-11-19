@@ -36,6 +36,115 @@ namespace Feel
 namespace FeelModels
 {
 
+
+
+
+void
+ModelMeasuresStorage::setValue( std::string const& name, std::string const& key, double val )
+{
+    M_values[name].setValue( key, val );
+}
+
+void
+ModelMeasuresStorage::setTable( std::string const& name, Feel::Table && table )
+{
+    ModelMeasuresStorageTable mmst( name, std::move( table ) );
+    M_tables.erase( name );
+    M_tables.emplace( std::make_pair( name, std::move( mmst ) ) );
+}
+
+void
+ModelMeasuresStorage::save()
+{
+    if ( M_worldComm->isMasterRank() )
+    {
+        for ( auto & [name, values] : M_values )
+            if ( values.isUpdated() )
+                values.exportCSV( M_directory );
+        for ( auto & [name, table] : M_tables )
+            if ( table.isUpdated() )
+                table.exportCSV( M_directory );
+    }
+    M_worldComm->barrier();
+}
+
+bool
+ModelMeasuresStorage::isUpdated() const
+{
+    for ( auto const& [name, values] : M_values )
+        if ( values.isUpdated() )
+            return true;
+    for ( auto const& [name, table] : M_tables )
+        if ( table.isUpdated() )
+            return true;
+    return false;
+}
+
+void
+ModelMeasuresStorage::resetState()
+{
+    for ( auto & [name, values] : M_values )
+        values.resetState();
+    for ( auto & [name, table] : M_tables )
+        table.resetState();
+}
+
+
+
+void
+ModelMeasuresStorageValues::setValue( std::string const& key, double val )
+{
+    M_data[key] = val;
+    M_stateUpdated = true;
+}
+
+void
+ModelMeasuresStorageValues::exportCSV( std::string const& directory, bool append )
+{
+    fs::path pdir(directory);
+    if ( !fs::exists( pdir ) )
+        fs::create_directories( pdir );
+    std::string filename = "measures.csv";
+    std::ofstream ofile( (pdir/filename).string(), append? std::ios::app : std::ios::trunc);
+    if ( ofile )
+        this->exportCSV( ofile );
+}
+void
+ModelMeasuresStorageValues::exportCSV( std::ostream &o )
+{
+    if ( M_data.empty() )
+        return;
+
+    Feel::Table table;
+    if ( M_keys.empty() )
+    {
+        table.resize( 2, M_data.size() );
+        M_keys.reserve( M_data.size() );
+        for ( auto const& [key,val] : M_data )
+        {
+            int i = M_keys.size();
+            M_keys.push_back( key );
+            table(0,i) = key;
+            table(1,i) = val;
+        }
+    }
+    else
+    {
+        CHECK( false ) << "TODO";
+    }
+    table.exportCSV( o );
+}
+
+
+void
+ModelMeasuresStorageTable::exportCSV( std::string const& directory, size_type index )
+{
+
+}
+
+
+
+
 template <typename T>
 std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
 {

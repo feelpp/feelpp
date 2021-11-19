@@ -30,6 +30,7 @@
 #ifndef FEELPP_MODELPOSTPROCESS_EXTRA_H
 #define FEELPP_MODELPOSTPROCESS_EXTRA_H 1
 
+#include <feel/feelcore/table.hpp>
 #include <feel/feelmodels/modelpostprocess.hpp>
 
 namespace Feel
@@ -98,6 +99,74 @@ private :
     std::vector<std::string> M_dataIndexToName;
     std::vector<double> M_data;
     bool M_addNewDataIsLocked;
+};
+
+
+// fwd declarations
+class ModelMeasuresStorageValues;
+class ModelMeasuresStorageTable;
+
+class ModelMeasuresStorage
+{
+public :
+    //enum class State { IN_MEMORY=0, ON_DISK, MODIFIED };
+
+    ModelMeasuresStorage( std::string const& directory, worldcomm_ptr_t const& worldComm ) : M_directory( directory ), M_worldComm( worldComm ) {}
+
+    void setValue( std::string const& key, double val ) { this->setValue( "", key, val ); }
+    void setValue( std::string const& name, std::string const& key, double val );
+
+    void setTable( std::string const& name, Feel::Table && table );
+    void save();
+
+    bool isUpdated() const;
+    void resetState();
+
+private :
+    std::string M_directory;
+    worldcomm_ptr_t M_worldComm;
+    std::map<std::string,ModelMeasuresStorageValues> M_values;
+    std::map<std::string,ModelMeasuresStorageTable> M_tables;
+};
+
+class ModelMeasuresStorageValues
+{
+public :
+    ModelMeasuresStorageValues() = default;
+    ModelMeasuresStorageValues( ModelMeasuresStorageValues && ) = default;
+    ModelMeasuresStorageValues( ModelMeasuresStorageValues const& ) = delete;
+
+    void setValue( std::string const& key, double val );
+
+    void exportCSV( std::string const& directory, bool append = true );
+    void exportCSV( std::ostream &o );
+
+    bool isUpdated() const { return M_stateUpdated; }
+    void resetState() { M_stateUpdated = false; }
+
+private:
+    std::string M_name;
+    std::map<std::string,double> M_data;
+    std::vector<std::string> M_keys;
+    bool M_stateUpdated = false;
+};
+
+class ModelMeasuresStorageTable
+{
+public :
+    ModelMeasuresStorageTable( std::string const& name, Feel::Table && table ) : M_name( name ), M_table( std::move( table ) ) {}
+    ModelMeasuresStorageTable( ModelMeasuresStorageTable && ) = default;
+    ModelMeasuresStorageTable( ModelMeasuresStorageTable const& ) = delete;
+
+    Feel::Table const& table() const { return M_table; }
+    //Feel::Table & table() { return M_table; }
+    void exportCSV( std::string const& directory, size_type index = invalid_v<size_type> );
+
+    bool isUpdated() const { return false; }
+    void resetState() {}
+private:
+    std::string M_name;
+    Feel::Table M_table;
 };
 
 class ModelMeasuresEvaluatorContext

@@ -217,7 +217,7 @@ public :
 
     template <typename SymbolsExprType,typename FieldTupleType>
     void
-    eval( std::vector<ModelPostprocessPointPosition> const& allEvalPoints, std::map<std::string,double> & res, SymbolsExprType const& se, FieldTupleType const& fieldTuple )
+    eval( std::vector<ModelPostprocessPointPosition> const& allEvalPoints, ModelMeasuresStorage/*std::map<std::string,double>*/ & res, SymbolsExprType const& se, FieldTupleType const& fieldTuple )
         {
             for ( auto const& evalPoints : allEvalPoints )
             {
@@ -380,7 +380,7 @@ private :
 #endif
     template <typename ContextDataType,typename ExprType>
     void
-    evalImpl( ContextDataType const& ctx, std::set<index_type> const& nodeIds, ExprType const& theExpr, std::string const& outputNameBase, std::map<std::string,double> & res )
+    evalImpl( ContextDataType const& ctx, std::set<index_type> const& nodeIds, ExprType const& theExpr, std::string const& outputNameBase, ModelMeasuresStorage/*std::map<std::string,double>*/ & res )
         {
             //std::cout << "ModelMeasurePointEval evalImpl " << outputNameBase << " nodeIds " << nodeIds << std::endl;
             auto evalAtNodes = evaluateFromContext( _context=*ctx,
@@ -408,7 +408,8 @@ private :
                             outputName = (boost::format("%1%_%2%")%outputNameBase %j).str();
                         if ( numberOfNodes > 1 )
                             outputName += "_" + std::to_string( nodeId );
-                        res[outputName] = val;
+                        //res[outputName] = val;
+                        res.setValue( outputName, val );
                     }
                 }
             }
