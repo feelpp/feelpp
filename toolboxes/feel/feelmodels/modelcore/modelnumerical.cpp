@@ -56,9 +56,10 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         M_timeCurrent(M_timeInitial),
         M_manageParameterValues( true ),
         M_manageParameterValuesOfModelProperties( true ),
-        M_exporterPath( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) ),
+        M_exporterPath( (fs::path(this->rootRepository())/prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports"))).string() ),
         M_postProcessSaveRepository( fs::path(this->rootRepository())/prefixvm(this->prefix(), prefixvm(this->subPrefix(),"save")) ),
-        M_postProcessMeasuresIO( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldCommPtr() ),
+        M_postProcessMeasuresIO( (fs::path(this->rootRepository())/prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv"))).string(),this->worldCommPtr() ),
+        M_postProcessMeasures( (fs::path(this->rootRepository())/prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures"))).string(), this->worldCommPtr() ),
         //M_PsLogger( new PsLogger(prefixvm(this->prefix(),"PsLogger"),this->worldComm() ) )
         M_useChecker( boption(_prefix=this->prefix(),_name="checker",_vm=this->clovm()) )
     {

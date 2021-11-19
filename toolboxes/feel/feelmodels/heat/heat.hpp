@@ -587,13 +587,21 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
     bool hasMeasureQuantity = this->updatePostProcessMeasuresQuantities( mquantities, symbolsExpr );
     if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint || hasMeasureQuantity )
         hasMeasure = true;
-
+#if 0
     if ( hasMeasure )
     {
         if ( !this->isStationary() )
             this->postProcessMeasuresIO().setMeasure( "time", time );
         this->postProcessMeasuresIO().exportMeasures();
         this->upload( this->postProcessMeasuresIO().pathFile() );
+    }
+#endif
+    if ( this->postProcessMeasures().isUpdated() )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasures().setValue( "time", time );
+        this->postProcessMeasures().save();
+        //this->upload( this->postProcessMeasuresIO().pathFile() );
     }
 }
 
