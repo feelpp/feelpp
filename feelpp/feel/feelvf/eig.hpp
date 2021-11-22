@@ -24,6 +24,8 @@
 #ifndef __FEELPP_VF_EIG_H
 #define __FEELPP_VF_EIG_H 1
 
+#include <feel/feelvf/expr.hpp>
+
 namespace Feel
 {
 namespace vf
@@ -232,6 +234,12 @@ class Eig : public ExprDynamicBase
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return M_eigv[q]( c1, c2 );
+        }
+
+        Eigen::Map<const vector_type>
+        evalq( uint16_type q ) const
+        {
+            return Eigen::Map<const vector_type>(M_eigv[q].data());
         }
 
       private:

@@ -98,7 +98,9 @@ private :
             this->updateEltsId( my_index );
 
             // create new submesh with the new elements and reread it in sequential
-            auto submesh = createSubmesh( mesh, idelements(mesh,this->M_elts_ids.begin(), this->M_elts_ids.end()) );
+            auto submesh = createSubmesh( _mesh=mesh,
+                                          _range=idelements(mesh,this->M_elts_ids.begin(), this->M_elts_ids.end()),
+                                          _context=EXTRACTION_KEEP_MESH_RELATION);
             saveGMSHMesh( _mesh=submesh, _filename=this->name(true)+"-submesh.msh" );
             auto seqmesh = loadMesh( _mesh=new mesh_type,
                                      _filename=this->name(true)+"-submesh.msh",

@@ -75,7 +75,7 @@ private:
     //--------------------------------------------------------------------//
     double M_helfrichBendingModulus;
     int M_forceImpl;
-    vf::FeelModels::HelfrichInnerDivImplementation M_helfrichInnerDivExprImpl;
+    HelfrichInnerDivImplementation M_helfrichInnerDivExprImpl;
     bool M_useIntegrationByParts;
     HelfrichMethod M_helfrichForceMethod;
 
@@ -119,9 +119,9 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::loadParametersFromOptionsV
     M_forceImpl = ioption( _name="helfrich-force-impl", _prefix=this->prefix() );
     std::string helfrichInnerDivExprImpl = soption( _name="helfrich-inner-div-impl", _prefix=this->prefix() );
     if( helfrichInnerDivExprImpl == "generic" )
-        M_helfrichInnerDivExprImpl = vf::FeelModels::HelfrichInnerDivImplementation::GENERIC;
+        M_helfrichInnerDivExprImpl = HelfrichInnerDivImplementation::GENERIC;
     else if( helfrichInnerDivExprImpl == "distance" )
-        M_helfrichInnerDivExprImpl = vf::FeelModels::HelfrichInnerDivImplementation::DISTANCE;
+        M_helfrichInnerDivExprImpl = HelfrichInnerDivImplementation::DISTANCE;
     else
         CHECK( false ) << helfrichInnerDivExprImpl << " is not a valid Helfrich inner div implementation\n";
 
@@ -159,13 +159,12 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::updateFluidInterfaceForces
     bool BuildNonCstPart = !BuildCstPart;
 
     vector_ptrtype& F = data.rhs();
-    auto Xh = this->fluid()->functionSpace();
+    auto Xh = this->fluid()->functionSpaceVelocity();
     auto myLinearForm = form1( _test=Xh, _vector=F,
                                _rowstart=this->fluid()->rowStartInVector() );
 
-    auto const& U = this->fluid()->fieldVelocityPressure();
-    auto u = U.template element<0>();
-    auto v = U.template element<0>();
+    auto const& u = this->fluid()->fieldVelocity();
+    auto const& v = u;
 
     if( BuildNonCstPart )
     {
@@ -178,7 +177,7 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::updateFluidInterfaceForces
             auto modGradPhi = this->levelset()->modGradPhi();
             auto D = this->levelset()->D();
 
-            auto helfrichInnerDiv = Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl );
+            auto helfrichInnerDiv = helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl );
             myLinearForm +=
                 integrate( _range=this->fluid()->rangeMeshElements(),
                         _expr= -this->bendingModulus() * trans(helfrichInnerDiv) * (
@@ -217,11 +216,10 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::updateFluidInterfaceForces
 
     const vector_ptrtype& XVec = data.currentSolution();
     vector_ptrtype& R = data.residual();
-    auto Xh = this->fluid()->functionSpace();
+    auto Xh = this->fluid()->functionSpaceVelocity();
 
-    auto U = Xh->element(XVec, this->fluid()->rowStartInVector());
-    auto u = U.template element<0>();
-    auto v = U.template element<0>();
+    auto u = Xh->element(XVec, this->fluid()->rowStartInVector());
+    auto const& v = this->fluid()->fieldVelocity();
 
     auto linearForm_PatternCoupled = form1( _test=Xh, _vector=R,
                                             _pattern=size_type(Pattern::COUPLED),
@@ -237,7 +235,7 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::updateFluidInterfaceForces
             auto modGradPhi = this->levelset()->modGradPhi();
             auto D = this->levelset()->D();
 
-            auto helfrichInnerDiv = Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl );
+            auto helfrichInnerDiv = helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl );
             linearForm_PatternCoupled +=
                 integrate( _range=this->fluid()->rangeMeshElements(),
                         _expr= this->bendingModulus() * trans(helfrichInnerDiv) * (
@@ -303,7 +301,7 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
                     auto helfrichInnerDiv = vf::project(
                             _space=this->levelset()->functionSpaceVectorial(),
                             _range=this->levelset()->rangeMeshElements(),
-                            _expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
+                            _expr=helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
                             );
                     *F = vf::project(
                             _space=this->levelset()->functionSpaceVectorial(),
@@ -317,7 +315,7 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
                     auto helfrichInnerDiv = vf::project(
                             _space=this->levelset()->functionSpaceVectorial(),
                             _range=this->levelset()->rangeMeshElements(),
-                            _expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
+                            _expr=helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
                             );
                     auto Fb_div = this->levelset()->projectorL2()->project(
                             _expr= divv(helfrichInnerDiv) 
@@ -332,7 +330,7 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
                 case HelfrichMethod::SMOOTH_PROJECTION:
                 {
                     auto helfrichInnerDiv = this->levelset()->smootherVectorial()->project(
-                            _expr=Feel::vf::FeelModels::helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
+                            _expr=helfrichInnerDivExpr( *N, *K, *modGradPhi, M_helfrichInnerDivExprImpl )
                             );
                     auto Fb_div = this->levelset()->smoother()->project(
                             _expr=divv(helfrichInnerDiv) 

@@ -414,32 +414,22 @@ WorldComm::subWorldCommPtr()
 worldcomm_ptr_t 
 WorldComm::subWorldComm( int _color ) const
 {
-    //std::cout << " WorldComm::subWorldComm( int _color ) " << std::endl;
-
-    bool isActive;
     int myColor = this->mapColorWorld()[this->globalRank()];
-
-    if ( myColor==_color )
-        isActive=true;
-
-    else
-        isActive=false;
-
-    std::vector<int> newIsActive(this->godSize(),false);
-    if (isActive)
+    bool isActive = ( myColor == _color );
+    std::vector<int> newIsActive( this->godSize(), false );
+    if ( isActive )
+    {
+        for ( int p = 0; p < this->localSize(); ++p )
         {
-            for ( int p=0;p<this->localSize();++p)
-                {
-                    newIsActive[ mapGlobalRankToGodRank()[mapLocalRankToGlobalRank()[p]] ]=true;
-                }
+            newIsActive[mapGlobalRankToGodRank()[mapLocalRankToGlobalRank()[p]]] = true;
         }
+    }
 
     return std::make_shared<self_type>( this->localComm(),
                                         this->localComm(),
                                         this->godComm(),
                                         myColor,
                                         newIsActive );
-    
 }
 
 //-------------------------------------------------------------------------------

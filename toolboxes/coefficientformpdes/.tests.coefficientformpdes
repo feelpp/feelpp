@@ -1,0 +1,10 @@
+ThermalBridgesENISO10211_case2  --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/heat/ThermalBridgesENISO10211/thermo2dCase2.cfg  --directory=toolboxes/testsuite/coefficientformpdes/heat/ThermalBridgesENISO10211/2dCase2
+ThermalBridgesENISO10211_case2_alternative  --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/heat/ThermalBridgesENISO10211/thermo2dCase2.cfg  --directory=toolboxes/testsuite/coefficientformpdes/heat/ThermalBridgesENISO10211/2dCase2_alternative --cfpdes.filename=$cfgdir/thermo2dCase2_alternative.json
+
+heat_thermo2d  --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/heat/thermo2d/thermo2d.cfg --directory=toolboxes/testsuite/coefficientformpdes/heat/thermo2d --ts.time-final=0.5
+heat_thermo2d_alternative  --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/heat/thermo2d/thermo2d_alternative.cfg --directory=toolboxes/testsuite/coefficientformpdes/heat/thermo2d --ts.time-final=0.5
+
+ElectroMagnets_HL-31_H1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/thermoelectric/ElectroMagnets_HL-31_H1/HL-31_H1.cfg --directory=toolboxes/testsuite/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1
+
+bratu --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/bratu/square/bratu.cfg -directory=toolboxes/testsuite/coefficientformpdes/bratu/square
+

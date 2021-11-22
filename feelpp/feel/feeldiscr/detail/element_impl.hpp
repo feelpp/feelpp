@@ -515,9 +515,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 
         const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
         const size_type fec_v = gmc_v;
-        gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
-                                                               this->functionSpace()->mesh()->element( __cv_id ),
-                                                               __geopc );
+        auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( __cv_id ), __geopc );
         pc_ptrtype pc( new pc_type( this->functionSpace()->fe(), pts ) );
         fec_ptr_t<fec_v,gmc_v> fectx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
                                                                              __c,
@@ -623,10 +621,12 @@ template<typename Context_t>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
 {
+#if 0 // TODO VINCENT
     if ( is_hcurl_conforming && ( ( context.gmContext()->context & vm::KB ) == 0 ) )
         throw std::logic_error("invalid geometric mapping context for hcurl " + std::to_string(context.gmContext()->context) );
     if ( is_hdiv_conforming && ( ( context.gmContext()->context & vm::JACOBIAN ) == 0  ) )
         throw std::logic_error("invalid geometric mapping context for hdiv " + std::to_string(context.gmContext()->context) );
+#endif
     index_type elt_id = context.eId();
     if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
         elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
@@ -680,9 +680,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_t
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
 
-    gmc_ptr_t<> __c = std::make_shared<gmc_t<>>( __gm,
-                                                 this->functionSpace()->mesh()->element( it->first ),
-                                                 __geopc );
+    auto __c = __gm->template context<DefaultCTX>( this->functionSpace()->mesh()->element( it->first ), __geopc );
 
     fec_ptr_t<> __ctx = std::make_shared<fec_t<>>( this->functionSpace()->fe(),
                                                    __c,
@@ -708,7 +706,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_t
         //update precompute of basis functions
         __pc->update( pts );
 
-        __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+        __c->template update<DefaultCTX>( this->functionSpace()->mesh()->element( it->first ), __geopc );
         __ctx->update( __c, __pc );
 
         //evaluate element for these points
@@ -758,9 +756,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
 
         const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
         const size_type fec_v = gmc_v|vm::GRAD;
-        gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
-                                                               this->functionSpace()->mesh()->element( __cv_id ),
-                                                               __geopc );
+        auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( __cv_id ), __geopc );
         pc_ptrtype pc( new pc_type( this->functionSpace()->fe(), pts ) );
         fec_ptr_t<fec_v,gmc_v> fectx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
                                                                              __c,
@@ -1001,9 +997,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_nod
 
     const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
     const size_type fec_v = gmc_v|vm::GRAD;
-    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
-                                                           this->functionSpace()->mesh()->element( it->first ),
-                                                           __geopc );
+    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
 
     fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
                                                                          __c,
@@ -1028,7 +1022,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_nod
 
         //update precompute of basis functions
         __pc->update( pts );
-        __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
         __ctx->update( __c, __pc );
 
         //evaluate element for these points
@@ -1178,9 +1172,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
     const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
     const size_type fec_v = gmc_v|vm::DIV|vm::FIRST_DERIVATIVE;
-    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
-                                                           this->functionSpace()->mesh()->element( it->first ),
-                                                           __geopc );
+    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
 
     fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
                                                                          __c,
@@ -1202,7 +1194,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_
 
         //update geomap context
         __geopc->update( pts );
-        __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
         //update precompute of basis functions
         __pc->update( pts );
         __ctx->update( __c, __pc );
@@ -1373,9 +1365,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
     const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
     const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
-    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
-                                                           this->functionSpace()->mesh()->element( it->first ),
-                                                           __geopc );
+    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
 
     fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
                                                                          __c,
@@ -1397,7 +1387,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
 
         //update geomap context
         __geopc->update( pts );
-        __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
         //update precompute of basis functions
         __pc->update( pts );
         __ctx->update( __c, __pc );
@@ -1462,9 +1452,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( matrix_nod
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
     const size_type gmc_v = vm::KB|vm::POINT;
     const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
-    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
-                                                           this->functionSpace()->mesh()->element( it->first ),
-                                                           __geopc );
+    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
 
     fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
                                                                          __c,
@@ -1486,7 +1474,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( matrix_nod
 
         //update geomap context
         __geopc->update( pts );
-        __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
         //update precompute of basis functions
         __pc->update( pts );
         __ctx->update( __c, __pc );
@@ -1550,9 +1538,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
     const size_type gmc_v = vm::KB|vm::POINT;
     const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
-    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
-                                                           this->functionSpace()->mesh()->element( it->first ),
-                                                           __geopc );
+    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
 
     fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
                                                                          __c,
@@ -1574,7 +1560,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
 
         //update geomap context
         __geopc->update( pts );
-        __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
         //update precompute of basis functions
         __pc->update( pts );
         __ctx->update( __c, __pc );
@@ -1638,9 +1624,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_nod
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
     const size_type gmc_v = vm::KB|vm::POINT;
     const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
-    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
-                                                           this->functionSpace()->mesh()->element( it->first ),
-                                                           __geopc );
+    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
 
     fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
                                                                          __c,
@@ -1662,7 +1646,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_nod
 
         //update geomap context
         __geopc->update( pts );
-        __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
         //update precompute of basis functions
         __pc->update( pts );
         __ctx->update( __c, __pc );
@@ -1766,9 +1750,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_t
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
     const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
     const size_type fec_v = gmc_v|vm::GRAD;
-    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
-                                                           this->functionSpace()->mesh()->element( it->first ),
-                                                           __geopc );
+    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
 
     fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
                                                                          __c,
@@ -1789,7 +1771,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_t
 
         //update geomap context
         __geopc->update( pts );
-        __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
         //update precompute of basis functions
         __pc->update( pts );
         __ctx->update( __c, __pc );
@@ -1845,9 +1827,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_t
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
     const size_type gmc_v = vm::KB|vm::POINT;
     const size_type fec_v = gmc_v|vm::GRAD;
-    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
-                                                           this->functionSpace()->mesh()->element( it->first ),
-                                                           __geopc );
+    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
 
     fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
                                                                          __c,
@@ -1869,7 +1849,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_t
 
         //update geomap context
         __geopc->update( pts );
-        __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
         //update precompute of basis functions
         __pc->update( pts );
         __ctx->update( __c, __pc );
@@ -1925,9 +1905,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_t
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
     const size_type gmc_v = vm::KB|vm::POINT;
     const size_type fec_v = gmc_v|vm::GRAD;
-    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
-                                                           this->functionSpace()->mesh()->element( it->first ),
-                                                           __geopc );
+    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
 
     fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
                                                                          __c,
@@ -1949,7 +1927,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_t
 
         //update geomap context
         __geopc->update( pts );
-        __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
         //update precompute of basis functions
         __pc->update( pts );
         __ctx->update( __c, __pc );
@@ -2056,9 +2034,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
     const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT|vm::HESSIAN;
     const size_type fec_v = gmc_v|vm::GRAD;
-    gmc_ptr_t<gmc_v> __c = std::make_shared<gmc_t<gmc_v>>( __gm,
-                                                           this->functionSpace()->mesh()->element( it->first ),
-                                                           __geopc );
+    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
 
     fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
                                                                          __c,
@@ -2079,7 +2055,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node
 
         //update geomap context
         __geopc->update( pts );
-        __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
         //update precompute of basis functions
         __pc->update( pts );
         __ctx->update( __c, __pc );
@@ -2222,16 +2198,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacianInterpolate( matrix
     //init the geomap context and precompute basis function
     geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
     pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    gmc_ptrtype __c( new gmc_type( __gm,
-                                   this->functionSpace()->mesh()->element( it->first ),
-                                   __geopc ) );
-    typedef typename mesh_type::element_type geoelement_type;
-    typedef typename functionspace_type::fe_type fe_type;
-    typedef typename fe_type::template Context<vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE|vm::POINT, fe_type, gm_type, geoelement_type,gmc_type::context> fectx_type;
-    typedef std::shared_ptr<fectx_type> fectx_ptrtype;
-    fectx_ptrtype __ctx( new fectx_type( this->functionSpace()->fe(),
-                                         __c,
-                                         __pc ) );
+    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT|vm::HESSIAN;
+    const size_type fec_v = gmc_v|vm::LAPLACIAN|vm::FIRST_DERIVATIVE;
+    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
+
+    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
+                                                                         __c,
+                                                                         __pc );
 
     for ( ; it!=it_end; ++it )
     {
@@ -2249,7 +2222,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacianInterpolate( matrix
 
         //update geomap context
         __geopc->update( pts );
-        __c->update( this->functionSpace()->mesh()->element( it->first ), __geopc );
+        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
         //update precompute of basis functions
         __pc->update( pts );
         __ctx->update( __c, __pc );
@@ -2287,12 +2260,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     // geometric mapping context
     typedef typename functionspace_type::mesh_type::gm_type gm_type;
     typedef std::shared_ptr<gm_type> gm_ptrtype;
-    typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
+    typedef typename gm_type::template Context<geoelement_type> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<Feel::vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-    typedef typename gm_type::template Context<context, geoelement_type> gm_context_type;
+    typedef typename gm_type::template Context<geoelement_type> gm_context_type;
     typedef typename geoelement_type::gm1_type gm1_type;
-    typedef typename gm1_type::template Context<context, geoelement_type> gm1_context_type;
+    typedef typename gm1_type::template Context<geoelement_type> gm1_context_type;
     typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
     typedef std::shared_ptr<gm1_context_type> gm1_context_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
@@ -2341,8 +2314,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         return;
 
     auto const& initElt = boost::unwrap_ref( *it );
-    gm_context_ptrtype __c( new gm_context_type( this->functionSpace()->gm(),initElt,__geopc, invalid_uint16_type_value, ex.dynamicContext() ) );
-    gm1_context_ptrtype __c1( new gm1_context_type( this->mesh()->gm1(),initElt,__geopc1, invalid_uint16_type_value, ex.dynamicContext() ) );
+    gm_context_ptrtype __c = this->mesh()->gm()->template context<context>( initElt,__geopc, ex.dynamicContext() );
+    gm1_context_ptrtype __c1 = this->mesh()->gm1()->template context<context>( initElt,__geopc1, ex.dynamicContext() );
 
     typedef typename t_expr_type::shape shape;
     static const bool is_rank_ok = ( shape::M == nComponents1 &&
@@ -2372,7 +2345,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         {
         case GeomapStrategyType::GEOMAP_HO:
         {
-            __c->update( curElt );
+            __c->template update<context>( curElt );
             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
             tensor_expr.update( mapgmc );
             __fe->interpolate( tensor_expr, IhLoc );
@@ -2381,7 +2354,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
         case GeomapStrategyType::GEOMAP_O1:
         {
-            __c1->update( curElt );
+            __c1->template update<context>( curElt );
             map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
             tensor_expr1.update( mapgmc1 );
             __fe->interpolate( tensor_expr1, IhLoc );
@@ -2393,7 +2366,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             if ( curElt.isOnBoundary() )
             {
                 // HO if on boundary
-                __c->update( curElt );
+                __c->template update<context>( curElt );
                 map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                 tensor_expr.update( mapgmc );
                 __fe->interpolate( tensor_expr, IhLoc );
@@ -2401,7 +2374,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
             else
             {
-                __c1->update( curElt );
+                __c1->template update<context>( curElt );
                 map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                 tensor_expr1.update( mapgmc1 );
                 __fe->interpolate( tensor_expr1, IhLoc );
@@ -2475,32 +2448,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                                         mpl::int_<ExprType::context|vm::POINT> >::type::value;
 
 
-    typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
-    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-    typedef typename gm1_type::template Context<context, geoelement_type> gmc1_type;
-    typedef std::shared_ptr<gmc1_type> gmc1_ptrtype;
-    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
-
-
     // dof
     typedef typename element_type::functionspace_type::dof_type dof_type;
-
-    // basis
-    typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
-    typedef std::shared_ptr<fecontext_type> fecontext_ptrtype;
-    typedef typename fe_type::template Context< context, fe_type, gm1_type, geoelement_type> fecontext1_type;
-    typedef std::shared_ptr<fecontext1_type> fecontext1_ptrtype;
-    //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
-
-    // expression
-    //typedef typename expression_type::template tensor<map_gmc_type,fecontext_type> t_expr_type;
-    //typedef decltype( basis_type::isomorphism( M_expr ) ) the_expression_type;
-    typedef expression_type the_expression_type;
-    typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
-    typedef typename iso_expression_type::template tensor<map_gmc_type> t_expr_type;
-    typedef typename iso_expression_type::template tensor<map_gmc1_type> t_expr1_type;
-    typedef typename t_expr_type::shape shape;
 
     //
     // start
@@ -2517,9 +2466,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     if ( __face_it == __face_en )
         return;
 
-    gm_ptrtype __gm( new gm_type );
-    gm1_ptrtype __gm1( new gm1_type );
-
+    auto __gm = this->functionSpace()->gm();
+    auto __gm1 = this->functionSpace()->gm1();
 
 
     //
@@ -2550,13 +2498,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     }
     face_type const& firstFace = *__face_it;
     uint16_type __face_id = firstFace.pos_first();
-    gmc_ptrtype __c( new gmc_type( __gm, firstFace.element( 0 ), __geopc, __face_id, ex.dynamicContext() ) );
-    gmc1_ptrtype __c1( new gmc1_type( __gm1, firstFace.element( 0 ), __geopc1, __face_id, ex.dynamicContext() ) );
+    auto __c = __gm->template context<context>( firstFace.element( 0 ), __geopc, __face_id, ex.dynamicContext() );
+    auto __c1 = __gm1->template context<context>( firstFace.element( 0 ), __geopc1, __face_id, ex.dynamicContext() );
 
-    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-    t_expr_type expr( ex, mapgmc );
-    map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
-    t_expr1_type expr1( ex, mapgmc1 );
+    auto expr_evaluator = ex.evaluator( vf::mapgmc(__c) );
+    auto expr1_evaluator = ex.evaluator( vf::mapgmc(__c1) );
 
 
     bool hasMeshSupportPartial = __dof->hasMeshSupport() && __dof->meshSupport()->isPartialSupport();
@@ -2622,27 +2568,23 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         case GeomapStrategyType::GEOMAP_OPT:
         case GeomapStrategyType::GEOMAP_HO:
         {
-            __c->update( curFace.element( faceConnectionId ), __face_id );
+            __c->template update<context>( curFace.element( faceConnectionId ), __face_id );
             DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << "  ref pts=" << __c->xRefs() << "\n";
             DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << __c->xReal() << "\n";
 
-            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-
-            expr.update( mapgmc );
-            __fe->faceInterpolate( expr, IhLoc );
+            expr_evaluator.update( vf::mapgmc( __c ) );
+            __fe->faceInterpolate( expr_evaluator, IhLoc );
         }
         break;
 
         case GeomapStrategyType::GEOMAP_O1:
         {
-            __c1->update( curFace.element( faceConnectionId ), __face_id );
+            __c1->template update<context>( curFace.element( faceConnectionId ), __face_id );
             DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << "  ref pts=" << __c1->xRefs() << "\n";
             DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << __c1->xReal() << "\n";
 
-            map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
-
-            expr1.update( mapgmc1 );
-            __fe->faceInterpolate( expr1, IhLoc );
+            expr1_evaluator.update( vf::mapgmc( __c1 ) );
+            __fe->faceInterpolate( expr1_evaluator, IhLoc );
         }
         break;
         }
@@ -2677,8 +2619,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     typedef typename range_gm_type::precompute_ptrtype range_geopc_ptrtype;
     typedef typename range_gm_type::precompute_type range_geopc_type;
 
-    typedef typename element_type::functionspace_type::basis_type::template ChangeDim<range_geoelement_type::nDim>::type fe_range_dim_type;
-
     auto __face_it = r.first;
     auto const __face_en = r.second;
 
@@ -2703,6 +2643,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     if ( !gmRange )
         gmRange.reset( new range_gm_type );
 
+    typedef typename element_type::functionspace_type::basis_type::template ChangeDim<range_geoelement_type::nDim>::type fe_range_dim_type;
     fe_range_dim_type feRangeDim;
 
     std::vector<std::map<range_permutation_type, range_geopc_ptrtype> > geopcRange( range_geoelement_type::numTopologicalFaces );
@@ -2712,13 +2653,21 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         for ( range_permutation_type __p( range_permutation_type::IDENTITY );
               __p < range_permutation_type( range_permutation_type::N_PERMUTATIONS ); ++__p )
         {
-            geopcRange[__f][__p] = range_geopc_ptrtype(  new range_geopc_type( gmRange, feRangeDim.points( __f ) ) );
+            // special case with lagrange P0d : dof point in 2d/3d faces are not connected to 1d/2d element, trick use barycenter of faces
+            if constexpr ( is_lagrange_polynomialset_P0d_v<typename element_type::functionspace_type::basis_type> )
+            {
+                auto fb = gmRange->referenceConvex().faceBarycenter( __f );
+                matrix_node_type fb_convert( fb.size(), 1 );
+                ublas::column(fb_convert,0) = fb;
+                geopcRange[__f][__p] = range_geopc_ptrtype(  new range_geopc_type( gmRange, fb_convert ) );
+            }
+            else
+                geopcRange[__f][__p] = range_geopc_ptrtype(  new range_geopc_type( gmRange, feRangeDim.points( __f ) ) );
         }
     }
 
-    const size_type context = mpl::if_< mpl::or_<mpl::bool_<is_hdiv_conforming>, mpl::bool_<is_hcurl_conforming> >,
-                                        mpl::int_<ExprType::context|vm::POINT|vm::JACOBIAN>,
-                                        mpl::int_<ExprType::context|vm::POINT> >::type::value;
+    constexpr size_type context = (is_hdiv_conforming || is_hcurl_conforming)?ExprType::context|vm::POINT|vm::JACOBIAN:ExprType::context|vm::POINT;
+
     auto gmcRange = gmRange->template context<context,1>( eltConnectedToFirstFace, geopcRange, fid_in_element, ex.dynamicContext() );
     auto expr_evaluator = ex.evaluatorWithPermutation( vf::mapgmc(gmcRange) );
 
@@ -2738,13 +2687,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         auto const& curFace = boost::unwrap_ref(*__face_it);
         fid_in_element = curFace.pos_first();
         uint16_type faceConnectionId = 0;
-        gmcRange->update( curFace.element( faceConnectionId ), fid_in_element );
+        gmcRange->template update<context>( curFace.element( faceConnectionId ), fid_in_element );
         expr_evaluator.update( vf::mapgmc( gmcRange ) );
 
         // get dof relation between fe and face in range
         eltIdRelatedToFace = meshFe->meshToSubMesh( curFace.id() );
         auto const& curEltRelatedToFace =  meshFe->element( eltIdRelatedToFace );
-        gmcFe->update( curEltRelatedToFace );
+        gmcFe->template update<vm::POINT>( curEltRelatedToFace );
         double dofPtCompareTol = std::max(1e-15,curEltRelatedToFace.hMin()*1e-5);
         for ( int q = 0 ; q < nPointsGmc ; ++q )
         {
@@ -2858,8 +2807,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         //std::cout << "entity " << curEntity.id() << " element " << eid << " id in element "
         //<< eid_in_element<< " with hasMarker " << curEntity.hasMarker() << std::endl;
         auto const& elt = mesh->element( eid );
-        ctx->update( elt, eid_in_element );
-        
+        ctx->template update<context>( elt, eid_in_element );
+
         expr_evaluator.update( vf::mapgmc( ctx ) );
         __fe->edgeInterpolate( expr_evaluator, IhLoc );
         //std::cout << "Ihloc: " << IhLoc << " eid: " << eid << " eid_in_element:" << eid_in_element << std::endl;
@@ -2952,7 +2901,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         auto const& elt = mesh->element( eid );
         //geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
         //ctx->update( elt, eid, geopc, mpl::int_<0>() );
-        ctx->update( elt, ptid_in_element );
+        ctx->template update<context>( elt, ptid_in_element );
 
         expr_evaluator.update( vf::mapgmc( ctx ) );
         __fe->vertexInterpolate( expr_evaluator, IhLoc );

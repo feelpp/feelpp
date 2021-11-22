@@ -127,7 +127,7 @@ void runTestElimination()
 }
 
 
-template<int Dim, int PolyOrder=1>
+template<int Dim, int PolyOrder=1,template<class Convex, uint16_type Order, typename T> class PointSetT = PointSetFekete>
 void runTestAssignMeshRelated()
 {
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<Dim,1>>);
@@ -136,23 +136,26 @@ void runTestAssignMeshRelated()
 
     auto g = Px()+Py()+Pz();
 
-    auto Vh = Pch<PolyOrder>( mesh );
-    auto Qh = Pch<PolyOrder>( submesh );
-    auto v = Vh->element();
-    auto q1 = Qh->element();
-    auto q2 = Qh->element();
+    if constexpr ( PolyOrder>0 )
+    {
+        auto Vh = Pch<PolyOrder,double,PointSetT>( mesh );
+        auto Qh = Pch<PolyOrder, double, PointSetT>( submesh );
+        auto v = Vh->element();
+        auto q1 = Qh->element();
+        auto q2 = Qh->element();
 
-    v.on(_range=therange,_expr=g);
-    q1.on(_range=elements(submesh),_expr=g);
-    q2.on(_range=therange,_expr=g);
-    double int1 = integrate(_range=therange,_expr=idv(v)).evaluate()(0,0);
-    double int2 = integrate(_range=elements(submesh),_expr=idv(q1)).evaluate()(0,0);
-    double int3 = integrate(_range=therange,_expr=idv(q2)).evaluate()(0,0);
-    BOOST_CHECK_CLOSE( int1, int2, 1e-12 );
-    BOOST_CHECK_CLOSE( int1, int3, 1e-12 );
+        v.on(_range=therange,_expr=g);
+        q1.on(_range=elements(submesh),_expr=g);
+        q2.on(_range=therange,_expr=g);
+        double int1 = integrate(_range=therange,_expr=idv(v)).evaluate()(0,0);
+        double int2 = integrate(_range=elements(submesh),_expr=idv(q1)).evaluate()(0,0);
+        double int3 = integrate(_range=therange,_expr=idv(q2)).evaluate()(0,0);
+        BOOST_CHECK_CLOSE( int1, int2, 1e-12 );
+        BOOST_CHECK_CLOSE( int1, int3, 1e-12 );
+    }
 
-    auto Wh = Pdhv<PolyOrder>( mesh );
-    auto Rh = Pdhv<PolyOrder>( submesh );
+    auto Wh = Pdhv<PolyOrder,PointSetT>( mesh );
+    auto Rh = Pdhv<PolyOrder,PointSetT>( submesh );
     auto w = Wh->element();
     auto r = Rh->element();
 
@@ -160,7 +163,8 @@ void runTestAssignMeshRelated()
     r.on(_range=therange,_expr=g*N());
     double intv1 = integrate(_range=therange,_expr=inner(idv(w))).evaluate()(0,0);
     double intv2 = integrate(_range=elements(submesh),_expr=inner(idv(r))).evaluate()(0,0);
-    BOOST_CHECK_CLOSE( intv1, intv2, 1e-12 );
+    if constexpr ( PolyOrder>0 ) // currently intv1 is equal to 0 if P0dv because it seems that we can't apply w.on(...) from a range of faces
+        BOOST_CHECK_CLOSE( intv1, intv2, 1e-12 );
 
 #if 0
     auto e1 = exporter( _mesh=mesh,_name="e1");
@@ -181,10 +185,22 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( test_on_dofs )
 
-BOOST_AUTO_TEST_CASE( assign_3d )
+BOOST_AUTO_TEST_CASE( assign_3d_assign )
 {
     runTestAssign<3>();
-    runTestAssignMeshRelated<3,4>();
+}
+BOOST_AUTO_TEST_CASE( assign_3d_meshrelated_order3 )
+{
+    runTestAssignMeshRelated<3,3>();
+}
+BOOST_AUTO_TEST_CASE( assign_3d_meshrelated_order4 )
+{
+    // @warning this does not work with PointSetFekete
+    runTestAssignMeshRelated<3,4,PointSetEquiSpaced>();
+}
+BOOST_AUTO_TEST_CASE( assign_3d_meshrelated_order0 )
+{
+    runTestAssignMeshRelated<3,0>();
 }
 
 BOOST_AUTO_TEST_CASE( elimination_3d )

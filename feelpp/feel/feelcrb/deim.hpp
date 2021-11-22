@@ -91,7 +91,9 @@ private :
 
         this->updateEltsId( this->M_index );
 
-        auto submesh = createSubmesh( mesh, idelements(mesh,this->M_elts_ids.begin(), this->M_elts_ids.end()) );
+        auto submesh = createSubmesh( _mesh=mesh,
+                                      _range=idelements(mesh, this->M_elts_ids.begin(), this->M_elts_ids.end()),
+                                      _context=EXTRACTION_KEEP_MESH_RELATION);
         saveGMSHMesh( _mesh=submesh, _filename=this->name(true)+"-submesh.msh" );
         Environment::worldComm().barrier();
 

@@ -65,7 +65,7 @@ public :
     std::set<std::string> const& markerDirichletBClm( ComponentType ct = ComponentType::NO_COMPONENT ) const;
 
     std::string getInfoDirichletBC() const;
-    void updateInformationObjectDirichletBC( pt::ptree & p );
+    void updateInformationObjectDirichletBC( pt::ptree & p ) const;
 
 private :
     void updateForUseMarkerDirichletBC();
@@ -94,7 +94,7 @@ public :
     std::set<std::string> const& markerNeumannBC( NeumannBCShape shape, std::string const& markerNameId ) const;
 
     std::string getInfoNeumannBC() const;
-    void updateInformationObjectNeumannBC( pt::ptree & p );
+    void updateInformationObjectNeumannBC( pt::ptree & p ) const;
 
 private :
     std::map<NeumannBCShape,std::map<std::string,std::set<std::string> > > M_containerMarkers;
@@ -119,7 +119,7 @@ public :
     std::set<std::string> const& markerNeumannEulerianFrameBC( NeumannEulerianFrameBCShape shape, std::string const& markerNameId ) const;
 
     std::string getInfoNeumannEulerianFrameBC() const;
-    void updateInformationObjectNeumannEulerianFrameBC( pt::ptree & p );
+    void updateInformationObjectNeumannEulerianFrameBC( pt::ptree & p ) const;
 private :
     std::map<NeumannEulerianFrameBCShape,std::map<std::string,std::set<std::string> > > M_containerMarkers;
     std::set<std::string> M_listMarkerEmpty;
@@ -142,7 +142,7 @@ public :
     std::set<std::string> const& markerALEMeshBC( std::string const& type ) const;
 
     std::string getInfoALEMeshBC() const;
-    void updateInformationObjectALEMeshBC( pt::ptree & p );
+    void updateInformationObjectALEMeshBC( pt::ptree & p ) const;
 
 private :
     std::map<std::string,std::set<std::string> > M_containerMarkers;
@@ -161,7 +161,7 @@ public :
     void addMarkerSlipBC( std::set<std::string> const& markers );
     std::set<std::string> const& markerSlipBC() const;
     std::string getInfoSlipBC() const;
-    void updateInformationObjectSlipBC( pt::ptree & p );
+    void updateInformationObjectSlipBC( pt::ptree & p ) const;
 private :
     std::set<std::string> M_containerMarkers;
     std::set<std::string> M_listMarkerEmpty;
@@ -181,7 +181,7 @@ public :
     std::set<std::string> const& markerPressureBC( std::string const& markerNameId ) const;
     bool hasMarkerPressureBC() const;
     std::string getInfoPressureBC() const;
-    void updateInformationObjectPressureBC( pt::ptree & p );
+    void updateInformationObjectPressureBC( pt::ptree & p ) const;
 private :
     std::map<std::string,std::set<std::string> > M_containerMarkers;
     std::set<std::string> M_listMarkers;
@@ -201,7 +201,7 @@ public :
     std::map<std::string,std::set<std::string> > const& markerRobinBC() const;
     std::set<std::string> const& markerRobinBC( std::string const& markerNameId ) const;
     std::string getInfoRobinBC() const;
-    void updateInformationObjectRobinBC( pt::ptree & p );
+    void updateInformationObjectRobinBC( pt::ptree & p ) const;
 private :
     std::map<std::string,std::set<std::string> > M_containerMarkers;
     std::set<std::string> M_listMarkerEmpty;
@@ -219,9 +219,28 @@ public :
     void addMarkerFluidStructureInterfaceBC( std::set<std::string> const& markers );
     std::set<std::string> const& markerFluidStructureInterfaceBC() const;
     std::string getInfoFluidStructureInterfaceBC() const;
-    void updateInformationObjectFluidStructureInterfaceBC( pt::ptree & p );
+    void updateInformationObjectFluidStructureInterfaceBC( pt::ptree & p ) const;
 private :
     std::set<std::string> M_containerMarkers;
+    std::set<std::string> M_listMarkerEmpty;
+};
+
+class MarkerManagementIntegralBC
+{
+public :
+
+    MarkerManagementIntegralBC();
+    MarkerManagementIntegralBC( MarkerManagementIntegralBC const& op ) = default;
+    void clearMarkerIntegralBC();
+    void setMarkerIntegralBC( std::string const& name, std::set<std::string> const& markers );
+    void addMarkerIntegralBC( std::string const& name, std::string const& marker );
+    void addMarkerIntegralBC( std::string const& name, std::set<std::string> const& markers );
+    std::map<std::string,std::set<std::string> > const& markerIntegralBC() const;
+    std::set<std::string> const& markerIntegralBC( std::string const& markerNameId ) const;
+    std::string getInfoIntegralBC() const;
+    void updateInformationObjectIntegralBC( pt::ptree & p ) const;
+private :
+    std::map<std::string,std::set<std::string> > M_containerMarkers;
     std::set<std::string> M_listMarkerEmpty;
 };
 

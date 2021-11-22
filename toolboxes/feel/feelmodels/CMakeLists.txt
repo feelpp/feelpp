@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 23 Feb 2015
 #
-#  Copyright (C) 2015 Feel++ Consortium
+#  Copyright (C) 2015-present Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -27,23 +27,20 @@ INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.models.macros.cmake DESTI
 
 add_subdirectory(cmake)
 add_subdirectory(modelcore)
-add_subdirectory(modelalg)
 add_subdirectory(modelmesh)
 add_subdirectory(modelvf)
+add_subdirectory(modelmaterials)
 
-
-add_custom_target(feelpp-models-algebra)
-add_dependencies(feelpp-models-algebra feelpp_modelalg)
 
 add_custom_target(feelpp-models-mesh)
 add_dependencies(feelpp-models-mesh feelpp_modelmesh)
 
 add_custom_target(feelpp-models)
 #add_dependencies(feelpp-models feelpp_model_heat feelpp_model_solidmechanics feelpp_model_fluid feelpp_model_fsi)
-add_dependencies(feelpp-models feelpp-models-algebra feelpp-models-mesh)
+add_dependencies(feelpp-models feelpp-models-mesh)
 
 add_custom_target(feelpp-models-common)
-add_dependencies(feelpp-models-common feelpp_modelcore feelpp_modelalg feelpp_modelmesh)
+add_dependencies(feelpp-models-common feelpp_modelcore feelpp_modelmesh)
 if( FEELPP_MODELS_HAS_MESHALE )
   add_dependencies(feelpp-models-common feelpp_modelmeshale)
 endif()
@@ -58,12 +55,19 @@ endif()
 if ( FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS )
   add_subdirectory(solid)
 endif()
+if ( FEELPP_TOOLBOXES_ENABLE_CFPDE )
+  add_subdirectory(coefficientformpdes)
+else()
+  set(FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS OFF)
+  set(FEELPP_TOOLBOXES_ENABLE_FSI OFF)
+endif()
 if ( FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
   add_subdirectory(fluid)
 endif()
 if ( FEELPP_TOOLBOXES_ENABLE_FSI )
   add_subdirectory(fsi)
 endif()
+
 if ( FEELPP_TOOLBOXES_ENABLE_ADVECTION )
   add_subdirectory(advection)
 endif()

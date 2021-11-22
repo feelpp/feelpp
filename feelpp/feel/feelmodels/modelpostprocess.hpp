@@ -30,11 +30,16 @@
 
 namespace Feel {
 
-class FEELPP_EXPORT ModelPostprocessExports
+class FEELPP_EXPORT ModelPostprocessExports : public CommObject
 {
   public :
-    ModelPostprocessExports()
+    using super = CommObject;
+    // (name,expr,markers,representations,tags)
+    using vector_export_expr_type = std::vector<std::tuple<std::string,ModelExpression,ModelMarkers,std::set<std::string>,std::set<std::string>>>;
+
+    ModelPostprocessExports( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
+        super( world ),
         M_format( "ensightgold" )
     {}
     ModelPostprocessExports( ModelPostprocessExports const& ) = default;
@@ -43,13 +48,18 @@ class FEELPP_EXPORT ModelPostprocessExports
     ModelPostprocessExports& operator=( ModelPostprocessExports && ) = default;
 
     std::set<std::string> const& fields() const { return M_fields; }
+    vector_export_expr_type const& expressions() const { return M_exprs; }
     std::string const& format() const { return M_format; }
 
     void setup( pt::ptree const& p );
 
+    void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+    void setParameterValues( std::map<std::string,double> const& mp );
   private :
+    std::string M_directoryLibExpr;
     std::set<std::string> M_fields;
     std::string M_format;
+    vector_export_expr_type M_exprs;
 };
 
 class FEELPP_EXPORT ModelPostprocessSave
@@ -68,6 +78,33 @@ class FEELPP_EXPORT ModelPostprocessSave
   private :
     std::set<std::string> M_fieldsNames;
     std::string M_fieldsFormat;
+};
+
+class FEELPP_EXPORT ModelPostprocessQuantities : public CommObject
+{
+    using super = CommObject;
+  public :
+    ModelPostprocessQuantities( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
+        :
+        super( world )
+    {}
+    ModelPostprocessQuantities( ModelPostprocessQuantities const& ) = default;
+    ModelPostprocessQuantities( ModelPostprocessQuantities&& ) = default;
+    ModelPostprocessQuantities& operator=( ModelPostprocessQuantities const& ) = default;
+    ModelPostprocessQuantities& operator=( ModelPostprocessQuantities && ) = default;
+
+    std::set<std::string> const& quantities() const { return M_quantities; }
+    std::map<std::string,ModelExpression> const& expressions() const { return M_exprs; }
+
+    void setup( pt::ptree const& p );
+
+    void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+    void setParameterValues( std::map<std::string,double> const& mp );
+
+  private :
+    std::string M_directoryLibExpr;
+    std::set<std::string> M_quantities;
+    std::map<std::string,ModelExpression> M_exprs;
 };
 
 class FEELPP_EXPORT ModelPointPosition
@@ -295,18 +332,27 @@ class FEELPP_EXPORT ModelPostprocessCheckerMeasure : public CommObject
     //! check if the arg val is close at tolerance to the reference value
     //! \return tuple ( check is true, diff value )
     std::tuple<bool,double> run( double val ) const;
+    //! check if the arg val is close at tolerance to the reference value (the target value can be an expression which depending on symbols expr given in arg)
+    //! \return tuple ( check is true, diff value )
+    template <typename SymbolsExprType>
+    std::tuple<bool,double> run( double val, SymbolsExprType const& se ) const
+    {
+        M_value = expr( M_valueExpr.exprScalar(), se ).evaluate()(0,0);
+        return this->runImpl( val );
+    }
 
     void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
   private:
+    std::tuple<bool,double> runImpl( double val ) const;
     void setup( std::string const& name, ModelIndexes const& indexes );
   private :
     pt::ptree M_p;
     std::string M_name;
     std::string M_directoryLibExpr;
     ModelExpression M_valueExpr;
-    double M_value;
+    mutable double M_value;
     double M_tolerance;
 };
 
@@ -323,18 +369,21 @@ public:
     bool useModelName() const { return M_useModelName; }
     std::map<std::string,ModelPostprocessExports> allExports() const { return M_exports; }
     std::map<std::string,ModelPostprocessSave> allSave() const { return M_save; }
+    std::map<std::string,ModelPostprocessQuantities> allMeasuresQuantities() const { return M_measuresQuantities; }
     std::map<std::string,std::vector<ModelPostprocessPointPosition> > const& allMeasuresPoint() const { return M_measuresPoint; }
     std::map<std::string,std::vector<ModelPostprocessNorm> > const& allMeasuresNorm() const { return M_measuresNorm; }
     std::map<std::string,std::vector<ModelPostprocessStatistics> > const& allMeasuresStatistics() const { return M_measuresStatistics; }
     std::map<std::string,std::vector<ModelPostprocessCheckerMeasure> > const& allCheckersMeasure() const { return M_checkersMeasure; }
     bool hasExports( std::string const& name = "" ) const;
     bool hasSave( std::string const& name = "" ) const;
+    bool hasMeasuresQuantities( std::string const& name = "" ) const;
     bool hasMeasuresPoint( std::string const& name = "" ) const;
     bool hasMeasuresNorm( std::string const& name = "" ) const;
     bool hasMeasuresStatistics( std::string const& name = "" ) const;
     bool hasCheckersMeasure( std::string const& name = "" ) const;
     ModelPostprocessExports const& exports( std::string const& name = "" ) const;
     ModelPostprocessSave const& save( std::string const& name = "" ) const;
+    ModelPostprocessQuantities const& measuresQuantities( std::string const& name = "" ) const;
     std::vector<ModelPostprocessPointPosition> const& measuresPoint( std::string const& name = "" ) const;
     std::vector<ModelPostprocessNorm> const& measuresNorm( std::string const& name = "" ) const;
     std::vector<ModelPostprocessStatistics> const& measuresStatistics( std::string const& name = "" ) const;
@@ -363,12 +412,14 @@ private:
     bool M_useModelName;
     std::map<std::string,ModelPostprocessExports> M_exports;
     std::map<std::string,ModelPostprocessSave> M_save;
+    std::map<std::string,ModelPostprocessQuantities> M_measuresQuantities;
     std::map<std::string,std::vector< ModelPostprocessPointPosition > > M_measuresPoint;
     std::map<std::string,std::vector< ModelPostprocessNorm > > M_measuresNorm;
     std::map<std::string,std::vector< ModelPostprocessStatistics > > M_measuresStatistics;
     std::map<std::string,std::vector< ModelPostprocessCheckerMeasure > > M_checkersMeasure;
     ModelPostprocessExports M_emptyExports;
     ModelPostprocessSave M_emptySave;
+    ModelPostprocessQuantities M_emptyMeasuresQuantities;
     std::vector< ModelPostprocessPointPosition > M_emptyMeasuresPoint;
     std::vector< ModelPostprocessNorm > M_emptyMeasuresNorm;
     std::vector< ModelPostprocessStatistics > M_emptyMeasuresStatistics;

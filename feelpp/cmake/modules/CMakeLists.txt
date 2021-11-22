@@ -25,6 +25,7 @@
 
 set( modules
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.version.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.directive.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.crb.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.om.cmake
@@ -56,7 +57,7 @@ if ( FEELPP_HAS_SCOTCH )
 endif()
 
 #FILE(GLOB modules "${CMAKE_CURRENT_SOURCE_DIR}/*.cmake")
-
+list(APPEND modules ${CMAKE_CURRENT_SOURCE_DIR}/FindMetis.cmake )
 INSTALL(FILES ${modules} DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/Feel++Config.cmake DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/FeelppContribConfig.cmake DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)

@@ -175,7 +175,7 @@ public :
         initMatrix<domain_element_type>();
     }
 
-    virtual ~Projector() {}
+    ~Projector() override {}
 
     //~Projector() {}
     //@}

@@ -70,7 +70,7 @@ public:
         M_descr( td.M_descr )
     {
     }
-    ~GmshSimplexDomain()
+    ~GmshSimplexDomain() override
     {}
 
     //@}
@@ -107,7 +107,7 @@ public:
 
 
 private:
-    std::string getDescription() const;
+    std::string getDescription() const override;
 
     // 1D
     std::string getDescription1D() const;

@@ -35,7 +35,6 @@
 //#include <feel/feelfilters/exporter.hpp>
 
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
 namespace Feel
 {
@@ -52,8 +51,8 @@ public :
     typedef MeshType mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    // typedef ModelAlgebraicFactory model_algebraic_factory_type;
+    // typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
     typedef typename super_type::backend_ptrtype backend_ptrtype;
     typedef typename super_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -93,7 +92,6 @@ public :
     typedef Projector<space_scal_m1_type,space_scal_m1_type> projector_scal_m1_type;
     typedef std::shared_ptr<projector_scal_m1_type> projector_scal_m1_ptrtype;
 #endif
-    typedef std::map< std::string, std::vector<flag_type> > flagSet_type;
 
     //typedef Exporter<mesh_type,mesh_type::nOrder> exporter_type;
     //typedef std::shared_ptr<exporter_type> exporter_ptrtype;
@@ -109,22 +107,13 @@ public :
     std::shared_ptr<std::ostringstream> getInfo() const override;
 
 
-    backend_ptrtype const& backend() const { return M_backend; }
     space_ptrtype const& functionSpace() const { return M_Xh; }
     element_ptrtype const& displacement() const { return M_displacement; }
     element_ptrtype const& dispImposedOnBoundary() const { return M_dispImposedOnBoundary; }
     element_ptrtype const& identity() const { return M_identity; }
     //space_scal_m1_ptrtype const& functionSpaceScalM1() const { return M_XhScalM1; }
 
-    flagSet_type const& flagSet() const { return M_flagSet; }
-    bool hasFlagSet( std::string const& key ) const { return ( M_flagSet.find(key) != M_flagSet.end() ); }
-    std::vector<flag_type> const& flagSet( std::string const& key ) const
-        {
-            CHECK( hasFlagSet( key ) ) << "the flag type " << key << " is unknown \n";
-            return M_flagSet.find(key)->second;
-        }
-    void setflagSet( flagSet_type const & fl ) { M_flagSet=fl; }
-
+    void setMarkersInBoundaryCondition( std::map< std::string, std::set<std::string> > const& bcToMarkers ) { M_bcToMarkers = bcToMarkers; }
     //projector_scal_m1_ptrtype /*const&*/ l2projector() const { return M_l2projector; }
 
     template < typename elem_type, typename elem2_type >
@@ -159,8 +148,9 @@ private :
 
     std::string M_solverType;
 
+    std::map< std::string, std::set<std::string> > M_bcToMarkers;
+
     mesh_ptrtype M_mesh;
-    flagSet_type M_flagSet;
     space_ptrtype M_Xh;
     element_ptrtype M_displacement;
     element_ptrtype M_displacementOld;
@@ -199,6 +189,7 @@ template < typename elem_type,typename elem2_type >
 void
 Winslow<MeshType,Order>::generateALEMap( elem_type const & elem,elem2_type const & elem2 )
 {
+#if 0
     M_dispImposedOnBoundary->on( _range=elements(M_displacement->mesh()),
                                  _expr=idv(elem) );
 
@@ -207,7 +198,14 @@ Winslow<MeshType,Order>::generateALEMap( elem_type const & elem,elem2_type const
     *M_displacement += vf::project(_space=M_displacement->functionSpace(),_range=elements(M_displacement->mesh()),_expr=vf::idv(elem2) );
     *M_displacementOld = *M_identity;
     *M_displacementOld += vf::project(_space=M_displacement->functionSpace(),_range=elements(M_displacement->mesh()),_expr=vf::idv(elem2) );
+#else
+    auto rangeElt = elements(support(M_displacement->functionSpace()));
+    M_dispImposedOnBoundary->on( _range=rangeElt,
+                                 _expr=idv(elem) );
 
+    M_displacement->on(_range=rangeElt,_expr=idv(M_identity) + idv(elem2) );
+    *M_displacementOld = *M_displacement;
+#endif
     // solve winslow model
     this->solve();
 }

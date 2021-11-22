@@ -65,11 +65,11 @@ class Object2
         Object2( std::string name = "" ) :
             JournalWatcher( "Object2", name ) {}
 
-    void updateInformationObject( pt::ptree & p ) override
+    void updateInformationObject( nl::json & p ) const override
         {
-            p.put( "a","1" );
-            p.put( "b","2" );
-            p.put( "c.d","3" );
+            p.emplace( "a",1 );
+            p.emplace( "b",2 );
+            p["/c/d"_json_pointer] =3;
         }
 };
 
@@ -92,7 +92,7 @@ BOOST_AUTO_TEST_CASE( journal_basic )
     }
     // Example how to retrieve a signal using signalhandler.
     // (The signals template arguments are required to cast into the proper signal.)
-    const auto& sigptr = Environment::signalStatic< void ( pt::ptree & ) >( "journalManager" );
+    const auto& sigptr = Environment::signalStatic< void ( nl::json & ) >( "journalManager" );
     BOOST_TEST_MESSAGE( "number of connected slot: " << sigptr->num_slots() );
 
     p1.journalConnect();
@@ -109,11 +109,12 @@ BOOST_AUTO_TEST_CASE( journal_basic )
     // Save into a json file.
     Environment::journalSave();
 
-    auto t = res.get_child( "Object2.p1" );
-    auto a = t.get<int>("a");
-    auto b = t.get<int>("b");
-    auto c = t.get_child("c");
-    auto d = c.get<int>("d");
+    auto t = res.at( "/Object2/p1"_json_pointer );
+    // std::cout << "t="<<t.dump(1) << std::endl;
+    auto a = t.at("a").get<int>();
+    auto b = t.at("b").get<int>();
+    auto c = t.at("c");
+    auto d = c.at("d").get<int>();
     if( Environment::isMasterRank() )
         BOOST_TEST_MESSAGE( a << " " << b <<  " " << d );
 

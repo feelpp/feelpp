@@ -1,0 +1,88 @@
+{
+    "Name": "Drop2d",
+    "ShortName": "Drop2d",
+    "Models":
+    {
+        "use-model-name": 1,
+        "fluid":
+        {
+            "equations":"Navier-Stokes"
+        },
+        "levelset1":
+        {
+            "equations":"Advection"
+        }
+    },
+    "Materials":
+    {
+        "OmegaFluid":
+        {
+            "rho":1000,
+            "mu":10
+        }
+    },
+
+    "Parameters":
+    {
+        "x0": "0.5",
+        "y0": "0.5",
+        "r0": "0.25"
+    },
+
+    "InitialConditions":
+    {
+        "multifluid.levelset1":
+        {
+            "Expression":
+            {
+                "ic1":
+                {
+                    "expr":"sqrt( (x-x0)*(x-x0) + (y-y0)*(y-y0) ) - r0 :x:x0:y:y0:r0"
+                }
+            }
+        }
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "Left":
+                {
+                    "expr":"{0,0}"
+                },
+                "Right":
+                {
+                    "expr":"{0,0}"
+                },
+                "Top":
+                {
+                    "expr":"{0,0}"
+                },
+                "Bottom":
+                {
+                    "expr":"{0,0}"
+                }
+            }
+        }
+    },
+
+    "PostProcess":
+    {
+        "use-model-name": 1,
+        "multifluid":
+        {
+            "Exports":
+            {
+                "fields":["fluid.velocity","fluid.pressure","fluid.density", "fluid.viscosity", "levelset1.phi", "pid"]
+            }
+        },
+        "fluid":
+        {
+        },
+        "levelset1":
+        {
+        }
+    }
+}

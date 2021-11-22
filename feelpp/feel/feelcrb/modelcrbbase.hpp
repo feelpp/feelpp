@@ -6,7 +6,8 @@
  Date: 2013-02-22
 
  Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
-
+ Copyright (C) 2011-present Feel++ Consortium
+ 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
@@ -29,7 +30,6 @@
 #ifndef ModelCrbBase_H
 #define ModelCrbBase_H 1
 
-//#include <feel/feel.hpp>
 #include <feel/feelcrb/crbmodeldb.hpp>
 #include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/deim.hpp>
@@ -1096,6 +1096,19 @@ public :
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
     {
         return boost::make_tuple( M_Aqm , M_Fqm );
+    }
+
+    std::vector< std::vector<sparse_matrix_ptrtype> > getMqm()
+    {
+        return M_Mqm;
+    }
+    std::vector< std::vector<sparse_matrix_ptrtype> > getAqm()
+    {
+        return M_Aqm;
+    }
+    std::vector< std::vector<std::vector<vector_ptrtype> > > getFqm()
+    {
+        return M_Fqm;
     }
 
     virtual affine_decomposition_type computePicardAffineDecomposition()

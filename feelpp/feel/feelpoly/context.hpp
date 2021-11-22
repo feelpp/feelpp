@@ -64,6 +64,7 @@ const size_type NORMAL_COMPONENT         = ( 1<<22 );
 const size_type LOCAL_BASIS              = ( 1<<23 );
 const size_type TRACE                    = ( 1<<24 );
 const size_type DYNAMIC                  = ( 1<<25 );
+const size_type DYNAMIC_BASIS_FUNCTION   = ( 1<<26 );
 
 #define FEELPP_DEFINE_CONTEXT(ctx_v,ctx)                                \
     template<size_type Context>                                         \
@@ -99,6 +100,7 @@ FEELPP_DEFINE_CONTEXT(NORMAL_COMPONENT,normal_component)
 FEELPP_DEFINE_CONTEXT(LOCAL_BASIS,local_basis)
 FEELPP_DEFINE_CONTEXT(TRACE,trace)
 FEELPP_DEFINE_CONTEXT(DYNAMIC,dynamic)
+FEELPP_DEFINE_CONTEXT(DYNAMIC_BASIS_FUNCTION,dynamic_basis_function)
 
 } // vm
 using namespace vm;

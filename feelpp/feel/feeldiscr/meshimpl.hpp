@@ -139,8 +139,7 @@ void print( MeshT* m )
 // Constructor.
 template <typename Shape, typename T, int Tag, typename IndexT>
 Mesh<Shape, T, Tag, IndexT>::Mesh( std::string const& name, worldcomm_ptr_t const& worldComm, std::string const& props )
-    : super( worldComm ),
-      super2( "Mesh", name ),
+    : super( name, worldComm ),
       M_numGlobalElements( 0 ),
       M_gm( new gm_type ),
       M_gm1( Feel::meshdetail::initGm1<type>( M_gm, mpl::bool_<nOrder == 1>() ) ),
@@ -418,6 +417,10 @@ void Mesh<Shape, T, Tag, IndexT>::updateForUseAfterMovingNodes( bool upMeasures 
     // reset localisation tool
     this->tool_localization()->reset();
 
+    for ( MeshSupportBase* ms : this->meshSupportsAttached() )
+        ms->resetLocalizationTool();
+
+
 #if !defined( __INTEL_COMPILER )
     // notify observers that the mesh has changed
     LOG(INFO) << "Notify observers that the mesh has changed\n";
@@ -466,10 +469,10 @@ void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
     if ( iv != en )
     {
         auto const& eltInit = iv->second;
-        std::shared_ptr<typename gm_type::template Context<vm::JACOBIAN, element_type>> ctx;
-        std::shared_ptr<typename gm_type::template Context</*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN, element_type>> ctxf;
-        std::shared_ptr<typename gm1_type::template Context<vm::JACOBIAN, element_type>> ctx1;
-        std::shared_ptr<typename gm1_type::template Context</*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN, element_type>> ctxf1;
+        std::shared_ptr<typename gm_type::template Context<element_type>> ctx;
+        std::shared_ptr<typename gm_type::template Context<element_type,1>> ctxf;
+        std::shared_ptr<typename gm1_type::template Context<element_type>> ctx1;
+        std::shared_ptr<typename gm1_type::template Context<element_type,1>> ctxf1;
         if ( pc )
             ctx = M_gm->template context<vm::JACOBIAN>( eltInit, pc );
         if ( !pcf.empty() )
@@ -485,13 +488,12 @@ void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
 
             if ( meshIsStraightened && !elt.isOnBoundary() )
             {
-
-                ctx1->update( elt );
+                ctx1->template update<vm::JACOBIAN>( elt );
                 elt.updateWithCtx( thequad1, ctx1, ctxf1 );
             }
             else
             {
-                ctx->update( elt );
+                ctx->template update<vm::JACOBIAN>( elt );
                 elt.updateWithCtx( thequad, ctx, ctxf );
             }
             // only compute meas for active element (no ghost)
@@ -2388,7 +2390,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
 {
     typedef std::vector<boost::tuple<size_type, std::vector<double>>> resultghost_point_type;
     typedef std::vector<boost::tuple<size_type, bool, std::vector<double>>> resultghost_edge_type;
-    typedef std::vector<boost::tuple<size_type, bool, std::vector<double>>> resultghost_face_type;
+    typedef std::vector<boost::tuple<size_type, bool, std::vector<double>, uint16_type>> resultghost_face_type;
 
     DVLOG( 1 ) << "updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm : start on rank " << MeshBase<IndexT>::worldComm().localRank() << "\n";
 
@@ -2430,15 +2432,33 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
     int nbRequest = 2 * neighborSubdomains;
     mpi::request* reqs = new mpi::request[nbRequest];
     int cptRequest = 0;
-    // first send/recv
+
+    // get size of data to transfer
+    std::map<rank_type,size_type> sizeRecv;
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank] );
-        reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank] );
+        reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 0, (size_type)dataToSend[neighborRank].size() );
+        reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
+    }
+    // wait all requests
+    mpi::wait_all( reqs, reqs + cptRequest );
+
+    // first send/recv
+    cptRequest = 0;
+    for ( rank_type neighborRank : this->neighborSubdomains() )
+    {
+        int nSendData = dataToSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 2, &(dataToSend[neighborRank][0]), nSendData );
+
+        int nRecvData = sizeRecv[neighborRank];
+        dataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 2, &(dataToRecv[neighborRank][0]), nRecvData );
     }
     //------------------------------------------------------------------------------------------------//
     // wait all requests
-    mpi::wait_all( reqs, reqs + nbRequest );
+    mpi::wait_all( reqs, reqs + cptRequest );
     //------------------------------------------------------------------------------------------------//
     // build the container to ReSend
     std::map<rank_type, std::vector<boost::tuple<resultghost_point_type, resultghost_edge_type, resultghost_face_type>>> dataToReSend;
@@ -2461,7 +2481,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
 
             //---------------------------//
             // get faces id and bary
-            resultghost_face_type idFacesWithBary( this->numLocalFaces(), boost::make_tuple( invalid_v<size_type>, false, std::vector<double>( nRealDim, 0. ) ) );
+            resultghost_face_type idFacesWithBary( this->numLocalFaces(), boost::make_tuple( invalid_v<size_type>, false, std::vector<double>( nRealDim, 0. ), invalid_v<uint16_type> ) );
             for ( uint16_type j = 0; j < theelt.nTopologicalFaces() /*this->numLocalFaces()*/; j++ )
             {
                 if ( !theelt.facePtr( j ) )
@@ -2490,6 +2510,10 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
                 {
                     idFacesWithBary[j].template get<2>()[comp] = baryFace[comp];
                 }
+
+                // face permutation
+                if constexpr ( nDim > 1 )
+                   idFacesWithBary[j].template get<3>() = theelt.facePermutation( j ).value();
             }
             //---------------------------//
             // get edges id and bary
@@ -2565,6 +2589,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
                         continue;
                     const bool faceOnBoundaryRecv = idFacesWithBaryRecv[j].template get<1>();
                     auto const& baryFaceRecv = idFacesWithBaryRecv[j].template get<2>();
+                    uint16_type facePermutation = idFacesWithBaryRecv[j].template get<3>();
 
                     //objective : find  face_it (hence jBis in theelt ) (permutations would be necessary)
                     uint16_type jBis = invalid_uint16_type_value;
@@ -2616,6 +2641,10 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
                     // maybe the face is not really on boundary
                     if ( faceModified.isOnBoundary() && !faceOnBoundaryRecv )
                         faceModified.setOnBoundary( false );
+
+                    // face permutation in the ghost element
+                    if constexpr ( nDim > 1 )
+                        theelt.setFacePermutation( jBis, typename element_type::face_permutation_type( facePermutation ) );
 
                 } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
 
@@ -3252,8 +3281,6 @@ void Mesh<Shape, T, Tag, IndexT>::Inverse::distribute( bool extrapolation )
     if ( nActifElt == 0 ) return;
 
     typedef typename self_type::element_type element_type;
-    typedef typename gm_type::template Context<vm::JACOBIAN | vm::KB | vm::POINT, element_type> gmc_type;
-    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     BoundingBox<> bb;
 
     typename gm_type::reference_convex_type refelem;
@@ -3268,16 +3295,15 @@ void Mesh<Shape, T, Tag, IndexT>::Inverse::distribute( bool extrapolation )
     M_pts_cvx.clear();
 
     KDTree::points_type boxpts;
-    gmc_ptrtype __c( new gmc_type( M_mesh->gm(),
-                                   boost::unwrap_ref( *el_it ),
-                                   __geopc ) );
+
+    auto __c = M_mesh->gm()->template context<vm::JACOBIAN | vm::KB | vm::POINT>( unwrap_ref( *el_it ),__geopc );
     VLOG( 2 ) << "[Mesh::Inverse] distribute mesh points ion kdtree\n";
 
     for ( ; el_it != el_en; ++el_it )
     {
         auto const& elt = boost::unwrap_ref( *el_it );
         // get geometric transformation
-        __c->update( elt );
+        __c->template update<vm::JACOBIAN | vm::KB | vm::POINT>( elt );
         gic_type gic( M_mesh->gm(), elt );
 
         // create bounding box

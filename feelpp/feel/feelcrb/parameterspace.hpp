@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-08-11
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -153,6 +153,15 @@ public:
                 return super::operator=( other );
             }
 
+        double const& coeff(int i ) const
+            {
+                return super::operator()(i);
+            }
+        double& coeff(int i )
+            {
+                return super::operator()(i);
+            }
+
         /**
          * return name of parameter at index d
          */
@@ -177,13 +186,48 @@ public:
                 return this->operator()( it - paramNames.begin() );
             }
 
+        void view() const
+        {
+            for (int i=0; i<this->size(); ++i)
+                std::cout << M_space->parameterName( i ) << "\t" << this->operator()( i ) << std::endl;
+        }
+
+        /**
+         * set a parameter
+         */
         void setParameterNamed( std::string name, double value )
-            {
-                auto paramNames = M_space->parameterNames();
-                auto it = std::find(paramNames.begin(), paramNames.end(), name);
-                if( it != paramNames.end() )
-                    this->operator()( it - paramNames.begin() ) = value;
-            }
+        {
+            auto paramNames = M_space->parameterNames();
+            auto it = std::find(paramNames.begin(), paramNames.end(), name);
+            if( it != paramNames.end() )
+                this->operator()( it - paramNames.begin() ) = value;
+            else
+                LOG( WARNING ) << name << " is not a parameter" << std::endl;
+        }
+
+        void setParameter( int i, double value)
+        {
+            this->operator()(i) = value;
+        }
+
+        /**
+         * set many parameters at once (overloaded function)
+         */
+        void setParameters( const std::vector<double> &values)
+        {
+            size_t n = values.size();
+            if (n != this->size())
+                LOG( WARNING ) << "The size of the given vector (" << n << ") is different fom the size (" << this->size() << ")" << std::endl;
+            size_t N = (n >= this->size()) ? n : this->size();
+            for (size_t i=0; i<N; ++i)
+                this->operator()(i) = values[i];
+        }
+
+        void setParameters( const std::map<std::string, double> &values )
+        {
+            for (auto a : values)
+                setParameterNamed( a.first, a.second );
+        }
 
         /**
          * get index of named parameter
@@ -1422,7 +1466,7 @@ public:
         }
 #endif
     //! destructor
-    virtual ~ParameterSpace() = default;
+    ~ParameterSpace() override = default;
 
     /**
      * generate a shared_ptr out of a parameter space

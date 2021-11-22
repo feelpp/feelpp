@@ -58,7 +58,7 @@ public:
     GmshHypercubeDomain( int dim, int order );
     GmshHypercubeDomain( int dim, int order, int rdim, bool use_hypercube );
     GmshHypercubeDomain( GmshHypercubeDomain const & td );
-    ~GmshHypercubeDomain();
+    ~GmshHypercubeDomain() override;
 
     //@}
 
@@ -95,7 +95,7 @@ private:
     int M_rdim;
     bool M_use_hypercube;
     //
-    std::string getDescription() const;
+    std::string getDescription() const override;
     // 1D
     std::string getDescription1D() const;
     // 2D

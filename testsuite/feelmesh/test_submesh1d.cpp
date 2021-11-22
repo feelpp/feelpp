@@ -23,17 +23,13 @@
 */
 
 #define BOOST_TEST_MODULE test_submesh1d
-// #include <feel/feel.hpp>
+
 #include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
-//#include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
-#include <feel/feeldiscr/createsubmesh.hpp>
 #include <feel/feeldiscr/thch.hpp>
-// #include <feel/feeldiscr/pch.hpp>
-// #include <feel/feeldiscr/pchv.hpp>
-// #include <feel/feeldiscr/product.hpp>
+
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 

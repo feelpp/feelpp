@@ -25,7 +25,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   \author Vincent HUBER <vincent.huber@cemosis.fr>
   \date 2013-08-22
   */
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelvf/vf.hpp>
 using namespace Feel;
 
   int

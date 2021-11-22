@@ -34,7 +34,5 @@ feelpp_add_application( fluid SRCS main_fm.cpp
   INSTALL TESTS
   MAN fluid
 )
+feelpp_add_testcase( cases PREFIX feelpp_toolbox_fluid CATEGORY toolboxes/fluid)
 
-foreach( _testcase IN ITEMS "lid-driven-cavity" "TurekHron" "TurekHronExt3d" "backwardfacingstep" "movingboundary" )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_fluid CATEGORY toolboxes/fluid)
-endforeach()

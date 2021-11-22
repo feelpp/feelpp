@@ -5,12 +5,10 @@ namespace Feel {
 
 BOOST_PARAMETER_NAME( thickness )
 BOOST_PARAMETER_NAME( use_adaptive_thickness )
-BOOST_PARAMETER_NAME( use_distance_impl )
-BOOST_PARAMETER_NAME( use_local_redist )
+BOOST_PARAMETER_NAME( impl )
 BOOST_PARAMETER_NAME( imorder )
 
 namespace FeelModels {
-//namespace vf {
 
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename ExprType>
 struct tensorLevelsetDeltaBase
@@ -32,7 +30,7 @@ public:
     // fe phi context
     typedef typename fe_phi_type::PreCompute pc_phi_type;
     typedef std::shared_ptr<pc_phi_type> pc_phi_ptrtype;
-    typedef typename fe_phi_type::template Context<expr_type::context_phi, fe_phi_type, gm_type,geoelement_type,gmc_type::context> ctx_phi_type;
+    typedef typename fe_phi_type::template Context<expr_type::context_phi, fe_phi_type, gm_type,geoelement_type,0, gmc_type::subEntityCoDim> ctx_phi_type;
     typedef std::shared_ptr<ctx_phi_type> ctx_phi_ptrtype;
 
     typedef typename matrix_node<value_type>::type matrix_node_type;
@@ -309,13 +307,13 @@ private:
     loc_scalar_type M_locEpsilon;
 };
 
-/** Non-adaptive thickness generic case:
+/** Generic case:
  * D = 1/(2*eps0) * ( 1 + cos(pi*phi/eps0) ) * |grad(phi)| if -eps0 <= phi <= eps0
  *   = 0 otherwise
  */
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename ExprType,
     template<typename, typename, typename, typename> class ThicknessPolicy>
-struct tensorLevelsetDeltaNonAdaptiveThicknessGeneric
+struct tensorLevelsetDeltaGeneric
 : 
     public tensorLevelsetDeltaBase<Geo_t, Basis_i_t, Basis_j_t, ExprType>,
     public ThicknessPolicy<Geo_t, Basis_i_t, Basis_j_t, ExprType>
@@ -346,21 +344,21 @@ public:
 
     using thickness_policy_type::locEpsilon;
 
-    tensorLevelsetDeltaNonAdaptiveThicknessGeneric( expr_type const& expr,
+    tensorLevelsetDeltaGeneric( expr_type const& expr,
             Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         :
             super_type( expr, geom, fev, feu ),
             thickness_policy_type( (super_type const&)(*this) ),
             M_locGradPhi( expr.phi().gradExtents(*fusion::at_key<key_type>( geom )) )
     {}
-    tensorLevelsetDeltaNonAdaptiveThicknessGeneric( expr_type const& expr,
+    tensorLevelsetDeltaGeneric( expr_type const& expr,
             Geo_t const& geom, Basis_i_t const& fev )
         :
             super_type( expr, geom, fev ),
             thickness_policy_type( (super_type const&)(*this) ),
             M_locGradPhi( expr.phi().gradExtents(*fusion::at_key<key_type>( geom )) )
     {}
-    tensorLevelsetDeltaNonAdaptiveThicknessGeneric( expr_type const& expr, Geo_t const& geom )
+    tensorLevelsetDeltaGeneric( expr_type const& expr, Geo_t const& geom )
         :
             super_type( expr, geom ),
             thickness_policy_type( (super_type const&)(*this) ),
@@ -434,13 +432,13 @@ private:
     array_vectorial_transpose_type M_locGradPhi;
 };
 
-/** Non-adaptive thickness localredist (delta(phi/modgradphi)) case:
+/** Localredist (delta(phi/modgradphi)) case:
  * D = 1/(2*eps0) * ( 1 + cos(pi*psi/eps0) ) if -eps0 <= psi <= eps0 with psi = phi / modgradphi
  *   = 0 otherwise
  */
 template< typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename ExprType,
     template<typename, typename, typename, typename> class ThicknessPolicy>
-struct tensorLevelsetDeltaNonAdaptiveThicknessLocalRedist
+struct tensorLevelsetDeltaLocalRedist
 : 
     public tensorLevelsetDeltaBase<Geo_t, Basis_i_t, Basis_j_t, ExprType>,
     public ThicknessPolicy<Geo_t, Basis_i_t, Basis_j_t, ExprType>
@@ -471,21 +469,21 @@ public:
 
     using thickness_policy_type::locEpsilon;
 
-    tensorLevelsetDeltaNonAdaptiveThicknessLocalRedist( expr_type const& expr,
+    tensorLevelsetDeltaLocalRedist( expr_type const& expr,
             Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         :
             super_type( expr, geom, fev, feu ),
             thickness_policy_type( (super_type const&)(*this) ),
             M_locGradPhi( expr.phi().gradExtents(*fusion::at_key<key_type>( geom )) )
     {}
-    tensorLevelsetDeltaNonAdaptiveThicknessLocalRedist( expr_type const& expr,
+    tensorLevelsetDeltaLocalRedist( expr_type const& expr,
             Geo_t const& geom, Basis_i_t const& fev )
         :
             super_type( expr, geom, fev ),
             thickness_policy_type( (super_type const&)(*this) ),
             M_locGradPhi( expr.phi().gradExtents(*fusion::at_key<key_type>( geom )) )
     {}
-    tensorLevelsetDeltaNonAdaptiveThicknessLocalRedist( expr_type const& expr, Geo_t const& geom )
+    tensorLevelsetDeltaLocalRedist( expr_type const& expr, Geo_t const& geom )
         :
             super_type( expr, geom ),
             thickness_policy_type( (super_type const&)(*this) ),
@@ -566,7 +564,7 @@ private:
  */
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename ExprType,
     template<typename, typename, typename, typename> class ThicknessPolicy>
-struct tensorLevelsetDeltaNonAdaptiveThicknessDistance
+struct tensorLevelsetDeltaDistance
 : 
     public tensorLevelsetDeltaBase<Geo_t, Basis_i_t, Basis_j_t, ExprType>,
     public ThicknessPolicy<Geo_t, Basis_i_t, Basis_j_t, ExprType>
@@ -595,19 +593,19 @@ public:
 
     using thickness_policy_type::locEpsilon;
 
-    tensorLevelsetDeltaNonAdaptiveThicknessDistance( expr_type const& expr,
+    tensorLevelsetDeltaDistance( expr_type const& expr,
             Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         :
             super_type( expr, geom, fev, feu ),
             thickness_policy_type( (super_type const&)(*this) )
     {}
-    tensorLevelsetDeltaNonAdaptiveThicknessDistance( expr_type const& expr,
+    tensorLevelsetDeltaDistance( expr_type const& expr,
             Geo_t const& geom, Basis_i_t const& fev )
         :
             super_type( expr, geom, fev ),
             thickness_policy_type( (super_type const&)(*this) )
     {}
-    tensorLevelsetDeltaNonAdaptiveThicknessDistance( expr_type const& expr, Geo_t const& geom )
+    tensorLevelsetDeltaDistance( expr_type const& expr, Geo_t const& geom )
         :
             super_type( expr, geom ),
             thickness_policy_type( (super_type const&)(*this) )
@@ -656,6 +654,12 @@ public:
     static const size_type context = context_phi;
 
     //------------------------------------------------------------------------------//
+    // implementation
+    enum class DeltaImpl {
+        GENERIC, RENORMALISED, DISTANCE
+    };
+
+    //------------------------------------------------------------------------------//
     // phi functionspace
     typedef typename element_phi_type::functionspace_type functionspace_phi_type;
     typedef typename functionspace_phi_type::reference_element_type fe_phi_type;
@@ -693,13 +697,12 @@ public:
 
     //--------------------------------------------------------------------//
     // Constructors
-    LevelsetDeltaExpr( element_phi_type const& phi, double thickness )
-        : M_phi( boost::cref(phi) )
-        , M_thicknessDelta( thickness )
-        , M_useAdaptiveThickness( false )
-        , M_useDistanceImplementation( false )
-        , M_useLocalRedist( false )
-        , M_imOrder( -1 )
+    LevelsetDeltaExpr( element_phi_type const& phi, double thickness ) : 
+        M_phi( boost::cref(phi) ),
+        M_thicknessDelta( thickness ),
+        M_useAdaptiveThickness( false ),
+        M_impl( DeltaImpl::GENERIC ),
+        M_imOrder( -1 )
     {}
 
     ~LevelsetDeltaExpr() = default;
@@ -724,10 +727,8 @@ public:
     // Options
     bool useAdaptiveThickness() const { return M_useAdaptiveThickness; }
     void setUseAdaptiveThickness( bool b ) { M_useAdaptiveThickness = b; }
-    bool useDistanceImplementation() const { return M_useDistanceImplementation; }
-    void setUseDistanceImplementation( bool b ) { M_useDistanceImplementation = b; }
-    bool useLocalRedist() const { return M_useLocalRedist; }
-    void setUseLocalRedist( bool b ) { M_useLocalRedist = b; }
+    DeltaImpl const& impl() const { return M_impl; }
+    void setImpl( DeltaImpl const& impl ) { M_impl = impl; }
 
     //--------------------------------------------------------------------//
     // Expr tensor
@@ -766,28 +767,32 @@ public:
             }
             else /* !expr.useAdaptiveThickness() */
             {
-                if( expr.useLocalRedist() )
+                switch( expr.impl() )
                 {
-                    M_tensorbase.reset(
-                            new tensorLevelsetDeltaNonAdaptiveThicknessLocalRedist< Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy >( 
-                                expr, geom, fev, feu
-                                )
-                            );
-                }
-                else /* !expr.expr.useLocalRedist() */
-                {
-                    if( expr.useDistanceImplementation() )
+                    case DeltaImpl::GENERIC:
+                    {
                         M_tensorbase.reset(
-                                new tensorLevelsetDeltaNonAdaptiveThicknessDistance<Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy>( 
+                                new tensorLevelsetDeltaGeneric<Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy>( 
                                     expr, geom, fev, feu
                                     )
                                 );
-                    else /* !expr.useDistanceImplementation() */
+                    } break;
+                    case DeltaImpl::RENORMALISED:
+                    {
                         M_tensorbase.reset(
-                                new tensorLevelsetDeltaNonAdaptiveThicknessGeneric<Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy>( 
+                                new tensorLevelsetDeltaLocalRedist< Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy >( 
                                     expr, geom, fev, feu
                                     )
                                 );
+                    } break;
+                    case DeltaImpl::DISTANCE:
+                    {
+                        M_tensorbase.reset(
+                                new tensorLevelsetDeltaDistance<Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy>( 
+                                    expr, geom, fev, feu
+                                    )
+                                );
+                    } break;
                 }
             }
         }
@@ -801,28 +806,32 @@ public:
             }
             else /* !expr.useAdaptiveThickness() */
             {
-                if( expr.useLocalRedist() )
+                switch( expr.impl() )
                 {
-                    M_tensorbase.reset(
-                            new tensorLevelsetDeltaNonAdaptiveThicknessLocalRedist<Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy>( 
-                                expr, geom, fev
-                                )
-                            );
-                }
-                else /* !expr.useLocalRedist() */
-                {
-                    if( expr.useDistanceImplementation() )
+                    case DeltaImpl::GENERIC:
+                    {
                         M_tensorbase.reset(
-                                new tensorLevelsetDeltaNonAdaptiveThicknessDistance<Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy>( 
+                                new tensorLevelsetDeltaGeneric<Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy>( 
                                     expr, geom, fev
                                     )
                                 );
-                    else /* !expr.useDistanceImplementation() */
+                    } break;
+                    case DeltaImpl::RENORMALISED:
+                    {
                         M_tensorbase.reset(
-                                new tensorLevelsetDeltaNonAdaptiveThicknessGeneric<Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy>( 
+                                new tensorLevelsetDeltaLocalRedist< Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy >( 
                                     expr, geom, fev
                                     )
                                 );
+                    } break;
+                    case DeltaImpl::DISTANCE:
+                    {
+                        M_tensorbase.reset(
+                                new tensorLevelsetDeltaDistance<Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy>( 
+                                    expr, geom, fev
+                                    )
+                                );
+                    } break;
                 }
             }
         }
@@ -835,28 +844,32 @@ public:
             }
             else /* !expr.useAdaptiveThickness() */
             {
-                if( expr.useLocalRedist() )
+                switch( expr.impl() )
                 {
-                    M_tensorbase.reset(
-                            new tensorLevelsetDeltaNonAdaptiveThicknessLocalRedist<Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy>( 
-                                expr, geom
-                                )
-                            );
-                }
-                else /* !expr.useLocalRedist() */
-                {
-                    if( expr.useDistanceImplementation() )
+                    case DeltaImpl::GENERIC:
+                    {
                         M_tensorbase.reset(
-                                new tensorLevelsetDeltaNonAdaptiveThicknessDistance<Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy>( 
+                                new tensorLevelsetDeltaGeneric<Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy>( 
                                     expr, geom
                                     )
                                 );
-                    else /* !expr.useDistanceImplementation() */
+                    } break;
+                    case DeltaImpl::RENORMALISED:
+                    {
                         M_tensorbase.reset(
-                                new tensorLevelsetDeltaNonAdaptiveThicknessGeneric<Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy>( 
+                                new tensorLevelsetDeltaLocalRedist< Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy >( 
                                     expr, geom
                                     )
                                 );
+                    } break;
+                    case DeltaImpl::DISTANCE:
+                    {
+                        M_tensorbase.reset(
+                                new tensorLevelsetDeltaDistance<Geo_t, Basis_i_t, Basis_j_t, expr_type, NonAdaptiveThicknessPolicy>( 
+                                    expr, geom
+                                    )
+                                );
+                    } break;
                 }
             }
         }
@@ -922,8 +935,7 @@ private:
     boost::reference_wrapper<const element_phi_type> M_phi;
     double M_thicknessDelta;
     bool M_useAdaptiveThickness;
-    bool M_useDistanceImplementation;
-    bool M_useLocalRedist;
+    DeltaImpl M_impl;
     int M_imOrder;
 };
 
@@ -951,8 +963,7 @@ BOOST_PARAMETER_FUNCTION(
         ) // required parameters
         ( optional
           ( use_adaptive_thickness, (bool), false )
-          ( use_distance_impl, (bool), false )
-          ( use_local_redist, (bool), false )
+          ( impl, (std::string), "generic" )
           ( imorder, (int), -1 )
         ) // optional parameters
     )
@@ -962,14 +973,20 @@ BOOST_PARAMETER_FUNCTION(
     lsdelta_t levelsetDeltaExpr( element, thickness );
 
     levelsetDeltaExpr.setUseAdaptiveThickness( use_adaptive_thickness );
-    levelsetDeltaExpr.setUseDistanceImplementation( use_distance_impl );
-    levelsetDeltaExpr.setUseLocalRedist( use_local_redist );
+    if ( impl == "generic" )
+        levelsetDeltaExpr.setImpl( lsdelta_t::DeltaImpl::GENERIC );
+    else if ( impl == "renorm" )
+        levelsetDeltaExpr.setImpl( lsdelta_t::DeltaImpl::RENORMALISED );
+    else if ( impl == "distance" )
+        levelsetDeltaExpr.setImpl( lsdelta_t::DeltaImpl::DISTANCE );
+    else
+        CHECK( false ) << impl << " is not a valid DeltaImpl (available: generic, renorm, distance)";
+
     levelsetDeltaExpr.setPolynomialOrder( imorder );
     
     return Expr< lsdelta_t >( levelsetDeltaExpr );
 }
 
-//}
 }
 }
 

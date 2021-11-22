@@ -152,13 +152,13 @@ class GeoMap
         geomap_elements_t;
 
   public:
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nRealDim = super::nRealDim;
-    static const uint16_type nDof = super::nDof;
-    static const uint16_type nOrder = Order;
-    static const uint16_type nNodes = super::nNodes;
-    static const fem::transformation_type trans = super::trans;
-    static const bool is_linear = ( trans == fem::LINEAR );
+    static constexpr uint16_type nDim = super::nDim;
+    static constexpr uint16_type nRealDim = super::nRealDim;
+    static constexpr uint16_type nDof = super::nDof;
+    static constexpr uint16_type nOrder = Order;
+    static constexpr uint16_type nNodes = super::nNodes;
+    static constexpr fem::transformation_type trans = super::trans;
+    static constexpr bool is_linear = ( trans == fem::LINEAR );
     
     typedef typename super::value_type value_type;
 
@@ -307,7 +307,7 @@ class GeoMap
     /**
             destructor
             */
-    ~GeoMap()
+    ~GeoMap() override
     {
     }
 
@@ -765,17 +765,16 @@ class GeoMap
      * Context for the geometric mapping depend on a node in the
      * reference element
      */
-    template <size_type context_v, typename ElementType, int SubEntityCoDim = 1>
+    template <typename ElementType, int SubEntityCoDim = 0>
     class Context
     {
       public:
-        static const size_type contextv = context_v;
-        static const size_type context = context_v;
         static const int subEntityCoDim = SubEntityCoDim;
+        static const int subEntityCoDimFix = SubEntityCoDim > 0 ? SubEntityCoDim : 1;
         // reference space dimension
         static const uint16_type PDim = ElementType::nDim;
         // real space dimension
-        static const uint16_type NDim = ElementType::nRealDim;
+        static constexpr uint16_type NDim = ElementType::nRealDim;
         static const uint16_type nDim = NDim;
         // type of transformation (linear or not)
         static const fem::transformation_type trans = geometric_mapping_type::trans;
@@ -802,7 +801,7 @@ class GeoMap
 
         typedef typename gm_type::precompute_ptrtype precompute_ptrtype;
 
-        typedef Context<contextv, ElementType, SubEntityCoDim> gmc_type;
+        typedef Context<ElementType, SubEntityCoDim> gmc_type;
         typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
         typedef node_t_type normal_type;
@@ -814,13 +813,13 @@ class GeoMap
 
         typedef ElementType element_type;
         //typedef typename element_type::permutation_type permutation_type;
-        typedef typename element_type::template PermutationSubEntity<SubEntityCoDim> permutation_type;
+        typedef typename element_type::template PermutationSubEntity<subEntityCoDimFix> permutation_type;
 
         using eigen_matrix_nx_type = eigen_matrix_type<NDim,Eigen::Dynamic,value_type>;
         using eigen_matrix_xn_type = eigen_matrix_type<Eigen::Dynamic,NDim,value_type>;
         using eigen_matrix_px_type = eigen_matrix_type<PDim,Eigen::Dynamic,value_type>;
         using eigen_matrix_xp_type = eigen_matrix_type<Eigen::Dynamic,PDim,value_type>;
-        
+
         using eigen_matrix_nn_type = eigen_matrix_type<NDim,NDim,value_type>;
         using vector_eigen_matrix_pp_type = vector_eigen_matrix_type<PDim,PDim,value_type>;
         using vector_eigen_matrix_nn_type = vector_eigen_matrix_type<NDim,NDim,value_type>;
@@ -831,42 +830,27 @@ class GeoMap
         using hessian_type = tensor3_fixed_size_t<NDim,PDim,PDim,value_type>;
         using vector_hessian_type = vector_tensor3_fixed_size_t<NDim,PDim,PDim,value_type>;
 
+        static constexpr bool is_on_face = subEntityCoDim == 1;
+
+        Context() = default;
+
+        template <int CTX>
         Context( gm_ptrtype __gm,
                  element_type const& __e,
+                 std::integral_constant<int, CTX> const& statctx,
                  precompute_ptrtype const& __pc = precompute_ptrtype(),
                  uint16_type __f = invalid_uint16_type_value,
                  size_type dynctx = 0 )
             : M_gm( __gm ),
-              M_element( boost::addressof( __e ) ),
+              M_element( nullptr ),
               M_pc( __pc ),
               M_pc_faces(),
               M_npoints( ( M_pc ) ? M_pc->nPoints() : 0 ),
-
-              //M_xref( PDim ),
-              //M_xreal( NDim ),
-              //M_x0( NDim ),
-              M_J( nComputedPoints() ),
-              M_G( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ),
-              //M_ref_normals( M_gm->referenceConvex().normals() ),
-              M_normals( nComputedPoints() ),
-              M_unit_normals( nComputedPoints() ),
-              M_normal_norms( nComputedPoints() ),
-              M_tangents( nComputedPoints() ),
-              M_unit_tangents( nComputedPoints() ),
-              M_tangent_norms( nComputedPoints() ),
-              M_local_basis_real( nComputedPoints() ),
-              M_local_basis_ref( nComputedPoints() ),
-              M_xrefq( PDim, nPoints() ),
-              M_xrealq( NDim, nPoints() ),
-              M_g_linear( M_G.size2(), PDim ),
-              M_g( M_G.size2(), PDim ),
-              M_hessian_basis_at_pt( M_G.size2(), PDim, PDim ),
-              M_K( nComputedPoints() ),
+              M_G( NDim, gm_type::nNodes ),
+              M_g( M_G.cols(), PDim ),
+              M_hessian_basis_at_pt( M_G.cols(), PDim, PDim ),
               M_CS(),
               M_CSi(),
-              M_B( nComputedPoints() ),
-              M_hessian( nComputedPoints() ),
-              M_Ptangent( nComputedPoints() ),
               M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
               M_id( __e.id() ),
               M_e_markers( __e.markers() ),
@@ -881,48 +865,40 @@ class GeoMap
               M_meas( 0 ),
               M_measface( 0 ),
               M_perm(),
-              M_dynamic_context( dynctx )
+              M_dynamic_context( dynctx ),
+              M_context_updated( 0 )
         {
-            if ( this->isOnSubEntity() )
-                M_f_markers = entityMarkers<SubEntityCoDim>( __e, __f );
-            if ( is_linear )
-            {
-                M_gm->gradient( node_t_type(), M_g_linear );
-            }
-            updateGradient<>( 0 );
-            if ( M_pc && !this->isOnSubEntity() )
-                update( __e );
+            this->setElement( __e );
 
+            if constexpr ( subEntityCoDim == 0 )
+            {
+                if ( M_pc )
+                {
+                    resize<CTX,true>();
+                    update<CTX>( __e );
+                }
+            }
         }
 
+        template <int CTX>
         Context( gm_ptrtype __gm,
                  element_type const& __e,
+                 std::integral_constant<int, CTX> const& statctx,
                  std::vector<std::map<permutation_type, precompute_ptrtype> > & __pc,
                  uint16_type __f,
                  size_type dynctx = 0 )
             :
-            Context( __gm, __e, __pc.empty()?precompute_ptrtype{}:__pc[__f][__e.permutation(__f, mpl::int_<subEntityCoDim>() )], __f, dynctx )
+            Context( __gm, __e, statctx, __pc.empty()?precompute_ptrtype{}:__pc[__f][__e.permutation(__f, mpl::int_<subEntityCoDimFix>() )], __f, dynctx )
             {
                 if ( !__pc.empty() )
                     M_pc_faces =  __pc;
                 if ( M_pc )
-                    update( __e, M_face_id );
+                {
+                    resize<CTX,true>();
+                    update<CTX>( __e, M_face_id );
+                }
             }
-        
-        using using_vectices_t = mpl::int_<0>;
 
-        // context for geomap at vertices
-        Context( gm_ptrtype __gm,
-                 element_type const& __e,
-                 precompute_ptrtype & __pc,
-                 uint16_type __f,
-                 using_vectices_t )
-            :
-            Context( __gm, __e, __pc )
-            {
-                update( __e, __f, using_vectices_t() );
-            }
-        
         Context( gmc_ptrtype& p )
             :
             Context( *p )
@@ -930,7 +906,7 @@ class GeoMap
 
         Context( Context const& ) = default;
         Context( Context && ) = default;
-        
+
         /**
          * clone the context
          */
@@ -939,184 +915,6 @@ class GeoMap
             return std::make_shared<gmc_type>( *this );
         }
 
-       /**
-        * update information on this context
-        *
-        *  - update the coordinate of the real points
-        *  - update the pseudo-inverse of the gradient of the transformation
-        *
-        *  compute \f$ K(x_{\mathrm{ref}}) = G \nabla_{\mathrm{ref}} \phi(x_{\mathrm{ref}}) \f$
-        *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
-        *
-        *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^T K )^{-1} \f$
-        *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
-        */
-#if 0
-        void update( element_type const& __e, uint16_type __f )
-        {
-            //M_face_id = __f;
-            //M_perm = __e.permutation( M_face_id, mpl::int_<subEntityCoDim>() );
-            //M_pc = M_pc_faces[__f][M_perm];
-            update<context>( __e, __f, true /*updatePc*/);
-        }
-#endif        
-        //!
-        //! update geometric only using vertices information
-        //!
-        template<size_type CTX=context>
-        void update( element_type const& __e, uint16_type __f, using_vectices_t )
-        {
-            update<CTX>( __e, __f );
-        }
-
-        template<size_type CTX=context>
-        void update( element_type const& __e, uint16_type __f, precompute_ptrtype pc, using_vectices_t )
-        {
-            M_pc = pc;
-            update<CTX>( __e );
-        }
-        template<size_type CTX=context>
-        void update( element_type const& __e, uint16_type __f, permutation_type __perm, bool __updateJacobianCtx = true )
-        {
-            const bool updatePc = false;
-
-#if 1
-            M_perm=__perm;
-            if ( __updateJacobianCtx )
-                update( __e, M_pc_faces[__f][M_perm], __f, updatePc );
-            else
-                this->update<clear_value_v<context,vm::JACOBIAN|vm::MEASURE>>( __e, M_pc_faces[__f][M_perm], __f, updatePc );
-#else
-            //M_element_c = std::shared_ptr<element_type const>(&__e);
-            M_element = boost::addressof( __e );
-            M_face_id = __f;
-
-            M_perm = __perm;
-
-            M_pc = M_pc_faces[__f][M_perm];
-            //M_G = __e.G();
-            M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
-            M_id = __e.id();
-            M_e_markers = __e.markers();
-            if ( this->isOnSubEntity() )
-                M_f_markers = entityMarkers<subEntityCoDim>( __e, __f );
-            M_xrefq = M_pc->nodes();
-
-            FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )
-            ( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
-            FEELPP_ASSERT( M_pc )
-                .error( "invalid precompute data structure" );
-
-            if ( vm::has_measure<context>::value )
-            {
-                M_h = __e.h();
-                M_h_min = __e.hMin();
-                M_meas = __e.measure();
-                if ( subEntityCoDim == 1 )
-                {
-                    M_measface = __e.faceMeasure( M_face_id );
-                    M_h_face = __e.hFace( M_face_id );
-                }
-                //M_h_edge = __e.hEdge( M_face_id );
-            }
-            else if ( vm::has_tangent<context>::value && ( NDim == 2 ) )
-            {
-                if ( subEntityCoDim == 1 )
-                    M_h_face = __e.hFace( M_face_id );
-            }
-
-            if ( vm::has_point_v<context> || ( vm::has_dynamic_v<context> && vm::hasPOINT( M_dynamic_context ) ) )
-            {
-
-                //ublas::axpy_prod( M_G, pc->phi(), M_xrealq, true );
-                std::fill( M_xrealq.data().begin(), M_xrealq.data().end(), value_type( 0 ) );
-                const uint16_type size1 = M_G.size1();
-                const uint16_type size3 = M_G.size2();
-                const uint16_type size2 = M_pc->nPoints();
-
-                for ( uint16_type i = 0; i < size1; ++i )
-                    for ( uint16_type j = 0; j < size2; ++j )
-                    {
-                        for ( uint16_type k = 0; k < size3; ++k )
-                            M_xrealq( i, j ) += M_G( i, k ) * M_pc->phi()[k][j]( 0, 0 );
-                    }
-            }
-
-            if ( vm::has_jacobian<context>::value && __updateJacobianCtx )
-            {
-                update( __e, M_pc_faces[__f][M_perm], __f, updatePc );
-            }
-#endif
-        }
-
-        template<size_type CTX=context>
-        void update( element_type const& __e,
-                     precompute_ptrtype const& __pc,
-                     uint16_type __f = invalid_uint16_type_value,
-                     bool updatePc = true )
-        {
-            M_pc = __pc;
-
-            if ( M_npoints != M_pc->nPoints() )
-            {
-                M_npoints = M_pc.get()->nPoints();
-
-                if ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> )
-                {
-                    M_K.resize( nComputedPoints() );
-                    M_B.resize( nComputedPoints() );
-                    M_J.resize( nComputedPoints() );
-                    if ( vm::has_hessian<CTX>::value || vm::has_laplacian<CTX>::value )
-                    {
-                        M_hessian.resize( nComputedPoints() );
-                    }
-                    if ( vm::has_tangent<CTX>::value )
-                        M_Ptangent.resize( nComputedPoints() );
-                }
-                M_xrefq.resize( PDim, nPoints() );
-                M_xrealq.resize( NDim, nPoints() );
-                if ( vm::has_normal_v<CTX> )
-                {
-                    M_normals.resize( nComputedPoints() );
-                    M_unit_normals.resize( nComputedPoints() );
-                    M_normal_norms.resize( nComputedPoints() );
-                }
-
-                if ( is_linear )
-                {
-                    M_gm->gradient( node_t_type(), M_g_linear );
-                }
-            }
-
-            update<CTX>( __e, __f, updatePc );
-        }
-
-        template<size_type CTX=context>
-        bool resizeGradient()
-            {
-                if ( vm::has_jacobian_v<CTX> )
-                {
-                    const bool _resized = M_G.size2() != M_g.size1();
-                    if ( _resized )
-                    {
-                        M_g.resize( M_G.size2(), PDim );
-                    }
-                    return _resized;
-                }
-                return false;
-            }
-        template<size_type CTX=context>
-        void updateGradient( int q )
-            {
-                if ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> ||
-                     ( vm::has_dynamic_v<CTX> && ( hasJACOBIAN( M_dynamic_context ) || hasKB( M_dynamic_context ) ) ) )
-                {
-                    //if ( !is_linear )
-                    M_gm->gradient( q, M_g, M_pc.get() );
-                        //else 
-                        //M_gm->gradient( 0, M_g, M_pc.get() );
-                } 
-            }
         /**
          * update information on this context
          *
@@ -1129,53 +927,116 @@ class GeoMap
          *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^T K )^{-1} \f$
          *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
          */
-        template<size_type CTX=context>
-        void update( element_type const& __e, uint16_type __f = invalid_uint16_type_value, bool updatePC = true )
+
+        template<size_type CTX,int TheSubEntityCoDim = SubEntityCoDim>
+        void update( element_type const& __e,
+                     std::enable_if_t< TheSubEntityCoDim == 0 >* = nullptr )
             {
-
-                M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
-                M_element = boost::addressof( __e );
-                M_id = __e.id();
-                M_e_markers = __e.markers();
-                M_face_id = __f;
-                if ( this->isOnSubEntity() )
-                    M_f_markers = entityMarkers<subEntityCoDim>( __e, __f );
-                if ( this->isOnSubEntity() && updatePC )
-                {
-                    M_perm = __e.permutation( M_face_id, mpl::int_<subEntityCoDim>() );
-                    //M_perm = __e.permutation( M_face_id );
-                    M_pc = M_pc_faces[__f][M_perm];
-                }
-                M_xrefq = M_pc->nodes();
-
-                DCHECK( M_G.size2() == M_gm->nbPoints()  ) << "Invalid number of points got " << M_G.size2() << " expected: " << M_gm->nbPoints();
-                DCHECK( M_pc ) << "invalid precompute data structure";
-
-                updateMeasures<CTX>();
-                updatePoints<CTX>();
-                updateJKBN<CTX>();
+                this->setElement( __e );
+                this->updateImpl<CTX>();
             }
+
+        template<size_type CTX,int TheSubEntityCoDim = SubEntityCoDim>
+        void update( element_type const& __e, uint16_type __f,
+                     std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr)
+            {
+                this->setElement( __e );
+                this->setSubEntity( __f );
+                this->updateImpl<CTX>();
+            }
+
+        template<size_type CTX,int TheSubEntityCoDim = SubEntityCoDim>
+        void update( element_type const& __e, uint16_type __f, permutation_type __perm,
+                     std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr)
+            {
+                this->setElement( __e );
+                this->setSubEntity( __f,__perm );
+                this->updateImpl<CTX>();
+            }
+
+        /**
+        * update information on this context
+        *
+        *  - update the coordinate of the real points
+        *  - update the pseudo-inverse of the gradient of the transformation
+        *
+        *  compute \f$ K(x_{\mathrm{ref}}) = G \nabla_{\mathrm{ref}} \phi(x_{\mathrm{ref}}) \f$
+        *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
+        *
+        *  compute \f$ B(x_{\mathrm{ref}}) = K ( K^T K )^{-1} \f$
+        *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
+        */
+
+        template<size_type CTX>
+        void update( element_type const& __e,
+                     precompute_ptrtype const& __pc,
+                     uint16_type __f = invalid_uint16_type_value,
+                     bool updatePc = true )
+        {
+            M_pc = __pc;
+
+            if ( M_npoints != M_pc->nPoints() )
+            {
+                M_npoints = M_pc.get()->nPoints();
+                resize<CTX>();
+            }
+
+            if constexpr ( subEntityCoDim > 0 )
+                update<CTX>( __e, __f/*, updatePc*/ );
+            else
+                update<CTX>( __e );
+        }
+
+
+        FEELPP_STRONG_INLINE
         void setElement( element_type const& __e )
             {
-                M_element = boost::addressof( __e );
-                M_id = __e.id();
+                element_type const* newElement = std::addressof( __e );
+                bool isSameElt = newElement == M_element; // ( dynamic_cast<void const*>( newElement ) == dynamic_cast<void const*>( M_element ) )
+                if ( !isSameElt )
+                {
+                    M_context_updated = 0;
+                    M_element = std::addressof( __e );
+                    if constexpr ( !is_reference_convex_v<element_type> )
+                    {
+                        if constexpr ( gm_type::nNodes == element_type::numVertices )
+                            __e.updateVertices( M_G );
+                        else
+                            __e.updateG( M_G );
+                    }
+                    else
+                    {
+                        if constexpr( std::is_same_v<value_type,typename element_type::value_type> )
+                            M_G = em_cmatrix_col_type<value_type>( ( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ).data().begin(), M_G.rows(), M_G.cols() );
+                        else
+                            M_G = em_cmatrix_col_type<typename element_type::value_type>( ( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ).data().begin(), M_G.rows(), M_G.cols() ).template cast<value_type>();
+                    }
+
+                    M_id = __e.id();
+                    M_e_markers = __e.markers();
+                }
+
             }
-        //!
-        //! update geomap data only on face, element has not been changed
-        //!
-        template<size_type CTX=context>
-        void updateOnFace( uint16_type __f, bool updatePC = true )
+
+        template<int TheSubEntityCoDim = SubEntityCoDim >
+        void setSubEntity( uint16_type __f,
+                           std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr )
             {
                 M_face_id = __f;
-                if ( this->isOnSubEntity() && updatePC )
-                {
-                    M_perm = M_element->permutation( M_face_id, mpl::int_<subEntityCoDim>() );
-                    //M_perm = __e.permutation( M_face_id );
-                    M_pc = M_pc_faces[__f][M_perm];
-                }
-                updatePoints<CTX>();
-                updateJKBN<CTX>();
-                
+                CHECK( M_face_id != invalid_v<uint16_type> ) << "sub entity id not defined";
+                M_perm = this->element().permutation( M_face_id, mpl::int_<subEntityCoDim>() );
+                M_pc = M_pc_faces[__f][M_perm];
+                M_f_markers = entityMarkers<subEntityCoDim>( this->element(), __f );
+            }
+        template<int TheSubEntityCoDim = SubEntityCoDim >
+        void setSubEntity( uint16_type __f, permutation_type __perm,
+                           std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr )
+            {
+                M_face_id = __f;
+                CHECK( M_face_id != invalid_v<uint16_type> ) << "sub entity id not defined";
+                M_perm = __perm;
+                M_pc = M_pc_faces[__f][M_perm];
+                M_f_markers = entityMarkers<subEntityCoDim>( this->element(), __f );
             }
 
         ~Context()
@@ -1185,7 +1046,7 @@ class GeoMap
         /** @name Accessors
          */
         //@{
-        
+
         /**
          \return the geometric mapping associated with the context
          */
@@ -1193,7 +1054,7 @@ class GeoMap
             {
                 return M_gm;
             }
-        
+
         /**
          \return the dimension of the space of the real element
          */
@@ -1201,7 +1062,7 @@ class GeoMap
             {
                 return NDim;
             }
-        
+
         /**
          \return the dimension of the space of the reference element
          */
@@ -1217,7 +1078,7 @@ class GeoMap
             {
             return *M_element;
             }
-        
+
         element_type const& element_c() const
             {
                 return *M_element;
@@ -1235,9 +1096,10 @@ class GeoMap
         //!
         bool isOnSubEntity() const
             {
-                return subEntityCoDim > 1 || ( (subEntityCoDim == 1) && (M_face_id != invalid_uint16_type_value) );
+                return (subEntityCoDim > 0) && (M_face_id != invalid_uint16_type_value);
+                //return subEntityCoDim > 1 || ( (subEntityCoDim == 1) && (M_face_id != invalid_uint16_type_value) );
             }
-        
+
         //!
         //! @return the number of points to transfer from reference to real element
         //!
@@ -1245,24 +1107,28 @@ class GeoMap
             {
                 return M_npoints;
             }
-        
+
         //!
         //! in the case of linear transformation, the jacobian is constant and
         //! we don't have to compute the information at all points, only at one
         //!
         //! @return the number of points at which the geometric mapping is really computed. 
         //!
-        uint16_type nComputedPoints() const
+        constexpr uint16_type nComputedPoints() const
         {
-            return is_linear_polynomial_v<gm_type>?1:M_npoints;
+            //return is_linear_polynomial_v<gm_type>?1:M_npoints;
+            if constexpr ( is_linear_polynomial_v<gm_type> )
+                return 1;
+            else
+                return M_npoints;
         }
-        
+
         /**
          * \return the set of points in the reference convex
          */
         matrix_node_t_type const& xRefs() const
         {
-            return M_xrefq;
+            return M_pc->nodes();
         }
 
         /**
@@ -1270,7 +1136,7 @@ class GeoMap
          */
         ublas::matrix_column<matrix_node_t_type const> xRef( int q ) const
         {
-            return ublas::column( M_xrefq, q );
+            return M_pc->node( q );
         }
 
         /**
@@ -1312,7 +1178,8 @@ class GeoMap
          * \return the matrix associated with the geometric nodes
          */
         //matrix_node_t_type const& G() const { return M_G; }
-        matrix_type const& G() const
+        //matrix_type const& G() const
+        eigen_matrix_nx_type const& G() const
         {
             return M_G;
         }
@@ -1364,7 +1231,7 @@ class GeoMap
             {
                 return M_local_basis_real[q].col(0);
             }
-        
+
         template<typename GeoMapT=gm_type>
         value_type const& localBasis( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
             {
@@ -1477,34 +1344,30 @@ class GeoMap
         /**
          \return the barycenter of the geometric nodes
          */
-        node_t_type barycenterReal() const
-        {
-            node_t_type __barycenter( M_G.size1() );
-            __barycenter.clear();
-
-            for ( uint16_type __c = 0; __c < M_G.size2(); ++__c )
+        eigen_vector_type<NDim,value_type> barycenterReal() const
             {
-                __barycenter += ublas::column( M_G, __c );
+                int nPts = M_G.cols();
+                return (1./nPts)*M_G*eigen_vector_type<Eigen::Dynamic,value_type>::Ones( nPts );
             }
-
-            __barycenter /= M_G.size2();
-            return __barycenter;
-        }
-
         /**
          * tell whether the point is on the surface of the convex
          * @return true if the point is on the surface, false otherwise
          */
         bool isOnConvexSurface() const
         {
-            if ( trans == fem::LINEAR )
+            if constexpr ( trans == fem::LINEAR )
             {
+#if 0
                 // x -x0 - K(0)\bar{x}
                 return std::abs( ublas::norm_2( xReal() - ublas::column( M_G, 0 ) -
                                                 ublas::prod( M_K, xRef() ) ) ) < 1e-10;
+#else
+                CHECK( false ) << "TODO";
+                return false;
+#endif
             }
-
-            return false;
+            else
+                return false;
         }
 
         node_t_type const& refNormal( int /*q*/ ) const
@@ -1782,7 +1645,12 @@ class GeoMap
          */
         value_type radiusEstimate() const
             {
+#if 0
             return M_gm->radiusEstimate( M_G );
+#else
+            CHECK( false ) << "TODO";
+            return value_type(0);
+#endif
         }
 
         /**
@@ -1937,42 +1805,50 @@ class GeoMap
          * @return true if the permutation has been found and the geomap updated,
          * false otherwise.
          */
-        template <typename EltType, typename NeighborGeoType>
-        bool updateFromNeighborMatchingFace( EltType const& elt, uint16_type face_in_elt, std::shared_ptr<NeighborGeoType> const& gmc )
+        template <int CTX,typename EltType, typename NeighborGeoType,int TheSubEntityCoDim = SubEntityCoDim>
+        bool updateFromNeighborMatchingFace( EltType const& elt, uint16_type face_in_elt, std::shared_ptr<NeighborGeoType> const& gmc,
+                                             std::enable_if_t< TheSubEntityCoDim == 1 >* = nullptr )
             {
                 if ( M_gm->hasPermutationWithNeighborFace( elt.id(), face_in_elt ) == false )
                 {
-                    auto gmcptr = gmc.get();
-                    bool found_permutation = false;
-                    for ( permutation_type __p( permutation_type::IDENTITY );
-                          __p < permutation_type( permutation_type::N_PERMUTATIONS ) && !found_permutation; ++__p )
-                    {
-                        // update only xReal in current geomap
-                        this->update( elt, face_in_elt, __p, false );
-                        
-                        bool check = true;
-                        for ( uint16_type i = 0; i < gmc->nPoints() && check; ++i )
-                        {
-                            
-                            for ( uint16_type d = 0; (d < NDim); ++d )
-                            {
-                                
-                                check = check && ( std::abs( gmcptr->xReal( i )[d] - this->xReal( i )[d] ) < 1e-8 );
-                            }
-                        }
-                        // if check update full gmc context with the good permutation
-                        if ( check )
-                        {
-                            this->update( elt, face_in_elt, __p );
-                            M_gm->setPermutationWithNeighborFace( elt.id(), face_in_elt, __p.value() );
-                            found_permutation = true;
-                            return found_permutation;
-                        }
-                    }
+                    auto [found_permutation,perm] = this->updateFromMatchingNodes<CTX>(elt, face_in_elt, gmc );
+                    if ( found_permutation )
+                        M_gm->setPermutationWithNeighborFace( elt.id(), face_in_elt, perm.value() );
                     return found_permutation;
                 }
-                this->update( elt, face_in_elt, permutation_type(M_gm->permutationWithNeighborFace(elt.id(), face_in_elt)) );
+                this->update<CTX>( elt, face_in_elt, permutation_type(M_gm->permutationWithNeighborFace(elt.id(), face_in_elt)) );
                 return true;
+            }
+
+        template <int CTX,typename EltType, typename MatchingGmcType,int TheSubEntityCoDim = SubEntityCoDim>
+        std::pair<bool,permutation_type> updateFromMatchingNodes( EltType const& elt, uint16_type subentity_in_elt, std::shared_ptr<MatchingGmcType> const& gmc,
+                                                                  std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr )
+            {
+                this->setElement( elt );
+                auto gmcptr = gmc.get();
+                for ( permutation_type __p( permutation_type::IDENTITY );
+                      __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+                {
+                    // update only xReal in current geomap
+                    this->setSubEntity( subentity_in_elt,__p );
+                    this->updatePoints();
+
+                    bool check = true;
+                    for ( uint16_type i = 0; i < gmc->nPoints() && check; ++i )
+                    {
+                        for ( uint16_type d = 0; (d < NDim); ++d )
+                        {
+                            check = check && ( std::abs( gmcptr->xReal( i )[d] - this->xReal( i )[d] ) < 1e-8 );
+                        }
+                    }
+                    // if check update full gmc context with the good permutation
+                    if ( check )
+                    {
+                        this->update<CTX>( elt, subentity_in_elt, __p );
+                        return std::make_pair(true, __p);
+                    }
+                }
+                return std::make_pair(false,permutation_type( permutation_type::IDENTITY ));
             }
 
         //@}
@@ -1997,117 +1873,112 @@ class GeoMap
             return M_perm;
         }
 
-        template<int CTX = context>
-        void updateMeasures()
+        template<size_type CTX>
+        void updateImpl()
             {
-                if ( vm::has_measure<CTX>::value )
+                DCHECK( M_G.cols() == M_gm->nbPoints()  ) << "Invalid number of points got " << M_G.cols() << " expected: " << M_gm->nbPoints();
+                DCHECK( M_pc ) << "invalid precompute data structure";
+
+                if constexpr ( vm::has_point_v<CTX> )
                 {
-                    M_h = M_element->h();
-                    M_h_min = M_element->hMin();
-                    M_meas = M_element->measure();
-                    if ( this->isOnFace() )
-                    {
-                        M_measface = M_element->faceMeasure( M_face_id );
-                        M_h_face = M_element->hFace( M_face_id );
-                        //M_h_edge = M_element->hEdge( M_face_id );
-                    }
+                    this->updatePoints();
                 }
-                if ( vm::has_tangent<CTX>::value && ( NDim == 2 ) )
+                else if constexpr ( vm::has_dynamic_v<CTX> )
                 {
-                    if ( this->isOnFace() )
+                    if ( hasPOINT( M_dynamic_context ) )
+                        this->updatePoints();
+                }
+                if constexpr ( vm::has_measure_v<CTX> )
+                {
+                    this->updateMeasures();
+                }
+                else if constexpr ( vm::has_dynamic_v<CTX> )
+                {
+                    if ( hasMEASURE( M_dynamic_context ) )
+                        this->updateMeasures();
+                }
+
+                if constexpr ( subEntityCoDim == 1 )//this->isOnFace()
+                {
+                    if constexpr ( vm::has_measure_v<CTX> || vm::has_tangent_v<CTX> )
+                        this->updateFaceMeasures();
+                    else if constexpr ( vm::has_dynamic_v<CTX> )
                     {
-                        M_h_face = M_element->hFace( M_face_id );
+                        if ( hasMEASURE( M_dynamic_context ) || hasTANGENT( M_dynamic_context ) )
+                            this->updateFaceMeasures();
                     }
                 }
 
-            }
-        template<int CTX=context>
-        void updatePoints()
-            {
-                if ( vm::has_point_v<CTX> || ( vm::has_dynamic_v<CTX> &&  hasPOINT( M_dynamic_context ) ) )
-                {
-                    em_matrix_col_type<value_type> Xreal( M_xrealq.data().begin(), M_xrealq.size1(), M_xrealq.size2() );
-                    em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
-                    Xreal.noalias() = Pts * M_pc->phiEigen();
-                }
+                updateJKBN<CTX>();
+                M_context_updated = CTX | M_dynamic_context;
             }
 
-        template<size_type CTX=context,typename ConvexType = ElementType>
-        void updateJacobian( eigen_matrix_np_type const & K, eigen_matrix_np_type& B, value_type& J,
+        FEELPP_STRONG_INLINE
+        void updateGradient( int q ) noexcept
+            {
+                M_gm->gradient( q, M_g, M_pc.get() );
+            }
+
+        FEELPP_STRONG_INLINE
+        void updateMeasures() noexcept
+            {
+                M_h = M_element->h();
+                M_h_min = M_element->hMin();
+                M_meas = M_element->measure();
+            }
+
+        FEELPP_STRONG_INLINE
+        void updateFaceMeasures() noexcept
+            {
+                M_measface = M_element->faceMeasure( M_face_id );
+                M_h_face = M_element->hFace( M_face_id );
+            }
+
+
+        FEELPP_STRONG_INLINE
+        void updatePoints() noexcept
+            {
+                em_matrix_col_type<value_type> Xreal( M_xrealq.data().begin(), M_xrealq.size1(), M_xrealq.size2() );
+                //em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
+                Xreal.noalias() = M_G * M_pc->phiEigen();
+            }
+
+        template<typename ConvexType = ElementType>
+        void updateJacobian( eigen_matrix_np_type const & K, value_type& J,
                              std::enable_if_t<dimension_v<ConvexType> == real_dimension_v<ConvexType>>* = nullptr )
         {
-            if ( vm::has_jacobian_v<CTX> || ( vm::has_dynamic_v<CTX> &&  hasJACOBIAN( M_dynamic_context ) ) )
-            {
-                J = math::abs( K.determinant() );
-            }
-            if ( vm::has_kb_v<CTX> || ( vm::has_dynamic_v<CTX> &&  hasKB( M_dynamic_context ) ) )
-            {
-                M_CS.noalias() = K.inverse();
-                B.noalias() = M_CS.transpose();
-                //std::cout << "1.B=" << B << std::endl;
-            }
+            J = math::abs( K.determinant() );
         }
-        template<size_type CTX=context,typename ConvexType = ElementType>
-        void updateJacobian( eigen_matrix_np_type const& K, eigen_matrix_np_type& B, value_type& J,
+        template<typename ConvexType = ElementType>
+        void updateJacobian( eigen_matrix_np_type const& K, value_type& J,
                              std::enable_if_t<dimension_v<ConvexType> != real_dimension_v<ConvexType>>* = nullptr )
         {
             // CS = K^T K
-            M_CSi.noalias() = K.transpose()*K;
-            if ( vm::has_jacobian_v<CTX> || ( vm::has_dynamic_v<CTX> &&  hasJACOBIAN( M_dynamic_context ) ) )
-            {
-                J = math::sqrt( math::abs( M_CSi.determinant() ) );
-            }
-
-            if ( vm::has_kb_v<CTX> || ( vm::has_dynamic_v<CTX> &&  hasKB( M_dynamic_context ) ) )
-            {
-                M_CS=M_CSi.inverse();
-                // B = K CS
-                B.noalias() = K*M_CS;
-                //std::cout << "2.B=" << B << std::endl;
-            }
+            //M_CSi.noalias() = K.transpose()*K;
+            J = math::sqrt( math::abs( M_CSi.determinant() ) );
         }
-
-        /**
-         * update Jacobian data : linear case
-         */
-        void updateJKBN( mpl::bool_<true> )
+        template<typename ConvexType = ElementType>
+        void updateB( eigen_matrix_np_type const & K, eigen_matrix_np_type& B,
+                      std::enable_if_t<dimension_v<ConvexType> == real_dimension_v<ConvexType>>* = nullptr )
         {
-            if ( !M_gm->isCached() ||
-                 ( M_gm->isCached() && M_gm->cached( M_id ) == false ) )
-            {
-                updateJKBN( mpl::true_(), mpl::bool_<NDim == PDim>() );
-                if ( M_gm->isCached() )
-                {
-                    // cache J, K and B
-                    M_gm->addJ( M_id, M_J );
-                    //if ( vm::has_kb<context>::value )
-                    {
-                        M_gm->addK( M_id, M_K );
-                        M_gm->addB( M_id, M_B );
-                    }
-                    M_gm->setCached( M_id, true );
-
-                    //LOG(INFO) << "(add to cache) J[" << M_id << "]=" <<  M_J << "\n";
-                    //LOG(INFO) << "(add to cache) B[" << M_id << "]=" <<  M_B << "\n";
-                }
-            }
-
-            else
-            {
-                M_J = M_gm->J( M_id );
-                //LOG(INFO) << "(use cache) J[" << M_id << "]=" <<  M_J << "\n";
-                //if ( vm::has_kb<context>::value )
-                {
-                    M_K = M_gm->K( M_id );
-                    M_B = M_gm->B( M_id );
-                    //LOG(INFO) << "(use cache) B[" << M_id << "]=" <<  M_B << "\n";
-                }
-            }
+            M_CS.noalias() = K.inverse();
+            B.noalias() = M_CS.transpose();
+        }
+        template<typename ConvexType = ElementType>
+        void updateB( eigen_matrix_np_type const& K, eigen_matrix_np_type& B,
+                             std::enable_if_t<dimension_v<ConvexType> != real_dimension_v<ConvexType>>* = nullptr )
+        {
+            // CS = K^T K
+            // M_CSi.noalias() = K.transpose()*K;
+            M_CS=M_CSi.inverse();
+            // B = K CS
+            B.noalias() = K*M_CS;
+            //std::cout << "2.B=" << B << std::endl;
         }
         //!
         //! update hessian information
         //!
-        template<int CTX=context>
+        template<int CTX>
         void updateHessian( eigen_matrix_np_type const& B )
         {
             if constexpr ( vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX> )
@@ -2124,166 +1995,427 @@ class GeoMap
         //!
         //! update normal in the real element
         //!
-        template<int CTX=context,typename ConvexType = ElementType>
-        void updateNormals( eigen_matrix_np_type const& B,
-                            eigen_vector_n_type& N, eigen_vector_n_type& unitN, value_type& Nnorm )
-        {
-            //if constexpr ( ( NDim != PDim ) || ( vm::has_normal_v<CTX> ) )
-            if constexpr ( vm::has_normal_v<CTX> || vm::has_dynamic_v<CTX> )
-            {
-                
-                if ( !this->isOnFace() )
-                    return; //throw std::logic_error( "normal computation defined only on faces" );
-                //if ( M_gm->hasUnitNormalAtFace( M_id, M_face_id ) == false )
-                if ( vm::has_normal_v<CTX> || ( vm::has_dynamic_v<CTX> && hasNORMAL( M_dynamic_context ) ) )
-                {
-                    N.noalias() = B * M_gm->referenceConvex().normal( M_face_id );
-                    Nnorm = N.norm();
-                    unitN = N/Nnorm;
 
-                    //M_gm->setNormalNormAtFace( M_id, M_face_id, M_n_norm );
-                    //M_gm->setUnitNormalAtFace( M_id, M_face_id, M_un_real );
-                }
-#if 0
-                else
-                {
-                    Nnorm = M_gm->normalNormAtFace( M_id, M_face_id );
-                    unitN = M_gm->unitNormalAtFace( M_id, M_face_id );
-                    
-                }
-#endif
-            }
+        FEELPP_STRONG_INLINE
+        void updateNormals( eigen_matrix_np_type const& B,
+                            eigen_vector_n_type& N, eigen_vector_n_type& unitN, value_type& Nnorm ) noexcept
+        {
+            N.noalias() = B * M_gm->referenceConvex().normal( M_face_id );
+            Nnorm = N.norm();
+            unitN = N/Nnorm;
+
+            //M_gm->setNormalNormAtFace( M_id, M_face_id, M_n_norm );
+            //M_gm->setUnitNormalAtFace( M_id, M_face_id, M_un_real );
+
         }
 
-        template<int CTX=context>
+        FEELPP_STRONG_INLINE
         void updateTangents( eigen_matrix_np_type const& K, eigen_vector_n_type const& unitN,
                              eigen_vector_n_type& Ta, eigen_vector_n_type& unitT, value_type& Tnorm,
-                             eigen_matrix_nn_type& P )
+                             eigen_matrix_nn_type& P ) noexcept
         {
-            if constexpr ( vm::has_tangent<CTX>::value )
+            if constexpr ( NDim == 2 )
             {
-                if ( M_face_id == invalid_uint16_type_value )
-                    return;//throw std::logic_error( "tangent computation defined only on faces" );
-                if ( NDim == 2 )
-                {
-                    // t = |\hat{e}|*o_K*(K*t_ref)/|e| where o_K is the sign(e*x_K(\hat{e}))
-                    Ta.noalias() = K * M_gm->referenceConvex().tangent( M_face_id );
-                    Tnorm = Ta.norm();
-                    unitT = Ta/Tnorm;
-                }
-
-                // compute projector on tangent plane
-                P.setIdentity();
-                P.noalias() -= unitN * unitN.transpose();
+                // t = |\hat{e}|*o_K*(K*t_ref)/|e| where o_K is the sign(e*x_K(\hat{e}))
+                Ta.noalias() = K * M_gm->referenceConvex().tangent( M_face_id );
+                Tnorm = Ta.norm();
+                unitT = Ta/Tnorm;
             }
+
+            // compute projector on tangent plane
+            P.setIdentity();
+            P.noalias() -= unitN * unitN.transpose();
         }
         //!
         //! update normal in the real element
         //!
-        template<int CTX=context,typename ConvexType = ElementType>
+        FEELPP_STRONG_INLINE
         void updateLocalBasis( eigen_matrix_np_type const& B,
-                               eigen_matrix_pp_type& local_basis_ref, eigen_matrix_np_type& local_basis_real )
+                               eigen_matrix_pp_type& local_basis_ref, eigen_matrix_np_type& local_basis_real ) noexcept
         {
-            if constexpr ( vm::has_local_basis_v<CTX> )
+#if 0
+            if  ( !this->isOnFace() )
+                return;//throw std::logic_error("Local basis defined only on faces ");
+#endif
+            local_basis_ref = eigen_matrix_pp_type::Identity();
+            eigen_vector_p_type Np = M_gm->referenceConvex().normal( M_face_id );
+            int max_col;
+            Np.array().abs().maxCoeff( &max_col );
+            if ( max_col != 0 )
+                local_basis_ref.col( max_col ) = local_basis_ref.col( 0 );
+            local_basis_ref.col(0)=Np;
+            local_basis_real = B*local_basis_ref;
+            // orthogonalize columns using the Gram-Schmidt algorithm
+            for (int col = 0; col < PDim; ++col)
             {
-                if  ( !this->isOnFace() )
-                    return;//throw std::logic_error("Local basis defined only on faces ");
-                local_basis_ref = eigen_matrix_pp_type::Identity();
-                eigen_vector_p_type Np = M_gm->referenceConvex().normal( M_face_id );
-                int max_col;
-                Np.array().abs().maxCoeff( &max_col );
-                if ( max_col != 0 )
-                    local_basis_ref.col( max_col ) = local_basis_ref.col( 0 );
-                local_basis_ref.col(0)=Np;
-                local_basis_real = B*local_basis_ref;
-                // orthogonalize columns using the Gram-Schmidt algorithm
-                
-                for (int col = 0; col < PDim; ++col)
+                typename eigen_matrix_np_type::ColXpr colVec = local_basis_real.col(col);
+                for (int prevCol = 0; prevCol < col; ++prevCol)
                 {
-                    typename eigen_matrix_np_type::ColXpr colVec = local_basis_real.col(col);
-                    for (int prevCol = 0; prevCol < col; ++prevCol)
-                    {
-                        typename eigen_matrix_np_type::ColXpr prevColVec = local_basis_real.col(prevCol);
-                        colVec -= colVec.dot(prevColVec)*prevColVec;
-                    }
-                    local_basis_real.col(col) = colVec.normalized();
+                    typename eigen_matrix_np_type::ColXpr prevColVec = local_basis_real.col(prevCol);
+                    colVec -= colVec.dot(prevColVec)*prevColVec;
                 }
-                
-                // Ensure basis_real is direct
-                if ( (NDim == PDim) && (NDim>1) && ( local_basis_real.determinant() < 0 ) )
-                {
-                    local_basis_real.col(1) *= -1;
-                }
+                local_basis_real.col(col) = colVec.normalized();
+            }
+
+            // Ensure basis_real is direct
+            if ( (NDim == PDim) && (NDim>1) && ( local_basis_real.determinant() < 0 ) )
+            {
+                local_basis_real.col(1) *= -1;
             }
         }
-        //!
-        //! update various terms associated to the geometric transformation such
-        //! as jacobian, jacobian matrix its inverse or the normals
-        //!
-        template<int CTX=context>
+
+
+        template<size_type CTX,bool ForceResizeJKBN=false>
+        void resize()
+        {
+            if constexpr ( vm::has_point_v<CTX> )
+            {
+                M_xrealq.resize( NDim, nPoints() );
+            }
+            else if constexpr ( vm::has_dynamic_v<CTX> )
+            {
+                if ( hasPOINT( M_dynamic_context ) )
+                    M_xrealq.resize( NDim, nPoints() );
+            }
+            if constexpr ( !is_linear_polynomial_v<gm_type> || ForceResizeJKBN )
+                 resizeJKBN<CTX>();
+        }
+        template<size_type CTX>
+        void resizeJKBN()
+            {
+                static const bool IsOnFace = subEntityCoDim == 1;
+                if constexpr ( !vm::has_dynamic_v<CTX> )
+                {
+                    if constexpr ( !IsOnFace )
+                    {
+                        if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> ) )
+                            return;
+                    }
+                    else
+                    {
+                        if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> ) )
+                            return;
+                    }
+                }
+
+                static const bool hasStaticB = IsOnFace?
+                    vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> :
+                    vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>;
+                bool hasJ = vm::has_jacobian_v<CTX>;
+                bool hasLocalBasis = IsOnFace && vm::has_local_basis_v<CTX>;
+                bool hasTangent = IsOnFace && vm::has_tangent_v<CTX>;
+                bool hasNormal = IsOnFace && (vm::has_normal_v<CTX> || vm::has_tangent_v<CTX>);
+                bool hasB = hasStaticB;//vm::has_normal_v<CTX> || vm::has_tangent_v<CTX>;
+                bool hasSecondDerivative = vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>;
+                if constexpr ( vm::has_dynamic_v<CTX> )
+                {
+                    if constexpr ( !vm::has_jacobian_v<CTX> )
+                        hasJ = hasJACOBIAN( M_dynamic_context );
+                    if constexpr ( !vm::has_second_derivative_v<CTX> && !vm::has_hessian_v<CTX> )
+                        hasSecondDerivative = hasSECOND_DERIVATIVE( M_dynamic_context ) || hasHESSIAN( M_dynamic_context );
+                    if constexpr ( IsOnFace )
+                    {
+                        hasLocalBasis = hasLOCAL_BASIS( M_dynamic_context );
+                        hasTangent = hasTANGENT( M_dynamic_context );
+                        hasNormal = hasTangent || hasNORMAL( M_dynamic_context );
+                        if constexpr ( !hasStaticB )
+                             hasB = hasNormal || hasKB( M_dynamic_context );
+                    }
+                    else
+                    {
+                        if constexpr ( !hasStaticB )
+                             hasB =  hasKB( M_dynamic_context );
+                    }
+
+                    if constexpr ( !(vm::has_jacobian_v<CTX> || hasStaticB) )
+                           if ( !(hasJ || hasB) )
+                               return;
+                }
+
+                const uint16_type _nComputedPoints = nComputedPoints();
+
+                // K
+                M_K.resize( _nComputedPoints );
+
+                // jacobian
+                if constexpr ( vm::has_jacobian_v<CTX> )
+                {
+                    M_J.resize( _nComputedPoints );
+                }
+                else if constexpr ( vm::has_dynamic_v<CTX> )
+                {
+                    if ( hasJ )
+                        M_J.resize( _nComputedPoints );
+                }
+
+                // B
+                if constexpr ( hasStaticB )
+                {
+                    M_B.resize( _nComputedPoints );
+                }
+                else if constexpr ( vm::has_dynamic_v<CTX> )
+                {
+                    if ( hasB )
+                        M_B.resize( _nComputedPoints );
+                }
+
+                // second derivative
+                if constexpr ( !gmc_type::is_linear )
+                {
+                    if constexpr ( vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> /*|| vm::has_laplacian_v<CTX>*/ )
+                    {
+                        M_hessian.resize( _nComputedPoints );
+                    }
+                    else if constexpr ( vm::has_dynamic_v<CTX> )
+                    {
+                        if ( hasSecondDerivative )
+                            M_hessian.resize( _nComputedPoints );
+                    }
+                }
+
+                if constexpr ( IsOnFace )
+                {
+                    // normal
+                    if constexpr ( vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> )
+                    {
+                        M_normals.resize( _nComputedPoints );
+                        M_unit_normals.resize( _nComputedPoints );
+                        M_normal_norms.resize( _nComputedPoints );
+                    }
+                    else if constexpr ( vm::has_dynamic_v<CTX> )
+                    {
+                        if ( hasNormal )
+                        {
+                            M_normals.resize( _nComputedPoints );
+                            M_unit_normals.resize( _nComputedPoints );
+                            M_normal_norms.resize( _nComputedPoints );
+                        }
+                    }
+                    // tangent
+                    if constexpr ( vm::has_tangent_v<CTX> )
+                    {
+                        M_tangents.resize( _nComputedPoints );
+                        M_unit_tangents.resize( _nComputedPoints );
+                        M_tangent_norms.resize( _nComputedPoints );
+                        M_Ptangent.resize( _nComputedPoints );
+                    }
+                    else if constexpr ( vm::has_dynamic_v<CTX> )
+                    {
+                        if ( hasTangent )
+                        {
+                            M_tangents.resize( _nComputedPoints );
+                            M_unit_tangents.resize( _nComputedPoints );
+                            M_tangent_norms.resize( _nComputedPoints );
+                            M_Ptangent.resize( _nComputedPoints );
+                        }
+                    }
+                    // local basis
+                    if constexpr ( vm::has_local_basis_v<CTX> )
+                    {
+                        M_local_basis_ref.resize( _nComputedPoints );
+                        M_local_basis_real.resize( _nComputedPoints );
+                    }
+                    else if constexpr ( vm::has_dynamic_v<CTX> )
+                    {
+                        if ( hasLocalBasis )
+                        {
+                            M_local_basis_ref.resize( _nComputedPoints );
+                            M_local_basis_real.resize( _nComputedPoints );
+                        }
+                    }
+                }
+
+            }
+
+
+
+        template<int CTX>
         void updateJKBN() noexcept
             {
-                if constexpr ( vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_dynamic_v<CTX> )
+                static const bool IsOnFace = subEntityCoDim == 1;
+                if constexpr ( !vm::has_dynamic_v<CTX> )
                 {
-                    Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
-                    em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
-                    tensor_map_t<2,value_type> TPts( M_G.data().begin(), M_G.size1(), M_G.size2() );
-                    bool _gradient_needs_update = resizeGradient<CTX>();
-                    em_matrix_col_type<value_type> GradPhi( M_g.data().begin(),
-                                                            M_G.size2(), PDim );
-
-                    for ( int q = 0; q < nComputedPoints(); ++q )
+                    if constexpr ( !IsOnFace )
                     {
-                        if ( 0 ) //is_linear && M_gm->cache( M_id, M_K[q], M_B[q], M_J[q] ) )
-                        {
-                        }
-                        else
-                        {
-                            if constexpr(!gmc_type::is_linear)
-                            {
-                                updateGradient<CTX>( q );
-                                new (&GradPhi) em_matrix_col_type<value_type>(M_g.data().begin(),
-                                                                              M_G.size2(), PDim );
-                            }
-                            M_K[q].noalias() = Pts * GradPhi;
+                        if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>) )
+                            return;
+                    }
+                    else
+                    {
+                        if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> ) )
+                            return;
+                    }
+                }
 
-                            updateJacobian( M_K[q], M_B[q], M_J[q] );
-#if 0                                                                                                                     
-                            //std::cout << "CTX=" << CTX << std::endl;
-                            //std::cout << "K[" << q << "]=" << M_K[q] << std::endl;
-                            //std::cout << "B[" << q << "]=" << M_B[q] << std::endl;
-                            //std::cout << "J[" << q << "]=" << M_J[q] << std::endl;
-                            //if ( 0 && is_linear )
-                                //M_gm->updateCache( M_id, M_K[q], M_B[q], M_J[q] );
-#endif                                                    
-                        }
-                        if constexpr ( vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX> )
+                static const bool hasStaticB = IsOnFace?
+                    vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> :
+                    vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>;
+                bool hasJ = vm::has_jacobian_v<CTX>;
+                bool hasLocalBasis = IsOnFace && vm::has_local_basis_v<CTX>;
+                bool hasTangent = IsOnFace && vm::has_tangent_v<CTX>;
+                bool hasNormal = IsOnFace && (vm::has_normal_v<CTX> || vm::has_tangent_v<CTX>);
+                bool hasB = hasStaticB;//vm::has_normal_v<CTX> || vm::has_tangent_v<CTX>;
+                bool hasSecondDerivative = vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>;
+                if constexpr ( vm::has_dynamic_v<CTX> )
+                {
+                    if constexpr ( !vm::has_jacobian_v<CTX> )
+                        hasJ = hasJACOBIAN( M_dynamic_context );
+                    if constexpr ( !vm::has_second_derivative_v<CTX> && !vm::has_hessian_v<CTX> )
+                        hasSecondDerivative = hasSECOND_DERIVATIVE( M_dynamic_context ) || hasHESSIAN( M_dynamic_context );
+                    if constexpr ( IsOnFace )
+                    {
+                        hasLocalBasis = hasLOCAL_BASIS( M_dynamic_context );
+                        hasTangent = hasTANGENT( M_dynamic_context );
+                        hasNormal = hasTangent || hasNORMAL( M_dynamic_context );
+                        if constexpr ( !hasStaticB )
+                             hasB = hasNormal || hasKB( M_dynamic_context );
+                    }
+                    else
+                    {
+                        if constexpr ( !hasStaticB )
+                             hasB =  hasKB( M_dynamic_context );
+                    }
+
+                    if constexpr ( !(vm::has_jacobian_v<CTX> || hasStaticB) )
+                           if ( !(hasJ || hasB) )
+                               return;
+                }
+
+                //em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
+
+                //bool _gradient_needs_update = resizeGradient<CTX>();
+                em_matrix_col_type<value_type> GradPhi( M_g.data().begin(),
+                                                        M_G.cols(), PDim );
+
+                tensor_map_t<2,value_type> TPts( M_G.data()/*.begin()*/, M_G.rows(), M_G.cols() );
+                Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
+
+                //if constexpr ( is_linear_polynomial_v<gm_type> )
+                const uint16_type nPts = nComputedPoints();
+                for ( uint16_type q = 0; q < nPts; ++q )
+                {
+                    //uint16_type q = 0;
+                    updateGradient( q );
+
+                    auto & K = M_K[q];
+
+                    K.noalias() = /*Pts*/ M_G* GradPhi;
+
+                    if constexpr ( dimension_v<ElementType> != real_dimension_v<ElementType> )
+                    {
+                        // CS = K^T K
+                        M_CSi.noalias() = K.transpose()*K;
+                    }
+
+                    // jacobian
+                    if constexpr ( vm::has_jacobian_v<CTX> )
+                    {
+                        updateJacobian( K, M_J[q] );
+                    }
+                    else if constexpr ( vm::has_dynamic_v<CTX> )
+                    {
+                        if ( hasJ )
+                            updateJacobian( K, M_J[q] );
+                    }
+
+                    // B
+                    if constexpr ( hasStaticB )
+                    {
+                        updateB( K, M_B[q] );
+                    }
+                    else if constexpr ( vm::has_dynamic_v<CTX> )
+                    {
+                        if ( hasB )
+                            updateB( K, M_B[q] );
+                    }
+
+                    // second derivative
+                    if constexpr ( !gmc_type::is_linear )
+                    {
+                        if constexpr ( vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> /*|| vm::has_laplacian_v<CTX>*/ )
                         {
                             //M_h.resize( { NDim, NDim } );
                             M_gm->hessianBasisAtPoint( q, M_hessian_basis_at_pt, M_pc.get() );
                             M_hessian[q] = TPts.contract(M_hessian_basis_at_pt,dims);
                             //std::cout << "M_hessian[" << q << "]=" << M_hessian[q] << std::endl;
                         }
-
-                        updateHessian<CTX>( M_B[q] );
-                        updateNormals<CTX>( M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
-                        updateTangents<CTX>( M_K[q], M_unit_normals[q], M_tangents[q], M_unit_tangents[q], M_tangent_norms[q], M_Ptangent[q] );
-                        updateLocalBasis<CTX>(  M_B[q], M_local_basis_ref[q], M_local_basis_real[q] );
+                        else if constexpr ( vm::has_dynamic_v<CTX> )
+                        {
+                            if ( hasSecondDerivative )
+                            {
+                                M_gm->hessianBasisAtPoint( q, M_hessian_basis_at_pt, M_pc.get() );
+                                M_hessian[q] = TPts.contract(M_hessian_basis_at_pt,dims);
+                            }
+                        }
                     }
 
-                }
-                else if constexpr ( vm::has_normal_v<CTX> )
-                    for ( int q = 0; q < nComputedPoints(); ++q )
-                        updateNormals<CTX>( M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
-            }
 
-        Context();
+                    if constexpr ( IsOnFace )
+                    {
+                        // normal
+                        if constexpr ( vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> )
+                        {
+                            updateNormals( M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
+                        }
+                        else if constexpr ( vm::has_dynamic_v<CTX> )
+                        {
+                            if ( hasNormal )
+                                updateNormals( M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
+                        }
+                        // tangent
+                        if constexpr ( vm::has_tangent_v<CTX> )
+                        {
+                            updateTangents( K, M_unit_normals[q], M_tangents[q], M_unit_tangents[q], M_tangent_norms[q], M_Ptangent[q] );
+                        }
+                        else if constexpr ( vm::has_dynamic_v<CTX> )
+                        {
+                            if ( hasTangent )
+                                updateTangents( K, M_unit_normals[q], M_tangents[q], M_unit_tangents[q], M_tangent_norms[q], M_Ptangent[q] );
+                        }
+                        // local basis
+                        if constexpr ( vm::has_local_basis_v<CTX> )
+                        {
+                            updateLocalBasis( M_B[q], M_local_basis_ref[q], M_local_basis_real[q] );
+                        }
+                        else if constexpr ( vm::has_dynamic_v<CTX> )
+                        {
+                            if ( hasLocalBasis )
+                                updateLocalBasis( M_B[q], M_local_basis_ref[q], M_local_basis_real[q] );
+                        }
+                    }
+                }
+            }
 
         friend class boost::serialization::access;
 
         template <class Archive>
         void serialize( Archive& ar, const unsigned int version )
         {
+            if constexpr ( subEntityCoDim == 0 )
+            {
+                ar& BOOST_SERIALIZATION_NVP( M_dynamic_context );
+                ar& BOOST_SERIALIZATION_NVP( M_context_updated );
+                if constexpr ( Archive::is_saving::value )
+                {
+                    ar & boost::serialization::make_nvp( "xRefs", this->xRefs() );
+                }
+                else if constexpr ( Archive::is_loading::value )
+                {
+                    size_type saveDynamicContext = M_dynamic_context;
+                    matrix_node_t_type _xRefs;
+                    ar & boost::serialization::make_nvp( "xRefs", _xRefs );
+                    M_pc = M_gm->preCompute( _xRefs );
+                    M_dynamic_context = M_context_updated;
+                    M_context_updated = 0;
+                    M_npoints = M_pc->nPoints();
+                    resize<vm::DYNAMIC,true>();
+                    update<vm::DYNAMIC>( this->element()/*, __f, updatePc*/ );
+                    M_dynamic_context = saveDynamicContext;
+                }
+            }
+            else // TODO apply same procedure as above
+            {
+
             ar& BOOST_SERIALIZATION_NVP( M_npoints );
             ar& BOOST_SERIALIZATION_NVP( M_J );
             ar& BOOST_SERIALIZATION_NVP( M_G );
@@ -2294,9 +2426,8 @@ class GeoMap
             ar& BOOST_SERIALIZATION_NVP( M_tangents );
             ar& BOOST_SERIALIZATION_NVP( M_unit_tangents );
             ar& BOOST_SERIALIZATION_NVP( M_tangent_norms );
-            ar& BOOST_SERIALIZATION_NVP( M_xrefq );
             ar& BOOST_SERIALIZATION_NVP( M_xrealq );
-            ar& BOOST_SERIALIZATION_NVP( M_g_linear );
+            //ar& BOOST_SERIALIZATION_NVP( M_g_linear );
             ar& BOOST_SERIALIZATION_NVP( M_g );
             ar& BOOST_SERIALIZATION_NVP( M_K );
             ar& BOOST_SERIALIZATION_NVP( M_CS );
@@ -2317,6 +2448,7 @@ class GeoMap
             ar& BOOST_SERIALIZATION_NVP( M_meas );
             ar& BOOST_SERIALIZATION_NVP( M_measface );
             ar& BOOST_SERIALIZATION_NVP( M_perm );
+            }
         }
 
       private:
@@ -2332,7 +2464,8 @@ class GeoMap
 
         std::vector<value_type> M_J;
 
-        matrix_type M_G;
+        //matrix_type M_G;
+        eigen_matrix_nx_type M_G;
         //vector_eigen_vector_p_type M_ref_normals;
         vector_eigen_vector_n_type M_normals, M_unit_normals;
         std::vector<value_type> M_normal_norms;
@@ -2341,10 +2474,9 @@ class GeoMap
         vector_eigen_matrix_np_type M_local_basis_real;
         vector_eigen_matrix_pp_type M_local_basis_ref;
 
-        matrix_node_t_type M_xrefq;
         matrix_type M_xrealq;
 
-        matrix_type M_g_linear;
+        //matrix_type M_g_linear;
         matrix_type M_g;
         hessian_basis_type M_hessian_basis_at_pt;
         
@@ -2376,57 +2508,55 @@ class GeoMap
         permutation_type M_perm;
 
         size_type M_dynamic_context;
+        size_type M_context_updated;
 
     }; // Context
 
-    template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
-    std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>
+    template <size_type Context_v, int SubEntityCoDim_v = 0, typename ElementType_t>
+        std::shared_ptr<Context<ElementType_t, SubEntityCoDim_v>>
     context( geometric_mapping_ptrtype gm, ElementType_t const& e, precompute_ptrtype const& pc, size_type dynctx = 0 )
     {
-        return std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>(
-            new Context<Context_v, ElementType_t, SubEntityCoDim_v>( gm,
-                                                                     e,
-                                                                     pc, invalid_uint16_type_value, dynctx ) );
+        return std::make_shared<Context<ElementType_t, SubEntityCoDim_v>>( gm,
+                                                                           e, std::integral_constant<int, Context_v>{},
+                                                                           pc, invalid_uint16_type_value, dynctx );
     }
 
-    template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
-    std::shared_ptr<Context<Context_v, ElementType_t,SubEntityCoDim_v>>
+    template <size_type Context_v, int SubEntityCoDim_v = 0, typename ElementType_t>
+    std::shared_ptr<Context<ElementType_t,SubEntityCoDim_v>>
     context( ElementType_t const& e, precompute_ptrtype const& pc, size_type dynctx = 0 )
     {
-        return std::make_shared<Context<Context_v, ElementType_t,SubEntityCoDim_v>>(
+        return std::make_shared<Context<ElementType_t,SubEntityCoDim_v>>(
             //super_enable_this::shared_from_this(),
             std::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP>>( this->shared_from_this() ),
-            e,
+            e,  std::integral_constant<int, Context_v>{},
             pc, invalid_uint16_type_value, dynctx );
     }
 
     template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
-    std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>
+    std::shared_ptr<Context<ElementType_t, SubEntityCoDim_v>>
     context( geometric_mapping_ptrtype gm,
              ElementType_t const& e,
              std::vector<std::map<typename ElementType_t::permutation_type, precompute_ptrtype>>& pc,
              uint16_type f,
              size_type dynctx = 0 )
     {
-        return std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>(
-            new Context<Context_v, ElementType_t, SubEntityCoDim_v>( gm,
-                                                                     e,
-                                                                     pc,
-                                                                     f, dynctx ) );
+        return std::make_shared<Context<ElementType_t, SubEntityCoDim_v>>( gm,
+                                                                           e, std::integral_constant<int, Context_v>{},
+                                                                           pc,
+                                                                           f, dynctx );
     }
     template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
-    std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>
+        std::shared_ptr<Context<ElementType_t, SubEntityCoDim_v>>
     context( ElementType_t const& e,
              std::vector<std::map<typename ElementType_t::template PermutationSubEntity<SubEntityCoDim_v>, precompute_ptrtype>>& pc,
              uint16_type f, size_type dynctx = 0 )
     {
-        return std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>(
-            new Context<Context_v, ElementType_t, SubEntityCoDim_v>(
+        return std::make_shared<Context<ElementType_t, SubEntityCoDim_v>>(
                 //super_enable_this::shared_from_this(),
                 std::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP>>( this->shared_from_this() ),
-                e,
+                e, std::integral_constant<int, Context_v>{},
                 pc,
-                f, dynctx ) );
+                f, dynctx );
     }
 
     /**

@@ -44,7 +44,7 @@ using nonconforming_t = mpl::bool_<false>;
 template<typename C>
 constexpr bool is_conforming = C::value;
 
-enum class interpolation_operand_type { ID = 0, GRADIENT, CURL, DIV };
+enum class interpolation_operand_type { ID = 0, GRADIENT, CURL, DIV, EXPR };
 
 inline std::ostream&
 operator<<( std::ostream& os, interpolation_operand_type const& o )
@@ -57,32 +57,31 @@ operator<<( std::ostream& os, interpolation_operand_type const& o )
         os << "CURL";
     if ( o == interpolation_operand_type::DIV )
         os << "DIV";
+    if ( o == interpolation_operand_type::EXPR )
+        os << "EXPR";
     return os;
 }
 
+
 template<bool C, interpolation_operand_type O>
-class InterpolationTypeBase
+class InterpolationTypeBaseBase
 {
 public :
     static constexpr bool is_conforming = C;
     static constexpr interpolation_operand_type interpolation_operand = O;
     using operand_t = mpl::int_<static_cast<int>( interpolation_operand )>;
-    using id_t = mpl::int_<static_cast<int>( interpolation_operand_type::ID )>;
-    using gradient_t = mpl::int_<static_cast<int>( interpolation_operand_type::GRADIENT )>;
-    using curl_t = mpl::int_<static_cast<int>( interpolation_operand_type::CURL )>;
-    using div_t = mpl::int_<static_cast<int>( interpolation_operand_type::DIV )>;
 
-    constexpr InterpolationTypeBase()
+    constexpr InterpolationTypeBaseBase()
         :
         M_searchWithCommunication( true ),
         M_componentsAreSamePoint( true ),
         M_onlyLocalizeOnBoundary( false ),
         M_nbNearNeighborInKdTree( 15)
         {}  
-    constexpr InterpolationTypeBase( bool useComm, 
-                                     bool compAreSamePt=true, 
-                                     bool onlyLocalizeOnBoundary=false, 
-                                     int nbNearNeighborInKdTree=15 )
+    constexpr InterpolationTypeBaseBase( bool useComm, 
+                                         bool compAreSamePt=true, 
+                                         bool onlyLocalizeOnBoundary=false, 
+                                         int nbNearNeighborInKdTree=15 )
     :
         M_searchWithCommunication( useComm ),
         M_componentsAreSamePoint( compAreSamePt ),
@@ -90,11 +89,11 @@ public :
         M_nbNearNeighborInKdTree( nbNearNeighborInKdTree )
     {}
 
-    InterpolationTypeBase( InterpolationTypeBase const& a) = default;
-    InterpolationTypeBase( InterpolationTypeBase && a) = default;
+    InterpolationTypeBaseBase( InterpolationTypeBaseBase const& a) = default;
+    InterpolationTypeBaseBase( InterpolationTypeBaseBase && a) = default;
 
-    InterpolationTypeBase& operator=( InterpolationTypeBase const& a) = default;
-    InterpolationTypeBase& operator=( InterpolationTypeBase && a) = default;
+    InterpolationTypeBaseBase& operator=( InterpolationTypeBaseBase const& a) = default;
+    InterpolationTypeBaseBase& operator=( InterpolationTypeBaseBase && a) = default;
 
     constexpr bool searchWithCommunication() const noexcept { return M_searchWithCommunication; }
     constexpr bool componentsAreSamePoint() const noexcept { return M_componentsAreSamePoint; }
@@ -103,6 +102,44 @@ public :
 
     static constexpr bool isConforming() noexcept { return is_conforming; }
     static constexpr interpolation_operand_type interpolationOperand() noexcept { return interpolation_operand; }
+
+private :
+
+    bool M_searchWithCommunication;
+    bool M_componentsAreSamePoint;
+    bool M_onlyLocalizeOnBoundary;
+    int M_nbNearNeighborInKdTree;
+};
+
+
+template<bool C, interpolation_operand_type O >
+class InterpolationTypeBase : public InterpolationTypeBaseBase<C,O>
+{
+    using super_type = InterpolationTypeBaseBase<C,O>;
+public :
+    static constexpr bool is_conforming = super_type::is_conforming;
+    static constexpr interpolation_operand_type interpolation_operand = super_type::interpolation_operand;
+    using operand_t = typename super_type::operand_t; //mpl::int_<static_cast<int>( interpolation_operand )>;
+    using id_t = mpl::int_<static_cast<int>( interpolation_operand_type::ID )>;
+    using gradient_t = mpl::int_<static_cast<int>( interpolation_operand_type::GRADIENT )>;
+    using curl_t = mpl::int_<static_cast<int>( interpolation_operand_type::CURL )>;
+    using div_t = mpl::int_<static_cast<int>( interpolation_operand_type::DIV )>;
+
+    constexpr InterpolationTypeBase() = default;
+    constexpr InterpolationTypeBase( bool useComm, 
+                                     bool compAreSamePt=true, 
+                                     bool onlyLocalizeOnBoundary=false, 
+                                     int nbNearNeighborInKdTree=15 )
+        :
+        super_type( useComm,compAreSamePt,onlyLocalizeOnBoundary,nbNearNeighborInKdTree )
+    {}
+
+    InterpolationTypeBase( InterpolationTypeBase const& a) = default;
+    InterpolationTypeBase( InterpolationTypeBase && a) = default;
+
+    InterpolationTypeBase& operator=( InterpolationTypeBase const& a) = default;
+    InterpolationTypeBase& operator=( InterpolationTypeBase && a) = default;
+
     static constexpr bool requiresDerivatives() noexcept 
         { 
             return interpolation_operand == interpolation_operand_type::GRADIENT || 
@@ -136,12 +173,12 @@ private:
         {
             return vf::div( std::forward<Elt>(e) );
         }
-private :
+    /*private :
 
     bool M_searchWithCommunication;
     bool M_componentsAreSamePoint;
     bool M_onlyLocalizeOnBoundary;
-    int M_nbNearNeighborInKdTree;
+     int M_nbNearNeighborInKdTree;*/
 };
 
 struct InterpolationNonConforming : public InterpolationTypeBase<false,interpolation_operand_type::ID>
@@ -260,6 +297,36 @@ struct InterpolationDiv : public InterpolationTypeBase<is_conforming<C>,interpol
     InterpolationDiv& operator=( InterpolationDiv const& ) = default;
 };
 
+template<typename ExprType,typename C>
+struct InterpolationExpr : public InterpolationTypeBaseBase<is_conforming<C>,interpolation_operand_type::EXPR>
+{
+    using super = InterpolationTypeBaseBase<is_conforming<C>,interpolation_operand_type::EXPR>;
+    using expr_type = ExprType;
+    constexpr InterpolationExpr() = default;
+    constexpr InterpolationExpr(expr_type const& expr,
+                                C c,
+                                bool useComm = true,
+                                bool compAreSamePt=true,
+                                bool onlyLocalizeOnBoundary=false,
+                                int nbNearNeighborInKdTree=15 )
+        :
+        super(useComm,compAreSamePt,onlyLocalizeOnBoundary,nbNearNeighborInKdTree),
+        M_expr( expr )
+        {}
+    InterpolationExpr( InterpolationExpr const& ) = default;
+    InterpolationExpr( InterpolationExpr && ) = default;
+    //InterpolationExpr& operator=( InterpolationExpr const& ) = default;
+
+    template<typename Elt>
+    constexpr decltype(auto) operand( Elt&& e ) 
+        {
+            return M_expr;
+        }
+
+private :
+    expr_type M_expr;
+};
+
 template<typename C, typename ...Args>
 InterpolationID<C>
 makeInterpolation( C&& c, Args&&... args )
@@ -288,35 +355,606 @@ makeDivInterpolation( C&& c, Args&&... args )
     return InterpolationDiv<C>( std::forward<C>(c), std::forward<Args>(args)... );
 }
 
-
-
-namespace detailsup
+template<typename ExprType, typename C, typename ...Args>
+InterpolationExpr<ExprType,C>
+makeExprInterpolation( ExprType const& expr, C&& c, Args&&... args )
 {
-
-template < typename EltType >
-typename EltType::size_type
-idElt( EltType & elt,mpl::size_t<MESH_ELEMENTS> )
-{
-    return elt.id();
+    return InterpolationExpr<ExprType,C>( expr, std::forward<C>(c), std::forward<Args>(args)... );
 }
 
-template < typename EltType >
-typename EltType::size_type
-idElt( EltType & elt,mpl::size_t<MESH_FACES> )
+
+template <typename T=double>
+struct OperatorInterpolationMatrixSetup
 {
-    if ( !elt.element0().isGhostCell() )
-        return elt.element0().id();
-    else if ( elt.isConnectedTo1() && !elt.element1().isGhostCell() )
-        return elt.element1().id();
+    using sparse_matrix_type = MatrixSparse<T>;
+    using sparse_matrix_ptrtype = std::shared_ptr<sparse_matrix_type>;
+
+    OperatorInterpolationMatrixSetup( sparse_matrix_ptrtype m = sparse_matrix_ptrtype{}, Feel::MatrixStructure c = Feel::DIFFERENT_NONZERO_PATTERN,
+                                      size_type indexBlockRow = 0, size_type indexBlockCol = 0 )
+        :
+        M_matrix( m ),
+        M_indexBlockSpaceRow( indexBlockRow ),
+        M_indexBlockSpaceCol( indexBlockCol ),
+        M_context( c )
+        {}
+
+    OperatorInterpolationMatrixSetup( OperatorInterpolationMatrixSetup const& ) = default;
+    OperatorInterpolationMatrixSetup( OperatorInterpolationMatrixSetup && ) = default;
+
+    OperatorInterpolationMatrixSetup& operator=( OperatorInterpolationMatrixSetup const& ) = default;
+    OperatorInterpolationMatrixSetup& operator=( OperatorInterpolationMatrixSetup && ) = default;
+
+    sparse_matrix_ptrtype matrix() const { return M_matrix; }
+    size_type indexBlockSpaceRow() const { return M_indexBlockSpaceRow; }
+    size_type indexBlockSpaceCol() const { return M_indexBlockSpaceCol; }
+
+    bool hasContext( Feel::MatrixStructure c ) const { return (M_context == c); }
+
+    void setMatrix( sparse_matrix_ptrtype m ) { M_matrix = m;; }
+private :
+    sparse_matrix_ptrtype M_matrix;
+    size_type M_indexBlockSpaceRow, M_indexBlockSpaceCol;
+    Feel::MatrixStructure M_context;
+};
+//-----------------------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------------------------------//
+namespace detail
+{
+
+template <typename DomainSpaceType, typename ImageSpaceType, typename ExprType>
+struct PrecomputeDomainBasisFunction
+{
+    typedef std::shared_ptr<DomainSpaceType> domain_space_ptrtype;
+    typedef std::shared_ptr<ImageSpaceType> image_space_ptrtype;
+    //typedef GeoElementType geoelement_type;
+    typedef typename DomainSpaceType::mesh_type::element_type geoelement_type;
+    typedef typename DomainSpaceType::basis_type fe_type;
+    typedef typename ImageSpaceType::basis_type image_fe_type;
+    typedef typename image_fe_type::template ChangeDim<fe_type::nDim>::type image_fe_changedim_type;
+
+    typedef ExprType expression_type;
+
+    // geomap context
+    typedef typename geoelement_type::gm_type gm_type;
+    typedef typename geoelement_type::gm_ptrtype gm_ptrtype;
+    typedef typename gm_type::precompute_type geopc_type;
+    typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
+    static const size_type context2 = (is_hdiv_conforming_v<image_fe_type> || is_hcurl_conforming_v<image_fe_type> )?
+        expression_type::context|vm::JACOBIAN|vm::KB :
+        expression_type::context;
+    static const size_type context = ( DomainSpaceType::nDim == ImageSpaceType::nDim )? context2 : context2|vm::POINT;
+    typedef typename gm_type::template Context<geoelement_type> gmc_type;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+
+    // fe context
+    typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
+    typedef std::shared_ptr<fecontext_type> fecontext_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_fec_type;
+
+    // tensor expression
+    typedef typename expression_type::template tensor<map_gmc_type,map_fec_type> t_expr_type;
+
+    PrecomputeDomainBasisFunction( domain_space_ptrtype const& XhDomain, image_space_ptrtype const& XhImage, ExprType const& expr )
+        :
+        M_XhDomain( XhDomain ),
+        M_XhImage( XhImage ),
+        M_expr( expr )
+    {
+        geoelement_type const * eltInitPtr = nullptr;
+        if ( M_XhDomain->dof()->hasMeshSupport() && M_XhDomain->dof()->meshSupport()->isPartialSupport() )
+        {
+            for ( auto const& eltWrap : elements(support(M_XhDomain)) )
+            {
+                auto const& elt = unwrap_ref(eltWrap);
+                eltInitPtr = &elt;
+                break;
+            }
+        }
+        else
+        {
+            auto itElt = M_XhDomain->mesh()->firstElementIteratorWithProcessId();
+            if ( itElt != M_XhDomain->mesh()->endElement() )
+                eltInitPtr = &(itElt->second);
+        }
+        if ( !eltInitPtr )
+            return;
+
+        this->init( *eltInitPtr );
+    }
+
+
+    template <typename ImageEltType>
+    uint16_type update( geoelement_type const& elt, ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp )
+    {
+
+        // update geomap context, finite element context and expr
+        if constexpr ( !vm::has_grad_v<context> && !vm::has_curl_v<context> && !vm::has_div_v<context> && !vm::has_point_v<context> && !vm::has_dynamic_v<context> &&
+             !is_hdiv_conforming_v<typename DomainSpaceType::fe_type> && !is_hcurl_conforming_v<typename DomainSpaceType::fe_type> &&
+             !is_hdiv_conforming_v<typename ImageSpaceType::fe_type> && !is_hcurl_conforming_v<typename ImageSpaceType::fe_type> )
+        {
+            if constexpr ( DomainSpaceType::nDim != ImageSpaceType::nDim )
+                  M_gmc->template update<context>( elt );
+        }
+        else
+        {
+            M_gmc->template update<context>( elt );
+            M_fec->update( M_gmc );
+            //t_expr_type texpr( M_expr, mapgmc( M_gmc), mapfec( M_fec ) );
+            M_tensorExpr->update( mapgmc( M_gmc), mapfec( M_fec ) );
+            if constexpr ( DomainSpaceType::nDim == ImageSpaceType::nDim )
+            {
+                M_XhImage->fe()->interpolateBasisFunction( *M_tensorExpr, M_IhLoc );
+            }
+            else
+            {
+                M_imageFeChangeDim->interpolateBasisFunction( *M_tensorExpr, M_IhLoc );
+            }
+        }
+
+        // get image local dof id
+        if constexpr ( DomainSpaceType::nDim == ImageSpaceType::nDim )
+        {
+            return M_XhImage->dof()->localDofInElement( imageElt, imageLocDof, comp );
+        }
+        else
+        {
+            double dofPtCompareTol = std::max( 1e-15, imageElt.hMin() * 1e-5 );
+            auto const& imageGlobDofPt = M_XhImage->dof()->dofPoint( imageGlobDof ).template get<0>();
+            bool find = false;
+            size_type thelocDofToFind = invalid_v<size_type>;
+            for ( uint16_type jloc = 0; jloc < image_fe_changedim_type::nLocalDof; ++jloc )
+            {
+                auto const& domainGlobDofPt = M_gmc->xReal( jloc );
+                bool find2 = true;
+                for ( uint16_type d = 0; d < DomainSpaceType::nRealDim; ++d )
+                {
+                    find2 = find2 && ( std::abs( imageGlobDofPt[d] - domainGlobDofPt[d] ) < dofPtCompareTol );
+                }
+                if ( find2 )
+                {
+                    thelocDofToFind = jloc;
+                    find = true;
+                    break;
+                }
+            }
+            CHECK( find ) << "[OperatorInterpolation::update] Compatible dof not found";
+            return image_fe_changedim_type::nLocalDof * comp + thelocDofToFind;
+
+        }
+
+        
+
+#if 0
+
+        domainLocalDofFromImageLocalDof( std::shared_ptr<DomainDofType> const& domaindof, std::shared_ptr<ImageDofType> const& imagedof,
+                                         ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp, size_type domainEltId,
+                                         std::shared_ptr<DomainGmcType>& gmcDomain )
+            
+        if constexpr ( DomainDofType::nDim == ImageDofType::nDim )
+    {
+        return imagedof->localDofInElement( imageElt, imageLocDof, comp );
+    }
     else
     {
-        CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
-        return invalid_v<typename EltType::size_type>;
+        typedef typename ImageDofType::fe_type ImageBasisType;
+        typedef typename DomainDofType::fe_type DomainBasisType;
+        typedef typename ImageBasisType::template ChangeDim<DomainBasisType::nDim>::type new_basis_type;
+
+        //typedef typename image_fe_type::template ChangeDim<fe_type::nDim>::type image_fe_changedim_type;
+
+        gmcDomain->update( domaindof->mesh()->element( domainEltId ) );
+
+        double dofPtCompareTol = std::max( 1e-15, imageElt.hMin() * 1e-5 );
+        auto const& imageGlobDofPt = imagedof->dofPoint( imageGlobDof ).template get<0>();
+        bool find = false;
+        size_type thelocDofToFind = invalid_v<size_type>;
+        for ( uint16_type jloc = 0; jloc < new_basis_type::nLocalDof; ++jloc )
+        {
+            auto const& domainGlobDofPt = gmcDomain->xReal( jloc );
+            bool find2 = true;
+            for ( uint16_type d = 0; d < DomainDofType::nRealDim; ++d )
+            {
+                find2 = find2 && ( std::abs( imageGlobDofPt[d] - domainGlobDofPt[d] ) < dofPtCompareTol );
+            }
+            if ( find2 )
+            {
+                thelocDofToFind = jloc;
+                find = true;
+                break;
+            }
+        }
+        CHECK( find ) << "not find a compatible dof\n ";
+        return new_basis_type::nLocalDof * comp + thelocDofToFind;
+    }
+
+#endif
+
+
+
+    }
+
+    Eigen::MatrixXd const& interpolant() const { return M_IhLoc; }
+
+    gmc_ptrtype & gmc() { return M_gmc; }
+
+private :
+  void init( geoelement_type const& elt )
+  {
+      if constexpr ( DomainSpaceType::nDim == ImageSpaceType::nDim )
+      {
+          // auto const& elt = *M_XhDomain->mesh()->beginElementWithProcessId();
+
+          gm_ptrtype gm = M_XhDomain->gm();
+
+          //geopc_ptrtype geopc( new geopc_type( gm, imageSpace->fe()->dual().points() ) );
+          auto refPts = M_XhImage->fe()->dual().points();
+          auto geopc = gm->preCompute( gm, refPts );
+          auto fepc = M_XhDomain->fe()->preCompute( M_XhDomain->fe(), refPts /*gmc->xRefs()*/ );
+
+          gmc_ptrtype gmc = gm->template context<context>( elt, geopc );
+          fecontext_ptrtype fec( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
+
+          M_gmc = gm->template context<context>( elt, geopc );
+          M_fec.reset( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
+
+          map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( M_gmc ) );
+          map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0>>( M_fec ) );
+          //t_expr_type texpr( M_expr, mapgmc, mapfec );
+          M_tensorExpr = std::make_shared<t_expr_type>( M_expr, mapgmc, mapfec );
+          using shape = typename t_expr_type::shape;
+          M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product ? fe_type::nComponents * fe_type::nLocalDof : fe_type::nLocalDof,
+                                           image_fe_type::is_product ? image_fe_type::nComponents * image_fe_type::nLocalDof : image_fe_type::nLocalDof );
+
+          M_XhImage->fe()->interpolateBasisFunction( *M_tensorExpr, M_IhLoc );
+      }
+      else
+      {
+          //typedef typename ImageSpaceType::basis_type::template ChangeDim<DomainSpaceType::basis_type::nDim>::type new_basis_type;
+          //new_basis_type newImageBasis;
+          M_imageFeChangeDim = std::make_shared<image_fe_changedim_type>();
+
+          // auto const& elt = *M_XhDomain->mesh()->beginElementWithProcessId();
+          gm_ptrtype gm = M_XhDomain->gm();
+
+          auto refPts = M_imageFeChangeDim->dual().points(); //M_XhImage->fe()->dual().points();
+          auto geopc = gm->preCompute( gm, refPts );
+          auto fepc = M_XhDomain->fe()->preCompute( M_XhDomain->fe(), refPts /*gmc->xRefs()*/ );
+
+          gmc_ptrtype gmc = gm->template context<context>( elt, geopc );
+          fecontext_ptrtype fec( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
+
+          M_gmc = gm->template context<context>( elt, geopc );
+          M_fec.reset( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
+
+          map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( M_gmc ) );
+          map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0>>( M_fec ) );
+          //t_expr_type texpr( M_expr, mapgmc, mapfec );
+          M_tensorExpr = std::make_shared<t_expr_type>( M_expr, mapgmc, mapfec );
+
+          using shape = typename t_expr_type::shape;
+          M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product ? fe_type::nComponents * fe_type::nLocalDof : fe_type::nLocalDof,
+                                           image_fe_changedim_type::is_product ? image_fe_changedim_type::nComponents * image_fe_changedim_type::nLocalDof : image_fe_changedim_type::nLocalDof );
+          M_imageFeChangeDim->interpolateBasisFunction( *M_tensorExpr, M_IhLoc );
+      }
+  }
+
+private:
+  domain_space_ptrtype M_XhDomain;
+  image_space_ptrtype M_XhImage;
+  expression_type const& M_expr;
+  std::shared_ptr<t_expr_type> M_tensorExpr;
+  std::shared_ptr<image_fe_changedim_type> M_imageFeChangeDim;
+  gmc_ptrtype M_gmc;
+  fecontext_ptrtype M_fec;
+  Eigen::MatrixXd M_IhLoc;
+
+};
+
+
+
+template <typename DomainSpaceType, typename ImageSpaceType, typename ExprType>
+std::shared_ptr<PrecomputeDomainBasisFunction<DomainSpaceType,ImageSpaceType,ExprType>>
+precomputeDomainBasisFunction( std::shared_ptr<DomainSpaceType> const& domainSpace , std::shared_ptr<ImageSpaceType> const& imageSpace,
+                               ExprType const& expr )
+{
+    typedef PrecomputeDomainBasisFunction<DomainSpaceType,ImageSpaceType,ExprType> res_type;
+    return std::make_shared<res_type>( domainSpace, imageSpace, expr );
+}
+
+//--------------------------------------------------------------------------------------------------//
+template <typename DomainSpaceType, typename ImageSpaceType>
+struct DomainEltIdFromImageEltId
+{
+    using domain_space_type = DomainSpaceType;
+    using domain_mesh_type = typename domain_space_type::mesh_type;
+    using image_space_type = ImageSpaceType;
+    using image_mesh_type = typename image_space_type::mesh_type;
+
+    using domain_vector_mesh_element_type = typename domain_mesh_type::super_elements::elements_reference_wrapper_type;//   std::vector<boost::reference_wrapper<typename domain_mesh_type::element_type> >;
+    using image_vector_mesh_element_type = typename image_mesh_type::super_elements::elements_reference_wrapper_type;//std::vector<boost::reference_wrapper<typename image_mesh_type::element_type> >;
+
+    using size_type = typename domain_mesh_type::size_type;
+
+    DomainEltIdFromImageEltId( std::shared_ptr<domain_space_type> XhDomain, std::shared_ptr<image_space_type> XhImage )
+        :
+        M_XhDomain( XhDomain ),
+        M_XhImage( XhImage ),
+        M_meshDomain( XhDomain->mesh() ),
+        M_meshImage( XhImage->mesh() ),
+        M_image_related_to_domain( M_meshImage->isSubMeshFrom( M_meshDomain ) ),
+        M_domain_related_to_image( M_meshDomain->isSubMeshFrom( M_meshImage ) ),
+        M_domain_sibling_of_image( M_meshDomain->isSiblingOf( M_meshImage ) ),
+        M_meshSupportDomain( M_XhDomain->template meshSupport<0>() ),
+        M_meshSupportImage( M_XhImage->template meshSupport<0>() ),
+        M_hasMeshSupportPartialDomain( M_meshSupportDomain->isPartialSupport() ),
+        M_hasMeshSupportPartialImage( M_meshSupportImage->isPartialSupport() )
+        {}
+
+    std::set<size_type> //domain_vector_mesh_element_type
+    apply( typename image_mesh_type::element_type const& imageElt ) const
+        {
+            static const uint16_type nDimDomain = domain_mesh_type::nDim;
+            static const uint16_type nDimImage = image_mesh_type::nDim;
+            static const uint16_type nDimDiffBetweenDomainImage = ( nDimDomain > nDimImage )? nDimDomain-nDimImage : nDimImage-nDimDomain;
+            image_vector_mesh_element_type imageElts = {  boost::cref( imageElt ) };
+            return this->apply<nDimDiffBetweenDomainImage>( imageElt, imageElts );
+        }
+
+    std::set<size_type> //domain_vector_mesh_element_type
+    apply( typename image_mesh_type::face_type const& imageFace ) const
+        {
+            image_vector_mesh_element_type imageElts;
+#if 0
+            if ( imageFace.isConnectedTo0() && !imageFace.element0().isGhostCell() )
+                if ( !M_hasMeshSupportPartialImage || M_meshSupportImage->hasElement( imageFace.element0().id() ) )
+                    imageElts.push_back( boost::cref( imageFace.element0() ) );
+            if ( imageFace.isConnectedTo1() && !imageFace.element1().isGhostCell() )
+                if ( !M_hasMeshSupportPartialImage || M_meshSupportImage->hasElement( imageFace.element1().id() ) )
+                    imageElts.push_back( boost::cref( imageFace.element1() ) );
+#else
+            if ( imageFace.isConnectedTo0() )
+            {
+                if ( M_hasMeshSupportPartialImage )
+                {
+                    if ( M_meshSupportImage->hasElement( imageFace.element0().id() ) && !M_meshSupportImage->hasGhostElement( imageFace.element0().id() ) )
+                        imageElts.push_back( boost::cref( imageFace.element0() ) );
+                }
+                else if ( !imageFace.element0().isGhostCell() )
+                {
+                    imageElts.push_back( boost::cref( imageFace.element0() ) );
+                }
+            }
+
+            if ( imageFace.isConnectedTo1() )
+            {
+                if ( M_hasMeshSupportPartialImage )
+                {
+                    if ( M_meshSupportImage->hasElement( imageFace.element1().id() ) && !M_meshSupportImage->hasGhostElement( imageFace.element1().id() ) )
+                        imageElts.push_back( boost::cref( imageFace.element1() ) );
+                }
+                else if ( !imageFace.element1().isGhostCell() )
+                {
+                    imageElts.push_back( boost::cref( imageFace.element1() ) );
+                }
+            }
+
+#endif
+            
+
+            static const uint16_type nDimDomain = domain_mesh_type::nDim;
+            static const uint16_type nDimImage = image_mesh_type::nDim;
+            static const uint16_type nDimDiffBetweenDomainImage = ( nDimDomain > nDimImage )? nDimDomain-nDimImage : nDimImage-nDimDomain;
+
+            return this->apply<nDimDiffBetweenDomainImage>( imageFace, imageElts );
+        }
+private :
+
+    template <int ApplyType, typename EntityType>
+    std::set<size_type> //domain_vector_mesh_element_type
+    apply( EntityType const& imageEntity, image_vector_mesh_element_type const& imageElts,
+           typename std::enable_if_t< ApplyType == 0 >* = nullptr ) const
+        {
+            std::set<size_type> idsFind;
+
+            for ( auto const& imageElt : imageElts )
+            {
+                size_type imageEltId = unwrap_ref(imageElt).id();
+                if ( M_image_related_to_domain )
+                {
+                    const size_type domainEltId = M_meshImage->subMeshToMesh( imageEltId );
+                    VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
+                    if ( domainEltId != invalid_v<size_type> ) idsFind.insert( domainEltId );
+                }
+                else if ( M_domain_related_to_image )
+                {
+                    const size_type domainEltId = M_meshDomain->meshToSubMesh( imageEltId );
+                    VLOG(2) << "[domain_related_to_image] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
+                    if ( domainEltId != invalid_v<size_type> ) idsFind.insert( domainEltId );
+                }
+                else if( M_domain_sibling_of_image )
+                {
+                    const size_type domainEltId = M_meshDomain->meshToSubMesh( M_meshImage, imageEltId );
+                    DVLOG(1) << "[domain_sibling_of_image] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
+                    if ( domainEltId != invalid_v<size_type> ) idsFind.insert( domainEltId );
+                }
+                else // same mesh
+                {
+                    idsFind.insert( imageEltId );
+                }
+            }
+
+            return idsFind;
+        }
+
+       template <int ApplyType, typename EntityType>
+    std::set<size_type> //domain_vector_mesh_element_type
+    apply( EntityType const& imageEntity, image_vector_mesh_element_type const& imageElts,
+           typename std::enable_if_t< ApplyType == 1 >* = nullptr ) const
+        {
+            std::set<size_type> idsFind;
+
+            for ( auto const& imageElt : imageElts )
+            {
+                size_type imageEltId = unwrap_ref(imageElt).id();
+                if ( M_image_related_to_domain )
+                {
+                    auto const& theface = M_meshDomain->face( M_meshImage->subMeshToMesh( imageEltId ) );
+                    size_type domainEltId = invalid_v<size_type>;
+                    if ( M_hasMeshSupportPartialDomain )
+                    {
+                        if ( M_meshSupportDomain->hasElement( theface.element0().id() ) && !M_meshSupportDomain->hasGhostElement( theface.element0().id() ) )
+                            domainEltId = theface.element0().id();
+                        else if ( theface.isConnectedTo1() && M_meshSupportDomain->hasElement( theface.element1().id() ) && !M_meshSupportDomain->hasGhostElement( theface.element1().id() ) )
+                            domainEltId = theface.element1().id();
+                        else
+                            CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
+                    }
+                    else
+                    {
+                        if ( !theface.element0().isGhostCell() )
+                            domainEltId = theface.element0().id();
+                        else if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
+                            domainEltId = theface.element1().id();
+                        else
+                            CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
+                    }
+                    VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
+                    if ( domainEltId != invalid_v<size_type> ) idsFind.insert( domainEltId );
+                }
+                else if( M_domain_related_to_image )
+                {
+#if 0
+                    auto const& eltImage = M_meshImage->element(imageEltId);
+                    for (uint16_type f=0;f< M_meshImage->numLocalFaces();++f)
+                    {
+                        const size_type idFind = M_meshDomain->meshToSubMesh( eltImage.face(f).id() );
+                        if ( idFind != invalid_v<size_type> ) idsFind.insert( idFind );
+                    }
+                    DVLOG(2) << "[trial_related_to_test<1>] test element id: "  << imageEltId << " idsFind.size() "<< idsFind.size() << "\n";
+#else
+                    // imageEntity is face here
+                    const size_type idFind = M_meshDomain->meshToSubMesh( imageEntity.id() );
+                    if ( idFind == invalid_v<size_type> )
+                        continue;
+                    // warning this case can appears
+                    if ( M_hasMeshSupportPartialImage && M_meshSupportDomain->hasGhostElement( idFind ) )
+                        continue;
+                    idsFind.insert( idFind );
+#endif
+                }
+                else if( M_domain_sibling_of_image )
+                {
+                    if constexpr ( domain_mesh_type::nDim > image_mesh_type::nDim )
+                                 {
+                                     size_type domainEltId1 = invalid_v<size_type>;
+                                     size_type domainEltId2 = invalid_v<size_type>;
+                                     auto const& theface = dynamic_cast<domain_mesh_type const*>(M_meshImage->parentMesh().get())->face( M_meshImage->subMeshToMesh( imageEltId ) );
+                                     if ( !theface.element0().isGhostCell() )
+                                         domainEltId1 = theface.element0().id();
+                                     if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
+                                         domainEltId2 = theface.element1().id();
+
+                                     DVLOG(3) << "[image_related_to_domain] image element id: "  << imageEltId  << " : " << theface.element0().id() << " , " << theface.element1().id();
+                                     // now recover the element id in domain mesh
+                                     domainEltId1 = M_meshDomain->meshToSubMesh( domainEltId1 );
+                                     domainEltId2 = M_meshDomain->meshToSubMesh( domainEltId2 );
+                                     DVLOG(3) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id 1 : " << domainEltId1 << " domain element id 2 : " << domainEltId2 << "\n";
+                                     if ( domainEltId1 != invalid_v<size_type> ) idsFind.insert( domainEltId1 );
+                                     else if ( domainEltId2 != invalid_v<size_type> ) idsFind.insert( domainEltId2 );
+                                 }
+                    else
+                    {
+                        auto const& eltImage = M_meshImage->element(imageEltId);
+                        for (uint16_type f=0;f< M_meshImage->numLocalFaces();++f)
+                        {
+                            const size_type id_in_parent_face = dynamic_cast<image_mesh_type const*>(M_meshImage->parentMesh().get())->subMeshToMesh( eltImage.face(f).id() );
+                            // get now the id of the face in the domain mesh
+                            const size_type idFind = M_meshDomain->meshToSubMesh( id_in_parent_face );
+                            if ( idFind != invalid_v<size_type> ) idsFind.insert( idFind );
+                        }
+                        DVLOG(3) << "[trial_related_to_test<1>] test element id: "  << imageEltId << " idsFind.size() "<< idsFind.size() << "\n";
+                    }
+                }
+                else // same mesh
+                {
+                    idsFind.insert( imageEltId );
+                }
+            }
+            return idsFind;
+        }
+
+       template <int ApplyType, typename EntityType>
+    std::set<size_type> //domain_vector_mesh_element_type
+    apply( EntityType const& imageEntity, image_vector_mesh_element_type const& imageElts,
+           typename std::enable_if_t< ApplyType == 2 >* = nullptr ) const
+        {
+            std::set<size_type> idsFind;
+            CHECK(false) << "not implemented\n";
+            return idsFind;
+        }
+
+private :
+    std::shared_ptr<domain_space_type> M_XhDomain;
+    std::shared_ptr<image_space_type> M_XhImage;
+    std::shared_ptr<domain_mesh_type> M_meshDomain;
+    std::shared_ptr<image_mesh_type> M_meshImage;
+    bool M_image_related_to_domain;
+    bool M_domain_related_to_image;
+    bool M_domain_sibling_of_image;
+    std::shared_ptr<MeshSupport<domain_mesh_type>> M_meshSupportDomain;
+    std::shared_ptr<MeshSupport<image_mesh_type>> M_meshSupportImage;
+    bool M_hasMeshSupportPartialDomain, M_hasMeshSupportPartialImage;
+};
+
+//--------------------------------------------------------------------------------------------------//
+
+template <typename DomainDofType, typename ImageDofType, typename ImageEltType, typename DomainGmcType>
+uint16_type
+domainLocalDofFromImageLocalDof( std::shared_ptr<DomainDofType> const& domaindof, std::shared_ptr<ImageDofType> const& imagedof,
+                                 ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp, size_type domainEltId,
+                                 std::shared_ptr<DomainGmcType>& gmcDomain )
+{
+    if constexpr ( DomainDofType::nDim == ImageDofType::nDim )
+    {
+        return imagedof->localDofInElement( imageElt, imageLocDof, comp );
+    }
+    else
+    {
+        typedef typename ImageDofType::fe_type ImageBasisType;
+        typedef typename DomainDofType::fe_type DomainBasisType;
+        typedef typename ImageBasisType::template ChangeDim<DomainBasisType::nDim>::type new_basis_type;
+
+        gmcDomain->update( domaindof->mesh()->element( domainEltId ) );
+
+        double dofPtCompareTol = std::max( 1e-15, imageElt.hMin() * 1e-5 );
+        auto const& imageGlobDofPt = imagedof->dofPoint( imageGlobDof ).template get<0>();
+        bool find = false;
+        size_type thelocDofToFind = invalid_v<size_type>;
+        for ( uint16_type jloc = 0; jloc < new_basis_type::nLocalDof; ++jloc )
+        {
+            auto const& domainGlobDofPt = gmcDomain->xReal( jloc );
+            bool find2 = true;
+            for ( uint16_type d = 0; d < DomainDofType::nRealDim; ++d )
+            {
+                find2 = find2 && ( std::abs( imageGlobDofPt[d] - domainGlobDofPt[d] ) < dofPtCompareTol );
+            }
+            if ( find2 )
+            {
+                thelocDofToFind = jloc;
+                find = true;
+                break;
+            }
+        }
+        CHECK( find ) << "not find a compatible dof\n ";
+        return new_basis_type::nLocalDof * comp + thelocDofToFind;
     }
 }
 
+} // namespace detail
 
-} //detailsup
+
 
 
 /**
@@ -368,10 +1006,12 @@ public:
     typedef typename image_mesh_type::element_iterator image_mesh_element_iterator;
 
     // geometric mapping context
-    typedef typename image_mesh_type::gm_type image_gm_type;
-    typedef typename image_mesh_type::gm_ptrtype image_gm_ptrtype;
-    typedef typename image_mesh_type::template gmc<vm::POINT>::type image_gmc_type;
-    typedef typename image_mesh_type::template gmc<vm::POINT>::ptrtype image_gmc_ptrtype;
+    // typedef typename image_mesh_type::gm_type image_gm_type;
+    // typedef typename image_mesh_type::gm_ptrtype image_gm_ptrtype;
+    // using image_gmc_type = typename image_gm_type::template Context<typename image_mesh_type::element_type>;
+    // using image_gmc_ptrtype = std::shared_ptr<image_gmc_type>;
+    // typedef typename image_mesh_type::template gmc<vm::POINT>::type image_gmc_type;
+    // typedef typename image_mesh_type::template gmc<vm::POINT>::ptrtype image_gmc_ptrtype;
 
     // dof
     typedef typename dual_image_space_type::dof_type dof_type;
@@ -401,6 +1041,7 @@ public:
     // node type
     typedef typename matrix_node<typename image_mesh_type::value_type>::type matrix_node_type;
 
+    using matrix_setup_type = OperatorInterpolationMatrixSetup<typename super::matrix_type::value_type>;
 
     //@}
 
@@ -422,21 +1063,24 @@ public:
                            dual_image_space_ptrtype const& imagespace,
                            backend_ptrtype const& backend,
                            InterpType const& interptype,
-                           bool ddmethod=false);
+                           bool ddmethod=false,
+                           matrix_setup_type const& matSetup = matrix_setup_type{} );
 
     OperatorInterpolation( domain_space_ptrtype const& domainspace,
                            dual_image_space_ptrtype const& imagespace,
                            IteratorRange const& r,
                            backend_ptrtype const& backend,
                            InterpType const& interptype,
-                           bool ddmethod=false);
+                           bool ddmethod=false,
+                           matrix_setup_type const& matSetup = matrix_setup_type{} );
 
     OperatorInterpolation( domain_space_ptrtype const& domainspace,
                            dual_image_space_ptrtype const& imagespace,
                            std::list<IteratorRange> const& r,
                            backend_ptrtype const& backend,
                            InterpType const& interptype,
-                           bool ddmethod=false);
+                           bool ddmethod=false,
+                           matrix_setup_type const& matSetup = matrix_setup_type{} );
 
 
     /**
@@ -444,7 +1088,7 @@ public:
      */
     OperatorInterpolation( OperatorInterpolation const& oi ) = default;
     OperatorInterpolation( OperatorInterpolation && oi ) = default;
-    ~OperatorInterpolation() = default;
+    ~OperatorInterpolation() override = default;
 
     //@}
 
@@ -498,7 +1142,7 @@ protected:
 private:
 
     // determine if ghost dofs must used if the active dof in not present from the range
-    std::set<size_type> defineGhostDofUsedToInterpolate();
+    std::set<size_type> defineGhostDofUsedToInterpolate( Feel::detail::DomainEltIdFromImageEltId<DomainSpaceType,ImageSpaceType> const& deifiei );
 
     void updateSameMesh();
     void updateNoRelationMesh();
@@ -564,6 +1208,7 @@ private:
     std::list<range_iterator> M_listRange;
     worldcomm_ptr_t M_WorldCommFusion;
     InterpType M_interptype;
+    matrix_setup_type M_matrixSetup;
 };
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
@@ -572,14 +1217,16 @@ OperatorInterpolation( domain_space_ptrtype const& domainspace,
                        dual_image_space_ptrtype const& imagespace,
                        backend_ptrtype const& backend,
                        InterpType const& interptype,
-                       bool ddmethod )
+                       bool ddmethod,
+                       matrix_setup_type const& matSetup )
     :
     super( domainspace, imagespace, backend, false ),
     M_listRange(),
     M_WorldCommFusion( (ddmethod || ( this->domainSpace()->worldCommPtr() == this->dualImageSpace()->worldCommPtr() ) ) ?
                        this->domainSpace()->worldCommPtr() :
                        this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
-    M_interptype(interptype)
+    M_interptype(interptype),
+    M_matrixSetup( matSetup )
 {
     M_listRange.push_back( elements( imagespace->mesh() ) );
     update();
@@ -593,14 +1240,16 @@ OperatorInterpolation( domain_space_ptrtype const& domainspace,
                        IteratorRange const& r,
                        backend_ptrtype const& backend,
                        InterpType const& interptype,
-                       bool ddmethod )
+                       bool ddmethod,
+                       matrix_setup_type const& matSetup )
     :
     super( domainspace, imagespace, backend, false ),
     M_listRange(),
     M_WorldCommFusion( (ddmethod || ( this->domainSpace()->worldCommPtr() == this->dualImageSpace()->worldCommPtr() ) ) ?
                        this->domainSpace()->worldCommPtr() :
                        this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
-    M_interptype(interptype)
+    M_interptype(interptype),
+    M_matrixSetup( matSetup )
 {
     M_listRange.push_back( r );
     update();
@@ -613,14 +1262,16 @@ OperatorInterpolation( domain_space_ptrtype const& domainspace,
                        std::list<IteratorRange> const& r,
                        backend_ptrtype const& backend,
                        InterpType const& interptype,
-                       bool ddmethod )
+                       bool ddmethod,
+                       matrix_setup_type const& matSetup )
     :
     super( domainspace, imagespace, backend, false ),
     M_listRange( r ),
     M_WorldCommFusion( (ddmethod || ( this->domainSpace()->worldCommPtr() == this->dualImageSpace()->worldCommPtr() ) ) ?
                        this->domainSpace()->worldCommPtr() :
                        this->domainSpace()->worldCommPtr()+this->dualImageSpace()->worldCommPtr() ),
-    M_interptype(interptype)
+    M_interptype(interptype),
+    M_matrixSetup( matSetup )
 {
     update();
 }
@@ -665,344 +1316,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     this->mat().close();
 }
 
-
-//-----------------------------------------------------------------------------------------------------------------//
-//-----------------------------------------------------------------------------------------------------------------//
-//-----------------------------------------------------------------------------------------------------------------//
-namespace detail
-{
-
-template <typename DomainSpaceType, typename ImageSpaceType, typename ExprType>
-struct PrecomputeDomainBasisFunction
-{
-    typedef std::shared_ptr<DomainSpaceType> domain_space_ptrtype;
-    typedef std::shared_ptr<ImageSpaceType> image_space_ptrtype;
-    //typedef GeoElementType geoelement_type;
-    typedef typename DomainSpaceType::mesh_type::element_type geoelement_type;
-    typedef typename DomainSpaceType::basis_type fe_type;
-    typedef typename ImageSpaceType::basis_type image_fe_type;
-    typedef ExprType expression_type;
-
-    // geomap context
-    typedef typename geoelement_type::gm_type gm_type;
-    typedef typename geoelement_type::gm_ptrtype gm_ptrtype;
-    typedef typename gm_type::precompute_type geopc_type;
-    typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
-    static const size_type context2 = (is_hdiv_conforming_v<image_fe_type> || is_hcurl_conforming_v<image_fe_type> )?
-        expression_type::context|vm::JACOBIAN|vm::KB :
-        expression_type::context;
-    static const size_type context = ( DomainSpaceType::nDim == ImageSpaceType::nDim )? context2 : context2|vm::POINT;
-    typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
-    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-
-    // fe context
-    typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type,gmc_type::context> fecontext_type;
-    typedef std::shared_ptr<fecontext_type> fecontext_ptrtype;
-    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_fec_type;
-
-    // tensor expression
-    typedef typename expression_type::template tensor<map_gmc_type,map_fec_type> t_expr_type;
-
-    PrecomputeDomainBasisFunction( domain_space_ptrtype const& XhDomain, image_space_ptrtype const& XhImage, ExprType const& expr )
-        :
-        M_XhDomain( XhDomain ),
-        M_XhImage( XhImage ),
-        M_expr( expr )
-    {
-        auto itElt = M_XhDomain->mesh()->firstElementIteratorWithProcessId();
-        if ( itElt == M_XhDomain->mesh()->endElement() )
-            return;
-
-        this->init( itElt->second );
-    }
-
-
-    void update( geoelement_type const& elt )
-    {
-        if constexpr ( !vm::has_grad_v<context> && !vm::has_curl_v<context> && !vm::has_div_v<context> && 
-             !is_hdiv_conforming_v<typename DomainSpaceType::fe_type> && !is_hcurl_conforming_v<typename DomainSpaceType::fe_type> &&
-             !is_hdiv_conforming_v<typename ImageSpaceType::fe_type> && !is_hcurl_conforming_v<typename ImageSpaceType::fe_type> )
-            return;
-        else
-        {
-            M_gmc->update( elt );
-            M_fec->update( M_gmc );
-
-            t_expr_type texpr( M_expr, mapgmc( M_gmc), mapfec( M_fec ) );
-
-            M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
-        } 
-    }
-
-    Eigen::MatrixXd const& interpolant() const { return M_IhLoc; }
-
-    gmc_ptrtype & gmc() { return M_gmc; }
-
-private :
-  void init( geoelement_type const& elt )
-  {
-      if constexpr ( DomainSpaceType::nDim == ImageSpaceType::nDim )
-      {
-          // auto const& elt = *M_XhDomain->mesh()->beginElementWithProcessId();
-
-          gm_ptrtype gm = M_XhDomain->gm();
-
-          //geopc_ptrtype geopc( new geopc_type( gm, imageSpace->fe()->dual().points() ) );
-          auto refPts = M_XhImage->fe()->dual().points();
-          auto geopc = gm->preCompute( gm, refPts );
-          auto fepc = M_XhDomain->fe()->preCompute( M_XhDomain->fe(), refPts /*gmc->xRefs()*/ );
-
-          gmc_ptrtype gmc( new gmc_type( gm, elt, geopc ) );
-          fecontext_ptrtype fec( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
-
-          M_gmc.reset( new gmc_type( gm, elt, geopc ) );
-          M_fec.reset( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
-
-          map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( M_gmc ) );
-          map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0>>( M_fec ) );
-          t_expr_type texpr( M_expr, mapgmc, mapfec );
-          using shape = typename t_expr_type::shape;
-          M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product ? fe_type::nComponents * fe_type::nLocalDof : fe_type::nLocalDof,
-                                           image_fe_type::is_product ? image_fe_type::nComponents * image_fe_type::nLocalDof : image_fe_type::nLocalDof );
-
-          M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
-      }
-      else
-      {
-          typedef typename ImageSpaceType::basis_type::template ChangeDim<DomainSpaceType::basis_type::nDim>::type new_basis_type;
-          new_basis_type newImageBasis;
-
-          // auto const& elt = *M_XhDomain->mesh()->beginElementWithProcessId();
-          gm_ptrtype gm = M_XhDomain->gm();
-
-          auto refPts = newImageBasis.dual().points(); //M_XhImage->fe()->dual().points();
-          auto geopc = gm->preCompute( gm, refPts );
-          auto fepc = M_XhDomain->fe()->preCompute( M_XhDomain->fe(), refPts /*gmc->xRefs()*/ );
-
-          gmc_ptrtype gmc( new gmc_type( gm, elt, geopc ) );
-          fecontext_ptrtype fec( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
-
-          M_gmc.reset( new gmc_type( gm, elt, geopc ) );
-          M_fec.reset( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
-
-          map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( M_gmc ) );
-          map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0>>( M_fec ) );
-          t_expr_type texpr( M_expr, mapgmc, mapfec );
-
-          using shape = typename t_expr_type::shape;
-          M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product ? fe_type::nComponents * fe_type::nLocalDof : fe_type::nLocalDof,
-                                           new_basis_type::is_product ? new_basis_type::nComponents * new_basis_type::nLocalDof : new_basis_type::nLocalDof );
-          newImageBasis.interpolateBasisFunction( texpr, M_IhLoc );
-      }
-  }
-
-private:
-  domain_space_ptrtype M_XhDomain;
-  image_space_ptrtype M_XhImage;
-  expression_type const& M_expr;
-
-  gmc_ptrtype M_gmc;
-  fecontext_ptrtype M_fec;
-  Eigen::MatrixXd M_IhLoc;
-
-};
-
-
-
-template <typename DomainSpaceType, typename ImageSpaceType, typename ExprType>
-std::shared_ptr<PrecomputeDomainBasisFunction<DomainSpaceType,ImageSpaceType,ExprType>>
-precomputeDomainBasisFunction( std::shared_ptr<DomainSpaceType> const& domainSpace , std::shared_ptr<ImageSpaceType> const& imageSpace,
-                               ExprType const& expr )
-{
-    typedef PrecomputeDomainBasisFunction<DomainSpaceType,ImageSpaceType,ExprType> res_type;
-    return std::make_shared<res_type>( domainSpace, imageSpace, expr );
-}
-
 //--------------------------------------------------------------------------------------------------//
-
-template <typename DomainMeshType, typename ImageMeshType>
-std::set<typename DomainMeshType::size_type>
-domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, typename DomainMeshType::size_type imageEltId, mpl::int_<0> /**/ )
-{
-    using size_type = typename DomainMeshType::size_type;
-    const bool image_related_to_domain = imageMesh->isSubMeshFrom( domainMesh );
-    const bool domain_related_to_image = domainMesh->isSubMeshFrom( imageMesh );
-    const bool domain_sibling_of_image = domainMesh->isSiblingOf( imageMesh );
-    std::set<size_type> idsFind;
-    if ( image_related_to_domain )
-    {
-        const size_type domainEltId = imageMesh->subMeshToMesh( imageEltId );
-        VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
-        if ( domainEltId != invalid_v<size_type> ) idsFind.insert( domainEltId );
-    }
-    else if( domain_related_to_image )
-    {
-        const size_type domainEltId = domainMesh->meshToSubMesh( imageEltId );
-        VLOG(2) << "[domain_related_to_image] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
-        if ( domainEltId != invalid_v<size_type> ) idsFind.insert( domainEltId );
-    }
-    else if( domain_sibling_of_image )
-    {
-        const size_type domainEltId = domainMesh->meshToSubMesh( imageMesh, imageEltId );
-        DVLOG(1) << "[domain_sibling_of_image] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
-        if ( domainEltId != invalid_v<size_type> ) idsFind.insert( domainEltId );
-    }
-    else // same mesh
-    {
-        idsFind.insert( imageEltId );
-    }
-    return idsFind;
-}
-
-template <typename DomainMeshType, typename ImageMeshType>
-std::set<typename DomainMeshType::size_type>
-domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, typename DomainMeshType::size_type imageEltId, mpl::int_<1> /**/ )
-{
-    using size_type = typename DomainMeshType::size_type;
-    const bool image_related_to_domain = imageMesh->isSubMeshFrom( domainMesh );
-    const bool domain_related_to_image = domainMesh->isSubMeshFrom( imageMesh );
-    const bool domain_sibling_of_image = domainMesh->isSiblingOf( imageMesh );
-    std::set<size_type> idsFind;
-    if ( image_related_to_domain )
-    {
-        auto const& theface = domainMesh->face( imageMesh->subMeshToMesh( imageEltId ) );
-        size_type domainEltId = invalid_v<size_type>;
-        if ( !theface.element0().isGhostCell() )
-            domainEltId = theface.element0().id();
-        else if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
-            domainEltId = theface.element1().id();
-        else
-            CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
-
-        VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
-        if ( domainEltId != invalid_v<size_type> ) idsFind.insert( domainEltId );
-    }
-    else if( domain_related_to_image )
-    {
-        auto const& eltImage = imageMesh->element(imageEltId);
-        for (uint16_type f=0;f< imageMesh->numLocalFaces();++f)
-        {
-            const size_type idFind = domainMesh->meshToSubMesh( eltImage.face(f).id() );
-            if ( idFind != invalid_v<size_type> ) idsFind.insert( idFind );
-        }
-        DVLOG(2) << "[trial_related_to_test<1>] test element id: "  << imageEltId << " idsFind.size() "<< idsFind.size() << "\n";
-    }
-    else if( domain_sibling_of_image )
-    {
-        static const uint16_type nDimDomain = DomainMeshType::nDim;
-        static const uint16_type nDimImage = ImageMeshType::nDim;
-
-        if ( nDimDomain > nDimImage )
-        {
-            size_type domainEltId1 = invalid_v<size_type>;
-            size_type domainEltId2 = invalid_v<size_type>;
-            auto const& theface = dynamic_cast<DomainMeshType const*>(imageMesh->parentMesh().get())->face( imageMesh->subMeshToMesh( imageEltId ) );
-            if ( !theface.element0().isGhostCell() )
-                domainEltId1 = theface.element0().id();
-            if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
-                domainEltId2 = theface.element1().id();
-
-            DVLOG(3) << "[image_related_to_domain] image element id: "  << imageEltId  << " : " << theface.element0().id() << " , " << theface.element1().id();
-            // now recover the element id in domain mesh
-            domainEltId1 = domainMesh->meshToSubMesh( domainEltId1 );
-            domainEltId2 = domainMesh->meshToSubMesh( domainEltId2 );
-            DVLOG(3) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id 1 : " << domainEltId1 << " domain element id 2 : " << domainEltId2 << "\n";
-            if ( domainEltId1 != invalid_v<size_type> ) idsFind.insert( domainEltId1 );
-            else if ( domainEltId2 != invalid_v<size_type> ) idsFind.insert( domainEltId2 );
-        }
-        else
-        {
-            auto const& eltImage = imageMesh->element(imageEltId);
-            for (uint16_type f=0;f< imageMesh->numLocalFaces();++f)
-            {
-                const size_type id_in_parent_face = dynamic_cast<ImageMeshType const*>(imageMesh->parentMesh().get())->subMeshToMesh( eltImage.face(f).id() );
-                // get now the id of the face in the domain mesh
-                const size_type idFind = domainMesh->meshToSubMesh( id_in_parent_face );
-                if ( idFind != invalid_v<size_type> ) idsFind.insert( idFind );
-            }
-            DVLOG(3) << "[trial_related_to_test<1>] test element id: "  << imageEltId << " idsFind.size() "<< idsFind.size() << "\n";
-        }
-    }
-    else // same mesh
-    {
-        idsFind.insert( imageEltId );
-    }
-    return idsFind;
-}
-
-template <typename DomainMeshType, typename ImageMeshType>
-std::set<typename DomainMeshType::size_type>
-domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, typename DomainMeshType::size_type imageEltId, mpl::int_<2> /**/ )
-{
-    using size_type = typename DomainMeshType::size_type;
-    CHECK(false) << "not implemented\n";
-    std::set<size_type> idsFind;
-    return idsFind;
-}
-
-template <typename DomainMeshType, typename ImageMeshType>
-std::set<typename DomainMeshType::size_type>
-domainEltIdFromImageEltId( std::shared_ptr<DomainMeshType> const& domainMesh, std::shared_ptr<ImageMeshType> const& imageMesh, typename DomainMeshType::size_type imageEltId )
-{
-    using size_type = typename DomainMeshType::size_type;
-    static const uint16_type nDimDomain = DomainMeshType::nDim;
-    static const uint16_type nDimImage = ImageMeshType::nDim;
-    static const uint16_type nDimDiffBetweenDomainImage = ( nDimDomain > nDimImage )? nDimDomain-nDimImage : nDimImage-nDimDomain;
-    return domainEltIdFromImageEltId( domainMesh,imageMesh,imageEltId,mpl::int_<nDimDiffBetweenDomainImage>() );
-}
-
-//--------------------------------------------------------------------------------------------------//
-
-template <typename DomainDofType, typename ImageDofType, typename ImageEltType, typename DomainGmcType>
-uint16_type
-domainLocalDofFromImageLocalDof( std::shared_ptr<DomainDofType> const& domaindof, std::shared_ptr<ImageDofType> const& imagedof,
-                                 ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp, size_type domainEltId,
-                                 std::shared_ptr<DomainGmcType>& gmcDomain )
-{
-    if constexpr ( DomainDofType::nDim == ImageDofType::nDim )
-    {
-        return imagedof->localDofInElement( imageElt, imageLocDof, comp );
-    }
-    else
-    {
-        typedef typename ImageDofType::fe_type ImageBasisType;
-        typedef typename DomainDofType::fe_type DomainBasisType;
-        typedef typename ImageBasisType::template ChangeDim<DomainBasisType::nDim>::type new_basis_type;
-
-        gmcDomain->update( domaindof->mesh()->element( domainEltId ) );
-
-        double dofPtCompareTol = std::max( 1e-15, imageElt.hMin() * 1e-5 );
-        auto const& imageGlobDofPt = imagedof->dofPoint( imageGlobDof ).template get<0>();
-        bool find = false;
-        size_type thelocDofToFind = invalid_v<size_type>;
-        for ( uint16_type jloc = 0; jloc < new_basis_type::nLocalDof; ++jloc )
-        {
-            auto const& domainGlobDofPt = gmcDomain->xReal( jloc );
-            bool find2 = true;
-            for ( uint16_type d = 0; d < DomainDofType::nRealDim; ++d )
-            {
-                find2 = find2 && ( std::abs( imageGlobDofPt[d] - domainGlobDofPt[d] ) < dofPtCompareTol );
-            }
-            if ( find2 )
-            {
-                thelocDofToFind = jloc;
-                find = true;
-                break;
-            }
-        }
-        CHECK( find ) << "not find a compatible dof\n ";
-        return new_basis_type::nLocalDof * comp + thelocDofToFind;
-    }
-}
-
-//--------------------------------------------------------------------------------------------------//
-
-} // namespace detail
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
 std::set<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::size_type>
-OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::defineGhostDofUsedToInterpolate()
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::defineGhostDofUsedToInterpolate( Feel::detail::DomainEltIdFromImageEltId<DomainSpaceType,ImageSpaceType> const& deifiei )
 {
     std::set<size_type> ghostDofUsedToInterpolate;
     bool meshAreRelated = this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() );
@@ -1010,12 +1328,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     auto const& imagedof = this->dualImageSpace()->dof();
 
     std::map< rank_type, std::vector< size_type > > dataToSend, dataToRecv;
-    // init container used in send/recv
-    for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
-    {
-        dataToSend[p].clear();
-        dataToRecv[p].clear();
-    }
+    // // init container used in send/recv
+    // for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+    // {
+    //     dataToSend[p].clear();
+    //     dataToRecv[p].clear();
+    // }
 
     std::vector<std::set<uint16_type> > dof_done( this->dualImageSpace()->nLocalDof(), std::set<uint16_type>() );
     std::set<size_type> activeDofSharedPresentInRange;
@@ -1030,8 +1348,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
             // if related -> check connection between domain and image element
             if ( meshAreRelated )
             {
-                auto idElem = detailsup::idElt( theImageElt,idim_type() );
-                auto const& domains_eid_set = Feel::detail::domainEltIdFromImageEltId( this->domainSpace()->mesh(),this->dualImageSpace()->mesh(),idElem );
+                auto domains_eid_set = deifiei.apply( theImageElt );
                 if ( domains_eid_set.size() == 0 )
                     continue;
             }
@@ -1069,16 +1386,31 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     mpi::request * reqs = new mpi::request[nbRequest];
     int cptRequest=0;
 
-    for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+    // get size of data to transfer (first phase)
+    std::map<rank_type,size_type> sizeRecv;
+    for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
     {
-        CHECK( dataToSend.find(p) != dataToSend.end() ) << " no data to send to proc " << p << "\n";
-        reqs[cptRequest] = this->dualImageSpace()->worldCommPtr()->localComm().isend( p , 0, dataToSend.find(p)->second );
-        ++cptRequest;
-        reqs[cptRequest] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( p , 0, dataToRecv[p] );
-        ++cptRequest;
+        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest);
+
+    // send/recv first phase
+    cptRequest=0;
+    for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
+    {
+        int nSendData = dataToSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, &(dataToSend[neighborRank][0]), nSendData );
+
+        int nRecvData = sizeRecv[neighborRank];
+        dataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, &(dataToRecv[neighborRank][0]), nRecvData );
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + cptRequest);
 
 
     std::map< size_type, std::set<rank_type> > dataToTreat;
@@ -1090,12 +1422,6 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     }
 
     std::map< rank_type, std::vector< size_type > > dataToReSend, dataToReRecv;
-    for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
-    {
-        dataToReSend[p].clear();
-        dataToReRecv[p].clear();
-    }
-
     for ( auto const& dofAsked : dataToTreat )
     {
         size_type thedofGC = dofAsked.first;
@@ -1112,17 +1438,30 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     }
 
+    // get size of data to transfer (second phase)
     cptRequest=0;
-    for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+    for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
     {
-        CHECK( dataToReSend.find(p) != dataToReSend.end() ) << " no data to send to proc " << p << "\n";
-        reqs[cptRequest] = this->dualImageSpace()->worldCommPtr()->localComm().isend( p , 0, dataToReSend.find(p)->second );
-        ++cptRequest;
-        reqs[cptRequest] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( p , 0, dataToReRecv[p] );
-        ++cptRequest;
+        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, (size_type)dataToReSend[neighborRank].size() );
+        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest);
+
+    // send/recv second phase
+    cptRequest=0;
+    for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
+    {
+        int nSendData = dataToReSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, &(dataToReSend[neighborRank][0]), nSendData );
+        int nRecvData = sizeRecv[neighborRank];
+        dataToReRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, &(dataToReRecv[neighborRank][0]), nRecvData );
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + cptRequest);
     delete [] reqs;
 
     for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
@@ -1161,7 +1500,30 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     auto const& imagedof = this->dualImageSpace()->dof();
     auto const& domaindof = this->domainSpace()->dof();
 
-    auto sparsity_graph = std::make_shared<graph_type>( this->dualImageSpace()->dof(), this->domainSpace()->dof() );
+    bool needToUpdateGraph = true;
+    bool needToCopyMatrix = false;
+    std::shared_ptr<graph_type> sparsity_graph;
+    if ( M_matrixSetup.matrix() && M_matrixSetup.matrix()->hasGraph() &&
+         ( M_matrixSetup.hasContext( Feel::SAME_NONZERO_PATTERN ) || M_matrixSetup.hasContext( Feel::SUBSET_NONZERO_PATTERN ) ) )
+    {
+        sparsity_graph = M_matrixSetup.matrix()->graph();
+        if ( M_matrixSetup.hasContext( Feel::SAME_NONZERO_PATTERN ) )
+            needToUpdateGraph = false;
+        else
+        {
+            sparsity_graph->unlock();
+            needToCopyMatrix = true;
+        }
+    }
+    else
+    {
+        auto dmRow = M_matrixSetup.matrix()?  M_matrixSetup.matrix()->mapRowPtr() : this->dualImageSpace()->mapPtr();
+        auto dmCol = M_matrixSetup.matrix()?  M_matrixSetup.matrix()->mapColPtr() : this->domainSpace()->mapPtr();
+        sparsity_graph = std::make_shared<graph_type>( dmRow, dmCol );
+    }
+
+    auto const& dofIdToContainerIdRow = sparsity_graph->mapRowPtr()->dofIdToContainerId( M_matrixSetup.indexBlockSpaceRow() );
+    auto const& dofIdToContainerIdCol = sparsity_graph->mapColPtr()->dofIdToContainerId( M_matrixSetup.indexBlockSpaceCol() );
 
     // Local assembly: compute matrix by evaluating
     // the domain space basis function at the dual image space
@@ -1171,39 +1533,50 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // element are the same, this compute are done only one times
     // For other fe like Nedelec,Raviart-Thomas this assembly must
     // done for each element
+    //return;//
 
     auto uDomain = this->domainSpace()->element();
-    auto expr = interpolation_type::operand(uDomain);
+    //auto expr = interpolation_type::operand(uDomain);
+    auto expr = M_interptype.operand(uDomain);
     auto MlocEvalBasisNEW = Feel::detail::precomputeDomainBasisFunction( this->domainSpace(), this->dualImageSpace(), expr );
     Eigen::MatrixXd IhLoc;
 
+    Feel::detail::DomainEltIdFromImageEltId<DomainSpaceType,ImageSpaceType> deifiei( this->domainSpace(), this->dualImageSpace() );
 
     // determine if ghost dofs must used if the active dof in not present from the range
     std::set<size_type> ghostDofUsedToInterpolate;
     if ( this->dualImageSpace()->worldCommPtr()->localSize() > 0 )
     {
-        ghostDofUsedToInterpolate = this->defineGhostDofUsedToInterpolate();
+        ghostDofUsedToInterpolate = this->defineGhostDofUsedToInterpolate( deifiei );
     }
 
 
     // we perfom 2 pass : first build matrix graph, second assembly matrix
     enum OpToApplyEnum { BUILD_GRAPH, ASSEMBLY_MATRIX };
-    std::vector<OpToApplyEnum> opToApplySet = { OpToApplyEnum::BUILD_GRAPH, OpToApplyEnum::ASSEMBLY_MATRIX };
+    std::vector<OpToApplyEnum> opToApplySet;
+    if ( needToUpdateGraph )
+        opToApplySet.push_back( OpToApplyEnum::BUILD_GRAPH );
+    opToApplySet.push_back( OpToApplyEnum::ASSEMBLY_MATRIX );
     for ( OpToApplyEnum opToApply : opToApplySet )
     {
         std::vector<std::set<uint16_type> > dof_done( this->dualImageSpace()->nLocalDof(), std::set<uint16_type>() );
 
         if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
         {
-            // compute graph
-            sparsity_graph->close();
             // create matrix
-            VLOG(1) << "Building interpolation matrix ( " << this->domainSpace()->dofOnOff()->nDof() << "," << this->domainSpace()->dofOnOff()->nLocalDof()
-                    << "," << this->dualImageSpace()->dofOn()->nDof() << ", " << this->dualImageSpace()->dofOn()->nLocalDof() << ")";
-            google::FlushLogFiles(google::INFO);
-            this->matPtr() = this->backend()->newMatrix( this->domainSpace()->dofOnOff(),
-                                                         this->dualImageSpace()->dofOn(),
-                                                         sparsity_graph  );
+            if ( needToUpdateGraph )
+            {
+                VLOG(1) << "Building interpolation matrix ( " << this->domainSpace()->dofOnOff()->nDof() << "," << this->domainSpace()->dofOnOff()->nLocalDof()
+                        << "," << this->dualImageSpace()->dofOn()->nDof() << ", " << this->dualImageSpace()->dofOn()->nLocalDof() << ")";
+                google::FlushLogFiles(google::INFO);
+                CHECK( !needToCopyMatrix ) << "TODO : copy matrix from setup";
+                M_matrixSetup.setMatrix( this->backend()->newMatrix( sparsity_graph->mapColPtr(), sparsity_graph->mapRowPtr(),
+                                                                     sparsity_graph ) );
+                 // this->matPtr() = this->backend()->newMatrix( this->domainSpace()->dofOnOff(),
+                 //                                              this->dualImageSpace()->dofOn(),
+                 //                                              sparsity_graph  );
+            }
+            this->setMatrix( M_matrixSetup.matrix() );
         }
 
         for ( auto& itListRange : M_listRange )
@@ -1211,10 +1584,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
             for( auto const& theImageEltWrap : itListRange )
             {
                 auto const& theImageElt = boost::unwrap_ref(theImageEltWrap);
-
-                auto const& idElem = detailsup::idElt( theImageElt,idim_type() );
-                auto const& domains_eid_set = Feel::detail::domainEltIdFromImageEltId( this->domainSpace()->mesh(),this->dualImageSpace()->mesh(),idElem );
-                DVLOG(1) << "idElem.id=" << idElem << "  domainset: " << domains_eid_set;
+                auto domains_eid_set = deifiei.apply( theImageElt );
                 if ( domains_eid_set.size() == 0 )
                     continue;
 
@@ -1226,7 +1596,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                         uint16_type compDofTableImage = (image_basis_type::is_product)? comp : 0;
                         auto const& thedofImage = imagedof->localToGlobal( theImageElt, iloc, compDofTableImage );
                         size_type i = thedofImage.index();
-                        
+
                         if ( ( image_basis_type::is_product && dof_done[i].empty() ) ||
                              ( !image_basis_type::is_product && dof_done[i].find( comp ) == dof_done[i].end() ) )
                         {
@@ -1248,13 +1618,14 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
                             for ( auto const& domain_eid : domains_eid_set )
                             {
+
                                 auto const& s = domaindof->localToGlobalSigns( domain_eid );
 
-                                const uint16_type ilocprime = Feel::detail::domainLocalDofFromImageLocalDof( domaindof,imagedof, theImageElt, iloc, i,comp, domain_eid, MlocEvalBasisNEW->gmc()/*gmcDomain*/ );
+                                uint16_type ilocprime = invalid_v<uint16_type>;
 
                                 if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
                                 {
-                                    MlocEvalBasisNEW->update( this->domainSpace()->mesh()->element( domain_eid ) );
+                                    ilocprime = MlocEvalBasisNEW->update( this->domainSpace()->mesh()->element( domain_eid ),  theImageElt, iloc, i,comp );
                                     IhLoc = MlocEvalBasisNEW->interpolant();
                                 }
 
@@ -1267,7 +1638,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                              image_basis_type::is_product && 
                                              ( M_interptype.interpolationOperand() == interpolation_operand_type::ID ) 
                                              && cdomain != comp) continue;
-                                            
+
                                         // get column
                                         const size_type j = domaindof->localToGlobal( domain_eid, jloc, cdomain ).index();
 
@@ -1279,10 +1650,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                         }
                                         else if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
                                         {
-                                            
                                             const value_type val = s(jloc)*IhLoc( cdomain*domain_basis_type::nLocalDof+jloc,
                                                                                   ilocprime );
+#if 0
                                             this->matPtr()->set( i,j,val );
+#else
+                                            this->matPtr()->set( dofIdToContainerIdRow[i], dofIdToContainerIdCol[j], val );
+#endif
                                         }
                                     }
                                 }
@@ -1296,6 +1670,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
             } // for ( ; it != en; ++ it )
         } // for ( ; itListRange!=enListRange ; ++itListRange)
+
+        if ( opToApply == OpToApplyEnum::BUILD_GRAPH )
+        {
+            // compute graph
+            sparsity_graph->close();
+        }
     } // opToApply
 
 }
@@ -1332,12 +1712,19 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     //-----------------------------------------
     //init the localization tool
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
-    if ( this->interpolationType().onlyLocalizeOnBoundary() ) locTool->updateForUseBoundaryFaces();
-    else locTool->updateForUse();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
+    if ( this->interpolationType().onlyLocalizeOnBoundary() )
+        locTool->updateForUseBoundaryFaces();
+    else
+        locTool->updateForUse();
     // kdtree parameter
     locTool->kdtree()->nbNearNeighbor(this->interpolationType().nbNearNeighborInKdTree());
+#if 0
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
+#else
+    bool notUseOptLocTest = true;
+#endif
     //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
     //locTool->kdtree()->nbNearNeighbor(3);
@@ -1356,7 +1743,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     std::vector< std::list<std::pair<size_type,double> > > memory_valueInMatrix( this->dualImageSpace()->nLocalDof() );
 
     //-----------------------------------------
-    size_type eltIdLocalised = 0;
+    size_type eltIdLocalised = invalid_v<size_type>;
 
     // for each element in range
     auto itListRange = M_listRange.begin();
@@ -1389,11 +1776,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     ublas::column(ptsReal,0 ) = boost::get<0>(imagedof->dofPoint(gdof));
                                     //------------------------
                                     // localisation process
-                                    if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
+                                    //if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
                                     auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,theImageElt.vertices()/*theImageElt.G()*/,mpl::int_<interpolation_type::isConforming()>());
                                     for ( bool hasFindPtLocalised : resLocalisation.template get<0>()  )
                                          LOG_IF(ERROR, !hasFindPtLocalised ) << "OperatorInterpolation::updateNoRelationMesh : point localisation fail!\n";
-                                    eltIdLocalised = resLocalisation.template get<1>();
+                                    if ( !notUseOptLocTest )
+                                        eltIdLocalised = resLocalisation.template get<1>();
                                     //------------------------
                                     // for each localised points
                                     itanal = locTool->result_analysis_begin();
@@ -1640,7 +2028,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //-----------------------------------------------------------------------------------------
     // determine if ghost dofs must used if the active dof in not present from the range
     //-----------------------------------------------------------------------------------------
-    std::set<size_type> ghostDofUsedToInterpolate = this->defineGhostDofUsedToInterpolate();
+    Feel::detail::DomainEltIdFromImageEltId<DomainSpaceType,ImageSpaceType> deifiei( this->domainSpace(), this->dualImageSpace() );
+    std::set<size_type> ghostDofUsedToInterpolate = this->defineGhostDofUsedToInterpolate( deifiei );
 
     //-----------------------------------------------------------------------------------------
     // Start localization process
@@ -1656,7 +2045,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     extrapolation_memory_type dof_extrapolationData(this->dualImageSpace()->nLocalDof());
 
     //init the localization tool
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
     bool doExtrapolationAtStart = locTool->doExtrapolation();
     // kdtree parameter
     locTool->kdtree()->nbNearNeighbor(this->interpolationType().nbNearNeighborInKdTree());
@@ -1667,7 +2057,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     if ( doExtrapolationAtStart && this->interpolationType().searchWithCommunication() ) locTool->setExtrapolation(false);
 
 
+#if 0
     uint16_type nMPIsearch=15;//5;
+#else
+    // TODO : put 15 not work when a partition is not gather in one group.
+    // we should compute these group and compute barycenter in each of them
+    uint16_type nMPIsearch = this->domainSpace()->mesh()->worldCommPtr()->localSize();
+#endif
     if( InterpType::isConforming()) nMPIsearch=this->domainSpace()->mesh()->worldCommPtr()->localSize();
     else if (this->domainSpace()->mesh()->worldCommPtr()->localSize()<nMPIsearch) nMPIsearch=this->domainSpace()->mesh()->worldCommPtr()->localSize();
    // only one int this case
@@ -1679,7 +2075,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
    boost::mpi::timer mytimer;
    this->worldCommFusion().globalComm().barrier();
    if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
-       std::cout << " start while " << std::endl;
+       LOG(INFO) << " start while " << std::endl;
 
    size_type nbLocalisationFail=1;
    while(!FinishMPIsearch)
@@ -1693,7 +2089,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            //std::cout <<  "proc " << this->worldCommFusion().globalRank() <<  " pointsSearched.size() " << pointsSearched.size() << std::endl;
            double t1 = mytimer.elapsed();
            if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
-               std::cout << "finish-step1 in " << (boost::format("%1%") % t1).str() << std::endl;
+               LOG(INFO) << "finish-step1 in " << (boost::format("%1%") % t1).str() << std::endl;
            //this->worldCommFusion().globalComm().barrier();
            mytimer.restart();
 
@@ -1711,7 +2107,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            //std::cout <<  "proc " << this->worldCommFusion().globalRank() <<  " memory_localisationFail.size() " << memory_localisationFail.size() << std::endl;
            double t2 = mytimer.elapsed();
            if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
-               std::cout << "finish-step2 in " << (boost::format("%1%") % t2).str() << std::endl;
+               LOG(INFO) << "finish-step2 in " << (boost::format("%1%") % t2).str() << std::endl;
            //this->worldCommFusion().globalComm().barrier();
            mytimer.restart();
 
@@ -1742,11 +2138,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
            double t3 = mytimer.elapsed();
            if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
-               std::cout << "finish-step3 in " << (boost::format("%1%") % t3).str() << std::endl;
+               LOG(INFO) << "finish-step3 in " << (boost::format("%1%") % t3).str() << std::endl;
            mytimer.restart();
 
            if ( this->worldCommFusion().globalRank() == this->dualImageSpace()->worldCommPtr()->masterRank() )
-               std::cout << " it " << counterMPIsearch << "  nbLocalisationFail " << nbLocalisationFail << std::endl;
+               LOG(INFO) << " it " << counterMPIsearch << "  nbLocalisationFail " << nbLocalisationFail << std::endl;
 
            //std::cout <<  "proc " << this->worldCommFusion().globalRank()
            //          << " et " <<nbLocalisationFail << std::endl;
@@ -1758,7 +2154,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
    if ( doExtrapolationAtStart && nbLocalisationFail>0 )
        {
-           std::cout << " Start Extrapolation" << std::endl;
+           LOG(INFO) << " Start Extrapolation" << std::endl;
            std::vector<std::set<size_type> > dof_searchWithProcExtrap(this->dualImageSpace()->nLocalDof());
            //locTool->setExtrapolation(true);
            uint16_type nMPIsearchExtrap=5;
@@ -2010,7 +2406,8 @@ OperatorInterpolation<DomainSpaceType,
     auto const* domaindof = this->domainSpace()->dof().get();
     auto const* domainbasis = this->domainSpace()->basis().get();
 
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
     //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
@@ -2252,7 +2649,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     const size_type nProc_domain = this->domainSpace()->mesh()->worldCommPtr()->localSize();
 
     // localisation tool with matrix node
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
     //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
@@ -2715,7 +3113,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     const size_type nProc_domain = this->domainSpace()->mesh()->worldCommPtr()->localSize();
 
     // localisation tool with matrix node
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
     //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
@@ -3109,7 +3508,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     auto const* imagedof = this->dualImageSpace()->dof().get();
     //iterator_type it, en;
 
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
     std::vector< std::list<boost::tuple<size_type,uint16_type> > > memSetGdofAndComp( nProc_domain );
@@ -3378,9 +3778,10 @@ opInterpPtr( std::shared_ptr<DomainSpaceType> const& domainspace,
              IteratorRange const& r,
              typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,typename Feel::detail::opinterprangetype<IteratorRange>::type,InterpType>::backend_ptrtype const& backend,
              InterpType const& interptype,
-             bool ddmethod )
+             bool ddmethod,
+             OperatorInterpolationMatrixSetup<typename DomainSpaceType::value_type> const& matSetup = OperatorInterpolationMatrixSetup<typename DomainSpaceType::value_type>{} )
 {
-    typedef OperatorInterpolation<DomainSpaceType, 
+    typedef OperatorInterpolation<DomainSpaceType,
                                   ImageSpaceType,
                                   typename Feel::detail::opinterprangetype<IteratorRange>::type,
                                   InterpType> operatorinterpolation_type;
@@ -3390,7 +3791,8 @@ opInterpPtr( std::shared_ptr<DomainSpaceType> const& domainspace,
                                                                r,
                                                                backend,
                                                                interptype,
-                                                               ddmethod );
+                                                             ddmethod,
+                                                             matSetup );
 
     return opI;
 }
@@ -3434,6 +3836,7 @@ BOOST_PARAMETER_FUNCTION(
       ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
       ( type,           *, InterpolationNonConforming()  )
       ( ddmethod,  (bool),  false )
+      ( matrix,         *, typename compute_opInterpolation_return<Args>::type::matrix_setup_type{} )
     ) // optional
 )
 {
@@ -3441,7 +3844,7 @@ BOOST_PARAMETER_FUNCTION(
     Feel::detail::ignore_unused_variable_warning( args );
 #endif
     std::decay_t<decltype(type)> t( type );
-    return opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod );
+    return opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod,matrix );
 
 } // opInterpolation
 

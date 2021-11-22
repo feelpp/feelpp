@@ -1,0 +1,18 @@
+#include <feel/feeldiscr/pch.hpp>
+#include <type_traits>
+
+using namespace Feel;
+int main( int argc, char** argv )
+{
+    
+    using mesh_t = Mesh<Simplex<<%= n %>>>;
+    auto mesh = std::make_shared<mesh_t>();
+    
+    using Xh_t = FunctionSpace<Mesh<Simplex<<%= n %>>>,bases<Lagrange<2,Scalar>> >;
+    static_assert( !std::is_same_v<Xh_t,  Pch_type<mesh_t,2> >, "no the same types");
+#if defined(METABENCH)
+    auto Xh1=std::make_shared<FunctionSpace<Mesh<Simplex<<%= n %>>>,bases<Lagrange<2,Scalar>> >>(mesh);
+    auto e = Xh1->element();
+#endif
+
+}

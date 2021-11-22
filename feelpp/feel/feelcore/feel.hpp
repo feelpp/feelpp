@@ -40,7 +40,7 @@
 //! @defgroup Filters
 //! Filter classes provided by the library
 
-//! @defgroup Variational-Formulation
+//! @defgroup DSEL-Variational-Formulation
 //! Variational forms provided by the library
 
 #if defined(__APPLE__)

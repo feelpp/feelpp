@@ -12,8 +12,8 @@ runLevelsetApplication()
 
     typedef Simplex<FEELPP_DIM,1> convex_type;
     typedef Lagrange<OrderLevelset, Scalar, Continuous, PointSetFekete> basis_type;
-    //typedef FunctionSpace<Mesh<convex_type>, bases<typename FeelModels::detail::ChangeBasisPolySet<Vectorial, basis_type>::type>, Periodicity<NoPeriodicity>> space_advection_velocity_type;
-    typedef FunctionSpace<Mesh<convex_type>, Feel::detail::bases<Lagrange<OrderLevelset, Vectorial, Continuous, PointSetFekete>>, double, Periodicity<NoPeriodicity>, mortars<NoMortar>> space_advection_velocity_type;
+    typedef FunctionSpace<Mesh<convex_type>, bases<typename FeelModels::detail::ChangeBasisPolySet<Vectorial, basis_type>::type>/*, Periodicity<NoPeriodicity>*/ > space_advection_velocity_type;
+    //typedef FunctionSpace<Mesh<convex_type>, Feel::detail::bases<Lagrange<OrderLevelset, Vectorial, Continuous, PointSetFekete>>, double, Periodicity<NoPeriodicity>, mortars<NoMortar>> space_advection_velocity_type;
     typedef Lagrange<OrderLevelsetPN, Scalar, Continuous, PointSetFekete> basis_PN_type;
 
     typedef FeelModels::LevelSet<
@@ -61,7 +61,7 @@ runLevelsetApplication()
     }
     else
     {
-        int reinit_every = ioption( _name="levelset.reinit-every" );
+        int redist_every = ioption( _name="levelset.redist-every" );
 
         for ( int iter = 1; !LS->timeStepBase()->isFinished(); LS->updateTimeStep(), ++iter )
         {
@@ -69,14 +69,14 @@ runLevelsetApplication()
             Feel::cout << "time simulation: " << LS->time() << "s \n";
             Feel::cout << "============================================================\n";
 
-            Feel::cout << "Iter since reinit: " << LS->iterSinceReinit() << std::endl;
+            Feel::cout << "Iter since redist: " << LS->iterSinceRedistanciation() << std::endl;
             Feel::cout << "Levelset BDF order: " << LS->timeStepBDF()->timeOrder() << std::endl;
 
             LS->solve();
-            if( reinit_every > 0 && iter%reinit_every == 0 )
+            if( redist_every > 0 && iter%redist_every == 0 )
             {
                 Feel::cout << "Reinitializing... ";
-                LS->reinitialize();
+                LS->redistanciate();
                 Feel::cout << "done\n";
             }
 
@@ -101,7 +101,7 @@ int main( int argc, char** argv )
     levelsetoptions.add( toolboxes_options( "levelset" ) );
     levelsetoptions.add_options()
         ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P2, P1" )
-        ("levelset.reinit-every", Feel::po::value<int>()->default_value( -1 ), "reinitialize levelset every n iterations" )
+        ("levelset.redist-every", Feel::po::value<int>()->default_value( -1 ), "redistantiate levelset every n iterations" )
         ("export-dist-to-boundary", Feel::po::value<bool>()->default_value( false ), "compute and export the distance to the boundary" )
         ;
 

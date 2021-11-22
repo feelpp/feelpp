@@ -118,7 +118,7 @@ public :
         this->setName( "fekete", Order );
     }
 
-    ~PointSetFeketeSimplex() {}
+    ~PointSetFeketeSimplex() override {}
 
 private :
 

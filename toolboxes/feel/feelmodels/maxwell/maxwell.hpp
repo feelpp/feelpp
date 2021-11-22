@@ -34,7 +34,6 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
@@ -127,11 +126,11 @@ public:
              worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
              std::string const& subPrefix = "",
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"MaxwellMesh.path"); }
+
     std::shared_ptr<std::ostringstream> getInfo() const;
 private :
     void loadParameterFromOptionsVm();
-    void createMesh();
+    void initMesh();
     void initBoundaryConditions();
     template<typename convex = convex_type>
     void initDirichlet(std::enable_if_t<convex::nDim==2>* = nullptr) { this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getScalarFields<nDim>( "magnetic-potential", "Dirichlet" ); }
@@ -139,7 +138,6 @@ private :
     void initDirichlet(std::enable_if_t<convex::nDim==3>* = nullptr) { this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "magnetic-potential", "Dirichlet" ); }
     void initPostProcess();
 public :
-    void setMesh(mesh_ptrtype const& mesh) { M_mesh = mesh; }
     // update for use
     void init( bool buildModelAlgebraicFactory = true );
     BlocksBaseGraphCSR buildBlockMatrixGraph() const;
@@ -159,7 +157,8 @@ public :
 
     //___________________________________________________________________________________//
 
-    mesh_ptrtype const& mesh() const { return M_mesh; }
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_magneticpotential_ptrtype const& spaceMagneticPotential() const { return M_XhMagneticPotential; }
@@ -171,12 +170,6 @@ public :
     element_magneticfield_type const& fieldMagneticField() const { return *M_fieldMagneticField; }
 
     maxwellproperties_ptrtype const& maxwellProperties() const { return M_maxwellProperties; }
-
-    backend_ptrtype const& backend() const { return M_backend; }
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
-    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
-    model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
 
     //___________________________________________________________________________________//
     // apply assembly and solver
@@ -204,9 +197,8 @@ public :
     // auto vcurlv(T f, std::enable_if_t<convex::nDim==2>* = nullptr) const -> decltype(curlxv(f)) { return curlxv(f); }
 
 private :
-    bool M_hasBuildFromMesh, M_isUpdatedForUse;
+    //bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
-    mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
     space_magneticpotential_ptrtype M_XhMagneticPotential;
@@ -224,10 +216,6 @@ private :
     // regularization
     double M_epsilon;
 
-    // algebraic data/tools
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    BlocksBaseVector<double> M_blockVectorSolution;
     std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
     // start dof index fields in matrix (temperature,maxwell-potential,...)
     std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;

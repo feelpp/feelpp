@@ -40,3 +40,24 @@
 [submodule "feelpp/contrib/indicators"]
 	path = feelpp/contrib/indicators
 	url = https://github.com/feelpp/indicators.git
+[submodule "feelpp/contrib/simple-web-server"]
+	path = feelpp/contrib/simple-web-server
+	url = https://gitlab.com/feelpp/Simple-Web-Server.git
+[submodule "feelpp/contrib/range-v3"]
+	path = feelpp/contrib/range-v3
+	url = https://github.com/feelpp/range-v3.git
+[submodule "feelpp/contrib/matplot"]
+	path = feelpp/contrib/matplot
+	url = https://github.com/feelpp/matplotplusplus.git
+[submodule "feelpp/contrib/cpr"]
+	path = feelpp/contrib/cpr
+	url = https://github.com/feelpp/cpr.git
+[submodule "feelpp/contrib/boost/hana"]
+	path = feelpp/contrib/boost/hana
+	url = https://github.com/feelpp/hana.git
+[submodule "feelpp/contrib/eigen"]
+	path = feelpp/contrib/eigen
+	url = https://gitlab.com/feelpp/eigen.git
+[submodule "feelpp/contrib/fmt"]
+	path = feelpp/contrib/fmt
+	url = https://github.com/feelpp/fmt.git

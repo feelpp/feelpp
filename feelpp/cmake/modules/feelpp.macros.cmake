@@ -1001,4 +1001,32 @@ macro(feelpp_get_environment)
   get_property( MPIEXEC_NUMPROC_FLAG TARGET Feelpp::feelpp PROPERTY MPIEXEC_NUMPROC_FLAG )
   get_property( MPIEXEC_PREFLAGS TARGET Feelpp::feelpp PROPERTY MPIEXEC_PREFLAGS )
   get_property( MPIEXEC_POSTFLAGS TARGET Feelpp::feelpp PROPERTY MPIEXEC_POSTFLAGS )
+  if ( FEELPP_HAS_PYTHON )
+    get_property( FEELPP_PYTHON_MODULE_PATH TARGET Feelpp::feelpp PROPERTY FEELPP_PYTHON_MODULE_PATH )
+  endif()
 endmacro()
+
+#
+# add a pybind11 feelpp module
+# FEELPP_PYTHON_MODULE_PATH must be defined !
+#
+macro(feelpp_add_pymodule)
+ PARSE_ARGUMENTS(FEELPP_PYMODULE
+    "NAME;SRCS;DESTINATION;LINK_LIBRARIES"
+    ""
+    ${ARGN}
+    )
+  CAR(FEELPP_PYMODULE_NAME ${FEELPP_PYMODULE_DEFAULT_ARGS})
+  message(STATUS "[pyfeelpp] add pymodule ${FEELPP_PYMODULE_NAME}")
+  pybind11_add_module(_${FEELPP_PYMODULE_NAME}  ${FEELPP_PYMODULE_SRCS}  )
+  target_include_directories(_${FEELPP_PYMODULE_NAME} PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${PETSC4PY_INCLUDE_DIR})
+  target_link_libraries( _${FEELPP_PYMODULE_NAME} PUBLIC Feelpp::feelpp ${FEELPP_PYMODULE_LINK_LIBRARIES} )
+  install(TARGETS _${FEELPP_PYMODULE_NAME} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/${FEELPP_PYMODULE_DESTINATION})
+  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py )
+    add_custom_command(
+           TARGET _${FEELPP_PYMODULE_NAME} POST_BUILD
+           COMMAND ${CMAKE_COMMAND} -E copy
+                   ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+                   ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
+  endif()
+endmacro(feelpp_add_pymodule)

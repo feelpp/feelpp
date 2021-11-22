@@ -551,7 +551,7 @@ public:
         super( cr ),
         M_refconvex()
     {}
-    ~RaviartThomas()
+    ~RaviartThomas() override
     {}
 
     //@}

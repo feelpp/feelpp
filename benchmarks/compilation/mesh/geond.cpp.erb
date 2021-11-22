@@ -1,0 +1,10 @@
+#include <feel/feelmesh/geond.hpp>
+
+int main( int argc, char** argv )
+{
+    using namespace Feel;
+#if defined(METABENCH)
+    GeoND<<%= n %>,Simplex<<%= n %>>> T;
+#endif
+
+}

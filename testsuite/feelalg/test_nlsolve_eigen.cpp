@@ -125,7 +125,7 @@ public:
         }
 
 
-    void run()
+    void run() override
         {
             M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
             M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
@@ -162,7 +162,7 @@ public:
             BOOST_TEST_MESSAGE( "solution checked" );
 
         }
-    void run( const double*, long unsigned int, double*, long unsigned int ) {}
+    void run( const double*, long unsigned int, double*, long unsigned int ) override {}
 private:
 
     std::shared_ptr<SolverNonLinear<double> > M_nlsolver;
@@ -204,7 +204,7 @@ public:
         }
 
 
-    void run()
+    void run() override
         {
             M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
             M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
@@ -240,7 +240,7 @@ public:
             BOOST_TEST_MESSAGE( "solution checked" );
 
         }
-    void run( const double*, long unsigned int, double*, long unsigned int ) {}
+    void run( const double*, long unsigned int, double*, long unsigned int ) override {}
 private:
 
     std::shared_ptr<SolverNonLinear<double> > M_nlsolver;

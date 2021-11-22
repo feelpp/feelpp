@@ -112,7 +112,7 @@ public :
         this->setPoints( Gt );
     }
 
-    ~PointSetMapped() {}
+    ~PointSetMapped() override {}
 
     permutation_vector_type getVectorPermutation ( face_permutation_type P )
     {
