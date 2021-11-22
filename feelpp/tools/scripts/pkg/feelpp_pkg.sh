@@ -28,10 +28,10 @@ fi
 # local debug build
 PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}/${CHANNEL}/
 if [ ! -f $HOME/pbuilder/${DIST}_base.tgz ]; then
-    echo "--- creating distribution $DIST"
+    echo "--- creating distribution $DIST results: ${PBUILDER_RESULTS}"
     pbuilder-dist $DIST create
 fi
-echo "--- start from clean slate"
+echo "--- start from clean slate in ${PBUILDER_RESULTS}"
 if [ -d build-$DIST ]; then rm -rf build-$DIST; fi
 
 if [ -n "$(ls -A ${PBUILDER_RESULTS}/ 2>/dev/null)" ];
