@@ -9,7 +9,19 @@ import sys, os
 from tqdm import tqdm
 from scipy.sparse.linalg import splu, spsolve
 
-# from reducedBasis.reducedBasis import ReducedBasis
+
+
+def convertToPetscMat(Aq):
+    AqP = []
+    for A in Aq:
+        AqP.append(A.to_petsc().mat())
+    return AqP
+
+def convertToPetscVec(Fq):
+    FqP = []
+    for F in Fq:
+        FqP.append(F.to_petsc().vec())
+    return FqP
 
 
 class reducedbasis():
@@ -249,6 +261,7 @@ class reducedbasis():
         v.setUp()
         v.set(0)
         v.assemble()
+        i=0
 
         for mu in mus:
             beta = self.model.computeBetaQm(mu)
@@ -265,7 +278,10 @@ class reducedbasis():
             sol = F.duplicate()
             self.ksp.solve(F, sol)
             self.Z.append(sol)
+            print(i, self.Z[-1].min(), self.Z[-1].max())
             # print(self.reshist)
+            i += 1
+
         if orth:
             self.orthonormalizeZ()
 
@@ -278,13 +294,14 @@ class reducedbasis():
         Returns:
             np.ndarray: ((xi_i,xi_j)_X)_{0<=i<N,0<=j<N}
         """
-        # sc = np.zeros((self.N, self.N))
+        sc = np.zeros((self.N, self.N))
         for i in range(self.N):
             for j in range(self.N):
-                # sc[i,j] = np.round(self.scalarA(self.Z[i], self.Z[j]), decimals=3)
+                sc[i,j] = np.round(self.scalarA(self.Z[i], self.Z[j]), decimals=3)
                 if np.round(np.round(self.scalarA(self.Z[i], self.Z[j]), decimals=3)) != [0,1][i==j]:
                     return False
         # return sc
+        # print("sc",sc)
         return True
 
 
