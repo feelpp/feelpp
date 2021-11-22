@@ -129,6 +129,17 @@
             }
         },
         {
+            "name": "pyfeelpp-all-dbg",
+            "inherits": "default",
+            "displayName": "pyfeelpp-all-dbg",
+            "description": "Build only the Feel++ pyfeelpp-all Component in Debug mode",
+            "binaryDir": "${sourceDir}/build/pyfeelpp-all-dbg",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "FEELPP_COMPONENT": "pyfeelpp-all"
+            }
+        },
+        {
             "name": "testsuite",
             "inherits": "default",
             "displayName": "testsuite",
@@ -210,6 +221,15 @@
             "name": "pyfeelpp-all",
             "inherits": "default",
             "configurePreset": "pyfeelpp-all",
+            "targets": [
+                "all",
+                "install"
+            ]
+        },
+        {
+            "name": "pyfeelpp-all-dbg",
+            "inherits": "default",
+            "configurePreset": "pyfeelpp-all-dbg",
             "targets": [
                 "all",
                 "install"
