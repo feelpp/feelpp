@@ -9,7 +9,7 @@ if [ -z "$BUILDKITE_BRANCH" -a -z "$BRANCH" ]; then
     DIST=focal
 fi
 # default values
-CHANNEL=latest
+CHANNEL=${CHANNEL:-latest}
 if [ "$BUILDKITE_BRANCH" = "develop" -o  "$BRANCH" = "develop" ]; then
     CHANNEL=latest
 fi
