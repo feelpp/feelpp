@@ -32,6 +32,7 @@
 #include <boost/bimap/unordered_set_of.hpp>
 
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeltiming/tic.hpp>
 #include <feel/feeldiscr/meshstructured.hpp>
 
@@ -96,16 +97,21 @@ std::tuple<int32_t, int32_t, std::string> readHBFHeaderAndSizes( std::string con
 /**
  * Given a std::ifstream, read the header and return the sizes of the HBF and the type of data
  */
-std::tuple<int32_t, int32_t, std::string> readHBFHeaderAndSizes( std::ifstream& in );
+std::tuple<int32_t, int32_t, std::string> readHBFHeaderAndSizes( std::istream& in );
 
 /**
  * @brief read an HBF file containing an array of floats
  * @param s file name
  * @return eigen array of type T
  */
-template <typename T>
-holo3_image<T>
-readHBF( std::string const& s );
+template <typename T> holo3_image<T> readHBF( std::string const& s );
+
+/**
+ * @brief read an HBF stream containing an array of floats
+ * @param s hbf stream
+ * @return eigen array of type T
+ */
+template <typename T> holo3_image<T> readHBF( std::istream& s );
 
 /**
  * @brief write a HBF file containing an array of floats
@@ -113,9 +119,16 @@ readHBF( std::string const& s );
  * @param s file name
  * @param x eigen array of type T
  */
-template <typename T>
-void
-writeHBF( std::string const& s, holo3_image<T> const& x );
+template <typename T> void writeHBF( std::string const& s, holo3_image<T> const& x, worldcomm_ptr_t wc = Environment::worldCommPtr() );
+
+/**
+ * @brief write a HBF stream containing an array of floats
+ *
+ * @param s stream to write the hbf to
+ * @param x eigen array of type T
+ */
+template <typename T> void writeHBF( std::ostream& s, holo3_image<T> const& x );
+
 
 holo3_image<float> cutHbf ( holo3_image<float> const& im, int n, int start );
 
@@ -130,7 +143,7 @@ public:
     typedef meta::Pch<Mesh<Hypercube<2>>,1>::ptrtype q1_space_ptrtype;
     typedef meta::Pch<Mesh<Hypercube<2>>,1>::type space_type;
     typedef space_type::element_type q1_element_type;
-
+    
     typedef boost::bimap<bimaps::set_of<std::pair<int,int>>, bimaps::set_of<int> > dof_table;
     typedef dof_table::value_type dof_relation;
     typedef dof_table::left_iterator hbf_dof_iterator;
@@ -138,20 +151,22 @@ public:
     typedef dof_table::right_iterator feelpp_dof_iterator;
     typedef dof_table::right_const_iterator feelpp_dof_const_iterator;
 
-    Hbf2Feelpp( int nx, int ny, q1_space_ptrtype Yh );
     /**
-     * @brief [brief description]
-     * @details [long description]
-     * @return [description]
+     * build the correspondance data structure
+     * \param nx indicates the number of nodes in x direction
+     * \param ny indicates the number of nodes in y direction
+     * the number of cells is nx-1 and ny-1 in the x and y direction respectively
      */
-    q1_element_type operator()( holo3_image<float> const& x );
+    Hbf2Feelpp( int nx, int ny, q1_space_ptrtype Yh);
 
     /**
-     * @brief [brief description]
-     * @details [long description]
-     * 
-     * @param x [description]
-     * @return [description]
+     * build a Q1 element from a nodal image
+     */
+    q1_element_type operator()( holo3_image<float> const& x );
+    
+
+    /**
+     * from a Q1 element build a nodal image
      */
     template<typename ElementType>
     holo3_image<float>
@@ -180,40 +195,42 @@ public:
 
     //typedef meta::Pch<Mesh<Hypercube<2>>,1>::ptrtype q1_space_ptrtype;
     //typedef meta::Pch<Mesh<Hypercube<2>>,1>::type space_type;
-    typedef meta::Pch<MeshStructured,1>::ptrtype q1_space_ptrtype;
-    typedef meta::Pch<MeshStructured,1>::type space_type;
+    typedef meta::Pch<MeshStructured<Hypercube<2>>,1>::ptrtype q1_space_ptrtype;
+    typedef meta::Pch<MeshStructured<Hypercube<2>>,1>::type space_type;
     typedef space_type::element_type q1_element_type;
 
     typedef boost::bimap<bimaps::unordered_set_of<std::pair<int,int>>, bimaps::unordered_set_of<int>, bimaps::list_of_relation > dof_table;
     typedef dof_table::value_type dof_relation;
-#if 0    
-    typedef dof_table::left_iterator hbf_dof_iterator;
-    typedef dof_table::left_const_iterator hbf_dof_const_iterator;
-    typedef dof_table::right_iterator feelpp_dof_iterator;
-    typedef dof_table::right_const_iterator feelpp_dof_const_iterator;
-#endif
-    Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh );
-    /**
-     * @brief [brief description]
-     * @details [long description]
-     * @return [description]
-     */
-    q1_element_type operator()( holo3_image<float> const& x );
-    q1_element_type operator()( holo3_image<float> const& x, q1_element_type u);
 
     /**
-     * @brief [brief description]
-     * @details [long description]
-     * 
-     * @param x [description]
-     * @return [description]
+     * build the correspondance data structure
+     * \param nx indicates the number of nodes in x direction
+     * \param ny indicates the number of nodes in y direction
+     * the number of cells is nx-1 and ny-1 in the x and y direction respectively
+     */
+    Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh );
+
+    /**
+     * build a Q1 element from a nodal image
+     */
+    q1_element_type operator()( holo3_image<float> const& x );
+    q1_element_type operator()( holo3_image<float> const& x, q1_element_type& u);
+
+    /**
+     * build a Q0 element from a cell image
+     */
+    void cellToQ1( holo3_image<float> const& x, q1_element_type& u );
+    
+    /**
+     * from a Q1 element build a nodal image
      */
     holo3_image<float>  operator()( q1_element_type const& u );
+
 private:
     int M_rows;
     int M_cols;
     q1_space_ptrtype M_Xh;
-    dof_table M_relation;
+    dof_table M_relation, M_relation_q0;
   
 };
 

@@ -64,12 +64,8 @@ public:
     typedef ExprT2 expression_2_type;
     typedef typename expression_1_type::value_type value_1_type;
     typedef typename expression_2_type::value_type value_2_type;
-    typedef value_1_type value_type;
-    using evaluate_type = typename expression_1_type::evaluate_type;
-
-    // verify that all returning types are integral or floating types
-    BOOST_STATIC_ASSERT( ::boost::is_arithmetic<value_1_type>::value  &&
-                         ::boost::is_arithmetic<value_2_type>::value );
+    using value_type = decltype(std::pow(value_1_type{}, value_2_type{}));
+    using evaluate_type = evaluate_expression_t<this_type>;
 
     explicit Pow( expression_1_type const& __expr1, expression_2_type const& __expr2  )
         :
@@ -96,6 +92,10 @@ public:
      * \warning the Pow order computation is wrong here, we actually need the
      * ExprT2 value (and not imorder) to multiply by ExprT1::imorder.
      */
+
+    //! dynamic context
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr_1 ) | Feel::vf::dynamicContext( M_expr_2 ); }
+
     //! polynomial order
     uint16_type polynomialOrder() const { return M_expr_1.polynomialOrder(); }
 
@@ -120,6 +120,53 @@ public:
                 for ( uint16_type j=0;j< eval1.cols();++j )
                     res(i,j) = std::pow( eval1(i,j), eval2(0,0) );
             return res;
+        }
+
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+        {
+            M_expr_1.setParameterValues( mp );
+            M_expr_2.setParameterValues( mp );
+        }
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+        {
+             M_expr_1.updateParameterValues( pv );
+             M_expr_2.updateParameterValues( pv );
+        }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newLeftExpr = this->left().applySymbolsExpr( se );
+            auto newRightExpr = this->right().applySymbolsExpr( se );
+            using new_expr_left_type = std::decay_t<decltype(newLeftExpr)>;
+            using new_expr_right_type = std::decay_t<decltype(newRightExpr)>;
+            return Pow<new_expr_left_type,new_expr_right_type>( newLeftExpr,newRightExpr );
+        }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            return M_expr_1.hasSymbolDependency( symb, se ) ||  M_expr_2.hasSymbolDependency( symb, se );
+        }
+
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+        {
+            M_expr_1.dependentSymbols( symb,res,se );
+            M_expr_2.dependentSymbols( symb,res,se );
+        }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+        {
+            // NOTE : this expression assumes that the exponent does not depend on the symbol to be derived
+            auto diffExpr1 = M_expr_1.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
+            using expr1_diff_type = std::decay_t<decltype(diffExpr1)>;
+            auto newExponant = M_expr_2 - cst(1); // 1.0;
+            using new_expr2_type = std::decay_t<decltype(newExponant)>;
+            using new_pow_type = Pow<expression_1_type, new_expr2_type>;
+            return diffExpr1*M_expr_2*expr(new_pow_type( M_expr_1, newExponant));
         }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
@@ -281,35 +328,49 @@ protected:
     expression_2_type M_expr_2;
 };
 
+/**
+ * @brief provide pow expression e1^e2
+ * @ingroup DSEL-Variational-Formulation
+ * \code
+   std::cout << integrate( _range=elements(mesh), _expr=pow( Px(), Py() ) ).evaluate();
+   \endcode
+ */
 template<typename ExprT1,  typename ExprT2>
 inline
-Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-      mpl::identity<Cst<ExprT1> >,
-      mpl::identity<ExprT1> >::type::type,
-      typename mpl::if_<boost::is_arithmetic<ExprT2>,
-      mpl::identity<Cst<ExprT2> >,
-      mpl::identity<ExprT2> >::type::type> >
-      pow( ExprT1 const& __e1, ExprT2 const& __e2 )
+// Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
+//       mpl::identity<Cst<ExprT1> >,
+//       mpl::identity<ExprT1> >::type::type,
+//       typename mpl::if_<boost::is_arithmetic<ExprT2>,
+//       mpl::identity<Cst<ExprT2> >,
+//       mpl::identity<ExprT2> >::type::type> >
+auto
+pow( ExprT1 const& __e1, ExprT2 const& __e2 )
 {
     typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
-            mpl::identity<Cst<ExprT1> >,
-            mpl::identity<ExprT1> >::type::type t1;
+                              mpl::identity<Expr<Cst<ExprT1>> >,
+                              mpl::identity<ExprT1> >::type::type t1;
     typedef typename mpl::if_<boost::is_arithmetic<ExprT2>,
-            mpl::identity<Cst<ExprT2> >,
-            mpl::identity<ExprT2> >::type::type t2;
+                              mpl::identity<Expr<Cst<ExprT2> > >,
+                              mpl::identity<ExprT2> >::type::type t2;
     typedef Pow<t1, t2> expr_t;
-    return Expr< expr_t >(  expr_t( t1( __e1 ), t2( __e2 ) ) );
+    if constexpr ( std::is_arithmetic_v<ExprT1> && std::is_arithmetic_v<ExprT2> )
+        return expr( expr_t( cst(__e1), cst(__e2) ) );
+    else if constexpr ( std::is_arithmetic_v<ExprT1> )
+        return expr( expr_t( cst(__e1), __e2 ) );
+    else if constexpr ( std::is_arithmetic_v<ExprT2> )
+        return expr( expr_t(  __e1, cst(__e2) ) );
+    else
+        return expr( expr_t(  __e1, __e2) );
 }
 
 
+/**
+ * provide pow expression e1^e2
+ * @ingroup DSEL-Variational-Formulation
+ */
 template<typename ExprT1,  typename ExprT2>
 inline
-Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-                            mpl::identity<Cst<ExprT1> >,
-                            mpl::identity<Expr<ExprT1> > >::type::type,
-          typename mpl::if_<boost::is_arithmetic<ExprT2>,
-                            mpl::identity<Cst<ExprT2> >,
-                            mpl::identity<Expr<ExprT2> > >::type::type> >
+auto
 operator^( typename mpl::if_<boost::is_arithmetic<ExprT1>,
                              mpl::identity<ExprT1>,
                              mpl::identity<Expr<ExprT1> > >::type::type const& __e1,

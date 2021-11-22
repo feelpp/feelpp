@@ -178,7 +178,7 @@ public:
     void updateResidual(const vector_ptrtype& X, vector_ptrtype& R);
     void updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J);
     void newtonSolve(element_type& sol);
-    void run();
+    void run() override;
 
 private:
     //! linear algebra backend

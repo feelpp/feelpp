@@ -141,7 +141,10 @@ public:
      * Destructor. Free all memory, but do not release the memory of
      * the sparsity structure.
      */
-    virtual ~MatrixSparse ();
+    ~MatrixSparse () override;
+
+    using clone_ptrtype = std::shared_ptr<MatrixSparse<T> >;
+    virtual clone_ptrtype clone() const  = 0;
 
     /**
      * Return datamap for rows

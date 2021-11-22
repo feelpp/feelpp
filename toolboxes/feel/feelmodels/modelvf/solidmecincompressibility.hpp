@@ -30,13 +30,12 @@
 #define __FEELPP_MODELS_VF_SOLIDMECINCOMPRESSIBILITY_H 1
 
 #include <feel/feelmodels/modelvf/exprtensorbase.hpp>
-#include <feel/feelmodels/solid/mechanicalpropertiesdescription.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
-
+#if 0
 struct ExprApplySolidMecPresFormType
 {
     enum ExprApplyType { EVAL=0,JACOBIAN_TRIAL_DISP=1,JACOBIAN_TRIAL_PRES=2 };
@@ -60,14 +59,14 @@ struct tensorSolidMecPressureFormulationMultiplierBase : public tensorBase<Geo_t
     typedef typename expr_type::fe_disp_type::PreCompute pc_disp_type;
     typedef std::shared_ptr<pc_disp_type> pc_disp_ptrtype;
     typedef typename expr_type::fe_disp_type::template Context<expr_type::context_disp, typename expr_type::fe_disp_type,
-                                                               gm_type,geoelement_type,gmc_type::context> ctx_disp_type;
+                                                               gm_type,geoelement_type,0, gmc_type::subEntityCoDim> ctx_disp_type;
     typedef std::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
 
     // fe pressure context
     typedef typename expr_type::fe_pressure_type::PreCompute pc_pressure_type;
     typedef std::shared_ptr<pc_pressure_type> pc_pressure_ptrtype;
     typedef typename expr_type::fe_pressure_type::template Context<expr_type::context_pressure, typename expr_type::fe_pressure_type,
-                                                                   gm_type,geoelement_type,gmc_type::context> ctx_pressure_type;
+                                                                   gm_type,geoelement_type,0, gmc_type::subEntityCoDim> ctx_pressure_type;
     typedef std::shared_ptr<ctx_pressure_type> ctx_pressure_ptrtype;
 
     tensorSolidMecPressureFormulationMultiplierBase( expr_type const& expr,
@@ -626,12 +625,12 @@ private:
 
 
 
-template<typename ElementDispType, typename ElementPressureType, typename MechPropType,typename SpecificExprType>
+template<typename ElementDispType, typename ElementPressureType, typename ModelPhysicSolidType,typename SpecificExprType>
 class SolidMecPressureFormulationMultiplier
 {
 public:
 
-    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,MechPropType,SpecificExprType> self_type;
+    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,ModelPhysicSolidType,SpecificExprType> self_type;
 
     static const size_type context_disp = vm::JACOBIAN|vm::KB|vm::GRAD;
     static const size_type context_pressure = vm::JACOBIAN;
@@ -639,7 +638,6 @@ public:
 
     typedef ElementDispType element_disp_type;
     typedef ElementPressureType element_pressure_type;
-    typedef MechPropType mechprop_type;
     typedef SpecificExprType spec_expr_type;
     //------------------------------------------------------------------------------//
     // displacement functionspace
@@ -688,11 +686,11 @@ public:
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
-    SolidMecPressureFormulationMultiplier( element_disp_type const& disp, element_pressure_type const& p, mechprop_type const& mechprop )
+    SolidMecPressureFormulationMultiplier( element_disp_type const& disp, element_pressure_type const& p, ModelPhysicSolidType const& physicSolidData )
         :
         M_disp( disp ),
         M_pressure( p ),
-        M_mechProp( mechprop )
+        M_physicSolidData( physicSolidData )
     {}
     SolidMecPressureFormulationMultiplier( SolidMecPressureFormulationMultiplier const & op ) = default;
 
@@ -707,7 +705,7 @@ public:
 
     element_disp_type const& disp() const { return M_disp; }
     element_pressure_type const& pressure() const { return M_pressure; }
-    mechprop_type const& mechanicalPropertiesDesc() const { return M_mechProp; }
+    ModelPhysicSolidType const& physicSolidData() const { return M_physicSolidData; }
 
     typedef Shape<nDim, Tensor2, false, false> my_shape_type;
 
@@ -726,21 +724,21 @@ public:
 
         tensor( self_type const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
-            if ( expr.mechanicalPropertiesDesc().materialLaw() == "StVenantKirchhoff" )
+            if ( expr.physicSolidData().materialModel() == "StVenantKirchhoff" )
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationMultiplierStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev,feu) );
             else
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationMultiplierClassic<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev,feu) );
         }
         tensor( self_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
         {
-            if ( expr.mechanicalPropertiesDesc().materialLaw() == "StVenantKirchhoff" )
+            if ( expr.physicSolidData().materialModel() == "StVenantKirchhoff" )
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationMultiplierStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev) );
             else
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationMultiplierClassic<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev) );
         }
         tensor( self_type const& expr, Geo_t const& geom )
         {
-            if ( expr.mechanicalPropertiesDesc().materialLaw() == "StVenantKirchhoff" )
+            if ( expr.physicSolidData().materialModel() == "StVenantKirchhoff" )
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationMultiplierStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom) );
             else
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationMultiplierClassic<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom) );
@@ -804,9 +802,10 @@ public:
 private:
     element_disp_type const& M_disp;
     element_pressure_type const& M_pressure;
-    mechprop_type const& M_mechProp;
+    ModelPhysicSolidType const& M_physicSolidData;
 };
 
+#endif
 
  
   
@@ -825,7 +824,6 @@ struct tensorSolidMecPressureFormulationConstraintBase : public tensorBase<Geo_t
 {
     typedef tensorBase<Geo_t,Basis_i_t,Basis_j_t,typename ExprType::my_shape_type,typename ExprType::value_type > super_type;
     typedef ExprType expr_type;
-    typedef typename expr_type::spec_expr_type SpecificExprType;
     typedef typename expr_type::value_type value_type;
     typedef typename expr_type::geoelement_type geoelement_type;
     typedef typename super_type::gm_type gm_type;
@@ -837,7 +835,7 @@ struct tensorSolidMecPressureFormulationConstraintBase : public tensorBase<Geo_t
     typedef typename expr_type::fe_disp_type::PreCompute pc_disp_type;
     typedef std::shared_ptr<pc_disp_type> pc_disp_ptrtype;
     typedef typename expr_type::fe_disp_type::template Context<expr_type::context_disp, typename expr_type::fe_disp_type,
-                                                               gm_type,geoelement_type,gmc_type::context> ctx_disp_type;
+                                                               gm_type,geoelement_type,0, gmc_type::subEntityCoDim> ctx_disp_type;
     typedef std::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
 
     tensorSolidMecPressureFormulationConstraintBase( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -871,39 +869,29 @@ struct tensorSolidMecPressureFormulationConstraintBase : public tensorBase<Geo_t
     template<typename IM>
     void init( IM const& im ) {}
 
-    void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) { update(geom); }
-    void update( Geo_t const& geom, Basis_i_t const& /*fev*/ ) { update(geom); }
-    virtual void update( Geo_t const& geom ) = 0;
-    void update( Geo_t const& geom, uint16_type face ) { CHECK( false ) << "TODO"; }
+    void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) override { this->update(geom); }
+    void update( Geo_t const& geom, Basis_i_t const& /*fev*/ ) override { this->update(geom); }
+    virtual void update( Geo_t const& geom ) override = 0;
+    void update( Geo_t const& geom, uint16_type face ) override { CHECK( false ) << "TODO"; }
 
-    using super_type::evalijq; // fix clang warning
-
-    virtual
-    ret_type evalijq( uint16_type i, uint16_type j, uint16_type q ) const { return super_type::evalijq(i,j,q); }
-
-    virtual
-    value_type evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
-
-    //virtual
-    //value_type evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const = 0;
-    value_type evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
+    value_type evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const override
     {
-        DCHECK( SpecificExprType::value == ExprApplyType::EVAL ) << "only for EVAL expression";
+        DCHECK( expr_type::is_applied_as_eval ) << "only for EVAL expression";
         return M_locRes[q]( c1,c2 );
     }
     ret_type
-    evaliq( uint16_type i, uint16_type q ) const
+    evaliq( uint16_type i, uint16_type q ) const override
     {
-        DCHECK( SpecificExprType::value == ExprApplyType::EVAL ) << "only for EVAL expression";
+        DCHECK( expr_type::is_applied_as_eval ) << "only for EVAL expression";
         return ret_type(M_locRes[q].data());
     }
 
-    value_type evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
+    value_type evalq( uint16_type c1, uint16_type c2, uint16_type q ) const override
     {
         return M_locRes[q]( c1,c2 );
     }
     ret_type
-    evalq( uint16_type q ) const
+    evalq( uint16_type q ) const override
     {
         return ret_type(M_locRes[q].data());
     }
@@ -922,7 +910,6 @@ struct tensorSolidMecPressureFormulationConstraintClassic : public tensorSolidMe
 {
     typedef tensorSolidMecPressureFormulationConstraintBase<Geo_t,Basis_i_t,Basis_j_t,ExprType> super_type;
     typedef typename super_type::expr_type expr_type;
-    typedef typename expr_type::spec_expr_type SpecificExprType;
     typedef typename super_type::value_type value_type;
     typedef typename super_type::matrix_shape_type matrix_shape_type;
     using ret_type = typename super_type::ret_type;
@@ -939,7 +926,7 @@ struct tensorSolidMecPressureFormulationConstraintClassic : public tensorSolidMe
         super_type( expr, geom )
         {}
 
-    void update( Geo_t const& geom )
+    void update( Geo_t const& geom ) override
     {
         this->setGmc( geom );
         std::fill( this->M_locRes.data(), this->M_locRes.data()+this->M_locRes.num_elements(), super_type::matrix_shape_type::Zero() );
@@ -949,74 +936,49 @@ struct tensorSolidMecPressureFormulationConstraintClassic : public tensorSolidMe
         this->M_ctxDisp->update( this->gmc(),  (typename super_type::pc_disp_ptrtype const&) this->M_pcDisp );
         this->M_expr.disp().grad( *this->M_ctxDisp, this->M_locGradDisplacement );
 
-        updateImpl( mpl::int_<SpecificExprType::value>() );
+        if constexpr ( expr_type::is_applied_as_eval )
+        {
+            this->updateImpl();
+        }
     }
 
     value_type
-    evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
+    evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const override
     {
-        return evalijq( i,j,c1,c2,q, mpl::int_<SpecificExprType::value>() );
+        if constexpr ( expr_type::is_applied_as_eval )
+            return this->evalq( c1,c2,q );
+        else
+            return evalijq( i,j,c1,c2,q,mpl::int_<super_type::gmc_type::nDim>() );
     }
-    /*value_type
-    evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
-    {
-        return evaliq( i,c1,c2,q, mpl::int_<SpecificExprType::value>() );
-     }*/
 
 private:
 
     //----------------------------------------------------------------------------------------//
-    void updateImpl( mpl::int_<ExprApplyType::EVAL> )
-    {
-        updateImpl( mpl::int_<ExprApplyType::EVAL>(), mpl::int_<super_type::gmc_type::nDim>() );
-    }
-    void updateImpl( mpl::int_<ExprApplyType::EVAL>, mpl::int_<2> /*Dim*/ )
-    {
-        for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
-        {
-            auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
-            const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1);
-            const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1);
-            this->M_locRes[q](0,0) = du1vdx + du2vdy + du1vdx*du2vdy - du1vdy*du2vdx;
-        }
-    }
-    void updateImpl( mpl::int_<ExprApplyType::EVAL>, mpl::int_<3> /*Dim*/ )
-    {
-        for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
-        {
-            auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
-            const value_type F11 = 1+gradDisplacementEval(0,0), F12 =   gradDisplacementEval(0,1), F13 =   gradDisplacementEval(0,2);
-            const value_type F21 =   gradDisplacementEval(1,0), F22 = 1+gradDisplacementEval(1,1), F23 =   gradDisplacementEval(1,2);
-            const value_type F31 =   gradDisplacementEval(2,0), F32 =   gradDisplacementEval(2,1), F33 = 1+gradDisplacementEval(2,2);
-            const value_type detF = F11*(F22*F33-F23*F32) - F21*(F12*F33-F13*F32) + F31*(F12*F23 - F13*F22);
-            this->M_locRes[q](0,0) = detF-1;
-        }
-    }
-    void updateImpl( mpl::int_<ExprApplyType::JACOBIAN> ) {}
 
-    /*value_type
-    evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::EVAL> ) const
+    void updateImpl()
     {
-        return this->evalq( c1,c2,q );
+        for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
+        {
+            auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
+            if constexpr ( super_type::gmc_type::nDim == 2 )
+            {
+                const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1);
+                const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1);
+                this->M_locRes[q](0,0) = du1vdx + du2vdy + du1vdx*du2vdy - du1vdy*du2vdx;
+            }
+            else
+            {
+                const value_type F11 = 1+gradDisplacementEval(0,0), F12 =   gradDisplacementEval(0,1), F13 =   gradDisplacementEval(0,2);
+                const value_type F21 =   gradDisplacementEval(1,0), F22 = 1+gradDisplacementEval(1,1), F23 =   gradDisplacementEval(1,2);
+                const value_type F31 =   gradDisplacementEval(2,0), F32 =   gradDisplacementEval(2,1), F33 = 1+gradDisplacementEval(2,2);
+                const value_type detF = F11*(F22*F33-F23*F32) - F21*(F12*F33-F13*F32) + F31*(F12*F23 - F13*F22);
+                this->M_locRes[q](0,0) = detF-1;
+            }
+        }
     }
+
     value_type
-    evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ) const
-    {
-        CHECK( false ) << "not allow";return 0;
-     }*/
-    using super_type::evalijq; // fix clang warning
-    value_type
-    evalijq( uint16_type i,uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::EVAL> ) const
-    {
-        return this->evalq( c1,c2,q );
-    }
-    value_type
-    evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ) const
-    {
-        return evalijq( i,j,c1,c2,q,mpl::int_<ExprApplyType::JACOBIAN>(),mpl::int_<super_type::gmc_type::nDim>() );
-    }
-    value_type
-    evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN>, mpl::int_<2> /*Dim*/ ) const
+    evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<2> /*Dim*/ ) const
     {
         auto const& gradTrial = this->fecTrial()->grad( j, q );
         const value_type Fat11 = gradTrial( 0, 0, 0 ), Fat12 = gradTrial( 0, 1, 0 );
@@ -1029,7 +991,7 @@ private:
         return detJm1;
     }
     value_type
-    evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN>, mpl::int_<3> /*Dim*/ ) const
+    evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<3> /*Dim*/ ) const
     {
         auto const& gradTrial = this->fecTrial()->grad( j, q );
         const value_type Fat11 = gradTrial( 0, 0, 0 ), Fat12 = gradTrial( 0, 1, 0 ), Fat13 = gradTrial( 0, 2, 0 );
@@ -1058,7 +1020,6 @@ struct tensorSolidMecPressureFormulationConstraintStVenantKirchhoff : public ten
 {
     typedef tensorSolidMecPressureFormulationConstraintBase<Geo_t,Basis_i_t,Basis_j_t,ExprType> super_type;
     typedef typename super_type::expr_type expr_type;
-    typedef typename expr_type::spec_expr_type SpecificExprType;
     typedef typename super_type::value_type value_type;
     typedef typename super_type::matrix_shape_type matrix_shape_type;
 
@@ -1075,7 +1036,7 @@ struct tensorSolidMecPressureFormulationConstraintStVenantKirchhoff : public ten
         super_type( expr, geom )
         {}
 
-    void update( Geo_t const& geom )
+    void update( Geo_t const& geom ) override
     {
         this->setGmc( geom );
         std::fill( this->M_locRes.data(), this->M_locRes.data()+this->M_locRes.num_elements(), super_type::matrix_shape_type::Zero() );
@@ -1084,13 +1045,21 @@ struct tensorSolidMecPressureFormulationConstraintStVenantKirchhoff : public ten
             this->M_pcDisp->update( this->gmc()->pc()->nodes() );
         this->M_ctxDisp->update( this->gmc(),  (typename super_type::pc_disp_ptrtype const&) this->M_pcDisp );
         this->M_expr.disp().grad( *this->M_ctxDisp, this->M_locGradDisplacement );
-        updateImpl( mpl::int_<SpecificExprType::value>() );
+
+        if constexpr ( expr_type::is_applied_as_eval )
+        {
+            this->updateImpl();
+        }
     }
 
     value_type
-    evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
+    evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const override
     {
-        return evalijq( i,j,c1,c2,q, mpl::int_<SpecificExprType::value>() );
+        //return evalijq( i,j,c1,c2,q, mpl::int_<SpecificExprType::value>() );
+        if constexpr ( expr_type::is_applied_as_eval )
+            return this->evalq( c1,c2,q );
+        else
+            return evalijq( i,j,c1,c2,q,mpl::int_<super_type::gmc_type::nDim>() );
     }
     /*value_type
     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -1101,68 +1070,40 @@ struct tensorSolidMecPressureFormulationConstraintStVenantKirchhoff : public ten
 private:
 
     //----------------------------------------------------------------------------------------//
-    void updateImpl( mpl::int_<ExprApplyType::EVAL> )
-    {
-        updateImpl( mpl::int_<ExprApplyType::EVAL>(), mpl::int_<super_type::gmc_type::nDim>() );
-    }
-    void updateImpl( mpl::int_<ExprApplyType::EVAL>, mpl::int_<2> /*Dim*/ )
+    void updateImpl()
     {
         for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
         {
             // trace E
             auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
-            const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1);
-            const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1);
-            const value_type subtraceE1 = 0.5*(std::pow(du1vdx,2)+std::pow(du2vdx,2));
-            const value_type subtraceE2 = 0.5*(std::pow(du1vdy,2)+std::pow(du2vdy,2));
-            const value_type E11 = du1vdx + subtraceE1;
-            const value_type E22 = du2vdy + subtraceE2;
-            this->M_locRes[q](0,0) = E11 + E22;
+            if constexpr ( super_type::gmc_type::nDim == 2 )
+            {
+                const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1);
+                const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1);
+                const value_type subtraceE1 = 0.5*(std::pow(du1vdx,2)+std::pow(du2vdx,2));
+                const value_type subtraceE2 = 0.5*(std::pow(du1vdy,2)+std::pow(du2vdy,2));
+                const value_type E11 = du1vdx + subtraceE1;
+                const value_type E22 = du2vdy + subtraceE2;
+                this->M_locRes[q](0,0) = E11 + E22;
+            }
+            else
+            {
+                const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1), du1vdz = gradDisplacementEval(0,2);
+                const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1), du2vdz = gradDisplacementEval(1,2);
+                const value_type du3vdx = gradDisplacementEval(2,0), du3vdy = gradDisplacementEval(2,1), du3vdz = gradDisplacementEval(2,2);
+                const value_type subtraceE1 = 0.5*(std::pow(du1vdx,2)+std::pow(du2vdx,2)+std::pow(du3vdx,2));
+                const value_type subtraceE2 = 0.5*(std::pow(du1vdy,2)+std::pow(du2vdy,2)+std::pow(du3vdy,2));
+                const value_type subtraceE3 = 0.5*(std::pow(du1vdz,2)+std::pow(du2vdz,2)+std::pow(du3vdz,2));
+                const value_type E11 = du1vdx + subtraceE1;
+                const value_type E22 = du2vdy + subtraceE2;
+                const value_type E33 = du3vdz + subtraceE3;
+                this->M_locRes[q](0,0) = E11+E22+E33;
+            }
         }
     }
-    void updateImpl( mpl::int_<ExprApplyType::EVAL>, mpl::int_<3> /*Dim*/ )
-    {
-        for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
-        {
-            // trace E
-            auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
-            const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1), du1vdz = gradDisplacementEval(0,2);
-            const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1), du2vdz = gradDisplacementEval(1,2);
-            const value_type du3vdx = gradDisplacementEval(2,0), du3vdy = gradDisplacementEval(2,1), du3vdz = gradDisplacementEval(2,2);
-            const value_type subtraceE1 = 0.5*(std::pow(du1vdx,2)+std::pow(du2vdx,2)+std::pow(du3vdx,2));
-            const value_type subtraceE2 = 0.5*(std::pow(du1vdy,2)+std::pow(du2vdy,2)+std::pow(du3vdy,2));
-            const value_type subtraceE3 = 0.5*(std::pow(du1vdz,2)+std::pow(du2vdz,2)+std::pow(du3vdz,2));
-            const value_type E11 = du1vdx + subtraceE1;
-            const value_type E22 = du2vdy + subtraceE2;
-            const value_type E33 = du3vdz + subtraceE3;
-            this->M_locRes[q](0,0) = E11+E22+E33;
-        }
-    }
-    void updateImpl( mpl::int_<ExprApplyType::JACOBIAN> ) {}
 
-    /*value_type
-    evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::EVAL> ) const
-    {
-        return this->evalq( c1,c2,q );
-    }
     value_type
-    evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ) const
-    {
-        CHECK( false ) << "not allow";return 0;
-     }*/
-    using super_type::evalijq; // fix clang warning
-    value_type
-    evalijq( uint16_type i,uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::EVAL> ) const
-    {
-        return this->evalq( c1,c2,q );
-    }
-    value_type
-    evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ) const
-    {
-        return evalijq( i,j,c1,c2,q,mpl::int_<ExprApplyType::JACOBIAN>(),mpl::int_<super_type::gmc_type::nDim>() );
-    }
-    value_type
-    evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN>, mpl::int_<2> /*Dim*/ ) const
+    evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<2> /*Dim*/ ) const
     {
         auto const& gradTrial = this->fecTrial()->grad( j, q );
         const value_type du1tdx = gradTrial( 0, 0, 0 ), du1tdy = gradTrial( 0, 1, 0 );
@@ -1178,7 +1119,7 @@ private:
         return tracedE;
     }
     value_type
-    evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN>, mpl::int_<3> /*Dim*/ ) const
+    evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<3> /*Dim*/ ) const
     {
         auto const& gradTrial = this->fecTrial()->grad( j, q );
         const value_type du1tdx = gradTrial( 0, 0, 0 ), du1tdy = gradTrial( 0, 1, 0 ), du1tdz=gradTrial( 0, 2, 0 );
@@ -1200,19 +1141,20 @@ private:
 };
 
 
-template<typename ElementDispType, typename MechPropType,typename SpecificExprType>
+template<typename ElementDispType, typename ModelPhysicSolidType, ExprApplyType ExprApplied>
 class SolidMecPressureFormulationConstraint
 {
 public:
 
-    typedef SolidMecPressureFormulationConstraint<ElementDispType,MechPropType,SpecificExprType> self_type;
+    typedef SolidMecPressureFormulationConstraint<ElementDispType,ModelPhysicSolidType,ExprApplied> self_type;
 
     static const size_type context_disp = vm::JACOBIAN|vm::KB|vm::GRAD;
     static const size_type context = context_disp;
 
     typedef ElementDispType element_disp_type;
-    typedef MechPropType mechprop_type;
-    typedef SpecificExprType spec_expr_type;
+
+    static constexpr bool is_applied_as_eval = ExprApplied == ExprApplyType::EVAL;
+    static constexpr bool is_applied_as_jacobian = ExprApplied == ExprApplyType::JACOBIAN;
     //------------------------------------------------------------------------------//
     // displacement functionspace
     typedef typename element_disp_type::functionspace_type functionspace_disp_type;
@@ -1241,20 +1183,17 @@ public:
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = mpl::if_<  mpl::bool_< ( SpecificExprType::value == ExprApplyType::JACOBIAN ) >,
-                                              typename mpl::if_<boost::is_same<Func,fe_disp_type>,
-                                                                mpl::bool_<true>, mpl::bool_<false> >::type,
-                                              mpl::bool_<false> >::type::value;
+        static const bool result = is_applied_as_jacobian && std::is_same_v<Func,fe_disp_type>;
     };
 
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
 
-    SolidMecPressureFormulationConstraint( element_disp_type const& disp, mechprop_type const& mechprop )
+    SolidMecPressureFormulationConstraint( element_disp_type const& disp, ModelPhysicSolidType const& physicSolidData )
         :
         M_disp( disp ),
-        M_mechProp( mechprop )
+        M_physicSolidData( physicSolidData )
     {}
 
     SolidMecPressureFormulationConstraint( SolidMecPressureFormulationConstraint const & op ) = default;
@@ -1269,8 +1208,7 @@ public:
     bool isPolynomial() const { return true; }
 
     element_disp_type const& disp() const { return M_disp; }
-    mechprop_type const& mechanicalPropertiesDesc() const { return M_mechProp; }
-
+    ModelPhysicSolidType const& physicSolidData() const { return M_physicSolidData; }
 
     typedef Shape<nDim, Scalar, false, false> my_shape_type;
 
@@ -1288,21 +1226,21 @@ public:
 
         tensor( self_type const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
-            if ( expr.mechanicalPropertiesDesc().materialLaw() == "StVenantKirchhoff" )
+            if ( expr.physicSolidData().materialModel() == "StVenantKirchhoff" )
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationConstraintStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev,feu) );
             else
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationConstraintClassic<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev,feu) );
         }
         tensor( self_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
         {
-            if ( expr.mechanicalPropertiesDesc().materialLaw() == "StVenantKirchhoff" )
+            if ( expr.physicSolidData().materialModel() == "StVenantKirchhoff" )
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationConstraintStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev) );
             else
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationConstraintClassic<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev) );
         }
         tensor( self_type const& expr, Geo_t const& geom )
         {
-            if ( expr.mechanicalPropertiesDesc().materialLaw() == "StVenantKirchhoff" )
+            if ( expr.physicSolidData().materialModel() == "StVenantKirchhoff" )
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationConstraintStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom) );
             else
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationConstraintClassic<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom) );
@@ -1367,7 +1305,7 @@ public:
 
 private:
     element_disp_type const& M_disp;
-    mechprop_type const& M_mechProp;
+    ModelPhysicSolidType const& M_physicSolidData;
 };
 
 
@@ -1386,61 +1324,61 @@ private:
 /**
  * keywords
  */
-
-template<class ElementDispType,class ElementPressureType,class MechPropType >
+#if 0
+template<typename ElementDispType,typename ElementPressureType,typename ModelPhysicSolidType>
 inline
-Expr< SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,MechPropType,mpl::int_<ExprApplySolidMecPresFormType::EVAL> > >
+Expr< SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,ModelPhysicSolidType,mpl::int_<ExprApplySolidMecPresFormType::EVAL> > >
 solidMecPressureFormulationMultiplier( ElementDispType const& v, ElementPressureType const& p,
-                                       MechPropType const& mechanicalPropertiesDesc )
+                                       ModelPhysicSolidType const& physicSolidData )
 {
-    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,MechPropType,mpl::int_<ExprApplySolidMecPresFormType::EVAL> > myexpr_type;
-    return Expr< myexpr_type >( myexpr_type( v,p,mechanicalPropertiesDesc ) );
+    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,ModelPhysicSolidType,mpl::int_<ExprApplySolidMecPresFormType::EVAL> > myexpr_type;
+    return Expr< myexpr_type >( myexpr_type( v,p,physicSolidData ) );
 }
 
-template<class ElementDispType,class ElementPressureType,class MechPropType>
+template<typename ElementDispType,typename ElementPressureType,typename ModelPhysicSolidType>
 inline
-Expr< SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,MechPropType,
+Expr< SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,ModelPhysicSolidType,
                                             mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_DISP> > >
 solidMecPressureFormulationMultiplierJacobianTrialDisp( ElementDispType const& v,ElementPressureType const& p,
-                                                        MechPropType const& mechanicalPropertiesDesc )
+                                                        ModelPhysicSolidType const& physicSolidData )
 {
-    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,MechPropType,
+    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,ModelPhysicSolidType,
                                                   mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_DISP> > myexpr_type;
-    return Expr< myexpr_type >( myexpr_type( v,p,mechanicalPropertiesDesc ) );
+    return Expr< myexpr_type >( myexpr_type( v,p,physicSolidData ) );
 }
 
-template<class ElementDispType,class ElementPressureType,class MechPropType>
+template<typename ElementDispType,typename ElementPressureType,typename ModelPhysicSolidType>
 inline
-Expr< SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,MechPropType,
+Expr< SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,ModelPhysicSolidType,
                                             mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_PRES> > >
 solidMecPressureFormulationMultiplierJacobianTrialPressure( ElementDispType const& v,ElementPressureType const& p,
-                                                            MechPropType const& mechanicalPropertiesDesc )
+                                                            ModelPhysicSolidType const& physicSolidData )
 {
-    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,MechPropType,
+    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,ModelPhysicSolidType,
                                                   mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_PRES> > myexpr_type;
-    return Expr< myexpr_type >(  myexpr_type( v,p,mechanicalPropertiesDesc ) );
+    return Expr< myexpr_type >(  myexpr_type( v,p,physicSolidData ) );
 }
+#endif
 
 
-
-template<class ElementDispType,class MechPropType>
+template<typename ElementDispType,typename ModelPhysicSolidType>
 inline
-Expr< SolidMecPressureFormulationConstraint<ElementDispType,MechPropType,mpl::int_<ExprApplyType::EVAL> > >
+auto
 solidMecPressureFormulationConstraint( ElementDispType const& v,
-                                       MechPropType const& mechanicalPropertiesDesc )
+                                       ModelPhysicSolidType const& physicSolidData )
 {
-    typedef SolidMecPressureFormulationConstraint<ElementDispType,MechPropType,mpl::int_<ExprApplyType::EVAL> > myexpr_type;
-    return Expr< myexpr_type >( myexpr_type( v,mechanicalPropertiesDesc ) );
+    typedef SolidMecPressureFormulationConstraint<unwrap_ptr_t<ElementDispType>,ModelPhysicSolidType,ExprApplyType::EVAL > myexpr_type;
+    return Expr< myexpr_type >( myexpr_type( unwrap_ptr(v),physicSolidData ) );
 }
 
-template<class ElementDispType,class MechPropType>
+template<typename ElementDispType,typename ModelPhysicSolidType>
 inline
-Expr< SolidMecPressureFormulationConstraint<ElementDispType,MechPropType,mpl::int_<ExprApplyType::JACOBIAN> > >
+auto
 solidMecPressureFormulationConstraintJacobian( ElementDispType const& v,
-                                             MechPropType const& mechanicalPropertiesDesc )
+                                               ModelPhysicSolidType const& physicSolidData )
 {
-    typedef SolidMecPressureFormulationConstraint<ElementDispType,MechPropType,mpl::int_<ExprApplyType::JACOBIAN> > myexpr_type;
-    return Expr< myexpr_type >(  myexpr_type( v,mechanicalPropertiesDesc ) );
+    typedef SolidMecPressureFormulationConstraint<unwrap_ptr_t<ElementDispType>,ModelPhysicSolidType,ExprApplyType::JACOBIAN > myexpr_type;
+    return Expr< myexpr_type >(  myexpr_type( unwrap_ptr(v),physicSolidData ) );
 }
 
 } // namespace FeelModels

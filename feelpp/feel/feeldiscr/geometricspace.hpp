@@ -41,7 +41,7 @@ struct GeometricSpaceBase : public CommObject
     GeometricSpaceBase( GeometricSpaceBase && ) = default;
     GeometricSpaceBase& operator=( GeometricSpaceBase const& ) = default;
     GeometricSpaceBase& operator=( GeometricSpaceBase && ) = default;
-    virtual ~GeometricSpaceBase() = default;
+    ~GeometricSpaceBase() override = default;
 
 };
 struct ContextGeometricBase {};
@@ -62,7 +62,8 @@ public :
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef typename mesh_type::element_type element_type;
     typedef typename element_type::gm_type gm_type;
-    typedef typename gm_type::template Context<vm::POINT, element_type> gmc_type;
+    static const size_type gmc_context_v = vm::POINT;
+    typedef typename gm_type::template Context<element_type> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
 
@@ -136,7 +137,8 @@ public :
                         M_meshGeoContext->addElement( meshEltCtx, false );
                     }
                     auto const& meshEltCtxRegister = M_meshGeoContext->element( meshEltCtx.id() );
-                    M_gmc.reset( new gmc_type( M_meshGeoContext->gm(),meshEltCtxRegister ) );
+                    M_gmc = M_meshGeoContext->gm()->template context<gmc_context_v>( meshEltCtxRegister, typename gmc_type::precompute_ptrtype{} );
+                    //M_gmc.reset( new gmc_type( M_meshGeoContext->gm(),meshEltCtxRegister ) );
                     ar & boost::serialization::make_nvp( "gmContext", *M_gmc );
                 }
                 else if ( M_Xh && M_Xh->mesh() )
@@ -144,7 +146,8 @@ public :
                     // std::cout << "geospace ContextGeo with full mesh\n";
                     CHECK ( M_Xh->mesh()->hasElement( meshEltCtx.id()/*, meshEltCtx.processId()*/ ) ) << "fails because mesh doesnt have the element reloaded for gmc";
                     auto const& meshEltCtxRegister = M_Xh->mesh()->element( meshEltCtx.id()/*, meshEltCtx.processId()*/ );
-                    M_gmc.reset( new gmc_type( M_Xh->mesh()->gm(),meshEltCtxRegister ) );
+                    //M_gmc.reset( new gmc_type( M_Xh->mesh()->gm(),meshEltCtxRegister ) );
+                    M_gmc = M_Xh->mesh()->gm()->template context<gmc_context_v>( meshEltCtxRegister, typename gmc_type::precompute_ptrtype{} );
                     ar & boost::serialization::make_nvp( "gmContext", *M_gmc );
 
                 }
@@ -248,7 +251,7 @@ public :
                 auto gmpc = M_Xh->mesh()->gm()->preCompute( M_Xh->mesh()->gm(), p );
                 DVLOG(2) << "build precompute data structure for geometric mapping\n";
                 // build geometric mapping
-                auto gmc = M_Xh->mesh()->gm()->template context<gmc_type::context>( M_Xh->mesh()->element( eid ), gmpc );
+                auto gmc = M_Xh->mesh()->gm()->template context<gmc_context_v>( M_Xh->mesh()->element( eid ), gmpc );
                 DVLOG(2) << "build geometric mapping context\n";
 
                 int number = M_t.size()-1;

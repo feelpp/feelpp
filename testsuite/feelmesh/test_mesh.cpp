@@ -166,17 +166,12 @@ struct test_mesh_filters
         // elements
         {
             Feel::detail::mesh_type::gm_ptrtype __gm = mesh->gm();
-            typedef Feel::detail::mesh_type::gm_type gm_type;
-            typedef gm_type::precompute_ptrtype geopc_ptrtype;
-            typedef gm_type::precompute_type geopc_type;
-            typedef gm_type::Context<vm::POINT, Feel::detail::mesh_type::element_type> gmc_type;
-            typedef std::shared_ptr<gmc_type> gmc_ptrtype;
             //
             // Precompute some data in the reference element for
             // geometric mapping and reference finite element
             //1
             Feel::detail::mesh_type::reference_convex_type ref_conv;
-            geopc_ptrtype __geopc( new geopc_type( __gm, ref_conv.points() ) );
+            auto __geopc = __gm->preCompute( ref_conv.points() );
             Feel::MeshTraits<Feel::detail::mesh_type>::element_const_iterator it = mesh->beginElement();
             Feel::MeshTraits<Feel::detail::mesh_type>::element_const_iterator en = mesh->endElement();
 
@@ -187,7 +182,7 @@ struct test_mesh_filters
                 // check that the geometric transformation from
                 // the current gives back the vertices of the
                 // element
-                gmc_ptrtype __c( new gmc_type( __gm, elt, __geopc ) );
+                auto __c = __gm->template context<vm::POINT>( elt, __geopc );
 
                 BOOST_CHECK( ublas::norm_frobenius( __c->xReal() - elt.G() ) < 1e-15 );
             }

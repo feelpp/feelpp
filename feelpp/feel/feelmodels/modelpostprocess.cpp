@@ -58,6 +58,137 @@ ModelPostprocessExports::setup( pt::ptree const& p )
     }
     if ( auto formatOpt = p.get_optional<std::string>( "format" ) )
         M_format = *formatOpt;
+
+    if ( auto exprTree = p.get_child_optional("expr") )
+    {
+        for ( auto const& item : *exprTree )
+        {
+            std::string exprName = item.first;
+            std::set<std::string> representations, tags;
+
+            if ( item.second.empty() ) // name:expr
+            {
+                ModelExpression modelexpr;
+                ModelMarkers markers;
+                modelexpr.setExpr( exprName,  *exprTree, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+                CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
+                M_exprs.push_back( std::make_tuple(exprName,modelexpr,markers,representations,tags) );
+            }
+            else
+            {
+                if ( auto repOpt = item.second.get_child_optional("representation") )
+                {
+                    if ( repOpt->empty() )
+                        representations.insert( repOpt->get_value<std::string>() );
+                    else
+                    {
+                        for ( auto const& therep : *repOpt )
+                        {
+                            CHECK( therep.first.empty() ) << "should be an array, not a subtree";
+                            representations.insert( therep.second.template get_value<std::string>() );
+                        }
+                    }
+                }
+
+                if ( auto tagOpt = item.second.get_child_optional("tag") )
+                {
+                    if ( tagOpt->empty() )
+                        tags.insert( tagOpt->get_value<std::string>() );
+                    else
+                    {
+                        for ( auto const& thetag : *tagOpt )
+                            tags.insert( thetag.second.template get_value<std::string>() );
+                    }
+                }
+
+                if ( item.second.get_child_optional("expr") )
+                {
+                    ModelExpression modelexpr;
+                    ModelMarkers markers;
+                    modelexpr.setExpr( "expr",  item.second, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+                    if ( auto ptmarkers = item.second.get_child_optional("markers") )
+                        markers.setPTree(*ptmarkers/*, indexes*/);
+                    CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
+                    M_exprs.push_back( std::make_tuple(exprName,modelexpr,markers,representations,tags) );
+                }
+
+                if ( auto ptparts = item.second.get_child_optional("parts") )
+                {
+                    for ( auto const& itemPart : *ptparts )
+                    {
+                        CHECK( itemPart.first.empty() ) << "should be an array, not a subtree";
+                        ModelExpression modelexpr;
+                        ModelMarkers markers;
+                        modelexpr.setExpr( "expr",  itemPart.second, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+                        if ( auto ptmarkers = itemPart.second.get_child_optional("markers") )
+                            markers.setPTree(*ptmarkers/*, indexes*/);
+                        CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
+                        M_exprs.push_back( std::make_tuple(exprName,modelexpr,markers,representations,tags) );
+                    }
+                }
+            }
+
+        } // for ( auto const& item : *exprTree )
+    }
+}
+
+void
+ModelPostprocessExports::setParameterValues( std::map<std::string,double> const& mp )
+{
+    for ( auto & edata : M_exprs )
+        std::get<1>( edata ).setParameterValues( mp );
+}
+
+void
+ModelPostprocessQuantities::setup( pt::ptree const& p )
+{
+    if ( p.empty() ) // value case
+        M_quantities.insert( p.get_value<std::string>() );
+    else // array case
+    {
+        for ( auto const& item : p )
+        {
+            if ( item.first.empty() ) // array case
+            {
+                //CHECK( item.first.empty() ) << "should be an array, not a subtree";
+                std::string const& fieldName = item.second.template get_value<std::string>();
+                M_quantities.insert( fieldName );
+            }
+            else if( item.first == "names" )
+            {
+                // markers : { name = mark }
+                if( item.second.empty() )
+                    M_quantities.insert( item.second.template get_value<std::string>() );
+                else
+                {
+                    // markers : { name = [mark1, mark2] }
+                    for( auto const& item2 : item.second )
+                        M_quantities.insert( item2.second.template get_value<std::string>() );
+                }
+            }
+            else if( item.first == "expr" )
+            {
+                for ( auto const& item2 : item.second )
+                {
+                    std::string exprName = item2.first;
+                    CHECK( !exprName.empty() ) << "expr name is empty or expr is an array";
+                    ModelExpression modelexpr;
+                    modelexpr.setExpr( exprName, item.second , this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+                    CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
+                    M_exprs.emplace( std::make_pair( exprName, std::move(modelexpr) ) );
+                }
+            }
+        }
+    }
+
+    //LOG(INFO) << "add to postprocess quantity  " << fieldName;
+}
+
+void
+ModelPostprocessQuantities::setParameterValues( std::map<std::string,double> const& mp )
+{
+    for ( auto & [_name,_expr] : M_exprs )
+        _expr.setParameterValues( mp );
 }
 
 void
@@ -262,13 +393,19 @@ ModelPostprocessCheckerMeasure::setup( std::string const& name, ModelIndexes con
 
     M_valueExpr.setExpr( "value", M_p, this->worldComm(), M_directoryLibExpr, indexes );
     CHECK( M_valueExpr.hasExprScalar() ) << "require value entry and the value should be a scalar expression";
-    M_value = M_valueExpr.exprScalar().evaluate()(0,0);
+    //M_value = M_valueExpr.exprScalar().evaluate()(0,0);
 
     if ( auto itTol = M_p.get_optional<double>("tolerance") )
         M_tolerance = *itTol;
 }
 std::tuple<bool,double>
 ModelPostprocessCheckerMeasure::run( double val ) const
+{
+    M_value = M_valueExpr.exprScalar().evaluate()(0,0);
+    return this->runImpl( val );
+}
+std::tuple<bool,double>
+ModelPostprocessCheckerMeasure::runImpl( double val ) const
 {
     if ( std::abs(val) < 1e-10 || std::abs(M_value) < 1e-10 )
     {
@@ -287,7 +424,7 @@ void
 ModelPostprocessCheckerMeasure::setParameterValues( std::map<std::string,double> const& mp )
 {
     M_valueExpr.setParameterValues( mp );
-    M_value = M_valueExpr.exprScalar().evaluate()(0,0);
+    //M_value = M_valueExpr.exprScalar().evaluate()(0,0);
 }
 
 ModelPostprocess::ModelPostprocess( worldcomm_ptr_t const& world )
@@ -345,9 +482,10 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
 {
     if ( auto exports = p.get_child_optional("Exports") )
     {
-        ModelPostprocessExports ppexports;
+        ModelPostprocessExports ppexports( this->worldCommPtr() );
+        ppexports.setDirectoryLibExpr( M_directoryLibExpr );
         ppexports.setup( *exports );
-        if ( !ppexports.fields().empty() )
+        if ( !ppexports.fields().empty() || !ppexports.expressions().empty() )
             M_exports[name] = ppexports;
     }
     if ( auto save = p.get_child_optional("Save") )
@@ -360,6 +498,17 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
 
     if ( auto measures = p.get_child_optional("Measures") )
     {
+        for ( std::string const& quantitiesSectionName : { "Quantities", "quantities" } )
+            if ( auto quantities = measures->get_child_optional( quantitiesSectionName ) )
+            {
+                ModelPostprocessQuantities ppquantities( this->worldCommPtr() );
+                ppquantities.setDirectoryLibExpr( M_directoryLibExpr );
+                ppquantities.setup( *quantities );
+                if( !ppquantities.quantities().empty() || !ppquantities.expressions().empty() )
+                    M_measuresQuantities[name] = ppquantities;
+                break;
+            }
+
         auto evalPoints = measures->get_child_optional("Points");
         if ( evalPoints )
         {
@@ -453,6 +602,10 @@ ModelPostprocess::saveMD(std::ostream &os)
 void
 ModelPostprocess::setParameterValues( std::map<std::string,double> const& mp )
 {
+
+    for (auto & [name,p] : M_exports )
+        p.setParameterValues( mp );
+
     for( auto & p : M_measuresPoint )
         for( auto & p2 : p.second )
             p2.setParameterValues( mp );
@@ -464,6 +617,9 @@ ModelPostprocess::setParameterValues( std::map<std::string,double> const& mp )
     for( auto & p : M_measuresStatistics )
         for( auto & p2 : p.second )
             p2.setParameterValues( mp );
+
+    for (auto & [name,p] : M_measuresQuantities )
+        p.setParameterValues( mp );
 
     for( auto & p : M_checkersMeasure )
         for( auto & p2 : p.second )
@@ -481,6 +637,12 @@ ModelPostprocess::hasSave( std::string const& name ) const
 {
     std::string nameUsed = (M_useModelName)? name : "";
     return M_save.find( nameUsed ) != M_save.end();
+}
+bool
+ModelPostprocess::hasMeasuresQuantities( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    return M_measuresQuantities.find( nameUsed ) != M_measuresQuantities.end();
 }
 bool
 ModelPostprocess::hasMeasuresPoint( std::string const& name ) const
@@ -526,6 +688,16 @@ ModelPostprocess::save( std::string const& name ) const
         return M_save.find( nameUsed )->second;
     else
         return M_emptySave;
+}
+ModelPostprocessQuantities const&
+ModelPostprocess::measuresQuantities( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    //CHECK( this->hasExports( nameUsed ) ) << "no measures quantities with name:"<<name;
+    if ( this->hasMeasuresQuantities( nameUsed ) )
+        return M_measuresQuantities.find( nameUsed )->second;
+    else
+        return M_emptyMeasuresQuantities;
 }
 std::vector<ModelPostprocessPointPosition> const&
 ModelPostprocess::measuresPoint( std::string const& name ) const

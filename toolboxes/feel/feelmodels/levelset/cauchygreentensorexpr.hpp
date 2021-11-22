@@ -2,7 +2,6 @@
 #define _CAUCHY_GREEN_TENSOR_EXPR_HPP 1
 
 namespace Feel {
-namespace vf {
 namespace FeelModels {
 
 template<typename ElementBackwardCharacteristicsType, typename ElementNormalType, int IMOrder>
@@ -105,12 +104,12 @@ public:
         // fe backwardcharacteristics context
         typedef typename fe_backwardcharacteristics_type::PreCompute pc_backwardcharacteristics_type;
         typedef std::shared_ptr<pc_backwardcharacteristics_type> pc_backwardcharacteristics_ptrtype;
-        typedef typename fe_backwardcharacteristics_type::template Context<expr_type::context_backwardcharacteristics, fe_backwardcharacteristics_type, gm_type,geoelement_type,gmc_type::context> ctx_backwardcharacteristics_type;
+        typedef typename fe_backwardcharacteristics_type::template Context<expr_type::context_backwardcharacteristics, fe_backwardcharacteristics_type, gm_type,geoelement_type> ctx_backwardcharacteristics_type;
         typedef std::shared_ptr<ctx_backwardcharacteristics_type> ctx_backwardcharacteristics_ptrtype;
         // fe normal context
         typedef typename fe_normal_type::PreCompute pc_normal_type;
         typedef std::shared_ptr<pc_normal_type> pc_normal_ptrtype;
-        typedef typename fe_normal_type::template Context<expr_type::context_normal, fe_normal_type, gm_type,geoelement_type,gmc_type::context> ctx_normal_type;
+        typedef typename fe_normal_type::template Context<expr_type::context_normal, fe_normal_type, gm_type,geoelement_type> ctx_normal_type;
         typedef std::shared_ptr<ctx_normal_type> ctx_normal_ptrtype;
 
         // Shapes types
@@ -360,7 +359,6 @@ leftCauchyGreenTensorExpr( ElementBackwardCharacteristicsType const& Y, ElementN
 
 
 
-}
 }
 }
 #endif

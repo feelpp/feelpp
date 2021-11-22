@@ -34,9 +34,9 @@ class JournalWatcher : public Event::SlotHandler
 {
 public:
     // Type alias.
-    using notify_type = pt::ptree;
+    using notify_type = nl::json;
 
-    using function_update_information_type = std::function<void ( pt::ptree & )>;
+    using function_update_information_type = std::function<void ( nl::json & )>;
     //! Constructors
     //! @{
 
@@ -56,6 +56,9 @@ public:
     explicit JournalWatcher( function_update_information_type const& func, std::string const& category = "", std::string const& name = "",
                              bool useDefaultNameIfEmpty = true, bool connect = JournalManager::journalAutoMode() );
 
+    //! Copy constructor
+    JournalWatcher( JournalWatcher const& jw );
+
     //! Default destructor.
     //! The (inherited) object is always disconnected from the journal during the
     //! destruction.
@@ -64,6 +67,7 @@ public:
         this->journalFinalize();
     }
     //! @}
+
 
     //! Getters
     //! @{
@@ -83,11 +87,11 @@ public:
         return M_name;
     }
 
-    //! Return the section name into the journal
-    std::string journalSectionName() const;
+    //! Return the section into the journal as json_pointer
+    typename nl::json::json_pointer journalSection() const;
 
     //! Return the information into property tree
-    pt::ptree const& informationObject() const { return M_informationObject; }
+    nl::json const& informationObject() const { return M_informationObject; }
     //! @}
 
     //! Setters
@@ -105,22 +109,27 @@ public:
     //! The disconnection is safe.
     void journalDisconnect();
 
+    //! update information object into p
+    virtual void updateInformationObject( nl::json & p ) const {}
+
     //! set information object
-    void setInformationObject( pt::ptree const& informationObject )
+    void setInformationObject( nl::json const& informationObject )
         {
             M_informationObject = informationObject;
         }
     //! put information object
-    void putInformationObject( pt::ptree const& informationObject )
+    void putInformationObject( nl::json const& informationObject )
         {
-            for( const auto& p : informationObject )
-                M_informationObject.put_child( p.first, p.second );
+            //for( const auto& p : informationObject )
+            //M_informationObject.put_child( p.first, p.second );
+            M_informationObject.update( informationObject.begin(), informationObject.end() );
         }
     //! add information object
-    void addInformationObject( pt::ptree const& informationObject )
+    void addInformationObject( nl::json const& informationObject )
         {
-            for( const auto& p : informationObject )
-                M_informationObject.add_child( p.first, p.second );
+            // for( const auto& p : informationObject )
+            //     M_informationObject.add_child( p.first, p.second );
+            M_informationObject.insert( informationObject.begin(), informationObject.end() );
         }
 
     //! finalize journal publication
@@ -134,7 +143,6 @@ protected:
         {
             M_function_updateInformationObject( M_informationObject );
         }
-    virtual void updateInformationObject( pt::ptree & p ) {}
 
 private :
     //! Watch child properties and notify the manager.
@@ -162,7 +170,7 @@ private:
     function_update_information_type M_function_updateInformationObject;
 
     //! information object data structure
-    pt::ptree M_informationObject;
+    nl::json M_informationObject;
     //! @}
 };
 

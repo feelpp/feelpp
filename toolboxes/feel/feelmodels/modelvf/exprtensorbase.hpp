@@ -33,7 +33,7 @@ namespace Feel
 {
 namespace FeelModels
 {
-    enum ExprApplyType { EVAL=0,JACOBIAN=1 };
+enum class ExprApplyType { EVAL=0,JACOBIAN,LINEAR_TRIAL,LINEAR_TEST };
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename ShapeType, typename ValueType>
     struct tensorBase
@@ -160,8 +160,12 @@ namespace FeelModels
         basis_fec_trial_ptrtype const& fecTrial() const { return M_fecTrial; }
         matrix_shape_type /*const*/& locMatrixShape() const { return M_locMatrixShape; }
 
-        virtual void update( Geo_t const& geom ) = 0;
-        virtual void update( Geo_t const& geom, uint16_type face ) = 0;
+        virtual void update( Geo_t const& geom ) { CHECK( false ) << "should be override"; };
+        virtual void update( Geo_t const& geom, uint16_type face ) { CHECK( false ) << "should be override"; };
+        virtual void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) { CHECK( false ) << "should be override"; }
+        virtual void update( Geo_t const& geom, Basis_i_t const& fev ) { CHECK( false ) << "should be override"; }
+
+
 
         virtual
         ret_type

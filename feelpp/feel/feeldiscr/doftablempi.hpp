@@ -1264,7 +1264,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints( ext_
         return;
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
-    typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
+    typedef typename gm_type::template Context<element_type> gm_context_type;
     typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
 
     typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
@@ -1285,9 +1285,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints( ext_
         auto const& elt = unwrap_ref( eltWrap );
 
         if ( __c )
-            __c->update( elt );
+            __c->template update<vm::POINT>( elt );
         else
-            __c = gm_context_ptrtype( new gm_context_type( gm, elt, __geopc ) );
+            __c = gm->template context<vm::POINT>( elt, __geopc );
 
         for ( auto const& ldof : this->localDof( elt.id() ) )
         {

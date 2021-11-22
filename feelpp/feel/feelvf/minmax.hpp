@@ -79,6 +79,9 @@ public:
         DVLOG(2) << "OpMax::OpMax copy constructor\n";
     }
 
+    //! dynamic context
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr_1 ) | Feel::vf::dynamicContext( M_expr_2 ); }
+
     //! polynomial order
     uint16_type polynomialOrder() const { return std::max( M_expr_1.polynomialOrder(), M_expr_2.polynomialOrder() ); }
 
@@ -107,7 +110,7 @@ public:
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
-        BOOST_MPL_ASSERT_MSG( ( boost::is_same<typename l_type::shape, typename r_type::shape>::value ),
+        BOOST_MPL_ASSERT_MSG( ( is_same_shape_v<typename l_type::shape, typename r_type::shape> ),
                               INVALID_SHAPES_FOR_MIN,
                               ( mpl::int_<l_type::shape::M>,mpl::int_<l_type::shape::N>,mpl::int_<r_type::shape::M>,mpl::int_<r_type::shape::N> ) );
         typedef typename l_type::shape shape;
@@ -279,6 +282,9 @@ public:
     {
         DVLOG(2) << "OpMin::OpMin copy constructor\n";
     }
+
+    //! dynamic context
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr_1 ) | Feel::vf::dynamicContext( M_expr_2 ); }
 
     //! polynomial order
     uint16_type polynomialOrder() const { return std::max( M_expr_1.polynomialOrder(), M_expr_2.polynomialOrder() ); }

@@ -31,6 +31,7 @@
 
 #include <feel/feelcore/journalwatcher.hpp>
 #include <feel/feelcore/commobject.hpp>
+#include <feel/feelalg/datamap.hpp>
 
 namespace Feel
 {
@@ -78,7 +79,7 @@ public:
     FunctionSpaceBase( FunctionSpaceBase const& ) = default;
     FunctionSpaceBase( FunctionSpaceBase && ) = default;
     //! destructor
-    virtual ~FunctionSpaceBase() = default;
+    ~FunctionSpaceBase() override = default;
 
     //@}
 
@@ -100,6 +101,8 @@ public:
     /** @name Accessors
      */
     //@{
+
+    virtual datamap_ptr_t<> mapPtr() const = 0;
 
     //@}
 

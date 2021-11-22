@@ -135,7 +135,7 @@ public :
 
     ExporterEnsightGold( ExporterEnsightGold const & __ex ) = default;
 
-    ~ExporterEnsightGold();
+    ~ExporterEnsightGold() override;
 
 
     //@}
@@ -217,6 +217,9 @@ private:
     std::string M_face_type;
     bool M_mergeTimeSteps;
     int M_packTimeSteps;
+
+    // mapping allow to get ordering between Feel++ and Ensight format with curve element
+    std::map<std::string,std::vector<uint16_type>> M_nodesOrderingInElementToEnsight;
 
     /* Number of digits used in timesteps */
     /* Set to 4 by default: range [0000; 9999] for timesteps */

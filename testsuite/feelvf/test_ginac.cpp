@@ -381,7 +381,7 @@ void runTest1()
                         // grad vectorial
                         auto exprVectorialFeelGrad = mat<2,2>( 2*a*Px()*cos(M_PI*Py()), -M_PI*a*Px()*Px()*sin(M_PI*Py()),
                                                                4*b*Px()*Py()*exp(Px()*Px())*sin(Px()) + 2*b*Py()*exp(Px()*Px())*cos(Px()), 2*b*sin(Px())*exp(Px()*Px()) );
-                        auto exprVectorialGinacGrad = grad/*<2>*/( exprVectorialGinac );
+                        auto exprVectorialGinacGrad = grad<2>( exprVectorialGinac );
                         auto uVectorialFeelGrad = XhTensor2->element( exprVectorialFeelGrad );
                         auto uVectorialGinacGrad = XhTensor2->element( exprVectorialGinacGrad );
                         checkEqualElements( testTag+" grad", uVectorialFeelGrad, uVectorialGinacGrad );
@@ -516,7 +516,6 @@ void runTest3()
 
     // vectorial expressions
     auto exprVecA = expr<2,1>("{2*x*y+x*x*y,4*x-y}:x:y");
-    auto exprVecAvf = expr(exprVecA);
     auto exprVecB = expr<2,1>("{2*u*y+u*x*y,4*u-y}:u:x:y");
     auto exprVecBvf = expr(exprVecB, symbolExpr( "u",idv(u1) ) );
     auto exprVecC = expr<2,1>("{2*u*v+x*x*y,4*u-v}:u:v:x:y");
@@ -731,6 +730,66 @@ void runTest5()
     BOOST_CHECK_CLOSE( u.max(), 6.14, 1e-12 );
 }
 
+void runTest6()
+{
+    auto exprScalar1 = expr("2+u:u");
+    auto exprScalar2 = expr("3*u+v:u:v");
+    auto exprScalar3 = expr("v+w:v:w");
+    auto exprScalar4 = expr("xx+v+w:xx:v:w");
+    //v=2+3=5 w=3*3+5=14 xx=5+14=19 yy=19+5+14=38
+    auto thesymbolExprA = symbolsExpr( symbolExpr("u",cst(3.0)),
+                                       symbolExpr("v",exprScalar1),
+                                       symbolExpr("w",exprScalar2),
+                                       symbolExpr("xx",exprScalar3),
+                                       symbolExpr("yy",exprScalar4)
+                                       );
+    auto exprScalar3vf = expr(exprScalar3,thesymbolExprA);
+    BOOST_CHECK_CLOSE( exprScalar3vf.evaluate()(0,0), 19, 1e-12 );
+    auto exprScalar4vf = expr(exprScalar4,thesymbolExprA);
+    BOOST_CHECK_CLOSE( exprScalar4vf.evaluate()(0,0), 38, 1e-12 );
+
+    auto exprVectorial1 = expr<2,1>("{v+w,v-w}:v:w");
+    auto exprVectorial2 = expr<2,1>("{xx_x+v+w,xx_y+3*(v-w)}:xx_x:xx_y:v:w");
+    //v=2+3=5 w=3*3+5=14 xx_x=5+14=19 xx_y=5-14=-9   yy_x=19+5+14=38   yy_y=19+3*(5-14)=-36
+    auto thesymbolExprB = symbolsExpr( symbolExpr("u",cst(3.0)),
+                                       symbolExpr("v",exprScalar1),
+                                       symbolExpr("w",exprScalar2),
+                                       symbolExpr("xx",exprVectorial1, SymbolExprComponentSuffix( 2,1,true )),
+                                       symbolExpr("yy",exprVectorial2, SymbolExprComponentSuffix( 2,1,true ) )
+                                       );
+
+    auto exprVectorial1vf = expr(exprVectorial1,thesymbolExprB);
+    BOOST_CHECK_CLOSE( exprVectorial1vf.evaluate()(0,0), 19, 1e-12 );
+    BOOST_CHECK_CLOSE( exprVectorial1vf.evaluate()(1,0), -9, 1e-12 );
+    auto exprVectorial2vf = expr(exprVectorial2,thesymbolExprB);
+    BOOST_CHECK_CLOSE( exprVectorial2vf.evaluate()(0,0), 38, 1e-12 );
+    BOOST_CHECK_CLOSE( exprVectorial2vf.evaluate()(1,0), -36, 1e-12 );
+
+    using mesh_t = Mesh<Simplex<2>>;
+    auto mesh = loadMesh( _mesh = new mesh_t );
+    double evalIntegrate4 = integrate(_range=elements(mesh),_expr=exprScalar4vf ).evaluate()(0,0);
+    double evalIntegrate4_check = integrate(_range=elements(mesh),_expr=cst(38.) ).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( evalIntegrate4, evalIntegrate4_check, 1e-12 );
+    auto evalIntegrateVectorial2 = integrate(_range=elements(mesh),_expr=exprVectorial2vf ).evaluate();
+    auto evalIntegrateVectorial2_check = integrate(_range=elements(mesh),_expr=vec(cst(38.),cst(-36.)) ).evaluate();
+    BOOST_CHECK_CLOSE( evalIntegrateVectorial2(0,0), evalIntegrateVectorial2_check(0,0), 1e-12 );
+    BOOST_CHECK_CLOSE( evalIntegrateVectorial2(1,0), evalIntegrateVectorial2_check(1,0), 1e-12 );
+}
+
+template <typename ElementType>
+struct MyUpdateFunctor
+{
+    MyUpdateFunctor( ElementType & u ) : M_u( u ), M_t( 0 ) {}
+
+    void setValue( double t ) { M_t = t; }
+
+    void update() { M_u.setConstant( M_t ); }
+
+private :
+    ElementType & M_u;
+    double M_t;
+};
+
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( inner_suite )
 BOOST_AUTO_TEST_CASE( test_0 )
@@ -756,5 +815,149 @@ BOOST_AUTO_TEST_CASE( test_4 )
 BOOST_AUTO_TEST_CASE( test_5 )
 {
     runTest5();
+}
+BOOST_AUTO_TEST_CASE( test_6 )
+{
+    runTest6();
+}
+BOOST_AUTO_TEST_CASE( test_7 )
+{
+    auto a1 = expr( "3*u+v:u:v");
+    a1.setParameterValues( { { "u", 2 }, { "v",5 } } );
+    BOOST_CHECK_CLOSE( a1.evaluate()(0,0), 11, 1e-12 );
+    auto a2 = expr( "{3*u+v}:u:v");
+    a2.setParameterValues( { { "u", 2 }, { "v",5 } } );
+    BOOST_CHECK_CLOSE( a2.evaluate()(0,0), 11, 1e-12 );
+    auto a3 = expr<1,1>( "3*u+v:u:v");
+    a3.setParameterValues( { { "u", 2 }, { "v",5 } } );
+    BOOST_CHECK_CLOSE( a3.evaluate()(0,0), 11, 1e-12 );
+    auto a4 = expr<1,1>( "{3*u+v}:u:v");
+    a4.setParameterValues( { { "u", 2 }, { "v",5 } } );
+    BOOST_CHECK_CLOSE( a4.evaluate()(0,0), 11, 1e-12 );
+    auto a5 = expr<1,1>( "{3*u*x^2+2*v*y^2}:u:v:x:y");
+    a5.setParameterValues( { { "u", 2 }, { "v",5 } } );
+    auto lap_a5 = laplacian( a5 );
+    BOOST_CHECK_CLOSE( lap_a5.evaluate()(0,0), 32, 1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( test_8 )
+{
+    auto se = symbolsExpr( symbolExpr( "u", _e1 ), symbolExpr( "v", _e2 ) );
+    auto a1b = expr("2*u+v*w:u:v:w");
+    a1b.setParameterValues( { { "w", 2 } } );
+    auto a1l = expr( a1b, se );
+    auto a1 = a1l( cst(3.),cst(5.) );
+    BOOST_CHECK_CLOSE( a1.evaluate()(0,0), 16, 1e-12 );
+}
+BOOST_AUTO_TEST_CASE( test_symbolsexpr_update_function )
+{
+    using mesh_t = Mesh<Simplex<2, 1>>;
+    auto mesh = loadMesh( _mesh = new mesh_t );
+    auto Vh = Pch<1>( mesh );
+    auto u = Vh->element();
+    auto v = Vh->element();
+
+    double t=0;
+    auto up_lambda = [&u,&t]() {
+        u.setConstant( t );
+    };
+
+    using element_type = std::decay_t<decltype(v)>;
+    MyUpdateFunctor<element_type> up_functor( v );
+
+    auto se = symbolsExpr( symbolExpr( "k", cst(3.) ),
+                           symbolExpr( "u", idv(u),SymbolExprComponentSuffix(1,1), up_lambda ),
+                           symbolExpr( "v", idv(v),SymbolExprComponentSuffix(1,1), std::bind( &MyUpdateFunctor<element_type>::update, &up_functor ) )
+                           );
+
+    for ( ; t<1 ; t+=0.1 )
+    {
+        double int_exact = integrate(_range=elements(mesh),_expr=cst(t) ).evaluate()(0,0);
+        double int_u = integrate(_range=elements(mesh),_expr=expr(expr("u:u"),se) ).evaluate()(0,0);
+        BOOST_CHECK_CLOSE( int_u,int_exact, 1e-10 );
+
+        up_functor.setValue( t );
+        double int_v = integrate(_range=elements(mesh),_expr=expr(expr("v:v"),se) ).evaluate()(0,0);
+        BOOST_CHECK_CLOSE( int_v,int_exact, 1e-10 );
+    }
+}
+
+BOOST_AUTO_TEST_CASE( test_mod )
+{
+    auto se = symbolsExpr( symbolExpr( "u", _e1 ), symbolExpr( "v", _e2 ) );
+    auto a1b = expr("mod(u,v):u:v");
+    a1b.setParameterValues( { { "u", 2 }, { "v", 1 }} );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "u", 3 }, { "v", 6 }} );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 3, 1e-12 );
+    a1b.setParameterValues( { { "u", 6.1 }, { "v", 3 }} );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.1, 1e-12 );
+}
+BOOST_AUTO_TEST_CASE( test_step1 )
+{
+    auto se = symbolsExpr( symbolExpr( "u", _e1 ), symbolExpr( "v", _e2 ) );
+    auto a1b = expr("step1(u,v):u:v");
+    a1b.setParameterValues( { { "u", 0 }, { "v", 0.5 }} );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "u", 1 }, { "v", 0.5 }} );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "u", 0.49999 }, { "v", 0.5 }} );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "u", 0.5 }, { "v", 0.5 }} );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+}
+BOOST_AUTO_TEST_CASE( test_rectangle )
+{
+    auto se = symbolsExpr( symbolExpr( "u", _e1 ), symbolExpr( "v", _e2 ) );
+    auto a1b = expr("rectangle(t,1,2):t");
+    a1b.setParameterValues( { { "t", 0 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 1.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 3} } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+}
+BOOST_AUTO_TEST_CASE( test_triangle )
+{
+    auto a1b = expr("triangle(t,1,2):t");
+    a1b.setParameterValues( { { "t", -2 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 3 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 0.5 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 1.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0, 1e-12 );
+    a1b.setParameterValues( { { "t", 2 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 1.75 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.5, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.25 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.5, 1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( test_mapabcd )
+{
+    auto a1b = expr("mapabcd(t,1,2,-1,1):t");
+    a1b.setParameterValues( { { "t", -2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), -1, 1e-12 );
+    a1b.setParameterValues( { { "t", 3 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), -1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.5 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.25 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), -0.5, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.75 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.5, 1e-12 );
 }
 BOOST_AUTO_TEST_SUITE_END()

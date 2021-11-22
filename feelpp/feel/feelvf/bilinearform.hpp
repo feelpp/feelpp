@@ -397,10 +397,12 @@ public:
                                   mpl::identity<typename space_2_type::mortar_fe_type>,
                                   mpl::identity<typename space_2_type::fe_type> >::type::type trial_fe_type;
         typedef std::shared_ptr<trial_fe_type> trial_fe_ptrtype;
-        typedef typename trial_fe_type::template Context< trial_geometric_mapping_context_type::context,
-                trial_fe_type,
-                trial_geometric_mapping_type,
-                mesh_element_2_type> trial_fecontext_type;
+        typedef typename trial_fe_type::template Context< expression_type::context, // trial_geometric_mapping_context_type::context,
+                                                          trial_fe_type,
+                                                          trial_geometric_mapping_type,
+                                                          mesh_element_2_type,
+                                                          0,
+                                                          trial_geometric_mapping_context_type::subEntityCoDim> trial_fecontext_type;
         typedef std::shared_ptr<trial_fecontext_type> trial_fecontext_ptrtype;
         typedef typename mpl::if_<mpl::equal_to<trial_map_size, mpl::int_<1> >,
                 mpl::identity<fusion::map<fusion::pair<gmc<0>, trial_fecontext_ptrtype> > >,
@@ -414,10 +416,12 @@ public:
                                   mpl::identity<typename space_1_type::mortar_fe_type>,
                                   mpl::identity<typename space_1_type::fe_type> >::type::type test_fe_type;
         typedef std::shared_ptr<test_fe_type> test_fe_ptrtype;
-        typedef typename test_fe_type::template Context< test_geometric_mapping_context_type::context,
-                test_fe_type,
-                test_geometric_mapping_type,
-                mesh_element_1_type> test_fecontext_type;
+        typedef typename test_fe_type::template Context< expression_type::context, // test_geometric_mapping_context_type::context,
+                                                         test_fe_type,
+                                                         test_geometric_mapping_type,
+                                                         mesh_element_1_type,
+                                                         0,
+                                                         test_geometric_mapping_context_type::subEntityCoDim> test_fecontext_type;
         typedef std::shared_ptr<test_fecontext_type> test_fecontext_ptrtype;
         typedef typename mpl::if_<mpl::equal_to<test_map_size, mpl::int_<1> >,
                 mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > >,
@@ -1108,7 +1112,7 @@ public:
 
     BilinearForm( BilinearForm const& __vf ) = default;
     BilinearForm( BilinearForm && __vf ) = default;
-    ~BilinearForm()
+    ~BilinearForm() override
     {
         //toc(M_name, FLAGS_v > 0 );
     }

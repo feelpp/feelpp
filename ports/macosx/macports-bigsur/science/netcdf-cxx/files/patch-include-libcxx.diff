@@ -1,0 +1,12 @@
+diff -Naur netcdf-cxx-4.2.orig/configure.ac netcdf-cxx-4.2/configure.ac
+--- configure.ac	2011-09-30 16:33:04.000000000 +0200
++++ configure.ac	2021-02-08 10:57:35.000000000 +0100
+@@ -12,7 +12,7 @@
+ 
+ # Create the VERSION file, which contains the package version from
+ # AC_INIT.
+-echo -n AC_PACKAGE_VERSION>VERSION
++echo -n AC_PACKAGE_VERSION>VERSION_BIS
+ AC_SUBST(PACKAGE_VERSION)
+ 
+ AC_MSG_NOTICE([netCDF-cxx AC_PACKAGE_VERSION])

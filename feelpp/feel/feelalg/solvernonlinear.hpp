@@ -170,7 +170,7 @@ public:
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverNonLinear( std::string const& prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    SolverNonLinear( std::string const& prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), po::variables_map const& vm = Environment::vm() );
 
     /**
      * copy constructor
@@ -180,7 +180,7 @@ public:
     /**
      * Destructor.
      */
-    virtual ~SolverNonLinear();
+    ~SolverNonLinear() override;
 
 
     /**
@@ -190,9 +190,11 @@ public:
     static FEELPP_DEPRECATED solvernonlinear_ptrtype build( po::variables_map const& vm, std::string const& prefix = "",
                                                             worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     static solvernonlinear_ptrtype build( std::string const& prefix = "",
-                                          worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+                                          worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+                                          po::variables_map const& vm = Environment::vm() );
     static solvernonlinear_ptrtype build( std::string const& kind, std::string const& prefix = "",
-                                          worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+                                          worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+                                          po::variables_map const& vm = Environment::vm() );
 
     /**
      * Builds a \p NonlinearSolver using the nonlinear solver package specified by

@@ -120,7 +120,7 @@ public :
     {}
 
     
-    virtual ~PointSetQuadrature() = default;
+    ~PointSetQuadrature() override = default;
 
     virtual bool isFaceIm() const noexcept
     {
@@ -556,7 +556,7 @@ public :
 
             return *this;
         }
-        bool isFaceIm() const noexcept
+        bool isFaceIm() const noexcept override
         {
             return is_face_im;
         }
@@ -719,12 +719,11 @@ PointSetQuadrature<Convex,T,IndexT>::constructQROnFace( Elem const& ref_convex,
                 DVLOG(2) << "[quadpt] ref_convex_face "  << __f << "=" << ref_convex_face.points() << "\n";
                 //toPython( ref_convex_face );
 
-                typename GM::template Context<vm::JACOBIAN|vm::POINT|vm::KB,element_type> __c( __gm->boundaryMap(),
-                                                                                               ref_convex_face,
-                                                                                               __geopc );
-                __c.update( ref_convex_face );
-                DVLOG(2) << "[quadpt] ref_convex_face "  << __f << " xref" << __c.xRefs() << "\n";
-                DVLOG(2) << "[quadpt] ref_convex_face "  << __f << " xreal" << __c.xReal() << "\n";
+                auto __c = __gm->boundaryMap()->template context<vm::JACOBIAN|vm::POINT|vm::KB>( ref_convex_face,
+                                                                                                 __geopc );
+                __c->template update<vm::JACOBIAN|vm::POINT|vm::KB>( ref_convex_face );
+                DVLOG(2) << "[quadpt] ref_convex_face "  << __f << " xref" << __c->xRefs() << "\n";
+                DVLOG(2) << "[quadpt] ref_convex_face "  << __f << " xreal" << __c->xReal() << "\n";
 
                 value_type __len = 0.0;
                 M_n_face[__f][__p.value()].resize( Elem::nDim, __qr_face->nPoints() );
@@ -738,19 +737,19 @@ PointSetQuadrature<Convex,T,IndexT>::constructQROnFace( Elem const& ref_convex,
 
                 for ( uint16_type __ip = 0; __ip < __qr_face->nPoints(); ++__ip )
                 {
-                    ublas::column( M_n_face[__f][__p.value()], __ip ) = __c.xReal( __ip );
+                    ublas::column( M_n_face[__f][__p.value()], __ip ) = __c->xReal( __ip );
 
                     // w = w_face * ||B*n|| * J
-                    M_w_face[ __f][__p.value()]( __ip ) = __qr_face->weight( __ip )*__c.J( __ip );
+                    M_w_face[ __f][__p.value()]( __ip ) = __qr_face->weight( __ip )*__c->J( __ip );
 
                     __len += M_w_face[ __f][__p.value()]( __ip );
 
 
-                    DVLOG(2) << "face " << __f << " ip = " << __ip << "       J =" << __c.J( __ip ) << "\n";
+                    DVLOG(2) << "face " << __f << " ip = " << __ip << "       J =" << __c->J( __ip ) << "\n";
                     DVLOG(2) << "face " << __f << " ip = " << __ip << "  weight =" << __qr_face->weight( __ip ) << "\n";
                     DVLOG(2) << "face " << __f << " ip = " << __ip << "  weight =" << M_w_face[ __f][__p.value()]( __ip ) << "\n";
-                    //            DVLOG(2) << "face " << __f << " ip = " << __ip << "  x  ref =" << __c.xRef( __ip ) << "\n";
-                    //            DVLOG(2) << "face " << __f << " ip = " << __ip << "  x real =" << __c.xReal( __ip ) << "\n";
+                    //            DVLOG(2) << "face " << __f << " ip = " << __ip << "  x  ref =" << __c->xRef( __ip ) << "\n";
+                    //            DVLOG(2) << "face " << __f << " ip = " << __ip << "  x real =" << __c->xReal( __ip ) << "\n";
                 }
 
                 DVLOG(2) << "length = " << __len << "\n";
@@ -789,7 +788,7 @@ PointSetQuadrature<Convex,T, IndexT>::constructQROnEdge( Elem const& ref_convex,
                 //toPython( ref_convex_edge );
 
                 auto ctx = __gm->context<(vm::JACOBIAN|vm::POINT|vm::KB)>( __gm->edgeMap(), ref_convex_edge, __geopc );
-                ctx.update( ref_convex_edge );
+                ctx.template update<vm::JACOBIAN|vm::POINT|vm::KB>( ref_convex_edge );
                 DVLOG(2) << "[quadpt] ref_convex_edge "  << __f << " xref" << ctx.xRefs() << "\n";
                 DVLOG(2) << "[quadpt] ref_convex_edge "  << __f << " xreal" << ctx.xReal() << "\n";
 

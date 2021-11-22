@@ -187,7 +187,7 @@ public:
 
     DataMap( DataMap const & dm ) = default;
     DataMap( DataMap&& dm ) = default;
-    virtual ~DataMap();
+    ~DataMap() override;
 
     //@}
 

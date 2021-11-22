@@ -39,7 +39,7 @@
 #include <feel/feelmesh/refentity.hpp>
 #include <feel/feelmesh/pointset.hpp>
 #include <feel/feelpoly/equispaced.hpp>
-
+#include <feel/feelpoly/fekete.hpp>
 
 #include <feel/feelpoly/dualbasis.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
@@ -69,8 +69,8 @@ public DualBasis<Basis>
     typedef DualBasis<Basis> super;
 public:
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder= super::nOrder;
+    inline static const uint16_type nDim = super::nDim;
+    inline static const uint16_type nOrder= super::nOrder;
 
     typedef typename super::primal_space_type primal_space_type;
     typedef typename primal_space_type::value_type value_type;
@@ -84,13 +84,12 @@ public:
     typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
     template< template<class, uint16_type, class> class TestPointSetType >
-    static const bool is_pointset_v = std::is_base_of_v<TestPointSetType<convex_type, nOrder, value_type>,pointset_type >;
-
-    static const uint16_type numPoints = reference_convex_type::numPoints;
-    static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
+    inline static const bool is_pointset_v = std::is_base_of_v<TestPointSetType<convex_type, nOrder, value_type>,pointset_type >;
+    inline static const uint16_type numPoints = reference_convex_type::numPoints;
+    inline static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
+    inline static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
+    inline static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
+    inline static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
 
 #if 0
     /**
@@ -162,7 +161,7 @@ public:
 
         M_pts = M_pset.points();
 
-        if ( nOrder > 0 )
+        if constexpr ( nOrder > 0 )
         {
             for ( uint16_type e = M_convex_ref.entityRange( nDim-1 ).begin();
                     e < M_convex_ref.entityRange( nDim-1 ).end();
@@ -195,7 +194,7 @@ public:
         DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
         DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
 
-        if ( nOrder > 0 )
+        if constexpr ( nOrder > 0 )
         {
             for ( uint16_type e = M_convex_ref.entityRange( nDim-1 ).begin();
                     e < M_convex_ref.entityRange( nDim-1 ).end();
@@ -322,7 +321,7 @@ template<uint16_type N,
          typename ContinuityType = Continuous,
          typename T = double,
          template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          uint16_type TheTAG = 0 >
 class Lagrange
     :
@@ -341,30 +340,30 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = N;
-    static const uint16_type nRealDim = RealDim;
-    static const uint16_type nOrder =  O;
-    static const bool isTransformationEquivalent = true;
-    static const bool isContinuous = ContinuityType::is_continuous;
+    inline static const uint16_type nDim = N;
+    inline static const uint16_type nRealDim = RealDim;
+    inline static const uint16_type nOrder =  O;
+    inline static const bool isTransformationEquivalent = true;
+    inline static const bool isContinuous = ContinuityType::is_continuous;
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
     typedef typename super::dual_space_type dual_space_type;
     typedef ContinuityType continuity_type;
-    static const uint16_type TAG = TheTAG;
+    inline static const uint16_type TAG = TheTAG;
 
     /**
      * Polynomial Set type: scalar or vectorial
      */
     typedef typename super::polyset_type polyset_type;
-    static constexpr bool is_symm_v  = Feel::is_symm_v<polyset_type>;
+    inline static constexpr bool is_symm_v  = Feel::is_symm_v<polyset_type>;
     using is_symm  = Feel::is_symm<polyset_type>;
-    static const bool is_tensor2 = polyset_type::is_tensor2;
-    static const bool is_tensor2symm = is_tensor2 && is_symm_v;
-    static const bool is_vectorial = polyset_type::is_vectorial;
-    static const bool is_scalar = polyset_type::is_scalar;
-    static const uint16_type nComponents = polyset_type::nComponents;
-    static const uint16_type nComponents1 = polyset_type::nComponents1;
-    static const uint16_type nComponents2 = polyset_type::nComponents2;
+    inline static const bool is_tensor2 = polyset_type::is_tensor2;
+    inline static const bool is_tensor2symm = is_tensor2 && is_symm_v;
+    inline static const bool is_vectorial = polyset_type::is_vectorial;
+    inline static const bool is_scalar = polyset_type::is_scalar;
+    inline static const uint16_type nComponents = polyset_type::nComponents;
+    inline static const uint16_type nComponents1 = polyset_type::nComponents1;
+    inline static const uint16_type nComponents2 = polyset_type::nComponents2;
 
     static const bool is_product = true;
     static constexpr int Nm2 = (N>2)?N-2:0;
@@ -393,22 +392,22 @@ public:
     typedef typename convex_type::topological_face_type face_type;
     typedef typename convex_type::edge_type edge_type;
 
-    static const uint16_type numPoints = reference_convex_type::numPoints;
-    static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
-    static const uint16_type nLocalDof = dual_space_type::nLocalDof;
-    static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
-    static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
-    static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
-    static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
-    static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
+    inline static const uint16_type numPoints = reference_convex_type::numPoints;
+    inline static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
+    inline static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
+    inline static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
+    inline static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
+    inline static const uint16_type nLocalDof = dual_space_type::nLocalDof;
+    inline static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    inline static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    inline static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    inline static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    inline static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
                                                face_type::numEdges * nDofPerEdge +
                                                face_type::numFaces * nDofPerFace );
-    static const uint16_type nLocalEdgeDof = ( edge_type::numVertices * nDofPerVertex +
-                                               edge_type::numEdges * nDofPerEdge);
-    static const uint16_type nLocalVertexDof = nDofPerVertex;
+    inline static const uint16_type nLocalEdgeDof = ( edge_type::numVertices * nDofPerVertex +
+                                                      edge_type::numEdges * nDofPerEdge);
+    inline static const uint16_type nLocalVertexDof = nDofPerVertex;
     template<int subN>
     struct SubSpace
     {
@@ -430,7 +429,7 @@ public:
         typedef Lagrange<NewDim, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
     };
 
-    static const bool isLagrangeP0Continuous = isP0Continuous<this_type>::result;
+    inline static const bool isLagrangeP0Continuous = isP0Continuous<this_type>::result;
 
     //@}
 
@@ -467,7 +466,7 @@ public:
         // std::cout << "[LagrangeDual] points= " << M_pts << "\n";
     }
 
-    virtual ~Lagrange() {}
+    ~Lagrange() override {}
 
     //@}
 
@@ -757,44 +756,11 @@ private:
     face_basis_ptrtype M_bdylag;
     std::vector<uint16_type> M_unsymm2symm;
 };
-template<uint16_type N,
-         uint16_type RealDim,
-         uint16_type O,
-         template<uint16_type Dim> class PolySetType,
-         typename ContinuityType,
-         typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type, class> class Pts,
-         uint16_type TheTAG >
-const uint16_type Lagrange<N,RealDim,O,PolySetType,ContinuityType,T,Convex,Pts,TheTAG>::nDim;
-
-template<uint16_type N,
-         uint16_type RealDim,
-         uint16_type O,
-         template<uint16_type Dim> class PolySetType,
-         typename ContinuityType,
-         typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type, class> class Pts,
-         uint16_type TheTAG >
-const uint16_type Lagrange<N,RealDim,O,PolySetType,ContinuityType,T,Convex,Pts,TheTAG>::nOrder;
-
-template<uint16_type N,
-         uint16_type RealDim,
-         uint16_type O,
-         template<uint16_type Dim> class PolySetType,
-         typename ContinuityType,
-         typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type, class> class Pts,
-         uint16_type TheTAG >
-const uint16_type Lagrange<N,RealDim,O,PolySetType,ContinuityType,T,Convex,Pts,TheTAG>::nLocalDof;
-
 } // namespace fem
 template<uint16_type Order,
          template<uint16_type Dim> class PolySetType = Scalar,
          typename ContinuityType = Continuous,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          uint16_type TheTAG=0 >
 class Lagrange
 {
@@ -819,22 +785,20 @@ public:
 
     typedef Lagrange<Order,Scalar,ContinuityType,Pts,TheTAG> component_basis_type;
 
-    static const uint16_type nOrder =  Order;
-    static const uint16_type TAG = TheTAG;
+    inline static const uint16_type nOrder =  Order;
+    inline static const uint16_type TAG = TheTAG;
 
 };
-template<uint16_type Order,
-         template<uint16_type Dim> class PolySetType,
-         typename ContinuityType,
-         template<class, uint16_type, class> class Pts,
-         uint16_type TheTAG>
-const uint16_type Lagrange<Order,PolySetType,ContinuityType,Pts,TheTAG>::nOrder;
+
 
 
 template<typename P>
 using is_lagrange_polynomialset = std::is_base_of<fem::LagrangePolynomialSet,P>;
 template<typename P>
 constexpr bool is_lagrange_polynomialset_v = boost::is_base_of<fem::LagrangePolynomialSet,P>::value;
+
+template<typename P>
+constexpr bool is_lagrange_polynomialset_P0d_v = is_lagrange_polynomialset_v<P> && (P::nOrder == 0) && !P::continuity_type::is_continuous;
 
 } // namespace Feel
 #endif /* __lagrange_H */

@@ -183,7 +183,7 @@ class MatrixBlockBase : public MatrixSparse<T>
     {
     }
 
-    ~MatrixBlockBase()
+    ~MatrixBlockBase() override
     {
     }
 
@@ -193,7 +193,7 @@ class MatrixBlockBase : public MatrixSparse<T>
      */
     //@{
 
-    MatrixBlockBase operator=( MatrixBlockBase const& mb )
+    MatrixBlockBase& operator=( MatrixBlockBase const& mb )
     {
         if ( this != &mb )
         {
@@ -202,7 +202,8 @@ class MatrixBlockBase : public MatrixSparse<T>
 
         return *this;
     }
-
+    using clone_ptrtype = typename super::clone_ptrtype;
+    clone_ptrtype clone() const override { return std::make_shared<MatrixBlockBase<T>>( *this ); }
     //@}
 
     /** @name Accessors

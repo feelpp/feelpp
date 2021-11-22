@@ -60,9 +60,9 @@ void MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleMatrixIBC( int i , std::string
     bbf( 3_c, 1_c, i, 1 ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                        _expr= tau_constant * pow(idv(H),M_tauOrder)* inner(idt(u),id(nu)) ),
 
-        // -<lambda2, m>_Gamma_I
-        bbf( 3_c, 3_c, i, i ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                           _expr=-tau_constant * pow(idv(H),M_tauOrder) * inner(idt(uI),id(nu)) );
+    // -<lambda2, m>_Gamma_I
+    bbf( 3_c, 3_c, i, i ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+                                       _expr=-tau_constant * pow(idv(H),M_tauOrder) * inner(idt(uI),id(nu)) );
 
 
 
@@ -257,7 +257,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
         Feel::cout << "c1: " << mean(_range=elements(M_mesh),_expr=c1) << std::endl;
         Feel::cout << "c2: " << mean(_range=elements(M_mesh),_expr=c2) << std::endl;
 
-        bbf( 0_c, 0_c ) +=  integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c1*inner(idt(sigma),id(v))) );
+        bbf( 0_c, 0_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c1*inner(idt(sigma),id(v))) );
         bbf( 0_c, 0_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
     }
 
@@ -451,7 +451,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
                     g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
                 Feel::cout << "Neumann condition on " << marker << ": " << g << std::endl;
                 blf( 2_c ) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
-                                        _expr= inner(expr(g)*N(), id(m)) );
+                                        _expr= inner(g*N(), id(m)) );
             }
         }
 
@@ -467,7 +467,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 
                 for( auto const& pairMat : modelProperties().materials() )
                 {
-                    auto gradu_exact = grad( g );
+                    auto gradu_exact = grad<Dim>( g );
                     auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
                     auto material = pairMat.second;
                     auto lambda = material.getScalar("lambda");
@@ -747,7 +747,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                                 // Export the errors
                                 M_exporter -> step( time )->add(prefixvm(prefix(), "u_error_L2"), l2err_u/l2norm_uex );
                                 //------ Sigma  ------//
-                                auto gradu_exact = grad(u_exact);
+                                auto gradu_exact = grad<Dim>(u_exact);
                                 auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
                                 for( auto const& pairMat : modelProperties().materials() )
                                 {

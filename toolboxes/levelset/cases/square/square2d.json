@@ -1,0 +1,69 @@
+{
+    "Name": "Square2d",
+    "ShortName": "Square2d",
+    "Models":
+    {
+        "equations":"Levelset"
+    },
+    "Parameters":
+    {
+        "x0": "-0.3",
+        "y0": "-0.3",
+        "r0": "0.08"
+    },
+
+    "InitialConditions":
+    {
+        "levelset":
+        {
+            "Expression":
+            {
+                "drop1":
+                {
+                    "expr":"sqrt( (x-x0)*(x-x0) + (y-y0)*(y-y0) ) - r0 :x:x0:y:y0:r0"
+                }
+            },
+            "Shapes":
+            {
+                "drop2":
+                {
+                    "shape": "sphere",
+                    "xc": "-0.1",
+                    "yc": "-0.05",
+                    "radius": "0.16"
+                },
+                "drop3":
+                {
+                    "shape": "sphere",
+                    "xc": "-0.25",
+                    "yc": "0.3",
+                    "radius": "0.05"
+                }
+            }
+        }
+    },
+    "BoundaryConditions":
+    {
+        "levelset":
+        {
+//            "inflow":
+//            {
+//                "Left":
+//                {
+//                    "expr":"0"
+//                }
+//            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields": ["phi", "normal", "curvature"]
+        },
+        "Measures":
+        {
+            "quantities": ["volume"]
+        }
+    }
+}

@@ -1,0 +1,51 @@
+{
+    "Name": "Tube2d",
+    "ShortName": "Tube2d",
+    "Models":
+    {
+        "equations":"Levelset"
+    },
+
+    "InitialConditions":
+    {
+        "levelset":
+        {
+            "Shapes":
+            {
+                "drop1":
+                {
+                    "shape": "sphere",
+                    "xc": "0.3",
+                    "yc": "0.5",
+                    "radius": "0.16"
+                }
+            }
+        }
+    },
+
+    "BoundaryConditions":
+    {
+        "levelset":
+        {
+            "inflow":
+            {
+                "Left":
+                {
+                    "expr":"0"
+                }
+            }
+        }
+    },
+
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields": ["phi"]
+        },
+        "Measures":
+        {
+            "quantities": ["volume"]
+        }
+    }
+}

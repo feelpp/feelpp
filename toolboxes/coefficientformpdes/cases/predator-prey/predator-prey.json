@@ -1,0 +1,104 @@
+{
+    /*
+      References :
+      - Finite element approximation of spatially extended prey interactions with the Holling type II functional response ( Marcus R. Garvie - Catalin Trenchea )
+      - Finite-Difference Schemes for Reaction-Diffusion Equations Modeling Prey-Predator Interactions in MATLAB ( Marcus R. Garvie )
+     */
+    "Name": "Square2d",
+    "ShortName": "Square2d",
+    "Models":
+    {
+        "equations":[
+            {
+                "name":"equation1",
+                "unknown":
+                {
+                    "basis":"Pch1",
+                    "name":"prey",
+                    "symbol":"u"
+                }
+            },
+            {
+                "name":"equation2",
+                "unknown":
+                {
+                    "basis":"Pch1",
+                    "name":"predator",
+                    "symbol":"v"
+                }
+            }
+        ]
+    },
+    "Parameters":
+    {
+        "thealpha":0.4,
+        "thebeta":2.0,
+        "thegamma":0.6,
+        "thedelta":1.0,
+        // "ustar":"thealpha*thegamma/(thebeta-thegamma):thealpha:thegamma:thebeta",
+        // "vstar":"(1-ustar)*(ustar+thealpha):ustar:thealpha"
+        "ustar":"6/35",
+        "vstar":"116.0/245"
+    },
+    "Materials":
+    {
+        "mymat1":
+        {
+            "markers":"Omega",
+            "equation1_c":"1", // diffusion
+            "equation1_a":"-( (1-equation1_u) - equation2_v/(equation1_u+thealpha) ):thealpha:equation1_u:equation2_v", // reaction
+            //"equation1_f":"( equation1_u*(1-equation1_u) - equation1_u*equation2_v/(equation1_u+thealpha) ):thealpha:equation1_u:equation2_v", // source
+            "equation1_d":"1",// first time derivative
+            "equation2_c":"thedelta:thedelta", // diffusion
+            "equation2_a":"-( (thebeta*equation1_u)/(equation1_u+thealpha) - thegamma ):thebeta:thealpha:thegamma:equation1_u", // reaction
+            //"equation2_f":"equation2_v*( (thebeta*equation1_u)/(equation1_u+thealpha) - thegamma ):thebeta:thealpha:thegamma:equation1_u:equation2_v", // source
+            "equation2_d":"1"// first time derivative
+        }
+    },
+    // "BoundaryConditions":
+    // {
+    //     "equation1":
+    //     {
+    //     },
+    //     "equation2":
+    //     {
+    //     }
+    // },
+    "InitialConditions":
+    {
+        "prey":
+        {
+            "Expression":
+            {
+                "myic":
+                {
+                    "markers":"Omega",
+                    "expr":"ustar-(2e-7)*(x-0.1*y-225)*(x-0.1*y-675):ustar:x:y"
+                }
+            }
+        },
+        "predator":
+        {
+            "Expression":
+            {
+                "myic":
+                {
+                    "markers":"Omega",
+                    "expr":"vstar-(3e-5)*(x-450) -(1.2e-4)*(y-150):vstar:x:y"
+                }
+            }
+        }
+    },
+
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["equation1.prey","equation2.predator"]
+            }
+        }
+    }
+}

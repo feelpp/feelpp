@@ -635,16 +635,17 @@ void
 GraphCSR::addMissingZeroEntriesDiagonal()
 {
     //if ( this->mapRow().worldComm().size() >1 && this->mapRow().nDof()!=this->mapCol().nDof() )
-    if ( this->mapRow().nDof()!=this->mapCol().nDof() )
+    if ( this->mapRow().nDof()!=this->mapCol().nDof() ) // only square matrix
         return;
 
     DVLOG(2) << " GraphCSR addMissingZeroEntriesDiagonal in graph\n";
 
     const size_type firstRow = this->firstRowEntryOnProc();
-    size_type firstCol = this->firstColEntryOnProc();
-    const size_type rowEnd = firstRow+std::min(this->mapRow().nLocalDofWithoutGhost(),this->mapCol().nLocalDofWithoutGhost());
+    //size_type firstCol = this->firstColEntryOnProc();
+    //const size_type rowEnd = firstRow+std::min(this->mapRow().nLocalDofWithoutGhost(),this->mapCol().nLocalDofWithoutGhost());
+    const size_type rowEnd = firstRow + this->mapRow().nLocalDofWithoutGhost();
     rank_type procId = this->mapRow().worldComm().globalRank();
-    for ( size_type i = firstRow ; i<rowEnd ; ++i,++firstCol )
+    for ( size_type i = firstRow ; i<rowEnd ; ++i/*,++firstCol*/ )
     {
         auto & row = this->row( i );
         //! init if empty
@@ -707,6 +708,7 @@ GraphCSR::close()
         vecToRecv_nElt[proc].clear();
     }
 
+    std::fill( M_n_total_nz.begin(), M_n_total_nz.end(), 0 );
     std::fill( M_n_nz.begin(), M_n_nz.end(), 0 );
     std::fill( M_n_oz.begin(), M_n_oz.end(), 0 );
 

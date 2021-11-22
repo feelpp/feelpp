@@ -61,15 +61,15 @@ public:
     typedef typename backend_type::vector_type vector_type;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
-    FsFunctionalLinear( space_ptrtype space ) :
-        super_type( space ),
-        M_backend( backend_type::build( soption( _name="backend" ) ) ), // BACKEND_PETSC is the default backend
-        M_vector( M_backend->newVector( space ) ),
-        M_name( "functionallinear" )
+    FsFunctionalLinear() :
+        super_type(),
+        M_backend( backend_type::build( soption( _name="backend" ) ) ),
+        M_name("functionallinear")
     {
     }
 
-    FsFunctionalLinear( space_ptrtype space, backend_ptrtype backend ) :
+    FsFunctionalLinear( space_ptrtype space, backend_ptrtype backend = backend_type::build( soption( _name="backend" ) ) )
+        :
         super_type( space ),
         M_backend( backend ),
         M_vector( M_backend->newVector( space ) ),
@@ -78,17 +78,23 @@ public:
     }
 
 
-    virtual ~FsFunctionalLinear() {}
+    ~FsFunctionalLinear() override {}
+
+    virtual void setSpace( space_ptrtype const& space ) override
+    {
+        super_type::setSpace(space);
+        M_vector = M_backend->newVector(space);
+    }
 
     void setName( std::string name ) { M_name = name; }
     std::string name() const { return M_name ; }
 
     // apply the functional
     virtual value_type
-    operator()( const element_type& x ) const
+    operator()( const element_type& x ) const override
     {
-        M_vector->close();
-        return M_backend->dot( *M_vector, x.container() );
+        DCHECK( M_vector ) << "vector not init";
+        return M_vector->dot( x.container() );
     }
 
     // get the representation vector
@@ -180,7 +186,7 @@ BOOST_PARAMETER_FUNCTION(
       ( space,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
-      ( backend,        *, Backend<typename Feel::detail::compute_functionalLinear_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
+      ( backend,        *, Backend<typename Feel::detail::compute_functionalLinear_return<Args>::space_type::value_type>::build( soption( _name="backend" ) ) )
     ) // optionnal
 )
 {

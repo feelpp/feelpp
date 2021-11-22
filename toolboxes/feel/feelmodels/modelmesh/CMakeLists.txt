@@ -59,11 +59,12 @@ if( FEELPP_MODELS_HAS_MESHALE )
     SHARED
     ${FEELPP_MODELS_MESHALE_SRC}
     )
-  set( FEELPP_MODELS_MESHALE_LIB_DEPENDS feelpp_modelalg feelpp_modelcore )
+  set( FEELPP_MODELS_MESHALE_LIB_DEPENDS feelpp_modelcore )
   target_link_libraries( feelpp_modelmeshale
     ${FEELPP_MODELS_MESHALE_LIB_DEPENDS}
     )
   set_property(TARGET feelpp_modelmeshale PROPERTY MACOSX_RPATH ON)
+  add_library(Feelpp::feelpp_modelmeshale ALIAS feelpp_modelmeshale )  # to match exported target
   set_target_properties(feelpp_modelmeshale PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
   INSTALL(TARGETS feelpp_modelmeshale
     EXPORT feelpp-toolboxes-targets

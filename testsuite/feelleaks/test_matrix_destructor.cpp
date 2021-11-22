@@ -31,7 +31,10 @@
 
 #include <fstream>
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelfilters/unithypercube.hpp>
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <Eigen/Dense>

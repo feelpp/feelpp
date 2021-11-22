@@ -1,0 +1,59 @@
+// -*- mode: javascript -*-
+{
+    "Name": "2D beam ",
+    "ShortName":"beam2d",
+    "Models":
+    {
+        "equations":"Generalised-String"
+    },
+    "Materials":
+    {
+        "fsi-wall":{
+            "E":"0.75e6",
+            "nu":"0.5",
+            "rho":"1.1"
+        }
+    },
+    // "Materials":
+    // {
+    //     "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
+    // },
+    "BoundaryConditions":
+    {
+        "displacement":
+        {
+            "Dirichlet":
+            {
+                "Fixe":
+                {
+                    "expr":"{0,0}"
+                }
+            },
+            "interface_fsi":
+            {
+                "fsi-wall":
+                {
+                    "expr":"0" 
+                }
+            }
+        },
+        "solid_1d":
+        {
+            "displacement_imposed":
+            {
+                "Fixe":
+                {
+                    "expr":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["displacement"]
+        }
+    }
+
+}

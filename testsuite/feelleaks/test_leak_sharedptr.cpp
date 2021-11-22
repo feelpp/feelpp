@@ -26,62 +26,67 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-11-23
  */
-#include <feel/feel.hpp>
-#include <boost/smart_ptr/make_shared.hpp>
+#include <memory>
+#include <iostream>
 
-#if defined(FEELPP_HAS_GPERFTOOLS)
+#include <boost/smart_ptr/make_shared.hpp>
+#include <feel/feelcore/feel.hpp>
+
+#if defined( FEELPP_HAS_GPERFTOOLS )
 #include <gperftools/heap-checker.h>
 #endif /* FEELPP_HAS_GPERFTOOLS */
 
 class A
 {
-public:
+  public:
     ~A()
-        {
-            std::cerr << "Destructor\n";
-        }
+    {
+        std::cerr << "Destructor\n";
+    }
 };
 //std::shared_ptr<A> f() { return new A; }
-std::shared_ptr<A> g() { return std::shared_ptr<A>(new A); }
-
-int main(int argc, char**argv )
+std::shared_ptr<A> g()
 {
-#if defined(FEELPP_HAS_GPERFTOOLS)
-    HeapLeakChecker check0("checker 0");
+    return std::shared_ptr<A>( new A );
+}
+
+int main( int argc, char** argv )
+{
+#if defined( FEELPP_HAS_GPERFTOOLS )
+    HeapLeakChecker check0( "checker 0" );
 #endif /* FEELPP_HAS_GPERFTOOLS */
     {
     }
-#if defined(FEELPP_HAS_GPERFTOOLS)
-    CHECK(check0.NoLeaks()) << "There are leaks";
+#if defined( FEELPP_HAS_GPERFTOOLS )
+    CHECK( check0.NoLeaks() ) << "There are leaks";
 #endif /* FEELPP_HAS_GPERFTOOLS */
 
-
-#if defined(FEELPP_HAS_GPERFTOOLS)
-    HeapLeakChecker check3("checker 3");
+#if defined( FEELPP_HAS_GPERFTOOLS )
+    HeapLeakChecker check3( "checker 3" );
 #endif /* FEELPP_HAS_GPERFTOOLS */
 #if 1
     {
-    std::shared_ptr<A> m( new A );
-    CHECK( m.use_count() == 1 ) << "Invalid shared_ptr, count: " << m.use_count();
-    std::cout << "before\n";
-    m.reset();
-    std::cout << "after\n";
-    CHECK( m.use_count() == 0 ) << "Invalid shared_ptr, count: " << m.use_count();
+        std::shared_ptr<A> m( new A );
+        CHECK( m.use_count() == 1 ) << "Invalid shared_ptr, count: " << m.use_count();
+        std::cout << "before\n";
+        m.reset();
+        std::cout << "after\n";
+        CHECK( m.use_count() == 0 ) << "Invalid shared_ptr, count: " << m.use_count();
     }
     {
-    std::shared_ptr<A> m( g() );
-    CHECK( m.use_count() == 1 ) << "Invalid shared_ptr, count: " << m.use_count();
-    m.reset();
-    CHECK( m.use_count() == 0 ) << "Invalid shared_ptr, count: " << m.use_count();
+        std::shared_ptr<A> m( g() );
+        CHECK( m.use_count() == 1 ) << "Invalid shared_ptr, count: " << m.use_count();
+        m.reset();
+        CHECK( m.use_count() == 0 ) << "Invalid shared_ptr, count: " << m.use_count();
     }
     {
-    std::shared_ptr<A> m( g() );
-    CHECK( m.use_count() == 1 ) << "Invalid shared_ptr, count: " << m.use_count();
-    m.reset();
-    CHECK( m.use_count() == 0 ) << "Invalid shared_ptr, count: " << m.use_count();
+        std::shared_ptr<A> m( g() );
+        CHECK( m.use_count() == 1 ) << "Invalid shared_ptr, count: " << m.use_count();
+        m.reset();
+        CHECK( m.use_count() == 0 ) << "Invalid shared_ptr, count: " << m.use_count();
     }
 #endif
-#if defined(FEELPP_HAS_GPERFTOOLS)
-    CHECK(check3.NoLeaks()) << "There are leaks";
+#if defined( FEELPP_HAS_GPERFTOOLS )
+    CHECK( check3.NoLeaks() ) << "There are leaks";
 #endif /* FEELPP_HAS_GPERFTOOLS */
 }

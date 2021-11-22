@@ -176,7 +176,7 @@ public:
     }
 
     //! destructor
-    ~CRBSCM()
+    ~CRBSCM() override
     {}
 
     //@}

@@ -157,7 +157,7 @@ MarkerManagementDirichletBC::markerDirichletBClm( ComponentType ct ) const
 
 
 void
-MarkerManagementDirichletBC::updateInformationObjectDirichletBC( pt::ptree & p )
+MarkerManagementDirichletBC::updateInformationObjectDirichletBC( pt::ptree & p ) const
 {
     for ( auto const& bykindbase : M_dirichletBCType )
     {
@@ -264,7 +264,7 @@ MarkerManagementNeumannBC::markerNeumannBC( NeumannBCShape shape,std::string con
 }
 
 void
-MarkerManagementNeumannBC::updateInformationObjectNeumannBC( pt::ptree & p )
+MarkerManagementNeumannBC::updateInformationObjectNeumannBC( pt::ptree & p ) const
 {
    for ( auto const& markNeumanBase : M_containerMarkers )
     {
@@ -359,7 +359,7 @@ MarkerManagementNeumannEulerianFrameBC::markerNeumannEulerianFrameBC( NeumannEul
 }
 
 void
-MarkerManagementNeumannEulerianFrameBC::updateInformationObjectNeumannEulerianFrameBC( pt::ptree & p )
+MarkerManagementNeumannEulerianFrameBC::updateInformationObjectNeumannEulerianFrameBC( pt::ptree & p ) const
 {
     // TODO
 }
@@ -440,7 +440,7 @@ MarkerManagementALEMeshBC::markerALEMeshBC( std::string const& type ) const
 }
 
 void
-MarkerManagementALEMeshBC::updateInformationObjectALEMeshBC( pt::ptree & p )
+MarkerManagementALEMeshBC::updateInformationObjectALEMeshBC( pt::ptree & p ) const
 {
     // TODO
 }
@@ -504,7 +504,7 @@ MarkerManagementSlipBC::markerSlipBC() const
 }
 
 void
-MarkerManagementSlipBC::updateInformationObjectSlipBC( pt::ptree & p )
+MarkerManagementSlipBC::updateInformationObjectSlipBC( pt::ptree & p ) const
 {
     // TODO
 }
@@ -591,7 +591,7 @@ MarkerManagementPressureBC::hasMarkerPressureBC() const
 }
 
 void
-MarkerManagementPressureBC::updateInformationObjectPressureBC( pt::ptree & p )
+MarkerManagementPressureBC::updateInformationObjectPressureBC( pt::ptree & p ) const
 {
     // TODO
 }
@@ -665,7 +665,7 @@ MarkerManagementRobinBC::markerRobinBC( std::string const& markerNameId ) const
 }
 
 void
-MarkerManagementRobinBC::updateInformationObjectRobinBC( pt::ptree & p )
+MarkerManagementRobinBC::updateInformationObjectRobinBC( pt::ptree & p ) const
 {
     // TODO
 }
@@ -732,9 +732,80 @@ MarkerManagementFluidStructureInterfaceBC::getInfoFluidStructureInterfaceBC() co
 }
 
 void
-MarkerManagementFluidStructureInterfaceBC::updateInformationObjectFluidStructureInterfaceBC( pt::ptree & p )
+MarkerManagementFluidStructureInterfaceBC::updateInformationObjectFluidStructureInterfaceBC( pt::ptree & p ) const
 {
     // TODO
+}
+
+//--------------------------------------------------------------//
+
+MarkerManagementIntegralBC::MarkerManagementIntegralBC()
+    :
+    M_containerMarkers(),
+    M_listMarkerEmpty()
+{}
+void
+MarkerManagementIntegralBC::clearMarkerIntegralBC()
+{
+    M_containerMarkers.clear();
+}
+void
+MarkerManagementIntegralBC::setMarkerIntegralBC( std::string const& name, std::set<std::string> const& markers )
+{
+    M_containerMarkers[name] = markers;
+}
+void
+MarkerManagementIntegralBC::addMarkerIntegralBC( std::string const& name, std::string const& marker )
+{
+    if ( name.empty() ) return;
+    M_containerMarkers[name].insert(marker);
+}
+void
+MarkerManagementIntegralBC::addMarkerIntegralBC( std::string const& name, std::set<std::string> const& markers )
+{
+    if ( name.empty() ) return;
+    for(auto const& m : markers )
+        M_containerMarkers[name].insert(m);
+}
+std::map<std::string,std::set<std::string> > const&
+MarkerManagementIntegralBC::markerIntegralBC() const
+{
+    return M_containerMarkers;
+}
+std::set<std::string> const&
+MarkerManagementIntegralBC::markerIntegralBC( std::string const& markerNameId ) const
+{
+    if ( M_containerMarkers.find( markerNameId ) != M_containerMarkers.end() )
+        return M_containerMarkers.find(markerNameId)->second;
+    else
+        return M_listMarkerEmpty;
+}
+
+void
+MarkerManagementIntegralBC::updateInformationObjectIntegralBC( pt::ptree & p ) const
+{
+    // TODO
+}
+std::string
+MarkerManagementIntegralBC::getInfoIntegralBC() const
+{
+    std::ostringstream _ostr;
+
+    for ( auto const& markerBase : M_containerMarkers )
+    {
+        _ostr << "\n       -- Integral : " << markerBase.first;
+        if ( markerBase.second.size() == 1 && *markerBase.second.begin() == markerBase.first ) continue;
+        _ostr << " -> (";
+        int cptMark = 0;
+        for ( auto itMark = markerBase.second.begin(), enMark = markerBase.second.end() ; itMark!=enMark ; ++itMark,++cptMark )
+        {
+            if ( cptMark > 0) _ostr << " , ";
+            _ostr << *itMark;
+        }
+        _ostr << ")";
+    }
+
+    return _ostr.str();
 }
 
 

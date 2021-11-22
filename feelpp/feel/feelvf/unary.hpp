@@ -89,27 +89,60 @@ public:
     typename Lambda<TheExpr...>::type
     operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_expr( e... ) ); }
 
+    size_type dynamicContext() const { return vf::dynamicContext( M_expr ); } 
+
     //! polynomial order
     uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
 
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr.isPolynomial(); }
 
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr.evaluate(p,worldcomm);
+        }
+
     expression_type const& expression() const
     {
         return M_expr;
     }
 
-    void setParameterValues( std::map<std::string,value_type> const& mp )
-    {
-        M_expr.setParameterValues( mp );
-    }
-    size_type dynamicContext() const { return vf::dynamicContext( M_expr ); } 
-
-    //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    void setParameterValues( std::map<std::string,double> const& mp )
         {
-            return M_expr.evaluate(p,worldcomm);
+            M_expr.setParameterValues( mp );
+        }
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+        {
+            M_expr.updateParameterValues( pv );
+        }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newExpr = M_expr.applySymbolsExpr( se );
+            using new_expr_type = std::decay_t<decltype(newExpr)>;
+            return UnaryPlus<new_expr_type>( newExpr );
+        }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            return M_expr.hasSymbolDependency( symb, se );
+        }
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+        {
+            M_expr.dependentSymbols( symb, res, se );
+        }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+        {
+            auto theDiffExpr = M_expr.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
+            using new_expr_type = std::decay_t<decltype(theDiffExpr)>;
+            return UnaryPlus<new_expr_type>( theDiffExpr );
         }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
@@ -142,6 +175,13 @@ public:
             :
             M_t_expr( expr.expression(), geom )
         {}
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_t_expr( std::true_type{}, exprExpanded.expression(), ttse, expr.expression(), geom, theInitArgs... )
+            {}
+
         template<typename IM>
         void init( IM const& im )
         {
@@ -163,6 +203,12 @@ public:
         {
             M_t_expr.update( geom, face );
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                M_t_expr.update( std::true_type{}, exprExpanded.expression(), ttse, geom, theUpdateArgs... );
+            }
         template<typename ... CTX>
         void updateContext( CTX const& ... ctx )
         {
@@ -298,11 +344,19 @@ public:
     typename Lambda<TheExpr...>::type
     operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_expr( e... ) ); }
 
+    size_type dynamicContext() const { return vf::dynamicContext( M_expr ); } 
+
     //! polynomial order
     uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
 
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr.isPolynomial(); }
+
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return -M_expr.evaluate(p,worldcomm);
+        }
 
     expression_type const& expression() const
     {
@@ -310,16 +364,42 @@ public:
     }
 
     void setParameterValues( std::map<std::string,value_type> const& mp )
-    {
-        M_expr.setParameterValues( mp );
-    }
-    size_type dynamicContext() const { return vf::dynamicContext( M_expr ); } 
-
-    //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
         {
-            return -M_expr.evaluate(p,worldcomm);
+            M_expr.setParameterValues( mp );
         }
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+        {
+            M_expr.updateParameterValues( pv );
+        }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newExpr = M_expr.applySymbolsExpr( se );
+            using new_expr_type = std::decay_t<decltype(newExpr)>;
+            return UnaryMinus<new_expr_type>( newExpr );
+        }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            return M_expr.hasSymbolDependency( symb, se );
+        }
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+        {
+            M_expr.dependentSymbols( symb, res, se );
+        }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+        {
+            auto theDiffExpr = M_expr.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
+            using new_expr_type = std::decay_t<decltype(theDiffExpr)>;
+            return UnaryMinus<new_expr_type>( theDiffExpr );
+        }
+
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -351,6 +431,12 @@ public:
             :
             M_t_expr( expr.expression(), geom )
         {}
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_t_expr( std::true_type{}, exprExpanded.expression(), ttse, expr.expression(), geom, theInitArgs... )
+            {}
         template<typename IM>
         void init( IM const& im )
         {
@@ -372,6 +458,12 @@ public:
         {
             M_t_expr.update( geom, face );
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                M_t_expr.update( std::true_type{}, exprExpanded.expression(), ttse, geom, theUpdateArgs... );
+            }
 
         template<typename ... CTX>
         void updateContext( CTX const& ... ctx )

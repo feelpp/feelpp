@@ -1,0 +1,141 @@
+{
+    "Name": "HDG-Mixed-Poisson",
+    "ShortName":"MP",
+	"Models": { "equations":"hdg"},
+    "Materials":
+    {
+        "OmegaG":
+        {
+            "name":"oxide",
+	    	"cond":"3.9 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
+            "scale_flux":"1e-4 / (3.9 * 8.854^(-12))" // E = D/(epsR*eps0) 
+        },
+        "OmegaS":
+        {
+            "name":"silicium",
+	    	"cond":"11.7 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
+            "scale_flux":"1e-4 / (11.7 * 8.854^(-12))" // E = D/(epsR*eps0) 
+        },
+        "OmegaD":
+        {
+            "name":"silicium",
+	    	"cond":"11.7 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
+            "scale_flux":"1e-4 / (11.7 * 8.854^(-12))" // E = D/(epsR*eps0) 
+        },
+        "OmegaB":
+        {
+            "name":"silicium",
+	    	"cond":"11.7 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
+            "scale_flux":"1e-4 / (11.7 * 8.854^(-12))" // E = D/(epsR*eps0) 
+        }
+    },
+    "InitialConditions":
+    {
+        "potential":
+        {
+            "Expression":
+            {
+                "OmegaG":
+                {
+                    "markers":["omegaG","omegaS","omegaB","omegaD",],
+                    "expr":"0.0"
+                }
+            }
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "VolumicForces":
+            {
+                "OmegaG":
+                {
+                    "expr":"0.0:x:y:z" 
+                },
+                "OmegaB":
+                {
+                    "expr":"0.0:x:y:z" 
+                },
+                "OmegaD":
+                {
+                    "expr":"0.0:x:y:z" 
+                },
+                "OmegaS":
+                {
+                    "expr":"0.0:x:y:z" 
+                }
+            },
+            "Dirichlet":
+	    	{
+	    		"Source":
+        		{
+                	"expr":"0.5865"  
+               	},
+	    		"Drain":
+        		{
+                	"expr":"0.5865"  
+               	},
+	    		"Bulk":
+        		{
+                	"expr":"-0.3897"  
+               	}
+	    	},
+            "Neumann":
+            {
+	    		"WallG":
+        		{
+                	"expr":"0.0"  
+               	},
+	    		"WallS":
+        		{
+                	"expr":"0.0"  
+               	},
+	    		"WallD":
+        		{
+                	"expr":"0.0"  
+               	},
+	    		"WallB":
+        		{
+                	"expr":"0.0"  
+               	}
+            }
+		},
+		"flux":
+		{
+	    	"Integral":
+	    	{
+        		"Gate":
+                {
+					"expr": "-1.4558*10^(-17) * 10^4" //"-90.8740" // "-1.4558*10^(-17)"//
+                }
+ 	    	},
+            "InterfaceCondition":
+            {
+                "IntSG":
+                {
+                    "expr":"0.0011 * 10^4" //"7.0995e15" // "0.0011"
+                },
+                "IntDG":
+                {
+                    "expr":"0.0011 * 10^4" //"7.0995e15" // "0.0011"
+                },
+                "IntBG":
+                {
+                    "expr":"0.0011 * 10^4" //"7.0995e15" // "0.0011"
+                }
+            }
+    	}
+     },
+    "PostProcess":
+    {
+		"Exports":
+		{
+        	"fields":["potential","flux","scaled_flux"]
+		}
+    }
+}
+
+
+
+

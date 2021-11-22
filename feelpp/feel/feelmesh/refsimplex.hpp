@@ -44,9 +44,9 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder = super::nOrder;
-    static const uint16_type nRealDim = super::nRealDim;
+    static constexpr uint16_type nDim = super::nDim;
+    static constexpr uint16_type nOrder = super::nOrder;
+    static constexpr uint16_type nRealDim = super::nRealDim;
 
     static const uint16_type topological_dimension = super::topological_dimension;
     static const uint16_type real_dimension = super::real_dimension;
@@ -281,7 +281,7 @@ public:
 
     Reference( Reference const & r ) = default;
 
-    ~Reference() = default;
+    ~Reference() override = default;
 
     //@}
 

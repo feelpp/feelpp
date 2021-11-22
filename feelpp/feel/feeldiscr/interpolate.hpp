@@ -111,23 +111,24 @@ interpolate( std::shared_ptr<SpaceType> const& space,
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename mesh_type::element_iterator mesh_element_iterator;
     using size_type = typename SpaceType::size_type;
-    
+
     typedef typename FunctionType::functionspace_type::mesh_type domain_mesh_type;
     typedef typename domain_mesh_type::element_type domain_geoelement_type;
     typedef typename domain_mesh_type::element_iterator domain_mesh_element_iterator;
     // geometric mapping context
     typedef typename mesh_type::gm_type gm_type;
     typedef std::shared_ptr<gm_type> gm_ptrtype;
-    typedef typename gm_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, geoelement_type> gmc_type;
+    static const size_type gmc_v = vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN;
+    typedef typename gm_type::template Context<geoelement_type> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
     typedef typename domain_mesh_type::gm_type domain_gm_type;
     typedef std::shared_ptr<domain_gm_type> domain_gm_ptrtype;
-    typedef typename domain_gm_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, domain_geoelement_type> domain_gmc_type;
+    typedef typename domain_gm_type::template Context<domain_geoelement_type> domain_gmc_type;
     typedef std::shared_ptr<domain_gmc_type> domain_gmc_ptrtype;
 
     typedef typename FunctionType::functionspace_type::fe_type f_fe_type;
-    typedef typename f_fe_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, f_fe_type, domain_gm_type, domain_geoelement_type,domain_gmc_type::context> f_fectx_type;
+    typedef typename f_fe_type::template Context<vm::POINT|vm::GRAD|vm::KB|vm::JACOBIAN, f_fe_type, domain_gm_type, domain_geoelement_type,gmc_v> f_fectx_type;
     typedef std::shared_ptr<f_fectx_type> f_fectx_ptrtype;
 
     // dof
@@ -177,6 +178,10 @@ interpolate( std::shared_ptr<SpaceType> const& space,
             EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
             rangeElt = elements( f.functionSpace()->mesh(), entityProcess );
         }
+        // need to sync if the function f is defined on a partial mesh support
+        if ( hasMeshSupportPartialDomain )
+            applyVectorSync = true;
+
         auto it = rangeElt.template get<1>();
         auto en = rangeElt.template get<2>();
 
@@ -247,7 +252,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
                 for ( ; it != en; ++ it )
                 {
                     auto const& curElt = unwrap_ref(*it);
-                    gmc->update( curElt );
+                    gmc->template update<context>( curElt );
                     expr_evaluator.update( vf::mapgmc( gmc ) );
                     __fe->interpolate( expr_evaluator, IhLoc );
 
@@ -270,7 +275,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
                 for ( ; it != en; ++ it )
                 {
                     auto const& curElt = unwrap_ref(*it);
-                    gmc->update( curElt );
+                    gmc->template update<context>( curElt );
                     expr_evaluator.update( vf::mapgmc( gmc ) );
 
                     for ( auto & [c1,c2,IhLoc] : IhLocsByComp )
@@ -320,7 +325,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
 
         domain_geopc_ptrtype __dgeopc( new domain_geopc_type( __dgm, pts ) );
 
-        domain_gmc_ptrtype __c( new domain_gmc_type( __dgm, *it, __dgeopc ) );
+        domain_gmc_ptrtype __c = __dgm->template context<gmc_v>( unwrap_ref( *it ), __dgeopc );
         auto pc = f.functionSpace()->fe()->preCompute( f.functionSpace()->fe(), __c->xRefs() );
 
         f_fectx_ptrtype fectx( new f_fectx_type( f.functionSpace()->fe(),
@@ -354,7 +359,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
         for ( ; it != en; ++ it )
         {
             domain_geoelement_type const& curElt = boost::unwrap_ref(*it);
-            __c->update( curElt );
+            __c->template update<gmc_v>( curElt );
             meshinv.pointsInConvex( curElt.id(), itab );
 
             if ( itab.size() == 0 )
@@ -378,7 +383,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
                     __dgeopc->update( pts );
                     //std::cout << "------------------------------------------------------------\n";
                     //std::cout << "pts = " << pts << "\n";
-                    __c->update( *it );
+                    __c->template update<gmc_v>( *it );
                     pc->update( __c->xRefs() );
                     fectx->update( __c, pc );
                     //typename FunctionType::pc_type pc( f.functionSpace()->fe(), __c->xRefs() );

@@ -444,7 +444,7 @@ public:
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
         //showMe();
     }
-    ~ImporterGmsh()
+    ~ImporterGmsh() override
     {}
 
     //@}
@@ -517,7 +517,7 @@ public:
      */
     //@{
 
-    void visit( mesh_type* mesh );
+    void visit( mesh_type* mesh ) override;
 
     void showMe() const;
 
@@ -2961,14 +2961,34 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
 
     mpi::request * reqs = new mpi::request[nbRequest];
     int cptRequest=0;
+
+    for ( auto const& [proc,thedata] : dataToSend )
+    {
+        int nSendData = thedata.size();
+        reqs[cptRequest++] = this->worldComm().localComm().isend( proc , 0, nSendData );
+    }
+
+    std::map<rank_type,size_type> sizeRecv;
+    for ( rank_type proc=0; proc<nProc; ++proc )
+    {
+        if ( nbMsgToRecv[proc] > 0 )
+        {
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( proc , 0, sizeRecv[proc] );
+        }
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + cptRequest);
+
     //-----------------------------------------------------------//
+    cptRequest=0;
     // first send
     auto itDataToSend = dataToSend.begin();
     auto const enDataToSend = dataToSend.end();
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
-        reqs[cptRequest] = this->worldComm().localComm().isend( itDataToSend->first , 0, itDataToSend->second );
-        ++cptRequest;
+        int nSendData = itDataToSend->second.size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = this->worldComm().localComm().isend( itDataToSend->first , 0, &(itDataToSend->second[0]), nSendData );
     }
     //-----------------------------------------------------------//
     // first recv
@@ -2977,13 +2997,15 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     {
         if ( nbMsgToRecv[proc] > 0 )
         {
-            reqs[cptRequest] = this->worldComm().localComm().irecv( proc , 0, dataToRecv[proc] );
-            ++cptRequest;
+            int nRecvData = sizeRecv[proc];
+            dataToRecv[proc].resize( nRecvData );
+            if ( nRecvData > 0 )
+                reqs[cptRequest++] = this->worldComm().localComm().irecv( proc , 0, &(dataToRecv[proc][0]), nRecvData );
         }
     }
     //-----------------------------------------------------------//
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest);
     //-----------------------------------------------------------//
     // build the container to ReSend
     std::map<rank_type, std::vector<int> > dataToReSend;
@@ -3005,8 +3027,9 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     auto const enDataToReSend = dataToReSend.end();
     for ( ; itDataToReSend!=enDataToReSend ; ++itDataToReSend )
     {
-        reqs[cptRequest] = this->worldComm().localComm().isend( itDataToReSend->first , 0, itDataToReSend->second );
-        ++cptRequest;
+        int nSendData = itDataToReSend->second.size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = this->worldComm().localComm().isend( itDataToReSend->first , 0, &(itDataToReSend->second[0]), nSendData );
     }
     //-----------------------------------------------------------//
     // recv the initial request
@@ -3015,12 +3038,14 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
         const rank_type idProc = itDataToSend->first;
-        reqs[cptRequest] = this->worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc] );
-        ++cptRequest;
+        int nRecvData = itDataToSend->second.size();
+        finalDataToRecv[idProc].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( idProc, 0, &(finalDataToRecv[idProc][0]), nRecvData );
     }
     //-----------------------------------------------------------//
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest);
     // delete reqs because finish comm
     delete [] reqs;
     //-----------------------------------------------------------//

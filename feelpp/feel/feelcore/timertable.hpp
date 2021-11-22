@@ -179,22 +179,7 @@ public:
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::mean(acc) << " "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << std::sqrt(boost::accumulators::variance(acc)) << "\n";
 
-                std::string n = boost::trim_fill_copy( boost::trim_fill_copy_if( T.second.msg, "_", boost::is_any_of(":")), "_" );
-                
-                try {
-                    Environment::summary().put( "application.timers."s+n+".name", T.second.msg );
-                    Environment::summary().put( "application.timers."s+n+".count", boost::accumulators::count(acc) );
-                    Environment::summary().put( "application.timers."s+n+".total", boost::accumulators::sum(acc) );
-                    Environment::summary().put( "application.timers."s+n+".max", boost::accumulators::max(acc) );
-                    Environment::summary().put( "application.timers."s+n+".min", boost::accumulators::min(acc) );
-                    Environment::summary().put( "application.timers."s+n+".mean", boost::accumulators::mean(acc) );
-                    Environment::summary().put( "application.timers."s+n+".stddev", std::sqrt(boost::accumulators::variance(acc)) );
-                }
-                catch( pt::ptree_bad_data const& d )
-                {
-                    std::cout << "d: " << d.what() << std::endl;
-                }
-                
+                std::string n = boost::trim_fill_copy( boost::trim_fill_copy_if( T.second.msg, "_", boost::is_any_of(":")), "_" );                
             }
             os << std::resetiosflags(os.flags());
             if ( display )
@@ -276,7 +261,7 @@ private:
     //! @{
 
     //! update information
-    void updateInformationObject( pt::ptree & p ) override
+    void updateInformationObject( nl::json & p ) const override
     {
         using namespace boost::accumulators;
         using namespace std::string_literals;
@@ -297,13 +282,14 @@ private:
             sortTotal[tot] = T.second;
 
             const std::string& prefix = T.second.instance_name;
-            p.put( prefix + ".message", T.second.msg );
-            p.put( prefix + ".count", boost::accumulators::count(acc) );
-            p.put( prefix + ".total", boost::accumulators::sum(acc) );
-            p.put( prefix + ".max", boost::accumulators::max(acc) );
-            p.put( prefix + ".min", boost::accumulators::min(acc) );
-            p.put( prefix + ".mean", boost::accumulators::mean(acc) );
-            p.put( prefix + ".std_dev", std::sqrt( boost::accumulators::variance(acc) ) );
+            auto & jData = p[prefix];
+            jData[ "message" ] = T.second.msg;
+            jData[ "count" ] = boost::accumulators::count(acc);
+            jData[ "total" ] = boost::accumulators::sum(acc);
+            jData[ "max" ] = boost::accumulators::max(acc);
+            jData[ "min"] = boost::accumulators::min(acc);
+            jData[ "mean" ] = boost::accumulators::mean(acc);
+            jData[ "std_dev" ] = std::sqrt( boost::accumulators::variance(acc) );
         }
 
         for( auto const& T: sortTotal )
@@ -316,13 +302,14 @@ private:
             for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
 
             const std::string& prefix = T.second.instance_name;
-            p.put( prefix + ".message", T.second.msg );
-            p.put( prefix + ".count", boost::accumulators::count(acc) );
-            p.put( prefix + ".total", boost::accumulators::sum(acc) );
-            p.put( prefix + ".max", boost::accumulators::max(acc) );
-            p.put( prefix + ".min", boost::accumulators::min(acc) );
-            p.put( prefix + ".mean", boost::accumulators::mean(acc) );
-            p.put( prefix + ".std_dev", std::sqrt( boost::accumulators::variance(acc) ) );
+            auto & jData = p[prefix];
+            jData[ "message" ] = T.second.msg;
+            jData[ "count" ] = boost::accumulators::count(acc);
+            jData[ "total" ] = boost::accumulators::sum(acc);
+            jData[ "max" ] = boost::accumulators::max(acc);
+            jData[ "min" ] = boost::accumulators::min(acc);
+            jData[ "mean" ] = boost::accumulators::mean(acc);
+            jData[ "std_dev" ] = std::sqrt( boost::accumulators::variance(acc) );
         }
     }
 

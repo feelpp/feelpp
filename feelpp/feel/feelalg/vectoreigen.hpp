@@ -111,13 +111,13 @@ public:
 
     VectorEigen( VectorEigen const & m );
 
-    ~VectorEigen();
+    ~VectorEigen() override;
 
     /**
      * Creates a copy of this vector and returns it in an \p shared_ptr<>.
      * This must be overloaded in the derived classes.
      */
-    clone_ptrtype clone () const ;
+    clone_ptrtype clone () const override ;
 
     /**
      * Change the dimension of the vector to \p N. The reserved memory
@@ -133,18 +133,18 @@ public:
      */
     void init ( const size_type N,
                 const size_type n_local,
-                const bool      fast=false );
+                const bool      fast=false ) override;
 
     /**
      * call init with n_local = N,
      */
     void init ( const size_type n,
-                const bool      fast=false );
+                const bool      fast=false ) override;
 
     /**
      * init from a \p DataMap
      */
-    void init( datamap_ptrtype const& dm );
+    void init( datamap_ptrtype const& dm ) override;
 
 
     //@}
@@ -155,12 +155,12 @@ public:
     /**
      *  \f$U = V\f$: copy all components.
      */
-    Vector<value_type>& operator= ( const Vector<value_type> &V );
+    Vector<value_type>& operator= ( const Vector<value_type> &V ) override;
 
     /**
      * Access components, returns \p u(i).
      */
-    T operator()( size_type i ) const
+    T operator()( size_type i ) const override
     {
         FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
         FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
@@ -175,7 +175,7 @@ public:
     /**
      * Access components, returns \p u(i).
      */
-    T& operator()( size_type i )
+    T& operator()( size_type i ) override
     {
         FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
         FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
@@ -219,7 +219,7 @@ public:
      * Addition operator.
      * Fast equivalent to \p U.add(1, V).
      */
-    Vector<T>& operator+=( const Vector<T>& v )
+    Vector<T>& operator+=( const Vector<T>& v ) override
     {
         checkInvariant();
         add( 1., v );
@@ -230,7 +230,7 @@ public:
      * Subtraction operator.
      * Fast equivalent to \p U.add(-1, V).
      */
-    Vector<T>& operator-=( const Vector<T>& v )
+    Vector<T>& operator-=( const Vector<T>& v ) override
     {
         checkInvariant();
         add( -1., v );
@@ -274,7 +274,7 @@ public:
     /**
      * \return true if vector is initialized/usable, false otherwise
      */
-    bool isInitialized() const
+    bool isInitialized() const override
     {
         return true;
     }
@@ -290,7 +290,7 @@ public:
      * see if vector has been closed
      * and fully assembled yet
      */
-    bool closed() const
+    bool closed() const override
     {
         return true;
     }
@@ -324,7 +324,7 @@ public:
     /**
      * set the entries to the constant \p v
      */
-    void setConstant( value_type v )
+    void setConstant( value_type v ) override
         {
             M_vec.setConstant( v );
         }
@@ -346,18 +346,18 @@ public:
      * having called the default
      * constructor.
      */
-    void clear ();
+    void clear () override;
 
     /**
      * Set all entries to 0. This method retains
      * sparsity structure.
      */
-    void zero ()
+    void zero () override
     {
         M_vec.setZero( M_vec.size() );
     }
 
-    void zero ( size_type /*start1*/, size_type /*stop1*/ )
+    void zero ( size_type /*start1*/, size_type /*stop1*/ ) override
     {
         //eigen::project( (*this), eigen::range( start1, stop1 ) ) = eigen::zero_vector<value_type>( stop1 );
         this->zero();
@@ -366,7 +366,7 @@ public:
     /**
      * Add \p value to the value already accumulated
      */
-    void add ( const size_type i, const value_type& value )
+    void add ( const size_type i, const value_type& value ) override
     {
         checkInvariant();
         M_vec( i ) += value;
@@ -375,7 +375,7 @@ public:
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
      */
-    void addVector ( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_v<size_type> )
+    void addVector ( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_v<size_type> ) override
     {
         for ( int j = 0; j < n; ++j )
             M_vec( i[j] ) += v[j];
@@ -384,7 +384,7 @@ public:
     /**
      * set to \p value
      */
-    void set ( size_type i, const value_type& value )
+    void set ( size_type i, const value_type& value ) override
     {
         checkInvariant();
         M_vec( i ) = value;
@@ -393,7 +393,7 @@ public:
     /**
      * v([i1,i2,...,in]) = [value1,...,valuen]
      */
-    void setVector ( int* i, int n, value_type* v )
+    void setVector ( int* i, int n, value_type* v ) override
     {
         for ( int j = 0; j < n; ++j )
             M_vec( i[j] ) = v[j];
@@ -405,7 +405,7 @@ public:
      * want to specify WHERE to add it
      */
     void addVector ( const std::vector<value_type>& v,
-                     const std::vector<size_type>& dof_indices )
+                     const std::vector<size_type>& dof_indices ) override
     {
         FEELPP_ASSERT ( v.size() == dof_indices.size() ).error( "invalid dof indices" );
 
@@ -420,7 +420,7 @@ public:
      * the \p NumericVector<T> V
      */
     void addVector ( const Vector<value_type>& V,
-                     const std::vector<size_type>& dof_indices )
+                     const std::vector<size_type>& dof_indices ) override
     {
         FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
 
@@ -434,7 +434,7 @@ public:
      * and a \p Vector \p V to \p this, where \p this=U.
      */
     void addVector ( const Vector<value_type>& /*V_in*/,
-                     const MatrixSparse<value_type>& /*A_in*/ );
+                     const MatrixSparse<value_type>& /*A_in*/ ) override;
     // {
     //     FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     // }
@@ -459,7 +459,7 @@ public:
      * and you want to specify WHERE to insert it
      */
     void insert ( const std::vector<T>& /*v*/,
-                  const std::vector<size_type>& /*dof_indices*/ )
+                  const std::vector<size_type>& /*dof_indices*/ ) override
     {
         FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
@@ -471,7 +471,7 @@ public:
      * the Vector<T> V
      */
     void insert ( const Vector<T>& /*V*/,
-                  const std::vector<size_type>& /*dof_indices*/ )
+                  const std::vector<size_type>& /*dof_indices*/ ) override
     {
         FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
@@ -496,14 +496,14 @@ public:
      * the DenseVector<T> V
      */
     void insert ( const ublas::vector<T>& V,
-                  const std::vector<size_type>& dof_indices );
+                  const std::vector<size_type>& dof_indices ) override;
 
 
     /**
      * Scale each element of the
      * vector by the given factor.
      */
-    void scale ( const T factor )
+    void scale ( const T factor ) override
     {
         M_vec *= factor;
     }
@@ -514,15 +514,15 @@ public:
      * vector to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL", bool renumber = false ) const;
+    void printMatlab( const std::string name="NULL", bool renumber = false ) const override;
 
-    void close() {}
+    void close() override {}
 
     /**
      * @return the minimum element in the vector.  In case of complex
      * numbers, this returns the minimum Real part.
      */
-    real_type min() const
+    real_type min() const override
     {
         checkInvariant();
 
@@ -548,7 +548,7 @@ public:
      * @return the maximum element in the vector.  In case of complex
      * numbers, this returns the maximum Real part.
      */
-    real_type max() const
+    real_type max() const override
     {
         checkInvariant();
 
@@ -574,7 +574,7 @@ public:
      * @return the \f$l_1\f$-norm of the vector, i.e.  the sum of the
      * absolute values.
      */
-    real_type l1Norm() const
+    real_type l1Norm() const override
     {
         checkInvariant();
         double local_l1 = M_vec.array().abs().sum();
@@ -599,7 +599,7 @@ public:
      * @return the \f$l_2\f$-norm of the vector, i.e.  the square root
      * of the sum of the squares of the elements.
      */
-    real_type l2Norm() const
+    real_type l2Norm() const override
     {
         checkInvariant();
         real_type local_norm2 = M_vec.squaredNorm();
@@ -621,7 +621,7 @@ public:
      * @return the maximum absolute value of the elements of this
      * vector, which is the \f$l_\infty\f$-norm of a vector.
      */
-    real_type linftyNorm() const
+    real_type linftyNorm() const override
     {
         checkInvariant();
         real_type local_norminf = M_vec.array().abs().maxCoeff();
@@ -643,7 +643,7 @@ public:
     /**
      * @return the sum of the vector.
      */
-    value_type sum() const
+    value_type sum() const override
     {
         checkInvariant();
         value_type local_sum = M_vec.array().sum();
@@ -681,7 +681,7 @@ public:
      * Addition of \p s to all components.
      * \note \p s is a scalar and not a vector.
      */
-    void add( const T& a )
+    void add( const T& a ) override
     {
         checkInvariant();
 
@@ -695,7 +695,7 @@ public:
      * \f$U+=V\f$.
      * Simple vector addition, equal to the \p operator+=.
      */
-    void add( const Vector<T>& v )
+    void add( const Vector<T>& v ) override
     {
         checkInvariant();
         add( 1., v );
@@ -707,7 +707,7 @@ public:
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add( const T& a, const Vector<T>& v )
+    void add( const T& a, const Vector<T>& v ) override
     {
         checkInvariant();
 
@@ -762,7 +762,7 @@ public:
                                   const size_type proc_id = 0 ) const;
 
 
-    value_type dot( Vector<T> const& __v ) const
+    value_type dot( Vector<T> const& __v ) const override
     {
         throw std::logic_error( "[vetor eigen] ERROR dot function not yet implemented" );
         return 0;

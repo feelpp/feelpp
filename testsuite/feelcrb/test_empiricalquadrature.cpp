@@ -1,12 +1,13 @@
 #define BOOST_TEST_MODULE eq testsuite
 
 #include <feel/feelcore/testsuite.hpp>
-
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
-#include <feel/feelvf/vf.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/empiricalquadrature.hpp>
+#include <feel/feelvf/vf.hpp>
+
 
 using namespace Feel;
 

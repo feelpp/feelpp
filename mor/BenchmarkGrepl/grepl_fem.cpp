@@ -6,7 +6,7 @@
   Author(s): Cecile Daversin  <cecile.daversin@lncmi.cnrs.fr>
        Date: 2011-12-07
 
-  Copyright (C) 2014-2016 Feel++ Consortium
+  Copyright (C) 2014-present Feel++ Consortium
 
 
   This library is free software; you can redistribute it and/or
@@ -29,7 +29,13 @@
    \author Cecile Daversin <cecile.daversin@lncmi.cnrs.fr>
    \date 2014-12-22
  */
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feelvf/vf.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
 using namespace Feel;
 

@@ -23,35 +23,37 @@
 #
 #
 # setup pyfeelpp-mor
+cmake_minimum_required(VERSION 3.13)
+project(pyfeelpp-mor)
 
-OPTION(FEELPP_ENABLE_PYFEELPP_MOR "Enable PyFeel++ for MOR" ON  )
-if (FEELPP_ENABLE_PYFEELPP_MOR)
-    # additional cmake args can be necessary for paraview
-  set(PYFEELPP_SETUP_HAS_PARAVIEW_CMAKE_ARGS 0)
-  set(PYFEELPP_SETUP_PARAVIEW_CMAKE_ARGS "[]")
-  if ( FEELPP_HAS_PARAVIEW AND PARAVIEW_ENABLE_QT_SUPPORT )
-    if (PARAVIEW_QT_VERSION VERSION_GREATER "4")
-      set(PYFEELPP_SETUP_HAS_PARAVIEW_CMAKE_ARGS 1)
-      set(PYFEELPP_SETUP_PARAVIEW_CMAKE_ARGS "['-DQt${PARAVIEW_QT_VERSION}_DIR=${Qt${PARAVIEW_QT_VERSION}_DIR}']")
-    else()
-      # TODO QT4
-    endif()
+if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STREQUAL "mor/pyfeelpp-mor" )
+  find_package(Feel++ COMPONENTS Toolboxes MOR PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
+  if(NOT FEELPP_FOUND)
+    message(FATAL_ERROR "[pyfeelpp-mor] Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+  else()
+    message(STATUS "[pyfeelpp-mor] found Feel++ library")
   endif()
+  if (NOT FEELPP_TOOLBOXES_FOUND)
+    message(WARNING "[pyfeelpp-mor] Feel++ was not installed with toolboxes component")
+  else()
+    message(STATUS "[pyfeelpp-mor] found Feel++ toolboxes")
+  endif()
+  if (NOT FEELPP_MOR_FOUND)
+    message(WARNING "[pyfeelpp-mor] Feel++ was not installed with mor component")
+  else()
+    message(STATUS "[pyfeelpp-mor] found Feel++ mor")
+  endif()
+  if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "install prefix" FORCE)
+    # SKIP RPATH if we set CMAKE_INSTALL_PREFIX
+    SET(CMAKE_SKIP_RPATH ON)
+  endif()
+else()
+  set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
+endif()
 
-  
-  set(SETUP_MOR_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup-mor.py")
-  set(SETUP_MOR_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup-mor.py")
-  configure_file(${SETUP_MOR_PY_IN} ${SETUP_MOR_PY})
-  set(PYFEELPP_MOR_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages/)
-  install(DIRECTORY DESTINATION ${PYFEELPP_MOR_INSTALL_DIR})
-  install(
-    CODE "set(ENV{PYTHONPATH} \"${PYFEELPP_MOR_INSTALL_DIR}:$ENV{PYTHONPATH}\")"
-    CODE "
-      execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_MOR_PY} install  --prefix ${CMAKE_INSTALL_PREFIX} RESULT_VARIABLE ret )
-      if(ret EQUAL \"1\")
-         message( FATAL_ERROR \"pyfeelpp-mor setup.py bad exit status\")
-      endif()
-    "
-    )
-  
+OPTION(FEELPP_ENABLE_PYFEELPP_MOR "Enable PyFeel++ MOR" ON  )
+if (FEELPP_ENABLE_PYFEELPP_MOR)
+  message(STATUS "Enabling pyfeelpp mor")
+  add_subdirectory(feelpp)
 endif()

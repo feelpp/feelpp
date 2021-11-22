@@ -1,0 +1,12 @@
+#include <feel/feelmesh/geoentity.hpp>
+
+int main( int argc, char** argv )
+{
+    using namespace Feel;
+#if defined(METABENCH)
+    GeoEntity<Simplex<<%= n %>>> T1;
+    GeoEntity<Simplex<<%= n %>>> T2;
+    GeoEntity<Simplex<<%= n %>>> T3;
+#endif
+
+}

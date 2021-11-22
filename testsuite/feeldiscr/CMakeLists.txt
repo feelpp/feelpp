@@ -18,9 +18,9 @@ feelpp_add_test( spacefunc )
 # feelpp_add_test( space_0d SKIP_TEST )
 
 
-feelpp_add_test( hdiv CFG test_hdiv.cfg NO_MPI_TEST)
+feelpp_add_test( hdiv CFG test_hdiv.cfg NO_MPI_TEST SKIP_TEST)
 feelpp_add_test( hdiv_oneelt CFG test_hdiv_oneelt.cfg NO_MPI_TEST )
-feelpp_add_test( hdiv3D CFG test_hdiv3D.cfg)
+# feelpp_add_test( hdiv3D CFG test_hdiv3D.cfg)
 feelpp_add_test( hdiv3D_oneelt CFG test_hdiv3D_oneelt.cfg NO_MPI_TEST )
 feelpp_add_test( hcurl_oneelt CFG test_hcurl_oneelt.cfg NO_MPI_TEST )
 feelpp_add_test( hcurl_assembly CFG test_hcurl_assembly.cfg GEO two_elements_mesh.geo eight_elements_mesh.msh NO_MPI_TEST)
@@ -78,6 +78,7 @@ if ( FEELPP_HAS_SLEPC )
 endif()
 
 feelpp_add_test( twolaplaciansdistributed )
+feelpp_add_test( masterworker_laplacian )
 
 feelpp_add_test( markerhdf5_2D SRCS test_markerhdf5 DEFS CHECKH5_DIM=2 GEO markerhdf5_2D.geo)
 feelpp_add_test( markerhdf5_3D SRCS test_markerhdf5 DEFS CHECKH5_DIM=3 GEO markerhdf5_3D.geo)
@@ -98,5 +99,8 @@ feelpp_add_test( on_dofs SRCS test_on_dofs GEO square_mmarked.geo CFG test_on_do
 #! not functional yet
 # feelpp_add_test( element0D )
 
-feelpp_add_test( operatorlagrangep1 CLI "--pc-type=gamg --gmsh.hsize=0.25" )
+if ( FEELPP_HAS_VTK )
+  feelpp_add_test( operatorlagrangep1 CLI "--pc-type=gamg --gmsh.hsize=0.25" )  
+endif()
 
+feelpp_add_test( sensors CFG sensors.cfg GEO sensorsdesc.json )

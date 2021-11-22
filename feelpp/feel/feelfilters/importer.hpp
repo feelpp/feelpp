@@ -92,7 +92,7 @@ class FEELPP_EXPORT Importer
         M_file_type( _file_type )
         {}
 
-    virtual ~Importer()
+    ~Importer() override
     {}
 
     /**

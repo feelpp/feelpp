@@ -6,7 +6,7 @@ namespace Feel
 {
 
 template<int Order, int Dim>
-BenchmarkGreplNonlinearElliptic<Order,Dim>::BenchmarkGreplNonlinearElliptic()
+BenchmarkGreplNonlinearElliptic<Order,Dim>::BenchmarkGreplNonlinearElliptic(std::string const& prefix)
     :
     super_type( "BenchMarkGreplNonlinearElliptic" + std::to_string(Order) + "_" + std::to_string(Dim) + "D" ),
     M_use_newton( boption(_name="crb.use-newton") ),

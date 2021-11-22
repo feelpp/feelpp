@@ -48,13 +48,47 @@ public :
     void exportMeasures();
     FEELPP_DEPRECATED void setParameter(std::string const& key,double val);
     void setMeasure(std::string const& key,double val);
-    void setMeasureComp( std::string const& key,std::vector<double> const& values );
+
+    template <typename T>
+    void setMeasure( std::string const& key, std::vector<T> const& values ) { this->setMeasure( key, values.data(), values.size() ); }
+
+    template<typename Derived>
+    void setMeasure(std::string const& key, Eigen::MatrixBase<Derived> const& mat )
+        {
+            if ( mat.rows() == 1 && mat.cols() == 1 )
+                this->setMeasure( key, mat(0,0) );
+            else if ( mat.rows() == 1 || mat.cols() == 1 )
+                for (int d=0;d<mat.rows()*mat.cols();++d)
+                    this->setMeasure( (boost::format("%1%_%2%")%key %d).str(), mat(d) );
+            else
+                for (int i=0;i<mat.rows();++i)
+                    for (int j=0;j<mat.cols();++j)
+                        this->setMeasure( (boost::format("%1%_%2%%3%")%key %i %j).str(), mat(i,j) );
+        }
+    template <typename T>
+    void setMeasure(std::string const& key, const T * data, int dim)
+        {
+            if ( dim == 1 )
+                this->setMeasure( key, data[0] );
+            else
+                for (int d=0;d<dim;++d)
+                    this->setMeasure( (boost::format("%1%_%2%")%key %d).str(), data[d] );
+        }
+    FEELPP_DEPRECATED void setMeasureComp( std::string const& key,std::vector<double> const& values );
+    void setMeasures( std::map<std::string,double> const& m );
     FEELPP_DEPRECATED bool hasParameter( std::string const& key ) const { return this->hasMeasure( key ); }
     bool hasMeasure( std::string const& key ) const { return M_dataNameToIndex.find( key ) != M_dataNameToIndex.end(); }
     //! return measure from a key
     double measure( std::string const& key ) const;
+    //! return the current measures in memory
+    std::map<std::string,double> currentMeasures() const;
+    //! return path of file where measures are stored
     std::string const& pathFile() const { return M_pathFile; }
+    //! set path of file where measures are stored
     void setPathFile( std::string const& s ) { M_pathFile = s; }
+
+    //! update measures values into the mapping of values \mp
+    void updateParameterValues( std::map<std::string,double> & mp, std::string const& prefix_symbol ) const;
 private :
     void writeHeader();
 private :
@@ -135,6 +169,31 @@ private :
     std::list<std::string> M_meshMarkers;
     std::string M_direction;
 };
+
+
+class ModelMeasuresNormalFluxGeneric
+{
+public :
+    ModelMeasuresNormalFluxGeneric() = default;
+    ModelMeasuresNormalFluxGeneric( ModelMeasuresNormalFluxGeneric const& ) = default;
+    ModelMeasuresNormalFluxGeneric( ModelMeasuresNormalFluxGeneric&& ) = default;
+    ModelMeasuresNormalFluxGeneric& operator=( ModelMeasuresNormalFluxGeneric const& ) = default;
+    ModelMeasuresNormalFluxGeneric& operator=( ModelMeasuresNormalFluxGeneric && ) = default;
+
+    std::string const& name() const { return M_name; }
+    std::set<std::string> const& markers() const { return M_markers; }
+    std::string const& direction() const { return M_direction; }
+    bool isOutward() const { return M_direction == "outward"; }
+
+    void setup( pt::ptree const& _pt, std::string const& name, ModelIndexes const& indexes );
+
+private :
+    std::string M_name;
+    ModelMarkers M_markers;
+    std::string M_direction;
+};
+
+
 
 } // namespace FeelModels
 } // namespace Feel
