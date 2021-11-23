@@ -37,13 +37,21 @@ namespace FeelModels
 {
 
 
-
-
-void
-ModelMeasuresStorage::setValue( std::string const& name, std::string const& key, double val )
+bool
+ModelMeasuresStorage::hasValue( std::string const& name, std::string const& key ) const
 {
-    M_values[name].setValue( key, val );
+    auto itFindName = M_values.find( name );
+    if ( itFindName == M_values.end() )
+        return false;
+    return itFindName->second.hasValue( key );
 }
+
+typename ModelMeasuresStorage::value_type
+ModelMeasuresStorage::value( std::string const& name, std::string const& key ) const
+{
+    return M_values.at( name ).value( key );
+}
+
 
 void
 ModelMeasuresStorage::setTable( std::string const& name, Feel::Table && table )
@@ -54,16 +62,48 @@ ModelMeasuresStorage::setTable( std::string const& name, Feel::Table && table )
 }
 
 void
-ModelMeasuresStorage::save()
+ModelMeasuresStorage::save( double time )
 {
+    if ( !this->isUpdated() )
+        return;
+
+    // TODO check the time
+    M_times.push_back( time );
+
     if ( M_worldComm->isMasterRank() )
     {
+        fs::path pdir(M_directory);
+        if ( !fs::exists( pdir ) )
+            fs::create_directories( pdir );
+
         for ( auto & [name, values] : M_values )
             if ( values.isUpdated() )
-                values.exportCSV( M_directory );
+                values.saveCSV( M_directory );
         for ( auto & [name, table] : M_tables )
             if ( table.isUpdated() )
                 table.exportCSV( M_directory );
+
+        nl::json jmeta;
+        jmeta["times"] = M_times;
+        nl::json j_measures_values, j_measures_tables;
+        for ( auto const& [name, values] : M_values )
+            j_measures_values[name] = { { "format", "csv" } };
+        for ( auto const& [name, table] : M_tables )
+            j_measures_tables[name] = { { "format", "csv" } };
+        nl::json j_measures;
+        if ( !j_measures_values.is_null() )
+            j_measures["values"] = j_measures_values;
+        if ( !j_measures_tables.is_null() )
+            j_measures["tables"] = j_measures_tables;
+        if ( !j_measures.is_null() )
+            jmeta["measures"] = j_measures;
+
+        std::ofstream ofile( (pdir/"metadata.json").string(), std::ios::trunc);
+        if ( ofile )
+        {
+            ofile << jmeta.dump(1);
+            ofile.close();
+        }
     }
     M_worldComm->barrier();
 }
@@ -89,23 +129,64 @@ ModelMeasuresStorage::resetState()
         table.resetState();
 }
 
-
-
 void
-ModelMeasuresStorageValues::setValue( std::string const& key, double val )
+ModelMeasuresStorage::updateParameterValues( std::map<std::string,double> & mp, std::string const& prefix_symbol ) const
 {
-    M_data[key] = val;
-    M_stateUpdated = true;
+    for ( auto const& [name, values] : M_values )
+        values.updateParameterValues( mp, prefix_symbol );
 }
 
 void
-ModelMeasuresStorageValues::exportCSV( std::string const& directory, bool append )
+ModelMeasuresStorage::restart( double time )
+{
+    fs::path pdir(M_directory);
+    std::ifstream ifile( (pdir/"metadata.json").string() );
+    if ( !ifile )
+        return;
+
+    nl::json jmeta;
+    ifile >> jmeta;
+    if ( jmeta.contains("times") )
+        M_times = jmeta.at( "times" ).get<std::vector<double>>();
+
+    int restartIndex=0;
+    for ( int k=0; k<M_times.size(); ++k,++restartIndex )
+        if ( std::abs(M_times[k]-time ) < 1e-8 )
+            break;
+
+    if ( M_times.empty() )
+        return;
+
+    CHECK( restartIndex < M_times.size() ) << "wrong time for restart";
+    bool isLastIndex = restartIndex == (M_times.size() - 1);
+
+    if ( jmeta.contains("measures") )
+    {
+        auto const& j_measures = jmeta.at("measures");
+        if ( j_measures.contains( "values" ) )
+        {
+            for ( auto const& el : j_measures.at("values").items() )
+            {
+                std::string const& name = el.key();
+                ModelMeasuresStorageValues mmsv( name );
+                mmsv.restart( M_directory, restartIndex, isLastIndex );
+                M_values.erase( name );
+                M_values.emplace( std::make_pair( name, std::move( mmsv ) ) );
+            }
+        }
+    }
+
+    this->resetState();
+}
+
+
+void
+ModelMeasuresStorageValues::saveCSV( std::string const& directory, bool append )
 {
     fs::path pdir(directory);
     if ( !fs::exists( pdir ) )
         fs::create_directories( pdir );
-    std::string filename = "measures.csv";
-    std::ofstream ofile( (pdir/filename).string(), append? std::ios::app : std::ios::trunc);
+    std::ofstream ofile( this->filename_CSV( pdir ), append && !M_keys.empty()? std::ios::app : std::ios::trunc);
     if ( ofile )
         this->exportCSV( ofile );
 }
@@ -116,8 +197,10 @@ ModelMeasuresStorageValues::exportCSV( std::ostream &o )
         return;
 
     Feel::Table table;
+    table.format().setFloatingPointPrecision( 16 );
     if ( M_keys.empty() )
     {
+        table.format().setFirstRowIsHeader( true );
         table.resize( 2, M_data.size() );
         M_keys.reserve( M_data.size() );
         for ( auto const& [key,val] : M_data )
@@ -130,16 +213,90 @@ ModelMeasuresStorageValues::exportCSV( std::ostream &o )
     }
     else
     {
-        CHECK( false ) << "TODO";
+        CHECK( M_data.size() == M_keys.size() ) << "number of key are different from previous save (" << M_data.size() << " != " << M_keys.size() << ") : not compatible with csv format";
+        table.resize( 1, M_data.size() );
+        for ( int i=0;i<M_keys.size();++i )
+        {
+            auto const& key = M_keys[i];
+            auto itFindVal = M_data.find( key );
+            CHECK( itFindVal != M_data.end() ) << "not find key "<<key << "in data values";
+            table(0,i) = itFindVal->second;
+        }
     }
     table.exportCSV( o );
+}
+
+void
+ModelMeasuresStorageValues::updateParameterValues( std::map<std::string,double> & mp, std::string const& prefix_symbol ) const
+{
+    for ( auto const& [key,val] : M_data )
+        mp.emplace( std::make_pair( prefixvm(prefix_symbol,key,"_"), val ) );
+}
+
+
+void
+ModelMeasuresStorageValues::restart( std::string const& directory, int restartIndex, bool isLastIndex )
+{
+    std::string filename = this->filename_CSV( directory );
+
+    std::unique_ptr<std::ifstream> ifile;
+    std::unique_ptr<std::ofstream> ofile;
+
+    fs::path pfilename = fs::path(filename);
+
+    if ( isLastIndex )
+    {
+        ifile = std::make_unique<std::ifstream>( pfilename );
+    }
+    else
+    {
+        fs::path pfilename_tmp = fs::path(filename);
+        pfilename_tmp.replace_extension( ".tmp.csv" );
+        fs::rename( pfilename, pfilename_tmp );
+
+        ifile = std::make_unique<std::ifstream>( pfilename_tmp );
+        ofile = std::make_unique<std::ofstream>( pfilename, std::ios::trunc );
+    }
+
+    std::string lineRead;
+    std::vector<std::string> lineReadSplitted;
+
+    // first line
+    std::getline( *ifile, lineRead );
+    if ( ofile )
+        *ofile << lineRead << "\n";
+
+    boost::split( M_keys, lineRead, boost::is_any_of(","), boost::token_compress_on );
+    for ( auto & key : M_keys )
+        boost::trim( key );
+    std::vector<std::string> idToKey( M_keys.size() );
+    for (int k=0;k<M_keys.size();++k)
+        idToKey[k] = M_keys[k];
+
+    int currentIndex=0;
+    while ( !ifile->eof() )
+    {
+        if ( currentIndex > restartIndex )
+        {
+            break;
+        }
+        std::getline(*ifile,lineRead);
+        if ( ofile )
+            *ofile << lineRead << "\n";
+        ++currentIndex;
+    }
+
+    boost::split( lineReadSplitted, lineRead, boost::is_any_of(","), boost::token_compress_on );
+    CHECK( lineReadSplitted.size() == idToKey.size() ) << "something wrong";
+    for (int k=0;k<idToKey.size();++k)
+        this->setValue( idToKey[k], std::stod( lineReadSplitted[k] ) );
 }
 
 
 void
 ModelMeasuresStorageTable::exportCSV( std::string const& directory, size_type index )
 {
-
+    CHECK( false ) << "TODO";
 }
 
 
@@ -155,7 +312,7 @@ std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
 }
 
 
-
+#if 0
 ModelMeasuresIO::ModelMeasuresIO( std::string const& pathFile, worldcomm_ptr_t const& worldComm )
     :
     M_worldComm( worldComm ),
@@ -359,6 +516,8 @@ ModelMeasuresIO::updateParameterValues( std::map<std::string,double> & mp, std::
     for ( auto const& [name,val] : this->currentMeasures() )
         mp.emplace( std::make_pair( prefixvm(prefix_symbol,name,"_"), val ) );
 }
+
+#endif
 
 void
 ModelMeasuresEvaluatorContext::add( std::string const& field, int ctxId, std::string const& name )
