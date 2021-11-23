@@ -567,20 +567,21 @@ template <typename ModelFieldsType, typename SymbolsExpr, typename ModelMeasures
 void
 Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities )
 {
-    bool hasMeasure = false;
+    //bool hasMeasure = false;
 
     auto const& t = mfields.field( FieldTag::temperature(this), "temperature" );
 
     // compute measures
     for ( auto const& [ppName,ppFlux] : M_postProcessMeasuresNormalHeatFlux )
     {
-        //auto const& t = this->fieldTemperature();
         double heatFlux = integrate(_range=markedfaces(this->mesh(),ppFlux.markers() ),
                                     _expr=this->normalHeatFluxExpr( t, ppFlux.isOutward(), symbolsExpr ) ).evaluate()(0,0);
-        this->postProcessMeasuresIO().setMeasure("Normal_Heat_Flux_"+ppName,heatFlux);
-        hasMeasure = true;
+        this->postProcessMeasures().setValue("Normal_Heat_Flux_"+ppName,heatFlux);
     }
 
+    // execute common post process and save measures
+    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, M_measurePointsEvaluation, symbolsExpr, mfields, mquantities );
+#if 0
     bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
     bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
     bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, symbolsExpr, mfields );
@@ -603,6 +604,7 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
         this->postProcessMeasures().save();
         //this->upload( this->postProcessMeasuresIO().pathFile() );
     }
+#endif
 }
 
 } // namespace FeelModels
