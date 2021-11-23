@@ -1,4 +1,5 @@
 var integrate_8hpp =
 [
-    [ "BOOST_PARAMETER_FUNCTION", "integrate_8hpp.html#aa5aa333d16eb1309be2de112f6f3d6d6", null ]
+    [ "integrate_type", "structFeel_1_1detail_1_1integrate__type.html", "structFeel_1_1detail_1_1integrate__type" ],
+    [ "integrate", "integrate_8hpp.html#a0b20abf8d127ea2766a9bdc5d6b26cc8", null ]
 ];

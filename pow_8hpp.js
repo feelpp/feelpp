@@ -5,6 +5,6 @@ var pow_8hpp =
     [ "HasTrialFunction", "structFeel_1_1vf_1_1Pow_1_1HasTrialFunction.html", "structFeel_1_1vf_1_1Pow_1_1HasTrialFunction" ],
     [ "tensor", "structFeel_1_1vf_1_1Pow_1_1tensor.html", "structFeel_1_1vf_1_1Pow_1_1tensor" ],
     [ "is_zero", "structFeel_1_1vf_1_1Pow_1_1tensor_1_1is__zero.html", "structFeel_1_1vf_1_1Pow_1_1tensor_1_1is__zero" ],
-    [ "operator^", "pow_8hpp.html#ga35acf84111e373ba117a5a221645d9bc", null ],
-    [ "pow", "pow_8hpp.html#ga00218e2f351eaf8e36042f5475764cb2", null ]
+    [ "operator^", "pow_8hpp.html#gab7965105a4a850885f454c7c3865ffc6", null ],
+    [ "pow", "pow_8hpp.html#gaea4c47fc4a17435b9b1d3fe115a6788d", null ]
 ];

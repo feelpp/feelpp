@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -102,7 +102,6 @@ $(document).ready(function(){initNavTree('classFeel_1_1Environment.html',''); in
 
 <div class="header">
   <div class="summary">
-<a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="classFeel_1_1Environment-members.html">List of all members</a>  </div>
   <div class="headertitle">
@@ -164,13 +163,16 @@ Constructors, destructor</h2></td></tr>
 <tr class="memitem:a2090fcc5dc3f4bd395df2a3c21b12a79"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a2090fcc5dc3f4bd395df2a3c21b12a79">Environment</a> (<a class="el" href="classint.html">int</a> argc, char **argv, mpi::threading::level lvl, po::options_description const &amp;desc, po::options_description const &amp;desc_lib, <a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp;about, <a class="el" href="structFeel_1_1Repository_1_1Config.html">Repository::Config</a> const &amp;config)</td></tr>
 <tr class="memdesc:a2090fcc5dc3f4bd395df2a3c21b12a79"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new <a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a> object.  <a href="classFeel_1_1Environment.html#a2090fcc5dc3f4bd395df2a3c21b12a79">More...</a><br /></td></tr>
 <tr class="separator:a2090fcc5dc3f4bd395df2a3c21b12a79"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a67d588817f8e5e71d5b351e74019fb69"><td class="memTemplParams" colspan="2"><a id="a67d588817f8e5e71d5b351e74019fb69"></a>
-template&lt;class ArgumentPack &gt; </td></tr>
-<tr class="memitem:a67d588817f8e5e71d5b351e74019fb69"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Environment</b> (ArgumentPack const &amp;args)</td></tr>
-<tr class="separator:a67d588817f8e5e71d5b351e74019fb69"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a476a87186d6023817e9bd1d430c7e45f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a476a87186d6023817e9bd1d430c7e45f">BOOST_PARAMETER_CONSTRUCTOR</a> (<a class="el" href="classFeel_1_1Environment.html">Environment</a>,(<a class="el" href="classFeel_1_1Environment.html">Environment</a>), tag,(required(argc,(<a class="el" href="classint.html">int</a>))(argv,(char **)))(optional(desc, *)(desc_lib, *)(about, *)(threading,(mpi::threading::level))(config,(<a class="el" href="structFeel_1_1Repository_1_1Config.html">Repository::Config</a>)))) ~<a class="el" href="classFeel_1_1Environment.html">Environment</a>() override</td></tr>
-<tr class="memdesc:a476a87186d6023817e9bd1d430c7e45f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shuts down the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment.  <a href="classFeel_1_1Environment.html#a476a87186d6023817e9bd1d430c7e45f">More...</a><br /></td></tr>
-<tr class="separator:a476a87186d6023817e9bd1d430c7e45f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9239f6de6ab77613075d290c076ac46c"><td class="memItemLeft" align="right" valign="top"><a id="a9239f6de6ab77613075d290c076ac46c"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Environment</b> (NA::arguments&lt; typename na::argc::template required_as_t&lt; <a class="el" href="classint.html">int</a> &gt;, typename na::argv::template required_as_t&lt; char ** &gt;, typename na::threading::template required_as_t&lt; mpi::threading::level &gt;, typename na::desc::template required_as_t&lt; po::options_description const &amp; &gt;, typename na::desc_lib::template required_as_t&lt; po::options_description const &amp; &gt;, typename na::about::template required_as_t&lt; <a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp; &gt;, typename na::config::template required_as_t&lt; <a class="el" href="structFeel_1_1Repository_1_1Config.html">Repository::Config</a> const &amp; &gt; &gt; &amp;&amp;args)</td></tr>
+<tr class="separator:a9239f6de6ab77613075d290c076ac46c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a80c1705bd4e94b003deb4e44d61b84a8"><td class="memTemplParams" colspan="2"><a id="a80c1705bd4e94b003deb4e44d61b84a8"></a>
+template&lt;typename ... Ts, typename  = typename std::enable_if_t&lt; sizeof...(Ts) != 0 &amp;&amp; ( NA::is_named_argument_v&lt;Ts&gt; &amp;&amp; ...) &gt;&gt; </td></tr>
+<tr class="memitem:a80c1705bd4e94b003deb4e44d61b84a8"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Environment</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a80c1705bd4e94b003deb4e44d61b84a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8063d8d062ce24ca7776b78cbfd57ca3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a8063d8d062ce24ca7776b78cbfd57ca3">~Environment</a> () override</td></tr>
+<tr class="memdesc:a8063d8d062ce24ca7776b78cbfd57ca3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shuts down the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment.  <a href="classFeel_1_1Environment.html#a8063d8d062ce24ca7776b78cbfd57ca3">More...</a><br /></td></tr>
+<tr class="separator:a8063d8d062ce24ca7776b78cbfd57ca3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Accessors</h2></td></tr>
@@ -280,9 +282,10 @@ static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 directories</h2></td></tr>
-<tr class="memitem:a4a798d4f94eab35b2c0d2f53d3971ae8"><td class="memItemLeft" align="right" valign="top"><a id="a4a798d4f94eab35b2c0d2f53d3971ae8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((void), static changeRepository, tag,(required(directory,(boost::format)))(optional(filename, *(boost::is_convertible&lt; mpl::_, std::string &gt;),&quot;logfile&quot;)(subdir, *(boost::is_convertible&lt; mpl::_, <a class="el" href="classbool.html">bool</a> &gt;), S_vm[&quot;npdir&quot;].as&lt; <a class="el" href="classbool.html">bool</a> &gt;())(worldcomm,(<a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a>), <a class="el" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">Environment::worldComm</a>())(remove,(<a class="el" href="classbool.html">bool</a>), false)))</td></tr>
-<tr class="separator:a4a798d4f94eab35b2c0d2f53d3971ae8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b4fd6aec8923b20258015b1f4da9dfe"><td class="memTemplParams" colspan="2"><a id="a9b4fd6aec8923b20258015b1f4da9dfe"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a9b4fd6aec8923b20258015b1f4da9dfe"><td class="memTemplItemLeft" align="right" valign="top">static void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>changeRepository</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a9b4fd6aec8923b20258015b1f4da9dfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afd49f17202ebc86ad12e811d939bf662"><td class="memItemLeft" align="right" valign="top">static std::string const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#afd49f17202ebc86ad12e811d939bf662">rootRepository</a> ()</td></tr>
 <tr class="separator:afd49f17202ebc86ad12e811d939bf662"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace781e8da2c930e0297dd005cf5ddbbf"><td class="memItemLeft" align="right" valign="top">static std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#ace781e8da2c930e0297dd005cf5ddbbf">findFile</a> (std::string const &amp;filename, std::vector&lt; std::string &gt; paths={})</td></tr>
@@ -330,23 +333,6 @@ static uuids::uuid&#160;</td><td class="memItemRight" valign="bottom"><a class="
 <tr class="memdesc:aa41742c7a53cafd818bc49fa49bc48db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate a UUID from a namespace UUID and a name. <br /></td></tr>
 <tr class="separator:aa41742c7a53cafd818bc49fa49bc48db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
-Public Member Functions</h2></td></tr>
-<tr class="memitem:a38e72200b44f8090d022120c69643e89"><td class="memItemLeft" align="right" valign="top"><a id="a38e72200b44f8090d022120c69643e89"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((po::variable_value), static <a class="el" href="classFeel_1_1Environment.html#a777708cb9116c7556145d1b3dd63e852">vm</a>, tag,(required(name,(std::string)))(optional(sub,(std::string), std::string())(prefix,(std::string), std::string())(<a class="el" href="classFeel_1_1Environment.html#a777708cb9116c7556145d1b3dd63e852">vm</a>,(po::variables_map const &amp;), <a class="el" href="classFeel_1_1Environment.html#a777708cb9116c7556145d1b3dd63e852">Environment::vm</a>())))</td></tr>
-<tr class="separator:a38e72200b44f8090d022120c69643e89"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b6c0308d0bc89011ba8b08b0faec9b3"><td class="memItemLeft" align="right" valign="top"><a id="a2b6c0308d0bc89011ba8b08b0faec9b3"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((std::pair&lt; std::string, po::variable_value &gt;), static option, tag,(required(name,(std::string)))(optional(sub,(std::string), std::string())(prefix,(std::string), std::string())(<a class="el" href="classFeel_1_1Environment.html#a777708cb9116c7556145d1b3dd63e852">vm</a>,(po::variables_map const &amp;), <a class="el" href="classFeel_1_1Environment.html#a777708cb9116c7556145d1b3dd63e852">Environment::vm</a>())))</td></tr>
-<tr class="separator:a2b6c0308d0bc89011ba8b08b0faec9b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_methods_classFeel_1_1JournalManager"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1JournalManager')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1JournalManager.html">Feel::JournalManager</a></td></tr>
-<tr class="memitem:a63f487b5d6b635223a07a34c8165d782 inherit pub_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#a63f487b5d6b635223a07a34c8165d782">JournalManager</a> ()</td></tr>
-<tr class="memdesc:a63f487b5d6b635223a07a34c8165d782 inherit pub_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <a href="classFeel_1_1JournalManager.html#a63f487b5d6b635223a07a34c8165d782">More...</a><br /></td></tr>
-<tr class="separator:a63f487b5d6b635223a07a34c8165d782 inherit pub_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adca6ff9f7e53eac59d5d8974efeda645 inherit pub_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="adca6ff9f7e53eac59d5d8974efeda645"></a>
-virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#adca6ff9f7e53eac59d5d8974efeda645">~JournalManager</a> ()=default</td></tr>
-<tr class="memdesc:adca6ff9f7e53eac59d5d8974efeda645 inherit pub_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor. <br /></td></tr>
-<tr class="separator:adca6ff9f7e53eac59d5d8974efeda645 inherit pub_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a65c0f336d8f4a7c1e5a2205116a98d27"><td class="memTemplParams" colspan="2"><a id="a65c0f336d8f4a7c1e5a2205116a98d27"></a>
@@ -372,6 +358,10 @@ static void&#160;</td><td class="memItemRight" valign="bottom"><b>clearSomeMemor
 <tr class="memitem:a43c7e409ca67d5c89864bb5a91468fdf"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structFeel_1_1MemoryUsage.html">MemoryUsage</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a43c7e409ca67d5c89864bb5a91468fdf">logMemoryUsage</a> (std::string const &amp;message)</td></tr>
 <tr class="memdesc:a43c7e409ca67d5c89864bb5a91468fdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">print resident memory usage as well as PETSc malloc usage in log file  <a href="classFeel_1_1Environment.html#a43c7e409ca67d5c89864bb5a91468fdf">More...</a><br /></td></tr>
 <tr class="separator:a43c7e409ca67d5c89864bb5a91468fdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8693c471e813351a6b1145bdb5233a84"><td class="memTemplParams" colspan="2"><a id="a8693c471e813351a6b1145bdb5233a84"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a8693c471e813351a6b1145bdb5233a84"><td class="memTemplItemLeft" align="right" valign="top">static std::pair&lt; std::string, po::variable_value &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>option</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a8693c471e813351a6b1145bdb5233a84"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a29b2eeaca395bba470dc395348692677"><td class="memItemLeft" align="right" valign="top"><a id="a29b2eeaca395bba470dc395348692677"></a>
 static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a29b2eeaca395bba470dc395348692677">saveTimers</a> (<a class="el" href="classbool.html">bool</a> save)</td></tr>
 <tr class="memdesc:a29b2eeaca395bba470dc395348692677"><td class="mdescLeft">&#160;</td><td class="mdescRight">display and save timers <br /></td></tr>
@@ -390,6 +380,10 @@ static void&#160;</td><td class="memItemRight" valign="bottom"><b>saveTimersMD</
 <tr class="memitem:a7dab59a5c06a5085826c3d83127e473d"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">stopLogging</a> (<a class="el" href="classbool.html">bool</a> remove=false)</td></tr>
 <tr class="memdesc:a7dab59a5c06a5085826c3d83127e473d"><td class="mdescLeft">&#160;</td><td class="mdescRight">stop logging in Feel++.  <a href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">More...</a><br /></td></tr>
 <tr class="separator:a7dab59a5c06a5085826c3d83127e473d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aefa39799fcc994f5d7f089f2ac7df1cd"><td class="memTemplParams" colspan="2"><a id="aefa39799fcc994f5d7f089f2ac7df1cd"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:aefa39799fcc994f5d7f089f2ac7df1cd"><td class="memTemplItemLeft" align="right" valign="top">static po::variable_value&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vm</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:aefa39799fcc994f5d7f089f2ac7df1cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_static_methods_classFeel_1_1JournalManager"><td colspan="2" onclick="javascript:toggleInherit('pub_static_methods_classFeel_1_1JournalManager')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classFeel_1_1JournalManager.html">Feel::JournalManager</a></td></tr>
 <tr class="memitem:a68fcb2fe0b7c450c25db9b7d8b1f3624 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#a68fcb2fe0b7c450c25db9b7d8b1f3624">setJournalFilename</a> (const std::string &amp;name)</td></tr>
 <tr class="memdesc:a68fcb2fe0b7c450c25db9b7d8b1f3624 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Setters.  <a href="classFeel_1_1JournalManager.html#a68fcb2fe0b7c450c25db9b7d8b1f3624">More...</a><br /></td></tr>
@@ -471,6 +465,14 @@ Additional Inherited Members</h2></td></tr>
 <tr class="memitem:aa32d9687c879073aee7b4c43cb269285 inherit pub_types_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="aa32d9687c879073aee7b4c43cb269285"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a></td></tr>
 <tr class="separator:aa32d9687c879073aee7b4c43cb269285 inherit pub_types_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classFeel_1_1JournalManager"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1JournalManager')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1JournalManager.html">Feel::JournalManager</a></td></tr>
+<tr class="memitem:a63f487b5d6b635223a07a34c8165d782 inherit pub_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#a63f487b5d6b635223a07a34c8165d782">JournalManager</a> ()</td></tr>
+<tr class="memdesc:a63f487b5d6b635223a07a34c8165d782 inherit pub_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <a href="classFeel_1_1JournalManager.html#a63f487b5d6b635223a07a34c8165d782">More...</a><br /></td></tr>
+<tr class="separator:a63f487b5d6b635223a07a34c8165d782 inherit pub_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adca6ff9f7e53eac59d5d8974efeda645 inherit pub_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="adca6ff9f7e53eac59d5d8974efeda645"></a>
+virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#adca6ff9f7e53eac59d5d8974efeda645">~JournalManager</a> ()=default</td></tr>
+<tr class="memdesc:adca6ff9f7e53eac59d5d8974efeda645 inherit pub_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor. <br /></td></tr>
+<tr class="separator:adca6ff9f7e53eac59d5d8974efeda645 inherit pub_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="aa174c7b26f9285d351fc2e8efb933594"></a>
@@ -554,57 +556,6 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
 
 </div>
 </div>
-<a id="a476a87186d6023817e9bd1d430c7e45f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a476a87186d6023817e9bd1d430c7e45f">&#9670;&nbsp;</a></span>BOOST_PARAMETER_CONSTRUCTOR()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::Environment::BOOST_PARAMETER_CONSTRUCTOR </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classFeel_1_1Environment.html">Environment</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">(<a class="el" href="classFeel_1_1Environment.html">Environment</a>)&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">tag&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">(required(argc,(<a class="el" href="classint.html">int</a>))(argv,(char **)))(optional(desc, *)(desc_lib, *)(about, *)(threading,(mpi::threading::level))(config,(<a class="el" href="structFeel_1_1Repository_1_1Config.html">Repository::Config</a>)))&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Shuts down the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment. </p>
-<p>If this <code><a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a></code> object was used to initialize the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment, and the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment has not already been shut down (finalized), this destructor will shut down the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment. </p>
-
-</div>
-</div>
 <a id="a26e4f2505f0ba9e0a0266390447f68f7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a26e4f2505f0ba9e0a0266390447f68f7">&#9670;&nbsp;</a></span>expand()</h2>
 
@@ -648,10 +599,6 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the expansion of the feel++ paths defined in string expr </dd></dl>
-
-<p class="reference">References <a class="el" href="classFeel_1_1Environment.html#a0090277ae3216635d65330b4bfff9dd3">appRepository()</a>, <a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">Feel::expr()</a>, <a class="el" href="classFeel_1_1Environment.html#a6c55a43784441001b70b5aaca4c235ba">numberOfProcessors()</a>, and <a class="el" href="classFeel_1_1Environment.html#afd49f17202ebc86ad12e811d939bf662">rootRepository()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Environment.html#a2090fcc5dc3f4bd395df2a3c21b12a79">Environment()</a>, and <a class="el" href="classFeel_1_1Environment.html#ace781e8da2c930e0297dd005cf5ddbbf">findFile()</a>.</p>
 
 </div>
 </div>
@@ -727,8 +674,6 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
 </li>
 </ul>
 
-<p class="reference">References <a class="el" href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">expand()</a>, <a class="el" href="classFeel_1_1Environment.html#a924747a128671827d402879455f226c0">localGeoRepository()</a>, and <a class="el" href="classFeel_1_1Environment.html#a54dac2208cb7895c32383349706387db">systemGeoRepository()</a>.</p>
-
 <p class="reference">Referenced by <a class="el" href="classFeel_1_1Environment.html#af8a764da932892ce2381be38c7061736">setConfigFile()</a>.</p>
 
 </div>
@@ -776,8 +721,6 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the filename </dd></dl>
-
-<p class="reference">References <a class="el" href="structFeel_1_1RemoteData.html#a1bcf1311b39d7a8e370757558634c707">Feel::RemoteData::canDownload()</a>, <a class="el" href="structFeel_1_1RemoteData.html#ae7aca8c7d3f15edf5032c0d1bb4403ae">Feel::RemoteData::download()</a>, <a class="el" href="classFeel_1_1Environment.html#afd49f17202ebc86ad12e811d939bf662">rootRepository()</a>, and <a class="el" href="classFeel_1_1Environment.html#a3ffa1e65a0e0cf627d2187173c7feebb">worldCommPtr()</a>.</p>
 
 </div>
 </div>
@@ -834,8 +777,6 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
 <p>This routine is equivalent to a call to <code>MPI_Initialized</code>.</p>
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> if the MPI environment has been initialized. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Environment.html#a2090fcc5dc3f4bd395df2a3c21b12a79">Environment()</a>.</p>
-
 </div>
 </div>
 <a id="af6b3e753d8970217aebba01cb1fee52f"></a>
@@ -891,8 +832,6 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
 
 <p>rank 0 process is considered the master process </p>
 <p>the master process can then for example print information in the console or in some files </p>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1JournalManager.html#a25e83050695ce2e3d6d52a34bdc728b9">Feel::JournalManager::journalSave()</a>.</p>
 
 </div>
 </div>
@@ -972,10 +911,6 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the local config files repository (default: <code>$HOME/feel/config</code>) </dd></dl>
 
-<p class="reference">References <a class="el" href="classFeel_1_1Environment.html#afd49f17202ebc86ad12e811d939bf662">rootRepository()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Application.html#ae8a93b3a1b08b3369b849fbe887bb808">Feel::Application::doOptions()</a>.</p>
-
 </div>
 </div>
 <a id="a924747a128671827d402879455f226c0"></a>
@@ -1001,10 +936,6 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
 </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the local geo files repository (default: <code>$HOME/feel/geo</code>) </dd></dl>
-
-<p class="reference">References <a class="el" href="classFeel_1_1Environment.html#afd49f17202ebc86ad12e811d939bf662">rootRepository()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Environment.html#ace781e8da2c930e0297dd005cf5ddbbf">findFile()</a>.</p>
 
 </div>
 </div>
@@ -1076,8 +1007,6 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
   </dd>
 </dl>
 
-<p class="reference">References <a class="el" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">worldComm()</a>.</p>
-
 </div>
 </div>
 <a id="afd49f17202ebc86ad12e811d939bf662"></a>
@@ -1104,7 +1033,7 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the root repository (default: <code>$HOME/feel</code>) </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Environment.html#a2090fcc5dc3f4bd395df2a3c21b12a79">Environment()</a>, <a class="el" href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">expand()</a>, <a class="el" href="classFeel_1_1Environment.html#a4fc75efe7320d69c331e814fa35321cf">findFileRemotely()</a>, <a class="el" href="classFeel_1_1Environment.html#a2e717aba852ebe1e4eefd461a5ff3cb3">localConfigRepository()</a>, <a class="el" href="classFeel_1_1Environment.html#a924747a128671827d402879455f226c0">localGeoRepository()</a>, and <a class="el" href="classFeel_1_1Application.html#aaf35f44ad003a66bf5a9c02d45558503">Feel::Application::rootRepository()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1Application.html#aaf35f44ad003a66bf5a9c02d45558503">Feel::Application::rootRepository()</a>.</p>
 
 </div>
 </div>
@@ -1166,7 +1095,7 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
   </dd>
 </dl>
 
-<p class="reference">References <a class="el" href="classFeel_1_1Environment.html#ace781e8da2c930e0297dd005cf5ddbbf">findFile()</a>, and <a class="el" href="namespaceFeel.html#a284aa243399471c48629a91886b6647c">Feel::readFromFile()</a>.</p>
+<p class="reference">References <a class="el" href="classFeel_1_1Environment.html#ace781e8da2c930e0297dd005cf5ddbbf">findFile()</a>.</p>
 
 </div>
 </div>
@@ -1233,8 +1162,6 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
 <div class="line">LOG(INFO) &lt;&lt; <span class="stringliteral">&quot;Feel++ uses logging&quot;</span>;</div>
 <div class="line"><a class="code" href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">Environment::stopLogging</a>();</div>
 </div><!-- fragment --> 
-<p class="reference">References <a class="el" href="classFeel_1_1Environment.html#ac2ba36cb9e6b5cc1df509104647d4ec5">logsRepository()</a>.</p>
-
 </div>
 </div>
 <a id="a7dab59a5c06a5085826c3d83127e473d"></a>
@@ -1301,10 +1228,6 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a tuple : the system config files repository (default: <code>/usr/share/feel/config</code> or /usr/local/share/feel/config) and true or false whether the directory exists or not </dd></dl>
 
-<p class="reference">References <a class="el" href="classFeel_1_1Info.html#a0d68e99fbab25b8e9308d6b3e72b9879">Feel::Info::prefix()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Application.html#ae8a93b3a1b08b3369b849fbe887bb808">Feel::Application::doOptions()</a>.</p>
-
 </div>
 </div>
 <a id="a54dac2208cb7895c32383349706387db"></a>
@@ -1330,10 +1253,6 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
 </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a tuple : the system geo files repository (default: <code>/usr/share/feel/geo</code> or /usr/local/share/feel/geo) and true or false whether the directory exists or not </dd></dl>
-
-<p class="reference">References <a class="el" href="classFeel_1_1Info.html#a7ee0feccafbebc6b049e6d178f02e9b6">Feel::Info::datadir()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Environment.html#ace781e8da2c930e0297dd005cf5ddbbf">findFile()</a>.</p>
 
 </div>
 </div>
@@ -1388,8 +1307,6 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
 </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the shared_ptr <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> </dd></dl>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Environment.html#a4fc75efe7320d69c331e814fa35321cf">findFileRemotely()</a>.</p>
 
 </div>
 </div>
@@ -1524,13 +1441,41 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
   </dd>
 </dl>
 
-<p class="reference">References <a class="el" href="classFeel_1_1AboutData.html#a169bf848c34367e76d8fc9b2ba134fe3">Feel::AboutData::appName()</a>, <a class="el" href="classFeel_1_1Environment.html#a0090277ae3216635d65330b4bfff9dd3">appRepository()</a>, <a class="el" href="namespaceFeel.html#a93536565ac5d46bac7768a1e50432ca8">Feel::askPassword()</a>, <a class="el" href="classFeel_1_1Repository.html#a75eb8dd647b083d73f671a58d31eeb9a">Feel::Repository::configure()</a>, <a class="el" href="classFeel_1_1Repository.html#ab6f60083e5ba3fb0f53606a74e430e87">Feel::Repository::directory()</a>, <a class="el" href="classFeel_1_1Repository.html#a1540f6307530108c5a56dd7754878c89">Feel::Repository::directoryWithoutAppenders()</a>, <a class="el" href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">expand()</a>, <a class="el" href="classFeel_1_1Environment.html#acbfe687c47835d900969edacd9cd7a51">initialized()</a>, <a class="el" href="classFeel_1_1JournalManager.html#a4771e8ff34683e6715cd0b86fa59a9a2">Feel::JournalManager::journalCheckpoint()</a>, <a class="el" href="classFeel_1_1JournalManager.html#a735aa096e8e78391574e06ebec3b18ef">Feel::JournalManager::journalDBConfig()</a>, <a class="el" href="classFeel_1_1Environment.html#a68d66fb8e0d0f6c418b9a5f99296e2b8">optionsDescriptionApplication()</a>, <a class="el" href="classFeel_1_1Repository.html#aced500213fc9de20e0fa448c0b852852">Feel::Repository::root()</a>, <a class="el" href="classFeel_1_1Environment.html#afd49f17202ebc86ad12e811d939bf662">rootRepository()</a>, <a class="el" href="classFeel_1_1JournalManager.html#af3998caa18c821abfa5dba41170473a3">Feel::JournalManager::setJournalAutoMode()</a>, <a class="el" href="classFeel_1_1JournalManager.html#a55deac5c47e5e6ab3ac7607f89149a57">Feel::JournalManager::setJournalEnable()</a>, <a class="el" href="classFeel_1_1JournalManager.html#a68fcb2fe0b7c450c25db9b7d8b1f3624">Feel::JournalManager::setJournalFilename()</a>, <a class="el" href="classFeel_1_1AboutData.html#ac3e7f00124b73aa5009d91e44791435b">Feel::AboutData::version()</a>, and <a class="el" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">worldComm()</a>.</p>
+</div>
+</div>
+<a id="a8063d8d062ce24ca7776b78cbfd57ca3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8063d8d062ce24ca7776b78cbfd57ca3">&#9670;&nbsp;</a></span>~Environment()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::Environment::~Environment </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Shuts down the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment. </p>
+<p>If this <code><a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a></code> object was used to initialize the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment, and the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment has not already been shut down (finalized), this destructor will shut down the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment. </p>
+
+<p class="reference">References <a class="el" href="classFeel_1_1AboutData.html#a169bf848c34367e76d8fc9b2ba134fe3">Feel::AboutData::appName()</a>, <a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796">Feel::WorldComm::globalRank()</a>, <a class="el" href="classFeel_1_1Environment.html#a29b2eeaca395bba470dc395348692677">saveTimers()</a>, and <a class="el" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">worldComm()</a>.</p>
 
 </div>
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="anamespaceFeel_html"><div class="ttname"><a href="namespaceFeel.html">Feel</a></div><div class="ttdoc">-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...</div><div class="ttdef"><b>Definition:</b> about.cpp:39</div></div>
+<div class="ttc" id="anamespaceFeel_html"><div class="ttname"><a href="namespaceFeel.html">Feel</a></div><div class="ttdoc">-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...</div><div class="ttdef"><b>Definition:</b> about.cpp:36</div></div>
 <div class="ttc" id="aclassFeel_1_1Environment_html_af0fa80df613e602f56dc46f72d0a456c"><div class="ttname"><a href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">Feel::Environment::startLogging</a></div><div class="ttdeci">static void startLogging(std::string decorate)</div><div class="ttdoc">start logging.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2050</div></div>
 <div class="ttc" id="aclassFeel_1_1Environment_html_a26e4f2505f0ba9e0a0266390447f68f7"><div class="ttname"><a href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">Feel::Environment::expand</a></div><div class="ttdeci">static std::string expand(std::string const &amp;expr)</div><div class="ttdoc">expand feel++ pathes in a string</div><div class="ttdef"><b>Definition:</b> environment.cpp:2457</div></div>
 <div class="ttc" id="aclassFeel_1_1Environment_html_a7dab59a5c06a5085826c3d83127e473d"><div class="ttname"><a href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">Feel::Environment::stopLogging</a></div><div class="ttdeci">static void stopLogging(bool remove=false)</div><div class="ttdoc">stop logging in Feel++.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2105</div></div>

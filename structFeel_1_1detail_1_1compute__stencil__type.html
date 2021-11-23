@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: Feel::detail::compute_stencil_type&lt; Args &gt; Struct Template Reference</title>
+<title>Feel++: Feel::detail::compute_stencil_type&lt; ArgTestType, ArgTrialType, ArgRangeType, ArgRangeExtendedType, ArgQuadType &gt; Struct Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -105,33 +105,33 @@ $(document).ready(function(){initNavTree('structFeel_1_1detail_1_1compute__stenc
 <a href="#pub-types">Public Types</a> &#124;
 <a href="structFeel_1_1detail_1_1compute__stencil__type-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">Feel::detail::compute_stencil_type&lt; Args &gt; Struct Template Reference</div>  </div>
+<div class="title">Feel::detail::compute_stencil_type&lt; ArgTestType, ArgTrialType, ArgRangeType, ArgRangeExtendedType, ArgQuadType &gt; Struct Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:af34e7da8c16ee8ebfc1e5759637ca69d"><td class="memItemLeft" align="right" valign="top"><a id="af34e7da8c16ee8ebfc1e5759637ca69d"></a>
-typedef <a class="el" href="structFeel_1_1detail_1_1remove__pointer__const__reference__default__type.html">remove_pointer_const_reference_default_type</a>&lt; Args, <a class="el" href="structFeel_1_1tag_1_1quad.html">tag::quad</a>, <a class="el" href="structFeel_1_1stencilQuadSet.html">stencilQuadSet</a>&lt;&gt; &gt;::<a class="el" href="classFeel_1_1Stencil.html">type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>_quad_type</b></td></tr>
-<tr class="separator:af34e7da8c16ee8ebfc1e5759637ca69d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae9ffcf0f7687dff5f456dd4f0611cfa9"><td class="memItemLeft" align="right" valign="top"><a id="ae9ffcf0f7687dff5f456dd4f0611cfa9"></a>
-typedef <a class="el" href="structFeel_1_1detail_1_1remove__pointer__const__reference__default__type.html">remove_pointer_const_reference_default_type</a>&lt; Args, <a class="el" href="structFeel_1_1tag_1_1range__extended.html">tag::range_extended</a>, <a class="el" href="structFeel_1_1StencilRangeMap0Type.html">StencilRangeMap0Type</a> &gt;::<a class="el" href="classFeel_1_1Stencil.html">type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>_range_extended_type</b></td></tr>
-<tr class="separator:ae9ffcf0f7687dff5f456dd4f0611cfa9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a80593c2643cd94469e4b7343c20b31f4"><td class="memItemLeft" align="right" valign="top"><a id="a80593c2643cd94469e4b7343c20b31f4"></a>
-typedef <a class="el" href="structFeel_1_1detail_1_1remove__pointer__const__reference__default__type.html">remove_pointer_const_reference_default_type</a>&lt; Args, <a class="el" href="structFeel_1_1tag_1_1range.html">tag::range</a>, <a class="el" href="structFeel_1_1StencilRangeMap0Type.html">StencilRangeMap0Type</a> &gt;::<a class="el" href="classFeel_1_1Stencil.html">type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>_range_type</b></td></tr>
-<tr class="separator:a80593c2643cd94469e4b7343c20b31f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3add70cee91fb4b970973668e54a5f5e"><td class="memItemLeft" align="right" valign="top"><a id="a3add70cee91fb4b970973668e54a5f5e"></a>
-typedef <a class="el" href="structFeel_1_1detail_1_1remove__pointer__const__reference__type.html">remove_pointer_const_reference_type</a>&lt; Args, <a class="el" href="structFeel_1_1tag_1_1test.html">tag::test</a> &gt;::<a class="el" href="classFeel_1_1Stencil.html">type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>_test_type</b></td></tr>
-<tr class="separator:a3add70cee91fb4b970973668e54a5f5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a779fdd3fc829589163c6ca8038d76ae1"><td class="memItemLeft" align="right" valign="top"><a id="a779fdd3fc829589163c6ca8038d76ae1"></a>
-typedef <a class="el" href="structFeel_1_1detail_1_1remove__pointer__const__reference__type.html">remove_pointer_const_reference_type</a>&lt; Args, <a class="el" href="structFeel_1_1tag_1_1trial.html">tag::trial</a> &gt;::<a class="el" href="classFeel_1_1Stencil.html">type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>_trial_type</b></td></tr>
-<tr class="separator:a779fdd3fc829589163c6ca8038d76ae1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a520b4f14bd9363ce9fe91082ba2455fb"><td class="memItemLeft" align="right" valign="top"><a id="a520b4f14bd9363ce9fe91082ba2455fb"></a>
+<tr class="memitem:a4ed924fdf95f2c26749ade65a484254b"><td class="memItemLeft" align="right" valign="top"><a id="a4ed924fdf95f2c26749ade65a484254b"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>_quad_type</b> = std::decay_t&lt; ArgQuadType &gt;</td></tr>
+<tr class="separator:a4ed924fdf95f2c26749ade65a484254b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c7eab3709603606a5d13df19337e137"><td class="memItemLeft" align="right" valign="top"><a id="a2c7eab3709603606a5d13df19337e137"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>_range_extended_type</b> = std::decay_t&lt; ArgRangeExtendedType &gt;</td></tr>
+<tr class="separator:a2c7eab3709603606a5d13df19337e137"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae481f9c1269a9bda79a1e3b07ae3fba5"><td class="memItemLeft" align="right" valign="top"><a id="ae481f9c1269a9bda79a1e3b07ae3fba5"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>_range_type</b> = std::decay_t&lt; ArgRangeType &gt;</td></tr>
+<tr class="separator:ae481f9c1269a9bda79a1e3b07ae3fba5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe5804c1ee2ce77444ecfb230684d812"><td class="memItemLeft" align="right" valign="top"><a id="abe5804c1ee2ce77444ecfb230684d812"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>_test_type</b> = Feel::remove_shared_ptr_type&lt; std::decay_t&lt; ArgTestType &gt; &gt;</td></tr>
+<tr class="separator:abe5804c1ee2ce77444ecfb230684d812"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a150e8522aec06f61bb708d2ecc78520b"><td class="memItemLeft" align="right" valign="top"><a id="a150e8522aec06f61bb708d2ecc78520b"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>_trial_type</b> = Feel::remove_shared_ptr_type&lt; std::decay_t&lt; ArgTrialType &gt; &gt;</td></tr>
+<tr class="separator:a150e8522aec06f61bb708d2ecc78520b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:addaf343f1ee8928458bf065879b351f8"><td class="memItemLeft" align="right" valign="top"><a id="addaf343f1ee8928458bf065879b351f8"></a>
 typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1Stencil.html">type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>ptrtype</b></td></tr>
-<tr class="separator:a520b4f14bd9363ce9fe91082ba2455fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa4315d5120d8924230453aeffd7e22b5"><td class="memItemLeft" align="right" valign="top"><a id="aa4315d5120d8924230453aeffd7e22b5"></a>
+<tr class="separator:addaf343f1ee8928458bf065879b351f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abab707609651dc5976cebc7a8b86fb8a"><td class="memItemLeft" align="right" valign="top"><a id="abab707609651dc5976cebc7a8b86fb8a"></a>
 typedef <a class="el" href="classFeel_1_1Stencil.html">Stencil</a>&lt; _test_type, _trial_type, _range_type, _range_extended_type, _quad_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>type</b></td></tr>
-<tr class="separator:aa4315d5120d8924230453aeffd7e22b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:abab707609651dc5976cebc7a8b86fb8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

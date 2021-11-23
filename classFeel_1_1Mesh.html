@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -608,12 +608,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>addFaceNeighborSubdom
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a1dde9018ac511872477f144b35ff9a4b"><td class="memItemLeft" align="right" valign="top"><a id="a1dde9018ac511872477f144b35ff9a4b"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((<a class="el" href="classbool.html">bool</a>), load, tag,(required(name,(std::string))(path, *))(optional(update,(size_type), MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES)(<a class="el" href="classFeel_1_1Mesh.html">type</a>,(std::string), std::string(&quot;binary&quot;))(suffix,(std::string), std::string(&quot;&quot;))(sep,(std::string), std::string(&quot;&quot;))))</td></tr>
-<tr class="separator:a1dde9018ac511872477f144b35ff9a4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af5776a3c40ad0daeadab9dda8ad1373e"><td class="memItemLeft" align="right" valign="top"><a id="af5776a3c40ad0daeadab9dda8ad1373e"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((void), save, tag,(required(name,(std::string))(path, *))(optional(<a class="el" href="classFeel_1_1Mesh.html">type</a>,(std::string), std::string(&quot;binary&quot;))(suffix,(std::string), std::string(&quot;&quot;))(sep,(std::string), std::string(&quot;&quot;))))</td></tr>
-<tr class="separator:af5776a3c40ad0daeadab9dda8ad1373e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e9e8013dfe087689c84c94a0eb319b0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#a0e9e8013dfe087689c84c94a0eb319b0">checkLocalPermutation</a> (mpl::bool_&lt; false &gt;) const</td></tr>
 <tr class="memdesc:a0e9e8013dfe087689c84c94a0eb319b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">private:  <a href="classFeel_1_1Mesh.html#a0e9e8013dfe087689c84c94a0eb319b0">More...</a><br /></td></tr>
 <tr class="separator:a0e9e8013dfe087689c84c94a0eb319b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -633,6 +627,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="separator:ae1c06bf148b0004b90c8f6d281094221"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1bde4ac6d172980bca2a547d6e2c2506"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#a1bde4ac6d172980bca2a547d6e2c2506">isPeriodic</a> () const</td></tr>
 <tr class="separator:a1bde4ac6d172980bca2a547d6e2c2506"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a758e0f28ce8b7c0a6bdacd21af91c5"><td class="memTemplParams" colspan="2"><a id="a6a758e0f28ce8b7c0a6bdacd21af91c5"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a6a758e0f28ce8b7c0a6bdacd21af91c5"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>load</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a6a758e0f28ce8b7c0a6bdacd21af91c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a42dbd7fe8a0f0c0bb5e8dcb95fb76259"><td class="memItemLeft" align="right" valign="top"><a id="a42dbd7fe8a0f0c0bb5e8dcb95fb76259"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>meshModified</b> () override</td></tr>
 <tr class="separator:a42dbd7fe8a0f0c0bb5e8dcb95fb76259"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -684,6 +682,10 @@ template&lt;typename TheShape &gt; </td></tr>
 template&lt;typename TheShape  = GeoShape&gt; </td></tr>
 <tr class="memitem:a46c4247bb93dad32ca0f4e38f41a374b"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_NO_EXPORT void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==3 &gt; *=nullptr)</td></tr>
 <tr class="separator:a46c4247bb93dad32ca0f4e38f41a374b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d95dabb70c27125761760a7948e9625"><td class="memTemplParams" colspan="2"><a id="a9d95dabb70c27125761760a7948e9625"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a9d95dabb70c27125761760a7948e9625"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>save</b> (Ts &amp;&amp;... v) const</td></tr>
+<tr class="separator:a9d95dabb70c27125761760a7948e9625"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a85b1320c69de76241668007069d01111"><td class="memItemLeft" align="right" valign="top"><a id="a85b1320c69de76241668007069d01111"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#a85b1320c69de76241668007069d01111">setPeriodicEntities</a> (std::vector&lt; <a class="el" href="structFeel_1_1PeriodicEntity.html">PeriodicEntity</a> &gt; const &amp;e)</td></tr>
 <tr class="memdesc:a85b1320c69de76241668007069d01111"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the periodic entities <br /></td></tr>

@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -114,7 +114,7 @@ $(document).ready(function(){initNavTree('createsubmesh_8hpp.html',''); initResi
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CreateSubmeshTool.html">Feel::CreateSubmeshTool&lt; MeshType, IteratorRange, TheTag &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1detail_1_1createSubmesh.html">Feel::detail::createSubmesh&lt; Args &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1detail_1_1CreateSubmeshTrait.html">Feel::detail::CreateSubmeshTrait&lt; MeshArgType, RangeArgType &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html">Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">unifying mesh class  <a href="classFeel_1_1Mesh.html#details">More...</a><br /></td></tr>
@@ -136,9 +136,14 @@ template&lt;typename MeshType , typename SubMeshType , typename IndexT  = typena
 template&lt;typename MeshType , typename SubMeshType , typename IndexT  = typename MeshType::index_type&gt; </td></tr>
 <tr class="memitem:a5ac483470299f33c851668f37b601926"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::addMarkedEdgesInSubMesh</b> (std::shared_ptr&lt; MeshType &gt; const &amp;mesh, typename MeshType::face_type const &amp;oldFace, std::map&lt; IndexT, IndexT &gt; const &amp;new_node_numbers, IndexT &amp;n_new_faces, std::shared_ptr&lt; SubMeshType &gt; &amp;newMesh, std::set&lt; IndexT &gt; &amp;oldEdgeIdsDone)</td></tr>
 <tr class="separator:a5ac483470299f33c851668f37b601926"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae25e68ca2c423a11caeab8942a08a2fc"><td class="memItemLeft" align="right" valign="top"><a id="ae25e68ca2c423a11caeab8942a08a2fc"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::BOOST_PARAMETER_FUNCTION</b> ((typename <a class="el" href="structFeel_1_1detail_1_1createSubmesh.html">Feel::detail::createSubmesh</a>&lt; Args &gt;::ptrtype), createSubmesh, tag,(required(mesh, *)(range, *))(optional(worldcomm, *, mesh-&gt;worldCommPtr())(context, *(boost::is_integral&lt; mpl::_ &gt;), EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT)(update, *(boost::is_integral&lt; mpl::_ &gt;), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES)(only_on_boundary_faces,(<a class="el" href="classbool.html">bool</a>), false)(view,(<a class="el" href="classbool.html">bool</a>), false)))</td></tr>
-<tr class="separator:ae25e68ca2c423a11caeab8942a08a2fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a176cc32171bed0eab2bf81d47d5c9749"><td class="memTemplParams" colspan="2"><a id="a176cc32171bed0eab2bf81d47d5c9749"></a>
+template&lt;typename MeshArgType , typename RangeArgType &gt; </td></tr>
+<tr class="memitem:a176cc32171bed0eab2bf81d47d5c9749"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="structFeel_1_1detail_1_1CreateSubmeshTrait.html">Feel::detail::CreateSubmeshTrait</a>&lt; MeshArgType, RangeArgType &gt;::ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::createSubmesh</b> (NA::arguments&lt; typename na::mesh::template required_as_t&lt; MeshArgType &gt;, typename na::range::template required_as_t&lt; RangeArgType &gt;, typename na::worldcomm::template required_as_t&lt; worldcomm_ptr_t &gt;, typename na::context::template required_as_t&lt; <a class="el" href="classsize__type.html">size_type</a> &gt;, typename na::update::template required_as_t&lt; <a class="el" href="classsize__type.html">size_type</a> &gt;, typename na::only_on_boundary_faces::template required_as_t&lt; <a class="el" href="classbool.html">bool</a> &gt;, typename na::view::template required_as_t&lt; <a class="el" href="classbool.html">bool</a> &gt; &gt; &amp;&amp;args)</td></tr>
+<tr class="separator:a176cc32171bed0eab2bf81d47d5c9749"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab68be7fbc8c5e67ad358f939dc86bdba"><td class="memTemplParams" colspan="2"><a id="ab68be7fbc8c5e67ad358f939dc86bdba"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:ab68be7fbc8c5e67ad358f939dc86bdba"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::createSubmesh</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:ab68be7fbc8c5e67ad358f939dc86bdba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><dl class="section author"><dt>Author</dt><dd>Vincent Chabannes <a href="#" onclick="location.href='mai'+'lto:'+'vin'+'ce'+'nt.'+'ch'+'aba'+'nn'+'es@'+'im'+'ag.'+'fr'; return false;">vince<span style="display: none;">.nosp@m.</span>nt.c<span style="display: none;">.nosp@m.</span>haban<span style="display: none;">.nosp@m.</span>nes@<span style="display: none;">.nosp@m.</span>imag.<span style="display: none;">.nosp@m.</span>fr</a> </dd></dl>

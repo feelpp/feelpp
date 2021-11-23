@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: Feel::MeshAdaptation Class Reference</title>
+<title>Feel++: Feel::MeshAdaptation&lt; Dim, Order, OrderGeo &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -108,182 +108,183 @@ $(document).ready(function(){initNavTree('classFeel_1_1MeshAdaptation.html','');
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="classFeel_1_1MeshAdaptation-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">Feel::MeshAdaptation Class Reference</div>  </div>
+<div class="title">Feel::MeshAdaptation&lt; Dim, Order, OrderGeo &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a773cd16e4345fe69c832aa7093022cbf"><td class="memItemLeft" align="right" valign="top"><a id="a773cd16e4345fe69c832aa7093022cbf"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#a57b8391420b4e558eb33d5d708a76dbb">backend_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a773cd16e4345fe69c832aa7093022cbf">backend_ptrtype</a></td></tr>
-<tr class="memdesc:a773cd16e4345fe69c832aa7093022cbf"><td class="mdescLeft">&#160;</td><td class="mdescRight">linear algebra backend factory shared_ptr&lt;&gt; type <br /></td></tr>
-<tr class="separator:a773cd16e4345fe69c832aa7093022cbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a57b8391420b4e558eb33d5d708a76dbb"><td class="memItemLeft" align="right" valign="top"><a id="a57b8391420b4e558eb33d5d708a76dbb"></a>
-typedef Backend&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a57b8391420b4e558eb33d5d708a76dbb">backend_type</a></td></tr>
-<tr class="memdesc:a57b8391420b4e558eb33d5d708a76dbb"><td class="mdescLeft">&#160;</td><td class="mdescRight">linear algebra backend factory <br /></td></tr>
-<tr class="separator:a57b8391420b4e558eb33d5d708a76dbb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e1cff6761c473efadf55aad3d2de8d0"><td class="memItemLeft" align="right" valign="top"><a id="a6e1cff6761c473efadf55aad3d2de8d0"></a>
+<tr class="memitem:a287d9c77e089e5fc0c44ff9837ff599d"><td class="memItemLeft" align="right" valign="top"><a id="a287d9c77e089e5fc0c44ff9837ff599d"></a>
+typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#af81ad8ec8afcc3b9707a1caed678c351">backend_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a287d9c77e089e5fc0c44ff9837ff599d">backend_ptrtype</a></td></tr>
+<tr class="memdesc:a287d9c77e089e5fc0c44ff9837ff599d"><td class="mdescLeft">&#160;</td><td class="mdescRight">linear algebra backend factory shared_ptr&lt;&gt; type <br /></td></tr>
+<tr class="separator:a287d9c77e089e5fc0c44ff9837ff599d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af81ad8ec8afcc3b9707a1caed678c351"><td class="memItemLeft" align="right" valign="top"><a id="af81ad8ec8afcc3b9707a1caed678c351"></a>
+typedef Backend&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#af81ad8ec8afcc3b9707a1caed678c351">backend_type</a></td></tr>
+<tr class="memdesc:af81ad8ec8afcc3b9707a1caed678c351"><td class="mdescLeft">&#160;</td><td class="mdescRight">linear algebra backend factory <br /></td></tr>
+<tr class="separator:af81ad8ec8afcc3b9707a1caed678c351"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e2a343081a5ed0fbec70e23bff6fc23"><td class="memItemLeft" align="right" valign="top"><a id="a3e2a343081a5ed0fbec70e23bff6fc23"></a>
 typedef <a class="el" href="classFeel_1_1Simplex.html">Simplex</a>&lt; Dim, OrderGeo, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>convex_type</b></td></tr>
-<tr class="separator:a6e1cff6761c473efadf55aad3d2de8d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9b274a8907fb64f5c1fdd2655f9ce5e9"><td class="memItemLeft" align="right" valign="top"><a id="a9b274a8907fb64f5c1fdd2655f9ce5e9"></a>
+<tr class="separator:a3e2a343081a5ed0fbec70e23bff6fc23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9dd507b38cc17c45fd1f0002beeefa54"><td class="memItemLeft" align="right" valign="top"><a id="a9dd507b38cc17c45fd1f0002beeefa54"></a>
 typedef space_type::element_type&#160;</td><td class="memItemRight" valign="bottom"><b>element_type</b></td></tr>
-<tr class="separator:a9b274a8907fb64f5c1fdd2655f9ce5e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac05476eee719ac8247557877460f805f"><td class="memItemLeft" align="right" valign="top"><a id="ac05476eee719ac8247557877460f805f"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#ade5824416261358762c84f14ae61ef8f">export_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ac05476eee719ac8247557877460f805f">export_ptrtype</a></td></tr>
-<tr class="memdesc:ac05476eee719ac8247557877460f805f"><td class="mdescLeft">&#160;</td><td class="mdescRight">the exporter factory (shared_ptr&lt;&gt; type) <br /></td></tr>
-<tr class="separator:ac05476eee719ac8247557877460f805f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ade5824416261358762c84f14ae61ef8f"><td class="memItemLeft" align="right" valign="top"><a id="ade5824416261358762c84f14ae61ef8f"></a>
-typedef Exporter&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#a17baa2ddc3992208a32e343eb9444308">mesh_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ade5824416261358762c84f14ae61ef8f">export_type</a></td></tr>
-<tr class="memdesc:ade5824416261358762c84f14ae61ef8f"><td class="mdescLeft">&#160;</td><td class="mdescRight">the exporter factory type <br /></td></tr>
-<tr class="separator:ade5824416261358762c84f14ae61ef8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a27dc42c24c0b6fbbc074d94112410d39"><td class="memItemLeft" align="right" valign="top"><a id="a27dc42c24c0b6fbbc074d94112410d39"></a>
+<tr class="separator:a9dd507b38cc17c45fd1f0002beeefa54"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad93631a1ba332461b22c06a3f174ceab"><td class="memItemLeft" align="right" valign="top"><a id="ad93631a1ba332461b22c06a3f174ceab"></a>
+typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#a5762f59a81f796b712e54e528e47c60b">export_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ad93631a1ba332461b22c06a3f174ceab">export_ptrtype</a></td></tr>
+<tr class="memdesc:ad93631a1ba332461b22c06a3f174ceab"><td class="mdescLeft">&#160;</td><td class="mdescRight">the exporter factory (shared_ptr&lt;&gt; type) <br /></td></tr>
+<tr class="separator:ad93631a1ba332461b22c06a3f174ceab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5762f59a81f796b712e54e528e47c60b"><td class="memItemLeft" align="right" valign="top"><a id="a5762f59a81f796b712e54e528e47c60b"></a>
+typedef Exporter&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#af221984d4946424aa778d0c5b9e0c3b4">mesh_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a5762f59a81f796b712e54e528e47c60b">export_type</a></td></tr>
+<tr class="memdesc:a5762f59a81f796b712e54e528e47c60b"><td class="mdescLeft">&#160;</td><td class="mdescRight">the exporter factory type <br /></td></tr>
+<tr class="separator:a5762f59a81f796b712e54e528e47c60b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a133c774ec375d214da3913f8b0891788"><td class="memItemLeft" align="right" valign="top"><a id="a133c774ec375d214da3913f8b0891788"></a>
 typedef Eigen::Matrix&lt; double, Dim, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>matrixN_type</b></td></tr>
-<tr class="separator:a27dc42c24c0b6fbbc074d94112410d39"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad5d394abfc0bc10f2233de8ba748cddd"><td class="memItemLeft" align="right" valign="top"><a id="ad5d394abfc0bc10f2233de8ba748cddd"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#a17baa2ddc3992208a32e343eb9444308">mesh_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ad5d394abfc0bc10f2233de8ba748cddd">mesh_ptrtype</a></td></tr>
-<tr class="memdesc:ad5d394abfc0bc10f2233de8ba748cddd"><td class="mdescLeft">&#160;</td><td class="mdescRight">mesh shared_ptr&lt;&gt; type <br /></td></tr>
-<tr class="separator:ad5d394abfc0bc10f2233de8ba748cddd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a17baa2ddc3992208a32e343eb9444308"><td class="memItemLeft" align="right" valign="top"><a id="a17baa2ddc3992208a32e343eb9444308"></a>
-typedef <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Simplex.html">convex_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a17baa2ddc3992208a32e343eb9444308">mesh_type</a></td></tr>
-<tr class="memdesc:a17baa2ddc3992208a32e343eb9444308"><td class="mdescLeft">&#160;</td><td class="mdescRight">mesh type <br /></td></tr>
-<tr class="separator:a17baa2ddc3992208a32e343eb9444308"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad3950e3d3140792ea0fbc2d71c00db36"><td class="memItemLeft" align="right" valign="top"><a id="ad3950e3d3140792ea0fbc2d71c00db36"></a>
+<tr class="separator:a133c774ec375d214da3913f8b0891788"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46d54a222cc92f6b6e5f8f9709b79bd5"><td class="memItemLeft" align="right" valign="top"><a id="a46d54a222cc92f6b6e5f8f9709b79bd5"></a>
+typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#af221984d4946424aa778d0c5b9e0c3b4">mesh_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a46d54a222cc92f6b6e5f8f9709b79bd5">mesh_ptrtype</a></td></tr>
+<tr class="memdesc:a46d54a222cc92f6b6e5f8f9709b79bd5"><td class="mdescLeft">&#160;</td><td class="mdescRight">mesh shared_ptr&lt;&gt; type <br /></td></tr>
+<tr class="separator:a46d54a222cc92f6b6e5f8f9709b79bd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af221984d4946424aa778d0c5b9e0c3b4"><td class="memItemLeft" align="right" valign="top"><a id="af221984d4946424aa778d0c5b9e0c3b4"></a>
+typedef <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Simplex.html">convex_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#af221984d4946424aa778d0c5b9e0c3b4">mesh_type</a></td></tr>
+<tr class="memdesc:af221984d4946424aa778d0c5b9e0c3b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">mesh type <br /></td></tr>
+<tr class="separator:af221984d4946424aa778d0c5b9e0c3b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5112e0eee40b25d95b57501ff63ce57"><td class="memItemLeft" align="right" valign="top"><a id="ae5112e0eee40b25d95b57501ff63ce57"></a>
 typedef std::list&lt; std::pair&lt; std::vector&lt; p1_element_type &gt;, std::string &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>metric_list_type</b></td></tr>
-<tr class="separator:ad3950e3d3140792ea0fbc2d71c00db36"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a20632df0cc8b813531916203494b87b0"><td class="memItemLeft" align="right" valign="top"><a id="a20632df0cc8b813531916203494b87b0"></a>
+<tr class="separator:ae5112e0eee40b25d95b57501ff63ce57"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee5bea0e6057b786af68587063e6ebfa"><td class="memItemLeft" align="right" valign="top"><a id="aee5bea0e6057b786af68587063e6ebfa"></a>
 typedef <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">p0_space_type::element_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>p0_element_type</b></td></tr>
-<tr class="separator:a20632df0cc8b813531916203494b87b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:accac81907bd893344dca19d3695b0c6c"><td class="memItemLeft" align="right" valign="top"><a id="accac81907bd893344dca19d3695b0c6c"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#a159f2b5a094ff79fb0d58234a813daab">p0_space_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>p0_space_ptrtype</b></td></tr>
-<tr class="separator:accac81907bd893344dca19d3695b0c6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a159f2b5a094ff79fb0d58234a813daab"><td class="memItemLeft" align="right" valign="top"><a id="a159f2b5a094ff79fb0d58234a813daab"></a>
-typedef <a class="el" href="classFeel_1_1FunctionSpace.html">Pdh_type</a>&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#a17baa2ddc3992208a32e343eb9444308">mesh_type</a>, 0 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a159f2b5a094ff79fb0d58234a813daab">p0_space_type</a></td></tr>
-<tr class="memdesc:a159f2b5a094ff79fb0d58234a813daab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scalar P0 space. <br /></td></tr>
-<tr class="separator:a159f2b5a094ff79fb0d58234a813daab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad8ac713ba0ebfe45cc8fd9f7c616ddca"><td class="memItemLeft" align="right" valign="top"><a id="ad8ac713ba0ebfe45cc8fd9f7c616ddca"></a>
+<tr class="separator:aee5bea0e6057b786af68587063e6ebfa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9958d486bf7644cc322440bfdf35c7fe"><td class="memItemLeft" align="right" valign="top"><a id="a9958d486bf7644cc322440bfdf35c7fe"></a>
+typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#ab8cca74a0f5525be2ef64eabf6cf30dd">p0_space_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>p0_space_ptrtype</b></td></tr>
+<tr class="separator:a9958d486bf7644cc322440bfdf35c7fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8cca74a0f5525be2ef64eabf6cf30dd"><td class="memItemLeft" align="right" valign="top"><a id="ab8cca74a0f5525be2ef64eabf6cf30dd"></a>
+typedef <a class="el" href="classFeel_1_1FunctionSpace.html">Pdh_type</a>&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#af221984d4946424aa778d0c5b9e0c3b4">mesh_type</a>, 0 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ab8cca74a0f5525be2ef64eabf6cf30dd">p0_space_type</a></td></tr>
+<tr class="memdesc:ab8cca74a0f5525be2ef64eabf6cf30dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scalar P0 space. <br /></td></tr>
+<tr class="separator:ab8cca74a0f5525be2ef64eabf6cf30dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c33e31b652d39dc678efc81f0617b25"><td class="memItemLeft" align="right" valign="top"><a id="a8c33e31b652d39dc678efc81f0617b25"></a>
 typedef p1_space_type::element_type&#160;</td><td class="memItemRight" valign="bottom"><b>p1_element_type</b></td></tr>
-<tr class="separator:ad8ac713ba0ebfe45cc8fd9f7c616ddca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afbb39c4f6ce46470535b39af48a00ea7"><td class="memItemLeft" align="right" valign="top"><a id="afbb39c4f6ce46470535b39af48a00ea7"></a>
+<tr class="separator:a8c33e31b652d39dc678efc81f0617b25"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b2981dbdff828cd40f8e56a4435ad18"><td class="memItemLeft" align="right" valign="top"><a id="a5b2981dbdff828cd40f8e56a4435ad18"></a>
 typedef std::shared_ptr&lt; p1_space_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>p1_space_ptrtype</b></td></tr>
-<tr class="separator:afbb39c4f6ce46470535b39af48a00ea7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a42325d1754d66a25342847e588d19700"><td class="memItemLeft" align="right" valign="top"><a id="a42325d1754d66a25342847e588d19700"></a>
-typedef Pch_type&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#a17baa2ddc3992208a32e343eb9444308">mesh_type</a>, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>p1_space_type</b></td></tr>
-<tr class="separator:a42325d1754d66a25342847e588d19700"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6975689f48fe98fde1191191711a1bcc"><td class="memItemLeft" align="right" valign="top"><a id="a6975689f48fe98fde1191191711a1bcc"></a>
-typedef <a class="el" href="structFeel_1_1bases.html">bases</a>&lt; Lagrange&lt; 1, Vectorial &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a6975689f48fe98fde1191191711a1bcc">p1vec_basis_type</a></td></tr>
-<tr class="memdesc:a6975689f48fe98fde1191191711a1bcc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vectorial P1 space. <br /></td></tr>
-<tr class="separator:a6975689f48fe98fde1191191711a1bcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf9ff2feafbbd38e4db0dc0b6f298286"><td class="memItemLeft" align="right" valign="top"><a id="adf9ff2feafbbd38e4db0dc0b6f298286"></a>
+<tr class="separator:a5b2981dbdff828cd40f8e56a4435ad18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69ab3c12312779a645045e96a7b3eedb"><td class="memItemLeft" align="right" valign="top"><a id="a69ab3c12312779a645045e96a7b3eedb"></a>
+typedef Pch_type&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#af221984d4946424aa778d0c5b9e0c3b4">mesh_type</a>, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>p1_space_type</b></td></tr>
+<tr class="separator:a69ab3c12312779a645045e96a7b3eedb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2cac21e6fae1aa74197ea3a9cfb87b4"><td class="memItemLeft" align="right" valign="top"><a id="af2cac21e6fae1aa74197ea3a9cfb87b4"></a>
+typedef <a class="el" href="structFeel_1_1bases.html">bases</a>&lt; Lagrange&lt; 1, Vectorial &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#af2cac21e6fae1aa74197ea3a9cfb87b4">p1vec_basis_type</a></td></tr>
+<tr class="memdesc:af2cac21e6fae1aa74197ea3a9cfb87b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vectorial P1 space. <br /></td></tr>
+<tr class="separator:af2cac21e6fae1aa74197ea3a9cfb87b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d29b065d5613c56f569f79e5eaa9038"><td class="memItemLeft" align="right" valign="top"><a id="a4d29b065d5613c56f569f79e5eaa9038"></a>
 typedef <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">p1vec_space_type::element_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>p1vec_element_type</b></td></tr>
-<tr class="separator:adf9ff2feafbbd38e4db0dc0b6f298286"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0168cd8a48474e8c3cbd409d962de6ef"><td class="memItemLeft" align="right" valign="top"><a id="a0168cd8a48474e8c3cbd409d962de6ef"></a>
+<tr class="separator:a4d29b065d5613c56f569f79e5eaa9038"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4ba447fb8c5ac5df3b5060c56160ad3"><td class="memItemLeft" align="right" valign="top"><a id="ab4ba447fb8c5ac5df3b5060c56160ad3"></a>
 typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">p1vec_space_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>p1vec_space_ptrtype</b></td></tr>
-<tr class="separator:a0168cd8a48474e8c3cbd409d962de6ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a99defb65d6c1721e4bc76c304d3097de"><td class="memItemLeft" align="right" valign="top"><a id="a99defb65d6c1721e4bc76c304d3097de"></a>
-typedef <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#a17baa2ddc3992208a32e343eb9444308">mesh_type</a>, <a class="el" href="classFeel_1_1MeshAdaptation.html#a6975689f48fe98fde1191191711a1bcc">p1vec_basis_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>p1vec_space_type</b></td></tr>
-<tr class="separator:a99defb65d6c1721e4bc76c304d3097de"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad5bd7fac85bcbefbe9bf2a3e3fb64049"><td class="memItemLeft" align="right" valign="top"><a id="ad5bd7fac85bcbefbe9bf2a3e3fb64049"></a>
+<tr class="separator:ab4ba447fb8c5ac5df3b5060c56160ad3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f0cf7d07e257d276fa4d5da6530f4bf"><td class="memItemLeft" align="right" valign="top"><a id="a7f0cf7d07e257d276fa4d5da6530f4bf"></a>
+typedef <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#af221984d4946424aa778d0c5b9e0c3b4">mesh_type</a>, <a class="el" href="classFeel_1_1MeshAdaptation.html#af2cac21e6fae1aa74197ea3a9cfb87b4">p1vec_basis_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>p1vec_space_type</b></td></tr>
+<tr class="separator:a7f0cf7d07e257d276fa4d5da6530f4bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55985901e91cf0867918fb6bcbe39848"><td class="memItemLeft" align="right" valign="top"><a id="a55985901e91cf0867918fb6bcbe39848"></a>
 typedef mesh_type::point_type&#160;</td><td class="memItemRight" valign="bottom"><b>point_type</b></td></tr>
-<tr class="separator:ad5bd7fac85bcbefbe9bf2a3e3fb64049"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aabf9c5e50a5095d1e5ae45762dfb86b2"><td class="memItemLeft" align="right" valign="top"><a id="aabf9c5e50a5095d1e5ae45762dfb86b2"></a>
+<tr class="separator:a55985901e91cf0867918fb6bcbe39848"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a05b1c66fe9b5438a51b9c4cb8c7009f0"><td class="memItemLeft" align="right" valign="top"><a id="a05b1c66fe9b5438a51b9c4cb8c7009f0"></a>
 typedef std::shared_ptr&lt; space_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>space_ptrtype</b></td></tr>
-<tr class="separator:aabf9c5e50a5095d1e5ae45762dfb86b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a26e90ea9c47b2a347afa700ac0cacc56"><td class="memItemLeft" align="right" valign="top"><a id="a26e90ea9c47b2a347afa700ac0cacc56"></a>
-typedef Pch_type&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#a17baa2ddc3992208a32e343eb9444308">mesh_type</a>, <a class="el" href="structFeel_1_1Order.html">Order</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>space_type</b></td></tr>
-<tr class="separator:a26e90ea9c47b2a347afa700ac0cacc56"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a12fabb2a6bfacb59e027517daa5ecab8"><td class="memItemLeft" align="right" valign="top"><a id="a12fabb2a6bfacb59e027517daa5ecab8"></a>
-typedef backend_type::sparse_matrix_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a12fabb2a6bfacb59e027517daa5ecab8">sparse_matrix_ptrtype</a></td></tr>
-<tr class="memdesc:a12fabb2a6bfacb59e027517daa5ecab8"><td class="mdescLeft">&#160;</td><td class="mdescRight">sparse matrix type associated with backend (shared_ptr&lt;&gt; type) <br /></td></tr>
-<tr class="separator:a12fabb2a6bfacb59e027517daa5ecab8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acd80f5384a3caf3f77511971516698a9"><td class="memItemLeft" align="right" valign="top"><a id="acd80f5384a3caf3f77511971516698a9"></a>
-typedef backend_type::sparse_matrix_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#acd80f5384a3caf3f77511971516698a9">sparse_matrix_type</a></td></tr>
-<tr class="memdesc:acd80f5384a3caf3f77511971516698a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">sparse matrix type associated with backend <br /></td></tr>
-<tr class="separator:acd80f5384a3caf3f77511971516698a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae6473954ded61b89acc274ec76118c36"><td class="memItemLeft" align="right" valign="top"><a id="ae6473954ded61b89acc274ec76118c36"></a>
-typedef backend_type::vector_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ae6473954ded61b89acc274ec76118c36">vector_ptrtype</a></td></tr>
-<tr class="memdesc:ae6473954ded61b89acc274ec76118c36"><td class="mdescLeft">&#160;</td><td class="mdescRight">vector type associated with backend (shared_ptr&lt;&gt; type) <br /></td></tr>
-<tr class="separator:ae6473954ded61b89acc274ec76118c36"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a09de6558d0b6bb8100298eed58561775"><td class="memItemLeft" align="right" valign="top"><a id="a09de6558d0b6bb8100298eed58561775"></a>
-typedef backend_type::vector_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a09de6558d0b6bb8100298eed58561775">vector_type</a></td></tr>
-<tr class="memdesc:a09de6558d0b6bb8100298eed58561775"><td class="mdescLeft">&#160;</td><td class="mdescRight">vector type associated with backend <br /></td></tr>
-<tr class="separator:a09de6558d0b6bb8100298eed58561775"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4a7e75f87fb5d2a006bc47b6ea94d19"><td class="memItemLeft" align="right" valign="top"><a id="af4a7e75f87fb5d2a006bc47b6ea94d19"></a>
+<tr class="separator:a05b1c66fe9b5438a51b9c4cb8c7009f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a285a11433e0e7441f15677f97c9059c3"><td class="memItemLeft" align="right" valign="top"><a id="a285a11433e0e7441f15677f97c9059c3"></a>
+typedef Pch_type&lt; <a class="el" href="classFeel_1_1MeshAdaptation.html#af221984d4946424aa778d0c5b9e0c3b4">mesh_type</a>, <a class="el" href="structFeel_1_1Order.html">Order</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>space_type</b></td></tr>
+<tr class="separator:a285a11433e0e7441f15677f97c9059c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2a212949ffeab1f76431385050d08bb"><td class="memItemLeft" align="right" valign="top"><a id="af2a212949ffeab1f76431385050d08bb"></a>
+typedef backend_type::sparse_matrix_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#af2a212949ffeab1f76431385050d08bb">sparse_matrix_ptrtype</a></td></tr>
+<tr class="memdesc:af2a212949ffeab1f76431385050d08bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">sparse matrix type associated with backend (shared_ptr&lt;&gt; type) <br /></td></tr>
+<tr class="separator:af2a212949ffeab1f76431385050d08bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0dd9c24c5d660266d5cac544be0c846c"><td class="memItemLeft" align="right" valign="top"><a id="a0dd9c24c5d660266d5cac544be0c846c"></a>
+typedef backend_type::sparse_matrix_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a0dd9c24c5d660266d5cac544be0c846c">sparse_matrix_type</a></td></tr>
+<tr class="memdesc:a0dd9c24c5d660266d5cac544be0c846c"><td class="mdescLeft">&#160;</td><td class="mdescRight">sparse matrix type associated with backend <br /></td></tr>
+<tr class="separator:a0dd9c24c5d660266d5cac544be0c846c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef0ce2786df3999e79d20bf43087673a"><td class="memItemLeft" align="right" valign="top"><a id="aef0ce2786df3999e79d20bf43087673a"></a>
+typedef backend_type::vector_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#aef0ce2786df3999e79d20bf43087673a">vector_ptrtype</a></td></tr>
+<tr class="memdesc:aef0ce2786df3999e79d20bf43087673a"><td class="mdescLeft">&#160;</td><td class="mdescRight">vector type associated with backend (shared_ptr&lt;&gt; type) <br /></td></tr>
+<tr class="separator:aef0ce2786df3999e79d20bf43087673a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab82fd55fb9a509a49bba75587cd6f8a2"><td class="memItemLeft" align="right" valign="top"><a id="ab82fd55fb9a509a49bba75587cd6f8a2"></a>
+typedef backend_type::vector_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ab82fd55fb9a509a49bba75587cd6f8a2">vector_type</a></td></tr>
+<tr class="memdesc:ab82fd55fb9a509a49bba75587cd6f8a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">vector type associated with backend <br /></td></tr>
+<tr class="separator:ab82fd55fb9a509a49bba75587cd6f8a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab61064d6e205ac1891c420e722c694f2"><td class="memItemLeft" align="right" valign="top"><a id="ab61064d6e205ac1891c420e722c694f2"></a>
 typedef Eigen::Matrix&lt; double, Dim, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>vectorN_type</b></td></tr>
-<tr class="separator:af4a7e75f87fb5d2a006bc47b6ea94d19"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:ab61064d6e205ac1891c420e722c694f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a5912260d4274dd994f7013a47de46809"><td class="memItemLeft" align="right" valign="top"><a id="a5912260d4274dd994f7013a47de46809"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a5912260d4274dd994f7013a47de46809">adaptMeshHess1</a> (element_type &amp;U, const <a class="el" href="classFeel_1_1MeshAdaptation.html#ad5d394abfc0bc10f2233de8ba748cddd">mesh_ptrtype</a> &amp;mesh, double hMin, double hMax, std::string name, std::string geofile, double tol, <a class="el" href="classbool.html">bool</a> aniso)</td></tr>
-<tr class="memdesc:a5912260d4274dd994f7013a47de46809"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classFeel_1_1Mesh.html" title="unifying mesh class">Mesh</a> adaptation from Hessian matrix. <br /></td></tr>
-<tr class="separator:a5912260d4274dd994f7013a47de46809"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a465a48ae4ffc82ce67714df851d7e5ca"><td class="memItemLeft" align="right" valign="top"><a id="a465a48ae4ffc82ce67714df851d7e5ca"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>adaptMeshHess2</b> (element_type &amp;U, const <a class="el" href="classFeel_1_1MeshAdaptation.html#ad5d394abfc0bc10f2233de8ba748cddd">mesh_ptrtype</a> &amp;mesh, double hMin, double hMax, std::string name, std::string geofile, double tol, <a class="el" href="classbool.html">bool</a> aniso)</td></tr>
-<tr class="separator:a465a48ae4ffc82ce67714df851d7e5ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac82b9e4ca4cd6068ec50ff1a75b0d2c"><td class="memItemLeft" align="right" valign="top"><a id="aac82b9e4ca4cd6068ec50ff1a75b0d2c"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>adaptMeshHess2</b> (element_type &amp;U, const <a class="el" href="classFeel_1_1MeshAdaptation.html#ad5d394abfc0bc10f2233de8ba748cddd">mesh_ptrtype</a> &amp;mesh, double hMin, double hMax, std::string name, std::string geofile, double tol, <a class="el" href="classbool.html">bool</a> aniso, mpl::bool_&lt; false &gt;)</td></tr>
-<tr class="separator:aac82b9e4ca4cd6068ec50ff1a75b0d2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a87d664c52b09a0ab68e14e6ffac333"><td class="memItemLeft" align="right" valign="top"><a id="a2a87d664c52b09a0ab68e14e6ffac333"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>adaptMeshHess2</b> (element_type &amp;U, const <a class="el" href="classFeel_1_1MeshAdaptation.html#ad5d394abfc0bc10f2233de8ba748cddd">mesh_ptrtype</a> &amp;mesh, double hMin, double hMax, std::string name, std::string geofile, double tol, <a class="el" href="classbool.html">bool</a> aniso, mpl::bool_&lt; true &gt;)</td></tr>
-<tr class="separator:a2a87d664c52b09a0ab68e14e6ffac333"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afa2d04ab1ef1bc907398a9fadbb230a6"><td class="memItemLeft" align="right" valign="top"><a id="afa2d04ab1ef1bc907398a9fadbb230a6"></a>
-<a class="el" href="classFeel_1_1MeshAdaptation.html#ad5d394abfc0bc10f2233de8ba748cddd">mesh_ptrtype</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#afa2d04ab1ef1bc907398a9fadbb230a6">adaptMeshImpl</a> (const <a class="el" href="classFeel_1_1MeshAdaptation.html#ad5d394abfc0bc10f2233de8ba748cddd">mesh_ptrtype</a> &amp;initMesh, std::string geofile, std::string adaptType, std::list&lt; std::pair&lt; element_type, std::string &gt; &gt; var, std::list&lt; std::pair&lt; std::vector&lt; p1_element_type &gt;, std::string &gt; &gt; metric, double hMin, double hMax, double tol)</td></tr>
-<tr class="memdesc:afa2d04ab1ef1bc907398a9fadbb230a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Interface. <br /></td></tr>
-<tr class="separator:afa2d04ab1ef1bc907398a9fadbb230a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6a04bfb2c210485f3ad30d1fe88bfbe9"><td class="memItemLeft" align="right" valign="top"><a id="a6a04bfb2c210485f3ad30d1fe88bfbe9"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a6a04bfb2c210485f3ad30d1fe88bfbe9">BOOST_PARAMETER_MEMBER_FUNCTION</a> ((<a class="el" href="classFeel_1_1MeshAdaptation.html#ad5d394abfc0bc10f2233de8ba748cddd">mesh_ptrtype</a>), adaptMesh, tag,(required(initMesh,(<a class="el" href="classFeel_1_1MeshAdaptation.html#ad5d394abfc0bc10f2233de8ba748cddd">mesh_ptrtype</a>))(geofile,(std::string))(adaptType,(std::string)))(optional(var,(std::list&lt; std::pair&lt; element_type, std::string &gt; &gt;), M_defaultVar)(metric,(std::list&lt; std::pair&lt; std::vector&lt; p1_element_type &gt;, std::string &gt; &gt;), M_defaultMetric)(hMin,(double), 1.0e-3)(hMax,(double), 100.0)(tol,(double), 1.0)))</td></tr>
-<tr class="memdesc:a6a04bfb2c210485f3ad30d1fe88bfbe9"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classFeel_1_1Mesh.html" title="unifying mesh class">Mesh</a> adaptation interface. <br /></td></tr>
-<tr class="separator:a6a04bfb2c210485f3ad30d1fe88bfbe9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4434c41e5578009c781f8edb32379c4"><td class="memItemLeft" align="right" valign="top"><a id="af4434c41e5578009c781f8edb32379c4"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#af4434c41e5578009c781f8edb32379c4">buildAdaptedMesh</a> (std::string geofile, std::string name, std::vector&lt; std::string &gt; posfiles, <a class="el" href="classbool.html">bool</a> aniso)</td></tr>
-<tr class="memdesc:af4434c41e5578009c781f8edb32379c4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build adapted mesh. <br /></td></tr>
-<tr class="separator:af4434c41e5578009c781f8edb32379c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac7795ad3ba5b5bd90576071f9eee64ff"><td class="memItemLeft" align="right" valign="top"><a id="ac7795ad3ba5b5bd90576071f9eee64ff"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ac7795ad3ba5b5bd90576071f9eee64ff">computeMetric</a> (const double tol, const double h_min, const double h_max, const matrixN_type &amp;hessian_matrix, matrixN_type &amp;M, double &amp;max_eigenvalue, <a class="el" href="classint.html">int</a> dofId)</td></tr>
-<tr class="memdesc:ac7795ad3ba5b5bd90576071f9eee64ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the metric for mesh adaptation using hessian matrix. <br /></td></tr>
-<tr class="separator:ac7795ad3ba5b5bd90576071f9eee64ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a09f1cdab89d6ce45c52163b5f23ca86b"><td class="memItemLeft" align="right" valign="top"><a id="a09f1cdab89d6ce45c52163b5f23ca86b"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a09f1cdab89d6ce45c52163b5f23ca86b">createAdaptedGeo</a> (std::string geofile, std::string name, std::vector&lt; std::string &gt; posfiles, <a class="el" href="classbool.html">bool</a> aniso)</td></tr>
-<tr class="memdesc:a09f1cdab89d6ce45c52163b5f23ca86b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adapt geofile for mesh adaptation. <br /></td></tr>
-<tr class="separator:a09f1cdab89d6ce45c52163b5f23ca86b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae12ea23e9b942fd53bd55bfabd61cf19"><td class="memItemLeft" align="right" valign="top"><a id="ae12ea23e9b942fd53bd55bfabd61cf19"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ae12ea23e9b942fd53bd55bfabd61cf19">createPosfile</a> (std::string name_var, const p1_element_type &amp;bbNewMap, const <a class="el" href="classFeel_1_1MeshAdaptation.html#ad5d394abfc0bc10f2233de8ba748cddd">mesh_ptrtype</a> &amp;mesh)</td></tr>
-<tr class="memdesc:ae12ea23e9b942fd53bd55bfabd61cf19"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generates a GMSH post processing file (for mesh adaptation) <br /></td></tr>
-<tr class="separator:ae12ea23e9b942fd53bd55bfabd61cf19"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac1bb2a7325f378e167d6e81680ff7820"><td class="memItemLeft" align="right" valign="top"><a id="ac1bb2a7325f378e167d6e81680ff7820"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>createPosfileAnisotropic</b> (std::string nameVar, const std::vector&lt; p1_element_type &gt; &amp;bbNewMap, const <a class="el" href="classFeel_1_1MeshAdaptation.html#ad5d394abfc0bc10f2233de8ba748cddd">mesh_ptrtype</a> &amp;mesh)</td></tr>
-<tr class="separator:ac1bb2a7325f378e167d6e81680ff7820"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaaef62b0e8fad8cfee54146da6af81b7"><td class="memItemLeft" align="right" valign="top"><a id="aaaef62b0e8fad8cfee54146da6af81b7"></a>
-const std::vector&lt; matrixN_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#aaaef62b0e8fad8cfee54146da6af81b7">directions</a> ()</td></tr>
-<tr class="memdesc:aaaef62b0e8fad8cfee54146da6af81b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set of directions on a dof. <br /></td></tr>
-<tr class="separator:aaaef62b0e8fad8cfee54146da6af81b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a941a50c796b5651b911c858fd15e4271"><td class="memItemLeft" align="right" valign="top"><a id="a941a50c796b5651b911c858fd15e4271"></a>
-const std::vector&lt; vectorN_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a941a50c796b5651b911c858fd15e4271">measures</a> ()</td></tr>
-<tr class="memdesc:a941a50c796b5651b911c858fd15e4271"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set of measures on a dof. <br /></td></tr>
-<tr class="separator:a941a50c796b5651b911c858fd15e4271"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a403a7a78b837206cfadde41acabeee2d"><td class="memItemLeft" align="right" valign="top"><a id="a403a7a78b837206cfadde41acabeee2d"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a403a7a78b837206cfadde41acabeee2d">MeshAdaptation</a> ()</td></tr>
-<tr class="memdesc:a403a7a78b837206cfadde41acabeee2d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor. <br /></td></tr>
-<tr class="separator:a403a7a78b837206cfadde41acabeee2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a810da85ba45f7e0c480cb4add22c3ee4"><td class="memItemLeft" align="right" valign="top"><a id="a810da85ba45f7e0c480cb4add22c3ee4"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a810da85ba45f7e0c480cb4add22c3ee4">pastePosFilesTogether</a> (std::vector&lt; std::string &gt;const &amp;posFiles)</td></tr>
-<tr class="memdesc:a810da85ba45f7e0c480cb4add22c3ee4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Paste several pos files together (for parallel adaptation only) <br /></td></tr>
-<tr class="separator:a810da85ba45f7e0c480cb4add22c3ee4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab09fdfdd6df4468659813b3d1880051d"><td class="memTemplParams" colspan="2"><a id="ab09fdfdd6df4468659813b3d1880051d"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:ab09fdfdd6df4468659813b3d1880051d"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1MeshAdaptation.html#a46d54a222cc92f6b6e5f8f9709b79bd5">mesh_ptrtype</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ab09fdfdd6df4468659813b3d1880051d">adaptMesh</a> (Ts &amp;&amp;... v)</td></tr>
+<tr class="memdesc:ab09fdfdd6df4468659813b3d1880051d"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classFeel_1_1Mesh.html" title="unifying mesh class">Mesh</a> adaptation interface. <br /></td></tr>
+<tr class="separator:ab09fdfdd6df4468659813b3d1880051d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab2042b7b529e1e7179f85095f4250e0c"><td class="memItemLeft" align="right" valign="top"><a id="ab2042b7b529e1e7179f85095f4250e0c"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ab2042b7b529e1e7179f85095f4250e0c">adaptMeshHess1</a> (element_type &amp;U, const <a class="el" href="classFeel_1_1MeshAdaptation.html#a46d54a222cc92f6b6e5f8f9709b79bd5">mesh_ptrtype</a> &amp;mesh, double hMin, double hMax, std::string name, std::string geofile, double tol, <a class="el" href="classbool.html">bool</a> aniso)</td></tr>
+<tr class="memdesc:ab2042b7b529e1e7179f85095f4250e0c"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classFeel_1_1Mesh.html" title="unifying mesh class">Mesh</a> adaptation from Hessian matrix. <br /></td></tr>
+<tr class="separator:ab2042b7b529e1e7179f85095f4250e0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac164c0c2a832db915e920423630bafe8"><td class="memItemLeft" align="right" valign="top"><a id="ac164c0c2a832db915e920423630bafe8"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><b>adaptMeshHess2</b> (element_type &amp;U, const <a class="el" href="classFeel_1_1MeshAdaptation.html#a46d54a222cc92f6b6e5f8f9709b79bd5">mesh_ptrtype</a> &amp;mesh, double hMin, double hMax, std::string name, std::string geofile, double tol, <a class="el" href="classbool.html">bool</a> aniso)</td></tr>
+<tr class="separator:ac164c0c2a832db915e920423630bafe8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec1701d594edf30b427568a6a8f4df93"><td class="memItemLeft" align="right" valign="top"><a id="aec1701d594edf30b427568a6a8f4df93"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><b>adaptMeshHess2</b> (element_type &amp;U, const <a class="el" href="classFeel_1_1MeshAdaptation.html#a46d54a222cc92f6b6e5f8f9709b79bd5">mesh_ptrtype</a> &amp;mesh, double hMin, double hMax, std::string name, std::string geofile, double tol, <a class="el" href="classbool.html">bool</a> aniso, mpl::bool_&lt; false &gt;)</td></tr>
+<tr class="separator:aec1701d594edf30b427568a6a8f4df93"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abeb34da64279683d2d4ebf3c9f50c5bc"><td class="memItemLeft" align="right" valign="top"><a id="abeb34da64279683d2d4ebf3c9f50c5bc"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><b>adaptMeshHess2</b> (element_type &amp;U, const <a class="el" href="classFeel_1_1MeshAdaptation.html#a46d54a222cc92f6b6e5f8f9709b79bd5">mesh_ptrtype</a> &amp;mesh, double hMin, double hMax, std::string name, std::string geofile, double tol, <a class="el" href="classbool.html">bool</a> aniso, mpl::bool_&lt; true &gt;)</td></tr>
+<tr class="separator:abeb34da64279683d2d4ebf3c9f50c5bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad39b898d87944de4665d92483a23475c"><td class="memItemLeft" align="right" valign="top"><a id="ad39b898d87944de4665d92483a23475c"></a>
+<a class="el" href="classFeel_1_1MeshAdaptation.html#a46d54a222cc92f6b6e5f8f9709b79bd5">mesh_ptrtype</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ad39b898d87944de4665d92483a23475c">adaptMeshImpl</a> (const <a class="el" href="classFeel_1_1MeshAdaptation.html#a46d54a222cc92f6b6e5f8f9709b79bd5">mesh_ptrtype</a> &amp;initMesh, std::string geofile, std::string adaptType, std::list&lt; std::pair&lt; element_type, std::string &gt; &gt; var, std::list&lt; std::pair&lt; std::vector&lt; p1_element_type &gt;, std::string &gt; &gt; metric, double hMin, double hMax, double tol)</td></tr>
+<tr class="memdesc:ad39b898d87944de4665d92483a23475c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Interface. <br /></td></tr>
+<tr class="separator:ad39b898d87944de4665d92483a23475c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5ffa0f8d6139230c5b6a40f3d3753bf"><td class="memItemLeft" align="right" valign="top"><a id="ac5ffa0f8d6139230c5b6a40f3d3753bf"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ac5ffa0f8d6139230c5b6a40f3d3753bf">buildAdaptedMesh</a> (std::string geofile, std::string name, std::vector&lt; std::string &gt; posfiles, <a class="el" href="classbool.html">bool</a> aniso)</td></tr>
+<tr class="memdesc:ac5ffa0f8d6139230c5b6a40f3d3753bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build adapted mesh. <br /></td></tr>
+<tr class="separator:ac5ffa0f8d6139230c5b6a40f3d3753bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a494029f73662612bc161170298042e14"><td class="memItemLeft" align="right" valign="top"><a id="a494029f73662612bc161170298042e14"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a494029f73662612bc161170298042e14">computeMetric</a> (const double tol, const double h_min, const double h_max, const matrixN_type &amp;hessian_matrix, matrixN_type &amp;M, double &amp;max_eigenvalue, <a class="el" href="classint.html">int</a> dofId)</td></tr>
+<tr class="memdesc:a494029f73662612bc161170298042e14"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the metric for mesh adaptation using hessian matrix. <br /></td></tr>
+<tr class="separator:a494029f73662612bc161170298042e14"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19e9e75154b3ddae0f210294d0c3d69d"><td class="memItemLeft" align="right" valign="top"><a id="a19e9e75154b3ddae0f210294d0c3d69d"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a19e9e75154b3ddae0f210294d0c3d69d">createAdaptedGeo</a> (std::string geofile, std::string name, std::vector&lt; std::string &gt; posfiles, <a class="el" href="classbool.html">bool</a> aniso)</td></tr>
+<tr class="memdesc:a19e9e75154b3ddae0f210294d0c3d69d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adapt geofile for mesh adaptation. <br /></td></tr>
+<tr class="separator:a19e9e75154b3ddae0f210294d0c3d69d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0e746f3015a94491f527469ad9b634d"><td class="memItemLeft" align="right" valign="top"><a id="ae0e746f3015a94491f527469ad9b634d"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ae0e746f3015a94491f527469ad9b634d">createPosfile</a> (std::string name_var, const p1_element_type &amp;bbNewMap, const <a class="el" href="classFeel_1_1MeshAdaptation.html#a46d54a222cc92f6b6e5f8f9709b79bd5">mesh_ptrtype</a> &amp;mesh)</td></tr>
+<tr class="memdesc:ae0e746f3015a94491f527469ad9b634d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generates a GMSH post processing file (for mesh adaptation) <br /></td></tr>
+<tr class="separator:ae0e746f3015a94491f527469ad9b634d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af68ece8dadca16673d8bb66a3b78ba9b"><td class="memItemLeft" align="right" valign="top"><a id="af68ece8dadca16673d8bb66a3b78ba9b"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><b>createPosfileAnisotropic</b> (std::string nameVar, const std::vector&lt; p1_element_type &gt; &amp;bbNewMap, const <a class="el" href="classFeel_1_1MeshAdaptation.html#a46d54a222cc92f6b6e5f8f9709b79bd5">mesh_ptrtype</a> &amp;mesh)</td></tr>
+<tr class="separator:af68ece8dadca16673d8bb66a3b78ba9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad7cecf8eab8e42d8a6eef117c486e54c"><td class="memItemLeft" align="right" valign="top"><a id="ad7cecf8eab8e42d8a6eef117c486e54c"></a>
+const std::vector&lt; matrixN_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ad7cecf8eab8e42d8a6eef117c486e54c">directions</a> ()</td></tr>
+<tr class="memdesc:ad7cecf8eab8e42d8a6eef117c486e54c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set of directions on a dof. <br /></td></tr>
+<tr class="separator:ad7cecf8eab8e42d8a6eef117c486e54c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a146b65859689393fc4d74075c705193b"><td class="memItemLeft" align="right" valign="top"><a id="a146b65859689393fc4d74075c705193b"></a>
+const std::vector&lt; vectorN_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a146b65859689393fc4d74075c705193b">measures</a> ()</td></tr>
+<tr class="memdesc:a146b65859689393fc4d74075c705193b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set of measures on a dof. <br /></td></tr>
+<tr class="separator:a146b65859689393fc4d74075c705193b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2cc708bbab60fd83c0b140a366090700"><td class="memItemLeft" align="right" valign="top"><a id="a2cc708bbab60fd83c0b140a366090700"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#a2cc708bbab60fd83c0b140a366090700">MeshAdaptation</a> ()</td></tr>
+<tr class="memdesc:a2cc708bbab60fd83c0b140a366090700"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor. <br /></td></tr>
+<tr class="separator:a2cc708bbab60fd83c0b140a366090700"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3f840ddb140e92dc3c6a3a57addc2fb"><td class="memItemLeft" align="right" valign="top"><a id="ae3f840ddb140e92dc3c6a3a57addc2fb"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshAdaptation.html#ae3f840ddb140e92dc3c6a3a57addc2fb">pastePosFilesTogether</a> (std::vector&lt; std::string &gt;const &amp;posFiles)</td></tr>
+<tr class="memdesc:ae3f840ddb140e92dc3c6a3a57addc2fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Paste several pos files together (for parallel adaptation only) <br /></td></tr>
+<tr class="separator:ae3f840ddb140e92dc3c6a3a57addc2fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:acdbdeb372ec7ceae2bc78bbedf72dfec"><td class="memItemLeft" align="right" valign="top"><a id="acdbdeb372ec7ceae2bc78bbedf72dfec"></a>
+<tr class="memitem:a72d5d79ff4953d2716bbfe469a89ebdc"><td class="memItemLeft" align="right" valign="top"><a id="a72d5d79ff4953d2716bbfe469a89ebdc"></a>
 static metric_list_type&#160;</td><td class="memItemRight" valign="bottom"><b>makeMetricList</b> (p1_element_type &amp;metric, std::string metric_name)</td></tr>
-<tr class="separator:acdbdeb372ec7ceae2bc78bbedf72dfec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac34f4293e982541a392fc806d83f499a"><td class="memItemLeft" align="right" valign="top"><a id="ac34f4293e982541a392fc806d83f499a"></a>
+<tr class="separator:a72d5d79ff4953d2716bbfe469a89ebdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a98877096cf15a74443866f5f22c3c188"><td class="memItemLeft" align="right" valign="top"><a id="a98877096cf15a74443866f5f22c3c188"></a>
 static metric_list_type&#160;</td><td class="memItemRight" valign="bottom"><b>makeMetricList</b> (std::vector&lt; p1_element_type &gt; &amp;metrics, std::string metric_name)</td></tr>
-<tr class="separator:ac34f4293e982541a392fc806d83f499a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a98877096cf15a74443866f5f22c3c188"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:a93d81c34b8bc1b65dac8946025f418dc"><td class="memItemLeft" align="right" valign="top"><a id="a93d81c34b8bc1b65dac8946025f418dc"></a>
+<tr class="memitem:a7fd5494d63bc6b8e130e29092a49ed2c"><td class="memItemLeft" align="right" valign="top"><a id="a7fd5494d63bc6b8e130e29092a49ed2c"></a>
 static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>isP1</b> = (<a class="el" href="structFeel_1_1Order.html">Order</a> == 1)</td></tr>
-<tr class="separator:a93d81c34b8bc1b65dac8946025f418dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a7fd5494d63bc6b8e130e29092a49ed2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

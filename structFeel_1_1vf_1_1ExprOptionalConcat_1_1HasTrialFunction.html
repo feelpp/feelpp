@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -140,14 +140,13 @@ template&lt;typename Func &gt; </div>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">= std::decay_t&lt;decltype( hana::fold( tuple_expr_type{},</div>
 <div class="line">                                                                      hana::integral_constant&lt;bool,false&gt;{},</div>
-<div class="line">                                                                      []( <span class="keyword">auto</span> <span class="keyword">const</span>&amp; res, <span class="keyword">auto</span> <span class="keyword">const</span>&amp; e ) { hana::integral_constant&lt;<a class="code" href="classbool.html">bool</a>, res.value || std::decay_t&lt;decltype(e)&gt;::template HasTrialFunction&lt;Func&gt;::result &gt;{}; }</div>
-<div class="line">                                                                      ) )&gt;::value</div>
+<div class="line">                                                                      </div>
+<div class="line">                                                                      <span class="keyword">typename</span> FunctorsVariadicExpr::template HasTrialFunction&lt;Func&gt;{} ) )&gt;::value</div>
 </div><!-- fragment -->
 </div>
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="aclassbool_html"><div class="ttname"><a href="classbool.html">bool</a></div></div>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>

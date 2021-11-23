@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -112,8 +112,6 @@ $(document).ready(function(){initNavTree('operatorlinear_8hpp.html',''); initRes
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1compute__opLinear__return.html">Feel::compute_opLinear_return&lt; Args &gt;</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1OperatorLinear.html">Feel::OperatorLinear&lt; DomainSpace, DualImageSpace &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linear <a class="el" href="classFeel_1_1Operator.html" title="Operator between function spaces.">Operator</a> between function spaces, represented by a matrix.  <a href="classFeel_1_1OperatorLinear.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -128,9 +126,10 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a1bfc32f17859e3555b3ce31476efaef6"><td class="memItemLeft" align="right" valign="top"><a id="a1bfc32f17859e3555b3ce31476efaef6"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::BOOST_PARAMETER_FUNCTION</b> ((typename compute_opLinear_return&lt; Args &gt;::type), opLinear, tag,(required(domainSpace, *(boost::is_convertible&lt; mpl::_, std::shared_ptr&lt; FunctionSpaceBase &gt; &gt;))(imageSpace, *(boost::is_convertible&lt; mpl::_, std::shared_ptr&lt; FunctionSpaceBase &gt; &gt;)))(optional(backend, *, Backend&lt; typename compute_opLinear_return&lt; Args &gt;::domain_space_type::value_type &gt;::build(soption(_name=&quot;backend&quot;)))(pattern, *,(size_type) Pattern::COUPLED)))</td></tr>
-<tr class="separator:a1bfc32f17859e3555b3ce31476efaef6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06e07c72a1ab59173529647062e7a002"><td class="memTemplParams" colspan="2"><a id="a06e07c72a1ab59173529647062e7a002"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a06e07c72a1ab59173529647062e7a002"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::opLinear</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a06e07c72a1ab59173529647062e7a002"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><dl class="section author"><dt>Author</dt><dd>Christoph Winkelmann <a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'h.'+'win'+'ke'+'lma'+'nn'+'@ep'+'fl'+'.ch'; return false;">chris<span style="display: none;">.nosp@m.</span>toph<span style="display: none;">.nosp@m.</span>.wink<span style="display: none;">.nosp@m.</span>elma<span style="display: none;">.nosp@m.</span>nn@ep<span style="display: none;">.nosp@m.</span>fl.c<span style="display: none;">.nosp@m.</span>h</a> </dd></dl>

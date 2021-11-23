@@ -1,17 +1,5 @@
 var NAVTREEINDEX9 =
 {
-"classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIdsByEntity.html":[6,1,1,4,24,1],
-"classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIdsByEntity.html#a1906d29fcd21321f11683a90c9c8d2f2":[6,1,1,4,24,1,7],
-"classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIdsByEntity.html#a24548e4fad1530e1a66e6bd64d60635c":[6,1,1,4,24,1,8],
-"classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIdsByEntity.html#a27668fa52aedc4830b61227c2e4dcd39":[6,1,1,4,24,1,5],
-"classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIdsByEntity.html#a509cf4532b7ff729e4a806af986c03ef":[6,1,1,4,24,1,2],
-"classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIdsByEntity.html#a5448dbe18e0b20805c317cc1e49621b5":[6,1,1,4,24,1,4],
-"classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIdsByEntity.html#a66c727a8041ee74e7bf8ce766d56601d":[6,1,1,4,24,1,3],
-"classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIdsByEntity.html#aaeabf77820aa85067fc9f899af14c568":[6,1,1,4,24,1,6],
-"classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIdsByEntity.html#ab261078bf6f2dbb84d29a60265fe9ec3":[6,1,1,4,24,1,0],
-"classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIdsByEntity.html#ad72d280e4e853affece733fcc75af980":[6,1,1,4,24,1,9],
-"classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIdsByEntity.html#afcd2570b7fc8c92b0300a4e0e43ddd20":[6,1,1,4,24,1,1],
-"classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html":[6,1,1,4,24,2],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html#a1914d79ecde0d293de37cea0602504ad":[6,1,1,4,24,2,1],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html#aaaa56cccfe6b4a012f8e7e4088295807":[6,1,1,4,24,2,3],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html#ac1a879d1b40a407c1197424026275ede":[6,1,1,4,24,2,0],
@@ -249,5 +237,17 @@ var NAVTREEINDEX9 =
 "classFeel_1_1FeelModels_1_1ModelMeasuresIO.html#afa8efa9dd85692dfb807ed413acf72f3":[6,1,1,4,44,2],
 "classFeel_1_1FeelModels_1_1ModelMeasuresIO.html#afbdfb96af52e9b751521599d178eeb9c":[6,1,1,4,44,5],
 "classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html":[6,1,1,4,45],
-"classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html#a0930bed4dff511f132ff542627ae0b32":[6,1,1,4,45,1]
+"classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html#a0930bed4dff511f132ff542627ae0b32":[6,1,1,4,45,1],
+"classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html#a1728b27528c97f202447f0397428fa34":[6,1,1,4,45,8],
+"classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html#a1e0b11106b204eff141a92939c200ddd":[6,1,1,4,45,2],
+"classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html#a41c933b1054d4600a7cd24f2566f2d73":[6,1,1,4,45,7],
+"classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html#a58c9f70e46efc82dce24c239913fe30a":[6,1,1,4,45,5],
+"classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html#a82448f63572b1dac9c429f565fcb415e":[6,1,1,4,45,9],
+"classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html#aaae1b80fee68aa25e9a4b96ecb4b8491":[6,1,1,4,45,6],
+"classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html#ab04ba51c676a858d844d16193ffce272":[6,1,1,4,45,4],
+"classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html#ad54db559b56b16d29eca1d3835ecaa33":[6,1,1,4,45,0],
+"classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html#adbbc365128a0e327ef0e89dd9cb59217":[6,1,1,4,45,3],
+"classFeel_1_1FeelModels_1_1ModelMeasuresQuantities.html":[6,1,1,4,46],
+"classFeel_1_1FeelModels_1_1ModelMeasuresQuantities.html#a08d302092a8939f9c658ccc03c89a85e":[6,1,1,4,46,7],
+"classFeel_1_1FeelModels_1_1ModelMeasuresQuantities.html#a181c547b2a439f67bcc10f28101a4a4b":[6,1,1,4,46,9]
 };

@@ -31,7 +31,8 @@ var classFeel_1_1vf_1_1Pow =
     [ "value_1_type", "classFeel_1_1vf_1_1Pow.html#adbe1790e4d2c16ffff0a633557c23316", null ],
     [ "value_2_type", "classFeel_1_1vf_1_1Pow.html#a27be66083e641560dedee1e25e2dc360", null ],
     [ "value_type", "classFeel_1_1vf_1_1Pow.html#a010ccc77bff0e4c81082fe5b286a4f54", null ],
-    [ "Pow", "classFeel_1_1vf_1_1Pow.html#afa78fdfad13a8c289c398f2196dc18d2", null ],
-    [ "Pow", "classFeel_1_1vf_1_1Pow.html#aaa5bea7c475973d1c0d0921873de67f3", null ],
+    [ "Pow", "classFeel_1_1vf_1_1Pow.html#a12e8c93471c293e54331174c92d72e39", null ],
+    [ "Pow", "classFeel_1_1vf_1_1Pow.html#abe0c7731ab982c62d8685386899c807e", null ],
+    [ "Pow", "classFeel_1_1vf_1_1Pow.html#a28e47166bc5c71ca4c51005659abfe52", null ],
     [ "Pow", "classFeel_1_1vf_1_1Pow.html#a16cc0a7d90130e3364d06eaf81f31318", null ]
 ];

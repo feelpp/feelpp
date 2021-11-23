@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -178,9 +178,6 @@ template&lt;typename T &gt; </td></tr>
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a4badefe6edc89679e1f912f9f1ca7197"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>BlockBilinearForm</b> (T &amp;&amp;ps, std::enable_if_t&lt; std::is_base_of&lt; ProductSpacesBase, decay_type&lt; T &gt;&gt;::value &gt; *=nullptr)</td></tr>
 <tr class="separator:a4badefe6edc89679e1f912f9f1ca7197"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abb2f68de77fa2775ecd5d68860502f36"><td class="memItemLeft" align="right" valign="top"><a id="abb2f68de77fa2775ecd5d68860502f36"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((typename Backend&lt; double &gt;::solve_return_type), solve, tag,(required(in_out(solution), *)(rhs, *))(optional(condense,(<a class="el" href="classbool.html">bool</a>), false)(condenser,(*), condenser_poisson())(local,(<a class="el" href="classbool.html">bool</a>), false)(name,(std::string), &quot;&quot;)(kind,(std::string), soption(_prefix=name, _name=&quot;backend&quot;))(rebuild,(<a class="el" href="classbool.html">bool</a>), boption(_prefix=name, _name=&quot;backend.rebuild&quot;))(pre,(pre_solve_type), pre_solve_type())(post,(post_solve_type), post_solve_type())))</td></tr>
-<tr class="separator:abb2f68de77fa2775ecd5d68860502f36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a94e991c44d70da1ddedbd1cf6e4c485a"><td class="memItemLeft" align="right" valign="top"><a id="a94e991c44d70da1ddedbd1cf6e4c485a"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>close</b> ()</td></tr>
 <tr class="separator:a94e991c44d70da1ddedbd1cf6e4c485a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -226,6 +223,10 @@ template&lt;typename BackendT &gt; </td></tr>
 template&lt;typename BackendT &gt; </td></tr>
 <tr class="memitem:a931f3f594c8d7ca11cf156b8c0e79677"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>setStrategy</b> (solve::strategy s, BackendT &amp;&amp;b, std::vector&lt; size_type &gt; const &amp;patterns)</td></tr>
 <tr class="separator:a931f3f594c8d7ca11cf156b8c0e79677"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47a5b565366036d6eb68736c08dc39b3"><td class="memTemplParams" colspan="2"><a id="a47a5b565366036d6eb68736c08dc39b3"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a47a5b565366036d6eb68736c08dc39b3"><td class="memTemplItemLeft" align="right" valign="top">Backend&lt; double &gt;::solve_return_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>solve</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a47a5b565366036d6eb68736c08dc39b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af33be0f5c1a79d5057ae4026ba8d18a8"><td class="memTemplParams" colspan="2"><a id="af33be0f5c1a79d5057ae4026ba8d18a8"></a>
 template&lt;typename Solution_t , typename Rhs_t &gt; </td></tr>
 <tr class="memitem:af33be0f5c1a79d5057ae4026ba8d18a8"><td class="memTemplItemLeft" align="right" valign="top">Backend&lt; double &gt;::solve_return_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>solveImpl</b> (Solution_t &amp;solution, Rhs_t const &amp;rhs, std::string const &amp;name, std::string const &amp;kind=&quot;petsc&quot;, bool rebuild=false, pre_solve_type pre=pre_solve_type(), post_solve_type post=post_solve_type())</td></tr>

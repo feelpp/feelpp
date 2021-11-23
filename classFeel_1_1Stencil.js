@@ -42,10 +42,10 @@ var classFeel_1_1Stencil =
     [ "rangeiterator_test_type", "classFeel_1_1Stencil.html#add818742b2fdd4ea9a9198a1eec9ba6f", null ],
     [ "self_type", "classFeel_1_1Stencil.html#ad1e6269a4c259023f9f80a5dfb6a12de", null ],
     [ "size_type", "classFeel_1_1Stencil.html#a7c41ce16849ab482823641ad57fda8bc", null ],
-    [ "test_space_ptrtype", "classFeel_1_1Stencil.html#a6735503a19acf1501dc03e0c0c47cf6d", null ],
-    [ "test_space_type", "classFeel_1_1Stencil.html#a0250266a0aa07fc32ab418815ebc8d0b", null ],
-    [ "trial_space_ptrtype", "classFeel_1_1Stencil.html#a67f8084dd3fa2913429fff160c131a0f", null ],
-    [ "trial_space_type", "classFeel_1_1Stencil.html#a115f8b136248542bfa2d51fac330e807", null ],
+    [ "test_space_ptrtype", "classFeel_1_1Stencil.html#af252e00dc2e7332abdf1a05411edffd7", null ],
+    [ "test_space_type", "classFeel_1_1Stencil.html#ac68b2dd59d334877cfd5cd3fe68dbed6", null ],
+    [ "trial_space_ptrtype", "classFeel_1_1Stencil.html#ab68041128127fb3ea5057439a2e5a77f", null ],
+    [ "trial_space_type", "classFeel_1_1Stencil.html#a65f097071aefabc3cf989d74d390c981", null ],
     [ "Stencil", "classFeel_1_1Stencil.html#a525b354dbecbe36671c53a8d6c59a042", null ],
     [ "Stencil", "classFeel_1_1Stencil.html#a8c2325de6ae90d4ccb3c9408747fb03c", null ]
 ];

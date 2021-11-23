@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -102,7 +102,6 @@ $(document).ready(function(){initNavTree('classFeel_1_1Projector.html',''); init
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Instances and minimal complete definitions</a> &#124;
 <a href="classFeel_1_1Projector-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">Feel::Projector Class Reference</div>  </div>
@@ -113,11 +112,6 @@ $(document).ready(function(){initNavTree('classFeel_1_1Projector.html',''); init
 <dl class="section author"><dt>Author</dt><dd>Vincent Doyeux </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classFeel_1_1OperatorLinear.html" title="Linear Operator between function spaces, represented by a matrix.">OperatorLinear</a> </dd></dl>
 </div><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
-Instances and minimal complete definitions</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1Projector_1_1integrate__type.html">integrate_type</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Typedefs</h2></td></tr>
 <tr class="memitem:a08f4516b34561079baba3b555aa492b2"><td class="memItemLeft" align="right" valign="top"><a id="a08f4516b34561079baba3b555aa492b2"></a>
@@ -188,9 +182,10 @@ template&lt;typename Range , typename Expr , typename Elem &gt; </td></tr>
 template&lt;typename RangeT , typename ExprT &gt; </td></tr>
 <tr class="memitem:a1975a91503f50f447540dfac426b9947"><td class="memTemplItemLeft" align="right" valign="top">dual_image_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>projectL2</b> (RangeT <a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, ExprT const &amp;<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>)</td></tr>
 <tr class="separator:a1975a91503f50f447540dfac426b9947"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1682189785aaeae3c602e2734d0283a9"><td class="memItemLeft" align="right" valign="top"><a id="a1682189785aaeae3c602e2734d0283a9"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((dual_image_element_type), project, tag,(required(<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>, *))(optional(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *, self_type::rangeElements(this-&gt;domainSpace(), this-&gt;dualImageSpace()))(quad, *, <a class="el" href="namespaceFeel.html#a1d9f0d87bd325ffed641f92f6d12c3c8">quad_order_from_expression</a>)(quad1, *, <a class="el" href="namespaceFeel.html#a1d9f0d87bd325ffed641f92f6d12c3c8">quad_order_from_expression</a>)(geomap, *, GeomapStrategyType::GEOMAP_OPT)(grad_expr, *,(vf::zero&lt; domain_space_type::nComponents, domain_space_type::nDim &gt;()))(div_expr, *, cst(0.))(curl_expr, *,(vf::zero&lt; mpl::if_&lt; mpl::equal_to&lt; mpl::int_&lt; domain_space_type::nComponents &gt;, mpl::int_&lt; 1 &gt; &gt;, mpl::int_&lt; 1 &gt;, typename mpl::if_&lt; mpl::equal_to&lt; mpl::int_&lt; domain_space_type::nDim &gt;, mpl::int_&lt; 3 &gt; &gt;, mpl::int_&lt; 3 &gt;, mpl::int_&lt; 1 &gt; &gt;::type &gt;::type::value, 1 &gt;()))))</td></tr>
-<tr class="separator:a1682189785aaeae3c602e2734d0283a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a50b8786594daa50741fa6df32268f18f"><td class="memTemplParams" colspan="2"><a id="a50b8786594daa50741fa6df32268f18f"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a50b8786594daa50741fa6df32268f18f"><td class="memTemplItemLeft" align="right" valign="top">dual_image_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>project</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a50b8786594daa50741fa6df32268f18f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb455429f276e9f2a60c96f147038018"><td class="memTemplParams" colspan="2"><a id="abb455429f276e9f2a60c96f147038018"></a>
 template&lt;typename RhsExpr &gt; </td></tr>
 <tr class="memitem:abb455429f276e9f2a60c96f147038018"><td class="memTemplItemLeft" align="right" valign="top">dual_image_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>operator()</b> (RhsExpr const &amp;rhs_expr)</td></tr>

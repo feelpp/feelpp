@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -101,16 +101,160 @@ $(document).ready(function(){initNavTree('evaluator_8hpp.html',''); initResizabl
 </div>
 
 <div class="header">
+  <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#namespaces">Namespaces</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">evaluator.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1minmaxData.html">Feel::vf::minmaxData&lt; Dim &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">data returned by minmax  <a href="structFeel_1_1vf_1_1minmaxData.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1normLinfData.html">Feel::vf::normLinfData&lt; Dim &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">data returned by normLinf  <a href="structFeel_1_1vf_1_1normLinfData.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
+Namespaces</h2></td></tr>
+<tr class="memitem:namespaceFeel"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html">Feel</a></td></tr>
+<tr class="memdesc:namespaceFeel"><td class="mdescLeft">&#160;</td><td class="mdescRight">-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:a5001bd8a763304529bc1b22bdfa35c76"><td class="memTemplParams" colspan="2">template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a5001bd8a763304529bc1b22bdfa35c76"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="evaluator_8hpp.html#a5001bd8a763304529bc1b22bdfa35c76">Feel::vf::evaluate</a> (Ts &amp;&amp;... v)</td></tr>
+<tr class="memdesc:a5001bd8a763304529bc1b22bdfa35c76"><td class="mdescLeft">&#160;</td><td class="mdescRight">evaluate an expression over a range of element at a set of points defined in the reference element  <a href="evaluator_8hpp.html#a5001bd8a763304529bc1b22bdfa35c76">More...</a><br /></td></tr>
+<tr class="separator:a5001bd8a763304529bc1b22bdfa35c76"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d1ca1671a2c3476ef2151a91f8bb516"><td class="memTemplParams" colspan="2"><a id="a6d1ca1671a2c3476ef2151a91f8bb516"></a>
+template&lt;typename IteratorRange , typename Pset , typename ExprT &gt; </td></tr>
+<tr class="memitem:a6d1ca1671a2c3476ef2151a91f8bb516"><td class="memTemplItemLeft" align="right" valign="top">details::Evaluator&lt; EVAL_NODAL, IteratorRange, Pset, Expr&lt; ExprT &gt; &gt;::eval_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::vf::evaluate_impl</b> (IteratorRange const &amp;range_it, Pset const &amp;pset, Expr&lt; ExprT &gt; const &amp;__expr, GeomapStrategyType geomap=GeomapStrategyType::GEOMAP_HO)</td></tr>
+<tr class="separator:a6d1ca1671a2c3476ef2151a91f8bb516"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae15a60f88f76e1c3a850ca5f0cc169ad"><td class="memTemplParams" colspan="2"><a id="ae15a60f88f76e1c3a850ca5f0cc169ad"></a>
+template&lt;typename Dimensions &gt; </td></tr>
+<tr class="memitem:ae15a60f88f76e1c3a850ca5f0cc169ad"><td class="memTemplItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="classint.html">int</a>, 2 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::vf::indices2Array</b> (const <a class="el" href="classint.html">int</a> &amp;index, const Dimensions &amp;dimensions, const <a class="el" href="classint.html">int</a> options)</td></tr>
+<tr class="separator:ae15a60f88f76e1c3a850ca5f0cc169ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d7e567a0ade6c048252a75ed57f59de"><td class="memTemplParams" colspan="2"><a id="a5d7e567a0ade6c048252a75ed57f59de"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a5d7e567a0ade6c048252a75ed57f59de"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::vf::maxPerCell</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a5d7e567a0ade6c048252a75ed57f59de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab224cc9778715ca5753101cb70ad6b6d"><td class="memTemplParams" colspan="2">template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:ab224cc9778715ca5753101cb70ad6b6d"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="evaluator_8hpp.html#ab224cc9778715ca5753101cb70ad6b6d">Feel::vf::minmax</a> (Ts &amp;&amp;... v)</td></tr>
+<tr class="memdesc:ab224cc9778715ca5753101cb70ad6b6d"><td class="mdescLeft">&#160;</td><td class="mdescRight">evaluate an expression over a range of element at a set of points defined in the reference element  <a href="evaluator_8hpp.html#ab224cc9778715ca5753101cb70ad6b6d">More...</a><br /></td></tr>
+<tr class="separator:ab224cc9778715ca5753101cb70ad6b6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f147f009d03a9c8ac68bd7c0530d5b7"><td class="memTemplParams" colspan="2">template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a5f147f009d03a9c8ac68bd7c0530d5b7"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="evaluator_8hpp.html#a5f147f009d03a9c8ac68bd7c0530d5b7">Feel::vf::normLinf</a> (Ts &amp;&amp;... v)</td></tr>
+<tr class="memdesc:a5f147f009d03a9c8ac68bd7c0530d5b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">evaluate an expression over a range of element at a set of points defined in the reference element  <a href="evaluator_8hpp.html#a5f147f009d03a9c8ac68bd7c0530d5b7">More...</a><br /></td></tr>
+<tr class="separator:a5f147f009d03a9c8ac68bd7c0530d5b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'he'+'.pr'+'ud'+'hom'+'me'+'@fe'+'el'+'pp.'+'or'+'g'; return false;">chris<span style="display: none;">.nosp@m.</span>toph<span style="display: none;">.nosp@m.</span>e.pru<span style="display: none;">.nosp@m.</span>dhom<span style="display: none;">.nosp@m.</span>me@fe<span style="display: none;">.nosp@m.</span>elpp<span style="display: none;">.nosp@m.</span>.org</a> </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>2012-05-27</dd></dl>
 <dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'he'+'.pr'+'ud'+'hom'+'me'+'@fe'+'el'+'pp.'+'or'+'g'; return false;">chris<span style="display: none;">.nosp@m.</span>toph<span style="display: none;">.nosp@m.</span>e.pru<span style="display: none;">.nosp@m.</span>dhom<span style="display: none;">.nosp@m.</span>me@fe<span style="display: none;">.nosp@m.</span>elpp<span style="display: none;">.nosp@m.</span>.org</a> </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>2013-03-20 </dd></dl>
-</div></div><!-- contents -->
+</div><h2 class="groupheader">Function Documentation</h2>
+<a id="a5001bd8a763304529bc1b22bdfa35c76"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5001bd8a763304529bc1b22bdfa35c76">&#9670;&nbsp;</a></span>evaluate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ... Ts&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::vf::evaluate </td>
+          <td>(</td>
+          <td class="paramtype">Ts &amp;&amp;...&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>evaluate an expression over a range of element at a set of points defined in the reference element </p>
+<ul>
+<li>range the range of mesh elements to apply the projection (the remaining parts are set to 0) </li>
+<li>pset set of points (e.g. quadrature points) in the reference elements to be transformed in the real elements </li>
+<li>expr the expression to project </li>
+<li>geomap the type of geomap to use (make sense only using high order meshes) </li>
+</ul>
+
+<p class="reference">References <a class="el" href="evaluator_8hpp.html#a5001bd8a763304529bc1b22bdfa35c76">Feel::vf::evaluate()</a>, and <a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">Feel::range()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="evaluator_8hpp.html#a5001bd8a763304529bc1b22bdfa35c76">Feel::vf::evaluate()</a>, <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a6bce93a6491db7917aaab9a596e9fe21">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;::geomapPtr()</a>, and <a class="el" href="classFeel_1_1ReducedBasisSpace_1_1Element.html#a37e37c7e70cab1a878604054d4c83847">Feel::ReducedBasisSpace&lt; SpaceType &gt;::Element&lt; T, Cont &gt;::idExtents()</a>.</p>
+
+</div>
+</div>
+<a id="ab224cc9778715ca5753101cb70ad6b6d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab224cc9778715ca5753101cb70ad6b6d">&#9670;&nbsp;</a></span>minmax()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ... Ts&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::vf::minmax </td>
+          <td>(</td>
+          <td class="paramtype">Ts &amp;&amp;...&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>evaluate an expression over a range of element at a set of points defined in the reference element </p>
+<ul>
+<li>range the range of mesh elements to apply the projection (the remaining parts are set to 0) </li>
+<li>pset set of points (e.g. quadrature points) in the reference elements to be transformed in the real elements </li>
+<li>expr the expression to project </li>
+<li>geomap the type of geomap to use (make sense only using high order meshes) </li>
+</ul>
+
+<p class="reference">References <a class="el" href="evaluator_8hpp.html#ab224cc9778715ca5753101cb70ad6b6d">Feel::vf::minmax()</a>, and <a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">Feel::range()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="evaluator_8hpp.html#ab224cc9778715ca5753101cb70ad6b6d">Feel::vf::minmax()</a>.</p>
+
+</div>
+</div>
+<a id="a5f147f009d03a9c8ac68bd7c0530d5b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f147f009d03a9c8ac68bd7c0530d5b7">&#9670;&nbsp;</a></span>normLinf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ... Ts&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::vf::normLinf </td>
+          <td>(</td>
+          <td class="paramtype">Ts &amp;&amp;...&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>evaluate an expression over a range of element at a set of points defined in the reference element </p>
+<ul>
+<li>range the range of mesh elements to apply the projection (the remaining parts are set to 0) </li>
+<li>pset set of points (e.g. quadrature points) in the reference elements to be transformed in the real elements </li>
+<li>expr the expression to project </li>
+<li>geomap the type of geomap to use (make sense only using high order meshes) </li>
+</ul>
+
+<p class="reference">References <a class="el" href="evaluator_8hpp.html#a5f147f009d03a9c8ac68bd7c0530d5b7">Feel::vf::normLinf()</a>, and <a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">Feel::range()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="evaluator_8hpp.html#a5f147f009d03a9c8ac68bd7c0530d5b7">Feel::vf::normLinf()</a>.</p>
+
+</div>
+</div>
+</div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

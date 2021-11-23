@@ -7,10 +7,7 @@ var classFeel_1_1Environment =
     [ "addTimer", "classFeel_1_1Environment.html#a40e7009dadbb4eb4b0c0f4b21f5dd523", null ],
     [ "appRepository", "classFeel_1_1Environment.html#a0090277ae3216635d65330b4bfff9dd3", null ],
     [ "appRepositoryWithoutNumProc", "classFeel_1_1Environment.html#a5acbad0a73d62db32e67cfa6c6cb60b1", null ],
-    [ "BOOST_PARAMETER_CONSTRUCTOR", "classFeel_1_1Environment.html#a476a87186d6023817e9bd1d430c7e45f", null ],
-    [ "BOOST_PARAMETER_MEMBER_FUNCTION", "classFeel_1_1Environment.html#a38e72200b44f8090d022120c69643e89", null ],
-    [ "BOOST_PARAMETER_MEMBER_FUNCTION", "classFeel_1_1Environment.html#a2b6c0308d0bc89011ba8b08b0faec9b3", null ],
-    [ "BOOST_PARAMETER_MEMBER_FUNCTION", "classFeel_1_1Environment.html#a4a798d4f94eab35b2c0d2f53d3971ae8", null ],
+    [ "changeRepository", "classFeel_1_1Environment.html#a9b4fd6aec8923b20258015b1f4da9dfe", null ],
     [ "clearSomeMemory", "classFeel_1_1Environment.html#a7577f9c9892a52415fffdf2466dc11d6", null ],
     [ "commandLineParser", "classFeel_1_1Environment.html#ab2e117294ca2fb9cf42f725af5ca8564", null ],
     [ "configFiles", "classFeel_1_1Environment.html#adad6ddb79fe801af011ca3ca81dfa343", null ],
@@ -36,6 +33,7 @@ var classFeel_1_1Environment =
     [ "nameUUID", "classFeel_1_1Environment.html#aa41742c7a53cafd818bc49fa49bc48db", null ],
     [ "numberOfProcessors", "classFeel_1_1Environment.html#a6c55a43784441001b70b5aaca4c235ba", null ],
     [ "olLoadInGmsh", "classFeel_1_1Environment.html#a310dffe9636ab0e3de5065621876d408", null ],
+    [ "option", "classFeel_1_1Environment.html#a8693c471e813351a6b1145bdb5233a84", null ],
     [ "optionsDescription", "classFeel_1_1Environment.html#a22efe6496f3dd83409a6137dbe271b22", null ],
     [ "optionsDescriptionApplication", "classFeel_1_1Environment.html#a68d66fb8e0d0f6c418b9a5f99296e2b8", null ],
     [ "optionsDescriptionLibrary", "classFeel_1_1Environment.html#aae55d49e75a6d3a68df407e54db6b03f", null ],
@@ -55,6 +53,7 @@ var classFeel_1_1Environment =
     [ "systemGeoRepository", "classFeel_1_1Environment.html#a54dac2208cb7895c32383349706387db", null ],
     [ "threadLevel", "classFeel_1_1Environment.html#ac069d8bd28f382ed6db571caf548ec70", null ],
     [ "vm", "classFeel_1_1Environment.html#a777708cb9116c7556145d1b3dd63e852", null ],
+    [ "vm", "classFeel_1_1Environment.html#aefa39799fcc994f5d7f089f2ac7df1cd", null ],
     [ "worldComm", "classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7", null ],
     [ "worldCommPtr", "classFeel_1_1Environment.html#a3ffa1e65a0e0cf627d2187173c7feebb", null ],
     [ "worldCommSeq", "classFeel_1_1Environment.html#aa9fb2dc75317e4e9fec61ef7e52b8f63", null ],
@@ -67,5 +66,7 @@ var classFeel_1_1Environment =
     [ "Environment", "classFeel_1_1Environment.html#a2f72ceaafeecd718e9089c5d16322cfd", null ],
     [ "Environment", "classFeel_1_1Environment.html#a5dd435d3b4d3664600a9555c750cee22", null ],
     [ "Environment", "classFeel_1_1Environment.html#a2090fcc5dc3f4bd395df2a3c21b12a79", null ],
-    [ "Environment", "classFeel_1_1Environment.html#a67d588817f8e5e71d5b351e74019fb69", null ]
+    [ "Environment", "classFeel_1_1Environment.html#a9239f6de6ab77613075d290c076ac46c", null ],
+    [ "Environment", "classFeel_1_1Environment.html#a80c1705bd4e94b003deb4e44d61b84a8", null ],
+    [ "~Environment", "classFeel_1_1Environment.html#a8063d8d062ce24ca7776b78cbfd57ca3", null ]
 ];

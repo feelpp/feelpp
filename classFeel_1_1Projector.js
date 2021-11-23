@@ -1,10 +1,8 @@
 var classFeel_1_1Projector =
 [
-    [ "integrate_type", "structFeel_1_1Projector_1_1integrate__type.html", "structFeel_1_1Projector_1_1integrate__type" ],
     [ "apply", "classFeel_1_1Projector.html#a51e4f20a5a515e064e2991f4d1084c15", null ],
     [ "apply", "classFeel_1_1Projector.html#a817b859a31389e14228018d9c1d075d0", null ],
     [ "applyOn", "classFeel_1_1Projector.html#a5d25ec4afea5c7d81f7373a6cf34c469", null ],
-    [ "BOOST_PARAMETER_MEMBER_FUNCTION", "classFeel_1_1Projector.html#a1682189785aaeae3c602e2734d0283a9", null ],
     [ "derivate", "classFeel_1_1Projector.html#a26dbf28a7df39fddc12edacc39be16a8", null ],
     [ "epsilon", "classFeel_1_1Projector.html#a2aef30466c3e43dc7fc5865d228e0a81", null ],
     [ "gamma", "classFeel_1_1Projector.html#a07c88d77609297e6778f88a2287c0b4f", null ],
@@ -13,6 +11,7 @@ var classFeel_1_1Projector =
     [ "operator()", "classFeel_1_1Projector.html#a1c863253eabdacf9c2c6c1bdcb81413b", null ],
     [ "operator()", "classFeel_1_1Projector.html#a48ba3c1828ab7decebc463da29bef8cd", null ],
     [ "operator()", "classFeel_1_1Projector.html#abb455429f276e9f2a60c96f147038018", null ],
+    [ "project", "classFeel_1_1Projector.html#a50b8786594daa50741fa6df32268f18f", null ],
     [ "projectL2", "classFeel_1_1Projector.html#a1975a91503f50f447540dfac426b9947", null ],
     [ "projectorType", "classFeel_1_1Projector.html#a59b577ed968c3e50e0e19054424e2d87", null ],
     [ "rangeBoundaryFaces", "classFeel_1_1Projector.html#ad9806432f5943806d63517e637f83304", null ],

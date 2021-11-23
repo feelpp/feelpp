@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -290,12 +290,14 @@ template&lt;typename X1 , typename X2 &gt; </td></tr>
 <tr class="memitem:a23ba03ff5b18d1274596b6c5233ff103"><td class="memItemLeft" align="right" valign="top"><a id="a23ba03ff5b18d1274596b6c5233ff103"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>isMatrixAllocated</b> () const</td></tr>
 <tr class="separator:a23ba03ff5b18d1274596b6c5233ff103"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9d73535798113b1964ed5c23a7f83423"><td class="memItemLeft" align="right" valign="top"><a id="a9d73535798113b1964ed5c23a7f83423"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((typename Backend&lt; value_type &gt;::solve_return_type), solve, tag,(required(in_out(solution), *)(rhs, *))(optional(<a class="el" href="classFeel_1_1BilinearFormBase.html#a7316a4dfc7fbbcb74391045a4e8e9a4d">name</a>,(std::string), &quot;&quot;)(kind,(std::string), soption(_prefix=<a class="el" href="classFeel_1_1BilinearFormBase.html#a7316a4dfc7fbbcb74391045a4e8e9a4d">name</a>, _name=&quot;backend&quot;))(rebuild,(<a class="el" href="classbool.html">bool</a>), boption(_prefix=<a class="el" href="classFeel_1_1BilinearFormBase.html#a7316a4dfc7fbbcb74391045a4e8e9a4d">name</a>, _name=&quot;backend.rebuild&quot;))(pre,(pre_solve_type), pre_solve_type())(post,(post_solve_type), post_solve_type())))</td></tr>
-<tr class="separator:a9d73535798113b1964ed5c23a7f83423"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad1ed0cbbb09cd9ee8863336c3386693c"><td class="memItemLeft" align="right" valign="top"><a id="ad1ed0cbbb09cd9ee8863336c3386693c"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((typename Backend&lt; value_type &gt;::solve_return_type), solveb, tag,(required(in_out(solution), *)(rhs, *)(backend, *))(optional(prec,(preconditioner_ptrtype), preconditioner(_prefix=backend-&gt;prefix(), _matrix=this-&gt;matrixPtr(), _pc=backend-&gt;pcEnumType(), _pcfactormatsolverpackage=backend-&gt;matSolverPackageEnumType(), _backend=backend))))</td></tr>
-<tr class="separator:ad1ed0cbbb09cd9ee8863336c3386693c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa808c399664fe9d44321479e1ebd83d6"><td class="memTemplParams" colspan="2"><a id="aa808c399664fe9d44321479e1ebd83d6"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:aa808c399664fe9d44321479e1ebd83d6"><td class="memTemplItemLeft" align="right" valign="top">Backend&lt; value_type &gt;::solve_return_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>solve</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:aa808c399664fe9d44321479e1ebd83d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8147a96cecc0024c9e4a5b6dc86284f3"><td class="memTemplParams" colspan="2"><a id="a8147a96cecc0024c9e4a5b6dc86284f3"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a8147a96cecc0024c9e4a5b6dc86284f3"><td class="memTemplItemLeft" align="right" valign="top">Backend&lt; value_type &gt;::solve_return_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>solveb</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a8147a96cecc0024c9e4a5b6dc86284f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>

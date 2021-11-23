@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -955,15 +955,17 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>boost::serialization
 <tr class="memitem:a1c80080b8cbf2dee0c0b0e8c0dfd3cff"><td class="memItemLeft" align="right" valign="top"><a id="a1c80080b8cbf2dee0c0b0e8c0dfd3cff"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setFunctionSpace</b> (functionspace_ptrtype space)</td></tr>
 <tr class="separator:a1c80080b8cbf2dee0c0b0e8c0dfd3cff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4302cb538893336ebc76fc68666765d5"><td class="memItemLeft" align="right" valign="top"><a id="a4302cb538893336ebc76fc68666765d5"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_CONST_MEMBER_FUNCTION</b> ((void), save, tag,(required(path, *))(optional(<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4f483954320a6dc780d542c00ab0af74">name</a>,(std::string), M_name)(type,(std::string), std::string(&quot;default&quot;))(suffix,(std::string), std::string(&quot;&quot;))(sep,(std::string), std::string(&quot;&quot;))))</td></tr>
-<tr class="separator:a4302cb538893336ebc76fc68666765d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21d6b27320fc87b753a92b1aa00f8227"><td class="memTemplParams" colspan="2"><a id="a21d6b27320fc87b753a92b1aa00f8227"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a21d6b27320fc87b753a92b1aa00f8227"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>save</b> (Ts &amp;&amp;... v) const</td></tr>
+<tr class="separator:a21d6b27320fc87b753a92b1aa00f8227"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a2ab8427fbddcc0ac2e165d71ed974b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a8a2ab8427fbddcc0ac2e165d71ed974b">saveImpl</a> (std::string const &amp;path, std::string const &amp;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4f483954320a6dc780d542c00ab0af74">name</a>, std::string const &amp;type=&quot;binary&quot;, std::string const &amp;suffix=&quot;&quot;, std::string const &amp;sep=&quot;&quot;) const</td></tr>
 <tr class="memdesc:a8a2ab8427fbddcc0ac2e165d71ed974b"><td class="mdescLeft">&#160;</td><td class="mdescRight">save function space element in file  <a href="classFeel_1_1FunctionSpace_1_1Element.html#a8a2ab8427fbddcc0ac2e165d71ed974b">More...</a><br /></td></tr>
 <tr class="separator:a8a2ab8427fbddcc0ac2e165d71ed974b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7da68e4d2366e13ac93ae953fa0b34bb"><td class="memItemLeft" align="right" valign="top"><a id="a7da68e4d2366e13ac93ae953fa0b34bb"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((<a class="el" href="classbool.html">bool</a>), load, tag,(required(path, *))(optional(<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4f483954320a6dc780d542c00ab0af74">name</a>,(std::string), M_name)(type,(std::string), std::string(&quot;default&quot;))(suffix,(std::string), std::string(&quot;&quot;))(sep,(std::string), std::string(&quot;&quot;))))</td></tr>
-<tr class="separator:a7da68e4d2366e13ac93ae953fa0b34bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f6b7e9609cfed23aeaed925c8d79eba"><td class="memTemplParams" colspan="2"><a id="a6f6b7e9609cfed23aeaed925c8d79eba"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a6f6b7e9609cfed23aeaed925c8d79eba"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>load</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a6f6b7e9609cfed23aeaed925c8d79eba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35ce80988cfa11dbc180586965569ed4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a35ce80988cfa11dbc180586965569ed4">loadImpl</a> (std::string const &amp;path, std::string const &amp;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4f483954320a6dc780d542c00ab0af74">name</a>, std::string const &amp;type=&quot;binary&quot;, std::string const &amp;suffix=&quot;&quot;, std::string const &amp;sep=&quot;&quot;)</td></tr>
 <tr class="memdesc:a35ce80988cfa11dbc180586965569ed4"><td class="mdescLeft">&#160;</td><td class="mdescRight">load function space element from file  <a href="classFeel_1_1FunctionSpace_1_1Element.html#a35ce80988cfa11dbc180586965569ed4">More...</a><br /></td></tr>
 <tr class="separator:a35ce80988cfa11dbc180586965569ed4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -974,12 +976,14 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>printMatlab</b> (std:
 p0dh_element_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a9ce5402381edbf1943cf498f6bff4340">ewiseMean</a> (std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">p0dh_t</a> &gt; &amp;P0dh) const</td></tr>
 <tr class="memdesc:a9ce5402381edbf1943cf498f6bff4340"><td class="mdescLeft">&#160;</td><td class="mdescRight">compute the element wise mean value of an element <br /></td></tr>
 <tr class="separator:a9ce5402381edbf1943cf498f6bff4340"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4142f9722e9e4a14024ee72e29f07ef1"><td class="memItemLeft" align="right" valign="top"><a id="a4142f9722e9e4a14024ee72e29f07ef1"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((void), on, tag,(required(<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>, *))(optional(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *, <a class="el" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">elements</a>(this-&gt;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a44dfae35c3eeb0100867655c46e0cb26">mesh</a>()))(prefix,(std::string), &quot;&quot;)(geomap, *, GeomapStrategyType::GEOMAP_OPT)(accumulate, *(boost::is_integral&lt; mpl::_ &gt;), false)(close,(<a class="el" href="classbool.html">bool</a>), false)(verbose,(<a class="el" href="classbool.html">bool</a>), boption(_prefix=prefix, _name=&quot;on.verbose&quot;))))</td></tr>
-<tr class="separator:a4142f9722e9e4a14024ee72e29f07ef1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:add3c947e2814b4e660e2b20cba827f03"><td class="memItemLeft" align="right" valign="top"><a id="add3c947e2814b4e660e2b20cba827f03"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((void), plus, tag,(required(<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>, *))(optional(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *, <a class="el" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">elements</a>(this-&gt;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a44dfae35c3eeb0100867655c46e0cb26">mesh</a>()))(prefix,(std::string), &quot;&quot;)(geomap, *, GeomapStrategyType::GEOMAP_OPT)(close,(<a class="el" href="classbool.html">bool</a>), false)(verbose,(<a class="el" href="classbool.html">bool</a>), boption(_prefix=prefix, _name=&quot;on.verbose&quot;))))</td></tr>
-<tr class="separator:add3c947e2814b4e660e2b20cba827f03"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c9e7fba901a1eeb6868e369f3223646"><td class="memTemplParams" colspan="2"><a id="a5c9e7fba901a1eeb6868e369f3223646"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a5c9e7fba901a1eeb6868e369f3223646"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>on</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a5c9e7fba901a1eeb6868e369f3223646"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad6c4fa56fd8bbec56651eb80510627e5"><td class="memTemplParams" colspan="2"><a id="ad6c4fa56fd8bbec56651eb80510627e5"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:ad6c4fa56fd8bbec56651eb80510627e5"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>plus</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:ad6c4fa56fd8bbec56651eb80510627e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5192ab3467d8c516d9542088a0dd9716"><td class="memTemplParams" colspan="2"><a id="a5192ab3467d8c516d9542088a0dd9716"></a>
 template&lt;typename RangeType , typename ExprType &gt; </td></tr>
 <tr class="memitem:a5192ab3467d8c516d9542088a0dd9716"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_NO_EXPORT void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (RangeType const &amp;r, ExprType const &amp;e, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate=true, <a class="el" href="classbool.html">bool</a> verbose=false)</td></tr>
@@ -1142,8 +1146,6 @@ template&lt;ComponentType THECOMP&gt; </div>
 
 <p>get the component of the element </p>
 <dl class="section return"><dt>Returns</dt><dd>the THECOMP-th component of the element </dd></dl>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a39dfc55163946247970ed9df9a9ba117">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;::element()</a>.</p>
 
 </div>
 </div>
@@ -1380,8 +1382,6 @@ template&lt;typename B  = basis_0_type&gt; </div>
 <dl class="section note"><dt>Note</dt><dd>the vector of components is already allocated <div class="fragment"><div class="line">Xh-&gt;element( K, EigenVector )</div>
 </div><!-- fragment --> </dd></dl>
 
-<p class="reference">References <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#abdac810ae98cd82e98863f569f12fdc5">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;::comp()</a>.</p>
-
 </div>
 </div>
 <a id="aa380f38d3b1d486e7f31e53ea654a396"></a>
@@ -1469,6 +1469,8 @@ template&lt;typename T  = double, typename Cont  = VectorUblas&lt;T&gt;&gt; </di
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a geometric mapping context associated with the element </dd></dl>
 <dl class="todo"><dt><b><a class="el" href="todo.html#_todo000003">Todo:</a></b></dt><dd>should be in the element of the mesh </dd></dl>
+
+<p class="reference">References <a class="el" href="evaluator_8hpp.html#a5001bd8a763304529bc1b22bdfa35c76">Feel::vf::evaluate()</a>.</p>
 
 </div>
 </div>

@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -527,8 +527,6 @@ template&lt;typename T  = double, typename Cont  = Eigen::Matrix&lt;T,Eigen::Dyn
 <p>these functione are here for the compilation. </p>
 <p>evaluateFromContext has the kywork _projection=true and in that case we project the expression on the function space associated to the context and it may happens that user wants to do evaluateFromContext( _context=ctx, _expr=dxv(...) , _projection=false ) and so even we don't project dxv(...), in order to compile we need to have these functions </p>
 
-<p class="reference">References <a class="el" href="classFeel_1_1ReducedBasisSpace.html#a33f778e030a95f59766c571bc0f0bf98">Feel::ReducedBasisSpace&lt; SpaceType &gt;::context()</a>.</p>
-
 </div>
 </div>
 <a id="a37e37c7e70cab1a878604054d4c83847"></a>
@@ -553,6 +551,8 @@ template&lt;typename ContextType &gt; </div>
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the extents of the interpolation of the function at a set of points </dd></dl>
+
+<p class="reference">References <a class="el" href="evaluator_8hpp.html#a5001bd8a763304529bc1b22bdfa35c76">Feel::vf::evaluate()</a>.</p>
 
 </div>
 </div>

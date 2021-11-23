@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -141,18 +141,18 @@ typedef <a class="el" href="classFeel_1_1Stencil.html">Stencil</a>&lt; X1, X2, R
 <tr class="memitem:a7c41ce16849ab482823641ad57fda8bc"><td class="memItemLeft" align="right" valign="top"><a id="a7c41ce16849ab482823641ad57fda8bc"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b> = typename graph_type::size_type</td></tr>
 <tr class="separator:a7c41ce16849ab482823641ad57fda8bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6735503a19acf1501dc03e0c0c47cf6d"><td class="memItemLeft" align="right" valign="top"><a id="a6735503a19acf1501dc03e0c0c47cf6d"></a>
-typedef X1&#160;</td><td class="memItemRight" valign="bottom"><b>test_space_ptrtype</b></td></tr>
-<tr class="separator:a6735503a19acf1501dc03e0c0c47cf6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0250266a0aa07fc32ab418815ebc8d0b"><td class="memItemLeft" align="right" valign="top"><a id="a0250266a0aa07fc32ab418815ebc8d0b"></a>
-typedef X1::element_type&#160;</td><td class="memItemRight" valign="bottom"><b>test_space_type</b></td></tr>
-<tr class="separator:a0250266a0aa07fc32ab418815ebc8d0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a67f8084dd3fa2913429fff160c131a0f"><td class="memItemLeft" align="right" valign="top"><a id="a67f8084dd3fa2913429fff160c131a0f"></a>
-typedef X2&#160;</td><td class="memItemRight" valign="bottom"><b>trial_space_ptrtype</b></td></tr>
-<tr class="separator:a67f8084dd3fa2913429fff160c131a0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a115f8b136248542bfa2d51fac330e807"><td class="memItemLeft" align="right" valign="top"><a id="a115f8b136248542bfa2d51fac330e807"></a>
-typedef X2::element_type&#160;</td><td class="memItemRight" valign="bottom"><b>trial_space_type</b></td></tr>
-<tr class="separator:a115f8b136248542bfa2d51fac330e807"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af252e00dc2e7332abdf1a05411edffd7"><td class="memItemLeft" align="right" valign="top"><a id="af252e00dc2e7332abdf1a05411edffd7"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>test_space_ptrtype</b> = std::shared_ptr&lt; test_space_type &gt;</td></tr>
+<tr class="separator:af252e00dc2e7332abdf1a05411edffd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac68b2dd59d334877cfd5cd3fe68dbed6"><td class="memItemLeft" align="right" valign="top"><a id="ac68b2dd59d334877cfd5cd3fe68dbed6"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>test_space_type</b> = X1</td></tr>
+<tr class="separator:ac68b2dd59d334877cfd5cd3fe68dbed6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab68041128127fb3ea5057439a2e5a77f"><td class="memItemLeft" align="right" valign="top"><a id="ab68041128127fb3ea5057439a2e5a77f"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>trial_space_ptrtype</b> = std::shared_ptr&lt; trial_space_type &gt;</td></tr>
+<tr class="separator:ab68041128127fb3ea5057439a2e5a77f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65f097071aefabc3cf989d74d390c981"><td class="memItemLeft" align="right" valign="top"><a id="a65f097071aefabc3cf989d74d390c981"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>trial_space_type</b> = X2</td></tr>
+<tr class="separator:a65f097071aefabc3cf989d74d390c981"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>

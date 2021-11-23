@@ -1,6 +1,5 @@
 var ginac_8hpp =
 [
-    [ "Fields", "classFeel_1_1Fields.html", "classFeel_1_1Fields" ],
     [ "Symbols", "classFeel_1_1Symbols.html", "classFeel_1_1Symbols" ],
     [ "map_scalar_field", "structFeel_1_1vf_1_1map__scalar__field.html", "structFeel_1_1vf_1_1map__scalar__field" ],
     [ "map_scalar_fields", "structFeel_1_1vf_1_1map__scalar__fields.html", "structFeel_1_1vf_1_1map__scalar__fields" ],

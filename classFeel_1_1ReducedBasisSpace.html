@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -280,9 +280,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>addPrimalBasisElement
 <tr class="memitem:a0474d1d49425cad60934a16708f6617e"><td class="memItemLeft" align="right" valign="top"><a id="a0474d1d49425cad60934a16708f6617e"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>basisValue</b> (<a class="el" href="classint.html">int</a> N, <a class="el" href="classint.html">int</a> idx) const</td></tr>
 <tr class="separator:a0474d1d49425cad60934a16708f6617e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:add42b8da464cf2843f9d8d7fba8cb4d4"><td class="memItemLeft" align="right" valign="top"><a id="add42b8da464cf2843f9d8d7fba8cb4d4"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((this_ptrtype), static New, tag,(required(space, *)))</td></tr>
-<tr class="separator:add42b8da464cf2843f9d8d7fba8cb4d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a33f778e030a95f59766c571bc0f0bf98"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1ReducedBasisSpace_1_1ContextRBSet.html">ContextRBSet</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1ReducedBasisSpace.html#a33f778e030a95f59766c571bc0f0bf98">context</a> ()</td></tr>
 <tr class="separator:a33f778e030a95f59766c571bc0f0bf98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a16e95c9f04957ff226b6c0a7a9e3bd15"><td class="memItemLeft" align="right" valign="top"><a id="a16e95c9f04957ff226b6c0a7a9e3bd15"></a>
@@ -425,9 +422,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>visualize</b> ()</td>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:ac7e48aedd75d7371001a24112df06f9d"><td class="memItemLeft" align="right" valign="top"><a id="ac7e48aedd75d7371001a24112df06f9d"></a>
-static this_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>NewImpl</b> (fespace_ptrtype const &amp;Xh)</td></tr>
-<tr class="separator:ac7e48aedd75d7371001a24112df06f9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc3e5c3239b3b5be8caeebc4f57094e0"><td class="memItemLeft" align="right" valign="top"><a id="adc3e5c3239b3b5be8caeebc4f57094e0"></a>
+static this_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>New</b> (fespace_ptrtype const &amp;space)</td></tr>
+<tr class="separator:adc3e5c3239b3b5be8caeebc4f57094e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a88e5fa943d8cf1267a39f7de6e7b926f"><td class="memTemplParams" colspan="2"><a id="a88e5fa943d8cf1267a39f7de6e7b926f"></a>
+template&lt;typename ... Ts, typename  = typename std::enable_if_t&lt; sizeof...(Ts) != 0 &amp;&amp; ( NA::is_named_argument_v&lt;Ts&gt; &amp;&amp; ...) &gt;&gt; </td></tr>
+<tr class="memitem:a88e5fa943d8cf1267a39f7de6e7b926f"><td class="memTemplItemLeft" align="right" valign="top">static this_ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>New</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a88e5fa943d8cf1267a39f7de6e7b926f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
@@ -472,8 +473,6 @@ template&lt;typename SpaceType &gt; </div>
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>function space context </dd></dl>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1ReducedBasisSpace_1_1Element.html#ab3ccab73d22114b6b42a3501ed2639c5">Feel::ReducedBasisSpace&lt; SpaceType &gt;::Element&lt; T, Cont &gt;::gradInterpolate()</a>.</p>
 
 </div>
 </div>

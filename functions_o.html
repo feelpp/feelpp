@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -145,6 +145,7 @@ $(document).ready(function(){initNavTree('functions_o.html',''); initResizable()
 , <a class="el" href="classFeel_1_1meta_1_1Context.html#a12edf06b9f9e912874549e5e0bb35dea">Feel::meta::Context&lt; StorageType &gt;</a>
 , <a class="el" href="classFeel_1_1ProductSpaces2_1_1Element.html#aa360dc0e5c26df7a46bc24f3ab15938c">Feel::ProductSpaces2&lt; T, SpaceList &gt;::Element</a>
 , <a class="el" href="classFeel_1_1Table.html#ae95fa8dd5eccc54e104689e6922e258a">Feel::Table</a>
+, <a class="el" href="structFeel_1_1vf_1_1normLinfData.html#adc1f9bd312c44613920782d6513195bd">Feel::vf::normLinfData&lt; Dim &gt;</a>
 , <a class="el" href="structstd_1_1hash_3_01nlohmann_1_1json_01_4.html#aec1567d1fa47dbe5b77954dce3a55b64">std::hash&lt; nlohmann::json &gt;</a>
 , <a class="el" href="structstd_1_1less_3_1_1nlohmann_1_1detail_1_1value__t_01_4.html#a10d3fea50edf7b15ead8f4ceeb006000">std::less&lt;::nlohmann::detail::value_t &gt;</a>
 </li>
@@ -152,8 +153,8 @@ $(document).ready(function(){initNavTree('functions_o.html',''); initResizable()
 : <a class="el" href="classnlohmann_1_1detail_1_1iter__impl.html#a5ca57856d9bba54a5fc51cee891de827">nlohmann::detail::iter_impl&lt; BasicJsonType &gt;</a>
 , <a class="el" href="classnlohmann_1_1detail_1_1iteration__proxy__value.html#a10accadf05a172fdc69a016bec201e81">nlohmann::detail::iteration_proxy_value&lt; IteratorType &gt;</a>
 </li>
-<li>operator+
-: <a class="el" href="classnlohmann_1_1detail_1_1iter__impl.html#a94108d1a7563e103534f23eb5c1ee175">nlohmann::detail::iter_impl&lt; BasicJsonType &gt;</a>
+<li>operator+()
+: <a class="el" href="classnlohmann_1_1detail_1_1iter__impl.html#a8ef76aeb5a5032768f0f61f48ac189c0">nlohmann::detail::iter_impl&lt; BasicJsonType &gt;</a>
 , <a class="el" href="classnlohmann_1_1detail_1_1json__reverse__iterator.html#aabf172b436988e2edde22f13f27caaed">nlohmann::detail::json_reverse_iterator&lt; Base &gt;</a>
 </li>
 <li>operator++()
@@ -187,7 +188,7 @@ $(document).ready(function(){initNavTree('functions_o.html',''); initResizable()
 : <a class="el" href="classnlohmann_1_1json__pointer.html#a7395bd0af29ac23fd3f21543c935cdfa">nlohmann::json_pointer&lt; BasicJsonType &gt;</a>
 </li>
 <li>operator&lt;
-: <a class="el" href="classnlohmann_1_1basic__json.html#abed3e9b4ab75f5bcbd3cd20f5af5cdab">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
+: <a class="el" href="classnlohmann_1_1basic__json.html#a7999ee3a69a4979d92e98ab1e88c8759">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
 , <a class="el" href="classnlohmann_1_1detail_1_1iter__impl.html#a0d14cd76203e00bdcef6a64a5d055cc7">nlohmann::detail::iter_impl&lt; BasicJsonType &gt;</a>
 </li>
 <li>operator&lt;&lt;
@@ -221,13 +222,13 @@ $(document).ready(function(){initNavTree('functions_o.html',''); initResizable()
 <li>operator==()
 : <a class="el" href="classFeel_1_1Geo0D.html#a6b376c7986149d83cbdceba9be4e825c">Feel::Geo0D&lt; Dim, T, IndexT &gt;</a>
 , <a class="el" href="classFeel_1_1WorldComm.html#ace65a2ba7a2c86db0e3a6fc15137a8e6">Feel::WorldComm</a>
-, <a class="el" href="classnlohmann_1_1basic__json.html#aef302e3ae215e46e5035d0e4fdf47235">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
+, <a class="el" href="classnlohmann_1_1basic__json.html#aba21440ea1aff44f718285ed7d6d20d9">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
 , <a class="el" href="classnlohmann_1_1detail_1_1iter__impl.html#a2b592605b63ae7f5401996ffa3b14393">nlohmann::detail::iter_impl&lt; BasicJsonType &gt;</a>
 , <a class="el" href="classnlohmann_1_1detail_1_1iteration__proxy__value.html#af2b78a8b9c9276b07c928b21bb1e2d54">nlohmann::detail::iteration_proxy_value&lt; IteratorType &gt;</a>
 , <a class="el" href="classnlohmann_1_1json__pointer.html#a4667ef558c8c3f8a646bfda0c6654653">nlohmann::json_pointer&lt; BasicJsonType &gt;</a>
 </li>
 <li>operator&gt;
-: <a class="el" href="classnlohmann_1_1basic__json.html#a124c319566198d9f092c5bebea46ce77">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
+: <a class="el" href="classnlohmann_1_1basic__json.html#a412895af9a582869a4d369a64fb1b6d6">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
 , <a class="el" href="classnlohmann_1_1detail_1_1iter__impl.html#aaf3620b8dfa4bed8a9ac2b51dd55dbd7">nlohmann::detail::iter_impl&lt; BasicJsonType &gt;</a>
 </li>
 <li>operator&gt;=
@@ -239,12 +240,12 @@ $(document).ready(function(){initNavTree('functions_o.html',''); initResizable()
 </li>
 <li>operator[]()
 : <a class="el" href="classFeel_1_1ProductSpaces2.html#a99e5e306cca6c4e7ea30651c63886f18">Feel::ProductSpaces2&lt; T, SpaceList &gt;</a>
-, <a class="el" href="classnlohmann_1_1basic__json.html#ad21d96f490fa1aa8605fba8dadcce319">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
+, <a class="el" href="classnlohmann_1_1basic__json.html#a9ea67fc1ef0ccc42e1d5388fe0416ae5">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
 , <a class="el" href="classnlohmann_1_1detail_1_1iter__impl.html#ac0b9276f1102ed4b9cd3f5f56287e3ce">nlohmann::detail::iter_impl&lt; BasicJsonType &gt;</a>
 , <a class="el" href="classnlohmann_1_1detail_1_1json__reverse__iterator.html#a8ed9e445e03c49c46612eb7f7d55bb61">nlohmann::detail::json_reverse_iterator&lt; Base &gt;</a>
 </li>
 <li>OperatorInterpolation()
-: <a class="el" href="classFeel_1_1OperatorInterpolation.html#a3b97944179a9f3f65d611e1ba0e8db19">Feel::OperatorInterpolation&lt; DomainSpaceType, ImageSpaceType, IteratorRange, InterpType &gt;</a>
+: <a class="el" href="classFeel_1_1OperatorInterpolation.html#ae857399db44ed87ccb938b9728f7553d">Feel::OperatorInterpolation&lt; DomainSpaceType, ImageSpaceType, IteratorRange, InterpType &gt;</a>
 </li>
 <li>OperatorLagrangeP1()
 : <a class="el" href="classFeel_1_1OperatorLagrangeP1.html#ad5d6d8b180407b4efd8af71e636769c5">Feel::OperatorLagrangeP1&lt; SpaceType &gt;</a>

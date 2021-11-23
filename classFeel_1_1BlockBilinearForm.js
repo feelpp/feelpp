@@ -1,7 +1,6 @@
 var classFeel_1_1BlockBilinearForm =
 [
     [ "allocateMatrix", "classFeel_1_1BlockBilinearForm.html#a458bd2eacd61ebd8b04b5f2c6755a21d", null ],
-    [ "BOOST_PARAMETER_MEMBER_FUNCTION", "classFeel_1_1BlockBilinearForm.html#abb2f68de77fa2775ecd5d68860502f36", null ],
     [ "close", "classFeel_1_1BlockBilinearForm.html#a94e991c44d70da1ddedbd1cf6e4c485a", null ],
     [ "isMatrixAllocated", "classFeel_1_1BlockBilinearForm.html#a5b0f9d172be2e1fc8db115ecba63d1cd", null ],
     [ "matrixPtr", "classFeel_1_1BlockBilinearForm.html#a25f1d010b81a35a4f15a32bf8972ef1b", null ],
@@ -16,6 +15,7 @@ var classFeel_1_1BlockBilinearForm =
     [ "setStrategy", "classFeel_1_1BlockBilinearForm.html#adb09ad20f997f04df635ecf6819e2e8b", null ],
     [ "setStrategy", "classFeel_1_1BlockBilinearForm.html#a7c6b82d94796efd5eb9e318f374e566b", null ],
     [ "setStrategy", "classFeel_1_1BlockBilinearForm.html#a931f3f594c8d7ca11cf156b8c0e79677", null ],
+    [ "solve", "classFeel_1_1BlockBilinearForm.html#a47a5b565366036d6eb68736c08dc39b3", null ],
     [ "solveImpl", "classFeel_1_1BlockBilinearForm.html#af33be0f5c1a79d5057ae4026ba8d18a8", null ],
     [ "solveImplCondense", "classFeel_1_1BlockBilinearForm.html#af1e26f918812cd2204e47124a9325513", null ],
     [ "solveImplCondense", "classFeel_1_1BlockBilinearForm.html#ad052b59fd9f11469ccb419ed976a21a6", null ],

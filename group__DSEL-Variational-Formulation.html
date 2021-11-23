@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -112,15 +112,15 @@ $(document).ready(function(){initNavTree('group__DSEL-Variational-Formulation.ht
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga35acf84111e373ba117a5a221645d9bc"><td class="memTemplParams" colspan="2"><a id="ga35acf84111e373ba117a5a221645d9bc"></a>
-template&lt;typename ExprT1 , typename ExprT2 &gt; </td></tr>
-<tr class="memitem:ga35acf84111e373ba117a5a221645d9bc"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__DSEL-Variational-Formulation.html#ga35acf84111e373ba117a5a221645d9bc">Feel::vf::operator^</a> (typename mpl::if_&lt; boost::is_arithmetic&lt; ExprT1 &gt;, mpl::identity&lt; ExprT1 &gt;, mpl::identity&lt; Expr&lt; ExprT1 &gt; &gt; &gt;::type::type const &amp;__e1, typename mpl::if_&lt; boost::is_arithmetic&lt; ExprT2 &gt;, mpl::identity&lt; ExprT2 &gt;, mpl::identity&lt; Expr&lt; ExprT2 &gt; &gt; &gt;::type::type const &amp;__e2)</td></tr>
-<tr class="memdesc:ga35acf84111e373ba117a5a221645d9bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">provide pow expression e1^e2 <br /></td></tr>
-<tr class="separator:ga35acf84111e373ba117a5a221645d9bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga00218e2f351eaf8e36042f5475764cb2"><td class="memTemplParams" colspan="2">template&lt;typename ExprT1 , typename ExprT2 &gt; </td></tr>
-<tr class="memitem:ga00218e2f351eaf8e36042f5475764cb2"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__DSEL-Variational-Formulation.html#ga00218e2f351eaf8e36042f5475764cb2">Feel::vf::pow</a> (ExprT1 const &amp;__e1, ExprT2 const &amp;__e2)</td></tr>
-<tr class="memdesc:ga00218e2f351eaf8e36042f5475764cb2"><td class="mdescLeft">&#160;</td><td class="mdescRight">provide pow expression e1^e2  <a href="group__DSEL-Variational-Formulation.html#ga00218e2f351eaf8e36042f5475764cb2">More...</a><br /></td></tr>
-<tr class="separator:ga00218e2f351eaf8e36042f5475764cb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab7965105a4a850885f454c7c3865ffc6"><td class="memTemplParams" colspan="2"><a id="gab7965105a4a850885f454c7c3865ffc6"></a>
+template&lt;typename ExprT1 , typename ExprT2 , typename  = typename std::enable_if_t&lt; is_vf_expr_v&lt;ExprT1&gt; || is_vf_expr_v&lt;ExprT2&gt; &gt;&gt; </td></tr>
+<tr class="memitem:gab7965105a4a850885f454c7c3865ffc6"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__DSEL-Variational-Formulation.html#gab7965105a4a850885f454c7c3865ffc6">Feel::vf::operator^</a> (ExprT1 &amp;&amp;__e1, ExprT2 &amp;&amp;__e2)</td></tr>
+<tr class="memdesc:gab7965105a4a850885f454c7c3865ffc6"><td class="mdescLeft">&#160;</td><td class="mdescRight">provide pow expression e1^e2 <br /></td></tr>
+<tr class="separator:gab7965105a4a850885f454c7c3865ffc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaea4c47fc4a17435b9b1d3fe115a6788d"><td class="memTemplParams" colspan="2">template&lt;typename ExprT1 , typename ExprT2 &gt; </td></tr>
+<tr class="memitem:gaea4c47fc4a17435b9b1d3fe115a6788d"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__DSEL-Variational-Formulation.html#gaea4c47fc4a17435b9b1d3fe115a6788d">Feel::vf::pow</a> (ExprT1 &amp;&amp;__e1, ExprT2 &amp;&amp;__e2)</td></tr>
+<tr class="memdesc:gaea4c47fc4a17435b9b1d3fe115a6788d"><td class="mdescLeft">&#160;</td><td class="mdescRight">provide pow expression e1^e2  <a href="group__DSEL-Variational-Formulation.html#gaea4c47fc4a17435b9b1d3fe115a6788d">More...</a><br /></td></tr>
+<tr class="separator:gaea4c47fc4a17435b9b1d3fe115a6788d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7b9221db5c7afed153789f616a1c6328"><td class="memTemplParams" colspan="2">template&lt;typename ExprT &gt; </td></tr>
 <tr class="memitem:ga7b9221db5c7afed153789f616a1c6328"><td class="memTemplItemLeft" align="right" valign="top">Expr&lt; <a class="el" href="classFeel_1_1vf_1_1PrintExpr.html">PrintExpr</a>&lt; ExprT &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__DSEL-Variational-Formulation.html#ga7b9221db5c7afed153789f616a1c6328">Feel::vf::print</a> (ExprT v, std::string t=&quot;&quot;)</td></tr>
 <tr class="separator:ga7b9221db5c7afed153789f616a1c6328"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -138,8 +138,8 @@ template&lt;typename ExprT1 , typename ExprT2 &gt; </td></tr>
 <tr class="separator:gaeac7fe8c4b52a6f9c1320275ad39f01e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga00218e2f351eaf8e36042f5475764cb2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga00218e2f351eaf8e36042f5475764cb2">&#9670;&nbsp;</a></span>pow()</h2>
+<a id="gaea4c47fc4a17435b9b1d3fe115a6788d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaea4c47fc4a17435b9b1d3fe115a6788d">&#9670;&nbsp;</a></span>pow()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -149,13 +149,13 @@ template&lt;typename ExprT1 , typename ExprT2 &gt; </div>
         <tr>
           <td class="memname">auto Feel::vf::pow </td>
           <td>(</td>
-          <td class="paramtype">ExprT1 const &amp;&#160;</td>
+          <td class="paramtype">ExprT1 &amp;&amp;&#160;</td>
           <td class="paramname"><em>__e1</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">ExprT2 const &amp;&#160;</td>
+          <td class="paramtype">ExprT2 &amp;&amp;&#160;</td>
           <td class="paramname"><em>__e2</em>&#160;</td>
         </tr>
         <tr>
@@ -169,11 +169,9 @@ template&lt;typename ExprT1 , typename ExprT2 &gt; </div>
 <p><code>#include &lt;<a class="el" href="pow_8hpp.html">/home/runner/work/feelpp/feelpp/feelpp/feel/feelvf/pow.hpp</a>&gt;</code></p>
 
 <p>provide pow expression e1^e2 </p>
-<div class="fragment"><div class="line">std::cout &lt;&lt; integrate( _range=<a class="code" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">elements</a>(mesh), _expr=<a class="code" href="group__DSEL-Variational-Formulation.html#ga00218e2f351eaf8e36042f5475764cb2">pow</a>( Px(), Py() ) ).evaluate();</div>
+<div class="fragment"><div class="line">std::cout &lt;&lt; integrate( _range=<a class="code" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">elements</a>(mesh), _expr=<a class="code" href="group__DSEL-Variational-Formulation.html#gaea4c47fc4a17435b9b1d3fe115a6788d">pow</a>( Px(), Py() ) ).evaluate();</div>
 </div><!-- fragment --> 
-<p class="reference">References <a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">Feel::expr()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a6586f4480802097cacc2f37606f67f56">Feel::etaQ()</a>, <a class="el" href="classFeel_1_1vf_1_1Pow.html#a2f3c9a0951fae50af1c0072e6b573223">Feel::vf::Pow&lt; ExprT1, ExprT2 &gt;::evaluate()</a>, and <a class="el" href="classFeel_1_1Application.html#a0642acdfe3fdb86f2e6b4558c60af1de">Feel::Application::run()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a6586f4480802097cacc2f37606f67f56">Feel::etaQ()</a>, and <a class="el" href="group__DSEL-Variational-Formulation.html#gab7965105a4a850885f454c7c3865ffc6">Feel::vf::operator^()</a>.</p>
 
 </div>
 </div>
@@ -314,8 +312,8 @@ template&lt;typename ExprT1 &gt; </div>
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
+<div class="ttc" id="agroup__DSEL-Variational-Formulation_html_gaea4c47fc4a17435b9b1d3fe115a6788d"><div class="ttname"><a href="group__DSEL-Variational-Formulation.html#gaea4c47fc4a17435b9b1d3fe115a6788d">Feel::vf::pow</a></div><div class="ttdeci">auto pow(ExprT1 &amp;&amp;__e1, ExprT2 &amp;&amp;__e2)</div><div class="ttdoc">provide pow expression e1^e2</div><div class="ttdef"><b>Definition:</b> pow.hpp:340</div></div>
 <div class="ttc" id="anamespaceFeel_html_a55b180ac7bf9d1ebd55a0b79f97e131e"><div class="ttname"><a href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">Feel::elements</a></div><div class="ttdeci">elements_type const  &amp; elements() const</div><div class="ttdef"><b>Definition:</b> elements.hpp:280</div></div>
-<div class="ttc" id="agroup__DSEL-Variational-Formulation_html_ga00218e2f351eaf8e36042f5475764cb2"><div class="ttname"><a href="group__DSEL-Variational-Formulation.html#ga00218e2f351eaf8e36042f5475764cb2">Feel::vf::pow</a></div><div class="ttdeci">auto pow(ExprT1 const &amp;__e1, ExprT2 const &amp;__e2)</div><div class="ttdoc">provide pow expression e1^e2</div><div class="ttdef"><b>Definition:</b> pow.hpp:347</div></div>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>

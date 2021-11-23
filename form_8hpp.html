@@ -39,7 +39,7 @@
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Feel++
-   &#160;<span id="projectnumber">0.109.0</span>
+   &#160;<span id="projectnumber">0.110.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -123,15 +123,6 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:gacdef11b8e5310c903938bb3caa847fca"><td class="memItemLeft" align="right" valign="top">
-&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::BOOST_PARAMETER_FUNCTION</b> ((typename compute_form1_return&lt; Args &gt;::<a class="el" href="classstd_1_1is__convertible_1_1type.html">type</a>), form1, tag,(required(test, *(boost::is_convertible&lt; mpl::_, std::shared_ptr&lt; FunctionSpaceBase &gt; &gt;)))(optional(backend, *, Feel::backend(_worldcomm=test-&gt;worldCommPtr()))(in_out(<a class="el" href="classboost_1_1fusion_1_1vector.html">vector</a>), *, backend-&gt;newVector(test))(init, *(boost::is_integral&lt; mpl::_ &gt;), false)(do_threshold, *(boost::is_integral&lt; mpl::_ &gt;), <a class="el" href="classbool.html">bool</a>(false))(threshold, *(boost::is_floating_point&lt; mpl::_ &gt;), type_traits&lt; double &gt;::epsilon())(rowstart, *(boost::is_integral&lt; mpl::_ &gt;), 0)(name,(std::string), std::string(&quot;linearform.f&quot;))))</td></tr>
-<tr class="separator:gacdef11b8e5310c903938bb3caa847fca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8671382bf52b639987ce01018bc99fe2"><td class="memItemLeft" align="right" valign="top">
-&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::BOOST_PARAMETER_FUNCTION</b> ((typename compute_form1_return&lt; Args &gt;::<a class="el" href="classstd_1_1is__convertible_1_1type.html">type</a>), lform, tag,(required(test, *(boost::is_convertible&lt; mpl::_, std::shared_ptr&lt; FunctionSpaceBase &gt; &gt;))(in_out(<a class="el" href="classboost_1_1fusion_1_1vector.html">vector</a>), *(Feel::detail::is_vector_ptr&lt; mpl::_ &gt;)))(optional(init, *(boost::is_integral&lt; mpl::_ &gt;), false)(do_threshold, *(boost::is_integral&lt; mpl::_ &gt;), <a class="el" href="classbool.html">bool</a>(false))(threshold, *(boost::is_floating_point&lt; mpl::_ &gt;), type_traits&lt; double &gt;::epsilon())(rowstart, *(boost::is_integral&lt; mpl::_ &gt;), 0)))</td></tr>
-<tr class="separator:ga8671382bf52b639987ce01018bc99fe2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a94c38d1c5a8f739a12be5e89fb62fabd"><td class="memItemLeft" align="right" valign="top"><a id="a94c38d1c5a8f739a12be5e89fb62fabd"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::BOOST_PARAMETER_FUNCTION</b> ((typename compute_form2_return&lt; Args, mpl::bool_&lt; boost::is_same&lt; typename parameter::value_type&lt; Args, tag::trial &gt;::<a class="el" href="classstd_1_1is__convertible_1_1type.html">type</a>, boost::parameter::void_ &gt;::value &gt; &gt;::<a class="el" href="classstd_1_1is__convertible_1_1type.html">type</a>), form2, tag,(required(test, *)(trial, *))(deduced(optional(init, *(boost::is_integral&lt; mpl::_ &gt;), false)(properties,(size_type), NON_HERMITIAN)(pattern, *(boost::is_integral&lt; mpl::_ &gt;), size_type(Pattern::COUPLED))(backend, *, Feel::backend(_worldcomm=test-&gt;worldCommPtr()))(in_out(matrix), *(boost::is_convertible&lt; mpl::_, std::shared_ptr&lt; MatrixSparse&lt; double &gt;&gt;&gt;), backend-&gt;newMatrix(_test=test, _trial=trial, _pattern=pattern, _properties=properties))(rowstart, *(boost::is_integral&lt; mpl::_ &gt;), 0)(colstart, *(boost::is_integral&lt; mpl::_ &gt;), 0)(name,(std::string), std::string(&quot;bilinearform.a&quot;)))))</td></tr>
-<tr class="separator:a94c38d1c5a8f739a12be5e89fb62fabd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4746a852a7228707d17706e51662485d"><td class="memTemplParams" colspan="2"><a id="a4746a852a7228707d17706e51662485d"></a>
 template&lt;typename X1 , typename RepType &gt; </td></tr>
 <tr class="memitem:a4746a852a7228707d17706e51662485d"><td class="memTemplItemLeft" align="right" valign="top">vf::detail::LinearForm&lt; X1, RepType, RepType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::form</b> (std::string name, std::shared_ptr&lt; X1 &gt; const &amp;__X1, std::shared_ptr&lt; RepType &gt; __M, size_type rowstart=0, <a class="el" href="classbool.html">bool</a> init=false, <a class="el" href="classbool.html">bool</a> do_threshold=false, typename X1::value_type threshold=type_traits&lt; typename RepType::value_type &gt;::epsilon())</td></tr>
@@ -140,6 +131,14 @@ template&lt;typename X1 , typename RepType &gt; </td></tr>
 template&lt;typename X1 , typename X2 &gt; </td></tr>
 <tr class="memitem:a3756095e796728bc2ad113dd5b9ee0b8"><td class="memTemplItemLeft" align="right" valign="top">vf::detail::BilinearForm&lt; X1, X2 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::form</b> (std::string name, std::shared_ptr&lt; X1 &gt; const &amp;__X1, std::shared_ptr&lt; X2 &gt; const &amp;__X2, std::shared_ptr&lt; MatrixSparse&lt; double &gt; &gt; __M, size_type rowstart=0, size_type colstart=0, <a class="el" href="classbool.html">bool</a> init=false, <a class="el" href="classbool.html">bool</a> do_threshold=false, typename X1::value_type threshold=type_traits&lt; double &gt;::epsilon(), size_type pattern=Pattern::COUPLED)</td></tr>
 <tr class="separator:a3756095e796728bc2ad113dd5b9ee0b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa7b95d2d10a5d0e4457740daa190a6e0"><td class="memTemplParams" colspan="2">
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:gaa7b95d2d10a5d0e4457740daa190a6e0"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::form1</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:gaa7b95d2d10a5d0e4457740daa190a6e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae0194bba0f2f858c384597706e3c59e"><td class="memTemplParams" colspan="2"><a id="aae0194bba0f2f858c384597706e3c59e"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:aae0194bba0f2f858c384597706e3c59e"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::form2</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:aae0194bba0f2f858c384597706e3c59e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'he'+'.pr'+'ud'+'hom'+'me'+'@fe'+'el'+'pp.'+'or'+'g'; return false;">chris<span style="display: none;">.nosp@m.</span>toph<span style="display: none;">.nosp@m.</span>e.pru<span style="display: none;">.nosp@m.</span>dhom<span style="display: none;">.nosp@m.</span>me@fe<span style="display: none;">.nosp@m.</span>elpp<span style="display: none;">.nosp@m.</span>.org</a> </dd></dl>
