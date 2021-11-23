@@ -31,8 +31,12 @@ typedef double (*fobj)(unsigned n, const double *x, double *fgrad, void *my_func
 
 struct myf
 {
-    decltype( loadMesh(_mesh=new Mesh<Simplex<2>>) ) mesh;
-    meta::Pch<Mesh<Simplex<2>>,2>::ptrtype Vh;
+    using mesh_type = Mesh<Simplex<2>>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
+    //decltype( loadMesh(_mesh=new Mesh<Simplex<2>>) ) mesh;
+    //meta::Pch<mesh_type,2>::ptrtype Vh;
+    mesh_ptrtype mesh;
+    Pch_ptrtype<mesh_type,2> Vh;
     double mu;
     decltype(form2( _trial=Vh, _test=Vh)) a;
     decltype(form1( _test=Vh)) l;

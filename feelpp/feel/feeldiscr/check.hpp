@@ -87,10 +87,10 @@ int check( CheckerT&& thechecker, ElementT const& u, solution_t s = solution_t::
             {
                 if constexpr ( is_scalar_field_v<ElementT> )
                 {
-                    auto mean_p_exact = mean( elements(support(Vh)), sol_ex )(0,0);
-                    auto mean_p = mean( elements(support(Vh)), idv(u) )(0,0);
-                    l2 = normL2( elements(support(Vh)),
-                                 (sol_ex - cst(mean_p_exact)) - (idv(u) - cst(mean_p)) );
+                    auto mean_p_exact = mean( _range=elements(support(Vh)), _expr=sol_ex )(0,0);
+                    auto mean_p = mean( _range=elements(support(Vh)), _expr=idv(u) )(0,0);
+                    l2 = normL2( _range=elements(support(Vh)),
+                                 _expr=(sol_ex - cst(mean_p_exact)) - (idv(u) - cst(mean_p)) );
                     l2_p = normL2( _range=elements(support(Vh)), _expr=sol_ex- cst(mean_p_exact) );
                 }
             }

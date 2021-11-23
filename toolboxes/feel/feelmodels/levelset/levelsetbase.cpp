@@ -291,9 +291,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::interfaceRectangularFunction( element_levelset
         ;
 
     return vf::project( 
-            this->functionSpace(), 
-            this->rangeMeshElements(),
-            R_expr
+            _space=this->functionSpace(), 
+            _range=this->rangeMeshElements(),
+            _expr=R_expr
             );
 }
 
@@ -890,7 +890,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDirac() const
     if ( M_useHeavisideDiracNodalProj )
         M_dirac->on(_range=this->rangeMeshElements(),_expr=this->diracExpr() );
     else
-        *M_dirac = M_projectorL2Scalar->project( this->diracExpr() );
+        *M_dirac = M_projectorL2Scalar->project( _expr=this->diracExpr() );
 
     M_doUpdateDirac = false;
 
@@ -914,7 +914,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateHeaviside() const
         if ( M_useHeavisideDiracNodalProj )
             M_heaviside->on(_range=this->rangeMeshElements(),_expr=Feel::FeelModels::levelsetHeaviside(psi, cst(eps)));
         else
-            *M_heaviside = M_projectorL2Scalar->project( Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
+            *M_heaviside = M_projectorL2Scalar->project( _expr=Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
     }
     else
     {
@@ -923,7 +923,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateHeaviside() const
         if ( M_useHeavisideDiracNodalProj )
             M_heaviside->on(_range=this->rangeMeshElements(),_expr=Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
         else
-            *M_heaviside = M_projectorL2Scalar->project( Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
+            *M_heaviside = M_projectorL2Scalar->project( _expr=Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
     }
 
     M_doUpdateHeaviside = false;
@@ -1071,11 +1071,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceNormal() const
             break;
         case LevelSetDerivationMethod::L2_PROJECTION:
             this->log("LevelSetBase", "updateDistanceNormal", "perform L2 projection");
-            *M_distanceNormal = this->projectorL2Vectorial()->project( N_expr );
+            *M_distanceNormal = this->projectorL2Vectorial()->project( _expr=N_expr );
             break;
         case LevelSetDerivationMethod::SMOOTH_PROJECTION:
             this->log("LevelSetBase", "updateDistanceNormal", "perform smooth projection");
-            *M_distanceNormal = this->smootherVectorial()->project( N_expr );
+            *M_distanceNormal = this->smootherVectorial()->project( _expr=N_expr );
             break;
         //case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
             //this->log("LevelSetBase", "updateDistanceNormal", "perform PN-nodal projection");
@@ -1698,7 +1698,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::grad( element_levelset_type const& phi, LevelS
             return this->projectorL2Vectorial()->derivate( idv(phi) );
         case LevelSetDerivationMethod::SMOOTH_PROJECTION:
             this->log("LevelSetBase", "grad", "perform smooth projection");
-            return this->smootherVectorial()->project( trans(gradv(phi)) );
+            return this->smootherVectorial()->project( _expr=trans(gradv(phi)) );
         case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
             this->log("LevelSetBase", "grad", "perform PN-nodal projection");
             CHECK( M_useSpaceIsoPN ) << "use-space-iso-pn must be enabled to use PN_NODAL_PROJECTION \n";
@@ -1727,10 +1727,10 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::modGrad( element_levelset_type const& phi, Lev
                     );
         case LevelSetDerivationMethod::L2_PROJECTION:
             this->log("LevelSetBase", "modGrad", "perform L2 projection");
-            return this->projectorL2()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
+            return this->projectorL2()->project( _expr=sqrt( gradv(phi)*trans(gradv(phi)) ) );
         case LevelSetDerivationMethod::SMOOTH_PROJECTION:
             this->log("LevelSetBase", "modGrad", "perform smooth projection");
-            return this->smoother()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
+            return this->smoother()->project( _expr=sqrt( gradv(phi)*trans(gradv(phi)) ) );
         case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
             this->log("LevelSetBase", "modGrad", "perform PN-nodal projection");
             CHECK( M_useSpaceIsoPN ) << "use-space-iso-pn must be enabled to use PN_NODAL_PROJECTION \n";
@@ -2018,7 +2018,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::submeshDirac() const
     if( M_doUpdateSubmeshDirac )
     {
         this->mesh()->updateMarker2( *this->markerDirac() );
-        M_submeshDirac = createSubmesh( this->mesh(), marked2elements( this->mesh(), 1 ) );
+        M_submeshDirac = createSubmesh( _mesh=this->mesh(), _range=marked2elements( this->mesh(), 1 ) );
         M_doUpdateSubmeshDirac = false;
     }
     return M_submeshDirac;
@@ -2031,7 +2031,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::submeshOuter( double cut ) const
     if( M_doUpdateSubmeshOuter || cut != M_markerOuterCut )
     {
         this->mesh()->updateMarker2( *this->markerOuter( cut ) );
-        M_submeshOuter = createSubmesh( this->mesh(), marked2elements( this->mesh(), 1 ) );
+        M_submeshOuter = createSubmesh( _mesh=this->mesh(), _range=marked2elements( this->mesh(), 1 ) );
         M_doUpdateSubmeshOuter = false;
     }
     return M_submeshOuter;
@@ -2044,7 +2044,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::submeshInner( double cut ) const
     if( M_doUpdateSubmeshInner || cut != M_markerInnerCut )
     {
         this->mesh()->updateMarker2( *this->markerInner( cut ) );
-        M_submeshInner = createSubmesh( this->mesh(), marked2elements( this->mesh(), 1 ) );
+        M_submeshInner = createSubmesh( _mesh=this->mesh(), _range=marked2elements( this->mesh(), 1 ) );
         M_doUpdateSubmeshInner = false;
     }
     return M_submeshInner;

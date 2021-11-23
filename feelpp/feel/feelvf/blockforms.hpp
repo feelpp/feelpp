@@ -15,8 +15,8 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef FEELPP_BLOCKFORMS_HPP
-#define FEELPP_BLOCKFORMS_HPP 1
+#ifndef FEELPP_VF_BLOCKFORMS_H
+#define FEELPP_VF_BLOCKFORMS_H
 
 #include <feel/feelvf/form.hpp>
 #include <feel/feelalg/vectorblock.hpp>
@@ -343,23 +343,22 @@ public :
     sparse_matrix_ptrtype matrixPtr() { return M_matrix; }
     using pre_solve_type = typename Backend<value_type>::pre_solve_type;
     using post_solve_type = typename Backend<value_type>::post_solve_type;
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<double>::solve_return_type ),
-                                     solve,
-                                     tag,
-                                     ( required
-                                       ( in_out( solution ),* )
-                                       ( rhs, * ) )
-                                     ( optional
-                                       ( condense,           ( bool ), false )
-                                       ( condenser,     (*), condenser_poisson() )
-                                       ( local,          ( bool ), false )
-                                       ( name,           ( std::string ), "" )
-                                       ( kind,           ( std::string ), soption(_prefix=name,_name="backend") )
-                                       ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                                       ( pre, (pre_solve_type), pre_solve_type() )
-                                       ( post, (post_solve_type), post_solve_type() )
-                                       ) )
+
+    template <typename ... Ts>
+    typename Backend<double>::solve_return_type solve( Ts && ... v )
         {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && solution = args.get(_solution);
+            auto && rhs = args.get(_rhs);
+            bool condense = args.get_else(_condense,false);
+            auto && condenser = args.get_else(_condenser,condenser_poisson() );
+            bool local = args.get_else(_local,false);
+            std::string const& name = args.get_else(_name,"" );
+            std::string const& kind = args.get_else_invocable(_kind,[&name](){ return soption(_prefix=name,_name="backend"); } );
+            bool rebuild = args.get_else_invocable(_rebuild,[&name](){ return boption(_prefix=name,_name="backend.rebuild"); } );
+            pre_solve_type pre = args.get_else(_pre, pre_solve_type() );
+            post_solve_type post = args.get_else(_post,post_solve_type() );
+
             if constexpr ( std::is_same_v<decay_type<decltype(condenser)>,condenser_stokes> )
                 return solveImpl( solution, rhs, name, kind, rebuild, pre, post );
             else
