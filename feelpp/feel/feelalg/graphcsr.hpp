@@ -27,8 +27,8 @@
    \date 2007-10-29
  */
 
-#ifndef __GraphCSR_H
-#define __GraphCSR_H 1
+#ifndef FEELPP_ALG_GRAPHCSR_H
+#define FEELPP_ALG_GRAPHCSR_H
 
 #include <vector>
 #include <map>

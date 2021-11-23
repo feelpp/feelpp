@@ -28,7 +28,6 @@
  */
 #include <sstream>
 
-#include <boost/timer.hpp>
 // Boost.Test
 // make sure that the init_unit_test function is defined by UTF
 //#define BOOST_TEST_MAIN
@@ -334,10 +333,10 @@ BOOST_AUTO_TEST_CASE( supportedgmshmesh_import )
 	BOOST_CHECK_EQUAL( nelements( boundaryfaces( mesh ) ),  nelements( boundaryfaces( meshimp ) ) );
 	BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
 			   std::distance( meshimp->beginElement(), meshimp->endElement() ) );
-	BOOST_CHECK_CLOSE( integrate( elements( mesh ), cst( 1. ) ).evaluate()(0,0),
-			   integrate( elements( meshimp ), cst( 1. ) ).evaluate()(0,0), 1e-6 );
-	BOOST_CHECK_CLOSE( integrate( boundaryfaces( mesh ), cst( 1. ) ).evaluate()(0,0) ,
-			   integrate( boundaryfaces( meshimp ), cst( 1. ) ).evaluate()(0,0), 1e-6 );
+	BOOST_CHECK_CLOSE( integrate( _range=elements( mesh ), _expr=cst( 1. ) ).evaluate()(0,0),
+                       integrate( _range=elements( meshimp ), _expr=cst( 1. ) ).evaluate()(0,0), 1e-6 );
+	BOOST_CHECK_CLOSE( integrate( _range=boundaryfaces( mesh ), _expr=cst( 1. ) ).evaluate()(0,0) ,
+                       integrate( _range=boundaryfaces( meshimp ), _expr=cst( 1. ) ).evaluate()(0,0), 1e-6 );
 
 	BOOST_TEST_MESSAGE( "[supportedgmshmesh_import] mesh format: " << format << " done.\n" );
       }

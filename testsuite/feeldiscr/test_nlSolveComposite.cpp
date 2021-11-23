@@ -405,8 +405,8 @@ TestNLSolveComposite<Dim, OrderV, OrderT>::run()
     V = VT.template element<0>();
     T = VT.template element<1>();
 
-    auto T_mean = integrate( elements(mesh), idv(T) ).evaluate()(0,0);
-    auto area = integrate( elements(mesh), cst(1.) ).evaluate()(0,0);
+    auto T_mean = integrate( _range=elements(mesh), _expr=idv(T) ).evaluate()(0,0);
+    auto area = integrate( _range=elements(mesh), _expr=cst(1.) ).evaluate()(0,0);
     T_mean /= area;
     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
         std::cout << "[P" << OrderV << "-P" << OrderT << "] Tmean = " << T_mean << std::endl;

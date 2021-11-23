@@ -27,8 +27,8 @@
    \author Vincent Chabannes <vincent.chabannes@imag.fr>
    \date 2011-07-21
  */
-#ifndef FEELPP_CREATESUBMESH_HPP
-#define FEELPP_CREATESUBMESH_HPP 1
+#ifndef FEELPP_DISCR_CREATESUBMESH_HPP
+#define FEELPP_DISCR_CREATESUBMESH_HPP 1
 
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/identity.hpp>
@@ -1352,38 +1352,60 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
 
 namespace detail
 {
-template<typename Args>
-struct createSubmesh
+template<typename MeshArgType,typename RangeArgType>
+struct CreateSubmeshTrait
 {
-    using mesh_or_support_type = typename Feel::remove_shared_ptr< typename Feel::meta::remove_all< typename parameter::binding<Args, tag::mesh>::type >::type >::type;
+    using mesh_or_support_type = typename Feel::remove_shared_ptr< typename Feel::meta::remove_all< MeshArgType >::type >::type;
     using mesh_type = typename mpl::if_c< is_mesh_v<mesh_or_support_type>, mesh_or_support_type, typename mesh_or_support_type::mesh_type>::type;
-    using range_type = typename Feel::meta::remove_all< typename parameter::binding<Args, tag::range>::type >::type;
+    using range_type = typename Feel::meta::remove_all< RangeArgType >::type;
     using builder_type = CreateSubmeshTool<mesh_type,typename Feel::detail::submeshrangetype<range_type>::type,mesh_type::tag>;
     using ptrtype = typename builder_type::mesh_build_ptrtype;
 };
 }
 
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::createSubmesh< Args>::ptrtype ), // return type
-    createSubmesh,    // 2. function name
-    tag,           // 3. namespace of tag types
-    ( required
-      ( mesh, *)
-      ( range, *)
-      ) // 4. one required parameter, and
-    ( optional
-      ( worldcomm,  *, mesh->worldCommPtr() )
-      ( context,    *(boost::is_integral<mpl::_>), EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT )
-      ( update,     *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
-      ( only_on_boundary_faces, (bool), false )
-      ( view, (bool), false )
-      )
-                         )
+template <typename MeshArgType,typename RangeArgType>
+typename Feel::detail::CreateSubmeshTrait<MeshArgType,RangeArgType>::ptrtype
+createSubmesh( NA::arguments<
+               typename na::mesh::template required_as_t<MeshArgType>,
+               typename na::range::template required_as_t<RangeArgType>,
+               typename na::worldcomm::template required_as_t<worldcomm_ptr_t>,
+               typename na::context::template required_as_t<size_type>,
+               typename na::update::template required_as_t<size_type>,
+               typename na::only_on_boundary_faces::template required_as_t<bool>,
+               typename na::view::template required_as_t<bool>
+               > && args )
 {
-    typename Feel::detail::createSubmesh< Args>::builder_type t( mesh,range,worldcomm,update );
+    auto && mesh = args.get(_mesh);
+    auto && range = args.get(_range);
+    auto && worldcomm = args.get(_worldcomm);
+    size_type context = args.get(_context);
+    size_type update = args.get(_update);
+    bool only_on_boundary_faces = args.get(_only_on_boundary_faces);
+    bool view =  args.get(_view);
+
+    typename Feel::detail::CreateSubmeshTrait<MeshArgType,RangeArgType>::builder_type t( mesh,range,worldcomm,update );
     t.subMeshIsOnBoundaryFaces( only_on_boundary_faces );
     t.setIsView( view );
     return t.build(context);
+}
+
+template <typename ... Ts>
+auto createSubmesh( Ts && ... v )
+{
+    auto args0 = NA::make_arguments( std::forward<Ts>(v)... )
+        .add_default_arguments( NA::make_default_argument( _context, EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT ),
+                                NA::make_default_argument( _update, MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES),
+                                NA::make_default_argument( _only_on_boundary_faces, false ),
+                                NA::make_default_argument( _view, false )
+                                );
+        ;
+    auto && mesh = args0.get(_mesh);
+    auto && range = args0.get(_range);
+    auto args = std::move( args0 ).add_default_arguments( NA::make_default_argument( _worldcomm, mesh->worldCommPtr() ) );
+
+    using arg_mesh_type = decltype(mesh);
+    using arg_range_type = decltype(range);
+    return createSubmesh<arg_mesh_type,arg_range_type>( std::move( args ) );
 }
 
 /**

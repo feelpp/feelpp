@@ -27,7 +27,6 @@
    \date 2012-05-28
  */
 #include <sstream>
-#include <boost/timer.hpp>
 
 #define BOOST_TEST_MODULE evaluate testsuite
 #include <feel/feelcore/testsuite.hpp>

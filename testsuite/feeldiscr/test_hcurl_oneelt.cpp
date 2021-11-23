@@ -294,7 +294,7 @@ TestHCurlOneElt::shape_functions( std::string one_element_mesh )
         int edgeid = 0;
         BOOST_FOREACH( std::string edge, edges )
         {
-            auto int_u_t = integrate( markedfaces( oneelement_mesh, edge ), trans( T() )*idv( u_vec[i] ) ).evaluate()( 0,0 );
+            auto int_u_t = integrate( _range=markedfaces( oneelement_mesh, edge ), _expr=trans( T() )*idv( u_vec[i] ) ).evaluate()( 0,0 );
 
             if ( edgeid == i )
                 BOOST_CHECK_CLOSE( int_u_t, 1, 1e-13 );
@@ -304,7 +304,7 @@ TestHCurlOneElt::shape_functions( std::string one_element_mesh )
 
             checkidv[3*i+edgeid] = int_u_t;
 
-            form1( _test=Xh, _vector=F, _init=true ) = integrate( markedfaces( oneelement_mesh, edge ), trans( T() )*id( V_ref ) );
+            form1( _test=Xh, _vector=F, _init=true ) = integrate( _range=markedfaces( oneelement_mesh, edge ), _expr=trans( T() )*id( V_ref ) );
             auto form_v_t = inner_product( u_vec[i], *F );
 
             if ( edgeid == i )
@@ -319,8 +319,8 @@ TestHCurlOneElt::shape_functions( std::string one_element_mesh )
 
         // curl2D(u1,u2) = d(u2)/dx1 - d(u1)/dx2
         // 2D case : only curlx is initialized to curl2D(u1,u2) (curl is a vector with only one component initialized)
-        auto int_curlxv = integrate( elements( oneelement_mesh ), curlxv( u_vec[i] ) ).evaluate()( 0,0 );
-        auto int_vt = integrate( boundaryfaces( oneelement_mesh ), trans( T() )*idv( u_vec[i] ) ).evaluate()( 0,0 );
+        auto int_curlxv = integrate( _range=elements( oneelement_mesh ), _expr=curlxv( u_vec[i] ) ).evaluate()( 0,0 );
+        auto int_vt = integrate( _range=boundaryfaces( oneelement_mesh ), _expr=trans( T() )*idv( u_vec[i] ) ).evaluate()( 0,0 );
 
         BOOST_CHECK_CLOSE( int_vt, 1, 1e-13 );
         BOOST_CHECK_CLOSE( int_curlxv, int_vt, 1e-13 );
@@ -329,9 +329,9 @@ TestHCurlOneElt::shape_functions( std::string one_element_mesh )
 
         // curl2D(u1,u2) = d(u2)/dx1 - d(u1)/dx2
         // 2D case : only curlx is initialized to curl2D(u1,u2) (curl is a vector with only one component initialized)
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( elements( oneelement_mesh ), curlx( V_ref ) );
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( _range=elements( oneelement_mesh ), _expr=curlx( V_ref ) );
         auto form_curlxv = inner_product( u_vec[i], *F );
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( boundaryfaces( oneelement_mesh ),trans( T() )*id( V_ref ) );
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( _range=boundaryfaces( oneelement_mesh ),_expr=trans( T() )*id( V_ref ) );
         auto form_vt = inner_product( u_vec[i], *F );
 
         BOOST_CHECK_CLOSE( form_vt, 1, 1e-13 );

@@ -581,7 +581,7 @@ CollectionOfDataByMeshEntity<IndexType>::updateMapping( std::string const& mappi
             pids.resize( nPointOnCurrentEntity );
             //CHECK( pointIds.size() == 2 ) << "must be a pair : " << pointIds.size();
             for ( int p=0;p<nPointOnCurrentEntity;++p )
-                pids[p] = pointIds[p].get<index_type>();
+                pids[p] = pointIds[p].template get<index_type>();
             std::sort( pids.begin(), pids.end() );
             auto itFindEdgeInMesh = mapPointIdsToEdgeId.find( pids );
             //CHECK( itFindEdgeInMesh != mapPointIdsToEdgeId.end() ) <<  "entity not found : " << dataEntityId << " -> " <<  pids;

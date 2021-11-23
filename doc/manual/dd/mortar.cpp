@@ -129,7 +129,7 @@ private:
     export_ptrtype M_firstExporter;
     export_ptrtype M_secondExporter;
     trace_export_ptrtype M_trace_exporter;
-    std::map<std::string, std::pair<boost::timer, double> > timers;
+    std::map<std::string, std::pair<Feel::Timer, double> > timers;
     std::vector<int> outside1;
     std::vector<int> outside2;
     int gamma1;
@@ -176,13 +176,13 @@ MortarLag<Dim,Order1,Order2>::exportResults( element1_type& u, element2_type& v,
     auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
 
     auto e1 = Xh1->element();
-    e1 = vf::project( Xh1, elements(mesh1), g );
+    e1.on(_range=elements(mesh1), _expr=g );
 
     auto e2 = Xh2->element();
-    e2 = vf::project( Xh2, elements(mesh2), g );
+    e2.on(_range=elements(mesh2), _expr=g );
 
     std::cout << "exportResults starts\n";
-    timers["export"].first.restart();
+    timers["export"].first.start();
 
     M_firstExporter->step(0)->setMesh( mesh1 );
     M_firstExporter->step(0)->add( "solution", (boost::format( "solution-%1%" ) % int(1) ).str(), u );
@@ -227,7 +227,7 @@ MortarLag<Dim,Order1,Order2>::run()
 {
 
     //if ( !this->vm().count( "nochdir" ) )
-    Environment::changeRepository( boost::format( "doc/manual/%1%/%2%-%3%/P%4%-P%5%/h_%6%-%7%/" )
+    Environment::changeRepository( _directory=boost::format( "doc/manual/%1%/%2%-%3%/P%4%-P%5%/h_%6%-%7%/" )
                                    % this->about().appName()
                                    % shape
                                    % Dim
@@ -289,27 +289,28 @@ MortarLag<Dim,Order1,Order2>::run()
     value_type coeff = doption("coeff");
 
     auto F1 = M_backend->newVector( Xh1 );
-    form1( _test=Xh1, _vector=F1, _init=true ) =
-        integrate( elements(mesh1), 10000*f*id(v1) );
+    form1( _test=Xh1, _vector=F1 ) =
+        integrate( _range=elements(mesh1), _expr=10000*f*id(v1) );
 
     BOOST_FOREACH( int marker, outside1 )
     {
         form1( _test=Xh1, _vector=F1 ) +=
-            integrate( markedfaces(mesh1,marker),
-                       10000*g*(-grad(v1)*vf::N()+penaldir*id(v1)/hFace()) );
+            integrate( _range=markedfaces(mesh1,marker),
+                       _expr=10000*g*(-grad(v1)*vf::N()+penaldir*id(v1)/hFace()) );
     }
 
     F1->close();
 
     auto D1 = M_backend->newMatrix( _trial=Xh1, _test=Xh1 );
 
-    form2( _trial=Xh1, _test=Xh1, _matrix=D1, _init=true ) =
-        integrate( elements(mesh1), 10000*coeff*gradt(u1)*trans(grad(v1)) );
+    form2( _trial=Xh1, _test=Xh1, _matrix=D1 ) =
+        integrate( _range=elements(mesh1), _expr=10000*coeff*gradt(u1)*trans(grad(v1)) );
 
     BOOST_FOREACH( int marker, outside1 )
     {
         form2( _trial=Xh1, _test=Xh1, _matrix=D1 ) +=
-            integrate( markedfaces(mesh1,marker),
+            integrate( _range=markedfaces(mesh1,marker),
+                       _expr=
                        10000*(-(gradt(u1)*vf::N())*id(v1)
                            -(grad(v1)*vf::N())*idt(u1)
                            +penaldir*id(v1)*idt(u1)/hFace()));
@@ -320,10 +321,10 @@ MortarLag<Dim,Order1,Order2>::run()
     auto B1 = M_backend->newMatrix( _trial=Xh1, _test=Lh1 );
 
     std::cout << "assembly_B1 starts\n";
-    timers["assemby_B1"].first.restart();
+    timers["assemby_B1"].first.start();
 
-    form2( _trial=Xh1, _test=Lh1, _matrix=B1, _init=true) =
-        integrate( markedfaces(mesh1,gamma1), idt(u1)*id(nu) );
+    form2( _trial=Xh1, _test=Lh1, _matrix=B1 ) =
+        integrate( _range=markedfaces(mesh1,gamma1), _expr=idt(u1)*id(nu) );
 
     timers["assemby_B1"].second = timers["assemby_B1"].first.elapsed();
     std::cout << "assemby_B1 done in " << timers["assemby_B1"].second << "s\n";
@@ -331,27 +332,28 @@ MortarLag<Dim,Order1,Order2>::run()
     B1->close();
 
     auto F2 = M_backend->newVector( Xh2 );
-    form1( _test=Xh2, _vector=F2, _init=true ) =
-        integrate( elements(mesh2), f*id(v2) );
+    form1( _test=Xh2, _vector=F2 ) =
+        integrate( _range=elements(mesh2), _expr=f*id(v2) );
 
     BOOST_FOREACH( int marker, outside2 )
     {
         form1( _test=Xh2, _vector=F2 ) +=
-            integrate( markedfaces(mesh2,marker),
-                       g*(-grad(v2)*vf::N()+penaldir*id(v2)/hFace()) );
+            integrate( _range=markedfaces(mesh2,marker),
+                       _expr=g*(-grad(v2)*vf::N()+penaldir*id(v2)/hFace()) );
     }
 
     F2->close();
 
     auto D2 = M_backend->newMatrix( _trial=Xh2, _test=Xh2 );
 
-    form2( _trial=Xh2, _test=Xh2, _matrix=D2, _init=true ) =
-        integrate( elements(mesh2), coeff*gradt(u2)*trans(grad(v2)) );
+    form2( _trial=Xh2, _test=Xh2, _matrix=D2 ) =
+        integrate( _range=elements(mesh2), _expr=coeff*gradt(u2)*trans(grad(v2)) );
 
     BOOST_FOREACH( int marker, outside2 )
     {
         form2( _trial=Xh2, _test=Xh2, _matrix=D2 ) +=
-            integrate( markedfaces(mesh2,marker),
+            integrate( _range=markedfaces(mesh2,marker),
+                       _expr=
                        -(gradt(u2)*vf::N())*id(v2)
                        -(grad(v2)*vf::N())*idt(u2)
                        +penaldir*id(v2)*idt(u2)/hFace());
@@ -362,10 +364,10 @@ MortarLag<Dim,Order1,Order2>::run()
     auto B2 = M_backend->newMatrix( _trial=Xh2, _test=Lh1, _buildGraphWithTranspose=true );
 
     std::cout << "assembly_B2 starts\n";
-    timers["assembly_B2"].first.restart();
+    timers["assembly_B2"].first.start();
 
-    form2( _trial=Xh2, _test=Lh1, _matrix=B2, _init=true ) =
-        integrate( markedfaces(mesh1,gamma1), -idt(u2)*id(nu) );
+    form2( _trial=Xh2, _test=Lh1, _matrix=B2 ) =
+        integrate( _range=markedfaces(mesh1,gamma1), _expr=-idt(u2)*id(nu) );
 
     timers["assembly_B2"].second = timers["assembly_B2"].first.elapsed();
     std::cout << "assembly_B2 done in " << timers["assembly_B2"].second << "s\n";
@@ -390,7 +392,7 @@ MortarLag<Dim,Order1,Order2>::run()
                                         << B21 << D2 << B2t
                                         << B1 << B2  << BLL ;
 
-    auto AbB = M_backend->newBlockMatrix(myb);
+    auto AbB = M_backend->newBlockMatrix(_block=myb);
     AbB->close();
 
     auto FbB = M_backend->newVector( u1.size()+u2.size()+mu.size(),u1.size()+u2.size()+mu.size() );
@@ -408,7 +410,7 @@ MortarLag<Dim,Order1,Order2>::run()
     std::cout << "size of linear system: " << FbB->size() << "\n";
 
     std::cout << "solve starts\n";
-    timers["solve"].first.restart();
+    timers["solve"].first.start();
 
     M_backend->solve(_matrix=AbB,
                      _solution=UbB,
@@ -427,23 +429,23 @@ MortarLag<Dim,Order1,Order2>::run()
     for (size_type i = 0 ; i < mu.size(); ++ i)
     mu.set(i, (*UbB)(u1.size()+u2.size()+i) );
 
-    double L2error12 =integrate(elements(mesh1),(idv(u1)-g)*(idv(u1)-g) ).evaluate()(0,0);
+    double L2error12 =integrate(_range=elements(mesh1),_expr=(idv(u1)-g)*(idv(u1)-g) ).evaluate()(0,0);
     double L2error1 =   math::sqrt( L2error12 );
 
-    double L2error22 =integrate(elements(mesh2),(idv(u2)-g)*(idv(u2)-g) ).evaluate()(0,0);
+    double L2error22 =integrate(_range=elements(mesh2),_expr=(idv(u2)-g)*(idv(u2)-g) ).evaluate()(0,0);
     double L2error2 =   math::sqrt( L2error22 );
 
-    double semi_H1error1 =integrate(elements(mesh1),
-                                    ( gradv(u1)-gradg )*trans( (gradv(u1)-gradg) ) ).evaluate()(0,0);
+    double semi_H1error1 =integrate(_range=elements(mesh1),
+                                    _expr=( gradv(u1)-gradg )*trans( (gradv(u1)-gradg) ) ).evaluate()(0,0);
 
-    double semi_H1error2 =integrate(elements(mesh2),
-                                    ( gradv(u2)-gradg )*trans( (gradv(u2)-gradg) ) ).evaluate()(0,0);
+    double semi_H1error2 =integrate(_range=elements(mesh2),
+                                    _expr=( gradv(u2)-gradg )*trans( (gradv(u2)-gradg) ) ).evaluate()(0,0);
 
     double H1error1 = math::sqrt( L2error12 + semi_H1error1 );
 
     double H1error2 = math::sqrt( L2error22 + semi_H1error2 );
 
-    double error =integrate(elements(trace_mesh), (idv(u1)-idv(u2))*(idv(u1)-idv(u2)) ).evaluate()(0,0);
+    double error =integrate(_range=elements(trace_mesh), _expr=(idv(u1)-idv(u2))*(idv(u1)-idv(u2)) ).evaluate()(0,0);
 
     double global_error = math::sqrt(L2error12 + L2error22 + semi_H1error1 + semi_H1error2);
 

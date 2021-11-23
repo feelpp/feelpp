@@ -59,6 +59,7 @@ void defMeasure(py::module &m)
                 return measure( _range=r, _expr=expr(e), _quad=quad_order );
             }, py::arg("range"), py::arg("expr")="1", py::arg("quad")=1, "compute the measure of the range of elements" );
     }        
+#if 0
     if constexpr ( mesh_t::nDim == 3 )
     {
         m.def("measure",[]( edges_reference_wrapper_t<mesh_t> const& r, std::string const& e, int quad_order ){
@@ -66,6 +67,7 @@ void defMeasure(py::module &m)
             }, py::arg("range"), py::arg("expr")="1", py::arg("quad")=1, "compute the measure of the range of elements" );
 
     }
+#endif
 }
  
 

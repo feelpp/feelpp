@@ -152,8 +152,8 @@ StabilizationGLSParameter<MeshType,OrderPoly>::init()
             fB = integrate( _range=elements(mesh),
                             _expr=inner(grad(w),gradt(w)) );
             if ( math::abs( this->M_penalLambdaK ) > 1e-12 )
-                fB += integrate( elements(mesh),
-                                 this->M_penalLambdaK*inner(id(w),idt(w)) );
+                fB += integrate( _range=elements(mesh),
+                                 _expr=this->M_penalLambdaK*inner(id(w),idt(w)) );
             matB->close();
 
             Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> localEigenMatA(0,0);

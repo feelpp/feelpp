@@ -84,7 +84,7 @@ Grid<Dim>::run()
 {
     std::cout << "------------------------------------------------------------\n";
     std::cout << "Execute Grid<" << Dim << ">\n";
-    Environment::changeRepository( boost::format( "doc/manual/%1%/%2%-%3%/P%4%/h_%5%/" )
+    Environment::changeRepository( _directory=boost::format( "doc/manual/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()
                                    % shape
                                    % Dim
@@ -142,16 +142,16 @@ Grid<Dim>::run()
     value_type kappa = doption("kappa");
     value_type nu = doption("nu");
 
-    auto A = M_backend->newMatrix( Xh, Xh ) ;
+    auto A = M_backend->newMatrix( _test=Xh, _trial=Xh ) ;
     form2( _test=Xh, _trial=Xh, _matrix=A ) =
-        integrate( elements( mesh ), kappa*gradt( u )*trans( grad( v ) ) + nu*idt( u )*id( v ) );
+        integrate( _range=elements( mesh ), _expr=kappa*gradt( u )*trans( grad( v ) ) + nu*idt( u )*id( v ) );
 
-    auto B = M_backend->newMatrix( Xh, Xh ) ;
+    auto B = M_backend->newMatrix( _test=Xh, _trial=Xh ) ;
     form2( _test=Xh, _trial=Xh, _matrix=B );
     BOOST_FOREACH( int marker, flags )
     {
-        form2( Xh, Xh, _matrix=B ) +=
-            integrate( markedfaces( mesh,marker ), kappa*idt( u )*id( v ) );
+        form2( _test=Xh, _trial=Xh, _matrix=B ) +=
+            integrate( _range=markedfaces( mesh,marker ), _expr=kappa*idt( u )*id( v ) );
     }
 
     int maxit = ioption("solvereigen-maxiter");

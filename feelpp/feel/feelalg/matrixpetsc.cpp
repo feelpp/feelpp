@@ -27,7 +27,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-01-03
  */
-#include <boost/timer.hpp>
+
 #include <boost/smart_ptr/make_shared.hpp>
 
 #include <feel/feelcore/feelpetsc.hpp>
