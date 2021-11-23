@@ -372,9 +372,13 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
+            this->postProcessMeasures().restart( this->timeInitial() );
+#if 0
+        if ( this->doRestart() )
             this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
         else
             this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
+#endif
     }
 
     double tElpased = this->timerTool("Constructor").stop("initPostProcess");
@@ -604,6 +608,8 @@ HEAT_CLASS_TEMPLATE_TYPE::updateParameterValues()
     this->materialsProperties()->updateParameterValues( paramValues );
     for ( auto [physicName,physicData] : this->physics/*FromCurrentType*/() )
         physicData->updateParameterValues( paramValues );
+
+    this->updateParameterValues_postProcess( paramValues, prefixvm("postprocess",this->keyword(),"_" ) );
 
     this->setParameterValues( paramValues );
 }
