@@ -22,7 +22,7 @@
 //! @copyright 2018 Feel++ Consortium
 //!
 #include <pybind11/pybind11.h>
-
+#include <pybind11/stl.h>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
@@ -31,7 +31,7 @@
 #endif
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelvf/vf.hpp>
-
+#include <feel/feelvf/print.hpp>
 namespace py = pybind11;
 using namespace Feel;
 
@@ -76,7 +76,10 @@ void defToolbox(py::module &m)
         .def( "updateMovingMesh", &toolbox_t::updateMovingMesh, "update the moving mesh by using displacement imposed given" )
         .def(
             "updateDisplacementImposed", []( std::shared_ptr<toolbox_t>& t, ale_map_element_t const& d, elements_reference_wrapper_t<mesh_ptr_t> const& r )
-            { t->updateDisplacementImposed( idv(d), r ); },
+            {
+                //t->updateDisplacementImposed( print(idv(d),"disp: "), r ); 
+                t->updateDisplacementImposed( idv(d), r ); 
+            },
             py::arg( "disp" ), py::arg( "range" ),
             "update ALE map from imposed displacement on a range of elements" )
         .def(
@@ -85,15 +88,18 @@ void defToolbox(py::module &m)
             py::arg( "disp" ), py::arg( "range" ),
             "update ALE map from imposed displacement on a range of faces" )
 
-        //.def( "setDisplacementImposedOnInitialDomainOverElements", &toolbox_t::setDisplacementImposedOnInitialDomainOverElements, py::arg( "name" ), py::arg("markers"), "defined element markers where disp imposed is given on initial mesh (not necessarly equal to ref mesh when we apply remesh)" )
-        //.def( "setDisplacementImposedOnInitialDomainOverFaces", &toolbox_t::setDisplacementImposedOnInitialDomainOverFaces, py::arg( "name" ), py::arg("markers"), "defined face markers where disp imposed is given on initial mesh (not necessarly equal to ref mesh when we apply remesh)" )
-        //.def( "updateDisplacementImposedOnInitialDomain", &toolbox_t::updateDisplacementImposedOnInitialDomain, py::arg( "name" ), py::arg( "disp" ), py::arg("range"), "" )
+        .def( "setDisplacementImposedOnInitialDomainOverElements", &toolbox_t::setDisplacementImposedOnInitialDomainOverElements, py::arg( "keyword" ), py::arg("markers"), "defined element markers where disp imposed is given on initial mesh (not necessarly equal to ref mesh when we apply remesh)" )
+        .def( "setDisplacementImposedOnInitialDomainOverFaces", &toolbox_t::setDisplacementImposedOnInitialDomainOverFaces, py::arg( "keyword" ), py::arg("markers"), "defined face markers where disp imposed is given on initial mesh (not necessarly equal to ref mesh when we apply remesh)" )
+        .def( "updateDisplacementImposedOnInitialDomain", []( std::shared_ptr<toolbox_t>& t, std::string keyword, ale_map_element_t const& d, faces_reference_wrapper_t<mesh_ptr_t> const& r  ){
+                t->updateDisplacementImposedOnInitialDomain( keyword, idv(d), r );
+            } , py::arg( "keyword" ), py::arg( "disp" ), py::arg("range"), "" )
 
         .def( "revertMovingMesh", &toolbox_t::revertMovingMesh, py::arg( "updateMeshMeasures" ) = true, "revert mesh in moving state" )
         .def( "revertReferenceMesh", &toolbox_t::revertReferenceMesh, py::arg( "updateMeshMeasures" ) = true, "revert mesh in reference state" )
-        //.def( "revertInitialMesh", &toolbox_t::revertInitialMesh, py::arg( "updateMeshMeasures" ) = true, "revert mesh in initial state" )
+        .def( "revertInitialDomain", &toolbox_t::revertInitialDomain, py::arg( "updateMeshMeasures" ) = true, "revert mesh in initial domain" )
         .def( "updateTimeStep", &toolbox_t::updateTimeStep, "update time step" )
-        .def( "exportResults", &toolbox_t::exportResults, py::arg( "time" ) = 0., "export results" );
+        .def( "exportResults", &toolbox_t::exportResults, py::arg( "time" ) = 0., "export results" )
+        .def( "applyRemesh", &toolbox_t::applyRemesh, py::arg("mesh"), py::arg("range"), "apply remesh ");
 #endif
 }
 
