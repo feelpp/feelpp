@@ -24,6 +24,7 @@
 #include <regex>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/eigen.h>
 
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feeldiscr/mesh.hpp>
@@ -94,9 +95,9 @@ void defMesh(py::module &m)
     using namespace Feel;
     using mesh_t = MeshT;
     using mesh_ptr_t = std::shared_ptr<mesh_t>;
-    int Dim = MeshT::nDim;
+    static constexpr int Dim = MeshT::nDim;
     int Order = MeshT::nOrder;
-    int RealDim = MeshT::nRealDim;
+    static constexpr int RealDim = MeshT::nRealDim;
     std::string pyclass_name = std::string("Mesh_");
     std::string suffix = "S";
     if constexpr ( is_hypercube_v<typename MeshT::element_type> )
@@ -108,13 +109,21 @@ void defMesh(py::module &m)
         .def_static("create",&mesh_t::New,"Construct a new shared_ptr mesh")
         .def("dimension",&mesh_t::dimension,"get topological dimension")
         .def("realDimension",&mesh_t::realDimension,"get real dimension")
-
-
+        .def("isRelatedTo",[]( mesh_ptr_t const& self, mesh_ptr_t const& other ) { return self->isRelatedTo(other); },"is the mesh related to another mesh")
+        .def("isSubMeshFrom",[]( mesh_ptr_t const& self, mesh_ptr_t const& other ) { return self->isSubMeshFrom(other); },"is the mesh a sub mesh of another mesh")
+        .def("isParentMeshOf",[]( mesh_ptr_t const& self, mesh_ptr_t const& other ) { return self->isParentMeshOf(other); },"is the mesh the parent mesh of another mesh")
+        .def("isSiblingOf",[]( mesh_ptr_t const& self, mesh_ptr_t const& other ) { return self->isSiblingOf(other); },"is the mesh a sibling of another mesh")
         // elements counts
         .def("numGlobalElements",&mesh_t::numGlobalElements,"get the number of elements over the whole mesh, requires communication if the mesh is parallel")
         .def("numGlobalFaces",&mesh_t::numGlobalFaces,"get the number of faces over the whole mesh, requires communication if the mesh is parallel")
         .def("numGlobalEdges",&mesh_t::numGlobalEdges,"get the number of edges over the whole mesh, requires communication if the mesh is parallel") 
         .def("numGlobalPoints",&mesh_t::numGlobalPoints,"get the number of points over the whole mesh, requires communication if the mesh is parallel") 
+        .def("saveHDF5",[]( mesh_ptr_t const& self, std::string const& fname ) {
+            return self->saveHDF5(fname);
+        }, py::arg("name"), "save mesh to H5 file" )
+        .def("loadHDF5",[]( mesh_ptr_t const& self, std::string const& fname ) {
+            return self->loadHDF5(fname);
+        }, py::arg("name"), "load mesh from H5 file"  )
         // measures
         .def("hAverage",&mesh_t::hAverage,"get the average edge length of the mesh")
         .def("hMin",&mesh_t::hMin,"get the minimum edge length of the mesh")
@@ -150,6 +159,35 @@ void defMesh(py::module &m)
     m.def("nelements", (decltype(&nElementsTuple<mesh_ptr_t>))  &nElementsTuple<mesh_ptr_t>,"get the number of elements in range, the local one if global is false", py::arg("range"),py::arg("global") = true );
     m.def("nfaces",(decltype(&nFacesTuple<mesh_ptr_t>))  &nFacesTuple<mesh_ptr_t>,"get the number of faces in range, the local one if global is false", py::arg("range"),py::arg("global") = true );
     //m.def("markedfaces", &markedfaces<mesh_t>,"get iterator over the marked faces of the mesh");
+    m.def(
+        "coordinatesFromMesh", []( mesh_ptr_t const& r, std::string const& m ) {
+            std::vector<eigen_vector_type<RealDim>> v;
+            for( auto const& p_ptr : markedpoints(r,m) )
+            {
+                auto const& p = unwrap_ptr( p_ptr ).get();
+                eigen_vector_type<RealDim> ep;
+                for(int i = 0; i < Dim; ++ i ) ep(i) = p(i);
+                v.push_back( ep );
+            }
+            return v;
+        },
+        py::arg( "mesh" ), py::arg( "marker" ), "return the coordinates of a  Marked point" );
+    m.def(
+        "coordinatesFromMesh", []( mesh_ptr_t const& r, std::vector<std::string> const& m ) {
+            std::map<std::string,std::vector<eigen_vector_type<RealDim>>> v;
+            for( auto const& marker : m )
+            {
+                for( auto const& p_ptr : markedpoints(r,marker) )
+                {
+                    eigen_vector_type<RealDim> ep;
+                    auto const& p = unwrap_ptr( p_ptr ).get();
+                    for(int i = 0; i < Dim; ++ i ) ep(i) = p(i);
+                    v[marker].push_back( ep );
+                }
+            }
+            return v;
+        },
+        py::arg( "mesh" ), py::arg( "markers" ), "return map of point coordinates associated with markers" );
     m.def( "markedelements", []( mesh_ptr_t const& r, std::string const& m ) {
             return markedelements(r,m);
         },py::arg("range"), py::arg("marker"), "return the range of elements of the mesh with marker" );
