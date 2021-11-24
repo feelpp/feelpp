@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2013-02-21
 #
-#  Copyright (C) 2013-2015 Feel++ Consortium
+#  Copyright (C) 2013-2021 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -59,7 +59,7 @@ endif()
 
 
 set(FEELPP_VERSION_MAJOR "0")
-set(FEELPP_VERSION_MINOR "108")
+set(FEELPP_VERSION_MINOR "109")
 set(FEELPP_VERSION_MICRO "0")
 set(FEELPP_REVISION "0" )
 set(FEELPP_BUILDID "0" )

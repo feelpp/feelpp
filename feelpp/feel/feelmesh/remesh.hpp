@@ -55,7 +55,7 @@ remesh( std::shared_ptr<MeshT> const& r,
     using mesh_ptr_t = std::shared_ptr<mesh_t>;
     if ( r->worldComm().localSize() == 1 )
     {
-        auto R = std::make_shared<Remesh<mesh_t>>( r, req_elts, req_facets );
+        auto R = std::make_shared<Remesh<mesh_t>>( r, req_elts, req_facets, parent );
         auto P1h = Pch<1>( r );
 
         if ( std::smatch sm; 
@@ -99,7 +99,7 @@ remesh( std::shared_ptr<MeshT> const& r,
                                      //_update=update_,  TODO test FACE_MINIMAL
                                      _straighten = false );
             auto P1h = Pch<1>( meshSeq );
-            auto R = std::make_shared<Remesh<mesh_t>>( meshSeq, req_elts, req_facets );
+            auto R = std::make_shared<Remesh<mesh_t>>( meshSeq, req_elts, req_facets, parent );
 
             if ( std::smatch sm; std::regex_match( metric_expr, sm, std::regex( "gradedls\\((.*),(.*)\\)" ) ) )
             {
