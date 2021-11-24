@@ -139,7 +139,7 @@ def test_compar():
         assert( relErrOnU < 1e-12 )
 
 
-
+@pytest.mark.dependency(depends=['test_init_environment'])
 def test_for_param():
     """check that the error on reduced basis for the generating sample is null, when the basis is not orthonormalized
     """
@@ -151,7 +151,10 @@ def test_for_param():
     rbParam.computeOfflineReducedBasis(pytest.mus, orth=False)
     for i,mu in enumerate(pytest.mus):
         print('check RB {} with mu:{}'.format(i,mu))
-        [betaA, betaF] = model.computeBetaQm(mu)
+        beta = model.computeBetaQm(mu)
+        assert(len(beta) == 2)
+        betaA = beta[0]
+        betaF = beta[1]
         A = rbParam.assembleA(betaA[0])
         F = rbParam.assembleF(betaF[0][0])
 
@@ -168,20 +171,58 @@ def test_for_param():
         assert(abs(u.dot(A * u) - uN.T @ AN @ uN)/abs(u.dot(A * u)) < 1e-10), "abs(u.dot(A * u) - uN.T @ AN @ uN)/abs(u.dot(A * u)) = {}".format(abs(u.dot(A * u) - uN.T @ AN @ uN)/abs(u.dot(A * u)))
 
 
+@pytest.mark.dependency(depends=['test_init_reducedbasis'])
+def test_comparMatrix():
+    """Compares the construction of the matrix to the toolbox one
+    """
+    mu = Dmu.element(True, False)    # TODO : see how to get the values from json
+    mu.setParameters({"Bi":0.01, "k_0":1, "k_1":0.1, "k_2":0.1, "k_3":0.1, "k_4":0.1})
+    beta = model.computeBetaQm(mu)
+    assert(len(beta) == 2)
+    betaA = beta[0]
+    # M_tb = heatBox.assembleMatrix().mat()
+    M_tb = assembleMDEIM(mu).mat()
+    M_tb.assemble()
+    M_rb = pytest.rb.assembleA(betaA[0])
+
+    assert(M_tb.size == M_rb.size)
+    
+    norm = (M_tb - M_rb).norm() / M_tb.norm()
+    assert norm < 1e-10, f"relative error {norm} is too high"
 
 
+@pytest.mark.dependency(depends=['test_init_reducedbasis'])
+def test_comparRhs():
+    """Compares the construction of the rhs to the toolbox one
+    """
+    mu = Dmu.element(True, False)    # TODO : see how to get the values from json
+    mu.setParameters({"Bi":0.01, "k_0":1, "k_1":0.1, "k_2":0.1, "k_3":0.1, "k_4":0.1})
+    beta = model.computeBetaQm(mu)
+    assert len(beta) == 2, f"len(beta)={len(beta)} and should be 2"
+    betaF = beta[1]
+    F_tb = assembleDEIM(mu).vec()
+    F_tb.assemble()
+    F_rb = pytest.rb.assembleF(betaF[0][0])
+
+    assert F_tb.size == F_rb.size, f"F_tb = {F_tb.size} != {F_rb.size} = F_rb"
+    norm = (F_tb-F_rb).norm() / F_tb.norm()
+    assert norm < 1e-10, f"relative error {norm} too high"
 
 
 
 # Greedy Tests
 
+@pytest.mark.long
 @pytest.mark.dependency(depends=['test_init_environment'])
 def test_runGreedy():
+    """runs the greedy algorithm to generate a basis
+       (this test is quite long)
+    """
     Aq = pytest.decomposition[0]
     Fq = pytest.decomposition[1]
     pytest.rbGreedy = reducedbasis(convertToPetscMat(Aq[0]), convertToPetscVec(Fq[0][0]), model, mubar, alphaLB)
 
-    Xi_train = listOfParams(100)
+    Xi_train = listOfParams(500)
     mu0 = Dmu.element(True, True)
     S = pytest.rbGreedy.greedy(mu0, Xi_train, Nmax=60)
 
