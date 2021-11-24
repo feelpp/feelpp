@@ -1,4 +1,5 @@
 SetFactory("OpenCASCADE");
+Mesh.ElementOrder = 2;
 
 height = 1;
 r = 0.2;

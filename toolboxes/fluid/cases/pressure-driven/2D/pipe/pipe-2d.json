@@ -1,6 +1,6 @@
 {
-    "Name": "straight-pipe",
-    "ShortName":"sp",
+    "Name": "gravity",
+    "ShortName":"gravity",
     "Models":
     {
         "equations":"Stokes"
@@ -9,16 +9,15 @@
     {
         "nu":1,
         "L":1,
-        "pin":10,
-        "pout":1,
-        "R":0.2,
-        "uex":"(pin-pout)*R^2*(1-(y^2+z^2)/(R^2))/(4*nu*L):x:y:z:R:pin:pout:nu:L",
-        "pex":"pin+(pout-pin)*x/L:x:y:z:L:pin:pout"
+        "pin":1,
+        "pout":0,
+        "H":4,
+        "uex":"(pin-pout)*(L-x)*x/(2*H*nu):pin:pout:L:x:H:nu",
+        "pex":"pin+(pout-pin)*y/H:y:z:H:pin:pout"
     },
     "Materials":
     {
-        "Omega":
-        {
+        "Omega":{
             "rho":"1",
             "mu":"nu:nu"
         }
@@ -29,9 +28,13 @@
         {
             "Dirichlet":
             {
-                "wall":
+                "left":
                 {
-                    "expr":"{0,0,0}"
+                    "expr":"{0,0}"
+                },
+                "right":
+                {
+                    "expr":"{0,0}"
                 }
             }
         },
@@ -39,14 +42,31 @@
         {
             "Dirichlet":
             {
-                "outlet":
+                "top":
                 {
                     "expr":"pout:pout"
                 },
-                "inlet":
+                "bottom":
                 {
                     "expr":"pin:pin"
                 }
+            }
+        }
+    },
+	"Exact solution":
+	{
+	    "p_exact":
+	    {
+		    "Omega":
+		    {
+		        "expr":"pex:pex"
+		    }
+	    },
+        "u_exact":
+        {
+            "Omega":
+            {
+                "expr":"{0,uex}:uex"
             }
         }
     },
@@ -60,15 +80,31 @@
                 {
                     "type":"L2-error", 
                     "field":"pressure", 
-                    "solution":"pex:pex", //"1-x/2:x", 
+                    "solution":"pex:pex",
                     "markers":"Omega" 
                 },
                 "u": 
                 {
                     "type":"L2-error", 
                     "field":"velocity", 
-                    "solution":"{uex,0,0}:uex", //"{(0.25-(y*y+z*z))/8,0,0}:y:z", 
+                    "solution":"{0,uex}:uex",
                     "markers":"Omega" 
+                }
+            }
+        },
+        "Checkers":
+        {
+            "Measures":
+            {
+                "Norm_u_L2-error":
+                {
+                    "value":0,
+                    "tolerance":1
+                },
+                "Norm_p_L2-error":
+                {
+                    "value":0,
+                    "tolerance":1
                 }
             }
         },
@@ -77,7 +113,7 @@
             "fields":["velocity","pressure","pid"],
             "expr":
             {
-                "u_ex":"{uex,0,0}:uex",
+                "u_ex":"{0,uex}:uex",
                 "p_ex":"pex:pex"
             }
         }

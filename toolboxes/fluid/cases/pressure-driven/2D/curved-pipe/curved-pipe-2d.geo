@@ -23,6 +23,8 @@ Circle(4) = {3, 1, 4};
 Line Loop(1) = {3, 2, -4, -1};
 Surface(1) = {1};
 
+Characteristic Length{ PointsOf{ Surface{1}; } } = h;
+
 Physical Line("wall") = {4, 3};
 Physical Line("outlet") = {1};
 Physical Line("inlet") = {2};
