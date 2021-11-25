@@ -165,6 +165,13 @@ private :
             return (pdir/filename).string();
         }
 
+    friend class boost::serialization::access;
+    template <class Archive>
+    void serialize( Archive& ar, const unsigned int version )
+        {
+            ar& BOOST_SERIALIZATION_NVP( M_data );
+            ar& BOOST_SERIALIZATION_NVP( M_keys );
+        }
 
 private:
     std::string M_name;
@@ -256,6 +263,9 @@ public :
 
     //! restart measures
     void restart( double time );
+
+private :
+    void restartSeqImpl( double time );
 
 private :
     std::string M_directory;

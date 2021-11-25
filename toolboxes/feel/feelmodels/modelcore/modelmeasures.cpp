@@ -139,6 +139,41 @@ ModelMeasuresStorage::updateParameterValues( std::map<std::string,double> & mp, 
 void
 ModelMeasuresStorage::restart( double time )
 {
+    std::vector<std::string> storageValuesNames;
+    if ( M_worldComm->isMasterRank() )
+    {
+        this->restartSeqImpl( time );
+        for ( auto & [name, values] : M_values )
+            storageValuesNames.push_back( name );
+    }
+
+    if ( M_worldComm->globalComm().size() > 1 )
+    {
+        auto dataBroadcasted = std::make_tuple( std::move(M_times), std::move( storageValuesNames ) );
+        boost::mpi::broadcast( M_worldComm->globalComm(), dataBroadcasted, M_worldComm->masterRank() );
+        std::tie( M_times, storageValuesNames ) = std::move( dataBroadcasted );
+
+        if ( !M_worldComm->isMasterRank() )
+        {
+            for ( std::string const& name : storageValuesNames )
+            {
+                ModelMeasuresStorageValues mmsv( name );
+                M_values.erase( name );
+                M_values.emplace( std::make_pair( name, std::move( mmsv ) ) );
+            }
+        }
+
+        for ( auto & [name, values] : M_values )
+            boost::mpi::broadcast( M_worldComm->globalComm(), values, M_worldComm->masterRank() );
+    }
+
+
+    this->resetState();
+}
+
+void
+ModelMeasuresStorage::restartSeqImpl( double time )
+{
     fs::path pdir(M_directory);
     std::ifstream ifile( (pdir/"metadata.json").string() );
     if ( !ifile )
@@ -175,8 +210,6 @@ ModelMeasuresStorage::restart( double time )
             }
         }
     }
-
-    this->resetState();
 }
 
 
