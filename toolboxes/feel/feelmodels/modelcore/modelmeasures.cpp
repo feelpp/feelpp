@@ -149,9 +149,8 @@ ModelMeasuresStorage::restart( double time )
 
     if ( M_worldComm->globalComm().size() > 1 )
     {
-        auto dataBroadcasted = std::make_tuple( std::move(M_times), std::move( storageValuesNames ) );
+        auto dataBroadcasted = std::forward_as_tuple( M_times, storageValuesNames );
         boost::mpi::broadcast( M_worldComm->globalComm(), dataBroadcasted, M_worldComm->masterRank() );
-        std::tie( M_times, storageValuesNames ) = std::move( dataBroadcasted );
 
         if ( !M_worldComm->isMasterRank() )
         {
@@ -166,7 +165,6 @@ ModelMeasuresStorage::restart( double time )
         for ( auto & [name, values] : M_values )
             boost::mpi::broadcast( M_worldComm->globalComm(), values, M_worldComm->masterRank() );
     }
-
 
     this->resetState();
 }
