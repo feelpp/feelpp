@@ -99,18 +99,43 @@ splitByLines( std::string const& input )
   
 
 
-Table::Table()
+Table::Table( int nRow, int nCol, Table::MemoryLayout ml )
     :
-    M_nRow(0), M_nCol(0), M_format( new TableImpl::Format{} )
+    M_memoryLayout( ml ),
+    M_nRow(nRow), M_nCol(nCol),
+    M_format( new TableImpl::Format{} )
 {}
 
 Table::Table( Table const& t )
     :
+    M_memoryLayout( t.M_memoryLayout ),
     M_nRow( t.M_nRow ),
     M_nCol( t.M_nCol ),
     M_cells( t.M_cells ),
     M_format( new TableImpl::Format{t.format()} )
 {}
+
+void
+Table::resize( int nRow, int nCol )
+{
+    if ( (nRow == M_nRow) && (nCol == M_nCol) )
+        return;
+
+    std::vector<TableImpl::Cell> cellsSave = std::move( M_cells );
+    int nRowSave = M_nRow, nColSave = M_nCol;
+    M_cells.resize( nRow*nCol );
+    M_nRow = nRow;
+    M_nCol = nCol;
+    for (int i=0;i<std::min(M_nRow,nRowSave);++i)
+    {
+        for (int j=0;j<std::min(M_nCol,nColSave);++j)
+        {
+            int id = M_memoryLayout == MemoryLayout::RowMajor? i*nColSave+j : i+j*nRowSave;
+            this->operator()(i,j) = std::move( cellsSave[id] );
+        }
+    }
+}
+
 
 std::vector<Printer::OutputText>
 Table::toOutputText( TableImpl::Format const& format ) const
