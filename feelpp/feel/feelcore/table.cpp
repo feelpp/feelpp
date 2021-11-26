@@ -104,7 +104,9 @@ Table::Table( int nRow, int nCol, Table::MemoryLayout ml )
     M_memoryLayout( ml ),
     M_nRow(nRow), M_nCol(nCol),
     M_format( new TableImpl::Format{} )
-{}
+{
+    M_cells.resize( nRow*nCol );
+}
 
 Table::Table( Table const& t )
     :
