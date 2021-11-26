@@ -183,20 +183,27 @@ private:
 class ModelMeasuresStorageTable
 {
 public :
-    ModelMeasuresStorageTable( std::string const& name, Feel::Table && table ) : M_name( name ), M_table( std::move( table ) ) {}
+    ModelMeasuresStorageTable( std::string const& name ) : M_name( name ) {}
     ModelMeasuresStorageTable( ModelMeasuresStorageTable && ) = default;
     ModelMeasuresStorageTable( ModelMeasuresStorageTable const& ) = delete;
 
     Feel::Table const& table() const { return M_table; }
-    //Feel::Table & table() { return M_table; }
-    void exportCSV( std::string const& directory, size_type index = invalid_v<size_type> );
 
-    bool isUpdated() const { return false; }
-    void resetState() {}
+    void setTable( Feel::Table && table )
+        {
+            M_table = std::move( table );
+            M_stateUpdated = true;
+        }
+
+    void saveCSV( std::string const& directory, size_type index = invalid_v<size_type> );
+
+    bool isUpdated() const { return M_stateUpdated; }
+    void resetState() { M_stateUpdated = false; }
 
 private:
     std::string M_name;
     Feel::Table M_table;
+    bool M_stateUpdated = false;
 };
 
 

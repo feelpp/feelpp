@@ -56,9 +56,9 @@ ModelMeasuresStorage::value( std::string const& name, std::string const& key ) c
 void
 ModelMeasuresStorage::setTable( std::string const& name, Feel::Table && table )
 {
-    ModelMeasuresStorageTable mmst( name, std::move( table ) );
-    M_tables.erase( name );
-    M_tables.emplace( std::make_pair( name, std::move( mmst ) ) );
+    if ( M_tables.find( name ) == M_tables.end() )
+        M_tables.emplace( std::make_pair( name, ModelMeasuresStorageTable(name) ) );
+    M_tables.at( name ).setTable( std::move( table ) );
 }
 
 void
@@ -81,7 +81,7 @@ ModelMeasuresStorage::save( double time )
                 values.saveCSV( M_directory );
         for ( auto & [name, table] : M_tables )
             if ( table.isUpdated() )
-                table.exportCSV( M_directory );
+                table.saveCSV( M_directory,M_times.size()-1 );
 
         nl::json jmeta;
         jmeta["times"] = M_times;
@@ -325,9 +325,18 @@ ModelMeasuresStorageValues::restart( std::string const& directory, int restartIn
 
 
 void
-ModelMeasuresStorageTable::exportCSV( std::string const& directory, size_type index )
+ModelMeasuresStorageTable::saveCSV( std::string const& directory, size_type index )
 {
-    CHECK( false ) << "TODO";
+    fs::path pdir(directory);
+    if ( !fs::exists( pdir ) )
+        fs::create_directories( pdir );
+
+    std::string filename_wide = M_name.empty()? "table" : fmt::format("table.{}",M_name);
+    std::string filename = index!= invalid_v<size_type>? fmt::format("{}.{}.csv",filename_wide,index) : fmt::format("{}.csv",filename_wide);
+
+    //std::ofstream ofile( this->filename_CSV( pdir ), std::ios::trunc);
+    std::ofstream ofile( (pdir/filename).string(), std::ios::trunc);
+    M_table.exportCSV( ofile );
 }
 
 
