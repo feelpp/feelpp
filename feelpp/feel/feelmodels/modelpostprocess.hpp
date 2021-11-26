@@ -227,6 +227,29 @@ public :
         int M_nPoints;
     };
 
+    struct MeasuresOutput
+    {
+        MeasuresOutput()
+            :
+            M_type( "values" ),
+            M_includeCoordinates( false )
+            {}
+        MeasuresOutput( MeasuresOutput const& ) = default;
+        MeasuresOutput( MeasuresOutput && ) = default;
+        MeasuresOutput& operator=( MeasuresOutput const& ) = default;
+        MeasuresOutput& operator=( MeasuresOutput && ) = default;
+        void setup( nl::json const& jarg );
+
+        std::string const& name() const { return M_name; }
+        std::string const& type() const { return M_type; }
+        bool includeCoordinates() const { return M_includeCoordinates; }
+
+        void setName( std::string const& name ) { M_name = name; }
+    private :
+        std::string M_name, M_type;
+        bool M_includeCoordinates;
+    };
+
     ModelPostprocessPointPosition( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
         super_type( world )
@@ -236,19 +259,23 @@ public :
     ModelPostprocessPointPosition& operator=( ModelPostprocessPointPosition const& ) = default;
     ModelPostprocessPointPosition& operator=( ModelPostprocessPointPosition && ) = default;
 
+    //! name given to the postprocessing
     std::string const& name() const { return M_name; }
-
+    //! points (over each geo) where postprocessing is applied
     std::vector<std::shared_ptr<PointsOverGeometry>> const& pointsOverAllGeometry() const { return M_pointsOverAllGeometry; }
-
+    //! return fields names used in postprocessing
     std::set<std::string> const& fields() const { return M_fields; }
-    //std::set<std::string> & fields() { return M_fields; }
-
+    //! expressions used in postprocessing
     std::map<std::string,std::tuple<ModelExpression,std::string> > const& expressions() const { return M_exprs; }
+    //! return info about measures output
+    MeasuresOutput const& measuresOutput() const { return M_measuresOutput; }
+
 
     void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setFields( std::set<std::string> const& fields ) { M_fields = fields; }
     void addFields( std::string const& field ) { M_fields.insert( field ); }
+
     void setParameterValues( std::map<std::string,double> const& mp );
 
     template <typename SymbolsExprType>
@@ -274,6 +301,7 @@ public :
     std::vector<std::shared_ptr<PointsOverGeometry>> M_pointsOverAllGeometry;
     std::set<std::string> M_fields;
     std::map<std::string,std::tuple<ModelExpression,std::string> > M_exprs; // name -> ( expr, tag )
+    MeasuresOutput M_measuresOutput;
 };
 
 //! store informations require by the postprocessing Norm
