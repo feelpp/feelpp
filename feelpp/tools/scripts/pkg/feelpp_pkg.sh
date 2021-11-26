@@ -26,19 +26,19 @@ fi
 
 #PBUILDER_RESULTS=/var/lib/buildkite-agent/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
 # local debug build
-PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
+PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}/${CHANNEL}/
 if [ ! -f $HOME/pbuilder/${DIST}_base.tgz ]; then
-    echo "--- creating distribution $DIST"
+    echo "--- creating distribution $DIST results: ${PBUILDER_RESULTS}"
     pbuilder-dist $DIST create
 fi
-echo "--- start from clean slate"
+echo "--- start from clean slate in ${PBUILDER_RESULTS}"
 if [ -d build-$DIST ]; then rm -rf build-$DIST; fi
 
 if [ -n "$(ls -A ${PBUILDER_RESULTS}/ 2>/dev/null)" ];
 then
     echo "removing previous builds in $PBUILDER_RESULTS";
     ls -1 ${PBUILDER_RESULTS}/
-    rm -f "${PBUILDER_RESULTS}/*";
+    rm -f ${PBUILDER_RESULTS}/*;
 else
     echo "no files in ${PBUILDER_RESULTS}/";
 fi
