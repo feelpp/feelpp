@@ -292,6 +292,23 @@ ModelPostprocessPointPosition::PointsOverSegment::updatePointsSampling( coord_va
 }
 
 void
+ModelPostprocessPointPosition::MeasuresOutput::setup( nl::json const& jarg )
+{
+    if ( jarg.contains( "name" ) )
+        M_name = jarg.at("name").get<std::string>();
+    if ( jarg.contains( "type" ) )
+        M_type = jarg.at("type").get<std::string>();
+    if ( jarg.contains( "include_coordinates" ) )
+    {
+        auto const& j_include_coordinates = jarg.at("include_coordinates");
+        if ( j_include_coordinates.is_boolean() )
+            M_includeCoordinates = j_include_coordinates.get<bool>();
+        else if ( j_include_coordinates.is_string() )
+            M_includeCoordinates = boost::lexical_cast<bool>( j_include_coordinates.get<std::string>() );
+    }
+}
+
+void
 ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes const& indexes )
 {
     std::ostringstream pt_ostr;
@@ -388,6 +405,10 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
         }
     }
 
+    if ( jData.contains( "output" ) )
+        M_measuresOutput.setup( jData.at("output") );
+    if ( M_measuresOutput.name().empty() && M_measuresOutput.type() != "values" )
+        M_measuresOutput.setName( this->name() );
 }
 
 void
