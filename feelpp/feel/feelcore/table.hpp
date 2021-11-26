@@ -146,16 +146,16 @@ public :
     void
     add_row( T && rowValues ) { this->addRowOrColImpl<true>( std::forward<T>( rowValues ) ); }
 
-    //! set row at index \i in table from initializer_list \rowValues (i should be less than M_nRow, size of rowValues should be equal to M_nCol )
-    void set_row( int i, std::initializer_list<variant_value_type> && rowValues )
+    //! set row at index \i in table from initializer_list \rowValues from row index j (i should be less than M_nRow, size of rowValues should be <= M_nCol-j )
+    void set_row( int i, std::initializer_list<variant_value_type> && rowValues, int start_j = 0 )
         {
-            this->set_row<std::initializer_list<variant_value_type>>( i,std::forward<std::initializer_list<variant_value_type>>( rowValues ) );
+            this->set_row<std::initializer_list<variant_value_type>>( i,std::forward<std::initializer_list<variant_value_type>>( rowValues ), start_j );
         }
 
-    //! set row at index \i in table from an iterable data \rowValues (i should be less than M_nRow, size of rowValues should be equal to M_nCol )
+    //! set row at index \i in table from an iterable data \rowValues from col index j (i should be less than M_nRow, size of rowValues should be <=  M_nCol-j )
     template <typename T,std::enable_if_t< is_iterable_v<T>, bool> = true >
     void
-    set_row( int i, T && rowValues ) { this->setRowOrColImpl<true>( i,  std::forward<T>( rowValues ) ); }
+    set_row( int i, T && rowValues, int start_j = 0 ) { this->setRowOrColImpl<true>( i,  std::forward<T>( rowValues ), start_j ); }
 
     //! add column in table ( size of \colValues should be equal to M_nRow if table is non empty)
     void add_col( std::initializer_list<variant_value_type> && colValues )
@@ -168,16 +168,16 @@ public :
     void
     add_col( T && colValues ) { this->addRowOrColImpl<false>( std::forward<T>( colValues ) ); }
 
-    //! set column at index \i in table from initializer_list \colValues (j should be less than M_nCol, size of colValues should be equal to M_nRow )
-    void set_col( int j, std::initializer_list<variant_value_type> && colValues )
+    //! set column at index \i in table from initializer_list \colValues from row index i (j should be less than M_nCol, size of colValues should be <= M_nRow-i )
+    void set_col( int j, std::initializer_list<variant_value_type> && colValues, int start_i = 0 )
         {
-            this->set_col<std::initializer_list<variant_value_type>>( j,std::forward<std::initializer_list<variant_value_type>>( colValues ) );
+            this->set_col<std::initializer_list<variant_value_type>>( j,std::forward<std::initializer_list<variant_value_type>>( colValues ), start_i );
         }
 
-    //! set column at index \i in table from initializer_list \colValues (j should be less than M_nCol, size of colValues should be equal to M_nRow )
+    //! set column at index \i in table from an iterable data \colValues from row index i (j should be less than M_nCol, size of colValues should be <= M_nRow-i )
     template <typename T,std::enable_if_t< is_iterable_v<T>, bool> = true >
     void
-    set_col( int j, T && colValues ) { this->setRowOrColImpl<false>( j,  std::forward<T>( colValues ) ); }
+    set_col( int j, T && colValues, int start_i = 0 ) { this->setRowOrColImpl<false>( j,  std::forward<T>( colValues ), start_i ); }
 
     //! get table format
     TableImpl::Format& format() { return *M_format; }
@@ -207,7 +207,7 @@ private :
 
     template <bool IsRow, typename T,std::enable_if_t< is_iterable_v<T>, bool> = true >
     void
-    setRowOrColImpl( int i, T && values );
+    setRowOrColImpl( int i, T && values, int start_j );
 
 private :
     Table::MemoryLayout M_memoryLayout;
@@ -411,7 +411,7 @@ Table::addRowOrColImpl( T && values )
 
 template <bool IsRow, typename T,std::enable_if_t< is_iterable_v<T>, bool> >
 void
-Table::setRowOrColImpl( int i, T && values )
+Table::setRowOrColImpl( int i, T && values, int start_j )
 {
     size_t containerSize = std::distance( values.begin(), values.end() );
 
@@ -420,10 +420,10 @@ Table::setRowOrColImpl( int i, T && values )
         if ( i < 0 || i >= M_nRow )
             throw std::out_of_range( fmt::format("row index i={} is invalid, should respect : 0 <= i < {}",i,M_nRow) );
 
-        if ( M_nRow > 0 && containerSize != M_nCol )
-            throw std::runtime_error( fmt::format("number of values given for setting the row is invalid : {} but should be {}",containerSize,M_nCol) );
+        if ( /*M_nRow > 0 &&*/ containerSize > (M_nCol-start_j) )
+            throw std::runtime_error( fmt::format("number of values given for setting the row is invalid : {} but should be less or equal to {}",containerSize,M_nCol-start_j ) );
 
-        int j = 0;
+        int j = start_j;
         for ( auto && rowValue : std::forward<T>( values ) )
             this->operator()(i,j++) = std::forward<decltype(rowValue)>(rowValue);// TableImpl::Cell(rowValue);
     }
@@ -431,10 +431,10 @@ Table::setRowOrColImpl( int i, T && values )
     {
         if ( i < 0 || i >= M_nCol )
             throw std::out_of_range( fmt::format("col index j={} is invalid, should respect : 0 <= j < {}",i,M_nCol) );
-        if ( M_nCol > 0 && containerSize != M_nRow )
-            throw std::runtime_error( fmt::format("number of values given for setting the column is invalid : {} but should be {}",containerSize,M_nRow) );
+        if ( /*M_nCol > 0 &&*/ containerSize > (M_nRow-start_j) )
+            throw std::runtime_error( fmt::format("number of values given for setting the column is invalid : {} but should be less or equal to {}",containerSize,M_nRow-start_j) );
 
-        int j = 0;
+        int j = start_j;
         for ( auto && colValue : std::forward<T>( values ) )
             this->operator()(j++,i) = std::forward<decltype(colValue)>(colValue);// TableImpl::Cell(rowValue);
     }
