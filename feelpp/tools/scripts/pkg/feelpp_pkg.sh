@@ -101,7 +101,11 @@ elif [ "$COMPONENT" = "feelpp-mor" ]; then
 fi
 make package_source
 echo "--- cloning feelpp.pkg"
-git clone -q https://github.com/feelpp/feelpp.pkg.git
+if  [ -z "$BRANCH" ];
+    git clone -q https://github.com/feelpp/feelpp.pkg.git
+else
+    git clone -b $BRANCH -q https://github.com/feelpp/feelpp.pkg.git
+fi
 # local debug build
 #ln -s ../../Debian/feelpp.pkg
 
