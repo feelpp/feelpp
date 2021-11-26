@@ -101,7 +101,7 @@ elif [ "$COMPONENT" = "feelpp-mor" ]; then
 fi
 make package_source
 echo "--- cloning feelpp.pkg"
-if  [ -z "$BRANCH" ];
+if  [ -z "$BRANCH" ]; then
     git clone -q https://github.com/feelpp/feelpp.pkg.git
 else
     git clone -b $BRANCH -q https://github.com/feelpp/feelpp.pkg.git
