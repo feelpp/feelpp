@@ -173,7 +173,7 @@
                               ],
                     "index2":["field","expr"]
                 },
-                "Points_pointsBIS_%2%_temperature_%1_1%":
+                "Points_pointsBIS_%1_1%_%2%_temperature":
                 {
                     "value":"%1_2%",
                     "tolerance":1e-1,
