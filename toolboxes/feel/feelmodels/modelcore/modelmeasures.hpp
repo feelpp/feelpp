@@ -199,6 +199,13 @@ public :
 
     bool isUpdated() const { return M_stateUpdated; }
     void resetState() { M_stateUpdated = false; }
+private :
+    std::string filename_CSV( fs::path const& pdir,size_type index ) const
+        {
+            std::string filename_wide = M_name.empty()? "table" : fmt::format("table.{}",M_name);
+            std::string filename = index!= invalid_v<size_type>? fmt::format("{}.{}.csv",filename_wide,index) : fmt::format("{}.csv",filename_wide);
+            return (pdir/filename).string();
+        }
 
 private:
     std::string M_name;
