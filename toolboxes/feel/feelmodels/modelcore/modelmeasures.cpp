@@ -331,11 +331,7 @@ ModelMeasuresStorageTable::saveCSV( std::string const& directory, size_type inde
     if ( !fs::exists( pdir ) )
         fs::create_directories( pdir );
 
-    std::string filename_wide = M_name.empty()? "table" : fmt::format("table.{}",M_name);
-    std::string filename = index!= invalid_v<size_type>? fmt::format("{}.{}.csv",filename_wide,index) : fmt::format("{}.csv",filename_wide);
-
-    //std::ofstream ofile( this->filename_CSV( pdir ), std::ios::trunc);
-    std::ofstream ofile( (pdir/filename).string(), std::ios::trunc);
+    std::ofstream ofile( this->filename_CSV( pdir, index ), std::ios::trunc);
     M_table.exportCSV( ofile );
 }
 
