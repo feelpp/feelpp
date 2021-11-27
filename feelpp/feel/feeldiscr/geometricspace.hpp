@@ -205,6 +205,8 @@ public :
             return M_t.size();
         }
 
+        std::vector<node_type> const& points() const { return M_t; }
+
         bool ctxHaveBeenMpiBroadcasted() const { return M_ctxHaveBeenMpiBroadcasted; }
 
         void removeCtx()
