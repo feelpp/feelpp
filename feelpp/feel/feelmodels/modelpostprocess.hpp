@@ -231,8 +231,7 @@ public :
     {
         MeasuresOutput()
             :
-            M_type( "values" ),
-            M_includeCoordinates( false )
+            M_type( "values" )
             {}
         MeasuresOutput( MeasuresOutput const& ) = default;
         MeasuresOutput( MeasuresOutput && ) = default;
@@ -242,17 +241,16 @@ public :
 
         std::string const& name() const { return M_name; }
         std::string const& type() const { return M_type; }
-        bool includeCoordinates() const { return M_includeCoordinates; }
 
         void setName( std::string const& name ) { M_name = name; }
     private :
         std::string M_name, M_type;
-        bool M_includeCoordinates;
     };
 
     ModelPostprocessPointPosition( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
-        super_type( world )
+        super_type( world ),
+        M_includeCoordinates( false )
         {}
     ModelPostprocessPointPosition( ModelPostprocessPointPosition const& ) = default;
     ModelPostprocessPointPosition( ModelPostprocessPointPosition&& ) = default;
@@ -267,6 +265,8 @@ public :
     std::set<std::string> const& fields() const { return M_fields; }
     //! expressions used in postprocessing
     std::map<std::string,std::tuple<ModelExpression,std::string> > const& expressions() const { return M_exprs; }
+    //! include coordinates measure in post processing
+    bool includeCoordinates() const { return M_includeCoordinates; }
     //! return info about measures output
     MeasuresOutput const& measuresOutput() const { return M_measuresOutput; }
 
@@ -301,6 +301,7 @@ public :
     std::vector<std::shared_ptr<PointsOverGeometry>> M_pointsOverAllGeometry;
     std::set<std::string> M_fields;
     std::map<std::string,std::tuple<ModelExpression,std::string> > M_exprs; // name -> ( expr, tag )
+    bool M_includeCoordinates;
     MeasuresOutput M_measuresOutput;
 };
 

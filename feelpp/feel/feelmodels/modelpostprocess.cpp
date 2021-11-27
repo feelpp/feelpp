@@ -298,14 +298,6 @@ ModelPostprocessPointPosition::MeasuresOutput::setup( nl::json const& jarg )
         M_name = jarg.at("name").get<std::string>();
     if ( jarg.contains( "type" ) )
         M_type = jarg.at("type").get<std::string>();
-    if ( jarg.contains( "include_coordinates" ) )
-    {
-        auto const& j_include_coordinates = jarg.at("include_coordinates");
-        if ( j_include_coordinates.is_boolean() )
-            M_includeCoordinates = j_include_coordinates.get<bool>();
-        else if ( j_include_coordinates.is_string() )
-            M_includeCoordinates = boost::lexical_cast<bool>( j_include_coordinates.get<std::string>() );
-    }
 }
 
 void
@@ -314,11 +306,11 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
     std::ostringstream pt_ostr;
     write_json( pt_ostr, M_p );
     std::istringstream pt_istream( pt_ostr.str() );
-    nl::json jData;
-    pt_istream >> jData;
+    nl::json jarg;
+    pt_istream >> jarg;
 
-    bool hasCoord = jData.contains( "coord" );
-    bool hasMarker = jData.contains( "marker" );
+    bool hasCoord = jarg.contains( "coord" );
+    bool hasMarker = jarg.contains( "marker" );
 
 #if 0
     // coord or marker is necessary
@@ -336,7 +328,7 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
     }
     if ( hasCoord )
     {
-        nl::json const& jCoord = jData.at( "coord" );
+        nl::json const& jCoord = jarg.at( "coord" );
 
         auto poc = std::make_shared<PointsOverCoordinates>();
         poc->setup( jCoord, this->worldComm(), M_directoryLibExpr, indexes );
@@ -345,10 +337,10 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
 
     } // hasCoord
 
-    bool hasOverGeo = jData.contains( "over_geometry" );
+    bool hasOverGeo = jarg.contains( "over_geometry" );
     if ( hasOverGeo )
     {
-        auto const& jOverGeo = jData.at( "over_geometry" );
+        auto const& jOverGeo = jarg.at( "over_geometry" );
         for ( auto const& el : jOverGeo.items() )
         {
             //std::cout << "el.key() " << el.key() << std::endl;
@@ -364,9 +356,9 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
         }
     }
 
-    if ( jData.contains( "fields" ) )
+    if ( jarg.contains( "fields" ) )
     {
-        auto const& jFields = jData.at( "fields" );
+        auto const& jFields = jarg.at( "fields" );
 
         std::vector<std::string> fieldList;
         if ( jFields.is_string() )
@@ -386,9 +378,9 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
             this->addFields( indexes.replace( field ) );
     }
 
-    if ( jData.contains( "expressions" ) )
+    if ( jarg.contains( "expressions" ) )
     {
-        auto const& jExprs = jData.at( "expressions" );
+        auto const& jExprs = jarg.at( "expressions" );
 
         for ( auto const& el : jExprs.items() )
         {
@@ -404,9 +396,17 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
             M_exprs.emplace( exprName, std::make_tuple( std::move( mexpr ), "" ) );
         }
     }
+    if ( jarg.contains( "include_coordinates" ) )
+    {
+        auto const& j_include_coordinates = jarg.at("include_coordinates");
+        if ( j_include_coordinates.is_boolean() )
+            M_includeCoordinates = j_include_coordinates.get<bool>();
+        else if ( j_include_coordinates.is_string() )
+            M_includeCoordinates = boost::lexical_cast<bool>( j_include_coordinates.get<std::string>() );
+    }
 
-    if ( jData.contains( "output" ) )
-        M_measuresOutput.setup( jData.at("output") );
+    if ( jarg.contains( "output" ) )
+        M_measuresOutput.setup( jarg.at("output") );
     if ( M_measuresOutput.name().empty() && M_measuresOutput.type() != "values" )
         M_measuresOutput.setName( this->name() );
 }
