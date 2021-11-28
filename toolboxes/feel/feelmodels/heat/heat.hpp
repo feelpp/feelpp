@@ -567,8 +567,6 @@ template <typename ModelFieldsType, typename SymbolsExpr, typename ModelMeasures
 void
 Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities )
 {
-    //bool hasMeasure = false;
-
     auto const& t = mfields.field( FieldTag::temperature(this), "temperature" );
 
     // compute measures
@@ -581,30 +579,6 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
 
     // execute common post process and save measures
     super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, M_measurePointsEvaluation, symbolsExpr, mfields, mquantities );
-#if 0
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, symbolsExpr, mfields );
-    bool hasMeasureQuantity = this->updatePostProcessMeasuresQuantities( mquantities, symbolsExpr );
-    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint || hasMeasureQuantity )
-        hasMeasure = true;
-#if 0
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
-#endif
-    if ( this->postProcessMeasures().isUpdated() )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasures().setValue( "time", time );
-        this->postProcessMeasures().save();
-        //this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
-#endif
 }
 
 } // namespace FeelModels
