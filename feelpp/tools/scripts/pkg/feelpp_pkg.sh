@@ -8,6 +8,10 @@ set -eo pipefail
 scriptdir=$PWD/$(dirname $0)
 source $(dirname $0)/feelpp_pkg_common.sh
 
+echo "DIST: ${DIST}"
+echo "BRANCH: ${BRANCH}"
+echo "FLAVOR: ${FLAVOR}"
+
 #OTHERMIRROR=
 #if [ "$COMPONENT" = "feelpp-toolboxes" ]; then
 #    OTHERMIRROR="deb https://dl.bintray.com/feelpp/ubuntu $DIST $CHANNEL"
@@ -100,7 +104,7 @@ elif [ "$COMPONENT" = "feelpp-mor" ]; then
     cd build-$DIST && ../configure -r --root=../mor    
 fi
 make package_source
-echo "--- cloning feelpp.pkg"
+echo "--- cloning feelpp.pkg: ${BRANCH}"
 if  [ -z "$BRANCH" ]; then
     git clone -q https://github.com/feelpp/feelpp.pkg.git
 else
