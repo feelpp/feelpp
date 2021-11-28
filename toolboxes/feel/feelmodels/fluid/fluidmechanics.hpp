@@ -1928,8 +1928,9 @@ public:
 #endif
 
     // measure tools for points evaluation
-    typedef MeasurePointsEvaluation<space_velocity_type,space_pressure_type> measure_points_evaluation_type;
+    typedef MeasurePointsEvaluation< hana::tuple<GeometricSpace<mesh_type>> > measure_points_evaluation_type;
     typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
+
 
     using force_type = Eigen::Matrix<typename super_type::value_type, nDim, 1, Eigen::ColMajor>;
     //___________________________________________________________________________________//
@@ -3212,16 +3213,14 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::executePostProce
     {
         auto measuredForce = this->computeForce( markedfaces( this->mesh(),ppForces.meshMarkers() ), symbolsExpr );
         std::string name = ppForces.name();
-        this->postProcessMeasuresIO().setMeasure( "drag_"+name, measuredForce(0,0) );
-        this->postProcessMeasuresIO().setMeasure( "lift_"+name, measuredForce(1,0) );
-        hasMeasure = true;
+        this->postProcessMeasures().setValue( "drag_"+name, measuredForce(0,0) );
+        this->postProcessMeasures().setValue( "lift_"+name, measuredForce(1,0) );
     }
     // flow rate measures
     for ( auto const& ppFlowRate : M_postProcessMeasuresFlowRate )
     {
         double valFlowRate = this->computeFlowRate( ppFlowRate.meshMarkers(), ppFlowRate.useExteriorNormal() );
-        this->postProcessMeasuresIO().setMeasure("flowrate_"+ppFlowRate.name(),valFlowRate);
-        hasMeasure = true;
+        this->postProcessMeasures().setValue( "flowrate_"+ppFlowRate.name(),valFlowRate);
     }
 
     if ( true )
@@ -3235,37 +3234,22 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::executePostProce
         {
             double pressureSum = this->computePressureSum();
             double pressureMean = pressureSum/area;
-            this->postProcessMeasuresIO().setMeasure("pressure_sum",pressureSum);
-            this->postProcessMeasuresIO().setMeasure("pressure_mean",pressureMean);
-            hasMeasure = true;
+            this->postProcessMeasures().setValue("pressure_sum",pressureSum);
+            this->postProcessMeasures().setValue("pressure_mean",pressureMean);
         }
         if ( hasMeasuresVelocityDivergence )
         {
             double velocityDivergenceSum = this->computeVelocityDivergenceSum();
             double velocityDivergenceMean = velocityDivergenceSum/area;
             double velocityDivergenceNormL2 = this->computeVelocityDivergenceNormL2();
-            this->postProcessMeasuresIO().setMeasure("velocity_divergence_sum",velocityDivergenceNormL2);
-            this->postProcessMeasuresIO().setMeasure("velocity_divergence_mean",velocityDivergenceMean);
-            this->postProcessMeasuresIO().setMeasure("velocity_divergence_normL2",velocityDivergenceNormL2);
-            hasMeasure = true;
+            this->postProcessMeasures().setValue("velocity_divergence_sum",velocityDivergenceNormL2);
+            this->postProcessMeasures().setValue("velocity_divergence_mean",velocityDivergenceMean);
+            this->postProcessMeasures().setValue("velocity_divergence_normL2",velocityDivergenceNormL2);
         }
     }
 
-
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
-    bool hasMeasureQuantity = this->updatePostProcessMeasuresQuantities( mquantities, symbolsExpr );
-    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint || hasMeasureQuantity )
-        hasMeasure = true;
-
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
+    // execute common post process and save measures
+    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, M_measurePointsEvaluation, symbolsExpr, mfields, mquantities );
 }
 
 
