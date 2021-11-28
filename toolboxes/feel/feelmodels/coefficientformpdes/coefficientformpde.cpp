@@ -272,8 +272,11 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initPostProcess()
     auto geospaceWithNames = std::make_pair( std::set<std::string>({this->keyword()}), geospace );
     auto meshes = hana::make_tuple( geospaceWithNames );
     M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( meshes );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
+    for ( auto /*const*/& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
+    {
+        evalPoints.updateForUse( this->symbolsExpr() );
         M_measurePointsEvaluation->init( evalPoints );
+    }
 
     double tElpased = this->timerTool("Constructor").stop("initPostProcess");
     this->log("CoefficientFormPDE","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );

@@ -412,6 +412,7 @@ template <typename ModelFieldsType, typename SymbolsExpr, typename ModelMeasures
 void
 CoefficientFormPDE<ConvexType,BasisUnknownType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities )
 {
+#if 0
     bool hasMeasure = false;
     bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields );
     bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields );
@@ -427,6 +428,9 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::executePostProcessMeasures( dou
         this->postProcessMeasuresIO().exportMeasures();
         this->upload( this->postProcessMeasuresIO().pathFile() );
     }
+#endif
+    // execute common post process and save measures
+    super_type::executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), M_measurePointsEvaluation, symbolsExpr, mfields, mquantities );
 }
 
 } // namespace Feel
