@@ -57,7 +57,7 @@ namespace FeelModels
  * Toolbox MixedPoisson
  * @ingroup Toolboxes
  */
-template<typename ConvexType, int Order, template<uint16_type> class PolySetType = Scalar, int E_Order = 4>
+template<typename ConvexType, int Order, template<uint16_type> class PolySetType = Vectorial, int E_Order = 4>
 class MixedPoisson : public ModelNumerical,
                      public ModelPhysics<ConvexType::nDim>,
                      public std::enable_shared_from_this<MixedPoisson<ConvexType, Order, PolySetType, E_Order> >
@@ -83,16 +83,16 @@ public:
     static const uint16_type expr_order = (Order+E_Order)*nOrderGeo;
 
     template<uint16_type Dim>
-    using polyset_potential_type = PolySetType<Dim>;
+    using polyset_flux_type = PolySetType<Dim>;
 
     template<uint16_type Dim, class P>
-    struct RankUp;
+    struct RankDown { using type = Vectorial<Dim>; };
     template<uint16_type Dim>
-    struct RankUp<Dim, Scalar<Dim>> { using type = Vectorial<Dim>; };
+    struct RankDown<Dim, Vectorial<Dim>> { using type = Scalar<Dim>; };
+    // template<uint16_type Dim>
+    // struct RankUp<Dim, Vectorial<Dim>> { using type = Tensor2Symm<Dim>; };
     template<uint16_type Dim>
-    struct RankUp<Dim, Vectorial<Dim>> { using type = Tensor2Symm<Dim>; };
-    template<uint16_type Dim>
-    using polyset_flux_type = typename RankUp<Dim, polyset_potential_type<Dim>>::type;
+    using polyset_potential_type = typename RankDown<Dim, polyset_flux_type<Dim>>::type;
 
     // Vh
     using basis_flux_type = Lagrange<Order, polyset_flux_type, Discontinuous>;
@@ -138,6 +138,7 @@ public:
     using product2_space_ptrtype = std::shared_ptr<product2_space_type>;
 
     static constexpr bool is_scalar = space_potential_type::is_scalar;
+    static constexpr bool is_tensor2symm = space_flux_type::is_tensor2symm;
 
     // materials properties
     typedef MaterialsProperties<nRealDim> materialsproperties_type;
