@@ -359,7 +359,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     // point measures
     auto geospace = std::make_shared<GeometricSpace<mesh_type>>( this->mesh() );
-    auto geospaceWithNames = std::make_pair( std::set<std::string>({"heat"}), geospace );
+    auto geospaceWithNames = std::make_pair( std::set<std::string>({this->keyword()}), geospace );
     auto meshes = hana::make_tuple( geospaceWithNames );
     M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( meshes );
     for ( auto /*const*/& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
@@ -373,12 +373,6 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     {
         if ( this->doRestart() )
             this->postProcessMeasures().restart( this->timeInitial() );
-#if 0
-        if ( this->doRestart() )
-            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-        else
-            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
-#endif
     }
 
     double tElpased = this->timerTool("Constructor").stop("initPostProcess");

@@ -218,7 +218,7 @@ public:
     typedef exporter_ptrtype exporter_manager_ptrtype;
 
     // Measure tools for points evaluation
-    typedef MeasurePointsEvaluation<space_levelset_type> measure_points_evaluation_type;
+    typedef MeasurePointsEvaluation< hana::tuple<GeometricSpace<mesh_type>> > measure_points_evaluation_type;
     typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     //--------------------------------------------------------------------//
