@@ -179,6 +179,17 @@ public:
         }
     }
 
+    void initPostProcess() override {
+        super_type::initPostProcess();
+        int i = 0;
+        for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( this->M_fluxKey, "Coupling") )
+        {
+            auto fields = this->modelProperties().postProcess().exports( name ).fields();
+            M_circuits[i++]->addExportedVariables(std::vector<std::string>(fields.begin(), fields.end()) );
+        }
+    }
+
+
     int constantSpacesSize() const override { return this->M_bcIntegralMarkerManagement.markerIntegralBC().size() + this->M_coupledBC.size(); }
     int nbIbc() const { return this->constantSpacesSize() - 2*this->M_coupledBC.size(); }
 

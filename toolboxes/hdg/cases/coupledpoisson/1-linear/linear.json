@@ -105,45 +105,56 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "use-model-name":1,
+        "buffer":
         {
-            "fields":["potential","flux"]
-        },
-        "Measures":
-        {
-            "Norm":
+            "Exports":
             {
-                "potential_error":
-                {
-                    "type":"L2-error",
-                    "field": "potential",
-                    // "solution": "b+(Cb*a*c*exp((H-x)/(k*L*L)))*cos(c*t)+a*sin(c*t):x:y:z:a:b:c:Cb:H:k:L:t",
-                    "solution": "10+Pi*exp(2-x)*cos(2*Pi*t)+0.5*sin(2*Pi*t):x:t",
-                    "markers":"omega"
-                },
-                "flux_error":
-                {
-                    "type":"L2-error",
-                    "field":"flux",
-                    // "solution":"{0,0,Cb*a*c/L/L*exp((H-x)/(k*L*L))}:x:y:z:t:Cb:a:c:L:H:k",
-                    "solution":"{Pi*exp(2-x)*cos(2*Pi*t),0,0}:x:y:z:t",
-                    "markers":"omega"
-                }
+                "fields":["Pi_1.phi","Rbuffer.p.v","R.i"]
             }
         },
-        "Checkers":
+        "poisson":
         {
+            "Exports":
+            {
+                "fields":["potential","flux"]
+            },
             "Measures":
             {
-                "Norm_potential_error_L2-error":
+                "Norm":
                 {
-                    "value":0,
-                    "tolerance":1
-                },
-                "Norm_flux_error_L2-error":
+                    "potential_error":
+                    {
+                        "type":"L2-error",
+                        "field": "potential",
+                        // "solution": "b+(Cb*a*c*exp((H-x)/(k*L*L)))*cos(c*t)+a*sin(c*t):x:y:z:a:b:c:Cb:H:k:L:t",
+                        "solution": "10+Pi*exp(2-x)*cos(2*Pi*t)+0.5*sin(2*Pi*t):x:t",
+                        "markers":"omega"
+                    },
+                    "flux_error":
+                    {
+                        "type":"L2-error",
+                        "field":"flux",
+                        // "solution":"{0,0,Cb*a*c/L/L*exp((H-x)/(k*L*L))}:x:y:z:t:Cb:a:c:L:H:k",
+                        "solution":"{Pi*exp(2-x)*cos(2*Pi*t),0,0}:x:y:z:t",
+                        "markers":"omega"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
                 {
-                    "value":0,
-                    "tolerance":1
+                    "Norm_potential_error_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1
+                    },
+                    "Norm_flux_error_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1
+                    }
                 }
             }
         }
