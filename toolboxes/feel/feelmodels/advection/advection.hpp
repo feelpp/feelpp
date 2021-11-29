@@ -205,7 +205,7 @@ public :
     typedef std::shared_ptr<exporter_type> exporter_ptrtype;
 
     // Measure tools for points evaluation
-    typedef MeasurePointsEvaluation<space_advection_type> measure_points_evaluation_type;
+    typedef MeasurePointsEvaluation< hana::tuple<GeometricSpace<mesh_type>> > measure_points_evaluation_type;
     typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     //--------------------------------------------------------------------//

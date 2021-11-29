@@ -425,11 +425,15 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcessExportsAndMeasures()
     super_type::initPostProcess();
 
     // Point measures
-    auto fieldNamesWithSpaceLevelset = std::make_pair( std::set<std::string>({"levelset"}), this->functionSpace() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceLevelset );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
+    auto geospace = std::make_shared<GeometricSpace<mesh_type>>( this->mesh() );
+    auto geospaceWithNames = std::make_pair( std::set<std::string>({this->keyword()}), geospace );
+    auto meshes = hana::make_tuple( geospaceWithNames );
+    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( meshes );
+    for ( auto /*const*/& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
+    {
+        evalPoints.updateForUse( this->symbolsExpr() );
         M_measurePointsEvaluation->init( evalPoints );
+    }
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -607,9 +611,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createPostProcessMeasures()
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
-            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-        else
-            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
+            this->postProcessMeasures().restart( this->timeInitial() );
     }
 }
 

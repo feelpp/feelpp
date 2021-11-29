@@ -229,7 +229,7 @@ public:
 
 
     // measure tools for points evaluation
-    typedef MeasurePointsEvaluation<space_displacement_type> measure_points_evaluation_type;
+    typedef MeasurePointsEvaluation< hana::tuple<GeometricSpace<mesh_type>> > measure_points_evaluation_type;
     typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     //___________________________________________________________________________________//
@@ -873,7 +873,6 @@ SolidMechanics<ConvexType,BasisDisplacementType>::executePostProcessMeasures( do
 {
     if ( !this->hasSolidEquationStandard() )
         return;
-    bool hasMeasure = false;
 
     //auto const& u = mfields.field( FieldTag::displacement(this), "displacement" );
 
@@ -885,24 +884,13 @@ SolidMechanics<ConvexType,BasisDisplacementType>::executePostProcessMeasures( do
         elements_reference_wrapper_t<mesh_type> vvrange = ( vvmarkers.size() == 1 && vvmarkers.begin()->empty() )?
             M_rangeMeshElements : markedelements( this->mesh(),vvmarkers );
         double volVar = this->computeVolumeVariation( vvrange );
-        this->postProcessMeasuresIO().setMeasure( vvname, volVar );
-        hasMeasure = true;
+        this->postProcessMeasures().setValue( vvname, volVar );
     }
 
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
+    model_measures_quantities_empty_t mquantities;
 
-    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
-        hasMeasure = true;
-
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
+    // execute common post process and save measures
+    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, M_measurePointsEvaluation, symbolsExpr, mfields, mquantities );
 }
 
 
