@@ -1,173 +1,102 @@
-#include "../feel/feelmodels/hdg/mixedelasticity.hpp"
+#include <feel/feelmodels/hdg/mixedpoisson.hpp>
+#include <feel/feelmodels/modelcore/convergencemode.hpp>
 
 using namespace Feel;
 
-
-inline
-AboutData
-makeAbout()
+template <typename ToolboxType>
+int
+runToolboxSimulation( std::shared_ptr<ToolboxType> toolbox )
 {
-    AboutData about( "mixed-elasticity-model" ,
-                     "mixed-elasticity-model" ,
-                     "0.1",
-                     "Mixed-Elasticity-Model",
-                     AboutData::License_GPL,
-                     "Copyright (c) 2016 Feel++ Consortium" );
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    about.addAuthor( "Romain Hild", "developer", "", "" );
-    about.addAuthor( "Lorenzo Sala", "developer", "", "" );
-    return about;
+    toolbox->init();
+    toolbox->printAndSaveInfo();
+
+    if ( toolbox->isStationary() )
+    {
+        toolbox->solve();
+        if( boption("use-postprocess") )
+            toolbox->solvePostProcess();
+        toolbox->exportResults();
+    }
+    else
+    {
+        if ( !toolbox->doRestart() )
+            toolbox->exportResults(toolbox->timeInitial());
+
+        for ( toolbox->startTimeStep() ; !toolbox->timeStepBase()->isFinished(); toolbox->updateTimeStep() )
+        {
+            if (toolbox->worldComm().isMasterRank())
+            {
+                std::cout << "============================================================\n";
+                std::cout << "time simulation: " << toolbox->time() << "s \n";
+                std::cout << "============================================================\n";
+            }
+
+            toolbox->solve();
+            toolbox->exportResults();
+        }
+    }
+    return !toolbox->checkResults();
 }
 
-template<int nDim, int OrderT>
-void
-runApplicationMixedElasticity()
+template <typename ToolboxType>
+int
+runMixedPoissonSimulation()
 {
     using namespace Feel;
-
-    typedef FeelModels::MixedElasticity<nDim,OrderT> me_type;
-
-    auto ME = me_type::New("hdg.elasticity");
-    auto mesh = loadMesh( _mesh=new typename me_type::mesh_type );
-
-    decltype( IPtr( _domainSpace=Pdhv<OrderT>(mesh), _imageSpace=Pdhv<OrderT>(mesh) ) ) Idh ;
-    decltype( IPtr( _domainSpace=Pdhms<OrderT>(mesh), _imageSpace=Pdhms<OrderT>(mesh) ) ) Idhv;
-
-    std::list<std::string> listSubmesh;
-
-    std::string unseparatedList = soption( "hdg.elasticity.gmsh.submesh");
-
-    char help;
-    std::string nameSubmesh;
-    for ( int i = 0; i < unseparatedList.size(); i++)
-    {
-
-        help = unseparatedList[i];
-        if ( help == ',' || i == unseparatedList.size()-1 )
-        {
-            if ( i ==  unseparatedList.size()-1)
-                nameSubmesh.push_back(help);
-            listSubmesh.push_back(nameSubmesh);
-            nameSubmesh.erase();
-        }
-        else
-        {
-            nameSubmesh.push_back(help);
-        }
-    }
-
-    if ( listSubmesh.empty() )
-        ME -> init(mesh);
-    else
-    {
-        Feel::cout << "Using submesh: " << listSubmesh << std::endl;
-        auto cmesh = createSubmesh( _mesh=mesh, _range=markedelements( mesh, listSubmesh ) );
-        Idh = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
-        Idhv = IPtr( _domainSpace=Pdhms<OrderT>(cmesh), _imageSpace=Pdhms<OrderT>(mesh) );
-        ME -> init( cmesh, mesh );
-    }
-
-
-
-    /*
-     if ( soption("gmsh.submesh").empty() )
-     {
-     ME -> init(mesh);
-     }
-     else
-     {
-     Feel::cout << "Using submesh: " << soption("gmsh.submesh") << std::endl;
-     std::list<std::string> listSubmeshes;
-     listSubmeshes.push_back( soption("gmsh.submesh") );
-     if ( !soption("gmsh.submesh2").empty() )
-     {
-     Feel::cout << "Using submesh 2: " << soption("gmsh.submesh2") << std::endl;
-     listSubmeshes.push_back( soption("gmsh.submesh2") );
-     }
-     auto cmesh = createSubmesh( _mesh=mesh, _range=markedelements(mesh,listSubmeshes) );
-
-     Idh = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
-     Idhv = IPtr( _domainSpace=Pdhms<OrderT>(cmesh), _imageSpace=Pdhms<OrderT>(mesh) );
-     ME -> init( cmesh, mesh );
-     }
-     */
-
-    if ( ME -> isStationary() )
-    {
-        ME->assembleCst();
-        ME->assembleNonCst();
-        ME->solve();
-        ME->exportResults( mesh );
-        ME->exportTimers();
-    }
-    else
-    {
-        //ME->assembleCst();
-        for ( ; !ME->timeStepBase()->isFinished() ; ME->updateTimeStep() )
-        {
-            Feel::cout << "============================================================\n";
-            Feel::cout << "time simulation: " << ME->time() << "s \n";
-            Feel::cout << "============================================================\n";
-            ME->assembleCst();
-            ME->assembleNonCst();
-            ME->solve();
-            ME->exportResults( mesh , Idh, Idhv );
-        }
-    }
-
-#if 0
-
-    ME->geometricTest();
-
-#endif
+    auto ME = ToolboxType::New("hdg.elasticity");
+    return runToolboxSimulation( ME );
 }
 
 int main(int argc, char *argv[])
 {
     using namespace Feel;
 
-    po::options_description meoptions( "hdg.elasticity options" );
-    meoptions.add( FeelModels::makeMixedElasticityOptions("hdg.elasticity") );
-    meoptions.add_options()
+    po::options_description mpoptions( "hdg.elasticity options" );
+    mpoptions.add( toolboxes_options("mixedpoisson", "hdg.elasticity") );
+    mpoptions.add_options()
         ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
         ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
+        ("case.mode", Feel::po::value<std::string>()->default_value( "simulation" ), "mode : simulation, h-convergence")
+        ("case.mode.h-convergence.hsize", po::value<std::vector<double> >()->multitoken(), "mesh hsize used in h-convergence" )
+        ("use-postprocess", po::value<bool>()->default_value(false), "post process potential" )
         ;
-
-    Feel::Environment env( _argc=argc,
-                           _argv=argv,
-                           _about=makeAbout(),
-                           _desc=meoptions,
-                           _desc_lib=FeelModels::makeMixedElasticityLibOptions("hdg.elasticity").add(feel_options())
+    Feel::Environment env( _argc=argc, _argv=argv,
+                           _desc=mpoptions,
+                           _about=about(_name="toolboxes_mixedpoisson",
+                                        _author="Feel++ Consortium",
+                                        _email="feelpp-devel@feelpp.org")
                            );
 
-
+    std::string mode = soption(_name="case.mode");
     int dimension = ioption(_name="case.dimension");
     std::string discretization = soption(_name="case.discretization");
 
     auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
-#if FEELPP_INSTANTIATION_ORDER_MAX >= 3
     auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
                                              hana::make_tuple("P2", hana::int_c<2> ),
-                                             hana::make_tuple("P3", hana::int_c<3> ) );
-#elif FEELPP_INSTANTIATION_ORDER_MAX >= 2
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
-                                             hana::make_tuple("P2", hana::int_c<2> ) );
-#else
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
-#endif
+                                             hana::make_tuple("P3", hana::int_c<3> ));
+    int status = 1;
 
-    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension]( auto const& d )
-                                                                                         {
-                                                                                             constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
-                                                                                             std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
-                                                                                             constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
-                                                                                             if ( dimension == _dim && discretization == _discretization )
-                                                                                                 runApplicationMixedElasticity<_dim,_torder>();
-                                                                                         } );
-
-
-    return 0;
+    if ( mode == "simulation" || mode == "h-convergence" )
+    {
+        hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension,&status,&mode]( auto const& d )
+                        {
+                            constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
+                            std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
+                            constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
+                            if ( dimension == _dim && discretization == _discretization )
+                            {
+                                typedef Feel::FeelModels::MixedPoisson< Simplex<_dim,1>,_torder,Vectorial> model_type;
+                                if ( mode == "simulation" )
+                                    status = runMixedPoissonSimulation<model_type>();
+                                else
+                                    status = runHConvergence<model_type>("", runToolboxSimulation<model_type>);
+                            }
+                        } );
+    }
+    else if ( mode == "p-convergence" )
+    {
+        // TODO
+    }
+    return status;
 }
-
-
-

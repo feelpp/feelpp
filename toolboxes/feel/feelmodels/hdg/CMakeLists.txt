@@ -32,7 +32,7 @@ foreach(_DIM 2 3)
         DIM     ${_DIM}
         P_ORDER ${_P_ORDER}
         GEO_ORDER ${_G_ORDER}
-        POLYSET Scalar
+        POLYSET Vectorial
         )
       set(FEELPP_MODELS_LIBRARIES_HDG ${FEELPP_MODELS_LIBRARIES_HDG} ${HDG_LIB_NAME} )
     endforeach()
@@ -42,13 +42,13 @@ foreach(_DIM 2 3)
   math(EXPR _P_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
   feelpp_max( MAX_ORDER 1 ${_P_ORDER})
   message(STATUS "[feelpp] MIXEDELASTICITY ${_DIM}D PNG1 N=1..${MAX_ORDER}")
-  foreach( _P_ORDER RANGE 1 1)#${MAX_ORDER} )
-    foreach( _G_ORDER RANGE 1 1)#2 )
+  foreach( _P_ORDER RANGE 1 ${MAX_ORDER} )
+    foreach( _G_ORDER RANGE 1 2 )
       genLibHdg(
         DIM     ${_DIM}
         P_ORDER ${_P_ORDER}
         GEO_ORDER ${_G_ORDER}
-        POLYSET Vectorial
+        POLYSET Tensor2Symm
         )
       set(FEELPP_MODELS_LIBRARIES_HDG ${FEELPP_MODELS_LIBRARIES_HDG} ${HDG_LIB_NAME} )
     endforeach()

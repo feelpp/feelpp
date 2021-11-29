@@ -38,11 +38,11 @@ feelpp_add_application( hdg_poisson
   INSTALL MAN hdg_poisson
   TESTS )
 
-# feelpp_add_application( hdg_elasticity
-#   SRCS mixedelasticity_main.cpp
-#   INCLUDE_IN_ALL
-#   LINK_LIBRARIES feelpp_toolbox_hdg_elasticity_lib
-#   INSTALL MAN hdg_elasticity )
+feelpp_add_application( hdg_elasticity
+  SRCS mixedelasticity_main.cpp
+  INCLUDE_IN_ALL
+  LINK_LIBRARIES feelpp_toolbox_hdg_lib
+  INSTALL MAN hdg_elasticity )
 
 feelpp_add_application( hdg_thermoelectric
   SRCS thermoelectric_main.cpp
