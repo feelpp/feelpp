@@ -1,0 +1,144 @@
+{
+    "Name": "HDG-CoupledMixedPoisson-constant",
+    "ShortName": "CMP",
+    "Models":
+    {
+        "equations":"hdg"
+    },
+    "Parameters":
+    {
+        "Cb":1,
+        "Rb":1,
+        "L":1,
+        "H":2,
+        "a":10,
+        "b":0.5,
+        "Rout":1,
+        "k":1
+    },
+    "Materials":
+    {
+        "omega":
+        {
+            "cond":"k:k"
+        }
+    },
+    "InitialConditions":
+    {
+        "potential":
+        {
+            "Expression":
+            {
+                "myic1":
+                {
+                    "markers":"omega",
+                    "expr": "10"
+                    // "expr": "10+0.5*x*t:x:t"
+                    // "expr":"a+b*x*t:x:y:z:a:b:t"
+                }
+            }
+        },
+        "buffer":
+        {
+            "Expression":
+            {
+                "myic1":
+                {
+                    "markers":"top",
+                    // "expr":"a+b*(H+Rb*L*L*k)*t:a:b:H:Rb:L:k:t"
+                    "expr":"10+0.5*(2+1)*t:t"
+                }
+            }
+        }
+    },
+    "BoundaryConditions":
+    {
+        "flux":
+        {
+            "Coupling":
+            {
+                "buffer":
+                {
+                    "markers":"top",
+                    "capacitor": "Cbuffer.C",
+                    "resistor": "Rbuffer.R",
+                    "circuit": "$cfgdir/test_linear.fmu",
+                    "buffer": "Pi_1.phi"
+                }
+            }
+        },
+        "potential":
+        {
+            "VolumicForces":
+            {
+                "omega":
+                {
+                    "expr":"0.5*x:x"
+                }
+            },
+            "Dirichlet":
+            {
+                "bottom":
+                {
+                    "expr":"10"
+                }
+            },
+            "Neumann":
+            {
+                "lateral":
+                {
+                    "expr":0
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["potential","flux"],
+            "expr":
+            {
+                "p_exact":"a+b*x*t:a:b:x:t",
+                "j_exact":"{-k*b*t,0,0}:k:b:t"
+            }
+        },
+        "Measures":
+        {
+            "Norm":
+            {
+                "potential_error":
+                {
+                    "type":"L2-error",
+                    "field": "potential",
+                    // "solution": "a+b*x*t:x:a:b:t",
+                    "solution": "10+0.5*x*t:t:x",
+                    "markers":"omega"
+                },
+                "flux_error":
+                {
+                    "type":"L2-error",
+                    "field":"flux",
+                    "solution":"{-k*b*t,0,0}:k:b:t",
+                    "markers":"omega"
+                }
+            }
+        },
+        "Checkers":
+        {
+            "Measures":
+            {
+                "Norm_potential_error_L2-error":
+                {
+                    "value":0,
+                    "tolerance":1e-6
+                },
+                "Norm_flux_error_L2-error":
+                {
+                    "value":0,
+                    "tolerance":1e-6
+                }
+            }
+        }
+    }
+}
