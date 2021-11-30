@@ -6,8 +6,8 @@ The domain is the rectangle $\Omega=[0;L]\times[0;H]\subset\mathbb R^2$. Default
 
 The parameter are:
 
-* `pin` : inlet pressure on $\Gamma_{in}
-* `pout` : outlet pressure on $\Gamma_{out}$
+* `pin` : inlet pressure on $\Gamma_{bottom}
+* `pout` : outlet pressure on $\Gamma_{top}$
 * `L` : pipe width
 * `H` : pipe length
 * `nu` : dynamic viscosity

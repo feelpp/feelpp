@@ -63,6 +63,20 @@ foreach( _DIM 2 3)
   endif()
 endforeach()
 
+# Taylor Hood P3P2G2
+foreach( _DIM 2 3)
+  if ( FEELPP_INSTANTIATION_ORDER_MAX GREATER 1 AND FEELPP_MESH_MAX_ORDER GREATER 1 )
+    genLibFluidMechanics(
+      DIM ${_DIM}
+      GEO_ORDER 2
+      U_ORDER 3
+      P_ORDER 2
+      P_CONTINUITY Continuous
+      )
+    set(FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS} ${FLUIDMECHANICS_LIB_NAME}  )
+  endif()
+endforeach()
+
 add_library(feelpp_toolbox_fluid_lib SHARED libfluidmechanics.cpp)
 add_library(Feelpp::feelpp_toolbox_fluid_lib ALIAS feelpp_toolbox_fluid_lib )  # to match exported target
 set_target_properties(feelpp_toolbox_fluid_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_fluid_lib")
