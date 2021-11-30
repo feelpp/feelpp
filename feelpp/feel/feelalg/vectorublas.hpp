@@ -107,6 +107,55 @@ class VectorUblasBase: public Vector<T>
         typedef typename super_type::datamap_ptrtype datamap_ptrtype;
         using size_type = typename datamap_type::size_type;
 
+        class iterator
+        {
+            public:
+                template< typename It >
+                iterator( const It & it ): M_iteratorImpl( new iterator_impl<It>( it ) ) { }
+                
+                iterator( const iterator & other ): M_iteratorImpl( other.M_iteratorImpl ? other.M_iteratorImpl->clone() : nullptr ) { }
+                iterator & swap( iterator & other ) { std::swap( M_iteratorImpl, other.M_iteratorImpl ); return *this; }
+                iterator & operator=( const iterator & other ) { swap( iterator( other ) ); return *this; }
+
+                value_type & operator*() const { return M_iteratorImpl->current(); }
+                iterator & operator++() { M_iteratorImpl->next(); return *this; }
+                iterator & operator--() { M_iteratorImpl->previous(); return *this; }
+                bool operator==( const iterator & other ) const { return M_iteratorImpl->equal( *other.M_iteratorImpl ); }
+                iterator & operator=( const iterator & other ) { assign( other ); return *this; }
+
+            private:
+                class iterator_impl_base
+                {
+                    public:
+                        iterator_impl_base * clone() const = 0;
+
+                        virtual value_type & current() const = 0;
+                        virtual void next() = 0;
+                        virtual void previous() = 0;
+                        virtual bool equal( const iterator_impl_base & other ) const = 0;
+                        virtual void assign( const iterator_impl_base & other ) = 0;
+                };
+                
+                template< typename It >
+                class iterator_impl: public iterator_impl_base
+                {
+                    public:
+                        iterator_impl( const It & it ) { M_it = it; }
+                        iterator_impl<It> * clone() const override { return new iterator_impl<It>( M_it ); }
+
+                        value_type & current() const override { return *M_it; }
+                        void next() override { ++M_it; }
+                        void previous() override { --M_it; }
+                        bool equal( const iterator_impl_base & other ) const { return M_it.operator==( dynamic_cast<iterator_impl<It>&>( other ).M_it ); }
+                        void assign( const iterator_impl_base & other ) { M_it = dynamic_cast<iterator_impl<It>&>( other ).M_it
+
+                    private:
+                        It M_it;
+                };
+
+            private:
+                iterator_impl_base * M_iteratorImpl;
+        };
 
     public:
         // Constructors/Destructor
