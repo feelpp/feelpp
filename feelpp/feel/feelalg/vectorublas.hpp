@@ -112,10 +112,12 @@ class VectorUblasBase: public Vector<T>
             public:
                 template< typename It >
                 iterator( const It & it ): M_iteratorImpl( new iterator_impl<It>( it ) ) { }
+                iterator() = delete;
                 
                 iterator( const iterator & other ): M_iteratorImpl( other.M_iteratorImpl ? other.M_iteratorImpl->clone() : nullptr ) { }
                 iterator & swap( iterator & other ) { std::swap( M_iteratorImpl, other.M_iteratorImpl ); return *this; }
                 iterator & operator=( const iterator & other ) { swap( iterator( other ) ); return *this; }
+                ~iterator() { delete M_iteratorImpl; }
 
                 value_type & operator*() const { return M_iteratorImpl->current(); }
                 iterator & operator++() { M_iteratorImpl->next(); return *this; }
@@ -183,6 +185,11 @@ class VectorUblasBase: public Vector<T>
         //TODO
 
         // Iterators API
+        virtual iterator begin() = 0;
+        virtual iterator end() = 0;
+
+        virtual iterator beginGhost() = 0;
+        virtual iterator endGhost() = 0;
 
 };
 
