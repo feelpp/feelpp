@@ -270,6 +270,14 @@ public:
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
+    std::string const& physic() const { return this->keyword(); }
+    std::string diffusionCoefficientName() const { return prefixvm( this->physic(), "c", "_" ); }
+    std::string firstTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "d", "_" ); }
+    std::string secondTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "d2", "_" ); }
+    std::string sourceCoefficientName() const { return prefixvm( this->physic(), "f", "_" ); }
+    std::string lameLambdaCoefficientName() const { return prefixvm( this->physic(), "lambda", "_" ); }
+    std::string lameMuCoefficientName() const { return prefixvm( this->physic(), "mu", "_" ); }
+
     double tauCst() const { return M_tauCst; }
     void setTauCst(double cst) { M_tauCst = cst; }
     bool useSC() const { return M_useSC; }
