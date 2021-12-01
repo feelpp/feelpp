@@ -103,7 +103,7 @@
         },
         "Exports":
         {
-            "fields":["velocity","pressure","pid"]
+            "fields":["velocity","pressure","pid"],
             "expr":
             {
                 "u_ex":"{uexx,uexy}:uexx:uexy",

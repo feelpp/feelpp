@@ -1,6 +1,6 @@
 {
     "Name": "curved pipe 3d",
-    "ShortName":"cp3",
+    "ShortName":"cp3d",
     "Models":
     {
         "equations":"Stokes"
@@ -8,20 +8,21 @@
     "Parameters":
     {
         "nu":1,
-        "a":17.1887338539247,
-        "b":0.096781975733881,
-        "c":0.995836667858137,
-        "d":0.596781975733881,
-        "e":19.0985931710274,
-        "f":1.5707963267949,
-        "g":2.09439510239320,
-        "ugradexxx":"-a*sqrt(-x^2/(x^2 + y^2) + 1)*(0.5*x*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - b*x/sqrt(x^2 + y^2) - c*x/(x^2 + y^2)^(3/2)) - a*(x^3/(x^2 + y^2)^2 - x/(x^2 + y^2))*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - d*sqrt(x^2 + y^2) + c/sqrt(x^2 + y^2))/sqrt(-x^2/(x^2 + y^2) + 1):x:y:a:b:c:d",
-        "ugradexxy":"-a*x^2*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - d*sqrt(x^2 + y^2) + c/sqrt(x^2 + y^2))/(x^2 + y^2)^(3/2) + a*x*(0.5*x*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - b*x/sqrt(x^2 + y^2) - c*x/(x^2 + y^2)^(3/2))/sqrt(x^2 + y^2) + a*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - d*sqrt(x^2 + y^2) + c/sqrt(x^2 + y^2))/sqrt(x^2 + y^2):x:y:a:b:c:d",
-        "ugradexyx":"-a*x^2*y*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - d*sqrt(x^2 + y^2) + c/sqrt(x^2 + y^2))/((x^2 + y^2)^2*sqrt(-x^2/(x^2 + y^2) + 1)) - a*sqrt(-x^2/(x^2 + y^2) + 1)*(0.5*y*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - b*y/sqrt(x^2 + y^2) - c*y/(x^2 + y^2)^(3/2)):x:y:a:b:c:d",
-        "ugradexyy":"-a*x*y*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - d*sqrt(x^2 + y^2) + c/sqrt(x^2 + y^2))/(x^2 + y^2)^(3/2) + a*x*(0.5*y*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - b*y/sqrt(x^2 + y^2) - c*y/(x^2 + y^2)^(3/2))/sqrt(x^2 + y^2):x:y:a:b:c:d",
-        "uexx":"-sin(acos(x/sqrt(x*x+y*y)))*(e-(e/10))*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+c/sqrt(x*x+y*y)-d*sqrt(x*x+y*y)):x:y:c:d:e",
-        "uexy":"cos(acos(x/sqrt(x*x+y*y)))*(e-(e/10))*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+c/sqrt(x*x+y*y)-d*sqrt(x*x+y*y)):x:y:c:d:e",
-        "pex":"(e*(acos(x/sqrt(x*x+y*y))-f)+(e/10)*(g-acos(x/sqrt(x*x+y*y)))):x:y:e:f:g"
+        "pi":3.141592653589793,
+        "alpha1":"pi/2:pi",
+        "angle":"pi/6:pi",
+        "alpha2":"alpha1+angle:alpha1:angle",
+        "r1":1.9,
+        "r2":2.1,
+        "pin":10,
+        "pout":1,
+        "pex":"(pin*(-alpha1+acos(x/sqrt(x^2+y^2)))-pout*(-angle-alpha1+acos(x/sqrt(x^2+y^2))))/angle:x:y:pin:pout:alpha1:angle",
+        "uexx":"-(pin-pout)*sqrt(-x^2/(x^2+y^2)+1)*(0.5*r1^2*r2^2*(log(r1)-log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2))+0.5*sqrt(x^2+y^2)*log(sqrt(x^2+y^2))+sqrt(x^2+y^2)*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(r1^2-r2^2))/angle:x:y:pin:pout:alpha1:angle:r1:r2",
+        "uexy":"x*(pin-pout)*(0.5*r1^2*r2^2*(log(r1)-log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2))+0.5*sqrt(x^2+y^2)*log(sqrt(x^2+y^2))+sqrt(x^2+y^2)*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(r1^2-r2^2))/(angle*sqrt(x^2+y^2)):x:y:pin:pout:alpha1:angle:r1:r2",
+        "ugradexxx":"-(pin-pout)*sqrt(-x^2/(x^2+y^2)+1)*(-0.5*x*r1^2*r2^2*(log(r1)-log(r2))/((x^2+y^2)^(3/2)*(r1^2-r2^2))+0.5*x*log(sqrt(x^2+y^2))/sqrt(x^2+y^2)+0.5*x/sqrt(x^2+y^2)+x*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2)))/angle-(pin-pout)*(x^3/(x^2+y^2)^2-x/(x^2+y^2))*(0.5*r1^2*r2^2*(log(r1)-log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2))+0.5*sqrt(x^2+y^2)*log(sqrt(x^2+y^2))+sqrt(x^2+y^2)*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(r1^2-r2^2))/(angle*sqrt(-x^2/(x^2+y^2)+1)):x:y:pin:pout:alpha1:angle:r1:r2",
+        "ugradexxy":"-x^2*(pin-pout)*(0.5*r1^2*r2^2*(log(r1)-log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2))+0.5*sqrt(x^2+y^2)*log(sqrt(x^2+y^2))+sqrt(x^2+y^2)*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(r1^2-r2^2))/(angle*(x^2+y^2)^(3/2))+x*(pin-pout)*(-0.5*x*r1^2*r2^2*(log(r1)-log(r2))/((x^2+y^2)^(3/2)*(r1^2-r2^2))+0.5*x*log(sqrt(x^2+y^2))/sqrt(x^2+y^2)+0.5*x/sqrt(x^2+y^2)+x*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2)))/(angle*sqrt(x^2+y^2))+(pin-pout)*(0.5*r1^2*r2^2*(log(r1)-log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2))+0.5*sqrt(x^2+y^2)*log(sqrt(x^2+y^2))+sqrt(x^2+y^2)*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(r1^2-r2^2))/(angle*sqrt(x^2+y^2)):x:y:pin:pout:alpha1:angle:r1:r2",
+        "ugradexyx":"-x^2*y*(pin-pout)*(0.5*r1^2*r2^2*(log(r1)-log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2))+0.5*sqrt(x^2+y^2)*log(sqrt(x^2+y^2))+sqrt(x^2+y^2)*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(r1^2-r2^2))/(angle*(x^2+y^2)^2*sqrt(-x^2/(x^2+y^2)+1))-(pin-pout)*sqrt(-x^2/(x^2+y^2)+1)*(-0.5*y*r1^2*r2^2*(log(r1)-log(r2))/((x^2+y^2)^(3/2)*(r1^2-r2^2))+0.5*y*log(sqrt(x^2+y^2))/sqrt(x^2+y^2)+0.5*y/sqrt(x^2+y^2)+y*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2)))/angle:x:y:pin:pout:alpha1:angle:r1:r2",
+        "ugradexyy":"-x*y*(pin-pout)*(0.5*r1^2*r2^2*(log(r1)-log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2))+0.5*sqrt(x^2+y^2)*log(sqrt(x^2+y^2))+sqrt(x^2+y^2)*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(r1^2-r2^2))/(angle*(x^2+y^2)^(3/2))+x*(pin-pout)*(-0.5*y*r1^2*r2^2*(log(r1)-log(r2))/((x^2+y^2)^(3/2)*(r1^2-r2^2))+0.5*y*log(sqrt(x^2+y^2))/sqrt(x^2+y^2)+0.5*y/sqrt(x^2+y^2)+y*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2)))/(angle*sqrt(x^2+y^2)):x:y:pin:pout:alpha1:angle:r1:r2"
     },
     "Materials":
     {
@@ -48,11 +49,11 @@
             {
                 "inlet":
                 {
-                    "expr":10
+                    "expr":"pin:pin"
                 },
                 "outlet":
                 {
-                    "expr":1
+                    "expr":"pout:pout"
                 }
             }
         }
@@ -66,14 +67,16 @@
                 "p": 
                 {
                     "type":"L2-error", 
-                    "field":"pressure", 
+                    "field":"pressure",
+                    "quad":5,
                     "solution":"pex:pex", 
                     "markers":"Omega" 
                 },
                 "u": 
                 {
                     "type":["L2-error","H1-error"], 
-                    "field":"velocity", 
+                    "field":"velocity",
+                    "quad":5,
                     "solution":"{uexx,uexy,0}:uexx:uexy",
                     "grad_solution":"{ugradexxx, ugradexyx, 0, ugradexxy, ugradexyy, 0, 0, 0, 0}:ugradexxx:ugradexyx:ugradexxy:ugradexyy",
                     "markers":"Omega" 

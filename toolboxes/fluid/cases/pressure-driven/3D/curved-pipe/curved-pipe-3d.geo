@@ -8,14 +8,14 @@ r1 = 1.9;
 r2 = 2.1;
 R = r2-r1;
 angle = Pi/6;
-startangle = Pi/2;
-endangle = startangle + angle;
+alpha1 = Pi/2;
+alpha2 = alpha1 + angle;
 
 Point(1) = {0, 0, 0, h};
-Point(2) = {r1*Cos(startangle), r1*Sin(startangle), 0, h};
-Point(3) = {r2*Cos(startangle), r2*Sin(startangle), 0, h};
-Point(4) = {r2*Cos(endangle), r2*Sin(endangle), 0, h};
-Point(5) = {r1*Cos(endangle), r1*Sin(endangle), 0, h};
+Point(2) = {r1*Cos(alpha1), r1*Sin(alpha1), 0, h};
+Point(3) = {r2*Cos(alpha1), r2*Sin(alpha1), 0, h};
+Point(4) = {r2*Cos(alpha2), r2*Sin(alpha2), 0, h};
+Point(5) = {r1*Cos(alpha2), r1*Sin(alpha2), 0, h};
 
 Line(1) = {2, 3};
 Line(2) = {5, 4};
@@ -30,7 +30,7 @@ Extrude {0, 0, R} {
   Surface{1}; 
 }
 
-Physical Surface("wall") = {4, 2, 6, 1};
-Physical Surface("outlet") = {3};
-Physical Surface("inlet") = {5};
+Physical Surface("wall") = {5, 3, 1, 6};
+Physical Surface("outlet") = {2};
+Physical Surface("inlet") = {4};
 Physical Volume("Omega") = {1};
