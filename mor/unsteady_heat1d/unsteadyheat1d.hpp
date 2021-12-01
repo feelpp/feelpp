@@ -29,9 +29,6 @@
 #ifndef __UnsteadyHeat1D_H
 #define __UnsteadyHeat1D_H 1
 
-#include <boost/timer.hpp>
-#include <boost/shared_ptr.hpp>
-
 #include <feel/options.hpp>
 #include <feel/feelcore/feel.hpp>
 

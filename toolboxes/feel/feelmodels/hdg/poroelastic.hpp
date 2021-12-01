@@ -114,7 +114,7 @@ public:
             M_mesh = meshCommon;
 
 
-            M_PoissonModel = mp_type::New("hdg.poisson");
+            M_PoissonModel = mp_type::New(_prefix="hdg.poisson");
             M_PoissonModel->setMesh( _meshPoisson );
             M_PoissonModel->init();
             M_PoissonModel->algebraicFactory()->addFunctionLinearAssembly(std::bind( &self_type::poissonAssembly, std::ref(*this), std::placeholders::_1 ));
