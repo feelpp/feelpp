@@ -5,6 +5,21 @@
     {
         "equations":"Stokes"
     },
+    "Parameters":
+    {
+        "a":9.54929658551372,
+        "b":1.5707963267949,
+        "c":0.995836667858137,
+        "d":2.61799387799149,
+        "e":0.596781975733881,
+        "pex":"a*(acos(x/sqrt(x*x+y*y))-b)+a*(d-acos(x/sqrt(x*x+y*y)))/10:x:y:a:b:d",
+        "uexx":"-sin(acos(x/sqrt(x*x+y*y)))*(a-a/10)*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+c/sqrt(x*x+y*y)-e*sqrt(x*x+y*y)):x:y:a:c:e",
+        "uexy":"cos(acos(x/sqrt(x*x+y*y)))*(a-a/10)*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+c/sqrt(x*x+y*y)-e*sqrt(x*x+y*y)):x:y:a:c:e",
+        "ugradexxx":"-9*a*sqrt(-x**2/(x**2+y**2)+1)*(-x*c/(x**2+y**2)**(3/2)-x*e/sqrt(x**2+y**2)+0.5*x*log(sqrt(x**2+y**2))/sqrt(x**2+y**2)+0.5*x/sqrt(x**2+y**2))/10-9*a*(x**3/(x**2+y**2)**2-x/(x**2+y**2))*(c/sqrt(x**2+y**2)-e*sqrt(x**2+y**2)+0.5*sqrt(x**2+y**2)*log(sqrt(x**2+y**2)))/(10*sqrt(-x**2/(x**2+y**2)+1)):x:y:a:c:e",
+        "ugradexxy":"-9*x**2*a*(c/sqrt(x**2+y**2)-e*sqrt(x**2+y**2)+0.5*sqrt(x**2+y**2)*log(sqrt(x**2+y**2)))/(10*(x**2+y**2)**(3/2))+9*x*a*(-x*c/(x**2+y**2)**(3/2)-x*e/sqrt(x**2+y**2)+0.5*x*log(sqrt(x**2+y**2))/sqrt(x**2+y**2)+0.5*x/sqrt(x**2+y**2))/(10*sqrt(x**2+y**2))+9*a*(c/sqrt(x**2+y**2)-e*sqrt(x**2+y**2)+0.5*sqrt(x**2+y**2)*log(sqrt(x**2+y**2)))/(10*sqrt(x**2+y**2)):x:y:a:c:e",
+        "ugradexyx":"-9*x**2*y*a*(c/sqrt(x**2+y**2)-e*sqrt(x**2+y**2)+0.5*sqrt(x**2+y**2)*log(sqrt(x**2+y**2)))/(10*(x**2+y**2)**2*sqrt(-x**2/(x**2+y**2)+1))-9*a*sqrt(-x**2/(x**2+y**2)+1)*(-y*c/(x**2+y**2)**(3/2)-y*e/sqrt(x**2+y**2)+0.5*y*log(sqrt(x**2+y**2))/sqrt(x**2+y**2)+0.5*y/sqrt(x**2+y**2))/10:x:y:a:c:e",
+        "ugradexyy":"-9*x*y*a*(c/sqrt(x**2+y**2)-e*sqrt(x**2+y**2)+0.5*sqrt(x**2+y**2)*log(sqrt(x**2+y**2)))/(10*(x**2+y**2)**(3/2))+9*x*a*(-y*c/(x**2+y**2)**(3/2)-y*e/sqrt(x**2+y**2)+0.5*y*log(sqrt(x**2+y**2))/sqrt(x**2+y**2)+0.5*y/sqrt(x**2+y**2))/(10*sqrt(x**2+y**2)):x:y:a:c:e"
+    },
     "Materials":
     {
         "Omega":{
@@ -20,7 +35,7 @@
             {
                 "wall":
                 {
-                    "expr":"{-sin(acos(x/sqrt(x*x+y*y)))*(9.54929658551372-0.954929658551372)*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+0.995836667858137/sqrt(x*x+y*y)-0.596781975733881*sqrt(x*x+y*y)),cos(acos(x/sqrt(x*x+y*y)))*(9.54929658551372-0.954929658551372)*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+0.995836667858137/sqrt(x*x+y*y)-0.596781975733881*sqrt(x*x+y*y)),0}:x:y"
+                    "expr":"{uexx,uexy,0}:uexx:uexy"
                 }
             }
         },
@@ -49,21 +64,48 @@
                 {
                     "type":"L2-error", 
                     "field":"pressure", 
-                    "solution":"(9.54929658551372*(acos(x/sqrt(x*x+y*y))-1.5707963267949)+0.954929658551372*(2.61799387799149-acos(x/sqrt(x*x+y*y)))):x:y", 
+                    "solution":"pex:pex", 
                     "markers":"Omega" 
                 },
                 "u": 
                 {
-                    "type":"L2-error", 
+                    "type":["L2-error","H1-error"], 
                     "field":"velocity", 
-                    "solution":"{-sin(acos(x/sqrt(x*x+y*y)))*(9.54929658551372-0.954929658551372)*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+0.995836667858137/sqrt(x*x+y*y)-0.596781975733881*sqrt(x*x+y*y)),cos(acos(x/sqrt(x*x+y*y)))*(9.54929658551372-0.954929658551372)*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+0.995836667858137/sqrt(x*x+y*y)-0.596781975733881*sqrt(x*x+y*y)),0}:x:y", 
+                    "solution":"{uexx,uexy,0}:uexx:uexy",
+                    "grad_solution":"{ugradexxx, ugradexyx, 0, ugradexxy, ugradexyy, 0, 0, 0, 0}:ugradexxx:ugradexyx:ugradexxy:ugradexyy",
                     "markers":"Omega" 
+                }
+            }
+        },
+        "Checkers":
+        {
+            "Measures":
+            {
+                "Norm_u_L2-error":
+                {
+                    "value":0,
+                    "tolerance":1
+                },
+                "Norm_u_H1-error":
+                {
+                    "value":0,
+                    "tolerance":1
+                },
+                "Norm_p_L2-error":
+                {
+                    "value":0,
+                    "tolerance":1
                 }
             }
         },
         "Exports":
         {
-            "fields":["velocity","pressure","pid"]
+            "fields":["velocity","pressure","pid"],
+            "expr":
+            {
+                "u_ex":"{uexx,uexy,0}:uexx:uexy",
+                "p_ex":"pex:pex"
+            }
         }
     }
 

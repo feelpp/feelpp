@@ -82,6 +82,11 @@
                     "value":0,
                     "tolerance":1
                 },
+                "Norm_u_H1-error":
+                {
+                    "value":0,
+                    "tolerance":1
+                },
                 "Norm_p_L2-error":
                 {
                     "value":0,

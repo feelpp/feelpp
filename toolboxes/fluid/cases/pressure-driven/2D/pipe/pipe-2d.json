@@ -13,7 +13,8 @@
         "pout":0,
         "H":4,
         "uex":"(pin-pout)*(L-x)*x/(2*H*nu):pin:pout:L:x:H:nu",
-        "pex":"pin+(pout-pin)*y/H:y:z:H:pin:pout"
+        "pex":"pin+(pout-pin)*y/H:y:z:H:pin:pout",
+        "ugradex":"-x*(pin - pout)/(2*H*nu) + (-x + L)*(pin - pout)/(2*H*nu):x:pin:pout:H:nu:L"
     },
     "Materials":
     {
@@ -85,9 +86,10 @@
                 },
                 "u": 
                 {
-                    "type":"L2-error", 
+                    "type":["L2-error", "H1-error"], 
                     "field":"velocity", 
                     "solution":"{0,uex}:uex",
+                    "grad_solution":"{0,0,ugradex,0}:ugradex",
                     "markers":"Omega" 
                 }
             }
@@ -97,6 +99,11 @@
             "Measures":
             {
                 "Norm_u_L2-error":
+                {
+                    "value":0,
+                    "tolerance":1
+                },
+                "Norm_u_H1-error":
                 {
                     "value":0,
                     "tolerance":1
