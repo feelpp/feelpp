@@ -8,6 +8,10 @@ set -eo pipefail
 scriptdir=$PWD/$(dirname $0)
 source $(dirname $0)/feelpp_pkg_common.sh
 
+echo "DIST: ${DIST}"
+echo "BRANCH: ${BRANCH}"
+echo "FLAVOR: ${FLAVOR}"
+
 #OTHERMIRROR=
 #if [ "$COMPONENT" = "feelpp-toolboxes" ]; then
 #    OTHERMIRROR="deb https://dl.bintray.com/feelpp/ubuntu $DIST $CHANNEL"
@@ -26,19 +30,19 @@ fi
 
 #PBUILDER_RESULTS=/var/lib/buildkite-agent/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
 # local debug build
-PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
+PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}/${CHANNEL}/
 if [ ! -f $HOME/pbuilder/${DIST}_base.tgz ]; then
-    echo "--- creating distribution $DIST"
+    echo "--- creating distribution $DIST results: ${PBUILDER_RESULTS}"
     pbuilder-dist $DIST create
 fi
-echo "--- start from clean slate"
+echo "--- start from clean slate in ${PBUILDER_RESULTS}"
 if [ -d build-$DIST ]; then rm -rf build-$DIST; fi
 
 if [ -n "$(ls -A ${PBUILDER_RESULTS}/ 2>/dev/null)" ];
 then
     echo "removing previous builds in $PBUILDER_RESULTS";
     ls -1 ${PBUILDER_RESULTS}/
-    rm -f "${PBUILDER_RESULTS}/*";
+    rm -f ${PBUILDER_RESULTS}/*;
 else
     echo "no files in ${PBUILDER_RESULTS}/";
 fi
@@ -100,8 +104,12 @@ elif [ "$COMPONENT" = "feelpp-mor" ]; then
     cd build-$DIST && ../configure -r --root=../mor    
 fi
 make package_source
-echo "--- cloning feelpp.pkg"
-git clone -q https://github.com/feelpp/feelpp.pkg.git
+echo "--- cloning feelpp.pkg: ${BRANCH}"
+if  [ -z "$BRANCH" ]; then
+    git clone -q https://github.com/feelpp/feelpp.pkg.git
+else
+    git clone -b $BRANCH -q https://github.com/feelpp/feelpp.pkg.git
+fi
 # local debug build
 #ln -s ../../Debian/feelpp.pkg
 

@@ -24,8 +24,6 @@
 #ifndef FEELPP_HEAT1D_HPP
 #define FEELPP_HEAT1D_HPP 1
 
-#include <boost/timer.hpp>
-
 #include <feel/options.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/gmsh.hpp>

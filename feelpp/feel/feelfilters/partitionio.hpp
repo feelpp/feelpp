@@ -21,8 +21,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef FEELPP_PARTITIONIO_HPP
-#define FEELPP_PARTITIONIO_HPP 1
+#ifndef FEELPP_FILTERS_PARTITIONIO_H
+#define FEELPP_FILTERS_PARTITIONIO_H
 
 #if defined(FEELPP_HAS_HDF5)
 #include <boost/algorithm/string/split.hpp>
@@ -1619,44 +1619,5 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
 
 
 #endif /* FEELPP_HAS_HDF5 */
-
-#if 0
-
-BOOST_PARAMETER_FUNCTION( ( void ),
-                          h5partition,                                       // 2. name of the function template
-                          tag,                                        // 3. namespace of tag types
-                          ( required                                  // 4. one required parameter, and
-                            ( mesh, * )
-                              ) // required
-                          ( optional                                  // 4. one required parameter, and
-                            ( name,  *, Environment::about().appName() )
-                            ( worldcomm, *, Environment::worldComm() )
-                            ( path, *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
-                          ) )
-{
-    typedef typename Feel::detail::partition<Args>::type mesh_type;
-    std::string filename = prefix + "_mesh.h5";
-    PartitionIO<mesh_type> p( filename, worldcomm );
-    p.write(mesh);
-}
-
-BOOST_PARAMETER_FUNCTION( ( void ),
-                          h5read,                                       // 2. name of the function template
-                          tag,                                        // 3. namespace of tag types
-                          ( required                                  // 4. one required parameter, and
-                            ( in_out(mesh), * )
-                              ) // required
-                          ( optional                                  // 4. one required parameter, and
-                            ( prefix,  *, Environment::about().appName() )
-                            ( worldcomm, *, Environment::worldComm() )
-                            ( path, *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
-                          ) )
-{
-    typedef typename Feel::detail::partition<Args>::type mesh_type;
-    std::string filename = prefix + "_mesh.h5";
-    PartitionIO<mesh_type> p( filename, worldcomm );
-    p.read(mesh);
-}
-#endif
 
 #endif /* __PartitionIO_H */

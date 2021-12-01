@@ -127,6 +127,7 @@ BOOST_AUTO_TEST_CASE( test_prepostsolve )
     Feel::cout << "||u-(f-mex)||=" << l2error << std::endl;
 
     v.on(_range=elements(mesh), _expr=f-mex);
+
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
     e->add( "v", v );
@@ -162,7 +163,7 @@ BOOST_AUTO_TEST_CASE( test_prepost_nlsolve )
 
     auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
         {
-            if (!J) J = backend()->newMatrix( Xh, Xh );
+            if (!J) J = backend()->newMatrix( _test=Xh, _trial=Xh );
             auto j = form2( _test=Xh, _trial=Xh, _matrix=J );
             j = a ;
         };
@@ -188,7 +189,8 @@ BOOST_AUTO_TEST_CASE( test_prepost_nlsolve )
     Feel::cout << "||u-(f-mex)||=" << l2error << Feel::endl;
 
     v.on(_range=elements(mesh), _expr=f-mex);
-    auto e = exporter( _mesh=mesh, _prefix="nlsolve" );
+
+    auto e = exporter( _mesh=mesh, _name="nlsolve" );
     e->add( "u", u );
     e->add( "v", v );
     e->save();

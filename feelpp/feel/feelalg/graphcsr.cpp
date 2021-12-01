@@ -26,7 +26,6 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-10-29
  */
-#include <boost/timer.hpp>
 
 #include <feel/feelcore/application.hpp>
 #include <feel/feelalg/graphcsr.hpp>
@@ -673,7 +672,6 @@ GraphCSR::close()
     M_is_closed = true;
     //return;
     //std::cout << "closing graph " << this << "...\n";
-    boost::timer ti;
     DVLOG(2) << "[close] nrows=" << this->size() << "\n";
     DVLOG(2) << "[close] firstRowEntryOnProc()=" << this->firstRowEntryOnProc() << "\n";
     DVLOG(2) << "[close] lastRowEntryOnProc()=" << this->lastRowEntryOnProc() << "\n";

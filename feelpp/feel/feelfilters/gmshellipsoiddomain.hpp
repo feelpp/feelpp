@@ -30,7 +30,6 @@
 #define __GmshEllipsoidDomain_H 1
 
 
-#include <boost/parameter.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
 

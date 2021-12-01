@@ -22,8 +22,6 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <cmath>
-
-#include <boost/timer.hpp>
 #define BOOST_TEST_MODULE vector testsuite
 #include <feel/feelcore/testsuite.hpp>
 

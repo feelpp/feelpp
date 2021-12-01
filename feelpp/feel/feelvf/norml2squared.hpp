@@ -31,30 +31,22 @@
 
 namespace Feel {
 
-BOOST_PARAMETER_FUNCTION(
-    ( double ), // return type
-    normL2Squared,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( expr,   * )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( parallel,   ( bool ), true )
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type(vf::detail::integrate_type<Args>::exprOrder) )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type(vf::detail::integrate_type<Args>::exprOrder_1) )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-    )
-)
+template <typename ... Ts>
+double normL2Squared( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && range = args.get(_range);
+    auto && expr = args.get(_expr);
+    bool parallel = args.get_else( _parallel, true );
+    auto && quad = args.get_else( _quad, quad_order_from_expression );
+    auto && quad1 = args.get_else( _quad1, quad_order_from_expression );
+    GeomapStrategyType geomap = args.get_else( _geomap,GeomapStrategyType::GEOMAP_OPT );
+    bool use_tbb = args.get_else( _use_tbb, false );
+    bool use_harts = args.get_else( _use_harts, false );
+    int grainsize = args.get_else( _grainsize, 100 );
+    std::string const& partitioner = args.get_else( _partitioner, "auto");
+    bool verbose = args.get_else( _verbose, false );
+
     return integrate( _range=range, _expr=inner(expr,expr), _quad=quad, _geomap=geomap,
                       _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                       _partitioner=partitioner, _verbose=verbose ).evaluate(parallel)( 0, 0 );

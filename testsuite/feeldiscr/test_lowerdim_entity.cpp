@@ -27,7 +27,6 @@
    \date 2013-06-25
  */
 #include <sstream>
-#include <boost/timer.hpp>
 
 #define BOOST_TEST_MODULE lower dimensional entities testsuite
 #include <feel/feelcore/testsuite.hpp>

@@ -32,6 +32,7 @@
 
 #include <feel/feelcore/disablewarnings.hpp>
 #include <Eigen/Core>
+#include <Eigen/Dense>
 #include <Eigen/CXX11/Tensor>
 #include <feel/feelcore/reenablewarnings.hpp>
 
@@ -470,6 +471,37 @@ void serialize( Archive & ar,
 //
 // Eigen::TensorFixedSize
 //
+template<typename Archive,typename Scalar_, typename Dimensions_, int Options_, typename IndexType>
+inline void serialize(Archive & ar,
+                      //Eigen::TensorFixedSize<T,Eigen::Sizes<M,N>,Options_, IndexType> & t,
+                      Eigen::TensorFixedSize<Scalar_,Dimensions_,Options_, IndexType> & t,
+                      const unsigned int /* aVersion */)
+{
+#if 0
+    int m = t.dimension(0);
+    int n = t.dimension(1);
+    ar & (m);
+    ar & (n);
+#endif
+    ar & boost::serialization::make_array(t.data(), t.size());
+}
+#if 0
+template<class Archive, typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
+inline void serialize(Archive & ar,
+        Eigen::Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> & matrix,
+        const unsigned int /* aVersion */)
+{
+    Eigen::Index rows = matrix.rows();
+    Eigen::Index cols = matrix.cols();
+    ar & (rows);
+    ar & (cols);
+    if(rows != matrix.rows() || cols != matrix.cols())
+        matrix.resize(rows, cols);
+    if(matrix.size() !=0)
+        ar &  boost::serialization::make_array(matrix.data(), rows * cols);
+}
+#endif
+#if 0
 template<typename T, typename Archive>
 void save( Archive & ar,
            const Eigen::TensorFixedSize<T,Eigen::Sizes<1,1>> & t,
@@ -674,7 +706,7 @@ void serialize( Archive & ar,
 {
     split_free( ar, t, file_version );
 }
-
+#endif
 
 //
 // boost::tuple<T1,T2>

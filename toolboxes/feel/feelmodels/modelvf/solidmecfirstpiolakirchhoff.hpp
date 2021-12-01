@@ -234,7 +234,7 @@ private :
         typedef typename super_type::loc_matrix_tensor2_type loc_matrix_tensor2_type;
         typedef typename super_type::array_matrix_tensor2_type array_matrix_tensor2_type;
 
-        using expr_mat_properity_scalar_type = std::decay_t<decltype(expr( typename ModelExpression::expr_scalar_type{},typename ExprType::symbols_expr_type{} ) )>;
+        using expr_mat_properity_scalar_type = std::decay_t<decltype(Feel::vf::expr( typename ModelExpression::expr_scalar_type{},typename ExprType::symbols_expr_type{} ) )>;
         using tensor_mat_properity_scalar_type = typename expr_mat_properity_scalar_type::template tensor<Geo_t,Basis_i_t,Basis_j_t>;
 
         using tensor_fpk_lm_type = tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,expr_type>;

@@ -16,7 +16,7 @@ BOOST_AUTO_TEST_SUITE( eigenmode_suite )
 
 BOOST_AUTO_TEST_CASE( test_0 )
 {
-    auto mesh = loadMesh(new Mesh<Simplex<3> >);
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<3> >);
 
     auto Nh = Ned1h<0>( mesh );
     auto u = Nh->element();

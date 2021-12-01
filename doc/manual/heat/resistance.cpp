@@ -174,7 +174,7 @@ private:
 
     export_ptrtype exporter;
 
-    std::map<std::string,std::pair<boost::timer,double> > timers;
+    std::map<std::string,std::pair<Feel::Timer,double> > timers;
 
 }; // Resistance
 
@@ -232,7 +232,7 @@ template<int Dim, int Order>
 typename ResistanceLaplacian<Dim,Order>::mesh_ptrtype
 ResistanceLaplacian<Dim,Order>::createMesh()
 {
-    timers["mesh"].first.restart();
+    timers["mesh"].first.start();
     mesh_ptrtype mesh( new mesh_type );
     //mesh->setRenumber( false );
 
@@ -299,7 +299,7 @@ template<int Dim, int Order>
 typename ResistanceLaplacian<Dim,Order>::line_mesh_ptrtype
 ResistanceLaplacian<Dim,Order>::createLine()
 {
-    timers["mesh"].first.restart();
+    timers["mesh"].first.start();
     line_mesh_ptrtype mesh( new line_mesh_type );
     //mesh->setRenumber( false );
 
@@ -333,37 +333,38 @@ ResistanceLaplacian<Dim, Order>::run()
     //    int maxIter = 10.0/meshSize;
     using namespace Feel::vf;
 
-    timers["init"].first.restart();
+    timers["init"].first.start();
 
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
+    sparse_matrix_ptrtype M( M_backend->newMatrix( _test=Xh, _trial=Xh ) );
 
     double T0= doption("T0");
     double k1= doption("k1");
     double k2= doption("k2");
     double c= doption("conductance");
     double Q= doption("Q");
-    form2( Xh, Xh, _matrix=M, _init=true ) = ( integrate( markedelements( mesh,  mesh->markerName( "k1" ) ),
-                                       k1*gradt( u )*trans( grad( v ) ) )+
-                                       integrate( markedelements( mesh,  mesh->markerName( "k2" ) ),
-                                               k2*gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) = integrate( _range=markedelements( mesh,  mesh->markerName( "k1" ) ),
+                                                         _expr=k1*gradt( u )*trans( grad( v ) ) ) +
+        integrate( _range=markedelements( mesh,  mesh->markerName( "k2" ) ),
+                   _expr=k2*gradt( u )*trans( grad( v ) ) );
 
-    form2( Xh, Xh, _matrix=M ) += integrate( markedfaces( mesh, mesh->markerName( "Tfixed" ) ),
-                                     -k1*gradt( u )*N()*id( v )
-                                     -k1*grad( v )*N()*idt( u )
-                                     + penalisation_bc*id( u )*idt( v )/hFace() );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( _range=markedfaces( mesh, mesh->markerName( "Tfixed" ) ),
+                                                          _expr=
+                                                          -k1*gradt( u )*N()*id( v )
+                                                          -k1*grad( v )*N()*idt( u )
+                                                          + penalisation_bc*id( u )*idt( v )/hFace() );
     auto N21 = vec( constant( -1. ),constant( 0. ) );
-    form2( Xh, Xh, _matrix=M ) += integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),
-                                     c*( trans( jump( id( v ) ) )*N21 )*( trans( jumpt( idt( u ) ) )*N21 ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( _range=markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),
+                                                          _expr=c*( trans( jump( id( v ) ) )*N21 )*( trans( jumpt( idt( u ) ) )*N21 ) );
 
     M->close();
 
     vector_ptrtype F( M_backend->newVector( Xh ) );
-    form1( Xh, _vector=F, _init=true ) = ( integrate( markedfaces( mesh, mesh->markerName( "Tflux" ) ), Q*id( v ) )+
-                                   integrate( markedfaces( mesh, mesh->markerName( "Tfixed" ) ),
-                                           T0*( -k1*grad( v )*N()+ penalisation_bc*id( v )/hFace() ) ) );
+    form1( _test=Xh, _vector=F ) = ( integrate( _range=markedfaces( mesh, mesh->markerName( "Tflux" ) ), _expr=Q*id( v ) )+
+                                     integrate( _range=markedfaces( mesh, mesh->markerName( "Tfixed" ) ),
+                                                _expr=T0*( -k1*grad( v )*N()+ penalisation_bc*id( v )/hFace() ) ) );
 
     F->close();
 
@@ -375,9 +376,9 @@ ResistanceLaplacian<Dim, Order>::run()
 
     this->solve( M, u, F );
 
-    double meas = integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),constant( 1.0 ) ).evaluate()( 0,0 ) ;
-    double mean_jump = integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),
-                                  trans( jumpv( idv( u ) ) )*N21 ).evaluate()( 0,0 );
+    double meas = integrate( _range=markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),_expr=constant( 1.0 ) ).evaluate()( 0,0 ) ;
+    double mean_jump = integrate( _range=markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),
+                                  _expr=trans( jumpv( idv( u ) ) )*N21 ).evaluate()( 0,0 );
     std::cout <<  "int ([[T]]) = " << mean_jump << "\n";
     LOG(INFO) <<  "int ([[T]]) = " << mean_jump << "\n";
     std::cout <<  "mean([[T]]) = " << mean_jump/meas << "\n";
@@ -386,10 +387,12 @@ ResistanceLaplacian<Dim, Order>::run()
     p0_space_ptrtype P0h = p0_space_type::New( mesh );
     p0_element_type k( P0h, "k" );
 
-    k = vf::project( P0h, elements( mesh ),
+    k = vf::project( _space=P0h, _range=elements( mesh ),
+                     _expr=
                      ( emarker()==mesh->markerName( "k1" ) )*k1 +
                      ( emarker()==mesh->markerName( "k2" ) )*k2 );
-    std::cout << "flux = " << integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),
+    std::cout << "flux = " << integrate( _range=markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),
+                                         _expr=
                                          leftfacev( idv( k )*gradv( u )*N() )+
                                          rightfacev( idv( k )*gradv( u )*N() ) ).evaluate()( 0,0 ) << "\n";
 
@@ -405,7 +408,7 @@ ResistanceLaplacian<Dim, Order>::solve( sparse_matrix_ptrtype& D,
                                         element_type& u,
                                         vector_ptrtype& F )
 {
-    timers["solver"].first.restart();
+    timers["solver"].first.start();
 
 
     vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
@@ -422,7 +425,7 @@ void
 ResistanceLaplacian<Dim, Order>::exportResults( p0_element_type& k, element_type& U, element_type& V, element_type& E )
 
 {
-    timers["export"].first.restart();
+    timers["export"].first.start();
 
     LOG(INFO) << "exportResults starts\n";
 
@@ -433,7 +436,7 @@ ResistanceLaplacian<Dim, Order>::exportResults( p0_element_type& k, element_type
 
 
     typename vectorial_functionspace_type::element_type g( Yh, "grad u" );
-    g = vf::project( Yh, elements( Yh->mesh() ), trans( gradv( U ) ) );
+    g.on(_range=elements( Yh->mesh() ), _expr=trans( gradv( U ) ) );
     exporter->step( 1. )->add( "grad(u)", g );
 
     exporter->save();

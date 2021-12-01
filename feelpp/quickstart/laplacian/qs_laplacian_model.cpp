@@ -29,7 +29,6 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
-#include <tabulate/table.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/print.hpp>
@@ -41,7 +40,6 @@ namespace Feel
 template<int Dim, int Order>
 int cg_laplacian_model()
 {
-    using namespace tabulate;
     using Feel::cout;
     // tag::mesh_space[]
     tic();

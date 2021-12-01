@@ -17,7 +17,7 @@ void runStokesDirichletLM()
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<3>> );
     std::list<std::string> listMarker{"inlet","wall"};
     std::list<std::string> presslm{"inlet","outlet"};
-    auto submesh = createSubmesh(mesh,markedfaces(mesh,presslm));
+    auto submesh = createSubmesh(_mesh=mesh,_range=markedfaces(mesh,presslm));
 
     auto Vh1 = THch<OrderGeo>(mesh);
     auto Vh21 = Pch<2,double, PointSetEquiSpaced,Mesh<Simplex<2,1,3>>,0>(submesh);
@@ -104,11 +104,11 @@ void runStokesDirichletLM()
     cout << ".. block(0,1) block(1,0) done";
     for( auto bdy : { inlet, outlet } )
     {
-        a_01 +=integrate( markedfaces( mesh, bdy ),
-                          -trans(cross(id(u),N()))(0,2)*idt(lambda1)*alpha);
+        a_01 +=integrate( _range=markedfaces( mesh, bdy ),
+                          _expr=-trans(cross(id(u),N()))(0,2)*idt(lambda1)*alpha);
                           //-trans(cross(id(u),N()))*(Clag1t) );
-        a_10 +=integrate( markedfaces( mesh, bdy ),
-                          -trans(cross(idt(u),N()))(0,2)*id(lambda1)*alpha);
+        a_10 +=integrate( _range=markedfaces( mesh, bdy ),
+                          _expr=-trans(cross(idt(u),N()))(0,2)*id(lambda1)*alpha);
         a_10 += on( _range=boundaryfaces(submesh), _rhs=F, _element=*lambda1, _expr=cst(0.));
             //-trans(cross(idt(u),N()))*(Clag1) );
 
@@ -116,12 +116,14 @@ void runStokesDirichletLM()
     cout << ".. block(0,2) block(2,0) done";
     for( auto bdy : { inlet, outlet } )
     {
-        a_02 +=integrate( markedfaces( mesh, bdy ),
+        a_02 +=integrate( _range=markedfaces( mesh, bdy ),
+                          _expr=
                           -trans(cross(id(u),N()))(0,0)*alpha*idt(lambda2)*Ny()
                           +trans(cross(id(u),N()))(0,1)*alpha*idt(lambda2)*Nx());
         
                           //-trans(cross(id(u),N()))*(Clag2t) );
-        a_20 +=integrate( markedfaces( mesh, bdy ),
+        a_20 +=integrate( _range=markedfaces( mesh, bdy ),
+                          _expr=
                           -trans(cross(idt(u),N()))(0,0)*alpha*id(lambda2)*Ny()
                           +trans(cross(idt(u),N()))(0,1)*alpha*id(lambda2)*Nx());
         a_20 += on( _range=boundaryfaces(submesh), _rhs=F, _element=*lambda2, _expr=cst(0.));

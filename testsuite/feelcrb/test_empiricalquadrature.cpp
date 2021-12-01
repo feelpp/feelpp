@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE( test_1 )
     Dmu->setParameterName(0, "p1");
     Dmu->setParameterName(1, "p2");
 
-    auto mesh = loadMesh( new Mesh<Simplex<3> > );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<3> > );
     auto r = elements(mesh);
 
     auto eq = EmpiricalQuadrature(r,Dmu);

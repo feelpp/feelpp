@@ -26,44 +26,37 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2014-01-04
  */
-#ifndef FEELPP_VF_NORMH1_HPP
-#define FEELPP_VF_NORMH1_HPP 1
+#ifndef FEELPP_VF_NORMH1_H
+#define FEELPP_VF_NORMH1_H
 
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/integrator.hpp>
 
 namespace Feel  {
 
-BOOST_PARAMETER_FUNCTION(
-    ( double ), // return type
-    normH1,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( expr,   * )
-      ( grad_expr, *)
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( quad,   *, quad_order_from_expression )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,  *, quad_order_from_expression )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-    )
-)
+template <typename ... Ts>
+double normH1( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && range = args.get(_range);
+    auto && expr = args.get(_expr);
+    auto && grad_expr = args.get(_grad_expr);
+    bool parallel = args.get_else( _parallel, true );
+    auto && quad = args.get_else( _quad, quad_order_from_expression );
+    auto && quad1 = args.get_else( _quad1, quad_order_from_expression );
+    GeomapStrategyType geomap = args.get_else( _geomap,GeomapStrategyType::GEOMAP_OPT );
+    bool use_tbb = args.get_else( _use_tbb, false );
+    bool use_harts = args.get_else( _use_harts, false );
+    int grainsize = args.get_else( _grainsize, 100 );
+    std::string const& partitioner = args.get_else( _partitioner, "auto");
+    bool verbose = args.get_else( _verbose, false );
+
     double a = integrate( _range=range, _expr=inner(expr), _quad=quad, _geomap=geomap,
                           _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                          _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
+                          _partitioner=partitioner, _verbose=verbose ).evaluate(parallel)( 0, 0 );
     double b = integrate( _range=range, _expr=inner(grad_expr), _quad=quad, _geomap=geomap,
                           _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                          _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
+                          _partitioner=partitioner, _verbose=verbose ).evaluate(parallel)( 0, 0 );
     return math::sqrt( a + b );
 }
 

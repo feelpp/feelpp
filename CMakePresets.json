@@ -65,7 +65,8 @@
                 "FEELPP_COMPONENT": "feelpp",
                 "FEELPP_ENABLE_MOR": "OFF",
                 "FEELPP_ENABLE_TOOLBOXES": "OFF",
-                "FEELPP_ENABLE_TESTS": "OFF"
+                "FEELPP_ENABLE_TESTS": "OFF",
+                "FEELPP_ENABLE_FMILIB": "OFF"
             }
         },
         {
@@ -129,6 +130,17 @@
             }
         },
         {
+            "name": "pyfeelpp-all-dbg",
+            "inherits": "default",
+            "displayName": "pyfeelpp-all-dbg",
+            "description": "Build only the Feel++ pyfeelpp-all Component in Debug mode",
+            "binaryDir": "${sourceDir}/build/pyfeelpp-all-dbg",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "FEELPP_COMPONENT": "pyfeelpp-all"
+            }
+        },
+        {
             "name": "testsuite",
             "inherits": "default",
             "displayName": "testsuite",
@@ -179,7 +191,12 @@
         {
             "name": "dbg",
             "configurePreset": "dbg",
-            "jobs": 10
+            "jobs": 10,
+            "targets": [
+                "feelpp",
+                "pyfeelpp",
+                "install"
+            ]
         },
         {
             "name": "feelpp",
@@ -214,7 +231,20 @@
         {
             "name": "pyfeelpp-all",
             "inherits": "default",
-            "configurePreset": "pyfeelpp-all"
+            "configurePreset": "pyfeelpp-all",
+            "targets": [
+                "all",
+                "install"
+            ]
+        },
+        {
+            "name": "pyfeelpp-all-dbg",
+            "inherits": "default",
+            "configurePreset": "pyfeelpp-all-dbg",
+            "targets": [
+                "all",
+                "install"
+            ]
         },
         {
             "name": "doxygen",

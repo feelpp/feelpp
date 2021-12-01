@@ -32,16 +32,18 @@ namespace Feel {
 /// \cond DETAIL
 namespace detail
 {
-template<typename Args, typename Tag=tag::geoentity>
+//template<typename Args, typename Tag=tag::geoentity>
+template<typename ArgGeoEntityType>
 struct meshFromGeoEntity
 {
-    typedef typename boost::remove_pointer<
-        typename boost::remove_const<
-            typename boost::remove_reference<
-                typename parameter::binding<Args, Tag>::type
-                >::type
-            >::type
-    >::type _type;
+    using _type = std::decay_t<ArgGeoEntityType>;
+    // typedef typename boost::remove_pointer<
+    //     typename boost::remove_const<
+    //         typename boost::remove_reference<
+    //             typename parameter::binding<Args, Tag>::type
+    //             >::type
+    //         >::type
+    // >::type _type;
 
     typedef typename _type::GeoShape GeoShape;
     typedef typename mpl::if_< mpl::bool_<GeoShape::is_simplex>,
