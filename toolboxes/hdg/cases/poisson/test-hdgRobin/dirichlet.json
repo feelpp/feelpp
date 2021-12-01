@@ -13,20 +13,13 @@
         {
             "name":"porousmedium",
             // "k":"-K:K" !!! not working in journal
-            "cond": "-1"
+            "poisson_c": "-1"
         }
     },
     "BoundaryConditions":
     {
         "potential":
         {
-	        "VolumicForces":
-	        {
-		        "Omega":
-		        {
-		            "expr":"0.0"
-		        }
-	        },
             "Dirichlet":
             {
                 "Dirichlet":
@@ -34,17 +27,7 @@
                     "expr":"x*(1-x)*(y-1)+y*y*y/3-y*y+y+2*x:x:y"
                 }
             }
-	},
-	"Exact solution":
-	{
-	    "p_exact":
-	    {
-		    "Omega":
-		    {
-		        "expr":"x*(1-x)*(y-1)+y*y*y/3-y*y+y+2*x:x:y"
-		    }
 	    }
-	}
     },
     "PostProcess":
     {

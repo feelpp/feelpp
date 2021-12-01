@@ -7,20 +7,13 @@
         "omega":
         {
             "name":"copper",
-            "cond":"1"
+            "poisson_c":"1"
         }
     },
     "BoundaryConditions":
     {
         "potential":
         {
-            "SourceTerm":
-            {
-                "omega":
-                {
-                    "expr":"0"
-                }
-            },
             "Dirichlet":
             {
                 "in":
@@ -31,9 +24,9 @@
                 {
                     "expr":"0.25"
                 }
-		},
-		"Neumann":
-		{
+		    },
+		    "Neumann":
+		    {
                 "ext":
                 {
                     "expr":"0"

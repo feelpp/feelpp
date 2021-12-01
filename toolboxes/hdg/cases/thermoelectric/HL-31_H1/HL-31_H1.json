@@ -7,7 +7,9 @@
         "Cu":
         {
             "filename":"$cfgdir/Cu.json",
-            "physics":["heat","electric"]
+            "physics":["heat","electric"],
+            "electric_c":"sigma:sigma",
+            "heat_c":"k:k"
         }
     },
     "BoundaryConditions":

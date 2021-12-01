@@ -31,7 +31,10 @@
     {
         "omega":
         {
-            "cond":"k:k"
+            "poisson_c":"k:k",
+            // "expr":"a*c*cos(c*t)*(1-Cb/(k*L*L*L*L)*exp((H-x)/(k*L*L)))-Cb*a*c*c*exp((H-x)/(k*L*L))*sin(c*t):x:y:z:t:a:c:Cb:k:L:H"
+            "poisson_f":"-2*Pi*Pi*exp(2-x)*sin(2*Pi*t)+(Pi-Pi*exp(2-x))*cos(2*Pi*t):x:y:z:t"
+
         }
     },
     "InitialConditions":
@@ -79,14 +82,6 @@
         },
         "potential":
         {
-            "VolumicForces":
-            {
-                "omega":
-                {
-                    "expr":"-2*Pi*Pi*exp(2-x)*sin(2*Pi*t)+(Pi-Pi*exp(2-x))*cos(2*Pi*t):x:y:z:t"
-                    // "expr":"a*c*cos(c*t)*(1-Cb/(k*L*L*L*L)*exp((H-x)/(k*L*L)))-Cb*a*c*c*exp((H-x)/(k*L*L))*sin(c*t):x:y:z:t:a:c:Cb:k:L:H"
-                }
-            },
             "Dirichlet":
             {
                 "bottom":
