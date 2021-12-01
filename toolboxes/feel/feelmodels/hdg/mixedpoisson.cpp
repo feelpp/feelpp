@@ -52,7 +52,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
       M_fluxKey(MixedPoissonPhysicsMap[physic]["fluxK"]),
       M_tauCst(doption( prefixvm(this->prefix(), "tau_constant") )),
       M_useSC(boption( prefixvm(this->prefix(), "use-sc")) ),
-      M_postMatrixInit(false)
+      M_postMatrixInit(false),
+      M_solverName(soption(_prefix=this->prefix(), _name="solver"))
 {
     this->log("MixedPoisson","constructor", "start" );
 
@@ -287,26 +288,58 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initTimeStep()
     this->log("MixedPoisson","initTimeStep", "start" );
     this->timerTool("Constructor").start();
 
+    double ti = this->timeInitial();
+    double tf = this->timeFinal();
+    double dt = this->timeStep();
+
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
+    std::string suffixName = "";
+    if ( myFileFormat == "binary" )
+        suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
 
-    int bdfOrder = 1;
-    if ( M_timeStepping == "BDF" )
-        bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
-    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
-
-    M_bdfPotential = this->createBdf( this->spacePotential(),M_potentialKey, bdfOrder, nConsecutiveSave, myFileFormat );
+    if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+    {
+        int bdfOrder = 1;
+        if ( M_timeStepping == "BDF" )
+            bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+        int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
+        M_bdfPotential = this->createBdf( this->spacePotential(),M_potentialKey, bdfOrder, nConsecutiveSave, myFileFormat );
+    }
+    else if( M_timeStepping == "Newmark" )
+    {
+        M_newmarkPotential = newmark( _space=this->spacePotential(),
+                                      _name=M_potentialKey+suffixName,
+                                      _prefix=this->prefix(),
+                                      _initial_time=ti, _final_time=tf, _time_step=dt,
+                                      _restart=this->doRestart(), _restart_path=this->restartPath(), _restart_at_last_save=this->restartAtLastSave(),
+                                      _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+    }
 
     if (!this->doRestart())
     {
         // up current time
-        this->updateTime( M_bdfPotential->timeInitial() );
+        if ( M_timeStepping == "Newmark" )
+            this->updateTime( M_newmarkPotential->timeInitial() );
+        else
+            this->updateTime( M_bdfPotential->timeInitial() );
     }
     else
     {
-        // start time step
-        double tir = M_bdfPotential->restart();
-        // load a previous solution as current solution
-        *this->fieldPotentialPtr() = M_bdfPotential->unknown(0);
+        double tir;
+        if ( M_timeStepping == "Newmark" )
+        {
+            // restart time step
+            tir = M_newmarkPotential->restart();
+            // load a previous solution as current solution
+            *this->fieldPotentialPtr() = M_newmarkPotential->previousUnknown();
+        }
+        else
+        {
+            // start time step
+            tir = M_bdfPotential->restart();
+            // load a previous solution as current solution
+            *this->fieldPotentialPtr() = M_bdfPotential->unknown(0);
+        }
         // up initial time
         this->setTimeInitial( tir );
         // up current time
@@ -546,6 +579,16 @@ MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve()
 {
+    if( M_solverName == "Linear" )
+        this->solveLinear();
+    else
+        this->solvePicard();
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+void
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solveLinear()
+{
     solve::strategy s = M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
     M_A = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *this->backend(), (s>=solve::strategy::static_condensation)?false:true );
     M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *this->backend(), false);
@@ -569,6 +612,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve()
 
     M_up = std::make_shared<element_flux_type>( U(0_c) );
     M_pp = std::make_shared<element_potential_type>( U(1_c));
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+void
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solvePicard()
+{
+    CHECK(false) << "Solve Picard not yet implemented";
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
@@ -604,10 +654,19 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::startTimeStep()
     // // some time stepping require to compute residual without time derivative
     // this->updateTimeStepCurrentResidual();
 
-    // start time step
-    if (!this->doRestart())
-        M_bdfPotential->start( M_bdfPotential->unknowns() );
-     // up current time
+    if ( M_timeStepping == "Newmark" )
+    {
+        // start time step
+        if ( !this->doRestart() )
+            M_newmarkPotential->start(this->fieldPotential());
+    }
+    else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+    {
+        // start time step
+        if (!this->doRestart())
+            M_bdfPotential->start( M_bdfPotential->unknowns() );
+    }
+    // up current time
     this->updateTime( M_bdfPotential->time() );
 
     // update all expressions in bc or in house prec
@@ -634,13 +693,17 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateTimeStep()
         M_bdfPotential->next( this->fieldPotential() );
         int currentTimeOrder = this->timeStepBdfPotential()->timeOrder();
         rebuildCstAssembly = previousTimeOrder != currentTimeOrder && this->timeStepBase()->strategy() == TS_STRATEGY_DT_CONSTANT;
-        this->updateTime( this->timeStepBdfPotential()->time() );
     }
     else if ( M_timeStepping == "Theta" )
     {
         M_bdfPotential->next( this->fieldPotential() );
-        this->updateTime( this->timeStepBdfPotential()->time() );
     }
+    else if ( M_timeStepping == "Newmark" )
+    {
+        M_newmarkPotential->next( this->fieldPotential() );
+    }
+    // up current time
+    this->updateTime( this->timeStepBase()->time() );
 
     if ( rebuildCstAssembly )
         this->setNeedToRebuildCstPart(true);
