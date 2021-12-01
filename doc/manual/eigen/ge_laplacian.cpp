@@ -52,7 +52,7 @@ EigenProblem<Dim, Order>::run()
         std::cout << "Execute EigenProblem<" << Dim << ">\n";
     }
 
-    Environment::changeRepository( boost::format( "eigen/%1%/%2%D-P%3%/h_%4%/" )
+    Environment::changeRepository( _directory=boost::format( "eigen/%1%/%2%D-P%3%/h_%4%/" )
                                    % this->about().appName()
                                    % Dim
                                    % Order
@@ -66,11 +66,11 @@ EigenProblem<Dim, Order>::run()
 
     auto l = form1( _test=Xh );
     auto a = form2( _test=Xh, _trial=Xh);
-    a = integrate( elements( mesh ), dxt(u)*dx(v)+dyt(u)*dy(v)+dzt(u)*dz(v));
-    a+= on( boundaryfaces(mesh), _element=u, _rhs=l, _expr=cst(0.));
+    a = integrate( _range=elements( mesh ), _expr=dxt(u)*dx(v)+dyt(u)*dy(v)+dzt(u)*dz(v));
+    a+= on( _range=boundaryfaces(mesh), _element=u, _rhs=l, _expr=cst(0.));
 
     auto b = form2( _test=Xh, _trial=Xh);
-    b = integrate( elements(mesh), trans(idt( u ))*id( v ) );
+    b = integrate( _range=elements(mesh), _expr=trans(idt( u ))*id( v ) );
 
     auto modes= veigs( _formA=a, _formB=b );
 

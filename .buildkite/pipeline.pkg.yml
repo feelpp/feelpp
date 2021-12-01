@@ -2,16 +2,22 @@ steps:
  - trigger: "pkg-feelpp-focal"
    label: ":package: :ubuntu: focal Feel++ ${BUILDKITE_BRANCH}"
    async: true
+   build:
+     branch: "${BUILDKITE_BRANCH}"
    if: pipeline.slug=="pkg-feelpp" && ( build.branch == "develop" || build.branch == "master" )
  - wait
  - trigger: "pkg-feelpp-bionic"
    label: ":package: :ubuntu: bionic Feel++ ${BUILDKITE_BRANCH}"
    async: true
+   build:
+     branch: "${BUILDKITE_BRANCH}"
    if: pipeline.slug=="pkg-feelpp" && ( build.branch == "develop" || build.branch == "master" )   
  - wait 
  - trigger: "pkg-feelpp-buster"
    label: ":package: :debian: buster Feel++  ${BUILDKITE_BRANCH}"
    async: true
+   build:
+     branch: "${BUILDKITE_BRANCH}"
    if: pipeline.slug=="pkg-feelpp" && ( build.branch == "develop" || build.branch == "master" )
 # - wait
 # # Toolboxes 

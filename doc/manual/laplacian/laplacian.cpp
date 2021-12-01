@@ -86,13 +86,13 @@ Laplacian<Dim,Order>::run()
     LOG(INFO) << "------------------------------------------------------------\n";
     LOG(INFO) << "Execute Laplacian<" << Dim << ">\n";
 
-    Environment::changeRepository( boost::format( "doc/manual/laplacian/%1%/D%2%/P%3%/h_%4%/" )
+    Environment::changeRepository( _directory=boost::format( "doc/manual/laplacian/%1%/D%2%/P%3%/h_%4%/" )
                                    % this->about().appName()
                                    % Dim
                                    % Order
                                    % doption("gmsh.hsize") );
 
-    auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
     auto Xh = Pch<Order>( mesh );
     Xh->printInfo();
 
@@ -106,7 +106,7 @@ Laplacian<Dim,Order>::run()
     auto exact = expr(soption(_name=(boost::format("exact%1%D")%Dim).str()));
     std::string rhs_str = soption(_name=(boost::format("rhs%1%D")%Dim).str());
     auto f = -nu*laplacian(exact);
-    auto gradg = grad<Dim,2>(exact);
+    auto gradg = grad<Dim>(exact);
     if ( Environment::isMasterRank() )
     {
         std::cout << "Looking for u such that -Delta u = f on Omega\n"

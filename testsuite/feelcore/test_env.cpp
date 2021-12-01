@@ -74,14 +74,12 @@ BOOST_AUTO_TEST_CASE( test_env1 )
     using namespace Feel;
     BOOST_TEST_MESSAGE( "test_env1" );
 
-    double hsize = Feel::option(_name="hsize").as<double>(), hsize2;
-    BOOST_CHECK_CLOSE( Feel::optionT(_name="hsize", _opt=hsize2 ), hsize, 1e-15 );
-    BOOST_CHECK_CLOSE( hsize2, hsize, 1e-15 );
+    double hsize = Feel::option(_name="hsize").as<double>();
+    BOOST_CHECK_CLOSE( Feel::optionT<double>(_name="hsize"), hsize, 1e-15 );
 
-    std::string fname = Feel::option(_name="fname").as<std::string>(), fname2;
+    std::string fname = Feel::option(_name="fname").as<std::string>();
     double t;
-    BOOST_CHECK_EQUAL( Feel::optionT(_name="fname", _opt=fname2 ), fname );
-    BOOST_CHECK_EQUAL( fname2, fname );
+    BOOST_CHECK_EQUAL( Feel::optionT<std::string>(_name="fname"), fname );
 
     // if you try to do the following an exception is triggerred and a nice
     // message with a backtrace is printed

@@ -25,7 +25,7 @@
 #ifndef FEELPP_CRB_CRBMODELDB_H
 #define FEELPP_CRB_CRBMODELDB_H 1
 
-#include <feel/feelcore/feel.hpp>
+//#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcrb/crbenums.hpp>
 

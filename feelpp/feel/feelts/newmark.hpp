@@ -26,16 +26,15 @@
    \author Vincent Chabannes <vincent.chabannes@feelpp.org>
    \date 2014-02-24
 */
-#ifndef _NEWMARK_H
-#define _NEWMARK_H
+#ifndef FEELPP_TS_NEWMARK_H
+#define FEELPP_TS_NEWMARK_H
 
 #include <string>
 #include <iostream>
 #include <sstream>
 #include <algorithm>
 
-#include <boost/timer.hpp>
-#include <boost/shared_array.hpp>
+//#include <boost/shared_array.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/utility.hpp>
@@ -54,7 +53,6 @@
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 
-#include <boost/parameter.hpp>
 #include <feel/feelcore/parameter.hpp>
 
 #include <feel/feelcore/feel.hpp>
@@ -764,31 +762,28 @@ Newmark<SpaceType>::updateFromDisp( typename space_type::template Element<value_
 }
 
 
-
-BOOST_PARAMETER_FUNCTION(
-    ( std::shared_ptr<Newmark<typename meta::remove_all<typename parameter::binding<Args, tag::space>::type>::type::element_type> > ),
-    newmark, tag,
-    ( required
-      ( space,*( boost::is_convertible<mpl::_,std::shared_ptr<Feel::FunctionSpaceBase> > ) ) )
-    ( optional
-      ( prefix,*,"" )
-      ( name,*,"newmark" )
-      ( initial_time,*( boost::is_floating_point<mpl::_> ), doption(_prefix=prefix,_name="ts.time-initial") )
-      ( final_time,*( boost::is_floating_point<mpl::_> ),doption(_prefix=prefix,_name="ts.time-final") )
-      ( time_step,*( boost::is_floating_point<mpl::_> ),doption(_prefix=prefix,_name="ts.time-step") )
-      //( strategy,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"ts.strategy" )].template as<int>() )
-      ( steady,*( bool ),boption(_prefix=prefix,_name="ts.steady") )
-      ( restart,*( boost::is_integral<mpl::_> ),boption(_prefix=prefix,_name="ts.restart") )
-      ( restart_path,*,soption(_prefix=prefix,_name="ts.restart.path") )
-      ( restart_at_last_save,*( boost::is_integral<mpl::_> ),boption(_prefix=prefix,_name="ts.restart.at-last-save") )
-      ( save,*( boost::is_integral<mpl::_> ),boption(_prefix=prefix,_name="ts.save") )
-      ( freq,*(boost::is_integral<mpl::_> ),ioption(_prefix=prefix,_name="ts.save.freq") )
-      ( format,*,soption(_prefix=prefix,_name="ts.file-format") )
-      ( rank_proc_in_files_name,*( boost::is_integral<mpl::_> ),boption(_prefix=prefix,_name="ts.rank-proc-in-files-name") )
-    ) )
+template <typename ... Ts>
+auto newmark( Ts && ... v )
 {
-    typedef typename meta::remove_all<space_type>::type::element_type _space_type;
-    auto thenewmark = std::shared_ptr<Newmark<_space_type> >( new Newmark<_space_type>( space,name,prefix ) );
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && space = args.get(_space);
+    po::variables_map const& vm = args.get_else(_vm,Environment::vm());
+    std::string const& prefix = args.get_else(_prefix,"");
+    std::string const& name = args.get_else(_name,"newmark");
+    double initial_time = args.get_else_invocable( _initial_time, [&prefix,&vm](){ return doption(_prefix=prefix,_name="ts.time-initial",_vm=vm); } );
+    double final_time = args.get_else_invocable( _final_time, [&prefix,&vm](){ return doption(_prefix=prefix,_name="ts.time-final",_vm=vm); } );
+    double time_step = args.get_else_invocable( _time_step, [&prefix,&vm](){ return doption(_prefix=prefix,_name="ts.time-step",_vm=vm); } );
+    bool steady = args.get_else_invocable( _steady, [&prefix,&vm](){ return boption(_prefix=prefix,_name="ts.steady",_vm=vm); } );
+    bool restart = args.get_else_invocable( _restart, [&prefix,&vm](){ return boption(_prefix=prefix,_name="ts.restart",_vm=vm); } );
+    std::string const& restart_path = args.get_else_invocable( _restart_path, [&prefix,&vm](){ return soption(_prefix=prefix,_name="ts.restart.path",_vm=vm); } );
+    bool restart_at_last_save = args.get_else_invocable( _restart_at_last_save, [&prefix,&vm](){ return boption(_prefix=prefix,_name="ts.restart.at-last-save",_vm=vm); } );
+    bool save = args.get_else_invocable( _save, [&prefix,&vm](){ return boption(_prefix=prefix,_name="ts.save",_vm=vm); } );
+    int freq = args.get_else_invocable( _freq, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="ts.save.freq",_vm=vm); } );
+    std::string const& format = args.get_else_invocable( _format, [&prefix,&vm](){ return soption(_prefix=prefix,_name="ts.file-format",_vm=vm); } );
+    bool rank_proc_in_files_name = args.get_else_invocable( _rank_proc_in_files_name, [&prefix,&vm](){ return boption(_prefix=prefix,_name="ts.rank-proc-in-files-name",_vm=vm); } );
+
+    using _space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(space)>>>;
+    auto thenewmark = std::make_shared<Newmark<_space_type>>( space,name,prefix );
     thenewmark->setTimeInitial( initial_time );
     thenewmark->setTimeFinal( final_time );
     thenewmark->setTimeStep( time_step );

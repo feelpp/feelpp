@@ -16,15 +16,15 @@ OptimizationLinearProgramming::OptimizationLinearProgramming(int direction, std:
     glp_set_obj_dir( M_pb, direction );
     M_params = new glp_smcp;
     glp_init_smcp(M_params);
-    M_params->msg_lev = ioption("glpk.verbosity");
-    M_params->meth = ioption("glpk.method");
-    M_params->tol_bnd = doption("glpk.tolerance-bounds");
-    M_params->tol_dj = doption("glpk.tolerance-dual");
-    M_params->tol_piv = doption("glpk.tolerance-pivot");
-    M_params->it_lim = ioption("glpk.iteration-limit");
-    M_params->tm_lim = ioption("glpk.time-limit");
-    M_params->presolve = ioption("glpk.presolve");
-    M_scaling = ioption("glpk.scaling");
+    M_params->msg_lev = ioption(_name="glpk.verbosity");
+    M_params->meth = ioption(_name="glpk.method");
+    M_params->tol_bnd = doption(_name="glpk.tolerance-bounds");
+    M_params->tol_dj = doption(_name="glpk.tolerance-dual");
+    M_params->tol_piv = doption(_name="glpk.tolerance-pivot");
+    M_params->it_lim = ioption(_name="glpk.iteration-limit");
+    M_params->tm_lim = ioption(_name="glpk.time-limit");
+    M_params->presolve = ioption(_name="glpk.presolve");
+    M_scaling = ioption(_name="glpk.scaling");
 }
 
 OptimizationLinearProgramming::~OptimizationLinearProgramming()

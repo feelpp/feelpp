@@ -27,8 +27,8 @@
    \author Stephane Veys <stephane.veys@imag.fr>
    \date 2013-04-07
 */
-#ifndef __ReducedBasisSpace_H
-#define __ReducedBasisSpace_H 1
+#ifndef FEELPP_DISCR_REDUCEDBASISSPACE_H
+#define FEELPP_DISCR_REDUCEDBASISSPACE_H 1
 
 #include <feel/feelcrb/crb.hpp>
 
@@ -691,22 +691,21 @@ public :
     void visualize ()
         {
         }
-
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( this_ptrtype ),
-                                     static New,
-                                     tag,
-                                     ( required
-                                       ( space, *) ) )
+    template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
+    static this_ptrtype New( Ts && ... v )
         {
-            //LOG( INFO ) << "ReducedBasis NEW (new impl)";
-            return NewImpl( space );
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && space = args.get(_space);
+            return std::make_shared<this_type>( space );
         }
+    static this_ptrtype New( fespace_ptrtype const& space ) { return New(_space=space); }
 
-    static this_ptrtype NewImpl( fespace_ptrtype const& Xh )
-        {
 
-            return this_ptrtype( new this_type( Xh ) );
-        }
+    // static this_ptrtype NewImpl( fespace_ptrtype const& Xh )
+    //     {
+
+    //         return this_ptrtype( new this_type( Xh ) );
+    //     }
 
     /*
      * Get the FEM functionspace

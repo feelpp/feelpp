@@ -31,7 +31,6 @@
 #include <feel/feeldiscr/check.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <tabulate/table.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/print.hpp>
@@ -53,7 +52,7 @@ stokes(SpacePtrType Vh)
     auto q = U.template element<1>();
     auto mu = doption(_name="mu");
     auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f") );
-    auto thechecker = checker("qs_stokes",soption("checker.solution"));
+    auto thechecker = checker(_name="qs_stokes",_solution_key=soption("checker.solution"));
     auto solution = expr<FEELPP_DIM,1>( thechecker.check()? thechecker.solution() : soption(_name="functions.g") );
     auto g = solution;
     toc("Vh");

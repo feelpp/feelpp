@@ -30,7 +30,7 @@ int main( int argc, char** argv )
 {
   const int dim = FEELPP_DIM;
 
-  Feel::Environment env( argc, argv, _desc=meshAdaptFromLSOptions() );
+  Feel::Environment env( _argc=argc, _argv=argv, _desc=meshAdaptFromLSOptions() );
 
   auto mesh = unitHypercube<dim>();
 
@@ -102,12 +102,12 @@ int main( int argc, char** argv )
       exp->save();
 
       tic();
-      mesh = mesh_adaptation.adaptMesh(_initMesh=mesh,
-                                       _geofile=geofile,
-                                       _adaptType="isotropic",
+      mesh = mesh_adaptation.adaptMesh(_mesh=mesh,
+                                       _geo=geofile,
+                                       _type="isotropic",
                                        _metric=metric_list,
-                                       _hMin=hmin,
-                                       _hMax=hmax );
+                                       _hmin=hmin,
+                                       _hmax=hmax );
       toc("made mesh adaptation");
 
   }

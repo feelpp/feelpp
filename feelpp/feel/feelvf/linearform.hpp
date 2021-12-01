@@ -34,9 +34,6 @@
 #include <Eigen/Eigen>
 #include <Eigen/StdVector>
 
-#include <boost/fusion/support/pair.hpp>
-#include <boost/fusion/container.hpp>
-#include <boost/fusion/sequence.hpp>
 #include <boost/fusion/algorithm.hpp>
 #include <boost/multi_array.hpp>
 #include <feel/feelvf/block.hpp>

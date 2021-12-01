@@ -44,7 +44,7 @@ int main(int argc, char**argv )
 
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<3>>);
 
-    auto g = expr<2,1>( soption(_name="functions.g") );
+    auto g = expr<3,1>( soption(_name="functions.g") );
     typedef Lagrange<2, Vectorial> basis_u_type;
     typedef Lagrange<1, Scalar> basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
@@ -73,17 +73,17 @@ int main(int argc, char**argv )
         a += integrate( _range=elements( mesh ), _expr=divt(u)*div(v) );
     a +=integrate( _range=elements( mesh ), _expr=gradt( p )*id(v) + grad( q )*idt(u) );
     if ( soption(_name="p" ) == "lm")
-        a +=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ) );
+        a +=integrate( _range=elements( mesh ), _expr=id( q )*idt( lambda ) + idt( p )*id( nu ) );
     else
-        a +=integrate( elements( mesh ), idt( lambda )*id( nu ) );
+        a +=integrate( _range=elements( mesh ), _expr=idt( lambda )*id( nu ) );
     if ( soption(_name="p" ) == "penal")
         a += integrate( _range=elements( mesh ), _expr=1e-6*idt(p)*id(q) );
     //a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=zero<2>() ) ;
     auto gamma = doption(_name="parameters.gamma");
     if ( boption(_name="bc1" ) )
-        a += integrate( boundaryfaces(mesh), gamma*(trans(idt(u))*N())*(trans(id(u))*N())/hFace() );
+        a += integrate( _range=boundaryfaces(mesh), _expr=gamma*(trans(idt(u))*N())*(trans(id(u))*N())/hFace() );
     if ( boption(_name="bc2" ) )
-         a += integrate( boundaryfaces(mesh), gamma*(trans(curlt(u))*N())*(trans(id(u))*N())/hFace() );
+         a += integrate( _range=boundaryfaces(mesh), _expr=gamma*(trans(curlt(u))*N())*(trans(id(u))*N())/hFace() );
 
     auto b = form2( _trial=Vh, _test=Vh);
     b = integrate( _range=elements( mesh ), _expr=trans(idt(u))*id(v)+0.*idt(p)*id(p) );

@@ -84,8 +84,9 @@ struct std_item
     static V const& get(T const& x, int i)
         {
             if( i<0 ) i+=x.size();
-            if( i>=0 && i<x.size() ) return x[i];
-            IndexError();
+            if ( i< 0 || i>= x.size() )
+                IndexError();
+            return x[i];
         }
     static void set(T & x, int i, V const& v)
         {
