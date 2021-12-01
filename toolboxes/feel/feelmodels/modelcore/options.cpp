@@ -700,6 +700,7 @@ mixedpoisson_options( std::string const& prefix )
 {
     po::options_description desc_options("mixedpoisson options");
     desc_options.add_options()
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "Linear" ), "numeric solver : Linear, Picard")
         ( prefixvm( prefix, "tau_constant" ).c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( prefixvm( prefix, "use-sc" ).c_str(), po::value<bool>()->default_value( true ), "use static condensation" )
         ( prefixvm( prefix, "time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")

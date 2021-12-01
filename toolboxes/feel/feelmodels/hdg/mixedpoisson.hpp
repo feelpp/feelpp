@@ -45,6 +45,7 @@
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelts/bdf.hpp>
+#include <feel/feelts/newmark.hpp>
 
 #include <feel/feelmodels/hdg/enums.hpp>
 
@@ -153,6 +154,8 @@ public:
     typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     // time scheme
+    using newmark_potential_type = Newmark<space_potential_type>;
+    using newmark_potential_ptrtype = std::shared_ptr<newmark_potential_type>;
     using bdf_potential_type = Bdf<space_potential_type>;
     using bdf_potential_ptrtype = std::shared_ptr<bdf_potential_type>;
 
@@ -204,9 +207,11 @@ protected:
     // time discretisation
     std::string M_timeStepping;
     bdf_potential_ptrtype M_bdfPotential;
+    newmark_potential_ptrtype M_newmarkPotential;
     double M_timeStepThetaValue;
     vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
+    std::string M_solverName;
     double M_tauCst;
     bool M_useSC;
 
@@ -343,6 +348,8 @@ public:
     //___________________________________________________________________________________//
 
     virtual void solve();
+    void solveLinear();
+    void solvePicard();
     virtual void updateLinearPDE( DataUpdateLinear& data ) const override;
     template <typename ModelContextType>
     void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
@@ -412,8 +419,17 @@ public:
     // time step scheme
     std::string const& timeStepping() const { return M_timeStepping; }
     bdf_potential_ptrtype const& timeStepBdfPotential() const { return M_bdfPotential; }
-    std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfPotential(); }
-    std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBdfPotential(); }
+    newmark_potential_ptrtype const& timeStepNewmarkPotential() const { return M_newmarkPotential; }
+    std::shared_ptr<TSBase> timeStepBase() {
+        if( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+            return this->timeStepBdfPotential();
+        else
+            return this->timeStepNewmarkPotential();}
+    std::shared_ptr<TSBase> timeStepBase() const {
+        if( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+            return this->timeStepBdfPotential();
+        else
+            return this->timeStepNewmarkPotential();}
     virtual void startTimeStep();
     virtual void updateTimeStep();
 
