@@ -43,7 +43,7 @@ int
 runMixedPoissonSimulation()
 {
     using namespace Feel;
-    auto ME = ToolboxType::New("hdg.elasticity");
+    auto ME = ToolboxType::New(_prefix="hdg.elasticity", _physic=Feel::FeelModels::MixedPoissonPhysics::Elasticity);
     return runToolboxSimulation( ME );
 }
 
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
                             constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
                             if ( dimension == _dim && discretization == _discretization )
                             {
-                                typedef Feel::FeelModels::MixedPoisson< Simplex<_dim,1>,_torder,Vectorial> model_type;
+                                typedef Feel::FeelModels::MixedPoisson< Simplex<_dim,1>,_torder,Tensor2Symm> model_type;
                                 if ( mode == "simulation" )
                                     status = runMixedPoissonSimulation<model_type>();
                                 else

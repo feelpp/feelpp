@@ -10,7 +10,8 @@ namespace FeelModels {
 enum MixedPoissonPhysics{
     None = 0,
     Electric,
-    Heat
+    Heat,
+    Elasticity
 };
 
 extern std::map<MixedPoissonPhysics,std::map<std::string,std::string> > MixedPoissonPhysicsMap;
