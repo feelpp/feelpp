@@ -64,7 +64,8 @@
             "cacheVariables": {
                 "FEELPP_COMPONENT": "feelpp",
                 "FEELPP_ENABLE_MOR": "OFF",
-                "FEELPP_ENABLE_TOOLBOXES": "OFF"
+                "FEELPP_ENABLE_TOOLBOXES": "OFF",
+                "FEELPP_ENABLE_TESTS": "OFF"
             }
         },
         {
@@ -135,6 +136,16 @@
             "binaryDir": "${sourceDir}/build/testsuite",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "testsuite"
+            }
+        },
+        {
+            "name": "benchmarks",
+            "inherits": "default",
+            "displayName": "benchmarks",
+            "description": "Build only the Feel++ benchmarks Component",
+            "binaryDir": "${sourceDir}/build/benchmarks",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "benchmarks"
             }
         },
         {
