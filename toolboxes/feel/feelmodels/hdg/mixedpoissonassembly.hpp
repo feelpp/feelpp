@@ -15,6 +15,8 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
     auto F = std::dynamic_pointer_cast<condensed_vector_t<value_type>>(data.rhs());
     bool buildCstPart = data.buildCstPart();
     bool buildNonCstPart = !buildCstPart;
+    if( buildNonCstPart )
+        return;
 
     auto mesh = this->mesh();
     auto ps = this->spaceProduct();
@@ -28,6 +30,33 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
     auto sc_param = M_useSC ? 0.5 : 1.0;
 
     auto const& symbolsExpr = mctx.symbolsExpr();
+
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    {
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+        {
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            if( this->materialsProperties()->hasProperty( matName, this->diffusionCoefficientName() ) )
+            {
+                auto coeff_c = this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() );
+                auto coeff_c_expr = expr( coeff_c.expr(), symbolsExpr );
+                bbf(0_c, 0_c) += integrate(_range=range, _expr=inner(idt(u),id(u))/coeff_c_expr);
+            }
+            if( this->materialsProperties()->hasProperty( matName, this->lameLambdaCoefficientName() ) && this->materialsProperties()->hasProperty( matName, this->lameMuCoefficientName() ) )
+            {
+                auto coeff_lambda = this->materialsProperties()->materialProperty( matName, this->lameLambdaCoefficientName() );
+                auto coeff_lambda_expr = expr( coeff_lambda.expr(), symbolsExpr );
+                auto coeff_mu = this->materialsProperties()->materialProperty( matName, this->lameMuCoefficientName() );
+                auto coeff_mu_expr = expr( coeff_mu.expr(), symbolsExpr );
+                auto c1 = cst(0.5)/coeff_mu_expr;
+                auto c2 = -coeff_lambda_expr/(cst(2.) * coeff_mu_expr * (nDim*coeff_lambda_expr + cst(2.)*coeff_mu_expr));
+                bbf( 0_c, 0_c ) += integrate(_range=range, _expr=-c1*inner(idt(u),id(u)) );
+                if constexpr( is_tensor2symm ) {
+                    bbf( 0_c, 0_c ) += integrate(_range=range, _expr=-c2*trace(idt(u))*trace(id(u)) );
+                }
+            }
+        }
+    }
 
     // -(p,div(v))_Omega
     bbf( 0_c, 1_c ) += integrate(_range=elements(support(M_Wh)), _expr=-inner(idt(p),div(u)) );
@@ -51,10 +80,30 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
                                  _expr=tau_constant * inner(id(p), idt(p)) );
     if( !this->isStationary() )
     {
-        // (1/delta_t p, w)_Omega  [only if it is not stationary]
-        auto coeff = this->timeStepBdfPotential()->polyDerivCoefficient(0);
-        bbf( 1_c, 1_c) += integrate(_range=elements(support(M_Wh)),
-                                    _expr=coeff*inner(idt(p), id(p)) );
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        {
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+            {
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                if( this->materialsProperties()->hasProperty( matName, this->firstTimeDerivativeCoefficientName() ) )
+                {
+                    auto coeff = this->timeStepBdfPotential()->polyDerivCoefficient(0);
+                    auto coeff_d = this->materialsProperties()->materialProperty( matName, this->firstTimeDerivativeCoefficientName() );
+                    auto coeff_d_expr = expr(coeff_d.expr(), symbolsExpr);
+                    // (1/delta_t p, w)_Omega  [only if it is not stationary]
+                    bbf( 1_c, 1_c) += integrate(_range=range,
+                                                _expr=coeff_d_expr*coeff*inner(idt(p), id(p)) );
+                }
+                if( this->materialsProperties()->hasProperty( matName, this->secondTimeDerivativeCoefficientName() ) )
+                {
+                    auto dt = this->timeStep();
+                    auto coeff_d2 = this->materialsProperties()->materialProperty( matName, this->secondTimeDerivativeCoefficientName() );
+                    auto coeff_d2_expr = expr(coeff_d2.expr(), symbolsExpr);
+                    bbf( 1_c, 1_c) += integrate(_range=range,
+                                                _expr=coeff_d2_expr*inner(idt(p), id(p))/(dt*dt) );
+                }
+            }
+        }
     }
 
     // <-tau phat, w>_Gamma\Gamma_I
@@ -80,36 +129,53 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
     bbf( 2_c, 2_c ) += integrate(_range=internalfaces(support(M_Wh)),
                                  _expr=-sc_param*tau_constant * inner(idt(phat), id(phat) ) );
 
+    if( !this->isStationary() )
+    {
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        {
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+            {
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                if( this->materialsProperties()->hasProperty( matName, this->firstTimeDerivativeCoefficientName() ) )
+                {
+                    auto polyDeriv = this->timeStepBdfPotential()->polyDeriv();
+                    auto coeff_d = this->materialsProperties()->materialProperty( matName, this->firstTimeDerivativeCoefficientName() );
+                    auto coeff_d_expr = expr(coeff_d.expr(), symbolsExpr);
+                    blf(1_c) += integrate(_range=range,
+                                          _expr=coeff_d_expr*inner(id(p), idv(polyDeriv)) );
+                }
+                if( this->materialsProperties()->hasProperty( matName, this->secondTimeDerivativeCoefficientName() ) )
+                {
+                    auto dt = this->timeStep();
+                    auto coeff_d2 = this->materialsProperties()->materialProperty( matName, this->secondTimeDerivativeCoefficientName() );
+                    auto coeff_d2_expr = expr(coeff_d2.expr(), symbolsExpr);
+                    // blf(1_c) += integrate(_range=range,
+                    //                       _expr=coeff_d2_expr*inner(idt(p), id(p))/(dt*dt) );
+                }
+            }
+        }
+    }
+
+    // needed for static condensation
+    blf(1_c) += integrate(_range=M_rangeMeshElements, _expr=cst(0.));
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
-            auto const& condExpr = this->materialsProperties()->materialProperty( matName, this->M_physicMap.at("condK"));
-            auto cond = expr( condExpr.expr(), symbolsExpr);
-            bbf(0_c, 0_c) += integrate(_range=range, _expr=inner(idt(u),id(u))/cond);
+            if( this->materialsProperties()->hasProperty( matName, this->sourceCoefficientName() ) )
+            {
+                auto coeff_f = this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() );
+                auto coeff_f_expr = [&coeff_f,&symbolsExpr]() -> decltype(auto) {
+                                        if constexpr( is_scalar ) {
+                                            return expr(coeff_f.expr(), symbolsExpr);
+                                        } else {
+                                            return expr(coeff_f.template expr<nDim>(), symbolsExpr);
+                                        }
+                                    }();
+                blf(1_c) += integrate(_range=range, _expr=inner(id(p), coeff_f_expr));
+            }
         }
-    }
-
-    if( !this->isStationary() )
-    {
-        auto polyDeriv = this->timeStepBdfPotential()->polyDeriv();
-        blf(1_c) += integrate(_range=M_rangeMeshElements, _expr=inner(id(p), idv(polyDeriv)) );
-    }
-
-    // needed for static condensation
-    blf(1_c) += integrate(_range=M_rangeMeshElements, _expr=cst(0.));
-    for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "VolumicForces") )
-    {
-        auto range = bc.emptyMarkers() ? elements(support(M_Wh)) : markedelements(support(M_Wh), bc.markers());
-        auto g = [&bc = bc,&symbolsExpr]() -> decltype(auto) {
-                     if constexpr( is_scalar ) {
-                         return expr(bc.expr(), symbolsExpr);
-                     } else {
-                         return expr(bc.template expr<nDim>(), symbolsExpr);
-                     }
-                 }();
-        blf(1_c) += integrate(_range=range, _expr=inner(id(p),g));
     }
     for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Dirichlet") )
     {
@@ -132,10 +198,10 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
                                      _expr=inner(id(phat), normalt(u)) );
         // <tau p, mu>_Gamma_N
         bbf( 2_c, 1_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                     _expr=tau_constant*inner(id(phat), idt(p)) );
+                                     _expr=-tau_constant*inner(id(phat), idt(p)) );
         // <-tau phat, mu>_Gamma_N
         bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                     _expr=-tau_constant*inner(idt(phat), id(phat)) );
+                                     _expr=tau_constant*inner(idt(phat), id(phat)) );
         auto g = [&bc = bc,&symbolsExpr]() -> decltype(auto) {
                      if constexpr( is_scalar ) {
                          return expr(bc.expr(), symbolsExpr);
@@ -153,10 +219,10 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
                                      _expr=inner(id(phat), normalt(u)) );
         // <tau p, mu>_Gamma_R
         bbf( 2_c, 1_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                     _expr=tau_constant*inner(id(phat), idt(p)) );
+                                     _expr=-tau_constant*inner(id(phat), idt(p)) );
         // <-tau phat, mu>_Gamma_R
         bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                     _expr=-tau_constant*inner(idt(phat), id(phat)) );
+                                     _expr=tau_constant*inner(idt(phat), id(phat)) );
 
         auto g1 = expr(bc.expr1(), symbolsExpr);
         bbf(2_c, 2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
@@ -188,11 +254,11 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
 
         // <tau p, m>_Gamma_I
         bbf( 3_c, 1_c, i, 0 ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
-                                            _expr=tau_constant*inner(idt(p), id(l)) );
+                                            _expr=-tau_constant*inner(idt(p), id(l)) );
 
         // -<lambda2, m>_Gamma_I
         bbf( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
-                                            _expr=-tau_constant*inner(id(l), idt(l)) );
+                                            _expr=tau_constant*inner(id(l), idt(l)) );
 
         double meas = integrate( _range=markedfaces(support(M_Wh), bc.markers()),
                                  _expr=cst(1.)).evaluate()(0,0);
@@ -249,12 +315,15 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updatePostPDE( DataUpdate
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
-            auto const& condExpr = this->materialsProperties()->materialProperty( matName, this->M_physicMap.at("condK"));
-            auto cond = expr( condExpr.expr(), symbolsExpr);
-            if constexpr( is_scalar ) {
-                blf(0_c) = integrate(_range=range, _expr=-grad(pp)*idv(u)/cond );
-            } else {
-                blf(0_c) = integrate(_range=range, _expr=-inner(grad(pp), idv(u))/cond );
+            if( this->materialsProperties()->hasProperty( matName, this->diffusionCoefficientName() ) )
+            {
+                auto coeff_c = this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() );
+                auto coeff_c_expr = expr( coeff_c.expr(), symbolsExpr );
+                if constexpr( is_scalar ) {
+                    blf(0_c) = integrate(_range=range, _expr=-grad(pp)*idv(u)/coeff_c_expr );
+                } else {
+                    blf(0_c) = integrate(_range=range, _expr=-inner(grad(pp), idv(u))/coeff_c_expr );
+                }
             }
         }
     }
