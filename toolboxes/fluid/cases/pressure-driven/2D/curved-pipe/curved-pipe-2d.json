@@ -15,13 +15,20 @@
     "Parameters":
     {
         "nu":1,
-        "ugradexxx":"-17.1887338539247*sqrt(-x^2/(x^2 + y^2) + 1)*(0.5*x*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - 0.096781975733881*x/sqrt(x^2 + y^2) - 0.995836667858137*x/(x^2 + y^2)^(3/2)) - 17.1887338539247*(x^3/(x^2 + y^2)^2 - x/(x^2 + y^2))*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - 0.596781975733881*sqrt(x^2 + y^2) + 0.995836667858137/sqrt(x^2 + y^2))/sqrt(-x^2/(x^2 + y^2) + 1):x:y",
-        "ugradexxy":"-17.1887338539247*x^2*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - 0.596781975733881*sqrt(x^2 + y^2) + 0.995836667858137/sqrt(x^2 + y^2))/(x^2 + y^2)^(3/2) + 17.1887338539247*x*(0.5*x*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - 0.096781975733881*x/sqrt(x^2 + y^2) - 0.995836667858137*x/(x^2 + y^2)^(3/2))/sqrt(x^2 + y^2) + 17.1887338539247*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - 0.596781975733881*sqrt(x^2 + y^2) + 0.995836667858137/sqrt(x^2 + y^2))/sqrt(x^2 + y^2):x:y",
-        "ugradexyx":"-17.1887338539247*x^2*y*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - 0.596781975733881*sqrt(x^2 + y^2) + 0.995836667858137/sqrt(x^2 + y^2))/((x^2 + y^2)^2*sqrt(-x^2/(x^2 + y^2) + 1)) - 17.1887338539247*sqrt(-x^2/(x^2 + y^2) + 1)*(0.5*y*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - 0.096781975733881*y/sqrt(x^2 + y^2) - 0.995836667858137*y/(x^2 + y^2)^(3/2)):x:y",
-        "ugradexyy":"-17.1887338539247*x*y*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - 0.596781975733881*sqrt(x^2 + y^2) + 0.995836667858137/sqrt(x^2 + y^2))/(x^2 + y^2)^(3/2) + 17.1887338539247*x*(0.5*y*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - 0.096781975733881*y/sqrt(x^2 + y^2) - 0.995836667858137*y/(x^2 + y^2)^(3/2))/sqrt(x^2 + y^2):x:y",
-        "uexx":"-sin(acos(x/sqrt(x*x+y*y)))*(19.0985931710274-1.90985931710274)*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+0.995836667858137/sqrt(x*x+y*y)-0.596781975733881*sqrt(x*x+y*y)):x:y",
-        "uexy":"cos(acos(x/sqrt(x*x+y*y)))*(19.0985931710274-1.90985931710274)*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+0.995836667858137/sqrt(x*x+y*y)-0.596781975733881*sqrt(x*x+y*y)):x:y",
-        "pex":"(19.0985931710274*(acos(x/sqrt(x*x+y*y))-1.5707963267949)+1.90985931710274*(2.09439510239320-acos(x/sqrt(x*x+y*y)))):x:y"
+        "a":17.1887338539247,
+        "b":0.096781975733881,
+        "c":0.995836667858137,
+        "d":0.596781975733881,
+        "e":19.0985931710274,
+        "f":1.5707963267949,
+        "g":2.09439510239320,
+        "ugradexxx":"-a*sqrt(-x^2/(x^2 + y^2) + 1)*(0.5*x*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - b*x/sqrt(x^2 + y^2) - c*x/(x^2 + y^2)^(3/2)) - a*(x^3/(x^2 + y^2)^2 - x/(x^2 + y^2))*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - d*sqrt(x^2 + y^2) + c/sqrt(x^2 + y^2))/sqrt(-x^2/(x^2 + y^2) + 1):x:y:a:b:c:d",
+        "ugradexxy":"-a*x^2*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - d*sqrt(x^2 + y^2) + c/sqrt(x^2 + y^2))/(x^2 + y^2)^(3/2) + a*x*(0.5*x*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - b*x/sqrt(x^2 + y^2) - c*x/(x^2 + y^2)^(3/2))/sqrt(x^2 + y^2) + a*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - d*sqrt(x^2 + y^2) + c/sqrt(x^2 + y^2))/sqrt(x^2 + y^2):x:y:a:b:c:d",
+        "ugradexyx":"-a*x^2*y*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - d*sqrt(x^2 + y^2) + c/sqrt(x^2 + y^2))/((x^2 + y^2)^2*sqrt(-x^2/(x^2 + y^2) + 1)) - a*sqrt(-x^2/(x^2 + y^2) + 1)*(0.5*y*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - b*y/sqrt(x^2 + y^2) - c*y/(x^2 + y^2)^(3/2)):x:y:a:b:c:d",
+        "ugradexyy":"-a*x*y*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - d*sqrt(x^2 + y^2) + c/sqrt(x^2 + y^2))/(x^2 + y^2)^(3/2) + a*x*(0.5*y*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - b*y/sqrt(x^2 + y^2) - c*y/(x^2 + y^2)^(3/2))/sqrt(x^2 + y^2):x:y:a:b:c:d",
+        "uexx":"-sin(acos(x/sqrt(x*x+y*y)))*(e-(e/10))*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+c/sqrt(x*x+y*y)-d*sqrt(x*x+y*y)):x:y:c:d:e",
+        "uexy":"cos(acos(x/sqrt(x*x+y*y)))*(e-(e/10))*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+c/sqrt(x*x+y*y)-d*sqrt(x*x+y*y)):x:y:c:d:e",
+        "pex":"(e*(acos(x/sqrt(x*x+y*y))-f)+(e/10)*(g-acos(x/sqrt(x*x+y*y)))):x:y:e:f:g"
     },
     "BoundaryConditions":
     {
@@ -97,6 +104,11 @@
         "Exports":
         {
             "fields":["velocity","pressure","pid"]
+            "expr":
+            {
+                "u_ex":"{uexx,uexy}:uexx:uexy",
+                "p_ex":"pex:pex"
+            }
         }
     }
 }

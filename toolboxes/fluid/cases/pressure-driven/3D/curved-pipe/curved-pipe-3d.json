@@ -1,30 +1,33 @@
 {
-    "Name": "gravity",
-    "ShortName":"gravity",
+    "Name": "curved pipe 3d",
+    "ShortName":"cp3",
     "Models":
     {
         "equations":"Stokes"
     },
     "Parameters":
     {
-        "a":9.54929658551372,
-        "b":1.5707963267949,
+        "nu":1,
+        "a":17.1887338539247,
+        "b":0.096781975733881,
         "c":0.995836667858137,
-        "d":2.61799387799149,
-        "e":0.596781975733881,
-        "pex":"a*(acos(x/sqrt(x*x+y*y))-b)+a*(d-acos(x/sqrt(x*x+y*y)))/10:x:y:a:b:d",
-        "uexx":"-sin(acos(x/sqrt(x*x+y*y)))*(a-a/10)*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+c/sqrt(x*x+y*y)-e*sqrt(x*x+y*y)):x:y:a:c:e",
-        "uexy":"cos(acos(x/sqrt(x*x+y*y)))*(a-a/10)*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+c/sqrt(x*x+y*y)-e*sqrt(x*x+y*y)):x:y:a:c:e",
-        "ugradexxx":"-9*a*sqrt(-x**2/(x**2+y**2)+1)*(-x*c/(x**2+y**2)**(3/2)-x*e/sqrt(x**2+y**2)+0.5*x*log(sqrt(x**2+y**2))/sqrt(x**2+y**2)+0.5*x/sqrt(x**2+y**2))/10-9*a*(x**3/(x**2+y**2)**2-x/(x**2+y**2))*(c/sqrt(x**2+y**2)-e*sqrt(x**2+y**2)+0.5*sqrt(x**2+y**2)*log(sqrt(x**2+y**2)))/(10*sqrt(-x**2/(x**2+y**2)+1)):x:y:a:c:e",
-        "ugradexxy":"-9*x**2*a*(c/sqrt(x**2+y**2)-e*sqrt(x**2+y**2)+0.5*sqrt(x**2+y**2)*log(sqrt(x**2+y**2)))/(10*(x**2+y**2)**(3/2))+9*x*a*(-x*c/(x**2+y**2)**(3/2)-x*e/sqrt(x**2+y**2)+0.5*x*log(sqrt(x**2+y**2))/sqrt(x**2+y**2)+0.5*x/sqrt(x**2+y**2))/(10*sqrt(x**2+y**2))+9*a*(c/sqrt(x**2+y**2)-e*sqrt(x**2+y**2)+0.5*sqrt(x**2+y**2)*log(sqrt(x**2+y**2)))/(10*sqrt(x**2+y**2)):x:y:a:c:e",
-        "ugradexyx":"-9*x**2*y*a*(c/sqrt(x**2+y**2)-e*sqrt(x**2+y**2)+0.5*sqrt(x**2+y**2)*log(sqrt(x**2+y**2)))/(10*(x**2+y**2)**2*sqrt(-x**2/(x**2+y**2)+1))-9*a*sqrt(-x**2/(x**2+y**2)+1)*(-y*c/(x**2+y**2)**(3/2)-y*e/sqrt(x**2+y**2)+0.5*y*log(sqrt(x**2+y**2))/sqrt(x**2+y**2)+0.5*y/sqrt(x**2+y**2))/10:x:y:a:c:e",
-        "ugradexyy":"-9*x*y*a*(c/sqrt(x**2+y**2)-e*sqrt(x**2+y**2)+0.5*sqrt(x**2+y**2)*log(sqrt(x**2+y**2)))/(10*(x**2+y**2)**(3/2))+9*x*a*(-y*c/(x**2+y**2)**(3/2)-y*e/sqrt(x**2+y**2)+0.5*y*log(sqrt(x**2+y**2))/sqrt(x**2+y**2)+0.5*y/sqrt(x**2+y**2))/(10*sqrt(x**2+y**2)):x:y:a:c:e"
+        "d":0.596781975733881,
+        "e":19.0985931710274,
+        "f":1.5707963267949,
+        "g":2.09439510239320,
+        "ugradexxx":"-a*sqrt(-x^2/(x^2 + y^2) + 1)*(0.5*x*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - b*x/sqrt(x^2 + y^2) - c*x/(x^2 + y^2)^(3/2)) - a*(x^3/(x^2 + y^2)^2 - x/(x^2 + y^2))*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - d*sqrt(x^2 + y^2) + c/sqrt(x^2 + y^2))/sqrt(-x^2/(x^2 + y^2) + 1):x:y:a:b:c:d",
+        "ugradexxy":"-a*x^2*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - d*sqrt(x^2 + y^2) + c/sqrt(x^2 + y^2))/(x^2 + y^2)^(3/2) + a*x*(0.5*x*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - b*x/sqrt(x^2 + y^2) - c*x/(x^2 + y^2)^(3/2))/sqrt(x^2 + y^2) + a*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - d*sqrt(x^2 + y^2) + c/sqrt(x^2 + y^2))/sqrt(x^2 + y^2):x:y:a:b:c:d",
+        "ugradexyx":"-a*x^2*y*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - d*sqrt(x^2 + y^2) + c/sqrt(x^2 + y^2))/((x^2 + y^2)^2*sqrt(-x^2/(x^2 + y^2) + 1)) - a*sqrt(-x^2/(x^2 + y^2) + 1)*(0.5*y*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - b*y/sqrt(x^2 + y^2) - c*y/(x^2 + y^2)^(3/2)):x:y:a:b:c:d",
+        "ugradexyy":"-a*x*y*(0.5*sqrt(x^2 + y^2)*log(sqrt(x^2 + y^2)) - d*sqrt(x^2 + y^2) + c/sqrt(x^2 + y^2))/(x^2 + y^2)^(3/2) + a*x*(0.5*y*log(sqrt(x^2 + y^2))/sqrt(x^2 + y^2) - b*y/sqrt(x^2 + y^2) - c*y/(x^2 + y^2)^(3/2))/sqrt(x^2 + y^2):x:y:a:b:c:d",
+        "uexx":"-sin(acos(x/sqrt(x*x+y*y)))*(e-(e/10))*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+c/sqrt(x*x+y*y)-d*sqrt(x*x+y*y)):x:y:c:d:e",
+        "uexy":"cos(acos(x/sqrt(x*x+y*y)))*(e-(e/10))*(0.5*sqrt(x*x+y*y)*log(sqrt(x*x+y*y))+c/sqrt(x*x+y*y)-d*sqrt(x*x+y*y)):x:y:c:d:e",
+        "pex":"(e*(acos(x/sqrt(x*x+y*y))-f)+(e/10)*(g-acos(x/sqrt(x*x+y*y)))):x:y:e:f:g"
     },
     "Materials":
     {
         "Omega":{
             "rho":"1",
-            "mu":"1"
+            "mu":"nu:nu"
         }
     },
     "BoundaryConditions":
