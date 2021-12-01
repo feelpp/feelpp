@@ -195,7 +195,7 @@ Heat3d::output( int output_index, parameter_type const& mu , element_type& u, bo
     }
     else if ( output_index == 1 )
     {
-        output = mean(elements(mesh),idv(u))(0,0);
+        output = mean(_range=elements(mesh),_expr=idv(u))(0,0);
         std::cout << " Heat3d::output " << output << "\n";
     }
     // else if ( output_index == 2 )

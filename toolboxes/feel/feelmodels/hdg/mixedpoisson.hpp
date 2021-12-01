@@ -198,17 +198,15 @@ protected:
     mutable bool M_postMatrixInit;
 public:
 
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( self_ptrtype ), static New, tag,
-        ( required
-          ( prefix,*( boost::is_convertible<mpl::_,std::string> ) )
-          )
-        ( optional
-          ( physic, *, MixedPoissonPhysics::None )
-          ( worldcomm, *, Environment::worldCommPtr() )
-          ( repository, *, ModelBaseRepository() )
-          ) )
+    template <typename ... Ts>
+    static self_ptrtype New( Ts && ... v )
         {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            std::string const& prefix = args.get(_prefix);
+            //std::string const& keyword = args.get_else(_keyword,"hdg");
+            MixedPoissonPhysics physic =  args.get_else(_physic, MixedPoissonPhysics::None );
+            worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
+            auto && repository = args.get_else_invocable(_repository,[](){ return ModelBaseRepository{}; } );
             return std::make_shared<self_type>( prefix, physic, worldcomm, "", repository );
         }
 

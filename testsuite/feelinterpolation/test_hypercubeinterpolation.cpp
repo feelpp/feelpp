@@ -99,7 +99,7 @@ Test<Dim,Order>::run()
     std::cout << "------------------------------------------------------------\n";
     std::cout << "Execute Test<" << Dim << "," << Order << ">\n";
 
-    Environment::changeRepository( boost::format( "testsuite/feelinterpolation/%1%/%2%-%3%/P%4%/h_%5%/" )
+    Environment::changeRepository( _directory=boost::format( "testsuite/feelinterpolation/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()
                                    % convex_type::name()
                                    % Dim

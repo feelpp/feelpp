@@ -32,6 +32,8 @@
 #ifndef __CRB_H
 #define __CRB_H 1
 
+
+#if 0
 #include <boost/multi_array.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_io.hpp>
@@ -43,6 +45,7 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <boost/algorithm/string.hpp>
+
 #include <fstream>
 
 
@@ -51,6 +54,7 @@
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/split_member.hpp>
+#endif
 
 #include <vector>
 
@@ -60,13 +64,13 @@
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/solvereigen.hpp>
-#include <feel/feelcore/feel.hpp>
+//#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
-#include <feel/feelcore/parameter.hpp>
+//#include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/serialization.hpp>
 
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/subelements.hpp>
+//#include <feel/feeldiscr/subelements.hpp>
 #include <feel/feeldiscr/expansion.hpp>
 #include <feel/feelts/bdf.hpp>
 
@@ -79,7 +83,7 @@
 #include <feel/feelcrb/crbelementsdb.hpp>
 #include <feel/feelcrb/pod.hpp>
 
-#include <feel/feelfilters/exporter.hpp>
+//#include <feel/feelfilters/exporter.hpp>
 
 #include <feel/feelcore/pslogger.hpp>
 
@@ -2394,7 +2398,7 @@ CRB<TruthModelType>::offline()
     number_of_added_elements = 1;
     bool seek_mu_in_complement = M_seekMuInComplement;
 
-    boost::timer ti;
+    Feel::Timer ti;
     LOG(INFO)<< "Offline CRB starts, this may take a while until Database is computed...\n";
     //LOG(INFO) << "[CRB::offline] Starting offline for output " << M_output_index << "\n";
     //LOG(INFO) << "[CRB::offline] initialize underlying finite element model\n";
@@ -2456,7 +2460,7 @@ CRB<TruthModelType>::offline()
     //if M_N == 0 then there is not an already existing database
     if( M_rebuild || M_N == 0 )
     {
-        ti.restart();
+        ti.start();
         //scm_ptrtype M_scm = scm_ptrtype( new scm_type( M_vm ) );
         //M_scm->setTruthModel( M_model );
         //    std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scm->offline();
@@ -2471,11 +2475,11 @@ CRB<TruthModelType>::offline()
 
         if( this->worldComm().isMasterRank() )
             std::cout << " -- sampling init done in " << ti.elapsed() << "s\n";
-        ti.restart();
+        ti.start();
 
         if( this->worldComm().isMasterRank() )
             std::cout << " -- residual data init done in " << ti.elapsed() << std::endl;
-        ti.restart();
+        ti.start();
 
         // empty sets
         M_WNmu->clear();
@@ -2660,7 +2664,7 @@ CRB<TruthModelType>::offline()
             std::cout << M_current_mu( size-1 ) << " ]" <<std::endl;
         }
 
-        boost::mpi::timer timer2, timer3;
+        Feel::Timer timer2, timer3;
         LOG(INFO) <<"========================================"<<"\n";
 
         if ( M_error_type == CRB_NO_RESIDUAL )
@@ -2685,8 +2689,8 @@ CRB<TruthModelType>::offline()
         M_WNmu_complement = M_WNmu->complement();
 
         bool norm_zero = false;
-        timer2.restart();
-        timer3.restart();
+        timer2.start();
+        timer3.start();
         if ( M_model->isSteady() )
         {
             this->addBasis( u, udu, mu );
@@ -2791,7 +2795,7 @@ CRB<TruthModelType>::offline()
             POD->setTimeInitial( M_model->timeInitial() );
             mode_set_type ModeSet;
 
-            timer2.restart();
+            timer2.start();
             size_type number_max_of_mode = POD->pod( ModeSet,true );
             tpr=timer2.elapsed();
 
@@ -2842,7 +2846,7 @@ CRB<TruthModelType>::offline()
                 POD->setTimeInitial( M_model->timeFinal()+M_model->timeStep() );
                 mode_set_type ModeSetdu;
 
-                timer2.restart();
+                timer2.start();
                 POD->pod( ModeSetdu,false );
                 tdu=timer2.elapsed();
 
@@ -2940,7 +2944,7 @@ CRB<TruthModelType>::offline()
         {
             if( this->worldComm().isMasterRank() )
                 std::cout << "  -- offlineResidual update starts\n";
-            timer2.restart();
+            timer2.start();
             offlineResidual( M_N, number_of_added_elements );
             LOG(INFO)<<"[CRB::offline] end of call offlineResidual and M_N = "<< M_N <<"\n";
             if( this->worldComm().isMasterRank() )
@@ -2948,7 +2952,7 @@ CRB<TruthModelType>::offline()
             bool model_has_eim_error = M_model->hasEimError();
             if( model_has_eim_error )
                 offlineResidualEim( M_N, number_of_added_elements );
-            timer2.restart();
+            timer2.start();
         }
 
         bool ser_greedy = M_SER_useGreedyInRb;
@@ -2992,7 +2996,7 @@ CRB<TruthModelType>::offline()
         }
         else
         {
-            timer2.restart();
+            timer2.start();
             boost::tie( M_maxerror, mu , delta_pr , delta_du ) = maxErrorBounds( M_N );
             auto time=timer2.elapsed();
             M_current_mu = mu;
@@ -3014,7 +3018,7 @@ CRB<TruthModelType>::offline()
 
         if ( ioption(_prefix=M_prefix,_name="crb.check.rb") == 1 )
         {
-            timer2.restart();
+            timer2.start();
             check( M_WNmu->size() );
             std::cout << "  -- check reduced basis done in " << timer2.elapsed() << "s\n";
         }
@@ -3790,12 +3794,12 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     vector_ptrtype U( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype Rhs( M_backend->newVector( M_model->functionSpace() ) );
 
-    boost::timer timer, timer2;
+    Feel::Timer timer, timer2;
 
     boost::tie( boost::tuples::ignore, A, F ) = M_model->update( mu );
 
     LOG(INFO) << "  -- updated model for parameter in " << timer2.elapsed() << "s\n";
-    timer2.restart();
+    timer2.start();
 
     LOG(INFO) << "[CRB::checkResidual] transpose primal matrix" << "\n";
     At = M_model->newMatrix();
@@ -3809,13 +3813,13 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     //LOG(INFO) << "[CRB::checkResidual] solving primal" << "\n";
     //backendA->solve( _matrix=A,  _solution=u, _rhs=F[0] );
     //LOG(INFO) << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
-    timer2.restart();
+    timer2.start();
     *Rhs = *F[M_output_index];
     Rhs->close();
     Rhs->scale( -1 );
     //backendAt->solve( _matrix=At,  _solution=udu, _rhs=Rhs );
     //LOG(INFO) << "  -- dual problem solved in " << timer2.elapsed() << "s\n";
-    timer2.restart();
+    timer2.start();
 
     vector_ptrtype Aun( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype Atun( M_backend->newVector( M_model->functionSpace() ) );
@@ -7326,7 +7330,7 @@ void
 CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_added_elements )
 {
 
-    boost::timer ti;
+    Feel:Timer ti;
     int __QLhs = M_model->Qa();
     int __QRhs = M_model->Ql( 0 );
     int __QOutput = M_model->Ql( M_output_index );
@@ -7373,7 +7377,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
 
     //the model can be time-dependant and be executed in steady mode
     //so in that case, we don't need to compute this.
-    ti.restart();
+    ti.start();
     if( ! M_model_executed_in_steady_mode )
     {
 
@@ -7404,7 +7408,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
 
         if( this->worldComm().isMasterRank() )
             std::cout << "     o M_Cmf_pr updated in " << ti.elapsed() << "s\n";
-        ti.restart();
+        ti.start();
 
         for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
         {
@@ -7474,7 +7478,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
 
         if( this->worldComm().isMasterRank() )
             std::cout << "     o M_Cma_pr updated in " << ti.elapsed() << "s\n";
-        ti.restart();
+        ti.start();
 
         for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
         {
@@ -7614,7 +7618,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
         // Dual
         //
 
-        ti.restart();
+        ti.start();
 
         LOG(INFO) << "[offlineResidual] Cmf_du Cma_du Cmm_du\n";
         for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
@@ -7660,7 +7664,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
         if( this->worldComm().isMasterRank() )
             std::cout << "     o M_Cmf_du updated in " << ti.elapsed() << "s\n";
 
-        ti.restart();
+        ti.start();
 
         for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
         {
@@ -7748,7 +7752,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
         if( this->worldComm().isMasterRank() )
             std::cout << "     o Cma_du updated in " << ti.elapsed() << "s\n";
 
-        ti.restart();
+        ti.start();
 
 
         for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
@@ -7879,7 +7883,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
 
         if( this->worldComm().isMasterRank() )
             std::cout << "     o Cmm_du updated in " << ti.elapsed() << "s\n";
-        ti.restart();
+        ti.start();
 
     }//if( ! M_model_executed_in_steady_mode )
 
@@ -7909,7 +7913,7 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number_of_added_elements )
 {
-    boost::timer ti;
+    Feel::Timer ti;
     int __QLhs = M_model->Qa();
     int __QRhs = M_model->Ql( 0 );
     int __QOutput = M_model->Ql( M_output_index );
@@ -7960,7 +7964,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
     // no need to recompute this term each time
     if ( Ncur == M_Nm || use_ser )
     {
-        ti.restart();
+        ti.start();
         LOG(INFO) << "[offlineResidual] Compute Primal residual data\n";
         LOG(INFO) << "[offlineResidual] C0_pr\n";
 
@@ -8030,7 +8034,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
     //std::cout << "c0 2 = " << M_model->scalarProduct( __X, __X ) << "\n";;
 #endif
 
-    ti.restart();
+    ti.start();
 
     bool optimize = boption(_prefix=M_prefix,_name="crb.optimize-offline-residual") ;
 
@@ -8071,7 +8075,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
     if( this->worldComm().isMasterRank() )
         std::cout << "     o Lambda_pr updated in " << ti.elapsed() << "s\n";
 
-    ti.restart();
+    ti.start();
 
     for ( int elem=__N-added_elements; elem<__N; elem++ )
     {
@@ -8195,7 +8199,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
         std::cout << "     o Gamma_pr updated in " << ti.elapsed() << "s\n";
     sparse_matrix_ptrtype Atq1 = M_model->newMatrix();
     sparse_matrix_ptrtype Atq2 = M_model->newMatrix();
-    ti.restart();
+    ti.start();
 
     //
     // Dual
@@ -8235,7 +8239,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
 
             if( this->worldComm().isMasterRank() )
                 std::cout << "     o C0_du updated in " << ti.elapsed() << "s\n";
-            ti.restart();
+            ti.start();
         }
 
         LOG(INFO) << "[offlineResidual] Lambda_du, Gamma_du\n";
@@ -8281,7 +8285,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
 
         if( this->worldComm().isMasterRank() )
             std::cout << "     o Lambda_du updated in " << ti.elapsed() << "s\n";
-        ti.restart();
+        ti.start();
 
         for ( int elem=__N-added_elements; elem<__N; elem++ )
         {
@@ -8436,7 +8440,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
 
         if( this->worldComm().isMasterRank() )
             std::cout << "     o Gamma_du updated in " << ti.elapsed() << "s\n";
-        ti.restart();
+        ti.start();
         LOG(INFO) << "[offlineResidual] Done.\n";
 
     }//end of if (solve_dual_problem)
@@ -8446,7 +8450,7 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number_of_added_elements )
 {
-    boost::timer ti;
+    Feel::Timer ti;
     int __QLhs = M_model->Qa();
     int __QRhs = M_model->Ql( 0 );
     int __QOutput = M_model->Ql( M_output_index );
@@ -8473,7 +8477,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
 
     bool optimize = boption(_prefix=M_prefix,_name="crb.optimize-offline-residual") ;
 
-    ti.restart();
+    ti.start();
 
     //
     //  Primal
@@ -8601,7 +8605,7 @@ CRB<TruthModelType>::offlineResidualV1( int Ncur, mpl::bool_<false> , int number
     //
     if( M_solve_dual_problem )
     {
-        ti.restart();
+        ti.start();
 
         sparse_matrix_ptrtype Atq1;
         bool opIsSym = boption(_prefix=M_prefix,_name="crb.use-symmetric-matrix");
@@ -8744,7 +8748,7 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int number_of_added_elements )
 {
-    boost::timer ti;
+    Feel::Timer ti;
     int __QLhs = M_model->Qa();
     int __QRhs = M_model->Ql( 0 );
     int __QOutput = M_model->Ql( M_output_index );
@@ -8783,7 +8787,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
     // no need to recompute this term each time
     if ( Ncur == M_Nm )
     {
-        ti.restart();
+        ti.start();
         for ( int __q1 = 0; __q1 < __QRhs; ++__q1 )
         {
             auto itq1 = eim_interpolation_errors_F[0].find(__q1);
@@ -8823,7 +8827,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
 
     }// Ncur==M_Nm
 
-    ti.restart();
+    ti.start();
 
     //
     //  Primal
@@ -8873,7 +8877,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
     if( this->worldComm().isMasterRank() )
         std::cout << "     o Lambda_pr_eim updated in " << ti.elapsed() << "s\n";
 
-    ti.restart();
+    ti.start();
 
     for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
     {
@@ -8978,7 +8982,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
         std::cout << "     o Gamma_pr_eim updated in " << ti.elapsed() << "s\n";
     sparse_matrix_ptrtype Atq1 = M_model->newMatrix();
     sparse_matrix_ptrtype Atq2 = M_model->newMatrix();
-    ti.restart();
+    ti.start();
 
     //
     // Dual
@@ -9032,7 +9036,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
 
             if( this->worldComm().isMasterRank() )
                 std::cout << "     o C0_du_eim updated in " << ti.elapsed() << "s\n";
-            ti.restart();
+            ti.start();
         }
 
         LOG(INFO) << "[offlineResidual] Lambda_du, Gamma_du\n";
@@ -9086,7 +9090,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
 
         if( this->worldComm().isMasterRank() )
             std::cout << "     o Lambda_du_eim updated in " << ti.elapsed() << "s\n";
-        ti.restart();
+        ti.start();
 
         for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
         {
@@ -9216,7 +9220,7 @@ CRB<TruthModelType>::offlineResidualEim( int Ncur, mpl::bool_<false> , int numbe
 
         if( this->worldComm().isMasterRank() )
             std::cout << "     o Gamma_du_eim updated in " << ti.elapsed() << "s\n";
-        ti.restart();
+        ti.start();
         LOG(INFO) << "[offlineResidual eim] Done.\n";
 
     }//end of if (M_solve_dual_problem)
@@ -9428,13 +9432,13 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         //M_N may be different of dimension-max
         Nwn = M_N;
     }
-    boost::mpi::timer t1;
+    Feel::Timer t1;
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold , print_rb_matrix);
     double time_prediction=t1.elapsed();
     auto output_vector=o.template get<0>();
     double output_vector_size=output_vector.size();
     double output = output_vector[output_vector_size-1];
-    t1.restart();
+    t1.start();
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
     double time_error_estimation=t1.elapsed();
     auto vector_output_upper_bound = error_estimation.template get<0>();

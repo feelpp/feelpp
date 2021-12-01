@@ -21,8 +21,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef FEELPP_VF_MEAN_HPP
-#define FEELPP_VF_MEAN_HPP 1
+#ifndef FEELPP_VF_MEAN_H
+#define FEELPP_VF_MEAN_H
 
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/integrator.hpp>
@@ -30,31 +30,23 @@
 
 namespace Feel {
 
-BOOST_PARAMETER_FUNCTION(
-    ( typename vf::detail::integrate_type<Args>::expr_type::expression_type::matrix_type ), // return type
-    mean,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( expr,   * )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( quad,   *, quad_order_from_expression )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, quad_order_from_expression )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-      ( parallel,   *( boost::is_integral<mpl::_> ), 1 )
-      ( worldcomm,       (worldcomm_ptr_t), Environment::worldCommPtr() )
-    )
-)
+template <typename ... Ts>
+auto mean( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && range = args.get(_range);
+    auto && expr = args.get(_expr);
+    bool parallel = args.get_else( _parallel, true );
+    auto && quad = args.get_else( _quad, quad_order_from_expression );
+    auto && quad1 = args.get_else( _quad1, quad_order_from_expression );
+    GeomapStrategyType geomap = args.get_else( _geomap,GeomapStrategyType::GEOMAP_OPT );
+    bool use_tbb = args.get_else( _use_tbb, false );
+    bool use_harts = args.get_else( _use_harts, false );
+    int grainsize = args.get_else( _grainsize, 100 );
+    std::string const& partitioner = args.get_else( _partitioner, "auto");
+    bool verbose = args.get_else( _verbose, false );
+    worldcomm_ptr_t worldcomm = args.get_else( _worldcomm, Environment::worldCommPtr() );
+
     double meas = integrate( _range=range, _expr=cst(1.0), _quad=quad, _quad1=quad1, _geomap=geomap,
                              _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                              _partitioner=partitioner, _verbose=verbose ).evaluate( parallel,worldcomm )( 0, 0 );
@@ -69,32 +61,24 @@ BOOST_PARAMETER_FUNCTION(
     return eint/meas;
 }
 
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_form1_return<Args>::type ), // return type
-    form1_mean,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( test, *  )
-      ( range, *  )
-      ( expr,   * )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( quad,   *, quad_order_from_expression )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, quad_order_from_expression )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-      ( parallel,   *( boost::is_integral<mpl::_> ), 1 )
-      ( worldcomm,       (worldcomm_ptr_t), Environment::worldCommPtr() )
-    )
-)
+template <typename ... Ts>
+auto form1_mean( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && test = args.get(_test);
+    auto && range = args.get(_range);
+    auto && expr = args.get(_expr);
+    bool parallel = args.get_else( _parallel, true );
+    auto && quad = args.get_else( _quad, quad_order_from_expression );
+    auto && quad1 = args.get_else( _quad1, quad_order_from_expression );
+    GeomapStrategyType geomap = args.get_else( _geomap,GeomapStrategyType::GEOMAP_OPT );
+    bool use_tbb = args.get_else( _use_tbb, false );
+    bool use_harts = args.get_else( _use_harts, false );
+    int grainsize = args.get_else( _grainsize, 100 );
+    std::string const& partitioner = args.get_else( _partitioner, "auto");
+    bool verbose = args.get_else( _verbose, false );
+    worldcomm_ptr_t worldcomm = args.get_else( _worldcomm, Environment::worldCommPtr() );
+
     double meas = integrate( _range=range, _expr=cst(1.0), _quad=quad, _quad1=quad1, _geomap=geomap,
                              _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                              _partitioner=partitioner, _verbose=verbose ).evaluate( parallel,worldcomm )( 0, 0 );

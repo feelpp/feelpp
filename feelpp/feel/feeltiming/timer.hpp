@@ -82,6 +82,31 @@ public :
     mutable std::stack<type> localStack;
 };
 }
+
+
+struct Timer
+{
+    //! create a timer and called start()
+    Timer() { this->start(); }
+    Timer( Timer const& ) = default;
+    Timer( Timer && ) = default;
+    Timer& operator=( Timer const& ) = default;
+    Timer& operator=( Timer && ) = default;
+
+    //! start the timer
+    void start() { M_timePoint = std::chrono::high_resolution_clock::now(); }
+
+    //! return the elapsed time betwen the last start
+    template <class PeriodType = std::ratio<1>,class RepType=double>
+    RepType elapsed() const
+        {
+            auto curTime = std::chrono::high_resolution_clock::now();
+            return std::chrono::duration_cast<std::chrono::duration<RepType,PeriodType>>(curTime - M_timePoint).count();
+        }
+private :
+    using time_point = std::chrono::high_resolution_clock::time_point;
+    time_point M_timePoint;
+};
 }
 
 #endif /* FEELPP_TIMING_TIMER_HPP */

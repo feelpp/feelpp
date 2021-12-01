@@ -27,8 +27,8 @@
    \date 2012-08-04
  */
 
-#ifndef __MESHADAPTATION_HPP
-#define __MESHADAPTATION_HPP 1
+#ifndef FEELPP_MESH_MESHADAPTATION_H
+#define FEELPP_MESH_MESHADAPTATION_H
 
 /** include linear algebra backend */
 #include <feel/feelalg/backend.hpp>
@@ -76,15 +76,6 @@
 
 namespace Feel
 {
-
-    BOOST_PARAMETER_NAME(initMesh)
-    BOOST_PARAMETER_NAME(geofile)
-    BOOST_PARAMETER_NAME(adaptType)
-    BOOST_PARAMETER_NAME(var)
-    BOOST_PARAMETER_NAME(metric)
-    BOOST_PARAMETER_NAME(hMin)
-    BOOST_PARAMETER_NAME(hMax)
-    BOOST_PARAMETER_NAME(tol)
 
     template<int Dim,
              int Order,
@@ -236,33 +227,29 @@ namespace Feel
 
 
         //! Mesh adaptation interface
-        // _initMesh = initial mesh
-        // _geofile = complete path to access geofile
-        // _adaptType = isotropic | anisotropic
-        // _var = list of (element_type, string) = list of (variable, name of the variable)
+        // _mesh = initial mesh
+        // _geo = complete path to access geofile
+        // _type = isotropic | anisotropic
+        // _element = list of (element_type, string) = list of (variable, name of the variable)
         // _metric = list of (vector<p1_element_type>, string) = list of (hsize(isotropic) | matrix(anisotropic), name for metric)
-        // _hMin, _hMax = limits for hsize
-        // _tol = geometric tolerance (for adaptation from hessian)
+        // _hlin, _hmax = limits for hsize
+        // _tolerance = geometric tolerance (for adaptation from hessian)
+        template <typename ... Ts>
+        mesh_ptrtype adaptMesh( Ts && ... v )
+            {
+                auto args = NA::make_arguments( std::forward<Ts>(v)... );
+                mesh_ptrtype initMesh = args.get(_mesh ); // initial mesh
+                std::string const& geofile = args.get(_geo);
+                std::string const& adaptType = args.get(_type); // type of adaptation : isotropic | anisotropic
+                std::list< std::pair<element_type, std::string> > const& var = args.get_else(_element, M_defaultVar );
+                std::list< std::pair< std::vector<p1_element_type>, std::string> > const& metric = args.get_else(_metric, M_defaultMetric);
+                double hMin = args.get_else(_hmin,1.0e-3);
+                double hMax = args.get_else(_hmax,100.0);
+                double tol = args.get_else(_tolerance,1.);
 
-        BOOST_PARAMETER_MEMBER_FUNCTION(
-                                        (mesh_ptrtype),
-                                        adaptMesh,
-                                        tag,
-                                        (required
-                                         (initMesh,(mesh_ptrtype)) // initial mesh
-                                         (geofile, (std::string)) // geometry
-                                         (adaptType, (std::string))) //type of adaptation : isotropic | anisotropic
-                                        (optional
-                                         (var, (std::list< std::pair<element_type, std::string> >), M_defaultVar)
-                                         (metric, (std::list< std::pair< std::vector<p1_element_type>, std::string> >), M_defaultMetric)
-                                         (hMin, (double), 1.0e-3)
-                                         (hMax, (double), 100.0)
-                                         (tol, (double), 1.0))
-                                        )
-        {
-            mesh_ptrtype newMesh = this-> adaptMeshImpl( initMesh, geofile, adaptType, var, metric, hMin, hMax, tol);
-            return newMesh;
-        }
+                mesh_ptrtype newMesh = this-> adaptMeshImpl( initMesh, geofile, adaptType, var, metric, hMin, hMax, tol);
+                return newMesh;
+            }
 
     private :
         std::list< std::pair<element_type, std::string> > M_defaultVar;
@@ -388,7 +375,7 @@ namespace Feel
 
                 for (size_t k=0; k<eltPoints.size(); k++)
                     {
-                        auto dofIndex = boost::get<0>( P1h->dof()->localToGlobal( elt.id(), k) );
+                        auto dofIndex = P1h->dof()->localToGlobal( elt.id(), k).index();
                         newPosFile << bbNewMap[ dofIndex ];
                         if ( k!= eltPoints.size() - 1)
                             newPosFile << ", ";
@@ -454,7 +441,7 @@ namespace Feel
 
                 for (size_t k=0; k<eltPoints.size(); k++)
                     {
-                        auto dofIndex = boost::get<0>( P1h->dof()->localToGlobal( elt.id(), k) );
+                        auto dofIndex = P1h->dof()->localToGlobal( elt.id(), k).index();
 
                         int num = 0;
                         newPosFile << (bbNewMap[num++])[ dofIndex ];
@@ -1058,14 +1045,14 @@ namespace Feel
         // ******* From U in P1 space -> approximate components of hessian matrix on P1 space ******** //
         // Project u on P1 space
         auto varP1 = P1h->element();
-        varP1 = vf::project( P1h, elements(mesh), idv(var) );
+        varP1.on(_range=elements(mesh), _expr=idv(var) );
 
         // First derivatives of U (P1) are P0
         std::vector<p0_element_type> dvard1P0(Dim, P0h->element());
         std::vector<p1_element_type> dvard1P1(Dim, P1h->element());
         for (int i=0; i<Dim; i++)
             {
-                dvard1P0[i] = vf::project(P0h, elements(mesh), gradv(varP1)(0,i) );
+                dvard1P0[i].on(_range=elements(mesh), _expr=gradv(varP1)(0,i) );
                 dvard1P1[i] = div( sum(P1h, idv(dvard1P0[i])*meas()), sum(P1h, meas() ) ); //L2 proj -> P1
             }
 
@@ -1077,7 +1064,7 @@ namespace Feel
                 for (int j=0; j<Dim; j++)
                     {
                         // Hessian components are entered column by column
-                        hessP0[i+j*Dim] = vf::project(P0h, elements(mesh), gradv( dvard1P1[j] )(0,i) );
+                        hessP0[i+j*Dim].on(_range=elements(mesh), _expr=gradv( dvard1P1[j] )(0,i) );
                         hessP1[i+j*Dim] = div( sum(P1h, idv(hessP0[i+j*Dim])*meas()), sum(P1h, meas() ) ); //L2 proj -> P1
                     }
             }
@@ -1213,7 +1200,7 @@ namespace Feel
             {
                 for (int j=0; j<Dim; j++)
                     {
-                        dvard2Pkm2[i+j*Dim] = vf::project( Pkm2H, elements(mesh),hessv(var)(i,j));
+                        dvard2Pkm2[i+j*Dim].on(_range=elements(mesh),_expr=hessv(var)(i,j));
                     }
             }
 
@@ -1229,7 +1216,7 @@ namespace Feel
                 for (int j=0; j<Dim; j++)
                     {
                         //dvard2P1[i+j*Dim] = l2proj->project( _expr=idv( dvard2Pkm2[i+j*Dim]) );
-                        dvard2P1[i+j*Dim] = vf::project( P1h, elements(mesh), idv( dvard2Pkm2[i+j*Dim]) );
+                        dvard2P1[i+j*Dim].on(_range=elements(mesh), _expr=idv( dvard2Pkm2[i+j*Dim]) );
                     }
             }
         // ******************************************************************************************* //

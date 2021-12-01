@@ -202,9 +202,9 @@ template<int Dim, int Order>
 void
 StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
-    boost::timer ti;
+    Feel::Timer ti;
     LOG(INFO) << "[updateResidual] start\n";
-    value_type penalisation_bc = option(_name="penalbc").template as<value_type>();
+    value_type penalisation_bc = doption(_name="penalbc");
 
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "U" );
@@ -220,18 +220,19 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
     auto eta = 0.1*Px()*( Px() -5 )*( Px()-2.5 )*sin( omega*M_PI*cst_ref( time )  );
 
     form1( _test=M_Xh, _vector=R ) =
-        integrate( elements( mesh ),
+        integrate( _range=elements( mesh ),
+                   _expr=
                    .5*mu*( trace( ( gradv( u )*trans( gradv( u ) ) )*grad( v ) ) )+
                    .25*lambda*trace( gradv( u )*trans( gradv( u ) ) )*div( v ) -
                    trans( gravity*oneY() )*id( v ) );
 
     // force applied at the bottom
     form1( _test=M_Xh, _vector=R ) +=
-        integrate( markedfaces( mesh, 2 ),
-                   -trans( eta*oneY() )*id( v ) );
+        integrate( _range=markedfaces( mesh, 2 ),
+                   _expr=-trans( eta*oneY() )*id( v ) );
     form1( _test=M_Xh, _vector=R ) +=
-        integrate( elements( mesh ),
-                   -density*trans( 2*idv( *un )-idv( *un1 ) ) *id( v ) /( dt*dt )
+        integrate( _range=elements( mesh ),
+                   _expr=-density*trans( 2*idv( *un )-idv( *un1 ) ) *id( v ) /( dt*dt )
             );
 
     M_oplin->apply( u, v );
@@ -244,7 +245,7 @@ template<int Dim, int Order>
 void
 StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J )
 {
-    boost::timer ti;
+    Feel::Timer ti;
     LOG(INFO) << "[updateJacobian] start\n";
     static bool is_init = false;
     value_type penalisation_bc = option(_name="penalbc").template as<value_type>();
@@ -253,11 +254,11 @@ StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_m
     element_type v( M_Xh, "V" );
     u = *X;
 
-    if ( !J ) J= backend()->newMatrix( M_Xh, M_Xh );
+    if ( !J ) J= backend()->newMatrix( _test=M_Xh, _trial=M_Xh );
 
     form2( _test=M_Xh, _trial=M_Xh, _matrix=J ) =
-        integrate( elements( mesh ),
-                   .5*mu*( trace( ( gradv( u )*trans( gradt( u ) ) )*grad( v ) ) )+
+        integrate( _range=elements( mesh ),
+                   _expr=.5*mu*( trace( ( gradv( u )*trans( gradt( u ) ) )*grad( v ) ) )+
                    .25*lambda*trace( gradv( u )*trans( gradt( u ) ) )*div( v ) );
     J->addMatrix( 1.0, M_oplin->mat() );
     LOG(INFO) << "[updateJacobian] done in " << ti.elapsed() << "s\n";
@@ -297,7 +298,8 @@ StVenantKirchhoff<Dim, Order>::run()
     auto def = sym( grad( v ) );
     auto Id = eye<Dim>();
     *M_oplin =
-        integrate( elements( mesh ),
+        integrate( _range=elements( mesh ),
+                   _expr=
                    //density*trans(idt(uu))*id(v)*M_bdf->derivateCoefficient( M_time_order, dt ) +
                    density*trans( idt( u ) )*id( v )/( dt*dt )+
                    lambda*divt( u )*div( v )  +
@@ -305,13 +307,15 @@ StVenantKirchhoff<Dim, Order>::run()
             );
 
     *M_oplin +=
-        integrate( markedfaces( mesh,1 ),
+        integrate( _range=markedfaces( mesh,1 ),
+                   _expr=
                    - trans( ( 2*mu*deft+lambda*trace( deft )*Id )*N() )*id( v )
                    - trans( ( 2*mu*def+lambda*trace( def )*Id )*N() )*idt( u )
                    + penalisation_bc*trans( idt( u ) )*id( v )/hFace() );
 
     *M_oplin +=
-        integrate( markedfaces( mesh,3 ),
+        integrate( _range=markedfaces( mesh,3 ),
+                   _expr=
                    - trans( ( 2*mu*deft+lambda*trace( deft )*Id )*N() )*id( v )
                    - trans( ( 2*mu*def+lambda*trace( def )*Id )*N() )*idt( u )
                    + penalisation_bc*trans( idt( u ) )*id( v )/hFace() );
@@ -327,12 +331,12 @@ StVenantKirchhoff<Dim, Order>::run()
     M_bdf->initialize( U );
 
 
-    boost::timer ttotal;
+    Feel::Timer ttotal;
     int iterations = 0;
 
     for ( time = dt, iterations = 0; time < ft; time +=dt, ++iterations )
     {
-        boost::timer ti;
+        Feel::Timer ti;
         LOG(INFO) << "============================================================\n";
         LOG(INFO) << "time: " << time << "s, iteration: " << iterations << "\n";
 
