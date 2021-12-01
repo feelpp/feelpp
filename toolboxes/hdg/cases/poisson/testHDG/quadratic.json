@@ -7,7 +7,8 @@
         "omega":
         {
             "name":"simulation_domain",
-            "cond":"1"
+            "poisson_c":"1",
+            "poisson_f":"2*t-2:x:y:t"
         }
     },
     "InitialConditions":
@@ -35,13 +36,6 @@
     {
         "potential":
         {
-            "VolumicForces":
-            {
-                "omega":
-                {
-					"expr":"2*t-2:x:y:t"
-                }
-            },
             "Dirichlet":
             {
                 "bc":

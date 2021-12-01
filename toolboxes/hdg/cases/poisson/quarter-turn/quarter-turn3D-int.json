@@ -12,7 +12,7 @@
         "omega":
         {
             "name":"copper",
-            "cond":"58e+3"
+            "poisson_c":"58e+3"
             // "alpha":"3.35e-3",
             // "T0":"293",
             // "sigma0":"58e+3",
@@ -25,10 +25,6 @@
     {
         "potential":
         {
-            "VolumicForces":
-            {
-                "" : { "expr":"0"}
-            },
             "Dirichlet":
             {
                 "V1":
@@ -65,24 +61,7 @@
                     "expr":"-800"
                 }
             }
-        },
-	    "Exact solution":
-	    {
-	        "p_exact":
-	        {
-		        "omega":
-		        {
-		            "expr":"2*dif/Pi*atan2(y,x):x:y:z:dif"
-		        }
-	        },
-            "u_exact":
-            {
-                "omega":
-                {
-                    "expr":"{2*sigma0*dif/Pi*y/(x*x+y*y),-2*sigma0*dif/Pi*x/(x*x+y*y),0}:x:y:z:dif:sigma0"
-                }
-            }
-	    }
+        }
     },
     "PostProcess":
     {

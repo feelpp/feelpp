@@ -20,7 +20,9 @@
     {
         "omega":
         {
-            "cond":"k:k"
+            "poisson_c":"k:k",
+            "poisson_d":"1",
+            "poisson_f":"0.5*x:x"
         }
     },
     "InitialConditions":
@@ -53,14 +55,6 @@
         },
         "potential":
         {
-            "VolumicForces":
-            {
-                "omega":
-                {
-                    "expr":"0.5*x:x"
-                    // "expr":"b*x:x:b"
-                }
-            },
             "Dirichlet":
             {
                 "bottom":

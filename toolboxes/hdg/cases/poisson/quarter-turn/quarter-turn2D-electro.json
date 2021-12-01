@@ -18,17 +18,13 @@
         "omega":
         {
             "name":"copper",
-            "cond":"58e3"
+            "poisson_c":"58e3"
         }
     },
     "BoundaryConditions":
     {
         "potential":
         {
-            "VolumicForces":
-            {
-                "": {"expr":"0"}
-            },
             "Dirichlet":
             {
                 "top":
