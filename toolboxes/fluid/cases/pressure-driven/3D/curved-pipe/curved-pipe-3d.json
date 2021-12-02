@@ -68,7 +68,7 @@
                 {
                     "type":"L2-error", 
                     "field":"pressure",
-                    "quad":5,
+                    "quad":9,
                     "solution":"pex:pex", 
                     "markers":"Omega" 
                 },
@@ -76,7 +76,7 @@
                 {
                     "type":["L2-error","H1-error"], 
                     "field":"velocity",
-                    "quad":5,
+                    "quad":9,
                     "solution":"{uexx,uexy,0}:uexx:uexy",
                     "grad_solution":"{ugradexxx, ugradexyx, 0, ugradexxy, ugradexyy, 0, 0, 0, 0}:ugradexxx:ugradexyx:ugradexxy:ugradexyy",
                     "markers":"Omega" 

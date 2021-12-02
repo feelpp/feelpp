@@ -7,6 +7,7 @@
     },
     "Parameters":
     {
+        "pi":3.141592653589793,
         "nu":1,
         "L":1,
         "pin":10,
@@ -62,7 +63,7 @@
                 {
                     "type":"L2-error", 
                     "field":"pressure",
-                    "quad":6,
+                    "quad":8,
                     "solution":"pex:pex", //"1-x/2:x", 
                     "markers":"Omega" 
                 },
@@ -70,10 +71,27 @@
                 {
                     "type":["L2-error", "H1-error"], 
                     "field":"velocity", 
-                    "quad":6,
+                    "quad":8,
                     "solution":"{uex,0,0}:uex", //"{(0.25-(y*y+z*z))/8,0,0}:y:z", 
                     "grad_solution":"{0,ugradexyx,ugradexzx,0,0,0,0,0,0}:ugradexyx:ugradexzx",
                     "markers":"Omega" 
+                },
+                "one":
+                {
+                    "type":"L2",
+                    "expr":"1/(2*pi*R*L):pi:R:L",
+                    "markers":"wall",
+                    "quad":5
+                }
+            },
+            "Statistics":
+            {   
+                "sigman.one":
+                {
+                    "type":"integrate",
+                    "expr":"-y^2*(pin-pout)/(L*sqrt(y^2+z^2))+y*(-x*(-pin+pout)/L-pin)/sqrt(y^2+z^2)-z^2*(pin-pout)/(L*sqrt(y^2+z^2))+z*(-x*(-pin+pout)/L-pin)/sqrt(y^2+z^2):x:y:z:pin:pout:L",
+                    "markers":"wall",
+                    "quad":5
                 }
             }
         },
@@ -95,6 +113,11 @@
                 {
                     "value":0,
                     "tolerance":1
+                },
+                "Norm_one_L2":
+                {
+                    "value":1,
+                    "tolerance":1
                 }
             }
         },
@@ -104,7 +127,8 @@
             "expr":
             {
                 "u_ex":"{uex,0,0}:uex",
-                "p_ex":"pex:pex"
+                "p_ex":"pex:pex",
+                "ugrad_ex":"{0,ugradexyx,ugradexzx,0,0,0,0,0,0}:ugradexyx:ugradexzx"
             }
         }
     }

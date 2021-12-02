@@ -29,10 +29,14 @@ feelpp_add_application( fluid SRCS main_fm.cpp
   feelpp_toolbox_fluid_lib_2dP2P1G2
   feelpp_toolbox_fluid_lib_2dP3P2G1
   feelpp_toolbox_fluid_lib_2dP3P2G2
+  feelpp_toolbox_fluid_lib_2dP4P3G1
+  feelpp_toolbox_fluid_lib_2dP4P3G2
   feelpp_toolbox_fluid_lib_3dP2P1G1
   feelpp_toolbox_fluid_lib_3dP2P1G2
   feelpp_toolbox_fluid_lib_3dP3P2G1
+  feelpp_toolbox_fluid_lib_3dP4P3G1
   feelpp_toolbox_fluid_lib_3dP3P2G2
+  feelpp_toolbox_fluid_lib_3dP4P3G2
   feelpp_toolbox_fluid_lib_2dP1P1G1
   feelpp_toolbox_fluid_lib_3dP1P1G1
   INSTALL TESTS
