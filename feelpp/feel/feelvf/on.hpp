@@ -208,6 +208,27 @@ public:
     {
         M_elts.push_back( __elts );
     }
+
+    IntegratorOnExpr( ElementRange const& __elts,
+                      element_type && __u,
+                      rhs_element_type const& __rhs,
+                      expression_type const& __expr,
+                      size_type __on,
+                      double value_on_diag )
+        :
+        M_elts(),
+        M_eltbegin( __elts.template get<1>() ),
+        M_eltend( __elts.template get<2>() ),
+        M_uFromRValue( std::make_shared<element_type>( std::forward<element_type>(__u) ) ),
+        M_u( *M_uFromRValue ),
+        M_rhs( __rhs ),
+        M_expr( __expr ),
+        M_on_strategy( __on ),
+        M_value_on_diagonal( value_on_diag )
+    {
+        M_elts.push_back( __elts );
+    }
+
     IntegratorOnExpr( std::list<ElementRange> const& __elts,
                       element_type const& __u,
                       rhs_element_type const& __rhs,
@@ -313,6 +334,7 @@ private:
     element_iterator M_eltbegin;
     element_iterator M_eltend;
 
+    std::shared_ptr<element_type> M_uFromRValue;
     element_type const& M_u;
     mutable rhs_element_type M_rhs;
     expression_type M_expr;
@@ -1125,7 +1147,9 @@ auto on( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && range = args.get(_range);
-    auto && element = args.get(_element);
+    //auto && element = args.get(_element);
+    // NOTE : the line below allows to defined element as an lvalue or rvalue (as given when called the function) : TODO : add api in NApp
+    auto && element = std::move(args.template getArgument<na::element>()).value();
     auto && rhs = args.get(_rhs);
     auto && expr = args.get(_expr);
     std::string const& prefix = args.get_else(_prefix,"");
@@ -1136,7 +1160,7 @@ auto on( Ts && ... v )
     using integratoron_helper_type = vf::detail::integratoron_type<decltype(range),decltype(rhs),decltype(element),decltype(expr)>;
 
     typename integratoron_helper_type::type ion( range,
-                                                 element,
+                                                 std::forward<decltype(element)>( element ),
                                                  Feel::vf::detail::getRhsVector(rhs),
                                                  expr,
                                                  size_type(ContextOnMap[type]),
@@ -1166,7 +1190,7 @@ auto on( Ts && ... v )
         }
     }
     //typename vf::detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type );
-    return typename integratoron_helper_type::expr_type( ion );
+    return typename integratoron_helper_type::expr_type( std::move(ion) );
 }
 
 
