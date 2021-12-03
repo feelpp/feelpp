@@ -123,7 +123,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1FeelModels_1_1ModelAlgebr
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:abbf222dac59d4ee9187dad32a9d037ea"><td class="memItemLeft" align="right" valign="top"><a id="abbf222dac59d4ee9187dad32a9d037ea"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>addMatrixToAdd</b> (sparse_matrix_ptrtype mat, Feel::MatrixStructure matStruc, double scaling)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>addMatrixToAdd</b> (sparse_matrix_ptrtype mat, Feel::MatrixStructure matStruc, <a class="el" href="classdouble.html">double</a> scaling)</td></tr>
 <tr class="separator:abbf222dac59d4ee9187dad32a9d037ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a38313dd14ffe19724277c28991e80893"><td class="memItemLeft" align="right" valign="top"><a id="a38313dd14ffe19724277c28991e80893"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>addRhsToAdd</b> (sparse_matrix_ptrtype mat, vector_ptrtype vec)</td></tr>
@@ -150,7 +150,7 @@ FEELPP_DEPRECATED <a class="el" href="classbool.html">bool</a>&#160;</td><td cla
 sparse_matrix_ptrtype &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>matrix</b> ()</td></tr>
 <tr class="separator:a8ea4d6962744bfe459f8dac73b1422cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2158c834cb932fbd2d3a1defb3e5aad3"><td class="memItemLeft" align="right" valign="top"><a id="a2158c834cb932fbd2d3a1defb3e5aad3"></a>
-std::map&lt; Feel::MatrixStructure, std::pair&lt; sparse_matrix_ptrtype, double &gt; &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>matrixToAdd</b> () const</td></tr>
+std::map&lt; Feel::MatrixStructure, std::pair&lt; sparse_matrix_ptrtype, <a class="el" href="classdouble.html">double</a> &gt; &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>matrixToAdd</b> () const</td></tr>
 <tr class="separator:a2158c834cb932fbd2d3a1defb3e5aad3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a64e4b4f9ddc25d1d3f402af9976a758a"><td class="memItemLeft" align="right" valign="top"><a id="a64e4b4f9ddc25d1d3f402af9976a758a"></a>
 vector_ptrtype &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>rhs</b> ()</td></tr>
@@ -166,7 +166,7 @@ FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><b>set
 <tr class="separator:a488a5f285edc882576e62cb7936585e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase.html">Feel::FeelModels::ModelAlgebraic::DataUpdateBase</a></td></tr>
 <tr class="memitem:a32e60396c8f785b2242df8c5dc342557 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memItemLeft" align="right" valign="top"><a id="a32e60396c8f785b2242df8c5dc342557"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>addDoubleInfo</b> (std::string const &amp;info, double <a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>addDoubleInfo</b> (std::string const &amp;info, <a class="el" href="classdouble.html">double</a> <a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>)</td></tr>
 <tr class="separator:a32e60396c8f785b2242df8c5dc342557 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79ad0aa8fa223352268ef3ec36445045 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memItemLeft" align="right" valign="top"><a id="a79ad0aa8fa223352268ef3ec36445045"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>addInfo</b> (std::string const &amp;info)</td></tr>
@@ -175,7 +175,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>addInfo</b> (std::str
 void&#160;</td><td class="memItemRight" valign="bottom"><b>addMatrixInfo</b> (std::string const &amp;info, sparse_matrix_ptrtype mat)</td></tr>
 <tr class="separator:aefa781e1e6f2406aedfc086351806453 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d78fb0999a7d02b9dd85669f1399ab2 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memItemLeft" align="right" valign="top"><a id="a6d78fb0999a7d02b9dd85669f1399ab2"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>addParameterValuesInfo</b> (std::string const &amp;info, std::map&lt; std::string, double &gt; const &amp;pv)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>addParameterValuesInfo</b> (std::string const &amp;info, std::map&lt; std::string, <a class="el" href="classdouble.html">double</a> &gt; const &amp;pv)</td></tr>
 <tr class="separator:a6d78fb0999a7d02b9dd85669f1399ab2 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad50d4fcde3a91974fcf4db5469333db7 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memItemLeft" align="right" valign="top"><a id="ad50d4fcde3a91974fcf4db5469333db7"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>addVectorInfo</b> (std::string const &amp;info, vector_ptrtype vec)</td></tr>
@@ -193,7 +193,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>copyInfos</b> (<a cla
 &#160;</td><td class="memItemRight" valign="bottom"><b>DataUpdateBase</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase.html">DataUpdateBase</a> const &amp;)=default</td></tr>
 <tr class="separator:adf93433f1046a695cb332693d3f51dea inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a030f3acf34bdf74bee06f04e35aaf794 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memItemLeft" align="right" valign="top"><a id="a030f3acf34bdf74bee06f04e35aaf794"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>doubleInfo</b> (std::string const &amp;info) const</td></tr>
+<a class="el" href="classdouble.html">double</a>&#160;</td><td class="memItemRight" valign="bottom"><b>doubleInfo</b> (std::string const &amp;info) const</td></tr>
 <tr class="separator:a030f3acf34bdf74bee06f04e35aaf794 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0fe83ac90f48a54cd78030e00bdb449a inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memItemLeft" align="right" valign="top"><a id="a0fe83ac90f48a54cd78030e00bdb449a"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>eraseDoubleInfo</b> (std::string const &amp;info)</td></tr>
@@ -229,10 +229,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>eraseVectorInfo</b> (
 sparse_matrix_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>matrixInfo</b> (std::string const &amp;info)</td></tr>
 <tr class="separator:a69c1ed52951480e61cdb930a1acbc7ae inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a462ff9c6de7b612a2ccb029559c2859a inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memItemLeft" align="right" valign="top"><a id="a462ff9c6de7b612a2ccb029559c2859a"></a>
-std::map&lt; std::string, double &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>parameterValuesInfo</b> (std::string const &amp;info)</td></tr>
+std::map&lt; std::string, <a class="el" href="classdouble.html">double</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>parameterValuesInfo</b> (std::string const &amp;info)</td></tr>
 <tr class="separator:a462ff9c6de7b612a2ccb029559c2859a inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3218198eecbcab31f8d8c92b0727cb97 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memItemLeft" align="right" valign="top"><a id="a3218198eecbcab31f8d8c92b0727cb97"></a>
-std::map&lt; std::string, double &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>parameterValuesInfo</b> (std::string const &amp;info) const</td></tr>
+std::map&lt; std::string, <a class="el" href="classdouble.html">double</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>parameterValuesInfo</b> (std::string const &amp;info) const</td></tr>
 <tr class="separator:a3218198eecbcab31f8d8c92b0727cb97 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa1b069049ede8830a65e0838bd260c5e inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase"><td class="memItemLeft" align="right" valign="top"><a id="aa1b069049ede8830a65e0838bd260c5e"></a>
 vector_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>vectorInfo</b> (std::string const &amp;info)</td></tr>

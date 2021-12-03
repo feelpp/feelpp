@@ -277,7 +277,7 @@ template&lt;typename BasicJsonType &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>a new JSON pointer with <em>rhs</em> appended to <em>lhs</em> </dd></dl>
 <p>@liveexample{The example shows the usage of <code>operator/</code>.,json_pointer__operator_add_binary}</p>
 <p>@complexity Linear in the length of <em>lhs</em> and <em>rhs</em>.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classnlohmann_1_1json__pointer.html#a7395bd0af29ac23fd3f21543c935cdfa">operator/=(const json_pointer&amp;)</a> to append a JSON pointer</dd></dl>
+<dl class="section see"><dt>See also</dt><dd>see <a class="el" href="classnlohmann_1_1json__pointer.html#a7395bd0af29ac23fd3f21543c935cdfa">operator/=(const json_pointer&amp;)</a> to append a JSON pointer</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
 
 </div>
@@ -329,7 +329,7 @@ template&lt;typename BasicJsonType &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>a new JSON pointer with <em>array_idx</em> appended to <em>ptr</em> </dd></dl>
 <p>@liveexample{The example shows the usage of <code>operator/</code>.,json_pointer__operator_add_binary}</p>
 <p>@complexity Linear in the length of <em>ptr</em>.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classnlohmann_1_1json__pointer.html#a7de51480324eb1c5a89ed552cd699875">operator/=(std::size_t)</a> to append an array index</dd></dl>
+<dl class="section see"><dt>See also</dt><dd>see <a class="el" href="classnlohmann_1_1json__pointer.html#a7de51480324eb1c5a89ed552cd699875">operator/=(std::size_t)</a> to append an array index</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
 
 </div>
@@ -381,7 +381,7 @@ template&lt;typename BasicJsonType &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>a new JSON pointer with unescaped <em>token</em> appended to <em>ptr</em> </dd></dl>
 <p>@liveexample{The example shows the usage of <code>operator/</code>.,json_pointer__operator_add_binary}</p>
 <p>@complexity Linear in the length of <em>ptr</em>.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classnlohmann_1_1json__pointer.html#abdd21567b2b1d69329af0f520335e68b">operator/=(std::string)</a> to append a reference token</dd></dl>
+<dl class="section see"><dt>See also</dt><dd>see <a class="el" href="classnlohmann_1_1json__pointer.html#abdd21567b2b1d69329af0f520335e68b">operator/=(std::string)</a> to append a reference token</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
 
 </div>
@@ -501,8 +501,6 @@ template&lt;typename BasicJsonType &gt; </div>
 <p>@liveexample{The example shows the result of <code>empty</code> for different JSON Pointers.,json_pointer__empty}</p>
 <dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
 
-<p class="reference">References <a class="el" href="classnlohmann_1_1detail_1_1binary__reader.html#aa03c779d4512b5764895dc341b0ef902">nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;::chars_read</a>, <a class="el" href="classnlohmann_1_1detail_1_1parse__error.html#a137ea4d27de45d8a844fd13451d40f3d">nlohmann::detail::parse_error::create()</a>, and <a class="el" href="classnlohmann_1_1detail_1_1binary__reader.html#aba4d89d9d38235f72f60332d6c385222">nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;::sax</a>.</p>
-
 </div>
 </div>
 <a id="ae9015c658f99cf3d48a8563accc79988"></a>
@@ -528,6 +526,8 @@ template&lt;typename BasicJsonType &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>a string representation of the JSON pointer</dd></dl>
 <p>@liveexample{The example shows the result of <code>to_string</code>.,json_pointer__to_string}</p>
 <dl class="section since"><dt>Since</dt><dd>version 2.0.0 </dd></dl>
+
+<p class="reference">References <a class="el" href="classnlohmann_1_1detail_1_1binary__reader.html#ab47df98119524e9c7d9ff0b820913883">nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;::current</a>.</p>
 
 </div>
 </div>
@@ -559,11 +559,11 @@ template&lt;typename BasicJsonType &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>JSON pointer with <em>ptr</em> appended</dd></dl>
 <p>@liveexample{The example shows the usage of <code>operator/=</code>.,json_pointer__operator_add}</p>
 <p>@complexity Linear in the length of <em>ptr</em>.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classnlohmann_1_1json__pointer.html#abdd21567b2b1d69329af0f520335e68b">operator/=(std::string)</a> to append a reference token </dd>
+<dl class="section see"><dt>See also</dt><dd>see <a class="el" href="classnlohmann_1_1json__pointer.html#abdd21567b2b1d69329af0f520335e68b">operator/=(std::string)</a> to append a reference token </dd>
 <dd>
-<a class="el" href="classnlohmann_1_1json__pointer.html#a7de51480324eb1c5a89ed552cd699875">operator/=(std::size_t)</a> to append an array index </dd>
+see <a class="el" href="classnlohmann_1_1json__pointer.html#a7de51480324eb1c5a89ed552cd699875">operator/=(std::size_t)</a> to append an array index </dd>
 <dd>
-<a class="el" href="classnlohmann_1_1json__pointer.html#a90a11fe6c7f37b1746a3ff9cb24b0d53">operator/(const json_pointer&amp;, const json_pointer&amp;)</a> for a binary operator</dd></dl>
+see <a class="el" href="classnlohmann_1_1json__pointer.html#a90a11fe6c7f37b1746a3ff9cb24b0d53">operator/(const json_pointer&amp;, const json_pointer&amp;)</a> for a binary operator</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
 
 </div>
@@ -596,11 +596,11 @@ template&lt;typename BasicJsonType &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>JSON pointer with <em>array_idx</em> appended</dd></dl>
 <p>@liveexample{The example shows the usage of <code>operator/=</code>.,json_pointer__operator_add}</p>
 <p>@complexity Amortized constant.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classnlohmann_1_1json__pointer.html#a7395bd0af29ac23fd3f21543c935cdfa">operator/=(const json_pointer&amp;)</a> to append a JSON pointer </dd>
+<dl class="section see"><dt>See also</dt><dd>see <a class="el" href="classnlohmann_1_1json__pointer.html#a7395bd0af29ac23fd3f21543c935cdfa">operator/=(const json_pointer&amp;)</a> to append a JSON pointer </dd>
 <dd>
-<a class="el" href="classnlohmann_1_1json__pointer.html#abdd21567b2b1d69329af0f520335e68b">operator/=(std::string)</a> to append a reference token </dd>
+see <a class="el" href="classnlohmann_1_1json__pointer.html#abdd21567b2b1d69329af0f520335e68b">operator/=(std::string)</a> to append a reference token </dd>
 <dd>
-<a class="el" href="classnlohmann_1_1json__pointer.html#a926c9065dbed1bedc17857a813f7a46f">operator/(const json_pointer&amp;, std::string)</a> for a binary operator</dd></dl>
+see <a class="el" href="classnlohmann_1_1json__pointer.html#a926c9065dbed1bedc17857a813f7a46f">operator/(const json_pointer&amp;, std::string)</a> for a binary operator</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
 
 </div>
@@ -633,11 +633,11 @@ template&lt;typename BasicJsonType &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>JSON pointer with <em>token</em> appended without escaping <em>token</em> </dd></dl>
 <p>@liveexample{The example shows the usage of <code>operator/=</code>.,json_pointer__operator_add}</p>
 <p>@complexity Amortized constant.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classnlohmann_1_1json__pointer.html#a7395bd0af29ac23fd3f21543c935cdfa">operator/=(const json_pointer&amp;)</a> to append a JSON pointer </dd>
+<dl class="section see"><dt>See also</dt><dd>see <a class="el" href="classnlohmann_1_1json__pointer.html#a7395bd0af29ac23fd3f21543c935cdfa">operator/=(const json_pointer&amp;)</a> to append a JSON pointer </dd>
 <dd>
-<a class="el" href="classnlohmann_1_1json__pointer.html#a7de51480324eb1c5a89ed552cd699875">operator/=(std::size_t)</a> to append an array index </dd>
+see <a class="el" href="classnlohmann_1_1json__pointer.html#a7de51480324eb1c5a89ed552cd699875">operator/=(std::size_t)</a> to append an array index </dd>
 <dd>
-<a class="el" href="classnlohmann_1_1json__pointer.html#af5a4bc4f82113c271c9a0cd4d3b5f31c">operator/(const json_pointer&amp;, std::size_t)</a> for a binary operator</dd></dl>
+see <a class="el" href="classnlohmann_1_1json__pointer.html#af5a4bc4f82113c271c9a0cd4d3b5f31c">operator/(const json_pointer&amp;, std::size_t)</a> for a binary operator</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
 
 </div>
@@ -695,6 +695,8 @@ template&lt;typename BasicJsonType &gt; </div>
   </dd>
 </dl>
 <dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
+
+<p class="reference">References <a class="el" href="classnlohmann_1_1detail_1_1binary__reader.html#ab47df98119524e9c7d9ff0b820913883">nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;::current</a>.</p>
 
 </div>
 </div>
@@ -757,8 +759,6 @@ template&lt;typename BasicJsonType &gt; </div>
 <p>@complexity Amortized constant.</p>
 <p>@liveexample{The example shows the result of <code>push_back</code> for different JSON Pointers.,json_pointer__push_back}</p>
 <dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
-
-<p class="reference">References <a class="el" href="classnlohmann_1_1detail_1_1binary__reader.html#aa03c779d4512b5764895dc341b0ef902">nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;::chars_read</a>, <a class="el" href="classnlohmann_1_1detail_1_1parse__error.html#a137ea4d27de45d8a844fd13451d40f3d">nlohmann::detail::parse_error::create()</a>, and <a class="el" href="classnlohmann_1_1detail_1_1binary__reader.html#aba4d89d9d38235f72f60332d6c385222">nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;::sax</a>.</p>
 
 </div>
 </div>
@@ -837,7 +837,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="aclassnlohmann_1_1json__pointer_html_a7f32d7c62841f0c4a6784cf741a6e4f8"><div class="ttname"><a href="classnlohmann_1_1json__pointer.html#a7f32d7c62841f0c4a6784cf741a6e4f8">nlohmann::json_pointer::json_pointer</a></div><div class="ttdeci">json_pointer(const std::string &amp;s=&quot;&quot;)</div><div class="ttdoc">create JSON pointer</div><div class="ttdef"><b>Definition:</b> _json.hpp:9408</div></div>
+<div class="ttc" id="aclassnlohmann_1_1json__pointer_html_a7f32d7c62841f0c4a6784cf741a6e4f8"><div class="ttname"><a href="classnlohmann_1_1json__pointer.html#a7f32d7c62841f0c4a6784cf741a6e4f8">nlohmann::json_pointer::json_pointer</a></div><div class="ttdeci">json_pointer(const std::string &amp;s=&quot;&quot;)</div><div class="ttdoc">create JSON pointer</div><div class="ttdef"><b>Definition:</b> _json.hpp:9988</div></div>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>

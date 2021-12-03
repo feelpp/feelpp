@@ -225,10 +225,10 @@ typedef GetGm&lt; nOrder &gt;::type&#160;</td><td class="memItemRight" valign="b
 using&#160;</td><td class="memItemRight" valign="bottom"><b>index_type</b> = uint32_type</td></tr>
 <tr class="separator:a64ab400d02d0c8046be267a3d352d2ae inherit pub_types_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a691ae9ddd6e4e31d80ae23ded36a7704 inherit pub_types_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a691ae9ddd6e4e31d80ae23ded36a7704"></a>
-typedef matrix_node&lt; value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_node_type</b></td></tr>
+typedef matrix_node&lt; <a class="el" href="classdouble.html">value_type</a> &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_node_type</b></td></tr>
 <tr class="separator:a691ae9ddd6e4e31d80ae23ded36a7704 inherit pub_types_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a76b46341b406dd24e84e61adb1a25d06 inherit pub_types_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a76b46341b406dd24e84e61adb1a25d06"></a>
-typedef node&lt; value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>node_type</b></td></tr>
+typedef node&lt; <a class="el" href="classdouble.html">value_type</a> &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>node_type</b></td></tr>
 <tr class="separator:a76b46341b406dd24e84e61adb1a25d06 inherit pub_types_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0948aec15dcd5f664a4bd8553a2a5d6 inherit pub_types_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="af0948aec15dcd5f664a4bd8553a2a5d6"></a>
 typedef mpl::if_&lt; mpl::equal_to&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 1 &gt; &gt;, mpl::identity&lt; vertex_permutation_type &gt;, typename mpl::if_&lt; mpl::equal_to&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 2 &gt; &gt;, mpl::identity&lt; edge_permutation_type &gt;, mpl::identity&lt; face_permutation_type &gt; &gt;::type &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>permutation_type</b></td></tr>
@@ -243,7 +243,7 @@ typedef std::vector&lt; <a class="el" href="classFeel_1_1GeoElement0D.html">poin
 using&#160;</td><td class="memItemRight" valign="bottom"><b>point_type</b> = <a class="el" href="classFeel_1_1GeoElement0D.html">PointType</a></td></tr>
 <tr class="separator:a5080956e21e931e60eafe7893d1a4b55 inherit pub_types_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26398c9151488f66bb398d42f239883c inherit pub_types_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a26398c9151488f66bb398d42f239883c"></a>
-typedef <a class="el" href="classFeel_1_1GeoElement0D.html">GeoElement0D</a>&lt; Dim, <a class="el" href="classFeel_1_1SubFaceOfNone.html">SubFaceOfNone</a>&lt; 0 &gt;, double, uint32_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>PointType</b></td></tr>
+typedef <a class="el" href="classFeel_1_1GeoElement0D.html">GeoElement0D</a>&lt; Dim, <a class="el" href="classFeel_1_1SubFaceOfNone.html">SubFaceOfNone</a>&lt; 0 &gt;, <a class="el" href="classdouble.html">double</a>, uint32_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>PointType</b></td></tr>
 <tr class="separator:a26398c9151488f66bb398d42f239883c inherit pub_types_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa598b598b7a9c9ba62285f4e5eed4ed3 inherit pub_types_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="aa598b598b7a9c9ba62285f4e5eed4ed3"></a>
 typedef GetImMeasure&lt; 1 &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>quad_meas1_type</b></td></tr>
@@ -258,13 +258,13 @@ typedef gm1_type::super::reference_convex_type&#160;</td><td class="memItemRight
 typedef gm_type::super::reference_convex_type&#160;</td><td class="memItemRight" valign="bottom"><b>reference_convex_type</b></td></tr>
 <tr class="separator:a6aaf20588f0ae95808c1472ca37db6bc inherit pub_types_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0770524adbd851e5bb35fb135e0ec532 inherit pub_types_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a0770524adbd851e5bb35fb135e0ec532"></a>
-typedef <a class="el" href="classFeel_1_1GeoND.html">GeoND</a>&lt; Dim, GEOSHAPE, value_type, index_type, <a class="el" href="classFeel_1_1GeoElement0D.html">GeoElement0D</a>&lt; Dim, <a class="el" href="classFeel_1_1SubFaceOfNone.html">SubFaceOfNone</a>&lt; 0 &gt;, double, uint32_type &gt;, UseMeasuresStorage &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>self_type</b></td></tr>
+typedef <a class="el" href="classFeel_1_1GeoND.html">GeoND</a>&lt; Dim, GEOSHAPE, <a class="el" href="classdouble.html">value_type</a>, index_type, <a class="el" href="classFeel_1_1GeoElement0D.html">GeoElement0D</a>&lt; Dim, <a class="el" href="classFeel_1_1SubFaceOfNone.html">SubFaceOfNone</a>&lt; 0 &gt;, <a class="el" href="classdouble.html">double</a>, uint32_type &gt;, UseMeasuresStorage &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>self_type</b></td></tr>
 <tr class="separator:a0770524adbd851e5bb35fb135e0ec532 inherit pub_types_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25a810bc2873c06fd30bac2f26ae90c9 inherit pub_types_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a25a810bc2873c06fd30bac2f26ae90c9"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b> = index_type</td></tr>
 <tr class="separator:a25a810bc2873c06fd30bac2f26ae90c9 inherit pub_types_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7712914c5aad1b3ae7652f75f1190902 inherit pub_types_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a7712914c5aad1b3ae7652f75f1190902"></a>
-typedef double&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
+typedef <a class="el" href="classdouble.html">double</a>&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
 <tr class="separator:a7712914c5aad1b3ae7652f75f1190902 inherit pub_types_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a62576c1f95b44cd04686b0cdadcb1588 inherit pub_types_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a62576c1f95b44cd04686b0cdadcb1588"></a>
 typedef super::vertex_permutation_type&#160;</td><td class="memItemRight" valign="bottom"><b>vertex_permutation_type</b></td></tr>
@@ -274,13 +274,13 @@ typedef super::vertex_permutation_type&#160;</td><td class="memItemRight" valign
 typedef GEOSHAPE&#160;</td><td class="memItemRight" valign="bottom"><b>super</b></td></tr>
 <tr class="separator:ae9e53875f7fd8250faa6fc92588651cd inherit pub_types_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a29623bed3267afa25907549173b3b034 inherit pub_types_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a29623bed3267afa25907549173b3b034"></a>
-typedef <a class="el" href="classFeel_1_1GeoEntity.html">GeoEntity</a>&lt; GEOSHAPE, double, uint32_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>GeoShape</b></td></tr>
+typedef <a class="el" href="classFeel_1_1GeoEntity.html">GeoEntity</a>&lt; GEOSHAPE, <a class="el" href="classdouble.html">double</a>, uint32_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>GeoShape</b></td></tr>
 <tr class="separator:a29623bed3267afa25907549173b3b034 inherit pub_types_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8cd4fe91a48e5b062bc98298f6efdbb0 inherit pub_types_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a8cd4fe91a48e5b062bc98298f6efdbb0"></a>
-typedef <a class="el" href="classFeel_1_1GeoEntity.html">GeoEntity</a>&lt; GEOSHAPE, double, uint32_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>self_type</b></td></tr>
+typedef <a class="el" href="classFeel_1_1GeoEntity.html">GeoEntity</a>&lt; GEOSHAPE, <a class="el" href="classdouble.html">double</a>, uint32_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>self_type</b></td></tr>
 <tr class="separator:a8cd4fe91a48e5b062bc98298f6efdbb0 inherit pub_types_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b5ee1438cd8374edcf75005daad9279 inherit pub_types_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a6b5ee1438cd8374edcf75005daad9279"></a>
-typedef double&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
+typedef <a class="el" href="classdouble.html">double</a>&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
 <tr class="separator:a6b5ee1438cd8374edcf75005daad9279 inherit pub_types_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7708e624e25573338017c50992b174be inherit pub_types_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a7708e624e25573338017c50992b174be"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>index_type</b> = uint32_type</td></tr>
@@ -418,10 +418,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setFacePermutation</b
 <tr class="separator:a5b9bc1128d0d09d14bfe40fa1b17084f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classFeel_1_1GeoND"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1GeoND')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1GeoND.html">Feel::GeoND&lt; Dim, GEOSHAPE, double, uint32_type, GeoElement0D&lt; Dim, SubFaceOfNone&lt; 0 &gt;, double, uint32_type &gt;, false &gt;</a></td></tr>
 <tr class="memitem:a208fbd54997e54f38b07481001e82d9e inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a208fbd54997e54f38b07481001e82d9e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>applyDisplacement</b> (<a class="el" href="classint.html">int</a> i, ublas::vector&lt; double &gt; const &amp;u)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>applyDisplacement</b> (<a class="el" href="classint.html">int</a> i, ublas::vector&lt; <a class="el" href="classdouble.html">double</a> &gt; const &amp;u)</td></tr>
 <tr class="separator:a208fbd54997e54f38b07481001e82d9e inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d9c43cae16be7baefc4411cd9cde48a inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a9d9c43cae16be7baefc4411cd9cde48a"></a>
-FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><b>applyDisplacementG</b> (<a class="el" href="classint.html">int</a> i, ublas::vector&lt; double &gt; const &amp;u)</td></tr>
+FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><b>applyDisplacementG</b> (<a class="el" href="classint.html">int</a> i, ublas::vector&lt; <a class="el" href="classdouble.html">double</a> &gt; const &amp;u)</td></tr>
 <tr class="separator:a9d9c43cae16be7baefc4411cd9cde48a inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af02ee1626f5999d1c59e4faf7362886a inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top">node_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoND.html#af02ee1626f5999d1c59e4faf7362886a">barycenter</a> () const</td></tr>
 <tr class="separator:af02ee1626f5999d1c59e4faf7362886a inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -432,7 +432,7 @@ point_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>beginPoint<
 point_const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>beginPoint</b> () const</td></tr>
 <tr class="separator:aa0d09c370d9967020d65b187784bcdc0 inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a493662295c6f8945d2a57e04a2cd5ae8 inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a493662295c6f8945d2a57e04a2cd5ae8"></a>
-<a class="el" href="classFeel_1_1GeoND.html">GeoND</a>&lt; Dim, GEOSHAPE, double, uint32_type, <a class="el" href="classFeel_1_1GeoElement0D.html">GeoElement0D</a>&lt; Dim, <a class="el" href="classFeel_1_1SubFaceOfNone.html">SubFaceOfNone</a>&lt; 0 &gt;, double, uint32_type &gt;, UseMeasuresStorage &gt;::value_type&#160;</td><td class="memItemRight" valign="bottom"><b>computeFaceMeasureImpl</b> (QuadType const &amp;thequad, std::shared_ptr&lt; CtxFaceType &gt; &amp;ctxf, uint16_type f) const</td></tr>
+<a class="el" href="classFeel_1_1GeoND.html">GeoND</a>&lt; Dim, GEOSHAPE, <a class="el" href="classdouble.html">double</a>, uint32_type, <a class="el" href="classFeel_1_1GeoElement0D.html">GeoElement0D</a>&lt; Dim, <a class="el" href="classFeel_1_1SubFaceOfNone.html">SubFaceOfNone</a>&lt; 0 &gt;, <a class="el" href="classdouble.html">double</a>, uint32_type &gt;, UseMeasuresStorage &gt;::<a class="el" href="classdouble.html">value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>computeFaceMeasureImpl</b> (QuadType const &amp;thequad, std::shared_ptr&lt; CtxFaceType &gt; &amp;ctxf, uint16_type f) const</td></tr>
 <tr class="separator:a493662295c6f8945d2a57e04a2cd5ae8 inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0dda30c38c8f6c4eac745e1aa1fad272 inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a0dda30c38c8f6c4eac745e1aa1fad272"></a>
 point_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>endPoint</b> ()</td></tr>
@@ -448,10 +448,10 @@ point_const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>endPo
 <tr class="memitem:ad9d1b8e802052cb35df84a349ce20310 inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top">FEELPP_DEPRECATED matrix_node_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoND.html#ad9d1b8e802052cb35df84a349ce20310">faceBarycenters</a> () const</td></tr>
 <tr class="separator:ad9d1b8e802052cb35df84a349ce20310 inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adf0c68a44270904870b13b0cd4976978 inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="adf0c68a44270904870b13b0cd4976978"></a>
-value_type&#160;</td><td class="memItemRight" valign="bottom"><b>faceMeasure</b> (uint16_type f) const</td></tr>
+<a class="el" href="classdouble.html">value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>faceMeasure</b> (uint16_type f) const</td></tr>
 <tr class="separator:adf0c68a44270904870b13b0cd4976978 inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a46ef8846d6796a7e998bdcb6e4c2f457 inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a46ef8846d6796a7e998bdcb6e4c2f457"></a>
-Eigen::Matrix&lt; value_type, numTopologicalFaces, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>faceMeasures</b> () const</td></tr>
+Eigen::Matrix&lt; <a class="el" href="classdouble.html">value_type</a>, numTopologicalFaces, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>faceMeasures</b> () const</td></tr>
 <tr class="separator:a46ef8846d6796a7e998bdcb6e4c2f457 inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac9b5fd87a21cd3ea4da536a34936c2a3 inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top">uint16_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoND.html#ac9b5fd87a21cd3ea4da536a34936c2a3">faceToOppositePoint</a> (uint16_type const _localFace, uint16_type const _point) const</td></tr>
 <tr class="memdesc:ac9b5fd87a21cd3ea4da536a34936c2a3 inherit pub_methods_classFeel_1_1GeoND"><td class="mdescLeft">&#160;</td><td class="mdescRight">faceToOppositePoint(i,j) = localId of jth opposite point to ith local face  <a href="classFeel_1_1GeoND.html#ac9b5fd87a21cd3ea4da536a34936c2a3">More...</a><br /></td></tr>
@@ -480,7 +480,7 @@ gm_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
 gm1_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoND.html#ac931cf0d42140a603e81cefaf74274d4">gm1</a> () const</td></tr>
 <tr class="memdesc:ac931cf0d42140a603e81cefaf74274d4 inherit pub_methods_classFeel_1_1GeoND"><td class="mdescLeft">&#160;</td><td class="mdescRight">return the geometric mapping if a mesh was set <br /></td></tr>
 <tr class="separator:ac931cf0d42140a603e81cefaf74274d4 inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afc3fc4fa65cec832f0e0ba9ea2293d8e inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top">value_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoND.html#afc3fc4fa65cec832f0e0ba9ea2293d8e">h</a> () const</td></tr>
+<tr class="memitem:afc3fc4fa65cec832f0e0ba9ea2293d8e inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classdouble.html">value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoND.html#afc3fc4fa65cec832f0e0ba9ea2293d8e">h</a> () const</td></tr>
 <tr class="memdesc:afc3fc4fa65cec832f0e0ba9ea2293d8e inherit pub_methods_classFeel_1_1GeoND"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the max length of the edges of the element  <a href="classFeel_1_1GeoND.html#afc3fc4fa65cec832f0e0ba9ea2293d8e">More...</a><br /></td></tr>
 <tr class="separator:afc3fc4fa65cec832f0e0ba9ea2293d8e inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add7d4eddc5b30f44f42d995bdbf9761c inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="add7d4eddc5b30f44f42d995bdbf9761c"></a>
@@ -502,12 +502,12 @@ gm1_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 <tr class="memitem:a5d6b2ee399038246cb17ce1ee742893e inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoND.html#a5d6b2ee399038246cb17ce1ee742893e">hasPointWithMarker</a> () const</td></tr>
 <tr class="separator:a5d6b2ee399038246cb17ce1ee742893e inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a750ab50ac2a477dcd1ca9c325f156109 inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a750ab50ac2a477dcd1ca9c325f156109"></a>
-value_type&#160;</td><td class="memItemRight" valign="bottom"><b>hEdge</b> (uint16_type f) const</td></tr>
+<a class="el" href="classdouble.html">value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hEdge</b> (uint16_type f) const</td></tr>
 <tr class="separator:a750ab50ac2a477dcd1ca9c325f156109 inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a67b3e14e0007473927b2aa4134169eae inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top">value_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoND.html#a67b3e14e0007473927b2aa4134169eae">hFace</a> (uint16_type f) const</td></tr>
+<tr class="memitem:a67b3e14e0007473927b2aa4134169eae inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classdouble.html">value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoND.html#a67b3e14e0007473927b2aa4134169eae">hFace</a> (uint16_type f) const</td></tr>
 <tr class="memdesc:a67b3e14e0007473927b2aa4134169eae inherit pub_methods_classFeel_1_1GeoND"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the max length of the edge in the local face <code>f</code>  <a href="classFeel_1_1GeoND.html#a67b3e14e0007473927b2aa4134169eae">More...</a><br /></td></tr>
 <tr class="separator:a67b3e14e0007473927b2aa4134169eae inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a23044487f4df526f16acc2b20b997841 inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top">value_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoND.html#a23044487f4df526f16acc2b20b997841">hMin</a> () const</td></tr>
+<tr class="memitem:a23044487f4df526f16acc2b20b997841 inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classdouble.html">value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoND.html#a23044487f4df526f16acc2b20b997841">hMin</a> () const</td></tr>
 <tr class="memdesc:a23044487f4df526f16acc2b20b997841 inherit pub_methods_classFeel_1_1GeoND"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the minimum edge length in the element  <a href="classFeel_1_1GeoND.html#a23044487f4df526f16acc2b20b997841">More...</a><br /></td></tr>
 <tr class="separator:a23044487f4df526f16acc2b20b997841 inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1729449d342c04c3818c6ffba2e74ff3 inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a1729449d342c04c3818c6ffba2e74ff3"></a>
@@ -555,7 +555,7 @@ value_type&#160;</td><td class="memItemRight" valign="bottom"><b>hEdge</b> (uint
 std::map&lt; uint16_type, <a class="el" href="classMarker1.html">Marker1</a> &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>markers</b> () const</td></tr>
 <tr class="separator:ac0a38aa8427168dee193454a876164f9 inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0b17028c355a221ed9ebde24e4c9c56 inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="af0b17028c355a221ed9ebde24e4c9c56"></a>
-value_type&#160;</td><td class="memItemRight" valign="bottom"><b>measure</b> () const override</td></tr>
+<a class="el" href="classdouble.html">value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>measure</b> () const override</td></tr>
 <tr class="separator:af0b17028c355a221ed9ebde24e4c9c56 inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3aa792898af4504ec6c69968cd91c0fc inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a> const *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoND.html#a3aa792898af4504ec6c69968cd91c0fc">mesh</a> () const</td></tr>
 <tr class="separator:a3aa792898af4504ec6c69968cd91c0fc inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -632,7 +632,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setMarker3</b> (flag_
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setMarkers</b> (std::map&lt; uint16_type, <a class="el" href="classMarker1.html">Marker1</a> &gt; const &amp;markers)</td></tr>
 <tr class="separator:a1afba5a7125d60d7bdb6b3aae5b0273a inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1ef142ae8c47054c1b43034fec3ef2f6 inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a1ef142ae8c47054c1b43034fec3ef2f6"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setMeasurePointElementNeighbors</b> (value_type meas)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setMeasurePointElementNeighbors</b> (<a class="el" href="classdouble.html">value_type</a> meas)</td></tr>
 <tr class="separator:a1ef142ae8c47054c1b43034fec3ef2f6 inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad460af1914ad8ae8641c2201f761e630 inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="ad460af1914ad8ae8641c2201f761e630"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoND.html#ad460af1914ad8ae8641c2201f761e630">setNeighbor</a> (uint16_type n, <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> neigh_id)</td></tr>
@@ -642,7 +642,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memdesc:a60735ad34e4e54120b91309ea1a4a497 inherit pub_methods_classFeel_1_1GeoND"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inserts a point.  <a href="classFeel_1_1GeoND.html#a60735ad34e4e54120b91309ea1a4a497">More...</a><br /></td></tr>
 <tr class="separator:a60735ad34e4e54120b91309ea1a4a497 inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a9ba6387af0e308d1f2fd960d20bfc1 inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top"><a id="a2a9ba6387af0e308d1f2fd960d20bfc1"></a>
-FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><b>setPointCoordG</b> (<a class="el" href="classint.html">int</a> i, ublas::vector&lt; double &gt; const &amp;u)</td></tr>
+FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><b>setPointCoordG</b> (<a class="el" href="classint.html">int</a> i, ublas::vector&lt; <a class="el" href="classdouble.html">double</a> &gt; const &amp;u)</td></tr>
 <tr class="separator:a2a9ba6387af0e308d1f2fd960d20bfc1 inherit pub_methods_classFeel_1_1GeoND"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc5af4e952641ab4d3a943a9c3f836fa inherit pub_methods_classFeel_1_1GeoND"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoND.html#adc5af4e952641ab4d3a943a9c3f836fa">setTags</a> (std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;tags)</td></tr>
 <tr class="memdesc:adc5af4e952641ab4d3a943a9c3f836fa inherit pub_methods_classFeel_1_1GeoND"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the tags associated to the points  <a href="classFeel_1_1GeoND.html#adc5af4e952641ab4d3a943a9c3f836fa">More...</a><br /></td></tr>

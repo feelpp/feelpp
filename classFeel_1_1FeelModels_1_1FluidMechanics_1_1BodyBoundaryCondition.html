@@ -292,7 +292,7 @@ auto&#160;</td><td class="memItemRight" valign="bottom"><b>rigidVelocityExpr</b>
 auto&#160;</td><td class="memItemRight" valign="bottom"><b>rigidVelocityExprFromFields</b> () const</td></tr>
 <tr class="separator:a78f743f650a0b5de7abb552787d7c6d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ae5344355d1fb7b8333f8ed46568143"><td class="memItemLeft" align="right" valign="top"><a id="a3ae5344355d1fb7b8333f8ed46568143"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setParameterValues</b> (std::map&lt; std::string, double &gt; const &amp;mp)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setParameterValues</b> (std::map&lt; std::string, <a class="el" href="classdouble.html">double</a> &gt; const &amp;mp)</td></tr>
 <tr class="separator:a3ae5344355d1fb7b8333f8ed46568143"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9a49fad7c9dae9825a99c148736b42ec"><td class="memItemLeft" align="right" valign="top"><a id="a9a49fad7c9dae9825a99c148736b42ec"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setup</b> (std::string const &amp;bodyName, pt::ptree const &amp;p, <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html">self_type</a> const &amp;fluidToolbox)</td></tr>
@@ -313,13 +313,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>startTimeStep</b> ()<
 tabulate_informations_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>tabulateInformations</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;jsonInfo, <a class="el" href="classFeel_1_1TabulateInformationProperties.html">TabulateInformationProperties</a> const &amp;tabInfoProp, std::map&lt; std::string, uint16_type &gt; &amp;jsonPtrFunctionSpacesToLevel) const</td></tr>
 <tr class="separator:ad71688352909e2461ba085be66790e46"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4313211d5282ed1e827854fa98b0a9fb"><td class="memItemLeft" align="right" valign="top"><a id="a4313211d5282ed1e827854fa98b0a9fb"></a>
-moment_of_inertia_type&#160;</td><td class="memItemRight" valign="bottom"><b>timeDerivativeOfMomentOfInertia_bodyFrame</b> (double dt) const</td></tr>
+moment_of_inertia_type&#160;</td><td class="memItemRight" valign="bottom"><b>timeDerivativeOfMomentOfInertia_bodyFrame</b> (<a class="el" href="classdouble.html">double</a> dt) const</td></tr>
 <tr class="separator:a4313211d5282ed1e827854fa98b0a9fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa0b3204a1cd6b667ea7fd72bad231d6c"><td class="memItemLeft" align="right" valign="top"><a id="aa0b3204a1cd6b667ea7fd72bad231d6c"></a>
 auto const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>translationalVelocityExpr</b> () const</td></tr>
 <tr class="separator:aa0b3204a1cd6b667ea7fd72bad231d6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75ad83a6c90c90f91d681fda2c45d7fc"><td class="memItemLeft" align="right" valign="top"><a id="a75ad83a6c90c90f91d681fda2c45d7fc"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a75ad83a6c90c90f91d681fda2c45d7fc">updateDisplacement</a> (double dt)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a75ad83a6c90c90f91d681fda2c45d7fc">updateDisplacement</a> (<a class="el" href="classdouble.html">double</a> dt)</td></tr>
 <tr class="memdesc:a75ad83a6c90c90f91d681fda2c45d7fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">update displacement of body <br /></td></tr>
 <tr class="separator:a75ad83a6c90c90f91d681fda2c45d7fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b974aa1087b2033cc429fb25553ad3e"><td class="memTemplParams" colspan="2"><a id="a7b974aa1087b2033cc429fb25553ad3e"></a>
@@ -340,7 +340,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>updateInformationObje
 void&#160;</td><td class="memItemRight" valign="bottom"><b>updateMatrixPTilde_angular</b> (<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html">self_type</a> const &amp;fluidToolbox, sparse_matrix_ptrtype &amp;mat, size_type startBlockIndexVelocity=0, size_type startBlockIndexAngularVelocity=0) const</td></tr>
 <tr class="separator:aca2cbc648e8248529b9f2a7e8606fd10"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a14241a406586e59e26a39c32f60808cd"><td class="memItemLeft" align="right" valign="top"><a id="a14241a406586e59e26a39c32f60808cd"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>updateParameterValues</b> (std::map&lt; std::string, double &gt; &amp;mp, std::string const &amp;prefix_symbol)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>updateParameterValues</b> (std::map&lt; std::string, <a class="el" href="classdouble.html">double</a> &gt; &amp;mp, std::string const &amp;prefix_symbol)</td></tr>
 <tr class="separator:a14241a406586e59e26a39c32f60808cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abbabbd37bc809639d7f9bd379c2c1d58"><td class="memItemLeft" align="right" valign="top"><a id="abbabbd37bc809639d7f9bd379c2c1d58"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>updateTimeStep</b> ()</td></tr>

@@ -148,6 +148,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ad0c722d53ff97be700ccf6a9468bd456"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1json__sax.html#ad0c722d53ff97be700ccf6a9468bd456">end_object</a> ()=0</td></tr>
 <tr class="memdesc:ad0c722d53ff97be700ccf6a9468bd456"><td class="mdescLeft">&#160;</td><td class="mdescRight">the end of an object was read  <a href="structnlohmann_1_1json__sax.html#ad0c722d53ff97be700ccf6a9468bd456">More...</a><br /></td></tr>
 <tr class="separator:ad0c722d53ff97be700ccf6a9468bd456"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8358c063b2d7222b3aafa62fded04403"><td class="memItemLeft" align="right" valign="top"><a id="a8358c063b2d7222b3aafa62fded04403"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>json_sax</b> (const <a class="el" href="structnlohmann_1_1json__sax.html">json_sax</a> &amp;)=default</td></tr>
+<tr class="separator:a8358c063b2d7222b3aafa62fded04403"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62dae3713ca4914265904e30cd6b6347"><td class="memItemLeft" align="right" valign="top"><a id="a62dae3713ca4914265904e30cd6b6347"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>json_sax</b> (<a class="el" href="structnlohmann_1_1json__sax.html">json_sax</a> &amp;&amp;) noexcept=default</td></tr>
+<tr class="separator:a62dae3713ca4914265904e30cd6b6347"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e0c7ecd80b18d18a8cc76f71cfc2028"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1json__sax.html#a2e0c7ecd80b18d18a8cc76f71cfc2028">key</a> (string_t &amp;<a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>)=0</td></tr>
 <tr class="memdesc:a2e0c7ecd80b18d18a8cc76f71cfc2028"><td class="mdescLeft">&#160;</td><td class="mdescRight">an object key was read  <a href="structnlohmann_1_1json__sax.html#a2e0c7ecd80b18d18a8cc76f71cfc2028">More...</a><br /></td></tr>
 <tr class="separator:a2e0c7ecd80b18d18a8cc76f71cfc2028"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -163,6 +169,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ad9b253083e0509923ba195136f49face"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1json__sax.html#ad9b253083e0509923ba195136f49face">number_unsigned</a> (number_unsigned_t <a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>)=0</td></tr>
 <tr class="memdesc:ad9b253083e0509923ba195136f49face"><td class="mdescLeft">&#160;</td><td class="mdescRight">an unsigned integer number was read  <a href="structnlohmann_1_1json__sax.html#ad9b253083e0509923ba195136f49face">More...</a><br /></td></tr>
 <tr class="separator:ad9b253083e0509923ba195136f49face"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a90dae111cf189ac9ad340a60b199b6"><td class="memItemLeft" align="right" valign="top"><a id="a1a90dae111cf189ac9ad340a60b199b6"></a>
+<a class="el" href="structnlohmann_1_1json__sax.html">json_sax</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (const <a class="el" href="structnlohmann_1_1json__sax.html">json_sax</a> &amp;)=default</td></tr>
+<tr class="separator:a1a90dae111cf189ac9ad340a60b199b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac74584e3dc41f2465e69b37d7d2bf694"><td class="memItemLeft" align="right" valign="top"><a id="ac74584e3dc41f2465e69b37d7d2bf694"></a>
+<a class="el" href="structnlohmann_1_1json__sax.html">json_sax</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="structnlohmann_1_1json__sax.html">json_sax</a> &amp;&amp;) noexcept=default</td></tr>
+<tr class="separator:ac74584e3dc41f2465e69b37d7d2bf694"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a60287e3bd85f489e04c83f7e3b76e613"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1json__sax.html#a60287e3bd85f489e04c83f7e3b76e613">parse_error</a> (std::size_t position, const std::string &amp;last_token, const <a class="el" href="classnlohmann_1_1detail_1_1exception.html">detail::exception</a> &amp;ex)=0</td></tr>
 <tr class="memdesc:a60287e3bd85f489e04c83f7e3b76e613"><td class="mdescLeft">&#160;</td><td class="mdescRight">a parse error occurred  <a href="structnlohmann_1_1json__sax.html#a60287e3bd85f489e04c83f7e3b76e613">More...</a><br /></td></tr>
 <tr class="separator:a60287e3bd85f489e04c83f7e3b76e613"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -213,7 +225,7 @@ template&lt;typename BasicJsonType &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>whether parsing should proceed </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>It is safe to move the passed binary. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1detail_1_1lexer.html#a7cd7d55de2cd398660bc243c7229caf9">nlohmann::detail::lexer&lt; BasicJsonType, InputAdapterType &gt;::skip_bom()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespacenlohmann_1_1detail.html#ad2860d9bcd96cd7b8258a5b94674508c">nlohmann::detail::little_endianess()</a>.</p>
 
 </div>
 </div>
@@ -252,7 +264,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>whether parsing should proceed </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1detail_1_1lexer.html#a7cd7d55de2cd398660bc243c7229caf9">nlohmann::detail::lexer&lt; BasicJsonType, InputAdapterType &gt;::skip_bom()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespacenlohmann_1_1detail.html#ad2860d9bcd96cd7b8258a5b94674508c">nlohmann::detail::little_endianess()</a>.</p>
 
 </div>
 </div>
@@ -284,7 +296,7 @@ template&lt;typename BasicJsonType &gt; </div>
 <p>the end of an array was read </p>
 <dl class="section return"><dt>Returns</dt><dd>whether parsing should proceed </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1detail_1_1lexer.html#a7cd7d55de2cd398660bc243c7229caf9">nlohmann::detail::lexer&lt; BasicJsonType, InputAdapterType &gt;::skip_bom()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespacenlohmann_1_1detail.html#ad2860d9bcd96cd7b8258a5b94674508c">nlohmann::detail::little_endianess()</a>.</p>
 
 </div>
 </div>
@@ -316,7 +328,7 @@ template&lt;typename BasicJsonType &gt; </div>
 <p>the end of an object was read </p>
 <dl class="section return"><dt>Returns</dt><dd>whether parsing should proceed </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1detail_1_1lexer.html#a7cd7d55de2cd398660bc243c7229caf9">nlohmann::detail::lexer&lt; BasicJsonType, InputAdapterType &gt;::skip_bom()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespacenlohmann_1_1detail.html#ad2860d9bcd96cd7b8258a5b94674508c">nlohmann::detail::little_endianess()</a>.</p>
 
 </div>
 </div>
@@ -356,7 +368,7 @@ template&lt;typename BasicJsonType &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>whether parsing should proceed </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>It is safe to move the passed string. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1detail_1_1lexer.html#a7cd7d55de2cd398660bc243c7229caf9">nlohmann::detail::lexer&lt; BasicJsonType, InputAdapterType &gt;::skip_bom()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespacenlohmann_1_1detail.html#ad2860d9bcd96cd7b8258a5b94674508c">nlohmann::detail::little_endianess()</a>.</p>
 
 </div>
 </div>
@@ -436,7 +448,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>whether parsing should proceed </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1detail_1_1lexer.html#a7cd7d55de2cd398660bc243c7229caf9">nlohmann::detail::lexer&lt; BasicJsonType, InputAdapterType &gt;::skip_bom()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespacenlohmann_1_1detail.html#ad2860d9bcd96cd7b8258a5b94674508c">nlohmann::detail::little_endianess()</a>.</p>
 
 </div>
 </div>
@@ -475,7 +487,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>whether parsing should proceed </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1detail_1_1lexer.html#a7cd7d55de2cd398660bc243c7229caf9">nlohmann::detail::lexer&lt; BasicJsonType, InputAdapterType &gt;::skip_bom()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespacenlohmann_1_1detail.html#ad2860d9bcd96cd7b8258a5b94674508c">nlohmann::detail::little_endianess()</a>.</p>
 
 </div>
 </div>
@@ -514,7 +526,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>whether parsing should proceed </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1detail_1_1lexer.html#a7cd7d55de2cd398660bc243c7229caf9">nlohmann::detail::lexer&lt; BasicJsonType, InputAdapterType &gt;::skip_bom()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespacenlohmann_1_1detail.html#ad2860d9bcd96cd7b8258a5b94674508c">nlohmann::detail::little_endianess()</a>.</p>
 
 </div>
 </div>
@@ -571,7 +583,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>whether parsing should proceed (must return false) </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1detail_1_1lexer.html#a7cd7d55de2cd398660bc243c7229caf9">nlohmann::detail::lexer&lt; BasicJsonType, InputAdapterType &gt;::skip_bom()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespacenlohmann_1_1detail.html#ad2860d9bcd96cd7b8258a5b94674508c">nlohmann::detail::little_endianess()</a>.</p>
 
 </div>
 </div>
@@ -611,7 +623,7 @@ template&lt;typename BasicJsonType &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>whether parsing should proceed </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>binary formats may report the number of elements </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1detail_1_1lexer.html#a7cd7d55de2cd398660bc243c7229caf9">nlohmann::detail::lexer&lt; BasicJsonType, InputAdapterType &gt;::skip_bom()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespacenlohmann_1_1detail.html#ad2860d9bcd96cd7b8258a5b94674508c">nlohmann::detail::little_endianess()</a>.</p>
 
 </div>
 </div>
@@ -651,7 +663,7 @@ template&lt;typename BasicJsonType &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>whether parsing should proceed </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>binary formats may report the number of elements </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1detail_1_1lexer.html#a7cd7d55de2cd398660bc243c7229caf9">nlohmann::detail::lexer&lt; BasicJsonType, InputAdapterType &gt;::skip_bom()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespacenlohmann_1_1detail.html#ad2860d9bcd96cd7b8258a5b94674508c">nlohmann::detail::little_endianess()</a>.</p>
 
 </div>
 </div>
@@ -691,7 +703,7 @@ template&lt;typename BasicJsonType &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>whether parsing should proceed </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>It is safe to move the passed string. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1detail_1_1lexer.html#a7cd7d55de2cd398660bc243c7229caf9">nlohmann::detail::lexer&lt; BasicJsonType, InputAdapterType &gt;::skip_bom()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespacenlohmann_1_1detail.html#ad2860d9bcd96cd7b8258a5b94674508c">nlohmann::detail::little_endianess()</a>.</p>
 
 </div>
 </div>

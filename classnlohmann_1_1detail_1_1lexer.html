@@ -193,9 +193,9 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 <tr class="memitem:ab75d61c4de687717648c7698850ddb9b"><td class="memItemLeft" align="right" valign="top"><a id="ab75d61c4de687717648c7698850ddb9b"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>lexer</b> (const <a class="el" href="classnlohmann_1_1detail_1_1lexer.html">lexer</a> &amp;)=delete</td></tr>
 <tr class="separator:ab75d61c4de687717648c7698850ddb9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5498021440ac08dc6079a3597ae1e459"><td class="memItemLeft" align="right" valign="top"><a id="a5498021440ac08dc6079a3597ae1e459"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>lexer</b> (InputAdapterType &amp;&amp;adapter, <a class="el" href="classbool.html">bool</a> ignore_comments_=false)</td></tr>
-<tr class="separator:a5498021440ac08dc6079a3597ae1e459"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a89bbc051da2514a469441a3a30ad63e4"><td class="memItemLeft" align="right" valign="top"><a id="a89bbc051da2514a469441a3a30ad63e4"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>lexer</b> (InputAdapterType &amp;&amp;adapter, <a class="el" href="classbool.html">bool</a> ignore_comments_=false) noexcept</td></tr>
+<tr class="separator:a89bbc051da2514a469441a3a30ad63e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae95416c7ae8b36f0dd0ab349eaa754a2"><td class="memItemLeft" align="right" valign="top"><a id="ae95416c7ae8b36f0dd0ab349eaa754a2"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>lexer</b> (<a class="el" href="classnlohmann_1_1detail_1_1lexer.html">lexer</a> &amp;&amp;)=default</td></tr>
 <tr class="separator:ae95416c7ae8b36f0dd0ab349eaa754a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -240,8 +240,6 @@ template&lt;typename BasicJsonType , typename InputAdapterType &gt; </div>
 
 <p>skip the UTF-8 byte order mark </p>
 <dl class="section return"><dt>Returns</dt><dd>true iff there is no BOM or the correct BOM has been skipped </dd></dl>
-
-<p class="reference">References <a class="el" href="structnlohmann_1_1json__sax.html#a38c2dbde07138cc436ea7fbf22c1e92d">nlohmann::json_sax&lt; BasicJsonType &gt;::binary()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a82ed080814fa656191a537284bb0c575">nlohmann::json_sax&lt; BasicJsonType &gt;::boolean()</a>, <a class="el" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">Feel::elements()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a235ee975617f28e6a996d1e36a282312">nlohmann::json_sax&lt; BasicJsonType &gt;::end_array()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#ad0c722d53ff97be700ccf6a9468bd456">nlohmann::json_sax&lt; BasicJsonType &gt;::end_object()</a>, <a class="el" href="classnlohmann_1_1detail_1_1json__sax__dom__parser.html#afc50fee0a92ce84afb84041ebbdfba80">nlohmann::detail::json_sax_dom_parser&lt; BasicJsonType &gt;::json_sax_dom_parser()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a2e0c7ecd80b18d18a8cc76f71cfc2028">nlohmann::json_sax&lt; BasicJsonType &gt;::key()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#ae7c31614e8a82164d2d7f8dbf4671b25">nlohmann::json_sax&lt; BasicJsonType &gt;::number_float()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#affa7a78b8e9cc9cc3ac99927143142a5">nlohmann::json_sax&lt; BasicJsonType &gt;::number_integer()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#ad9b253083e0509923ba195136f49face">nlohmann::json_sax&lt; BasicJsonType &gt;::number_unsigned()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a60287e3bd85f489e04c83f7e3b76e613">nlohmann::json_sax&lt; BasicJsonType &gt;::parse_error()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a5c53878cf08d463eb4e7ca0270532572">nlohmann::json_sax&lt; BasicJsonType &gt;::start_array()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a0671528b0debb5a348169d61f0382a0f">nlohmann::json_sax&lt; BasicJsonType &gt;::start_object()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a07eab82f6c82d606787eee9ad73d2bda">nlohmann::json_sax&lt; BasicJsonType &gt;::string()</a>, and <a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val()</a>.</p>
 
 </div>
 </div>

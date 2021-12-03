@@ -174,7 +174,7 @@ typedef backend_type::pre_solve_type&#160;</td><td class="memItemRight" valign="
 typedef std::shared_ptr&lt; preconditioner_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>preconditioner_ptrtype</b></td></tr>
 <tr class="separator:af0d476503ed3592df7965731717d0e2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8553a119133abf4a1c03f13652a97ff8"><td class="memItemLeft" align="right" valign="top"><a id="a8553a119133abf4a1c03f13652a97ff8"></a>
-typedef Preconditioner&lt; value_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>preconditioner_type</b></td></tr>
+typedef Preconditioner&lt; <a class="el" href="classdouble.html">value_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>preconditioner_type</b></td></tr>
 <tr class="separator:a8553a119133abf4a1c03f13652a97ff8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d22abc144f280cfd266078b6e7c1266"><td class="memItemLeft" align="right" valign="top"><a id="a1d22abc144f280cfd266078b6e7c1266"></a>
 typedef <a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html">ModelAlgebraicFactory</a>&#160;</td><td class="memItemRight" valign="bottom"><b>self_type</b></td></tr>
@@ -192,7 +192,7 @@ typedef sparse_matrix_ptrtype::element_type&#160;</td><td class="memItemRight" v
 typedef backend_type::update_nlsolve_type&#160;</td><td class="memItemRight" valign="bottom"><b>update_nlsolve_type</b></td></tr>
 <tr class="separator:a420434b594dc8a78151623bcc959eba3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1fe96693f290b54395c935c0dc7a3d4a"><td class="memItemLeft" align="right" valign="top"><a id="a1fe96693f290b54395c935c0dc7a3d4a"></a>
-typedef model_type::value_type&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
+typedef <a class="el" href="classdouble.html">model_type::value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
 <tr class="separator:a1fe96693f290b54395c935c0dc7a3d4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59f90b05e874185cb824248fbdc1e017"><td class="memItemLeft" align="right" valign="top"><a id="a59f90b05e874185cb824248fbdc1e017"></a>
 typedef model_type::vector_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>vector_ptrtype</b></td></tr>
@@ -231,10 +231,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>addFunctionResidualDo
 void&#160;</td><td class="memItemRight" valign="bottom"><b>addFunctionResidualPostAssembly</b> (function_assembly_residual_type const &amp;func, std::string const &amp;key=&quot;&quot;)</td></tr>
 <tr class="separator:ab6b2787405581affafa5b3183d78c787"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a407698a3eb73abd730fa46fbf7965c8a"><td class="memItemLeft" align="right" valign="top"><a id="a407698a3eb73abd730fa46fbf7965c8a"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>addVectorLinearRhsAssembly</b> (vector_ptrtype const &amp;vec, double scaling=1.0, std::string const &amp;key=&quot;&quot;, <a class="el" href="classbool.html">bool</a> cstPart=false)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>addVectorLinearRhsAssembly</b> (vector_ptrtype const &amp;vec, <a class="el" href="classdouble.html">double</a> scaling=1.0, std::string const &amp;key=&quot;&quot;, <a class="el" href="classbool.html">bool</a> cstPart=false)</td></tr>
 <tr class="separator:a407698a3eb73abd730fa46fbf7965c8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acdb22dabc4e53350f1dada6e87092b37"><td class="memItemLeft" align="right" valign="top"><a id="acdb22dabc4e53350f1dada6e87092b37"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>addVectorResidualAssembly</b> (vector_ptrtype const &amp;vec, double scaling=1.0, std::string const &amp;key=&quot;&quot;, <a class="el" href="classbool.html">bool</a> cstPart=false)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>addVectorResidualAssembly</b> (vector_ptrtype const &amp;vec, <a class="el" href="classdouble.html">double</a> scaling=1.0, std::string const &amp;key=&quot;&quot;, <a class="el" href="classbool.html">bool</a> cstPart=false)</td></tr>
 <tr class="separator:acdb22dabc4e53350f1dada6e87092b37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f96c31c6a85c05299ff182616cc961e"><td class="memItemLeft" align="right" valign="top"><a id="a2f96c31c6a85c05299ff182616cc961e"></a>
 FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><b>AlgoNewton2</b> (vector_ptrtype &amp;U)</td></tr>
@@ -254,16 +254,16 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memdesc:afe4bb741d782fa7959e518c1400f0112"><td class="mdescLeft">&#160;</td><td class="mdescRight">attach a sparse matrix to the precondtioner <br /></td></tr>
 <tr class="separator:afe4bb741d782fa7959e518c1400f0112"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7bbb297c0a50c984ddef05a6e06e98bb"><td class="memItemLeft" align="right" valign="top"><a id="a7bbb297c0a50c984ddef05a6e06e98bb"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>attachNearNullSpace</b> (<a class="el" href="classint.html">int</a> k, NullSpace&lt; value_type &gt; const &amp;nearNullSpace)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>attachNearNullSpace</b> (<a class="el" href="classint.html">int</a> k, NullSpace&lt; <a class="el" href="classdouble.html">value_type</a> &gt; const &amp;nearNullSpace)</td></tr>
 <tr class="separator:a7bbb297c0a50c984ddef05a6e06e98bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84099188ac4ef192bde5743ea0422b0a"><td class="memItemLeft" align="right" valign="top"><a id="a84099188ac4ef192bde5743ea0422b0a"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>attachNearNullSpace</b> (<a class="el" href="classint.html">int</a> k, NullSpace&lt; value_type &gt; const &amp;nearNullSpace, std::string const &amp;prefix)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>attachNearNullSpace</b> (<a class="el" href="classint.html">int</a> k, NullSpace&lt; <a class="el" href="classdouble.html">value_type</a> &gt; const &amp;nearNullSpace, std::string const &amp;prefix)</td></tr>
 <tr class="separator:a84099188ac4ef192bde5743ea0422b0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8baac9e872aaf3d338673d33afe93d5e"><td class="memItemLeft" align="right" valign="top"><a id="a8baac9e872aaf3d338673d33afe93d5e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>attachNearNullSpace</b> (NullSpace&lt; value_type &gt; const &amp;nearNullSpace)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>attachNearNullSpace</b> (NullSpace&lt; <a class="el" href="classdouble.html">value_type</a> &gt; const &amp;nearNullSpace)</td></tr>
 <tr class="separator:a8baac9e872aaf3d338673d33afe93d5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad03db4a066334cef647459c9a942a154"><td class="memItemLeft" align="right" valign="top"><a id="ad03db4a066334cef647459c9a942a154"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>attachNullSpace</b> (NullSpace&lt; value_type &gt; const &amp;nullSpace)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>attachNullSpace</b> (NullSpace&lt; <a class="el" href="classdouble.html">value_type</a> &gt; const &amp;nullSpace)</td></tr>
 <tr class="separator:ad03db4a066334cef647459c9a942a154"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a09e4f1943e85831d2e650a20832a19d1"><td class="memItemLeft" align="right" valign="top"><a id="a09e4f1943e85831d2e650a20832a19d1"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html#a09e4f1943e85831d2e650a20832a19d1">attachOperatorPCD</a> (std::string const &amp;key, typename preconditioner_type::operator_pcdbase_ptrtype const &amp;opPCD)</td></tr>

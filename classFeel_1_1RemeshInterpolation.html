@@ -119,13 +119,13 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>datamap_ptrtype</b> 
 using&#160;</td><td class="memItemRight" valign="bottom"><b>functionspace_base_ptrtype</b> = std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> &gt;</td></tr>
 <tr class="separator:aea9a543198c114d918d565f82f43364d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a01c1c2c4fc98031044221b7562bd1b55"><td class="memItemLeft" align="right" valign="top"><a id="a01c1c2c4fc98031044221b7562bd1b55"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>sparse_matrix_ptrtype</b> = std::shared_ptr&lt; MatrixSparse&lt; double &gt; &gt;</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>sparse_matrix_ptrtype</b> = std::shared_ptr&lt; MatrixSparse&lt; <a class="el" href="classdouble.html">double</a> &gt; &gt;</td></tr>
 <tr class="separator:a01c1c2c4fc98031044221b7562bd1b55"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1e7efc9c6609f06a893c93748a3af7d"><td class="memItemLeft" align="right" valign="top"><a id="ae1e7efc9c6609f06a893c93748a3af7d"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>vector_ptrtype</b> = std::shared_ptr&lt; <a class="el" href="classFeel_1_1Vector.html">vector_type</a> &gt;</td></tr>
 <tr class="separator:ae1e7efc9c6609f06a893c93748a3af7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc5dcedb171f97bd983ecde5a35bb7ed"><td class="memItemLeft" align="right" valign="top"><a id="afc5dcedb171f97bd983ecde5a35bb7ed"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>vector_type</b> = <a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; double &gt;</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>vector_type</b> = <a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; <a class="el" href="classdouble.html">double</a> &gt;</td></tr>
 <tr class="separator:afc5dcedb171f97bd983ecde5a35bb7ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -146,7 +146,7 @@ template&lt;typename DomainElementType , typename ImageElementType &gt; </td></t
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>interpolate</b> (std::string const &amp;name, vector_ptrtype const &amp;u, vector_ptrtype &amp;v) const</td></tr>
 <tr class="separator:aae22e9c40e6bb587d8db253d12003ba4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a189c80c92515c549ad4edbb66b38bf93"><td class="memItemLeft" align="right" valign="top"><a id="a189c80c92515c549ad4edbb66b38bf93"></a>
-<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>interpolateBlockVector</b> (std::string const &amp;name, vector_ptrtype oldVecMonolithic, vector_ptrtype newVecMonolithic, <a class="el" href="classBlocksBaseVector.html">BlocksBaseVector</a>&lt; double &gt; const &amp;bvs, <a class="el" href="classbool.html">bool</a> close=true) const</td></tr>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>interpolateBlockVector</b> (std::string const &amp;name, vector_ptrtype oldVecMonolithic, vector_ptrtype newVecMonolithic, <a class="el" href="classBlocksBaseVector.html">BlocksBaseVector</a>&lt; <a class="el" href="classdouble.html">double</a> &gt; const &amp;bvs, <a class="el" href="classbool.html">bool</a> close=true) const</td></tr>
 <tr class="separator:a189c80c92515c549ad4edbb66b38bf93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a3b4fd747abf42949e94817c79f4663"><td class="memItemLeft" align="right" valign="top"><a id="a1a3b4fd747abf42949e94817c79f4663"></a>
 sparse_matrix_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>matrixInterpolation</b> (functionspace_base_ptrtype domainSpace, functionspace_base_ptrtype imageSpace) const</td></tr>

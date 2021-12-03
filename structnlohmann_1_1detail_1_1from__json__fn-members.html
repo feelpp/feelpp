@@ -108,7 +108,7 @@ $(document).ready(function(){initNavTree('structnlohmann_1_1detail_1_1from__json
 
 <p>This is the complete list of members for <a class="el" href="structnlohmann_1_1detail_1_1from__json__fn.html">nlohmann::detail::from_json_fn</a>, including all inherited members.</p>
 <table class="directory">
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>operator()</b>(const BasicJsonType &amp;j, T &amp;val) const noexcept(noexcept(from_json(j, val))) -&gt; decltype(from_json(j, val), void()) (defined in <a class="el" href="structnlohmann_1_1detail_1_1from__json__fn.html">nlohmann::detail::from_json_fn</a>)</td><td class="entry"><a class="el" href="structnlohmann_1_1detail_1_1from__json__fn.html">nlohmann::detail::from_json_fn</a></td><td class="entry"></td></tr>
+  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>operator()</b>(const BasicJsonType &amp;j, T &amp;&amp;val) const noexcept(noexcept(from_json(j, std::forward&lt; T &gt;(val)))) -&gt; decltype(from_json(j, std::forward&lt; T &gt;(val))) (defined in <a class="el" href="structnlohmann_1_1detail_1_1from__json__fn.html">nlohmann::detail::from_json_fn</a>)</td><td class="entry"><a class="el" href="structnlohmann_1_1detail_1_1from__json__fn.html">nlohmann::detail::from_json_fn</a></td><td class="entry"></td></tr>
 </table></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

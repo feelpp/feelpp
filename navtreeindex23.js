@@ -1,5 +1,7 @@
 var NAVTREEINDEX23 =
 {
+"classFeel_1_1OperatorLinearComposite.html#a98855c12bc0391e3d213f8e6642e9f90":[6,1,1,202,18],
+"classFeel_1_1OperatorLinearComposite.html#a9926dd77cb08608a3b50849dfb320477":[6,1,1,202,46],
 "classFeel_1_1OperatorLinearComposite.html#a9a1d3aae11493f9cc1c42e5c9a9ca4aa":[6,1,1,202,6],
 "classFeel_1_1OperatorLinearComposite.html#a9c180cb3201b8a9f984ad2069e06269f":[6,1,1,202,51],
 "classFeel_1_1OperatorLinearComposite.html#a9d0b99bed74926d22e11d5783644b6de":[6,1,1,202,10],
@@ -247,7 +249,5 @@ var NAVTREEINDEX23 =
 "classFeel_1_1ProductSpace_1_1Element.html#afe4173b88c65a15805451dac5ff53176":[6,1,1,223,0,0],
 "classFeel_1_1ProductSpaces.html":[6,1,1,224],
 "classFeel_1_1ProductSpaces.html#a14a7c6836e792e0c1dbe73769b6d5f1e":[6,1,1,224,6],
-"classFeel_1_1ProductSpaces.html#a3022f290ba0b5443b955d9d260e8209c":[6,1,1,224,10],
-"classFeel_1_1ProductSpaces.html#a30f8b79958f2dc1a2c9ac61d47f4040d":[6,1,1,224,4],
-"classFeel_1_1ProductSpaces.html#a46fa4047e24e3523431f0a64ff8792df":[6,1,1,224,12]
+"classFeel_1_1ProductSpaces.html#a3022f290ba0b5443b955d9d260e8209c":[6,1,1,224,10]
 };

@@ -126,6 +126,10 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>key_type</b> = Key</
 <tr class="memitem:a1c9c1509ee714a9814b45a8030c84ec7"><td class="memItemLeft" align="right" valign="top"><a id="a1c9c1509ee714a9814b45a8030c84ec7"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>mapped_type</b> = T</td></tr>
 <tr class="separator:a1c9c1509ee714a9814b45a8030c84ec7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a89cc338e8466e74baaa138664c79ee98"><td class="memTemplParams" colspan="2"><a id="a89cc338e8466e74baaa138664c79ee98"></a>
+template&lt;typename InputIt &gt; </td></tr>
+<tr class="memitem:a89cc338e8466e74baaa138664c79ee98"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>require_input_iter</b> = typename std::enable_if&lt; std::is_convertible&lt; typename std::iterator_traits&lt; InputIt &gt;::iterator_category, std::input_iterator_tag &gt;::value &gt;::type</td></tr>
+<tr class="separator:a89cc338e8466e74baaa138664c79ee98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -156,6 +160,10 @@ const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>find</b> (c
 <tr class="memitem:a0241433138719e477a3cbb0c4cf0a243"><td class="memItemLeft" align="right" valign="top"><a id="a0241433138719e477a3cbb0c4cf0a243"></a>
 std::pair&lt; iterator, <a class="el" href="classbool.html">bool</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>insert</b> (const value_type &amp;value)</td></tr>
 <tr class="separator:a0241433138719e477a3cbb0c4cf0a243"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c8509f72bc33307661f1a0ed5763f9e"><td class="memTemplParams" colspan="2"><a id="a2c8509f72bc33307661f1a0ed5763f9e"></a>
+template&lt;typename InputIt , typename  = require_input_iter&lt;InputIt&gt;&gt; </td></tr>
+<tr class="memitem:a2c8509f72bc33307661f1a0ed5763f9e"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>insert</b> (InputIt first, InputIt last)</td></tr>
+<tr class="separator:a2c8509f72bc33307661f1a0ed5763f9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a48eceff729b80f3f4a023b737efccc5b"><td class="memItemLeft" align="right" valign="top"><a id="a48eceff729b80f3f4a023b737efccc5b"></a>
 std::pair&lt; iterator, <a class="el" href="classbool.html">bool</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>insert</b> (value_type &amp;&amp;value)</td></tr>
 <tr class="separator:a48eceff729b80f3f4a023b737efccc5b"><td class="memSeparator" colspan="2">&#160;</td></tr>

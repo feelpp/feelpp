@@ -1,5 +1,7 @@
 var NAVTREEINDEX9 =
 {
+"classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIdsByEntity.html#afcd2570b7fc8c92b0300a4e0e43ddd20":[6,1,1,4,24,1,1],
+"classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html":[6,1,1,4,24,2],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html#a1914d79ecde0d293de37cea0602504ad":[6,1,1,4,24,2,1],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html#aaaa56cccfe6b4a012f8e7e4088295807":[6,1,1,4,24,2,3],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html#ac1a879d1b40a407c1197424026275ede":[6,1,1,4,24,2,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX9 =
 "classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html#ab04ba51c676a858d844d16193ffce272":[6,1,1,4,45,4],
 "classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html#ad54db559b56b16d29eca1d3835ecaa33":[6,1,1,4,45,0],
 "classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html#adbbc365128a0e327ef0e89dd9cb59217":[6,1,1,4,45,3],
-"classFeel_1_1FeelModels_1_1ModelMeasuresQuantities.html":[6,1,1,4,46],
-"classFeel_1_1FeelModels_1_1ModelMeasuresQuantities.html#a08d302092a8939f9c658ccc03c89a85e":[6,1,1,4,46,7],
-"classFeel_1_1FeelModels_1_1ModelMeasuresQuantities.html#a181c547b2a439f67bcc10f28101a4a4b":[6,1,1,4,46,9]
+"classFeel_1_1FeelModels_1_1ModelMeasuresQuantities.html":[6,1,1,4,46]
 };

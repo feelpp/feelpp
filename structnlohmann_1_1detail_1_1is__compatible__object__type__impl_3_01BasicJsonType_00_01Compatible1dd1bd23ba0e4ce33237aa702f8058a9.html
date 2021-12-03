@@ -134,7 +134,7 @@ template&lt;typename BasicJsonType , typename CompatibleObjectType &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="el" href="classbool.html">bool</a> <a class="el" href="structnlohmann_1_1detail_1_1is__compatible__object__type__impl.html">nlohmann::detail::is_compatible_object_type_impl</a>&lt; BasicJsonType, CompatibleObjectType, enable_if_t&lt; is_detected&lt; mapped_type_t, CompatibleObjectType &gt;::value &amp;&amp;is_detected&lt; key_type_t, CompatibleObjectType &gt;::value &gt; &gt;::value</td>
+          <td class="memname">constexpr <a class="el" href="classbool.html">bool</a> <a class="el" href="structnlohmann_1_1detail_1_1is__compatible__object__type__impl.html">nlohmann::detail::is_compatible_object_type_impl</a>&lt; BasicJsonType, CompatibleObjectType, enable_if_t&lt; <a class="el" href="classis__detected.html">is_detected</a>&lt; mapped_type_t, CompatibleObjectType &gt;::value &amp;&amp;<a class="el" href="classis__detected.html">is_detected</a>&lt; key_type_t, CompatibleObjectType &gt;::value &gt; &gt;::value</td>
         </tr>
       </table>
   </td>
@@ -144,9 +144,9 @@ template&lt;typename BasicJsonType , typename CompatibleObjectType &gt; </div>
 </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">        std::is_constructible&lt;<span class="keyword">typename</span> object_t::key_type,</div>
+<div class="line">        is_constructible&lt;<span class="keyword">typename</span> object_t::key_type,</div>
 <div class="line">        <span class="keyword">typename</span> CompatibleObjectType::key_type&gt;::value &amp;&amp;</div>
-<div class="line">        std::is_constructible&lt;<span class="keyword">typename</span> object_t::mapped_type,</div>
+<div class="line">        is_constructible&lt;<span class="keyword">typename</span> object_t::mapped_type,</div>
 <div class="line">        <span class="keyword">typename</span> CompatibleObjectType::mapped_type&gt;::value</div>
 </div><!-- fragment -->
 </div>

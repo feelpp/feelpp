@@ -102,14 +102,15 @@ $(document).ready(function(){initNavTree('structnlohmann_1_1adl__serializer.html
 
 <div class="header">
   <div class="headertitle">
-<div class="title">nlohmann::adl_serializer&lt; typename, typename &gt; Member List</div>  </div>
+<div class="title">nlohmann::adl_serializer&lt; ValueType, typename &gt; Member List</div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p>This is the complete list of members for <a class="el" href="structnlohmann_1_1adl__serializer.html">nlohmann::adl_serializer&lt; typename, typename &gt;</a>, including all inherited members.</p>
+<p>This is the complete list of members for <a class="el" href="structnlohmann_1_1adl__serializer.html">nlohmann::adl_serializer&lt; ValueType, typename &gt;</a>, including all inherited members.</p>
 <table class="directory">
-  <tr class="even"><td class="entry"><a class="el" href="structnlohmann_1_1adl__serializer.html#a2c544585b8b1828a0f1eecd831d0496e">from_json</a>(BasicJsonType &amp;&amp;j, ValueType &amp;val) noexcept(noexcept(::nlohmann::from_json(std::forward&lt; BasicJsonType &gt;(j), val))) -&gt; decltype(::nlohmann::from_json(std::forward&lt; BasicJsonType &gt;(j), val), void())</td><td class="entry"><a class="el" href="structnlohmann_1_1adl__serializer.html">nlohmann::adl_serializer&lt; typename, typename &gt;</a></td><td class="entry"><span class="mlabel">static</span></td></tr>
-  <tr><td class="entry"><a class="el" href="structnlohmann_1_1adl__serializer.html#a01b867bd5dce5249d4f7433b8f27def6">to_json</a>(BasicJsonType &amp;j, ValueType &amp;&amp;val) noexcept(noexcept(::nlohmann::to_json(j, std::forward&lt; ValueType &gt;(val)))) -&gt; decltype(::nlohmann::to_json(j, std::forward&lt; ValueType &gt;(val)), void())</td><td class="entry"><a class="el" href="structnlohmann_1_1adl__serializer.html">nlohmann::adl_serializer&lt; typename, typename &gt;</a></td><td class="entry"><span class="mlabel">static</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="structnlohmann_1_1adl__serializer.html#a8180f52bf21fc610705bc521f22116ae">from_json</a>(BasicJsonType &amp;&amp;j, TargetType &amp;val) noexcept(noexcept(::nlohmann::from_json(std::forward&lt; BasicJsonType &gt;(j), val))) -&gt; decltype(::nlohmann::from_json(std::forward&lt; BasicJsonType &gt;(j), val), void())</td><td class="entry"><a class="el" href="structnlohmann_1_1adl__serializer.html">nlohmann::adl_serializer&lt; ValueType, typename &gt;</a></td><td class="entry"><span class="mlabel">static</span></td></tr>
+  <tr><td class="entry"><a class="el" href="structnlohmann_1_1adl__serializer.html#a95eddeff6ff0dd0b6b11c4c7a526716d">from_json</a>(BasicJsonType &amp;&amp;j) noexcept(noexcept(::nlohmann::from_json(std::forward&lt; BasicJsonType &gt;(j), detail::identity_tag&lt; TargetType &gt; {}))) -&gt; decltype(::nlohmann::from_json(std::forward&lt; BasicJsonType &gt;(j), detail::identity_tag&lt; TargetType &gt;</td><td class="entry"><a class="el" href="structnlohmann_1_1adl__serializer.html">nlohmann::adl_serializer&lt; ValueType, typename &gt;</a></td><td class="entry"><span class="mlabel">static</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="structnlohmann_1_1adl__serializer.html#afdcc8f0204ce8ac7d28a5403f6e1f0e7">to_json</a>(BasicJsonType &amp;j, TargetType &amp;&amp;val) noexcept(noexcept(::nlohmann::to_json(j, std::forward&lt; TargetType &gt;(val)))) -&gt; decltype(::nlohmann::to_json(j, std::forward&lt; TargetType &gt;(val)), void())</td><td class="entry"><a class="el" href="structnlohmann_1_1adl__serializer.html">nlohmann::adl_serializer&lt; ValueType, typename &gt;</a></td><td class="entry"><span class="mlabel">static</span></td></tr>
 </table></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

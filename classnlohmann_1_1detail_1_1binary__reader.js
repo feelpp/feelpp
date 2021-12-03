@@ -11,7 +11,7 @@ var classnlohmann_1_1detail_1_1binary__reader =
     [ "sax_", "classnlohmann_1_1detail_1_1binary__reader.html#a7c955f535229a803c486f8b527f60611", null ],
     [ "strict", "classnlohmann_1_1detail_1_1binary__reader.html#a88b1dab5c11fa0d7b1f686fc124bc2db", null ],
     [ "tag_handler", "classnlohmann_1_1detail_1_1binary__reader.html#afa06e1a22f34f9627be81433e228d5f9", null ],
-    [ "binary_reader", "classnlohmann_1_1detail_1_1binary__reader.html#ad7cb69186e01b77ec021e83137461457", null ],
+    [ "binary_reader", "classnlohmann_1_1detail_1_1binary__reader.html#a2aee4c3507eca623f7cec32544fdc5b2", null ],
     [ "binary_reader", "classnlohmann_1_1detail_1_1binary__reader.html#ab29d56b1e980a7b9a3383cf1ce862d1b", null ],
     [ "binary_reader", "classnlohmann_1_1detail_1_1binary__reader.html#acca2c4076df85f27dc1c904475e05c26", null ],
     [ "~binary_reader", "classnlohmann_1_1detail_1_1binary__reader.html#a359031cba136452d9030ed9ab4517b74", null ]

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: nlohmann::detail::output_vector_adapter&lt; CharType &gt; Class Template Reference</title>
+<title>Feel++: nlohmann::detail::output_vector_adapter&lt; CharType, AllocatorType &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -106,58 +106,70 @@ $(document).ready(function(){initNavTree('classnlohmann_1_1detail_1_1output__vec
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="classnlohmann_1_1detail_1_1output__vector__adapter-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">nlohmann::detail::output_vector_adapter&lt; CharType &gt; Class Template Reference</div>  </div>
+<div class="title">nlohmann::detail::output_vector_adapter&lt; CharType, AllocatorType &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><h3>template&lt;typename CharType&gt;<br />
-class nlohmann::detail::output_vector_adapter&lt; CharType &gt;</h3>
+<div class="textblock"><h3>template&lt;typename CharType, typename AllocatorType = std::allocator&lt;CharType&gt;&gt;<br />
+class nlohmann::detail::output_vector_adapter&lt; CharType, AllocatorType &gt;</h3>
 
 <p>output adapter for byte vectors </p>
 </div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for nlohmann::detail::output_vector_adapter&lt; CharType &gt;:</div>
+  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for nlohmann::detail::output_vector_adapter&lt; CharType, AllocatorType &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
  <div class="center">
-  <img src="classnlohmann_1_1detail_1_1output__vector__adapter.png" usemap="#nlohmann::detail::output_5Fvector_5Fadapter_3C_20CharType_20_3E_map" alt=""/>
-  <map id="nlohmann::detail::output_5Fvector_5Fadapter_3C_20CharType_20_3E_map" name="nlohmann::detail::output_5Fvector_5Fadapter_3C_20CharType_20_3E_map">
-<area href="structnlohmann_1_1detail_1_1output__adapter__protocol.html" title="abstract output adapter interface" alt="nlohmann::detail::output_adapter_protocol&lt; CharType &gt;" shape="rect" coords="0,0,325,24"/>
+  <img src="classnlohmann_1_1detail_1_1output__vector__adapter.png" usemap="#nlohmann::detail::output_5Fvector_5Fadapter_3C_20CharType_2C_20AllocatorType_20_3E_map" alt=""/>
+  <map id="nlohmann::detail::output_5Fvector_5Fadapter_3C_20CharType_2C_20AllocatorType_20_3E_map" name="nlohmann::detail::output_5Fvector_5Fadapter_3C_20CharType_2C_20AllocatorType_20_3E_map">
+<area href="structnlohmann_1_1detail_1_1output__adapter__protocol.html" title="abstract output adapter interface" alt="nlohmann::detail::output_adapter_protocol&lt; CharType &gt;" shape="rect" coords="0,0,403,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a9c3b96391589254510a6994756fc41ef"><td class="memItemLeft" align="right" valign="top"><a id="a9c3b96391589254510a6994756fc41ef"></a>
+<tr class="memitem:a6dae39269554747a51e1efb6fef837c0"><td class="memItemLeft" align="right" valign="top"><a id="a6dae39269554747a51e1efb6fef837c0"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>__attribute__</b> ((__nonnull__(2))) void write_characters(const CharType *s</td></tr>
-<tr class="separator:a9c3b96391589254510a6994756fc41ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9c4fbf88fda356837038ec30a264cd3e"><td class="memItemLeft" align="right" valign="top"><a id="a9c4fbf88fda356837038ec30a264cd3e"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>output_vector_adapter</b> (std::vector&lt; CharType &gt; &amp;vec) noexcept</td></tr>
-<tr class="separator:a9c4fbf88fda356837038ec30a264cd3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af6a22d4210bb7bc2da66021300ddd6db"><td class="memItemLeft" align="right" valign="top"><a id="af6a22d4210bb7bc2da66021300ddd6db"></a>
+<tr class="separator:a6dae39269554747a51e1efb6fef837c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3fe56240156513c7d6c2db9063c9e0a3"><td class="memItemLeft" align="right" valign="top"><a id="a3fe56240156513c7d6c2db9063c9e0a3"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>output_vector_adapter</b> (std::vector&lt; CharType, AllocatorType &gt; &amp;vec) noexcept</td></tr>
+<tr class="separator:a3fe56240156513c7d6c2db9063c9e0a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a75dd40842507f8604670ecfbf901ad0a"><td class="memItemLeft" align="right" valign="top"><a id="a75dd40842507f8604670ecfbf901ad0a"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>write_character</b> (CharType c) override</td></tr>
-<tr class="separator:af6a22d4210bb7bc2da66021300ddd6db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a75dd40842507f8604670ecfbf901ad0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_structnlohmann_1_1detail_1_1output__adapter__protocol"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_structnlohmann_1_1detail_1_1output__adapter__protocol')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="structnlohmann_1_1detail_1_1output__adapter__protocol.html">nlohmann::detail::output_adapter_protocol&lt; CharType &gt;</a></td></tr>
+<tr class="memitem:ab2a6b7a5b86c612df2d99d2970380456 inherit pub_methods_structnlohmann_1_1detail_1_1output__adapter__protocol"><td class="memItemLeft" align="right" valign="top"><a id="ab2a6b7a5b86c612df2d99d2970380456"></a>
+<a class="el" href="structnlohmann_1_1detail_1_1output__adapter__protocol.html">output_adapter_protocol</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (const <a class="el" href="structnlohmann_1_1detail_1_1output__adapter__protocol.html">output_adapter_protocol</a> &amp;)=default</td></tr>
+<tr class="separator:ab2a6b7a5b86c612df2d99d2970380456 inherit pub_methods_structnlohmann_1_1detail_1_1output__adapter__protocol"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2235c8f3da8dfe5b26cb030f6886811a inherit pub_methods_structnlohmann_1_1detail_1_1output__adapter__protocol"><td class="memItemLeft" align="right" valign="top"><a id="a2235c8f3da8dfe5b26cb030f6886811a"></a>
+<a class="el" href="structnlohmann_1_1detail_1_1output__adapter__protocol.html">output_adapter_protocol</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="structnlohmann_1_1detail_1_1output__adapter__protocol.html">output_adapter_protocol</a> &amp;&amp;) noexcept=default</td></tr>
+<tr class="separator:a2235c8f3da8dfe5b26cb030f6886811a inherit pub_methods_structnlohmann_1_1detail_1_1output__adapter__protocol"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adf6ef7a244c32162fe98d9773f31fa8a inherit pub_methods_structnlohmann_1_1detail_1_1output__adapter__protocol"><td class="memItemLeft" align="right" valign="top"><a id="adf6ef7a244c32162fe98d9773f31fa8a"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>output_adapter_protocol</b> (const <a class="el" href="structnlohmann_1_1detail_1_1output__adapter__protocol.html">output_adapter_protocol</a> &amp;)=default</td></tr>
+<tr class="separator:adf6ef7a244c32162fe98d9773f31fa8a inherit pub_methods_structnlohmann_1_1detail_1_1output__adapter__protocol"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9527a27ddd468e4360a3530cbd9c35a6 inherit pub_methods_structnlohmann_1_1detail_1_1output__adapter__protocol"><td class="memItemLeft" align="right" valign="top"><a id="a9527a27ddd468e4360a3530cbd9c35a6"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>output_adapter_protocol</b> (<a class="el" href="structnlohmann_1_1detail_1_1output__adapter__protocol.html">output_adapter_protocol</a> &amp;&amp;) noexcept=default</td></tr>
+<tr class="separator:a9527a27ddd468e4360a3530cbd9c35a6 inherit pub_methods_structnlohmann_1_1detail_1_1output__adapter__protocol"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f410a164e0eda17cf6561114b0eee4a inherit pub_methods_structnlohmann_1_1detail_1_1output__adapter__protocol"><td class="memItemLeft" align="right" valign="top"><a id="a2f410a164e0eda17cf6561114b0eee4a"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>write_characters</b> (const CharType *s, std::size_t length)=0</td></tr>
 <tr class="separator:a2f410a164e0eda17cf6561114b0eee4a inherit pub_methods_structnlohmann_1_1detail_1_1output__adapter__protocol"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a2ba2a63a4537346d8a80ed44166f1283"><td class="memItemLeft" align="right" valign="top">std::size_t length&#160;</td><td class="memItemRight" valign="bottom"><b>override</b></td></tr>
-<tr class="separator:a2ba2a63a4537346d8a80ed44166f1283"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac7f6dbfd7c6e8cbdf760aa3e9cfd0701"><td class="memItemLeft" align="right" valign="top">std::size_t length&#160;</td><td class="memItemRight" valign="bottom"><b>override</b></td></tr>
+<tr class="separator:ac7f6dbfd7c6e8cbdf760aa3e9cfd0701"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a2ba2a63a4537346d8a80ed44166f1283"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2ba2a63a4537346d8a80ed44166f1283">&#9670;&nbsp;</a></span>override</h2>
+<a id="ac7f6dbfd7c6e8cbdf760aa3e9cfd0701"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac7f6dbfd7c6e8cbdf760aa3e9cfd0701">&#9670;&nbsp;</a></span>override</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename CharType &gt; </div>
+template&lt;typename CharType , typename AllocatorType  = std::allocator&lt;CharType&gt;&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::size_t length <a class="el" href="classnlohmann_1_1detail_1_1output__vector__adapter.html">nlohmann::detail::output_vector_adapter</a>&lt; CharType &gt;::override</td>
+          <td class="memname">std::size_t length <a class="el" href="classnlohmann_1_1detail_1_1output__vector__adapter.html">nlohmann::detail::output_vector_adapter</a>&lt; CharType, AllocatorType &gt;::override</td>
         </tr>
       </table>
 </div><div class="memdoc">

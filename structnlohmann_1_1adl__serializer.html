@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: nlohmann::adl_serializer&lt; typename, typename &gt; Struct Template Reference</title>
+<title>Feel++: nlohmann::adl_serializer&lt; ValueType, typename &gt; Struct Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -105,43 +105,88 @@ $(document).ready(function(){initNavTree('structnlohmann_1_1adl__serializer.html
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="structnlohmann_1_1adl__serializer-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">nlohmann::adl_serializer&lt; typename, typename &gt; Struct Template Reference</div>  </div>
+<div class="title">nlohmann::adl_serializer&lt; ValueType, typename &gt; Struct Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><h3>template&lt;typename, typename&gt;<br />
-struct nlohmann::adl_serializer&lt; typename, typename &gt;</h3>
+<div class="textblock"><h3>template&lt;typename ValueType, typename&gt;<br />
+struct nlohmann::adl_serializer&lt; ValueType, typename &gt;</h3>
 
 <p>default JSONSerializer template argument </p>
 <p>This serializer ignores the template arguments and uses ADL (<a href="https://en.cppreference.com/w/cpp/language/adl">argument-dependent lookup</a>) for serialization. </p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a2c544585b8b1828a0f1eecd831d0496e"><td class="memTemplParams" colspan="2">template&lt;typename BasicJsonType , typename ValueType &gt; </td></tr>
-<tr class="memitem:a2c544585b8b1828a0f1eecd831d0496e"><td class="memTemplItemLeft" align="right" valign="top">static auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1adl__serializer.html#a2c544585b8b1828a0f1eecd831d0496e">from_json</a> (BasicJsonType &amp;&amp;j, ValueType &amp;<a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>) noexcept(noexcept(::nlohmann::from_json(std::forward&lt; BasicJsonType &gt;(j), <a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>))) -&gt; decltype(::nlohmann::from_json(std::forward&lt; BasicJsonType &gt;(j), <a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>), void())</td></tr>
-<tr class="memdesc:a2c544585b8b1828a0f1eecd831d0496e"><td class="mdescLeft">&#160;</td><td class="mdescRight">convert a JSON value to any value type  <a href="structnlohmann_1_1adl__serializer.html#a2c544585b8b1828a0f1eecd831d0496e">More...</a><br /></td></tr>
-<tr class="separator:a2c544585b8b1828a0f1eecd831d0496e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a01b867bd5dce5249d4f7433b8f27def6"><td class="memTemplParams" colspan="2">template&lt;typename BasicJsonType , typename ValueType &gt; </td></tr>
-<tr class="memitem:a01b867bd5dce5249d4f7433b8f27def6"><td class="memTemplItemLeft" align="right" valign="top">static auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1adl__serializer.html#a01b867bd5dce5249d4f7433b8f27def6">to_json</a> (BasicJsonType &amp;j, ValueType &amp;&amp;<a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>) noexcept(noexcept(::nlohmann::to_json(j, std::forward&lt; ValueType &gt;(<a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>)))) -&gt; decltype(::nlohmann::to_json(j, std::forward&lt; ValueType &gt;(<a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>)), void())</td></tr>
-<tr class="memdesc:a01b867bd5dce5249d4f7433b8f27def6"><td class="mdescLeft">&#160;</td><td class="mdescRight">convert any value type to a JSON value  <a href="structnlohmann_1_1adl__serializer.html#a01b867bd5dce5249d4f7433b8f27def6">More...</a><br /></td></tr>
-<tr class="separator:a01b867bd5dce5249d4f7433b8f27def6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a95eddeff6ff0dd0b6b11c4c7a526716d"><td class="memTemplParams" colspan="2">template&lt;typename BasicJsonType , typename TargetType  = ValueType&gt; </td></tr>
+<tr class="memitem:a95eddeff6ff0dd0b6b11c4c7a526716d"><td class="memTemplItemLeft" align="right" valign="top">static auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1adl__serializer.html#a95eddeff6ff0dd0b6b11c4c7a526716d">from_json</a> (BasicJsonType &amp;&amp;j) noexcept(noexcept(::nlohmann::from_json(std::forward&lt; BasicJsonType &gt;(j), <a class="el" href="structnlohmann_1_1detail_1_1identity__tag.html">detail::identity_tag</a>&lt; TargetType &gt; {}))) -&gt; decltype(::nlohmann::from_json(std::forward&lt; BasicJsonType &gt;(j), <a class="el" href="structnlohmann_1_1detail_1_1identity__tag.html">detail::identity_tag</a>&lt; TargetType &gt;</td></tr>
+<tr class="memdesc:a95eddeff6ff0dd0b6b11c4c7a526716d"><td class="mdescLeft">&#160;</td><td class="mdescRight">convert a JSON value to any value type  <a href="structnlohmann_1_1adl__serializer.html#a95eddeff6ff0dd0b6b11c4c7a526716d">More...</a><br /></td></tr>
+<tr class="separator:a95eddeff6ff0dd0b6b11c4c7a526716d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8180f52bf21fc610705bc521f22116ae"><td class="memTemplParams" colspan="2">template&lt;typename BasicJsonType , typename TargetType  = ValueType&gt; </td></tr>
+<tr class="memitem:a8180f52bf21fc610705bc521f22116ae"><td class="memTemplItemLeft" align="right" valign="top">static auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1adl__serializer.html#a8180f52bf21fc610705bc521f22116ae">from_json</a> (BasicJsonType &amp;&amp;j, TargetType &amp;<a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>) noexcept(noexcept(::nlohmann::from_json(std::forward&lt; BasicJsonType &gt;(j), <a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>))) -&gt; decltype(::nlohmann::from_json(std::forward&lt; BasicJsonType &gt;(j), <a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>), void())</td></tr>
+<tr class="memdesc:a8180f52bf21fc610705bc521f22116ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">convert a JSON value to any value type  <a href="structnlohmann_1_1adl__serializer.html#a8180f52bf21fc610705bc521f22116ae">More...</a><br /></td></tr>
+<tr class="separator:a8180f52bf21fc610705bc521f22116ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afdcc8f0204ce8ac7d28a5403f6e1f0e7"><td class="memTemplParams" colspan="2">template&lt;typename BasicJsonType , typename TargetType  = ValueType&gt; </td></tr>
+<tr class="memitem:afdcc8f0204ce8ac7d28a5403f6e1f0e7"><td class="memTemplItemLeft" align="right" valign="top">static auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1adl__serializer.html#afdcc8f0204ce8ac7d28a5403f6e1f0e7">to_json</a> (BasicJsonType &amp;j, TargetType &amp;&amp;<a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>) noexcept(noexcept(::nlohmann::to_json(j, std::forward&lt; TargetType &gt;(<a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>)))) -&gt; decltype(::nlohmann::to_json(j, std::forward&lt; TargetType &gt;(<a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>)), void())</td></tr>
+<tr class="memdesc:afdcc8f0204ce8ac7d28a5403f6e1f0e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">convert any value type to a JSON value  <a href="structnlohmann_1_1adl__serializer.html#afdcc8f0204ce8ac7d28a5403f6e1f0e7">More...</a><br /></td></tr>
+<tr class="separator:afdcc8f0204ce8ac7d28a5403f6e1f0e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a2c544585b8b1828a0f1eecd831d0496e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2c544585b8b1828a0f1eecd831d0496e">&#9670;&nbsp;</a></span>from_json()</h2>
+<a id="a95eddeff6ff0dd0b6b11c4c7a526716d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a95eddeff6ff0dd0b6b11c4c7a526716d">&#9670;&nbsp;</a></span>from_json() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename , typename &gt; </div>
+template&lt;typename ValueType , typename &gt; </div>
 <div class="memtemplate">
-template&lt;typename BasicJsonType , typename ValueType &gt; </div>
+template&lt;typename BasicJsonType , typename TargetType  = ValueType&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static auto <a class="el" href="structnlohmann_1_1adl__serializer.html">nlohmann::adl_serializer</a>&lt; typename, typename &gt;::from_json </td>
+          <td class="memname">static auto <a class="el" href="structnlohmann_1_1adl__serializer.html">nlohmann::adl_serializer</a>&lt; ValueType, typename &gt;::from_json </td>
+          <td>(</td>
+          <td class="paramtype">BasicJsonType &amp;&amp;&#160;</td>
+          <td class="paramname"><em>j</em></td><td>)</td>
+          <td> -&gt; decltype(::nlohmann::from_json(std::forward&lt;BasicJsonType&gt;(j), <a class="el" href="structnlohmann_1_1detail_1_1identity__tag.html">detail::identity_tag</a>&lt;TargetType&gt; </td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>convert a JSON value to any value type </p>
+<p>This function is usually called by the <code>get()</code> function of the <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> class (either explicit or via conversion operators).</p>
+<dl class="section note"><dt>Note</dt><dd>This function is chosen for value types which are not default-constructible.</dd></dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">j</td><td>JSON value to read from</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>copy of the JSON value, converted to <em>ValueType</em> </dd></dl>
+
+</div>
+</div>
+<a id="a8180f52bf21fc610705bc521f22116ae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8180f52bf21fc610705bc521f22116ae">&#9670;&nbsp;</a></span>from_json() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ValueType , typename &gt; </div>
+<div class="memtemplate">
+template&lt;typename BasicJsonType , typename TargetType  = ValueType&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static auto <a class="el" href="structnlohmann_1_1adl__serializer.html">nlohmann::adl_serializer</a>&lt; ValueType, typename &gt;::from_json </td>
           <td>(</td>
           <td class="paramtype">BasicJsonType &amp;&amp;&#160;</td>
           <td class="paramname"><em>j</em>, </td>
@@ -149,7 +194,7 @@ template&lt;typename BasicJsonType , typename ValueType &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">ValueType &amp;&#160;</td>
+          <td class="paramtype">TargetType &amp;&#160;</td>
           <td class="paramname"><em>val</em>&#160;</td>
         </tr>
         <tr>
@@ -168,6 +213,7 @@ template&lt;typename BasicJsonType , typename ValueType &gt; </div>
 
 <p>convert a JSON value to any value type </p>
 <p>This function is usually called by the <code>get()</code> function of the <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> class (either explicit or via conversion operators).</p>
+<dl class="section note"><dt>Note</dt><dd>This function is chosen for default-constructible value types.</dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">j</td><td>JSON value to read from </td></tr>
@@ -178,21 +224,21 @@ template&lt;typename BasicJsonType , typename ValueType &gt; </div>
 
 </div>
 </div>
-<a id="a01b867bd5dce5249d4f7433b8f27def6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a01b867bd5dce5249d4f7433b8f27def6">&#9670;&nbsp;</a></span>to_json()</h2>
+<a id="afdcc8f0204ce8ac7d28a5403f6e1f0e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afdcc8f0204ce8ac7d28a5403f6e1f0e7">&#9670;&nbsp;</a></span>to_json()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename , typename &gt; </div>
+template&lt;typename ValueType , typename &gt; </div>
 <div class="memtemplate">
-template&lt;typename BasicJsonType , typename ValueType &gt; </div>
+template&lt;typename BasicJsonType , typename TargetType  = ValueType&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static auto <a class="el" href="structnlohmann_1_1adl__serializer.html">nlohmann::adl_serializer</a>&lt; typename, typename &gt;::to_json </td>
+          <td class="memname">static auto <a class="el" href="structnlohmann_1_1adl__serializer.html">nlohmann::adl_serializer</a>&lt; ValueType, typename &gt;::to_json </td>
           <td>(</td>
           <td class="paramtype">BasicJsonType &amp;&#160;</td>
           <td class="paramname"><em>j</em>, </td>
@@ -200,13 +246,13 @@ template&lt;typename BasicJsonType , typename ValueType &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">ValueType &amp;&amp;&#160;</td>
+          <td class="paramtype">TargetType &amp;&amp;&#160;</td>
           <td class="paramname"><em>val</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
           <td>)</td>
-          <td></td><td> -&gt; decltype(::nlohmann::to_json(j, std::forward&lt;ValueType&gt;(<a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>)), void())
+          <td></td><td> -&gt; decltype(::nlohmann::to_json(j, std::forward&lt;TargetType&gt;(<a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>)), void())
     </td>
         </tr>
       </table>

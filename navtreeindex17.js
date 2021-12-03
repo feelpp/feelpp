@@ -1,5 +1,7 @@
 var NAVTREEINDEX17 =
 {
+"classFeel_1_1GeoEntity.html#adbe4dbe07e17f14d92327e0bee56d1d7":[6,1,1,94,41],
+"classFeel_1_1GeoEntity.html#ade196d65017ef561ff3d56b1543e5256":[6,1,1,94,15],
 "classFeel_1_1GeoEntity.html#adf27f073760957fa1e61c9095dedb006":[6,1,1,94,20],
 "classFeel_1_1GeoEntity.html#ae048478012512c63ce8414fb7ba45816":[6,1,1,94,67],
 "classFeel_1_1GeoEntity.html#ae0d75e8c4b17e58c4551d24b9535f0e4":[6,1,1,94,22],
@@ -247,7 +249,5 @@ var NAVTREEINDEX17 =
 "classFeel_1_1Hypercube.html#a5f5f6902f2c81ef8e93bf10d49ea26bf":[6,1,1,106,40],
 "classFeel_1_1Hypercube.html#a672ad7f308dbe775732ad23e8de22a1c":[6,1,1,106,19],
 "classFeel_1_1Hypercube.html#a672e97327c38d66a6d12e187e74b3b73":[6,1,1,106,27],
-"classFeel_1_1Hypercube.html#a6964ac850882bac4b54ba8fdcb0e8782":[6,1,1,106,6],
-"classFeel_1_1Hypercube.html#a6a545763bf62ae874e3509282787a483":[6,1,1,106,30],
-"classFeel_1_1Hypercube.html#a6fe9357aad0cf16633f5cc32233a4fd8":[6,1,1,106,28]
+"classFeel_1_1Hypercube.html#a6964ac850882bac4b54ba8fdcb0e8782":[6,1,1,106,6]
 };
