@@ -96,6 +96,13 @@ class VectorUblas : public Vector<T>
 namespace detail 
 {
 template< typename T >
+class VectorUblasBase;
+template< typename T >
+class VectorUblasContiguousGhosts;
+template< typename T >
+class VectorUblasNonContiguousGhosts;
+
+template< typename T >
 class VectorUblasBase: public Vector<T>
 {
     public:
@@ -103,6 +110,7 @@ class VectorUblasBase: public Vector<T>
         typedef Vector<T> super_type;
 
         typedef T value_type;
+        typedef typename type_traits<value_type>::real_type real_type;
         typedef typename super_type::datamap_type datamap_type;
         typedef typename super_type::datamap_ptrtype datamap_ptrtype;
         using size_type = typename datamap_type::size_type;
@@ -149,7 +157,7 @@ class VectorUblasBase: public Vector<T>
                         void next() override { ++M_it; }
                         void previous() override { --M_it; }
                         bool equal( const iterator_impl_base & other ) const { return M_it.operator==( dynamic_cast<iterator_impl<It>&>( other ).M_it ); }
-                        void assign( const iterator_impl_base & other ) { M_it = dynamic_cast<iterator_impl<It>&>( other ).M_it
+                        void assign( const iterator_impl_base & other ) { M_it = dynamic_cast<iterator_impl<It>&>( other ).M_it; }
 
                     private:
                         It M_it;
@@ -161,25 +169,39 @@ class VectorUblasBase: public Vector<T>
 
     public:
         // Constructors/Destructor
+        VectorUblasBase( ) = default;
         VectorUblasBase( size_type s );
         VectorUblasBase( const datamap_ptrtype & dm );
         VectorUblasBase( size_type s, size_type n_local );
 
         ~VectorUblasBase() override;
 
+        virtual super_type::clone_ptrtype clone() const override = 0;
+
         // Storage API
         void init( const size_type n, const size_type n_local, const bool fast = false ) override;
         void init( const size_type n, const bool fast = false ) override;
         void init( const datamap_ptrtype & dm ) override;
+        
+        virtual void resize( size_type n, bool preserve = true ) = 0;
+        virtual void clear() override = 0;
+
+        // Status API
+        bool isInitialized() const override { return true; }
+        void close() const { }
+        bool closed() const override { return true; }
+        bool areGlobalValuesUpdated() const { return true; }
+        void updateGlobalValues() const { }
+        void outdateGlobalValues() { }
 
         // Operators API
         Vector<value_type>& operator=( const Vector<value_type> & V ) override;
         Vector<value_type>& operator=( const this_type & V );
 
-        T operator()( size_type i ) const override = 0;
-        T& operator()( size_type i ) override = 0;
-        T operator[]( size_type i ) const { return this->operator()( i ); }
-        T& operator[]( size_type i ) { return this->operator()( i ); }
+        virtual value_type operator()( size_type i ) const override = 0;
+        virtual value_type& operator()( size_type i ) override = 0;
+        value_type operator[]( size_type i ) const { return this->operator()( i ); }
+        value_type& operator[]( size_type i ) { return this->operator()( i ); }
 
         Vector<T>& operator+=( const Vector<T>& v ) override { this->add( v ); return *this; }
         //TODO
@@ -190,6 +212,94 @@ class VectorUblasBase: public Vector<T>
 
         virtual iterator beginGhost() = 0;
         virtual iterator endGhost() = 0;
+
+        virtual size_type start() const = 0;
+        virtual size_type startNonContiguousGhosts() const = 0;
+
+        size_type rowStart() const { checkInvariants(); return 0; }
+        size_type rowStop() const { checkInvariants(); return 0; }
+
+        // Setters API
+        virtual void setConstant( value_type v ) = 0;
+        virtual void setZero() = 0;
+        void zero() override { this->setZero(); }
+
+        void set( const size_type i, const value_type & value ) override;
+        void setVector( int * i, int n, value_type * v ) override;
+
+        void add( const size_type i, const value_type & value ) override;
+        void add( const value_type & value ) override;
+        void add( const Vector<T> & v ) override;
+        void add( const value_type & a, const Vector<T> & v ) override;
+        void addVector( int * i, int n, value_type * v, size_type K = 0, size_type K2 = invalid_v<size_type> ) override;
+        void addVector( const std::vector<value_type> & v, const std::vector<size_type> & dof_ids ) override;
+        void addVector( const Vector<T> & v, const std::vector<size_type> & dof_ids ) override;
+        void addVector( const ublas::vector<value_type> & v, const std::vector<size_type> & dof_ids );
+        void addVector( const Vector<T> & /*v*/, const MatrixSparse<value_type> & /*A*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
+
+        void insert( const std::vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
+        void insert( const Vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
+        void insert( const ublas::vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
+
+        virtual void scale( const value_type factor ) override = 0;
+
+        // Utilities
+        real_type min() const override { return this->min( true ); }
+        virtual real_type min( bool parallel ) const = 0;
+        real_type max() const override { return this->max( true ); }
+        virtual real_type max( bool parallel ) const = 0;
+
+        virtual real_type l1Norm() const override = 0;
+        virtual real_type l2Norm() const override = 0;
+        virtual real_type linftyNorm() const override = 0;
+
+        virtual value_type sum() const override = 0;
+
+        value_type dot( const Vector<T> & v ) const override;
+        
+        // Exports
+        void printMatlab( const std::string & filename = "NULL", bool renumber = false ) const override;
+#ifdef FEELPP_HAS_HDF5
+        void saveHDF5( const std::string & filename, const std::string & tableName = "element", bool appendMode = false ) const;
+        void loadHDF5( const std::string & filename, const std::string & tableName = "element" );
+#endif
+
+        // Localization (parallel global to one proc local)
+        void localizeToOneProcessor( ublas::vector<T> & v_local, const size_type proc_id = 0 ) const;
+        void localizeToOneProcessor( std::vector<T> & v_local, const size_type proc_id = 0 ) const;
+
+    protected:
+        virtual void addVector( const VectorUblasBase<T> & v ) = 0;
+        virtual void addVector( const VectorUblasContiguousGhosts<T> & v ) = 0;
+        virtual void addVector( const VectorUblasNonContiguousGhosts<T> & v ) = 0;
+
+        virtual void maddVector( const value_type & a, const VectorUblasBase<T> & v ) = 0;
+        virtual void maddVector( const value_type & a, const VectorUblasContiguousGhosts<T> & v ) = 0;
+        virtual void maddVector( const value_type & a, const VectorUblasNonContiguousGhosts<T> & v ) = 0;
+
+        virtual value_type dot( const VectorUblasBase<T> & v ) = 0;
+        virtual value_type dot( const VectorUblasContiguousGhosts<T> & v ) = 0;
+        virtual value_type dot( const VectorUblasNonContiguousGhosts<T> & v ) = 0;
+
+};
+
+template< typename T >
+class VectorUblasContiguousGhosts: public VectorUblasBase<T>
+{
+    public:
+        // Typedefs
+        typedef VectorUblasBase<T> super_type;
+
+        typedef T value_type;
+        typedef typename type_traits<value_type>::real_type real_type;
+        typedef typename super_type::datamap_type datamap_type;
+        typedef typename super_type::datamap_ptrtype datamap_ptrtype;
+        using size_type = typename datamap_type::size_type;
+
+    public:
+
+    private:
+        ublas::vector<value_type> M_vec;
 
 };
 
