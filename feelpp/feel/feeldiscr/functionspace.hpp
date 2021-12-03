@@ -2344,7 +2344,7 @@ public:
         //@{
 
         Element();
-        Element( Element&& );
+        Element( Element&& ) = default;
         Element( Element const& __e );
 
         friend class FunctionSpace<A0,A1,A2,A3,A4>;
