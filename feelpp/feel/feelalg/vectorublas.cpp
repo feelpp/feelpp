@@ -126,6 +126,46 @@ void VectorUblasBase<T>::add( const value_type & a, const Vector<T> & v )
 }
 
 template< typename T >
+void VectorUblasBase<T>::sub( const Vector<T> & v )
+{
+#ifndef(NDEBUG)
+    checkInvariants();
+#endif
+    // Ublas case
+    const VectorUblasBase<T> * vecUblas = dynamic_cast<const VectorUblasBase<T> *>( &v );
+    if( vecUblas )
+        return this->subVector( *vecUblas );
+    // Petsc case
+    const VectorPetsc<T> * vecPetsc = dynamic_cast<const VectorPetsc<T> *>( &v );
+    if( vecPetsc )
+        return this->subVector( *vecPetsc );
+    // Default
+    for( size_type i = 0; i < this->localSize(); ++i )
+        this->operator()( i ) -= v( i );
+    return;
+}
+
+template< typename T >
+void VectorUblasBase<T>::sub( const value_type & a, const Vector<T> & v )
+{
+#ifndef(NDEBUG)
+    checkInvariants();
+#endif
+    // Ublas case
+    const VectorUblasBase<T> * vecUblas = dynamic_cast<const VectorUblasBase<T> *>( &v );
+    if( vecUblas )
+        return this->msubVector( a, *vecUblas );
+    // Petsc case
+    const VectorPetsc<T> * vecPetsc = dynamic_cast<const VectorPetsc<T> *>( &v );
+    if( vecPetsc )
+        return this->msubVector( a, *vecPetsc );
+    // Default
+    for( size_type i = 0; i < this->localSize(); ++i )
+        this->operator()( i ) -= a * v( i );
+    return;
+}
+
+template< typename T >
 void VectorUblasBase<T>::addVector( int * i, int n, value_type * v, size_type K = 0, size_type K2 = invalid_v<size_type> )
 {
     for( int j = 0; j < n; ++j )

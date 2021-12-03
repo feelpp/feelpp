@@ -296,19 +296,21 @@ class VectorUblasBase: public Vector<T>
 
         Vector<T>& operator+=( const Vector<T>& v ) override { this->add( v ); return *this; }
         VectorUblasExpression<T> operator+( const Vector<T>& v ) const;
+        Vector<T>& operator-=( const Vector<T>& v ) override { this->sub( v ); return *this; }
+        Vector<T>& operator*=( const value_type & a ) { this->scale( a ); return *this; }
 
-        // Iterators API
-        virtual iterator begin() = 0;
-        virtual iterator end() = 0;
+        //// Iterators API
+        //virtual iterator begin() = 0;
+        //virtual iterator end() = 0;
 
-        virtual iterator beginGhost() = 0;
-        virtual iterator endGhost() = 0;
+        //virtual iterator beginGhost() = 0;
+        //virtual iterator endGhost() = 0;
 
-        virtual size_type start() const = 0;
-        virtual size_type startNonContiguousGhosts() const = 0;
+        //virtual size_type start() const = 0;
+        //virtual size_type startNonContiguousGhosts() const = 0;
 
-        size_type rowStart() const { checkInvariants(); return 0; }
-        size_type rowStop() const { checkInvariants(); return 0; }
+        //size_type rowStart() const { checkInvariants(); return 0; }
+        //size_type rowStop() const { checkInvariants(); return 0; }
 
         // Setters API
         virtual void setConstant( value_type v ) = 0;
@@ -328,11 +330,14 @@ class VectorUblasBase: public Vector<T>
         void addVector( const ublas::vector<value_type> & v, const std::vector<size_type> & dof_ids );
         void addVector( const Vector<T> & /*v*/, const MatrixSparse<value_type> & /*A*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
 
+        void sub( const Vector<T> & v );
+        void sub( const value_type & a, const Vector<T> & v );
+        
+        virtual void scale( const value_type factor ) override = 0;
+
         void insert( const std::vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
         void insert( const Vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
         void insert( const ublas::vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
-
-        virtual void scale( const value_type factor ) override = 0;
 
         // Utilities
         real_type min() const override { return this->min( true ); }
@@ -367,6 +372,14 @@ class VectorUblasBase: public Vector<T>
         virtual void maddVector( const value_type & a, const VectorUblasBase<T> & v ) = 0;
         virtual void maddVector( const value_type & a, const VectorUblasContiguousGhosts<T> & v ) = 0;
         virtual void maddVector( const value_type & a, const VectorUblasNonContiguousGhosts<T> & v ) = 0;
+        
+        virtual void subVector( const VectorUblasBase<T> & v ) = 0;
+        virtual void subVector( const VectorUblasContiguousGhosts<T> & v ) = 0;
+        virtual void subVector( const VectorUblasNonContiguousGhosts<T> & v ) = 0;
+
+        virtual void msubVector( const value_type & a, const VectorUblasBase<T> & v ) = 0;
+        virtual void msubVector( const value_type & a, const VectorUblasContiguousGhosts<T> & v ) = 0;
+        virtual void msubVector( const value_type & a, const VectorUblasNonContiguousGhosts<T> & v ) = 0;
 
         virtual value_type dot( const VectorUblasBase<T> & v ) = 0;
         virtual value_type dot( const VectorUblasContiguousGhosts<T> & v ) = 0;
