@@ -62,6 +62,13 @@ public:
     }
 };
 
+template< typename T >
+class VectorUblasBase;
+template< typename T >
+class VectorUblasContiguousGhosts;
+template< typename T >
+class VectorUblasNonContiguousGhosts;
+
 } // namespace detail
 
 template< typename T >
@@ -86,21 +93,105 @@ class VectorUblas : public Vector<T>
         VectorUblas();
 
         ~VectorUblas() override;
+        //TODO
+        super_type::clone_ptrtype clone() const override = 0;
 
-    protected:
-        // Implementation classes
-        class VectorUblasImplBase
+        // Storage API
+        void init( const size_type n, const size_type n_local, const bool fast = false ) override { return M_vectorImpl->init( n, n_local, fast ); }
+        void init( const size_type n, const bool fast = false ) override { return M_vectorImpl->init( n, fast ); }
+        void init( const datamap_ptrtype & dm ) override { return M_vectorImpl->init( dm ); }
+        
+        void resize( size_type n, bool preserve = true ) { return M_vectorImpl->resize( n, preserve ); }
+        void clear() override { return M_vectorImpl->clear(); }
 
+        // Status API
+        bool isInitialized() const override { return true; }
+        void close() const override { }
+        bool closed() const override { return true; }
+        bool areGlobalValuesUpdated() const { return true; }
+        void updateGlobalValues() const { }
+        void outdateGlobalValues() { }
+
+        // Operators API
+        Vector<value_type>& operator=( const Vector<value_type> & V ) override;
+        Vector<value_type>& operator=( const this_type & V );
+
+        virtual value_type operator()( size_type i ) const override = 0;
+        virtual value_type& operator()( size_type i ) override = 0;
+        value_type operator[]( size_type i ) const { return this->operator()( i ); }
+        value_type& operator[]( size_type i ) { return this->operator()( i ); }
+
+        Vector<T>& operator+=( const Vector<T>& v ) override { this->add( v ); return *this; }
+        VectorUblasExpression<T> operator+( const Vector<T>& v ) const;
+
+        //// Iterators API
+        //virtual iterator begin() = 0;
+        //virtual iterator end() = 0;
+
+        //virtual iterator beginGhost() = 0;
+        //virtual iterator endGhost() = 0;
+
+        //virtual size_type start() const = 0;
+        //virtual size_type startNonContiguousGhosts() const = 0;
+
+        //size_type rowStart() const { return M_vectorImpl->rowStart(); }
+        //size_type rowStop() const { return M_vectorImpl->rowStop(); }
+
+        // Setters API
+        void setConstant( value_type a ) { return M_vectorImpl->setConstant( a ); }
+        void setZero() { return M_vectorImpl->setZero(); }
+        void zero() override { return this->setZero(); }
+
+        void set( const size_type i, const value_type & value ) override { return M_vectorImpl->set( i, value ); }
+        void setVector( int * i, int n, value_type * v ) override { return M_vectorImpl->setVector( i, v ); }
+
+        void add( const size_type i, const value_type & value ) override { return M_vectorImpl->add( i, value ); }
+        void add( const value_type & value ) override { return M_vectorImpl->add( value ); }
+        void add( const Vector<T> & v ) override { return M_vectorImpl->add( v ); }
+        void add( const value_type & a, const Vector<T> & v ) override { return M_vectorImpl->add( a, v ); }
+        void addVector( int * i, int n, value_type * v, size_type K = 0, size_type K2 = invalid_v<size_type> ) override { return M_vectorImpl->addVector( i, n, v, K, K2 ); }
+        void addVector( const std::vector<value_type> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->addVector( v, dof_ids ); }
+        void addVector( const Vector<T> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->addVector( v, dof_ids ); }
+        void addVector( const ublas::vector<value_type> & v, const std::vector<size_type> & dof_ids ) { return M_vectorImpl->addVector( v, dof_ids ); }
+        void addVector( const Vector<T> & v, const MatrixSparse<value_type> & A ) override { return M_vectorImpl->addVector( v, A ); }
+
+        void insert( const std::vector<value_type> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->insert( v, dof_ids ); }
+        void insert( const Vector<value_type> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->insert( v, dof_ids ); }
+        void insert( const ublas::vector<value_type> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->insert( v, dof_ids ); }
+
+        void scale( const value_type factor ) override { return M_vectorImpl->scale( factor ); }
+
+        // Utilities
+        real_type min() const override { return this->min( true ); }
+        real_type min( bool parallel ) const { return M_vectorImpl->min( parallel ); }
+        real_type max() const override { return this->max( true ); }
+        real_type max( bool parallel ) const { return M_vectorImpl->max( parallel ); }
+
+        real_type l1Norm() const override { return M_vectorImpl->l1Norm(); }
+        real_type l2Norm() const override { return M_vectorImpl->l2Norm(); }
+        real_type linftyNorm() const override { return M_vectorImpl->linftyNorm(); }
+
+        value_type sum() const override { return M_vectorImpl->sum(); }
+
+        value_type dot( const Vector<T> & v ) const override { return M_vectorImpl->dot( v ); }
+        
+        // Exports
+        void printMatlab( const std::string & filename = "NULL", bool renumber = false ) const override { return M_vectorImpl->printMatlab( filename, renumber ); }
+#ifdef FEELPP_HAS_HDF5
+        void saveHDF5( const std::string & filename, const std::string & tableName = "element", bool appendMode = false ) const { return M_vectorImpl->saveHDF5( filename, tableName, appendMode ); }
+        void loadHDF5( const std::string & filename, const std::string & tableName = "element" ) { return M_vectorImpl->loadHDF5( filename, tableName ); }
+#endif
+
+        // Localization (parallel global to one proc local)
+        void localizeToOneProcessor( ublas::vector<T> & v_local, const size_type proc_id = 0 ) const { return M_vectorImpl->localizeToOneProcessor( v_local, proc_id ); }
+        void localizeToOneProcessor( std::vector<T> & v_local, const size_type proc_id = 0 ) const { return M_vectorImpl->localizeToOneProcessor( v_local, proc_id ); }
+        
+    private:
+        std::unique_ptr<VectorUblasBase> M_vectorImpl;
 };
 
 namespace detail 
 {
-template< typename T >
-class VectorUblasBase;
-template< typename T >
-class VectorUblasContiguousGhosts;
-template< typename T >
-class VectorUblasNonContiguousGhosts;
 
 template< typename T >
 class VectorUblasBase: public Vector<T>
@@ -204,7 +295,7 @@ class VectorUblasBase: public Vector<T>
         value_type& operator[]( size_type i ) { return this->operator()( i ); }
 
         Vector<T>& operator+=( const Vector<T>& v ) override { this->add( v ); return *this; }
-        //TODO
+        VectorUblasExpression<T> operator+( const Vector<T>& v ) const;
 
         // Iterators API
         virtual iterator begin() = 0;
@@ -297,6 +388,13 @@ class VectorUblasContiguousGhosts: public VectorUblasBase<T>
         using size_type = typename datamap_type::size_type;
 
     public:
+        // Constructors/Destructor
+        VectorUblasContiguousGhosts( ) = default;
+        VectorUblasContiguousGhosts( size_type s );
+        VectorUblasContiguousGhosts( const datamap_ptrtype & dm );
+        VectorUblasContiguousGhosts( size_type s, size_type n_local );
+
+        ~VectorUblasContiguousGhosts() override;
 
     private:
         ublas::vector<value_type> M_vec;
