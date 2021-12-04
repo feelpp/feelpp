@@ -316,7 +316,7 @@ ToolboxMor<SpaceType, Options>::assembleData()
 
     this->M_Mqm.resize( 1 );
     this->M_Mqm[0].resize( 1 );
-    this->M_Mqm[0][0] = backend()->newMatrix(this->Xh, this->Xh);
+    this->M_Mqm[0][0] = backend()->newMatrix(_test=this->Xh, _trial=this->Xh);
     form2(_test=this->Xh, _trial=this->Xh, _matrix=this->M_Mqm[0][0])
         = integrate(_range=elements(this->Xh->mesh()), _expr=inner(id(u),idt(u)));
 
