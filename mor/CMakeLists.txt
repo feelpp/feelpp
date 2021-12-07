@@ -69,8 +69,7 @@ endif()
 
 
 OPTION(FEELPP_ENABLE_MOR_ALL "enable all MOR testcase" OFF)
-OPTION(FEELPP_ENABLE_MOR_EXAMPLES "enable all MOR examples" OFF)
-OPTION(FEELPP_ENABLE_MOR_TOOLBOX "enable toolbox testcase" ON)
+OPTION(FEELPP_ENABLE_MOR_EXAMPLES "enable MOR examples" ON)
 OPTION(FEELPP_ENABLE_MOR_MORDICUS "enable mordicus" OFF)
 
 if ( NOT MOR_SUBPROJECT AND NOT  FEELPP_TOOLBOXES_FOUND )
@@ -103,6 +102,10 @@ if ( FEELPP_ENABLE_MOR_MORDICUS )
 ENDIF()
 
 add_subdirectory(pyfeelpp-mor)
+
+if ( FEELPP_ENABLE_MOR_EXAMPLES )
+  add_subdirectory( examples )
+endif()
 
 include(${FEELPP_MOR_SOURCE_DIR}/cmake/feelpp.mor.cmake)
 install(EXPORT feelpp-mor-export-targets
