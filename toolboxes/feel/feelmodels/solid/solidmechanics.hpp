@@ -420,7 +420,7 @@ public :
     template <typename SymbExprType>
     auto exprPostProcessExportsToolbox( SymbExprType const& se, std::string const& prefix ) const
         {
-            using _expr_firstPiolaKirchhof_type = std::decay_t<decltype(Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(this->fieldDisplacement(),M_fieldPressure,*std::shared_ptr<ModelPhysicSolid<nDim>>{}, this->materialsProperties()->materialProperties(""),se))>;
+            using _expr_firstPiolaKirchhof_type = std::decay_t<decltype(Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(this->fieldDisplacement(),M_fieldPressure,std::shared_ptr<ModelPhysicSolid<nDim>>{}, this->materialsProperties()->materialProperties(""),se))>;
             using _expr_vonmises_type = std::decay_t<decltype( vonmises(_expr_firstPiolaKirchhof_type{}) )>;
             using _expr_tresca_type = std::decay_t<decltype( tresca(_expr_firstPiolaKirchhof_type{}) )>;
             using _expr_princial_stress_type = std::decay_t<decltype( eig(_expr_firstPiolaKirchhof_type{}) )>;
@@ -439,7 +439,7 @@ public :
                         auto const& matProperties = this->materialsProperties()->materialProperties( matName );
                         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
 
-                        auto fpk = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,M_fieldPressure,*physicSolidData,matProperties,se);
+                        auto fpk = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,M_fieldPressure,physicSolidData,matProperties,se);
                         auto vonmisesExpr = vonmises( fpk );
                         mapExprVonMisses[prefixvm(prefix,"von-mises-criterion")].push_back( std::make_tuple( vonmisesExpr, range, "element" ) );
 
@@ -596,24 +596,62 @@ public :
     template <typename ModelFieldsType>
     auto symbolsExpr( ModelFieldsType const& mfields ) const
         {
+#if 1
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
             return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+#else
+            return symbols_expression_empty_t{};
+#endif
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
     template <typename ModelFieldsType>
     auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
         {
-            return symbols_expression_empty_t{};
+            auto const& u = mfields.field( FieldTag::displacement(this), "displacement" );
+
+            using _expr_fpkt_type = std::decay_t<decltype(this->firstPiolaKirchhoffTensorExpr( u ))>;
+            symbol_expression_t<_expr_fpkt_type> se_fpkt;
+            std::string symbol_fpkt = fmt::format("{}_stress_P",this->keyword());
+            se_fpkt.add( symbol_fpkt, this->firstPiolaKirchhoffTensorExpr( u ), SymbolExprComponentSuffix(nDim,nDim) );
+
+            return Feel::vf::symbolsExpr( se_fpkt );
         }
 
     template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
     auto trialSymbolsExpr( ModelFieldsType const& mfields, TrialSelectorModelFieldsType const& tsmf ) const
         {
             return mfields.trialSymbolsExpr( tsmf );
+        }
+
+
+    
+    template <typename DispFieldType,typename SymbolsExprType = symbols_expression_empty_t>
+    auto firstPiolaKirchhoffTensorExpr( DispFieldType const& u, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            // TODO pressure
+            auto p = this->fieldPressurePtr();
+            using _stesstensor_expr_type = std::decay_t<decltype( Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,p,
+                                                                                                                      std::static_pointer_cast<ModelPhysicSolid<nDim>>( this->physicsFromCurrentType().begin()->second ),
+                                                                                                                      this->materialsProperties()->materialProperties(""),se) )>;
+            std::vector<std::pair<std::string,_stesstensor_expr_type>> theExprs;
+            for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+            {
+                auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
+                for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+                {
+                    auto const& matProperties = this->materialsProperties()->materialProperties( matName );
+                    auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
+
+                    auto stressTensorExpr = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,p,physicSolidData,matProperties,se);
+                    theExprs.push_back( std::make_pair( matName, std::move( stressTensorExpr ) ) );
+                }
+            }
+            return expr<typename mesh_type::index_type>( this->materialsProperties()->exprSelectorByMeshElementMapping(), theExprs );
+
         }
 
     //___________________________________________________________________________________//
