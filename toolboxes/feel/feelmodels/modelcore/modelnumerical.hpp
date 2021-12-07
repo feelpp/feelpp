@@ -779,11 +779,12 @@ ModelNumerical::checkResults( SymbolsExprType const& se ) const
     for ( auto const& checkerMeasure : this->modelProperties().postProcess().checkersMeasure( modelKeyword ) )
     {
         std::string measureName = checkerMeasure.name();
-        if ( !M_postProcessMeasures.hasValue( measureName ) )
-        {
-            LOG(WARNING) << "checker : ignore check of " << measureName << " because this measure was not computed";
-            continue;
-        }
+        CHECK( M_postProcessMeasures.hasValue( measureName ) ) << "checker failure : check of " << measureName << " was not computed";
+        // if ( !M_postProcessMeasures.hasValue( measureName ) )
+        // {
+        //     LOG(WARNING) << "checker : ignore check of " << measureName << " because this measure was not computed";
+        //     continue;
+        // }
 
         double valueMeasured = M_postProcessMeasures.value( measureName );
         auto [checkIsOk, diffVal] = checkerMeasure.run( valueMeasured, se );
