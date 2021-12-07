@@ -1,5 +1,10 @@
 feelpp: Feel++
 = {feelpp} Model Order Reduction component
 
+== Organisation
 
 
+- mor/feelmor: library
+- apps: use liobrary to create mor applications
+- examples: examples of crb usage in c++
+- tests: testsuite
