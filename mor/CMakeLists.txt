@@ -84,11 +84,11 @@ set(FEELPP_MOR_LIBRARIES)
 INCLUDE(CTest)
 ENABLE_TESTING()
 
-add_subdirectory(onlinerun)
+add_subdirectory(mor/feelmor)
 
 
 if ( FEELPP_TOOLBOXES_FOUND AND FEELPP_ENABLE_MOR_TOOLBOX )
-  add_subdirectory(toolbox-mor)
+  add_subdirectory(apps)
 endif()
 
 if ( FEELPP_ENABLE_MOR_MORDICUS )

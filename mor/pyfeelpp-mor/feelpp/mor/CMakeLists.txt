@@ -29,9 +29,9 @@ if ( TARGET pyfeelpptoolboxes  AND TARGET pyfeelpp )
     add_dependencies(pyfeelppmor _mor pyfeelpptoolboxes pyfeelpp)
 endif()
 
-if ( TARGET Feelpp::feelpp_crb_toolbox-mor )
+if ( TARGET Feelpp::feelpp_mor )
     message(STATUS "[pyfeelpp-mor] add pymodule toolboxmor")
-    feelpp_add_pymodule(toolboxmor SRCS toolboxmor.cpp DESTINATION feelpp/mor LINK_LIBRARIES Feelpp::feelpp_crb_toolbox-mor  )
+    feelpp_add_pymodule(toolboxmor SRCS toolboxmor.cpp DESTINATION feelpp/mor LINK_LIBRARIES Feelpp::feelpp_mor  )
     add_dependencies(pyfeelppmor  _toolboxmor)
 endif() 
 
