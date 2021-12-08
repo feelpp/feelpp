@@ -39,6 +39,11 @@ namespace FeelModels
 
 enum class ExprApplyTypeSolidMecFirstPiolaKirchhoff { EVAL=0,JACOBIAN_TRIAL_DISP=1,JACOBIAN_TRIAL_PRES=2 };
 
+// fwd declarations
+template< typename SolidMecFirstPiolaKirchhoffBaseType,bool UseDispPresForm>
+class SolidMecFirstPiolaKirchhoffLinearElasticity;
+
+
 template<typename ExprEvaluateFieldOperatorsDispType,typename FiniteElementDisplacementType,
          typename ExprEvaluateFieldOperatorsPressureType,typename FiniteElementPressureType,
          typename ModelPhysicSolidType, typename MaterialPropertiesType, typename SymbolsExprType,
@@ -46,11 +51,6 @@ template<typename ExprEvaluateFieldOperatorsDispType,typename FiniteElementDispl
 struct SolidMecFirstPiolaKirchhoffBase
 {
     using this_type = SolidMecFirstPiolaKirchhoffBase<ExprEvaluateFieldOperatorsDispType,FiniteElementDisplacementType,ExprEvaluateFieldOperatorsPressureType,FiniteElementPressureType,ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,ExprApplied,QuadOrder>;
-
-    static const size_type context_displacement = vm::JACOBIAN|vm::KB|vm::GRAD;
-    static const size_type context_pressure = vm::JACOBIAN;
-    static const size_type context = context_displacement|vm::DYNAMIC;
-
     using model_physic_solid_type = ModelPhysicSolidType;
     using material_properties_type = MaterialPropertiesType;
     using symbols_expr_type = SymbolsExprType;
@@ -63,6 +63,9 @@ struct SolidMecFirstPiolaKirchhoffBase
     static constexpr bool is_applied_as_jacobian_displacement = (ExprApplied == ExprApplyTypeSolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_DISP);
     static constexpr bool is_applied_as_jacobian_pressure = (ExprApplied == ExprApplyTypeSolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES);
 
+    static const size_type context = is_applied_as_eval || is_applied_as_jacobian_displacement?
+        ExprEvaluateFieldOperatorsDispType::expr_grad_type::context|vm::DYNAMIC :
+        ExprEvaluateFieldOperatorsPressureType::expr_id_type::context|vm::DYNAMIC ;
 
     static constexpr uint16_type nDim = model_physic_solid_type::nDim;
     static constexpr uint16_type nRealDim = nDim;
@@ -93,6 +96,10 @@ struct SolidMecFirstPiolaKirchhoffBase
     template <int M,int N>
     using material_property_expr_type = std::decay_t<decltype( expr( ModelExpression{}.template expr<M,N>(),symbols_expr_type{} ) )>;
 
+    static constexpr auto tuple_specialization_type_object = hana::to_tuple(hana::tuple_t<
+                                                                            SolidMecFirstPiolaKirchhoffLinearElasticity<this_type,false>,
+                                                                            SolidMecFirstPiolaKirchhoffLinearElasticity<this_type,true>
+                                                                            >);
 
     SolidMecFirstPiolaKirchhoffBase( std::shared_ptr<expr_evaluate_displacement_opertors_type> exprEvaluateDisplacementOperators,
                                      std::shared_ptr<expr_evaluate_pressure_opertors_type> exprEvaluatePressureOperators,
@@ -106,22 +113,7 @@ struct SolidMecFirstPiolaKirchhoffBase
         M_se( se ),
         M_timeSteppingScaling( timeSteppingScaling )
         {}
-#if 0
-    SolidMecFirstPiolaKirchhoffBase( std::shared_ptr<expr_evaluate_displacement_opertors_type> exprEvaluateDisplacementOperators,
-                                     element_displacement_type const & u, element_pressure_type const& p, std::shared_ptr<ModelPhysicSolidType> const& physicSolidData, MaterialPropertiesType const& matProperties,
-                                     SymbolsExprType const& se, double timeSteppingScaling = 1.0 )
-        :
-        M_exprEvaluateDisplacementOperators( exprEvaluateDisplacementOperators ),
-        //M_displacement( boost::cref(u) ),
-        //M_pressure( boost::cref(p) ),
-        M_physicSolidData( physicSolidData ),
-        M_matProperties( matProperties ),
-        M_se( se ),
-        M_timeSteppingScaling( timeSteppingScaling )
-    {
-        //this->initExprFirstPiolaKirchhoffBase();
-    }
-#endif
+
     SolidMecFirstPiolaKirchhoffBase( SolidMecFirstPiolaKirchhoffBase const& ) = default;
     SolidMecFirstPiolaKirchhoffBase( SolidMecFirstPiolaKirchhoffBase && ) = default;
 
@@ -169,21 +161,6 @@ struct SolidMecFirstPiolaKirchhoffBase
         }
 
 
-#if 0
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename... TheArgsType>
-    std::shared_ptr<tensor_base_type<Geo_t,Basis_i_t,Basis_j_t> >
-    evaluator( tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain, const TheArgsType&... theInitArgs ) const;
-
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename TheExprExpandedType,typename TupleTensorSymbolsExprType,typename... TheArgsType>
-    std::shared_ptr<tensor_base_type<Geo_t,Basis_i_t,Basis_j_t> >
-    evaluator( std::true_type/**/, tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain,
-               TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, const TheArgsType&... theInitArgs ) const;
-
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
-    void updateEvaluator( std::true_type /**/, std::shared_ptr<tensor_base_type<Geo_t,Basis_i_t,Basis_j_t> > & tensorToUpdate, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
-                          Geo_t const& geom, const TheArgsType&... theUpdateArgs );
-#endif
-
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor : public this_type::template tensor_base_type<Geo_t,Basis_i_t,Basis_j_t>
     {
@@ -206,9 +183,11 @@ struct SolidMecFirstPiolaKirchhoffBase
         template<typename... TheArgsType>
         tensor( this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
             :
-            super_type( geom, theInitArgs... ),
-            M_tensorExprEvaluateDisplacementOperators( std::make_shared<tensor_expr_evaluate_displacement_opertors_type>( *(expr.exprEvaluateDisplacementOperatorsPtr()), geom, theInitArgs... ) )
+            super_type( geom, theInitArgs... )
+            //M_tensorExprEvaluateDisplacementOperators( std::make_shared<tensor_expr_evaluate_displacement_opertors_type>( *(expr.exprEvaluateDisplacementOperatorsPtr()), geom, theInitArgs... ) )
             {
+                if ( expr.M_exprEvaluateDisplacementOperators )
+                    M_tensorExprEvaluateDisplacementOperators = std::make_shared<tensor_expr_evaluate_displacement_opertors_type>( *(expr.M_exprEvaluateDisplacementOperators), geom, theInitArgs... );
                 if ( expr.M_exprEvaluatePressureOperators )
                     M_tensorExprEvaluatePressureOperators = std::make_shared<tensor_expr_evaluate_pressure_opertors_type>( *(expr.M_exprEvaluatePressureOperators), geom, theInitArgs... );
             }
@@ -221,7 +200,6 @@ struct SolidMecFirstPiolaKirchhoffBase
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
         void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
                      Geo_t const& geom, const TheArgsType&... theUpdateArgs );
-
 
     protected :
         std::shared_ptr<tensor_expr_evaluate_displacement_opertors_type> M_tensorExprEvaluateDisplacementOperators;
@@ -248,8 +226,6 @@ protected :
     MaterialPropertiesType const& M_matProperties;
     SymbolsExprType const& M_se;
     double M_timeSteppingScaling;
-
-
 };
 
 template< typename SolidMecFirstPiolaKirchhoffBaseType,bool UseDispPresForm>
@@ -260,7 +236,7 @@ public :
     using this_type = SolidMecFirstPiolaKirchhoffLinearElasticity<SolidMecFirstPiolaKirchhoffBaseType,UseDispPresForm>;
     using material_property_scalar_expr_type = typename this_type::template material_property_expr_type<1,1>;
 
-    static constexpr bool useDispPresForm = UseDispPresForm;//false;
+    static constexpr bool useDispPresForm = UseDispPresForm;
 
     SolidMecFirstPiolaKirchhoffLinearElasticity( std::shared_ptr<typename super_type::expr_evaluate_displacement_opertors_type> exprEvaluateDisplacementOperators,
                                                  std::shared_ptr<typename super_type::expr_evaluate_pressure_opertors_type> exprEvaluatePressureOperators,
@@ -271,16 +247,19 @@ public :
         super_type( exprEvaluateDisplacementOperators,exprEvaluatePressureOperators,physicSolidData,matProperties,se,timeSteppingScaling ),
         M_exprLameSecondParameter( this->template materialPropertyExpr<1,1>("Lame-second-parameter") )
         {
-            this->exprEvaluateDisplacementOperatorsPtr()->setEnableGrad( true );
             if constexpr ( !useDispPresForm )
                M_exprLameFirstParameter.emplace( this->template materialPropertyExpr<1,1>("Lame-first-parameter") );
-            else
-                this->M_exprEvaluatePressureOperators->setEnableId( true );
+
+            if constexpr ( this_type::is_applied_as_eval )
+            {
+                this->exprEvaluateDisplacementOperatorsPtr()->setEnableGrad( true );
+                if constexpr ( useDispPresForm )
+                       this->M_exprEvaluatePressureOperators->setEnableId( true );
+            }
         }
 
     SolidMecFirstPiolaKirchhoffLinearElasticity( SolidMecFirstPiolaKirchhoffLinearElasticity const& ) = default;
     SolidMecFirstPiolaKirchhoffLinearElasticity( SolidMecFirstPiolaKirchhoffLinearElasticity &&  ) = default;
-
 
     material_property_scalar_expr_type const& exprLameFirstParameter() const { return *M_exprLameFirstParameter; }
     material_property_scalar_expr_type const& exprLameSecondParameter() const { return M_exprLameSecondParameter; }
@@ -293,19 +272,43 @@ public :
 
     size_type dynamicContext() const override
         {
-            if constexpr ( useDispPresForm )
-                return Feel::vf::dynamicContext( M_exprLameSecondParameter );
-            else
-                return Feel::vf::dynamicContext( *M_exprLameFirstParameter ) | Feel::vf::dynamicContext( M_exprLameSecondParameter );
+            size_type res = Feel::vf::dynamicContext( M_exprLameSecondParameter );
+            if constexpr ( !useDispPresForm )
+                res = res | Feel::vf::dynamicContext( *M_exprLameFirstParameter );
+            if constexpr ( this_type::is_applied_as_eval )
+            {
+                res = res | this->exprEvaluateDisplacementOperatorsPtr()->dynamicContext();
+                if constexpr ( useDispPresForm )
+                    res = res | this->M_exprEvaluatePressureOperators->dynamicContext();
+            }
+            return res;
         }
 
     uint16_type polynomialOrder() const override
         {
-            uint16_type orderGradDisp = this->exprEvaluateDisplacementOperatorsPtr()->exprGrad().polynomialOrder();
-            if constexpr ( useDispPresForm )
-                return M_exprLameSecondParameter.polynomialOrder() + orderGradDisp;
-            else
-                return std::max( M_exprLameFirstParameter->polynomialOrder(),M_exprLameSecondParameter.polynomialOrder() ) + orderGradDisp;
+            if constexpr ( this_type::is_applied_as_eval )
+            {
+                uint16_type orderGradDisp = this->exprEvaluateDisplacementOperatorsPtr()->exprGrad().polynomialOrder();
+                if constexpr ( useDispPresForm )
+                {
+                    uint16_type orderIdPressure = this->M_exprEvaluatePressureOperators->exprId().polynomialOrder();
+                    return std::max( orderIdPressure, (uint16_type) (M_exprLameSecondParameter.polynomialOrder() + orderGradDisp) );
+                }
+                else
+                    return std::max( M_exprLameFirstParameter->polynomialOrder(),M_exprLameSecondParameter.polynomialOrder() ) + orderGradDisp;
+            }
+            else if constexpr ( this_type::is_applied_as_jacobian_displacement )
+            {
+                uint16_type orderGradDisp = super_type::expr_evaluate_displacement_opertors_type::polynomialOrderGrad();
+                if constexpr ( useDispPresForm )
+                    return M_exprLameSecondParameter.polynomialOrder() + orderGradDisp;
+                else
+                    return std::max( M_exprLameFirstParameter->polynomialOrder(),M_exprLameSecondParameter.polynomialOrder() ) + orderGradDisp;
+            }
+            else if constexpr ( this_type::is_applied_as_jacobian_pressure )
+                return super_type::expr_evaluate_pressure_opertors_type::polynomialOrderId();
+
+            return 0;
         }
 
     template <typename TheSymbolExprType>
@@ -327,33 +330,16 @@ public :
         typedef typename super_type::gm_type gm_type;
         typedef typename super_type::value_type value_type;
 
-        using shape = typename super_type::shape_type;
+        //using shape = typename super_type::shape_type;
         using matrix_shape_type = typename super_type::matrix_shape_type;
-
         using array_shape_type = typename super_type::new_array_shape_type;
         using ret_type = typename super_type::ret_type;
 
-
-#if 0
-        tensor( this_type const& expr, typename this_type::super_type::template tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            :
-            super_type( geom,fev,feu ),
-            M_expr( expr )
-            M_tensorLameSecondParameter( this->expr().M_exprLameSecondParameter.evaluator( geom ) )
-            {}
-        tensor( this_type const& expr, typename this_type::super_type::template tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain, Geo_t const& geom, Basis_i_t const& fev )
-            :
-            super_type( geom,fev ),
-            M_expr( expr ),
-            M_tensorLameSecondParameter( this->expr().M_exprLameSecondParameter.evaluator( geom ) )
-            {}
-#endif
         template<typename... TheArgsType>
         tensor( this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
             :
             super_type( expr, geom, theInitArgs... ),
             M_expr( expr ),
-            //M_tensorExprEvaluateDisplacementOperators( tensorExprMain.tensorExprEvaluateDisplacementOperatorsPtr() ),
             M_tensorLameSecondParameter( M_expr.M_exprLameSecondParameter.evaluator( geom ) ),
             M_mId( matrix_shape_type::Identity() )
             {
@@ -367,7 +353,6 @@ public :
             :
             super_type( expr, geom, theInitArgs... ),
             M_expr( expr ),
-            //M_tensorExprEvaluateDisplacementOperators( tensorExprMain.tensorExprEvaluateDisplacementOperatorsPtr() ),
             M_tensorLameSecondParameter( std::true_type{}, exprExpanded.exprLameSecondParameter(), ttse, expr.M_exprLameSecondParameter, geom/*, theInitArgs...*/ ),
             M_mId( matrix_shape_type::Identity() )
             {
@@ -377,23 +362,33 @@ public :
 
         void update( Geo_t const& geom ) override
             {
-                this->M_tensorExprEvaluateDisplacementOperators->update( geom );
                 M_tensorLameSecondParameter.update( geom );
                 if constexpr ( !useDispPresForm )
                     M_tensorLameFirstParameter->update( geom );
-                else
-                    this->M_tensorExprEvaluatePressureOperators->update( geom );
+
+                if constexpr ( this_type::is_applied_as_eval )
+                {
+                    this->M_tensorExprEvaluateDisplacementOperators->update( geom );
+                    if constexpr ( useDispPresForm )
+                          this->M_tensorExprEvaluatePressureOperators->update( geom );
+                }
+
                 this->updateImpl();
             }
 
         void update( Geo_t const& geom, uint16_type face ) override
             {
-                this->M_tensorExprEvaluateDisplacementOperators->update( geom,face );
                 M_tensorLameSecondParameter.update( geom, face );
                 if constexpr ( !useDispPresForm )
                     M_tensorLameFirstParameter->update( geom, face );
-                else
-                    this->M_tensorExprEvaluatePressureOperators->update( geom, face );
+
+                if constexpr ( this_type::is_applied_as_eval )
+                {
+                    this->M_tensorExprEvaluateDisplacementOperators->update( geom,face );
+                    if constexpr ( useDispPresForm )
+                         this->M_tensorExprEvaluatePressureOperators->update( geom,face );
+                }
+
                 this->updateImpl();
             }
 
@@ -401,12 +396,17 @@ public :
         void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
                      Geo_t const& geom, const TheArgsType&... theUpdateArgs )
             {
-                this->M_tensorExprEvaluateDisplacementOperators->update( geom );
                 M_tensorLameSecondParameter.update( std::true_type{}, exprExpanded.exprLameSecondParameter(), ttse, geom/*, theUpdateArgs...*/ );
                 if constexpr ( !useDispPresForm )
                                  M_tensorLameFirstParameter->update( std::true_type{}, exprExpanded.exprLameFirstParameter(), ttse, geom/*, theUpdateArgs...*/ );
-                else
-                    this->M_tensorExprEvaluatePressureOperators->update( geom );
+
+                if constexpr ( this_type::is_applied_as_eval )
+                {
+                    this->M_tensorExprEvaluateDisplacementOperators->update( geom );
+                    if constexpr ( useDispPresForm )
+                         this->M_tensorExprEvaluatePressureOperators->update( geom );
+                }
+
                 this->updateImpl();
             }
 
@@ -436,7 +436,7 @@ public :
                 {
                     CHECK( false) << "not allow";
                     return ret_type(this->locMatrixShape().data());
-                }
+               }
             }
 
         value_type
@@ -515,10 +515,7 @@ public :
 
         }
 
-#if 1
-        //template <bool IsApplied = expr_type::is_applied_as_eval,std::enable_if_t< IsApplied, bool> = true>
-        template <typename TT/* = expr_type*/,std::enable_if_t< TT::is_applied_as_eval, bool> = true>
-        //template <bool IsApplied = expr_type::is_applied_as_eval,typename = typename std::enable_if_t< IsApplied > >
+        template <typename TT,std::enable_if_t< TT::is_applied_as_eval, bool> = true>
         ret_type
         evalijqImpl( uint16_type i, uint16_type j, uint16_type q ) const
         {
@@ -527,9 +524,7 @@ public :
             return ret_type(this->locMatrixShape().data());
         }
 
-        //template <bool IsApplied = expr_type::is_applied_as_jacobian_displacement,std::enable_if_t< IsApplied, bool> = true>
-        template <typename TT/* = expr_type*/,std::enable_if_t< TT::is_applied_as_jacobian_displacement, bool> = true>
-        //template <bool IsApplied = expr_type::is_applied_as_jacobian_displacement,typename = typename std::enable_if_t< IsApplied > >
+        template <typename TT,std::enable_if_t< TT::is_applied_as_jacobian_displacement, bool> = true>
         ret_type
         evalijqImpl( uint16_type i, uint16_type j, uint16_type q ) const
         {
@@ -577,26 +572,19 @@ public :
             return ret_type(thelocMat.data());
         }
 
-        //template <bool IsApplied = expr_type::is_applied_as_jacobian_pressure,std::enable_if_t< IsApplied, bool> = true>
-        template <typename TT /*= expr_type*/,std::enable_if_t< TT::is_applied_as_jacobian_pressure, bool> = true>
-        //template <bool IsApplied = expr_type::is_applied_as_jacobian_pressure,typename = typename std::enable_if_t< IsApplied > >
+        template <typename TT,std::enable_if_t< TT::is_applied_as_jacobian_pressure, bool> = true>
         ret_type
         evalijqImpl( uint16_type i, uint16_type j, uint16_type q ) const
         {
-#if 0 // TODO VINCENT
             // compute idt(p)*Id
             const value_type idTrialPressure = this->fecTrial()->id( j, 0, 0, q );
             typename super_type::matrix_shape_type & thelocMat = this->locMatrixShape();
             thelocMat = /*-*/idTrialPressure*M_mId;
             return ret_type(thelocMat.data());
-#else
-            return ret_type(this->locMatrixShape().data());
-#endif
         }
-#endif
+
     private :
         this_type const& M_expr;
-        //std::shared_ptr<tensor_expr_evaluate_displacement_opertors_type> M_tensorExprEvaluateDisplacementOperators;
         using material_property_scalar_tensor_type = typename material_property_scalar_expr_type::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>;
         std::optional<material_property_scalar_tensor_type> M_tensorLameFirstParameter;
         material_property_scalar_tensor_type M_tensorLameSecondParameter;
@@ -611,8 +599,24 @@ private :
 
     std::optional<material_property_scalar_expr_type> M_exprLameFirstParameter;
     material_property_scalar_expr_type M_exprLameSecondParameter;
-
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 template<typename ExprEvaluateFieldOperatorsDispType,typename FiniteElementDisplacementType,
@@ -652,18 +656,14 @@ std::shared_ptr<typename SolidMecFirstPiolaKirchhoffBase<ExprEvaluateFieldOperat
 SolidMecFirstPiolaKirchhoffBase<ExprEvaluateFieldOperatorsDispType,FiniteElementDisplacementType,ExprEvaluateFieldOperatorsPressureType,FiniteElementPressureType,
                                 ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,ExprApplied,QuadOrder>::evaluator( const TheArgsType&... theInitArgs ) const
 {
-    auto thetuple = hana::to_tuple(hana::tuple_t<
-                                   SolidMecFirstPiolaKirchhoffLinearElasticity<this_type,false>,
-                                   SolidMecFirstPiolaKirchhoffLinearElasticity<this_type,true>
-                                   >);
     std::shared_ptr<tensor<Geo_t,Basis_i_t,Basis_j_t>> ret;
-    hana::for_each( thetuple, [this,&ret,&theInitArgs...]( auto e ) {
-                                  if ( ret )
-                                      return;
-                                  using the_expr_type = typename std::decay_t<decltype( e ) >::type;
-                                  if ( auto objptr = dynamic_cast<the_expr_type const*>(this) )
-                                      ret = std::make_shared< typename the_expr_type::template tensor<Geo_t,Basis_i_t,Basis_j_t> >( *objptr, theInitArgs... );
-                              });
+    hana::for_each( tuple_specialization_type_object, [this,&ret,&theInitArgs...]( auto e ) {
+                                                          if ( ret )
+                                                              return;
+                                                          using the_expr_type = typename std::decay_t<decltype( e ) >::type;
+                                                          if ( auto objptr = dynamic_cast<the_expr_type const*>(this) )
+                                                              ret = std::make_shared< typename the_expr_type::template tensor<Geo_t,Basis_i_t,Basis_j_t> >( *objptr, theInitArgs... );
+                                                      });
     CHECK( ret ) << "cast failed : something wrong";
     return ret;
 }
@@ -681,20 +681,14 @@ SolidMecFirstPiolaKirchhoffBase<ExprEvaluateFieldOperatorsDispType,FiniteElement
                                 ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,ExprApplied,QuadOrder>::evaluator( std::true_type/**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
                                                                                                                                const TheArgsType&... theInitArgs ) const
 {
-    auto thetuple = hana::to_tuple(hana::tuple_t<
-                                   SolidMecFirstPiolaKirchhoffLinearElasticity<this_type,false>,
-                                   SolidMecFirstPiolaKirchhoffLinearElasticity<this_type,true>
-                                   >);
     std::shared_ptr<tensor<Geo_t,Basis_i_t,Basis_j_t>> ret;
-    hana::for_each( thetuple, [this,&ret,&exprExpanded,&ttse,&theInitArgs...]( auto e ) {
-                                  if ( ret )
-                                      return;
-                                  using the_expr_type = typename std::decay_t<decltype( e ) >::type;
-#if 1 // TODO
-                                  if ( auto objptr = dynamic_cast<the_expr_type const*>(this) )
-                                      ret = std::make_shared< typename the_expr_type::template tensor<Geo_t,Basis_i_t,Basis_j_t> >( std::true_type{}, the_expr_type::cast( exprExpanded ), ttse, *objptr, theInitArgs... );
-#endif
-                              });
+    hana::for_each( tuple_specialization_type_object, [this,&ret,&exprExpanded,&ttse,&theInitArgs...]( auto e ) {
+                                                          if ( ret )
+                                                              return;
+                                                          using the_expr_type = typename std::decay_t<decltype( e ) >::type;
+                                                          if ( auto objptr = dynamic_cast<the_expr_type const*>(this) )
+                                                              ret = std::make_shared< typename the_expr_type::template tensor<Geo_t,Basis_i_t,Basis_j_t> >( std::true_type{}, the_expr_type::cast( exprExpanded ), ttse, *objptr, theInitArgs... );
+                                                      });
     CHECK( ret ) << "cast failed : something wrong";
     return ret;
 }
@@ -726,23 +720,18 @@ SolidMecFirstPiolaKirchhoffBase<ExprEvaluateFieldOperatorsDispType,FiniteElement
                                 ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,ExprApplied,QuadOrder>::tensor<Geo_t,Basis_i_t,Basis_j_t>::update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
                                                                                                                                                                Geo_t const& geom, const TheArgsType&... theUpdateArgs )
 {
-    //CHECK( false ) << "TODO";
-    auto thetuple = hana::to_tuple(hana::tuple_t<
-                                   SolidMecFirstPiolaKirchhoffLinearElasticity<this_type,false>,
-                                   SolidMecFirstPiolaKirchhoffLinearElasticity<this_type,true>
-                                   >);
     bool isUp = false;
-    hana::for_each( thetuple, [this,&isUp,&exprExpanded,&ttse,&geom,&theUpdateArgs...]( auto e ) {
-                                  if ( isUp )
-                                      return;
-                                  using the_expr_type = typename std::decay_t<decltype( e ) >::type;
-                                  using the_expr_tensor_type = typename the_expr_type::template tensor<Geo_t,Basis_i_t,Basis_j_t>;
-                                  if ( auto objptr = dynamic_cast<the_expr_tensor_type*>(this) )
-                                  {
-                                      objptr->update( std::true_type{}, the_expr_type::cast( exprExpanded ), ttse, geom, theUpdateArgs... );
-                                      isUp = true;
-                                  }
-                              });
+    hana::for_each( tuple_specialization_type_object, [this,&isUp,&exprExpanded,&ttse,&geom,&theUpdateArgs...]( auto e ) {
+                                                          if ( isUp )
+                                                              return;
+                                                          using the_expr_type = typename std::decay_t<decltype( e ) >::type;
+                                                          using the_expr_tensor_type = typename the_expr_type::template tensor<Geo_t,Basis_i_t,Basis_j_t>;
+                                                          if ( auto objptr = dynamic_cast<the_expr_tensor_type*>(this) )
+                                                          {
+                                                              objptr->update( std::true_type{}, the_expr_type::cast( exprExpanded ), ttse, geom, theUpdateArgs... );
+                                                              isUp = true;
+                                                          }
+                                                      });
     CHECK( isUp ) << "cast failed : something wrong";
 }
 
@@ -3693,24 +3682,11 @@ public:
             CHECK( false )  << "TODO";
         }
 
-
     template <typename OtherSymbolsExprType>
     auto applySymbolsExpr( OtherSymbolsExprType const& se ) const
         {
-#if 0
-            // TODO : concat
-            auto newse = se;//Feel::vf::symbolsExpr( this->symbolsExpressionWithoutTensorContext(), se );
-            using new_se_type = std::decay_t<decltype(newse)>;
-            using new_this_type = SolidMecStressTensorImpl<ElementDisplacementType,ElementPressureType,ModelPhysicSolidType,MaterialPropertiesType,new_se_type,SpecificExprType,QuadOrder>;
-            return new_this_type( M_displacement/*, M_pressure*/, M_physicSolidData, M_matProperties, newse, M_timeSteppingScaling );
-#endif
-            // TODO : concat
-            //auto newse = se;//Feel::vf::symbolsExpr( this->symbolsExpressionWithoutTensorContext(), se );
-            //using new_se_type = std::decay_t<decltype(newse)>;
             using new_expr_type = std::decay_t<decltype( unwrap_ptr(M_exprFirstPiolaKirchhoffBase->applySymbolsExpr( se ) ) )>;
-            //auto newExpr = std::make_shared<new_expr_type>( M_exprFirstPiolaKirchhoffBase->applySymbolsExpr( se ) );
             return SolidMecStressTensorImpl<new_expr_type>( M_exprFirstPiolaKirchhoffBase->applySymbolsExpr( se ) );
-            //return *this;
         }
 
     template <int diffOrder, typename TheSymbolExprType>
@@ -3735,11 +3711,9 @@ public:
 
         struct is_zero { static const bool value = false; };
 
-        //typedef tensorBase<Geo_t, Basis_i_t, Basis_j_t,shape,value_type> tensorbase_type;
-        //typedef std::shared_ptr<tensorbase_type> tensorbase_ptrtype;
-
         using ret_type = typename tensor_expr_type::ret_type;
 
+#if 0
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
@@ -3761,6 +3735,15 @@ public:
             {
                 this->initTensor( expr,geom );
             }
+#endif
+        template<typename ... TheArgsType>
+        tensor( this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_expr( expr )
+            {
+                this->initTensor( expr,geom, theInitArgs... );
+            }
+
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
         tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
                 this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
@@ -3799,20 +3782,12 @@ public:
                      Geo_t const& geom, const TheArgsType&... theUpdateArgs )
             {
                 M_tensorbase->update(  std::true_type{}, *(exprExpanded.exprFirstPiolaKirchhoffBase()), ttse, geom, theUpdateArgs... );
-                //CHECK( false) << "TODO";
-#if 0
-                M_tensorExprEvaluateDisplacementOperators->update( geom, theUpdateArgs... );
-                M_expr.exprFirstPiolaKirchhoffBase()->template updateEvaluator<Geo_t, Basis_i_t, Basis_j_t>( std::true_type{}, M_tensorbase, *(exprExpanded.exprFirstPiolaKirchhoffBase()), ttse,  geom, theUpdateArgs...);
-#endif
             }
-
 
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
             return M_tensorbase->evalijq( i,j,q );
-            // CHECK( false) << "aieie";
-            // return ret_type(M_tensorbase->evalijq( i,j,q ).data() );
         }
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -3829,8 +3804,6 @@ public:
         evaliq( uint16_type i, uint16_type q ) const
         {
             return M_tensorbase->evaliq( i, q );
-            // CHECK( false) << "aieie";
-            // return ret_type(M_tensorbase->evaliq( i, q ).data());
         }
 
         value_type
@@ -3842,8 +3815,6 @@ public:
         evalq( uint16_type q ) const
         {
             return M_tensorbase->evalq( q );
-            // CHECK( false) << "aieie";
-            // return ret_type(M_tensorbase->evalq( q ).data());
         }
     private :
         template<typename... TheArgsType>
@@ -3856,11 +3827,6 @@ public:
                          this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
             {
                 M_tensorbase = expr.exprFirstPiolaKirchhoffBase()->template evaluator<Geo_t, Basis_i_t, Basis_j_t>( std::true_type{}, *(exprExpanded.exprFirstPiolaKirchhoffBase()), ttse, geom, theInitArgs... );
-#if 0
-                M_tensorExprEvaluateDisplacementOperators = std::make_shared<tensor_expr_evaluate_displacement_opertors_type>( *(expr.exprEvaluateDisplacementOperatorsPtr()), geom, theInitArgs... );
-
-                M_tensorbase = expr.exprFirstPiolaKirchhoffBase()->template evaluator<Geo_t, Basis_i_t, Basis_j_t>( std::true_type{}, *this, *(exprExpanded.exprFirstPiolaKirchhoffBase()), ttse, geom, theInitArgs... );
-#endif
             }
 
 #if 0
@@ -3921,32 +3887,11 @@ public:
 
     private:
         this_type const& M_expr;
-        //tensorbase_ptrtype M_tensorbase;
         std::shared_ptr<tensor_expr_type> M_tensorbase;
-        //std::shared_ptr<tensor_expr_evaluate_displacement_opertors_type> M_tensorExprEvaluateDisplacementOperators;
     };
 
 private :
-    
-    // void initExprFirstPiolaKirchhoffBase()
-    //     {
-    //         if ( this->physicSolidData().equation() == "Elasticity" )
-    //             M_exprFirstPiolaKirchhoffBase.reset( new SolidMecFirstPiolaKirchhoffLinearElasticity<this_type>( *this ) );
-    //         else
-    //             CHECK ( false ) << "invalid equation : "<< this->physicSolidData().equation() <<"\n";
-    //     }
-
-private:
     std::shared_ptr<expr_fpk_base_type> M_exprFirstPiolaKirchhoffBase;
-#if 0
-    std::shared_ptr<expr_evaluate_displacement_opertors_type> M_exprEvaluateDisplacementOperators;
-    boost::reference_wrapper<const element_displacement_type> M_displacement;
-    std::optional< boost::reference_wrapper<const element_pressure_type> > M_pressure;
-    std::shared_ptr<ModelPhysicSolidType> M_physicSolidData;
-    MaterialPropertiesType const& M_matProperties;
-    SymbolsExprType const& M_se;
-    double M_timeSteppingScaling;
-#endif
 };
 
 /**
@@ -3969,35 +3914,14 @@ solidMecFirstPiolaKirchhoffTensor( ElementDisplacementType const& u, std::shared
 
     using fe_disp_type = std::nullptr_t;//typename unwrap_ptr_t<ElementDisplacementType>::functionspace_type::reference_element_type;
     using fe_pressure_type = std::nullptr_t;//typename unwrap_ptr_t<ElementPressureType>::functionspace_type::reference_element_type;
-    typedef SolidMecFirstPiolaKirchhoffBase<expr_evaluate_displacement_opertors_type, fe_disp_type, //unwrap_ptr_t<ElementDisplacementType>,ElementPressureType,
+    typedef SolidMecFirstPiolaKirchhoffBase<expr_evaluate_displacement_opertors_type, fe_disp_type,
                                             expr_evaluate_pressure_opertors_type, fe_pressure_type,
                                             ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,ExprApplyTypeSolidMecFirstPiolaKirchhoff::EVAL, QuadOrder > smstresstensor_base_t;
 
-#if 0
-    auto hola = std::make_shared<SolidMecFirstPiolaKirchhoffLinearElasticity<expr_evaluate_displacement_opertors_type, unwrap_ptr_t<ElementDisplacementType>,ElementPressureType,
-                                                                             ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,
-                                                                             ExprApplyTypeSolidMecFirstPiolaKirchhoff::EVAL, QuadOrder>>( exprEvaluateDispOperators/*,unwrap_ptr(u)*/,physicSolidData,matProperties,se,timeSteppingScaling );
-#endif
-
-    std::shared_ptr<smstresstensor_base_t> hola;
-    if ( physicSolidData->useDisplacementPressureFormulation() )
-        hola = std::make_shared<SolidMecFirstPiolaKirchhoffLinearElasticity<smstresstensor_base_t,true>>( exprEvaluateDispOperators,exprEvaluatePressureOperators,physicSolidData,matProperties,se,timeSteppingScaling );
-    else
-        hola = std::make_shared<SolidMecFirstPiolaKirchhoffLinearElasticity<smstresstensor_base_t,false>>( exprEvaluateDispOperators,exprEvaluatePressureOperators,physicSolidData,matProperties,se,timeSteppingScaling );
-
-
     using smstresstensor_t = SolidMecStressTensorImpl<smstresstensor_base_t>;
-    return Expr< smstresstensor_t >( smstresstensor_t( hola ) );
-
-#if 0
-    if ( p && physicSolidData->useDisplacementPressureFormulation() )
-        return Expr< smstresstensor_t >( smstresstensor_t( exprEvaluateDispOperators,unwrap_ptr(u),*p, physicSolidData,matProperties,se,timeSteppingScaling ) );
-    else
-        return Expr< smstresstensor_t >( smstresstensor_t( exprEvaluateDispOperators,unwrap_ptr(u),physicSolidData,matProperties,se,timeSteppingScaling ) );
-#endif
+    return Expr< smstresstensor_t >( smstresstensor_t( smstresstensor_base_t::New( exprEvaluateDispOperators,exprEvaluatePressureOperators,physicSolidData,matProperties,se,timeSteppingScaling ) ) );
 }
 
-#if 1
 template<int QuadOrder=-1,typename ElementDisplacementType, typename ElementPressureType, typename ModelPhysicSolidType, typename MaterialPropertiesType, typename SymbolsExprType >
 inline
 auto
@@ -4017,30 +3941,12 @@ solidMecFirstPiolaKirchhoffTensorJacobianTrialDisplacement( ElementDisplacementT
 
     typedef SolidMecFirstPiolaKirchhoffBase<expr_evaluate_displacement_opertors_type, fe_disp_type,
                                             expr_evaluate_pressure_opertors_type, fe_pressure_type,
-                                            //unwrap_ptr_t<ElementDisplacementType>,ElementPressureType,
                                             ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,ExprApplyTypeSolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_DISP, QuadOrder > smstresstensor_base_t;
 
-
-#if 0
-    auto hola = std::make_shared<SolidMecFirstPiolaKirchhoffLinearElasticity<expr_evaluate_displacement_opertors_type, unwrap_ptr_t<ElementDisplacementType>,ElementPressureType,
-                                                                             ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,
-                                                                             ExprApplyTypeSolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_DISP, QuadOrder>>( exprEvaluateDispOperators/*,unwrap_ptr(u)*/,physicSolidData,matProperties,se );
-#endif
-    auto hola = std::make_shared<SolidMecFirstPiolaKirchhoffLinearElasticity<smstresstensor_base_t,false>>( exprEvaluateDispOperators,exprEvaluatePressureOperators,physicSolidData,matProperties,se );
     using smstresstensor_t = SolidMecStressTensorImpl<smstresstensor_base_t>;
-    return Expr< smstresstensor_t >( smstresstensor_t( hola ) );
-
-
-#if 0
-    typedef SolidMecStressTensorImpl<expr_evaluate_displacement_opertors_type,unwrap_ptr_t<ElementDisplacementType>,ElementPressureType,ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,ExprApplyTypeSolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_DISP, QuadOrder > smstresstensor_t;
-    if ( p && physicSolidData->useDisplacementPressureFormulation() )
-        return Expr< smstresstensor_t >( smstresstensor_t( exprEvaluateDispOperators,unwrap_ptr(u),*p, physicSolidData,matProperties,se ) );
-    else
-        return Expr< smstresstensor_t >( smstresstensor_t( exprEvaluateDispOperators,unwrap_ptr(u),physicSolidData,matProperties,se ) );
-#endif
+    return Expr< smstresstensor_t >( smstresstensor_t( smstresstensor_base_t::New(exprEvaluateDispOperators,exprEvaluatePressureOperators,physicSolidData,matProperties,se) ) );
 }
-#endif
-#if 0
+
 template<int QuadOrder=-1,typename ElementDisplacementType, typename ElementPressureType, typename ModelPhysicSolidType, typename MaterialPropertiesType, typename SymbolsExprType >
 inline
 auto
@@ -4048,10 +3954,22 @@ solidMecFirstPiolaKirchhoffTensorJacobianTrialPressure( ElementDisplacementType 
 {
     using expr_evaluate_displacement_opertors_type = ExprEvaluateFieldOperators<ElementDisplacementType>;
     auto exprEvaluateDispOperators = std::make_shared<expr_evaluate_displacement_opertors_type>( u );
-    typedef SolidMecStressTensorImpl<expr_evaluate_displacement_opertors_type,unwrap_ptr_t<ElementDisplacementType>,ElementPressureType,ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,ExprApplyTypeSolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES, QuadOrder > smstresstensor_t;
-    return Expr< smstresstensor_t >( smstresstensor_t( exprEvaluateDispOperators,unwrap_ptr(u),*p,physicSolidData,matProperties,se ) );
+    using expr_evaluate_pressure_opertors_type = ExprEvaluateFieldOperators<std::shared_ptr<ElementPressureType>>;
+    std::shared_ptr<expr_evaluate_pressure_opertors_type> exprEvaluatePressureOperators;
+    if ( p && physicSolidData->useDisplacementPressureFormulation() )
+        exprEvaluatePressureOperators = std::make_shared<expr_evaluate_pressure_opertors_type>( p );
+
+    using fe_disp_type = std::nullptr_t;
+    using fe_pressure_type = typename unwrap_ptr_t<ElementPressureType>::functionspace_type::reference_element_type;
+
+    typedef SolidMecFirstPiolaKirchhoffBase<expr_evaluate_displacement_opertors_type, fe_disp_type,
+                                            expr_evaluate_pressure_opertors_type, fe_pressure_type,
+                                            ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,ExprApplyTypeSolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES, QuadOrder > smstresstensor_base_t;
+
+    using smstresstensor_t = SolidMecStressTensorImpl<smstresstensor_base_t>;
+    return Expr< smstresstensor_t >( smstresstensor_t( smstresstensor_base_t::New(exprEvaluateDispOperators,exprEvaluatePressureOperators,physicSolidData,matProperties,se) ) );
+
 }
-#endif
 
 
 } // namespace FeelModels

@@ -58,6 +58,22 @@ public :
     expr_grad_type const& exprGrad() const { return *M_exprGrad; }
     expr_laplacian_type const& exprLaplacian() const { return *M_exprLaplacian; }
 
+    size_type dynamicContext() const
+        {
+            size_type res = 0;
+            if ( M_exprId )
+                res = res | Feel::vf::dynamicContext( *M_exprId );
+            if ( M_exprGrad )
+                res = res | Feel::vf::dynamicContext( *M_exprGrad );
+            if ( M_exprLaplacian )
+                res = res | Feel::vf::dynamicContext( *M_exprLaplacian );
+            return res;
+        }
+
+    static uint16_type polynomialOrderId() { return expr_id_type::expression_type::element_type::functionspace_type::basis_type::nOrder; }
+    static uint16_type polynomialOrderGrad() { return std::max( expr_id_type::expression_type::element_type::functionspace_type::basis_type::nOrder-1,0); }
+    static uint16_type polynomialOrderLaplacian() { return std::max( expr_id_type::expression_type::element_type::functionspace_type::basis_type::nOrder-2,0); }
+
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {
