@@ -65,6 +65,7 @@
                 "FEELPP_COMPONENT": "feelpp",
                 "FEELPP_ENABLE_MOR": "OFF",
                 "FEELPP_ENABLE_TOOLBOXES": "OFF",
+                "FEELPP_ENABLE_TESTS": "OFF",
                 "FEELPP_ENABLE_FMILIB": "OFF"
             }
         },
@@ -125,7 +126,8 @@
             "description": "Build only the Feel++ pyfeelpp-all Component",
             "binaryDir": "${sourceDir}/build/pyfeelpp-all",
             "cacheVariables": {
-                "FEELPP_COMPONENT": "pyfeelpp-all"
+                "FEELPP_COMPONENT": "pyfeelpp-all",
+                "CMAKE_INSTALL_PREFIX": "${binaryDir}/install/"
             }
         },
         {
@@ -147,6 +149,16 @@
             "binaryDir": "${sourceDir}/build/testsuite",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "testsuite"
+            }
+        },
+        {
+            "name": "benchmarks",
+            "inherits": "default",
+            "displayName": "benchmarks",
+            "description": "Build only the Feel++ benchmarks Component",
+            "binaryDir": "${sourceDir}/build/benchmarks",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "benchmarks"
             }
         },
         {
