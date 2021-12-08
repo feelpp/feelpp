@@ -11,8 +11,16 @@ parser.add_argument("--d", help="distance between two fins [default=0.75]", type
 parser.add_argument("--t", help="thickness of a fin [default=0.25]", type=str, default="0.25")
 parser.add_argument("--dim", help="dimension of the case (2 or 3) [default=2]", type=str, default="2")
 parser.add_argument("--cylinder", help="shape of fin and post (0=boxes, 1=box/cylinders, 2=cylinders) [default=0]", type=int, default=0)
+parser.add_argument("--odir", help="output directory", type=str, default=".")
+
 
 args = parser.parse_args()
+
+if not args.odir[-1] == "/":
+    args.odir += "/"
+
+if not os.path.isdir(args.odir):
+    os.mkdir(args.odir)
 
 
 
@@ -100,15 +108,15 @@ renderJson = templateJson.render(
 )
 
 
-fileGeo = open("fin.geo", "w")
+fileGeo = open(args.odir+"fin.geo", "w")
 a = fileGeo.write(renderGeo)
 fileGeo.close()
 
-fileCfg = open("thermal-fin.cfg", "w")
+fileCfg = open(args.odir+"thermal-fin.cfg", "w")
 a = fileCfg.write(renderCfg)
 fileCfg.close()
 
 
-fileJson = open("thermal-fin.json", "w")
+fileJson = open(args.odir+"thermal-fin.json", "w")
 a = fileJson.write(renderJson)
 fileJson.close()
