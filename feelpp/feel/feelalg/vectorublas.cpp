@@ -60,6 +60,23 @@ void VectorUblasBase<T>::set( const size_type i, const value_type & value )
 }
 
 template< typename T >
+void VectorUblasBase<T>::set( const Vector<T> & v )
+{
+    // Ublas case
+    const VectorUblasBase<T> * vecUblas = dynamic_cast<const VectorUblasBase<T> *>( &v );
+    if( vecUblas )
+        return this->setVector( *vecUblas );
+    // Petsc case
+    const VectorPetsc<T> * vecPetsc = dynamic_cast<const VectorPetsc<T> *>( &v );
+    if( vecPetsc )
+        return this->setVector( *vecPetsc );
+    // Default
+    for( size_type i = 0; i < this->localSize(); ++i )
+        this->operator()( i ) = v( i );
+    return;
+}
+
+template< typename T >
 void VectorUblasBase<T>::setVector( int * i, int n, value_type * v )
 {
     for( int j = 0; j < n; ++j )
