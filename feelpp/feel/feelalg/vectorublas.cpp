@@ -222,11 +222,11 @@ typename VectorUblasBase<T>::value_type VectorUblasBase<T>::dot( const Vector<T>
     // Ublas case
     const VectorUblasBase<T> * vecUblas = dynamic_cast<const VectorUblasBase<T> *>( &v );
     if( vecUblas )
-        return this->dot( *vecUblas );
+        return this->dotVector( *vecUblas );
     // Petsc case
     const VectorPetsc<T> * vecPetsc = dynamic_cast<const VectorPetsc<T> *>( &v );
     if( vecPetsc )
-        return this->dot( *vecPetsc );
+        return this->dotVector( *vecPetsc );
     // Default
     value_type localRes = 0;
     for( size_type i = 0; i < this->map().nLocalDofWithoutGhost(); ++i )
