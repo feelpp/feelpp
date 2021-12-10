@@ -69,12 +69,12 @@
         {
             "Measures":
             {
-                "Points_pointA_displacement_0":
+                "Points_pointA_field_displacement_0":
                 {
                     "value":-7.187e-3,
                     "tolerance":1e-1
                 },
-                "Points_pointA_displacement_1":
+                "Points_pointA_field_displacement_1":
                 {
                     "value":-66.1e-3,
                     "tolerance":1e-1
