@@ -42,7 +42,8 @@ enum class ExprApplyTypeSolidMecFirstPiolaKirchhoff { EVAL=0,JACOBIAN_TRIAL_DISP
 // fwd declarations
 template< typename SolidMecFirstPiolaKirchhoffBaseType,bool UseDispPresForm>
 class SolidMecFirstPiolaKirchhoffLinearElasticity;
-
+template< typename SolidMecFirstPiolaKirchhoffBaseType,bool UseDispPresForm>
+class SolidMecFirstPiolaKirchhoffStVenantKirchhoff;
 
 template<typename ExprEvaluateFieldOperatorsDispType,typename FiniteElementDisplacementType,
          typename ExprEvaluateFieldOperatorsPressureType,typename FiniteElementPressureType,
@@ -98,7 +99,9 @@ struct SolidMecFirstPiolaKirchhoffBase
 
     static constexpr auto tuple_specialization_type_object = hana::to_tuple(hana::tuple_t<
                                                                             SolidMecFirstPiolaKirchhoffLinearElasticity<this_type,false>,
-                                                                            SolidMecFirstPiolaKirchhoffLinearElasticity<this_type,true>
+                                                                            SolidMecFirstPiolaKirchhoffLinearElasticity<this_type,true>,
+                                                                            SolidMecFirstPiolaKirchhoffStVenantKirchhoff<this_type,false>,
+                                                                            SolidMecFirstPiolaKirchhoffStVenantKirchhoff<this_type,true>
                                                                             >);
 
     SolidMecFirstPiolaKirchhoffBase( std::shared_ptr<expr_evaluate_displacement_opertors_type> exprEvaluateDisplacementOperators,
@@ -184,7 +187,6 @@ struct SolidMecFirstPiolaKirchhoffBase
         tensor( this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
             :
             super_type( geom, theInitArgs... )
-            //M_tensorExprEvaluateDisplacementOperators( std::make_shared<tensor_expr_evaluate_displacement_opertors_type>( *(expr.exprEvaluateDisplacementOperatorsPtr()), geom, theInitArgs... ) )
             {
                 if ( expr.M_exprEvaluateDisplacementOperators )
                     M_tensorExprEvaluateDisplacementOperators = std::make_shared<tensor_expr_evaluate_displacement_opertors_type>( *(expr.M_exprEvaluateDisplacementOperators), geom, theInitArgs... );
@@ -192,18 +194,54 @@ struct SolidMecFirstPiolaKirchhoffBase
                     M_tensorExprEvaluatePressureOperators = std::make_shared<tensor_expr_evaluate_pressure_opertors_type>( *(expr.M_exprEvaluatePressureOperators), geom, theInitArgs... );
             }
 
-        virtual void update( Geo_t const& geom ) { CHECK( false ) << "should be override"; };
-        virtual void update( Geo_t const& geom, uint16_type face ) { CHECK( false ) << "should be override"; };
-        virtual void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) { CHECK( false ) << "should be override"; }
-        virtual void update( Geo_t const& geom, Basis_i_t const& fev ) { CHECK( false ) << "should be override"; }
+        void update( Geo_t const& geom ) override { CHECK( false ) << "should be override"; };
+        void update( Geo_t const& geom, uint16_type face ) override { CHECK( false ) << "should be override"; };
+        void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) override { CHECK( false ) << "should be override"; }
+        void update( Geo_t const& geom, Basis_i_t const& fev ) override { CHECK( false ) << "should be override"; }
 
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
         void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
                      Geo_t const& geom, const TheArgsType&... theUpdateArgs );
 
+
+        value_type
+        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const override
+            {
+                if constexpr ( this_type::is_applied_as_eval )
+                    return this->evalq( c1,c2,q );
+                else
+                {
+                    CHECK( false) << "not allow";
+                    return value_type(0);
+                }
+            }
+        ret_type
+        evaliq( uint16_type i, uint16_type q ) const override
+            {
+                if constexpr ( this_type::is_applied_as_eval )
+                    return this->evalq( q );
+                else
+                {
+                    CHECK( false) << "not allow";
+                    return ret_type(this->locMatrixShape().data());
+               }
+            }
+
+        value_type
+        evalq( uint16_type c1, uint16_type c2, uint16_type q ) const override
+            {
+                return M_localEval[q](c1,c2);
+            }
+        ret_type
+        evalq( uint16_type q ) const override
+            {
+                return ret_type(M_localEval[q].data());
+            }
+
     protected :
         std::shared_ptr<tensor_expr_evaluate_displacement_opertors_type> M_tensorExprEvaluateDisplacementOperators;
         std::shared_ptr<tensor_expr_evaluate_pressure_opertors_type> M_tensorExprEvaluatePressureOperators;
+        std::vector<matrix_shape_type> M_localEval;
     };
 
 
@@ -416,40 +454,6 @@ public :
                 return evalijqImpl<this_type>( i,j,q );
             }
 
-        value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const override
-            {
-                if constexpr ( this_type::is_applied_as_eval )
-                    return this->evalq( c1,c2,q );
-                else
-                {
-                    CHECK( false) << "not allow";
-                    return value_type(0);
-                }
-            }
-        ret_type
-        evaliq( uint16_type i, uint16_type q ) const override
-            {
-                if constexpr ( this_type::is_applied_as_eval )
-                    return this->evalq( q );
-                else
-                {
-                    CHECK( false) << "not allow";
-                    return ret_type(this->locMatrixShape().data());
-               }
-            }
-
-        value_type
-        evalq( uint16_type c1, uint16_type c2, uint16_type q ) const override
-            {
-                return M_localEval[q](c1,c2);
-            }
-        ret_type
-        evalq( uint16_type q ) const override
-            {
-                return ret_type(M_localEval[q].data());
-            }
-
 
     private :
 
@@ -460,11 +464,11 @@ public :
 
             double timeSteppingScaling = M_expr.timeSteppingScaling();
             uint16_type nPoint = this->gmc()->nPoints();
-            M_localEval.resize( nPoint, matrix_shape_type::Zero() );
+            this->M_localEval.resize( nPoint, matrix_shape_type::Zero() );
             matrix_shape_type E;
             for ( uint16_type q = 0; q < nPoint; ++q )
             {
-                matrix_shape_type & theLocRes = M_localEval[q];
+                matrix_shape_type & theLocRes = this->M_localEval[q];
 
                 auto const& gradDisplacementEval = this->M_tensorExprEvaluateDisplacementOperators->localEvalGrad( q );
                 //auto const& gradDisplacementEval = this->locGradDisplacement(q);
@@ -589,7 +593,450 @@ public :
         std::optional<material_property_scalar_tensor_type> M_tensorLameFirstParameter;
         material_property_scalar_tensor_type M_tensorLameSecondParameter;
         matrix_shape_type M_mId;
-        std::vector<matrix_shape_type> M_localEval;
+    };
+
+    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
+    friend struct tensor;
+
+private :
+
+    std::optional<material_property_scalar_expr_type> M_exprLameFirstParameter;
+    material_property_scalar_expr_type M_exprLameSecondParameter;
+};
+
+
+/**
+ * -------------------------------------------------------------------------------------------------  *
+ * -------------------------------------------------------------------------------------------------  *
+ * StVenantKirchhoff :
+ *   S = \lambda trace(E)*Id + 2*\mu*E
+ *   S = 2*\mu*E ( + pressure part : p*Id )
+ * -------------------------------------------------------------------------------------------------  *
+ * -------------------------------------------------------------------------------------------------  *
+ */
+
+template< typename SolidMecFirstPiolaKirchhoffBaseType,bool UseDispPresForm>
+class SolidMecFirstPiolaKirchhoffStVenantKirchhoff : public SolidMecFirstPiolaKirchhoffBaseType
+{
+    using super_type = SolidMecFirstPiolaKirchhoffBaseType;
+public :
+    using this_type = SolidMecFirstPiolaKirchhoffStVenantKirchhoff<SolidMecFirstPiolaKirchhoffBaseType,UseDispPresForm>;
+    using material_property_scalar_expr_type = typename this_type::template material_property_expr_type<1,1>;
+
+    static constexpr bool useDispPresForm = UseDispPresForm;
+
+    SolidMecFirstPiolaKirchhoffStVenantKirchhoff( std::shared_ptr<typename super_type::expr_evaluate_displacement_opertors_type> exprEvaluateDisplacementOperators,
+                                                  std::shared_ptr<typename super_type::expr_evaluate_pressure_opertors_type> exprEvaluatePressureOperators,
+                                                  std::shared_ptr<typename super_type::model_physic_solid_type> const& physicSolidData,
+                                                  typename super_type::material_properties_type const& matProperties,
+                                                  typename super_type::symbols_expr_type const& se, double timeSteppingScaling = 1.0 )
+        :
+        super_type( exprEvaluateDisplacementOperators,exprEvaluatePressureOperators,physicSolidData,matProperties,se,timeSteppingScaling ),
+        M_exprLameSecondParameter( this->template materialPropertyExpr<1,1>("Lame-second-parameter") )
+        {
+            if constexpr ( !useDispPresForm )
+               M_exprLameFirstParameter.emplace( this->template materialPropertyExpr<1,1>("Lame-first-parameter") );
+
+            this->exprEvaluateDisplacementOperatorsPtr()->setEnableGrad( true );
+            if constexpr ( this_type::is_applied_as_eval || this_type::is_applied_as_jacobian_displacement )
+            {
+                if constexpr ( useDispPresForm )
+                       this->M_exprEvaluatePressureOperators->setEnableId( true );
+            }
+        }
+
+    SolidMecFirstPiolaKirchhoffStVenantKirchhoff( SolidMecFirstPiolaKirchhoffStVenantKirchhoff const& ) = default;
+    SolidMecFirstPiolaKirchhoffStVenantKirchhoff( SolidMecFirstPiolaKirchhoffStVenantKirchhoff &&  ) = default;
+
+    material_property_scalar_expr_type const& exprLameFirstParameter() const { return *M_exprLameFirstParameter; }
+    material_property_scalar_expr_type const& exprLameSecondParameter() const { return M_exprLameSecondParameter; }
+
+    template <typename BB>
+    static auto const& cast( BB const& exprExpanded  )
+        {
+            return static_cast<SolidMecFirstPiolaKirchhoffStVenantKirchhoff<BB,UseDispPresForm> const&>( exprExpanded );
+        }
+
+    size_type dynamicContext() const override
+        {
+            size_type res = Feel::vf::dynamicContext( M_exprLameSecondParameter );
+            if constexpr ( !useDispPresForm )
+                res = res | Feel::vf::dynamicContext( *M_exprLameFirstParameter );
+            res = res | this->exprEvaluateDisplacementOperatorsPtr()->dynamicContext();
+            if constexpr ( this_type::is_applied_as_eval || this_type::is_applied_as_jacobian_displacement )
+            {
+                if constexpr ( useDispPresForm )
+                    res = res | this->M_exprEvaluatePressureOperators->dynamicContext();
+            }
+            return res;
+        }
+
+    uint16_type polynomialOrder() const override
+        {
+            uint16_type orderGradDisp = this->exprEvaluateDisplacementOperatorsPtr()->exprGrad().polynomialOrder();
+            if constexpr ( this_type::is_applied_as_eval || this_type::is_applied_as_jacobian_displacement )
+            {
+                if constexpr ( useDispPresForm  )
+                {
+                    uint16_type orderIdPressure = this->M_exprEvaluatePressureOperators->exprId().polynomialOrder();
+                    return std::max( orderIdPressure + orderGradDisp, M_exprLameSecondParameter.polynomialOrder() + 3*orderGradDisp );
+                }
+                else
+                    return std::max( M_exprLameFirstParameter->polynomialOrder(),M_exprLameSecondParameter.polynomialOrder() ) + 3*orderGradDisp;
+            }
+            else if constexpr ( this_type::is_applied_as_jacobian_pressure )
+                return super_type::expr_evaluate_pressure_opertors_type::polynomialOrderId() + orderGradDisp;
+
+            return 0;
+        }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+             if constexpr ( useDispPresForm )
+                 return M_exprLameSecondParameter.hasSymbolDependency( symb, se );
+             else
+                 return M_exprLameFirstParameter->M_exprLameSecondParameter.hasSymbolDependency( symb,se) || M_exprLameSecondParameter.hasSymbolDependency( symb, se );
+        }
+
+
+    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
+    struct tensor : public this_type::super_type::template tensor<Geo_t,Basis_i_t,Basis_j_t>
+    {
+        using super_type = typename this_type::super_type::template tensor<Geo_t,Basis_i_t,Basis_j_t>;
+    public :
+        typedef typename super_type::gmc_type gmc_type;
+        typedef typename super_type::gm_type gm_type;
+        typedef typename super_type::value_type value_type;
+
+        //using shape = typename super_type::shape_type;
+        using matrix_shape_type = typename super_type::matrix_shape_type;
+        using array_shape_type = typename super_type::new_array_shape_type;
+        using ret_type = typename super_type::ret_type;
+
+        template<typename... TheArgsType>
+        tensor( this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            super_type( expr, geom, theInitArgs... ),
+            M_expr( expr ),
+            M_tensorLameSecondParameter( M_expr.M_exprLameSecondParameter.evaluator( geom ) ),
+            M_mId( matrix_shape_type::Identity() )
+            {
+                //M_mId.setIdentity();
+                if constexpr ( !useDispPresForm )
+                    M_tensorLameFirstParameter.emplace( M_expr.M_exprLameFirstParameter->evaluator( geom ) );
+            }
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            super_type( expr, geom, theInitArgs... ),
+            M_expr( expr ),
+            M_tensorLameSecondParameter( std::true_type{}, exprExpanded.exprLameSecondParameter(), ttse, expr.M_exprLameSecondParameter, geom/*, theInitArgs...*/ ),
+            M_mId( matrix_shape_type::Identity() )
+            {
+                //M_mId.setIdentity();
+                if constexpr ( !useDispPresForm )
+                                 M_tensorLameFirstParameter.emplace( std::true_type{}, exprExpanded.exprLameFirstParameter(), ttse, *expr.M_exprLameFirstParameter, geom/*, theInitArgs...*/ );
+            }
+
+        void update( Geo_t const& geom ) override
+            {
+                M_tensorLameSecondParameter.update( geom );
+                if constexpr ( !useDispPresForm )
+                    M_tensorLameFirstParameter->update( geom );
+
+                this->M_tensorExprEvaluateDisplacementOperators->update( geom );
+                if constexpr ( this_type::is_applied_as_eval || this_type::is_applied_as_jacobian_displacement )
+                {
+                    if constexpr ( useDispPresForm )
+                          this->M_tensorExprEvaluatePressureOperators->update( geom );
+                }
+
+                this->updateImpl();
+            }
+
+        void update( Geo_t const& geom, uint16_type face ) override
+            {
+                M_tensorLameSecondParameter.update( geom, face );
+                if constexpr ( !useDispPresForm )
+                    M_tensorLameFirstParameter->update( geom, face );
+
+                this->M_tensorExprEvaluateDisplacementOperators->update( geom,face );
+                if constexpr ( this_type::is_applied_as_eval || this_type::is_applied_as_jacobian_displacement )
+                {
+                    if constexpr ( useDispPresForm )
+                         this->M_tensorExprEvaluatePressureOperators->update( geom,face );
+                }
+
+                this->updateImpl();
+            }
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                M_tensorLameSecondParameter.update( std::true_type{}, exprExpanded.exprLameSecondParameter(), ttse, geom/*, theUpdateArgs...*/ );
+                if constexpr ( !useDispPresForm )
+                                 M_tensorLameFirstParameter->update( std::true_type{}, exprExpanded.exprLameFirstParameter(), ttse, geom/*, theUpdateArgs...*/ );
+
+                this->M_tensorExprEvaluateDisplacementOperators->update( geom );
+                if constexpr ( this_type::is_applied_as_eval || this_type::is_applied_as_jacobian_displacement )
+                {
+                    if constexpr ( useDispPresForm )
+                         this->M_tensorExprEvaluatePressureOperators->update( geom );
+                }
+
+                this->updateImpl();
+            }
+
+        ret_type
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
+            {
+                return evalijqImpl<this_type>( i,j,q );
+            }
+
+
+    private :
+
+        void updateImpl()
+        {
+            if constexpr ( !(this_type::is_applied_as_eval || this_type::is_applied_as_jacobian_displacement) )
+                 return;
+
+            double timeSteppingScaling = M_expr.timeSteppingScaling();
+            uint16_type nPoint = this->gmc()->nPoints();
+            this->M_localEval.resize( nPoint, matrix_shape_type::Zero() );
+            matrix_shape_type E;
+            for ( uint16_type q = 0; q < nPoint; ++q )
+            {
+                matrix_shape_type & theLocRes = this->M_localEval[q];
+
+                auto const& gradDisplacementEval = this->M_tensorExprEvaluateDisplacementOperators->localEvalGrad( q );
+
+                if constexpr ( this_type::nRealDim == 2 )
+                {
+                    const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1);
+                    const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1);
+                    const value_type subtraceE1 = 0.5*(std::pow(du1vdx,2)+std::pow(du2vdx,2));
+                    const value_type subtraceE2 = 0.5*(std::pow(du1vdy,2)+std::pow(du2vdy,2));
+                    E(0,0) = du1vdx + subtraceE1;
+                    E(0,1) = 0.5*( du1vdy + du2vdx + du1vdx*du1vdy + du2vdx*du2vdy );
+                    E(1,0) = E(0,1);
+                    E(1,1) = du2vdy + subtraceE2;
+                }
+                else if constexpr ( this_type::nRealDim == 3 )
+                {
+                    const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1), du1vdz = gradDisplacementEval(0,2);
+                    const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1), du2vdz = gradDisplacementEval(1,2);
+                    const value_type du3vdx = gradDisplacementEval(2,0), du3vdy = gradDisplacementEval(2,1), du3vdz = gradDisplacementEval(2,2);
+                    const value_type subtraceE1 = 0.5*(std::pow(du1vdx,2)+std::pow(du2vdx,2)+std::pow(du3vdx,2));
+                    const value_type subtraceE2 = 0.5*(std::pow(du1vdy,2)+std::pow(du2vdy,2)+std::pow(du3vdy,2));
+                    const value_type subtraceE3 = 0.5*(std::pow(du1vdz,2)+std::pow(du2vdz,2)+std::pow(du3vdz,2));
+
+                    E(0,0) = du1vdx + subtraceE1;
+                    E(0,1) = 0.5*( du1vdy + du2vdx + du1vdx*du1vdy + du2vdx*du2vdy + du3vdx*du3vdy );
+                    E(0,2) = 0.5*( du1vdz + du3vdx + du1vdx*du1vdz + du2vdx*du2vdz + du3vdx*du3vdz );
+                    //E(1,0) = 0.5*( du2vdx + du1vdy + du1vdy*du1vdx + du2vdy*du2vdx + du3vdy*du3vdx );
+                    E(1,0) = E(0,1);
+                    E(1,1) = du2vdy + subtraceE2;
+                    E(1,2) = 0.5*( du2vdz + du3vdy + du1vdy*du1vdz + du2vdy*du2vdz + du3vdy*du3vdz );
+                    //E(2,0) = 0.5*( du3vdx + du1vdz + du1vdz*du1vdx + du2vdz*du2vdx + du3vdz*du3vdx );
+                    //E(2,1) = 0.5*( du3vdy + du2vdz + du1vdz*du1vdy + du2vdz*du2vdy + du3vdz*du3vdy );
+                    E(2,0) = E(0,2);
+                    E(2,1) = E(1,2);
+                    E(2,2) = du3vdz + subtraceE3;
+                }
+
+                if constexpr ( useDispPresForm )
+                {
+                    // p*Id+S_bis
+                    const value_type coefflame2 = M_tensorLameSecondParameter.evalq(0,0,q);
+                    const value_type pEval = this->M_tensorExprEvaluatePressureOperators->localEvalId( q )(0,0);
+                    auto S = pEval*M_mId + 2*coefflame2*timeSteppingScaling*E;
+                    if constexpr ( this_type::is_applied_as_jacobian_displacement )
+                    {
+                        theLocRes = S;
+                    }
+                    else
+                    {
+                        auto F = M_mId + gradDisplacementEval;
+                        theLocRes = F*S;
+                    }
+                }
+                else
+                {
+                    const value_type coefflame1 = M_tensorLameFirstParameter->evalq(0,0,q);
+                    const value_type coefflame2 = M_tensorLameSecondParameter.evalq(0,0,q);
+                    auto S = coefflame1*E.trace()*M_mId + 2*coefflame2*E;
+                    if constexpr ( this_type::is_applied_as_jacobian_displacement )
+                    {
+                        theLocRes = S;
+                    }
+                    else
+                    {
+                        auto F = M_mId + gradDisplacementEval;
+                        theLocRes = timeSteppingScaling*F*S;
+                        //theLocRes *= timeSteppingScaling;
+                    }
+                }
+            }
+        }
+
+        template <typename TT,std::enable_if_t< TT::is_applied_as_eval, bool> = true>
+        ret_type
+        evalijqImpl( uint16_type i, uint16_type j, uint16_type q ) const
+        {
+            CHECK( false ) << "not allow";
+            return ret_type(this->locMatrixShape().data());
+        }
+
+        template <typename TT,std::enable_if_t< TT::is_applied_as_jacobian_displacement, bool> = true>
+        ret_type
+        evalijqImpl( uint16_type i, uint16_type j, uint16_type q ) const noexcept
+        {
+            auto const& gradTrial = this->fecTrial()->grad( j, q );
+            auto const& gradDisplacementEval = this->M_tensorExprEvaluateDisplacementOperators->localEvalGrad( q );
+            auto const& localEval = this->M_localEval[q];
+
+            Eigen::Map< const Eigen::Matrix<typename super_type::value_type,super_type::shape_type::M,super_type::shape_type::N/*,Eigen::ColMajor*/ > >
+                gradTrial_matrix( gradTrial.data() );
+            // dFS = dF*S
+            typename super_type::matrix_shape_type dFS = gradTrial_matrix*localEval;
+            typename super_type::matrix_shape_type dE;
+            //typename super_type::matrix_shape_type & thelocMat = this->locMatrixShape();
+            typename super_type::matrix_shape_type thelocMat; // seems faster if thelocMat is a local variable (mayber cache access?)
+
+#if 0
+            dE = 0.5*(gradTrial_matrix + gradTrial_matrix.transpose() + gradDisplacementEval.transpose()*gradTrial_matrix + gradTrial_matrix.transpose()*gradDisplacementEval );
+            auto F = M_mId + gradDisplacementEval;
+#if 1
+            auto dS = coefflame1*dE.trace()*M_mId + 2*coefflame2*dE;
+#else
+            typename super_type::matrix_shape_type dS = coeffMult*dE;
+            dS.diagonal().array() += coeffOnDiag;
+#endif
+            thelocMat = F*dS + dFS;
+#endif
+            if constexpr ( this_type::nRealDim == 2 )
+            {
+                const value_type du1tdx = gradTrial( 0, 0, 0 ), du1tdy = gradTrial( 0, 1, 0 );
+                const value_type du2tdx = gradTrial( 1, 0, 0 ), du2tdy = gradTrial( 1, 1, 0 );
+                const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1);
+                const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1);
+
+                //auto dE = sym(gradt(u)) + 0.5*(trans(gradv(u))*gradt(u) + trans(gradt(u))*gradv(u));
+                dE(0,0) = du1tdx + /*0.5**/(du1vdx*du1tdx + du2vdx*du2tdx);
+                dE(0,1) = 0.5*( du1tdy + du2tdx + du1tdx*du1vdy + du2tdx*du2vdy + du1vdx*du1tdy + du2vdx*du2tdy );
+                dE(1,0) = dE(0,1);
+                dE(1,1) = du2tdy + du1vdy*du1tdy + du2vdy*du2tdy;
+
+                const value_type coefflame2 = M_tensorLameSecondParameter.evalq(0,0,q);
+                const value_type coeffMult = 2*coefflame2/**timeSteppingScaling*/;
+
+                value_type coeffOnDiag = 0;
+                if constexpr ( !useDispPresForm )
+                {
+                    const value_type tracedE = dE.trace();
+                    const value_type coefflame1 = M_tensorLameFirstParameter->evalq(0,0,q);
+                    coeffOnDiag = coefflame1*tracedE/**timeSteppingScaling*/;
+                }
+
+                // auto dS = idv(CoeffLame1)*trace(dE)*Id + 2*idv(CoeffLame2)*dE;
+                const value_type dS11 = coeffOnDiag + coeffMult*dE(0,0);
+                const value_type dS12 = coeffMult*dE(0,1);
+                const value_type dS21 = dS12;//coeffMult*dE(1,0);
+                const value_type dS22 = coeffOnDiag + coeffMult*dE(1,1);
+
+                const value_type F11 = 1 + du1vdx, F22 = 1 + du2vdy;
+                thelocMat(0,0) = F11*dS11 + du1vdy*dS21;
+                thelocMat(0,1) = F11*dS12 + du1vdy*dS22;
+                thelocMat(1,0) = du2vdx*dS11 + F22*dS21;
+                thelocMat(1,1) = du2vdx*dS12 + F22*dS22;
+                thelocMat += dFS;
+            }
+            else if constexpr ( this_type::nRealDim == 3 )
+            {
+                const value_type du1tdx = gradTrial( 0, 0, 0 ), du1tdy = gradTrial( 0, 1, 0 ), du1tdz=gradTrial( 0, 2, 0 );
+                const value_type du2tdx = gradTrial( 1, 0, 0 ), du2tdy = gradTrial( 1, 1, 0 ), du2tdz=gradTrial( 1, 2, 0 );
+                const value_type du3tdx = gradTrial( 2, 0, 0 ), du3tdy = gradTrial( 2, 1, 0 ), du3tdz=gradTrial( 2, 2, 0 );
+                const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1), du1vdz = gradDisplacementEval(0,2);
+                const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1), du2vdz = gradDisplacementEval(1,2);
+                const value_type du3vdx = gradDisplacementEval(2,0), du3vdy = gradDisplacementEval(2,1), du3vdz = gradDisplacementEval(2,2);
+
+                //auto dE = sym(gradt(u)) + 0.5*(trans(gradv(u))*gradt(u) + trans(gradt(u))*gradv(u));
+                dE(0,0) = du1tdx + /*0.5**/(du1vdx*du1tdx + du2vdx*du2tdx + du3vdx*du3tdx);
+                dE(0,1) = 0.5*( du1tdy + du2tdx + du1tdx*du1vdy + du2tdx*du2vdy + du3tdx*du3vdy + du1vdx*du1tdy + du2vdx*du2tdy + du3vdx*du3tdy );
+                dE(0,2) = 0.5*( du1tdz + du3tdx + du1tdx*du1vdz + du2tdx*du2vdz + du3tdx*du3vdz + du1vdx*du1tdz + du2vdx*du2tdz + du3vdx*du3tdz );
+                //dE(1,0) = 0.5*( du2tdx + du1tdy + du1tdy*du1vdx + du2tdy*du2vdx + du3tdy*du3vdx + du1vdy*du1tdx + du2vdy*du2tdx + du3vdy*du3tdx );
+                dE(1,0) = dE(0,1);
+                dE(1,1) = du2tdy + du1vdy*du1tdy + du2vdy*du2tdy + du3vdy*du3tdy;
+                dE(1,2) = 0.5*( du2tdz + du3tdy + du1tdy*du1vdz + du2tdy*du2vdz + du3tdy*du3vdz + du1vdy*du1tdz + du2vdy*du2tdz + du3vdy*du3tdz );
+                //dE(2,0) = 0.5*( du3tdx + du1tdz + du1tdz*du1vdx + du2tdz*du2vdx + du3tdz*du3vdx + du1vdz*du1tdx + du2vdz*du2tdx + du3vdz*du3tdx );
+                //dE(2,1) = 0.5*( du3tdy + du2tdz + du1tdz*du1vdy + du2tdz*du2vdy + du3tdz*du3vdy + du1vdz*du1tdy + du2vdz*du2tdy + du3vdz*du3tdy );
+                dE(2,0) = dE(0,2);
+                dE(2,1) = dE(1,2);
+                dE(2,2) = du3tdz + du1vdz*du1tdz + du2vdz*du2tdz + du3vdz*du3tdz;
+
+                const value_type coefflame2 = M_tensorLameSecondParameter.evalq(0,0,q);
+                const value_type coeffMult = 2*coefflame2/**timeSteppingScaling*/;
+
+                value_type coeffOnDiag = 0;
+                if constexpr ( !useDispPresForm )
+                {
+                    const value_type tracedE = dE.trace();
+                    const value_type coefflame1 = M_tensorLameFirstParameter->evalq(0,0,q);
+                    coeffOnDiag = coefflame1*tracedE/**timeSteppingScaling*/;
+                }
+
+                // auto dS = idv(CoeffLame1)*trace(dE)*Id + 2*idv(CoeffLame2)*dE;
+                const value_type dS11 = coeffOnDiag + coeffMult*dE(0,0);
+                const value_type dS12 = coeffMult*dE(0,1);
+                const value_type dS13 = coeffMult*dE(0,2);
+                const value_type dS21 = dS12;//coeffMult*dE(1,0);
+                const value_type dS22 = coeffOnDiag + coeffMult*dE(1,1);
+                const value_type dS23 = coeffMult*dE(1,2);
+                const value_type dS31 = dS13;//coeffMult*dE(2,0);
+                const value_type dS32 = dS23;//coeffMult*dE(2,1);
+                const value_type dS33 = coeffOnDiag + coeffMult*dE(2,2);
+
+                const value_type F11 = 1 + du1vdx, F22 = 1 + du2vdy, F33 = 1 + du3vdz;
+                thelocMat(0,0) = F11*dS11 + du1vdy*dS21 + du1vdz*dS31;
+                thelocMat(0,1) = F11*dS12 + du1vdy*dS22 + du1vdz*dS32;
+                thelocMat(0,2) = F11*dS13 + du1vdy*dS23 + du1vdz*dS33;
+                thelocMat(1,0) = du2vdx*dS11 + F22*dS21 + du2vdz*dS31;
+                thelocMat(1,1) = du2vdx*dS12 + F22*dS22 + du2vdz*dS32;
+                thelocMat(1,2) = du2vdx*dS13 + F22*dS23 + du2vdz*dS33;
+                thelocMat(2,0) = du3vdx*dS11 + du3vdy*dS21 + F33*dS31;
+                thelocMat(2,1) = du3vdx*dS12 + du3vdy*dS22 + F33*dS32;
+                thelocMat(2,2) = du3vdx*dS13 + du3vdy*dS23 + F33*dS33;
+                thelocMat += dFS;
+            }
+
+            this->locMatrixShape() = thelocMat;
+            //return ret_type(thelocMat.data());
+            return ret_type(this->locMatrixShape().data());
+        }
+
+        template <typename TT,std::enable_if_t< TT::is_applied_as_jacobian_pressure, bool> = true>
+        ret_type
+        evalijqImpl( uint16_type i, uint16_type j, uint16_type q ) const
+        {
+            // compute idt(p)*F
+            const value_type idTrialPressure = this->fecTrial()->id( j, 0, 0, q );
+            auto const& gradDisplacementEval = this->M_tensorExprEvaluateDisplacementOperators->localEvalGrad( q );
+            typename super_type::matrix_shape_type & thelocMat = this->locMatrixShape();
+            thelocMat = /*-*/idTrialPressure*(M_mId+gradDisplacementEval);
+            return ret_type(thelocMat.data());
+        }
+
+    private :
+        this_type const& M_expr;
+        using material_property_scalar_tensor_type = typename material_property_scalar_expr_type::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>;
+        std::optional<material_property_scalar_tensor_type> M_tensorLameFirstParameter;
+        material_property_scalar_tensor_type M_tensorLameSecondParameter;
+        matrix_shape_type M_mId;
     };
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
@@ -637,6 +1084,18 @@ SolidMecFirstPiolaKirchhoffBase<ExprEvaluateFieldOperatorsDispType,FiniteElement
             return std::make_shared<SolidMecFirstPiolaKirchhoffLinearElasticity<this_type,true>>( exprEvaluateDisplacementOperators,exprEvaluatePressureOperators,physicSolidData,matProperties,se,timeSteppingScaling );
         else
             return std::make_shared<SolidMecFirstPiolaKirchhoffLinearElasticity<this_type,false>>( exprEvaluateDisplacementOperators,exprEvaluatePressureOperators,physicSolidData,matProperties,se,timeSteppingScaling );
+    }
+    else if ( physicSolidData->equation() == "Hyper-Elasticity" )
+    {
+        if ( physicSolidData->materialModel() == "StVenantKirchhoff" )
+        {
+            if ( useDispPresForm )
+                return std::make_shared<SolidMecFirstPiolaKirchhoffStVenantKirchhoff<this_type,true>>( exprEvaluateDisplacementOperators,exprEvaluatePressureOperators,physicSolidData,matProperties,se,timeSteppingScaling );
+            else
+                return std::make_shared<SolidMecFirstPiolaKirchhoffStVenantKirchhoff<this_type,false>>( exprEvaluateDisplacementOperators,exprEvaluatePressureOperators,physicSolidData,matProperties,se,timeSteppingScaling );
+        }
+        else
+            CHECK ( false ) << "invalid materialLaw : "<< physicSolidData->materialModel();
     }
     else
         CHECK( false ) << "equation not implemented : " << physicSolidData->equation();
@@ -3673,7 +4132,7 @@ public:
     template <typename TheSymbolExprType>
     bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
         {
-            M_exprFirstPiolaKirchhoffBase->hasSymbolDependency( symb,se );
+            return M_exprFirstPiolaKirchhoffBase->hasSymbolDependency( symb,se );
         }
 
     template <typename TheSymbolExprType>
