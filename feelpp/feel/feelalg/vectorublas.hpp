@@ -390,15 +390,58 @@ class VectorUblasBase: public Vector<T>
         virtual void msubVector( const value_type & a, const VectorUblasContiguousGhosts<T> & v ) = 0;
         virtual void msubVector( const value_type & a, const VectorUblasNonContiguousGhosts<T> & v ) = 0;
 
-        virtual value_type dot( const VectorUblasBase<T> & v ) { return v.applyDot( *this ); }
-        virtual value_type applyDot( const VectorUblasBase<T> & v ) = 0;
-        virtual value_type dot( const VectorUblasContiguousGhosts<T> & v ) = 0;
-        virtual value_type dot( const VectorUblasNonContiguousGhosts<T> & v ) = 0;
+        virtual value_type dotVector( const VectorUblasBase<T> & v ) { return v.applyDotVector( *this ); }
+        virtual value_type applyDotVector( const VectorUblasBase<T> & v ) = 0;
+        virtual value_type dotVector( const VectorUblasContiguousGhosts<T> & v ) = 0;
+        virtual value_type dotVector( const VectorUblasNonContiguousGhosts<T> & v ) = 0;
 
 };
 
+template< template < typename > class V, typename T >
+class SettableVectorUblas: public virtual VectorUblasBase<T>
+{
+    protected:
+        void applySetVector( VectorUblasBase<T> & b ) override { return b.setVector( static_cast< V<T>& >( *this ) ); }
+};
+template< template < typename > class V, typename T >
+class AddableVectorUblas: public virtual VectorUblasBase<T>
+{
+    protected:
+        void applyAddVector( VectorUblasBase<T> & b ) override { return b.addVector( static_cast< V<T>& >( *this ) ); }
+};
+template< template < typename > class V, typename T >
+class MaddableVectorUblas: public virtual VectorUblasBase<T>
+{
+    protected:
+        void applyMaddVector( VectorUblasBase<T> & b ) override { return b.maddVector( static_cast< V<T>& >( *this ) ); }
+};
+template< template < typename > class V, typename T >
+class SubtractableVectorUblas: public virtual VectorUblasBase<T>
+{
+    protected:
+        void applySubVector( VectorUblasBase<T> & b ) override { return b.subVector( static_cast< V<T>& >( *this ) ); }
+};
+template< template < typename > class V, typename T >
+class MsubtractableVectorUblas: public virtual VectorUblasBase<T>
+{
+    protected:
+        void applyMsubVector( VectorUblasBase<T> & b ) override { return b.msubVector( static_cast< V<T>& >( *this ) ); }
+};
+template< template < typename > class V, typename T >
+class DottableVectorUblas: public virtual VectorUblasBase<T>
+{
+    protected:
+        typename VectorUblasBase<T>::value_type applyDotVector( VectorUblasBase<T> & b ) override { return b.dotVector( static_cast< V<T>& >( *this ) ); }
+};
+
 template< typename T >
-class VectorUblasContiguousGhosts: public VectorUblasBase<T>
+class VectorUblasContiguousGhosts: 
+    public SettableVectorUblasBase<VectorUblasContiguousGhosts, T>,
+    public AddableVectorUblasBase<VectorUblasContiguousGhosts, T>,
+    public MaddableVectorUblasBase<VectorUblasContiguousGhosts, T>,
+    public SubtractableVectorUblasBase<VectorUblasContiguousGhosts, T>,
+    public MsubtractableVectorUblasBase<VectorUblasContiguousGhosts, T>,
+    public DottableVectorUblasBase<VectorUblasContiguousGhosts, T>
 {
     public:
         // Typedefs
@@ -449,39 +492,26 @@ class VectorUblasContiguousGhosts: public VectorUblasBase<T>
         virtual value_type sum() const override = 0;
 
     protected:
-        virtual void setVector( const VectorUblasContiguousGhosts<T> & v ) = 0;
-        virtual void setVector( const VectorUblasNonContiguousGhosts<T> & v ) = 0;
+        void setVector( const VectorUblasContiguousGhosts<T> & v ) override;
+        void setVector( const VectorUblasNonContiguousGhosts<T> & v ) override;
 
-        virtual value_type dot( const VectorUblasContiguousGhosts<T> & v ) = 0;
-        virtual value_type dot( const VectorUblasNonContiguousGhosts<T> & v ) = 0;
+        virtual value_type dot( const VectorUblasContiguousGhosts<T> & v ) override;
+        virtual value_type dot( const VectorUblasNonContiguousGhosts<T> & v ) override;
         
-        void addVector( const VectorUblasBase<T> & v ) override;
         void addVector( const VectorUblasContiguousGhosts<T> & v ) override;
         void addVector( const VectorUblasNonContiguousGhosts<T> & v ) override;
 
-        void maddVector( const value_type & a, const VectorUblasBase<T> & v ) override;
         void maddVector( const value_type & a, const VectorUblasContiguousGhosts<T> & v ) override;
         void maddVector( const value_type & a, const VectorUblasNonContiguousGhosts<T> & v ) override;
         
-        void subVector( const VectorUblasBase<T> & v ) override;
         void subVector( const VectorUblasContiguousGhosts<T> & v ) override;
         void subVector( const VectorUblasNonContiguousGhosts<T> & v ) override;
 
-        void msubVector( const value_type & a, const VectorUblasBase<T> & v ) override;
         void msubVector( const value_type & a, const VectorUblasContiguousGhosts<T> & v ) override;
         void msubVector( const value_type & a, const VectorUblasNonContiguousGhosts<T> & v ) override;
 
-        value_type dot( const VectorUblasBase<T> & v ) override;
-        value_type dot( const VectorUblasContiguousGhosts<T> & v ) override;
-        value_type dot( const VectorUblasNonContiguousGhosts<T> & v ) override;
-
-    private:
-        void applySetVector( const VectorUblasBase<T> & v ) override { return v.setVector( *this ); }
-        void applyAddVector( const VectorUblasBase<T> & v ) override { return v.addVector( *this ); }
-        void applyMaddVector( const value_type & a, const VectorUblasBase<T> & v ) override { return v.maddVector( a, *this ); }
-        void applySubVector( const VectorUblasBase<T> & v ) override { return v.subVector( *this ); }
-        void applyMsubVector( const value_type & a, const VectorUblasBase<T> & v ) override { return v.msubVector( *this ); }
-        value_type applyDot( const VectorUblasBase<T> & v ) override { return v.dot( *this ); }
+        value_type dotVector( const VectorUblasContiguousGhosts<T> & v ) override;
+        value_type dotVector( const VectorUblasNonContiguousGhosts<T> & v ) override;
 
     protected:
         ublas::vector<value_type> M_vec;
