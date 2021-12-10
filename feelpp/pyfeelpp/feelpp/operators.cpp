@@ -60,9 +60,20 @@ void defOperator( py::module& m )
     std::string pyclass_name = fmt::format( "Mass_{}_{}D_P{}", suffix, Dim, Order );
     VLOG(2) << fmt::format("[pyfeelpp] class name: {}", pyclass_name ) << std::endl;
     using iterator_range_t = elements_reference_wrapper_t<mesh_t>;
+    using faces_iterator_range_t = faces_reference_wrapper_t<mesh_t>;
 
     m.def(
         "mass", []( space_ptr_t const& domain, space_ptr_t const& image, iterator_range_t const& r, std::string const& c = "1" )
+        { 
+            auto a=form2(_test=image,_trial=domain);
+            auto u=domain->element();
+            auto v=image->element();
+
+            a=integrate(_range=r,_expr=expr(c)*trace(trans(idt(u))*id(v)));
+            return a.matrixPtr(); },
+        py::arg( "trial" ), py::arg( "test" ), py::arg( "range" ), py::arg( "coeff" )=std::string{"1"}, "create a mass matrix" );
+    m.def(
+        "mass", []( space_ptr_t const& domain, space_ptr_t const& image, faces_iterator_range_t const& r, std::string const& c = "1" )
         { 
             auto a=form2(_test=image,_trial=domain);
             auto u=domain->element();
