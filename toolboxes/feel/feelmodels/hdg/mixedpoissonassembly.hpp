@@ -198,10 +198,10 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
                                      _expr=inner(id(phat), normalt(u)) );
         // <tau p, mu>_Gamma_N
         bbf( 2_c, 1_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                     _expr=-tau_constant*inner(id(phat), idt(p)) );
+                                     _expr=tau_constant*inner(id(phat), idt(p)) );
         // <-tau phat, mu>_Gamma_N
         bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                     _expr=tau_constant*inner(idt(phat), id(phat)) );
+                                     _expr=-tau_constant*inner(idt(phat), id(phat)) );
         auto g = [&bc = bc,&symbolsExpr]() -> decltype(auto) {
                      if constexpr( is_scalar ) {
                          return expr(bc.expr(), symbolsExpr);
@@ -219,10 +219,10 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
                                      _expr=inner(id(phat), normalt(u)) );
         // <tau p, mu>_Gamma_R
         bbf( 2_c, 1_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                     _expr=-tau_constant*inner(id(phat), idt(p)) );
+                                     _expr=tau_constant*inner(id(phat), idt(p)) );
         // <-tau phat, mu>_Gamma_R
         bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                     _expr=tau_constant*inner(idt(phat), id(phat)) );
+                                     _expr=-tau_constant*inner(idt(phat), id(phat)) );
 
         auto g1 = expr(bc.expr1(), symbolsExpr);
         bbf(2_c, 2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
@@ -254,11 +254,11 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
 
         // <tau p, m>_Gamma_I
         bbf( 3_c, 1_c, i, 0 ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
-                                            _expr=-tau_constant*inner(idt(p), id(l)) );
+                                            _expr=tau_constant*inner(idt(p), id(l)) );
 
         // -<lambda2, m>_Gamma_I
         bbf( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
-                                            _expr=tau_constant*inner(id(l), idt(l)) );
+                                            _expr=-tau_constant*inner(id(l), idt(l)) );
 
         double meas = integrate( _range=markedfaces(support(M_Wh), bc.markers()),
                                  _expr=cst(1.)).evaluate()(0,0);

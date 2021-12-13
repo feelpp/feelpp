@@ -703,7 +703,7 @@ mixedpoisson_options( std::string const& prefix )
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "Linear" ), "numeric solver : Linear, Picard")
         ( prefixvm( prefix, "tau_constant" ).c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( prefixvm( prefix, "use-sc" ).c_str(), po::value<bool>()->default_value( true ), "use static condensation" )
-        ( prefixvm( prefix, "time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
+        ( prefixvm( prefix, "time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta, Newmark")
         ( prefixvm( prefix, "time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
         ;
     return desc_options.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).add( backend_options( prefix+".sc" ) );
