@@ -113,7 +113,7 @@ def test_init_reducedbasis():
 
 @pytest.mark.dependency(depends=['test_init_reducedbasis'])
 def test_computeBasis():
-    """Cheks that the reduced basis is well computed and orthonormalized
+    """Checks that the reduced basis is well computed and orthonormalized
     """
     pytest.mus = listOfParams(40)
     pytest.rb.computeOfflineReducedBasis(pytest.mus, orth=True)
@@ -209,6 +209,51 @@ def test_comparRhs():
     assert norm < 1e-10, f"relative error {norm} too high"
 
 
+@pytest.mark.dependency(depends=['test_computeBasis'])
+def test_comparSols():
+    """Compares the construction of the matrix to the toolbox one
+    """
+    mu = Dmu.element(True, False)    # TODO : see how to get the values from json
+    mu.setParameters({"Bi":0.01, "k_0":1, "k_1":0.1, "k_2":0.1, "k_3":0.1, "k_4":0.1})
+    beta = model.computeBetaQm(mu)
+    assert(len(beta) == 2)
+    betaA = beta[0]
+    # M_tb = heatBox.assembleMatrix().mat()
+    assembleMDEIM(mu)
+    heatBox.solve()
+    u_tb = heatBox.fieldTemperature().to_petsc().vec()
+
+    u_rb,_ = pytest.rb.getSolutions(mu)
+    u_proj = pytest.rb.projFE(u_rb)
+
+    assert(u_proj.size == u_tb.size)
+    
+    norm = (u_tb - u_proj).norm() / u_tb.norm()
+    assert norm < 1e-10, f"relative error {norm} is too high"
+
+
+@pytest.mark.dependency(depends=['test_computeBasis'])
+def test_comparSolsFE():
+    """Compares the construction of the matrix to the toolbox one
+    """
+    mu = Dmu.element(True, False)    # TODO : see how to get the values from json
+    mu.setParameters({"Bi":0.01, "k_0":1, "k_1":0.1, "k_2":0.1, "k_3":0.1, "k_4":0.1})
+    beta = model.computeBetaQm(mu)
+    assert(len(beta) == 2)
+    betaA = beta[0]
+    # M_tb = heatBox.assembleMatrix().mat()
+    assembleMDEIM(mu)
+    heatBox.solve()
+    u_tb = heatBox.fieldTemperature().to_petsc().vec()
+
+    u_fe,_ = pytest.rb.getSolutionsFE(mu)
+
+    assert(u_tb.size == u_fe.size)
+    
+    norm = (u_tb - u_fe).norm() / u_tb.norm()
+    assert norm < 1e-10, f"relative error {norm} is too high"
+
+
 
 # Greedy Tests
 
@@ -222,11 +267,43 @@ def test_runGreedy():
     Fq = pytest.decomposition[1]
     pytest.rbGreedy = reducedbasis(convertToPetscMat(Aq[0]), convertToPetscVec(Fq[0][0]), model, mubar, alphaLB)
 
-    Xi_train = listOfParams(500)
+    Xi_train = listOfParams(100)
     mu0 = Dmu.element(True, True)
     S = pytest.rbGreedy.greedy(mu0, Xi_train, Nmax=60)
 
     assert( pytest.rbGreedy.DeltaMax[-1] < 1e-6 )
+
+# @pytest.mark.greedy
+# @pytest.mark.dependency(depends=['test_runGreedy'])
+# def test_cvgError(xi_test=None):
+#     if xi_test is None:
+#         xi_test = listOfParams(50)
+#     nb = len(xi_test)
+
+#     df = pd.DataFrame(columns=['minS', 'maxS', 'meanS', 'minU', 'maxU', 'meanU'],
+#                       index = list(range(1,pytest.rbGreedy.N+1)))
+
+#     # print("size minS maxS meanS minU maxU meanU")
+
+#     for size in range(1,pytest.rbGreedy.N+1):
+#         S = np.zeros(nb)
+#         U = np.zeros(nb)
+
+#         for i in range(nb):
+#             uN, sN = pytest.rbGreedy.getSolutions(xi_test[i], size=size)
+#             u , s  = pytest.rbGreedy.getSolutionsFE(xi_test[i])
+
+#             u_proj = pytest.rbGreedy.projFE(uN)
+
+#             S[i] = np.abs(sN - s)/np.abs(s)
+#             U[i] = pytest.rbGreedy.normA(u - u_proj)/pytest.rbGreedy.normA(u)
+
+#         df.loc[size] = pd.Series({'minS':np.min(S), 'maxS':np.max(S), 'meanS':np.mean(S),
+#                                   'minU':np.min(U), 'maxU':np.max(U), 'meanU':np.mean(U)})
+#         # print(size, np.min(S), np.max(S), np.mean(S), np.min(U), np.max(U), np.mean(U))
+#     return df
+
+
 
 
 
