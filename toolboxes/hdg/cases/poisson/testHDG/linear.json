@@ -7,6 +7,7 @@
         "omega":
         {
             "name":"simulation_domain",
+            "poisson_d":"1",
             "poisson_c":"1",
             "poisson_f":"1:x:y:t"
         }
@@ -20,7 +21,7 @@
                 "myic1":
                 {
                     "markers":"omega",
-					"expr":"t+x:x:t"
+					"expr":"t+x+y:x:y:t"
                 }
             }
         }
@@ -34,7 +35,7 @@
                 "bc":
 				{
                     "markers":["bottom","top","lateral"],
-					"expr":"t+x:x:t"
+					"expr":"t+x+y:x:y:t"
 				}
             }
         }
@@ -53,14 +54,14 @@
                 {
                     "type":"L2-error",
                     "field":"potential",
-                    "solution":"t+x:x:t",
+                    "solution":"t+x+y:x:y:t",
                     "markers":"omega"
                 },
                 "flux_error":
                 {
                     "type":"L2-error",
                     "field":"flux",
-                    "solution":"{-1,0}:x:t",
+                    "solution":"{-1,-1}:x:t",
                     "markers":"omega"
                 }
             }

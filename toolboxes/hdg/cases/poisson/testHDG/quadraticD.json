@@ -7,23 +7,8 @@
         "omega":
         {
             "name":"simulation_domain",
-            "poisson_d":"1",
             "poisson_c":"1",
-            "poisson_f":"2*t-6:x:y:t"
-        }
-    },
-    "InitialConditions":
-    {
-        "potential":
-        {
-            "Expression":
-            {
-                "myic1":
-                {
-                    "markers":"omega",
-					"expr":"t*t+x*x+2*y*y:x:y:t"
-                }
-            }
+            "poisson_f":"-6:x:y:t"
         }
     },
     "BoundaryConditions":
@@ -35,7 +20,7 @@
                 "bc":
 				{
                     "markers":["bottom","top","lateral"],
-					"expr":"t*t+x*x+2*y*y:x:y:t"
+					"expr":"x*x+2*y*y:x:y:t"
 				}
             }
         }
@@ -54,7 +39,7 @@
                 {
                     "type":"L2-error",
                     "field":"potential",
-                    "solution":"t*t+x*x+2*y*y:x:y:t",
+                    "solution":"x*x+2*y*y:x:y:t",
                     "markers":"omega"
                 },
                 "flux_error":

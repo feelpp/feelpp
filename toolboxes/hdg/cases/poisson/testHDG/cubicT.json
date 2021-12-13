@@ -7,6 +7,7 @@
         "omega":
         {
             "name":"simulation_domain",
+            "poisson_d":"1",
             "poisson_c":"1",
             "poisson_f":"3*t*t:x:y:t"
         }

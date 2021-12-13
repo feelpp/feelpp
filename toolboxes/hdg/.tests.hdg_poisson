@@ -1,7 +1,22 @@
+linear-time --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linearT.json
+linear-dirichlet --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linearD.json --ts.steady 1
+linear-neumann --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linearN.json --ts.steady 1
+linear-robin --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linearR.json --ts.steady 1
+linear-space --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linearS.json
+linear-space-time --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.json
+quadratic-time --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/quadraticT.json --hdg.poisson.bdf.order 2
+quadratic-dirichlet --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/quadraticD.json --ts.steady 1 --case.discretization P2
+quadratic-neumann --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/quadraticN.json --ts.steady 1 --case.discretization P2
+quadratic-robin --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/quadraticR.json --ts.steady 1 --case.discretization P2
+quadratic-space --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/quadraticS.json --case.discretization P2
+quadratic-space-time --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/quadratic.json --hdg.poisson.bdf.order 2 --case.discretization P2
+cubic-time --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/cubicT.json --hdg.poisson.bdf.order 3
+cubic-dirichlet --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/cubicD.json --ts.steady 1 --case.discretization P3
+cubic-neumann --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/cubicN.json --ts.steady 1 --case.discretization P3
+cubic-robin --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/cubicR.json --ts.steady 1 --case.discretization P3
+cubic-space --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/cubicS.json --case.discretization P3
+cubic-space-time --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/cubic.json --hdg.poisson.bdf.order 3 --case.discretization P3
 quarter-turn-2d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/quarter-turn/quarter-turn2D.cfg
 quarter-turn-2d-int --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/quarter-turn/quarter-turn2D-int.cfg
 quarter-turn-3d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/quarter-turn/quarter-turn3D.cfg
 quarter-turn-3d-int --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/quarter-turn/quarter-turn3D-int.cfg
-linear-time --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linearT.json
-quadratic-time --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/quadraticT.json --hdg.poisson.bdf.order 2
-cubic-time --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/linear.cfg --hdg.poisson.filename ${CMAKE_CURRENT_SOURCE_DIR}/cases/poisson/testHDG/cubicT.json --hdg.poisson.bdf.order 3

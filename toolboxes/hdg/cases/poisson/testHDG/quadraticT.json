@@ -7,6 +7,7 @@
         "omega":
         {
             "name":"simulation_domain",
+            "poisson_d":"1",
             "poisson_c":"1",
             "poisson_f":"2*t:x:y:t"
         }
@@ -21,12 +22,6 @@
                 {
                     "markers":"omega",
 					"expr":"t*t:x:t"
-                },
-                "myic2":
-                {
-                    "markers":"omega",
-					"expr":"0.0001:x:t",
-                    "time":-0.01
                 }
             }
         }
