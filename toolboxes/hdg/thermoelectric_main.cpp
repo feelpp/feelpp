@@ -29,6 +29,7 @@ runApplicationThermoElectric()
 
     auto te = std::make_shared<thermoelectric_type>();
     te->init();
+    te->printAndSaveInfo();
     tic();
     te->solve();
     toc("solve picard");
