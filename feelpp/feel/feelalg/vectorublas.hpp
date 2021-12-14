@@ -261,6 +261,7 @@ class VectorUblasBase: public Vector<T>
     public:
         // Constructors/Destructor
         VectorUblasBase( ) = default;
+        VectorUblasBase( VectorUblasBase<T> const & v ): super_type(v) { }
         VectorUblasBase( size_type s );
         VectorUblasBase( const datamap_ptrtype & dm );
         VectorUblasBase( size_type s, size_type n_local );
@@ -456,13 +457,15 @@ class VectorUblasContiguousGhosts:
     public:
         // Constructors/Destructor
         VectorUblasContiguousGhosts( ) = default;
+        VectorUblasContiguousGhosts( VectorUblasContiguousGhosts<T> const& v ): super_type(v), M_vec( v.M_vec ) { }
+
         VectorUblasContiguousGhosts( size_type s );
         VectorUblasContiguousGhosts( const datamap_ptrtype & dm );
         VectorUblasContiguousGhosts( size_type s, size_type n_local );
 
         ~VectorUblasContiguousGhosts() override;
         
-        virtual super_type::clone_ptrtype clone() const override = 0;
+        virtual super_type::clone_ptrtype clone() const override;
 
         // Storage API
         virtual void resize( size_type n ) override;

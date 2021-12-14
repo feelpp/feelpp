@@ -452,6 +452,13 @@ void VectorUblasBase<T,Storage>::localizeToOneProcessor( std::vector<T> & v_loca
 /*-----------------------------------------------------------------------------*/
 
 template< typename T >
+typename VectorUblasContiguousGhosts<T>::super_type::clone_ptrtype 
+VectorUblasContiguousGhosts<T>::clone() const
+{
+    return super_type::clone_ptrtype( new VectorUblasContiguousGhosts<T>( *this ) );
+}
+
+template< typename T >
 void VectorUblasContiguousGhosts<T>::resize( size_type n )
 {
     M_vec.resize( n );
