@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.21)
 project(pyfeelpp-all)
 
 if ( (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR) OR (FEELPP_COMPONENT STREQUAL "pyfeelpp-all" ))
