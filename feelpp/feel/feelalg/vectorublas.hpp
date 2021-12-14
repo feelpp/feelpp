@@ -436,12 +436,12 @@ class DottableVectorUblas: public virtual VectorUblasBase<T>
 
 template< typename T >
 class VectorUblasContiguousGhosts: 
-    public SettableVectorUblasBase<VectorUblasContiguousGhosts, T>,
-    public AddableVectorUblasBase<VectorUblasContiguousGhosts, T>,
-    public MaddableVectorUblasBase<VectorUblasContiguousGhosts, T>,
-    public SubtractableVectorUblasBase<VectorUblasContiguousGhosts, T>,
-    public MsubtractableVectorUblasBase<VectorUblasContiguousGhosts, T>,
-    public DottableVectorUblasBase<VectorUblasContiguousGhosts, T>
+    public SettableVectorUblas<VectorUblasContiguousGhosts, T>,
+    public AddableVectorUblas<VectorUblasContiguousGhosts, T>,
+    public MaddableVectorUblas<VectorUblasContiguousGhosts, T>,
+    public SubtractableVectorUblas<VectorUblasContiguousGhosts, T>,
+    public MsubtractableVectorUblas<VectorUblasContiguousGhosts, T>,
+    public DottableVectorUblas<VectorUblasContiguousGhosts, T>
 {
     public:
         // Typedefs
@@ -465,39 +465,35 @@ class VectorUblasContiguousGhosts:
         virtual super_type::clone_ptrtype clone() const override = 0;
 
         // Storage API
-        virtual void resize( size_type n ) = 0;
-        virtual void clear() override = 0;
+        virtual void resize( size_type n ) override;
+        virtual void clear() override;
+
+        ublas::vector<value_type> const& vec() const { return M_vec; }
 
         // Operators API
-        Vector<value_type>& operator=( const Vector<value_type> & V ) override;
-        Vector<value_type>& operator=( const this_type & V );
-
-        virtual value_type operator()( size_type i ) const override = 0;
-        virtual value_type& operator()( size_type i ) override = 0;
+        virtual value_type operator()( size_type i ) const override;
+        virtual value_type& operator()( size_type i ) override;
 
         // Setters API
-        virtual void setConstant( value_type v ) = 0;
-        virtual void setZero() = 0;
+        virtual void setConstant( value_type v ) override;
+        virtual void setZero() override;
 
-        virtual void scale( const value_type factor ) override = 0;
+        virtual void scale( const value_type factor ) override;
 
         // Utilities
-        virtual real_type min( bool parallel ) const = 0;
-        virtual real_type max( bool parallel ) const = 0;
+        virtual real_type min( bool parallel ) const override;
+        virtual real_type max( bool parallel ) const override;
 
-        virtual real_type l1Norm() const override = 0;
-        virtual real_type l2Norm() const override = 0;
-        virtual real_type linftyNorm() const override = 0;
+        virtual real_type l1Norm() const override;
+        virtual real_type l2Norm() const override;
+        virtual real_type linftyNorm() const override;
 
-        virtual value_type sum() const override = 0;
+        virtual value_type sum() const override;
 
     protected:
         void setVector( const VectorUblasContiguousGhosts<T> & v ) override;
         void setVector( const VectorUblasNonContiguousGhosts<T> & v ) override;
 
-        virtual value_type dot( const VectorUblasContiguousGhosts<T> & v ) override;
-        virtual value_type dot( const VectorUblasNonContiguousGhosts<T> & v ) override;
-        
         void addVector( const VectorUblasContiguousGhosts<T> & v ) override;
         void addVector( const VectorUblasNonContiguousGhosts<T> & v ) override;
 
