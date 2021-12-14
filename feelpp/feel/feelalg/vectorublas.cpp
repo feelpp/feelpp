@@ -449,6 +449,355 @@ void VectorUblasBase<T,Storage>::localizeToOneProcessor( std::vector<T> & v_loca
     std::copy( ublasV.begin(), ublasV.end(), v_local.begin() );
 }
 
+/*-----------------------------------------------------------------------------*/
+
+template< typename T >
+void VectorUblasContiguousGhosts<T>::resize( size_type n )
+{
+    M_vec.resize( n );
+}
+
+template< typename T >
+void VectorUblasContiguousGhosts<T>::clear( size_type n )
+{
+    M_vec.resize( 0 );
+}
+        
+template< typename T >
+typename VectorUblasContiguousGhosts<T>::value_type VectorUblasContiguousGhosts<T>::operator()( size_type i ) const
+{
+    return M_vec.operator()( i-this->firstLocalIndex() );
+}
+
+template< typename T >
+typename VectorUblasContiguousGhosts<T>::value_type& VectorUblasContiguousGhosts<T>::operator()( size_type i )
+{
+    return M_vec.operator()( i-this->firstLocalIndex() );
+}
+        
+template< typename T > 
+void VectorUblasContiguousGhosts<T>::setConstant( value_type v )
+{
+    M_vec = ublas::scalar_vector<T>( M_vec.size(), v );
+}
+  
+
+template< typename T > 
+void VectorUblasContiguousGhosts<T>::setZero()
+{
+    M_vec = ublas::zero_vector<T>( M_vec.size() );
+}
+  
+
+template< typename T > 
+void VectorUblasContiguousGhosts<T>::scale( const value_type factor )
+{
+    M_vec.operator*=( factor );
+}
+  
+template< typename T > 
+typename VectorUblasContiguousGhosts<T>::real_type VectorUblasContiguousGhosts<T>::min( bool parallel ) const
+{
+    checkInvariant();
+
+    size_type nActiveDof = this->map().nLocalDofWithoutGhost();
+    size_type nGhostDof = this->map().nLocalGhosts();
+    real_type local_min = ( nActiveDof > 0 ) ?
+        *std::min_element( M_vec.begin(), ( nGhostDof == 0 ) ? M_vec.end() : M_vec.begin()+nActiveDof ) :
+        std::numeric_limits<real_type>::max();
+    real_type global_min = local_min;
+
+#ifdef FEELPP_HAS_MPI
+    if ( parallel && this->comm().size() > 1 )
+    {
+        MPI_Allreduce( &local_min, &global_min, 1,
+                MPI_DOUBLE, MPI_MIN, this->comm() );
+    }
+#endif
+    return global_min;
+}
+
+template< typename T > 
+typename VectorUblasContiguousGhosts<T>::real_type VectorUblasContiguousGhosts<T>::max( bool parallel ) const
+{
+    checkInvariant();
+
+    size_type nActiveDof = this->map().nLocalDofWithoutGhost();
+    size_type nGhostDof = this->map().nLocalGhosts();
+    real_type local_max = ( nActiveDof > 0 ) ?
+        *std::max_element( M_vec.begin(), ( nGhostDof == 0 ) ? M_vec.end() : M_vec.begin()+nActiveDof ) :
+        std::numeric_limits<real_type>::min();
+    real_type global_max = local_max;
+
+#ifdef FEELPP_HAS_MPI
+    if ( parallel && this->comm().size() > 1 )
+    {
+        MPI_Allreduce( &local_max, &global_max, 1,
+                MPI_DOUBLE, MPI_MAX, this->comm() );
+    }
+#endif
+    return global_max;
+}
+        
+template< typename T >
+typename VectorUblasContiguousGhosts<T>::real_type VectorUblasContiguousGhosts<T>::l1Norm() const
+{
+    checkInvariant();
+
+    double local_l1 = 0;
+    if ( this->comm().size() == 1 )
+        local_l1 = ublas::norm_1( M_vec );
+    else
+        local_l1 = ublas::norm_1( ublas::project( M_vec, ublas::range( 0, this->map().nLocalDofWithoutGhost() ) ) );
+
+    double global_l1 = local_l1;
+
+#ifdef FEELPP_HAS_MPI
+    if ( this->comm().size() > 1 )
+    {
+        mpi::all_reduce( this->comm(), local_l1, global_l1, std::plus<real_type>() );
+    }
+#endif
+    return global_l1;
+}
+
+template< typename T >
+typename VectorUblasContiguousGhosts<T>::real_type VectorUblasContiguousGhosts<T>::l2Norm() const
+{
+    checkInvariant();
+
+    real_type local_norm2 = 0;
+    if ( this->comm().size() == 1 )
+    {
+        local_norm2 = ublas::inner_prod( M_vec, M_vec );
+    }
+    else
+    {
+        auto vecActiveDof = ublas::project( M_vec, ublas::range( 0, this->map().nLocalDofWithoutGhost() ) );
+        local_norm2 = ublas::inner_prod( vecActiveDof, vecActiveDof );
+    }
+    real_type global_norm2 = local_norm2;
+
+#ifdef FEELPP_HAS_MPI
+    if ( this->comm().size() > 1 )
+        mpi::all_reduce( this->comm(), local_norm2, global_norm2, std::plus<real_type>() );
+#endif
+
+    return math::sqrt( global_norm2 );
+}
+
+template< typename T >
+typename VectorUblasContiguousGhosts<T>::real_type VectorUblasContiguousGhosts<T>::linftyNorm() const
+{
+    checkInvariant();
+
+    real_type local_norminf = 0;
+    if ( this->comm().size() == 1 )
+        local_norminf = ublas::norm_inf( M_vec );
+    else
+        local_norminf = ublas::norm_inf( ublas::project( M_vec, ublas::range( 0, this->map().nLocalDofWithoutGhost() ) ) );
+
+    real_type global_norminf = local_norminf;
+
+#ifdef FEELPP_HAS_MPI
+    if ( this->comm().size() > 1 )
+    {
+        mpi::all_reduce( this->comm(), local_norminf, global_norminf, mpi::maximum<real_type>() );
+    }
+#endif
+    return global_norminf;
+}
+
+template< typename T >
+typename VectorUblasContiguousGhosts<T>::value_type VectorUblasContiguousGhosts<T>::sum() const
+{
+    checkInvariant();
+
+    value_type local_sum = 0;
+    if ( this->comm().size() == 1 )
+    {
+        local_sum = ublas::sum( M_vec );
+    }
+    else
+    {
+        local_sum = ublas::sum( ublas::project( M_vec, ublas::range( 0, this->map().nLocalDofWithoutGhost() ) ) );
+    }
+    value_type global_sum = local_sum;
+#ifdef FEELPP_HAS_MPI
+    if ( this->comm().size() > 1 )
+        mpi::all_reduce( this->comm(), local_sum, global_sum, std::plus<value_type>() );
+#endif
+
+    return global_sum;
+}
+
+template< typename T >
+void VectorUblasContiguousGhosts<T>::setVector( const VectorUblasContiguousGhosts<T> & v )
+{
+    M_vec = v.vec();
+}
+
+template< typename T >
+void VectorUblasContiguousGhosts<T>::setVector( const VectorUblasNonContiguousGhosts<T> & v )
+{
+    if ( this->comm().localSize() == 1 )
+    {
+        M_vec = v.vec();
+    }
+    else
+    {
+        size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
+        size_type nLocalGhosts = this->map().nLocalGhosts();
+        if ( nLocalDofWithoutGhost > 0 )
+            ublas::project( M_vec, ublas::range( 0, nLocalDofWithoutGhost ) ) = v.vec();
+        if ( nLocalGhosts > 0 )
+            ublas::project( M_vec, ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost+nLocalGhosts ) ) = v.vecNonContiguousGhosts();
+    }
+}
+
+template< typename T >
+void VectorUblasContiguousGhosts<T>::addVector( const VectorUblasContiguousGhosts<T> & v )
+{
+    M_vec += v.vec();
+}
+
+template< typename T >
+void VectorUblasContiguousGhosts<T>::addVector( const VectorUblasNonContiguousGhosts<T> & v )
+{
+    if ( this->comm().localSize() == 1 )
+    {
+        M_vec += v.vec();
+    }
+    else
+    {
+        size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
+        size_type nLocalGhosts = this->map().nLocalGhosts();
+        if ( nLocalDofWithoutGhost > 0 )
+            ublas::project( M_vec, ublas::range( 0, nLocalDofWithoutGhost ) ) += v.vec();
+        if ( nLocalGhosts > 0 )
+            ublas::project( M_vec, ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost+nLocalGhosts ) ) += v.vecNonContiguousGhosts();
+    }
+}
+
+template< typename T >
+void VectorUblasContiguousGhosts<T>::maddVector( const value_type & a, const VectorUblasContiguousGhosts<T> & v )
+{
+    M_vec += a * v.vec();
+}
+
+template< typename T >
+void VectorUblasContiguousGhosts<T>::maddVector( const value_type & a, const VectorUblasNonContiguousGhosts<T> & v )
+{
+    if ( this->comm().localSize() == 1 )
+    {
+        M_vec += a * v.vec();
+    }
+    else
+    {
+        size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
+        size_type nLocalGhosts = this->map().nLocalGhosts();
+        if ( nLocalDofWithoutGhost > 0 )
+            ublas::project( M_vec, ublas::range( 0, nLocalDofWithoutGhost ) ) += a * v.vec();
+        if ( nLocalGhosts > 0 )
+            ublas::project( M_vec, ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost+nLocalGhosts ) ) += a * v.vecNonContiguousGhosts();
+    }
+}
+
+template< typename T >
+void VectorUblasContiguousGhosts<T>::subVector( const VectorUblasContiguousGhosts<T> & v )
+{
+    M_vec -= v.vec();
+}
+
+template< typename T >
+void VectorUblasContiguousGhosts<T>::subVector( const VectorUblasNonContiguousGhosts<T> & v )
+{
+    if ( this->comm().localSize() == 1 )
+    {
+        M_vec -= v.vec();
+    }
+    else
+    {
+        size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
+        size_type nLocalGhosts = this->map().nLocalGhosts();
+        if ( nLocalDofWithoutGhost > 0 )
+            ublas::project( M_vec, ublas::range( 0, nLocalDofWithoutGhost ) ) -= v.vec();
+        if ( nLocalGhosts > 0 )
+            ublas::project( M_vec, ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost+nLocalGhosts ) ) -= v.vecNonContiguousGhosts();
+    }
+}
+
+template< typename T >
+void VectorUblasContiguousGhosts<T>::msubVector( const value_type & a, const VectorUblasContiguousGhosts<T> & v )
+{
+    M_vec -= a * v.vec();
+}
+
+template< typename T >
+void VectorUblasContiguousGhosts<T>::msubVector( const value_type & a, const VectorUblasNonContiguousGhosts<T> & v )
+{
+    if ( this->comm().localSize() == 1 )
+    {
+        M_vec -= a * v.vec();
+    }
+    else
+    {
+        size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
+        size_type nLocalGhosts = this->map().nLocalGhosts();
+        if ( nLocalDofWithoutGhost > 0 )
+            ublas::project( M_vec, ublas::range( 0, nLocalDofWithoutGhost ) ) -= a * v.vec();
+        if ( nLocalGhosts > 0 )
+            ublas::project( M_vec, ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost+nLocalGhosts ) ) -= a * v.vecNonContiguousGhosts();
+    }
+}
+
+template< typename T >
+value_type VectorUblasContiguousGhosts<T>::dotVector( const VectorUblasContiguousGhosts<T> & v )
+{
+    value_type localResult = 0;
+    if ( this->comm().localSize() == 1 )
+    {
+        localResult = ublas::inner_prod( M_vec, v.vec() );
+    }
+    else
+    {
+        size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
+        size_type nLocalDofWithoutGhostOther = v.map().nLocalDofWithoutGhost();
+        localResult = ublas::inner_prod( ublas::project( M_vec, ublas::range( 0, nLocalDofWithoutGhost ) ),
+                                         ublas::project( v.vec(), ublas::range( 0, nLocalDofWithoutGhostOther ) ) );
+    }
+
+    value_type globalResult = localResult;
+#ifdef FEELPP_HAS_MPI
+    if ( this->comm().size() > 1 )
+        mpi::all_reduce( this->comm(), localResult, globalResult, std::plus<value_type>() );
+#endif
+    return globalResult;
+}
+
+template< typename T >
+value_type VectorUblasContiguousGhosts<T>::dotVector( const VectorUblasNonContiguousGhosts<T> & v )
+{
+    value_type localResult = 0;
+    if ( this->comm().localSize() == 1 )
+    {
+        localResult = ublas::inner_prod( M_vec, v.vec() );
+    }
+    else
+    {
+        size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
+        localResult = ublas::inner_prod( ublas::project( M_vec, ublas::range( 0, nLocalDofWithoutGhost ) ),
+                                         v.vec() );
+    }
+
+    value_type globalResult = localResult;
+#ifdef FEELPP_HAS_MPI
+    if ( this->comm().size() > 1 )
+        mpi::all_reduce( this->comm(), localResult, globalResult, std::plus<value_type>() );
+#endif
+    return globalResult;
+}   
+
 
 } // namespace detail
 
