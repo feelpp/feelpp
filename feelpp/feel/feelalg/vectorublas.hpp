@@ -625,6 +625,92 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
 
 };
 
+/****************************************************************************/
+template< typename T >
+class VectorUblasNonContiguousGhostsBase: 
+    public SettableVectorUblas<VectorUblasNonContiguousGhostsBase, T>,
+    public AddableVectorUblas<VectorUblasNonContiguousGhostsBase, T>,
+    public MaddableVectorUblas<VectorUblasNonContiguousGhostsBase, T>,
+    public SubtractableVectorUblas<VectorUblasNonContiguousGhostsBase, T>,
+    public MsubtractableVectorUblas<VectorUblasNonContiguousGhostsBase, T>,
+    public DottableVectorUblas<VectorUblasNonContiguousGhostsBase, T>
+{
+    public:
+        // Typedefs
+        typedef VectorUblasBase<T> super_type;
+
+        typedef T value_type;
+        typedef typename type_traits<value_type>::real_type real_type;
+        typedef typename super_type::datamap_type datamap_type;
+        typedef typename super_type::datamap_ptrtype datamap_ptrtype;
+        using size_type = typename datamap_type::size_type;
+
+        using super_type::vector_ptr_variant_type;
+        using super_type::vector_cstptr_variant_type;
+
+    public:
+        // Constructors/Destructor
+        VectorUblasNonContiguousGhostsBase( ) = default;
+        VectorUblasNonContiguousGhostsBase( VectorUblasNonContiguousGhostsBase<T> const& v ): super_type(v), M_vec( v.M_vec ) { }
+
+        VectorUblasNonContiguousGhostsBase( size_type s );
+        VectorUblasNonContiguousGhostsBase( const datamap_ptrtype & dm );
+        VectorUblasNonContiguousGhostsBase( size_type s, size_type n_local );
+
+        ~VectorUblasNonContiguousGhostsBase() override;
+        
+        virtual super_type::clone_ptrtype clone() const override = 0;
+
+        // Storage API
+        virtual void resize( size_type n ) override = 0;
+        virtual void clear() override = 0;
+
+        virtual vector_cstptr_variant_type vec() const = 0;
+        virtual vector_cstptr_variant_type vecNonContiguousGhosts() const = 0;
+
+        // Operators API
+        virtual value_type operator()( size_type i ) const override = 0;
+        virtual value_type& operator()( size_type i ) override = 0;
+
+        // Setters API
+        virtual void setConstant( value_type v ) override = 0;
+        virtual void setZero() override = 0;
+
+        virtual void scale( const value_type factor ) override = 0;
+
+        // Utilities
+        virtual real_type min( bool parallel ) const override = 0;
+        virtual real_type max( bool parallel ) const override = 0;
+
+        virtual real_type l1Norm() const override = 0;
+        virtual real_type l2Norm() const override = 0;
+        virtual real_type linftyNorm() const override = 0;
+
+        virtual value_type sum() const override = 0;
+
+    protected:
+        virtual vector_ptr_variant_type vec() = 0;
+        virtual vector_ptr_variant_type vecNonContiguousGhosts() = 0;
+
+        void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+        void addVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void addVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+        void maddVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void maddVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+        
+        void subVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void subVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+        void msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+        value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+};
 
 }
 
