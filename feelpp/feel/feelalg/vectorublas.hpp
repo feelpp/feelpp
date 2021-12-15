@@ -25,6 +25,8 @@
 #ifndef _FEELPP_VECTORUBLAS_HPP
 #define _FEELPP_VECTORUBLAS_HPP 1
 
+#include <variant>
+
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <feel/feelalg/vector.hpp>
@@ -206,6 +208,23 @@ class VectorUblasBase: public Vector<T>
         typedef typename super_type::datamap_ptrtype datamap_ptrtype;
         using size_type = typename datamap_type::size_type;
 
+        // Actual storage variants
+        typedef ublas::vector<value_type> vector_storage_type;
+        typedef ublas::vector_range<ublas::vector<value_type>> vector_range_storage_type;
+        typedef ublas::vector_slice<ublas::vector<value_type>> vector_slice_storage_type;
+        typedef ublas::vector<value_type, Feel::detail::shallow_array_adaptor<value_type>> vector_map_storage_type;
+        typedef std::variant<
+            vector_storage_type *,
+            vector_range_storage_type *,
+            vector_slice_storage_type *,
+            vector_map_storage_type * > vector_ptr_variant_type;
+        typedef std::variant<
+            const vector_storage_type *,
+            const vector_range_storage_type *,
+            const vector_slice_storage_type *,
+            const vector_map_storage_type * > vector_cstptr_variant_type;
+
+        // Iterator class
         class iterator
         {
             public:
@@ -454,6 +473,9 @@ class VectorUblasContiguousGhosts:
         typedef typename super_type::datamap_ptrtype datamap_ptrtype;
         using size_type = typename datamap_type::size_type;
 
+        using super_type::vector_ptr_variant_type;
+        using super_type::vector_cstptr_variant_type;
+
     public:
         // Constructors/Destructor
         VectorUblasContiguousGhosts( ) = default;
@@ -471,7 +493,7 @@ class VectorUblasContiguousGhosts:
         virtual void resize( size_type n ) override;
         virtual void clear() override;
 
-        ublas::vector<value_type> const& vec() const { return M_vec; }
+        vector_cstptr_variant_type vec() const { return &M_vec; }
 
         // Operators API
         virtual value_type operator()( size_type i ) const override;
