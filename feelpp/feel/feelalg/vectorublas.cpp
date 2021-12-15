@@ -452,58 +452,58 @@ void VectorUblasBase<T,Storage>::localizeToOneProcessor( std::vector<T> & v_loca
 /*-----------------------------------------------------------------------------*/
 
 template< typename T >
-typename VectorUblasContiguousGhosts<T>::super_type::clone_ptrtype 
-VectorUblasContiguousGhosts<T>::clone() const
+typename VectorUblasContiguousGhostsBase<T>::super_type::clone_ptrtype 
+VectorUblasContiguousGhostsBase<T>::clone() const
 {
-    return super_type::clone_ptrtype( new VectorUblasContiguousGhosts<T>( *this ) );
+    return super_type::clone_ptrtype( new VectorUblasContiguousGhostsBase<T>( *this ) );
 }
 
 template< typename T >
-void VectorUblasContiguousGhosts<T>::resize( size_type n )
+void VectorUblasContiguousGhostsBase<T>::resize( size_type n )
 {
     M_vec.resize( n );
 }
 
 template< typename T >
-void VectorUblasContiguousGhosts<T>::clear( size_type n )
+void VectorUblasContiguousGhostsBase<T>::clear( size_type n )
 {
     M_vec.resize( 0 );
 }
         
 template< typename T >
-typename VectorUblasContiguousGhosts<T>::value_type VectorUblasContiguousGhosts<T>::operator()( size_type i ) const
+typename VectorUblasContiguousGhostsBase<T>::value_type VectorUblasContiguousGhostsBase<T>::operator()( size_type i ) const
 {
     return M_vec.operator()( i-this->firstLocalIndex() );
 }
 
 template< typename T >
-typename VectorUblasContiguousGhosts<T>::value_type& VectorUblasContiguousGhosts<T>::operator()( size_type i )
+typename VectorUblasContiguousGhostsBase<T>::value_type& VectorUblasContiguousGhostsBase<T>::operator()( size_type i )
 {
     return M_vec.operator()( i-this->firstLocalIndex() );
 }
         
 template< typename T > 
-void VectorUblasContiguousGhosts<T>::setConstant( value_type v )
+void VectorUblasContiguousGhostsBase<T>::setConstant( value_type v )
 {
     M_vec = ublas::scalar_vector<T>( M_vec.size(), v );
 }
   
 
 template< typename T > 
-void VectorUblasContiguousGhosts<T>::setZero()
+void VectorUblasContiguousGhostsBase<T>::setZero()
 {
     M_vec = ublas::zero_vector<T>( M_vec.size() );
 }
   
 
 template< typename T > 
-void VectorUblasContiguousGhosts<T>::scale( const value_type factor )
+void VectorUblasContiguousGhostsBase<T>::scale( const value_type factor )
 {
     M_vec.operator*=( factor );
 }
   
 template< typename T > 
-typename VectorUblasContiguousGhosts<T>::real_type VectorUblasContiguousGhosts<T>::min( bool parallel ) const
+typename VectorUblasContiguousGhostsBase<T>::real_type VectorUblasContiguousGhostsBase<T>::min( bool parallel ) const
 {
     checkInvariant();
 
@@ -525,7 +525,7 @@ typename VectorUblasContiguousGhosts<T>::real_type VectorUblasContiguousGhosts<T
 }
 
 template< typename T > 
-typename VectorUblasContiguousGhosts<T>::real_type VectorUblasContiguousGhosts<T>::max( bool parallel ) const
+typename VectorUblasContiguousGhostsBase<T>::real_type VectorUblasContiguousGhostsBase<T>::max( bool parallel ) const
 {
     checkInvariant();
 
@@ -547,7 +547,7 @@ typename VectorUblasContiguousGhosts<T>::real_type VectorUblasContiguousGhosts<T
 }
         
 template< typename T >
-typename VectorUblasContiguousGhosts<T>::real_type VectorUblasContiguousGhosts<T>::l1Norm() const
+typename VectorUblasContiguousGhostsBase<T>::real_type VectorUblasContiguousGhostsBase<T>::l1Norm() const
 {
     checkInvariant();
 
@@ -569,7 +569,7 @@ typename VectorUblasContiguousGhosts<T>::real_type VectorUblasContiguousGhosts<T
 }
 
 template< typename T >
-typename VectorUblasContiguousGhosts<T>::real_type VectorUblasContiguousGhosts<T>::l2Norm() const
+typename VectorUblasContiguousGhostsBase<T>::real_type VectorUblasContiguousGhostsBase<T>::l2Norm() const
 {
     checkInvariant();
 
@@ -594,7 +594,7 @@ typename VectorUblasContiguousGhosts<T>::real_type VectorUblasContiguousGhosts<T
 }
 
 template< typename T >
-typename VectorUblasContiguousGhosts<T>::real_type VectorUblasContiguousGhosts<T>::linftyNorm() const
+typename VectorUblasContiguousGhostsBase<T>::real_type VectorUblasContiguousGhostsBase<T>::linftyNorm() const
 {
     checkInvariant();
 
@@ -616,7 +616,7 @@ typename VectorUblasContiguousGhosts<T>::real_type VectorUblasContiguousGhosts<T
 }
 
 template< typename T >
-typename VectorUblasContiguousGhosts<T>::value_type VectorUblasContiguousGhosts<T>::sum() const
+typename VectorUblasContiguousGhostsBase<T>::value_type VectorUblasContiguousGhostsBase<T>::sum() const
 {
     checkInvariant();
 
@@ -639,13 +639,13 @@ typename VectorUblasContiguousGhosts<T>::value_type VectorUblasContiguousGhosts<
 }
 
 template< typename T >
-void VectorUblasContiguousGhosts<T>::setVector( const VectorUblasContiguousGhosts<T> & v )
+void VectorUblasContiguousGhostsBase<T>::setVector( const VectorUblasContiguousGhostsBase<T> & v )
 {
     M_vec = v.vec();
 }
 
 template< typename T >
-void VectorUblasContiguousGhosts<T>::setVector( const VectorUblasNonContiguousGhosts<T> & v )
+void VectorUblasContiguousGhostsBase<T>::setVector( const VectorUblasNonContiguousGhostsBase<T> & v )
 {
     if ( this->comm().localSize() == 1 )
     {
@@ -663,13 +663,13 @@ void VectorUblasContiguousGhosts<T>::setVector( const VectorUblasNonContiguousGh
 }
 
 template< typename T >
-void VectorUblasContiguousGhosts<T>::addVector( const VectorUblasContiguousGhosts<T> & v )
+void VectorUblasContiguousGhostsBase<T>::addVector( const VectorUblasContiguousGhostsBase<T> & v )
 {
     M_vec += v.vec();
 }
 
 template< typename T >
-void VectorUblasContiguousGhosts<T>::addVector( const VectorUblasNonContiguousGhosts<T> & v )
+void VectorUblasContiguousGhostsBase<T>::addVector( const VectorUblasNonContiguousGhostsBase<T> & v )
 {
     if ( this->comm().localSize() == 1 )
     {
@@ -687,13 +687,13 @@ void VectorUblasContiguousGhosts<T>::addVector( const VectorUblasNonContiguousGh
 }
 
 template< typename T >
-void VectorUblasContiguousGhosts<T>::maddVector( const value_type & a, const VectorUblasContiguousGhosts<T> & v )
+void VectorUblasContiguousGhostsBase<T>::maddVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v )
 {
     M_vec += a * v.vec();
 }
 
 template< typename T >
-void VectorUblasContiguousGhosts<T>::maddVector( const value_type & a, const VectorUblasNonContiguousGhosts<T> & v )
+void VectorUblasContiguousGhostsBase<T>::maddVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v )
 {
     if ( this->comm().localSize() == 1 )
     {
@@ -711,13 +711,13 @@ void VectorUblasContiguousGhosts<T>::maddVector( const value_type & a, const Vec
 }
 
 template< typename T >
-void VectorUblasContiguousGhosts<T>::subVector( const VectorUblasContiguousGhosts<T> & v )
+void VectorUblasContiguousGhostsBase<T>::subVector( const VectorUblasContiguousGhostsBase<T> & v )
 {
     M_vec -= v.vec();
 }
 
 template< typename T >
-void VectorUblasContiguousGhosts<T>::subVector( const VectorUblasNonContiguousGhosts<T> & v )
+void VectorUblasContiguousGhostsBase<T>::subVector( const VectorUblasNonContiguousGhostsBase<T> & v )
 {
     if ( this->comm().localSize() == 1 )
     {
@@ -735,13 +735,13 @@ void VectorUblasContiguousGhosts<T>::subVector( const VectorUblasNonContiguousGh
 }
 
 template< typename T >
-void VectorUblasContiguousGhosts<T>::msubVector( const value_type & a, const VectorUblasContiguousGhosts<T> & v )
+void VectorUblasContiguousGhostsBase<T>::msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v )
 {
     M_vec -= a * v.vec();
 }
 
 template< typename T >
-void VectorUblasContiguousGhosts<T>::msubVector( const value_type & a, const VectorUblasNonContiguousGhosts<T> & v )
+void VectorUblasContiguousGhostsBase<T>::msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v )
 {
     if ( this->comm().localSize() == 1 )
     {
@@ -759,7 +759,7 @@ void VectorUblasContiguousGhosts<T>::msubVector( const value_type & a, const Vec
 }
 
 template< typename T >
-value_type VectorUblasContiguousGhosts<T>::dotVector( const VectorUblasContiguousGhosts<T> & v )
+value_type VectorUblasContiguousGhostsBase<T>::dotVector( const VectorUblasContiguousGhostsBase<T> & v )
 {
     value_type localResult = 0;
     if ( this->comm().localSize() == 1 )
@@ -783,7 +783,7 @@ value_type VectorUblasContiguousGhosts<T>::dotVector( const VectorUblasContiguou
 }
 
 template< typename T >
-value_type VectorUblasContiguousGhosts<T>::dotVector( const VectorUblasNonContiguousGhosts<T> & v )
+value_type VectorUblasContiguousGhostsBase<T>::dotVector( const VectorUblasNonContiguousGhostsBase<T> & v )
 {
     value_type localResult = 0;
     if ( this->comm().localSize() == 1 )
