@@ -516,6 +516,8 @@ class VectorUblasContiguousGhostsBase:
         virtual value_type sum() const override;
 
     protected:
+        virtual vector_ptr_variant_type vec() = 0;
+
         void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
         void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
@@ -566,7 +568,10 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         using super_type::vector_cstptr_variant_type;
 
     public:
-        virtual vector_cstptr_variant_type vec() const { return M_vec; }
+        virtual vector_cstptr_variant_type vec() const { return &M_vec; }
+
+    protected:
+        virtual vector_ptr_variant_type vec() { return &M_vec; }
 
     protected:
         storage_type M_vec;
