@@ -493,7 +493,7 @@ class VectorUblasContiguousGhostsBase:
         virtual void resize( size_type n ) override;
         virtual void clear() override;
 
-        vector_cstptr_variant_type vec() const { return &M_vec; }
+        virtual vector_cstptr_variant_type vec() const = 0;
 
         // Operators API
         virtual value_type operator()( size_type i ) const override;
@@ -534,8 +534,42 @@ class VectorUblasContiguousGhostsBase:
         value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
         value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
+};
+
+template< typename T, typename Storage = ublas::vector<value_type> >
+class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
+{
+    public:
+        // Typedefs
+        typedef VectorUblasContiguousGhostsBase<T> super_type;
+
+        typedef T value_type;
+        typedef typename type_traits<value_type>::real_type real_type;
+        typedef typename super_type::datamap_type datamap_type;
+        typedef typename super_type::datamap_ptrtype datamap_ptrtype;
+        using size_type = typename datamap_type::size_type;
+
+        typedef Storage storage_type;
+        
+        using super_type::vector_storage_type;
+        using super_type::vector_range_storage_type;
+        using super_type::vector_slice_storage_type;
+        using super_type::vector_map_storage_type;
+        static_assert( 
+                std::is_same_v< storage_type, vector_storage_type > ||
+                std::is_same_v< storage_type, vector_range_storage_type > ||
+                std::is_same_v< storage_type, vector_slice_storage_type > || 
+                std::is_same_v< storage_type, vector_map_storage_type >,
+                "unsupported storage type" );
+
+        using super_type::vector_ptr_variant_type;
+        using super_type::vector_cstptr_variant_type;
+
+    public:
+        virtual vector_cstptr_variant_type vec() const { return M_vec; }
+
     protected:
-        ublas::vector<value_type> M_vec;
+        storage_type M_vec;
 
 };
 
