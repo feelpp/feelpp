@@ -577,7 +577,7 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         virtual void resize( size_type n ) override;
         virtual void clear() override;
 
-        virtual vector_cstptr_variant_type vec() const { return &M_vec; }
+        virtual vector_cstptr_variant_type vec() const override { return &M_vec; }
 
         // Operators API
         virtual value_type operator()( size_type i ) const override;
@@ -600,7 +600,7 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         virtual value_type sum() const override;
 
     protected:
-        virtual vector_ptr_variant_type vec() { return &M_vec; }
+        virtual vector_ptr_variant_type vec() override { return &M_vec; }
         
         void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
         void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
@@ -709,6 +709,95 @@ class VectorUblasNonContiguousGhostsBase:
 
         value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
         value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+};
+
+template< typename T, typename Storage = ublas::vector<value_type> >
+class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<T>
+{
+    public:
+        // Typedefs
+        typedef VectorUblasContiguousGhostsBase<T> super_type;
+
+        typedef T value_type;
+        typedef typename type_traits<value_type>::real_type real_type;
+        typedef typename super_type::datamap_type datamap_type;
+        typedef typename super_type::datamap_ptrtype datamap_ptrtype;
+        using size_type = typename datamap_type::size_type;
+
+        typedef Storage storage_type;
+        
+        using super_type::vector_storage_type;
+        using super_type::vector_range_storage_type;
+        using super_type::vector_slice_storage_type;
+        using super_type::vector_map_storage_type;
+        static_assert( 
+                std::is_same_v< storage_type, vector_storage_type > ||
+                std::is_same_v< storage_type, vector_range_storage_type > ||
+                std::is_same_v< storage_type, vector_slice_storage_type > || 
+                std::is_same_v< storage_type, vector_map_storage_type >,
+                "unsupported storage type" );
+
+        using super_type::vector_ptr_variant_type;
+        using super_type::vector_cstptr_variant_type;
+
+    public:
+        VectorUblasNonContiguousGhosts( VectorUblasNonContiguousGhosts<T, Storage> const& v ): super_type(v), M_vec( v.M_vec ), M_vecNonContiguousGhosts( v.M_vecNonContiguousGhosts ) { }
+
+        virtual super_type::clone_ptrtype clone() const override;
+
+        // Storage API
+        virtual void resize( size_type n ) override;
+        virtual void clear() override;
+
+        virtual vector_cstptr_variant_type vec() const override { return &M_vec; }
+        virtual vector_cstptr_variant_type vecNonContiguousGhosts() const override { return &M_vecNonContiguousGhosts; }
+
+        // Operators API
+        virtual value_type operator()( size_type i ) const override;
+        virtual value_type& operator()( size_type i ) override;
+
+        // Setters API
+        virtual void setConstant( value_type v ) override;
+        virtual void setZero() override;
+
+        virtual void scale( const value_type factor ) override;
+
+        // Utilities
+        virtual real_type min( bool parallel ) const override;
+        virtual real_type max( bool parallel ) const override;
+
+        virtual real_type l1Norm() const override;
+        virtual real_type l2Norm() const override;
+        virtual real_type linftyNorm() const override;
+
+        virtual value_type sum() const override;
+
+    protected:
+        virtual vector_ptr_variant_type vec() override { return &M_vec; }
+        virtual vector_ptr_variant_type vecNonContiguousGhosts() override { return &M_vecNonContiguousGhosts; }
+        
+        void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
+        void addVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void addVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
+        void maddVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void maddVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+        
+        void subVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void subVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
+        void msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
+        value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
+        value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
+    protected:
+        storage_type M_vec;
+        storage_type M_vecNonContiguousGhosts;
 
 };
 
