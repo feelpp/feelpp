@@ -51,6 +51,8 @@ HEAT_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
     M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
 
+    M_stabilizationGLS_checkConductivityDependencyOnCoordinates = boption(_name="stabilization-gls.check-conductivity-dependency-on-coordinates",_prefix=this->prefix());
+
     // time stepping
     M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
     M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
