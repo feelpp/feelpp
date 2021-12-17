@@ -72,7 +72,8 @@ public:
                                  MaterialProperties const& matProps,
                                  WorldComm const& world, std::string const& dirLibExpr,
                                  uint16_type polyOrder,
-                                 SymbolsExprType const& se)
+                                 SymbolsExprType const& se,
+                                 bool checkViscosityDependencyOnCoordinates )
         :
         M_exprEvaluateVelocityOperators( exprEvalVelocityOperators ),
         M_physicFluid( physicFluid ),
@@ -84,7 +85,7 @@ public:
         M_exprEvaluateVelocityOperators->setEnableLaplacian( true );
         M_exprDynamicViscosity.emplace( expr_dynamic_viscosity_impl_type( M_exprEvaluateVelocityOperators,physicFluid,matProps,invalid_uint16_type_value,se ) );
 
-        bool dynamicViscosityDependsOnCoordinatesInSpace = M_exprDynamicViscosity->template hasSymbolDependencyOnCoordinatesInSpace<expr_evaluate_velocity_opertors_type::field_clean_type::nRealDim>();
+        bool dynamicViscosityDependsOnCoordinatesInSpace = M_exprDynamicViscosity->template hasSymbolDependencyOnCoordinatesInSpace<expr_evaluate_velocity_opertors_type::field_clean_type::nRealDim>() && checkViscosityDependencyOnCoordinates;
         if ( dynamicViscosityDependsOnCoordinatesInSpace )
         {
             M_exprEvaluateVelocityOperators->setEnableGrad( true );
@@ -599,13 +600,14 @@ fluidMecDivViscousStressTensor( VelocityFieldType const& u,
                                 MaterialProperties const& matProps,
                                 WorldComm const& world, std::string const& dirLibExpr,
                                 SymbolsExprType const& se = symbols_expression_empty_t{},
+                                bool checkViscosityDependencyOnCoordinates = true,
                                 uint16_type polyOrder = invalid_uint16_type_value
                                 )
 {
     using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperators<VelocityFieldType>;
     typedef FluidMecDivStressTensorImpl<expr_evaluate_velocity_opertors_type,std::nullptr_t,ModelPhysicFluidType,SymbolsExprType,ExprApplyType::EVAL > fmstresstensor_t;
     auto exprEvaluateVelocityOperators = std::make_shared<expr_evaluate_velocity_opertors_type>( u );
-    return Expr< fmstresstensor_t >(  fmstresstensor_t( exprEvaluateVelocityOperators,physicFluid,matProps,world,dirLibExpr,polyOrder,se ) );
+    return Expr< fmstresstensor_t >(  fmstresstensor_t( exprEvaluateVelocityOperators,physicFluid,matProps,world,dirLibExpr,polyOrder,se,checkViscosityDependencyOnCoordinates ) );
 }
 
 template<ExprApplyType ExprApplied,class VelocityFieldType, class ModelPhysicFluidType,typename SymbolsExprType = symbols_expression_empty_t>
@@ -616,13 +618,14 @@ fluidMecDivViscousStressTensorTestTrialApplied( VelocityFieldType const& u,
                                                 MaterialProperties const& matProps,
                                                 WorldComm const& world, std::string const& dirLibExpr,
                                                 SymbolsExprType const& se = symbols_expression_empty_t{},
+                                                bool checkViscosityDependencyOnCoordinates = true,
                                                 uint16_type polyOrder = invalid_uint16_type_value
                                                 )
 {
     using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperators<VelocityFieldType>;
     typedef FluidMecDivStressTensorImpl<expr_evaluate_velocity_opertors_type,typename unwrap_ptr_t<VelocityFieldType>::functionspace_type::reference_element_type,ModelPhysicFluidType,SymbolsExprType,ExprApplied > fmstresstensor_t;
     auto exprEvaluateVelocityOperators = std::make_shared<expr_evaluate_velocity_opertors_type>( u );
-    return Expr< fmstresstensor_t >(  fmstresstensor_t( exprEvaluateVelocityOperators,physicFluid,matProps,world,dirLibExpr,polyOrder,se ) );
+    return Expr< fmstresstensor_t >(  fmstresstensor_t( exprEvaluateVelocityOperators,physicFluid,matProps,world,dirLibExpr,polyOrder,se,checkViscosityDependencyOnCoordinates ) );
 }
 
 template<class VelocityFieldType, class ModelPhysicFluidType,typename SymbolsExprType = symbols_expression_empty_t >
@@ -633,10 +636,11 @@ fluidMecDivViscousStressTensorJacobian( VelocityFieldType const& u,
                                         MaterialProperties const& matProps,
                                         WorldComm const& world, std::string const& dirLibExpr,
                                         SymbolsExprType const& se = symbols_expression_empty_t{},
+                                        bool checkViscosityDependencyOnCoordinates = true,
                                         uint16_type polyOrder = invalid_uint16_type_value
                                         )
 {
-    return fluidMecDivViscousStressTensorTestTrialApplied<ExprApplyType::JACOBIAN>(u,physicFluid,matProps,world,dirLibExpr,se,polyOrder);
+    return fluidMecDivViscousStressTensorTestTrialApplied<ExprApplyType::JACOBIAN>(u,physicFluid,matProps,world,dirLibExpr,se,checkViscosityDependencyOnCoordinates,polyOrder);
 }
 
 template<class VelocityFieldType, class ModelPhysicFluidType,typename SymbolsExprType = symbols_expression_empty_t >
@@ -647,10 +651,11 @@ fluidMecDivViscousStressTensorLinearTrial( VelocityFieldType const& u,
                                            MaterialProperties const& matProps,
                                            WorldComm const& world, std::string const& dirLibExpr,
                                            SymbolsExprType const& se = symbols_expression_empty_t{},
+                                           bool checkViscosityDependencyOnCoordinates = true,
                                            uint16_type polyOrder = invalid_uint16_type_value
                                            )
 {
-    return fluidMecDivViscousStressTensorTestTrialApplied<ExprApplyType::LINEAR_TRIAL>(u,physicFluid,matProps,world,dirLibExpr,se,polyOrder);
+    return fluidMecDivViscousStressTensorTestTrialApplied<ExprApplyType::LINEAR_TRIAL>(u,physicFluid,matProps,world,dirLibExpr,se,checkViscosityDependencyOnCoordinates,polyOrder);
 }
 
 template<class VelocityFieldType, class ModelPhysicFluidType,typename SymbolsExprType = symbols_expression_empty_t >
@@ -661,10 +666,11 @@ fluidMecDivViscousStressTensorLinearTest( VelocityFieldType const& u,
                                           MaterialProperties const& matProps,
                                           WorldComm const& world, std::string const& dirLibExpr,
                                           SymbolsExprType const& se = symbols_expression_empty_t{},
+                                          bool checkViscosityDependencyOnCoordinates = true,
                                           uint16_type polyOrder = invalid_uint16_type_value
                                           )
 {
-    return fluidMecDivViscousStressTensorTestTrialApplied<ExprApplyType::LINEAR_TEST>(u,physicFluid,matProps,world,dirLibExpr,se,polyOrder);
+    return fluidMecDivViscousStressTensorTestTrialApplied<ExprApplyType::LINEAR_TEST>(u,physicFluid,matProps,world,dirLibExpr,se,checkViscosityDependencyOnCoordinates,polyOrder);
 }
 
 } // namespace FeelModels

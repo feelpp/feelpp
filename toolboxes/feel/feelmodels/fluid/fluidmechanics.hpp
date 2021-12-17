@@ -2209,6 +2209,7 @@ public :
         }
     void setStabilizationGLSDoAssembly( bool b) { M_stabilizationGLSDoAssembly = b; }
     bool stabilizationGLSDoAssembly() const { return M_stabilizationGLSDoAssembly; }
+    bool stabilizationGLS_checkViscosityDependencyOnCoordinates() const { return M_stabilizationGLS_checkViscosityDependencyOnCoordinates; }
 
     bool applyCIPStabOnlyOnBoundaryFaces() const { return M_applyCIPStabOnlyOnBoundaryFaces; }
     void applyCIPStabOnlyOnBoundaryFaces(bool b) { M_applyCIPStabOnlyOnBoundaryFaces=b; }
@@ -2896,6 +2897,7 @@ private :
     stab_gls_parameter_ptrtype M_stabilizationGLSParameterPressure;
     std::map<std::string,range_elements_type> M_stabilizationGLSEltRangeConvectionDiffusion;
     std::map<std::string,range_elements_type> M_stabilizationGLSEltRangePressure;
+    bool M_stabilizationGLS_checkViscosityDependencyOnCoordinates = true;
 
     bool M_applyCIPStabOnlyOnBoundaryFaces;
     // stabilisation available
