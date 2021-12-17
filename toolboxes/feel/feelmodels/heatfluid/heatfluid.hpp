@@ -69,7 +69,7 @@ public:
     //___________________________________________________________________________________//
     // constructor
     HeatFluid( std::string const& prefix,
-               std::string const& keyword = "heat-fluid",
+               std::string const& keyword = "heatfluid",
                worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                std::string const& subPrefix = "",
                ModelBaseRepository const& modelRep = ModelBaseRepository() );

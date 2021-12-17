@@ -105,19 +105,6 @@ class Heat : public ModelNumerical,
             static auto temperature( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
         };
 
-#if 0
-        BOOST_PARAMETER_MEMBER_FUNCTION(
-            ( self_ptrtype ), static New, tag,
-            ( required
-              ( prefix,*( boost::is_convertible<mpl::_,std::string> ) )
-              )
-            ( optional
-              //( prefix,*( boost::is_convertible<mpl::_,std::string> ),"heat" )   // there is a compilation error if BOOST_PARAMETER_MEMBER_FUNCTION in a class template has no required
-              ( keyword,*( boost::is_convertible<mpl::_,std::string> ),"heat" )
-              ( worldcomm, *, Environment::worldCommPtr() )
-              ( repository, *, ModelBaseRepository() )
-              ) )
-#endif
         template <typename ... Ts>
         static self_ptrtype New( Ts && ... v )
             {
@@ -154,6 +141,8 @@ class Heat : public ModelNumerical,
         bool stabilizationGLS() const { return M_stabilizationGLS; }
         std::string const& stabilizationGLSType() const { return M_stabilizationGLSType; }
         stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
+        bool stabilizationGLS_checkConductivityDependencyOnCoordinates() const { return M_stabilizationGLS_checkConductivityDependencyOnCoordinates; }
+
         //___________________________________________________________________________________//
         // physical parameters
         materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
@@ -493,6 +482,7 @@ class Heat : public ModelNumerical,
         bool M_stabilizationGLS;
         std::string M_stabilizationGLSType;
         stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
+        bool M_stabilizationGLS_checkConductivityDependencyOnCoordinates = true;
 
         // post-process
         export_ptrtype M_exporter;

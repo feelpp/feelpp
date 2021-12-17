@@ -205,6 +205,8 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"stabilization-gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
         (prefixvm(prefix,"stabilization-gls.convection-diffusion.location.expressions").c_str(), Feel::po::value<std::string>(), "expression which determinate the location where stab is applied")
 
+        (prefixvm(prefix,"stabilization-gls.check-viscosity-dependency-on-coordinates").c_str(), Feel::po::value<bool>()->default_value( true ), "Debug option") // allow to not compute the derivativn of viscosity
+
         (prefixvm(prefix,"stabilisation-pspg").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
         (prefixvm(prefix,"stabilisation-gls").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
         (prefixvm(prefix,"stabilisation-cip-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
@@ -389,6 +391,8 @@ heat_options(std::string const& prefix)
         (prefixvm(prefix,"stabilization-gls.parameter.method").c_str(), Feel::po::value<std::string>()->default_value( "eigenvalue" ), "method used for compute tau : eigenvalue, doubly-asymptotic-approximation")
         (prefixvm(prefix,"stabilization-gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
         (prefixvm(prefix,"stabilization-gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
+
+        (prefixvm(prefix,"stabilization-gls.check-conductivity-dependency-on-coordinates").c_str(), Feel::po::value<bool>()->default_value( true ), "Debug option") // allow to not compute the derivativn of thermal conductivity
 
         (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
         (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
