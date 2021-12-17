@@ -1,9 +1,16 @@
 # Number of days of inactivity before an issue becomes stale
 daysUntilStale: 360
 # Number of days of inactivity before a stale issue is closed
-daysUntilClose: 30
+daysUntilClose: 100
 # Issues with these labels will never be considered stale
 exemptLabels:
+  - type:bug
+  - type:ftbs
+  - type:fte
+  - type:feature
+  - priority:Urgent
+  - priority:High
+  - status:confirmed
   - pinned
   - security
 # Label to use when marking an issue as stale
