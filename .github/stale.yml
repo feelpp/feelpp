@@ -8,6 +8,7 @@ exemptLabels:
   - type:ftbs
   - type:fte
   - type:feature
+  - type:refactoring
   - priority:Urgent
   - priority:High
   - status:confirmed
