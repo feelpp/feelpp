@@ -23,14 +23,14 @@ def download(data,worldComm):
 _meshes={
     'mesh(3,1,3)':Mesh_S3DG1R3,
     #'mesh(3,2,3)':Mesh_3DG2R3,
-    #'mesh(2,1,3)':Mesh_2DG1R3,
+    'mesh(2,1,3)':Mesh_S2DG1R3,
     #'mesh(2,2,3)':Mesh_2DG2R3,
     #'mesh(1,1,3)':Mesh_1DG1R3,
     #'mesh(1,2,3)':Mesh_1DG2R3,
     'mesh(2,1,2)':Mesh_S2DG1R2,
     'meshstructured(2,1,2)':Mesh_H2DG1R2,
     'mesh(2,2,2)':Mesh_S2DG2R2,
-    #'mesh(1,1,2)':Mesh_1DG1R2,
+    'mesh(1,1,2)':Mesh_S1DG1R2,
     #'mesh(1,2,2)':Mesh_1DG2R2,
     'mesh(1,1,1)':Mesh_S1DG1R1,
     #'mesh(1,2,1)':Mesh_1DG2R1
