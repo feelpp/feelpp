@@ -126,7 +126,8 @@
             "description": "Build only the Feel++ pyfeelpp-all Component",
             "binaryDir": "${sourceDir}/build/pyfeelpp-all",
             "cacheVariables": {
-                "FEELPP_COMPONENT": "pyfeelpp-all"
+                "FEELPP_COMPONENT": "pyfeelpp-all",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/pyfeelpp-all/install/"
             }
         },
         {
