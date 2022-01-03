@@ -8,8 +8,11 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/databymeshentity.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
+#include <feel/feelmodels/modelpostprocess.hpp>
 #include <feel/feelmodels/modelmarkers.hpp>
 #include <feel/feelmodels/modelcore/modelfields.hpp>
+
+#include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
 
 namespace Feel
 {
@@ -18,6 +21,82 @@ namespace FeelModels
 
 template <typename IndexType>
 class ModelMeshes;
+
+template <typename IndexType>
+class ModelMeshCommon
+{
+public:
+    using index_type = IndexType;
+    using mesh_base_type = MeshBase<index_type>;
+    using mesh_base_ptrtype = std::shared_ptr<mesh_base_type>;
+
+    ModelMeshCommon() = default;
+    ModelMeshCommon( ModelMeshCommon const& ) = default;
+    ModelMeshCommon( ModelMeshCommon && ) = default;
+
+    bool hasMesh() const { return M_mesh? true : false; }
+
+    template <typename MeshType = mesh_base_type>
+    auto mesh() const
+        {
+            if constexpr( std::is_same_v<MeshType,mesh_base_type> )
+                return M_mesh;
+            else
+                return std::dynamic_pointer_cast<MeshType>( M_mesh );
+        }
+
+    std::string const& meshFilename() const { return M_meshFilename; }
+
+    void setMesh( mesh_base_ptrtype m, std::string const& filename = "" ) { M_mesh = m; M_meshFilename = filename;  }
+
+    template <typename MeshType>
+    void initMeasurePointsEvaluationTool()
+        {
+            if ( !M_measurePointsEvaluation )
+            {
+                auto m = this->mesh<MeshType>();
+                auto geospace = std::make_shared<GeometricSpace<MeshType>>( m );
+                M_measurePointsEvaluation = std::make_shared<MeasurePointsEvaluation<MeshType>>( geospace );
+            }
+        }
+
+    template <typename MeshType>
+    auto measurePointsEvaluationTool()
+        {
+            return std::dynamic_pointer_cast<MeasurePointsEvaluation<MeshType>>( M_measurePointsEvaluation );
+        }
+
+    template <typename SpaceType>
+    auto createFunctionSpace( std::string const& basis )
+        {
+            auto itFind = M_functionSpaces.find( basis );
+            if ( itFind == M_functionSpaces.end() )
+            {
+                auto Vh = SpaceType::New(_mesh=this->mesh<typename SpaceType::mesh_type>());
+                M_functionSpaces[basis] = Vh;
+                return Vh;
+            }
+            else
+                return std::dynamic_pointer_cast<SpaceType>( itFind->second );
+        }
+
+    template <typename SpaceType = FunctionSpaceBase>
+    auto functionSpace( std::string const& basis ) const
+        {
+            auto itFind = M_functionSpaces.find( basis );
+            CHECK( itFind!=  M_functionSpaces.end() ) << "no space with basis " << basis;
+            if constexpr( std::is_same_v<SpaceType,FunctionSpaceBase> )
+                return itFind->second;
+            else
+                return std::dynamic_pointer_cast<SpaceType>( itFind->second );
+        }
+
+private:
+    mesh_base_ptrtype M_mesh;
+    std::string M_meshFilename;
+    std::map<std::string, std::shared_ptr<FunctionSpaceBase> > M_functionSpaces;
+    std::shared_ptr<MeasurePointsEvaluationBase> M_measurePointsEvaluation;
+};
 
 template <typename IndexType>
 class ModelMesh
@@ -80,7 +159,8 @@ public :
 
     ModelMesh( std::string const& name )
         :
-        M_name( name )
+        M_name( name ),
+        M_mmeshCommon( std::make_shared<ModelMeshCommon<IndexType>>() )
         {}
     ModelMesh( std::string const& name, ModelMeshes<IndexType> const& mMeshes );
     ModelMesh( ModelMesh const& ) = default;
@@ -90,7 +170,7 @@ public :
 
     void setupRestart( ModelMeshes<IndexType> const& mMeshes );
 
-    void setMesh( mesh_base_ptrtype m ) { M_mesh = m; }
+    void setMesh( mesh_base_ptrtype m, std::string const& meshFilename = "" ) { M_mmeshCommon->setMesh( m, meshFilename ); }
 
     ImportConfig & importConfig() { return M_importConfig; }
     ImportConfig const& importConfig() const { return M_importConfig; }
@@ -98,14 +178,19 @@ public :
     template <typename MeshType>
     void updateForUse( ModelMeshes<IndexType> const& mMeshes );
 
-    template <typename MeshType = mesh_base_type>
-    auto mesh() const
+    template <typename MeshType>
+    void initMeasurePointsEvaluationTool()
         {
-            if constexpr( std::is_same_v<MeshType,mesh_base_type> )
-                return M_mesh;
-            else
-                return std::dynamic_pointer_cast<MeshType>( M_mesh );
+            M_mmeshCommon->template initMeasurePointsEvaluationTool<MeshType>();
         }
+    template <typename MeshType>
+    auto measurePointsEvaluationTool()
+        {
+            return M_mmeshCommon->template measurePointsEvaluationTool<MeshType>();
+        }
+
+    template <typename MeshType = mesh_base_type>
+    auto mesh() const { return M_mmeshCommon->template mesh<MeshType>(); }
 
     std::map<std::string,collection_data_by_mesh_entity_type> const& collectionOfDataByMeshEntity() const { return M_codbme; }
 
@@ -189,8 +274,7 @@ public :
 
 private:
     std::string M_name;
-    mesh_base_ptrtype M_mesh;
-    std::string M_meshFilename;
+    std::shared_ptr<ModelMeshCommon<IndexType>> M_mmeshCommon;
     ImportConfig M_importConfig;
     std::map<std::string,collection_data_by_mesh_entity_type> M_codbme;
 
@@ -245,7 +329,6 @@ private:
 
     std::vector<FieldsSetup> M_fieldsSetup;
     std::vector<DistanceToRangeSetup> M_distanceToRangeSetup;
-    std::map<std::string, std::shared_ptr<FunctionSpaceBase> > M_functionSpaces;
     std::map<std::string, std::shared_ptr<Vector<double>> > M_fields;
     std::map<std::string, std::shared_ptr<Vector<double>> > M_distanceToRanges;
 };
@@ -305,6 +388,19 @@ public:
         if ( this->hasModelMesh( meshName ) )
             this->modelMesh( meshName ).template updateForUse<MeshType>( *this );
     }
+
+    template <typename MeshType>
+    void initMeasurePointsEvaluationTool( std::string const& meshName )
+        {
+            if ( this->hasModelMesh( meshName ) )
+                this->modelMesh( meshName ).template initMeasurePointsEvaluationTool<MeshType>();
+        }
+    template <typename MeshType>
+    auto measurePointsEvaluationTool( std::string const& meshName )
+        {
+            return this->modelMesh( meshName ).template measurePointsEvaluationTool<MeshType>();
+        }
+
 
     template <typename MeshType = mesh_base_type>
         auto mesh( std::string const& meshName ) const

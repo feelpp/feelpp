@@ -153,6 +153,7 @@ template <typename IndexType>
 ModelMesh<IndexType>::ModelMesh( std::string const& name, ModelMeshes<IndexType> const& mMeshes )
     :
     M_name( name ),
+    M_mmeshCommon( std::make_shared<ModelMeshCommon<IndexType>>() ),
     M_importConfig( mMeshes )
 {}
 
@@ -229,8 +230,10 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
 {
     using mesh_type = MeshType;
 
-    if ( !M_mesh )
+    if ( !M_mmeshCommon->hasMesh() )
     {
+        std::shared_ptr<mesh_type> meshLoaded;
+        std::string meshFilename;
         M_importConfig.updateForUse( mMeshes );
 
         auto wcPtr = ( M_importConfig.loadByMasterRankOnly() )? mMeshes.worldCommPtr()->subWorldCommSeqPtr() : mMeshes.worldCommPtr();
@@ -248,7 +251,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
 
             if ( !M_importConfig.loadByMasterRankOnly() || mMeshes.worldCommPtr()->isMasterRank() )
             {
-                M_mesh = loadMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
+                meshLoaded = loadMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
                                   _filename=inputMeshFilename,
                                   _prefix=mMeshes.prefix(),
                                   _vm=mMeshes.clovm(),
@@ -261,7 +264,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                                   _update= M_importConfig.meshComponents()/*MESH_UPDATE_EDGES|MESH_UPDATE_FACES*/);
             }
 
-            M_meshFilename = (generatePartitioning)? meshPartitionedFilename : M_importConfig.meshFilename();
+            meshFilename = (generatePartitioning)? meshPartitionedFilename : M_importConfig.meshFilename();
         }
         else if ( M_importConfig.hasGeoFilename() )
         {
@@ -283,7 +286,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                                             _h=M_importConfig.meshSize());
                 // allow to have a geo and msh file with a filename equal to prefix
                 geodesc->setPrefix(mMeshes.prefix());
-                M_mesh = createGMSHMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
+                meshLoaded = createGMSHMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
                                         _desc=geodesc,
                                         _prefix=mMeshes.prefix(),
                                         _vm=mMeshes.clovm(),
@@ -294,26 +297,28 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                                         _update=M_importConfig.meshComponents(),
                                         _directory=mMeshes.rootRepository() );
             }
-            M_meshFilename = mshfile;
+            meshFilename = mshfile;
         }
 
-        if ( M_mesh && !M_meshFilename.empty() && mMeshes.worldComm().isMasterRank() )
+        this->setMesh( meshLoaded, meshFilename );
+
+        if ( meshLoaded && !meshFilename.empty() && mMeshes.worldComm().isMasterRank() )
         {
             fs::path thedir = mMeshes.rootRepository();//fs::path( fileSavePath ).parent_path();
             std::string fileNameMeshPath = (thedir/prefixvm(M_name,"mesh.path")).string();
             if ( !fs::exists(thedir))
                 fs::create_directories(thedir);
             std::ofstream file( fileNameMeshPath.c_str(), std::ios::out|std::ios::trunc);
-            file << M_meshFilename;
+            file << meshFilename;
             file.close();
         }
-    } // if ( !M_mesh )
+    } // if ( !hasMesh )
 
     // update data by mesh entity
     for ( auto & [name,data] : M_codbme )
     {
-        data.setMesh( M_mesh );
-        data.template updateForUse<MeshType>();
+        data.setMesh( this->mesh<mesh_type>() );
+        data.template updateForUse<mesh_type>();
     }
 
 
@@ -333,10 +338,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                                 using basis_type = typename std::decay_t<decltype(hana::at_c<1>( b ) )>::type;
                                 using space_type = FunctionSpace<MeshType, bases<basis_type> >;
 
-                                if ( M_functionSpaces.find( basis ) == M_functionSpaces.end() )
-                                    M_functionSpaces[basis] = space_type::New(_mesh=this->mesh<MeshType>());
-
-                                auto Vh = std::dynamic_pointer_cast<space_type>( M_functionSpaces[basis] );
+                                auto Vh = M_mmeshCommon->template createFunctionSpace<space_type>( basis );
                                 auto u = Vh->elementPtr();
                                 u->load(_path=fs.filename(),_type="default");
                                 M_fields[fs.name()] = u;
@@ -349,11 +351,9 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
     {
         auto themesh = this->mesh<MeshType>();
         std::string basis = fmt::format( "Pch{}", MeshType::nOrder );
-        std::cout << "distance to range  create basis " << basis << std::endl;
+        //std::cout << "distance to range  create basis " << basis << std::endl;
         using distange_to_range_space_type = FunctionSpace<MeshType, bases<Lagrange<MeshType::nOrder,Scalar,Continuous,PointSetFekete>>>;
-        if ( M_functionSpaces.find( basis ) == M_functionSpaces.end() )
-            M_functionSpaces[basis] = distange_to_range_space_type::New(_mesh=themesh);
-        auto Vh = std::dynamic_pointer_cast<distange_to_range_space_type>( M_functionSpaces[basis] );
+        auto Vh = M_mmeshCommon->template createFunctionSpace<distange_to_range_space_type>( basis );
         auto u = Vh->elementPtr();
         auto rangeFaces = dtrs.markers().empty()? boundaryfaces(themesh) : markedfaces( themesh, dtrs.markers() );
         *u = distanceToRange( Vh, rangeFaces );
@@ -366,13 +366,13 @@ template <typename IndexType>
 void
 ModelMesh<IndexType>::updateInformationObject( nl::json & p ) const
 {
-    if ( M_mesh )
+    if ( M_mmeshCommon->hasMesh() )
     {
-        p["Discretization"] = M_mesh->journalSection().to_string();
+        p["Discretization"] = this->mesh()->journalSection().to_string();
         M_importConfig.updateInformationObject( p["Import configuration"] );
 
-        if ( !M_meshFilename.empty() )
-            p.emplace( "filename", M_meshFilename );
+        if ( !M_mmeshCommon->meshFilename().empty() )
+            p.emplace( "filename", M_mmeshCommon->meshFilename() );
     }
 }
 
