@@ -57,8 +57,9 @@ auto mean( Ts && ... v )
                            _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                            _partitioner=partitioner, _verbose=verbose ).evaluate( parallel,worldcomm );
     DLOG(INFO) << "[mean] integral = " << eint << "\n";
-    DLOG(INFO) << "[mean] mean = " << eint/meas << "\n";
-    return eint/meas;
+    auto res = (eint/meas).eval();
+    DLOG(INFO) << "[mean] mean = " << res << "\n";
+    return res;
 }
 
 template <typename ... Ts>
