@@ -96,10 +96,6 @@ class Heat : public ModelNumerical,
         typedef Exporter<mesh_type,nOrderGeo> export_type;
         typedef std::shared_ptr<export_type> export_ptrtype;
 
-        // measure tools for points evaluation
-        typedef MeasurePointsEvaluation< hana::tuple<GeometricSpace<mesh_type>> > measure_points_evaluation_type;
-        typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
-
         struct FieldTag
         {
             static auto temperature( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
@@ -487,7 +483,6 @@ class Heat : public ModelNumerical,
         // post-process
         export_ptrtype M_exporter;
         std::map<std::string,ModelMeasuresNormalFluxGeneric> M_postProcessMeasuresNormalHeatFlux;
-        measure_points_evaluation_ptrtype M_measurePointsEvaluation;
     };
 
 
@@ -568,7 +563,7 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
     }
 
     // execute common post process and save measures
-    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, M_measurePointsEvaluation, symbolsExpr, mfields, mquantities );
+    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, symbolsExpr, mfields, mquantities );
 }
 
 } // namespace FeelModels
