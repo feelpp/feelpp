@@ -39,9 +39,10 @@
 //#include <boost/parameter/python.hpp>
 #include <boost/mpl/vector.hpp>
 
-#include<feel/feelcore/environment.hpp>
-#include <feel/feelmesh/remesh.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/createsubmesh.hpp>
 #include <feel/feelmesh/metric.hpp>
+#include <feel/feelmesh/remesh.hpp>
 namespace py = pybind11;
 
 using namespace Feel;
@@ -265,6 +266,17 @@ void defMesh(py::module &m)
             py::arg( "required_facets" )=std::vector<std::string>{}, py::arg( "parent" ) = static_cast<mesh_ptr_t>(nullptr),
             "create a Remesher data structure" );
     }
+    m.def(
+        "createSubmesh", []( mesh_ptr_t const& m, markedelements_t<mesh_ptr_t> const& range )
+        { return createSubmesh( _mesh = m, _range = range ); },
+        py::return_value_policy::copy, py::arg( "mesh" ), py::arg( "range" ), fmt::format( "create submesh from range of elements" ).c_str() );
+    if constexpr ( mesh_t::nDim >= 2 )
+    {
+        m.def(
+            "createSubmesh", []( mesh_ptr_t const& m, markedfaces_t<mesh_ptr_t> const& range )
+            { return createSubmesh( _mesh = m, _range = range ); },
+            py::return_value_policy::copy, py::arg( "mesh" ), py::arg( "range" ), fmt::format( "create submesh from range of facets" ).c_str() );
+    }
 }
     
 
@@ -286,12 +298,12 @@ PYBIND11_MODULE(_mesh, m )
     // 2D
     defMesh<Mesh<Simplex<2,1,2>>>(m);
     defMesh<Mesh<Simplex<2,2,2>>>(m);
-    //defMesh<Simplex<1,1,2>>(m);
+    defMesh<Mesh<Simplex<1,1,2>>>(m);
     //defMesh<Simplex<1,2,2>>(m);
     // 3D
     defMesh<Mesh<Simplex<3,1,3>>>(m);
     defMesh<Mesh<Simplex<3,2,3>>>(m);
-    //defMesh<Simplex<2,1,3>>(m);
+    defMesh<Mesh<Simplex<2,1,3>>>(m);
     //defMesh<Simplex<2,2,3>>(m);
     //defMesh<Simplex<1,1,3>>(m);
     //defMesh<Simplex<1,2,3>>(m);
