@@ -41,10 +41,6 @@ public :
     typedef Exporter<mesh_type,nOrderGeo> export_type;
     typedef std::shared_ptr<export_type> export_ptrtype;
 
-    // measure tools for points evaluation
-    typedef MeasurePointsEvaluation< hana::tuple<GeometricSpace<mesh_type>> > measure_points_evaluation_type;
-    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
-
     // algebraic solver
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
     typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
@@ -604,36 +600,14 @@ template <typename ModelFieldsType, typename SymbolsExpr>
 void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
 {
-#if 0
-    bool hasMeasure = false;
-
-    if ( M_coefficientFormPDEs.empty() )
-        return;
-    auto defaultRangeMeshElements = M_coefficientFormPDEs.front()->rangeMeshElements(); // TODO compute intersection
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), defaultRangeMeshElements/*M_rangeMeshElements*/, symbolsExpr, mfields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), defaultRangeMeshElements/*M_rangeMeshElements*/, symbolsExpr, mfields );
-    //bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
-    if ( hasMeasureNorm || hasMeasureStatistics /*|| hasMeasurePoint*/ )
-        hasMeasure = true;
-
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
-#endif
-
     if ( M_coefficientFormPDEs.empty() )
         return;
 
     auto defaultRangeMeshElements = M_coefficientFormPDEs.front()->rangeMeshElements(); // TODO compute intersection
 
-    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
     model_measures_quantities_empty_t mquantities;
     // execute common post process and save measures
-    super_type::executePostProcessMeasures( time, this->mesh(), defaultRangeMeshElements, M_measurePointsEvaluation, symbolsExpr, mfields, mquantities );
+    super_type::executePostProcessMeasures( time, this->mesh(), defaultRangeMeshElements, symbolsExpr, mfields, mquantities );
 }
 
 
