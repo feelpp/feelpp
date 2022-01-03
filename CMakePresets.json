@@ -234,6 +234,9 @@
             "inherits": "default",
             "configurePreset": "pyfeelpp-all",
             "targets": [
+                "pyfeelpp",
+                "pyfeelpp-toolboxes",
+                "pyfeelpp-mor",
                 "all",
                 "install"
             ]
