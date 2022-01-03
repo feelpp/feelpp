@@ -225,8 +225,8 @@ class ModelNumerical : virtual public ModelBase,
         bool updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fields, double time, ModelFieldsType const& mFields,
                                        SymbolsExprType const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange );
 
-        template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
-        void executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation,
+        template <typename MeshType, typename RangeType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
+        void executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements,
                                          SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields, ModelQuantitiesType const& mQuantities );
         template<typename ModelQuantitiesType, typename SymbolsExprType = symbols_expression_empty_t>
         void updatePostProcessMeasuresQuantities( ModelQuantitiesType const& mQuantities, SymbolsExprType const& symbolsExpr = symbols_expression_empty_t{} );
@@ -236,8 +236,8 @@ class ModelNumerical : virtual public ModelBase,
         void updatePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields );
         template <typename MeasurePointEvalType, typename SymbolsExprType, typename ModelFieldsType>
         void updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExprType const& se, ModelFieldsType const& mFields );
-        template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
-        void updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation,
+        template <typename MeshType, typename RangeType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
+        void updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements,
                                         SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields, ModelQuantitiesType const& mQuantities );
 
         template <typename ModelFieldsType>
@@ -285,6 +285,20 @@ class ModelNumerical : virtual public ModelBase,
                     return this->modelProperties().parameters().symbolsExpr();
                 else
                     return std::decay_t<decltype(this->modelProperties().parameters().symbolsExpr())>{};
+            }
+
+        template <typename MeshType,typename SymbolsExprType>
+        void initPostProcessMeshes( SymbolsExprType const& se )
+            {
+                auto & allEvalPoints = this->modelProperties().postProcess().measuresPoint( this->keyword() );
+                for ( auto & evalPoints : allEvalPoints )
+                    evalPoints.updateForUse( se );
+                super_model_meshes_type::template initMeasurePointsEvaluationTool<MeshType>( this->keyword() );
+
+                auto measurePointsEvaluation = super_model_meshes_type::template measurePointsEvaluationTool<MeshType>( this->keyword() );
+                measurePointsEvaluation->init( allEvalPoints, this->keyword() );
+                //for ( auto & evalPoints : allEvalPoints )
+                //measurePointsEvaluation->init( evalPoints );
             }
 
         template <typename MeshType, bool AddFields = true>
@@ -614,21 +628,13 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
     return hasFieldToExport;
 }
 
-template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
+template <typename MeshType, typename RangeType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
 void
-ModelNumerical::executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& range, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation,
+ModelNumerical::executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& range,
                                             SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields, ModelQuantitiesType const& mQuantities )
 {
-    this->updatePostProcessMeasures( mesh, range, measurePointsEvaluation, symbolsExpr, mFields, mQuantities );
-#if 0
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
-#endif
+    this->updatePostProcessMeasures( mesh, range, symbolsExpr, mFields, mQuantities );
+
     if ( this->postProcessMeasures().isUpdated() )
     {
         if ( !this->isStationary() )
@@ -701,17 +707,18 @@ ModelNumerical::updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEval
 {
     if ( !measurePointsEvaluation )
         return;
-    measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), M_postProcessMeasures, se, mfields );
+    measurePointsEvaluation->eval( this->keyword() /*this->modelProperties().postProcess().measuresPoint( this->keyword() )*/, M_postProcessMeasures, se, mfields );
 }
 
-template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
+template <typename MeshType, typename RangeType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
 void
-ModelNumerical::updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation,
+ModelNumerical::updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements,
                                            SymbolsExpr const& symbolsExpr, ModelFieldsType const& mfields, ModelQuantitiesType const& tupleQuantities )
 {
     this->updatePostProcessMeasuresQuantities( tupleQuantities );
     this->updatePostProcessMeasuresNorm( mesh, rangeMeshElements, symbolsExpr, mfields );
     this->updatePostProcessMeasuresStatistics( mesh, rangeMeshElements, symbolsExpr, mfields );
+    auto measurePointsEvaluation = super_model_meshes_type::template measurePointsEvaluationTool<MeshType>( this->keyword() );
     this->updatePostProcessMeasuresPoint( measurePointsEvaluation, symbolsExpr, mfields );
 }
 

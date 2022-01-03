@@ -7,16 +7,22 @@
 #include <feel/feelmodels/modelpostprocess.hpp>
 #include <feel/feelmodels/modelcore/traits.hpp>
 #include <feel/feelcore/tuple_utils.hpp>
+#include <feel/feelmodels/modelcore/modelmeasures.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
 
-template <typename TupleMeshType,typename... SpacesType>
-class MeasurePointsEvaluation
-{
+class MeasurePointsEvaluationBase {
+public :
+    virtual ~MeasurePointsEvaluationBase() {}
+};
 
+template <typename MeshType>
+class MeasurePointsEvaluation : public MeasurePointsEvaluationBase
+{
+#if 0
     struct TransformSpaceToFieldNamesAndSpace
     {
         template <typename T>
@@ -30,7 +36,7 @@ class MeasurePointsEvaluation
                 return typename TransformSpaceToFieldNamesAndSpace::template apply<T>::type{};
             }
     };
-
+#endif
 
     struct PointOnContext
     {
@@ -53,6 +59,7 @@ class MeasurePointsEvaluation
         bool M_includeCoordinates;
         std::set<index_type> M_nodeIds;
     };
+#if 0
     struct TransformGeometricSpaceToContext
     {
         template <typename T>
@@ -77,9 +84,22 @@ class MeasurePointsEvaluation
                 return typename apply_type::type( std::make_shared<context_type>( t.second->context() ), {}, mapFieldToExport, {} );
             }
     };
+#endif
+    using mesh_type = MeshType;
+    using geometric_space_type = GeometricSpace<mesh_type>;
+    using geometric_context_type = typename geometric_space_type::Context;
+    using geometric_context_ptrtype = std::shared_ptr<geometric_context_type>;
 
+    using map_fieldname_to_nodeid_type = std::map<std::string, std::set<std::string> >; // fieldname -> ( pointName1,pointName2,...)
+    using map_pointsname_to_expr_nodeid_type = std::map<std::string, std::tuple< std::map<std::string,ModelExpression> > >; // pointName1 -> ( (exprname1->expr1),(exprname2->expr2), ... )
+
+#if 0
+    using internal_container_type = std::tuple<geometric_context_ptrtype, std::map<std::string,PointOnContext>, map_fieldname_to_nodeid_type, map_pointsname_to_expr_nodeid_type >;
+#endif
+    using points_eval_desc_type = std::map<std::string, std::tuple<std::map<std::string,PointOnContext>, map_fieldname_to_nodeid_type, map_pointsname_to_expr_nodeid_type > >;
 public :
 
+#if 0
     using tuple_mesh_type = TupleMeshType;
     using tuple_geospaces_with_names_type = std::decay_t<decltype( hana::transform( tuple_mesh_type{}, TransformSpaceToFieldNamesAndSpace{} ) ) >;
     using tuple_geocontext_type = std::decay_t<decltype( hana::transform( tuple_geospaces_with_names_type{}, TransformGeometricSpaceToContext{} ) ) >;
@@ -88,81 +108,92 @@ public :
         :
         M_geoContexts( hana::transform( geospaces, TransformGeometricSpaceToContext{} ) )
         {}
+#endif
+    MeasurePointsEvaluation( std::shared_ptr<geometric_space_type> geospace )
+        :
+        M_geoContext( std::make_shared<geometric_context_type>( geospace ) )
+    {
+        //std::get<0>( M_internalContainer ) = std::make_shared<geometric_context_type>( geospace ); //geospace->context();
+    }
 
     void
-    init( ModelPostprocessPointPosition const& evalPoints )
+    init( std::vector<ModelPostprocessPointPosition> const& allEvalPoints, std::string const& groupName = "" )
+        {
+            for ( auto const& evalPoints : allEvalPoints )
+                this->init( evalPoints, groupName );
+        }
+
+    void
+    init( ModelPostprocessPointPosition const& evalPoints, std::string const& groupName = "" )
         {
             auto const& fields = evalPoints.fields();
 
-            hana::for_each( M_geoContexts,
-                            [&evalPoints,&fields](auto & x) {
-                                auto & geoctx = std::get<0>( x );
-                                auto & ptPosNameToNodeIds = std::get<1>( x );
-                                auto & fieldsInCtx = std::get<2>( x );
+            auto & M_internalContainer = M_pointsEvalDesc[groupName];
 
-                                std::set<std::string> fieldsUsed;
-                                for ( std::string const& field : fields )
-                                {
-                                    if ( true ) // TODO check compatibility between field/geoctx
-                                    {
-                                        fieldsUsed.insert( field );
-                                    }
-                                }
+            auto & geoctx = M_geoContext;//std::get<0>( M_internalContainer );
+            auto & ptPosNameToNodeIds = std::get<0>( M_internalContainer );
+            auto & fieldsInCtx = std::get<1>( M_internalContainer );
 
-                                auto & exprInCtx = std::get<3>( x );
-                                std::map<std::string,ModelExpression> mapExprNameToExpr;
-                                for ( auto const& [name,exprData] : evalPoints.expressions() )
-                                {
-                                    auto const& [mexpr,tag] = exprData;
-                                    if ( true ) // TODO check compatibility between expr tag/geoctx
-                                    {
-                                        mapExprNameToExpr.emplace( name, mexpr );
-                                    }
-                                }
+            std::set<std::string> fieldsUsed;
+            for ( std::string const& field : fields )
+            {
+                if ( true ) // TODO check compatibility between field/geoctx
+                {
+                    fieldsUsed.insert( field );
+                }
+            }
 
-                                bool includeCoord = evalPoints.includeCoordinates();
+            auto & exprInCtx = std::get<2>( M_internalContainer );
+            std::map<std::string,ModelExpression> mapExprNameToExpr;
+            for ( auto const& [name,exprData] : evalPoints.expressions() )
+            {
+                auto const& [mexpr,tag] = exprData;
+                if ( true ) // TODO check compatibility between expr tag/geoctx
+                {
+                    mapExprNameToExpr.emplace( name, mexpr );
+                }
+            }
 
-                                if ( !mapExprNameToExpr.empty() || !fieldsUsed.empty() || includeCoord )
-                                {
-                                    auto [itPointOnCtx,isInserted] = ptPosNameToNodeIds.emplace( std::make_pair( evalPoints.name(), PointOnContext( evalPoints.measuresOutput().name(),
-                                                                                                                                                    evalPoints.measuresOutput().type(),
-                                                                                                                                                    includeCoord ) ) );
-                                    std::set<index_type> & nodeIds = itPointOnCtx->second.nodeIds();
-                                    for ( auto const& ptOverGeometry : evalPoints.pointsOverAllGeometry() )
-                                    {
-                                        for ( auto const& ptCoordEig : ptOverGeometry->coordinates() )
-                                        {
-                                            int nodeIdInCtx = geoctx->nPoints();
-                                            node_type ptCoord(3);
-                                            for ( int c=0;c</*3*/ptCoordEig.size();++c )
-                                                ptCoord[c]=ptCoordEig(c);
-                                            geoctx->add( ptCoord,false );
-                                            nodeIds.insert( nodeIdInCtx );
-                                        }
-                                    }
+            bool includeCoord = evalPoints.includeCoordinates();
 
-                                    for ( std::string const& field : fieldsUsed )
-                                        fieldsInCtx[field].insert( evalPoints.name() );
-                                    if ( !mapExprNameToExpr.empty() )
-                                        exprInCtx[evalPoints.name()] = std::make_tuple( std::move(mapExprNameToExpr) );
-                                }
+            if ( !mapExprNameToExpr.empty() || !fieldsUsed.empty() || includeCoord )
+            {
+                auto [itPointOnCtx,isInserted] = ptPosNameToNodeIds.emplace( std::make_pair( evalPoints.name(), PointOnContext( evalPoints.measuresOutput().name(),
+                                                                                                                                evalPoints.measuresOutput().type(),
+                                                                                                                                includeCoord ) ) );
+                std::set<index_type> & nodeIds = itPointOnCtx->second.nodeIds();
+                for ( auto const& ptOverGeometry : evalPoints.pointsOverAllGeometry() )
+                {
+                    for ( auto const& ptCoordEig : ptOverGeometry->coordinates() )
+                    {
+                        int nodeIdInCtx = geoctx->nPoints();
+                        node_type ptCoord(3);
+                        for ( int c=0;c</*3*/ptCoordEig.size();++c )
+                            ptCoord[c]=ptCoordEig(c);
+                        geoctx->add( ptCoord,false );
+                        nodeIds.insert( nodeIdInCtx );
+                    }
+                }
 
-                            });
-
-
+                for ( std::string const& field : fieldsUsed )
+                    fieldsInCtx[field].insert( evalPoints.name() );
+                if ( !mapExprNameToExpr.empty() )
+                    exprInCtx[evalPoints.name()] = std::make_tuple( std::move(mapExprNameToExpr) );
+            }
         }
 
 
 
-    template <typename SymbolsExprType,typename FieldTupleType>
+    template <typename SymbolsExprType,typename ModelFieldsType>
     void
-    eval( std::vector<ModelPostprocessPointPosition> const& allEvalPoints, ModelMeasuresStorage & res, SymbolsExprType const& se, FieldTupleType const& fieldTuple )
+    eval( std::string const& groupName, ModelMeasuresStorage & res, SymbolsExprType const& se, ModelFieldsType const& mfields )
         {
-            for ( auto const& evalPoints : allEvalPoints )
-            {
-                // TODO : update point position if node has moved
-            }
+            //#if 0 // TODO
 
+            auto itFindGroup = M_pointsEvalDesc.find( groupName );
+            if ( itFindGroup == M_pointsEvalDesc.end() )
+                return;
+            auto & M_internalContainer = itFindGroup->second;
 
             auto mfieldIsCompatible = []( auto const& geoctx, auto const& mfield, std::string const& fieldName) {
                                           if ( fieldName != mfield.nameWithPrefix() )
@@ -182,20 +213,21 @@ public :
                                       };
 
             // update gmc ctx
-            hana::for_each( M_geoContexts,[this,&se,&fieldTuple,&mfieldIsCompatible](auto & x)
+            //hana::for_each( M_geoContexts,[this,&se,&mfields,&mfieldIsCompatible](auto & x)
+            if ( true )
             {
-                auto & geoctx = std::get<0>( x );
+                auto & geoctx = M_geoContext;//std::get<0>( M_internalContainer );
                                 
                 geoctx->updateForUse(); // TODO VINCENT!!!!!!!!!!!!!!!!!
                                 
 
                 size_type dynctx=0;
 
-                auto const& fieldsInCtx = std::get<2>( x );
+                auto const& fieldsInCtx = std::get<1>( M_internalContainer );
                 for ( auto const& fieldInCtx : fieldsInCtx )
                 {
                     auto const& fieldName = fieldInCtx.first;
-                    hana::for_each( fieldTuple.tuple(), [&geoctx,&fieldName,&dynctx,&mfieldIsCompatible](auto const& y)
+                    hana::for_each( mfields.tuple(), [&geoctx,&fieldName,&dynctx,&mfieldIsCompatible](auto const& y)
                     {
                         for ( auto const& mfield : y )
                         {
@@ -209,7 +241,7 @@ public :
                     });
                 }
 
-                auto const& exprInCtx = std::get<3>( x );
+                auto const& exprInCtx = std::get<2>( M_internalContainer );
                 for ( auto const& [ptPosName, exprDataAndNodeIds ] : exprInCtx )
                 {
                     for ( auto const& exprData : std::get<0>( exprDataAndNodeIds ) )
@@ -220,22 +252,23 @@ public :
                     }
                 }
                 geoctx->template updateGmcContext<vm::DYNAMIC>( dynctx );
-            });
+            }
+                //});
 
 
             std::map<std::string, std::map<std::string, std::vector<std::pair<std::string,std::vector<double>>>>> measuresStored; //type -> ( outputName -> ( ( measureName1, measureValue1), ... ) )
 
-            hana::for_each( M_geoContexts,[this,&se,&fieldTuple,&measuresStored,&mfieldIsCompatible](auto const& x)
-            {
-                auto const& geoctx = std::get<0>( x );
-                auto const& pointsOnCtx = std::get<1>( x );
+            //hana::for_each( M_geoContexts,[this,&se,&mfields,&measuresStored,&mfieldIsCompatible](auto const& x)
+            //{
+            auto const& geoctx = M_geoContext;//std::get<0>( M_internalContainer );
+                auto const& pointsOnCtx = std::get<0>( M_internalContainer );
                 // fields
-                auto const& fieldsInCtx = std::get<2>( x );
+                auto const& fieldsInCtx = std::get<1>( M_internalContainer );
                 for ( auto const& fieldInCtx : fieldsInCtx )
                 {
                     auto const& fieldName = fieldInCtx.first;
                     auto const& ptPosSet = fieldInCtx.second;
-                    hana::for_each( fieldTuple.tuple(), [this,&geoctx,&pointsOnCtx,&fieldName,&ptPosSet,&measuresStored,&mfieldIsCompatible](auto const& y)
+                    hana::for_each( mfields.tuple(), [this,&geoctx,&pointsOnCtx,&fieldName,&ptPosSet,&measuresStored,&mfieldIsCompatible](auto const& y)
                     {
                         for ( auto const& mfield : y )
                         {
@@ -262,10 +295,10 @@ public :
                                 }
                              }
                         }
-                    }); // for_each fieldTuple
+                    }); // for_each mfields
                 }
                 // expressions
-                auto const& exprInCtx = std::get<3>( x );
+                auto const& exprInCtx = std::get<2>( M_internalContainer );
                 for ( auto const& [ptPosName, exprDataAndNodeIds ] : exprInCtx )
                 {
                     auto itFindPointOnCtx = pointsOnCtx.find( ptPosName );
@@ -311,7 +344,7 @@ public :
                     std::string measurePrefix = fmt::format("Points_{}",ptPosName);
                     this->updateMeasureImpl( coords,  pointOnCtx.outputType(), pointOnCtx.outputName(), measurePrefix, "coordinates", measuresStored );
                 }
-            }); // for_each M_geoContexts
+                //}); // for_each M_geoContexts
 
             // update measures in ModelMeasuresStorage
             for ( auto & [type,byType] : measuresStored )
@@ -349,6 +382,7 @@ public :
                     }
                 }
             }
+            //#endif // TODO
         }
 
 private :
@@ -455,7 +489,10 @@ private :
         }
 
 private :
-    tuple_geocontext_type M_geoContexts;
+    //tuple_geocontext_type M_geoContexts;
+    //internal_container_type M_internalContainer;
+    geometric_context_ptrtype M_geoContext;
+    points_eval_desc_type M_pointsEvalDesc;
 };
 
 } // namespace FeelModels
