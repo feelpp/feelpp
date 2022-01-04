@@ -23,25 +23,15 @@
 //!
 #include "mesh.hpp"
 
-void mesh1( py::module& m );
-void mesh2( py::module& m );
-void mesh3( py::module& m );
-
-PYBIND11_MODULE( _mesh, m )
+void mesh3( py::module& m )
 {
     using namespace Feel;
 
-    if ( import_mpi4py() < 0 ) return;
-
-    py::enum_<GeomapStrategyType>( m, "GeomapStrategyType" )
-        .value( "GEOMAP_OPT", GeomapStrategyType::GEOMAP_OPT )
-        .value( "GEOMAP_O1", GeomapStrategyType::GEOMAP_O1 )
-        .value( "GEOMAP_HO", GeomapStrategyType::GEOMAP_HO )
-        .export_values();
-
-    mesh1( m );
-    mesh2( m );
-    mesh3( m );
-
-    defMesh<MeshStructured<Hypercube<2>>>(m);
+    // 3D
+    defMesh<Mesh<Simplex<3, 1, 3>>>( m );
+    defMesh<Mesh<Simplex<3, 2, 3>>>( m );
+    defMesh<Mesh<Simplex<2, 1, 3>>>( m );
+    // defMesh<Simplex<2,2,3>>(m);
+    // defMesh<Simplex<1,1,3>>(m);
+    // defMesh<Simplex<1,2,3>>(m);
 }
