@@ -377,7 +377,7 @@ endif()
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring FMILib")
-option( FEELPP_ENABLE_FMILIB "Enable FMLIB C API" ON )
+option( FEELPP_ENABLE_FMILIB "Enable FMLIB C API" OFF )
 # FMILib configure
 # install rules.
 set(FMILIB_BUILD_STATIC_LIB OFF)
