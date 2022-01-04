@@ -78,9 +78,9 @@ main( int argc, char** argv )
                                              hana::make_tuple("P2P1G2", hana::make_tuple( hana::int_c<2>,hana::int_c<1>,hana::int_c<2>) ),
                                              hana::make_tuple("P1P1G1", hana::make_tuple( hana::int_c<1>,hana::int_c<1>,hana::int_c<1>) ),
                                              hana::make_tuple("P3P2G1", hana::make_tuple( hana::int_c<3>,hana::int_c<2>,hana::int_c<1>) ),
-                                             hana::make_tuple("P3P2G2", hana::make_tuple( hana::int_c<3>,hana::int_c<2>,hana::int_c<2>) ),
+                                             hana::make_tuple("P3P2G2", hana::make_tuple( hana::int_c<3>,hana::int_c<2>,hana::int_c<2>) )/*,
                                              hana::make_tuple("P4P3G1", hana::make_tuple( hana::int_c<4>,hana::int_c<3>,hana::int_c<1>) ),
-                                             hana::make_tuple("P4P3G2", hana::make_tuple( hana::int_c<4>,hana::int_c<3>,hana::int_c<2>) ) );
+                                             hana::make_tuple("P4P3G2", hana::make_tuple( hana::int_c<4>,hana::int_c<3>,hana::int_c<2>) )*/ );
 
     int status = 0;
     hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension,&status]( auto const& d )

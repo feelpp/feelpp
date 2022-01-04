@@ -68,7 +68,7 @@
                 {
                     "type":"L2-error", 
                     "field":"pressure",
-                    "quad":9,
+                    "quad":8,
                     "solution":"pex:pex", 
                     "markers":"Omega" 
                 },
@@ -76,10 +76,17 @@
                 {
                     "type":["L2-error","H1-error"], 
                     "field":"velocity",
-                    "quad":9,
+                    "quad":8,
                     "solution":"{uexx,uexy,0}:uexx:uexy",
                     "grad_solution":"{ugradexxx, ugradexyx, 0, ugradexxy, ugradexyy, 0, 0, 0, 0}:ugradexxx:ugradexyx:ugradexxy:ugradexyy",
                     "markers":"Omega" 
+                },
+                "one":
+                {
+                    "type":"L2",
+                    "expr":"1/(2*(r2-r1)*(r1*angle+(r2-r1)*angle+(r2-r1))):r1:r2:angle",
+                    "markers":"wall",
+                    "quad":8
                 }
             }
         },
@@ -100,6 +107,11 @@
                 "Norm_p_L2-error":
                 {
                     "value":0,
+                    "tolerance":1
+                },
+                "Norm_one_L2":
+                {
+                    "value":1,
                     "tolerance":1
                 }
             }
