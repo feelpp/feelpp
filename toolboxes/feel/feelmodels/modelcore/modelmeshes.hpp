@@ -172,6 +172,11 @@ public :
 
     void setMesh( mesh_base_ptrtype m, std::string const& meshFilename = "" ) { M_mmeshCommon->setMesh( m, meshFilename ); }
 
+    void setAsShared( ModelMesh<IndexType> const& m )
+        {
+            M_mmeshCommon = m.M_mmeshCommon;
+        }
+
     ImportConfig & importConfig() { return M_importConfig; }
     ImportConfig const& importConfig() const { return M_importConfig; }
 
@@ -359,12 +364,15 @@ public:
         CHECK( itFindMesh != this->end() ) << "mesh not found : " << meshName;
         return *itFindMesh->second;
     }
+    ModelMesh<IndexType> & modelMesh() { return this->modelMesh( this->keyword() ); }
+
     ModelMesh<IndexType> const& modelMesh( std::string const& meshName ) const
     {
         auto itFindMesh = this->find( meshName );
         CHECK( itFindMesh != this->end() ) << "mesh not found : " << meshName;
         return *itFindMesh->second;
     }
+    ModelMesh<IndexType> const& modelMesh() const { return this->modelMesh( this->keyword() ); }
 
     void setup( pt::ptree const& pt );
 
@@ -381,6 +389,15 @@ public:
             this->emplace( std::make_pair( meshName, std::make_shared<ModelMesh<IndexType>>( meshName ) ) );
         this->modelMesh( meshName ).setMesh( m );
     }
+
+    //! shared data (mesh,space,...) between several ModelMesh
+    void setModelMeshAsShared( std::string const& meshName, ModelMesh<IndexType> const& m )
+    {
+        if ( !this->hasModelMesh( meshName ) )
+            this->emplace( std::make_pair( meshName, std::make_shared<ModelMesh<IndexType>>( meshName ) ) );
+        this->modelMesh( meshName ).setAsShared( m );
+    }
+    void setModelMeshAsShared( ModelMesh<IndexType> const& m ) { this->setModelMeshAsShared( this->keyword(), m ); }
 
     template <typename MeshType>
     void updateForUse( std::string const& meshName )

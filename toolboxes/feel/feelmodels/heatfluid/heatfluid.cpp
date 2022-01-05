@@ -199,7 +199,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
         M_heatModel->setManageParameterValuesOfModelProperties( false );
     }
-    M_heatModel->setMesh( this->mesh() );
+    M_heatModel->setModelMeshAsShared( this->modelMesh() );
     M_heatModel->setMaterialsProperties( M_materialsProperties );
     M_heatModel->init( false );
 
@@ -211,7 +211,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_fluidModel->setModelProperties( this->modelPropertiesPtr() );
         M_fluidModel->setManageParameterValuesOfModelProperties( false );
     }
-    M_fluidModel->setMesh( this->mesh() );
+    M_fluidModel->setModelMeshAsShared( this->modelMesh() );
     M_fluidModel->setMaterialsProperties( M_materialsProperties );
     M_fluidModel->init( false );
 
