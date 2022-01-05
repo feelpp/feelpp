@@ -85,10 +85,6 @@ public:
     typedef Exporter<mesh_type,nOrderGeo> export_type;
     typedef std::shared_ptr<export_type> export_ptrtype;
 
-    // measure tools for points evaluation
-    typedef MeasurePointsEvaluation< hana::tuple<GeometricSpace<mesh_type>> > measure_points_evaluation_type;
-    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
-
     struct FieldTag
     {
         static auto potential( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
@@ -372,7 +368,6 @@ private :
 
     // post-process
     export_ptrtype M_exporter;
-    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 };
 
 
@@ -408,7 +403,7 @@ Electric<ConvexType,BasisPotentialType>::executePostProcessMeasures( double time
     model_measures_quantities_empty_t mquantities;
 
     // execute common post process and save measures
-    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, M_measurePointsEvaluation, symbolsExpr, mfields, mquantities );
+    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, symbolsExpr, mfields, mquantities );
 }
 
 } // namespace FeelModels

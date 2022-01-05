@@ -85,7 +85,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->loadConfigBCFile();
 
     // Mesh
-    if( !M_mesh )
+    if( !this->mesh() )
         this->createMesh();
     // Function spaces
     this->initFunctionSpaces();
@@ -236,11 +236,12 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::createMesh()
 {
     this->log("AdvDiffReac","createMesh","start");
     this->timerTool("Constructor").start();
-    
-    createMeshModel<mesh_type>(*this, M_mesh, this->fileNameMeshPath() );
-    CHECK( M_mesh ) << "mesh generation failed";
-    M_isUpdatedForUse = false;
-    M_rangeMeshElements = elements( M_mesh );
+
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
+    CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElapsed = this->timerTool("Constructor").stop("create");
     this->log("AdvDiffReac","createMesh", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -252,7 +253,9 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 {
     this->log("AdvDiffReac","initFunctionSpaces","start");
     this->timerTool("Constructor").start();
-    
+
+    M_rangeMeshElements = elements(this->mesh());
+
     // AdvDiffReac function space
     if( !M_Xh )
     {
@@ -263,7 +266,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
             extendedDT[0] = true;
         }
         M_Xh = space_advection_type::New( 
-                _mesh=M_mesh, 
+                _mesh=this->mesh(), 
                 _worldscomm=this->worldsComm(), 
                 _extended_doftable=extendedDT,
                 _periodicity=this->periodicity()
@@ -277,13 +280,13 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     // Advection velocity function space
     if( !M_XhAdvectionVelocity )
     {
-        M_XhAdvectionVelocity = space_advection_velocity_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+        M_XhAdvectionVelocity = space_advection_velocity_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
     }
 
     // P0d function space
     if ( !M_spaceP0d )
     {
-        M_spaceP0d = space_P0d_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+        M_spaceP0d = space_P0d_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
     }
 
     double tElapsed = this->timerTool("Constructor").stop("create");
@@ -296,7 +299,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initAlgebraicData()
 {
     this->log("AdvDiffReac","initAlgebraicData","start");
     this->timerTool("Constructor").start();
-    
+
     // Backend
     M_backend = backend_type::build( soption(_name="backend"), this->prefix(), M_Xh->worldCommPtr() );
 
@@ -377,7 +380,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initOthers()
     // Advection velocity 
     M_fieldAdvectionVelocity.reset( new element_advection_velocity_type(M_XhAdvectionVelocity, "AdvectionVelocity") );
     // P0d
-    M_spaceP0d = space_P0d_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+    M_spaceP0d = space_P0d_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
     
     // Load the field velocity convection from a math expr
     if ( Environment::vm().count(prefixvm(this->prefix(),"advection-velocity").c_str()) )
@@ -444,37 +447,6 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::buildVectorSolution()
     M_blockVectorSolution.buildVector( this->backend() );
 }
 
-//----------------------------------------------------------------------------//
-// Mesh
-ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
-void
-ADVDIFFREAC_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype m )
-{
-    this->log("AdvDiffReac","loadMesh", "start");
-    // create or reload mesh
-    if ( this->doRestart() && !m )
-    {
-        this->createMesh();
-    }
-    else
-    {
-        M_mesh = m;
-        M_isUpdatedForUse = false;
-    }
-    M_rangeMeshElements = elements(M_mesh);
-    this->log("AdvDiffReac","loadMesh", "finish");
-}
-
-ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
-void
-ADVDIFFREAC_CLASS_TEMPLATE_TYPE::setMesh( mesh_ptrtype const& m )
-{
-    this->log("AdvDiffReac","setMesh", "start");
-    M_mesh = m;
-    M_rangeMeshElements = elements(M_mesh);
-    M_isUpdatedForUse = false;
-    this->log("AdvDiffReac","setMesh", "finish");
-}
 
 //----------------------------------------------------------------------------//
 // Periodicity
@@ -1107,16 +1079,8 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initPostProcessExportsAndMeasures()
     this->setPostProcessSaveAllFieldsAvailable( postProcessAllFieldsAvailable );
     super_type::initPostProcess();
 
-    // Point measures
-    auto geospace = std::make_shared<GeometricSpace<mesh_type>>( this->mesh() );
-    auto geospaceWithNames = std::make_pair( std::set<std::string>({this->keyword()}), geospace );
-    auto meshes = hana::make_tuple( geospaceWithNames );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( meshes );
-    for ( auto /*const*/& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-    {
-        evalPoints.updateForUse( this->symbolsExpr() );
-        M_measurePointsEvaluation->init( evalPoints );
-    }
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
 }
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS

@@ -2001,16 +2001,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
-    // point measures
-    auto geospace = std::make_shared<GeometricSpace<mesh_type>>( this->mesh() );
-    auto geospaceWithNames = std::make_pair( std::set<std::string>({this->keyword()}), geospace );
-    auto meshes = hana::make_tuple( geospaceWithNames );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( meshes );
-    for ( auto /*const*/& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-    {
-        evalPoints.updateForUse( this->symbolsExpr() );
-        M_measurePointsEvaluation->init( evalPoints );
-    }
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
 
     if ( !this->isStationary() )
     {
