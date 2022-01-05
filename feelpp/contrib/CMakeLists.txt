@@ -377,7 +377,7 @@ endif()
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring FMILib")
-option( FEELPP_ENABLE_FMILIB "Enable FMLIB C API" OFF )
+option( FEELPP_ENABLE_FMILIB "Enable FMLIB C API" ON )
 # FMILib configure
 # install rules.
 set(FMILIB_BUILD_STATIC_LIB OFF)
@@ -395,8 +395,7 @@ if ( FEELPP_ENABLE_FMILIB )
   if ( FEELPP_CONTRIB_PREPARE_SUCCEED )
     add_subdirectory(fmilib)
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_FMILIB )
-    target_link_libraries(feelpp_contrib INTERFACE fmilib_shared )
-    set_target_properties(fmilib_shared PROPERTIES OUTPUT_NAME "feelpp_fmilib")
+    target_link_libraries(feelpp_contrib INTERFACE feelpp_fmilib )
     target_include_directories(feelpp_contrib INTERFACE
       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/fmilib/>
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/contrib/fmilib/>
