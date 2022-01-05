@@ -219,18 +219,7 @@ public:
     typedef Exporter<mesh_visu_ho_type> export_ho_type;
     typedef std::shared_ptr<export_ho_type> export_ho_ptrtype;
 #endif
-    // // context for evaluation
-    // typedef typename space_displacement_type::Context context_displacement_type;
-    // typedef std::shared_ptr<context_displacement_type> context_displacement_ptrtype;
-    // typedef typename space_pressure_type::Context context_pressure_type;
-    // typedef std::shared_ptr<context_pressure_type> context_pressure_ptrtype;
-    // typedef typename space_stress_scal_type::Context context_stress_scal_type;
-    // typedef std::shared_ptr<context_stress_scal_type> context_stress_scal_ptrtype;
 
-
-    // measure tools for points evaluation
-    typedef MeasurePointsEvaluation< hana::tuple<GeometricSpace<mesh_type>> > measure_points_evaluation_type;
-    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -832,13 +821,6 @@ private :
     element_scalar_visu_ho_ptrtype M_pressureVisuHO;
     op_interpolation_visu_ho_pressure_ptrtype M_opIpressure;
 #endif
-    // post-process point evaluation
-    // context_displacement_ptrtype M_postProcessMeasuresContextDisplacement;
-    // context_pressure_ptrtype M_postProcessMeasuresContextPressure;
-    // context_stress_scal_ptrtype M_postProcessMeasuresContextStressScalar;
-
-    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
-
 
     std::map<std::string,std::set<std::string> > M_postProcessVolumeVariation; // (name,list of markers)
     //-------------------------------------------//
@@ -928,7 +910,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::executePostProcessMeasures( do
     model_measures_quantities_empty_t mquantities;
 
     // execute common post process and save measures
-    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, M_measurePointsEvaluation, symbolsExpr, mfields, mquantities );
+    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, symbolsExpr, mfields, mquantities );
 }
 
 

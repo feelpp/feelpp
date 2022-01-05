@@ -1927,10 +1927,6 @@ public:
     typedef std::shared_ptr<export_ho_type> export_ho_ptrtype;
 #endif
 
-    // measure tools for points evaluation
-    typedef MeasurePointsEvaluation< hana::tuple<GeometricSpace<mesh_type>> > measure_points_evaluation_type;
-    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
-
 
     using force_type = Eigen::Matrix<typename super_type::value_type, nDim, 1, Eigen::ColMajor>;
     //___________________________________________________________________________________//
@@ -2979,8 +2975,6 @@ private :
 #endif
     //op_interpolation_visu_ho_vectorialdisc_ptrtype M_opIstress;
 #endif
-    // post-process measure at point
-    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
     // post-process measure forces (lift,drag) and flow rate
     std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
     std::vector< ModelMeasuresFlowRate > M_postProcessMeasuresFlowRate;
@@ -3251,7 +3245,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::executePostProce
     }
 
     // execute common post process and save measures
-    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, M_measurePointsEvaluation, symbolsExpr, mfields, mquantities );
+    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, symbolsExpr, mfields, mquantities );
 }
 
 

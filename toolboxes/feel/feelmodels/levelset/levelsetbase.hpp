@@ -217,9 +217,6 @@ public:
     typedef std::shared_ptr<exporter_type> exporter_ptrtype;
     typedef exporter_ptrtype exporter_manager_ptrtype;
 
-    // Measure tools for points evaluation
-    typedef MeasurePointsEvaluation< hana::tuple<GeometricSpace<mesh_type>> > measure_points_evaluation_type;
-    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -720,7 +717,6 @@ protected:
     //--------------------------------------------------------------------//
     // Export
     exporter_ptrtype M_exporter;
-    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 
     //--------------------------------------------------------------------//
     // User-defined fields
@@ -877,7 +873,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const&
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
     this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr );
-    this->executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), M_measurePointsEvaluation, symbolsExpr, mfields, tupleMeasuresQuantities );
+    this->executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields, tupleMeasuresQuantities );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
