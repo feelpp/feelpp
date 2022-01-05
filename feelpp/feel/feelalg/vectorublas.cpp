@@ -503,19 +503,7 @@ void VectorUblasContiguousGhosts<T, Storage>::scale( const value_type factor )
 {
     M_vec.operator*=( factor );
 }
-
-template< typename T, typename Storage > 
-VectorUblasRange<T> VectorUblasContiguousGhosts<T, Storage>::range( const range_type & rangeActive, const range_type & rangeGhost )
-{
-    return VectorUblasRange<T>( *this, rangeActive, rangeGhost );
-}
-
-template< typename T, typename Storage >
-VectorUblasSlice<T> VectorUblasContiguousGhosts<T, Storage>::slice( const slice_type & sliceActive, const slice_type & sliceGhost )
-{
-    return VectorUblasSlice<T>( *this, sliceActive, sliceGhost );
-}
-  
+ 
 template< typename T, typename Storage > 
 typename VectorUblasContiguousGhosts<T, Storage>::real_type VectorUblasContiguousGhosts<T, Storage>::min( bool parallel ) const
 {
@@ -875,6 +863,18 @@ value_type VectorUblasContiguousGhosts<T, Storage>::dotVector( const VectorUblas
     return globalResult;
 }   
 
+template< typename T, typename Storage > 
+VectorUblasRange<T, Storage> * VectorUblasContiguousGhosts<T, Storage>::rangeImpl( const range_type & rangeActive, const range_type & rangeGhost )
+{
+    return new VectorUblasRange<T, Storage>( *this, rangeActive, rangeGhost );
+}
+
+template< typename T, typename Storage >
+VectorUblasSlice<T, Storage> * VectorUblasContiguousGhosts<T, Storage>::sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost )
+{
+    return new VectorUblasSlice<T, Storage>( *this, sliceActive, sliceGhost );
+}
+
 /*-----------------------------------------------------------------------------*/
 
 template< typename T, typename Storage >
@@ -943,19 +943,7 @@ void VectorUblasNonContiguousGhosts<T, Storage>::scale( const value_type factor 
     M_vec.operator*=( factor );
     M_vecNonContiguousGhosts.operator*=( factor );
 }
-
-template< typename T, typename Storage > 
-VectorUblasRange<T> VectorUblasNonContiguousGhosts<T, Storage>::range( const range_type & rangeActive, const range_type & rangeGhost )
-{
-    return VectorUblasRange<T>( *this, rangeActive, rangeGhost );
-}
-
-template< typename T, typename Storage > 
-VectorUblasSlice<T> VectorUblasNonContiguousGhosts<T, Storage>::slice( const slice_type & sliceActive, const slice_type & sliceGhost )
-{
-    return VectorUblasSlice<T>( *this, sliceActive, sliceGhost );
-}
-  
+ 
 template< typename T, typename Storage > 
 typename VectorUblasNonContiguousGhosts<T, Storage>::real_type VectorUblasNonContiguousGhosts<T, Storage>::min( bool parallel ) const
 {
@@ -1355,40 +1343,53 @@ value_type VectorUblasNonContiguousGhosts<T, Storage>::dotVector( const VectorUb
     return globalResult;
 }   
 
-template< typename T >
-VectorUblasRange<T>::VectorUblasRange( VectorUblasContiguousGhosts<T> & v, const range_type & rangeActive, const range_type & rangeGhost ):
-    super_type( v.mapPtr() )
+template< typename T, typename Storage > 
+VectorUblasRange<T, Storage> * VectorUblasNonContiguousGhosts<T, Storage>::rangeImpl( const range_type & rangeActive, const range_type & rangeGhost )
 {
-    std::visit( [this]( auto && vec ) { this->M_vec = ublas::vector_range( vec, rangeActive ); }, v.vec() );
-    std::visit( [this]( auto && vec ) { this->M_vecNonContiguousGhosts = ublas::vector_range( vec, rangeGhost ); }, v.vec() );
+    return new VectorUblasRange<T, Storage>( *this, rangeActive, rangeGhost );
 }
 
-template< typename T >
-VectorUblasRange<T>::VectorUblasRange( VectorUblasNonContiguousGhosts<T> & v, const range_type & rangeActive, const range_type & rangeGhost ):
-    super_type( v.mapPtr() )
+template< typename T, typename Storage > 
+VectorUblasSlice<T, Storage> * VectorUblasNonContiguousGhosts<T, Storage>::sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost )
 {
-    std::visit( [this]( auto && vec ) { this->M_vec = ublas::vector_range( vec, rangeActive ); }, v.vec() );
-    std::visit( [this]( auto && vec ) { this->M_vecNonContiguousGhosts = ublas::vector_range( vec, rangeGhost ); }, v.vecNonContiguousGhosts() );
+    return new VectorUblasSlice<T, Storage>( *this, sliceActive, sliceGhost );
 }
 
-template< typename T >
-VectorUblasSlice<T>::VectorUblasSlice( VectorUblasContiguousGhosts<T> & v, const slice_type & sliceActive, const slice_type & sliceGhost ):
+template< typename T, typename Storage >
+VectorUblasRange<T, Storage>::VectorUblasRange( VectorUblasContiguousGhosts<T, Storage> & v, const range_type & rangeActive, const range_type & rangeGhost ):
     super_type( v.mapPtr() )
 {
-    std::visit( [this]( auto && vec ) { this->M_vec = ublas::vector_slice( vec, sliceActive ); }, v.vec() );
-    std::visit( [this]( auto && vec ) { this->M_vecNonContiguousGhosts = ublas::vector_slice( vec, sliceGhost ); }, v.vec() );
+    this->M_vec = ublas::vector_range( v.M_vec, rangeActive );
+    this->M_vecNonContiguousGhosts = ublas::vector_range( v.M_vec, rangeGhost );
 }
 
-template< typename T >
-VectorUblasSlice<T>::VectorUblasSlice( VectorUblasNonContiguousGhosts<T> & v, const slice_type & sliceActive, const slice_type & sliceGhost ):
+template< typename T, typename Storage >
+VectorUblasRange<T, Storage>::VectorUblasRange( VectorUblasNonContiguousGhosts<T, Storage> & v, const range_type & rangeActive, const range_type & rangeGhost ):
     super_type( v.mapPtr() )
 {
-    std::visit( [this]( auto && vec ) { this->M_vec = ublas::vector_slice( vec, sliceActive ); }, v.vec() );
-    std::visit( [this]( auto && vec ) { this->M_vecNonContiguousGhosts = ublas::vector_slice( vec, sliceGhost ); }, v.vecNonContiguousGhosts() );
+    this->M_vec = ublas::vector_range( v.M_vec, rangeActive );
+    this->M_vecNonContiguousGhosts = ublas::vector_range( v.M_vecNonContiguousGhosts, rangeGhost );
+}
+
+template< typename T, typename Storage >
+VectorUblasSlice<T>::VectorUblasSlice( VectorUblasContiguousGhosts<T, Storage> & v, const slice_type & sliceActive, const slice_type & sliceGhost ):
+    super_type( v.mapPtr() )
+{
+    this->M_vec = ublas::vector_slice( v.M_vec, sliceActive );
+    this->M_vecNonContiguousGhosts = ublas::vector_slice( v.M_vec, sliceGhost );
+}
+
+template< typename T, typename Storage >
+VectorUblasSlice<T>::VectorUblasSlice( VectorUblasNonContiguousGhosts<T, Storage> & v, const slice_type & sliceActive, const slice_type & sliceGhost ):
+    super_type( v.mapPtr() )
+{
+    this->M_vec = ublas::vector_slice( v.M_vec, sliceActive );
+    this->M_vecNonContiguousGhosts = ublas::vector_slice( v.M_vecNonContiguousGhosts, sliceGhost );
 }
 
 } // namespace detail
 
+/*-----------------------------------------------------------------------------*/
 template< typename T >
 VectorUblas<T>::VectorUblas():
     super_type(),
