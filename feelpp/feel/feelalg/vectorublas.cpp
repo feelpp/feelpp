@@ -503,6 +503,18 @@ void VectorUblasContiguousGhosts<T, Storage>::scale( const value_type factor )
 {
     M_vec.operator*=( factor );
 }
+
+template< typename T > 
+VectorUblasRange<T> VectorUblasContiguousGhosts<T>::range( const range_type & rangeActive, const range_type & rangeGhost )
+{
+    return VectorUblasRange<T>( *this, rangeActive, rangeGhost );
+}
+
+template< typename T > 
+VectorUblasSlice<T> VectorUblasContiguousGhosts<T>::slice( const slice_type & sliceActive, const slice_type & sliceGhost )
+{
+    return VectorUblasSlice<T>( *this, sliceActive, sliceGhost );
+}
   
 template< typename T, typename Storage > 
 typename VectorUblasContiguousGhosts<T, Storage>::real_type VectorUblasContiguousGhosts<T, Storage>::min( bool parallel ) const
@@ -931,6 +943,18 @@ void VectorUblasNonContiguousGhosts<T, Storage>::scale( const value_type factor 
     M_vec.operator*=( factor );
     M_vecNonContiguousGhosts.operator*=( factor );
 }
+
+template< typename T > 
+VectorUblasRange<T> VectorUblasNonContiguousGhosts<T>::range( const range_type & rangeActive, const range_type & rangeGhost )
+{
+    return VectorUblasRange<T>( *this, rangeActive, rangeGhost );
+}
+
+template< typename T > 
+VectorUblasSlice<T> VectorUblasNonContiguousGhosts<T>::slice( const slice_type & sliceActive, const slice_type & sliceGhost )
+{
+    return VectorUblasSlice<T>( *this, sliceActive, sliceGhost );
+}
   
 template< typename T, typename Storage > 
 typename VectorUblasNonContiguousGhosts<T, Storage>::real_type VectorUblasNonContiguousGhosts<T, Storage>::min( bool parallel ) const
@@ -1331,6 +1355,92 @@ value_type VectorUblasNonContiguousGhosts<T, Storage>::dotVector( const VectorUb
     return globalResult;
 }   
 
+template< typename T >
+VectorUblasRange<T>::VectorUblasRange( VectorUblasContiguousGhosts<T> & v, const range_type & rangeActive, const range_type & rangeGhost ):
+    super_type( v.mapPtr() )
+{
+    std::visit( [this]( auto && vec ) { this->M_vec = ublas::vector_range( vec, rangeActive ); }, v.vec() );
+    std::visit( [this]( auto && vec ) { this->M_vecNonContiguousGhosts = ublas::vector_range( vec, rangeGhost ); }, v.vec() );
+}
+
+template< typename T >
+VectorUblasRange<T>::VectorUblasRange( VectorUblasNonContiguousGhosts<T> & v, const range_type & rangeActive, const range_type & rangeGhost ):
+    super_type( v.mapPtr() )
+{
+    std::visit( [this]( auto && vec ) { this->M_vec = ublas::vector_range( vec, rangeActive ); }, v.vec() );
+    std::visit( [this]( auto && vec ) { this->M_vecNonContiguousGhosts = ublas::vector_range( vec, rangeGhost ); }, v.vecNonContiguousGhosts() );
+}
+
+template< typename T >
+VectorUblasSlice<T>::VectorUblasSlice( VectorUblasContiguousGhosts<T> & v, const slice_type & sliceActive, const slice_type & sliceGhost ):
+    super_type( v.mapPtr() )
+{
+    std::visit( [this]( auto && vec ) { this->M_vec = ublas::vector_slice( vec, sliceActive ); }, v.vec() );
+    std::visit( [this]( auto && vec ) { this->M_vecNonContiguousGhosts = ublas::vector_slice( vec, sliceGhost ); }, v.vec() );
+}
+
+template< typename T >
+VectorUblasSlice<T>::VectorUblasSlice( VectorUblasNonContiguousGhosts<T> & v, const slice_type & sliceActive, const slice_type & sliceGhost ):
+    super_type( v.mapPtr() )
+{
+    std::visit( [this]( auto && vec ) { this->M_vec = ublas::vector_slice( vec, sliceActive ); }, v.vec() );
+    std::visit( [this]( auto && vec ) { this->M_vecNonContiguousGhosts = ublas::vector_slice( vec, sliceGhost ); }, v.vecNonContiguousGhosts() );
+}
+
 } // namespace detail
+
+template< typename T >
+VectorUblas<T>::VectorUblas():
+    super_type(),
+    M_vectorImpl( new VectorUblasContiguousGhosts<T>() )
+{
+    //CHECK(false) << "empty ctor: TODO";
+}
+template< typename T >
+VectorUblas<T>::VectorUblas( size_type s ):
+    super_type( s, Environment::worldCommSeqPtr() ),
+    M_vectorImpl( new VectorUblasContiguousGhosts<T>( s ) )
+{
+    this->init( s, s, false );
+}
+template< typename T >
+VectorUblas<T>::VectorUblas( datamap_ptrtype const& dm ):
+    super_type( dm ),
+    M_vectorImpl( new VectorUblasContiguousGhosts<T>( dm ) )
+{
+    this->init( dm->nDof(), dm->nLocalDofWithGhost(), false );
+}
+template< typename T >
+VectorUblas<T>::VectorUblas( size_type s, size_type n_local ):
+    super_type( s, n_local, Environment::worldCommSeqPtr() ),
+    M_vectorImpl( new VectorUblasContiguousGhosts<T>( this->mapPtr() ) )
+{
+    this->init( this->size(), this->localSize(), false );
+}
+template< typename T >
+VectorUblas<T>::VectorUblas( VectorUblas<value_type>& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm ):
+    super_type( dm ),
+    M_vectorImpl( new //TODO )
+{
+}
+template< typename T >
+VectorUblas<T>::VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
+template< typename T >
+VectorUblas<T>::VectorUblas( VectorUblas<value_type>& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+template< typename T >
+VectorUblas<T>::VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+template< typename T >
+VectorUblas<T>::VectorUblas( ublas::vector<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
+template< typename T >
+VectorUblas<T>::VectorUblas( ublas::vector<value_type>& mActive, slice_type const& sliceActive,
+template< typename T >
+VectorUblas<T>::ublas::vector<value_type>& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+template< typename T >
+VectorUblas<T>::VectorUblas( typename this_type::shallow_array_adaptor::subtype& mActive, slice_type const& sliceActive,
+        typename this_type::shallow_array_adaptor::subtype& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+template< typename T >
+VectorUblas<T>::VectorUblas( size_type nActiveDof, value_type* arrayActiveDof,
+        size_type nGhostDof, value_type* arrayGhostDof,
+        datamap_ptrtype const& dm );
 
 } // namespace Feel

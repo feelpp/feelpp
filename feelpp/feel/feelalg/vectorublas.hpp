@@ -68,8 +68,14 @@ template< typename T >
 class VectorUblasBase;
 template< typename T >
 class VectorUblasContiguousGhostsBase;
+template< typename T, typename Storage >
+class VectorUblasContiguousGhosts;
 template< typename T >
 class VectorUblasNonContiguousGhostsBase;
+template< typename T, typename Storage >
+class VectorUblasNonContiguousGhosts;
+template< typename T >
+class VectorUblasRange;
 
 } // namespace detail
 
@@ -93,10 +99,34 @@ class VectorUblas : public Vector<T>
     public:
         // Constructors/Destructor
         VectorUblas();
+        VectorUblas( size_type s );
+        VectorUblas( datamap_ptrtype const& dm );
+        VectorUblas( size_type s, size_type n_local );
+        //FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
+        VectorUblas( VectorUblas<value_type>& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
+        VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
+        //FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, slice_type const& range, datamap_ptrtype const& dm );
+        VectorUblas( VectorUblas<value_type>& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+        VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+        //FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, range_type const& range );
+        VectorUblas( ublas::vector<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
+        //FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, slice_type const& slice );
+        //FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, slice_type const& slice );
+        //FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, slice_type const& slice, datamap_ptrtype const& dm );
+        VectorUblas( ublas::vector<value_type>& mActive, slice_type const& sliceActive,
+                     ublas::vector<value_type>& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+        VectorUblas( typename this_type::shallow_array_adaptor::subtype& mActive, slice_type const& sliceActive,
+                     typename this_type::shallow_array_adaptor::subtype& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+        VectorUblas( size_type nActiveDof, value_type* arrayActiveDof,
+                     size_type nGhostDof, value_type* arrayGhostDof,
+                     datamap_ptrtype const& dm );
 
-        ~VectorUblas() override;
-        //TODO
-        super_type::clone_ptrtype clone() const override = 0;
+        VectorUblas( const VectorUblas & other ): /*TODO*/M_vectorImpl( other.M_vectorImpl ? other.M_vectorImpl->clone() : nullptr ) { }
+        VectorUblas & swap( VectorUblas & other ) { std::swap( M_vectorImpl, other.M_vectorImpl ); return *this; }
+        VectorUblas & operator=( const VectorUblas & other ) { swap( VectorUblas( other ) ); return *this; }
+        ~VectorUblas() override { delete M_vectorImpl; }
+
+        super_type::clone_ptrtype clone() const override { return super_type::clone_ptrtype( new self_type( *this ) ); }
 
         // Storage API
         void init( const size_type n, const size_type n_local, const bool fast = false ) override { return M_vectorImpl->init( n, n_local, fast ); }
@@ -214,6 +244,11 @@ class VectorUblasBase: public Vector<T>
         typedef ublas::vector_slice<ublas::vector<value_type>> vector_slice_storage_type;
         typedef ublas::vector<value_type, Feel::detail::shallow_array_adaptor<value_type>> vector_map_storage_type;
         typedef std::variant<
+            vector_storage_type,
+            vector_range_storage_type,
+            vector_slice_storage_type,
+            vector_map_storage_type > vector_variant_type;
+        typedef std::variant<
             vector_storage_type *,
             vector_range_storage_type *,
             vector_slice_storage_type *,
@@ -223,6 +258,10 @@ class VectorUblasBase: public Vector<T>
             const vector_range_storage_type *,
             const vector_slice_storage_type *,
             const vector_map_storage_type * > vector_cstptr_variant_type;
+
+        // Ublas range and slice types
+        typedef ublas::basic_range<typename vector_storage_type::size_type, typename vector_storage_type::difference_type> range_type;
+        typedef ublas::basic_slice<typename vector_storage_type::size_type, typename vector_storage_type::difference_type> slice_type;
 
         // Iterator class
         class iterator
@@ -359,6 +398,10 @@ class VectorUblasBase: public Vector<T>
         void insert( const Vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
         void insert( const ublas::vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
 
+        // Range and slice API
+        virtual VectorUblasRange<T> range( const range_type & rangeActive, const range_type & rangeGhost ) = 0;
+        virtual VectorUblasSlice<T> slice( const slice_type & sliceActive, const slice_type & sliceGhost ) = 0;
+
         // Utilities
         real_type min() const override { return this->min( true ); }
         virtual real_type min( bool parallel ) const = 0;
@@ -474,8 +517,11 @@ class VectorUblasContiguousGhostsBase:
         typedef typename super_type::datamap_ptrtype datamap_ptrtype;
         using size_type = typename datamap_type::size_type;
 
-        using super_type::vector_ptr_variant_type;
-        using super_type::vector_cstptr_variant_type;
+        using typename super_type::vector_variant_type;
+        using typename super_type::vector_ptr_variant_type;
+        using typename super_type::vector_cstptr_variant_type;
+        using typename super_type::range_type;
+        using typename super_type::slice_type;
 
     public:
         // Constructors/Destructor
@@ -505,6 +551,10 @@ class VectorUblasContiguousGhostsBase:
         virtual void setZero() override = 0;
 
         virtual void scale( const value_type factor ) override = 0;
+        
+        // Range and slice API
+        virtual VectorUblasRange<T> range( const range_type & rangeActive, const range_type & rangeGhost ) override = 0;
+        virtual VectorUblasSlice<T> slice( const slice_type & sliceActive, const slice_type & sliceGhost ) override = 0;
 
         // Utilities
         virtual real_type min( bool parallel ) const override = 0;
@@ -539,7 +589,7 @@ class VectorUblasContiguousGhostsBase:
 
 };
 
-template< typename T, typename Storage = ublas::vector<value_type> >
+template< typename T >
 class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
 {
     public:
@@ -552,24 +602,25 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         typedef typename super_type::datamap_ptrtype datamap_ptrtype;
         using size_type = typename datamap_type::size_type;
 
-        typedef Storage storage_type;
-        
-        using super_type::vector_storage_type;
-        using super_type::vector_range_storage_type;
-        using super_type::vector_slice_storage_type;
-        using super_type::vector_map_storage_type;
-        static_assert( 
-                std::is_same_v< storage_type, vector_storage_type > ||
-                std::is_same_v< storage_type, vector_range_storage_type > ||
-                std::is_same_v< storage_type, vector_slice_storage_type > || 
-                std::is_same_v< storage_type, vector_map_storage_type >,
-                "unsupported storage type" );
+        //using super_type::vector_storage_type;
+        //using super_type::vector_range_storage_type;
+        //using super_type::vector_slice_storage_type;
+        //using super_type::vector_map_storage_type;
+        //static_assert( 
+                //std::is_same_v< storage_type, vector_storage_type > ||
+                //std::is_same_v< storage_type, vector_range_storage_type > ||
+                //std::is_same_v< storage_type, vector_slice_storage_type > || 
+                //std::is_same_v< storage_type, vector_map_storage_type >,
+                //"unsupported storage type" );
 
-        using super_type::vector_ptr_variant_type;
-        using super_type::vector_cstptr_variant_type;
+        using typename super_type::vector_variant_type;
+        using typename super_type::vector_ptr_variant_type;
+        using typename super_type::vector_cstptr_variant_type;
+        using typename super_type::range_type;
+        using typename super_type::slice_type;
 
     public:
-        VectorUblasContiguousGhosts( VectorUblasContiguousGhosts<T, Storage> const& v ): super_type(v), M_vec( v.M_vec ) { }
+        VectorUblasContiguousGhosts( VectorUblasContiguousGhosts<T> const& v ): super_type(v), M_vec( v.M_vec ) { }
 
         virtual super_type::clone_ptrtype clone() const override;
 
@@ -588,6 +639,10 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         virtual void setZero() override;
 
         virtual void scale( const value_type factor ) override;
+        
+        // Range and slice API
+        virtual VectorUblasRange<T> range( const range_type & rangeActive, const range_type & rangeGhost ) override;
+        virtual VectorUblasSlice<T> slice( const slice_type & sliceActive, const slice_type & sliceGhost ) override;
 
         // Utilities
         virtual real_type min( bool parallel ) const override;
@@ -645,8 +700,11 @@ class VectorUblasNonContiguousGhostsBase:
         typedef typename super_type::datamap_ptrtype datamap_ptrtype;
         using size_type = typename datamap_type::size_type;
 
-        using super_type::vector_ptr_variant_type;
-        using super_type::vector_cstptr_variant_type;
+        using typename super_type::vector_variant_type;
+        using typename super_type::vector_ptr_variant_type;
+        using typename super_type::vector_cstptr_variant_type;
+        using typename super_type::range_type;
+        using typename super_type::slice_type;
 
     public:
         // Constructors/Destructor
@@ -677,6 +735,10 @@ class VectorUblasNonContiguousGhostsBase:
         virtual void setZero() override = 0;
 
         virtual void scale( const value_type factor ) override = 0;
+
+        // Range and slice API
+        virtual VectorUblasRange<T> range( const range_type & rangeActive, const range_type & rangeGhost ) override = 0;
+        virtual VectorUblasSlice<T> slice( const slice_type & sliceActive, const slice_type & sliceGhost ) override = 0;
 
         // Utilities
         virtual real_type min( bool parallel ) const override = 0;
@@ -717,7 +779,7 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
 {
     public:
         // Typedefs
-        typedef VectorUblasContiguousGhostsBase<T> super_type;
+        typedef VectorUblasNonContiguousGhostsBase<T> super_type;
 
         typedef T value_type;
         typedef typename type_traits<value_type>::real_type real_type;
@@ -738,8 +800,11 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
                 std::is_same_v< storage_type, vector_map_storage_type >,
                 "unsupported storage type" );
 
-        using super_type::vector_ptr_variant_type;
-        using super_type::vector_cstptr_variant_type;
+        using typename super_type::vector_variant_type;
+        using typename super_type::vector_ptr_variant_type;
+        using typename super_type::vector_cstptr_variant_type;
+        using typename super_type::range_type;
+        using typename super_type::slice_type;
 
     public:
         VectorUblasNonContiguousGhosts( VectorUblasNonContiguousGhosts<T, Storage> const& v ): super_type(v), M_vec( v.M_vec ), M_vecNonContiguousGhosts( v.M_vecNonContiguousGhosts ) { }
@@ -762,6 +827,10 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         virtual void setZero() override;
 
         virtual void scale( const value_type factor ) override;
+        
+        // Range and slice API
+        virtual VectorUblasRange<T> range( const range_type & rangeActive, const range_type & rangeGhost ) override = 0;
+        virtual VectorUblasSlice<T> slice( const slice_type & sliceActive, const slice_type & sliceGhost ) override = 0;
 
         // Utilities
         virtual real_type min( bool parallel ) const override;
@@ -798,6 +867,54 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
     protected:
         storage_type M_vec;
         storage_type M_vecNonContiguousGhosts;
+
+};
+
+template< typename T >
+class VectorUblasRange: public VectorUblasNonContiguousGhosts<T>
+{
+    public:
+        typedef VectorUblasNonContiguousGhosts<T> super_type;
+
+        typedef T value_type;
+        typedef typename type_traits<value_type>::real_type real_type;
+        typedef typename super_type::datamap_type datamap_type;
+        typedef typename super_type::datamap_ptrtype datamap_ptrtype;
+        using size_type = typename datamap_type::size_type;
+
+        using typename super_type::vector_variant_type;
+        using typename super_type::vector_ptr_variant_type;
+        using typename super_type::vector_cstptr_variant_type;
+        using typename super_type::range_type;
+        using typename super_type::slice_type;
+
+    public:
+        VectorUblasRange( VectorUblasContiguousGhosts<T> & v, const range_type & rangeActive, const range_type & rangeGhost );
+        VectorUblasRange( VectorUblasNonContiguousGhosts<T> & v, const range_type & rangeActive, const range_type & rangeGhost );
+
+};
+
+template< typename T >
+class VectorUblasSlice: public VectorUblasNonContiguousGhosts<T>
+{
+    public:
+        typedef VectorUblasNonContiguousGhosts<T> super_type;
+
+        typedef T value_type;
+        typedef typename type_traits<value_type>::real_type real_type;
+        typedef typename super_type::datamap_type datamap_type;
+        typedef typename super_type::datamap_ptrtype datamap_ptrtype;
+        using size_type = typename datamap_type::size_type;
+
+        using typename super_type::vector_variant_type;
+        using typename super_type::vector_ptr_variant_type;
+        using typename super_type::vector_cstptr_variant_type;
+        using typename super_type::range_type;
+        using typename super_type::slice_type;
+
+    public:
+        VectorUblasSlice( VectorUblasContiguousGhosts<T> & v, const slice_type & rangeActive, const slice_type & rangeGhost );
+        VectorUblasSlice( VectorUblasNonContiguousGhosts<T> & v, const slice_type & rangeActive, const slice_type & rangeGhost );
 
 };
 
