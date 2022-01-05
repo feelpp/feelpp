@@ -240,7 +240,7 @@ typename VectorUblasBase<T>::value_type VectorUblasBase<T>::dot( const Vector<T>
 }
 
 
-template<typename T>
+template< typename T >
 void VectorUblasBase<T>::printMatlab( const std::string & filename, bool renumber ) const
 {
     std::string name = filename;
@@ -287,7 +287,7 @@ void VectorUblasBase<T>::printMatlab( const std::string & filename, bool renumbe
 }
 
 #ifdef FEELPP_HAS_HDF5
-template<typename T>
+template< typename T >
 void VectorUblasBase<T>::saveHDF5( const std::string & filename, const std::string & tableName, bool appendMode ) const
 {
     bool useTransposedStorage = true;
@@ -352,7 +352,7 @@ void VectorUblasBase<T>::saveHDF5( const std::string & filename, const std::stri
     hdf5.closeFile();
 }
 
-template<typename T,>
+template< typename T >
 void VectorUblasBase<T>::loadHDF5( const std::string & filename, const std::string & tableName )
 {
     bool useTransposedStorage = true;
@@ -410,7 +410,7 @@ void VectorUblasBase<T>::loadHDF5( const std::string & filename, const std::stri
 }
 #endif
 
-template<typename T>
+template< typename T >
 void VectorUblasBase<T,Storage>::localizeToOneProcessor( ublas::vector<T> & v_local, const size_type pid ) const
 {
     checkInvariant();
@@ -440,7 +440,7 @@ void VectorUblasBase<T,Storage>::localizeToOneProcessor( ublas::vector<T> & v_lo
 #endif
 }
 
-template<typename T>
+template< typename T >
 void VectorUblasBase<T,Storage>::localizeToOneProcessor( std::vector<T> & v_local, const size_type pid ) const
 {
     ublas::vector<T> ublasV;
@@ -504,14 +504,14 @@ void VectorUblasContiguousGhosts<T, Storage>::scale( const value_type factor )
     M_vec.operator*=( factor );
 }
 
-template< typename T > 
-VectorUblasRange<T> VectorUblasContiguousGhosts<T>::range( const range_type & rangeActive, const range_type & rangeGhost )
+template< typename T, typename Storage > 
+VectorUblasRange<T> VectorUblasContiguousGhosts<T, Storage>::range( const range_type & rangeActive, const range_type & rangeGhost )
 {
     return VectorUblasRange<T>( *this, rangeActive, rangeGhost );
 }
 
-template< typename T > 
-VectorUblasSlice<T> VectorUblasContiguousGhosts<T>::slice( const slice_type & sliceActive, const slice_type & sliceGhost )
+template< typename T, typename Storage >
+VectorUblasSlice<T> VectorUblasContiguousGhosts<T, Storage>::slice( const slice_type & sliceActive, const slice_type & sliceGhost )
 {
     return VectorUblasSlice<T>( *this, sliceActive, sliceGhost );
 }
@@ -944,14 +944,14 @@ void VectorUblasNonContiguousGhosts<T, Storage>::scale( const value_type factor 
     M_vecNonContiguousGhosts.operator*=( factor );
 }
 
-template< typename T > 
-VectorUblasRange<T> VectorUblasNonContiguousGhosts<T>::range( const range_type & rangeActive, const range_type & rangeGhost )
+template< typename T, typename Storage > 
+VectorUblasRange<T> VectorUblasNonContiguousGhosts<T, Storage>::range( const range_type & rangeActive, const range_type & rangeGhost )
 {
     return VectorUblasRange<T>( *this, rangeActive, rangeGhost );
 }
 
-template< typename T > 
-VectorUblasSlice<T> VectorUblasNonContiguousGhosts<T>::slice( const slice_type & sliceActive, const slice_type & sliceGhost )
+template< typename T, typename Storage > 
+VectorUblasSlice<T> VectorUblasNonContiguousGhosts<T, Storage>::slice( const slice_type & sliceActive, const slice_type & sliceGhost )
 {
     return VectorUblasSlice<T>( *this, sliceActive, sliceGhost );
 }
