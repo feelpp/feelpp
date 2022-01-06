@@ -88,7 +88,11 @@ public:
     void printAndSaveInfo();
     void solve();
     void exportResults();
-    bool checkResults() const { return M_heatModel->checkResults() && M_electricModel->checkResults(); }
+    bool checkResults() const {
+        bool ch = M_heatModel->checkResults();
+        bool ce = M_electricModel->checkResults();
+        return ch && ce;
+    }
 
     mesh_ptrtype mesh() const { return M_mesh; }
     heat_ptrtype heatModel() const { return M_heatModel; }

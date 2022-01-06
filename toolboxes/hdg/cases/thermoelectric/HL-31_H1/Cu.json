@@ -4,7 +4,7 @@
     "sigma0":"53e3",
     "Lorentz":"2.47e-8",
     // "k0":"0.38",//"0.37",
-    "sigma":"sigma0/(1+alpha*(T-T0)):sigma0:alpha:T:T0",
-    "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T"
+    "sigma":"sigma0/(1+alpha*(heat_T-T0)):sigma0:alpha:heat_T:T0",
+    "k":"sigma0*Lorentz*heat_T/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:Lorentz:heat_T"
     // "k":"k0*T/((1+alpha*(T-T0))*T0):k0:T:alpha:T0"
 }

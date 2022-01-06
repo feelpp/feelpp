@@ -9,12 +9,18 @@
     },
     "Parameters":
     {
-        "dif":0.03125,
-        "intensity":-800,
+        "dif":0.05,
+        // "dif":0.1,
+        // "intensity":-800,
+        "angle":"Pi/2",
+        "intensity":"-sigma0/angle*dif*log(2):sigma0:angle:dif",
         "sigma0":58e3,
         "k0":0.38,
-        "h":0.08,
-        "Tw":293
+        "hc":0.08,
+        "Tw":293,
+        "a":77.32406120073146,
+        "r0":1.2728918013826793,
+        "Tm":474.7493592202795
     },
     "Materials":
     {
@@ -31,8 +37,8 @@
             // "k":"sigma0*Lorentz*heat_T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:heat_T"
             // "k":"k0:k0",
             "k":"k0*heat_T/((1+alpha*(heat_T-T0))*T0):k0:heat_T:alpha:T0",
-            "electric_c":"sigma:sigma",
-            "heat_c":"k:k"
+            "electric_c":"sigma0:sigma0",
+            "heat_c":"k0:k0"
         }
     },
     "InitialConditions":
@@ -44,7 +50,7 @@
                 "myic1":
                 {
                     "markers":"omega",
-                    "expr": "58e3"
+                    "expr": "293"
                 }
             }
         }
@@ -100,13 +106,13 @@
             {
                 "Rint":
                 {
-                    "expr1":"-h:h",
-                    "expr2":"-h*Tw:h:Tw"
+                    "expr1":"-hc:hc",
+                    "expr2":"-hc*Tw:hc:Tw"
                 },
                 "Rext":
                 {
-                    "expr1":"-h:h",
-                    "expr2":"-h*Tw:h:Tw"
+                    "expr1":"-hc:hc",
+                    "expr2":"-hc*Tw:hc:Tw"
                 }
             },
             "Neumann":
@@ -137,7 +143,11 @@
         {
             "Exports":
             {
-                "fields": ["all"]
+                "fields": ["all"],
+                "expr":
+                {
+                    "Jex":"{sigma0*dif/angle*y/(x*x+y*y),-sigma0*dif/angle*x/(x*x+y*y),0}:x:y:dif:angle:sigma0"
+                }
             },
             "Measures":
             {
@@ -172,6 +182,21 @@
                         "expr":"-electric_Cx*electric_dxP-electric_Cy*electric_dyP-electric_Cz*electric_dzP:electric_Cx:electric_dxP:electric_Cy:electric_dyP:electric_Cz:electric_dzP",
                         "markers":"omega"
                     }
+                },
+                "Norm":
+                {
+                    "errorV":
+                    {
+                        "type":"L2-error",
+                        "field":"electric-potential",
+                        "solution":"dif/angle*atan2(y,x):x:y:dif:angle"
+                    },
+                    "errorJ":
+                    {
+                        "type":"L2-relative-error",
+                        "field":"current-density",
+                        "solution":"{sigma0*dif/angle*y/(x*x+y*y),-sigma0*dif/angle*x/(x*x+y*y),0}:x:y:dif:angle:sigma0"
+                    }
                 }
             },
             "Checkers":
@@ -180,13 +205,23 @@
                 {
                     "Statistics_Intentsity0_integrate_0":
                     {
-                        "value":800,
+                        "value":"sigma0/angle*dif*log(2):sigma0:angle:dif",
                         "tolerance":1e-3
                     },
                     "Statistics_Intentsity1_integrate_1":
                     {
-                        "value":-800,
+                        "value":"-sigma0/angle*dif*log(2):sigma0:angle:dif",
                         "tolerance":1e-3
+                    },
+                    "Norm_errorV_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1e-3
+                    },
+                    "Norm_errorJ_L2-relative-error":
+                    {
+                        "value":0,
+                        "tolerance":1e-2
                     }
                 }
             }
@@ -195,7 +230,11 @@
         {
             "Exports":
             {
-                "fields": ["all"]
+                "fields": ["all"],
+                "expr":
+                {
+                    "Tex":"-a*log(sqrt(x*x+y*y))^2+Tm:x:y:a:Tm"
+                }
             },
             "Measures":
             {
@@ -223,6 +262,15 @@
 				                   ["Rint", "h", "Tw"]
                                  ]
                     }
+                },
+                "Norm":
+                {
+                    "errorT":
+                    {
+                        "type":"L2-relative-error",
+                        "field":"temperature",
+                        "solution":"-a*log(sqrt(x*x+y*y))^2+Tm:x:y:a:Tm"
+                    }
                 }
             },
             "Checkers":
@@ -231,18 +279,13 @@
                 {
                     "Statistics_MeantT_max":
                     {
-                        "value":2.770551e+02,
+                        "value":474.7493592202795,
                         "tolerance":1e-3
                     },
-                    "Statistics_MeantT_mean":
+                    "Norm_errorT_L2-relative-error":
                     {
-                        "value":2.751334e+02,
-                        "tolerance":1e-3
-                    },
-                    "Statistics_MeantT_min":
-                    {
-                        "value":2.741112e+02,
-                        "tolerance":1e-3
+                        "value":0,
+                        "tolerance":5e-2
                     }
                 }
             }
