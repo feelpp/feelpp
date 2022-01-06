@@ -85,7 +85,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                                 cfpde->setManageParameterValuesOfModelProperties( false );
                             }
                             cfpde->setMaterialsProperties( M_materialsProperties );
-                            cfpde->setMesh( this->mesh() );
+                            cfpde->setModelMeshAsShared( this->modelMesh() );
 
                             // TODO check if the same space has already built
                             cfpde->init( false );
