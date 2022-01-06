@@ -155,3 +155,4 @@ feelpp/pyfeelpp/pytest-3.json
 nohup.out
 *.mesh.path
 *.measures.csv
+testsuite/feelfmi/.FMUOutput/
