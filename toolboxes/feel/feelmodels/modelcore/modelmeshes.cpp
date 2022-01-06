@@ -14,7 +14,7 @@ namespace FeelModels
 
 
 template <typename IndexType>
-ModelMesh<IndexType>::ImportConfig::ImportConfig( ModelMeshes<IndexType> const& mMeshes )
+ModelMeshCommon<IndexType>::ImportConfig::ImportConfig( ModelMeshes<IndexType> const& mMeshes )
     :
     M_generatePartitioning( boption(_prefix=mMeshes.prefix(),_name="gmsh.partition",_vm=mMeshes.clovm()) ),
     M_numberOfPartition( mMeshes.worldComm().localSize() ),
@@ -29,7 +29,7 @@ ModelMesh<IndexType>::ImportConfig::ImportConfig( ModelMeshes<IndexType> const& 
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::ImportConfig::setup( nl::json const& jarg, ModelMeshes<IndexType> const& mMeshes )
+ModelMeshCommon<IndexType>::ImportConfig::setup( nl::json const& jarg, ModelMeshes<IndexType> const& mMeshes )
 {
     if ( jarg.contains("filename") )
     {
@@ -66,7 +66,7 @@ ModelMesh<IndexType>::ImportConfig::setup( nl::json const& jarg, ModelMeshes<Ind
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::ImportConfig::setupInputMeshFilenameWithoutApplyPartitioning( std::string const& filename )
+ModelMeshCommon<IndexType>::ImportConfig::setupInputMeshFilenameWithoutApplyPartitioning( std::string const& filename )
 {
     M_inputFilename = filename;
     M_generatePartitioning = false;
@@ -74,7 +74,7 @@ ModelMesh<IndexType>::ImportConfig::setupInputMeshFilenameWithoutApplyPartitioni
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::ImportConfig::setupSequentialAndLoadByMasterRankOnly()
+ModelMeshCommon<IndexType>::ImportConfig::setupSequentialAndLoadByMasterRankOnly()
 {
     M_generatePartitioning = false;
     M_numberOfPartition = 1;
@@ -83,7 +83,7 @@ ModelMesh<IndexType>::ImportConfig::setupSequentialAndLoadByMasterRankOnly()
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::ImportConfig::updateForUse( ModelMeshes<IndexType> const& mMeshes )
+ModelMeshCommon<IndexType>::ImportConfig::updateForUse( ModelMeshes<IndexType> const& mMeshes )
 {
     if ( M_inputFilename.empty() )
         return;
@@ -112,7 +112,7 @@ ModelMesh<IndexType>::ImportConfig::updateForUse( ModelMeshes<IndexType> const& 
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::ImportConfig::updateInformationObject( nl::json & p ) const
+ModelMeshCommon<IndexType>::ImportConfig::updateInformationObject( nl::json & p ) const
 {
     if ( this->hasMeshFilename() )
     {
@@ -131,7 +131,7 @@ ModelMesh<IndexType>::ImportConfig::updateInformationObject( nl::json & p ) cons
 
 template <typename IndexType>
 tabulate_informations_ptr_t
-ModelMesh<IndexType>::ImportConfig::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+ModelMeshCommon<IndexType>::ImportConfig::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
 {
     Feel::Table tabInfo;
     if ( jsonInfo.contains("mesh-filename") )
@@ -153,8 +153,7 @@ template <typename IndexType>
 ModelMesh<IndexType>::ModelMesh( std::string const& name, ModelMeshes<IndexType> const& mMeshes )
     :
     M_name( name ),
-    M_mmeshCommon( std::make_shared<ModelMeshCommon<IndexType>>() ),
-    M_importConfig( mMeshes )
+    M_mmeshCommon( std::make_shared<ModelMeshCommon<IndexType>>( mMeshes ) )
 {}
 
 template <typename IndexType>
@@ -162,7 +161,7 @@ void
 ModelMesh<IndexType>::setup( nl::json const& jarg, ModelMeshes<IndexType> const& mMeshes )
 {
     if ( jarg.contains("Import") )
-         M_importConfig.setup( jarg.at("Import"), mMeshes );
+        M_mmeshCommon->importConfig().setup( jarg.at("Import"), mMeshes );
 
     if ( jarg.contains("Data") )
     {
@@ -219,7 +218,7 @@ ModelMesh<IndexType>::setupRestart( ModelMeshes<IndexType> const& mMeshes )
     mpi::broadcast( mMeshes.worldComm().localComm(), meshFilename, mMeshes.worldComm().masterRank() );
 
     mMeshes.log("ModelMesh","setupRestart", "mesh file : " + meshFilename);
-    M_importConfig.setupInputMeshFilenameWithoutApplyPartitioning( meshFilename );
+    M_mmeshCommon->importConfig().setupInputMeshFilenameWithoutApplyPartitioning( meshFilename );
 }
 
 
@@ -234,56 +233,57 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
     {
         std::shared_ptr<mesh_type> meshLoaded;
         std::string meshFilename;
-        M_importConfig.updateForUse( mMeshes );
+        auto & importConfig = M_mmeshCommon->importConfig();
+        importConfig.updateForUse( mMeshes );
 
-        auto wcPtr = ( M_importConfig.loadByMasterRankOnly() )? mMeshes.worldCommPtr()->subWorldCommSeqPtr() : mMeshes.worldCommPtr();
-        if ( M_importConfig.hasMeshFilename() )
+        auto wcPtr = ( importConfig.loadByMasterRankOnly() )? mMeshes.worldCommPtr()->subWorldCommSeqPtr() : mMeshes.worldCommPtr();
+        if ( importConfig.hasMeshFilename() )
         {
-            std::string const& inputMeshFilename = M_importConfig.meshFilename();
+            std::string const& inputMeshFilename = importConfig.meshFilename();
             mMeshes.log("ModelMesh","updateForUse", "load mesh file : " + inputMeshFilename);
 
             std::string rootpath = mMeshes.rootRepository();
             std::string meshPartitionedFilename = (fs::path( rootpath ) / (mMeshes.prefix() + ".json")).string();
             std::string meshFileExt = fs::path( inputMeshFilename ).extension().string();
-            bool generatePartitioning = M_importConfig.generatePartitioning();
+            bool generatePartitioning = importConfig.generatePartitioning();
             if ( generatePartitioning && meshFileExt != ".msh" )
                 CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
 
-            if ( !M_importConfig.loadByMasterRankOnly() || mMeshes.worldCommPtr()->isMasterRank() )
+            if ( !importConfig.loadByMasterRankOnly() || mMeshes.worldCommPtr()->isMasterRank() )
             {
                 meshLoaded = loadMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
                                   _filename=inputMeshFilename,
                                   _prefix=mMeshes.prefix(),
                                   _vm=mMeshes.clovm(),
                                   _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
-                                  _straighten=M_importConfig.straightenMesh(),
+                                  _straighten=importConfig.straightenMesh(),
                                   _rebuild_partitions=generatePartitioning,
                                   _rebuild_partitions_filename=meshPartitionedFilename,
-                                  _partitions=M_importConfig.numberOfPartition(),
+                                  _partitions=importConfig.numberOfPartition(),
                                   _savehdf5=0,
-                                  _update= M_importConfig.meshComponents()/*MESH_UPDATE_EDGES|MESH_UPDATE_FACES*/);
+                                  _update= importConfig.meshComponents()/*MESH_UPDATE_EDGES|MESH_UPDATE_FACES*/);
             }
 
-            meshFilename = (generatePartitioning)? meshPartitionedFilename : M_importConfig.meshFilename();
+            meshFilename = (generatePartitioning)? meshPartitionedFilename : importConfig.meshFilename();
         }
-        else if ( M_importConfig.hasGeoFilename() )
+        else if ( importConfig.hasGeoFilename() )
         {
-            std::string const& inputGeoFilename = M_importConfig.geoFilename();
+            std::string const& inputGeoFilename = importConfig.geoFilename();
             mMeshes.log("ModelMesh","updateForUse", "load geo file : " + inputGeoFilename);
             std::string path = mMeshes.rootRepository();
 
             std::string mshfile = (fs::path( path ) / mMeshes.prefix()).string();
-            if ( M_importConfig.numberOfPartition() > 1 )
+            if ( importConfig.numberOfPartition() > 1 )
                 mshfile += ".json";
             else
                 mshfile += ".msh";
-            if ( !M_importConfig.loadByMasterRankOnly() || mMeshes.worldCommPtr()->isMasterRank() )
+            if ( !importConfig.loadByMasterRankOnly() || mMeshes.worldCommPtr()->isMasterRank() )
             {
                 gmsh_ptrtype geodesc = geo( _filename=inputGeoFilename,
                                             _prefix=mMeshes.prefix(),
                                             _vm=mMeshes.clovm(),
                                             _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
-                                            _h=M_importConfig.meshSize());
+                                            _h=importConfig.meshSize());
                 // allow to have a geo and msh file with a filename equal to prefix
                 geodesc->setPrefix(mMeshes.prefix());
                 meshLoaded = createGMSHMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
@@ -291,10 +291,10 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                                         _prefix=mMeshes.prefix(),
                                         _vm=mMeshes.clovm(),
                                         _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
-                                        _h=M_importConfig.meshSize(),
-                                        _straighten=M_importConfig.straightenMesh(),
-                                        _partitions=M_importConfig.numberOfPartition(),
-                                        _update=M_importConfig.meshComponents(),
+                                        _h=importConfig.meshSize(),
+                                        _straighten=importConfig.straightenMesh(),
+                                        _partitions=importConfig.numberOfPartition(),
+                                        _update=importConfig.meshComponents(),
                                         _directory=mMeshes.rootRepository() );
             }
             meshFilename = mshfile;
@@ -369,7 +369,7 @@ ModelMesh<IndexType>::updateInformationObject( nl::json & p ) const
     if ( M_mmeshCommon->hasMesh() )
     {
         p["Discretization"] = this->mesh()->journalSection().to_string();
-        M_importConfig.updateInformationObject( p["Import configuration"] );
+        M_mmeshCommon->importConfig().updateInformationObject( p["Import configuration"] );
 
         if ( !M_mmeshCommon->meshFilename().empty() )
             p.emplace( "filename", M_mmeshCommon->meshFilename() );
@@ -393,7 +393,7 @@ ModelMesh<IndexType>::tabulateInformations( nl::json const& jsonInfo, TabulateIn
 
     if ( jsonInfo.contains("Import configuration") )
     {
-        tabInfo->add( "Import configuration",  ImportConfig::tabulateInformations( jsonInfo.at("Import configuration"), tabInfoProp ) );
+        tabInfo->add( "Import configuration", import_config_type::tabulateInformations( jsonInfo.at("Import configuration"), tabInfoProp ) );
     }
 
     if ( jsonInfo.contains("Discretization") )
@@ -531,6 +531,7 @@ ModelMeshes<IndexType>::tabulateInformations( nl::json const& jsonInfo, Tabulate
 }
 
 
+template class ModelMeshCommon<uint32_type>;
 template class ModelMesh<uint32_type>;
 template class ModelMeshes<uint32_type>;
 
