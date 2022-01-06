@@ -375,9 +375,44 @@ if ( FEELPP_ENABLE_KWSYS )
   endif()
 endif()
 
+option( FEELPP_ENABLE_FMI4CPP "Enable FMI4CPP" ON )
+if ( FEELPP_ENABLE_FMI4CPP )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring FMI4CPP")
+  set(FETCHCONTENT_SOURCE_DIR_FMI4CPP ${CMAKE_CURRENT_SOURCE_DIR}/fmi4cpp)
+  # patch includes fix for 18.04 compilation
+  FetchContent_Declare(fmi4cpp GIT_REPOSITORY https://github.com/feelpp/fmi4cpp.git GIT_TAG 645b6a35b1c166ace666c5d387d5a88b074ace18) 
+  set( USE_SYSTEM_CURL ON )
+  set( BUILD_FMI4CPP_TESTS ON )
+  if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
+      set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+  endif()
+  
+  set( FMI4CPP_HEADER_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp" )
+  set( FMI4CPP_CMAKE_INSTALL_DIR "share/feelpp/fmi4cpp")
+  set( FMI4CPP_DOC_INSTALL_DIR "share/doc/feelpp/fmi4cpp")
+  FetchContent_MakeAvailable(fmi4cpp)
+  add_library(feelpp_fmi4cpp INTERFACE)  
+  set_target_properties(fmi4cpp PROPERTIES OUTPUT_NAME "feelpp_fmi4cpp")
+  target_link_libraries(feelpp_fmi4cpp INTERFACE fmi4cpp)
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_FMI4CPP )
+  add_library(Feelpp::feelpp_fmi4cpp ALIAS feelpp_fmi4cpp)
+  target_include_directories(feelpp_fmi4cpp INTERFACE
+      $<BUILD_INTERFACE:${FMI4CPP_SOURCE_DIR}/include/>
+      $<INSTALL_INTERFACE:include/feelpp> )
+  install(TARGETS feelpp_fmi4cpp fmi4cpp EXPORT feelpp-contrib-export-targets
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
+  target_link_libraries( feelpp_contrib INTERFACE feelpp_fmi4cpp )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} fmi4cpp/Contrib")
+endif()
+
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring FMILib")
-option( FEELPP_ENABLE_FMILIB "Enable FMLIB C API" ON )
+option( FEELPP_ENABLE_FMILIB "Enable FMLIB C API" OFF )
 # FMILib configure
 # install rules.
 set(FMILIB_BUILD_STATIC_LIB OFF)
