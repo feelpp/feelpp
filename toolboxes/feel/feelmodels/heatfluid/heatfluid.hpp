@@ -257,6 +257,16 @@ public :
     void updateResidual( DataUpdateResidual & data ) const override;
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
+
+    bool checkResults() const override
+        {
+            // several calls (not do in on line) to be sure that all check have been run
+            bool checkHeatFluid = super_type::checkResults();
+            bool checkHeat = this->heatModel()->checkResults();
+            bool checkFluid = this->fluidModel()->checkResults();
+            return checkHeatFluid && checkHeat && checkFluid;
+        }
+
 private :
     void updateLinear_Heat( DataUpdateLinear & data ) const;
     void updateResidual_Heat( DataUpdateResidual & data ) const;
