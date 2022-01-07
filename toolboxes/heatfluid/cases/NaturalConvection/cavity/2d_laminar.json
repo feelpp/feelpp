@@ -20,6 +20,17 @@
         "Ra":1e5,//1.89e5,//1e5,//1e6,//1e5//1e4,//1e6,
         "Pr":0.71
     },
+    "Meshes":
+    {
+        "heatfluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/2d_laminar.geo",
+                "hsize":0.03  // 0.01
+            }
+        }
+    },
     "Materials":
     {
         "Omega":{
