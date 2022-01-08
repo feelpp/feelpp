@@ -111,6 +111,11 @@
                             }
                         },
                         "fields":["fluid.velocity","heat.temperature"],
+                        "expressions":
+                        {
+                            "local_cell_Reynolds":"materials_Omega_rho*fluid_U_magnitude*h/materials_Omega_mu:materials_Omega_rho:fluid_U_magnitude:h:materials_Omega_mu",
+                            "local_cell_Peclet":"materials_Omega_rho*fluid_U_magnitude*h/materials_Omega_k:materials_Omega_rho:fluid_U_magnitude:h:materials_Omega_k"
+                        },
                         "include_coordinates":1,
                         "output":
                         {
