@@ -264,11 +264,13 @@ public :
     //! return fields names used in postprocessing
     std::set<std::string> const& fields() const { return M_fields; }
     //! expressions used in postprocessing
-    std::map<std::string,std::tuple<ModelExpression,std::string> > const& expressions() const { return M_exprs; }
+    std::map<std::string,ModelExpression> const& expressions() const { return M_exprs; }
     //! include coordinates measure in post processing
     bool includeCoordinates() const { return M_includeCoordinates; }
     //! return info about measures output
     MeasuresOutput const& measuresOutput() const { return M_measuresOutput; }
+    //! return a related tag (for example : allow to identify the used mesh)
+    std::string const& tag() const { return M_tag; }
 
 
     void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
@@ -300,9 +302,10 @@ public :
     std::string M_directoryLibExpr;
     std::vector<std::shared_ptr<PointsOverGeometry>> M_pointsOverAllGeometry;
     std::set<std::string> M_fields;
-    std::map<std::string,std::tuple<ModelExpression,std::string> > M_exprs; // name -> ( expr, tag )
+    std::map<std::string,ModelExpression> M_exprs; // name -> expr
     bool M_includeCoordinates;
     MeasuresOutput M_measuresOutput;
+    std::string M_tag;
 };
 
 //! store informations require by the postprocessing Norm
