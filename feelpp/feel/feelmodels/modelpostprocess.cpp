@@ -393,7 +393,7 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
             mexpr.setExpr( exprStr, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
             CHECK( mexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
             //std::cout << "MYEXPR " << exprName << " : " << mexpr.exprToString() << std::endl;
-            M_exprs.emplace( exprName, std::make_tuple( std::move( mexpr ), "" ) );
+            M_exprs.emplace( exprName, std::move( mexpr ) );
         }
     }
     if ( jarg.contains( "include_coordinates" ) )
@@ -414,8 +414,8 @@ ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes cons
 void
 ModelPostprocessPointPosition::setParameterValues( std::map<std::string,double> const& mp )
 {
-    for ( auto & [name,exprData] : M_exprs )
-        std::get<0>( exprData ).setParameterValues( mp );
+    for ( auto & [exprName,mexpr] : M_exprs )
+        mexpr.setParameterValues( mp );
 
     for ( auto & pointsOverGeometry : M_pointsOverAllGeometry )
     {
