@@ -707,7 +707,8 @@ ModelNumerical::updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEval
 {
     if ( !measurePointsEvaluation )
         return;
-    measurePointsEvaluation->eval( this->keyword() /*this->modelProperties().postProcess().measuresPoint( this->keyword() )*/, M_postProcessMeasures, se, mfields );
+    for ( auto const& ppPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
+        measurePointsEvaluation->apply( this->keyword(), ppPoints, M_postProcessMeasures, se, mfields );
 }
 
 template <typename MeshType, typename RangeType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
