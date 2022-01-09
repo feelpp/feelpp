@@ -78,7 +78,7 @@
                 {
                     "Nusselt_number":
                     {
-                        "type":["integrate"],//,"max","min"], // TODO bug in minmax with dynamic context
+                        "type":["integrate","max","min"],
                         "expr":"heat_dn_T:heat_dn_T",
                         "markers":"hot_wall"
                     },
@@ -149,6 +149,16 @@
                     "Statistics_Nusselt_number_integrate":
                     {
                         "value":4.51,
+                        "tolerance":1e-1
+                    },
+                    "Statistics_Nusselt_number_max":
+                    {
+                        "value":7.636,
+                        "tolerance":1e-1
+                    },
+                    "Statistics_Nusselt_number_min":
+                    {
+                        "value":0.773,
                         "tolerance":1e-1
                     },
                     "Statistics_velocity_y_horizontal_centerline_max":
