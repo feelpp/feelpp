@@ -233,6 +233,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
     {
         std::shared_ptr<mesh_type> meshLoaded;
         std::string meshFilename;
+        std::string meshFilenameBase = fmt::format("{}.mesh",mMeshes.keyword());
         auto & importConfig = M_mmeshCommon->importConfig();
         importConfig.updateForUse( mMeshes );
 
@@ -243,7 +244,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
             mMeshes.log("ModelMesh","updateForUse", "load mesh file : " + inputMeshFilename);
 
             std::string rootpath = mMeshes.rootRepository();
-            std::string meshPartitionedFilename = (fs::path( rootpath ) / (mMeshes.prefix() + ".json")).string();
+            std::string meshPartitionedFilename = (fs::path( rootpath ) / (meshFilenameBase + ".json")).string();
             std::string meshFileExt = fs::path( inputMeshFilename ).extension().string();
             bool generatePartitioning = importConfig.generatePartitioning();
             if ( generatePartitioning && meshFileExt != ".msh" )
@@ -272,7 +273,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
             mMeshes.log("ModelMesh","updateForUse", "load geo file : " + inputGeoFilename);
             std::string path = mMeshes.rootRepository();
 
-            std::string mshfile = (fs::path( path ) / mMeshes.prefix()).string();
+            std::string mshfile = (fs::path( path ) / meshFilenameBase).string();
             if ( importConfig.numberOfPartition() > 1 )
                 mshfile += ".json";
             else
@@ -285,7 +286,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                                             _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
                                             _h=importConfig.meshSize());
                 // allow to have a geo and msh file with a filename equal to prefix
-                geodesc->setPrefix(mMeshes.prefix());
+                geodesc->setPrefix(meshFilenameBase);
                 meshLoaded = createGMSHMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
                                         _desc=geodesc,
                                         _prefix=mMeshes.prefix(),
