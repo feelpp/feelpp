@@ -166,7 +166,7 @@ set(EIGEN_TEST_NOQT 1)
 set(FETCHCONTENT_SOURCE_DIR_EIGEN ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
 set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
 
-FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 20440849794789eb9d9d29bc834296ce0e73b05c) # the commit hash for 1.5.0
+FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 3147391d946bb4b6c68edd901f2add6ac1f31f8c) # the commit hash for 1.5.0
 FetchContent_MakeAvailable(eigen)
 target_include_directories( feelpp_contrib BEFORE
       INTERFACE
@@ -382,7 +382,7 @@ option( FEELPP_ENABLE_FMILIB "Enable FMLIB C API" ON )
 # install rules.
 set(FMILIB_BUILD_STATIC_LIB OFF)
 set(FMILIB_BUILD_SHARED_LIB ON)
-set(FMILIB_BUILD_TESTS OFF)
+set(FMILIB_BUILD_TESTS ON)
 set(FMILIB_INSTALL_SUBLIBS ON)
 set(FMILIB_INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR} CACHE INTERNAL "")
 set(FMILIB_INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE INTERNAL "")
