@@ -1,0 +1,79 @@
+{
+    "Name": "Falling ellipse",
+    "ShortName":"Falling ellipse",
+    "Models":
+    {
+        "equations":"Navier-Stokes", 
+        "gravity":
+        {
+            "enable":1,
+            "expr":"{0,-981}:t"
+        }
+    },
+    "Materials":
+    {
+        "Fluid":{
+            "physics":"fluid",
+            "rho":"1",// g/cm3
+            "mu":"0.01"
+        },
+        "EllipseVolume":{
+            "physics":"body",
+            "rho":1.1
+        }
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "Walls":
+                {
+                    "expr":"{0,0}"
+                },
+                "Bottom":
+                {
+                    "expr":"{0,0}"
+                }
+            }
+        },
+        "fluid":
+        {
+            "outlet":
+            {
+                "Top":
+                {
+                    "expr":"{0,0}" 
+                }
+            },
+            "body":
+            {
+                "EllipseSurface":
+                {
+                    "markers":["EllipseSurface"],
+                    "materials":
+                    {
+                        "names":["EllipseVolume"]
+                    }
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["velocity","pressure","pid","displacement"]
+        },
+        "Measures":
+        {
+            "Quantities":
+            {
+                "names":"all"
+            }
+        }
+    }
+
+}
+
