@@ -33,21 +33,34 @@ template< typename T >
 VectorUblasBase<T>::VectorUblasBase( size_type s ):
     super_type( s, Environment::worldCommSeqPtr() )
 {
-   this->init( s, s, false ); 
+    this->init( s, s, false ); 
 }
 
 template< typename T >
 VectorUblasBase<T>::VectorUblasBase( const datamap_ptrtype & dm ):
     super_type( dm )
 {
-   this->init( dm->nDof(), dm->nLocalDofWithGhost(), false ); 
+    this->init( dm->nDof(), dm->nLocalDofWithGhost(), false ); 
 }
 
 template< typename T >
 VectorUblasBase<T>::VectorUblasBase( size_type s, size_type n_local ):
     super_type( s, n_local, Environment::worldCommSeqPtr() )
 {
-   this->init( this->size(), this->localSize(), false ); 
+    this->init( this->size(), this->localSize(), false ); 
+}
+
+template< typename T >
+void VectorUblasBase<T>::init( const size_type n, const bool fast = false )
+{
+    this->init( n, n, fast ); 
+}
+
+template< typename T >
+void VectorUblasBase<T>::init( const datamap_ptrtype & dm )
+{
+    super_type::init( dm );
+    this->init( dm->nDof(), dm->nLocalDofWithGhost(), false ); 
 }
 
 template< typename T >
@@ -450,6 +463,38 @@ void VectorUblasBase<T,Storage>::localizeToOneProcessor( std::vector<T> & v_loca
 }
 
 /*-----------------------------------------------------------------------------*/
+
+template< typename T, typename Storage >
+void VectorUblasContiguousGhosts<T, Storage>::init( const size_type n, const size_type n_local, const bool fast = false ) 
+{
+    FEELPP_ASSERT ( n_local <= n )
+    ( n_local )( n )
+    ( this->comm().rank() )
+    ( this->comm().size() ).error( "Invalid local vector size" );
+
+    // Clear the data structures if already initialized
+    if ( this->isInitialized() )
+        this->clear();
+
+    super1::init( n, n_local, fast );
+
+    // Initialize data structures
+    this->resize( this->localSize() );
+
+    // Set the initialized flag
+    this->M_is_initialized = true;
+
+    DVLOG(2) << "        global size = " << n << "\n";
+    DVLOG(2) << "        global size = " << n_local << "\n";
+    DVLOG(2) << "        global size = " << this->size() << "\n";
+    DVLOG(2) << "        local  size = " << this->localSize() << "\n";
+    DVLOG(2) << "  first local index = " << this->firstLocalIndex() << "\n";
+    DVLOG(2) << "   last local index = " << this->lastLocalIndex() << "\n";
+
+    // Zero the components unless directed otherwise
+    if ( !fast )
+        this->zero();
+}
 
 template< typename T, typename Storage >
 typename VectorUblasContiguousGhosts<T, Storage>::super_type::clone_ptrtype 
@@ -876,6 +921,38 @@ VectorUblasSlice<T, Storage> * VectorUblasContiguousGhosts<T, Storage>::sliceImp
 }
 
 /*-----------------------------------------------------------------------------*/
+
+template< typename T, typename Storage >
+void VectorUblasNonContiguousGhosts<T, Storage>::init( const size_type n, const size_type n_local, const bool fast = false ) 
+{
+    FEELPP_ASSERT ( n_local <= n )
+    ( n_local )( n )
+    ( this->comm().rank() )
+    ( this->comm().size() ).error( "Invalid local vector size" );
+
+    // Clear the data structures if already initialized
+    if ( this->isInitialized() )
+        this->clear();
+
+    super1::init( n, n_local, fast );
+
+    // Initialize data structures
+    this->resize( this->localSize() );
+
+    // Set the initialized flag
+    this->M_is_initialized = true;
+
+    DVLOG(2) << "        global size = " << n << "\n";
+    DVLOG(2) << "        global size = " << n_local << "\n";
+    DVLOG(2) << "        global size = " << this->size() << "\n";
+    DVLOG(2) << "        local  size = " << this->localSize() << "\n";
+    DVLOG(2) << "  first local index = " << this->firstLocalIndex() << "\n";
+    DVLOG(2) << "   last local index = " << this->lastLocalIndex() << "\n";
+
+    // Zero the components unless directed otherwise
+    if ( !fast )
+        this->zero();
+}
 
 template< typename T, typename Storage >
 typename VectorUblasNonContiguousGhosts<T, Storage>::super_type::clone_ptrtype 
@@ -1404,14 +1481,14 @@ VectorUblasSlice<T, Storage>::VectorUblasSlice( Storage & vActive, slice_type co
 template< typename T >
 VectorUblas<T>::VectorUblas():
     super_type(),
-    M_vectorImpl( new VectorUblasContiguousGhosts<T>() )
+    M_vectorImpl( new VectorUblasContiguousGhosts<T>( this->mapPtr() ) )
 {
     //CHECK(false) << "empty ctor: TODO";
 }
 template< typename T >
 VectorUblas<T>::VectorUblas( size_type s ):
     super_type( s, Environment::worldCommSeqPtr() ),
-    M_vectorImpl( new VectorUblasContiguousGhosts<T>( s ) )
+    M_vectorImpl( new VectorUblasContiguousGhosts<T>( this->mapPtr() ) )
 {
     this->init( s, s, false );
 }
@@ -1429,22 +1506,22 @@ VectorUblas<T>::VectorUblas( size_type s, size_type n_local ):
 {
     this->init( this->size(), this->localSize(), false );
 }
-template< typename T >
-VectorUblas<T>::VectorUblas( VectorUblas<T>& v, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm ):
-    super_type( dm ),
-    M_vectorImpl( v.range( rangeActive, rangeGhost ) )
-{
-}
-template< typename T >
-VectorUblas<T>::VectorUblas( VectorUblas<T>& v, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm ):
-    super_type( dm ),
-    M_vectorImpl( v.slice( sliceActive, sliceGhost ) )
-{
-}
+//template< typename T >
+//VectorUblas<T>::VectorUblas( VectorUblas<T>& v, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm ):
+    //super_type( dm ),
+    //M_vectorImpl( v.range( rangeActive, rangeGhost ) )
+//{
+//}
+//template< typename T >
+//VectorUblas<T>::VectorUblas( VectorUblas<T>& v, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm ):
+    //super_type( dm ),
+    //M_vectorImpl( v.slice( sliceActive, sliceGhost ) )
+//{
+//}
 template< typename T >
 VectorUblas<T>::VectorUblas( ublas::vector<T>& v, range_type const& range, datamap_ptrtype const& dm ):
     super_type( dm ),
-    M_vectorImpl( new VectorUblasRange<T, ublas::vector<T>>( v, range ) )
+    M_vectorImpl( new VectorUblasRange<T, ublas::vector<T>>( v, range, dm ) )
 {
 }
 template< typename T >
