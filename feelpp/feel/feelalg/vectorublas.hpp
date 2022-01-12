@@ -102,10 +102,10 @@ class VectorUblas : public Vector<T>
         VectorUblas( datamap_ptrtype const& dm );
         VectorUblas( size_type s, size_type n_local );
         //FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
-        VectorUblas( VectorUblas<value_type>& v, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
+        //TODO:VectorUblas( VectorUblas<value_type>& v, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
         //VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
         //FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, slice_type const& range, datamap_ptrtype const& dm );
-        VectorUblas( VectorUblas<value_type>& v, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+        //TODO:VectorUblas( VectorUblas<value_type>& v, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
         //VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
         //FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, range_type const& range );
         VectorUblas( ublas::vector<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
@@ -120,7 +120,7 @@ class VectorUblas : public Vector<T>
                      size_type nGhostDof, value_type * arrayGhostDof,
                      datamap_ptrtype const& dm );
 
-        VectorUblas( const VectorUblas & other ): /*TODO*/M_vectorImpl( other.M_vectorImpl ? other.M_vectorImpl->clone() : nullptr ) { }
+        VectorUblas( const VectorUblas & other ): M_vectorImpl( other.M_vectorImpl ? other.M_vectorImpl->clone() : nullptr ) { }
         VectorUblas & swap( VectorUblas & other ) { std::swap( M_vectorImpl, other.M_vectorImpl ); return *this; }
         VectorUblas & operator=( const VectorUblas & other ) { swap( VectorUblas( other ) ); return *this; }
         ~VectorUblas() override { delete M_vectorImpl; }
@@ -339,7 +339,7 @@ class VectorUblasBase: public Vector<T>
         virtual super_type::clone_ptrtype clone() const override = 0;
 
         // Storage API
-        void init( const size_type n, const size_type n_local, const bool fast = false ) override;
+        void init( const size_type n, const size_type n_local, const bool fast = false ) override = 0;
         void init( const size_type n, const bool fast = false ) override;
         void init( const datamap_ptrtype & dm ) override;
         
@@ -540,11 +540,9 @@ class VectorUblasContiguousGhostsBase:
         VectorUblasContiguousGhostsBase( ) = default;
         VectorUblasContiguousGhostsBase( VectorUblasContiguousGhostsBase<T> const& v ): super_type(v) { }
 
-        VectorUblasContiguousGhostsBase( size_type s );
-        VectorUblasContiguousGhostsBase( const datamap_ptrtype & dm );
-        VectorUblasContiguousGhostsBase( size_type s, size_type n_local );
-
         ~VectorUblasContiguousGhostsBase() override;
+        
+        void init( const size_type n, const size_type n_local, const bool fast = false ) override = 0;
         
         virtual super_type::clone_ptrtype clone() const override = 0;
 
@@ -639,9 +637,12 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         friend VectorUblasSlice<T, Storage>;
 
     public:
+        using VectorUblasBase<T>::VectorUblasBase;
         VectorUblasContiguousGhosts( const Storage & s, const datamap_ptrtype & dm ): super_type( dm ), M_vec( s ) { }
         VectorUblasContiguousGhosts( Storage && s, const datamap_ptrtype & dm ): super_type( dm ), M_vec( std::move(s) ) { }
         VectorUblasContiguousGhosts( VectorUblasContiguousGhosts<T> const& v ): super_type(v), M_vec( v.M_vec ) { }
+
+        void init( const size_type n, const size_type n_local, const bool fast = false ) override;
 
         virtual super_type::clone_ptrtype clone() const override;
 
@@ -729,13 +730,15 @@ class VectorUblasNonContiguousGhostsBase:
     public:
         // Constructors/Destructor
         VectorUblasNonContiguousGhostsBase( ) = default;
-        VectorUblasNonContiguousGhostsBase( VectorUblasNonContiguousGhostsBase<T> const& v ): super_type(v), M_vec( v.M_vec ) { }
+        VectorUblasNonContiguousGhostsBase( VectorUblasNonContiguousGhostsBase<T> const& v ): super_type(v) { }
 
         VectorUblasNonContiguousGhostsBase( size_type s );
         VectorUblasNonContiguousGhostsBase( const datamap_ptrtype & dm );
         VectorUblasNonContiguousGhostsBase( size_type s, size_type n_local );
 
         ~VectorUblasNonContiguousGhostsBase() override;
+        
+        void init( const size_type n, const size_type n_local, const bool fast = false ) override = 0;
         
         virtual super_type::clone_ptrtype clone() const override = 0;
 
@@ -833,9 +836,12 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         friend VectorUblasSlice<T, Storage>;
 
     public:
+        using VectorUblasBase<T>::VectorUblasBase;
         VectorUblasNonContiguousGhosts( const Storage & s, const Storage & sGhost, const datamap_ptrtype & dm ): super_type( dm ), M_vec( s ), M_vecNonContiguousGhosts( sGhost ) { }
         VectorUblasNonContiguousGhosts( Storage && s, Storage && sGhost, const datamap_ptrtype & dm ): super_type( dm ), M_vec( std::move(s) ), M_vecNonContiguousGhosts( std::move(sGhost) ) { }
         VectorUblasNonContiguousGhosts( VectorUblasNonContiguousGhosts<T, Storage> const& v ): super_type(v), M_vec( v.M_vec ), M_vecNonContiguousGhosts( v.M_vecNonContiguousGhosts ) { }
+        
+        void init( const size_type n, const size_type n_local, const bool fast = false ) override;
 
         virtual super_type::clone_ptrtype clone() const override;
 
