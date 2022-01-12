@@ -44,8 +44,7 @@ namespace detail
 // patch for shallow_array_adaptor from
 // http://stackoverflow.com/questions/1735841/initializing-a-ublas-vector-from-a-c-array
 template<typename T>
-class FEELPP_EXPORT shallow_array_adaptor
-    :
+class FEELPP_EXPORT shallow_array_adaptor:
         public boost::numeric::ublas::shallow_array_adaptor<T>
 {
 public:
@@ -103,22 +102,22 @@ class VectorUblas : public Vector<T>
         VectorUblas( datamap_ptrtype const& dm );
         VectorUblas( size_type s, size_type n_local );
         //FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
-        VectorUblas( VectorUblas<value_type>& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
-        VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
+        VectorUblas( VectorUblas<value_type>& v, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
+        //VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
         //FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, slice_type const& range, datamap_ptrtype const& dm );
-        VectorUblas( VectorUblas<value_type>& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
-        VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+        VectorUblas( VectorUblas<value_type>& v, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+        //VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
         //FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, range_type const& range );
         VectorUblas( ublas::vector<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
         //FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, slice_type const& slice );
         //FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, slice_type const& slice );
         //FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, slice_type const& slice, datamap_ptrtype const& dm );
-        VectorUblas( ublas::vector<value_type>& mActive, slice_type const& sliceActive,
-                     ublas::vector<value_type>& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
-        VectorUblas( typename this_type::shallow_array_adaptor::subtype& mActive, slice_type const& sliceActive,
-                     typename this_type::shallow_array_adaptor::subtype& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
-        VectorUblas( size_type nActiveDof, value_type* arrayActiveDof,
-                     size_type nGhostDof, value_type* arrayGhostDof,
+        VectorUblas( ublas::vector<T>& vActive, slice_type const& sliceActive,
+                     ublas::vector<T>& vGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+        //VectorUblas( typename this_type::shallow_array_adaptor::subtype& mActive, slice_type const& sliceActive,
+                     //typename this_type::shallow_array_adaptor::subtype& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+        VectorUblas( size_type nActiveDof, value_type * arrayActiveDof,
+                     size_type nGhostDof, value_type * arrayGhostDof,
                      datamap_ptrtype const& dm );
 
         VectorUblas( const VectorUblas & other ): /*TODO*/M_vectorImpl( other.M_vectorImpl ? other.M_vectorImpl->clone() : nullptr ) { }
@@ -902,6 +901,7 @@ class VectorUblasRange: public VectorUblasNonContiguousGhosts<T, ublas::vector_r
     public:
         VectorUblasRange( VectorUblasContiguousGhosts<T, Storage> & v, const range_type & rangeActive, const range_type & rangeGhost );
         VectorUblasRange( VectorUblasNonContiguousGhosts<T, Storage> & v, const range_type & rangeActive, const range_type & rangeGhost );
+        VectorUblasRange( ublas::vector<T> & v, const range_type & range, const datamap_ptrtype & dm );
 
 };
 
@@ -930,8 +930,11 @@ class VectorUblasSlice: public VectorUblasNonContiguousGhosts<T, ublas::vector_s
         using typename super_type::slice_type;
 
     public:
-        VectorUblasSlice( VectorUblasContiguousGhosts<T, Storage> & v, const slice_type & rangeActive, const slice_type & rangeGhost );
-        VectorUblasSlice( VectorUblasNonContiguousGhosts<T, Storage> & v, const slice_type & rangeActive, const slice_type & rangeGhost );
+        VectorUblasSlice( VectorUblasContiguousGhosts<T, Storage> & v, const slice_type & sliceActive, const slice_type & sliceGhost );
+        VectorUblasSlice( VectorUblasNonContiguousGhosts<T, Storage> & v, const slice_type & sliceActive, const slice_type & sliceGhost );
+        VectorUblasSlice( Storage & v, const slice_type & slice, const datamap_ptrtype & dm );
+        VectorUblasSlice( Storage & vActive, slice_type const& sliceActive,
+                Storage & vGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
 
 };
 
