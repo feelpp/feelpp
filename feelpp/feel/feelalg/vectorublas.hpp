@@ -624,6 +624,8 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         friend VectorUblasSlice<T, Storage>;
 
     public:
+        VectorUblasContiguousGhosts( const Storage & s, const datamap_ptrtype & dm ): super_type( dm ), M_vec( s ) { }
+        VectorUblasContiguousGhosts( Storage && s, const datamap_ptrtype & dm ): super_type( dm ), M_vec( std::move(s) ) { }
         VectorUblasContiguousGhosts( VectorUblasContiguousGhosts<T> const& v ): super_type(v), M_vec( v.M_vec ) { }
 
         virtual super_type::clone_ptrtype clone() const override;
@@ -812,6 +814,8 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         friend VectorUblasSlice<T, Storage>;
 
     public:
+        VectorUblasNonContiguousGhosts( const Storage & s, const Storage & sGhost, const datamap_ptrtype & dm ): super_type( dm ), M_vec( s ), M_vecNonContiguousGhosts( sGhost ) { }
+        VectorUblasNonContiguousGhosts( Storage && s, Storage && sGhost, const datamap_ptrtype & dm ): super_type( dm ), M_vec( std::move(s) ), M_vecNonContiguousGhosts( std::move(sGhost) ) { }
         VectorUblasNonContiguousGhosts( VectorUblasNonContiguousGhosts<T, Storage> const& v ): super_type(v), M_vec( v.M_vec ), M_vecNonContiguousGhosts( v.M_vecNonContiguousGhosts ) { }
 
         virtual super_type::clone_ptrtype clone() const override;
