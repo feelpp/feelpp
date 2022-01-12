@@ -239,24 +239,35 @@ class VectorUblasBase: public Vector<T>
 
         // Actual storage variants
         typedef ublas::vector<value_type> vector_storage_type;
-        typedef ublas::vector_range<ublas::vector<value_type>> vector_range_storage_type;
-        typedef ublas::vector_slice<ublas::vector<value_type>> vector_slice_storage_type;
+        typedef ublas::vector_range<vector_storage_type> vector_range_storage_type;
+        typedef ublas::vector_slice<vector_storage_type> vector_slice_storage_type;
         typedef ublas::vector<value_type, Feel::detail::shallow_array_adaptor<value_type>> vector_map_storage_type;
+        typedef ublas::vector_range<vector_map_storage_type> vector_range_map_storage_type;
+        typedef ublas::vector_slice<vector_map_storage_type> vector_slice_map_storage_type;
         typedef std::variant<
             vector_storage_type,
             vector_range_storage_type,
             vector_slice_storage_type,
-            vector_map_storage_type > vector_variant_type;
+            vector_map_storage_type,
+            vector_range_map_storage_type,
+            vector_slice_map_storage_type
+                > vector_variant_type;
         typedef std::variant<
             vector_storage_type *,
             vector_range_storage_type *,
             vector_slice_storage_type *,
-            vector_map_storage_type * > vector_ptr_variant_type;
+            vector_map_storage_type *,
+            vector_range_map_storage_type *,
+            vector_slice_map_storage_type *
+                > vector_ptr_variant_type;
         typedef std::variant<
             const vector_storage_type *,
             const vector_range_storage_type *,
             const vector_slice_storage_type *,
-            const vector_map_storage_type * > vector_cstptr_variant_type;
+            const vector_map_storage_type *,
+            const vector_range_map_storage_type *,
+            const vector_slice_map_storage_type *
+                > vector_cstptr_variant_type;
 
         // Ublas range and slice types
         typedef ublas::basic_range<typename vector_storage_type::size_type, typename vector_storage_type::difference_type> range_type;
@@ -607,11 +618,15 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         using super_type::vector_range_storage_type;
         using super_type::vector_slice_storage_type;
         using super_type::vector_map_storage_type;
+        using super_type::vector_range_map_storage_type;
+        using super_type::vector_slice_map_storage_type;
         static_assert( 
                 std::is_same_v< storage_type, vector_storage_type > ||
                 std::is_same_v< storage_type, vector_range_storage_type > ||
                 std::is_same_v< storage_type, vector_slice_storage_type > || 
-                std::is_same_v< storage_type, vector_map_storage_type >,
+                std::is_same_v< storage_type, vector_map_storage_type > ||
+                std::is_same_v< storage_type, vector_range_map_storage_type > ||
+                std::is_same_v< storage_type, vector_slice_map_storage_type >,
                 "unsupported storage type" );
 
         using typename super_type::vector_variant_type;
@@ -797,11 +812,15 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         using super_type::vector_range_storage_type;
         using super_type::vector_slice_storage_type;
         using super_type::vector_map_storage_type;
+        using super_type::vector_range_map_storage_type;
+        using super_type::vector_slice_map_storage_type;
         static_assert( 
                 std::is_same_v< storage_type, vector_storage_type > ||
                 std::is_same_v< storage_type, vector_range_storage_type > ||
                 std::is_same_v< storage_type, vector_slice_storage_type > || 
-                std::is_same_v< storage_type, vector_map_storage_type >,
+                std::is_same_v< storage_type, vector_map_storage_type > ||
+                std::is_same_v< storage_type, vector_range_map_storage_type > ||
+                std::is_same_v< storage_type, vector_slice_map_storage_type >,
                 "unsupported storage type" );
 
         using typename super_type::vector_variant_type;
@@ -891,6 +910,8 @@ class VectorUblasRange: public VectorUblasNonContiguousGhosts<T, ublas::vector_r
         using size_type = typename datamap_type::size_type;
         
         typedef Storage storage_type;
+        using super_type::vector_storage_type;
+        using super_type::vector_map_storage_type;
         static_assert( 
                 std::is_same_v< storage_type, vector_storage_type > ||
                 std::is_same_v< storage_type, vector_map_storage_type >,
@@ -922,6 +943,8 @@ class VectorUblasSlice: public VectorUblasNonContiguousGhosts<T, ublas::vector_s
         using size_type = typename datamap_type::size_type;
         
         typedef Storage storage_type;
+        using super_type::vector_storage_type;
+        using super_type::vector_map_storage_type;
         static_assert( 
                 std::is_same_v< storage_type, vector_storage_type > ||
                 std::is_same_v< storage_type, vector_map_storage_type >,
