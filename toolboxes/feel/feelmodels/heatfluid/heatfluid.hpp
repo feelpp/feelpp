@@ -293,6 +293,7 @@ private :
     materialsproperties_ptrtype M_materialsProperties;
 
     // solver
+    std::string M_solverName;
     bool M_useSemiImplicitTimeScheme;
 
     vector_ptrtype M_timeStepThetaSchemePreviousContrib, M_timeStepThetaSchemePreviousSolution;

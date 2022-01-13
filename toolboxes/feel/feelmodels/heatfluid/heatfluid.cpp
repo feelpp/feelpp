@@ -67,7 +67,8 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    M_useNaturalConvection = boption(_prefix=this->prefix(),_name="use-natural-convection");//"Forced-Convection";
+    M_useNaturalConvection = boption(_prefix=this->prefix(),_name="use-natural-convection");
+    M_solverName = soption(_prefix=this->prefix(),_name="solver");
 
     M_BoussinesqRefTemperature = doption(_name="Boussinesq.ref-temperature",_prefix=this->prefix());
     std::string gravityStr;
@@ -247,6 +248,13 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // update initial conditions
     this->updateInitialConditions( this->symbolsExpr() );
+
+
+    // solver
+    if ( M_solverName == "automatic" )
+    {
+        M_solverName = "Newton";
+    }
 
     // backend
     this->initAlgebraicBackend();
@@ -674,7 +682,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
             M_fluidModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
             M_heatModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat") );
 
-            this->algebraicFactory()->solve( "Newton", this->algebraicBlockVectorSolution()->vectorMonolithic() );
+            this->algebraicFactory()->solve( M_solverName, this->algebraicBlockVectorSolution()->vectorMonolithic() );
 
             this->algebraicBlockVectorSolution()->localize();
         }
