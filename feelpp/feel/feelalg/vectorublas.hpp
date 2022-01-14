@@ -73,8 +73,10 @@ template< typename T >
 class VectorUblasNonContiguousGhostsBase;
 template< typename T, typename Storage >
 class VectorUblasNonContiguousGhosts;
-template< typename T >
+template< typename T, typename Storage >
 class VectorUblasRange;
+template< typename T, typename Storage >
+class VectorUblasSlice;
 
 } // namespace detail
 
@@ -86,6 +88,8 @@ class VectorUblas : public Vector<T>
         typedef VectorUblas<T> self_type;
         typedef Vector<T> super_type;
 
+        using clone_ptrtype = typename super_type::clone_ptrtype;
+
         typedef T value_type;
         typedef typename type_traits<value_type>::real_type real_type;
 
@@ -94,6 +98,10 @@ class VectorUblas : public Vector<T>
         typedef typename super_type::datamap_type datamap_type;
         typedef typename super_type::datamap_ptrtype datamap_ptrtype;
         using size_type = typename datamap_type::size_type;
+        
+        // Ublas range and slice types
+        typedef ublas::basic_range<typename ublas::vector<value_type>::size_type, typename ublas::vector<value_type>::difference_type> range_type;
+        typedef ublas::basic_slice<typename ublas::vector<value_type>::size_type, typename ublas::vector<value_type>::difference_type> slice_type;
 
     public:
         // Constructors/Destructor
@@ -122,10 +130,9 @@ class VectorUblas : public Vector<T>
 
         VectorUblas( const VectorUblas & other ): M_vectorImpl( other.M_vectorImpl ? other.M_vectorImpl->clone() : nullptr ) { }
         VectorUblas & swap( VectorUblas & other ) { std::swap( M_vectorImpl, other.M_vectorImpl ); return *this; }
-        VectorUblas & operator=( const VectorUblas & other ) { swap( VectorUblas( other ) ); return *this; }
         ~VectorUblas() override { delete M_vectorImpl; }
 
-        super_type::clone_ptrtype clone() const override { return super_type::clone_ptrtype( new self_type( *this ) ); }
+        clone_ptrtype clone() const override { return clone_ptrtype( new self_type( *this ) ); }
 
         // Storage API
         void init( const size_type n, const size_type n_local, const bool fast = false ) override { return M_vectorImpl->init( n, n_local, fast ); }
@@ -145,15 +152,15 @@ class VectorUblas : public Vector<T>
 
         // Operators API
         Vector<value_type>& operator=( const Vector<value_type> & V ) override;
-        Vector<value_type>& operator=( const this_type & V );
+        VectorUblas & operator=( const VectorUblas & other ) { swap( VectorUblas( other ) ); return *this; }
 
-        virtual value_type operator()( size_type i ) const override = 0;
-        virtual value_type& operator()( size_type i ) override = 0;
+        virtual value_type operator()( size_type i ) const override { return M_vectorImpl->operator()( i ); }
+        virtual value_type& operator()( size_type i ) override { return M_vectorImpl->operator()( i ); }
         value_type operator[]( size_type i ) const { return this->operator()( i ); }
         value_type& operator[]( size_type i ) { return this->operator()( i ); }
 
         Vector<T>& operator+=( const Vector<T>& v ) override { this->add( v ); return *this; }
-        VectorUblasExpression<T> operator+( const Vector<T>& v ) const;
+        //VectorUblasExpression<T> operator+( const Vector<T>& v ) const;
 
         //// Iterators API
         //virtual iterator begin() = 0;
@@ -218,7 +225,7 @@ class VectorUblas : public Vector<T>
         void localizeToOneProcessor( std::vector<T> & v_local, const size_type proc_id = 0 ) const { return M_vectorImpl->localizeToOneProcessor( v_local, proc_id ); }
         
     private:
-        std::unique_ptr<VectorUblasBase> M_vectorImpl;
+        std::unique_ptr<detail::VectorUblasBase<value_type>> M_vectorImpl;
 };
 
 namespace detail 
@@ -230,6 +237,8 @@ class VectorUblasBase: public Vector<T>
     public:
         // Typedefs
         typedef Vector<T> super_type;
+
+        using clone_ptrtype = typename super_type::clone_ptrtype;
 
         typedef T value_type;
         typedef typename type_traits<value_type>::real_type real_type;
@@ -283,14 +292,13 @@ class VectorUblasBase: public Vector<T>
                 
                 iterator( const iterator & other ): M_iteratorImpl( other.M_iteratorImpl ? other.M_iteratorImpl->clone() : nullptr ) { }
                 iterator & swap( iterator & other ) { std::swap( M_iteratorImpl, other.M_iteratorImpl ); return *this; }
-                iterator & operator=( const iterator & other ) { swap( iterator( other ) ); return *this; }
-                ~iterator() { delete M_iteratorImpl; }
+                ~iterator() { if( M_iteratorImpl ) delete M_iteratorImpl; }
 
+                iterator & operator=( const iterator & other ) { swap( iterator( other ) ); return *this; }
                 value_type & operator*() const { return M_iteratorImpl->current(); }
                 iterator & operator++() { M_iteratorImpl->next(); return *this; }
                 iterator & operator--() { M_iteratorImpl->previous(); return *this; }
                 bool operator==( const iterator & other ) const { return M_iteratorImpl->equal( *other.M_iteratorImpl ); }
-                iterator & operator=( const iterator & other ) { assign( other ); return *this; }
 
             private:
                 class iterator_impl_base
@@ -336,7 +344,7 @@ class VectorUblasBase: public Vector<T>
 
         ~VectorUblasBase() override;
 
-        virtual super_type::clone_ptrtype clone() const override = 0;
+        virtual clone_ptrtype clone() const override = 0;
 
         // Storage API
         void init( const size_type n, const size_type n_local, const bool fast = false ) override = 0;
@@ -363,7 +371,7 @@ class VectorUblasBase: public Vector<T>
         value_type& operator[]( size_type i ) { return this->operator()( i ); }
 
         Vector<T>& operator+=( const Vector<T>& v ) override { this->add( v ); return *this; }
-        VectorUblasExpression<T> operator+( const Vector<T>& v ) const;
+        //VectorUblasExpression<T> operator+( const Vector<T>& v ) const;
         Vector<T>& operator-=( const Vector<T>& v ) override { this->sub( v ); return *this; }
         Vector<T>& operator*=( const value_type & a ) { this->scale( a ); return *this; }
 
@@ -438,6 +446,8 @@ class VectorUblasBase: public Vector<T>
         void localizeToOneProcessor( std::vector<T> & v_local, const size_type proc_id = 0 ) const;
 
     protected:
+        virtual void checkInvariants() const = 0;
+
         void setVector( const VectorUblasBase<T> & v ) { return v.applySetVector( *this ); }
         virtual void applySetVector( const VectorUblasBase<T> & v ) = 0;
         virtual void setVector( const VectorUblasContiguousGhostsBase<T> & v ) = 0;
@@ -523,6 +533,8 @@ class VectorUblasContiguousGhostsBase:
         // Typedefs
         typedef VectorUblasBase<T> super_type;
 
+        using typename super_type::clone_ptrtype;
+
         typedef T value_type;
         typedef typename type_traits<value_type>::real_type real_type;
         typedef typename super_type::datamap_type datamap_type;
@@ -544,7 +556,7 @@ class VectorUblasContiguousGhostsBase:
         
         void init( const size_type n, const size_type n_local, const bool fast = false ) override = 0;
         
-        virtual super_type::clone_ptrtype clone() const override = 0;
+        virtual clone_ptrtype clone() const override = 0;
 
         // Storage API
         virtual void resize( size_type n ) override = 0;
@@ -575,6 +587,8 @@ class VectorUblasContiguousGhostsBase:
     protected:
         virtual vector_ptr_variant_type vec() = 0;
 
+        void checkInvariants() const override = 0;
+
         void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
         void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
 
@@ -597,12 +611,14 @@ class VectorUblasContiguousGhostsBase:
         VectorUblasBase<T> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) override = 0;
 };
 
-template< typename T, typename Storage = ublas::vector<value_type> >
+template< typename T, typename Storage = ublas::vector<T> >
 class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
 {
     public:
         // Typedefs
         typedef VectorUblasContiguousGhostsBase<T> super_type;
+
+        using typename super_type::clone_ptrtype;
 
         typedef T value_type;
         typedef typename type_traits<value_type>::real_type real_type;
@@ -612,13 +628,13 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
 
         typedef Storage storage_type;
 
-        using super_type::vector_storage_type;
-        using super_type::vector_range_storage_type;
-        using super_type::vector_slice_storage_type;
-        using super_type::vector_map_storage_type;
-        using super_type::vector_range_map_storage_type;
-        using super_type::vector_slice_map_storage_type;
-        static_assert( 
+        using typename super_type::vector_storage_type;
+        using typename super_type::vector_range_storage_type;
+        using typename super_type::vector_slice_storage_type;
+        using typename super_type::vector_map_storage_type;
+        using typename super_type::vector_range_map_storage_type;
+        using typename super_type::vector_slice_map_storage_type;
+        static_assert(
                 std::is_same_v< storage_type, vector_storage_type > ||
                 std::is_same_v< storage_type, vector_range_storage_type > ||
                 std::is_same_v< storage_type, vector_slice_storage_type > || 
@@ -644,7 +660,7 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
 
         void init( const size_type n, const size_type n_local, const bool fast = false ) override;
 
-        virtual super_type::clone_ptrtype clone() const override;
+        virtual clone_ptrtype clone() const override;
 
         // Storage API
         virtual void resize( size_type n ) override;
@@ -674,6 +690,8 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
 
     protected:
         virtual vector_ptr_variant_type vec() override { return &M_vec; }
+        
+        void checkInvariants() const override;
         
         void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
         void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
@@ -715,6 +733,8 @@ class VectorUblasNonContiguousGhostsBase:
         // Typedefs
         typedef VectorUblasBase<T> super_type;
 
+        using typename super_type::clone_ptrtype;
+
         typedef T value_type;
         typedef typename type_traits<value_type>::real_type real_type;
         typedef typename super_type::datamap_type datamap_type;
@@ -740,7 +760,7 @@ class VectorUblasNonContiguousGhostsBase:
         
         void init( const size_type n, const size_type n_local, const bool fast = false ) override = 0;
         
-        virtual super_type::clone_ptrtype clone() const override = 0;
+        virtual clone_ptrtype clone() const override = 0;
 
         // Storage API
         virtual void resize( size_type n ) override = 0;
@@ -772,6 +792,8 @@ class VectorUblasNonContiguousGhostsBase:
     protected:
         virtual vector_ptr_variant_type vec() = 0;
         virtual vector_ptr_variant_type vecNonContiguousGhosts() = 0;
+        
+        void checkInvariants() const override = 0;
 
         void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
         void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
@@ -796,12 +818,14 @@ class VectorUblasNonContiguousGhostsBase:
 
 };
 
-template< typename T, typename Storage = ublas::vector<value_type> >
+template< typename T, typename Storage = ublas::vector<T> >
 class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<T>
 {
     public:
         // Typedefs
         typedef VectorUblasNonContiguousGhostsBase<T> super_type;
+
+        using typename super_type::clone_ptrtype;
 
         typedef T value_type;
         typedef typename type_traits<value_type>::real_type real_type;
@@ -811,12 +835,12 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
 
         typedef Storage storage_type;
         
-        using super_type::vector_storage_type;
-        using super_type::vector_range_storage_type;
-        using super_type::vector_slice_storage_type;
-        using super_type::vector_map_storage_type;
-        using super_type::vector_range_map_storage_type;
-        using super_type::vector_slice_map_storage_type;
+        using typename super_type::vector_storage_type;
+        using typename super_type::vector_range_storage_type;
+        using typename super_type::vector_slice_storage_type;
+        using typename super_type::vector_map_storage_type;
+        using typename super_type::vector_range_map_storage_type;
+        using typename super_type::vector_slice_map_storage_type;
         static_assert( 
                 std::is_same_v< storage_type, vector_storage_type > ||
                 std::is_same_v< storage_type, vector_range_storage_type > ||
@@ -843,7 +867,7 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         
         void init( const size_type n, const size_type n_local, const bool fast = false ) override;
 
-        virtual super_type::clone_ptrtype clone() const override;
+        virtual clone_ptrtype clone() const override;
 
         // Storage API
         virtual void resize( size_type n ) override;
@@ -875,6 +899,8 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
     protected:
         virtual vector_ptr_variant_type vec() override { return &M_vec; }
         virtual vector_ptr_variant_type vecNonContiguousGhosts() override { return &M_vecNonContiguousGhosts; }
+        
+        void checkInvariants() const override;
         
         void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
         void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
@@ -974,7 +1000,5 @@ class VectorUblasSlice: public VectorUblasNonContiguousGhosts<T, ublas::vector_s
 }
 
 } // Feel
-#endif
-
 
 #endif /* _FEELPP_VECTORUBLAS_HPP */
