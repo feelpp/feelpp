@@ -125,7 +125,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
         this->setSolverName( _solver );
     else
         M_solverName = _solver;
-    M_useVelocityExtrapolated = M_useSemiImplicitTimeScheme;
 
     //--------------------------------------------------------------//
     // fsi options
@@ -1123,9 +1122,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     //-------------------------------------------------//
     // bc body (call after meshALE->init() in case of restart)
     M_bodySetBC.updateForUse( *this );
-
-    if ( M_useSemiImplicitTimeScheme )
-        M_useVelocityExtrapolated = true;
 
     // update constant parameters
     this->updateParameterValues();
