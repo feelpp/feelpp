@@ -4109,7 +4109,7 @@ public:
                 auto args = NA::make_arguments( std::forward<Ts>(v)... );
                 auto && path = args.get(_path);
                 std::string const& name = args.get_else(_name,M_name);
-                std::string const& type = args.get_else(_name,"default");
+                std::string const& type = args.get_else(_type,"default");
                 std::string const& suffix = args.get_else(_suffix,"");
                 std::string const& sep = args.get_else(_sep,"");
                 saveImpl( Environment::expand( path ), name, type, suffix, sep );
@@ -4194,7 +4194,7 @@ public:
                 auto args = NA::make_arguments( std::forward<Ts>(v)... );
                 auto && path = args.get(_path);
                 std::string const& name = args.get_else(_name,M_name);
-                std::string const& type = args.get_else(_name,"default");
+                std::string const& type = args.get_else(_type,"default");
                 std::string const& suffix = args.get_else(_suffix,"");
                 std::string const& sep = args.get_else(_sep,"");
                 return loadImpl( Environment::expand( path ), name, type, suffix, sep );
