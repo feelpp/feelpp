@@ -234,12 +234,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( M_useNaturalConvection )
         M_fluidModel->setStabilizationGLSDoAssembly( false );
 
-    if ( M_useSemiImplicitTimeScheme )
-    {
-        M_fluidModel->setUseVelocityExtrapolated( true );
-        //M_fluidModel->setUseSemiImplicitTimeScheme(true);
-    }
-
     // post-process
     this->initPostProcess();
 

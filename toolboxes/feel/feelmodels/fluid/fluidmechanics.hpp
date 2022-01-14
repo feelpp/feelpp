@@ -2005,17 +2005,9 @@ public :
 
     element_velocity_external_storage_ptrtype const& fieldVelocityExtrapolatedPtr() const { return M_fieldVelocityExtrapolated; }
 
-    bool useVelocityExtrapolated() const { return M_useVelocityExtrapolated; }
-    void setUseVelocityExtrapolated( bool b ) { M_useVelocityExtrapolated = b; }
     vector_ptrtype vectorVelocityExtrapolated() const { return M_vectorVelocityExtrapolated; }
     vector_ptrtype vectorPreviousVelocityExtrapolated() const { return M_vectorPreviousVelocityExtrapolated; }
 
-    // element_normalstress_ptrtype & fieldNormalStressPtr() { return M_fieldNormalStress; }
-    // element_normalstress_ptrtype const& fieldNormalStressPtr() const { return M_fieldNormalStress; }
-    // element_normalstress_type const& fieldNormalStress() const { return *M_fieldNormalStress; }
-    // element_normalstress_ptrtype & fieldWallShearStressPtr() { return M_fieldWallShearStress; }
-    // element_normalstress_ptrtype const& fieldWallShearStressPtr() const { return M_fieldWallShearStress; }
-    // element_normalstress_type const& fieldWallShearStress() const { return *M_fieldWallShearStress; }
 
     bool useExtendedDofTable() const;
 
@@ -2240,28 +2232,6 @@ public :
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
-#if 0
-    void updateRho(double rho)
-    {
-        this->materialProperties()->setCstDensity(rho);
-    }
-    void updateMu(double mu)
-    {
-        this->materialProperties()->setCstDynamicViscosity(mu);
-        M_pmmNeedUpdate = true;
-    }
-    template < typename ExprT >
-    void updateRho(vf::Expr<ExprT> const& __expr)
-    {
-        this->materialProperties()->updateDensityField( __expr );
-    }
-    template < typename ExprT >
-    void updateMu(vf::Expr<ExprT> const& __expr)
-    {
-        this->materialProperties()->updateDynamicViscosityField( __expr );
-        M_pmmNeedUpdate = true;
-    }
-#endif
     //___________________________________________________________________________________//
     // toolbox fields
     //___________________________________________________________________________________//
@@ -2824,8 +2794,7 @@ private :
     space_pressure_ptrtype M_XhPressure;
     element_velocity_ptrtype M_fieldVelocity;
     element_pressure_ptrtype M_fieldPressure;
-
-    bool M_useVelocityExtrapolated;
+    // extrapolation of velocity in time
     vector_ptrtype M_vectorVelocityExtrapolated, M_vectorPreviousVelocityExtrapolated;
     element_velocity_external_storage_ptrtype M_fieldVelocityExtrapolated; // view on M_vectorVelocityExtrapolated
     // time discrtisation fluid
@@ -2983,9 +2952,6 @@ private :
     //----------------------------------------------------
     //----------------------------------------------------
     // algebraic data/tools
-    // backend_ptrtype M_backend;
-    // model_algebraic_factory_ptrtype M_algebraicFactory;
-    // BlocksBaseVector<double> M_blockVectorSolution;
     bool M_usePreviousSolution;
     vector_ptrtype M_vectorPreviousSolution;
     //----------------------------------------------------
@@ -3007,7 +2973,37 @@ template <typename SymbolsExprType>
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInitialConditions( SymbolsExprType const& se )
 {
-    // TODO : initial conditions for u and p
+    if ( this->doRestart() )
+        return;
+
+    std::vector<element_velocity_ptrtype> icVelocityFields;
+    std::vector<element_pressure_ptrtype> icPressureFields;
+    std::map<int, double> icVelocityPriorTimes;
+    std::map<int, double> icPressurePriorTimes;
+    if ( this->isStationary() )
+    {
+        icVelocityFields = { this->fieldVelocityPtr() };
+        icPressureFields = { this->fieldPressurePtr() };
+        icVelocityPriorTimes = {{0,0}};
+        icPressurePriorTimes = {{0,0}};
+    }
+    else
+    {
+        icVelocityFields = this->timeStepBDF()->unknowns();
+        icVelocityPriorTimes = this->timeStepBDF()->priorTimes();
+        icPressureFields = M_savetsPressure->unknowns();
+        icPressurePriorTimes = M_savetsPressure->priorTimes();
+    }
+
+    super_type::updateInitialConditions( "velocity", M_rangeMeshElements, se, icVelocityFields, icVelocityPriorTimes );
+    super_type::updateInitialConditions( "pressure", M_rangeMeshElements, se, icPressureFields, icPressurePriorTimes );
+
+    if ( !this->isStationary() )
+    {
+        *this->fieldVelocityPtr() = this->timeStepBDF()->unknown(0);
+        *this->fieldPressurePtr() = M_savetsPressure->unknown(0);
+    }
+
     if ( this->hasTurbulenceModel() )
         M_turbulenceModelType->updateInitialConditions( se );
 }
