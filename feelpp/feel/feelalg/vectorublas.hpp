@@ -342,7 +342,7 @@ class VectorUblasBase: public Vector<T>
         VectorUblasBase( const datamap_ptrtype & dm );
         VectorUblasBase( size_type s, size_type n_local );
 
-        ~VectorUblasBase() override;
+        ~VectorUblasBase() override = default;
 
         virtual clone_ptrtype clone() const override = 0;
 
@@ -552,7 +552,7 @@ class VectorUblasContiguousGhostsBase:
         VectorUblasContiguousGhostsBase( ) = default;
         VectorUblasContiguousGhostsBase( VectorUblasContiguousGhostsBase<T> const& v ): super_type(v) { }
 
-        ~VectorUblasContiguousGhostsBase() override;
+        ~VectorUblasContiguousGhostsBase() override = default;
         
         void init( const size_type n, const size_type n_local, const bool fast = false ) override = 0;
         
@@ -756,7 +756,7 @@ class VectorUblasNonContiguousGhostsBase:
         VectorUblasNonContiguousGhostsBase( const datamap_ptrtype & dm );
         VectorUblasNonContiguousGhostsBase( size_type s, size_type n_local );
 
-        ~VectorUblasNonContiguousGhostsBase() override;
+        ~VectorUblasNonContiguousGhostsBase() override = default;
         
         void init( const size_type n, const size_type n_local, const bool fast = false ) override = 0;
         
@@ -997,7 +997,7 @@ class VectorUblasSlice: public VectorUblasNonContiguousGhosts<T, ublas::vector_s
 
 };
 
-}
+} // detail
 
 } // Feel
 
