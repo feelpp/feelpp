@@ -424,12 +424,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcessExportsAndMeasures()
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
-    // Point measures
-    auto fieldNamesWithSpaceLevelset = std::make_pair( std::set<std::string>({"levelset"}), this->functionSpace() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceLevelset );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-        M_measurePointsEvaluation->init( evalPoints );
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -607,9 +603,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createPostProcessMeasures()
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
-            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-        else
-            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
+            this->postProcessMeasures().restart( this->timeInitial() );
     }
 }
 

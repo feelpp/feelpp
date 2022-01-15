@@ -1,0 +1,1 @@
+NaturalConvection_cavity_2d_laminar --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/NaturalConvection/cavity/2d_laminar.cfg --directory=toolboxes/testsuite/heatfluid/NaturalConvection/cavity/2d_laminar
