@@ -344,23 +344,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
-    // point measures
-    auto fieldNamesWithSpacePotential = std::make_pair( std::set<std::string>({M_potentialKey}), this->spacePotential() );
-    auto fieldNamesWithSpacePostPotential = std::make_pair( std::set<std::string>({"post"+M_potentialKey}), this->spacePostPotential() );
-    auto fieldNamesWithSpaceFlux = std::make_pair( std::set<std::string>({M_fluxKey}), this->spaceFlux() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpacePotential, fieldNamesWithSpacePostPotential, fieldNamesWithSpaceFlux );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-    {
-       M_measurePointsEvaluation->init( evalPoints );
-    }
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
 
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
-            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-        else
-            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
+            this->postProcessMeasures().restart( this->timeInitial() );
     }
 
     double tElpased = this->timerTool("Constructor").stop("createExporters");

@@ -65,7 +65,7 @@
     "PostProcess":
     {
         "use-model-name":1,
-        "thermo-electric":
+        "thermoelectric":
         {
             "Exports":
             {

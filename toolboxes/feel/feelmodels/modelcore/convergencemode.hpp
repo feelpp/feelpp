@@ -8,7 +8,9 @@ runHConvergence(std::string const& prefix,
 {
     using namespace Feel;
     int status = 0;
-    FeelModels::ModelMeasuresIO measures( "h-convergence.measures.csv", Environment::worldCommPtr() );
+    CHECK( false ) << "TODO dir";
+    FeelModels::ModelMeasuresStorage measures( "toto", Environment::worldCommPtr() );
+    //FeelModels::ModelMeasuresIO measures( "h-convergence.measures.csv", Environment::worldCommPtr() );
     CHECK( Environment::vm().count( "case.mode.h-convergence.hsize" ) ) << "require option : case.mode.h-convergence.hsize";
     std::vector<double> meshSizes = vdoption( _name="case.mode.h-convergence.hsize" );
 
@@ -24,10 +26,10 @@ runHConvergence(std::string const& prefix,
         if ( status != 0 )
             return status;
 
-        measures.setMeasure( "run_id", k );
-        measures.setMeasure( "mesh_size", meshSize );
-        measures.setMeasures( tb->postProcessMeasuresIO().currentMeasures() );
-        measures.exportMeasures();
+        measures.setValue( "run_id", k );
+        measures.setValue( "mesh_size", meshSize );
+        measures.setKeyValue( tb->postProcessMeasures().values() );
+        measures.save(k);
     }
     Feel::cout << "H convergence results are in " << (fs::path(Environment::appRepository())/"h-convergence.measures.csv").string() << std::endl;
     return status;

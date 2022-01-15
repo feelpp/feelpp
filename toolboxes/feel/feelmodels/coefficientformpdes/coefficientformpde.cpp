@@ -267,12 +267,8 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     this->initBasePostProcess();
 
-    // point measures
-    auto fieldNamesWithSpaceUnknown = std::make_pair( std::set<std::string>({this->unknownName()}), this->spaceUnknown() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceUnknown );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-        M_measurePointsEvaluation->init( evalPoints );
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
 
     double tElpased = this->timerTool("Constructor").stop("initPostProcess");
     this->log("CoefficientFormPDE","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );

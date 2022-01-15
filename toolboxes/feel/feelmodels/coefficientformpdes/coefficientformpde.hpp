@@ -50,9 +50,6 @@ public:
     // time scheme
     typedef Bdf<space_unknown_type> bdf_unknown_type;
     typedef std::shared_ptr<bdf_unknown_type> bdf_unknown_ptrtype;
-    // measure tools for points evaluation
-    typedef MeasurePointsEvaluation<space_unknown_type> measure_points_evaluation_type;
-    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
 
     CoefficientFormPDE( typename super_type::super2_type::infos_type const& infosPDE,
@@ -314,9 +311,6 @@ private :
     MarkerManagementRobinBC M_bcRobinMarkerManagement;
     // Comp -> ( Dirichlet bc Name -> markers distribute on entities )
     std::map<ComponentType, std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > > M_meshMarkersDofEliminationUnknown;
-
-    // post-process
-    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 };
 
 template< typename ConvexType, typename BasisUnknownType>
@@ -412,21 +406,8 @@ template <typename ModelFieldsType, typename SymbolsExpr, typename ModelMeasures
 void
 CoefficientFormPDE<ConvexType,BasisUnknownType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities )
 {
-    bool hasMeasure = false;
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
-    bool hasMeasureQuantity = this->updatePostProcessMeasuresQuantities( mquantities, symbolsExpr );
-    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint || hasMeasureQuantity )
-        hasMeasure = true;
-
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
+    // execute common post process and save measures
+    super_type::executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields, mquantities );
 }
 
 } // namespace Feel
