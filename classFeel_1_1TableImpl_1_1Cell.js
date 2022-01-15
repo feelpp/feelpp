@@ -7,6 +7,7 @@ var classFeel_1_1TableImpl_1_1Cell =
     [ "is_a", "classFeel_1_1TableImpl_1_1Cell.html#a4db2b91dc17980d565e6fac3459b0037", null ],
     [ "operator=", "classFeel_1_1TableImpl_1_1Cell.html#a7f7dcfc8c9827dcfe375afc8ba3f1714", null ],
     [ "operator=", "classFeel_1_1TableImpl_1_1Cell.html#a4da6e8aed0291ec77c66bc3b24aab527", null ],
+    [ "operator=", "classFeel_1_1TableImpl_1_1Cell.html#a7289d591cdc25794253ec2941cedac32", null ],
     [ "toOutputText", "classFeel_1_1TableImpl_1_1Cell.html#ab7ca19ec3098858a2c7f67f9dbe6cf6e", null ],
     [ "updateWidthAndHorizontalAlign", "classFeel_1_1TableImpl_1_1Cell.html#a04c4657437a917721185a5ecbfbf593f", null ],
     [ "value", "classFeel_1_1TableImpl_1_1Cell.html#a233c0d997654fc7eb1821656a8fff407", null ],

@@ -13,6 +13,7 @@ var structFeel_1_1TableImpl_1_1Format =
     [ "setFirstColumnIsHeader", "structFeel_1_1TableImpl_1_1Format.html#ad7fb4e6496e9b594946843b8700dd518", null ],
     [ "setFirstRowIsHeader", "structFeel_1_1TableImpl_1_1Format.html#af28311da05e0b28ab159ef8573ba2363", null ],
     [ "setFloatingPoint", "structFeel_1_1TableImpl_1_1Format.html#af37e1f634ec7bd8f506698fbebd8ca7e", null ],
+    [ "setFloatingPointPrecision", "structFeel_1_1TableImpl_1_1Format.html#a6735945138ced484ef27501c0c8e6e71", null ],
     [ "setFontAlign", "structFeel_1_1TableImpl_1_1Format.html#a943a22c80d7af2426dc036f172522a8c", null ],
     [ "setFontColor", "structFeel_1_1TableImpl_1_1Format.html#adfef69b822c60ac4310ac6bcfb93d17b", null ],
     [ "setHasColumnSeparator", "structFeel_1_1TableImpl_1_1Format.html#a257b30527cf3b49ba824585df11e7fbf", null ],

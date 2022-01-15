@@ -114,10 +114,6 @@ $(document).ready(function(){initNavTree('feelpp_2feel_2feelcore_2traits_8hpp.ht
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__eigen__matrix.html">Feel::is_eigen_matrix&lt; T, typename &gt;</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__eigen__matrix_3_01T_00_01std_1_1void__t_3_01Eigen_1_1MatrixBase_3_01T_01_4_01_4_01_4.html">Feel::is_eigen_matrix&lt; T, std::void_t&lt; Eigen::MatrixBase&lt; T &gt; &gt; &gt;</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__iterable.html">Feel::is_iterable&lt; T, typename &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__iterable_3_01T_00_01std_1_1void__t_3_01decltype_07std_1_1declval_3_01T_01_4_07e321607a6dd151c547f374e68b86fe92.html">Feel::is_iterable&lt; T, std::void_t&lt; decltype(std::declval&lt; T &gt;().begin()), decltype(std::declval&lt; T &gt;().end())&gt; &gt;</a></td></tr>
@@ -191,7 +187,7 @@ template&lt;typename T &gt; </td></tr>
 Variables</h2></td></tr>
 <tr class="memitem:a144f469080fe9acd188eaad6ed019524"><td class="memTemplParams" colspan="2"><a id="a144f469080fe9acd188eaad6ed019524"></a>
 template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a144f469080fe9acd188eaad6ed019524"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::is_eigen_matrix_v</b> = is_eigen_matrix&lt;T&gt;::value</td></tr>
+<tr class="memitem:a144f469080fe9acd188eaad6ed019524"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::is_eigen_matrix_v</b> = std::is_base_of_v&lt;Eigen::MatrixBase&lt;std::decay_t&lt;T&gt;&gt;,std::decay_t&lt;T&gt; &gt;</td></tr>
 <tr class="separator:a144f469080fe9acd188eaad6ed019524"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a73ac8b066e67602eaf7d62b0de2fccbf"><td class="memTemplParams" colspan="2"><a id="a73ac8b066e67602eaf7d62b0de2fccbf"></a>
 template&lt;typename T , typename V &gt; </td></tr>

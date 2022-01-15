@@ -139,15 +139,16 @@ typedef matrix_node&lt; typename node_type::value_type &gt;::type&#160;</td><td 
 <tr class="memitem:adc52a8e88a83f08522a357d87f465336"><td class="memItemLeft" align="right" valign="top"><a id="adc52a8e88a83f08522a357d87f465336"></a>
 typedef mesh_type::node_type&#160;</td><td class="memItemRight" valign="bottom"><b>node_type</b></td></tr>
 <tr class="separator:adc52a8e88a83f08522a357d87f465336"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aafbfae2080ae4e28b56bd2771988c4ea"><td class="memItemLeft" align="right" valign="top"><a id="aafbfae2080ae4e28b56bd2771988c4ea"></a>
-typedef std::map&lt; <a class="el" href="classint.html">int</a>, std::shared_ptr&lt; <a class="el" href="classFeel_1_1GeometricSpace_1_1ContextGeometric.html">ContextGeometric</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>super_type</b></td></tr>
-<tr class="separator:aafbfae2080ae4e28b56bd2771988c4ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35924e2a921f10c768b7495d8e197fa2"><td class="memItemLeft" align="right" valign="top"><a id="a35924e2a921f10c768b7495d8e197fa2"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>super_type</b> = std::map&lt; <a class="el" href="classint.html">int</a>, std::pair&lt; std::shared_ptr&lt; <a class="el" href="classFeel_1_1GeometricSpace_1_1ContextGeometric.html">ContextGeometric</a> &gt;, std::vector&lt; index_type &gt; &gt;&gt;</td></tr>
+<tr class="separator:a35924e2a921f10c768b7495d8e197fa2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a82e9dd0e11409529d4787c052ebc5dc2"><td class="memItemLeft" align="right" valign="top"><a id="a82e9dd0e11409529d4787c052ebc5dc2"></a>
-std::pair&lt; iterator, <a class="el" href="classbool.html">bool</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>add</b> (node_type const &amp;t)</td></tr>
-<tr class="separator:a82e9dd0e11409529d4787c052ebc5dc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a931eddb685214e49bb2df46235d01821"><td class="memItemLeft" align="right" valign="top"><a id="a931eddb685214e49bb2df46235d01821"></a>
+std::pair&lt; iterator, <a class="el" href="classbool.html">bool</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeometricSpace_1_1Context.html#a931eddb685214e49bb2df46235d01821">add</a> (node_type const &amp;t, <a class="el" href="classbool.html">bool</a> applyUpdateForUse=true)</td></tr>
+<tr class="memdesc:a931eddb685214e49bb2df46235d01821"><td class="mdescLeft">&#160;</td><td class="mdescRight">add a node param applyUpdateForUse : call updateForUse (default is true to keep same behavior with previous version) <br /></td></tr>
+<tr class="separator:a931eddb685214e49bb2df46235d01821"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad76c8cedb1bbc01678534e6d96ba7456"><td class="memItemLeft" align="right" valign="top"><a id="ad76c8cedb1bbc01678534e6d96ba7456"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>Context</b> (geometricspace_ptrtype const &amp;Xh)</td></tr>
 <tr class="separator:ad76c8cedb1bbc01678534e6d96ba7456"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -160,12 +161,22 @@ geometricspace_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>fun
 <tr class="memitem:a433c646061131a703d2725c6f4a08c76"><td class="memItemLeft" align="right" valign="top"><a id="a433c646061131a703d2725c6f4a08c76"></a>
 <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>nPoints</b> () const</td></tr>
 <tr class="separator:a433c646061131a703d2725c6f4a08c76"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3458e25d1ca7c5945e8b3104f166266f"><td class="memItemLeft" align="right" valign="top"><a id="a3458e25d1ca7c5945e8b3104f166266f"></a>
+std::vector&lt; node_type &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>points</b> () const</td></tr>
+<tr class="separator:a3458e25d1ca7c5945e8b3104f166266f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8dbe376ed1e03e133790ecd569a34fb3"><td class="memItemLeft" align="right" valign="top"><a id="a8dbe376ed1e03e133790ecd569a34fb3"></a>
 <a class="el" href="classFeel_1_1GeometricSpace.html">geometricspace_type</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>ptrFunctionSpace</b> () const</td></tr>
 <tr class="separator:a8dbe376ed1e03e133790ecd569a34fb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac80173fefda4960d60723652bc511097"><td class="memItemLeft" align="right" valign="top"><a id="ac80173fefda4960d60723652bc511097"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>removeCtx</b> ()</td></tr>
 <tr class="separator:ac80173fefda4960d60723652bc511097"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8caa5f2fcaa41fd04a4e56f77c5bbffc"><td class="memItemLeft" align="right" valign="top"><a id="a8caa5f2fcaa41fd04a4e56f77c5bbffc"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>updateForUse</b> ()</td></tr>
+<tr class="separator:a8caa5f2fcaa41fd04a4e56f77c5bbffc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a67e68bce39fb4145e05b7ec200c89d15"><td class="memTemplParams" colspan="2"><a id="a67e68bce39fb4145e05b7ec200c89d15"></a>
+template&lt;size_type CTX&gt; </td></tr>
+<tr class="memitem:a67e68bce39fb4145e05b7ec200c89d15"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateGmcContext</b> (<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> dynctx=0)</td></tr>
+<tr class="separator:a67e68bce39fb4145e05b7ec200c89d15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

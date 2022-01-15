@@ -158,6 +158,10 @@ template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a4da6e8aed0291ec77c66bc3b24aab527"><td class="memItemLeft" align="right" valign="top"><a id="a4da6e8aed0291ec77c66bc3b24aab527"></a>
 <a class="el" href="classFeel_1_1TableImpl_1_1Cell.html">Cell</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1TableImpl_1_1Cell.html">Cell</a> const &amp;)=default</td></tr>
 <tr class="separator:a4da6e8aed0291ec77c66bc3b24aab527"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7289d591cdc25794253ec2941cedac32"><td class="memTemplParams" colspan="2"><a id="a7289d591cdc25794253ec2941cedac32"></a>
+template&lt;typename T , std::enable_if_t&lt; !std::is_same_v&lt; std::decay_t&lt; T &gt;, Cell &gt;, bool &gt;  = true&gt; </td></tr>
+<tr class="memitem:a7289d591cdc25794253ec2941cedac32"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1TableImpl_1_1Cell.html">Cell</a> &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>operator=</b> (T &amp;&amp;v)</td></tr>
+<tr class="separator:a7289d591cdc25794253ec2941cedac32"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab7ca19ec3098858a2c7f67f9dbe6cf6e"><td class="memItemLeft" align="right" valign="top"><a id="ab7ca19ec3098858a2c7f67f9dbe6cf6e"></a>
 std::vector&lt; <a class="el" href="classFeel_1_1Printer_1_1OutputText.html">Printer::OutputText</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>toOutputText</b> (<a class="el" href="structFeel_1_1TableImpl_1_1Cell_1_1Format.html">Format</a> const &amp;format, <a class="el" href="classbool.html">bool</a> enableWidthMax=true) const</td></tr>
 <tr class="separator:ab7ca19ec3098858a2c7f67f9dbe6cf6e"><td class="memSeparator" colspan="2">&#160;</td></tr>

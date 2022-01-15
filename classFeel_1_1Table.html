@@ -112,20 +112,38 @@ $(document).ready(function(){initNavTree('classFeel_1_1Table.html',''); initResi
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
+<tr class="memitem:aee6bbd3df86a890170a3697f3b1e19c5"><td class="memItemLeft" align="right" valign="top"><a id="aee6bbd3df86a890170a3697f3b1e19c5"></a>enum &#160;</td><td class="memItemRight" valign="bottom"><b>MemoryLayout</b> { <b>RowMajor</b> =0, 
+<b>ColMajor</b>
+ }</td></tr>
+<tr class="separator:aee6bbd3df86a890170a3697f3b1e19c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a307c2c54f892caa30cda6eb895a9af2f"><td class="memItemLeft" align="right" valign="top"><a id="a307c2c54f892caa30cda6eb895a9af2f"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>variant_value_type</b> = std::variant&lt; std::string, <a class="el" href="classint.html">int</a>, <a class="el" href="classsize__t.html">size_t</a>, <a class="el" href="classdouble.html">double</a>, <a class="el" href="classFeel_1_1Table.html">Feel::Table</a>, <a class="el" href="classFeel_1_1Printer_1_1OutputText.html">Printer::OutputText</a>, std::vector&lt; <a class="el" href="classFeel_1_1Printer_1_1OutputText.html">Printer::OutputText</a> &gt; &gt;</td></tr>
 <tr class="separator:a307c2c54f892caa30cda6eb895a9af2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a3617e0dfe4e8f0fe7e6e223cb82699d5"><td class="memItemLeft" align="right" valign="top"><a id="a3617e0dfe4e8f0fe7e6e223cb82699d5"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#a3617e0dfe4e8f0fe7e6e223cb82699d5">add_row</a> (std::initializer_list&lt; variant_value_type &gt; const &amp;rowValues)</td></tr>
-<tr class="memdesc:a3617e0dfe4e8f0fe7e6e223cb82699d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">add row in table <br /></td></tr>
-<tr class="separator:a3617e0dfe4e8f0fe7e6e223cb82699d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a55757608c81c454ae4d2bc83b9123f05"><td class="memTemplParams" colspan="2"><a id="a55757608c81c454ae4d2bc83b9123f05"></a>
-template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a55757608c81c454ae4d2bc83b9123f05"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>add_row</b> (T const &amp;rowValues, std::enable_if_t&lt; is_iterable_v&lt; T &gt; &gt; *=nullptr)</td></tr>
-<tr class="separator:a55757608c81c454ae4d2bc83b9123f05"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ed1d4282240a54549300a9edecdc940"><td class="memItemLeft" align="right" valign="top"><a id="a6ed1d4282240a54549300a9edecdc940"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#a6ed1d4282240a54549300a9edecdc940">add_col</a> (std::initializer_list&lt; variant_value_type &gt; &amp;&amp;colValues)</td></tr>
+<tr class="memdesc:a6ed1d4282240a54549300a9edecdc940"><td class="mdescLeft">&#160;</td><td class="mdescRight">add column in table ( size of \colValues should be equal to M_nRow if table is non empty) <br /></td></tr>
+<tr class="separator:a6ed1d4282240a54549300a9edecdc940"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afdc5673c9f44270d8f131a1f874d66a7"><td class="memTemplParams" colspan="2"><a id="afdc5673c9f44270d8f131a1f874d66a7"></a>
+template&lt;typename T , std::enable_if_t&lt; is_iterable_v&lt; T &gt;, bool &gt;  = true&gt; </td></tr>
+<tr class="memitem:afdc5673c9f44270d8f131a1f874d66a7"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#afdc5673c9f44270d8f131a1f874d66a7">add_col</a> (T &amp;&amp;colValues)</td></tr>
+<tr class="memdesc:afdc5673c9f44270d8f131a1f874d66a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">add column in table ( size of \colValues should be equal to M_nRow if table is non empty) <br /></td></tr>
+<tr class="separator:afdc5673c9f44270d8f131a1f874d66a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a502a1ff988881a9bebe50b6d93956e1f"><td class="memItemLeft" align="right" valign="top"><a id="a502a1ff988881a9bebe50b6d93956e1f"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#a502a1ff988881a9bebe50b6d93956e1f">add_row</a> (std::initializer_list&lt; variant_value_type &gt; &amp;&amp;rowValues)</td></tr>
+<tr class="memdesc:a502a1ff988881a9bebe50b6d93956e1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">add row in table ( size of \rowValues should be equal to M_nCol if table is non empty) <br /></td></tr>
+<tr class="separator:a502a1ff988881a9bebe50b6d93956e1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a986a45fb757b27ef7473b550652bc510"><td class="memTemplParams" colspan="2"><a id="a986a45fb757b27ef7473b550652bc510"></a>
+template&lt;typename T , std::enable_if_t&lt; is_iterable_v&lt; T &gt;, bool &gt;  = true&gt; </td></tr>
+<tr class="memitem:a986a45fb757b27ef7473b550652bc510"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#a986a45fb757b27ef7473b550652bc510">add_row</a> (T &amp;&amp;rowValues)</td></tr>
+<tr class="memdesc:a986a45fb757b27ef7473b550652bc510"><td class="mdescLeft">&#160;</td><td class="mdescRight">add row in table ( size of \rowValues should be equal to M_nCol if table is non empty) <br /></td></tr>
+<tr class="separator:a986a45fb757b27ef7473b550652bc510"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0def351d5b9ea877432073a278448953"><td class="memItemLeft" align="right" valign="top"><a id="a0def351d5b9ea877432073a278448953"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#a0def351d5b9ea877432073a278448953">empty</a> () const</td></tr>
+<tr class="memdesc:a0def351d5b9ea877432073a278448953"><td class="mdescLeft">&#160;</td><td class="mdescRight">return true if the table is empty (i.e. nRow*nCol==0) <br /></td></tr>
+<tr class="separator:a0def351d5b9ea877432073a278448953"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa03178b17e1e3f10e7e81264783c2752"><td class="memItemLeft" align="right" valign="top"><a id="aa03178b17e1e3f10e7e81264783c2752"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#aa03178b17e1e3f10e7e81264783c2752">exportAsciiDoc</a> (std::ostream &amp;o) const</td></tr>
 <tr class="memdesc:aa03178b17e1e3f10e7e81264783c2752"><td class="mdescLeft">&#160;</td><td class="mdescRight">export into stream \o the asciidoc representation of the table <br /></td></tr>
@@ -133,6 +151,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:a0b7293d38a031780ad23b3f1344c4437"><td class="memItemLeft" align="right" valign="top"><a id="a0b7293d38a031780ad23b3f1344c4437"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>exportAsciiDocImpl</b> (std::ostream &amp;o, std::string const &amp;tableSeparator=&quot;|&quot;, <a class="el" href="classint.html">int</a> nestedTableLevel=0) const</td></tr>
 <tr class="separator:a0b7293d38a031780ad23b3f1344c4437"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03e3ae049a3372020e5314857ef265bf"><td class="memItemLeft" align="right" valign="top"><a id="a03e3ae049a3372020e5314857ef265bf"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#a03e3ae049a3372020e5314857ef265bf">exportCSV</a> (std::ostream &amp;o) const</td></tr>
+<tr class="memdesc:a03e3ae049a3372020e5314857ef265bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">export into stream \o the csv representation of the table (not work with nested table) <br /></td></tr>
+<tr class="separator:a03e3ae049a3372020e5314857ef265bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a633aa9f099c6e613539513ecb44530d2"><td class="memItemLeft" align="right" valign="top"><a id="a633aa9f099c6e613539513ecb44530d2"></a>
 <a class="el" href="structFeel_1_1TableImpl_1_1Format.html">TableImpl::Format</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#a633aa9f099c6e613539513ecb44530d2">format</a> ()</td></tr>
 <tr class="memdesc:a633aa9f099c6e613539513ecb44530d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">get table format <br /></td></tr>
@@ -167,6 +189,27 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>exportAsciiDocImpl</b
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#a949025fbc53a571e398cc9110476a8a0">resize</a> (<a class="el" href="classint.html">int</a> <a class="el" href="classFeel_1_1Table.html#af0979b1a44f7f06e9b70d1b539bb61cf">nRow</a>, <a class="el" href="classint.html">int</a> <a class="el" href="classFeel_1_1Table.html#a097b00868ba51420ca0c401adae061ae">nCol</a>)</td></tr>
 <tr class="memdesc:a949025fbc53a571e398cc9110476a8a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">resize the table <br /></td></tr>
 <tr class="separator:a949025fbc53a571e398cc9110476a8a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a561fbc23d5d706d3bb5622a3685de261"><td class="memItemLeft" align="right" valign="top"><a id="a561fbc23d5d706d3bb5622a3685de261"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#a561fbc23d5d706d3bb5622a3685de261">set_col</a> (<a class="el" href="classint.html">int</a> j, std::initializer_list&lt; variant_value_type &gt; &amp;&amp;colValues, <a class="el" href="classint.html">int</a> start_i=0)</td></tr>
+<tr class="memdesc:a561fbc23d5d706d3bb5622a3685de261"><td class="mdescLeft">&#160;</td><td class="mdescRight">set column at index \i in table from initializer_list \colValues from row index i (j should be less than M_nCol, size of colValues should be &lt;= M_nRow-i ) <br /></td></tr>
+<tr class="separator:a561fbc23d5d706d3bb5622a3685de261"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a89cf667b22c86f4d993326f893fd0683"><td class="memTemplParams" colspan="2"><a id="a89cf667b22c86f4d993326f893fd0683"></a>
+template&lt;typename T , std::enable_if_t&lt; is_iterable_v&lt; T &gt;, bool &gt;  = true&gt; </td></tr>
+<tr class="memitem:a89cf667b22c86f4d993326f893fd0683"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#a89cf667b22c86f4d993326f893fd0683">set_col</a> (<a class="el" href="classint.html">int</a> j, T &amp;&amp;colValues, <a class="el" href="classint.html">int</a> start_i=0)</td></tr>
+<tr class="memdesc:a89cf667b22c86f4d993326f893fd0683"><td class="mdescLeft">&#160;</td><td class="mdescRight">set column at index \i in table from an iterable data \colValues from row index i (j should be less than M_nCol, size of colValues should be &lt;= M_nRow-i ) <br /></td></tr>
+<tr class="separator:a89cf667b22c86f4d993326f893fd0683"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d1a5476bbd5f17abcd9829447a4c22b"><td class="memItemLeft" align="right" valign="top"><a id="a0d1a5476bbd5f17abcd9829447a4c22b"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#a0d1a5476bbd5f17abcd9829447a4c22b">set_row</a> (<a class="el" href="classint.html">int</a> i, std::initializer_list&lt; variant_value_type &gt; &amp;&amp;rowValues, <a class="el" href="classint.html">int</a> start_j=0)</td></tr>
+<tr class="memdesc:a0d1a5476bbd5f17abcd9829447a4c22b"><td class="mdescLeft">&#160;</td><td class="mdescRight">set row at index \i in table from initializer_list \rowValues from row index j (i should be less than M_nRow, size of rowValues should be &lt;= M_nCol-j ) <br /></td></tr>
+<tr class="separator:a0d1a5476bbd5f17abcd9829447a4c22b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac30b607cc240daefc462e8431eda6ebc"><td class="memTemplParams" colspan="2"><a id="ac30b607cc240daefc462e8431eda6ebc"></a>
+template&lt;typename T , std::enable_if_t&lt; is_iterable_v&lt; T &gt;, bool &gt;  = true&gt; </td></tr>
+<tr class="memitem:ac30b607cc240daefc462e8431eda6ebc"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1Table.html#ac30b607cc240daefc462e8431eda6ebc">set_row</a> (<a class="el" href="classint.html">int</a> i, T &amp;&amp;rowValues, <a class="el" href="classint.html">int</a> start_j=0)</td></tr>
+<tr class="memdesc:ac30b607cc240daefc462e8431eda6ebc"><td class="mdescLeft">&#160;</td><td class="mdescRight">set row at index \i in table from an iterable data \rowValues from col index j (i should be less than M_nRow, size of rowValues should be &lt;= M_nCol-j ) <br /></td></tr>
+<tr class="separator:ac30b607cc240daefc462e8431eda6ebc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64f676c44ca564740c16ad615516b352"><td class="memItemLeft" align="right" valign="top"><a id="a64f676c44ca564740c16ad615516b352"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Table</b> (<a class="el" href="classint.html">int</a> <a class="el" href="classFeel_1_1Table.html#af0979b1a44f7f06e9b70d1b539bb61cf">nRow</a>=0, <a class="el" href="classint.html">int</a> <a class="el" href="classFeel_1_1Table.html#a097b00868ba51420ca0c401adae061ae">nCol</a>=0, Table::MemoryLayout ml=Table::MemoryLayout::RowMajor)</td></tr>
+<tr class="separator:a64f676c44ca564740c16ad615516b352"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac9015959670b6f1d3ae5ef0381baaa4b"><td class="memItemLeft" align="right" valign="top"><a id="ac9015959670b6f1d3ae5ef0381baaa4b"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>Table</b> (<a class="el" href="classFeel_1_1Table.html">Table</a> &amp;&amp;)=default</td></tr>
 <tr class="separator:ac9015959670b6f1d3ae5ef0381baaa4b"><td class="memSeparator" colspan="2">&#160;</td></tr>

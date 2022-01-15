@@ -130,18 +130,18 @@ typedef super::iterator&#160;</td><td class="memItemRight" valign="bottom"><b>it
 <tr class="memitem:a6aa0caf0cb651c6a2b93fc611146df89"><td class="memItemLeft" align="right" valign="top"><a id="a6aa0caf0cb651c6a2b93fc611146df89"></a>
 typedef matrix_node&lt; value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_node_type</b></td></tr>
 <tr class="separator:a6aa0caf0cb651c6a2b93fc611146df89"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2cd1fae2a9e0a1918aa76572c7622fb"><td class="memItemLeft" align="right" valign="top"><a id="af2cd1fae2a9e0a1918aa76572c7622fb"></a>
-typedef std::map&lt; <a class="el" href="classint.html">int</a>, basis_context_ptrtype &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>super</b></td></tr>
-<tr class="separator:af2cd1fae2a9e0a1918aa76572c7622fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4839998f7b308a3d27cc0cbad3c6875e"><td class="memItemLeft" align="right" valign="top"><a id="a4839998f7b308a3d27cc0cbad3c6875e"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>super</b> = std::map&lt; <a class="el" href="classint.html">int</a>, std::pair&lt; basis_context_ptrtype, std::vector&lt; index_type &gt; &gt;&gt;</td></tr>
+<tr class="separator:a4839998f7b308a3d27cc0cbad3c6875e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a853e2bdb5f09e23fd452777e34b8564c"><td class="memItemLeft" align="right" valign="top"><a id="a853e2bdb5f09e23fd452777e34b8564c"></a>
 std::pair&lt; iterator, <a class="el" href="classbool.html">bool</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>add</b> (node_type const &amp;t)</td></tr>
 <tr class="separator:a853e2bdb5f09e23fd452777e34b8564c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a46711d483a1adb3ff4951c8dc644cb68"><td class="memItemLeft" align="right" valign="top"><a id="a46711d483a1adb3ff4951c8dc644cb68"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>addCtx</b> (basis_context_ptrtype ctx, <a class="el" href="classint.html">int</a> proc_having_the_point)</td></tr>
-<tr class="separator:a46711d483a1adb3ff4951c8dc644cb68"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49a2a155c4a8580dcaadd7530eb8d7c8"><td class="memItemLeft" align="right" valign="top"><a id="a49a2a155c4a8580dcaadd7530eb8d7c8"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>addCtx</b> (std::pair&lt; basis_context_ptrtype, std::vector&lt; index_type &gt;&gt; const &amp;ctx, <a class="el" href="classint.html">int</a> proc_having_the_point)</td></tr>
+<tr class="separator:a49a2a155c4a8580dcaadd7530eb8d7c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a86570fe3164d335d908cb07bf42adb4a"><td class="memItemLeft" align="right" valign="top"><a id="a86570fe3164d335d908cb07bf42adb4a"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>Context</b> (<a class="el" href="classFeel_1_1FunctionSpace_1_1Context.html">Context</a> const &amp;)=default</td></tr>
 <tr class="separator:a86570fe3164d335d908cb07bf42adb4a"><td class="memSeparator" colspan="2">&#160;</td></tr>

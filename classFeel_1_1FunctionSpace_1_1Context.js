@@ -1,7 +1,7 @@
 var classFeel_1_1FunctionSpace_1_1Context =
 [
     [ "add", "classFeel_1_1FunctionSpace_1_1Context.html#a853e2bdb5f09e23fd452777e34b8564c", null ],
-    [ "addCtx", "classFeel_1_1FunctionSpace_1_1Context.html#a46711d483a1adb3ff4951c8dc644cb68", null ],
+    [ "addCtx", "classFeel_1_1FunctionSpace_1_1Context.html#a49a2a155c4a8580dcaadd7530eb8d7c8", null ],
     [ "ctxHaveBeenMpiBroadcasted", "classFeel_1_1FunctionSpace_1_1Context.html#aeae8292c6dcc98b91ec08157d8d66c96", null ],
     [ "functionSpace", "classFeel_1_1FunctionSpace_1_1Context.html#a3dd3f9b3a1adb0a6d02212277de671e4", null ],
     [ "node", "classFeel_1_1FunctionSpace_1_1Context.html#ab7c3bd42449ae14520c7e525436833e1", null ],
@@ -15,7 +15,7 @@ var classFeel_1_1FunctionSpace_1_1Context =
     [ "bc_type", "classFeel_1_1FunctionSpace_1_1Context.html#a00ad86866b096e99b8d9bd4d5c13945f", null ],
     [ "iterator", "classFeel_1_1FunctionSpace_1_1Context.html#ac4d7463d5856a5c0e3261d7824a91412", null ],
     [ "matrix_node_type", "classFeel_1_1FunctionSpace_1_1Context.html#a6aa0caf0cb651c6a2b93fc611146df89", null ],
-    [ "super", "classFeel_1_1FunctionSpace_1_1Context.html#af2cd1fae2a9e0a1918aa76572c7622fb", null ],
+    [ "super", "classFeel_1_1FunctionSpace_1_1Context.html#a4839998f7b308a3d27cc0cbad3c6875e", null ],
     [ "Context", "classFeel_1_1FunctionSpace_1_1Context.html#a6244101435dd3d80ce4d981bba83e9ff", null ],
     [ "Context", "classFeel_1_1FunctionSpace_1_1Context.html#a3f0352a6174b77bc81d30dec5461b4ea", null ],
     [ "Context", "classFeel_1_1FunctionSpace_1_1Context.html#a86570fe3164d335d908cb07bf42adb4a", null ],

@@ -1,7 +1,5 @@
 var feelpp_2feel_2feelcore_2traits_8hpp =
 [
-    [ "is_eigen_matrix", "structFeel_1_1is__eigen__matrix.html", null ],
-    [ "is_eigen_matrix< T, std::void_t< Eigen::MatrixBase< T > > >", "structFeel_1_1is__eigen__matrix_3_01T_00_01std_1_1void__t_3_01Eigen_1_1MatrixBase_3_01T_01_4_01_4_01_4.html", null ],
     [ "is_iterable", "structFeel_1_1is__iterable.html", null ],
     [ "is_iterable< T, std::void_t< decltype(std::declval< T >().begin()), decltype(std::declval< T >().end())> >", "structFeel_1_1is__iterable_3_01T_00_01std_1_1void__t_3_01decltype_07std_1_1declval_3_01T_01_4_07e321607a6dd151c547f374e68b86fe92.html", null ],
     [ "is_iterable_of", "structFeel_1_1is__iterable__of.html", null ],

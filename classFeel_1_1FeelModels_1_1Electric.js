@@ -69,8 +69,6 @@ var classFeel_1_1FeelModels_1_1Electric =
     [ "export_type", "classFeel_1_1FeelModels_1_1Electric.html#abcbe30b10dfd591a4cd165b288118aad", null ],
     [ "materialsproperties_ptrtype", "classFeel_1_1FeelModels_1_1Electric.html#a561a030b72ff437b2be78ea586ccaf60", null ],
     [ "materialsproperties_type", "classFeel_1_1FeelModels_1_1Electric.html#a9da948973e38b3e8be365e2f1d92be84", null ],
-    [ "measure_points_evaluation_ptrtype", "classFeel_1_1FeelModels_1_1Electric.html#ade3d7ee5bacfe8b8939b1f52ae3064c5", null ],
-    [ "measure_points_evaluation_type", "classFeel_1_1FeelModels_1_1Electric.html#a542cf39c7ff9815edd32c7d03b75de09", null ],
     [ "mesh_electric_type", "classFeel_1_1FeelModels_1_1Electric.html#aa1ca6c3a9e409cb4933940446606f70a", null ],
     [ "mesh_ptrtype", "classFeel_1_1FeelModels_1_1Electric.html#a9fc3346d230c4da1a9174b0a91f6579b", null ],
     [ "mesh_type", "classFeel_1_1FeelModels_1_1Electric.html#a246aa97f2eb8c83e8706f69bc0f8ac94", null ],

@@ -393,10 +393,6 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__edge.html">is_edge</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__eigen__matrix.html">is_eigen_matrix</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__eigen__matrix_3_01T_00_01std_1_1void__t_3_01Eigen_1_1MatrixBase_3_01T_01_4_01_4_01_4.html">is_eigen_matrix&lt; T, std::void_t&lt; Eigen::MatrixBase&lt; T &gt; &gt; &gt;</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__face.html">is_face</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__filter.html">is_filter</a></td></tr>
@@ -3874,6 +3870,9 @@ constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_phys
 <tr class="memitem:acfb3b325edf29745782ae41ee53716e9"><td class="memItemLeft" align="right" valign="top"><a id="acfb3b325edf29745782ae41ee53716e9"></a>
 constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_physical_are_elementary_regions</b> = NA::identifier&lt;na::physical_are_elementary_regions&gt;</td></tr>
 <tr class="separator:acfb3b325edf29745782ae41ee53716e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a278e260c879a6527bd0bb388c93ce8ee"><td class="memItemLeft" align="right" valign="top"><a id="a278e260c879a6527bd0bb388c93ce8ee"></a>
+constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_points_used</b> = NA::identifier&lt;na::points_used&gt;</td></tr>
+<tr class="separator:a278e260c879a6527bd0bb388c93ce8ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad052d11f8f141786f8fb48430eb9beb8"><td class="memItemLeft" align="right" valign="top"><a id="ad052d11f8f141786f8fb48430eb9beb8"></a>
 constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_pointset</b> = NA::identifier&lt;na::pointset&gt;</td></tr>
 <tr class="separator:ad052d11f8f141786f8fb48430eb9beb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -4222,7 +4221,7 @@ template&lt;typename C &gt; </td></tr>
 <tr class="separator:aa84c49f28cc801323d811be5e9435958"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a144f469080fe9acd188eaad6ed019524"><td class="memTemplParams" colspan="2"><a id="a144f469080fe9acd188eaad6ed019524"></a>
 template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a144f469080fe9acd188eaad6ed019524"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>is_eigen_matrix_v</b> = <a class="el" href="structFeel_1_1is__eigen__matrix.html">is_eigen_matrix</a>&lt;T&gt;::value</td></tr>
+<tr class="memitem:a144f469080fe9acd188eaad6ed019524"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>is_eigen_matrix_v</b> = std::is_base_of_v&lt;Eigen::MatrixBase&lt;std::decay_t&lt;T&gt;&gt;,std::decay_t&lt;T&gt; &gt;</td></tr>
 <tr class="separator:a144f469080fe9acd188eaad6ed019524"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a24e78306747a9f0a7c70358f2290d4c2"><td class="memTemplParams" colspan="2"><a id="a24e78306747a9f0a7c70358f2290d4c2"></a>
 template&lt;typename... T&gt; </td></tr>

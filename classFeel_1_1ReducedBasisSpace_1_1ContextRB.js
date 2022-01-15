@@ -18,12 +18,10 @@ var classFeel_1_1ReducedBasisSpace_1_1ContextRB =
     [ "setRbSpace", "classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a1d6c726171cd7e5e4a12445b289cfa09", null ],
     [ "update", "classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#ae8ce1ae4aa4400c9beee831c383ec07c", null ],
     [ "nComponents", "classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a3b86647ffbe25f6962beffde26c7ecb5", null ],
-    [ "ctx_ptrtype", "classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#af7c85865050df5b62d268d5b517c877f", null ],
-    [ "ctx_type", "classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a0a32f905f3757f4759aef87237915236", null ],
     [ "reducedbasisspace_ptrtype", "classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a0114a7b4773f972479e0426b1a6ecec2", null ],
     [ "reducedbasisspace_type", "classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a49fb8bb7b56dde15054d5bef718b76e4", null ],
     [ "super", "classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a2630c017839994bbb5848d328bde824b", null ],
-    [ "ContextRB", "classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a83d2b652d35a39ff0accd208d8706207", null ],
+    [ "ContextRB", "classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a32013b99aed3f342d251e49bca15c1a2", null ],
     [ "ContextRB", "classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#aa0fb9afa940277a7e76409cd7192a7d3", null ],
     [ "ContextRB", "classFeel_1_1ReducedBasisSpace_1_1ContextRB.html#a6e1ed277f707d608b5376b866a920f2f", null ]
 ];

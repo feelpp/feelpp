@@ -1,10 +1,16 @@
 var classFeel_1_1FeelModels_1_1ModelMeshes =
 [
     [ "hasModelMesh", "classFeel_1_1FeelModels_1_1ModelMeshes.html#a880f625995184b2db9463c2ef35a3aec", null ],
+    [ "initMeasurePointsEvaluationTool", "classFeel_1_1FeelModels_1_1ModelMeshes.html#a527c1fe6e6ed3a32f1f93780e64b08bf", null ],
+    [ "measurePointsEvaluationTool", "classFeel_1_1FeelModels_1_1ModelMeshes.html#a4dc985f4d33a3c51454f231248c08cd1", null ],
     [ "mesh", "classFeel_1_1FeelModels_1_1ModelMeshes.html#a346c1b10f9de2803a2f41c3a5845e31b", null ],
+    [ "modelMesh", "classFeel_1_1FeelModels_1_1ModelMeshes.html#abe732bd2c364a3e5def93a612f4ea4a2", null ],
+    [ "modelMesh", "classFeel_1_1FeelModels_1_1ModelMeshes.html#a764ff9ca51d6a5cf465f9cc0f7b955fa", null ],
     [ "modelMesh", "classFeel_1_1FeelModels_1_1ModelMeshes.html#aa3106df67f775839e3379cf5e93b2844", null ],
     [ "modelMesh", "classFeel_1_1FeelModels_1_1ModelMeshes.html#a36010f9e4a9141c895d61f3ab9ae023f", null ],
     [ "setMesh", "classFeel_1_1FeelModels_1_1ModelMeshes.html#ad65e9bb002d1643cf36d6be9fd353926", null ],
+    [ "setModelMeshAsShared", "classFeel_1_1FeelModels_1_1ModelMeshes.html#a7be09c3d63ab7dfea352175e63ac00dc", null ],
+    [ "setModelMeshAsShared", "classFeel_1_1FeelModels_1_1ModelMeshes.html#abed1a31cdf072394a786cf447fd00541", null ],
     [ "setup", "classFeel_1_1FeelModels_1_1ModelMeshes.html#a9fe3e7e127eb6a850492a0cb54a7a17c", null ],
     [ "setupRestart", "classFeel_1_1FeelModels_1_1ModelMeshes.html#aa8f7427b409cf7838b70144b4749672d", null ],
     [ "symbolsExpr", "classFeel_1_1FeelModels_1_1ModelMeshes.html#aad5989ed3df16ce3e3c176f4b37ef420", null ],
