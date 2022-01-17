@@ -1,14 +1,5 @@
 var NAVTREEINDEX17 =
 {
-"classFeel_1_1GeoEntity.html#a6d9a654333a9c2b542f44aff9cdd3664":[6,1,1,94,68],
-"classFeel_1_1GeoEntity.html#a6fb58f5f897fc96cf4cfc32b77192adf":[6,1,1,94,12],
-"classFeel_1_1GeoEntity.html#a70eb577756f509f06305d8c900527891":[6,1,1,94,50],
-"classFeel_1_1GeoEntity.html#a712db5c96eab518810c5daaaafce5614":[6,1,1,94,60],
-"classFeel_1_1GeoEntity.html#a7708e624e25573338017c50992b174be":[6,1,1,94,96],
-"classFeel_1_1GeoEntity.html#a77fc635169bd29f886e2871635101bc5":[6,1,1,94,27],
-"classFeel_1_1GeoEntity.html#a7b519a880f0a6026d931d1fbf5af11fb":[6,1,1,94,91],
-"classFeel_1_1GeoEntity.html#a7c9bf4ccc45748212da85fbefac1e0af":[6,1,1,94,99],
-"classFeel_1_1GeoEntity.html#a7cf3aeed15820ad4c927b1fbcb29eb46":[6,1,1,94,79],
 "classFeel_1_1GeoEntity.html#a7eda5aa9e068ee37a2d1e60fb1383dea":[6,1,1,94,63],
 "classFeel_1_1GeoEntity.html#a8096a01991752e816fd99352e4974d68":[6,1,1,94,76],
 "classFeel_1_1GeoEntity.html#a816951830889ba1e0556224d5108e573":[6,1,1,94,70],
@@ -249,5 +240,14 @@ var NAVTREEINDEX17 =
 "classFeel_1_1GeometricSpace_1_1Context.html#a3785cd53ebde8f0a3b35cb8b4629c527":[6,1,1,95,0,12],
 "classFeel_1_1GeometricSpace_1_1Context.html#a3deaecef70aa6d8549699958c9b93cef":[6,1,1,95,0,11],
 "classFeel_1_1GeometricSpace_1_1Context.html#a433c646061131a703d2725c6f4a08c76":[6,1,1,95,0,4],
-"classFeel_1_1GeometricSpace_1_1Context.html#a67e68bce39fb4145e05b7ec200c89d15":[6,1,1,95,0,9]
+"classFeel_1_1GeometricSpace_1_1Context.html#a67e68bce39fb4145e05b7ec200c89d15":[6,1,1,95,0,9],
+"classFeel_1_1GeometricSpace_1_1Context.html#a7f68a5063235fec943d70b454acb4060":[6,1,1,95,0,10],
+"classFeel_1_1GeometricSpace_1_1Context.html#a8caa5f2fcaa41fd04a4e56f77c5bbffc":[6,1,1,95,0,8],
+"classFeel_1_1GeometricSpace_1_1Context.html#a8dbe376ed1e03e133790ecd569a34fb3":[6,1,1,95,0,6],
+"classFeel_1_1GeometricSpace_1_1Context.html#a931eddb685214e49bb2df46235d01821":[6,1,1,95,0,1],
+"classFeel_1_1GeometricSpace_1_1Context.html#ac80173fefda4960d60723652bc511097":[6,1,1,95,0,7],
+"classFeel_1_1GeometricSpace_1_1Context.html#ac98d07dd8f7b70e16ccb9a01abf56b9c":[6,1,1,95,0,0],
+"classFeel_1_1GeometricSpace_1_1Context.html#ad76c8cedb1bbc01678534e6d96ba7456":[6,1,1,95,0,15],
+"classFeel_1_1GeometricSpace_1_1Context.html#adc52a8e88a83f08522a357d87f465336":[6,1,1,95,0,13],
+"classFeel_1_1GeometricSpace_1_1ContextGeometric.html":[6,1,1,95,1]
 };

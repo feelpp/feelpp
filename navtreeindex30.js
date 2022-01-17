@@ -1,14 +1,5 @@
 var NAVTREEINDEX30 =
 {
-"classFeel_1_1detail_1_1TimeSet_1_1Step.html#a9bc3653556912dfb19ccee3de7de0878":[6,1,1,1,49,1,52],
-"classFeel_1_1detail_1_1TimeSet_1_1Step.html#a9d1964a38e828e0166e6f4e3e727e9a4":[6,1,1,1,49,1,31],
-"classFeel_1_1detail_1_1TimeSet_1_1Step.html#a9f0748a1831848fbbbb42cf0eef2d6ac":[6,1,1,1,49,1,29],
-"classFeel_1_1detail_1_1TimeSet_1_1Step.html#a9f9803bd452d27bfc3af35f29a5edd90":[6,1,1,1,49,1,49],
-"classFeel_1_1detail_1_1TimeSet_1_1Step.html#aa494a47a73b50e4ddf46ea0d46fc13d8":[6,1,1,1,49,1,70],
-"classFeel_1_1detail_1_1TimeSet_1_1Step.html#aa68eb5470eead0a6429ba6d5f47f1aec":[6,1,1,1,49,1,64],
-"classFeel_1_1detail_1_1TimeSet_1_1Step.html#aab0151e51ed8c532d6cbddf7180db557":[6,1,1,1,49,1,28],
-"classFeel_1_1detail_1_1TimeSet_1_1Step.html#aabc0541a386e60505df185efbc22dbc8":[6,1,1,1,49,1,3],
-"classFeel_1_1detail_1_1TimeSet_1_1Step.html#ab1671d6e5094b611b81adbf97fdca31a":[6,1,1,1,49,1,71],
 "classFeel_1_1detail_1_1TimeSet_1_1Step.html#ab3dc6236dab6ebd7f8b664cffd6ba61b":[6,1,1,1,49,1,27],
 "classFeel_1_1detail_1_1TimeSet_1_1Step.html#ab45be6390e7d1a1fd779f9988a65019b":[6,1,1,1,49,1,69],
 "classFeel_1_1detail_1_1TimeSet_1_1Step.html#ac22c5ca6c2ce29c7134f4bd183b211de":[6,1,1,1,49,1,26],
@@ -249,5 +240,14 @@ var NAVTREEINDEX30 =
 "classFeel_1_1mpfr_1_1MpfrClass.html#af2b07a163b7b04832d5b2cd79eef90b0":[6,1,1,8,1,114],
 "classFeel_1_1mpfr_1_1MpfrClass.html#af3194ca58b65decd21f162461a99bc88":[6,1,1,8,1,60],
 "classFeel_1_1mpfr_1_1MpfrClass.html#af321df859cb7800b9286a06fdab38be8":[6,1,1,8,1,78],
-"classFeel_1_1mpfr_1_1MpfrClass.html#af5ac24ceb95e8ceaa4f79928f7ef27d8":[6,1,1,8,1,152]
+"classFeel_1_1mpfr_1_1MpfrClass.html#af5ac24ceb95e8ceaa4f79928f7ef27d8":[6,1,1,8,1,152],
+"classFeel_1_1mpfr_1_1MpfrClass.html#af8596d7e129614182c2cbc4394a840b1":[6,1,1,8,1,139],
+"classFeel_1_1mpfr_1_1MpfrClass.html#af86c583628fb2fffec4e19f7e10f3ab8":[6,1,1,8,1,122],
+"classFeel_1_1mpfr_1_1MpfrClass.html#af8fe5341ba0b7556af98559139bffd54":[6,1,1,8,1,149],
+"classFeel_1_1mpfr_1_1MpfrClass.html#af9dd23c88ea069095b2d2b7da08bf5db":[6,1,1,8,1,79],
+"classFeel_1_1mpfr_1_1MpfrClass.html#afcc7f46fcf64e943ed901a37f7b3f93c":[6,1,1,8,1,148],
+"classFeel_1_1mpfr_1_1MpfrClass.html#afe47d89d35b1a21e1d381a18ab28eab5":[6,1,1,8,1,69],
+"classFeel_1_1mpfr_1_1MpfrClass.html#afe5becec26a06c14ee9fecc4f32e46f7":[6,1,1,8,1,39],
+"classFeel_1_1mpfr_1_1RefCounter.html":[6,1,1,8,2],
+"classFeel_1_1mpfr_1_1RefCounter.html#a1c3854d0d200c67aefddf63796e18378":[6,1,1,8,2,2]
 };

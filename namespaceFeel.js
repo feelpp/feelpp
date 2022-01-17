@@ -116,7 +116,6 @@ var namespaceFeel =
       [ "ModelFieldTag", "structFeel_1_1FeelModels_1_1ModelFieldTag.html", "structFeel_1_1FeelModels_1_1ModelFieldTag" ],
       [ "ModelGenericPDE", "classFeel_1_1FeelModels_1_1ModelGenericPDE.html", "classFeel_1_1FeelModels_1_1ModelGenericPDE" ],
       [ "ModelGenericPDEs", "classFeel_1_1FeelModels_1_1ModelGenericPDEs.html", "classFeel_1_1FeelModels_1_1ModelGenericPDEs" ],
-      [ "ModelMeasuresEvaluatorContext", "classFeel_1_1FeelModels_1_1ModelMeasuresEvaluatorContext.html", "classFeel_1_1FeelModels_1_1ModelMeasuresEvaluatorContext" ],
       [ "ModelMeasuresFlowRate", "classFeel_1_1FeelModels_1_1ModelMeasuresFlowRate.html", "classFeel_1_1FeelModels_1_1ModelMeasuresFlowRate" ],
       [ "ModelMeasuresForces", "classFeel_1_1FeelModels_1_1ModelMeasuresForces.html", "classFeel_1_1FeelModels_1_1ModelMeasuresForces" ],
       [ "ModelMeasuresNormalFluxGeneric", "classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric.html", "classFeel_1_1FeelModels_1_1ModelMeasuresNormalFluxGeneric" ],

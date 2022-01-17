@@ -16,5 +16,7 @@ var classFeel_1_1FeelModels_1_1ModelMeasuresStorage =
     [ "value", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#aa781a87cfcde4b458e2924e55b5a0e73", null ],
     [ "values", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#ab65ada15c8116cb2c4a0121e433cf7ca", null ],
     [ "values", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a3661ee12a044d63b8aed5595d7bafddf", null ],
-    [ "ModelMeasuresStorage", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a446add5c60b918854e3d416181516b6c", null ]
+    [ "ModelMeasuresStorage", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a446add5c60b918854e3d416181516b6c", null ],
+    [ "ModelMeasuresStorage", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#adb7fb10364a7228a9d4fa1bd9f2caa71", null ],
+    [ "ModelMeasuresStorage", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a5ca29a8c443cd13544e34758bb813ee8", null ]
 ];

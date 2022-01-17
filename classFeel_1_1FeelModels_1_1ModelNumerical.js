@@ -35,8 +35,6 @@ var classFeel_1_1FeelModels_1_1ModelNumerical =
     [ "postProcessExportsPidName", "classFeel_1_1FeelModels_1_1ModelNumerical.html#aa46c6c2a8b8097067aafe603fa286897", null ],
     [ "postProcessMeasures", "classFeel_1_1FeelModels_1_1ModelNumerical.html#a8abfee7769adab3190201f76c7450a69", null ],
     [ "postProcessMeasures", "classFeel_1_1FeelModels_1_1ModelNumerical.html#ad73195b1f00d119ac6a2b9e8f03b4add", null ],
-    [ "postProcessMeasuresEvaluatorContext", "classFeel_1_1FeelModels_1_1ModelNumerical.html#a156a31a98a931ee1c6684911b48efc42", null ],
-    [ "postProcessMeasuresEvaluatorContext", "classFeel_1_1FeelModels_1_1ModelNumerical.html#a107e95be4c1aa7ba2898121ce22a5cf4", null ],
     [ "postProcessMeasuresQuantitiesNames", "classFeel_1_1FeelModels_1_1ModelNumerical.html#ad148891a0aa28ed6c24f97c7cbcafdd4", null ],
     [ "postProcessSaveFields", "classFeel_1_1FeelModels_1_1ModelNumerical.html#ad374ad65fa5710bc0cffcf298099d09a", null ],
     [ "postProcessSaveFields", "classFeel_1_1FeelModels_1_1ModelNumerical.html#ac397dde1d816df3b2608eadb27093bc0", null ],
