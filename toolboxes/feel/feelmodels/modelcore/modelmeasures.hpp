@@ -38,81 +38,13 @@ namespace Feel
 namespace FeelModels
 {
 
-#if 0
-class ModelMeasuresIO
-{
-public :
-    ModelMeasuresIO( std::string const& pathFile, worldcomm_ptr_t const& worldComm /*= Environment::worldComm()*/ );
-    ModelMeasuresIO( ModelMeasuresIO const& ) = default;
-    void clear();
-    FEELPP_DEPRECATED void start() {}
-    void restart( std::string const& paramKey, double val );
-    void exportMeasures();
-    FEELPP_DEPRECATED void setParameter(std::string const& key,double val);
-    void setMeasure(std::string const& key,double val);
-
-    template <typename T>
-    void setMeasure( std::string const& key, std::vector<T> const& values ) { this->setMeasure( key, values.data(), values.size() ); }
-
-    template<typename Derived>
-    void setMeasure(std::string const& key, Eigen::MatrixBase<Derived> const& mat )
-         {
-            if ( mat.rows() == 1 && mat.cols() == 1 )
-                this->setMeasure( key, mat(0,0) );
-            else if ( mat.rows() == 1 || mat.cols() == 1 )
-                for (int d=0;d<mat.rows()*mat.cols();++d)
-                    this->setMeasure( (boost::format("%1%_%2%")%key %d).str(), mat(d) );
-            else
-                for (int i=0;i<mat.rows();++i)
-                    for (int j=0;j<mat.cols();++j)
-                        this->setMeasure( (boost::format("%1%_%2%%3%")%key %i %j).str(), mat(i,j) );
-        }
-    template <typename T>
-    void setMeasure(std::string const& key, const T * data, int dim)
-        {
-            if ( dim == 1 )
-                this->setMeasure( key, data[0] );
-            else
-                for (int d=0;d<dim;++d)
-                    this->setMeasure( (boost::format("%1%_%2%")%key %d).str(), data[d] );
-        }
-    FEELPP_DEPRECATED void setMeasureComp( std::string const& key,std::vector<double> const& values );
-    void setMeasures( std::map<std::string,double> const& m );
-    FEELPP_DEPRECATED bool hasParameter( std::string const& key ) const { return this->hasMeasure( key ); }
-    bool hasMeasure( std::string const& key ) const { return M_dataNameToIndex.find( key ) != M_dataNameToIndex.end(); }
-    //! return measure from a key
-    double measure( std::string const& key ) const;
-    //! return the current measures in memory
-    std::map<std::string,double> currentMeasures() const;
-    //! return path of file where measures are stored
-    std::string const& pathFile() const { return M_pathFile; }
-    //! set path of file where measures are stored
-    void setPathFile( std::string const& s ) { M_pathFile = s; }
-
-    //! update measures values into the mapping of values \mp
-    void updateParameterValues( std::map<std::string,double> & mp, std::string const& prefix_symbol ) const;
-
-
-private :
-    void writeHeader();
-private :
-    std::shared_ptr<WorldComm> M_worldComm;
-    std::string M_pathFile;
-    std::map<std::string,uint16_type> M_dataNameToIndex;
-    std::vector<std::string> M_dataIndexToName;
-    std::vector<double> M_data;
-    bool M_addNewDataIsLocked;
-};
-
-#endif
-
 class ModelMeasuresStorageValues
 {
     using value_type = double;
 public :
     ModelMeasuresStorageValues( std::string const& name ) : M_name( name ) {}
     ModelMeasuresStorageValues( ModelMeasuresStorageValues && ) = default;
-    ModelMeasuresStorageValues( ModelMeasuresStorageValues const& ) = delete;
+    ModelMeasuresStorageValues( ModelMeasuresStorageValues const& ) = default;
 
     template<typename T, std::enable_if_t< std::is_arithmetic_v<std::decay_t<T>>, bool> = true>
     void setValue( std::string const& key, T && val )
@@ -185,7 +117,7 @@ class ModelMeasuresStorageTable
 public :
     ModelMeasuresStorageTable( std::string const& name ) : M_name( name ) {}
     ModelMeasuresStorageTable( ModelMeasuresStorageTable && ) = default;
-    ModelMeasuresStorageTable( ModelMeasuresStorageTable const& ) = delete;
+    ModelMeasuresStorageTable( ModelMeasuresStorageTable const& ) = default;
 
     Feel::Table const& table() const { return M_table; }
 
@@ -225,6 +157,8 @@ public :
     //enum class State { IN_MEMORY=0, ON_DISK, MODIFIED };
 
     ModelMeasuresStorage( std::string const& directory, worldcomm_ptr_t const& worldComm ) : M_directory( directory ), M_worldComm( worldComm ) {}
+    ModelMeasuresStorage( ModelMeasuresStorage && ) = default;
+    ModelMeasuresStorage( ModelMeasuresStorage const& ) = default;
 
     //! set value \val related to the key nammed by \key (the measure storage is associated to the default name, i.e. empty string)
     template<typename T>
