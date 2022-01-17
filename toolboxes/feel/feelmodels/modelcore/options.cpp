@@ -396,6 +396,8 @@ heat_options(std::string const& prefix)
 
         (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
         (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "numeric solver : automatic, Newton, Picard, Linear")
         ;
     return heatOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
