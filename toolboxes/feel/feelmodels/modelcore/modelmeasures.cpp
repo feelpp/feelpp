@@ -349,56 +349,6 @@ std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
 
 
 
-void
-ModelMeasuresEvaluatorContext::add( std::string const& field, int ctxId, std::string const& name )
-{
-    M_mapFieldToMapCtxIdToName[field][ctxId] = name;
-}
-bool
-ModelMeasuresEvaluatorContext::has( std::string const& field ) const
-{
-    auto itFindField = M_mapFieldToMapCtxIdToName.find(field);
-    if ( itFindField == M_mapFieldToMapCtxIdToName.end() )
-        return false;
-    return true;
-}
-bool
-ModelMeasuresEvaluatorContext::has( std::string const& field, int ctxId ) const
-{
-    auto itFindField = M_mapFieldToMapCtxIdToName.find(field);
-    if ( itFindField == M_mapFieldToMapCtxIdToName.end() )
-        return false;
-    auto itFindCtxId = itFindField->second.find(ctxId);
-    if ( itFindCtxId == itFindField->second.end() )
-        return false;
-    return true;
-}
-std::string const&
-ModelMeasuresEvaluatorContext::name( std::string const& field, int ctxId ) const
-{
-    if ( !this->has( field,ctxId ) )
-         return M_emptyString;
-    else
-        return M_mapFieldToMapCtxIdToName.find(field)->second.find(ctxId)->second;
-}
-int
-ModelMeasuresEvaluatorContext::ctxId( std::string const& field, std::string const& name ) const
-{
-    int ctxIdNull = -1;
-    auto itFindField = M_mapFieldToMapCtxIdToName.find(field);
-    if ( itFindField == M_mapFieldToMapCtxIdToName.end() )
-        return ctxIdNull;
-
-    for ( auto const& ctxIdAndName : itFindField->second )
-    {
-        int curCtxId = ctxIdAndName.first;
-        std::string const& curName = ctxIdAndName.second;
-        if ( name == curName )
-            return curCtxId;
-    }
-    return ctxIdNull;
-}
-
 
 
 

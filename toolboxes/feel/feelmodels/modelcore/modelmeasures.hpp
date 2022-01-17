@@ -233,28 +233,6 @@ private :
 
 
 
-
-
-
-
-class ModelMeasuresEvaluatorContext
-{
-public :
-    ModelMeasuresEvaluatorContext() = default;
-    ModelMeasuresEvaluatorContext( ModelMeasuresEvaluatorContext const& ) = default;
-
-    std::map<std::string, std::map<int,std::string> > const& mapFieldToMapCtxIdToName() const { return M_mapFieldToMapCtxIdToName; }
-    void add( std::string const& field, int ctxId, std::string const& name );
-    bool has( std::string const& field ) const;
-    bool has( std::string const& field, int ctxId ) const;
-    std::string const& name( std::string const& field, int ctxId ) const;
-    int ctxId( std::string const& field, std::string const& name ) const;
-private :
-    // for each field, store data names evaluted : field -> ( (ctxId1->dataName1), (ctxId2->dataName2),...)
-    std::map<std::string, std::map<int,std::string> > M_mapFieldToMapCtxIdToName;
-    std::string M_emptyString;
-};
-
 class ModelMeasuresForces
 {
 public :

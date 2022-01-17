@@ -250,8 +250,6 @@ class ModelNumerical : virtual public ModelBase,
 
         ModelMeasuresStorage const& postProcessMeasures() const { return M_postProcessMeasures; }
         ModelMeasuresStorage & postProcessMeasures() { return M_postProcessMeasures; }
-        ModelMeasuresEvaluatorContext const& postProcessMeasuresEvaluatorContext() const { return M_postProcessMeasuresEvaluatorContext; }
-        ModelMeasuresEvaluatorContext & postProcessMeasuresEvaluatorContext() { return M_postProcessMeasuresEvaluatorContext; }
 
         virtual
         void updateParameterValues_postProcess( std::map<std::string,double> & mp, std::string const& prefix_symbol ) const
@@ -347,7 +345,6 @@ class ModelNumerical : virtual public ModelBase,
         fs::path M_postProcessSaveRepository;
         std::set<std::string> M_postProcessMeasuresQuantitiesNames, M_postProcessMeasuresQuantitiesAllNamesAvailable;
         ModelMeasuresStorage M_postProcessMeasures;
-        ModelMeasuresEvaluatorContext M_postProcessMeasuresEvaluatorContext;
 
         GeomapStrategyType M_geomap;
 
