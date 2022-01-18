@@ -269,7 +269,7 @@ public :
     //! return true if at least one measure (value or table) has been set or updated
     bool isUpdated() const;
 
-    //! resest state of measures storage : new measure modification will be turn on the updated state
+    //! reset state of measures storage : new measure modification will be turn on the updated state
     void resetState();
 
     //! update measures values into the mapping of values \mp
