@@ -1088,13 +1088,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
-    // point measures
-    auto fieldNamesWithSpaceDisplacement = std::make_pair( std::set<std::string>({"displacement"}), this->functionSpaceDisplacement() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceDisplacement );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-        M_measurePointsEvaluation->init( evalPoints );
-
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
 
 #if 0
     std::set<std::string> fieldNameStressScalar = { "Von-Mises","Tresca","princial-stress-1","princial-stress-2","princial-stress-3",
@@ -1149,9 +1144,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
-            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-        else
-            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
+            this->postProcessMeasures().restart( this->timeInitial() );
     }
 
 }

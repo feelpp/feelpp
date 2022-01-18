@@ -12,7 +12,7 @@
         "dif":0.05,
         "re":2,
         "ri":1,
-        "h":0.08,
+        "param_h":0.08,
         "Tw":293
     },
     "Materials":
@@ -31,7 +31,7 @@
                 "cooling":
                 {
                     "markers":["Rint","Rext"],
-                    "expr1":"h:h", // h
+                    "expr1":"param_h:param_h", // h
                     "expr2":"Tw:Tw" // T_c
                 }
             }
@@ -54,7 +54,7 @@
     "PostProcess":
     {
         "use-model-name":1,
-        "thermo-electric":
+        "thermoelectric":
         {
             "Exports":
             {

@@ -50,7 +50,7 @@ exprResidualImpl( HeatType const& heat, ModelPhysic<HeatType::nDim> const& physi
 
     auto thermalConductivityExprBase = matProps.property("thermal-conductivity");
     bool thermalConductivityIsMatrix = thermalConductivityExprBase.template hasExpr<HeatType::nDim,HeatType::nDim>();
-    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<HeatType::nDim>( se );
+    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<HeatType::nDim>( se ) && heat.stabilizationGLS_checkConductivityDependencyOnCoordinates();
     if (  HeatType::nOrderTemperature > 1 || thermalConductivityDependsOnCoordinatesInSpace )
     {
         if ( thermalConductivityIsMatrix )
@@ -189,7 +189,7 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobianStabilizationGLS( DataUpdat
 
     auto thermalConductivityExprBase = matProps.property("thermal-conductivity");
     bool thermalConductivityIsMatrix = thermalConductivityExprBase.template hasExpr<nDim,nDim>();
-    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<nDim>( se );
+    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<nDim>( se ) && this->stabilizationGLS_checkConductivityDependencyOnCoordinates();
     if ( thermalConductivityIsMatrix )
     {
         auto thermalConductivityExpr = expr( thermalConductivityExprBase.template expr<nDim,nDim>(), se );
@@ -342,7 +342,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( DataUpdat
 
     auto thermalConductivityExprBase = matProps.property("thermal-conductivity");
     bool thermalConductivityIsMatrix = thermalConductivityExprBase.template hasExpr<nDim,nDim>();
-    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<nDim>( se );
+    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<nDim>( se ) && this->stabilizationGLS_checkConductivityDependencyOnCoordinates();
     if ( thermalConductivityIsMatrix )
     {
         auto thermalConductivityExpr = expr( thermalConductivityExprBase.template expr<nDim,nDim>(), se );
@@ -487,7 +487,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( DataUpda
 
     auto thermalConductivityExprBase = matProps.property("thermal-conductivity");
     bool thermalConductivityIsMatrix = thermalConductivityExprBase.template hasExpr<nDim,nDim>();
-    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<nDim>( se );
+    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<nDim>( se ) && this->stabilizationGLS_checkConductivityDependencyOnCoordinates();
     if ( thermalConductivityIsMatrix )
     {
         auto thermalConductivityExpr = expr( thermalConductivityExprBase.template expr<nDim,nDim>(), se );

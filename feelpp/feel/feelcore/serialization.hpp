@@ -708,6 +708,14 @@ void serialize( Archive & ar,
 }
 #endif
 
+//! serialization of std::tuple
+template<typename Archive, typename ... Ts>
+void serialize(Archive& ar, std::tuple<Ts...>& t, const unsigned int version)
+{
+    std::apply( [&ar](Ts &... e ){ ( (ar& BOOST_SERIALIZATION_NVP( e )), ...  ); }, t );
+}
+
+
 //
 // boost::tuple<T1,T2>
 //
