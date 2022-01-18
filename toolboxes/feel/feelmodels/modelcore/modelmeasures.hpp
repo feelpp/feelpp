@@ -150,6 +150,15 @@ private:
 //class ModelMeasuresStorageValues;
 //class ModelMeasuresStorageTable;
 
+/**
+ * @brief Measure Storage class
+ * 
+ * The class stores values and tables in maps
+ * \code {.coo}
+ * code
+ * \endcode
+ * 
+ */
 class ModelMeasuresStorage
 {
     using value_type = double;
@@ -183,21 +192,28 @@ public :
             M_values.at( name ).setValue( std::forward<T>( keyVal ) );
         }
 
-    //! return true if a measure with key \key is present in default storage (nammed by empty string)
+    //! return true if a measure with key @p key is present in default storage (empty string)
     bool hasValue( std::string const& key ) const { return this->hasValue( "", key ); }
-    //! return true if a measure with key \key is present in storage nammed by \name
+    //! return true if a measure with key @p key is present in storage @p name
     bool hasValue( std::string const& name, std::string const& key ) const;
 
+    //! return value of measure with key @p key from default storage (empty string)
     value_type value( std::string const& key ) const { return this->value( "", key ); }
+    //! return value of measure with key @p key from storage 'name'
     value_type value( std::string const& name, std::string const& key ) const;
 
+    //! get the values dictionary from the default storage
     std::map<std::string,value_type> const& values() const { return this->values(""); }
+
+    //! get the values dictionary from the storage @p name
     std::map<std::string,value_type> const& values( std::string const& name ) const { return M_values.at( name ).values(); }
 
+    //! get the times
+    std::vector<double> const& times() const { return M_times; }
 
     void setTable( std::string const& name, Feel::Table && table );
 
-    //! save current measure at time \times
+    //! save current measure at time @p time
     void save( double time );
 
     //! return true if at least one measure (value or table) has been set or updated
@@ -212,6 +228,11 @@ public :
     //! restart measures
     void restart( double time );
 
+    //! get the directory where the measures are stored
+    fs::path directory() const { return fs::path(M_directory); }
+
+    //! get the metadata from the measure storage
+    nl::json metadata() const;
 private :
     void restartSeqImpl( double time );
 
