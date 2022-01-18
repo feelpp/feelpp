@@ -1,5 +1,8 @@
 var NAVTREEINDEX47 =
 {
+"structFeel_1_1detail_1_1computeNDofForEachSpace.html#acb2663182b798b073a05b18a66ae2b84":[6,1,1,1,9,2],
+"structFeel_1_1detail_1_1computeNDofForEachSpace.html#afa7032ed1db29f80abc451df5b0c1ab2":[6,1,1,1,9,5],
+"structFeel_1_1detail_1_1computeStartOfFieldSplit.html":[6,1,1,1,10],
 "structFeel_1_1detail_1_1computeStartOfFieldSplit.html#a51ea7fd389f51b3de41b3e5e3d2fc9c2":[6,1,1,1,10,0],
 "structFeel_1_1detail_1_1computeStartOfFieldSplit.html#ad661d89d8d12e02e9a41c46d2336f95d":[6,1,1,1,10,1],
 "structFeel_1_1detail_1_1compute__graph1.html":[6,1,1,1,5],
@@ -246,8 +249,5 @@ var NAVTREEINDEX47 =
 "structFeel_1_1meta_1_1Pdhmg.html#a905420c92bd7676be02fe93638acd315":[6,1,1,7,9,0],
 "structFeel_1_1meta_1_1Pdhv.html":[6,1,1,7,10],
 "structFeel_1_1meta_1_1Pdhv.html#a0858ff3123fbca926dc8b956d0686773":[6,1,1,7,10,1],
-"structFeel_1_1meta_1_1Pdhv.html#a2b91a7cdd570cf72cde57ad0817d48d6":[6,1,1,7,10,0],
-"structFeel_1_1meta_1_1THch.html":[6,1,1,7,11],
-"structFeel_1_1meta_1_1THch.html#a2500539f1508f0e1c4ac1931758d9637":[6,1,1,7,11,1],
-"structFeel_1_1meta_1_1THch.html#a38d0ffcaa714bca48fe72f1a1098f9b7":[6,1,1,7,11,0]
+"structFeel_1_1meta_1_1Pdhv.html#a2b91a7cdd570cf72cde57ad0817d48d6":[6,1,1,7,10,0]
 };

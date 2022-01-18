@@ -248,6 +248,6 @@ var NAVTREEINDEX9 =
 "classFeel_1_1FeelModels_1_1ModelMeasuresQuantity1.html#af6a84e6706fdf5a3f90c54c05a905ab8":[6,1,1,4,49,0],
 "classFeel_1_1FeelModels_1_1ModelMeasuresQuantity1.html#afa5d139879eb236fbf8047dc1a2112e3":[6,1,1,4,49,10],
 "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html":[6,1,1,4,51],
-"classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a1626002fd07d991795e9674dd3d68e5b":[6,1,1,4,51,3],
-"classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a1badace31e89f437d0d15493b72c20f0":[6,1,1,4,51,7]
+"classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a0913a0e0877115a1565e28262d05e3f8":[6,1,1,4,51,4],
+"classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a1626002fd07d991795e9674dd3d68e5b":[6,1,1,4,51,5]
 };

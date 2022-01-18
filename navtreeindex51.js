@@ -1,5 +1,8 @@
 var NAVTREEINDEX51 =
 {
+"structFeel_1_1vf_1_1minmaxData.html#adac8af8c26bf15fbd47fb0cbbc2be49d":[6,1,1,13,23,8],
+"structFeel_1_1vf_1_1minmaxData.html#aefbcefc8bfbe91c60a2ba1783ef8b4ea":[6,1,1,13,23,10],
+"structFeel_1_1vf_1_1minmaxData.html#af22c1ed3701cc84d7ea9c13c120f945b":[6,1,1,13,23,0],
 "structFeel_1_1vf_1_1normLinfData.html":[6,1,1,13,24],
 "structFeel_1_1vf_1_1normLinfData.html#a04a88203e4951d67eeaa974bc74bdf4c":[6,1,1,13,24,4],
 "structFeel_1_1vf_1_1normLinfData.html#a1562228c1193ab906814960e0ba0709f":[6,1,1,13,24,9],
@@ -246,8 +249,5 @@ var NAVTREEINDEX51 =
 "structnlohmann_1_1detail_1_1is__range.html":[6,1,2,0,76],
 "structnlohmann_1_1detail_1_1is__range.html#af7cd9fa19ca24709795adaae999e8ce9":[6,1,2,0,76,0],
 "structnlohmann_1_1detail_1_1is__sax.html":[6,1,2,0,77],
-"structnlohmann_1_1detail_1_1is__sax.html#a8ab7e51087000e948b4a2492257484dc":[6,1,2,0,77,0],
-"structnlohmann_1_1detail_1_1is__sax__static__asserts.html":[6,1,2,0,78],
-"structnlohmann_1_1detail_1_1iterator__input__adapter__factory.html":[6,1,2,0,83],
-"structnlohmann_1_1detail_1_1iterator__input__adapter__factory.html#a1439c0eda85f5f67199374d3254b8f2a":[6,1,2,0,83,2]
+"structnlohmann_1_1detail_1_1is__sax.html#a8ab7e51087000e948b4a2492257484dc":[6,1,2,0,77,0]
 };

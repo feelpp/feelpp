@@ -37,7 +37,7 @@ var searchData=
   ['dimension_5ft_363',['dimension_t',['../structFeel_1_1dimension__t.html',1,'Feel']]],
   ['dirac_364',['dirac',['../integratordirac_8hpp.html#a4ecb99e7e975aa79164c0a0b9edcb650',1,'Feel::vf']]],
   ['directions_365',['directions',['../classFeel_1_1MeshAdaptation.html#ad7cecf8eab8e42d8a6eef117c486e54c',1,'Feel::MeshAdaptation']]],
-  ['directory_366',['directory',['../classFeel_1_1Repository.html#ab6f60083e5ba3fb0f53606a74e430e87',1,'Feel::Repository']]],
+  ['directory_366',['directory',['../classFeel_1_1Repository.html#ab6f60083e5ba3fb0f53606a74e430e87',1,'Feel::Repository::directory()'],['../classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a85929d0fe575b39c766383cf9c1716a8',1,'Feel::FeelModels::ModelMeasuresStorage::directory()']]],
   ['directorywithoutappenders_367',['directoryWithoutAppenders',['../classFeel_1_1Repository.html#a1540f6307530108c5a56dd7754878c89',1,'Feel::Repository']]],
   ['disablewarnings_2ehpp_368',['disablewarnings.hpp',['../disablewarnings_8hpp.html',1,'']]],
   ['discarded_369',['discarded',['../namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985a94708897ec9db8647dfe695714c98e46',1,'nlohmann::detail']]],

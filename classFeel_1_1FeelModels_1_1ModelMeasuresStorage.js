@@ -1,8 +1,10 @@
 var classFeel_1_1FeelModels_1_1ModelMeasuresStorage =
 [
+    [ "directory", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a85929d0fe575b39c766383cf9c1716a8", null ],
     [ "hasValue", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a8a7f1254142ca4d25344a130a3525de4", null ],
     [ "hasValue", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a3ee1fbc42a84ab127f7555c8c01888cc", null ],
     [ "isUpdated", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#ace7d1914d06bd4093ae1484006164fc9", null ],
+    [ "metadata", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a0913a0e0877115a1565e28262d05e3f8", null ],
     [ "resetState", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a1626002fd07d991795e9674dd3d68e5b", null ],
     [ "restart", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#ab96f57896a02b40654bb119670d6be29", null ],
     [ "save", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a3cf0806b89194d21feaabf27ab727cbb", null ],
@@ -11,6 +13,7 @@ var classFeel_1_1FeelModels_1_1ModelMeasuresStorage =
     [ "setTable", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#af771b789afb0d1628dc3e7b148368062", null ],
     [ "setValue", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a86d681ba3efe80949f77ac252406277a", null ],
     [ "setValue", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a3cfb648398b8e6073456703e602a9a44", null ],
+    [ "times", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#ab16a569b9d1c15735cec0863dbd14116", null ],
     [ "updateParameterValues", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a8ab38423eba3092182dd8bc912a796fb", null ],
     [ "value", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#af3fb74c291de2a1367a87556b0a9b447", null ],
     [ "value", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#aa781a87cfcde4b458e2924e55b5a0e73", null ],
