@@ -7,7 +7,9 @@
  Date: 2012-01-19
 
  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+ Copyright (C) 2012-2022 Université de Strasbourg
  Copyright (C) 2020 Inria
+
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
