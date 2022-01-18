@@ -61,6 +61,25 @@ ModelMeasuresStorage::setTable( std::string const& name, Feel::Table && table )
     M_tables.at( name ).setTable( std::move( table ) );
 }
 
+nl::json
+ModelMeasuresStorage::metadata() const
+{
+    nl::json jmeta;
+    jmeta["times"] = M_times;
+    nl::json j_measures_values, j_measures_tables;
+    for ( auto const& [name, values] : M_values )
+        j_measures_values[name] = { { "format", "csv" } };
+    for ( auto const& [name, table] : M_tables )
+        j_measures_tables[name] = { { "format", "csv" } };
+    nl::json j_measures;
+    if ( !j_measures_values.is_null() )
+        j_measures["values"] = j_measures_values;
+    if ( !j_measures_tables.is_null() )
+        j_measures["tables"] = j_measures_tables;
+    if ( !j_measures.is_null() )
+        jmeta["measures"] = j_measures;
+    return jmeta;
+}    
 void
 ModelMeasuresStorage::save( double time )
 {
@@ -83,24 +102,10 @@ ModelMeasuresStorage::save( double time )
             if ( table.isUpdated() )
                 table.saveCSV( M_directory,M_times.size()-1 );
 
-        nl::json jmeta;
-        jmeta["times"] = M_times;
-        nl::json j_measures_values, j_measures_tables;
-        for ( auto const& [name, values] : M_values )
-            j_measures_values[name] = { { "format", "csv" } };
-        for ( auto const& [name, table] : M_tables )
-            j_measures_tables[name] = { { "format", "csv" } };
-        nl::json j_measures;
-        if ( !j_measures_values.is_null() )
-            j_measures["values"] = j_measures_values;
-        if ( !j_measures_tables.is_null() )
-            j_measures["tables"] = j_measures_tables;
-        if ( !j_measures.is_null() )
-            jmeta["measures"] = j_measures;
-
         std::ofstream ofile( (pdir/"metadata.json").string(), std::ios::trunc);
         if ( ofile )
         {
+            auto jmeta = this->metadata();
             ofile << jmeta.dump(1);
             ofile.close();
         }
