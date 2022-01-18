@@ -155,6 +155,7 @@ public :
 
     //! setup some infos from json
     void setup( pt::ptree const& p );
+    void setup( nl::json const& jarg );
 
     template <typename MeshType>
     void setMesh( std::shared_ptr<MeshType> const& mesh ) { M_mesh = mesh; }
@@ -338,6 +339,39 @@ CollectionOfDataByMeshEntity<IndexType>::setup( pt::ptree const& p )
     if ( auto filenameOpt = p.template get_optional<std::string>( "filename" ) )
        M_dataFilename = Environment::expand( *filenameOpt );
 }
+
+template <typename IndexType>
+void
+CollectionOfDataByMeshEntity<IndexType>::setup( nl::json const& jarg )
+{
+    if ( jarg.contains("fields") )
+    {
+        auto const& j_fields = jarg.at("fields");
+        if ( j_fields.is_string() )
+            M_fieldsRequired.insert( j_fields.template get<std::string>() );
+        else if ( j_fields.is_array() )
+        {
+            for ( auto const& el : jarg.items() )
+                if ( el.value().is_string() )
+                    M_fieldsRequired.insert( el.value().template get<std::string>() );
+        }
+    }
+
+    if ( jarg.contains("mapping_data_to_mesh_nodes") )
+    {
+        auto const& j_mdtomn = jarg.at("mapping_data_to_mesh_nodes");
+        if ( j_mdtomn.is_string() )
+            M_mappingFilename = Environment::expand( j_mdtomn.template get<std::string>() );
+    }
+
+    if ( jarg.contains("filename") )
+    {
+        auto const& j_filename = jarg.at("filename");
+        if ( j_filename.is_string() )
+            M_dataFilename = Environment::expand( j_filename.template get<std::string>() );
+    }
+}
+
 
 template <typename IndexType>
 template <typename MeshType>

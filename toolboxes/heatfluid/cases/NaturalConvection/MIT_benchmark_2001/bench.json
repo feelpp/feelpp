@@ -1,0 +1,98 @@
+/*
+- Christon, M. A., Gresho, P. M., Sutton, S. B. Computational predictability of natural convection flows in enclosures, In: Computational Fluid and Solid Mechanics, 40:1465-1468, First MIT Conference on Computational Fluid and Solid Mechanics, Elsevier, 2001
+Others ref :
+- http://www.mathematik.tu-dortmund.de/~featflow/en/benchmarks/cfdbenchmarking/mit_benchmark/mit_references.html
+- Davis, D., Bänsch, E. An operator-splitting finite-element approach to the 8:1 thermal cavity problem, International Journal for Numerical Methods in Fluids, 40:1019-1030, 2002
+*/
+{
+    "Name": "HeatFluid",
+    "ShortName":"HeatFluid",
+    "Models":
+    {
+        "use-model-name":1,
+        "fluid":
+        {
+            "equations":"Navier-Stokes"
+        }
+    },
+    "Parameters":
+    {
+        "Ra":3.4e5,
+        "Pr":0.71
+    },
+    "Meshes":
+    {
+        "heatfluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/bench.geo",
+                "hsize":0.03  // 0.01
+            }
+        }
+    },
+    "Materials":
+    {
+        "Omega":{
+            "rho":"1",
+            "mu":"sqrt(Pr/Ra):Pr:Ra",
+            "k":"1/sqrt(Ra*Pr):Pr:Ra",
+            "Cp":"1",
+            "beta":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "wall":
+                {
+                    "markers":["wall_hot","wall_cold","insulated"],
+                    "expr":"{0,0}"
+                }
+            }
+        },
+        "temperature":
+        {
+            "Dirichlet":
+            {
+                "wall_hot":{ "expr":"0.5" },
+                "wall_cold": { "expr":"-0.5" }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "heatfluid":
+        {
+            "Exports":
+            {
+                "fields":["fluid.velocity","fluid.pressure","heat.temperature","pid"]
+            },
+            "Measures":
+            {
+                "Points":
+                {
+                    "Point%1_1%":
+                    {
+                        "coord":"%1_2%",
+                        "fields":["fluid.velocity","fluid.pressure","heat.temperature"],
+                        // "expressions":
+                        // {
+                        //     "local_cell_Reynolds":"materials_Omega_rho*fluid_U_magnitude*h/materials_Omega_mu:materials_Omega_rho:fluid_U_magnitude:h:materials_Omega_mu",
+                        //     "local_cell_Peclet":"materials_Omega_rho*fluid_U_magnitude*h/materials_Omega_k:materials_Omega_rho:fluid_U_magnitude:h:materials_Omega_k"
+                        // },
+                        "index1":[ ["1", "{0.1810,7.3700}"],
+                                   ["2", "{0.8190,0.6300}"],
+                                   ["3", "{0.1810,0.6300}"],
+                                   ["4", "{0.8190,7.3700}"],
+                                   ["5", "{0.1810,4.0000}"] ]
+                    }
+                }
+            }
+        }
+    }
+}

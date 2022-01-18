@@ -103,7 +103,7 @@
     "PostProcess":
     {
         "use-model-name":1,
-        "heat-fluid":
+        "heatfluid":
         {
             "Exports":
             {
