@@ -1,2 +1,3 @@
-ThermalBridgesENISO10211_case2  --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/Building/ThermalBridgesENISO10211/thermo2dCase2.cfg  --directory=toolboxes/testsuite/heat/ThermalBridgesENISO10211/2dCase2
+ThermalBridgesENISO10211_case2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/Building/ThermalBridgesENISO10211/thermo2dCase2.cfg --directory=toolboxes/testsuite/heat/ThermalBridgesENISO10211/2dCase2
+ThermalBridgesENISO10211_case2_testsuite --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/Building/ThermalBridgesENISO10211/thermo2dCase2.cfg --heat.filename $cfgdir/testsuite_thermo2dCase2.json --directory=toolboxes/testsuite/heat/ThermalBridgesENISO10211/2dCase2_testsuite
 parabolic --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/test-para/test.cfg

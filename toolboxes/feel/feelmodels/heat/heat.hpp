@@ -480,6 +480,8 @@ class Heat : public ModelNumerical,
         stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
         bool M_stabilizationGLS_checkConductivityDependencyOnCoordinates = true;
 
+        std::string M_solverName;
+
         // post-process
         export_ptrtype M_exporter;
         std::map<std::string,ModelMeasuresNormalFluxGeneric> M_postProcessMeasuresNormalHeatFlux;
