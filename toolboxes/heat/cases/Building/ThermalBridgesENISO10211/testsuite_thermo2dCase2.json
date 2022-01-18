@@ -9,6 +9,17 @@
         "T0_top":0,
         "T0_bottom":20
     },
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/thermo2dCase2.geo",
+                "hsize":0.001
+            }
+        }
+    },
     "Materials":
     {
         "Concrete":
@@ -51,11 +62,18 @@
                 {
                     "expr1":"h_top:h_top",// h coeff
                     "expr2":"T0_top:T0_top"// temperature exterior
-                },
+                }
+                // "bottom":
+                // {
+                //     "expr1":"h_bottom:h_bottom",// h coeff
+                //     "expr2":"T0_bottom:T0_bottom"// temperature exterior
+                // }
+            },
+            "Neumann":
+            {
                 "bottom":
                 {
-                    "expr1":"h_bottom:h_bottom",// h coeff
-                    "expr2":"T0_bottom:T0_bottom"// temperature exterior
+                    "expr":"-h_bottom*(heat_T-T0_bottom):h_bottom:heat_T:T0_bottom"// h coeff
                 }
             }
         }

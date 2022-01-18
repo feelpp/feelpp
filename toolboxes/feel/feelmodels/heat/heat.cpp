@@ -56,6 +56,8 @@ HEAT_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     // time stepping
     M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
     M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
+
+    M_solverName = soption(_name="solver",_prefix=this->prefix());
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -189,6 +191,37 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // post-process
     this->initPostProcess();
+
+    // automatic solver selection
+    if ( M_solverName == "automatic" )
+    {
+        auto mfields = this->modelFields();
+        auto se = this->symbolsExpr( mfields );
+        auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( 0/*rowStartInVector*/ ) );
+        auto trialSymbolNames = tse.names();
+        bool isNonLinear = false;
+        for ( std::string tsName : trialSymbolNames )
+        {
+            if ( this->materialsProperties()->hasThermalConductivityDependingOnSymbol( tsName ) )
+            {
+                isNonLinear = true;
+                break;
+            }
+            for( auto const& d : M_bcNeumann )
+            {
+                auto neumannExpr = expression( d );
+                if ( neumannExpr.hasSymbolDependency( tsName, se ) )
+                {
+                    isNonLinear = true;
+                    break;
+                }
+            }
+            if ( isNonLinear )
+                break;
+        }
+        M_solverName = isNonLinear? "Newton" : "Linear";
+    }
+
 
     this->initAlgebraicModel();
 
@@ -686,10 +719,7 @@ HEAT_CLASS_TEMPLATE_TYPE::solve()
 
     this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
 
-    if ( this->materialsProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
-        this->algebraicFactory()->solve( "Newton", this->algebraicBlockVectorSolution()->vectorMonolithic() );
-    else
-        this->algebraicFactory()->solve( "LinearSystem", this->algebraicBlockVectorSolution()->vectorMonolithic() );
+    this->algebraicFactory()->solve( M_solverName, this->algebraicBlockVectorSolution()->vectorMonolithic() );
 
     this->algebraicBlockVectorSolution()->localize();
 
