@@ -36,21 +36,15 @@
             "Cp":"2500", //[ J/(kg*K) ]
             "rho":"500" //[ kg/(m^3) ]
         },
-        "Insulation":
+        "%1_1%":
         {
-            "markers":"mat3",
-            "k":"0.029",//[ W/(m*K) ]
-            "Cp":"1000", //[ J/(kg*K) ]
-            "rho":"150" //[ kg/(m^3) ]
-        },
-        "Aluminium":
-        {
-            "markers":"mat4",
-            "k":"230",//[ W/(m*K) ]
-            "Cp":"900", //[ J/(kg*K) ]
-            "rho":"2700" //[ kg/(m^3) ]
+            "markers":"%1_2%",
+            "k":"%1_3%",
+            "Cp":"%1_4%",
+            "rho":"%1_5%",
+            "index1":[ ["Aluminium","mat4",230,900,2700],
+                       ["Insulation","mat3",0.029,1000,150] ]
         }
-
     },
     "BoundaryConditions":
     {
@@ -73,7 +67,7 @@
             {
                 "bottom":
                 {
-                    "expr":"-h_bottom*(heat_T-T0_bottom):h_bottom:heat_T:T0_bottom"// h coeff
+                    "expr":"-h_bottom*(heat_T-T0_bottom):h_bottom:heat_T:T0_bottom"
                 }
             }
         }
