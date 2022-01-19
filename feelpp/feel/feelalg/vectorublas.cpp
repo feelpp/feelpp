@@ -255,7 +255,7 @@ typename VectorUblasBase<T>::value_type VectorUblasBase<T>::dot( const Vector<T>
 
 
 template< typename T >
-void VectorUblasBase<T>::printMatlab( const std::string & filename, bool renumber ) const
+void VectorUblasBase<T>::printMatlab( const std::string filename, bool renumber ) const
 {
     std::string name = filename;
     std::string separator = " , ";
