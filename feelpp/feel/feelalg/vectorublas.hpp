@@ -560,6 +560,10 @@ class VectorUblasContiguousGhostsBase:
         // Constructors/Destructor
         VectorUblasContiguousGhostsBase( ) = default;
         VectorUblasContiguousGhostsBase( VectorUblasContiguousGhostsBase<T> const& v ): super_type(v) { }
+        
+        VectorUblasContiguousGhostsBase( size_type s ): super_type( s ) { }
+        VectorUblasContiguousGhostsBase( const datamap_ptrtype & dm ): super_type( dm ) { }
+        VectorUblasContiguousGhostsBase( size_type s, size_type n_local ): super_type( s, n_local ) { }
 
         ~VectorUblasContiguousGhostsBase() override = default;
         
@@ -665,7 +669,7 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         friend VectorUblasSlice<T, Storage>;
 
     public:
-        using VectorUblasBase<T>::VectorUblasBase;
+        using super_type::VectorUblasContiguousGhostsBase;
         VectorUblasContiguousGhosts( const Storage & s, const datamap_ptrtype & dm ): super_type( dm ), M_vec( s ) { }
         VectorUblasContiguousGhosts( Storage && s, const datamap_ptrtype & dm ): super_type( dm ), M_vec( std::move(s) ) { }
         VectorUblasContiguousGhosts( VectorUblasContiguousGhosts<T> const& v ): super_type(v), M_vec( v.M_vec ) { }
@@ -773,10 +777,10 @@ class VectorUblasNonContiguousGhostsBase:
         // Constructors/Destructor
         VectorUblasNonContiguousGhostsBase( ) = default;
         VectorUblasNonContiguousGhostsBase( VectorUblasNonContiguousGhostsBase<T> const& v ): super_type(v) { }
-
-        VectorUblasNonContiguousGhostsBase( size_type s );
-        VectorUblasNonContiguousGhostsBase( const datamap_ptrtype & dm );
-        VectorUblasNonContiguousGhostsBase( size_type s, size_type n_local );
+        
+        VectorUblasNonContiguousGhostsBase( size_type s ): super_type( s ) { }
+        VectorUblasNonContiguousGhostsBase( const datamap_ptrtype & dm ): super_type( dm ) { }
+        VectorUblasNonContiguousGhostsBase( size_type s, size_type n_local ): super_type( s, n_local ) { }
 
         ~VectorUblasNonContiguousGhostsBase() override = default;
         
@@ -885,7 +889,7 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         friend VectorUblasSlice<T, Storage>;
 
     public:
-        using VectorUblasBase<T>::VectorUblasBase;
+        using super_type::VectorUblasNonContiguousGhostsBase;
         VectorUblasNonContiguousGhosts( const Storage & s, const Storage & sGhost, const datamap_ptrtype & dm ): super_type( dm ), M_vec( s ), M_vecNonContiguousGhosts( sGhost ) { }
         VectorUblasNonContiguousGhosts( Storage && s, Storage && sGhost, const datamap_ptrtype & dm ): super_type( dm ), M_vec( std::move(s) ), M_vecNonContiguousGhosts( std::move(sGhost) ) { }
         VectorUblasNonContiguousGhosts( VectorUblasNonContiguousGhosts<T, Storage> const& v ): super_type(v), M_vec( v.M_vec ), M_vecNonContiguousGhosts( v.M_vecNonContiguousGhosts ) { }
@@ -955,8 +959,8 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override;
         value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override;
         
-        VectorUblasRange<T, Storage> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) override;
-        VectorUblasSlice<T, Storage> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) override;
+        VectorUblasBase<T> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) override;
+        VectorUblasBase<T> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) override;
 
     protected:
         storage_type M_vec;
@@ -968,7 +972,7 @@ template< typename T, typename Storage >
 class VectorUblasRange: public VectorUblasNonContiguousGhosts<T, ublas::vector_range<Storage> >
 {
     public:
-        typedef VectorUblasNonContiguousGhosts<T, Storage> super_type;
+        typedef VectorUblasNonContiguousGhosts<T, ublas::vector_range<Storage>> super_type;
 
         typedef T value_type;
         typedef typename type_traits<value_type>::real_type real_type;
@@ -977,8 +981,8 @@ class VectorUblasRange: public VectorUblasNonContiguousGhosts<T, ublas::vector_r
         using size_type = typename datamap_type::size_type;
         
         typedef Storage storage_type;
-        using super_type::vector_storage_type;
-        using super_type::vector_map_storage_type;
+        using typename super_type::vector_storage_type;
+        using typename super_type::vector_map_storage_type;
         static_assert( 
                 std::is_same_v< storage_type, vector_storage_type > ||
                 std::is_same_v< storage_type, vector_map_storage_type >,
@@ -1001,7 +1005,7 @@ template< typename T, typename Storage >
 class VectorUblasSlice: public VectorUblasNonContiguousGhosts<T, ublas::vector_slice<Storage> >
 {
     public:
-        typedef VectorUblasNonContiguousGhosts<T, Storage> super_type;
+        typedef VectorUblasNonContiguousGhosts<T, ublas::vector_slice<Storage>> super_type;
 
         typedef T value_type;
         typedef typename type_traits<value_type>::real_type real_type;
@@ -1010,8 +1014,8 @@ class VectorUblasSlice: public VectorUblasNonContiguousGhosts<T, ublas::vector_s
         using size_type = typename datamap_type::size_type;
         
         typedef Storage storage_type;
-        using super_type::vector_storage_type;
-        using super_type::vector_map_storage_type;
+        using typename super_type::vector_storage_type;
+        using typename super_type::vector_map_storage_type;
         static_assert( 
                 std::is_same_v< storage_type, vector_storage_type > ||
                 std::is_same_v< storage_type, vector_map_storage_type >,
