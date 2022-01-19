@@ -26,7 +26,7 @@
 
 
 #include <vector>
-#include <boost/property_tree/ptree.hpp>
+//#include <boost/property_tree/ptree.hpp>
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feelmodels/modelexpression.hpp>
 #include <feel/feelmodels/modelmarkers.hpp>
@@ -51,18 +51,16 @@ struct FEELPP_EXPORT ModelMaterial : public CommObject
     ModelMaterial( ModelMaterial&& ) = default;
     ModelMaterial& operator=( ModelMaterial const& ) = default;
     ModelMaterial& operator=( ModelMaterial && ) = default;
-    ModelMaterial( std::string const& name, pt::ptree const& p,
+    ModelMaterial( std::string const& name, nl::json const& jarg,
                    worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
-                   std::string const& directoryLibExpr = "" );
+                   std::string const& directoryLibExpr = "",
+                   ModelIndexes const& indexes = ModelIndexes() );
 
     std::string const& name() const { return M_name; }
     std::set<std::string> const& meshMarkers() const { return M_meshMarkers; }
     std::set<std::string> const& physics() const { return M_physics; }
     std::string const physic() const { return M_physics.empty() ? "" : *(M_physics.begin()); }
-    //! return the property tree
-    pt::ptree const& pTree() const { return M_p; }
-    /*! Set Name
-     */
+    //! Set Name
     void setName( std::string const& name ) { M_name = name; }
 
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
@@ -70,7 +68,7 @@ struct FEELPP_EXPORT ModelMaterial : public CommObject
     void setPhysics( std::set<std::string> const& s) { M_physics = s; }
     void addPhysics( std::string const& s) { M_physics.insert( s ); }
 
-    void setProperty( std::string const& property, pt::ptree const& p );
+    void setProperty( std::string const& property, nl::json const& jarg, ModelIndexes const& indexes = ModelIndexes() );
     void setProperty( std::string const& property, std::string const& e );
 
     bool hasProperty( std::string const& prop ) const;
@@ -174,217 +172,9 @@ struct FEELPP_EXPORT ModelMaterial : public CommObject
     void load( std::string const& );
 
     void setParameterValues( std::map<std::string,double> const& mp );
-
-    /**
-     *
-     */
-    pt::ptree getNode( std::string const& key ) const {
-        try { return M_p.get_child( key ); }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-
-    /**
-     *
-     */
-    std::string getString( std::string const& key ) const {
-        try { return M_p.get<std::string>( key ); }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-
-    /**
-     *
-     */
-    int getInt( std::string const& key ) const {
-        try { return M_p.get<int>( key ); }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-
-    /**
-     *
-     */
-    double getDouble( std::string const& key ) const {
-        try { return M_p.get<double>( key ); }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-
-    /**
-     *
-     */
-    std::vector<std::string> getVecString( std::string const& key ) const {
-        try {
-            std::vector<std::string> res;
-            for( auto const& item : M_p.get_child( key ) )
-                res.push_back(item.second.template get_value<std::string>());
-            return res;
-        }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-
-    /**
-     *
-     */
-    std::vector<double> getVecDouble( std::string const& key ) const {
-        try {
-            std::vector<double> res;
-            for( auto const& item : M_p.get_child( key ) )
-                res.push_back(item.second.template get_value<double>());
-            return res;
-        }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-
-    /**
-     *
-     */
-    Expr<GinacEx<2> > getScalar( std::string const& key ) const {
-        try { return expr( M_p.get<std::string>( key ) ); }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-    // Expr<GinacEx<2> > getScalar( std::string const& key, std::pair<std::string,double> const& params ) { return expr( M_p.get( key, "0" ), params ); }
-    /**
-     *
-     */
-    Expr<GinacEx<2> > getScalar( std::string const& key, std::map<std::string,double> const& params ) const {
-        try { return expr( M_p.get<std::string>( key ), params ); }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-
-    /**
-     *
-     */
-    template<typename ExprT> auto/*Expr<GinacExVF<ExprT> >*/ getScalar( std::string const& key,
-                                                                std::string const& sym, ExprT e ) const {
-        try { return expr( M_p.get<std::string>( key ), sym, e ); }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-
-    /**
-     *
-     */
-    template<typename ExprT> auto/*Expr<GinacExVF<ExprT> >*/ getScalar( std::string const& key,
-                                                                std::initializer_list<std::string> const& sym,
-                                                                std::initializer_list<ExprT> e ) const {
-        try { return expr( M_p.get<std::string>( key ), sym, e ); }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-
-    /**
-     *
-     */
-    template<typename ExprT> auto/*Expr<GinacExVF<ExprT> >*/ getScalar( std::string const& key,
-                                                                std::vector<std::string> const& sym,
-                                                                std::vector<ExprT> e ) const {
-        try { return expr( M_p.get<std::string>( key ), sym, e ); }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-
-    /**
-     *
-     */
-    template<typename ExprT> auto/*Expr<GinacExVF<ExprT> >*/ getScalar( std::string const& key,
-                                                                std::initializer_list<std::string> const& sym,
-                                                                std::initializer_list<ExprT> e,
-                                                                std::map<std::string, double> params ) const {
-        try {
-            auto ex = expr( M_p.get<std::string>( key ), sym, e );
-            ex.setParameterValues( params );
-            return ex;
-        }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key ) const {
-        try { return expr<T,1>( M_p.get<std::string>( key ) ); }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key,
-                                                         std::pair<std::string,double> const& params ) const {
-        try { return expr<T,1>( M_p.get<std::string>( key ), params ); }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key,
-                                                         std::map<std::string,double> const& params ) const {
-        try { return expr<T,1>( M_p.get<std::string>( key ), params ); }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-    // template<int T, typename ExprT> Expr<GinacMatrixVF<ExprT> > getVector( std::string const& key, std::string const& sym, ExprT e );
-    // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e );
-    // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e );
-    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key ) const {
-        try { return expr<T1,T2>( M_p.get<std::string>( key ) ); }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key,
-                                                                       std::pair<std::string,double> const& params ) const {
-        try { return expr<T1,T2>( M_p.get<std::string>( key ), params ); }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key,
-                                                                       std::map<std::string,double> const& params ) const {
-        try { return expr<T1,T2>( M_p.get<std::string>( key ), params ); }
-        catch( pt::ptree_error const& e ) {
-            cerr << "key " << key << ": " << e.what() << std::endl;
-            exit(1);
-        }
-    }
-    // template<int T1, int T2, typename ExprT> Expr<GinacExVF<ExprT> > getMatrix( std::string const& key, std::string const& sym, ExprT e );
-    // template<int T1, int T2, typename ExprT> Expr<GinacExVF<ExprT> > getMatrix( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e );
-    // template<int T1, int T2, typename ExprT> Expr<GinacExVF<ExprT> > getMatrix( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e );
-
 private:
 
     std::string M_name; /*!< Material name*/
-    pt::ptree M_p;
     std::string M_directoryLibExpr;
 
     //! mat propeteries
@@ -409,9 +199,9 @@ public:
     using super = CommObject;
     using value_type = std::map<std::string,ModelMaterial>::value_type;
     ModelMaterials( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
-    ModelMaterials( pt::ptree const& p, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    //ModelMaterials( pt::ptree const& p, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     virtual ~ModelMaterials() = default;
-    void setPTree( pt::ptree const& _p ) { M_p = _p; setup(); }
+    void setPTree( nl::json const& jarg ) { M_p = jarg; setup(); }
 
     ModelMaterial const& material( std::string const& m ) const;
 
@@ -446,7 +236,7 @@ public:
             for ( auto const& [cname, mat] : *this )
             {
                 for( auto const& [symbName,mparam] : mat.properties() )
-                {  
+                {
                     if ( mparam.isEvaluable() && !add_evaluable )
                         continue;
                     if ( !mparam.template hasExpr<ni,nj>() )
@@ -459,13 +249,13 @@ public:
             return seParamValue;
         };
         auto tupleSymbolExprs = hana::transform( ModelExpression::expr_shapes, extract );
-        
+
         return Feel::vf::symbolsExpr( SymbolsExpr( tupleSymbolExprs ) );
     }
 private:
     void setup();
 private:
-    pt::ptree M_p;
+    nl::json M_p;
     std::string M_directoryLibExpr;
 
 };

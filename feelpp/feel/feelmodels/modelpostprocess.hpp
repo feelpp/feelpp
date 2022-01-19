@@ -462,11 +462,12 @@ class FEELPP_EXPORT ModelPostprocess : public CommObject
 public:
     using super = CommObject;
     ModelPostprocess( worldcomm_ptr_t const& world = Environment::worldCommPtr() );
-    ModelPostprocess( pt::ptree const& p, worldcomm_ptr_t const& world = Environment::worldCommPtr() );
     virtual ~ModelPostprocess();
-    pt::ptree const& pTree() const { return M_p; }
-    pt::ptree & pTree() { return M_p; }
-    pt::ptree pTree( std::string const& name ) const;
+    bool hasJsonPrperties( std::string const& name = "" ) const;
+    nl::json const& jsonPrperties( std::string const& name = "" ) const;
+    //nl::json const& pTree() const { return M_p; }
+    //nl::json & pTree() { return M_p; }
+    //nl::json const& pTree( std::string const& name ) const;
     bool useModelName() const { return M_useModelName; }
     std::map<std::string,ModelPostprocessExports> const& allExports() const { return M_exports; }
     std::map<std::string,ModelPostprocessSave> const& allSave() const { return M_save; }
@@ -491,7 +492,7 @@ public:
     std::vector<ModelPostprocessStatistics> const& measuresStatistics( std::string const& name = "" ) const;
     std::vector<ModelPostprocessCheckerMeasure> const& checkersMeasure( std::string const& name = "" ) const;
 
-    void setPTree( pt::ptree const& _p );
+    void setPTree( nl::json const& jarg );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
 
     void setParameterValues( std::map<std::string,double> const& mp );
@@ -510,7 +511,7 @@ private:
     void setup();
     void setup( std::string const& name, nl::json const& jarg );
 private:
-    pt::ptree M_p;
+    nl::json M_p;
     bool M_useModelName;
     std::map<std::string,ModelPostprocessExports> M_exports;
     std::map<std::string,ModelPostprocessSave> M_save;

@@ -21,8 +21,10 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#include <iostream>
-#include <boost/property_tree/json_parser.hpp>
+
+//#include <iostream>
+#include <regex>
+//#include <boost/property_tree/json_parser.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 
@@ -36,79 +38,85 @@ ModelMaterial::ModelMaterial( worldcomm_ptr_t const& worldComm )
     :
     super( worldComm )
 {}
-ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, worldcomm_ptr_t const& worldComm, std::string const& directoryLibExpr )
+ModelMaterial::ModelMaterial( std::string const& name, nl::json const& jarg, worldcomm_ptr_t const& worldComm, std::string const& directoryLibExpr, ModelIndexes const& indexes )
     :
     super( worldComm ),
     M_name( name ),
-    M_p( p ),
     M_directoryLibExpr( directoryLibExpr ),
     M_meshMarkers( name )
 {
-    if ( auto fnameOpt = p.get_optional<std::string>("filename") )
+
+    std::optional<nl::json> j_fileLoaded;
+    if ( jarg.contains("filename") )
     {
-        std::string fname = Environment::expand( fnameOpt.get() );
-        LOG(INFO) << "  - filename = " << fname << std::endl;
-        pt::ptree pf;
-        auto json_str_wo_comments = removeComments(readFromFile(fname));
-        std::istringstream istr( json_str_wo_comments );
-        pt::read_json( istr, pf );
-        for ( auto const& subpf : pf )
+        auto const& j_filename = jarg.at("filename");
+        if ( j_filename.is_string() )
         {
-            if ( M_p.count( subpf.first ) == 0 )
-            {
-                M_p.add_child(subpf.first,subpf.second );
-            }
+            std::string fname = Environment::expand( indexes.replace( j_filename.get<std::string>() ) );
+            LOG(INFO) << "  - filename = " << fname << std::endl;
+            pt::ptree pf;
+            auto json_str_wo_comments = removeComments(readFromFile(fname));
+            std::istringstream istr( json_str_wo_comments );
+            j_fileLoaded = nl::json{};
+            istr >> *j_fileLoaded;
         }
     }
 
+    if ( jarg.contains("markers") )
+        M_meshMarkers.setup( jarg.at("markers"), indexes);
 
-    if ( auto markers = M_p.get_child_optional("markers") )
-        M_meshMarkers.setPTree(*markers);
-
-    if ( auto physics = M_p.get_child_optional("physics") )
+    if ( jarg.contains("physics") )
     {
-        for( auto const& item : M_p.get_child("physics") )
-            M_physics.insert(item.second.template get_value<std::string>());
-        if( M_physics.empty() )
-            M_physics.insert(M_p.get<std::string>("physics") );
+        auto const& j_physics = jarg.at("physics");
+        if ( j_physics.is_string() )
+            M_physics.insert( indexes.replace( j_physics.get<std::string>() ) );
+        else if ( j_physics.is_array() )
+        {
+            for ( auto const& [j_physicskey,j_physicsval] : j_physics.items() )
+                if ( j_physicsval.is_string() )
+                    M_physics.insert( indexes.replace( j_physicsval.get<std::string>() ) );
+        }
     }
+
 
     std::map<std::string,double> constantMaterialProperty;
-    for( auto const& [k,v] : M_p )
-    {
-        VLOG(1) << "key: " << k;
-        if ( (k!= "markers") &&  (k!= "physics") && (k!= "name") && (k!= "filename")
-             && v.empty() && !v.data().empty() )
-        {
-            this->setProperty( k,M_p );
+    auto addMatPropLambda = [&constantMaterialProperty,&indexes,this]( nl::json const& jarg ) {
+                                std::regex index_pattern { "index[1-9][0-9]*" }; // motif
+                                for ( auto const& [jargkey,jargval] : jarg.items() )
+                                {
+                                    std::string const& propName = indexes.replace( jargkey );
+                                    if ( propName == "markers" || propName == "physics" || propName == "name" || propName == "filename" )
+                                        continue;
+                                    if ( jargval.empty() )
+                                        continue;
+                                    if ( std::regex_match( propName, index_pattern ) )
+                                        continue;
 
-            if ( this->hasPropertyConstant( k ) && this->hasPropertyExprScalar( k ) )
-            {
-                VLOG(1) << "key: " << k << " value: " << this->property( k ).value() << "  constant prop";
-                constantMaterialProperty[k] = this->property( k ).value();
-            }
-        }
-    }
+                                    VLOG(1) << "propName: " << propName;
+
+                                    this->setProperty( propName,jargval,indexes );
+                                    if ( this->hasPropertyConstant( propName ) && this->hasPropertyExprScalar( propName ) )
+                                    {
+                                        VLOG(1) << "key: " << propName << " value: " << this->property( propName ).value() << "  constant prop";
+                                        constantMaterialProperty[propName] = this->property( propName ).value();
+                                    }
+                                }
+                            };
+
+    if ( j_fileLoaded )
+        addMatPropLambda( *j_fileLoaded );
+    addMatPropLambda( jarg );
     this->setParameterValues( constantMaterialProperty );
-
-#if 0
-    std::set<std::string> matProperties = { "rho","mu","Cp","Cv","Tref","beta",
-                                            "k","k11","k12","k13","k22","k23","k33",
-                                            "E","nu","sigma","C","Cs","Cl","L",
-                                            "Ks","Kl","Tsol","Tliq" };
-    for ( std::string const& prop : matProperties )
-        this->setProperty( prop,M_p );
-#endif
 }
 
 bool
 ModelMaterial::hasProperty( std::string const& prop ) const
 {
-    auto p = M_p.get_child_optional( prop );
-    if( !p ) // child is missing
+    auto itFindProp = M_materialProperties.find( prop );
+    if ( itFindProp == M_materialProperties.end() )
         return false;
-    else
-        return true;
+    auto const& matProp = itFindProp->second;
+    return matProp.hasAtLeastOneExpr();
 }
 
 bool
@@ -181,15 +189,15 @@ ModelMaterial::propertyExprVectorial3( std::string const& prop ) const
 }
 
 void
-ModelMaterial::setProperty( std::string const& property, pt::ptree const& p )
+ModelMaterial::setProperty( std::string const& property, nl::json const& jarg, ModelIndexes const& indexes )
 {
-    M_materialProperties[property] = mat_property_expr_type();
     try
     {
-        M_materialProperties[property].setExpr( property,p,this->worldComm(),M_directoryLibExpr );
+        mat_property_expr_type mexpr;
+        mexpr.setExpr( jarg,this->worldComm(),M_directoryLibExpr,indexes );
+        M_materialProperties.emplace( std::make_pair( property, std::move( mexpr ) ) );
     } catch (std::exception &p) {
         LOG(WARNING) << p.what() << std::endl;
-        M_materialProperties.erase(property);
         return;
     }
 }
@@ -221,6 +229,7 @@ ModelMaterial::setParameterValues( std::map<std::string,double> const& mp )
 
 std::ostream& operator<<( std::ostream& os, ModelMaterial const& m )
 {
+#if 0
     os << "Material " << m.name()
        << "[ rho: " << m.rho()
        << ", mu: " << m.mu()
@@ -245,6 +254,7 @@ std::ostream& operator<<( std::ostream& os, ModelMaterial const& m )
        << ", Tsol: " <<  m.Tsol()
        << ", Tliq: " <<  m.Tliq()
        << "]";
+#endif
     return os;
 }
 
@@ -253,22 +263,18 @@ ModelMaterials::ModelMaterials( worldcomm_ptr_t const& worldComm )
     super( worldComm )
 {}
 
-ModelMaterials::ModelMaterials( pt::ptree const& p, worldcomm_ptr_t const& worldComm )
-    :
-    super( worldComm ),
-    M_p( p )
-{
-    setup();
-}
-
 void
 ModelMaterials::setup()
 {
-    for( auto const& v : M_p )
+    for ( auto const& [jargkey,jargval] : M_p.items() )
     {
-        LOG(INFO) << "Material Physical/Region :" << v.first  << "\n";
-        std::string name = v.first;
-        this->insert( std::make_pair( name, ModelMaterial( name, v.second, this->worldCommPtr(), M_directoryLibExpr ) ) );
+        auto indexesAllCases = ModelIndexes::generateAllCases( jargval );
+        for ( auto const& indexes : indexesAllCases )
+        {
+            std::string const& name = indexes.replace( jargkey );
+            LOG(INFO) << "Material Physical/Region :" << name  << "\n";
+            this->insert( std::make_pair( name, ModelMaterial( name, jargval, this->worldCommPtr(), M_directoryLibExpr, indexes ) ) );
+        }
     }
 }
 
@@ -282,7 +288,8 @@ ModelMaterials::setParameterValues( std::map<std::string,double> const& mp )
 void
 ModelMaterials::saveMD(std::ostream &os)
 {
-  os << "### Materials\n";
+#if 0
+    os << "### Materials\n";
   os << "|Material Physical Region Name|Rho|mu|Cp|Cv|k11|k12|k13|k22|k23|k33|Tref|beta|C|YoungModulus|nu|Sigma|Cs|Cl|L|Ks|Kl|Tsol|Tliq|\n";
   os << "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n";
   for(auto it = this->begin(); it!= this->end(); it++ )
@@ -312,6 +319,7 @@ ModelMaterials::saveMD(std::ostream &os)
        << "|" << it->second.Tliq()
        << "|\n";
   os << "\n";
+#endif
 }
 
 ModelMaterial const&
