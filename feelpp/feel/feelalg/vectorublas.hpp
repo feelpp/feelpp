@@ -167,11 +167,11 @@ class VectorUblas : public Vector<T>
         //VectorUblasExpression<T> operator+( const Vector<T>& v ) const;
 
         //// Iterators API
-        //virtual iterator begin() = 0;
-        //virtual iterator end() = 0;
+        //virtual iterator_type begin() = 0;
+        //virtual iterator_type end() = 0;
 
-        //virtual iterator beginGhost() = 0;
-        //virtual iterator endGhost() = 0;
+        //virtual iterator_type beginGhost() = 0;
+        //virtual iterator_type endGhost() = 0;
 
         //virtual size_type start() const = 0;
         //virtual size_type startNonContiguousGhosts() const = 0;
@@ -287,8 +287,11 @@ class VectorUblasBase: public Vector<T>
         typedef ublas::basic_slice<typename vector_storage_type::size_type, typename vector_storage_type::difference_type> slice_type;
 
         // Iterator class
+        template< typename Ref >
         class iterator
         {
+            public:
+                typedef Ref reference_type;
             public:
                 template< typename It >
                 iterator( const It & it ): M_iteratorImpl( new iterator_impl<It>( it ) ) { }
@@ -299,7 +302,7 @@ class VectorUblasBase: public Vector<T>
                 ~iterator() { if( M_iteratorImpl ) delete M_iteratorImpl; }
 
                 iterator & operator=( const iterator & other ) { swap( iterator( other ) ); return *this; }
-                value_type & operator*() const { return M_iteratorImpl->current(); }
+                reference_type operator*() const { return M_iteratorImpl->current(); }
                 iterator & operator++() { M_iteratorImpl->next(); return *this; }
                 iterator & operator--() { M_iteratorImpl->previous(); return *this; }
                 bool operator==( const iterator & other ) const { return M_iteratorImpl->equal( *other.M_iteratorImpl ); }
@@ -308,9 +311,11 @@ class VectorUblasBase: public Vector<T>
                 class iterator_impl_base
                 {
                     public:
-                        iterator_impl_base * clone() const = 0;
+                        virtual ~iterator_impl_base() = default;
 
-                        virtual value_type & current() const = 0;
+                        virtual iterator_impl_base * clone() const = 0;
+
+                        virtual reference_type current() const = 0;
                         virtual void next() = 0;
                         virtual void previous() = 0;
                         virtual bool equal( const iterator_impl_base & other ) const = 0;
@@ -322,13 +327,14 @@ class VectorUblasBase: public Vector<T>
                 {
                     public:
                         iterator_impl( const It & it ) { M_it = it; }
+                        ~iterator_impl() override = default;
                         iterator_impl<It> * clone() const override { return new iterator_impl<It>( M_it ); }
 
-                        value_type & current() const override { return *M_it; }
+                        reference_type current() const override { return *M_it; }
                         void next() override { ++M_it; }
                         void previous() override { --M_it; }
-                        bool equal( const iterator_impl_base & other ) const { return M_it.operator==( dynamic_cast<iterator_impl<It>&>( other ).M_it ); }
-                        void assign( const iterator_impl_base & other ) { M_it = dynamic_cast<iterator_impl<It>&>( other ).M_it; }
+                        bool equal( const iterator_impl_base & other ) const override { return M_it.operator==( dynamic_cast<const iterator_impl<It>&>( other ).M_it ); }
+                        void assign( const iterator_impl_base & other ) override { M_it = dynamic_cast<const iterator_impl<It>&>( other ).M_it; }
 
                     private:
                         It M_it;
@@ -337,6 +343,9 @@ class VectorUblasBase: public Vector<T>
             private:
                 iterator_impl_base * M_iteratorImpl;
         };
+
+        typedef iterator<value_type &> iterator_type;
+        typedef iterator<const value_type &> const_iterator_type;
 
     public:
         // Constructors/Destructor
@@ -380,14 +389,20 @@ class VectorUblasBase: public Vector<T>
         Vector<T>& operator*=( const value_type & a ) { this->scale( a ); return *this; }
 
         // Iterators API
-        virtual iterator begin() = 0;
-        virtual iterator end() = 0;
+        virtual iterator_type begin() = 0;
+        virtual const_iterator_type begin() const = 0;
+        virtual iterator_type end() = 0;
+        virtual const_iterator_type end() const = 0;
         
-        virtual iterator beginActive() = 0;
-        virtual iterator endActive() = 0;
+        virtual iterator_type beginActive() = 0;
+        virtual const_iterator_type beginActive() const = 0;
+        virtual iterator_type endActive() = 0;
+        virtual const_iterator_type endActive() const = 0;
 
-        virtual iterator beginGhost() = 0;
-        virtual iterator endGhost() = 0;
+        virtual iterator_type beginGhost() = 0;
+        virtual const_iterator_type beginGhost() const = 0;
+        virtual iterator_type endGhost() = 0;
+        virtual const_iterator_type endGhost() const = 0;
 
         //virtual size_type start() const = 0;
         //virtual size_type startNonContiguousGhosts() const = 0;
@@ -663,7 +678,8 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         using typename super_type::range_type;
         using typename super_type::slice_type;
 
-        using typename base_type::iterator;
+        using typename base_type::iterator_type;
+        using typename base_type::const_iterator_type;
 
         friend VectorUblasRange<T, Storage>;
         friend VectorUblasSlice<T, Storage>;
@@ -689,14 +705,20 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         virtual value_type& operator()( size_type i ) override;
         
         // Iterators API
-        virtual iterator begin() override { return iterator( M_vec.begin() ); }
-        virtual iterator end() override { return iterator( M_vec.end() ); }
+        virtual iterator_type begin() override { return iterator_type( M_vec.begin() ); }
+        virtual const_iterator_type begin() const override { return const_iterator_type( M_vec.begin() ); }
+        virtual iterator_type end() override { return iterator_type( M_vec.end() ); }
+        virtual const_iterator_type end() const override { return const_iterator_type( M_vec.end() ); }
         
-        virtual iterator beginActive() override { return iterator( M_vec.begin() ); }
-        virtual iterator endActive() override { return iterator( M_vec.find( this->map()->nLocalDofWithoutGhost() ) ); }
+        virtual iterator_type beginActive() override { return iterator_type( M_vec.begin() ); }
+        virtual const_iterator_type beginActive() const override { return const_iterator_type( M_vec.begin() ); }
+        virtual iterator_type endActive() override { return iterator_type( M_vec.find( this->map()->nLocalDofWithoutGhost() ) ); }
+        virtual const_iterator_type endActive() const override { return const_iterator_type( M_vec.find( this->map()->nLocalDofWithoutGhost() ) ); }
 
-        virtual iterator beginGhost() override { return iterator( M_vec.find( this->map()->nLocalDofWithoutGhost() ) ); }
-        virtual iterator endGhost() override { return iterator( M_vec.end() ); }
+        virtual iterator_type beginGhost() override { return iterator_type( M_vec.find( this->map()->nLocalDofWithoutGhost() ) ); }
+        virtual const_iterator_type beginGhost() const override { return const_iterator_type( M_vec.find( this->map()->nLocalDofWithoutGhost() ) ); }
+        virtual iterator_type endGhost() override { return iterator_type( M_vec.end() ); }
+        virtual const_iterator_type endGhost() const override { return const_iterator_type( M_vec.end() ); }
 
         // Setters API
         virtual void setConstant( value_type v ) override;
@@ -883,7 +905,8 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         using typename super_type::range_type;
         using typename super_type::slice_type;
 
-        using typename base_type::iterator;
+        using typename base_type::iterator_type;
+        using typename base_type::const_iterator_type;
 
         friend VectorUblasRange<T, Storage>;
         friend VectorUblasSlice<T, Storage>;
@@ -910,14 +933,20 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         virtual value_type& operator()( size_type i ) override;
         
         // Iterators API
-        virtual iterator begin() override { return iterator( M_vec.begin() ); }
-        virtual iterator end() override { return iterator( M_vec.end() ); }
+        virtual iterator_type begin() override { return iterator_type( M_vec.begin() ); }
+        virtual const_iterator_type begin() const override { return const_iterator_type( M_vec.begin() ); }
+        virtual iterator_type end() override { return iterator_type( M_vec.end() ); }
+        virtual const_iterator_type end() const override { return const_iterator_type( M_vec.end() ); }
 
-        virtual iterator beginActive() override { return iterator( M_vec.begin() ); }
-        virtual iterator endActive() override { return iterator( M_vec.end() ); }
+        virtual iterator_type beginActive() override { return iterator_type( M_vec.begin() ); }
+        virtual const_iterator_type beginActive() const override { return const_iterator_type( M_vec.begin() ); }
+        virtual iterator_type endActive() override { return iterator_type( M_vec.end() ); }
+        virtual const_iterator_type endActive() const override { return const_iterator_type( M_vec.end() ); }
 
-        virtual iterator beginGhost() override { return iterator( M_vecNonContiguousGhosts.begin() ); }
-        virtual iterator endGhost() override { return iterator( M_vecNonContiguousGhosts.end() ); }
+        virtual iterator_type beginGhost() override { return iterator_type( M_vecNonContiguousGhosts.begin() ); }
+        virtual const_iterator_type beginGhost() const override { return const_iterator_type( M_vecNonContiguousGhosts.begin() ); }
+        virtual iterator_type endGhost() override { return iterator_type( M_vecNonContiguousGhosts.end() ); }
+        virtual const_iterator_type endGhost() const override { return const_iterator_type( M_vecNonContiguousGhosts.end() ); }
 
         // Setters API
         virtual void setConstant( value_type v ) override;
