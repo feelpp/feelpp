@@ -343,31 +343,11 @@ ModelMeasuresStorageTable::saveCSV( std::string const& directory, size_type inde
 
 
 
-template <typename T>
-std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
-{
-    std::vector<T> r;
-    for (auto& item : pt.get_child(key))
-        r.push_back(item.second.template get_value<T>());
-    return r;
-}
-
-
-
-
-
-
 ModelMeasuresFlowRate::ModelMeasuresFlowRate()
 {
     this->setDirection( "interior_normal" );
 }
 
-void
-ModelMeasuresFlowRate::addMarker( std::string const& mark )
-{
-    if ( std::find( M_meshMarkers.begin(),M_meshMarkers.end(), mark ) == M_meshMarkers.end() )
-        M_meshMarkers.push_back( mark );
-}
 void
 ModelMeasuresFlowRate::setDirection( std::string const& dir )
 {
@@ -376,21 +356,19 @@ ModelMeasuresFlowRate::setDirection( std::string const& dir )
 }
 
 void
-ModelMeasuresFlowRate::setup( pt::ptree const& ptree, std::string const& name )
+ModelMeasuresFlowRate::setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes )
 {
-    std::vector<std::string> markerList = as_vector<std::string>( ptree, "markers" );
-    if ( markerList.empty() )
+    M_name = name;
+
+    if ( jarg.contains("markers") )
+        M_markers.setup( jarg.at("markers"), indexes);
+
+    if ( jarg.contains("direction" ) )
     {
-        std::string markerUnique = ptree.get<std::string>( "markers" );
-        if ( !markerUnique.empty() )
-            markerList = { markerUnique };
+        auto const& j_dir = jarg.at("direction");
+        if ( j_dir.is_string() )
+            this->setDirection( indexes.replace( j_dir.get<std::string>() ) );
     }
-    std::string direction = ptree.get<std::string>( "direction" );
-    //std::cout << "markerList " << markerList.front() << " direction " << direction << "\n";
-    this->setName( name );
-    for ( auto const& marker : markerList )
-        this->addMarker( marker );
-    this->setDirection( direction );
 }
 
 
