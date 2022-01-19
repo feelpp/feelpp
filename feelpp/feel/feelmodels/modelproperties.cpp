@@ -103,6 +103,12 @@ ModelProperties::setup()
 {
     editPtreeFromOptions( M_p, M_prefix );
 
+    std::ostringstream pt_ostr;
+    write_json( pt_ostr, M_p );
+    std::istringstream pt_istream( pt_ostr.str() );
+    nl::json jarg;
+    pt_istream >> jarg;
+
     try {
         M_name  = M_p.get<std::string>( "Name"  );
     }
@@ -167,21 +173,20 @@ ModelProperties::setup()
         M_icDeprecated.setPTree( *icDeprecated );
     }
 
-    auto mat = M_p.get_child_optional("Materials");
-    if ( mat )
+    if ( jarg.contains("Materials") )
     {
         LOG(INFO) << "Model with materials\n";
         if ( !M_directoryLibExpr.empty() )
             M_mat.setDirectoryLibExpr( M_directoryLibExpr );
-        M_mat.setPTree( *mat );
+        M_mat.setPTree( jarg.at("Materials") );
     }
-    auto pp = M_p.get_child_optional("PostProcess");
-    if ( pp )
+
+    if ( jarg.contains("PostProcess") )
     {
         LOG(INFO) << "Model with PostProcess\n";
         if ( !M_directoryLibExpr.empty() )
             M_postproc.setDirectoryLibExpr( M_directoryLibExpr );
-        M_postproc.setPTree( *pp );
+        M_postproc.setPTree( jarg.at("PostProcess") );
     }
     auto out = M_p.get_child_optional("Outputs");
     if ( out )

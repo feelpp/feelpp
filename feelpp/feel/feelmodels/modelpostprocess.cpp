@@ -581,30 +581,31 @@ ModelPostprocess::ModelPostprocess( worldcomm_ptr_t const& world )
     M_useModelName( false )
 {}
 
-ModelPostprocess::ModelPostprocess(pt::ptree const& p, worldcomm_ptr_t const& world )
-    :
-    super( world ),
-    M_useModelName( false )
-{}
-
 ModelPostprocess::~ModelPostprocess()
 {}
 
-pt::ptree
-ModelPostprocess::pTree( std::string const& name ) const
+bool
+ModelPostprocess::hasJsonPrperties( std::string const& name ) const
+{
+    if ( !M_useModelName )
+        return true;
+    else
+        return M_p.contains(name);
+}
+
+nl::json const&
+ModelPostprocess::jsonPrperties( std::string const& name ) const
 {
     if ( !M_useModelName )
         return M_p;
-    else if ( auto ptreeWithName = M_p.get_child_optional( name ) )
-        return *ptreeWithName;
-    pt::ptree ptree;
-    return ptree;
+    CHECK( M_p.contains(name) ) << "name " << name << "not in data structure";
+    return M_p.at( name );
 }
 
 void
-ModelPostprocess::setPTree( pt::ptree const& p )
+ModelPostprocess::setPTree( nl::json const& jarg )
 {
-    M_p = p;
+    M_p = jarg;
     setup();
 }
 
@@ -612,11 +613,8 @@ ModelPostprocess::setPTree( pt::ptree const& p )
 void
 ModelPostprocess::setup()
 {
-    std::ostringstream pt_ostr;
-    write_json( pt_ostr, M_p );
-    std::istringstream pt_istream( pt_ostr.str() );
-    nl::json jarg;
-    pt_istream >> jarg;
+    auto const& jarg = M_p;
+
 
     if ( jarg.contains("partition") )
     {
