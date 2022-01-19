@@ -93,7 +93,9 @@ class VectorUblas : public Vector<T>
         typedef T value_type;
         typedef typename type_traits<value_type>::real_type real_type;
 
-        //typedef ublas::vector<value_type> storage_type;
+        typedef detail::VectorUblasBase<value_type> vector_impl_type;
+        typedef std::unique_ptr<vector_impl_type> vector_impl_ptrtype;
+        typedef std::unique_ptr<const vector_impl_type> vector_impl_cstptrtype;
 
         typedef typename super_type::datamap_type datamap_type;
         typedef typename super_type::datamap_ptrtype datamap_ptrtype;
@@ -142,9 +144,11 @@ class VectorUblas : public Vector<T>
         void resize( size_type n ) { return M_vectorImpl->resize( n ); }
         void clear() override { return M_vectorImpl->clear(); }
 
+        const vector_impl_type & vectorImpl() const { return *M_vectorImpl; }
+
         // Status API
         bool isInitialized() const override { return true; }
-        void close() const override { }
+        void close() override { }
         bool closed() const override { return true; }
         bool areGlobalValuesUpdated() const { return true; }
         void updateGlobalValues() const { }
@@ -176,8 +180,8 @@ class VectorUblas : public Vector<T>
         //size_type rowStop() const { return M_vectorImpl->rowStop(); }
 
         // Setters API
-        void setConstant( value_type a ) { return M_vectorImpl->setConstant( a ); }
-        void setZero() { return M_vectorImpl->setZero(); }
+        void setConstant( value_type a ) override { return M_vectorImpl->setConstant( a ); }
+        void setZero() override { return M_vectorImpl->setZero(); }
         void zero() override { return this->setZero(); }
 
         void set( const size_type i, const value_type & value ) override { return M_vectorImpl->set( i, value ); }
@@ -214,7 +218,7 @@ class VectorUblas : public Vector<T>
         value_type dot( const Vector<T> & v ) const override { return M_vectorImpl->dot( v ); }
         
         // Exports
-        void printMatlab( const std::string & filename = "NULL", bool renumber = false ) const override { return M_vectorImpl->printMatlab( filename, renumber ); }
+        void printMatlab( const std::string filename = "NULL", bool renumber = false ) const override { return M_vectorImpl->printMatlab( filename, renumber ); }
 #ifdef FEELPP_HAS_HDF5
         void saveHDF5( const std::string & filename, const std::string & tableName = "element", bool appendMode = false ) const { return M_vectorImpl->saveHDF5( filename, tableName, appendMode ); }
         void loadHDF5( const std::string & filename, const std::string & tableName = "element" ) { return M_vectorImpl->loadHDF5( filename, tableName ); }
@@ -225,7 +229,7 @@ class VectorUblas : public Vector<T>
         void localizeToOneProcessor( std::vector<T> & v_local, const size_type proc_id = 0 ) const { return M_vectorImpl->localizeToOneProcessor( v_local, proc_id ); }
         
     private:
-        std::unique_ptr<detail::VectorUblasBase<value_type>> M_vectorImpl;
+        vector_impl_ptrtype M_vectorImpl;
 };
 
 namespace detail 
@@ -356,7 +360,7 @@ class VectorUblasBase: public Vector<T>
 
         // Status API
         bool isInitialized() const override { return true; }
-        void close() const { }
+        void close() override { }
         bool closed() const override { return true; }
         bool areGlobalValuesUpdated() const { return true; }
         void updateGlobalValues() const { }
@@ -375,12 +379,15 @@ class VectorUblasBase: public Vector<T>
         Vector<T>& operator-=( const Vector<T>& v ) override { this->sub( v ); return *this; }
         Vector<T>& operator*=( const value_type & a ) { this->scale( a ); return *this; }
 
-        //// Iterators API
-        //virtual iterator begin() = 0;
-        //virtual iterator end() = 0;
+        // Iterators API
+        virtual iterator begin() = 0;
+        virtual iterator end() = 0;
+        
+        virtual iterator beginActive() = 0;
+        virtual iterator endActive() = 0;
 
-        //virtual iterator beginGhost() = 0;
-        //virtual iterator endGhost() = 0;
+        virtual iterator beginGhost() = 0;
+        virtual iterator endGhost() = 0;
 
         //virtual size_type start() const = 0;
         //virtual size_type startNonContiguousGhosts() const = 0;
@@ -389,8 +396,8 @@ class VectorUblasBase: public Vector<T>
         //size_type rowStop() const { checkInvariants(); return 0; }
 
         // Setters API
-        virtual void setConstant( value_type v ) = 0;
-        virtual void setZero() = 0;
+        virtual void setConstant( value_type v ) override = 0;
+        virtual void setZero() override = 0;
         void zero() override { this->setZero(); }
 
         void set( const size_type i, const value_type & value ) override;
@@ -416,10 +423,6 @@ class VectorUblasBase: public Vector<T>
         void insert( const Vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
         void insert( const ublas::vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
 
-        // Range and slice API
-        std::unique_ptr<VectorUblasBase<T>> range( const range_type & rangeActive, const range_type & rangeGhost ) { return std::unique_ptr<VectorUblasBase<T>>( this->rangeImpl( rangeActive, rangeGhost ) ); }
-        std::unique_ptr<VectorUblasBase<T>> slice( const slice_type & sliceActive, const slice_type & sliceGhost ) { return std::unique_ptr<VectorUblasBase<T>>( this->sliceImpl( sliceActive, sliceGhost ) ); }
-
         // Utilities
         real_type min() const override { return this->min( true ); }
         virtual real_type min( bool parallel ) const = 0;
@@ -435,7 +438,7 @@ class VectorUblasBase: public Vector<T>
         value_type dot( const Vector<T> & v ) const override;
         
         // Exports
-        void printMatlab( const std::string & filename = "NULL", bool renumber = false ) const override;
+        void printMatlab( const std::string filename = "NULL", bool renumber = false ) const override;
 #ifdef FEELPP_HAS_HDF5
         void saveHDF5( const std::string & filename, const std::string & tableName = "element", bool appendMode = false ) const;
         void loadHDF5( const std::string & filename, const std::string & tableName = "element" );
@@ -444,6 +447,10 @@ class VectorUblasBase: public Vector<T>
         // Localization (parallel global to one proc local)
         void localizeToOneProcessor( ublas::vector<T> & v_local, const size_type proc_id = 0 ) const;
         void localizeToOneProcessor( std::vector<T> & v_local, const size_type proc_id = 0 ) const;
+        
+        // Range and slice API
+        std::unique_ptr<VectorUblasBase<T>> range( const range_type & rangeActive, const range_type & rangeGhost ) { return std::unique_ptr<VectorUblasBase<T>>( this->rangeImpl( rangeActive, rangeGhost ) ); }
+        std::unique_ptr<VectorUblasBase<T>> slice( const slice_type & sliceActive, const slice_type & sliceGhost ) { return std::unique_ptr<VectorUblasBase<T>>( this->sliceImpl( sliceActive, sliceGhost ) ); }
 
     protected:
         virtual void checkInvariants() const = 0;
@@ -617,6 +624,7 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
     public:
         // Typedefs
         typedef VectorUblasContiguousGhostsBase<T> super_type;
+        typedef VectorUblasBase<T> base_type;
 
         using typename super_type::clone_ptrtype;
 
@@ -649,6 +657,8 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         using typename super_type::range_type;
         using typename super_type::slice_type;
 
+        using typename base_type::iterator;
+
         friend VectorUblasRange<T, Storage>;
         friend VectorUblasSlice<T, Storage>;
 
@@ -671,6 +681,16 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         // Operators API
         virtual value_type operator()( size_type i ) const override;
         virtual value_type& operator()( size_type i ) override;
+        
+        // Iterators API
+        virtual iterator begin() override { return iterator( M_vec.begin() ); }
+        virtual iterator end() override { return iterator( M_vec.end() ); }
+        
+        virtual iterator beginActive() override { return iterator( M_vec.begin() ); }
+        virtual iterator endActive() override { return iterator( M_vec.find( this->map()->nLocalDofWithoutGhost() ) ); }
+
+        virtual iterator beginGhost() override { return iterator( M_vec.find( this->map()->nLocalDofWithoutGhost() ) ); }
+        virtual iterator endGhost() override { return iterator( M_vec.end() ); }
 
         // Setters API
         virtual void setConstant( value_type v ) override;
@@ -824,6 +844,7 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
     public:
         // Typedefs
         typedef VectorUblasNonContiguousGhostsBase<T> super_type;
+        typedef VectorUblasBase<T> base_type;
 
         using typename super_type::clone_ptrtype;
 
@@ -856,6 +877,8 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         using typename super_type::range_type;
         using typename super_type::slice_type;
 
+        using typename base_type::iterator;
+
         friend VectorUblasRange<T, Storage>;
         friend VectorUblasSlice<T, Storage>;
 
@@ -879,6 +902,16 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         // Operators API
         virtual value_type operator()( size_type i ) const override;
         virtual value_type& operator()( size_type i ) override;
+        
+        // Iterators API
+        virtual iterator begin() override { return iterator( M_vec.begin() ); }
+        virtual iterator end() override { return iterator( M_vec.end() ); }
+
+        virtual iterator beginActive() override { return iterator( M_vec.begin() ); }
+        virtual iterator endActive() override { return iterator( M_vec.end() ); }
+
+        virtual iterator beginGhost() override { return iterator( M_vecNonContiguousGhosts.begin() ); }
+        virtual iterator endGhost() override { return iterator( M_vecNonContiguousGhosts.end() ); }
 
         // Setters API
         virtual void setConstant( value_type v ) override;
@@ -998,7 +1031,81 @@ class VectorUblasSlice: public VectorUblasNonContiguousGhosts<T, ublas::vector_s
 };
 
 } // detail
+} // Feel
+
+#if FEELPP_HAS_PETSC
+#include <feel/feelalg/vectorpetsc.hpp>
+
+namespace Feel {
+/**
+ * returns a VectorPetsc from a VectorUblas
+ *
+ * here is a sample code:
+ * @code
+ * auto Xh = Pch<1>( mesh );
+ * auto v = Xh->element();
+ * auto b = backend(); // default backend is petsc type
+ * auto vp = toPETSc( v ); // get the VectorPetsc
+ * @endcode
+ *
+ * \warning one must be careful that the VectorUblas will provide contiguous
+ * data access.
+ * \warning VectorPetsc view is invalidated by VectorUblas re-assignment
+ */
+//template< typename T >
+//inline VectorPetsc<T>
+//toPETSc( const VectorUblas<T> & v )
+//{
+    //using namespace detail;
+    //if ( v.comm().size() > 1 )
+    //{
+        //const VectorUblasContiguousGhosts<T> * vecContiguousGhosts = dynamic_cast<const VectorUblasContiguousGhosts<T> *>( & v.vectorImpl() );
+        //if ( vecContiguousGhosts )
+            //return VectorPetscMPI<T>( std::addressof( * vecContiguousGhosts->begin() ), vecContiguousGhosts->mapPtr() );
+
+        //const VectorUblasNonContiguousGhosts<T> * vecNonContiguousGhosts = dynamic_cast<const VectorUblasNonContiguousGhosts<T> *>( & v.vectorImpl() );
+        //if ( vecNonContiguousGhosts )
+            //return VectorPetscMPIRange<T>( std::addressof( * vecNonContiguousGhosts->beginActive() ), std::addressof( * vecNonContiguousGhosts->beginGhost() ), vecNonContiguousGhosts->mapPtr() );
+        
+        //else
+            //CHECK( false ) << "Unsupported VectorUblas for VectorPetsc view";
+    //}
+    //else
+        //return VectorPetsc<T>( std::addressof( * v.vectorImpl().begin() ), v.mapPtr() );
+//}
+
+template< typename T >
+inline std::shared_ptr<VectorPetsc<T>>
+toPETScPtr( const VectorUblas<T> & v )
+{
+    using namespace detail;
+    if ( v.comm().size() > 1 )
+    {
+        const VectorUblasContiguousGhosts<T> * vecContiguousGhosts = dynamic_cast<const VectorUblasContiguousGhosts<T> *>( & v.vectorImpl() );
+        if ( vecContiguousGhosts )
+            return std::make_shared<VectorPetscMPI<T>>( std::addressof( * vecContiguousGhosts->begin() ), vecContiguousGhosts->mapPtr() );
+
+        const VectorUblasNonContiguousGhosts<T> * vecNonContiguousGhosts = dynamic_cast<const VectorUblasNonContiguousGhosts<T> *>( & v.vectorImpl() );
+        if ( vecNonContiguousGhosts )
+            return std::make_shared<VectorPetscMPIRange<T>>( std::addressof( * vecNonContiguousGhosts->beginActive() ), std::addressof( * vecNonContiguousGhosts->beginGhost() ), vecNonContiguousGhosts->mapPtr() );
+        
+        else
+            CHECK( false ) << "Unsupported VectorUblas for VectorPetsc view";
+    }
+    else
+        return std::make_shared<VectorPetsc<T>>( std::addressof( * v.vectorImpl().begin() ), v.mapPtr() );
+}
+
+template< typename T >
+inline VectorPetsc<T>
+toPETSc( const VectorUblas<T> & v )
+{
+    return *toPetscPtr( v );
+}
 
 } // Feel
+
+#endif // FEELPP_HAS_PETSC
+
 
 #endif /* _FEELPP_VECTORUBLAS_HPP */
