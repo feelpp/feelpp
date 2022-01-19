@@ -864,7 +864,7 @@ void VectorUblasContiguousGhosts<T, Storage>::msubVector( const value_type & a, 
 
 template< typename T, typename Storage >
 typename VectorUblasContiguousGhosts<T, Storage>::value_type 
-VectorUblasContiguousGhosts<T, Storage>::dotVector( const VectorUblasContiguousGhostsBase<T> & v )
+VectorUblasContiguousGhosts<T, Storage>::dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const
 {
     value_type localResult = 0;
     if ( this->comm().localSize() == 1 )
@@ -894,7 +894,7 @@ VectorUblasContiguousGhosts<T, Storage>::dotVector( const VectorUblasContiguousG
 
 template< typename T, typename Storage >
 typename VectorUblasContiguousGhosts<T, Storage>::value_type 
-VectorUblasContiguousGhosts<T, Storage>::dotVector( const VectorUblasNonContiguousGhostsBase<T> & v )
+VectorUblasContiguousGhosts<T, Storage>::dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const
 {
     value_type localResult = 0;
     if ( this->comm().localSize() == 1 )
@@ -1404,7 +1404,7 @@ void VectorUblasNonContiguousGhosts<T, Storage>::msubVector( const value_type & 
 
 template< typename T, typename Storage >
 typename VectorUblasNonContiguousGhosts<T, Storage>::value_type 
-VectorUblasNonContiguousGhosts<T, Storage>::dotVector( const VectorUblasContiguousGhostsBase<T> & v )
+VectorUblasNonContiguousGhosts<T, Storage>::dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const
 {
     value_type localResult = 0;
     if ( this->comm().localSize() == 1 )
@@ -1433,7 +1433,7 @@ VectorUblasNonContiguousGhosts<T, Storage>::dotVector( const VectorUblasContiguo
 
 template< typename T, typename Storage >
 typename VectorUblasNonContiguousGhosts<T, Storage>::value_type 
-VectorUblasNonContiguousGhosts<T, Storage>::dotVector( const VectorUblasNonContiguousGhostsBase<T> & v )
+VectorUblasNonContiguousGhosts<T, Storage>::dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const
 {
     //value_type localResult = ublas::inner_prod( M_vec, v.vec() );
     value_type localResult = std::visit( [this]( auto && _v ) -> value_type { return ublas::inner_prod( this->M_vec, *_v ); }, v.vec() );
