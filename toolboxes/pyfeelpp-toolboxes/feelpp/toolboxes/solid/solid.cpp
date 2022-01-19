@@ -71,6 +71,7 @@ void defSM(py::module &m)
         
         // time stepping
         .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (sm_t::*)() const>(&sm_t::timeStepBase), "get time stepping base")
+        .def("startTimeStep", &sm_t::startTimeStep, "start time stepping" )
         .def("updateTimeStep",&sm_t::updateTimeStep, "update time stepping")
 
         // elements

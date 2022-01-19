@@ -2,7 +2,8 @@ from ._modelcore import *
 from ._modelmesh import *
 import feelpp
 
-def simulate(toolbox,export=True):
+
+def simulate(toolbox, export=True, buildModelAlgebraicFactory=True):
     """simulate a toolbox
 
     simulate execute the toolbox in steady or transient case and export the results
@@ -15,7 +16,7 @@ def simulate(toolbox,export=True):
         toolbox = toolboxs.toolboxs(dim=2)
         simulate(toolbox)        
     """
-    toolbox.init()
+    toolbox.init(buildModelAlgebraicFactory)
     #toolbox.printAndSaveInfo()
     if toolbox.isStationary():
         toolbox.solve()
@@ -24,6 +25,7 @@ def simulate(toolbox,export=True):
     else:
         if not toolbox.doRestart():
             toolbox.exportResults(toolbox.timeInitial())
+        toolbox.startTimeStep()
         while not toolbox.timeStepBase().isFinished():
             if feelpp.Environment.isMasterRank():
                 print("============================================================\n")
