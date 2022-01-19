@@ -321,7 +321,7 @@ public :
     std::string const& direction() const { return M_direction; }
     bool isOutward() const { return M_direction == "outward"; }
 
-    void setup( pt::ptree const& _pt, std::string const& name, ModelIndexes const& indexes );
+    void setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes );
 
 private :
     std::string M_name;
