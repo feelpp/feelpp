@@ -395,15 +395,19 @@ ModelMeasuresFlowRate::setup( pt::ptree const& ptree, std::string const& name )
 
 
 void
-ModelMeasuresNormalFluxGeneric::setup( pt::ptree const& _pt, std::string const& name, ModelIndexes const& indexes )
+ModelMeasuresNormalFluxGeneric::setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes )
 {
     M_name = name;
 
-    if ( auto ptmarkers = _pt.get_child_optional("markers") )
-        M_markers.setPTree(*ptmarkers, indexes);
+    if ( jarg.contains("markers") )
+        M_markers.setup( jarg.at("markers"), indexes);
 
-    if ( auto itDir = _pt.get_optional<std::string>("direction") )
-        M_direction = indexes.replace( *itDir );
+    if ( jarg.contains("direction") )
+    {
+        auto const& j_direction = jarg.at("direction");
+        if ( j_direction.is_string() )
+            M_direction = indexes.replace( j_direction.get<std::string>() );
+    }
     else
         M_direction = "outward";
 
