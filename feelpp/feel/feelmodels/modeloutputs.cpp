@@ -33,44 +33,52 @@ ModelOutput::ModelOutput( worldcomm_ptr_t const& worldComm )
     super( worldComm )
 {}
 
-ModelOutput::ModelOutput( std::string name, pt::ptree const& p, worldcomm_ptr_t const& worldComm, std::string const& directoryLibExpr )
+ModelOutput::ModelOutput( std::string name, nl::json const& jarg, worldcomm_ptr_t const& worldComm, std::string const& directoryLibExpr )
     :
     super( worldComm ),
-    M_p( p ),
+    M_p( jarg ),
     M_directoryLibExpr( directoryLibExpr ),
     M_name( name ),
     M_markers( name )
 {
-    try {
-        M_type  = M_p.get<std::string>( "type"  );
-    }
-    catch ( pt::ptree_bad_path& e )
+    if ( jarg.contains("type") )
     {
-        LOG(WARNING) << "Missing type entry in output " << M_name << "\n";
+        auto const& j_type = jarg.at("type");
+        if ( j_type.is_string() )
+            M_type = j_type.get<std::string>();
     }
+    //else LOG(WARNING) << "Missing type entry in output " << M_name << "\n";
 
-    if( auto markers = p.get_child_optional("markers") )
-        M_markers.setPTree(*markers);
-    else
-        LOG(WARNING) << "Output " << M_name << " does not have any range\n";
+     if ( jarg.contains("markers") )
+         M_markers.setup( jarg.at("markers") );
+     //else LOG(WARNING) << "Output " << M_name << " does not have any range\n";
 
-    if( auto t = p.get_optional<int>("topodim") )
-    {
-        M_dim = *t;
-    }
-    else
-    {
-        LOG(WARNING) << "Output " << M_name << " does not have any dimension\n";
-    }
+     if ( jarg.contains("topodim") )
+     {
+         auto const& j_topodim = jarg.at("topodim");
+         if ( j_topodim.is_number_unsigned() )
+             M_dim = j_topodim.get<int>();
+     }
+     // else LOG(WARNING) << "Output " << M_name << " does not have any dimension\n";
 }
+
 
 std::string ModelOutput::getString( std::string const& key ) const
 {
-    try { return M_p.get<std::string>( key ); }
-    catch( pt::ptree_error const&e ) {
-        LOG(ERROR) << "output " << M_name << ": key " << key << ": " << e.what() << std::endl;
-        exit(1);
+    if ( !M_p.contains("key") )
+    {
+        CHECK( false ) << "invalid key";
+        return {};
     }
+
+    auto const& j_key =  M_p.at("key");
+    if ( !j_key.is_string() )
+    {
+        CHECK( false ) << "invalid key";
+        return {};
+    }
+
+    return j_key.get<std::string>();
 }
 
 std::ostream& operator<<( std::ostream& os, ModelOutput const& o )
@@ -92,10 +100,10 @@ ModelOutputs::ModelOutputs( worldcomm_ptr_t const& worldComm )
     super( worldComm )
 {}
 
-ModelOutputs::ModelOutputs( pt::ptree const& p, worldcomm_ptr_t const& worldComm )
+ModelOutputs::ModelOutputs( nl::json const& jarg, worldcomm_ptr_t const& worldComm )
     :
     super( worldComm ),
-    M_p( p )
+    M_p( jarg )
 {
     setup();
 }
@@ -103,33 +111,36 @@ ModelOutputs::ModelOutputs( pt::ptree const& p, worldcomm_ptr_t const& worldComm
 ModelOutput
 ModelOutputs::loadOutput( std::string const& s, std::string const& name )
 {
-    pt::ptree p;
-    pt::read_json( s, p );
-    return this->getOutput( p, name );
+    nl::json j;
+    std::ifstream i(s);
+    i >> j;
+    return this->getOutput( j, name );
 }
 
 void
 ModelOutputs::setup()
 {
-    for( auto const& v : M_p )
+    auto const& jarg = M_p;
+    for ( auto const& [jargkey,jargval] : jarg.items() )
     {
-        LOG(INFO) << "Output :" << v.first  << "\n";
-        if ( auto fname = v.second.get_optional<std::string>("filename") )
+        LOG(INFO) << "Output :" << jargkey;
+        if ( jargval.contains("filename") )
         {
-            LOG(INFO) << "  - filename = " << Environment::expand( fname.get() ) << std::endl;
-            this->insert( std::make_pair( v.first, this->loadOutput( Environment::expand( fname.get() ), v.first ) ) );
+            auto const& j_filename = jargval.at("filename");
+            std::string fname = Environment::expand( j_filename.get<std::string>() );
+            LOG(INFO) << "  - filename = " << fname << std::endl;
+            this->insert( std::make_pair( jargkey, this->loadOutput( fname, jargkey ) ) );
+
         }
         else
-        {
-            this->insert( std::make_pair( v.first, this->getOutput( v.second, v.first ) ) );
-        }
+            this->insert( std::make_pair( jargkey, this->getOutput( jargval, jargkey ) ) );
     }
 }
 
 ModelOutput
-ModelOutputs::getOutput( pt::ptree const& v, std::string const& name )
+ModelOutputs::getOutput( nl::json const& jarg, std::string const& name )
 {
-    ModelOutput o( name, v, this->worldCommPtr(), M_directoryLibExpr );
+    ModelOutput o( name, jarg, this->worldCommPtr(), M_directoryLibExpr );
     LOG(INFO) << "adding output " << o;
     return o;
 }

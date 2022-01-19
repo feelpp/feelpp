@@ -35,18 +35,13 @@ ModelParameters::ModelParameters( worldcomm_ptr_t const& world )
     super( world )
 {}
 
-ModelParameters::ModelParameters( pt::ptree const& p, worldcomm_ptr_t const& world )
-    :
-    super( world )
-{}
-
 ModelParameters::~ModelParameters()
 {}
 
 void
-ModelParameters::setPTree( pt::ptree const& p )
+ModelParameters::setPTree( nl::json const& jarg )
 {
-    M_p = p;
+    M_p = jarg;
     setup();
 }
 
@@ -54,76 +49,92 @@ ModelParameters::setPTree( pt::ptree const& p )
 void
 ModelParameters::setup()
 {
-    for( auto const& v : M_p )
+    for ( auto const& [jargkey,jargval] : M_p.items() )
     {
-        LOG(INFO) << "reading parameter " << v.first  << "\n";
-        std::string t = v.first; // parameter name
-        auto f= v.second;
-        ModelExpression modelexpr;
-        if ( f.empty() ) // parameter is not a node but a leaf
+        std::string const& t = jargkey; // parameter name
+        LOG(INFO) << "reading parameter " << t;
+
+        if ( jargval.is_primitive() )
         {
-            if( boost::optional<double> d = f.get_value_optional<double>() )
-            {
-                VLOG(2) << "adding parameter " << t << " with value " << *d;
-                modelexpr.setExprScalar( Feel::vf::expr( *d ) );
-            }
-            else if ( boost::optional<std::string> s = f.get_value_optional<std::string>() )
-            {
-                VLOG(2) << "adding parameter " << t << " with expr " << *s;
-                modelexpr.setExpr( *s, this->worldComm(), M_directoryLibExpr );
-            }
+            ModelExpression modelexpr;
+            modelexpr.setExpr( jargval, this->worldComm(), M_directoryLibExpr );
             if ( modelexpr.hasAtLeastOneExpr() )
-                this->operator[](t) = ModelParameter( t, modelexpr );
+                this->emplace( std::make_pair( t, ModelParameter( t, modelexpr ) ) );
         }
-        else
+        else if ( jargval.is_object() )
         {
             std::string name = t;
-            if( boost::optional<std::string> n = f.get_optional<std::string>("name") )
-                name = *n;
+            if ( jargval.contains("name") )
+            {
+                auto const& j_name = jargval.at("name");
+                if ( j_name.is_string() )
+                    name = j_name.get<std::string>();
+            }
             std::string type = "expression";
-            if( boost::optional<std::string> n = f.get_optional<std::string>("type") )
-                type = *n;
-            std::string desc = "";
-            if( boost::optional<std::string> n = f.get_optional<std::string>("description") )
-                desc = *n;
+            if ( jargval.contains("type") )
+            {
+                auto const& j_type = jargval.at("type");
+                if ( j_type.is_string() )
+                    type = j_type.get<std::string>();
+            }
+            std::string desc;
+            if ( jargval.contains("description") )
+            {
+                auto const& j_description = jargval.at("description");
+                if ( j_description.is_string() )
+                    desc = j_description.get<std::string>();
+            }
+
             if ( type == "expression" || type == "value" )
             {
                 double val = 0.;
                 double min = 0.;
                 double max = 0.;
-                if( boost::optional<double> d = f.get_optional<double>("min") )
-                    min = *d;
-                if( boost::optional<double> d = f.get_optional<double>("max") )
-                    max = *d;
+                if ( jargval.contains("min") )
+                {
+                    auto const& j_min = jargval.at("min");
+                    if ( j_min.is_number() )
+                        min = j_min.get<double>();
+                }
+                if ( jargval.contains("max") )
+                {
+                    auto const& j_max = jargval.at("max");
+                    if ( j_max.is_number() )
+                        max = j_max.get<double>();
+                }
 
-                modelexpr.setExpr( "value", f, this->worldComm(), M_directoryLibExpr );
+                ModelExpression modelexpr;
+                if ( jargval.contains("value") )
+                    modelexpr.setExpr( jargval.at("value"), this->worldComm(), M_directoryLibExpr );
                 this->operator[](t) = ModelParameter( t, modelexpr, min, max, desc );
             }
             else if ( type == "fit" )
             {
                 std::string filename;
-                if( boost::optional<std::string> d = f.get_optional<std::string>("filename") )
-                    filename = *d;
-                else
-                    CHECK( false ) << "filename is required with fit type";
+                if ( jargval.contains("filename") )
+                    filename = jargval.at("filename").get<std::string>();
+                CHECK( !filename.empty() ) << "filename is required with fit type";
 
-                modelexpr.setExpr( "expr", f, this->worldComm(), M_directoryLibExpr );
+                ModelExpression modelexpr;
+                if ( jargval.contains("expr") )
+                    modelexpr.setExpr( jargval.at("expr"), this->worldComm(), M_directoryLibExpr );
                 CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr is required with fit type";
 
                 std::string interpType = "Akima";
-                if( boost::optional<std::string> d = f.get_optional<std::string>("interpolation") )
-                    interpType = *d;
+                if ( jargval.contains("interpolation") )
+                    interpType = jargval.at("interpolation").get<std::string>();
 
                 auto itFindType = InterpolationTypeMap.find( interpType );
                 CHECK( itFindType != InterpolationTypeMap.end() ) << "invalid interpolator type " << type;
                 InterpolationType interpolatorEnumType = itFindType->second;
 
                 std::string abscissa;
-                if( boost::optional<std::string> d = f.get_optional<std::string>("abscissa") )
-                    abscissa = *d;
+                if ( jargval.contains("abscissa") )
+                    abscissa = jargval.at("abscissa").get<std::string>();
+
                 std::string ordinate;
-                if( boost::optional<std::string> d = f.get_optional<std::string>("ordinate") )
-                    ordinate = *d;
+                if ( jargval.contains("ordinate") )
+                    ordinate = jargval.at("ordinate").get<std::string>();
 
                 std::shared_ptr<Interpolator> interpolator = Interpolator::New( /*interpType*/interpolatorEnumType, filename, abscissa, ordinate, this->worldComm() );
                 this->operator[](t) = ModelParameter( name, interpolator,  modelexpr, desc );
