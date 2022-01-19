@@ -1447,13 +1447,13 @@ VectorUblasNonContiguousGhosts<T, Storage>::dotVector( const VectorUblasNonConti
 }   
 
 template< typename T, typename Storage > 
-VectorUblasRange<T, Storage> * VectorUblasNonContiguousGhosts<T, Storage>::rangeImpl( const range_type & rangeActive, const range_type & rangeGhost )
+VectorUblasBase<T> * VectorUblasNonContiguousGhosts<T, Storage>::rangeImpl( const range_type & rangeActive, const range_type & rangeGhost )
 {
     return new VectorUblasRange<T, Storage>( *this, rangeActive, rangeGhost );
 }
 
 template< typename T, typename Storage > 
-VectorUblasSlice<T, Storage> * VectorUblasNonContiguousGhosts<T, Storage>::sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost )
+VectorUblasBase<T> * VectorUblasNonContiguousGhosts<T, Storage>::sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost )
 {
     return new VectorUblasSlice<T, Storage>( *this, sliceActive, sliceGhost );
 }
