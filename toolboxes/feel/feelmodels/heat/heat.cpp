@@ -364,28 +364,28 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
             M_exporter->restart(this->timeInitial());
     }
 
-    pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
-    //  heat flux measures
-    std::string ppTypeMeasures = "Measures";
-    for( auto const& ptreeLevel0 : ptree )
-    {
-        std::string ptreeLevel0Name = ptreeLevel0.first;
-        if ( ptreeLevel0Name != ppTypeMeasures ) continue;
-        for( auto const& ptreeLevel1 : ptreeLevel0.second )
-        {
-            std::string ptreeLevel1Name = ptreeLevel1.first;
 
-            if ( ptreeLevel1Name == "Normal-Heat-Flux" )
+    if ( this->modelProperties().postProcess().hasJsonPrperties( this->keyword() ) )
+    {
+        auto const& j_pp = this->modelProperties().postProcess().jsonPrperties( this->keyword() );
+        std::string ppTypeMeasures = "Measures";
+        if ( j_pp.contains( ppTypeMeasures ) )
+        {
+            auto j_pp_measures = j_pp.at( ppTypeMeasures );
+            for ( auto const& [j_pp_measureskey,j_pp_measuresval] : j_pp_measures.items() )
             {
-                for( auto const& ptreeNormalHeatFlux : ptreeLevel1.second )
+                if ( j_pp_measureskey == "Normal-Heat-Flux" )
                 {
-                    auto indexesAllCases = ModelIndexes::generateAllCases( ptreeNormalHeatFlux.second );
-                    for ( auto const& indexes : indexesAllCases )
+                    for ( auto const& [j_pp_measures_nhfkey,j_pp_measures_nhfval] : j_pp_measuresval.items() )
                     {
-                        ModelMeasuresNormalFluxGeneric ppFlux;
-                        ppFlux.setup( ptreeNormalHeatFlux.second, indexes.replace( ptreeNormalHeatFlux.first ), indexes );
-                        if ( !ppFlux.markers().empty() )
-                            M_postProcessMeasuresNormalHeatFlux[ppFlux.name()] = ppFlux;
+                        auto indexesAllCases = ModelIndexes::generateAllCases( j_pp_measures_nhfval );
+                        for ( auto const& indexes : indexesAllCases )
+                        {
+                            ModelMeasuresNormalFluxGeneric ppFlux;
+                            ppFlux.setup( j_pp_measures_nhfval, indexes.replace( j_pp_measures_nhfkey ), indexes );
+                            if ( !ppFlux.markers().empty() )
+                                M_postProcessMeasuresNormalHeatFlux[ppFlux.name()] = ppFlux;
+                        }
                     }
                 }
             }
