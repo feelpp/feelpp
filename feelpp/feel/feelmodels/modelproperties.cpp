@@ -125,19 +125,20 @@ ModelProperties::setup()
         if ( Environment::isMasterRank() )
             std::cout << "Missing ShortName entry in model properties - set it to the Name entry : " << M_name << "\n";
     }
+
     M_unit = M_p.get( "Unit", "m" );
     if ( auto mod = M_p.get_child_optional("Models") )
     {
         LOG(INFO) << "Model with model\n";
         M_models.setPTree( *mod );
     }
-    auto par = M_p.get_child_optional("Parameters");
-    if ( par )
+
+    if ( jarg.contains("Parameters") )
     {
         LOG(INFO) << "Model with parameters\n";
         if ( !M_directoryLibExpr.empty() )
             M_params.setDirectoryLibExpr( M_directoryLibExpr );
-        M_params.setPTree( *par );
+        M_params.setPTree( jarg.at("Parameters") );
     }
     auto func = M_p.get_child_optional("Functions");
     if ( func )
@@ -188,13 +189,13 @@ ModelProperties::setup()
             M_postproc.setDirectoryLibExpr( M_directoryLibExpr );
         M_postproc.setPTree( jarg.at("PostProcess") );
     }
-    auto out = M_p.get_child_optional("Outputs");
-    if ( out )
+
+    if ( jarg.contains("Outputs") )
     {
         LOG(INFO) << "Model with outputs\n";
         if ( !M_directoryLibExpr.empty() )
             M_outputs.setDirectoryLibExpr( M_directoryLibExpr );
-        M_outputs.setPTree( *out );
+        M_outputs.setPTree( jarg.at("Outputs") );
     }
 }
 
