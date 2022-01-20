@@ -74,12 +74,22 @@ template <uint16_type Dim>
 std::shared_ptr<ModelPhysic<Dim>>
 ModelPhysic<Dim>::New( ModelPhysics<Dim> const& mphysics, std::string const& type, std::string const& name, ModelModel const& model )
 {
+    if ( type == "heat" )
+        return std::make_shared<ModelPhysicHeat<Dim>>( mphysics, name, model );
     if ( type == "fluid" )
         return std::make_shared<ModelPhysicFluid<Dim>>( mphysics, name, model );
     else if ( type == "solid" )
         return std::make_shared<ModelPhysicSolid<Dim>>( mphysics, name, model );
     else
         return std::make_shared<ModelPhysic<Dim>>( type, name, model );
+}
+
+template <uint16_type Dim>
+ModelPhysicHeat<Dim>::ModelPhysicHeat( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model )
+    :
+    super_type( "heat", name, model )
+{
+
 }
 
 template <uint16_type Dim>
