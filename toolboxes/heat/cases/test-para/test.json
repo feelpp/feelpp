@@ -40,14 +40,17 @@
     },
     "InitialConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Expression":
+            "temperature":
             {
-                "myic1":
+                "Expression":
                 {
-                    "markers":"omega",
-                    "expr":"293+10*t*t:t"
+                    "myic1":
+                    {
+                        "markers":"omega",
+                        "expr":"293+10*t*t:t"
+                    }
                 }
             }
         }
