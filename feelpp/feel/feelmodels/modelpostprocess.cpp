@@ -112,14 +112,14 @@ ModelPostprocessExports::setup( nl::json const& jarg  )
                 {
                     auto const& j_parts = jvalue.at("parts");
                     CHECK ( j_parts.is_array() ) << "parts should an array";
-                    for ( auto const& [partskey,partsval] : j_parts.items() )
+                    for ( auto const& [j_partskey,j_partsval] : j_parts.items() )
                     {
                         ModelExpression modelexpr;
                         ModelMarkers markers;
-                        CHECK( j_parts.contains("expr") ) << "expr is missing";
-                        modelexpr.setExpr( j_parts.at("expr"), this->worldComm(), M_directoryLibExpr/*,indexes*/ );
-                        if ( j_parts.contains("markers") )
-                            markers.setup( j_parts.at("markers") /*, indexes*/ );
+                        CHECK( j_partsval.contains("expr") ) << "expr is missing";
+                        modelexpr.setExpr( j_partsval.at("expr"), this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+                        if ( j_partsval.contains("markers") )
+                            markers.setup( j_partsval.at("markers") /*, indexes*/ );
                         CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
                         M_exprs.push_back( std::make_tuple(exprName,modelexpr,markers,representations,tags) );
                     }
