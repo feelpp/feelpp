@@ -240,9 +240,14 @@ public:
     SensorMap() = default;
     explicit SensorMap( space_ptrtype const& Xh ): M_Xh(Xh) {}
     explicit SensorMap( space_ptrtype const& Xh, json j)
-        : M_Xh(Xh),
-          M_j(j)
+        : M_Xh(Xh)
     {
+        this->loadJson(j);
+    }
+
+    void loadJson(json j)
+    {
+        M_j = j;
         for( auto const& /*it*/[name, sensor] : M_j.items() )
         {
             // auto name = it.first;
