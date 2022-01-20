@@ -1017,6 +1017,9 @@ public :
     void addMesh( std::shared_ptr<MeshType> mesh );
 
     template <typename MeshType>
+    void removeMesh( std::shared_ptr<MeshType> mesh );
+
+    template <typename MeshType>
     std::shared_ptr<MaterialsOnMesh<MeshType>> materialsOnMesh( std::shared_ptr<MeshType> mesh ) const
         {
             auto itFindMatMesh = M_materialsOnMesh.find( mesh );
@@ -1176,6 +1179,20 @@ MaterialsProperties<Dim>::addMesh( std::shared_ptr<MeshType> mesh )
     M_exprSelectorByMeshElementMapping->template updateForUse<MeshType>( mom->rangeMeshElementsByMaterial() );
 }
 
+template<uint16_type Dim>
+template <typename MeshType>
+void
+MaterialsProperties<Dim>::removeMesh( std::shared_ptr<MeshType> mesh )
+{
+    auto itFindMesh = M_materialsOnMesh.find( mesh->shared_from_this_meshbase() );
+    if ( itFindMesh == M_materialsOnMesh.end() )
+        return;
+    M_materialsOnMesh.erase( itFindMesh );
+
+    // clear elt mapping (TODO : only for this mesh)
+    M_exprSelectorByMeshElementMapping->clear();
+
+}
 
 } // namespace FeelModels
 } // namespace Feel

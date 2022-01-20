@@ -24,83 +24,55 @@
 #include <pybind11/pybind11.h>
 
 #include <feel/feelmodels/hdg/mixedpoisson.hpp>
-#include <feel/feelmodels/modelcore/modelnumerical.hpp>
-
 
 namespace py = pybind11;
 using namespace Feel;
 
-template <int nDim, int Order>
-void defHDGPoisson( py::module& m )
+template<int nDim, int OrderPotential>
+void defHDGPoisson(py::module &m)
 {
-    typedef FeelModels::MixedPoisson<nDim, Order> mp_type;
-
-#if 0
-    auto MP = mp_type::New("mixedpoisson");
-    auto mesh = loadMesh( _mesh=new typename mp_type::mesh_type );
-    decltype( IPtr( _domainSpace=Pdh<OrderT>(mesh), _imageSpace=Pdh<OrderT>(mesh) ) ) Idh ;
-    decltype( IPtr( _domainSpace=Pdhv<OrderT>(mesh), _imageSpace=Pdhv<OrderT>(mesh) ) ) Idhv;
-    if ( soption( "gmsh.submesh" ).empty() )
-        MP -> init(mesh);
-    else
-    {
-        Feel::cout << "Using submesh: " << soption("gmsh.submesh") << std::endl;
-        auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldComm() );
-        Idh = IPtr( _domainSpace=Pdh<OrderT>(cmesh), _imageSpace=Pdh<OrderT>(mesh) );
-        Idhv = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
-        MP -> init( cmesh, mesh );
-    }
-#endif
     using namespace Feel;
     using namespace Feel::FeelModels;
-    using toolbox_t = MixedPoisson< nDim, Order>;
-    using element_flux_t = typename toolbox_t::Vh_element_t;
-    using element_potential_t = typename toolbox_t::Wh_element_t;
-    using element_trace_t = typename toolbox_t::Mh_element_t;
-    using element_constant_t = typename toolbox_t::Ch_element_t;
-    using mesh_ptr_t = typename toolbox_t::mesh_ptrtype;
-    using op_interp_ptr_t = typename toolbox_t::op_interp_ptrtype;
-    using opv_interp_ptr_t = typename toolbox_t::opv_interp_ptrtype;
+    using toolbox_t = MixedPoisson< Simplex<nDim, 1>, OrderPotential>;
+    using space_flux_ptrtype = typename toolbox_t::space_flux_ptrtype;
+    using element_flux_type = typename toolbox_t::element_flux_type;
+    using element_flux_ptrtype = typename toolbox_t::element_flux_ptrtype;
+    using space_potential_ptrtype = typename toolbox_t::space_potential_ptrtype;
+    using element_potential_type = typename toolbox_t::element_potential_type;
+    using element_potential_ptrtype = typename toolbox_t::element_potential_ptrtype;
+    using space_postpotential_ptrtype = typename toolbox_t::space_postpotential_ptrtype;
+    using element_postpotential_type = typename toolbox_t::element_postpotential_type;
 
-    py::enum_<MixedPoissonPhysics>(m,"MixedPoissonPhysics")
-        .value("none", MixedPoissonPhysics::None)
-        .value("electric", MixedPoissonPhysics::Electric)
-        .value("heat", MixedPoissonPhysics::Heat);
-
-    std::string pyclass_name = std::string("HDGPoisson_") + std::to_string(nDim) + std::string("DP") + std::to_string(Order);
+    std::string pyclass_name = std::string("mixedpoisson_") + std::to_string(nDim) + std::string("DP") + std::to_string(OrderPotential);
     py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelNumerical>(m,pyclass_name.c_str())
-        .def(py::init<std::string const&,
-             MixedPoissonPhysics const&,
-             //bool,
-             worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
+        .def(py::init<std::string const&,MixedPoissonPhysics const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
              py::arg("physic")=MixedPoissonPhysics::None,
-             //py::arg("buildmesh")=true,
-             py::arg("worldComm"),
+             py::arg("worldComm")=Environment::worldCommPtr(),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
-             "Initialize the heat mechanics toolbox"
+             "Initialize the electric mechanics toolbox"
              )
-        //.def("init",static_cast<void (toolbox_t::*)()>(&toolbox_t::init), "initialize the HDG toolbox")
-        .def("init",static_cast<void (toolbox_t::*)(mesh_ptr_t, mesh_ptr_t)>(&toolbox_t::init), "initialize the HDG toolbox",py::arg("mesh")=(mesh_ptr_t)nullptr,py::arg("mesh_visu")=(mesh_ptr_t)nullptr)
+        .def("init",&toolbox_t::init, "initialize the electric mechanics toolbox",py::arg("buildModelAlgebraicFactory")= true)
+
         // mesh
         .def( "mesh", &toolbox_t::mesh, "get the mesh" )
+        .def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
+
         // elements
-        .def( "fluxSpace", &toolbox_t::fluxSpace, "get the flux function space")
-        .def( "fluxField", static_cast<element_flux_t const& (toolbox_t::*)() const>(&toolbox_t::fluxField), "returns the flux field" )
-        .def( "potentialSpace", &toolbox_t::potentialSpace, "get the potential function space")
-        .def( "potentialField", static_cast<element_potential_t const& (toolbox_t::*)() const>(&toolbox_t::potentialField), "returns the potential field" )
-        .def( "traceSpace", &toolbox_t::traceSpace, "get the trace function space")
-        //.def( "fieldTrace", static_cast<element_trace_t const& (toolbox_t::*)() const>(&toolbox_t::traceField), "returns the trace field" )
-        .def( "constantSpace", &toolbox_t::constantSpace, "get the constant function space")
-        // assembly
-        .def("assembleAll",&toolbox_t::assembleAll, "assemble the HDG Poisson model")
+        .def( "spaceFlux", &toolbox_t::spaceFlux, "returns the flux function space")
+        .def( "fieldFlux", &toolbox_t::fieldFlux, "returns the flux field")
+        .def( "fieldFluxPtr", &toolbox_t::fieldFluxPtr, "returns the flux field shared_ptr")
+        .def( "spacePotential", &toolbox_t::spacePotential, "returns the potential function space")
+        .def( "fieldPotential", &toolbox_t::fieldPotential, "returns the potential field")
+        .def( "fieldPotentialPtr", &toolbox_t::fieldPotentialPtr, "returns the potential field shared_tr")
+        .def( "spacePostPotential", &toolbox_t::spacePostPotential, "returns the post processed potential function space")
+        .def( "fieldPostPotential", &toolbox_t::fieldPostPotential, "returns the post processed potential field")
+        .def( "fieldPostPotentialPtr", &toolbox_t::fieldPostPotentialPtr, "returns the post processed potential field shared_tr")
+
         // solve
-        .def("solve",&toolbox_t::solve, "solve the HDG poisson problem")
-
-        //.def("exportResults",&toolbox_t::exportResults, "export the results of the heat mechanics problem",py::arg("mesh")=(mesh_ptr_t)nullptr)
-        .def("exportResults",static_cast<void (toolbox_t::*)(mesh_ptr_t, op_interp_ptr_t, opv_interp_ptr_t)>(&toolbox_t::exportResults), "export the results of the heat mechanics problem",py::arg("mesh")=(mesh_ptr_t)nullptr,py::arg("Idh")=(op_interp_ptr_t)nullptr,py::arg("Idhv")=(opv_interp_ptr_t)nullptr)
-        //.def("exportResults",static_cast<void (toolbox_t::*)( double, mesh_ptr_t, op_interp_ptr_t, opv_interp_ptr_t )>(&toolbox_t::exportResults), "export the results of the heat mechanics problem", py::arg("time"),py::arg("mesh")=(mesh_ptr_t)nullptr,py::arg("Idh")=(op_interp_ptr_t)nullptr,py::arg("Idhv")=(opv_interp_ptr_t)nullptr)
+        .def("solve",&toolbox_t::solve, "solve the electric mechanics problem, set boolean to true to update velocity and acceleration")
+        .def("exportResults",static_cast<void (toolbox_t::*)()>(&toolbox_t::exportResults), "export the results of the electric mechanics problem")
+        .def("exportResults",static_cast<void (toolbox_t::*)( double )>(&toolbox_t::exportResults), "export the results of the electric mechanics problem", py::arg("time"))
         ;
-
 }

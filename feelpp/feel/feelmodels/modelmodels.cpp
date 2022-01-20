@@ -26,29 +26,32 @@
 
 namespace Feel {
 
-ModelModel::ModelModel( std::string const& name, pt::ptree const& p, bool addVariants )
+ModelModel::ModelModel( std::string const& name, nl::json const& jarg, bool addVariants )
     :
     M_name( name ),
-    M_ptree( p )
+    M_ptree( jarg )
 {
-    if ( auto eq = M_ptree.get_optional<std::string>("equations") )
-        M_equations = *eq;
-
-    if ( auto submodels = M_ptree.get_child_optional("submodels") )
+    if ( jarg.contains( "equations" ) )
     {
-        if ( submodels->empty() ) // value case
-            M_submodels.insert( submodels->get_value<std::string>() );
-        else // array case
+        auto const& j_eq = jarg.at( "equations" );
+        if ( j_eq.is_string() )
+            M_equations = j_eq.get<std::string>();
+    }
+
+    if ( jarg.contains( "submodels" ) )
+    {
+        auto const& j_submodels = jarg.at( "submodels" );
+        if ( j_submodels.is_string() )
+            M_submodels.insert( j_submodels.get<std::string>() );
+        else if ( j_submodels.is_array() )
         {
-            for ( auto const& item : *submodels )
-            {
-                CHECK( item.first.empty() ) << "should be an array, not a subtree";
-                std::string const& mname = item.second.template get_value<std::string>();
-                M_submodels.insert( mname );
-            }
+            for ( auto const& [j_submodelskey,j_submodelsval]: j_submodels.items() )
+                if ( j_submodelsval.is_string() )
+                    M_submodels.insert( j_submodelsval.get<std::string>() );
         }
     }
 
+#if 0 // TODO VINCENT
     if ( addVariants )
     {
         for( auto const& [key,ptreeVariant] : M_ptree )
@@ -73,6 +76,7 @@ ModelModel::ModelModel( std::string const& name, pt::ptree const& p, bool addVar
             M_variants.emplace( key, ModelModel( key, ptreeVariant, false ) );
         }
     }
+#endif
 }
 
 ModelModels::ModelModels()
@@ -83,21 +87,30 @@ ModelModels::ModelModels()
 void
 ModelModels::setup()
 {
-    if ( auto useModelName = M_p.get_optional<bool>("use-model-name") )
-        M_useModelName = *useModelName;
+    auto const& jarg = M_p;
+    if ( jarg.contains("use-model-name") )
+    {
+        auto const& j_useModelName = jarg.at("use-model-name");
+        if ( j_useModelName.is_boolean() )
+            M_useModelName = j_useModelName.template get<bool>();
+        else if ( j_useModelName.is_string() )
+            M_useModelName = boost::lexical_cast<bool>( j_useModelName.template get<std::string>() );
+    }
 
     if ( M_useModelName )
     {
-        for( auto const& p1 : M_p )
+        for (auto const& [jargkey,jargval] : jarg.items())
         {
-            std::string const& name = p1.first;
-            this->insert( std::make_pair( name,ModelModel( name, p1.second ) ) );
+            if ( !jargval.is_object() )
+                continue;
+            std::string const& name = jargkey;
+            this->insert( std::make_pair(name,ModelModel( name,jargval ) ) );
         }
     }
     else
     {
         std::string name = "";
-        this->insert( std::make_pair( name, ModelModel(name, M_p ) ) );
+        this->insert( std::make_pair( name, ModelModel(name, jarg ) ) );
     }
 }
 

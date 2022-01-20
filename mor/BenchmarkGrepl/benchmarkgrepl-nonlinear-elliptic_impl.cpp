@@ -6,7 +6,7 @@ namespace Feel
 {
 
 template<int Order, int Dim>
-BenchmarkGreplNonlinearElliptic<Order,Dim>::BenchmarkGreplNonlinearElliptic()
+BenchmarkGreplNonlinearElliptic<Order,Dim>::BenchmarkGreplNonlinearElliptic(std::string const& prefix)
     :
     super_type( "BenchMarkGreplNonlinearElliptic" + std::to_string(Order) + "_" + std::to_string(Dim) + "D" ),
     M_use_newton( boption(_name="crb.use-newton") ),
@@ -51,7 +51,7 @@ void BenchmarkGreplNonlinearElliptic<Order,Dim>::initModel()
         static mesh_ptrtype static_mesh;
         if ( !static_mesh )
         {
-            std::string mshfile_name = option("mshfile").as<std::string>();
+            std::string mshfile_name = soption(_name="mshfile");
             if( mshfile_name=="" )
             {
                 double hsize=doption(_name="hsize");
@@ -488,7 +488,7 @@ BenchmarkGreplNonlinearElliptic<Order,Dim>::computeMonolithicFormulationU( param
     auto v = Xh->element();
     double gamma = doption(_name="gamma");
 
-    M_monoA = backend()->newMatrix( Xh, Xh );
+    M_monoA = backend()->newMatrix( _test=Xh, _trial=Xh );
     M_monoF.resize(2);
     M_monoF[0] = backend()->newVector( this->functionSpace() );
     M_monoF[1] = backend()->newVector( Xh );
@@ -523,7 +523,7 @@ BenchmarkGreplNonlinearElliptic<Order,Dim>::solve( parameter_type const& mu )
 {
     auto Xh=this->Xh;
     auto backendMonolithic = backend(_rebuild=true);
-    sparse_matrix_ptrtype J = backendMonolithic->newMatrix( Xh, Xh);
+    sparse_matrix_ptrtype J = backendMonolithic->newMatrix( _test=Xh, _trial=Xh);
     vector_ptrtype R = backendMonolithic->newVector( Xh );
     backendMonolithic->nlSolver()->jacobian = boost::bind( &self_type::updateJacobianMonolithic,
                                                    boost::ref( *this ), _1, _2, mu );
@@ -549,10 +549,10 @@ BenchmarkGreplNonlinearElliptic<Order,Dim>::computeLinearDecompositionA()
 
     this->M_linearAqm.resize(1);
     this->M_linearAqm[0].resize(1);
-    this->M_linearAqm[0][0] = backend()->newMatrix( Xh, Xh );
+    this->M_linearAqm[0][0] = backend()->newMatrix( _test=Xh, _trial=Xh );
     form2( _test=Xh, _trial=Xh, _matrix=this->M_linearAqm[0][0] ) =
         integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) ) +
-        integrate( boundaryfaces( mesh ), gamma*idt( u )*id( v )/h()
+        integrate( _range=boundaryfaces( mesh ), _expr=gamma*idt( u )*id( v )/h()
                    -gradt( u )*vf::N()*id( v )
                    -grad( v )*vf::N()*idt( u )
                    );
@@ -602,7 +602,7 @@ double BenchmarkGreplNonlinearElliptic<Order,Dim>::output( int output_index, par
     }
     if( output_index==1 )
     {
-        s = integrate( elements( mesh ), idv( solution ) ).evaluate()( 0,0 );
+        s = integrate( _range=elements( mesh ), _expr=idv( solution ) ).evaluate()( 0,0 );
     }
 
     return s ;

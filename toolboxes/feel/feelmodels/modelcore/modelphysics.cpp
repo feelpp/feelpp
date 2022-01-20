@@ -93,23 +93,38 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
     M_dynamicViscosity( soption(_name="viscosity.law",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ),
     M_turbulence( this )
 {
-    auto const& pt = model.ptree();
-    if ( auto eq = pt.template get_optional<std::string>("equations") )
-        this->setEquation( *eq );
-    if ( auto eq = pt.template get_optional<std::string>("equation") )
-        this->setEquation( *eq );
+
+    auto const& j_model = model.jsonProperties();
+    for ( std::string const& eqarg : { "equations", "equation" } )
+        if ( j_model.contains( eqarg ) )
+        {
+            auto const& j_model_eq = j_model.at( eqarg );
+            if ( j_model_eq.is_string() )
+                this->setEquation( j_model_eq.get<std::string>() );
+        }
 
 
     // setup gravity force
-    if ( auto hasGravity = pt.template get_optional<bool>("gravity") )
+    if ( j_model.contains("gravity") )
     {
-        M_gravityForceEnabled = *hasGravity;
-    }
-    else if ( auto ptreeGravity = pt.get_child_optional("gravity") )
-    {
-        if ( auto hasGravity = ptreeGravity->template get_optional<bool>("enable") )
-            M_gravityForceEnabled = *hasGravity;
-        M_gravityForceExpr.setExpr( "expr",*ptreeGravity,mphysics.worldComm(),mphysics.repository().expr() );
+        auto const& j_model_gravity = j_model.at("gravity");
+        if ( j_model_gravity.is_boolean() )
+            M_gravityForceEnabled = j_model_gravity.template get<bool>();
+        else if ( j_model_gravity.is_string() )
+            M_gravityForceEnabled = boost::lexical_cast<bool>( j_model_gravity.template get<std::string>() );
+        else if ( j_model_gravity.is_object() )
+        {
+            if ( j_model_gravity.contains( "enable" ) )
+            {
+                auto const& j_model_gravity_enable =  j_model_gravity.at("enable");
+                if ( j_model_gravity_enable.is_boolean() )
+                    M_gravityForceEnabled = j_model_gravity_enable.template get<bool>();
+                else if ( j_model_gravity_enable.is_string() )
+                    M_gravityForceEnabled = boost::lexical_cast<bool>( j_model_gravity_enable.template get<std::string>() );
+            }
+            if ( j_model_gravity.contains( "expr" ) )
+                M_gravityForceExpr.setExpr( j_model_gravity.at("expr"),mphysics.worldComm(),mphysics.repository().expr() );
+        }
     }
     if ( M_gravityForceEnabled && !M_gravityForceExpr.template hasExpr<Dim,1>() )
     {
@@ -123,11 +138,20 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
         M_gravityForceExpr.setExpr( gravityStr,mphysics.worldComm(),mphysics.repository().expr() );
     }
 
-    if ( auto vl = pt.template get_optional<std::string>("viscosity_law") )
-        M_dynamicViscosity.setLaw( *vl );
+    if ( j_model.contains("viscosity_law") )
+    {
+        auto const& j_model_viscosity_law = j_model.at("viscosity_law");
+        CHECK( j_model_viscosity_law.is_string() ) << "viscosity_law must be a string";
+            M_dynamicViscosity.setLaw( j_model_viscosity_law.template get<std::string>() );
+    }
 
-    if ( auto ptreeTurbulence = pt.get_child_optional("turbulence") )
-        M_turbulence.setup( *ptreeTurbulence );
+    if ( j_model.contains("turbulence") )
+    {
+        auto const& j_model_turbulence = j_model.at("turbulence");
+        CHECK( j_model_turbulence.is_object() ) << "turbulence must be an json object";
+        M_turbulence.setup( j_model_turbulence );
+    }
+
 }
 
 template <uint16_type Dim>
@@ -153,16 +177,25 @@ ModelPhysicFluid<Dim>::Turbulence::hasTurbulentKineticEnergy() const
 
 template <uint16_type Dim>
 void
-ModelPhysicFluid<Dim>::Turbulence::setup( pt::ptree const& pt )
+ModelPhysicFluid<Dim>::Turbulence::setup( nl::json const& jarg )
 {
-    if ( auto ptEnable = pt.template get_optional<bool>("enable") )
-        M_isEnabled = *ptEnable;
+    if ( jarg.contains("enable") )
+    {
+        auto const& j_enable = jarg.at("enable");
+        if ( j_enable.is_boolean() )
+            M_isEnabled = j_enable.template get<bool>();
+        else if ( j_enable.is_string() )
+            M_isEnabled = boost::lexical_cast<bool>( j_enable.template get<std::string>() );
+    }
 
     if ( !M_isEnabled )
         return;
-    if ( auto ptModel = pt.template get_optional<std::string>("model") )
+
+    if ( jarg.contains("model") )
     {
-        M_model = *ptModel;
+        auto const& j_model = jarg.at("model");
+        if ( j_model.is_string() )
+            M_model = j_model.template get<std::string>();
         CHECK( M_model == "Spalart-Allmaras" || M_model == "k-epsilon" ) << "invalid turubulence model " << M_model;
     }
 
@@ -194,23 +227,42 @@ ModelPhysicSolid<Dim>::ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std:
 {
     if ( mphysics.clovm().count(prefixvm(mphysics.prefix(),"model").c_str()) )
         this->setEquation( soption(_name="model",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) );
-    auto const& pt = model.ptree();
-    if ( auto eq = pt.template get_optional<std::string>("equations") )
-        this->setEquation( *eq );
-    if ( auto eq = pt.template get_optional<std::string>("equation") )
-        this->setEquation( *eq );
 
-    if ( auto e = pt.template get_optional<std::string>("material-model") )
-        M_materialModel = *e;
+    auto const& j_model = model.jsonProperties();
+    for ( std::string const& eqarg : { "equations", "equation" } )
+        if ( j_model.contains( eqarg ) )
+        {
+            auto const& j_model_eq = j_model.at( eqarg );
+            if ( j_model_eq.is_string() )
+                this->setEquation( j_model_eq.get<std::string>() );
+        }
+
+    if ( j_model.contains( "material-model" ) )
+    {
+        auto const& j_model_matmodel = j_model.at( "material-model" );
+        if ( j_model_matmodel.is_string() )
+            M_materialModel = j_model_matmodel.template get<std::string>();
+    }
     CHECK( M_materialModel == "StVenantKirchhoff" || M_materialModel == "NeoHookean" ) << "invalid material-model :" << M_materialModel;
 
-    if ( auto e = pt.template get_optional<std::string>("formulation") )
-        M_formulation = *e;
-
-    if ( auto e = pt.template get_optional<std::string>("volumetric-strain-energy") )
-        M_decouplingEnergyVolumicLaw = *e;
-    if ( auto e = pt.template get_optional<std::string>("neo-Hookean.variant") )
-        M_compressibleNeoHookeanVariantName = *e;
+    if ( j_model.contains( "formulation" ) )
+    {
+        auto const& j_model_formulation = j_model.at( "formulation" );
+        if ( j_model_formulation.is_string() )
+            M_formulation = j_model_formulation.template get<std::string>();
+    }
+    if ( j_model.contains( "volumetric-strain-energy" ) )
+    {
+        auto const& j_model_volstrainenergy = j_model.at( "volumetric-strain-energy" );
+        if ( j_model_volstrainenergy.is_string() )
+            M_decouplingEnergyVolumicLaw = j_model_volstrainenergy.template get<std::string>();
+    }
+    if ( j_model.contains( "neo-Hookean.variant" ) )
+    {
+        auto const& j_model_neoHookeanVariant = j_model.at( "neo-Hookean.variant" );
+        if ( j_model_neoHookeanVariant.is_string() )
+            M_compressibleNeoHookeanVariantName = j_model_neoHookeanVariant.template get<std::string>();
+    }
 
     CHECK( M_decouplingEnergyVolumicLaw == "classic" || M_decouplingEnergyVolumicLaw == "simo1985" ) << "invalid decouplingEnergyVolumicLaw : " << M_decouplingEnergyVolumicLaw;
     CHECK( M_compressibleNeoHookeanVariantName == "default" || M_compressibleNeoHookeanVariantName == "molecular-theory" ||

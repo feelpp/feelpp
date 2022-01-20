@@ -51,7 +51,7 @@ class FEELPP_EXPORT ModelPostprocessExports : public CommObject
     vector_export_expr_type const& expressions() const { return M_exprs; }
     std::string const& format() const { return M_format; }
 
-    void setup( pt::ptree const& p );
+    void setup( nl::json const& jarg );
 
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
@@ -74,7 +74,7 @@ class FEELPP_EXPORT ModelPostprocessSave
     std::set<std::string> const& fieldsNames() const { return M_fieldsNames; }
     std::string const& fieldsFormat() const { return M_fieldsFormat; }
 
-    void setup( pt::ptree const& p );
+    void setup( nl::json const& jarg );
   private :
     std::set<std::string> M_fieldsNames;
     std::string M_fieldsFormat;
@@ -96,7 +96,7 @@ class FEELPP_EXPORT ModelPostprocessQuantities : public CommObject
     std::set<std::string> const& quantities() const { return M_quantities; }
     std::map<std::string,ModelExpression> const& expressions() const { return M_exprs; }
 
-    void setup( pt::ptree const& p );
+    void setup( nl::json const& jarg );
 
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
@@ -107,95 +107,202 @@ class FEELPP_EXPORT ModelPostprocessQuantities : public CommObject
     std::map<std::string,ModelExpression> M_exprs;
 };
 
-class FEELPP_EXPORT ModelPointPosition
+class FEELPP_EXPORT ModelPostprocessPointPosition : public CommObject
 {
+    using super_type = CommObject;
 public :
-    typedef Eigen::MatrixXd coord_value_type;
-    typedef vector_field_expression<3> coord_expr_type;
 
-    ModelPointPosition()
-        :
-        M_value( coord_value_type::Zero(3,1) )
-        {}
+    struct PointsOverGeometry
+    {
+        using coord_value_type = Eigen::MatrixXd;
 
-    ModelPointPosition( ModelPointPosition const& ) = default;
-    ModelPointPosition( ModelPointPosition&& ) = default;
-    ModelPointPosition& operator=( ModelPointPosition const& ) = default;
-    ModelPointPosition& operator=( ModelPointPosition && ) = default;
+        virtual ~PointsOverGeometry() {}
 
-    std::string const& name() const { return M_name; }
-    coord_value_type const& value() const { return M_value; }
-    std::string const& meshMarker() const { return M_meshMarker; }
-    coord_expr_type const& expression() const { CHECK( this->hasExpression() ) << "no expression defined"; return *M_expr; }
-    bool hasExpression() const { return M_expr.get_ptr() != 0; }
+        virtual void setParameterValues( std::map<std::string,double> const& mp ) = 0;
 
-    void setName( std::string const& s ) { M_name = s; }
-    void setValue( coord_value_type const& v ) { M_value = v; }
-    void setMeshMarker( std::string const& s ) { M_meshMarker = s; }
-    void setExpression( std::string const& expression, std::string const& dirLibExpr = "",
-                        WorldComm const& world = Environment::worldComm() )
-        {
-            M_expr = expr<3,1>( expression,"",world,dirLibExpr );
-            M_value = M_expr->evaluate();
-        }
+        //! return the coordinates of all points (as a vector of coord)
+        std::vector<coord_value_type> const& coordinates() const { return M_coordinates; }
 
-    void setParameterValues( std::map<std::string,double> const& mp )
-        {
-            if ( !this->hasExpression() )
-                return;
-            M_expr->setParameterValues( mp );
-            M_value = M_expr->evaluate();
-        }
+    protected :
+        std::vector<coord_value_type> M_coordinates;
+    };
 
-private:
-    std::string M_name;
-    coord_value_type M_value;
-    boost::optional<coord_expr_type> M_expr;
-    std::string M_meshMarker;
+    struct PointPosition
+    {
+        using coord_value_type = Eigen::MatrixXd;
 
-};
+        PointPosition() = default;
+        PointPosition( PointPosition const& ) = default;
+        PointPosition( PointPosition && ) = default;
+        PointPosition& operator=( PointPosition const& ) = default;
+        PointPosition& operator=( PointPosition && ) = default;
 
-class FEELPP_EXPORT ModelPostprocessPointPosition : public std::pair< ModelPointPosition, std::set<std::string> >, public CommObject
-{
-    typedef std::pair< ModelPointPosition, std::set<std::string> > super_type;
-public :
-    using super2 = CommObject;
+        coord_value_type const& coordinatesEvaluated() const { return M_coordinatesEvaluated; }
+
+        void setup( std::string const& coordExprStr, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes );
+        void setup( nl::json const& jData, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes );
+
+        void setExpression( ModelExpression && mexpr ) { M_coordinatesExpr = mexpr/*; this->updateForUse()*/; }
+        void setMeshMarker( std::string const& s ) { M_meshMarker = s; }
+
+        void setParameterValues( std::map<std::string,double> const& mp )
+            {
+                if ( !M_coordinatesExpr.hasAtLeastOneExpr() )
+                    return;
+                M_coordinatesExpr.setParameterValues( mp );
+                //this->updateForUse();
+            }
+
+        template <typename SymbolsExprType>
+        void updateForUse( SymbolsExprType const& se )
+            {
+                if ( !M_coordinatesExpr.hasAtLeastOneExpr() )
+                    return;
+                M_coordinatesEvaluated = M_coordinatesExpr.evaluate( se );
+            }
+    private:
+        coord_value_type M_coordinatesEvaluated;
+        ModelExpression M_coordinatesExpr;
+        std::string M_meshMarker;
+    };
+
+    struct PointsOverCoordinates : PointsOverGeometry
+    {
+        PointsOverCoordinates() = default;
+        PointsOverCoordinates( PointsOverCoordinates const& ) = default;
+        PointsOverCoordinates( PointsOverCoordinates && ) = default;
+
+        void setup( nl::json const& jarg, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes );
+
+        void setParameterValues( std::map<std::string,double> const& mp ) override
+            {
+                for (auto & ptPos : M_pointPositions )
+                    ptPos.setParameterValues( mp );
+            }
+
+        template <typename SymbolsExprType>
+        void updateForUse( SymbolsExprType const& se )
+            {
+                this->M_coordinates.resize( M_pointPositions.size() );
+                int k=0;
+                for (auto & ptPos : M_pointPositions )
+                {
+                    ptPos.updateForUse( se );
+                    this->M_coordinates[k++] = ptPos.coordinatesEvaluated();
+                }
+            }
+    private :
+        std::vector<PointPosition> M_pointPositions;
+    };
+
+
+    struct PointsOverSegment : PointsOverGeometry
+    {
+        PointsOverSegment() : M_nPoints( 10 ) {}
+        PointsOverSegment( PointsOverSegment const& ) = default;
+        PointsOverSegment( PointsOverSegment && ) = default;
+
+        void setup( nl::json const& jarg, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes );
+
+        void setParameterValues( std::map<std::string,double> const& mp ) override
+            {
+                M_point1.setParameterValues( mp );
+                M_point2.setParameterValues( mp );
+            }
+
+        template <typename SymbolsExprType>
+        void updateForUse( SymbolsExprType const& se )
+            {
+                M_point1.updateForUse( se );
+                M_point2.updateForUse( se );
+                auto const& pt1 = M_point1.coordinatesEvaluated();
+                auto const& pt2 = M_point2.coordinatesEvaluated();
+
+                this->updatePointsSampling( pt1, pt2 );
+            }
+    private:
+        void updatePointsSampling( coord_value_type const& pt1, coord_value_type const& pt2 );
+    private:
+        PointPosition M_point1, M_point2;
+        int M_nPoints;
+    };
+
+    struct MeasuresOutput
+    {
+        MeasuresOutput()
+            :
+            M_type( "values" )
+            {}
+        MeasuresOutput( MeasuresOutput const& ) = default;
+        MeasuresOutput( MeasuresOutput && ) = default;
+        MeasuresOutput& operator=( MeasuresOutput const& ) = default;
+        MeasuresOutput& operator=( MeasuresOutput && ) = default;
+        void setup( nl::json const& jarg );
+
+        std::string const& name() const { return M_name; }
+        std::string const& type() const { return M_type; }
+
+        void setName( std::string const& name ) { M_name = name; }
+    private :
+        std::string M_name, M_type;
+    };
+
     ModelPostprocessPointPosition( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
-        super_type(),
-        super2( world )
-        {}
-    ModelPostprocessPointPosition( ModelPointPosition const& ptPos, worldcomm_ptr_t const& world = Environment::worldCommPtr() )
-        :
-        super_type( ptPos,std::set<std::string>() ),
-        super2( world )
-        {}
-    ModelPostprocessPointPosition( ModelPointPosition const& ptPos, std::set<std::string> const& fields,
-                                   worldcomm_ptr_t const& world = Environment::worldCommPtr() )
-        :
-        super_type( ptPos,fields ),
-        super2( world )
+        super_type( world ),
+        M_includeCoordinates( false )
         {}
     ModelPostprocessPointPosition( ModelPostprocessPointPosition const& ) = default;
     ModelPostprocessPointPosition( ModelPostprocessPointPosition&& ) = default;
     ModelPostprocessPointPosition& operator=( ModelPostprocessPointPosition const& ) = default;
     ModelPostprocessPointPosition& operator=( ModelPostprocessPointPosition && ) = default;
 
-    ModelPointPosition const& pointPosition() const { return this->first; }
-    ModelPointPosition & pointPosition() { return this->first; }
-    std::set<std::string> const& fields() const { return this->second; }
-    std::set<std::string> & fields() { return this->second; }
+    //! name given to the postprocessing
+    std::string const& name() const { return M_name; }
+    //! points (over each geo) where postprocessing is applied
+    std::vector<std::shared_ptr<PointsOverGeometry>> const& pointsOverAllGeometry() const { return M_pointsOverAllGeometry; }
+    //! return fields names used in postprocessing
+    std::set<std::string> const& fields() const { return M_fields; }
+    //! expressions used in postprocessing
+    std::map<std::string,ModelExpression> const& expressions() const { return M_exprs; }
+    //! include coordinates measure in post processing
+    bool includeCoordinates() const { return M_includeCoordinates; }
+    //! return info about measures output
+    MeasuresOutput const& measuresOutput() const { return M_measuresOutput; }
+    //! return a related tag (for example : allow to identify the used mesh)
+    std::string const& tag() const { return M_tag; }
 
-    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
+
+    void setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
-    void setFields( std::set<std::string> const& fields ) { this->second = fields; }
-    void addFields( std::string const& field ) { this->second.insert( field ); }
-    void setParameterValues( std::map<std::string,double> const& mp ) { this->pointPosition().setParameterValues( mp ); }
-private:
-    void setup( std::string const& name, ModelIndexes const& indexes );
-private:
-    pt::ptree M_p;
+    void setFields( std::set<std::string> const& fields ) { M_fields = fields; }
+    void addFields( std::string const& field ) { M_fields.insert( field ); }
+
+    void setParameterValues( std::map<std::string,double> const& mp );
+
+    template <typename SymbolsExprType>
+    void updateForUse( SymbolsExprType const& se )
+    {
+         for ( auto & pointsOverGeometry : M_pointsOverAllGeometry )
+         {
+             if ( !pointsOverGeometry )
+                 continue;
+             if ( auto pointsOverCoordinates = std::dynamic_pointer_cast<PointsOverCoordinates>( pointsOverGeometry ) )
+                 pointsOverCoordinates->updateForUse( se );
+             if ( auto pointsOverSegment = std::dynamic_pointer_cast<PointsOverSegment>( pointsOverGeometry ) )
+                 pointsOverSegment->updateForUse( se );
+         }
+    }
+
+  private:
+    std::string M_name;
     std::string M_directoryLibExpr;
+    std::vector<std::shared_ptr<PointsOverGeometry>> M_pointsOverAllGeometry;
+    std::set<std::string> M_fields;
+    std::map<std::string,ModelExpression> M_exprs; // name -> expr
+    bool M_includeCoordinates;
+    MeasuresOutput M_measuresOutput;
+    std::string M_tag;
 };
 
 //! store informations require by the postprocessing Norm
@@ -240,14 +347,11 @@ public :
     //! return true if a field has been given
     bool hasField() const { return !M_field.empty(); }
 
-    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
+    void setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
 
 private:
-    void setup( std::string const& name, ModelIndexes const& indexes );
-private:
-    pt::ptree M_p;
     std::string M_directoryLibExpr;
     std::string M_name, M_field;
     std::set<std::string> M_types;
@@ -292,14 +396,11 @@ public :
     //! return true if a field has been given
     bool hasField() const { return !M_field.empty(); }
 
-    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
+    void setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
 
 private:
-    void setup( std::string const& name, ModelIndexes const& indexes );
-private:
-    pt::ptree M_p;
     std::string M_directoryLibExpr;
     std::string M_name, M_field;
     std::set<std::string> M_types;
@@ -331,29 +432,29 @@ class FEELPP_EXPORT ModelPostprocessCheckerMeasure : public CommObject
     double tolerance() const { return M_tolerance; }
     //! check if the arg val is close at tolerance to the reference value
     //! \return tuple ( check is true, diff value )
-    std::tuple<bool,double> run( double val ) const;
+    //std::tuple<bool,double> run( double val ) const;
     //! check if the arg val is close at tolerance to the reference value (the target value can be an expression which depending on symbols expr given in arg)
     //! \return tuple ( check is true, diff value )
     template <typename SymbolsExprType>
     std::tuple<bool,double> run( double val, SymbolsExprType const& se ) const
     {
         M_value = expr( M_valueExpr.exprScalar(), se ).evaluate()(0,0);
+        M_tolerance = expr( M_toleranceExpr.exprScalar(), se ).evaluate()(0,0);
         return this->runImpl( val );
     }
 
-    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
+    void setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
   private:
     std::tuple<bool,double> runImpl( double val ) const;
-    void setup( std::string const& name, ModelIndexes const& indexes );
   private :
-    pt::ptree M_p;
     std::string M_name;
     std::string M_directoryLibExpr;
     ModelExpression M_valueExpr;
     mutable double M_value;
-    double M_tolerance;
+    ModelExpression M_toleranceExpr;
+    mutable double M_tolerance;
 };
 
 class FEELPP_EXPORT ModelPostprocess : public CommObject
@@ -361,15 +462,13 @@ class FEELPP_EXPORT ModelPostprocess : public CommObject
 public:
     using super = CommObject;
     ModelPostprocess( worldcomm_ptr_t const& world = Environment::worldCommPtr() );
-    ModelPostprocess( pt::ptree const& p, worldcomm_ptr_t const& world = Environment::worldCommPtr() );
     virtual ~ModelPostprocess();
-    pt::ptree const& pTree() const { return M_p; }
-    pt::ptree & pTree() { return M_p; }
-    pt::ptree pTree( std::string const& name ) const;
+    bool hasJsonProperties( std::string const& name = "" ) const;
+    nl::json const& jsonProperties( std::string const& name = "" ) const;
     bool useModelName() const { return M_useModelName; }
-    std::map<std::string,ModelPostprocessExports> allExports() const { return M_exports; }
-    std::map<std::string,ModelPostprocessSave> allSave() const { return M_save; }
-    std::map<std::string,ModelPostprocessQuantities> allMeasuresQuantities() const { return M_measuresQuantities; }
+    std::map<std::string,ModelPostprocessExports> const& allExports() const { return M_exports; }
+    std::map<std::string,ModelPostprocessSave> const& allSave() const { return M_save; }
+    std::map<std::string,ModelPostprocessQuantities> const& allMeasuresQuantities() const { return M_measuresQuantities; }
     std::map<std::string,std::vector<ModelPostprocessPointPosition> > const& allMeasuresPoint() const { return M_measuresPoint; }
     std::map<std::string,std::vector<ModelPostprocessNorm> > const& allMeasuresNorm() const { return M_measuresNorm; }
     std::map<std::string,std::vector<ModelPostprocessStatistics> > const& allMeasuresStatistics() const { return M_measuresStatistics; }
@@ -385,11 +484,12 @@ public:
     ModelPostprocessSave const& save( std::string const& name = "" ) const;
     ModelPostprocessQuantities const& measuresQuantities( std::string const& name = "" ) const;
     std::vector<ModelPostprocessPointPosition> const& measuresPoint( std::string const& name = "" ) const;
+    std::vector<ModelPostprocessPointPosition> & measuresPoint( std::string const& name = "" );
     std::vector<ModelPostprocessNorm> const& measuresNorm( std::string const& name = "" ) const;
     std::vector<ModelPostprocessStatistics> const& measuresStatistics( std::string const& name = "" ) const;
     std::vector<ModelPostprocessCheckerMeasure> const& checkersMeasure( std::string const& name = "" ) const;
 
-    void setPTree( pt::ptree const& _p );
+    void setPTree( nl::json const& jarg );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
 
     void setParameterValues( std::map<std::string,double> const& mp );
@@ -406,9 +506,9 @@ public:
     void saveMD(std::ostream &os);
 private:
     void setup();
-    void setup( std::string const& name, pt::ptree const& p );
+    void setup( std::string const& name, nl::json const& jarg );
 private:
-    pt::ptree M_p;
+    nl::json M_p;
     bool M_useModelName;
     std::map<std::string,ModelPostprocessExports> M_exports;
     std::map<std::string,ModelPostprocessSave> M_save;

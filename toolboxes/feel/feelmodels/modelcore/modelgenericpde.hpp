@@ -60,6 +60,7 @@ public :
     std::string sourceCoefficientName() const { return prefixvm( this->physic(), "f", "_" ); }
     std::string conservativeFluxConvectionCoefficientName() const { return prefixvm( this->physic(), "alpha", "_" ); }
     std::string conservativeFluxSourceCoefficientName() const { return prefixvm( this->physic(), "gamma", "_" ); }
+    std::string curlCurlCoefficientName() const { return prefixvm( this->physic(), "zeta", "_" ); }
 protected :
     void setupGenericPDE();
 

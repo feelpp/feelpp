@@ -28,7 +28,7 @@
  */
 #ifndef FEELPP_PCH_H
 #define FEELPP_PCH_H 1
-
+#include <boost/mp11/utility.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
 namespace Feel {
@@ -37,15 +37,13 @@ namespace meta {
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 struct Pch
 {
-    typedef FunctionSpace<MeshType,
-                          bases<Lagrange<Order,Scalar,Continuous,Pts,Tag>>,
-                          T,
-                          Periodicity <NoPeriodicity>,
-                          mortars<NoMortar>> type;
+    using type = boost::mp11::mp_if_c<Tag==0 && std::is_same_v<T,double>,
+                                      FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous,Pts>>>,  
+                                      FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous,Pts,Tag>>,T> >;
     typedef std::shared_ptr<type> ptrtype;
 };
 
@@ -54,20 +52,20 @@ struct Pch
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pch_type = typename meta::Pch<MeshType,Order,T,Pts,Tag>::type;
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pch_ptrtype = typename meta::Pch<MeshType,Order,T,Pts,Tag>::ptrtype;
 
-template<typename MeshType,int Order,typename T = double, template<class, uint16_type, class> class Pts = PointSetEquiSpaced, int Tag = 0>
+template<typename MeshType,int Order,typename T = double, template<class, uint16_type, class> class Pts = PointSetFekete, int Tag = 0>
 using Pch_element_t=typename Pch_type<MeshType,Order, T,Pts, Tag>::element_type;
 
-template<typename MeshType,int Order,typename T = double,template<class, uint16_type, class> class Pts = PointSetEquiSpaced, int Tag = 0>
+template<typename MeshType,int Order,typename T = double,template<class, uint16_type, class> class Pts = PointSetFekete, int Tag = 0>
 using Pch_element_type=Pch_element_t<MeshType,Order,T,Pts, Tag>;
 
 
@@ -79,7 +77,7 @@ using Pch_element_type=Pch_element_t<MeshType,Order,T,Pts, Tag>;
  */
 template<int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          typename MeshType,
          int Tag = 0>
 inline
@@ -99,7 +97,7 @@ Pch( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
  */
 template<int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          typename MeshType,
          int Tag = 0>
 inline

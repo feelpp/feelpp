@@ -160,6 +160,24 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
             }
         }
 
+        // curl curl
+        if constexpr ( unknown_is_vectorial )
+        {
+            if ( this->materialsProperties()->hasProperty( matName, this->curlCurlCoefficientName() ) )
+            {
+                auto const& coeff_zeta = this->materialsProperties()->materialProperty( matName, this->curlCurlCoefficientName() );
+                auto coeff_zeta_expr = expr( coeff_zeta.template expr<1,1>(), se );
+                bool build_curlCurlTerm = coeff_zeta_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+                if ( build_curlCurlTerm )
+                {
+                    bilinearForm +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*coeff_zeta_expr*inner(curlt(u),curl(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+        }
+
         // Reaction
         if ( this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() ) )
         {
@@ -223,10 +241,43 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
         }
 
         // Stab
-        if ( this->M_applyStabilization && buildNonCstPart )
+        if constexpr ( is_lagrange_polynomialset_v<typename space_unknown_type::fe_type> && space_unknown_type::fe_type::isContinuous )
         {
-            this->updateLinearPDEStabilizationGLS( data, mctx, matName, range );
+            if ( this->M_applyStabilization && buildNonCstPart )
+            {
+                this->updateLinearPDEStabilizationGLS( data, mctx, matName, range );
+            }
         }
+
+        if constexpr ( is_lagrange_polynomialset_v<typename space_unknown_type::fe_type> && !space_unknown_type::fe_type::isContinuous )
+        {
+
+            auto bilinearFormPatternExtended = form2( _test=Xh,_trial=Xh,_matrix=A,
+                                                      _pattern=size_type(Pattern::EXTENDED),
+                                                      _rowstart=this->rowStartInMatrix(),
+                                                      _colstart=this->colStartInMatrix() );
+            if ( this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
+            {
+                auto const& coeff_beta = this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() );
+                auto coeff_beta_expr = expr( coeff_beta.template expr<nDim,1>(), se );
+                bool build_ConvectionTerm = coeff_beta_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+                if ( build_ConvectionTerm )
+                {
+                    // see ERN, A. and GUERMOND, J. L. Discontinuous Galerkin methods for Friedrichs’ symmetric systems. I. General theory. SIAM J. Numer. Anal.
+                    double alpha=0.5;
+                    bilinearFormPatternExtended +=
+                        integrate( _range=internalfaces(mesh), // TODO here
+                                   _expr= timeSteppingScaling*(alpha*abs(inner(N(),coeff_beta_expr))-0.5*inner(leftface(N())+rightface(N()),coeff_beta_expr) )*inner( jumpt( idt(u) ), jump( id(v) ) ),
+                                   _geomap=this->geomap() );
+
+                    bilinearForm +=
+                        integrate( _range=boundaryfaces(mesh), // TODO here : only on material + precompute before the range
+                                   _expr= -timeSteppingScaling*( inner(N(),coeff_beta_expr)<0 )*inner(N(),coeff_beta_expr)*inner(idt(u),id(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+        }
+
 
     } // for each material
 
@@ -424,10 +475,12 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEDofElimination( 
 
     Feel::FeelModels::detail::applyDofEliminationLinear<MESH_ELEMENTS>( bilinearForm, F, mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
     Feel::FeelModels::detail::applyDofEliminationLinear<MESH_FACES>( bilinearForm, F, mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
+    if constexpr ( !is_hcurl_conforming_v<typename space_unknown_type::fe_type> )
+    {
     if constexpr ( nDim == 3 )
          Feel::FeelModels::detail::applyDofEliminationLinear<MESH_EDGES>( bilinearForm, F, mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
     Feel::FeelModels::detail::applyDofEliminationLinear<MESH_POINTS>( bilinearForm, F, mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
-
+    }
     this->log("CoefficientFormPDE","updateLinearPDEDofElimination","finish" );
 }
 
@@ -449,10 +502,12 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateNewtonInitialGuess( Model
 
     Feel::FeelModels::detail::applyNewtonInitialGuess<MESH_ELEMENTS>( mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
     Feel::FeelModels::detail::applyNewtonInitialGuess<MESH_FACES>( mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
+    if constexpr ( !is_hcurl_conforming_v<typename space_unknown_type::fe_type> )
+    {
     if constexpr ( nDim == 3 )
         Feel::FeelModels::detail::applyNewtonInitialGuess<MESH_EDGES>( mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
     Feel::FeelModels::detail::applyNewtonInitialGuess<MESH_POINTS>( mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
-
+    }
     // update info for synchronization
     this->updateDofEliminationIds( this->unknownName(), data );
 
@@ -728,6 +783,46 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
             }
         }
 
+        // curl curl
+        if constexpr ( unknown_is_vectorial )
+        {
+            if ( this->materialsProperties()->hasProperty( matName, this->curlCurlCoefficientName() ) )
+            {
+                auto const& coeff_zeta = this->materialsProperties()->materialProperty( matName, this->curlCurlCoefficientName() );
+                auto coeff_zeta_expr = expr( coeff_zeta.template expr<1,1>(), se );
+                bool build_curlCurlTerm = coeff_zeta_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+                if ( build_curlCurlTerm )
+                {
+                    bilinearForm +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*coeff_zeta_expr*inner(curlt(u),curl(v)),
+                                   _geomap=this->geomap() );
+                }
+                bool coeffCurlCurlDependOnUnknown = coeff_zeta.hasSymbolDependency( trialSymbolNames, se );
+                if ( coeffCurlCurlDependOnUnknown && buildNonCstPart )
+                {
+                    hana::for_each( tse.map(), [this,&coeff_zeta_expr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
+                    {
+                        for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
+                        {
+                            auto trialXh = trialSpacePair.first;
+                            auto trialBlockIndex = trialSpacePair.second;
+                            auto coeff_zeta_diff_expr = diffSymbolicExpr( coeff_zeta_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+                            if ( !coeff_zeta_diff_expr.expression().hasExpr() )
+                                continue;
+
+                            form2( _test=Xh,_trial=trialXh,_matrix=J,
+                                   _pattern=size_type(Pattern::COUPLED),
+                                   _rowstart=this->rowStartInMatrix(),
+                                   _colstart=trialBlockIndex ) +=
+                                integrate( _range=range,
+                                           _expr=timeSteppingScaling*coeff_zeta_diff_expr*inner(curlv(u),curl(v)),
+                                           _geomap=this->geomap() );
+                        }
+                    });
+                }
+            }
+        }
 
         // Reaction
         if ( this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() ) )
@@ -828,9 +923,41 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
         }
 
         // Stab
-        if ( this->M_applyStabilization && buildNonCstPart )
+        if constexpr ( is_lagrange_polynomialset_v<typename space_unknown_type::fe_type> && space_unknown_type::fe_type::isContinuous )
         {
-            this->updateJacobianStabilizationGLS( data, mctx, matName, range );
+            if ( this->M_applyStabilization && buildNonCstPart )
+            {
+                this->updateJacobianStabilizationGLS( data, mctx, matName, range );
+            }
+        }
+
+        if constexpr ( is_lagrange_polynomialset_v<typename space_unknown_type::fe_type> && !space_unknown_type::fe_type::isContinuous )
+        {
+
+            auto bilinearFormPatternExtended = form2( _test=Xh,_trial=Xh,_matrix=J,
+                                                      _pattern=size_type(Pattern::EXTENDED),
+                                                      _rowstart=this->rowStartInMatrix(),
+                                                      _colstart=this->colStartInMatrix() );
+            if ( this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
+            {
+                auto const& coeff_beta = this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() );
+                auto coeff_beta_expr = expr( coeff_beta.template expr<nDim,1>(), se );
+                bool build_ConvectionTerm = coeff_beta_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+                if ( build_ConvectionTerm )
+                {
+                    // see ERN, A. and GUERMOND, J. L. Discontinuous Galerkin methods for Friedrichs’ symmetric systems. I. General theory. SIAM J. Numer. Anal.
+                    double alpha=0.5;
+                    bilinearFormPatternExtended +=
+                        integrate( _range=internalfaces(mesh), // TODO here
+                                   _expr= timeSteppingScaling*(alpha*abs(inner(N(),coeff_beta_expr))-0.5*inner(leftface(N())+rightface(N()),coeff_beta_expr) )*inner( jumpt( idt(u) ), jump( id(v) ) ),
+                                   _geomap=this->geomap() );
+
+                    bilinearForm +=
+                        integrate( _range=boundaryfaces(mesh), // TODO here : only on material + precompute before the range
+                                   _expr= -timeSteppingScaling*( inner(N(),coeff_beta_expr)<0 )*inner(N(),coeff_beta_expr)*inner(idt(u),id(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
         }
 
 
@@ -1061,6 +1188,24 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
             }
         }
 
+        // curl curl
+        if constexpr ( unknown_is_vectorial )
+        {
+            if ( this->materialsProperties()->hasProperty( matName, this->curlCurlCoefficientName() ) )
+            {
+                auto const& coeff_zeta = this->materialsProperties()->materialProperty( matName, this->curlCurlCoefficientName() );
+                auto coeff_zeta_expr = expr( coeff_zeta.template expr<1,1>(), se );
+                bool build_curlCurlTerm = coeff_zeta_expr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+                if ( build_curlCurlTerm )
+                {
+                    linearForm +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*coeff_zeta_expr*inner(curlv(u),curl(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+        }
+
         // Reaction
         if ( buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() ) )
         {
@@ -1127,10 +1272,38 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
         }
 
         // Stab
-        if ( this->M_applyStabilization && buildNonCstPart )
+        if constexpr ( is_lagrange_polynomialset_v<typename space_unknown_type::fe_type> && space_unknown_type::fe_type::isContinuous )
         {
-            this->updateResidualStabilizationGLS( data, mctx, matName, range );
+            if ( this->M_applyStabilization && buildNonCstPart )
+            {
+                this->updateResidualStabilizationGLS( data, mctx, matName, range );
+            }
         }
+
+        if constexpr ( is_lagrange_polynomialset_v<typename space_unknown_type::fe_type> && !space_unknown_type::fe_type::isContinuous )
+        {
+            if ( buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
+            {
+                auto const& coeff_beta = this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() );
+                auto coeff_beta_expr = expr( coeff_beta.template expr<nDim,1>(), se );
+                bool build_ConvectionTerm = coeff_beta_expr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+                if ( build_ConvectionTerm )
+                {
+                    // see ERN, A. and GUERMOND, J. L. Discontinuous Galerkin methods for Friedrichs’ symmetric systems. I. General theory. SIAM J. Numer. Anal.
+                    double alpha=0.5;
+                    linearForm +=
+                        integrate( _range=internalfaces(mesh), // TODO here
+                                   _expr= timeSteppingScaling*(alpha*abs(inner(N(),coeff_beta_expr))-0.5*inner(leftface(N())+rightface(N()),coeff_beta_expr) )*inner( jumpv( idv(u) ), jump( id(v) ) ),
+                                   _geomap=this->geomap() );
+
+                    linearForm +=
+                        integrate( _range=boundaryfaces(mesh), // TODO here : only on material + precompute before the range
+                                   _expr= -timeSteppingScaling*( inner(N(),coeff_beta_expr)<0 )*inner(N(),coeff_beta_expr)*inner(idv(u),id(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+        }
+
 
     } // for each material
 

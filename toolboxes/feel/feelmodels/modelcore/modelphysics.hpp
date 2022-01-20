@@ -297,7 +297,7 @@ public :
         bool useBoussinesqApproximation() const;
         bool hasTurbulentKineticEnergy() const;
 
-        void setup( pt::ptree const& p );
+        void setup( nl::json const& jarg );
 
         void setFrictionVelocityWallFunction( std::string const& matName, std::string const& expr )
             {

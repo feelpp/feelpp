@@ -112,15 +112,21 @@ public :
     }
     bool isConstant() const { return this->isEvaluable(); }
 
-    evaluate_type evaluate() const
+    template <typename TheSymbolExprType = symbols_expression_empty_t>
+    evaluate_type evaluate( TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
     {
         evaluate_type res;
-        hana::for_each( expr_shapes, [this,&res]( auto const& e_ij )
+        hana::for_each( expr_shapes, [this,&res,&se]( auto const& e_ij )
                         {
                             constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
                             constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
                             if ( this->hasExpr<ni,nj>() )
-                                res = this->expr<ni,nj>().evaluate();
+                            {
+                                if constexpr ( is_symbols_expression_empty_v<TheSymbolExprType> )
+                                    res = this->expr<ni,nj>().evaluate();
+                                else
+                                    res = Feel::vf::expr( this->expr<ni,nj>(), se ).evaluate();
+                            }
                         });
         return res;
     }
@@ -176,6 +182,7 @@ public :
 
     //! set an expression from a key of a ptree p
     void setExpr( std::string const& key, pt::ptree const& p, WorldComm const& worldComm, std::string const& directoryLibExpr, ModelIndexes const& indexes = ModelIndexes() );
+    void setExpr( nl::json const& jarg, WorldComm const& worldComm, std::string const& directoryLibExpr, ModelIndexes const& indexes = ModelIndexes() );
     void setExpr( std::string const& expr, WorldComm const& worldComm = Environment::worldComm(), std::string const& directoryLibExpr = "" );
 
     void setParameterValues( std::map<std::string,double> const& mp )
@@ -358,6 +365,24 @@ public :
             coords.insert( "z" );
         return this->hasSymbolDependency( coords, se );
     }
+
+    template <typename TheSymbolExprType = symbols_expression_empty_t>
+    size_type dynamicContext( TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
+    {
+        size_type ctx = 0;
+        hana::for_each( expr_shapes, [this,&se,&ctx]( auto const& e_ij )
+                        {
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )
+                            {
+                                auto theExpr = Feel::vf::expr( this->expr<ni,nj>(), se );
+                                ctx = ctx | Feel::vf::dynamicContext( theExpr );
+                            }
+                        });
+        return ctx;
+    }
+
 
 private :
     boost::optional<expr_scalar_type> M_exprScalar;

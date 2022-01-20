@@ -29,7 +29,7 @@
 #include <feel/feeldiscr/check.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <tabulate/table.hpp>
+#include <feel/feelcore/table.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/print.hpp>
@@ -40,7 +40,6 @@ using namespace Feel;
 template<int Dim, int Order>
 int cg_laplacian_app()
 {
-    using namespace tabulate;
     using Feel::cout;
     // tag::mesh_space[]
     tic();
@@ -107,7 +106,7 @@ int cg_laplacian_app()
     auto r_2 = expr( locals.at("r_2") );
     Table summary;
     summary.add_row({"Solving -div(( k grad p ) = f with the following boundary conditions"});
-    summary[0].format().font_align(FontAlign::center);
+    summary(0,0).format().setFontAlign(Font::Align::center);
     Table data;
     //data.format().hide_border();
     data.add_row({"k",locals.at("k")});
@@ -128,7 +127,8 @@ int cg_laplacian_app()
         data.add_row({"Robin BC",std::to_string(nelements( markedfaces( support( Vh ), "Robin" ) ))});
         data.add_row({"-k*dn(p)+"+locals.at("r_1")+"*u", locals.at("r_2")}); 
     }
-    data.column(0).format().font_align(FontAlign::right);
+    for ( int i=0;i<data.nRow();++i )
+        data(i,0).format().setFontAlign(Font::Align::right);
     summary.add_row({data});
     if ( thechecker.check() )
     {
@@ -139,7 +139,8 @@ int cg_laplacian_app()
         if ( locals.count( "grad_p" ) )
             ex.add_row({"grad(p)",locals.at("grad_p")});
         ex.add_row({"-k*grad(p)",locals.at("u")});
-        ex.column(0).format().font_align(FontAlign::right);
+        for ( int i=0;i<ex.nRow();++i )
+            ex(i,0).format().setFontAlign(Font::Align::right);
         summary.add_row({ex});
     }
     Feel::cout << summary << std::endl;

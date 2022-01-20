@@ -99,18 +99,45 @@ splitByLines( std::string const& input )
   
 
 
-Table::Table()
+Table::Table( int nRow, int nCol, Table::MemoryLayout ml )
     :
-    M_nRow(0), M_nCol(0), M_format( new TableImpl::Format{} )
-{}
+    M_memoryLayout( ml ),
+    M_nRow(nRow), M_nCol(nCol),
+    M_format( new TableImpl::Format{} )
+{
+    M_cells.resize( nRow*nCol );
+}
 
 Table::Table( Table const& t )
     :
+    M_memoryLayout( t.M_memoryLayout ),
     M_nRow( t.M_nRow ),
     M_nCol( t.M_nCol ),
     M_cells( t.M_cells ),
     M_format( new TableImpl::Format{t.format()} )
 {}
+
+void
+Table::resize( int nRow, int nCol )
+{
+    if ( (nRow == M_nRow) && (nCol == M_nCol) )
+        return;
+
+    std::vector<TableImpl::Cell> cellsSave = std::move( M_cells );
+    int nRowSave = M_nRow, nColSave = M_nCol;
+    M_cells.resize( nRow*nCol );
+    M_nRow = nRow;
+    M_nCol = nCol;
+    for (int i=0;i<std::min(M_nRow,nRowSave);++i)
+    {
+        for (int j=0;j<std::min(M_nCol,nColSave);++j)
+        {
+            int id = M_memoryLayout == MemoryLayout::RowMajor? i*nColSave+j : i+j*nRowSave;
+            this->operator()(i,j) = std::move( cellsSave[id] );
+        }
+    }
+}
+
 
 std::vector<Printer::OutputText>
 Table::toOutputText( TableImpl::Format const& format ) const
@@ -241,7 +268,7 @@ Table::toOutputText( TableImpl::Format const& format ) const
 void
 Table::exportAsciiDocImpl( std::ostream &o, std::string const& tableSeparator, int nestedTableLevel ) const
 {
-    if ( this->nRow()*this->nCol() == 0 )
+    if ( this->empty() )
         return;
     o<< "\n";
     o << "[cols=\"";
@@ -274,6 +301,30 @@ Table::exportAsciiDocImpl( std::ostream &o, std::string const& tableSeparator, i
     }
     o << tableSeparator << "===" << "\n";
 }
+
+void
+Table::exportCSV( std::ostream &o ) const
+{
+    if ( this->empty() )
+        return;
+
+    for (int i=0;i<this->nRow();++i)
+    {
+        for (int j=0;j<this->nCol();++j)
+        {
+            auto const& c = this->operator()(i,j);
+            auto cellFormatUsed = c.format().newFromParent( this->format() );
+            auto ots = c.toOutputText( cellFormatUsed );
+            if ( j > 0 )
+                o << " , ";
+            for ( auto const& ot : ots )
+                o << ot;
+
+        }
+        o << "\n";
+    }
+}
+
 
 std::ostream&
 operator<<(std::ostream& o, Printer::OutputText const& cb )
@@ -338,6 +389,8 @@ Cell::Format::newFromParent( Format const& parentFormat ) const
         newFormat.setFontColor( M_fontColor? *M_fontColor : *(parentFormat.M_fontColor) );
     if ( M_fontFloatingPoint || parentFormat.M_fontFloatingPoint )
         newFormat.setFloatingPoint( M_fontFloatingPoint? *M_fontFloatingPoint : *(parentFormat.M_fontFloatingPoint) );
+    if ( M_fontFloatingPointPrecision || parentFormat.M_fontFloatingPointPrecision )
+        newFormat.setFloatingPointPrecision( M_fontFloatingPointPrecision? *M_fontFloatingPointPrecision : *(parentFormat.M_fontFloatingPointPrecision) );
     if ( M_paddingLeft || parentFormat.M_paddingLeft )
         newFormat.setPaddingLeft( M_paddingLeft? *M_paddingLeft : *(parentFormat.M_paddingLeft) );
     if ( M_paddingRight || parentFormat.M_paddingRight )
@@ -441,6 +494,7 @@ Cell::toOutputText( Format const& format, bool enableWidthMax ) const
     else if ( std::holds_alternative<double>( this->M_value ) )
     {
         double val = std::get<double>(this->M_value);
+        ostr << std::setprecision( format.floatingPointPrecision() );
         switch ( format.floatingPoint() )
         {
         case Font::FloatingPoint::fixed:

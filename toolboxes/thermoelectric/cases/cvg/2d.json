@@ -1,0 +1,81 @@
+// -*- mode: javascript -*-
+{
+    "Name":"cvg2d",
+    "ShortName":"cvg2d",
+    "Models":
+    {
+        // A_T (-(2*sigma*VD^2)/(Pi^2*k0))
+        // B_T (-(-(2*sigma*VD^2)/(Pi^2*k0))*((2*k0*re*log(ri)-h*re*ri*log(ri)^2)+(2*k0*ri*log(re)+h*re*ri*log(re)^2))/(k0*(ri+re)+h*re*ri*log(re/ri)))
+        // C_T (1/(2*h*re*ri)*(((2*k0*re*log(ri)-h*re*ri*log(ri)^2)-(2*k0*ri*log(re)+h*re*ri*log(re)^2))*(-(2*sigma*VD^2)/(Pi^2*k0)) + (k0*(re-ri) - h*re*ri*log(re*ri))*(-(-(2*sigma*VD^2)/(Pi^2*k0))*((2*k0*re*log(ri)-h*re*ri*log(ri)^2)+(2*k0*ri*log(re)+h*re*ri*log(re)^2))/(k0*(ri+re)+h*re*ri*log(re/ri))))+T_W)
+        // Bi (2*k0*re*log(ri)-h*re*ri*log(ri)^2)
+        // Be (2*k0*ri*log(re)+h*re*ri*log(re)^2)
+        // Br (k0*(ri+re)+h*re*ri*log(re/ri))
+        // T (-(2*sigma*VD^2)/(Pi^2*k0))*log(sqrt(x*x+y*y))^2 + (-(-(2*sigma*VD^2)/(Pi^2*k0))*((2*k0*re*log(ri)-h*re*ri*log(ri)^2)+(2*k0*ri*log(re)+h*re*ri*log(re)^2))/(k0*(ri+re)+h*re*ri*log(re/ri)))*log(sqrt(x*x+y*y)) + (1/(2*h*re*ri)*(((2*k0*re*log(ri)-h*re*ri*log(ri)^2)-(2*k0*ri*log(re)+h*re*ri*log(re)^2))*(-(2*sigma*VD^2)/(Pi^2*k0)) + (k0*(re-ri) - h*re*ri*log(re*ri))*(-(-(2*sigma*VD^2)/(Pi^2*k0))*((2*k0*re*log(ri)-h*re*ri*log(ri)^2)+(2*k0*ri*log(re)+h*re*ri*log(re)^2))/(k0*(ri+re)+h*re*ri*log(re/ri))))+T_W)
+        "t_expr": "(-(2*4.8e7*0.25^2)/(Pi^2*377))*log(sqrt(x*x+y*y))^2 + (-(-(2*4.8e7*0.25^2)/(Pi^2*377))*((2*377*2*log(1)-6e4*2*1*log(1)^2)+(2*377*1*log(2)+6e4*2*1*log(2)^2))/(377*(1+2)+6e4*2*1*log(2/1)))*log(sqrt(x*x+y*y)) + (1/(2*6e4*2*1)*(((2*377*2*log(1)-6e4*2*1*log(1)^2)-(2*377*1*log(2)+6e4*2*1*log(2)^2))*(-(2*4.8e7*0.25^2)/(Pi^2*377)) + (377*(2-1) - 6e4*2*1*log(2*1))*(-(-(2*4.8e7*0.25^2)/(Pi^2*377))*((2*377*2*log(1)-6e4*2*1*log(1)^2)+(2*377*1*log(2)+6e4*2*1*log(2)^2))/(377*(1+2)+6e4*2*1*log(2/1))))+303):x:y:z",
+        "v_expr":"2*0.25/Pi*atan2(x,y):x:y",
+        "c_expr":"{-2*0.25/Pi*y/(x*x+y*y),2*0.25/Pi*x/(x*x+y*y)}:x:y:z"
+    },
+    "Materials":
+    {
+        "omega":
+        {
+            "k":"377",//[ W/(m*K) ]
+            "sigma":"4.8e7"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "temperature":
+        {
+            "Robin":
+            {
+                "Rint":
+                {
+                    "expr1":"6e4", // h
+                    "expr2":"303" // T_c
+                },
+                "Rext":
+                {
+                    "expr1":"6e4", // h
+                    "expr2":"303" // T_c
+                }
+            },
+            "Neumann":
+            {
+                "V0":
+                {
+                    "expr":"0"
+                },
+                "V1":
+                {
+                    "expr":"0"
+                }
+            }
+        },
+        "electric-potential":
+        {
+            "Dirichlet":
+            {
+                "V0":
+                {
+                    "expr":"0" // V_in
+                },
+                "V1":
+                {
+                    "expr":"0.25" // V_out
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "thermoelectric":
+        {
+            "Exports":
+            {
+                "fields":["heat.temperature","electric.electric-potential","electric.electric-field","heat.pid"]
+            }
+        }
+    }
+}

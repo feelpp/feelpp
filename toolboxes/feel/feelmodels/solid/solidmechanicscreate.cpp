@@ -1063,95 +1063,36 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
             this->restartExporters( this->timeInitial() );
     }
 
-    auto const& ptree = this->modelProperties().postProcess().pTree( this->keyword() );
 
-    // volume variation
-    std::string ppTypeMeasures = "Measures";
-    std::string ppTypeMeasuresVolumeVariation = "VolumeVariation";
-    for( auto const& ptreeLevel0 : ptree )
+
+    if ( this->modelProperties().postProcess().hasJsonProperties( this->keyword() ) )
     {
-        std::string ptreeLevel0Name = ptreeLevel0.first;
-        if ( ptreeLevel0Name != ppTypeMeasures ) continue;
-        for( auto const& ptreeLevel1 : ptreeLevel0.second )
+        auto const& j_pp = this->modelProperties().postProcess().jsonProperties( this->keyword() );
+        std::string ppTypeMeasures = "Measures";
+        if ( j_pp.contains( ppTypeMeasures ) )
         {
-            std::string ptreeLevel1Name = ptreeLevel1.first;
-            if ( ptreeLevel1Name == ppTypeMeasuresVolumeVariation )
+            auto j_pp_measures = j_pp.at( ppTypeMeasures );
+            for ( auto const& [j_pp_measureskey,j_pp_measuresval] : j_pp_measures.items() )
             {
-                // TODO : init name and markers from ptree
-                std::string vvname = "volume_variation";
-                std::set<std::string> markers; markers.insert( "" );
-                if ( !markers.empty() )
+                if ( j_pp_measureskey == "VolumeVariation" )
                 {
-                    M_postProcessVolumeVariation[vvname] = markers;
+                    ModelMarkers _markers;
+                    _markers.setup( j_pp_measuresval /*,indexes*/);
+                    std::string vvname = "volume_variation";
+                    if ( !_markers.empty() )
+                        M_postProcessVolumeVariation[vvname] = _markers;
                 }
             }
         }
     }
 
-    // point measures
-    auto fieldNamesWithSpaceDisplacement = std::make_pair( std::set<std::string>({"displacement"}), this->functionSpaceDisplacement() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceDisplacement );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-        M_measurePointsEvaluation->init( evalPoints );
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
 
-
-#if 0
-    std::set<std::string> fieldNameStressScalar = { "Von-Mises","Tresca","princial-stress-1","princial-stress-2","princial-stress-3",
-                                                    "stress_xx","stress_xy","stress_xz","stress_yx","stress_yy","stress_yz","stress_zx","stress_zy","stress_zz" };
-    // points evaluation
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-    {
-        if (!this->isStandardModel()) break;// TODO
-
-        auto const& ptPos = evalPoints.pointPosition();
-        node_type ptCoord(3);
-        for ( int c=0;c<3;++c )
-            ptCoord[c]=ptPos.value()(c);
-
-        auto const& fields = evalPoints.fields();
-        for ( std::string const& field : fields )
-        {
-            if ( field == "displacement" || field == "velocity" || field == "acceleration" )
-            {
-                if ( !M_postProcessMeasuresContextDisplacement )
-                    M_postProcessMeasuresContextDisplacement.reset( new context_displacement_type( this->functionSpaceDisplacement()->context() ) );
-                int ctxId = M_postProcessMeasuresContextDisplacement->nPoints();
-                M_postProcessMeasuresContextDisplacement->add( ptCoord );
-                std::string ptNameExport = (boost::format("%1%_%2%")%field %ptPos.name()).str();
-                this->postProcessMeasuresEvaluatorContext().add( field, ctxId, ptNameExport );
-            }
-            else if ( field == "pressure" )
-            {
-                if ( !M_useDisplacementPressureFormulation )
-                    continue;
-                if ( !M_postProcessMeasuresContextPressure )
-                    M_postProcessMeasuresContextPressure.reset( new context_pressure_type( this->functionSpacePressure()->context() ) );
-                int ctxId = M_postProcessMeasuresContextPressure->nPoints();
-                M_postProcessMeasuresContextPressure->add( ptCoord );
-                std::string ptNameExport = (boost::format("pressure_%1%")%ptPos.name()).str();
-                this->postProcessMeasuresEvaluatorContext().add("pressure", ctxId, ptNameExport );
-            }
-            else if ( fieldNameStressScalar.find( field ) != fieldNameStressScalar.end() )
-            {
-                this->createAdditionalFunctionSpacesStressTensor();
-                if (!M_postProcessMeasuresContextStressScalar )
-                    M_postProcessMeasuresContextStressScalar.reset( new context_stress_scal_type( M_XhStressTensor->compSpace()->context() ) );
-                int ctxId = M_postProcessMeasuresContextStressScalar->nPoints();
-                M_postProcessMeasuresContextStressScalar->add( ptCoord );
-                std::string ptNameExport = (boost::format("%1%_%2%")%field %ptPos.name()).str();
-                this->postProcessMeasuresEvaluatorContext().add( field, ctxId, ptNameExport );
-            }
-
-        }
-    }
-#endif
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
-            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-        else
-            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
+            this->postProcessMeasures().restart( this->timeInitial() );
     }
 
 }

@@ -36,6 +36,8 @@
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelmesh/enums.hpp>
 #include <feel/feeldiscr/enums.hpp>
+#include <feel/feelalg/matrixcondensed.hpp>
+#include <feel/feelalg/vectorcondensed.hpp>
 
 namespace Feel
 {
@@ -527,6 +529,13 @@ public :
             if ( itFind == M_algebraicDataAndTools.end() )
                 return nullptr;
             return std::get<2>( itFind->second );
+        }
+
+    void removeAllAlgebraicDataAndTools()
+        {
+            M_algebraicDataAndTools.clear();
+            M_dofEliminationIds.clear();
+            M_startSubBlockSpaceIndex.clear();
         }
 
 private :

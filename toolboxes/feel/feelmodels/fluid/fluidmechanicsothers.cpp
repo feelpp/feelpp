@@ -669,8 +669,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
     if ( this->isMoveDomain() )
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-        auto drm = M_meshALE->dofRelationShipMap();
 #if 0
+        auto drm = M_meshALE->dofRelationShipMap();
         auto thedisp = M_meshALE->functionSpace()->element();
         for (size_type i=0;i<thedisp.nLocalDof();++i)
         {
@@ -1137,6 +1137,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
     {
         auto p = this->functionSpacePressure()->element();
 
+        M_definePressureCstAlgebraicOperatorMeanPressure.clear();
         M_definePressureCstAlgebraicOperatorMeanPressure.resize(M_definePressureCstMeshRanges.size());
         auto dofTablePressure = this->functionSpacePressure()->dof();
         for ( int k=0;k<M_definePressureCstMeshRanges.size();++k )
@@ -1240,7 +1241,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep( bool applyPreProcess )
     // up current time
     this->updateTime( M_bdfVelocity->time() );
 
-    if ( true )//M_useVelocityExtrapolated )
+    if ( true )
     {
         *M_vectorPreviousVelocityExtrapolated = *M_vectorVelocityExtrapolated;
         this->updateVelocityExtrapolated();
@@ -1342,7 +1343,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     if ( rebuildCstAssembly )
         this->setNeedToRebuildCstPart(true);
 
-    if ( true )//M_useVelocityExtrapolated )
+    if ( true )
     {
         *M_vectorPreviousVelocityExtrapolated = *M_vectorVelocityExtrapolated;
         this->updateVelocityExtrapolated();
@@ -1540,7 +1541,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmeshImpl()
     //-------------------------------------------------------------------//
     // compute ALE map
     //std::vector< mesh_ale_type::ale_map_element_type> polyBoundarySet = { *M_meshDisplacementOnInterface };
-    M_meshALE->update(*M_meshDisplacementOnInterface/*polyBoundarySet*/);
+    //M_meshALE->update(*M_meshDisplacementOnInterface/*polyBoundarySet*/);
+    M_meshALE->updateMovingMesh();
 
     //-------------------------------------------------------------------//
 
@@ -1596,12 +1598,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate( std::string const& marker, bool useExteriorNormal ) const
 {
-    return this->computeFlowRate( std::list<std::string>( { marker } ),useExteriorNormal );
+    return this->computeFlowRate( std::set<std::string>( { marker } ),useExteriorNormal );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate( std::set<std::string> const& markers, bool useExteriorNormal ) const
 {
     using namespace Feel::vf;
 
@@ -1724,9 +1726,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
 
-    nBlock += 2*M_bodySetBC.size();
+    for ( auto const& [bpname,bbc] : M_bodySetBC )
+    {
+        ++nBlock; // translational velocity
+        if ( !bbc.isInNBodyArticulated() )
+            ++nBlock; // angular velocity
+    }
     for ( auto const& nba : M_bodySetBC.nbodyArticulated() )
     {
+        ++nBlock; // angular velocity
         if ( nba.articulationMethod() != "lm" )
             continue;
         nBlock += nba.articulations().size();
@@ -1852,16 +1860,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     for ( auto const& [bpname,bbc] : M_bodySetBC )
     {
         size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".translational-velocity");
-        size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".angular-velocity");
         myblockGraph(startBlockIndexTranslationalVelocity,startBlockIndexTranslationalVelocity) = stencil(_test=bbc.spaceTranslationalVelocity(),_trial=bbc.spaceTranslationalVelocity(),
                                                                                                           _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(startBlockIndexAngularVelocity,startBlockIndexAngularVelocity) = stencil(_test=bbc.spaceAngularVelocity(),_trial=bbc.spaceAngularVelocity(),
-                                                                                              _diag_is_nonzero=false,_close=false)->graph();
-        indexBlock +=2;
+        if ( !bbc.isInNBodyArticulated() )
+        {
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".angular-velocity");
+            myblockGraph(startBlockIndexAngularVelocity,startBlockIndexAngularVelocity) = stencil(_test=bbc.spaceAngularVelocity(),_trial=bbc.spaceAngularVelocity(),
+                                                                                                  _diag_is_nonzero=false,_close=false)->graph();
+        }
+        //indexBlock +=2;
     }
 
     for ( auto const& nba : M_bodySetBC.nbodyArticulated() )
     {
+        size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+nba.name()+".angular-velocity");
+        myblockGraph(startBlockIndexAngularVelocity,startBlockIndexAngularVelocity) = stencil(_test=nba.spaceAngularVelocity(),_trial=nba.spaceAngularVelocity(),
+                                                                                              _diag_is_nonzero=false,_close=false)->graph();
         if ( nba.articulationMethod() != "lm" )
             continue;
         for ( auto const& ba : nba.articulations() )
@@ -1915,7 +1929,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
             myblockGraph(startBlockIndexArticulationLMTranslationalVelocity,startBlockIndexTranslationalVelocityBody2) = createArticulationGraph( ba.dataMapLagrangeMultiplierTranslationalVelocity(),
                                                                                                                                                   bbc2.spaceTranslationalVelocity()->mapPtr(),
                                                                                                                                                   false, Pattern::DEFAULT );
-            ++indexBlock;
+            //++indexBlock;
 
         }
     }
@@ -2088,19 +2102,33 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     {
         if ( bpbc.hasTranslationalVelocityExpr() )
         {
+#if 0
             this->updateDofEliminationIds( "body-bc.translational-velocity",  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
             // only do for one, dof ids are the same for all
             break;
+#else
+            std::string spaceName = "body-bc."+bpbc.name()+".translational-velocity";
+            this->updateDofEliminationIds( spaceName,  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
+#endif
         }
-    }
-    for ( auto const& [bpname,bpbc] : M_bodySetBC )
-    {
+
         if ( bpbc.hasAngularVelocityExpr() )
         {
+#if 0
             this->updateDofEliminationIds( "body-bc.angular-velocity",  bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
             // only do for one, dof ids are the same for all
             break;
+#else
+            std::string spaceName = "body-bc."+bpbc.name()+".angular-velocity";
+            this->updateDofEliminationIds( spaceName, bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
+#endif
         }
+
+        if ( true )
+        {
+            this->updateDofEliminationIds( "velocity", XhVelocity, bpbc.rangeMarkedFacesOnFluid() );
+        }
+
     }
 }
 

@@ -27,26 +27,27 @@
 namespace Feel {
 
 void
-ModelInitialCondition::setup( pt::ptree const& p, std::string const& typeIC )
+ModelInitialCondition::setup( nl::json const& jarg, std::string const& typeIC )
 {
-    M_p = p;
+    //M_p = jarg;
     if ( typeIC == "Expression" )
     {
-        M_modelExpr.setExpr( "expr", p, this->worldComm(), M_directoryLibExpr );
+        CHECK( jarg.contains("expr") ) << "an expression is required";
+        M_modelExpr.setExpr( jarg.at("expr"), this->worldComm(), M_directoryLibExpr );
         CHECK( M_modelExpr.hasAtLeastOneExpr() ) << "the entry expr is required";
         M_isExpression = true;
         M_isFile = false;
-        if ( auto ptmarkers = p.get_child_optional("markers") )
-            M_markers.setPTree(*ptmarkers);
+        if ( jarg.contains("markers") )
+            M_markers.setup( jarg.at("markers") );
     }
     else if ( typeIC == "File" )
     {
-        if ( auto itFileName = p.get_optional<std::string>("filename") )
-            M_fileName = *itFileName;
-        if ( auto itFormat = p.get_optional<std::string>("format") )
-            M_fileType = *itFormat;
-        if ( auto itDir = p.get_optional<std::string>("directory") )
-            M_fileDirectory = *itDir;
+        if ( jarg.contains("filename") )
+            M_fileName = jarg.at("filename").get<std::string>();
+        if ( jarg.contains("format") )
+            M_fileType = jarg.at("format").get<std::string>();
+        if ( jarg.contains("directory") )
+            M_fileDirectory = jarg.at("directory").get<std::string>();
         M_isExpression = false;
         M_isFile = true;
     }
@@ -68,23 +69,29 @@ ModelInitialCondition::setParameterValues( std::map<std::string,double> const& m
 
 
 void
-ModelInitialConditionTimeSet::setup( pt::ptree const& p )
+ModelInitialConditionTimeSet::setup( nl::json const& jarg )
 {
-    M_p = p;
-    for ( auto const& icAllExprPtree : p )
+    //M_p = p;
+    for ( auto const& [jargkey,jargval] : jarg.items() )
     {
-        std::string const typeIC = icAllExprPtree.first; // typeIC = Expression, File, ...
-        for ( auto const& icExprPtree : icAllExprPtree.second )
+        std::string const typeIC = jargkey; // typeIC = Expression, File, ...
+        for ( auto const& [j_typekey,j_typeval] : jargval.items() )
         {
-            std::string icName = icExprPtree.first;
+            std::string icName = j_typekey;
             double time = 0;
-            if( boost::optional<double> ittime = icExprPtree.second.get_optional<double>( "time" ) )
-                time = *ittime;
+            if ( j_typeval.contains("time") )
+            {
+                auto const& j_type_time = j_typeval.at("time");
+                if ( j_type_time.is_number() )
+                    time = j_type_time.get<double>();
+                else if ( j_type_time.is_string() )
+                    time = std::stod( j_type_time.get<std::string>() );
+            }
 
             ModelInitialCondition mic( this->worldCommPtr(), M_directoryLibExpr );
             mic.setName( icName );
-            mic.setup( icExprPtree.second, typeIC );
-            this->operator[]( time )[typeIC].push_back( mic );
+            mic.setup( j_typeval, typeIC );
+            this->operator[]( time )[typeIC].push_back( std::move( mic ) );
         }
     }
 }
@@ -100,38 +107,62 @@ ModelInitialConditionTimeSet::setParameterValues( std::map<std::string,double> c
 
 
 void
-ModelInitialConditions::setPTree( pt::ptree const& p )
+ModelInitialConditions::setPTree( nl::json const& jarg )
 {
-    for( auto const& subPtree : p )
+    bool useToolboxName = true;
+    if ( useToolboxName )
     {
-        std::string name = subPtree.first;
-        if ( this->find( name ) != this->end() )
+        for ( auto const& [jargkey,jargval] : jarg.items() )
+            this->setupInternal(jargkey,jargval );
+    }
+    else
+    {
+        this->setupInternal( "", jarg );
+    }
+}
+void
+ModelInitialConditions::setupInternal( std::string const& tbname, nl::json const& jarg )
+{
+    for ( auto const& [jargkey,jargval] : jarg.items() )
+    {
+        std::string const& fieldname = jargkey;
+        if ( this->has(tbname,fieldname ) )
         {
-            this->operator[]( name ).setup( subPtree.second );
+            this->operator[](tbname)[fieldname].setup( jargval );
         }
         else
         {
             ModelInitialConditionTimeSet micts( this->worldCommPtr(), M_directoryLibExpr );
-            micts.setup( subPtree.second );
-            this->operator[]( name ) = micts;
+            micts.setup( jargval );
+            this->operator[]( tbname ).emplace( std::make_pair( fieldname, std::move( micts ) ) );
         }
     }
 }
-
 void
 ModelInitialConditions::setParameterValues( std::map<std::string,double> const& mp )
 {
-    for ( auto & [name,ic] : *this )
-        ic.setParameterValues( mp );
+    for ( auto & [tbname,icdata] : *this )
+        for ( auto & [name,ic] : icdata )
+            ic.setParameterValues( mp );
 }
 
-ModelInitialConditionTimeSet const&
-ModelInitialConditions::get( std::string const& name ) const
+bool
+ModelInitialConditions::has( std::string const& tbname, std::string const& fieldname ) const
 {
-    auto itFindIC = this->find( name );
-    if ( itFindIC != this->end() )
-        return itFindIC->second;
-    return M_emptylInitialConditionTimeSet;
+    auto itFindTB = this->find( tbname );
+    if ( itFindTB == this->end() )
+        return false;
+    auto itFindField = itFindTB->second.find( fieldname );
+    if ( itFindField == itFindTB->second.end() )
+        return false;
+    return true;
+}
+ModelInitialConditionTimeSet const&
+ModelInitialConditions::get( std::string const& tbname, std::string const& fieldname ) const
+{
+    if ( !this->has( tbname,fieldname ) )
+        return M_emptylInitialConditionTimeSet;
+    return this->find( tbname )->second.find( fieldname )->second;
 }
 
 } // namespace Feel

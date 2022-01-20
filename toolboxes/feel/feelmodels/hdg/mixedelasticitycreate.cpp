@@ -160,7 +160,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::init( mesh_ptrtype mesh, mesh_ptrtype meshV
 {
     tic();
     if ( !mesh )
-        M_mesh = loadMesh( new mesh_type);
+        M_mesh = loadMesh( _mesh=new mesh_type);
     else
         M_mesh = mesh;
     M_timers["mesh"].push_back(toc("initMesh", this->verbose() || FLAGS_v > 0));

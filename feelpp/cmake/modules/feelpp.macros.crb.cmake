@@ -111,7 +111,7 @@ macro(crb_add_library)
 
   PARSE_ARGUMENTS(CRB_LIB
     "SRCS;LINK_LIBRARIES;PROJECT;EXEC;MAN;EXPORT"
-    "TEST"
+    "TEST;NOHEADER"
     ${ARGN}
     )
   CAR(CRB_LIB_NAME ${CRB_LIB_DEFAULT_ARGS})
@@ -131,10 +131,13 @@ macro(crb_add_library)
     set( ${CRB_LIB_EXEC} ${execname} )
   endif()
   add_library(${execname}  SHARED  ${CRB_LIB_SRCS} )
+  set_target_properties(${execname} PROPERTIES VERSION 1 SOVERSION 1)
   target_compile_options(${execname} PRIVATE -fvisibility=hidden)
+  
   target_include_directories( ${execname} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/feelpp/mor/${CRB_LIB_NAME}>  )
+
   target_link_libraries( ${execname} PUBLIC ${CRB_LIB_LINK_LIBRARIES} Feelpp::feelpp   )
   set_property(TARGET ${execname} PROPERTY LABELS crb)
   INSTALL(TARGETS ${execname} EXPORT ${CRB_LIB_EXPORT}

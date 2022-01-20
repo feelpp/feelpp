@@ -49,6 +49,47 @@ class ExprOptionalConcat : public Feel::vf::ExprDynamicBase
                  return t.front();
              }
      };
+
+    struct FunctorsVariadicExpr
+    {
+        template<typename Funct>
+        struct HasTestFunction
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value || T2::symbolexpr1_type::expr_type::template HasTestFunction<Funct>::result >{};
+                }
+        };
+        template<typename Funct>
+        struct HasTrialFunction
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value || T2::symbolexpr1_type::expr_type::template HasTrialFunction<Funct>::result >{};
+                }
+        };
+        template<typename Funct>
+        struct HasTestBasis
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value || T2::symbolexpr1_type::expr_type::template has_test_basis<Funct>::result >{};
+                }
+        };
+        template<typename Funct>
+        struct HasTrialBasis
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value || T2::symbolexpr1_type::expr_type::template has_trial_basis<Funct>::result >{};
+                }
+        };
+    };
+
 public :
     using this_type = ExprOptionalConcat<TupleExprType>;
 
@@ -68,8 +109,8 @@ public :
     {
         static const bool result = std::decay_t<decltype( hana::fold( tuple_expr_type{},
                                                                       hana::integral_constant<bool,false>{},
-                                                                      []( auto const& res, auto const& e ) { hana::integral_constant<bool, res.value || std::decay_t<decltype(e)>::template HasTestFunction<Func>::result >{}; }
-                                                                      ) )>::value;
+                                                                      //[]( auto const& res, auto const& e ) { hana::integral_constant<bool, res.value || std::decay_t<decltype(e)>::template HasTestFunction<Func>::result >{}; } ) )>::value;
+                                                                      typename FunctorsVariadicExpr::template HasTestFunction<Func>{} ) )>::value;
     };
 
     template<typename Func>
@@ -77,20 +118,20 @@ public :
     {
         static const bool result = std::decay_t<decltype( hana::fold( tuple_expr_type{},
                                                                       hana::integral_constant<bool,false>{},
-                                                                      []( auto const& res, auto const& e ) { hana::integral_constant<bool, res.value || std::decay_t<decltype(e)>::template HasTrialFunction<Func>::result >{}; }
-                                                                      ) )>::value;
+                                                                      //[]( auto const& res, auto const& e ) { hana::integral_constant<bool, res.value || std::decay_t<decltype(e)>::template HasTrialFunction<Func>::result >{}; } ) )>::value;
+                                                                      typename FunctorsVariadicExpr::template HasTrialFunction<Func>{} ) )>::value;
     };
 
     template<typename Func>
     static const bool has_test_basis = std::decay_t<decltype( hana::fold( tuple_expr_type{},
                                                                           hana::integral_constant<bool,false>{},
-                                                                          []( auto const& res, auto const& e ) { hana::integral_constant<bool, res.value || std::decay_t<decltype(e)>::template has_test_basis<Func>::result >{}; }
-                                                                          ) )>::value;
+                                                                          //[]( auto const& res, auto const& e ) { hana::integral_constant<bool, res.value || std::decay_t<decltype(e)>::template has_test_basis<Func>::result >{}; } ) )>::value;
+                                                                          typename FunctorsVariadicExpr::template HasTestBasis<Func>{} ) )>::value;
     template<typename Func>
     static const bool has_trial_basis = std::decay_t<decltype( hana::fold( tuple_expr_type{},
                                                                            hana::integral_constant<bool,false>{},
-                                                                           []( auto const& res, auto const& e ) { hana::integral_constant<bool, res.value || std::decay_t<decltype(e)>::template has_trial_basis<Func>::result >{}; }
-                                                                           ) )>::value;
+                                                                           //[]( auto const& res, auto const& e ) { hana::integral_constant<bool, res.value || std::decay_t<decltype(e)>::template has_trial_basis<Func>::result >{}; } ) )>::value;
+                                                                           typename FunctorsVariadicExpr::template HasTrialBasis<Func>{} ) )>::value;
 
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
