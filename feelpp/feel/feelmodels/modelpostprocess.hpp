@@ -463,11 +463,8 @@ public:
     using super = CommObject;
     ModelPostprocess( worldcomm_ptr_t const& world = Environment::worldCommPtr() );
     virtual ~ModelPostprocess();
-    bool hasJsonPrperties( std::string const& name = "" ) const;
-    nl::json const& jsonPrperties( std::string const& name = "" ) const;
-    //nl::json const& pTree() const { return M_p; }
-    //nl::json & pTree() { return M_p; }
-    //nl::json const& pTree( std::string const& name ) const;
+    bool hasJsonProperties( std::string const& name = "" ) const;
+    nl::json const& jsonProperties( std::string const& name = "" ) const;
     bool useModelName() const { return M_useModelName; }
     std::map<std::string,ModelPostprocessExports> const& allExports() const { return M_exports; }
     std::map<std::string,ModelPostprocessSave> const& allSave() const { return M_save; }

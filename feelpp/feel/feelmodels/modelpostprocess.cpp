@@ -585,7 +585,7 @@ ModelPostprocess::~ModelPostprocess()
 {}
 
 bool
-ModelPostprocess::hasJsonPrperties( std::string const& name ) const
+ModelPostprocess::hasJsonProperties( std::string const& name ) const
 {
     if ( !M_useModelName )
         return true;
@@ -594,7 +594,7 @@ ModelPostprocess::hasJsonPrperties( std::string const& name ) const
 }
 
 nl::json const&
-ModelPostprocess::jsonPrperties( std::string const& name ) const
+ModelPostprocess::jsonProperties( std::string const& name ) const
 {
     if ( !M_useModelName )
         return M_p;
@@ -615,8 +615,7 @@ ModelPostprocess::setup()
 {
     auto const& jarg = M_p;
 
-
-    if ( jarg.contains("partition") )
+    if ( jarg.contains("use-model-name") )
     {
         auto const& j_useModelName = jarg.at("use-model-name");
         if ( j_useModelName.is_boolean() )

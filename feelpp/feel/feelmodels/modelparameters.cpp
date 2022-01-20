@@ -95,12 +95,16 @@ ModelParameters::setup()
                     auto const& j_min = jargval.at("min");
                     if ( j_min.is_number() )
                         min = j_min.get<double>();
+                    else if ( j_min.is_string() )
+                        min = std::stod( j_min.get<std::string>() );
                 }
                 if ( jargval.contains("max") )
                 {
                     auto const& j_max = jargval.at("max");
                     if ( j_max.is_number() )
                         max = j_max.get<double>();
+                    else if ( j_max.is_string() )
+                        max = std::stod( j_max.get<std::string>() );
                 }
 
                 ModelExpression modelexpr;

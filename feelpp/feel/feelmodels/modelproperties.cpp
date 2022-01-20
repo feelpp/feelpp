@@ -109,28 +109,31 @@ ModelProperties::setup()
     nl::json jarg;
     pt_istream >> jarg;
 
-    try {
-        M_name  = M_p.get<std::string>( "Name"  );
-    }
-    catch ( pt::ptree_bad_path& e )
+    if ( jarg.contains("Name") )
     {
-        if ( Environment::isMasterRank() )
-            std::cout << "Missing Name entry in model properties\n";
+        auto const& j_name = jarg.at("Name");
+        if ( j_name.is_string() )
+            M_name = j_name.get<std::string>();
     }
-    try {
-        M_shortname = M_p.get( "ShortName", M_name );
-    }
-    catch ( pt::ptree_bad_path& e )
+    if ( jarg.contains("ShortName") )
     {
-        if ( Environment::isMasterRank() )
-            std::cout << "Missing ShortName entry in model properties - set it to the Name entry : " << M_name << "\n";
+        auto const& j_shortname = jarg.at("ShortName");
+        if ( j_shortname.is_string() )
+            M_shortname = j_shortname.get<std::string>();
     }
 
-    M_unit = M_p.get( "Unit", "m" );
-    if ( auto mod = M_p.get_child_optional("Models") )
+    M_unit = "m";
+    if ( jarg.contains("Unit") )
+    {
+        auto const& j_unit = jarg.at("Unit");
+        if ( j_unit.is_string() )
+            M_unit = j_unit.get<std::string>();
+    }
+
+    if ( jarg.contains("Models") )
     {
         LOG(INFO) << "Model with model\n";
-        M_models.setPTree( *mod );
+        M_models.setPTree( jarg.at("Models") );
     }
 
     if ( jarg.contains("Parameters") )
@@ -140,14 +143,7 @@ ModelProperties::setup()
             M_params.setDirectoryLibExpr( M_directoryLibExpr );
         M_params.setPTree( jarg.at("Parameters") );
     }
-    auto func = M_p.get_child_optional("Functions");
-    if ( func )
-    {
-        LOG(INFO) << "Model with functions\n";
-        if ( !M_directoryLibExpr.empty() )
-            M_functions.setDirectoryLibExpr( M_directoryLibExpr );
-        M_functions.setPTree( *func );
-    }
+
     auto bc = M_p.get_child_optional("BoundaryConditions");
     if ( bc )
     {
