@@ -76,35 +76,38 @@
     },
     "InitialConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Expression":
+            "temperature":
             {
-                "myic1":
+                "Expression":
                 {
-                    "markers":"Omega1",
-                    "expr":"293"
-                },
-                "myic2":
-                {
-                    "markers":"Omega2",
-                    "expr":"305"
-                },
-                "myic3":
-                {
-                    "markers":"Interface_1_2",
-                    "expr":"310"
-                }
-            }/*,
-            "File":
-            {
-                "myic3":
-                {
-                    "filename":"$home/feel/toolboxes/heat/thermo2d/P1G1/np_24/heat.ts/temperature/temperature-199.h5",
-                    "format":"hdf5"
-                    //"directory":"$home/feel/toolboxes/heat/thermo2d/P1G1/np_1/heat.ts/temperature"
-                }
-            }*/
+                    "myic1":
+                    {
+                        "markers":"Omega1",
+                        "expr":"293"
+                    },
+                    "myic2":
+                    {
+                        "markers":"Omega2",
+                        "expr":"305"
+                    },
+                    "myic3":
+                    {
+                        "markers":"Interface_1_2",
+                        "expr":"310"
+                    }
+                }/*,
+                   "File":
+                   {
+                   "myic3":
+                   {
+                   "filename":"$home/feel/toolboxes/heat/thermo2d/P1G1/np_24/heat.ts/temperature/temperature-199.h5",
+                   "format":"hdf5"
+                   //"directory":"$home/feel/toolboxes/heat/thermo2d/P1G1/np_1/heat.ts/temperature"
+                   }
+                   }*/
+            }
         }
     },
     "PostProcess":
