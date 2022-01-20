@@ -1938,61 +1938,49 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
 
-    // forces (lift, drag) and flow rate measures
-    pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
-    std::string ppTypeMeasures = "Measures";
-    for( auto const& ptreeLevel0 : ptree )
+
+    if ( this->modelProperties().postProcess().hasJsonPrperties( this->keyword() ) )
     {
-        std::string ptreeLevel0Name = ptreeLevel0.first;
-        if ( ptreeLevel0Name != ppTypeMeasures ) continue;
-        for( auto const& ptreeLevel1 : ptreeLevel0.second )
+        auto const& j_pp = this->modelProperties().postProcess().jsonPrperties( this->keyword() );
+        std::string ppTypeMeasures = "Measures";
+        if ( j_pp.contains( ppTypeMeasures ) )
         {
-            std::string ptreeLevel1Name = ptreeLevel1.first;
-            if ( ptreeLevel1Name == "Forces" )
+            auto j_pp_measures = j_pp.at( ppTypeMeasures );
+            for ( auto const& [j_pp_measureskey,j_pp_measuresval] : j_pp_measures.items() )
             {
-                // get list of marker
-                std::set<std::string> markerSet;
-                std::string markerUnique = ptreeLevel1.second.template get_value<std::string>();
-                if ( markerUnique.empty() )
+                if ( j_pp_measureskey == "Forces" )
                 {
-                    for (auto const& ptreeMarker : ptreeLevel1.second )
+                    // TODO : REVIEW THIS PP
+                    ModelMarkers _markers;
+                    _markers.setup( j_pp_measuresval /*,indexes*/);
+                    // save forces measure for each marker
+                    for ( std::string const& marker : _markers )
                     {
-                        std::string marker = ptreeMarker.second.template get_value<std::string>();
-                        markerSet.insert( marker );
+                        ModelMeasuresForces myPpForces;
+                        myPpForces.addMarker( marker );
+                        myPpForces.setName( marker );
+                        std::string name = myPpForces.name();
+                        M_postProcessMeasuresForces.push_back( myPpForces );
                     }
                 }
-                else
+                else if ( j_pp_measureskey == "FlowRate" )
                 {
-                    markerSet.insert( markerUnique );
+                    for( auto const& [j_pp_measures_flowratekey,j_pp_measures_flowrateval] : j_pp_measuresval.items() )
+                    {
+                        ModelMeasuresFlowRate myPpFlowRate;
+                        std::string const& name = j_pp_measures_flowratekey;
+                        myPpFlowRate.setup( j_pp_measures_flowrateval, name, ModelIndexes{} );
+                        M_postProcessMeasuresFlowRate.push_back( std::move( myPpFlowRate ) );
+                    }
                 }
-                // save forces measure for each marker
-                for ( std::string const& marker : markerSet )
+                else if ( j_pp_measureskey == "Pressure" )
                 {
-                    ModelMeasuresForces myPpForces;
-                    myPpForces.addMarker( marker );
-                    myPpForces.setName( marker );
-                    std::string name = myPpForces.name();
-                    M_postProcessMeasuresForces.push_back( myPpForces );
+                    M_postProcessMeasuresFields["pressure"] = "";
                 }
-            }
-            else if ( ptreeLevel1Name == "FlowRate" )
-            {
-                for( auto const& ptreeLevel2 : ptreeLevel1.second )
+                else if ( j_pp_measureskey == "VelocityDivergence" )
                 {
-                    ModelMeasuresFlowRate myPpFlowRate;
-                    std::string name = ptreeLevel2.first;
-                    myPpFlowRate.setup( ptreeLevel2.second, name );
-                    M_postProcessMeasuresFlowRate.push_back( myPpFlowRate );
+                    M_postProcessMeasuresFields["velocity-divergence"] = "";
                 }
-            }
-            else if ( ptreeLevel1Name == "Pressure" )
-            {
-                // this->modelProperties().postProcess().operator[](ppTypeMeasures).push_back( "Pressure" );
-                M_postProcessMeasuresFields["pressure"] = "";
-            }
-            else if ( ptreeLevel1Name == "VelocityDivergence" )
-            {
-                M_postProcessMeasuresFields["velocity-divergence"] = "";
             }
         }
     }

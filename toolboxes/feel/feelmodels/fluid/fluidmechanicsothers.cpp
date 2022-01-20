@@ -1595,12 +1595,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate( std::string const& marker, bool useExteriorNormal ) const
 {
-    return this->computeFlowRate( std::list<std::string>( { marker } ),useExteriorNormal );
+    return this->computeFlowRate( std::set<std::string>( { marker } ),useExteriorNormal );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate( std::set<std::string> const& markers, bool useExteriorNormal ) const
 {
     using namespace Feel::vf;
 
