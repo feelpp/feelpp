@@ -15,6 +15,8 @@ def convertToPetscMat(Aq):
     AqP = []
     for A in Aq:
         AqP.append(A.to_petsc().mat())
+        if not AqP[-1].assembled:
+            AqP[-1].assemble()
     return AqP
 
 def convertToPetscVec(Fq):
@@ -142,7 +144,7 @@ class reducedbasis():
     
     def orthonormalizeZ(self, nb=0):
         """Use Gram-Schmidt algorithm to orthonormalize the reduced basis
-        (the optionnal argument is not needed)
+        (the optional argument is not needed)
         """
         self.Z[0] /= self.normA(self.Z[0])
         for n in range(1, len(self.Z)):
@@ -153,7 +155,7 @@ class reducedbasis():
             z_tmp = self.Z[n] - s
             self.Z[n] = z_tmp / self.normA(z_tmp)
         # if not (self.test_orth() == np.eye(self.N)).all() and nb < 2:
-        if not (self.test_orth() ) and nb < 2:
+        if not (self.test_orth() ) and nb < 10:
             self.orthonormalizeZ(nb=nb+1)
         else:
             # pass
@@ -300,8 +302,12 @@ class reducedbasis():
                 sc[i,j] = np.round(self.scalarA(self.Z[i], self.Z[j]), decimals=3)
                 if np.round(np.round(self.scalarA(self.Z[i], self.Z[j]), decimals=3)) != [0,1][i==j]:
                     return False
-        # return sc
         # print("sc",sc)
+        # print("TESTORTH",np.linalg.norm(sc - np.eye(self.N)))
+        # for i in range(self.N):
+        #     for j in range(self.N):
+        #         if np.round(np.round(self.scalarA(self.Z[i], self.Z[j]), decimals=3)) != [0,1][i==j]:
+        #             return False
         return True
 
 

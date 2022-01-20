@@ -8,7 +8,7 @@ from feelpp.toolboxes.core import *
 from feelpp.mor import *
 import feelpp
 
-from reducedbasis.reducedbasis import *
+from feelpp.mor.reducedbasis.reducedbasis import *
 
 sys.argv += ['--config-file', '/home/saigre/feel/thermal-fin/pb4/thermal-fin.cfg']
 
