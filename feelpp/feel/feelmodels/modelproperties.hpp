@@ -102,7 +102,6 @@ public:
 
     ModelInitialConditions & initialConditions() { return M_ic; }
     ModelInitialConditions const& initialConditions() const { return M_ic; }
-    FEELPP_DEPRECATED BoundaryConditions const& initialConditionsDeprecated() const { return M_icDeprecated; }
 
     ModelPostprocess& postProcess() { return M_postproc; }
     ModelPostprocess const& postProcess() const { return M_postproc; }
@@ -140,7 +139,6 @@ private:
     ModelMaterials M_mat;
     BoundaryConditions M_bc;
     ModelInitialConditions M_ic;
-    BoundaryConditions M_icDeprecated; // DEPRECATED
     bool M_bc2_enabled = false;
     ModelBoundaryConditions M_bc2;
     ModelPostprocess M_postproc;
