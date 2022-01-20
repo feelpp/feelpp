@@ -314,8 +314,9 @@ class ModelNumerical : virtual public ModelBase,
                                  std::vector< std::shared_ptr<ElementType> > & dataToUpdate,
                                  std::map<int, double> const& priorTimes = {{0,0}} )
             {
-                ModelNumerical::updateInitialConditions( this->modelProperties().initialConditions().get( fieldName ),
-                                                         defaultRange, symbolsExpr, this->geomap(), dataToUpdate, priorTimes );
+                if ( this->modelProperties().initialConditions().has( this->keyword(), fieldName ) )
+                    ModelNumerical::updateInitialConditions( this->modelProperties().initialConditions().get( this->keyword(), fieldName ),
+                                                             defaultRange, symbolsExpr, this->geomap(), dataToUpdate, priorTimes );
             }
     private :
         template <typename ElementType, typename RangeType, typename SymbolsExpr>
