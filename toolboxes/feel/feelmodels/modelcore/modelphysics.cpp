@@ -9,10 +9,12 @@ namespace FeelModels
 {
 
 template <uint16_type Dim>
-ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name, ModelModel const& model )
+ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name, ModelBase const& mparent, ModelModel const& model )
     :
     M_type( type ),
-    M_name( name )
+    M_name( name ),
+    M_worldComm( mparent.worldCommPtr() ),
+    M_directoryLibExpr( mparent.repository().expr() )
 {
 
     // save name of submodel but not yet intialized
@@ -81,7 +83,7 @@ ModelPhysic<Dim>::New( ModelPhysics<Dim> const& mphysics, std::string const& typ
     else if ( type == "solid" )
         return std::make_shared<ModelPhysicSolid<Dim>>( mphysics, name, model );
     else
-        return std::make_shared<ModelPhysic<Dim>>( type, name, model );
+        return std::make_shared<ModelPhysic<Dim>>( type, name, mphysics, model );
 }
 
 template <uint16_type Dim>
@@ -95,10 +97,11 @@ ModelPhysicHeat<Dim>::ModelPhysicHeat( ModelPhysics<Dim> const& mphysics, std::s
 template <uint16_type Dim>
 ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model )
     :
-    super_type( "fluid", name, model ),
+    super_type( "fluid", name, mphysics, model ),
     M_equation( "Navier-Stokes" ),
     M_gravityForceEnabled( boption(_name="use-gravity-force",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ),
-    M_dynamicViscosity( soption(_name="viscosity.law",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) )
+    M_dynamicViscosity( soption(_name="viscosity.law",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ),
+    M_turbulence( this )
 {
 
     auto const& j_model = model.jsonProperties();
@@ -179,7 +182,7 @@ template <uint16_type Dim>
 bool
 ModelPhysicFluid<Dim>::Turbulence::hasTurbulentKineticEnergy() const
 {
-    return (M_model == "k-epsilon");
+    return false;// (M_model == "k-epsilon");
 }
 
 template <uint16_type Dim>
@@ -205,12 +208,27 @@ ModelPhysicFluid<Dim>::Turbulence::setup( nl::json const& jarg )
             M_model = j_model.template get<std::string>();
         CHECK( M_model == "Spalart-Allmaras" || M_model == "k-epsilon" ) << "invalid turubulence model " << M_model;
     }
+
+    this->setParameterNoMaterialNoModelLink( "kappa", "0.41" );
+    // upper limit on the mixing length :
+    // * default choice (see Comsol doc) : l_mix_lim = 0.5*lbb where lbb is the shortest side of the geometry bounding box.
+    // * for complex geometry, l_mix_lim should be given manually
+    //this->setParameterNoMaterialNoModelLink( "l_mix_lim", "0.5*0.0635" ); // turbulent pipe case
+    //this->setParameterNoMaterialNoModelLink( "l_mix_lim", "0.0508" ); // backward facing step case
+    this->setParameterNoMaterialNoModelLink( "l_mix_lim", "0.0381+0.0762" ); // backward facing step case
+
+    this->setParameterNoMaterialLink( "c_mu", "0.09", "k-epsilon" );
+    this->setParameterNoMaterialLink( "c_1epsilon", "1.44", "k-epsilon" );
+    this->setParameterNoMaterialLink( "c_2epsilon", "1.92", "k-epsilon" );
+    this->setParameterNoMaterialLink( "sigma_k", "1.0", "k-epsilon" );
+    this->setParameterNoMaterialLink( "sigma_epsilon", "1.3", "k-epsilon" );
+
 }
 
 template <uint16_type Dim>
 ModelPhysicSolid<Dim>::ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model )
     :
-    super_type( "solid", name, model ),
+    super_type( "solid", name, mphysics, model ),
     M_equation( "Hyper-Elasticity" ),
     M_materialModel( soption(_prefix=mphysics.prefix(), _name="material_law",_vm=mphysics.clovm() ) ),
     M_formulation( soption(_prefix=mphysics.prefix(), _name="formulation",_vm=mphysics.clovm() ) ),

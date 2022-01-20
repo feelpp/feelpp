@@ -58,7 +58,7 @@ ModelGenericPDE<Dim>::setupGenericPDE()
 {
     this->M_physicDefault = M_infos.equationName();
 
-    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(),  this->physicDefault() );
+    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(),  this->physicDefault(), *this );
 
     std::string unknownShape;
     if ( this->unknownBasis() == "Pch1" ||  this->unknownBasis() == "Pch2" || this->unknownBasis() == "Pdh1" )
@@ -131,7 +131,7 @@ void
 ModelGenericPDEs<Dim>::initGenericPDEs( std::string const& name )
 {
     this->M_physicDefault = name;
-    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(), name );
+    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(), name, *this );
     this->M_physics.emplace( name, mphysic );
 }
 
