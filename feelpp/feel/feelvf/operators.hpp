@@ -49,6 +49,7 @@
 
 #include <feel/feelvf/exproptionalconcat.hpp>
 #include <feel/feelvf/one.hpp>
+#include <feel/feelvf/ones.hpp>
 
 namespace Feel
 {
@@ -439,6 +440,12 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                             CHECK( false ) << "TODO tensorial case";    \
                             return *this;                               \
                         }                                               \
+                    }                                                   \
+                else if constexpr ( std::is_same_v< this_type, OpGrad<element_type, VF_OP_TYPE_OBJECT(T)> > ) \
+                    {                                                   \
+                        /*TODOOOO VINCENT*/                             \
+                        return Feel::vf::zero<EvaluateShape<functionspace_type::nRealDim>::type::M, \
+                                              EvaluateShape<functionspace_type::nRealDim>::type::N>(); \
                     }                                                   \
                 else                                                    \
                 {                                                       \

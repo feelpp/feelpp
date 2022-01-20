@@ -163,7 +163,7 @@ public:
             // NOTE : this expression assumes that the exponent does not depend on the symbol to be derived
             auto diffExpr1 = M_expr_1.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
             using expr1_diff_type = std::decay_t<decltype(diffExpr1)>;
-            auto newExponant = M_expr_2 - cst(1); // 1.0;
+            auto newExponant = M_expr_2 - cst(1.0); // 1.0;
             using new_expr2_type = std::decay_t<decltype(newExponant)>;
             using new_pow_type = Pow<expression_1_type, new_expr2_type>;
             return diffExpr1*M_expr_2*expr(new_pow_type( M_expr_1, newExponant));
@@ -221,6 +221,17 @@ public:
         {
             update( geom );
         }
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                expression_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_gmc( fusion::at_key<key_type>( geom ).get() ),
+            M_left( std::true_type{}, exprExpanded.left(), ttse, expr.left(), geom, theInitArgs... ),
+            M_right( std::true_type{}, exprExpanded.right(), ttse, expr.right(), geom, theInitArgs... ),
+            M_loc(  boost::extents[M_gmc->nPoints()] )
+            {}
+
         template<typename IM>
         void init( IM const& im )
         {
@@ -265,6 +276,25 @@ public:
                         M_loc[q]( c1,c2 ) = std::pow( left, right );
                     }
         }
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+        {
+            M_gmc = fusion::at_key<key_type>( geom ).get();
+            M_left.update( std::true_type{}, exprExpanded.left(), ttse, geom, theUpdateArgs... );
+            M_right.update( std::true_type{}, exprExpanded.right(), ttse, geom, theUpdateArgs... );
+
+            for ( int q = 0; q < M_gmc->nPoints(); ++q )
+                for ( int c1 = 0; c1 < shape::M; ++c1 )
+                    for ( int c2 = 0; c2 < shape::N; ++c2 )
+                    {
+                        value_type left = M_left.evalq( c1, c2, q );
+                        value_type right = M_right.evalq( c1, c2, q );
+                        M_loc[q]( c1,c2 ) = std::pow( left, right );
+                    }
+        }
+
 
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q  ) const
