@@ -1039,8 +1039,9 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     bool hasConverged = reason>0;
     if ( !hasConverged )
     {
-        LOG(ERROR) << "Nonlinear solve did not converge due to " << PetscConvertSNESReasonToString(reason)
-                   << " iterations " << n_iterations << std::endl;
+        if ( this->worldComm().isMasterRank() )
+            LOG(ERROR) << "Nonlinear solve did not converge due to " << PetscConvertSNESReasonToString(reason)
+                       << " iterations " << n_iterations << std::endl;
         if (this->showSNESConvergedReason() && this->worldComm().globalRank() == this->worldComm().masterRank() )
             std::cout << "Nonlinear solve did not converge due to " << PetscConvertSNESReasonToString(reason)
                       << " iterations " << n_iterations << std::endl;
