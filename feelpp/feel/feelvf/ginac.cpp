@@ -72,18 +72,6 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
     symtab table;
     LOG(INFO) <<"Inserting symbols in symbol table";
 
-#if 0
-    table["x"]=syms[0];
-    if ( syms.size() == 2 )
-    {
-        table["y"]=syms[1];
-    }
-    if ( syms.size() == 3 )
-    {
-        table["y"]=syms[1];
-        table["z"]=syms[2];
-    }
-#endif
     std::vector<symbol> total_syms;
     boost::for_each( syms, [&table, &total_syms]( symbol const& param )
                      {
@@ -107,17 +95,6 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
     try
     {
         e = reader(str);
-#if 0
-        if (!reader.strict)
-        {
-            symtab table_symbols = reader.get_syms();
-            boost::for_each( table_symbols, [](std::pair<std::string, ex> const& s )
-                             {
-                                 LOG(INFO) << "Symbol " << s.first << " added\n";
-                             }
-                );
-        }
-#endif
     }
     catch (std::invalid_argument& err)
     {

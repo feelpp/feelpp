@@ -97,17 +97,19 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->log("CoefficientFormPDE","initFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
+    bool useExtendedDoftable = is_lagrange_polynomialset_v<typename space_unknown_type::fe_type> && !space_unknown_type::fe_type::isContinuous;
+
     auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
     // functionspace
     if ( mom->isDefinedOnWholeMesh( this->physic() ) )
     {
         this->M_rangeMeshElements = elements(this->mesh());
-        M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+        M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_extended_doftable=useExtendedDoftable );
     }
     else
     {
         this->M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physic() ));
-        M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=this->M_rangeMeshElements );
+        M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=this->M_rangeMeshElements,_extended_doftable=useExtendedDoftable );
     }
 
     M_fieldUnknown.reset( new element_unknown_type( M_Xh,this->unknownName() ) );
@@ -132,7 +134,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     for( auto const& d : this->M_bcDirichlet )
         M_bcDirichletMarkerManagement.addMarkerDirichletBC("elimination", name(d), markers(d) );
 
-    if constexpr ( unknown_is_vectorial )
+    if constexpr ( unknown_is_vectorial && !is_hcurl_conforming_v<typename space_unknown_type::fe_type> )
     {
         for ( ComponentType comp : std::vector<ComponentType>( { ComponentType::X, ComponentType::Y, ComponentType::Z } ) )
         {
@@ -265,12 +267,8 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     this->initBasePostProcess();
 
-    // point measures
-    auto fieldNamesWithSpaceUnknown = std::make_pair( std::set<std::string>({this->unknownName()}), this->spaceUnknown() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceUnknown );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-        M_measurePointsEvaluation->init( evalPoints );
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
 
     double tElpased = this->timerTool("Constructor").stop("initPostProcess");
     this->log("CoefficientFormPDE","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
@@ -289,9 +287,14 @@ BlocksBaseGraphCSR
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 {
     int nBlock = 1;//this->nBlockMatrixGraph();
+
+    size_type thePat = size_type(Pattern::COUPLED);
+    if ( is_lagrange_polynomialset_v<typename space_unknown_type::fe_type> && !space_unknown_type::fe_type::isContinuous )
+        thePat = size_type(Pattern::EXTENDED);
     BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
     myblockGraph(0,0) = stencil(_test=this->spaceUnknown(),
-                                _trial=this->spaceUnknown() )->graph();
+                                _trial=this->spaceUnknown(),
+                                _pattern=thePat )->graph();
     return myblockGraph;
 }
 

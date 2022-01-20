@@ -29,6 +29,7 @@
 #if !defined(FEELPP_PCHV_HPP)
 #define FEELPP_PCHV_HPP 1
 
+#include <boost/mp11/utility.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
 namespace Feel
@@ -39,15 +40,11 @@ namespace meta
 
 template<typename MeshType,
          int Order,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 struct Pchv
 {
-    typedef FunctionSpace<MeshType,
-                          bases<Lagrange<Order,Vectorial,Continuous,Pts,Tag>>,
-                          double,
-                          Periodicity <NoPeriodicity>,
-                          mortars<NoMortar>> type;
+    using type = FunctionSpace<MeshType, bases<Lagrange<Order, Vectorial, Continuous, Pts, Tag>>>;
     typedef std::shared_ptr<type> ptrtype;
 };
 
@@ -55,19 +52,19 @@ struct Pchv
 
 template<typename MeshType,
          int Order,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchv_type = typename meta::Pchv<MeshType,Order,Pts,Tag>::type;
 template<typename MeshType,
          int Order,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchv_ptrtype = typename meta::Pchv<MeshType,Order,Pts,Tag>::ptrtype;
 
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
 using Pchv_element_t=typename Pchv_type<MeshType,Order,Pts>::element_type;
 
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
 using Pchv_element_type=Pchv_element_t<MeshType,Order,Pts>;
 
 
@@ -77,7 +74,7 @@ using Pchv_element_type=Pchv_element_t<MeshType,Order,Pts>;
    than k using Lagrange basis functions
  */
 template<int Order,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          typename MeshType,
          int Tag = 0>
 inline
@@ -95,7 +92,7 @@ Pchv( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
  than k using Lagrange basis functions
  */
 template<int Order,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          typename MeshType,
          int Tag = 0>
 inline

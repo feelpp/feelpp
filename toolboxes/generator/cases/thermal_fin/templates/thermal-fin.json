@@ -1,0 +1,84 @@
+// -*- mode: javascript -*-
+// Source for the values of rho, Cp, h : https://docs.lib.purdue.edu/iracc/1338/
+{
+    "Name": "Themal Fin {{ dim }}d",
+    "ShortName":"ThermalFin{{ dim }}d",
+    "Parameters":
+    {
+        {% for item in fins %}"k_{{ item }}":
+        {
+            "value":"0.1",
+            "min":"0.1",
+            "max":"10"
+        },
+        {% endfor %}"k_0":
+        {
+            "value":"1",
+            "min":"1",
+            "max":"1"
+        },
+        "Bi":
+        {
+            "value":"0.01",
+            "min":"0.01",
+            "max":"1"
+        }
+    },
+    "Materials":
+    {
+        {% for item in fins %}"Fin_{{ item }}":
+        {
+            "k":"k_{{ item }}:k_{{ item }}",
+            "Cp":"1.4e6",
+            "rho":"1"
+        },
+        {% endfor %}"Post":
+        {
+            "k":"k_0:k_0",
+            "Cp":"1.4e6",
+            "rho":"1"
+        }
+    },
+    "InitialConditions":
+    {
+        "temperature": 
+        {
+            "Expression": 
+            {
+                "init": 
+                {
+                    "markers":[{% for item in fins %}"Fin_{{ item }}", {% endfor %}"Post"], 
+                    "expr":"0" 
+                }
+            }
+        }
+    },
+    "BoundaryConditions":
+    {
+        "temperature":
+        {
+            "Neumann":
+            {
+                "Gamma_root":
+                {
+                    "expr":"1"     // according to doc : -k nabla T.n = g
+                }
+            },
+            "Robin":
+            {
+                "Gamma_ext":
+                {
+                    "expr1":"Bi:Bi",
+                    "expr2":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["temperature","pid"]
+        }
+    }
+}

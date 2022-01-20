@@ -29,3 +29,5 @@ endforeach()
 foreach(TEST extender_from_interface )
     feelpp_add_test( ${TEST} NO_MPI_TEST )
 endforeach()
+
+feelpp_add_test( distancetorange )

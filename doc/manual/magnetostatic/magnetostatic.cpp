@@ -68,14 +68,14 @@ int main(int argc, char**argv )
     a = integrate(_range=elements(mesh), _expr=c*trans(idt(u))*id(v)+curlxt(u)*curlx(v));
 
     if ( boption("weakdirichlet") ) //weak Dirichlet
-        a += integrate(boundaryfaces(mesh), -curlxt(u)*(cross(N(),id(u)) )
+        a += integrate(_range=boundaryfaces(mesh), _expr= -curlxt(u)*(cross(N(),id(u)) )
                        - curlx(u)*(cross(N(),idt(u)) )
                        + penaldir*trans(cross(idt(u),N()))*cross(id(u),N())/hFace() );
 #else //Dim = 3
     a = integrate(_range=elements(mesh), _expr=c*trans(idt(u))*id(v)+trans(curlt(u))*curl(v));
 
     if ( boption("weakdirichlet") ) //weak Dirichlet
-        a += integrate(boundaryfaces(mesh), -trans(curlt(u))*(cross(N(),id(u)) )
+        a += integrate(_range=boundaryfaces(mesh), _expr=-trans(curlt(u))*(cross(N(),id(u)) )
                        - trans(curl(u))*(cross(N(),idt(u)) )
                        + penaldir*trans(cross(idt(u),N()))*cross(id(u),N())/hFace() );
 #endif
@@ -85,10 +85,10 @@ int main(int argc, char**argv )
     if ( boption("weakdirichlet") ) //weak Dirichlet
     {
 #if FEELPP_DIM == 2
-      l += integrate(boundaryfaces(mesh), - curlx(u)*(cross(N(),e) )
+      l += integrate(_range=boundaryfaces(mesh), _expr=- curlx(u)*(cross(N(),e) )
                    + penaldir*trans(cross(e,N()))*cross(id(u),N())/hFace() );
 #else //Dim = 3
-      l += integrate(boundaryfaces(mesh), - trans(curl(u))*(cross(N(),e) )
+      l += integrate(_range=boundaryfaces(mesh), _expr=- trans(curl(u))*(cross(N(),e) )
                    + penaldir*trans(cross(e,N()))*cross(id(u),N())/hFace() );
 #endif
     }

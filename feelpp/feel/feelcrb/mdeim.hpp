@@ -26,8 +26,8 @@
    \author JB Wahl
    \date 2018-03-27
  */
-#ifndef _FEELPP_MDEIM_HPP
-#define _FEELPP_MDEIM_HPP 1
+#ifndef FEELPP_CRB_MDEIM_H
+#define FEELPP_CRB_MDEIM_H
 
 #include <feel/feelcrb/deimmodel.hpp>
 
@@ -133,42 +133,19 @@ private :
 
 
 
-
-namespace detail
+template <typename ... Ts>
+auto mdeim( Ts && ... v )
 {
-template <typename Args>
-struct compute_mdeim_return
-{
-    typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type::element_type model1_type;
-    typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
-
-    typedef MDEIM<model_type> type;
-    typedef std::shared_ptr<type> ptrtype;
-};
-} // namespace detail
-
-
-BOOST_PARAMETER_FUNCTION(
-                         ( typename Feel::detail::compute_mdeim_return<Args>::ptrtype ), // 1. return type
-                         mdeim,                        // 2. name of the function template
-                         tag,                                        // 3. namespace of tag types
-                         ( required
-                           ( in_out(model),          * )
-                           ) // required
-                         ( optional
-                           ( sampling, *, nullptr )
-                           ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
-                           ( filename, *( boost::is_convertible<mpl::_,std::string> ), "" )
-                           ( directory, *( boost::is_convertible<mpl::_,std::string> ), "" )
-                           ( tag, *( boost::is_convertible<mpl::_,int> ), 0 )
-                           ) // optionnal
-                         )
-{
-    typedef typename Feel::detail::compute_mdeim_return<Args>::type mdeim_type;
-    return std::make_shared<mdeim_type>( model, sampling, prefix, filename, directory, tag );
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && model = args.get(_model);
+    auto && sampling = args.get_else(_sampling, nullptr);
+    std::string const& prefix = args.get_else(_prefix,"");
+    std::string const& filename = args.get_else(_filename,"");
+    std::string const& directory = args.get_else(_directory,"");
+    int tag = args.get_else(_tag,0);
+    using model_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(model)>>>;
+    return std::make_shared<MDEIM<model_type>>( model, sampling, prefix, filename, directory, tag );
 }
-
-
 
 
 } //namespace Feel

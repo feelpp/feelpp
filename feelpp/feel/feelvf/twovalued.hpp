@@ -26,11 +26,11 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-05-07
  */
-#ifndef __TwoValued_H
-#define __TwoValued_H 1
+#ifndef FEELPP_VF_TwoValued_H
+#define FEELPP_VF_TwoValued_H 1
 
 
-#include <boost/fusion/container/generation/make_map.hpp>
+#include <feel/feelvf/expr.hpp>
 
 namespace Feel
 {
@@ -629,6 +629,9 @@ public:
     {}
 
     //@}
+
+    //! dynamic context
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr ); }
 
     //! polynomial order
     uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }

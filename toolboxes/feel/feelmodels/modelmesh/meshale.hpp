@@ -61,6 +61,8 @@ class MeshALE : public ModelBase
 
 public :
     typedef ModelBase super_type;
+    using self_type = MeshALE<Convex>;
+    using self_ptrtype = std::shared_ptr<self_type>;
     using size_type = uint32_type;
     typedef Backend<double> backend_type;
     typedef std::shared_ptr<backend_type> backend_ptrtype;
@@ -71,6 +73,8 @@ public :
     typedef Convex convex_type;
     typedef Mesh< convex_type > mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
+    using range_elements_type = elements_reference_wrapper_t<mesh_type>;
+    using range_faces_type = faces_reference_wrapper_t<mesh_type>;
 
     /*
      * Reference mesh typedefs
@@ -78,6 +82,7 @@ public :
     typedef typename mesh_type::P1_mesh_type  mesh_ref_type;
     typedef std::shared_ptr<mesh_ref_type> mesh_ref_ptrtype;
     typedef typename mesh_ref_type::shape_type convex_ref_type;
+    using range_elements_ref_type = elements_reference_wrapper_t<mesh_ref_type>;
 
     typedef ALE< convex_ref_type, mesh_type::nOrder > ale_map_type;
     typedef std::shared_ptr< ale_map_type > ale_map_ptrtype;
@@ -111,6 +116,125 @@ public :
     typedef std::shared_ptr<DofRelationshipMap_type> DofRelationshipMap_ptrtype;
 
 
+    struct ComputationalDomain
+    {
+    public :
+        ComputationalDomain( self_type const* meshALE );
+        ComputationalDomain( self_type const* meshALE, range_elements_type const& rangeElt );
+
+        void init( bool M_isARestart );
+
+        void generateMap( ale_map_element_type const& displacementOnMovingBoundary_HO_ref );
+
+        void updateDisplacement( ale_map_element_type & displacement );
+
+        //! add boundary marker with respect to type \bctype
+        void addMarkerInBoundaryCondition(std::string const& bctype, std::string const& marker);
+
+        //! return true if the boundary condition type \bctype has been defined
+        bool hasBoundaryCondition( std::string const& bctype ) const { return M_aleFactory->hasBoundaryCondition( bctype ); }
+
+        //! return markers associated to a boundary condition type \bctype
+        std::set<std::string> const& markers( std::string const& bctype ) const { return M_aleFactory->markers( bctype ); }
+
+        //! return the object that manage the ale computation
+        ale_map_ptrtype const& aleFactory() const { return M_aleFactory; }
+
+        //! return the object that manage the ale computation
+        ale_map_ptrtype & aleFactory() { return M_aleFactory; }
+
+        //! update meshale object to the next time step
+        void updateTimeStep();
+    private:
+        void build();
+    private :
+        self_type const* M_meshALE;
+        ale_map_ptrtype M_aleFactory;
+        // the distance between P1_ref and HO_ref
+        std::shared_ptr<ale_map_element_ref_type> M_dispP1ToHO_ref;
+        std::shared_ptr<ale_map_element_ref_type> M_displacementOnMovingBoundary_P1_ref;
+        std::shared_ptr<ale_map_element_ref_type> M_displacement_ref;
+        bdf_ale_displacement_ref_ptrtype M_bdf_ale_displacement_ref;
+        DofRelationshipMap_ptrtype M_drm;
+        exporter_ref_ptrtype M_exporter_ref;
+    };
+
+    class DisplacementImposedOnInitialDomainOverElements
+    {
+    public:
+        DisplacementImposedOnInitialDomainOverElements( self_type const* meshALE, std::set<std::string> const& markers );
+
+        std::set<std::string> const& markers() const { return M_markers; }
+        void revertInitialDomain();
+        void revertReferenceDomain();
+        bool isOnInitialDomain() const { return M_isRevertInitialDomain; }
+
+        template <typename ExprType>
+        void updateDisplacementImposed( ale_map_element_type & outputField, ExprType const& expr, range_elements_type const& range )
+            {
+                bool meshIsOnInitialDomainAtBegin = this->isOnInitialDomain();
+                if ( !meshIsOnInitialDomainAtBegin )
+                    this->revertInitialDomain();
+                outputField.on(_range=range, _expr=expr );
+                if ( !meshIsOnInitialDomainAtBegin )
+                    this->revertReferenceDomain();
+            }
+    private :
+        self_type const* M_meshALE;
+        std::set<std::string> M_markers;
+        mesh_ptrtype M_mesh;
+        bool M_isRevertInitialDomain = false;
+    };
+
+    class DisplacementImposedOnInitialDomainOverFaces
+    {
+        using trace_mesh_type = typename mesh_type::trace_mesh_type;
+        using trace_mesh_ptrtype = std::shared_ptr<trace_mesh_type>;
+        using trace_functionspace_type = typename ale_map_functionspace_type::trace_functionspace_type;
+        using trace_functionspace_ptrtype = std::shared_ptr<trace_functionspace_type>;
+        using trace_element_type = typename trace_functionspace_type::element_type;
+        using trace_element_ptrtype = std::shared_ptr<trace_element_type>;
+        using trace_range_elements_type = elements_reference_wrapper_t<trace_mesh_type>;
+    public :
+
+        DisplacementImposedOnInitialDomainOverFaces( self_type const* meshALE, std::set<std::string> const& markers );
+
+        std::set<std::string> const& markers() const { return M_markers; }
+
+        void revertInitialDomain();
+        void revertReferenceDomain();
+        bool isOnInitialDomain() const { return M_isRevertInitialDomain; }
+
+
+        template <typename ExprType>
+        void updateDisplacementImposed( ale_map_element_type & outputField, ExprType const& expr, range_faces_type const& range )
+            {
+                auto rangeElt = this->transformFromRelation( range );
+                bool meshIsOnInitialDomainAtBegin = this->isOnInitialDomain();
+                if ( !meshIsOnInitialDomainAtBegin )
+                    this->revertInitialDomain();
+                M_fieldDisplacementImposed->on(_range=rangeElt, _expr=expr ); // close?
+                if ( !meshIsOnInitialDomainAtBegin )
+                    this->revertReferenceDomain();
+                M_matrixInterpolationDisplacement->multVector( *M_fieldDisplacementImposed, outputField );
+            }
+
+    private:
+        trace_range_elements_type transformFromRelation( range_faces_type const& rangeFaces ) const;
+
+    private :
+        self_type const* M_meshALE;
+        std::set<std::string> M_markers;
+        trace_mesh_ptrtype M_mesh;
+        MeshMover<trace_mesh_type> M_mesh_mover;
+        trace_functionspace_ptrtype M_spaceDisplacement;
+        trace_element_ptrtype M_fieldDisplacementImposed;
+        trace_element_ptrtype M_fieldDisplacementRefToInitial;
+        std::shared_ptr<MatrixSparse<double>> M_matrixInterpolationDisplacement;
+        bool M_isRevertInitialDomain = false;
+    };
+
+
     MeshALE( mesh_ptrtype mesh_moving,
              std::string const& prefix="",
              worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
@@ -118,15 +242,32 @@ public :
 
     void init();
 
+    void applyRemesh( mesh_ptrtype const& newMesh, std::vector<std::tuple<std::string,range_elements_type>> const& rangeElt );
+
     std::shared_ptr<std::ostringstream> getInfo() const;
 
+    //! defined the whole mesh as a computational domain (compute disp from boundary)
+    void setWholeMeshAsComputationalDomain( std::string const& name );
+    //! defined a part of mesh as a computational domain
+    //! the displacement should be given in parts that not inside a computational domain
+    void setComputationalDomain( std::string const& name, range_elements_type const& rangeElt );
 
-    void addBoundaryFlags( std::string const& bctype, std::string const& marker );
-    void addBoundaryFlags( std::string const& bctype, std::vector<std::string> const& markers )
+    //! add marker in a boundary condition type (i.e. fixed, moving, free)
+    void addMarkerInBoundaryCondition( std::string const& bctype, std::string const& marker );
+    //! add markers in a boundary condition type (i.e. fixed, moving, free)
+    template <typename MarkersType,std::enable_if_t< is_iterable_v<MarkersType>, bool> = true>
+    void addMarkersInBoundaryCondition( std::string const& bc, MarkersType const& markers )
         {
             for ( std::string const& marker : markers )
-                this->addBoundaryFlags( bctype,marker );
+                this->addMarkerInBoundaryCondition( bc, marker );
         }
+    //! return set of markers associated to boundary condition type \bc
+    std::set<std::string> markers( std::string const& bc ) const;
+
+    //! defined element markers where disp imposed is given on initial mesh (not necessarly equal to ref mesh when we apply remesh)
+    void setDisplacementImposedOnInitialDomainOverElements( std::string const& name, std::set<std::string> const& markers );
+    //! defined face markers where disp imposed is given on initial mesh (not necessarly equal to ref mesh when we apply remesh)
+    void setDisplacementImposedOnInitialDomainOverFaces( std::string const& name, std::set<std::string> const& markers );
 
     /**
      * \return the reference mesh
@@ -142,6 +283,9 @@ public :
      * \return true is reverted on reference mesh, else false
      */
     bool isOnReferenceMesh() const { return M_isOnReferenceMesh; }
+    /**
+     * \return true is on moving mesh, else false
+     */
     bool isOnMovingMesh() const { return M_isOnMovingMesh; }
     /**
      * \return the functionspace
@@ -149,49 +293,14 @@ public :
     ale_map_functionspace_ptrtype functionSpace() const { return M_Xhmove; }
 
     /**
-     * \return the functionspace in reference mesh
-     */
-    ale_map_functionspace_ref_ptrtype functionSpaceInRef() const { return M_Xhref; }
-
-    /**
-     * \return ale object define (only!) on P1_ref
-     */
-    ale_map_ptrtype const& aleFactory() const { return M_aleFactory; }
-
-    /**
-     * \return the ale map in P1_ref
-     */
-    ale_map_element_ref_type const& mapInRef() const;
-
-    /**
-     * \return the ale map in HO_ref
-     */
-    ale_map_element_type map();
-
-    /**
      *
      */
     ale_map_element_ptrtype identityALE() const { return M_identity_ale; }
 
     /**
-     * \return the distance between P1_ref and HO_ref
-     */
-    ale_map_element_ref_ptrtype dispP1ToHO_ref() const { return M_dispP1ToHO_ref; }
-
-    /**
      *
      */
     ale_map_element_ptrtype displacementOnMovingBoundary() const { return M_displacementOnMovingBoundary_HO_ref; }
-
-    /**
-     *
-     */
-    ale_map_element_ref_ptrtype displacementOnMovingBoundaryInRef() const { return M_displacementOnMovingBoundary_P1_ref; }
-
-    /**
-     * \return the displacement
-     */
-    ale_map_element_ref_ptrtype displacementInRef() const { return M_displacement_ref; }
 
     /**
      * \return the displacement
@@ -203,67 +312,91 @@ public :
      */
     ale_map_element_ptrtype velocity() const { return M_meshVelocity; }
 
-    /*
-     * \ return dofRelationShipMap
-     */
-    DofRelationshipMap_ptrtype dofRelationShipMap() const { return M_drm; }
+    //! return field initial identity
+    ale_map_element_type const& fieldInitialIdentity() const { return *M_fieldInitialIdentity; }
 
+    //! update displacement imposed from an expression \expr on entities defined by \range
+    template <typename ExprType,typename RangeType >
+    void updateDisplacementImposed( ExprType const& expr, RangeType const& range );
+
+
+    //!
+    //template <typename ExprType>
+    //void updateDisplacementImposedOnInitialDomain( std::string const& name, ExprType const& expr, range_faces_type const& range );
+    template <typename ExprType,typename RangeType>
+    void updateDisplacementImposedOnInitialDomain( std::string const& name, ExprType const& expr, RangeType const& range );
+
+    //! update displacement imposed from a velocity expression \v on entities defined by \range (use bdf scheme)
+    template <typename ExprT, typename RangeType >
+    void updateDisplacementImposedFromVelocity( Expr<ExprT> const& v, RangeType const& range )
+        {
+            auto dispExpr = (v + idv(M_bdf_ale_identity->polyDeriv()))/M_bdf_ale_identity->polyDerivCoefficient(0) - idv(this->identityALE()) + idv( this->displacement() );
+            this->updateDisplacementImposed( dispExpr, range );
+        }
+
+    //! update the field \d  from a velocity expression \v on entities defined by \range (use bdf scheme)
+    template < typename FieldDispType, typename ExprT, typename RangeType >
+    void updateDisplacementFieldFromVelocity( FieldDispType & d, Expr<ExprT> const& v, RangeType const& range, bool doParallelSync = false ) const
+        {
+            unwrap_ptr(d).on(_range=range,
+                             _expr= (v + idv(M_bdf_ale_identity->polyDeriv()))/M_bdf_ale_identity->polyDerivCoefficient(0) - idv(this->identityALE()) + idv( this->displacement() ),
+                             _close=doParallelSync/*,_geomap=this->geomap()*/ );
+        }
+
+    auto displacementExprAtPreviousTime() const
+        {
+            return idv( M_bdf_ale_identity->unknown(0) ) - idv(this->identityALE()) + idv( this->displacement() );
+        }
+
+    //! parallel sync of values given
+    void updateDisplacementImposedForUse();
 
     /**
-     * \Compute ale map and move the mesh
-     */
-    template< typename elem_type >
-    void update( std::vector<elem_type> const& polyDisplacementSet );
-    template< typename elem_type >
-    void update( elem_type const& polyDisplacementSet );
-
-    /**
-     * \Revert mesh_ho in reference state
+     * \Revert mesh in reference state, \updateMeshMeasures boolean put to false avoid to recompute some mesh measure as the aera,...
      */
     void revertReferenceMesh( bool updateMeshMeasures = true );
 
     /**
-     * \Revert mesh_ho in reference state
+     * \Revert mesh in moving state, \updateMeshMeasures boolean put to false avoid to recompute some mesh measure as the aera,...
      */
     void revertMovingMesh( bool updateMeshMeasures = true );
 
+    void revertInitialDomain( bool updateMeshMeasures = true );
+
     /**
-     * \Revert mesh_ho in moving state
+     * update meshale object to the next time step
      */
     void updateTimeStep();
 
     /**
-     * \Export
+     * \Export visualisation results
      */
     void exportResults(double time=0);
 
+    //! update the moving mesh by using displacement imposed given
+    void updateMovingMesh() { this->updateImpl(); }
+
+#if 0
     void updateMetricMeshAdaptation( Expr<GinacExVF<2>> const& e )
         {
             M_aleFactory->updateMetricMeshAdaptation( e );
         }
+#endif
     template < typename ExprT >
     void updateMetricMeshAdaptation( Expr<ExprT> const& e )
         {
-            M_aleFactory->updateMetricMeshAdaptation( e );
-        }
-
-    template < typename FieldDispType, typename ExprT, typename RangeType >
-    void updateDisplacementFieldFromVelocity( FieldDispType & d, Expr<ExprT> const& v, RangeType const& range ) const
-        {
-            unwrap_ptr(d).on(_range=range,
-                             _expr= (v + idv(M_bdf_ale_identity->polyDeriv()))/M_bdf_ale_identity->polyDerivCoefficient(0) - idv(this->identityALE()) + idv( this->displacement() ) );
+            for ( auto & [name,cd] : M_computationalDomains )
+                cd.aleFactory()->updateMetricMeshAdaptation( e );
         }
 
 private :
 
     void updateIdentityMap();
+    void initFunctionSpaces();
     void initTimeStep();
     void updateImpl();
 
 private :
-
-
-    //backend_ptrtype M_backend;
 
     MeshMover<mesh_type> M_mesh_mover;
 
@@ -272,71 +405,89 @@ private :
 
     bool M_isOnReferenceMesh, M_isOnMovingMesh;
 
-    ale_map_ptrtype M_aleFactory;
-
-    ale_map_functionspace_ref_ptrtype M_Xhref;
     ale_map_functionspace_ptrtype M_Xhmove;
+    ale_map_element_ptrtype M_identity_ale;
+    ale_map_element_ptrtype M_displacementOnMovingBoundary_HO_ref;
+    ale_map_element_ptrtype M_displacement;
+    ale_map_element_ptrtype M_meshVelocity;
+    ale_map_element_ptrtype M_fieldTmp;
 
-    std::shared_ptr<ale_map_element_type> M_identity_ale;
-    std::shared_ptr<ale_map_element_ref_type> M_dispP1ToHO_ref;
+    ale_map_element_ptrtype M_fieldInitialIdentity;
 
-    std::shared_ptr<ale_map_element_type> M_displacementOnMovingBoundary_HO_ref;
-    std::shared_ptr<ale_map_element_ref_type> M_displacementOnMovingBoundary_P1_ref;
-
-    std::shared_ptr<ale_map_element_type> M_displacement;
-    std::shared_ptr<ale_map_element_ref_type> M_displacement_ref;
-    std::shared_ptr<ale_map_element_ref_type> M_map_ref;
-    std::shared_ptr<ale_map_element_type> M_meshVelocity;
-    std::shared_ptr<ale_map_element_type> M_fieldTmp;
-
-    bdf_ale_displacement_ref_ptrtype M_bdf_ale_displacement_ref;
     bdf_ale_displacement_ptrtype M_bdf_ale_identity;
-    bdf_ale_displacement_ptrtype M_bdf_ale_velocity;
-
-    DofRelationshipMap_ptrtype M_drm;
 
     exporter_ptrtype M_exporter;
-    exporter_ref_ptrtype M_exporter_ref;
 
     bool M_isARestart;
     std::string M_restartPath;
 
     std::set<size_type> M_dofsMultiProcessOnMovingBoundary_HO;
+
+    std::map<std::string,ComputationalDomain> M_computationalDomains;
+
+    std::map<std::string,DisplacementImposedOnInitialDomainOverElements> M_displacementImposedOnInitialDomainOverElements;
+    std::map<std::string,DisplacementImposedOnInitialDomainOverFaces> M_displacementImposedOnInitialDomainOverFaces;
 };
 
 //------------------------------------------------------------------------------------------------//
 
 template< class Convex >
-template< typename elem_type >
+template <typename ExprType,typename RangeType >
 void
-MeshALE<Convex>::update( std::vector<elem_type> const& polyDisplacementSet )
+MeshALE<Convex>::updateDisplacementImposed( ExprType const& expr, RangeType const& range )
 {
-    CHECK( polyDisplacementSet.size() == 1 ) << "invalid size";
-    this->update( polyDisplacementSet[0] );
+    M_displacementOnMovingBoundary_HO_ref->on(_range=range, _expr=expr );
+
+    //M_displacementOnMovingBoundary_HO_ref->on(_range=range, _expr=expr - ( idv(M_identity_ale) - idv(M_displacement) - idv(M_fieldInitialIdentity) ) );
+
+    auto dofMultiProcessOnRange = M_displacementOnMovingBoundary_HO_ref->functionSpace()->dofs( range, ComponentType::NO_COMPONENT, true );
+    M_dofsMultiProcessOnMovingBoundary_HO.insert( dofMultiProcessOnRange.begin(), dofMultiProcessOnRange.end() );
 }
+
+
 template< class Convex >
-template< typename elem_type >
+template <typename ExprType,typename RangeType >
 void
-MeshALE<Convex>::update( elem_type const& polyDisplacementSet )
+MeshALE<Convex>::updateDisplacementImposedOnInitialDomain( std::string const& name, ExprType const& expr, RangeType const& range )
 {
-    this->log(prefixvm(this->prefix(),"MeshALE"),"update", "start");
+    M_fieldTmp->zero();
+    if constexpr ( std::is_same_v<RangeType,range_elements_type> )
+    {
+        auto itFind = M_displacementImposedOnInitialDomainOverElements.find( name );
+        CHECK( itFind != M_displacementImposedOnInitialDomainOverElements.end() ) << "no displacementImposedOnInitialDomainOverElements with name " << name;
+        itFind->second.updateDisplacementImposed( *M_fieldTmp, expr, range );
+    }
+    else if constexpr ( std::is_same_v<RangeType,range_faces_type> )
+    {
+        auto itFind = M_displacementImposedOnInitialDomainOverFaces.find( name );
+        CHECK( itFind != M_displacementImposedOnInitialDomainOverFaces.end() ) << "no displacementImposedOnInitialDomainOverFaces with name " << name;
+        itFind->second.updateDisplacementImposed( *M_fieldTmp, expr, range );
+    }
+    else
+        CHECK( false ) << "error"; // TODO static assert
 
-    CHECK( this->isOnMovingMesh() ) << "meshALE must be on moving mesh\n";
-
-    M_displacementOnMovingBoundary_HO_ref->on(_range=markedfaces(M_movingMesh,this->aleFactory()->flagSet("moving")),
-        _expr=vf::idv(polyDisplacementSet) );
-    sync( *M_displacementOnMovingBoundary_HO_ref, "=", M_dofsMultiProcessOnMovingBoundary_HO );
-
-    this->updateImpl();
-
-    this->log(prefixvm(this->prefix(),"MeshALE"),"update", "finish");
+    this->updateDisplacementImposed( idv(M_fieldTmp)  - ( idv(M_identity_ale) - idv(M_displacement) - idv(M_fieldInitialIdentity) ), range );
 }
+#if 0
+template< class Convex >
+template <typename ExprType >
+void
+MeshALE<Convex>::updateDisplacementImposedOnInitialDomain( std::string const& name, ExprType const& expr, range_faces_type const& range )
+{
+    auto itFind = M_displacementImposedOnInitialDomainOverFaces.find( name );
+    CHECK( itFind != M_displacementImposedOnInitialDomainOverFaces.end() ) << "no displacementImposedOnInitialDomainOverFaces with name " << name;
 
+    M_fieldTmp->zero();
+    itFind->second.updateDisplacementImposed( *M_fieldTmp, expr, range );
+
+    this->updateDisplacementImposed( idv(M_fieldTmp)  - ( idv(M_identity_ale) - idv(M_displacement) - idv(M_fieldInitialIdentity) ), range );
+}
+#endif
 //------------------------------------------------------------------------------------------------//
 
 
 
-
+#if 0
 template<typename Args>
 struct compute_meshale_return
 {
@@ -365,7 +516,20 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename compute_meshale_return<Args>::type meshale_type;
     return meshale_ptrtype( new meshale_type(mesh,prefix,worldcomm,directory) );
 }
+#endif
+template <typename ... Ts>
+auto meshale( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && mesh = args.get(_mesh);
+    std::string const& prefix = args.get_else(_prefix,"");
+    worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,mesh->worldCommPtr() );
+    auto && directory = args.get_else(_directory,ModelBaseRepository() );
 
+    using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
+    using convex_type = typename mesh_type::shape_type;
+    return std::make_shared<MeshALE<convex_type>>( mesh,prefix,worldcomm,directory );
+}
 
 } // namespace FeelModels
 } // namespace Feel

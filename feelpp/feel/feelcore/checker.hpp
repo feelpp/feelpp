@@ -21,8 +21,8 @@
 //! @date 23 Jul 2017
 //! @copyright 2017 Feel++ Consortium
 //!
-#ifndef FEELPP_CHECKER_HPP
-#define FEELPP_CHECKER_HPP 1
+#ifndef FEELPP_CORE_CHECKER_H
+#define FEELPP_CORE_CHECKER_H
 
 #include <optional>
 #include <feel/feelcore/environment.hpp>
@@ -168,13 +168,15 @@ public:
     void setGradient( std::string const& s, std::string const& key = "gradient" ) { M_gradient = s; M_gradient_key = key; }
 
     //! set the script to configure a PDE from a set of coefficient using a script
-    void setScript( std::string const& s, variables_t const& inputs = {} , bool use = true );
+    void setScript( std::string const& s, variables_t const& inputs = {} , std::map<std::string,double> const& params = {}, bool use = true );
 
     //! @return true if use the script, false otherwise
     void setUseScript( bool u ) { M_use_script = u; }
     //! @return true if use the script, false otherwise
     bool useScript() const { return M_use_script; }
 
+    void setParameterValues( std::map<std::string,double> const& p ) { M_param_values = p; }
+    std::map<std::string,double> const& parameterValues() const { return M_param_values; }
     /*
      * compute manufactured solution from a python script
      * @param vm variables map
@@ -195,6 +197,7 @@ private:
     double M_etol, M_otol;
     std::string M_script;
     std::map<std::string,std::string> M_script_in;
+    std::map<std::string,double> M_param_values;
     bool M_use_script;
 };
 
@@ -271,35 +274,25 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
 //! @param gradient optional expression for the gradient, if empty use checker.gradient
 //! if @p gradient and option checker.gradient are empty then we do not set the gradient expression
 //!
-BOOST_PARAMETER_FUNCTION(
-    ( Checker ), // return type
-    checker,    // 2. function name
 
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( name, (std::string))
-      ( solution_key, (std::string))
-      ) // 4. one required parameter, and
-
-    ( optional
-      ( inputs,(std::map<std::string,std::string>), (std::map<std::string,std::string>{})  )
-      ( solution, (std::string), inputs.count(solution_key)?inputs.at(solution_key):soption("checker.solution"))
-      ( gradient_key, (std::string), std::string{"grad_"}+solution_key)
-      ( gradient, (std::string), inputs.count(gradient_key)?inputs.at(gradient_key):soption("checker.gradient"))
-      ( script,(std::string), soption("checker.script"))    
-      ( compute_pde_coefficients, (bool), boption("checker.compute-pde-coefficients") )
-      ( prefix, (std::string), "" )
-      ( verbose,   (bool), boption(_prefix=prefix,_name="checker.verbose") )
-      )
-    )
+template <typename ... Ts>
+Checker checker( Ts && ... v )
 {
-    using Feel::cout;
-    
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunsequenced"
-#endif
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    std::string const& name = args.get(_name);
+    std::string const& solution_key = args.get(_solution_key);
+
+    std::map<std::string,std::string> const& inputs = args.get_else(_inputs,std::map<std::string,std::string>{});
+    std::map<std::string,double> const& parameter_values = args.get_else(_parameter_values,std::map<std::string,double>{});
+    std::string const& solution = args.get_else_invocable(_solution,[&inputs,&solution_key](){ return inputs.count(solution_key)?inputs.at(solution_key):soption(_name="checker.solution"); } );
+    std::string const& gradient_key = args.get_else(_gradient_key,std::string{"grad_"}+solution_key);
+    std::string const& gradient = args.get_else_invocable(_gradient,[&inputs,&gradient_key](){ return inputs.count(gradient_key)?inputs.at(gradient_key):soption("checker.gradient"); } );
+    std::string const& script = args.get_else_invocable(_script,[](){ return soption(_name="checker.script"); } );
+    bool compute_pde_coefficients = args.get_else_invocable(_compute_pde_coefficients,[](){ return boption(_name="checker.compute-pde-coefficients"); });
+    std::string const& prefix =args.get_else(_prefix,"");
+    bool verbose = args.get_else_invocable(_verbose,[&prefix](){ return boption(_prefix=prefix,_name="checker.verbose"); } );
+
+
     //if ( solution.empty() && soption("checker.solution" ).empty() )
     //    throw std::logic_error("Invalid setup of Checker system, no solution provided");
     Checker c{name};
@@ -309,7 +302,7 @@ BOOST_PARAMETER_FUNCTION(
         c.setGradient( gradient, gradient_key );
     else
         c.setGradientKey( gradient_key );
-    c.setScript( script, inputs, compute_pde_coefficients ); 
+    c.setScript( script, inputs, parameter_values, compute_pde_coefficients );
     return c;
 }
 

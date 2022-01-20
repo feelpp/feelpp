@@ -1,0 +1,77 @@
+// -*- mode: javascript -*-
+{
+    "Name":"test2d",
+    "ShortName":"test2d",
+    "Materials":
+    {
+        "OmegaTE":
+        {
+            "physics":"thermo-electric",
+            //"k":"370",//[ W/(m*K) ]
+            "k":"100+350*(x*x+y*y):x:y",//[ W/(m*K) ]
+            //"Cp":"1000.005", //[ J/(kg*K) ]
+            // "rho":"1.205", //[ kg/(m^3) ]
+            "sigma":"53e6"
+            //"sigma":"53e6+y*y*1e8:y"
+        },
+        "OmegaHT":
+        {
+            "physics":"heat",
+            //"k":"1"
+            "k":"10+350*(x*x+y*y):x:y"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "temperature":
+        {
+            "Dirichlet":
+            {
+                "outerHT":
+                {
+                    "expr":"0"
+                }
+            },
+            "Neumann":
+            {
+                "insulation":
+                {
+                    "markers":["rightTE","leftTE","leftHT","rightHT","cylinder"],
+                    "expr":"0" 
+                }
+            }
+        },
+        "electric-potential":
+        {
+            "Dirichlet":
+            {
+                "rightTE":
+                {
+                    "expr":"0.3"
+                },
+                "leftTE":
+                {
+                    "expr":"0.1"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "thermoelectric":
+        {
+            "Exports":
+            {
+                "fields":["heat.temperature","electric.electric-potential","electric.electric-field","pid","all"]
+            }
+        },
+        "heat":
+        {
+        },
+        "electric":
+        {
+        }
+    }
+
+}

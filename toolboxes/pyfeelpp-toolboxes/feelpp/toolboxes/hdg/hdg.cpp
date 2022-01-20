@@ -23,21 +23,22 @@
 //!
 #include <pybind11/pybind11.h>
 
-#include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include "hdg-poisson.hpp"
 
 namespace py = pybind11;
 using namespace Feel;
 
-    
 
 PYBIND11_MODULE(_hdg, m )
 {
     using namespace Feel;
+    using namespace Feel::FeelModels;
 
-    m.def( "hdg_poisson_options", &FeelModels::makeMixedPoissonOptions, "get hdg mixed Poisson command line options",
-           py::arg("prefix")=std::string(""),py::arg("prefix_toolbox")=std::string("hdg.poisson"));
-    
+    py::enum_<MixedPoissonPhysics>(m,"MixedPoissonPhysics")
+        .value("none", MixedPoissonPhysics::None)
+        .value("electric", MixedPoissonPhysics::Electric)
+        .value("heat", MixedPoissonPhysics::Heat);
+
     defHDGPoisson<2,1>(m);
     defHDGPoisson<2,2>(m);
     defHDGPoisson<3,1>(m);

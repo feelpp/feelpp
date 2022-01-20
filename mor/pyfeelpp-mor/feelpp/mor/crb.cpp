@@ -84,8 +84,9 @@ struct std_item
     static V const& get(T const& x, int i)
         {
             if( i<0 ) i+=x.size();
-            if( i>=0 && i<x.size() ) return x[i];
-            IndexError();
+            if ( i< 0 || i>= x.size() )
+                IndexError();
+            return x[i];
         }
     static void set(T & x, int i, V const& v)
         {
@@ -238,10 +239,15 @@ PYBIND11_MODULE( _mor, m )
                             os << "]";
                             return os.str();
                         })
+        .def("view", &ElementP::view, "view the parameters names, with its values")
         .def("parameterNamed", static_cast<double& (ElementP::*)(std::string)>(&ElementP::parameterNamed), "return the parameter named", py::arg("name") )
         .def("parameterName", &ElementP::parameterName, "return the i-th name ", py::arg("i"))
         .def("size", &ElementP::size, "return the size of the parameters" )
         .def("__call__", static_cast<double& (ElementP::*)(int)>(&ElementP::coeff), "return the ith parameter", py::arg("i") )
+        .def("setParameter", static_cast<void (ElementP::*)(int, double)>(&ElementP::setParameter), "set the i-th to the value", py::arg("i"), py::arg("value"))
+        .def("setParameterNamed", static_cast<void (ElementP::*)(std::string, double)>(&ElementP::setParameterNamed), "set the named parameter to the value", py::arg("name"), py::arg("value"))
+        .def("setParameters", static_cast<void (ElementP::*)(const std::vector<double> &param)>(&ElementP::setParameters), "set the parameter to the given list", py::arg("values"))
+        .def("setParameters", static_cast<void (ElementP::*)(const std::map<std::string, double> &dict)>(&ElementP::setParameters), "set the parameter to the given dict with values", py::arg("values"))
         ;
 
     //!
@@ -264,7 +270,8 @@ PYBIND11_MODULE( _mor, m )
     py::class_<ParameterSpaceX,std::shared_ptr<ParameterSpaceX>>(m,"ParameterSpace")
         .def( py::init<>() )
         .def("sampling", &ParameterSpaceX::sampling)
-        .def("element", &ParameterSpaceX::element)
+        .def("element", &ParameterSpaceX::element, "return a parameter from the space\n  - broadcast : share the parameter to all processors\n  - apply_log : log random chosen parameter",
+            py::arg("broadcast")=true, py::arg("apply_log")=false)
         //.def("New", &ParameterSpaceX::New, ParameterSpaceX_New_overloads(args("dim", "WorldComm"), "New")).staticmethod("New")
         .def_static("create",&ParameterSpaceX::create )
         ;

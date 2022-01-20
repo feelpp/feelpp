@@ -55,7 +55,7 @@ makeOptions()
         ( "remesh.hsiz", po::value<double>(), "Constant mesh size " )
         
         ;
-    return desc_options.add( Feel::feel_options() );
+    return desc_options.add( backend_options("I") ).add( backend_options("Iv") ).add( Feel::feel_options() );
 }
 
 /*_________________________________________________*
@@ -172,7 +172,8 @@ template <int Dim, int RDim>
 int
 TestRemesh<Dim, RDim>::execute( int niter )
 {
-    std::vector<std::tuple<int,std::string>> iters{ {0,"0.2"}, {1,"0.1"}, {2,"0.05"} };
+    //std::vector<std::tuple<int,std::string>> iters{ {0,"0.2"}, {1,"0.1"}, {2,"0.05"} };
+    std::vector<std::tuple<int,std::string>> iters{ {0,"0.5"}, {1,"0.25"}, {2,"0.125"} };
     for( auto [iter,metric]: iters) //ranges::views::ints( 0, niter ) )
     {
         auto Vh = createSpace<scalar,2>( mesh_ );
@@ -193,8 +194,8 @@ TestRemesh<Dim, RDim>::execute( int niter )
         auto Mhr = createMetricSpace( out );
         auto Vhr = createSpace<scalar,2>( out );
         auto Whr = createSpace<vectorial,2>( out );
-        auto interp = I( _domainSpace = Vh, _imageSpace = Vhr );
-        auto interpv = I( _domainSpace = Wh, _imageSpace = Whr );
+        auto interp = I( _domainSpace = Vh, _imageSpace = Vhr, _backend=backend(_name="I",_rebuild=true) );
+        auto interpv = I( _domainSpace = Wh, _imageSpace = Whr, _backend=backend(_name="Iv",_rebuild=true) );
 
         auto ein = exporter( _mesh = mesh_, _name = fmt::format( "initial-{}", iter ) );
         auto eout = exporter( _mesh = out, _name = fmt::format("remeshed-{}", iter) );
@@ -255,6 +256,7 @@ TestRemesh<Dim, RDim>::execute( int niter )
                 BOOST_CHECK_SMALL( measinit - measremesh, 1e-10 );
             }
         }
+        backend(_rebuild=true);
         //auto ur = cgLaplacianDirichlet( Vhr, std::tuple{ expr( "1" ), expr( "0" ), expr( "x+y:x:y" ) } );
         auto ur = cgLaplacianDirichlet( Vhr, std::tuple{ expr( "1" ), expr( "pi*pi*sin(pi*x):x" ), expr( "sin(pi*x):x" ) } );
         eout->add( "lap_u", ur );

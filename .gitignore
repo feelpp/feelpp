@@ -1,3 +1,5 @@
+*.ts/
+*.exports/
 downloads/
 build*/
 *.bak
@@ -137,3 +139,19 @@ feelpp/quickstart/laplacian/qs_laplacian/
 doc/api/DocCmakeLists.doc
 node_modules
 feelppdb/
+toolboxes/pyfeelpp-toolboxes/tests/*.exports/
+toolboxes/pyfeelpp-toolboxes/tests/*.ts/
+toolboxes/pyfeelpp-toolboxes/tests/Testing
+toolboxes/pyfeelpp-toolboxes/tests/*.save/
+toolboxes/pyfeelpp-toolboxes/tests/*.geo
+toolboxes/pyfeelpp-toolboxes/tests/*.cfg
+toolboxes/pyfeelpp-toolboxes/tests/*.json
+toolboxes/pyfeelpp-toolboxes/tests/*.msh
+toolboxes/pyfeelpp-toolboxes/tests/*.mesh.path
+toolboxes/pyfeelpp-toolboxes/tests/*.csv
+toolboxes/pyfeelpp-toolboxes/tests/*.h5
+toolboxes/pyfeelpp-toolboxes/Testing/
+feelpp/pyfeelpp/pytest-3.json
+nohup.out
+*.mesh.path
+*.measures.csv

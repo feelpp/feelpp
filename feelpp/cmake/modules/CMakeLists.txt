@@ -25,6 +25,7 @@
 
 set( modules
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.version.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.directive.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.crb.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.om.cmake

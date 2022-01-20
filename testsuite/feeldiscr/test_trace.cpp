@@ -113,7 +113,7 @@ Test<Dim,Order>::run()
     std::cout << "Execute Test<" << Dim << "," << Order << ">\n";
 
     if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/P%4%G%4%/h_%5%/" )
+        Environment::changeRepository( _directory=boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/P%4%G%4%/h_%5%/" )
                                        % this->about().appName()
                                        % shape
                                        % Dim

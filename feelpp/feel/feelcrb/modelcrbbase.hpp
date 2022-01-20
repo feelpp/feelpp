@@ -27,16 +27,16 @@
    \author Stephane Veys <stephane.veys@imag.fr>
    \date 2013-02-22
 */
-#ifndef ModelCrbBase_H
-#define ModelCrbBase_H 1
+#ifndef ___ModelCrbBase_H
+#define ___ModelCrbBase_H 1
 
 #include <feel/feelcrb/crbmodeldb.hpp>
+//#include <feel/feelcrb/parameterspace.hpp>
+//#include <feel/feeldiscr/functionspace.hpp>
+//#include <feel/feeldiscr/reducedbasisspace.hpp>
+//#include <feel/feelvf/vf.hpp>
 #include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/deim.hpp>
-#include <feel/feelcrb/parameterspace.hpp>
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/reducedbasisspace.hpp>
-#include <feel/feelvf/vf.hpp>
 //#include<boost/tokenizer.hpp>
 #include<boost/regex.hpp>
 namespace Feel
@@ -1096,6 +1096,19 @@ public :
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
     {
         return boost::make_tuple( M_Aqm , M_Fqm );
+    }
+
+    std::vector< std::vector<sparse_matrix_ptrtype> > getMqm()
+    {
+        return M_Mqm;
+    }
+    std::vector< std::vector<sparse_matrix_ptrtype> > getAqm()
+    {
+        return M_Aqm;
+    }
+    std::vector< std::vector<std::vector<vector_ptrtype> > > getFqm()
+    {
+        return M_Fqm;
     }
 
     virtual affine_decomposition_type computePicardAffineDecomposition()

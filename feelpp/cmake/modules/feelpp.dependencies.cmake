@@ -525,6 +525,14 @@ if(FEELPP_ENABLE_PYTHON)
     else()
       message(STATUS "[feelpp] python wrapper will not be enabled")
     endif()
+
+    Find_Package(PETSC4PY)
+    if ( PETSC4PY_FOUND )
+      set( FEELPP_HAS_PETSC4PY 1 )
+      message(STATUS "[feelpp] petsc4py installed; headers: ${PETSC4PY_INCLUDE_DIR}")
+    else()
+      message(STATUS "[feelpp] petsc4py python wrapper will not be enabled")
+    endif()
       
   endif()
 
@@ -1062,13 +1070,16 @@ if ( FEELPP_ENABLE_VTK )
     # # endif()
     # MESSAGE("CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
 
+    option( FEELPP_ENABLE_VTK_FROM_PARAVIEW "Enable VTK Support" ON ) #${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+    if ( FEELPP_ENABLE_VTK_FROM_PARAVIEW )
     # First try to find ParaView
     # FIND_PACKAGE(ParaView QUIET
     #    COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
     #    PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR})
 
     FIND_PACKAGE(ParaView QUIET NO_MODULE
-        PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} )
+      PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} )
+    endif()
 
     if(ParaView_FOUND)
       if ( PARAVIEW_USE_FILE )

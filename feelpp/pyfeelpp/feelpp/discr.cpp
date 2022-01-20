@@ -127,43 +127,53 @@ void defDiscr(py::module &m, std::string const& suffix = "")
     // Element
     std::string e_pyclass_name = std::string("Element_") + pyclass_name;
     py::class_<element_t,std::shared_ptr<element_t>,VectorUblas<double>> elt(m,e_pyclass_name.c_str());
-    elt.def(py::init<>())
-        .def(py::init<std::shared_ptr<space_t> const&, std::string const&, std::string const&, size_type, ComponentType>(),py::arg("space"), py::arg("name"), py::arg("desc"), py::arg("start")=0, py::arg("ct")= ComponentType::NO_COMPONENT)
-        .def("functionSpace",static_cast<space_ptr_t const&(element_t::*)() const>(&element_t::functionSpace), "Get funtion space from element")
-        .def("size", static_cast< size_type (element_t::*)() const>(&element_t::size), "Get size of element")
-        
-        .def("save", &element_t::saveImpl, py::arg("path"), py::arg("name"), py::arg("type")="default", py::arg("suffix")="", py::arg("sep")="", "save functionspace element in file ")
-        .def("load", &element_t::loadImpl, py::arg("path"), py::arg("name"), py::arg("type")="default", py::arg("suffix")="", py::arg("sep")="", "load functionspace element from file ")
-        .def(py::self + py::self )
-        .def(py::self - py::self)
-        .def(double() + py::self)
-        .def(double() - py::self)
-        .def(py::self + double())
-        .def(py::self - double())
-        .def(py::self * double())
-        .def(double() * py::self)
+    elt.def( py::init<>() )
+        .def( py::init<std::shared_ptr<space_t> const&, std::string const&, std::string const&, size_type, ComponentType>(), py::arg( "space" ), py::arg( "name" ), py::arg( "desc" ), py::arg( "start" ) = 0, py::arg( "ct" ) = ComponentType::NO_COMPONENT )
+        .def( "functionSpace", static_cast<space_ptr_t const& (element_t::*)() const>( &element_t::functionSpace ), "Get funtion space from element" )
+        .def( "size", static_cast<size_type ( element_t::* )() const>( &element_t::size ), "Get size of element" )
+        .def( "min", static_cast<double ( element_t::* )() const>( &element_t::min ), "get the minimum of the element vector representation" )
+        .def( "max", static_cast<double ( element_t::* )() const>( &element_t::max ), "get the maximum of the element vector representation" )
+        .def( "save", &element_t::saveImpl, py::arg( "path" ), py::arg( "name" ), py::arg( "type" ) = "default", py::arg( "suffix" ) = "", py::arg( "sep" ) = "", "save functionspace element in file " )
+        .def( "load", &element_t::loadImpl, py::arg( "path" ), py::arg( "name" ), py::arg( "type" ) = "default", py::arg( "suffix" ) = "", py::arg( "sep" ) = "", "load functionspace element from file " )
+        .def( py::self + py::self )
+        .def( py::self - py::self )
+        .def( double() + py::self )
+        .def( double() - py::self )
+        .def( py::self + double() )
+        .def( py::self - double() )
+        .def( py::self * double() )
+        .def( double() * py::self )
         //.def(double() / py::self)
-        .def(py::self += py::self)
-        .def(py::self -= py::self)
-        .def(py::self *= double())
-        .def(-py::self)
-//        .def(py::self /= double())
-//        .def(py::self *= py::self)
-//        .def(py::self /= py::self)
+        .def( py::self += py::self )
+        .def( py::self -= py::self )
+        .def( py::self *= double() )
+        .def( -py::self )
+        //        .def(py::self /= double())
+        //        .def(py::self *= py::self)
+        //        .def(py::self /= py::self)
         ;
-
-        if constexpr( space_t::is_scalar )
-            {
-                elt.def("on", static_cast<void (element_t::*)( elements_reference_wrapper_t<mesh_ptr_t> const&, Expr<GinacEx<2>> const&, std::string const&, GeomapStrategyType, bool, bool)>(&element_t::template onImpl<elements_reference_wrapper_t<mesh_ptr_t>,Expr<GinacEx<2>>>),
-             py::arg("range"), py::arg("expr"), py::arg("prefix")="",
-             py::arg("geomap")=GeomapStrategyType::GEOMAP_OPT, py::arg("accumulate")=false, py::arg("verbose")=false, "build the interpolant of the expression expr on a range of elements");
-            }
-
+    elt.def("printMatlab", []( element_t& element, std::string const& fname ) {
+        element.printMatlab(fname);
+    }, py::arg("filename"), "print element to matlab format");
+    if constexpr ( space_t::is_scalar )
+    {
+        elt.def( "on", static_cast<void ( element_t::* )( elements_reference_wrapper_t<mesh_ptr_t> const&, Expr<GinacEx<2>> const&, std::string const&, GeomapStrategyType, bool, bool )>( &element_t::template onImpl<elements_reference_wrapper_t<mesh_ptr_t>, Expr<GinacEx<2>>> ),
+                 py::arg( "range" ), py::arg( "expr" ), py::arg( "prefix" ) = "",
+                 py::arg( "geomap" ) = GeomapStrategyType::GEOMAP_OPT, py::arg( "accumulate" ) = false, py::arg( "verbose" ) = false, "build the interpolant of the expression expr on a range of elements" );
+    }
+    elt.def( "on", []( element_t& element, elements_reference_wrapper_t<mesh_ptr_t> const& r, 
+                        Expr<GinacMatrix<element_t::nComponents1,element_t::nComponents2,2>> const& e, std::string const& p, GeomapStrategyType g, bool a, bool v ){
+                            element.on( _range=r, _expr=e );
+                    },
+            py::arg( "range" ), py::arg( "expr" ), py::arg( "prefix" ) = "",
+            py::arg( "geomap" ) = GeomapStrategyType::GEOMAP_OPT, py::arg( "accumulate" ) = false, py::arg( "verbose" ) = false, "build the interpolant of the expression expr on a range of elements" );
+#if 0
     std::string I_pyclass_name = std::string("I_") + pyclass_name;
     py::class_<I_t<space_t,space_t>,std::shared_ptr<I_t<space_t,space_t>>>(m,I_pyclass_name.c_str())
         .def(py::init<>())
         //.def(py::init<std::shared_ptr<space_t> const&, std::shared_ptr<space_t> const&>())
         ;
+#endif        
     m.def( "normL2", static_cast<double (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_norml2<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute L2 norm of function over a range of elements", py::arg("range"), py::arg("expr") );
     m.def( "normH1", static_cast<double (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_normh1<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute H1 norm of function over a range of elements", py::arg("range"), py::arg("expr") );
     m.def( "mean", static_cast<eigen_v_t (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_mean<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute mean of function over a range of elements", py::arg("range"), py::arg("expr") );
@@ -221,10 +231,10 @@ PYBIND11_MODULE(_discr, m )
                            defDiscr<Pdh_type<Mesh<Simplex<_dim>>, _order>>( m );
                            defDiscr<Pchv_type<Mesh<Simplex<_dim>>, _order>>( m );
                            defDiscr<Pdhv_type<Mesh<Simplex<_dim>>, _order>>( m );
-                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Scalar, Continuous, PointSetFekete>>>>(m, "_fekete");
-                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Scalar, Discontinuous, PointSetFekete>>>>(m, "_fekete");
-                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Vectorial, Continuous, PointSetFekete>>>>(m, "_fekete");
-                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Vectorial, Discontinuous, PointSetFekete>>>>(m, "_fekete");
+//                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Scalar, Continuous, PointSetFekete>>>>(m, "_fekete");
+//                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Scalar, Discontinuous, PointSetFekete>>>>(m, "_fekete");
+//                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Vectorial, Continuous, PointSetFekete>>>>(m, "_fekete");
+//                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Vectorial, Discontinuous, PointSetFekete>>>>(m, "_fekete");
                        });
 
     defDiscr<Pdh_type<Mesh<Simplex<2>>,0>>( m );

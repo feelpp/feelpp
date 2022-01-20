@@ -39,8 +39,9 @@ public :
         {}
 
     virtual ~StabilizationGLSParameter() = default;
-    
+
     void init();
+    void applyRemesh( mesh_ptr_t const& newMesh );
 
     template<bool HasConvectionExpr=true, bool HasCoeffDiffusionExpr=true, typename ExprConvectiontype, typename ExprCoeffDiffusionType, typename RangeType>
     void updateTau( ExprConvectiontype const& exprConvection, ExprCoeffDiffusionType const& exprCoeffDiffusion, RangeType const& RangeStab )
@@ -151,8 +152,8 @@ StabilizationGLSParameter<MeshType,OrderPoly>::init()
             fB = integrate( _range=elements(mesh),
                             _expr=inner(grad(w),gradt(w)) );
             if ( math::abs( this->M_penalLambdaK ) > 1e-12 )
-                fB += integrate( elements(mesh),
-                                 this->M_penalLambdaK*inner(id(w),idt(w)) );
+                fB += integrate( _range=elements(mesh),
+                                 _expr=this->M_penalLambdaK*inner(id(w),idt(w)) );
             matB->close();
 
             Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> localEigenMatA(0,0);
@@ -188,6 +189,18 @@ StabilizationGLSParameter<MeshType,OrderPoly>::init()
             }
         }
     }
+}
+
+
+template<typename MeshType, uint16_type OrderPoly>
+void
+StabilizationGLSParameter<MeshType,OrderPoly>::applyRemesh( mesh_ptr_t const& newMesh )
+{
+    this->M_mesh = newMesh;
+    this->M_spaceTau.reset();
+    this->M_fieldTau.reset();
+    M_spaceEigenValuesProblem.reset();
+    this->init();
 }
 
 

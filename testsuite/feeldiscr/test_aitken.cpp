@@ -220,7 +220,7 @@ runTestAitken()
                                 _type=( relaxmethod == 0 ) ? "standard" : "method1",
                                 _initial_theta=theta,
                                 _tolerance=tol );
-    aitkenRelax.initialize( residual, lambda );
+    aitkenRelax.initialize( _residual=residual, _currentElt=lambda );
 
     double pi = M_PI;
 
@@ -287,7 +287,7 @@ runTestAitken()
 
         residual = u2-lambda;
 
-        u2 = aitkenRelax.apply( residual, u2  );
+        u2 = aitkenRelax.apply( _residual=residual, _currentElt=u2  );
 
         aitkenRelax.printInfo();
 

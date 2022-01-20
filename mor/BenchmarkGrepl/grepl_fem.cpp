@@ -35,6 +35,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
 using namespace Feel;
 
@@ -174,7 +175,7 @@ GreplFem::updateJacobian( vector_ptrtype const& X, sparse_matrix_ptrtype & J)
     auto u = Xh->element();
     u=*X;
     auto v = Xh->element(); //test
-    if (!J) J = backend()->newMatrix( Xh, Xh );
+    if (!J) J = backend()->newMatrix( _test=Xh, _trial=Xh );
     double gamma = doption(_name="gamma");
 
     double mu1=doption(_name="mu1");

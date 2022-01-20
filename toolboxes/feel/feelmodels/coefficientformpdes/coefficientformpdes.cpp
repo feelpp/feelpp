@@ -85,7 +85,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                                 cfpde->setManageParameterValuesOfModelProperties( false );
                             }
                             cfpde->setMaterialsProperties( M_materialsProperties );
-                            cfpde->setMesh( this->mesh() );
+                            cfpde->setModelMeshAsShared( this->modelMesh() );
 
                             // TODO check if the same space has already built
                             cfpde->init( false );
@@ -221,6 +221,14 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
+
+    // start or restart the export of measures
+    if ( !this->isStationary() )
+    {
+        if ( this->doRestart() )
+            this->postProcessMeasures().restart( this->timeInitial() );
+    }
+
     double tElpased = this->timerTool("Constructor").stop("createExporters");
     this->log("CoefficientFormPDEs","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
 }
@@ -286,8 +294,15 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                             if ( !cfpde ) CHECK( false ) << "failure in dynamic_pointer_cast";
 
                             int rowId = this->startSubBlockSpaceIndex( cfpde->physicDefault() );
+#if 0
                             myblockGraph(rowId,rowId) = stencil(_test=cfpde->spaceUnknown(),
                                                                 _trial=cfpde->spaceUnknown() )->graph();
+#else
+                            auto blockGraph = cfpde->buildBlockMatrixGraph();
+                            for (int bg1 = 0 ; bg1< blockGraph.nRow() ; ++bg1)
+                                for (int bg2 = 0 ; bg2< blockGraph.nCol() ; ++bg2)
+                                    myblockGraph(rowId+bg1,rowId+bg2) = blockGraph(bg1,bg2);
+#endif
 
                             // maybe coupling with other equation in the row
                             for ( int k2=0;k2<nEq;++k2 )

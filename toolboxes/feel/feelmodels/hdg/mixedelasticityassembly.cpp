@@ -60,9 +60,9 @@ void MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleMatrixIBC( int i , std::string
     bbf( 3_c, 1_c, i, 1 ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                        _expr= tau_constant * pow(idv(H),M_tauOrder)* inner(idt(u),id(nu)) ),
 
-        // -<lambda2, m>_Gamma_I
-        bbf( 3_c, 3_c, i, i ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                           _expr=-tau_constant * pow(idv(H),M_tauOrder) * inner(idt(uI),id(nu)) );
+    // -<lambda2, m>_Gamma_I
+    bbf( 3_c, 3_c, i, i ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+                                       _expr=-tau_constant * pow(idv(H),M_tauOrder) * inner(idt(uI),id(nu)) );
 
 
 
@@ -248,16 +248,16 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
     for( auto const& pairMat : modelProperties().materials() )
     {
         auto material = pairMat.second;
-        auto lambda = material.getScalar("lambda");
+        auto lambda = material.property("lambda").exprScalar();
         Feel::cout << "Lambda: " << lambda << std::endl;
-        auto mu = material.getScalar("mu");
+        auto mu = material.property("mu").exprScalar();
         Feel::cout << "Mu: " << mu << std::endl;
         auto c1 = cst(0.5)/mu;
         auto c2 = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu));
         Feel::cout << "c1: " << mean(_range=elements(M_mesh),_expr=c1) << std::endl;
         Feel::cout << "c2: " << mean(_range=elements(M_mesh),_expr=c2) << std::endl;
 
-        bbf( 0_c, 0_c ) +=  integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c1*inner(idt(sigma),id(v))) );
+        bbf( 0_c, 0_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c1*inner(idt(sigma),id(v))) );
         bbf( 0_c, 0_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
     }
 
@@ -279,7 +279,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::assembleSTD()
         for( auto const& pairMat : modelProperties().materials() )
         {
             auto material = pairMat.second;
-            auto rho = material.getScalar("rho");
+            auto rho = material.property("rho").exprScalar();
             // bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
             //                              _expr = this->timeStepNM()->polySecondDerivCoefficient()*rho*inner(idt(u),id(w)) );
             bbf( 1_c, 1_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),
@@ -470,8 +470,8 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
                     auto gradu_exact = grad<Dim>( g );
                     auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
                     auto material = pairMat.second;
-                    auto lambda = material.getScalar("lambda");
-                    auto mu = material.getScalar("mu");
+                    auto lambda = material.property("lambda").exprScalar();
+                    auto mu = material.property("mu").exprScalar();
                     auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
 
                     Feel::cout << "Neumann condition computed from displacement on " << marker << std::endl;
@@ -507,7 +507,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
         for( auto const& pairMat : modelProperties().materials() )
         {
             auto material = pairMat.second;
-            auto rho = material.getScalar("rho");
+            auto rho = material.property("rho").exprScalar();
             auto u = this->timeStepNM()->previousUnknown(0);
             auto u1 = this->timeStepNM()->previousUnknown(1);
             auto dt = this-> timeStep();
@@ -624,7 +624,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                 {
                     auto marker = pairMat.first;
                     auto material = pairMat.second;
-                    auto kk = material.getScalar( "scale_displacement" );
+                    auto kk = material.property( "scale_displacement" ).exprScalar();
 
                     scaled_displ.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_pp));
                 }
@@ -641,7 +641,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                 {
                     auto marker = pairMat.first;
                     auto material = pairMat.second;
-                    auto kk = material.getScalar( "scale_stress" );
+                    auto kk = material.property( "scale_stress" ).exprScalar();
 
                     scaled_stress.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_up));
                 }
@@ -752,8 +752,8 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                                 for( auto const& pairMat : modelProperties().materials() )
                                 {
                                     auto material = pairMat.second;
-                                    auto lambda = material.getScalar("lambda");
-                                    auto mu = material.getScalar("mu");
+                                    auto lambda = material.property("lambda").exprScalar();
+                                    auto mu = material.property("mu").exprScalar();
                                     auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
 
                                     // EXPORT SIGMA EXACT

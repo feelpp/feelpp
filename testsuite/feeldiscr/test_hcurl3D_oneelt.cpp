@@ -373,16 +373,16 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
         }
 
         //Stokes Theorem for curl :
-        auto int_curlv = integrate( elements( oneelement_mesh ), curlv( u_vec[i] ) ).evaluate()(0,0);
-        int_curlv += integrate( elements( oneelement_mesh ), curlv( u_vec[i] ) ).evaluate()(1,0);
-        int_curlv += integrate( elements( oneelement_mesh ), curlv( u_vec[i] ) ).evaluate()(2,0);
+        auto int_curlv = integrate( _range=elements( oneelement_mesh ), _expr=curlv( u_vec[i] ) ).evaluate()(0,0);
+        int_curlv += integrate( _range=elements( oneelement_mesh ), _expr=curlv( u_vec[i] ) ).evaluate()(1,0);
+        int_curlv += integrate( _range=elements( oneelement_mesh ), _expr=curlv( u_vec[i] ) ).evaluate()(2,0);
 
         form1( _test=Xh, _vector=F ) = integrate( _range=elements( oneelement_mesh ), _expr=trans(one())*curl( V_ref ) );
         auto form_curlv = inner_product( u_vec[i], *F );
 
-        auto int_vn = integrate(boundaryfaces(oneelement_mesh), -cross( idv(u_vec[i]),N() )).evaluate()(0,0);
-        int_vn += integrate(boundaryfaces(oneelement_mesh), -cross( idv(u_vec[i]),N() )).evaluate()(1,0);
-        int_vn += integrate(boundaryfaces(oneelement_mesh), -cross( idv(u_vec[i]),N() )).evaluate()(2,0);
+        auto int_vn = integrate(_range=boundaryfaces(oneelement_mesh), _expr=-cross( idv(u_vec[i]),N() )).evaluate()(0,0);
+        int_vn += integrate(_range=boundaryfaces(oneelement_mesh), _expr=-cross( idv(u_vec[i]),N() )).evaluate()(1,0);
+        int_vn += integrate(_range=boundaryfaces(oneelement_mesh), _expr=-cross( idv(u_vec[i]),N() )).evaluate()(2,0);
 
         form1( _test=Xh, _vector=F ) = integrate( _range=boundaryfaces( oneelement_mesh ),
                                                   _expr=-trans(one())*cross( id(u_vec[i]),N() ) );

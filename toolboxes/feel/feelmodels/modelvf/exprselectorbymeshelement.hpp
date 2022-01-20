@@ -63,6 +63,12 @@ public :
                 return itFindName->second;
             return invalid_v<tag_type>;
         }
+
+    void clear()
+        {
+            M_eltIdToTag.clear();
+            M_nameToTag.clear();
+        }
 private :
     std::unordered_map<index_type,tag_type> M_eltIdToTag;
     std::map<std::string,tag_type> M_nameToTag;

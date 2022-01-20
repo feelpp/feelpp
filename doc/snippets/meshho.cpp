@@ -95,7 +95,7 @@ int main( int argc, char** argv )
         if ( math::abs( elt1-elt2 ) > 1e-13 )
         {
             std::cout << "problem with element: " << elt.id() << " elt1= " << elt1 << " elt2 = " << elt2 << " elt3 = " << elt3 << "\n";
-            auto meshe = createSubmesh( mesh, idedelements( mesh, elt.id() ) );
+            auto meshe = createSubmesh( _mesh=mesh, _range=idedelements( mesh, elt.id() ) );
             std::ostringstream os;
             os << "elt-ho-" << elt.id();
             saveGMSHMesh( _mesh=meshe, _filename=os.str() );

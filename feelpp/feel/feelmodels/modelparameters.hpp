@@ -26,8 +26,6 @@
 
 #include <map>
 
-#include <boost/property_tree/ptree.hpp>
-
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelfit/interpolator.hpp>
@@ -156,10 +154,9 @@ class ModelParameters: public std::map<std::string,ModelParameter>, public CommO
 public:
     using super=CommObject;
     ModelParameters( worldcomm_ptr_t const& world = Environment::worldCommPtr() );
-    ModelParameters( pt::ptree const& p, worldcomm_ptr_t const& world = Environment::worldCommPtr() );
     ModelParameters( ModelParameters const& ) = default;
     virtual ~ModelParameters();
-    void setPTree( pt::ptree const& _p );
+    void setPTree( nl::json const& jarg );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
 
     void updateParameterValues();
@@ -214,7 +211,7 @@ public:
 private:
     void setup();
 private:
-    pt::ptree M_p;
+    nl::json M_p;
     std::string M_directoryLibExpr;
 };
 

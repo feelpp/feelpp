@@ -65,7 +65,7 @@ int runSimulation()
                     heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
                 heatBox->updateParameterValues();
                 rhs->zero();
-                heatBox->algebraicFactory()->applyAssemblyLinear( heatBox->blockVectorSolution().vectorMonolithic(), mat, rhs, {"ignore-assembly.lhs"} );
+                heatBox->algebraicFactory()->applyAssemblyLinear( heatBox->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.lhs"} );
                 return rhs;
             };
     model->setAssembleDEIM(assembleDEIM);
@@ -76,7 +76,7 @@ int runSimulation()
                     heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
                 heatBox->updateParameterValues();
                 mat->zero();
-                heatBox->algebraicFactory()->applyAssemblyLinear( heatBox->blockVectorSolution().vectorMonolithic(), mat, rhs, {"ignore-assembly.rhs"} );
+                heatBox->algebraicFactory()->applyAssemblyLinear( heatBox->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.rhs"} );
                 return mat;
             };
     model->setAssembleMDEIM(assembleMDEIM);
@@ -95,7 +95,7 @@ int runSimulation()
                 auto rhs = deimHeatBox->algebraicFactory()->rhs()->clone();
                 rhs->zero();
                 auto matTMP = deimHeatBox->algebraicFactory()->matrix()->clone();
-                deimHeatBox->algebraicFactory()->applyAssemblyLinear( deimHeatBox->blockVectorSolution().vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
+                deimHeatBox->algebraicFactory()->applyAssemblyLinear( deimHeatBox->algebraicBlockVectorSolution()->vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
                 return rhs;
             };
     model->setOnlineAssembleDEIM(assembleOnlineDEIM);
@@ -114,7 +114,7 @@ int runSimulation()
                 auto mat = mdeimHeatBox->algebraicFactory()->matrix()->clone();
                 mat->zero();
                 auto rhsTMP = mdeimHeatBox->algebraicFactory()->rhs()->clone();
-                mdeimHeatBox->algebraicFactory()->applyAssemblyLinear( mdeimHeatBox->blockVectorSolution().vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
+                mdeimHeatBox->algebraicFactory()->applyAssemblyLinear( mdeimHeatBox->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
                 return mat;
             };
     model->setOnlineAssembleMDEIM(assembleOnlineMDEIM);
@@ -157,13 +157,13 @@ int runSimulation()
         // heatBox->updateFieldVelocityConvection();
         heatBox->solve();
         TFE = heatBox->fieldTemperature();
-        auto normT = normL2( rangeT, idv(TFE) );
+        auto normT = normL2( _range=rangeT, _expr=idv(TFE) );
         for(int n = 0; n < N; ++n)
         {
             crb->fixedPointPrimal(n+1, mu, uNs, uNolds, outputs);
             vectorN_type uN = uNs[0];
             TRB = crb->expansion( uN, n+1 );
-            errs[n][j] = normL2( rangeT, idv(TRB)-idv(TFE) );
+            errs[n][j] = normL2( _range=rangeT, _expr=idv(TRB)-idv(TFE) );
             errsRel[n][j] = errs[n][j]/normT;
         }
         ++j;
@@ -203,7 +203,7 @@ int runSimulation()
         Feel::cout << std::setw(5) << n+1 << std::setw(25) << min[n] << std::setw(25) << max[n]
                    << std::setw(25) << mean[n] << std::setw(25) << stdev[n] << std::endl;
 
-    auto e = exporter(mesh);
+    auto e = exporter(_mesh=mesh);
     e->add("TFE", TFE);
     e->add("TRB", TRB);
     e->save();

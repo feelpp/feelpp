@@ -1,7 +1,9 @@
 import sys
-from pyfeelpptoolboxes.hdg import *
+import feelpp
+from feelpp.toolboxes.core import *
+from feelpp.toolboxes.hdg import *
 
-e=core.Environment(sys.argv,opts=hdg_poisson_options())
+e=feelpp.Environment(sys.argv,opts=hdg_poisson_options())
 
 
 p1=hdgpoisson(dim=2,order=1)

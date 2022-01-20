@@ -18,6 +18,7 @@
 //!
 //!
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include <pybind11/functional.h>
 // #include <pybind11/eigen.h>
 
@@ -27,14 +28,25 @@
 namespace py = pybind11;
 using namespace Feel;
 
-template<typename SpaceType>
+template<typename SpaceType, int Options>
 void defToolboxMor(py::module &m)
 {
     using namespace Feel;
-    using mor_t = ToolboxMor<SpaceType>;
+    using mor_t = ToolboxMor<SpaceType, Options>;
     static constexpr uint16_type nDim = SpaceType::nDim;
+    static const bool is_time_dependent = ((Options&TimeDependent)==TimeDependent);
+    static const bool is_linear = !((Options&NonLinear)==NonLinear);
+    static const bool by_block = (Options&UseBlock)==UseBlock;
+    using affine_decomposition_type = typename mor_t::affine_decomposition_type;
 
-    std::string pyclass_name = std::string("ToolboxMor_") + std::to_string(nDim) + std::string("D");
+    std::string opt = "";
+    if( is_time_dependent )
+        opt += "_dt";
+    if( !is_linear )
+        opt += "_nl";
+    if( by_block )
+        opt += "_block";
+    std::string pyclass_name = std::string("ToolboxMor_") + std::to_string(nDim) + std::string("D") + opt;
     py::class_<mor_t,std::shared_ptr<mor_t>>(m,pyclass_name.c_str())
         .def(py::init<std::string const&>(),
              py::arg("prefix")=std::string(""),
@@ -51,6 +63,47 @@ void defToolboxMor(py::module &m)
         .def("setOnlineAssembleMDEIM", &mor_t::setOnlineAssembleMDEIM, "set the function to assemble MDEIM for the online model", py::arg("fct"))
         .def("getDEIMReducedMesh", &mor_t::getDEIMReducedMesh, "get the reduced mesh of DEIM" )
         .def("getMDEIMReducedMesh", &mor_t::getMDEIMReducedMesh, "get the reduced mesh of MDEIM" )
+        .def("parameterSpace", &mor_t::parameterSpace, "get the parameter space" )
+        .def("getAffineDecomposition",
+             [](mor_t& self) {
+                 auto AF = self.computeAffineDecomposition();
+                 if constexpr( is_time_dependent ) {
+                     auto Mqm = AF.template get<0>();
+                     auto Aqm = AF.template get<1>();
+                     auto Fqm = AF.template get<2>();
+                     return std::make_tuple(Aqm, Fqm, Mqm);
+                 } else {
+                     auto Aqm = AF.template get<0>();
+                     auto Fqm = AF.template get<1>();
+                     return std::make_tuple(Aqm, Fqm);
+                 }
+             })
+        .def("computeBetaQm", [](mor_t& self, ParameterSpaceX::Element const& mu) {
+                                 auto betaB = self.computeBetaQm(mu);
+                                 if constexpr( is_time_dependent ) {
+                                     auto betaMqm = betaB.template get<0>();
+                                     auto betaAqm = betaB.template get<1>();
+                                     auto betaFqm = betaB.template get<2>();
+                                     return std::make_tuple(betaAqm, betaFqm, betaMqm);
+                                 } else {
+                                     auto betaAqm = betaB.template get<0>();
+                                     auto betaFqm = betaB.template get<1>();
+                                     return std::make_tuple(betaAqm, betaFqm);
+                                 }
+                              }, "compute the coefficients for parameter mu" )
+        .def("computeBetaQm", [](mor_t& self, ParameterSpaceX::Element const& mu, double time) {
+                                 auto betaB = self.computeBetaQm(mu, time);
+                                 if constexpr( is_time_dependent ){
+                                     auto betaMqm = betaB.template get<0>();
+                                     auto betaAqm = betaB.template get<1>();
+                                     auto betaFqm = betaB.template get<2>();
+                                     return std::make_tuple(betaAqm, betaFqm, betaMqm);
+                                 } else {
+                                     auto betaAqm = betaB.template get<0>();
+                                     auto betaFqm = betaB.template get<1>();
+                                     return std::make_tuple(betaAqm, betaFqm);
+                                 }
+                              }, "compute the coefficients for parameter mu" )
         ;
     std::string modelnew_name = std::string("toolboxmor_") + std::to_string(nDim) +std::string("d");
     m.def(modelnew_name.c_str(), []() { return std::make_shared<mor_t>(); }," return a pointer on model");
@@ -86,9 +139,12 @@ PYBIND11_MODULE(_toolboxmor, m )
     using namespace Feel;
     using space_2d_type = FunctionSpace<Mesh<Simplex<2> >, bases<Lagrange<1, Scalar,Continuous,PointSetFekete> > >;
     using space_3d_type = FunctionSpace<Mesh<Simplex<3> >, bases<Lagrange<1, Scalar,Continuous,PointSetFekete> > >;
+    
 
-    defToolboxMor<space_2d_type>(m);
-    defToolboxMor<space_2d_type>(m);
+    defToolboxMor<space_2d_type, 0>(m);
+    defToolboxMor<space_2d_type, 0x1>(m);
+    defToolboxMor<space_3d_type, 0>(m);
+    defToolboxMor<space_3d_type, 0x1>(m);
 
     m.def("makeToolboxMorOptions", &makeToolboxMorOptions, "get options for the model" );
 

@@ -114,27 +114,23 @@ template<typename MeshType, int N>
 void
 ExporterEnsight<MeshType,N>::save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const
 {
-    boost::timer ti;
     DVLOG(2) << "[ExporterEnsight::save] export in ensight format\n";
 
-    DVLOG(2) << "[ExporterEnsight::save] export sos\n";
+    tic();
     _F_writeSoSFile();
-    DVLOG(2) << "[ExporterEnsight::save] export sos ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsight::save sos",FLAGS_v>1);
 
-    ti.restart();
-    DVLOG(2) << "[ExporterEnsight::save] export case file\n";
+    tic();
     _F_writeCaseFile();
-    DVLOG(2) << "[ExporterEnsight::save] export case file ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsight::save case",FLAGS_v>1);
 
-    ti.restart();
-    DVLOG(2) << "[ExporterEnsight::save] export geo(mesh) file\n";
+    tic();
     _F_writeGeoFiles();
-    DVLOG(2) << "[ExporterEnsight::save] export geo(mesh) file ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsight::save geo",FLAGS_v>1);
 
-    ti.restart();
-    DVLOG(2) << "[ExporterEnsight::save] export variable file\n";
+    tic();
     _F_writeVariableFiles();
-    DVLOG(2) << "[ExporterEnsight::save] export variable files ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsight::save variable",FLAGS_v>1);
 }
 
 template<typename MeshType, int N>

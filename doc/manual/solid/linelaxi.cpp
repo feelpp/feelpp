@@ -195,8 +195,8 @@ LinElAxi<Order>::run()
      * Data associated with the simulation
      */
     const double tol = 1e-5;
-    const double E = Environment::vm(_name="E").template as<double>();
-    const double nu = Environment::vm(_name="nu").template as<double>();
+    const double E = doption(_name="E");
+    const double nu = doption(_name="nu");
     const double mu = E/( 2*( 1+nu ) );
     const double lambda = E*nu/( ( 1+nu )*( 1-2*nu ) );
     const double density = 50;
@@ -216,7 +216,7 @@ LinElAxi<Order>::run()
      */
 
     auto rhs = M_backend->newVector( Xh );
-    auto lhs = M_backend->newMatrix( Xh, Xh );
+    auto lhs = M_backend->newMatrix( _test=Xh, _trial=Xh );
 
     using namespace Feel::vf;
     form1( _test=Xh, _vector=rhs ) =

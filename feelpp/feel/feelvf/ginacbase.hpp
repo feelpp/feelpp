@@ -29,6 +29,9 @@
 #ifndef FEELPP_GINACBASE_HPP
 #define FEELPP_GINACBASE_HPP
 
+#include <Eigen/Core>
+#include <feel/feelvf/exprbase.hpp>
+#include <ginac/ginac.h>
 namespace Feel::vf
 {
 
@@ -41,45 +44,7 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
     typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> vec_type;
 
     GiNaCBase() = default;
-    GiNaCBase( std::vector<GiNaC::symbol> const& syms )
-        : M_syms( syms ),
-          M_params( vec_type::Zero( M_syms.size() ) ),
-          M_indexSymbolXYZ(),
-          M_indexSymbolN(),
-          M_context( 0 ),
-          M_isNumericExpression( false )
-    {
-        // detect if symbol x,y,z are present and get index access in M_params
-        std::map<int, std::string> lstxyz{{0, "x"}, {1, "y"}, {2, "z"}};
-        for ( auto const& str : lstxyz )
-        {
-            auto itSym = std::find_if( M_syms.begin(), M_syms.end(),
-                                       [&str]( GiNaC::symbol const& s ) { return s.get_name() == str.second; } );
-            if ( itSym != M_syms.end() )
-                M_indexSymbolXYZ.insert( std::make_pair( str.first, std::distance( M_syms.begin(), itSym ) ) );
-        }
-        std::map<int, std::string> lstN{{3, "nx"}, {4, "ny"}, {5, "nz"}};
-        for ( auto const& str : lstN )
-        {
-            auto itSym = std::find_if( M_syms.begin(), M_syms.end(),
-                                       [&str]( GiNaC::symbol const& s ) { return s.get_name() == str.second; } );
-            if ( itSym != M_syms.end() )
-                M_indexSymbolN.insert( std::make_pair( str.first, std::distance( M_syms.begin(), itSym ) ) );
-        }
-
-        for ( auto const& is : M_indexSymbolXYZ )
-        {
-            VLOG( 1 ) << "index symbol relation:  " << is.first << " -> " << is.second << "\n";
-        }
-        for ( auto const& is : M_indexSymbolN )
-            VLOG( 1 ) << "index symbol relation:  " << is.first << " -> " << is.second << "\n";
-
-        if ( hasSymbol( "x" ) || hasSymbol( "y" ) || hasSymbol( "z" ) )
-            M_context = M_context | vm::POINT;
-        if ( hasAnySymbolN() )
-            M_context = M_context | vm::KB | vm::NORMAL;
-    }
-
+    GiNaCBase( std::vector<GiNaC::symbol> const& syms );
     GiNaCBase( GiNaCBase const& g ) = default;
 
     virtual ~GiNaCBase() {}
@@ -104,8 +69,10 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
 
     std::set<std::pair<uint16_type, uint16_type>> const& indexSymbolXYZ() const { return M_indexSymbolXYZ; }
     std::set<std::pair<uint16_type, uint16_type>> const& indexSymbolN() const { return M_indexSymbolN; }
+    std::set<std::pair<uint16_type, uint16_type>> const& indexSymbolGeom() const { return M_indexSymbolGeom; }
     bool hasAnySymbolXYZ() const { return !M_indexSymbolXYZ.empty(); }
     bool hasAnySymbolN() const { return !M_indexSymbolN.empty(); }
+    bool hasAnySymbolGeom() const { return !M_indexSymbolGeom.empty(); }
     size_type dynamicContext() const
     {
         return M_context;
@@ -164,6 +131,7 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
     vec_type M_params;
     std::set<std::pair<uint16_type, uint16_type>> M_indexSymbolXYZ;
     std::set<std::pair<uint16_type, uint16_type>> M_indexSymbolN;
+    std::set<std::pair<uint16_type, uint16_type>> M_indexSymbolGeom;
     std::map<std::string, value_type> M_symbolNameToValue;
     size_type M_context;
     bool M_isNumericExpression;

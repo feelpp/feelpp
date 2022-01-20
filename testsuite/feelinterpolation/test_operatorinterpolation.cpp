@@ -355,17 +355,17 @@ std::shared_ptr<Mesh<Simplex<3, OrderGeo>>>
     return mesh;
 }
 
-template <uint16_type Dim, uint16_type OrderGeo>
-void testSMD()
+template <uint16_type Dim, uint16_type OrderGeo,int Order=3, template<class Convex, uint16_type OrderP, typename T> class PointSetT = PointSetFekete>
+void testSMD( double tol )
 {
     BOOST_TEST_MESSAGE( "start test SMD " << Dim << "d Geo" << OrderGeo );
     auto mesh = buildMeshSMD<OrderGeo>( mpl::int_<Dim>() );
     BOOST_TEST_MESSAGE( "mesh done" );
     auto submesh = createSubmesh( _mesh=mesh, _range=markedfaces( mesh, "BoundaryInterp" ) );
     BOOST_TEST_MESSAGE( "submesh done" );
-    auto Xh1 = Pch<3 /*,PointSetFekete*/>( mesh );
+    auto Xh1 = Pch<Order, double,PointSetT>( mesh );
     BOOST_TEST_MESSAGE( "spaces Xh1 done" );
-    auto Xh2 = Pch<5 /*,PointSetFekete*/>( submesh );
+    auto Xh2 = Pch<Order+2, double,PointSetT>( submesh );
     BOOST_TEST_MESSAGE( "spaces Xh2 done" );
     auto u1 = Xh1->element();
     auto u2 = Xh2->element();
@@ -403,7 +403,7 @@ void testSMD()
                      .evaluate()( 0, 0 );
     BOOST_TEST_MESSAGE( "s1a=" << s1a );
     BOOST_TEST_MESSAGE( "s2a=" << s2a );
-    BOOST_CHECK_SMALL( s1a, 1e-16 );
+    BOOST_CHECK_SMALL( s1a, tol );
     BOOST_CHECK_SMALL( s2a, 1e-16 );
     double s1b = integrate( _range = markedfaces( mesh, "BoundaryInterp" ),
                             _expr = inner( idv( u1 ) - idv( u2Base ), idv( u1 ) - idv( u2Base ), mpl::int_<InnerProperties::IS_SAME>() ) )
@@ -413,7 +413,7 @@ void testSMD()
                      .evaluate()( 0, 0 );
     BOOST_TEST_MESSAGE( "s1b=" << s1b );
     BOOST_TEST_MESSAGE( "s2b=" << s2b );
-    BOOST_CHECK_SMALL( s1b, 1e-16 );
+    BOOST_CHECK_SMALL( s1b, tol );
     BOOST_CHECK_SMALL( s2b, 1e-16 );
     double s1c = integrate( _range = markedfaces( mesh, "BoundaryInterp" ),
                             _expr = inner( idv( u1 ) - idv( u1Base ), idv( u1 ) - idv( u1Base ), mpl::int_<InnerProperties::IS_SAME>() ) )
@@ -424,7 +424,7 @@ void testSMD()
     BOOST_TEST_MESSAGE( "s1c=" << s1c );
     BOOST_TEST_MESSAGE( "s2c=" << s2c );
     BOOST_CHECK_SMALL( s1c, 1e-16 );
-    BOOST_CHECK_SMALL( s2c, 1e-16 );
+    BOOST_CHECK_SMALL( s2c, tol );
     double s1d = integrate( _range = markedfaces( mesh, "BoundaryInterp" ),
                             _expr = inner( idv( u1Base ) - idv( u2Base ), idv( u1Base ) - idv( u2Base ), mpl::int_<InnerProperties::IS_SAME>() ) )
                      .evaluate()( 0, 0 );
@@ -433,8 +433,8 @@ void testSMD()
                      .evaluate()( 0, 0 );
     BOOST_TEST_MESSAGE( "s1d=" << s1d );
     BOOST_TEST_MESSAGE( "s2d=" << s2d );
-    BOOST_CHECK_SMALL( s1d, 1e-16 );
-    BOOST_CHECK_SMALL( s2d, 1e-16 );
+    BOOST_CHECK_SMALL( s1d, tol );
+    BOOST_CHECK_SMALL( s2d, tol );
     /*double s1e = integrate(_range=markedfaces(mesh,"BoundaryInterp"),
                            _expr=idv(u1Base) ).evaluate()(0,0);
     double s2e = integrate(_range=elements(submesh),
@@ -528,7 +528,7 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_2d_geo1 )
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo1" );
     using namespace test_operatorinterpolation;
 
-    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/2d2dgeo1" ) % Environment::about().appName() );
+    Environment::changeRepository( _directory=boost::format( "testsuite/feeldiscr/%1%/2d2dgeo1" ) % Environment::about().appName() );
 
     test_operatorinterpolation::test2dTo2d<1>();
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo1 done" );
@@ -539,7 +539,7 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_2d_geo2 )
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo2" );
     using namespace test_operatorinterpolation;
 
-    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/2d2dgeo2" ) % Environment::about().appName() );
+    Environment::changeRepository( _directory=boost::format( "testsuite/feeldiscr/%1%/2d2dgeo2" ) % Environment::about().appName() );
 
     test_operatorinterpolation::test2dTo2d<2>();
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo2 done" );
@@ -550,7 +550,7 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_1d_geo1 )
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo1" );
     using namespace test_operatorinterpolation;
 
-    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/2d1dgeo1" ) % Environment::about().appName() );
+    Environment::changeRepository( _directory=boost::format( "testsuite/feeldiscr/%1%/2d1dgeo1" ) % Environment::about().appName() );
 
     //test_operatorinterpolation::test2dTo2d<3>(test_app);
     test_operatorinterpolation::test2dTo1d<1>();
@@ -562,22 +562,23 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_1d_geo2 )
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo2" );
     using namespace test_operatorinterpolation;
 
-    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/2d1dgeo2" ) % Environment::about().appName() );
+    Environment::changeRepository( _directory=boost::format( "testsuite/feeldiscr/%1%/2d1dgeo2" ) % Environment::about().appName() );
 
     test_operatorinterpolation::test2dTo1d<2>();
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo2 done" );
 }
 
-BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_smd )
+BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_smd_13 )
 {
-    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_smd" );
     using namespace test_operatorinterpolation;
-
-    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/3d3dgeo1smd" ) % Environment::about().appName() );
-
-    //test_operatorinterpolation::testSMD<2,1>();
-    test_operatorinterpolation::testSMD<3, 1>();
-    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_smd done" );
+    Environment::changeRepository( _directory=boost::format( "testsuite/feeldiscr/%1%/3d3dgeo1smd" ) % Environment::about().appName() );
+    test_operatorinterpolation::testSMD<3, 1, 1, PointSetFekete>(1e-5);
+}
+BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_smd_35 )
+{
+    using namespace test_operatorinterpolation;
+    Environment::changeRepository( _directory=boost::format( "testsuite/feeldiscr/%1%/3d3dgeo1smd" ) % Environment::about().appName() );
+    test_operatorinterpolation::testSMD<3, 1, 3, PointSetEquiSpaced>(1e-16);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

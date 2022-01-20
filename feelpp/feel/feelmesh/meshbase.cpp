@@ -69,6 +69,27 @@ MeshBase<IndexT>::removeMeshWithNodesShared( MeshBase<IndexT> * m )
     M_meshesWithNodesShared.erase( newEnd, M_meshesWithNodesShared.end() );
 }
 
+template <typename IndexT>
+void
+MeshBase<IndexT>::attachMeshSupport( MeshSupportBase* ms ) const
+{
+    auto itFoundMeshSupport = std::find_if( M_meshSupportsAttached.begin(), M_meshSupportsAttached.end(),
+                                            [&ms]( MeshSupportBase* ms2) { return ms == ms2; });
+    if ( itFoundMeshSupport != M_meshSupportsAttached.end() )
+        return;
+    M_meshSupportsAttached.push_back( ms );
+}
+
+template <typename IndexT>
+void
+MeshBase<IndexT>::detachMeshSupport( MeshSupportBase* ms ) const
+{
+    auto itFoundMeshSupport = std::find_if( M_meshSupportsAttached.begin(), M_meshSupportsAttached.end(),
+                                            [&ms]( MeshSupportBase* ms2) { return ms == ms2; });
+    if ( itFoundMeshSupport == M_meshSupportsAttached.end() )
+        return;
+    M_meshSupportsAttached.erase( itFoundMeshSupport );
+}
 
 template <typename IndexT>
 void

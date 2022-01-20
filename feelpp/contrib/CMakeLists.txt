@@ -33,6 +33,21 @@ if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
 endif()
 
 message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring NAPP")
+set(FETCHCONTENT_SOURCE_DIR_NAPP ${CMAKE_CURRENT_SOURCE_DIR}/napp)
+FetchContent_Declare(napp GIT_REPOSITORY https://github.com/vincentchabannes/napp.git GIT_TAG 1cba0026b9ea7581902017074071a0da1a2e7a94) #v0.1.0 )
+set(NAPP_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+FetchContent_MakeAvailable(napp)
+target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_NAPP )
+target_link_libraries( feelpp_contrib INTERFACE napp )
+install(TARGETS napp EXPORT feelpp-contrib-export-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring FMT")
 set(FETCHCONTENT_SOURCE_DIR_FMT ${CMAKE_CURRENT_SOURCE_DIR}/fmt)
 FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/feelpp/fmt.git GIT_TAG 7bdf0628b1276379886c7f6dda2cef2b3b374f0b) 
@@ -151,7 +166,7 @@ set(EIGEN_TEST_NOQT 1)
 set(FETCHCONTENT_SOURCE_DIR_EIGEN ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
 set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
 
-FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 20440849794789eb9d9d29bc834296ce0e73b05c) # the commit hash for 1.5.0
+FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 3147391d946bb4b6c68edd901f2add6ac1f31f8c) # the commit hash for 1.5.0
 FetchContent_MakeAvailable(eigen)
 target_include_directories( feelpp_contrib BEFORE
       INTERFACE
@@ -367,7 +382,7 @@ option( FEELPP_ENABLE_FMILIB "Enable FMLIB C API" ON )
 # install rules.
 set(FMILIB_BUILD_STATIC_LIB OFF)
 set(FMILIB_BUILD_SHARED_LIB ON)
-set(FMILIB_BUILD_TESTS OFF)
+set(FMILIB_BUILD_TESTS ON)
 set(FMILIB_INSTALL_SUBLIBS ON)
 set(FMILIB_INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR} CACHE INTERNAL "")
 set(FMILIB_INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE INTERNAL "")
@@ -489,8 +504,19 @@ if ( FEELPP_ENABLE_MATPLOT )
       set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
     endif()
     message( STATUS "matplot++ CMAKE_INSTALL_INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
+    set( BUILD_SHARED_LIBS ON )
+    set( BUILD_INSTALLER ON )
+    set(OPTIMIZATION_FLAG_IS_SET ON)
     add_subdirectory( matplot )
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_MATPLOT )
+    set_target_properties(matplot PROPERTIES OUTPUT_NAME "feelpp_matplot")
+    target_link_libraries( feelpp_contrib INTERFACE matplot )
+    install(TARGETS matplot EXPORT feelpp-contrib-export-targets
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
 #    target_link_libraries(feelpp_contrib INTERFACE matplot )
     target_include_directories(feelpp_contrib INTERFACE
       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/matplot/source/>

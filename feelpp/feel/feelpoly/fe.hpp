@@ -6,7 +6,7 @@
        Date: 2005-10-06
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2011-2016 Feel++ Consortium
+  Copyright (C) 2011-2021 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -105,26 +105,24 @@ public:
     typedef typename super::polynomial_view_type polynomial_view_type;
 
     //!< Total number of degrees of freedom (equal to refEle::nDof)
-    static const uint16_type nLocalDof = dual_space_type::nLocalDof;
+    inline static const uint16_type nLocalDof = dual_space_type::nLocalDof;
     //!< Number of degrees of freedom per vertex
-    static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    inline static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
     //!< Number of degrees  of freedom per edge
-    static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    inline static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
     //!< Number of degrees  of freedom per face
-    static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    inline static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
     //!< Number of degrees  of freedom per volume
-    static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    inline static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
 
-    static const uint16_type nDof = nLocalDof;
-    static const uint16_type nNodes = nDof;
-    static const uint16_type nDofGrad = super::nDim*nDof;
-    static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
-    static const bool islinear_simplex = P::convex_type::is_simplex && (super::nOrder == 1);
-    static const bool islinear_hypercube = P::convex_type::is_hypercube && (super::nDim==1)  && (super::nOrder == 1);
-    static const bool islinear  = islinear_hypercube || islinear_simplex;
-    static const fem::transformation_type trans = ( fem::transformation_type )mpl::if_<mpl::bool_<islinear>,
-                                                                                       mpl::int_<fem::LINEAR>,
-                                                                                       mpl::int_<fem::NONLINEAR> >::type::value;
+    static constexpr uint16_type nDof = nLocalDof;
+    static constexpr uint16_type nNodes = nDof;
+    static constexpr uint16_type nDofGrad = super::nDim*nDof;
+    static constexpr uint16_type nDofHess = super::nDim*super::nDim*nDof;
+    static constexpr bool islinear_simplex = P::convex_type::is_simplex && (super::nOrder == 1);
+    static constexpr bool islinear_hypercube = P::convex_type::is_hypercube && (super::nDim==1)  && (super::nOrder == 1);
+    static constexpr bool islinear  = islinear_hypercube || islinear_simplex;
+    static constexpr fem::transformation_type trans = islinear?fem::LINEAR:fem::NONLINEAR;
     //@}
 
     /** @name Constructors, destructor
@@ -327,30 +325,5 @@ private:
     primal_space_type const& M_primal;
 
 };
-
-template<typename P,
-         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
-         template<class,uint16_type,class> class Pts>
-const uint16_type FiniteElement<P,PDual,Pts>::nLocalDof;
-
-template<typename P,
-         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
-         template<class,uint16_type,class> class Pts>
-const uint16_type FiniteElement<P,PDual,Pts>::nDofPerVertex;
-
-template<typename P,
-         template<class Pr, template<class,uint16_type,class> class Pt> class PDual,
-         template<class,uint16_type,class> class Pts>
-const uint16_type FiniteElement<P,PDual,Pts>::nDofPerEdge;
-
-template<typename P,
-         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
-         template<class,uint16_type,class> class Pts>
-const uint16_type FiniteElement<P,PDual,Pts>::nDofPerFace;
-
-template<typename P,
-         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
-         template<class,uint16_type,class> class Pts>
-const uint16_type FiniteElement<P,PDual,Pts>::nDofPerVolume;
-}
+}  // Feel
 #endif /* __FiniteElement_H */

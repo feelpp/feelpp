@@ -24,29 +24,27 @@
 #ifndef FEELPP_MODELMODELS_HPP
 #define FEELPP_MODELMODELS_HPP 1
 
-#include <boost/property_tree/ptree.hpp>
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/json.hpp>
 
 namespace Feel {
-
-namespace pt = boost::property_tree;
 
 class FEELPP_EXPORT ModelModel
 {
   public :
     ModelModel() = default;
-    ModelModel( std::string const& name, pt::ptree const& p, bool addVariants = true );
+    ModelModel( std::string const& name, nl::json const& p, bool addVariants = true );
     ModelModel( ModelModel const& ) = default;
     ModelModel( ModelModel && ) = default;
     std::string const& name() const { return M_name; }
-    pt::ptree const& ptree() const { return M_ptree; }
+    nl::json const& jsonProperties() const { return M_ptree; }
     std::string const& equations() const { return M_equations; }
     std::set<std::string> const& submodels() const { return M_submodels; }
     std::map<std::string,ModelModel> const& variants() const { return M_variants; }
 
   private:
     std::string M_name;
-    pt::ptree M_ptree;
+    nl::json M_ptree;
     std::string M_equations;
     std::set<std::string> M_submodels;
     std::map<std::string,ModelModel> M_variants;
@@ -58,16 +56,16 @@ class FEELPP_EXPORT ModelModels : public std::map<std::string,ModelModel>
     ModelModels();
     ModelModels( ModelModels const& ) = default;
     ModelModels( ModelModels && ) = default;
-    pt::ptree const& pTree() const { return M_p; }
+    //pt::ptree const& pTree() const { return M_p; }
     bool useModelName() const { return M_useModelName; }
     ModelModel const& model( std::string const& name = "" ) const;
     bool hasModel( std::string const& name = "" ) const;
 
-    void setPTree( pt::ptree const& _p ) { M_p = _p; setup(); }
+    void setPTree( nl::json const& _p ) { M_p = _p; setup(); }
   private :
     void setup();
   private :
-    pt::ptree M_p;
+    nl::json M_p;
     bool M_useModelName;
     ModelModel M_emptyModel;
 };

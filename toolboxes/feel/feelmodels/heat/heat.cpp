@@ -51,9 +51,13 @@ HEAT_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
     M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
 
+    M_stabilizationGLS_checkConductivityDependencyOnCoordinates = boption(_name="stabilization-gls.check-conductivity-dependency-on-coordinates",_prefix=this->prefix());
+
     // time stepping
     M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
     M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
+
+    M_solverName = soption(_name="solver",_prefix=this->prefix());
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -119,7 +123,8 @@ HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
         M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
 
-    M_fieldTemperature.reset( new element_temperature_type(M_Xh,"temperature"));
+    //M_fieldTemperature.reset( new element_temperature_type(M_Xh,"temperature"));
+    M_fieldTemperature =  M_Xh->elementPtr( "temperature" );
 
     double tElpased = this->timerTool("Constructor").stop("initFunctionSpaces");
     this->log("Heat","initFunctionSpaces",(boost::format("finish in %1% s")%tElpased).str() );
@@ -187,18 +192,38 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // post-process
     this->initPostProcess();
 
-    // backend
-    this->initAlgebraicBackend();
+    // automatic solver selection
+    if ( M_solverName == "automatic" )
+    {
+        auto mfields = this->modelFields();
+        auto se = this->symbolsExpr( mfields );
+        auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( 0/*rowStartInVector*/ ) );
+        auto trialSymbolNames = tse.names();
+        bool isNonLinear = false;
+        for ( std::string tsName : trialSymbolNames )
+        {
+            if ( this->materialsProperties()->hasThermalConductivityDependingOnSymbol( tsName ) )
+            {
+                isNonLinear = true;
+                break;
+            }
+            for( auto const& d : M_bcNeumann )
+            {
+                auto neumannExpr = expression( d );
+                if ( neumannExpr.hasSymbolDependency( tsName, se ) )
+                {
+                    isNonLinear = true;
+                    break;
+                }
+            }
+            if ( isNonLinear )
+                break;
+        }
+        M_solverName = isNonLinear? "Newton" : "Linear";
+    }
 
-    // subspaces index
-    size_type currentStartIndex = 0;
-    this->setStartSubBlockSpaceIndex( "temperature", currentStartIndex++ );
 
-     // vector solution
-    auto bvs = this->initAlgebraicBlockVectorSolution( 1 );
-    bvs->operator()(0) = this->fieldTemperaturePtr();
-    // init petsc vector associated to the block
-    bvs->buildVector( this->backend() );
+    this->initAlgebraicModel();
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -209,6 +234,66 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
     this->log("Heat","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
+}
+
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicModel()
+{
+    // backend
+    this->initAlgebraicBackend();
+
+    // subspaces index
+    size_type currentStartIndex = 0;
+    this->setStartSubBlockSpaceIndex( "temperature", currentStartIndex++ );
+
+    this->updateAlgebraicDofEliminationIds();
+
+     // vector solution
+    auto bvs = this->initAlgebraicBlockVectorSolution( 1 );
+    bvs->operator()(0) = this->fieldTemperaturePtr();
+    // init petsc vector associated to the block
+    bvs->buildVector( this->backend() );
+}
+
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
+{
+    mesh_ptrtype oldMesh = this->mesh();
+
+    // material prop
+    this->materialsProperties()->removeMesh( oldMesh );
+    this->materialsProperties()->addMesh( newMesh );
+
+    this->setMesh( newMesh );
+
+    // function space and fields
+    space_temperature_ptrtype old_Xh = M_Xh;
+    element_temperature_ptrtype old_fieldTemperature = M_fieldTemperature;
+    this->initFunctionSpaces();
+
+    // createInterpolationOp
+    auto opI_temperature = opInterpolation(_domainSpace=old_Xh,
+                                           _imageSpace=M_Xh,
+                                           _range=M_rangeMeshElements );
+    auto matrixInterpolation_temperature = opI_temperature->matPtr();
+    matrixInterpolation_temperature->multVector( *old_fieldTemperature, *M_fieldTemperature );
+
+    // time stepping
+    if ( M_bdfTemperature )
+        M_bdfTemperature->applyRemesh( M_Xh, matrixInterpolation_temperature );
+
+    // TODO : stabilization gls
+
+    // TODO : post process ??
+
+    // reset algebraic data/tools
+    this->removeAllAlgebraicDataAndTools();
+    this->initAlgebraicModel();
+
+    this->initAlgebraicFactory(); // TODO : Theta time scheme
+
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -263,7 +348,12 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     if ( !this->postProcessExportsFields().empty() )
     {
+#if 0
         std::string geoExportType="static";//change_coords_only, change, static
+#else
+        bool useStaticExporter = boption(_name="exporter.use-static-mesh",_prefix=this->prefix());
+        std::string geoExportType = useStaticExporter? "static":"change";
+#endif
         M_exporter = exporter( _mesh=this->mesh(),
                                _name="Export",
                                _geo=geoExportType,
@@ -274,48 +364,42 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
             M_exporter->restart(this->timeInitial());
     }
 
-    pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
-    //  heat flux measures
-    std::string ppTypeMeasures = "Measures";
-    for( auto const& ptreeLevel0 : ptree )
-    {
-        std::string ptreeLevel0Name = ptreeLevel0.first;
-        if ( ptreeLevel0Name != ppTypeMeasures ) continue;
-        for( auto const& ptreeLevel1 : ptreeLevel0.second )
-        {
-            std::string ptreeLevel1Name = ptreeLevel1.first;
 
-            if ( ptreeLevel1Name == "Normal-Heat-Flux" )
+    if ( this->modelProperties().postProcess().hasJsonProperties( this->keyword() ) )
+    {
+        auto const& j_pp = this->modelProperties().postProcess().jsonProperties( this->keyword() );
+        std::string ppTypeMeasures = "Measures";
+        if ( j_pp.contains( ppTypeMeasures ) )
+        {
+            auto j_pp_measures = j_pp.at( ppTypeMeasures );
+            for ( auto const& [j_pp_measureskey,j_pp_measuresval] : j_pp_measures.items() )
             {
-                for( auto const& ptreeNormalHeatFlux : ptreeLevel1.second )
+                if ( j_pp_measureskey == "Normal-Heat-Flux" )
                 {
-                    auto indexesAllCases = ModelIndexes::generateAllCases( ptreeNormalHeatFlux.second );
-                    for ( auto const& indexes : indexesAllCases )
+                    for ( auto const& [j_pp_measures_nhfkey,j_pp_measures_nhfval] : j_pp_measuresval.items() )
                     {
-                        ModelMeasuresNormalFluxGeneric ppFlux;
-                        ppFlux.setup( ptreeNormalHeatFlux.second, indexes.replace( ptreeNormalHeatFlux.first ), indexes );
-                        if ( !ppFlux.markers().empty() )
-                            M_postProcessMeasuresNormalHeatFlux[ppFlux.name()] = ppFlux;
+                        auto indexesAllCases = ModelIndexes::generateAllCases( j_pp_measures_nhfval );
+                        for ( auto const& indexes : indexesAllCases )
+                        {
+                            ModelMeasuresNormalFluxGeneric ppFlux;
+                            ppFlux.setup( j_pp_measures_nhfval, indexes.replace( j_pp_measures_nhfkey ), indexes );
+                            if ( !ppFlux.markers().empty() )
+                                M_postProcessMeasuresNormalHeatFlux[ppFlux.name()] = ppFlux;
+                        }
                     }
                 }
             }
         }
     }
 
-    // point measures
-    auto fieldNamesWithSpaceTemperature = std::make_pair( std::set<std::string>({"temperature"}), this->spaceTemperature() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceTemperature );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-        M_measurePointsEvaluation->init( evalPoints );
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
 
     // start or restart the export of measures
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
-            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-        else
-            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
+            this->postProcessMeasures().restart( this->timeInitial() );
     }
 
     double tElpased = this->timerTool("Constructor").stop("initPostProcess");
@@ -546,6 +630,8 @@ HEAT_CLASS_TEMPLATE_TYPE::updateParameterValues()
     for ( auto [physicName,physicData] : this->physics/*FromCurrentType*/() )
         physicData->updateParameterValues( paramValues );
 
+    this->updateParameterValues_postProcess( paramValues, prefixvm("postprocess",this->keyword(),"_" ) );
+
     this->setParameterValues( paramValues );
 }
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -598,6 +684,12 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
 
+}
+
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::updateAlgebraicDofEliminationIds()
+{
     auto mesh = this->mesh();
     auto XhTemperature = this->spaceTemperature();
     std::set<std::string> temperatureMarkers;
@@ -614,7 +706,6 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     auto const& listMarkedFacesTemperature = std::get<0>( meshMarkersTemperatureByEntities );
     if ( !listMarkedFacesTemperature.empty() )
         this->updateDofEliminationIds( "temperature", XhTemperature, markedfaces( mesh,listMarkedFacesTemperature ) );
-
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -628,10 +719,7 @@ HEAT_CLASS_TEMPLATE_TYPE::solve()
 
     this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
 
-    if ( this->materialsProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
-        this->algebraicFactory()->solve( "Newton", this->algebraicBlockVectorSolution()->vectorMonolithic() );
-    else
-        this->algebraicFactory()->solve( "LinearSystem", this->algebraicBlockVectorSolution()->vectorMonolithic() );
+    this->algebraicFactory()->solve( M_solverName, this->algebraicBlockVectorSolution()->vectorMonolithic() );
 
     this->algebraicBlockVectorSolution()->localize();
 

@@ -18,7 +18,7 @@ namespace FeelModels
 template<typename RangeType, typename ExprType, typename GradExprType, typename SymbolsExpr>
 void
 measureNormEvaluationH1( RangeType const& range, ExprType const& idExpr, GradExprType const& gradExpr, std::string const& normType,
-                         ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, std::map<std::string,double> & res, bool useQuadOrder = true,
+                         ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, ModelMeasuresStorage & res, bool useQuadOrder = true,
                          typename std::enable_if< ExprTraits<RangeType,ExprType>::shape::is_scalar>::type* = nullptr )
 {
     typedef typename ExprTraits<RangeType,ExprType>::shape shape_type;
@@ -43,13 +43,13 @@ measureNormEvaluationH1( RangeType const& range, ExprType const& idExpr, GradExp
                                   _quad=quadOrderError,_quad1=quad1OrderError );
     else
         CHECK( false ) << "not a H1 norm type";
-    res[normNameOutput] = normComputed;
+    res.setValue( normNameOutput, normComputed );
 }
 
 template<typename RangeType, typename ExprType, typename GradExprType, typename SymbolsExpr>
 void
 measureNormEvaluationH1( RangeType const& range, ExprType const& idExpr, GradExprType const& gradExpr, std::string const& normType,
-                         ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, std::map<std::string,double> & res, bool useQuadOrder = true,
+                         ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, ModelMeasuresStorage & res, bool useQuadOrder = true,
                          typename std::enable_if< ExprTraits<RangeType,ExprType>::shape::is_vectorial>::type* = nullptr )
 {
     typedef typename ExprTraits<RangeType,ExprType>::shape shape_type;
@@ -74,13 +74,13 @@ measureNormEvaluationH1( RangeType const& range, ExprType const& idExpr, GradExp
                                   _quad=quadOrderError,_quad1=quad1OrderError );
     else
         CHECK( false ) << "not a H1 norm type";
-    res[normNameOutput] = normComputed;
+    res.setValue( normNameOutput, normComputed );
 }
 
 template<typename RangeType, typename ExprType, typename SymbolsExpr>
 void
 measureNormEvaluationL2( RangeType const& range, ExprType const& idExpr, std::string const& normType,
-                         ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, std::map<std::string,double> & res, bool useQuadOrder = true )
+                         ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, ModelMeasuresStorage & res, bool useQuadOrder = true )
 {
     typedef typename ExprTraits<RangeType,ExprType>::shape shape_type;
     typedef typename ExprTraits<RangeType,ExprType>::element_type element_type;
@@ -93,21 +93,30 @@ measureNormEvaluationL2( RangeType const& range, ExprType const& idExpr, std::st
     double normComputed = 0;
     if ( normType == "L2" )
         normComputed = normL2(_range=range,_expr=idExpr,_quad=quadOrder,_quad1=quad1Order );
-    else if ( normType == "L2-error" )
+    else if ( normType == "L2-error" || normType == "L2-relative-error" )
+    {
         normComputed = normL2(_range=range,_expr=idExpr - expr( ppNorm.solution().template expr<shape_type::M,shape_type::N>(), symbolsExpr ),
                               _quad=quadOrderError,_quad1=quad1OrderError );
+        if ( normType == "L2-relative-error" )
+        {
+            double normSolution = normL2(_range=range,_expr=expr( ppNorm.solution().template expr<shape_type::M,shape_type::N>(), symbolsExpr ),
+                                         _quad=quadOrderError,_quad1=quad1OrderError );
+            if( normSolution > 1e-10 )
+                normComputed /= normSolution;
+        }
+    }
     else
         CHECK( false ) << "not a L2 norm type";
-    res[normNameOutput] = normComputed;
+    res.setValue( normNameOutput, normComputed );
 }
 
 template<typename RangeType, typename FieldType, typename SymbolsExpr>
 void
 measureNormEvaluationField( RangeType const& range, FieldType const& field, std::string const& normType,
-                            ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, std::map<std::string,double> & res,
+                            ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, ModelMeasuresStorage & res,
                             typename std::enable_if< FieldType::is_scalar || FieldType::is_vectorial >::type* = nullptr )
 {
-    if ( normType == "L2" || normType == "L2-error" )
+    if ( normType == "L2" || normType == "L2-error" || normType == "L2-relative-error" )
         measureNormEvaluationL2( range, idv(field), normType, ppNorm, symbolsExpr, res );
     else if ( normType == "H1" || normType == "SemiH1" || normType == "H1-error" || normType == "SemiH1-error" )
         measureNormEvaluationH1( range, idv(field), gradv(field), normType, ppNorm, symbolsExpr, res, false );
@@ -118,10 +127,10 @@ measureNormEvaluationField( RangeType const& range, FieldType const& field, std:
 template<typename RangeType, typename FieldType, typename SymbolsExpr>
 void
 measureNormEvaluationField( RangeType const& range, FieldType const& field, std::string const& normType,
-                            ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, std::map<std::string,double> & res,
+                            ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, ModelMeasuresStorage & res,
                             typename std::enable_if< FieldType::is_tensor2 || FieldType::is_tensor2symm >::type* = nullptr )
 {
-    if ( normType == "L2" || normType == "L2-error" )
+    if ( normType == "L2" || normType == "L2-error" || normType == "L2-relative-error" )
         measureNormEvaluationL2( range, idv(field), normType, ppNorm, symbolsExpr, res, false );
     else if ( normType == "H1" || normType == "SemiH1" || normType == "H1-error" || normType == "SemiH1-error" )
         CHECK( false ) << "normType " << normType << " is not implemented with tensor field";
@@ -133,7 +142,7 @@ measureNormEvaluationField( RangeType const& range, FieldType const& field, std:
 template<typename RangeType, typename SymbolsExpr, typename... FieldTupleType >
 void
 measureNormEvaluation( RangeType const& range,
-                       ModelPostprocessNorm const& ppNorm,  std::map<std::string,double> & res,
+                       ModelPostprocessNorm const& ppNorm, ModelMeasuresStorage & res,
                        SymbolsExpr const& symbolsExpr, FieldTupleType const& ... fieldTuple )
 {
     typedef typename RangeTraits<RangeType>::element_type element_type;
@@ -230,7 +239,7 @@ measureNormEvaluation( RangeType const& range,
 template<typename MeshType, typename RangeType, typename SymbolsExpr, typename... FieldTupleType>
 void
 measureNormEvaluation( std::shared_ptr<MeshType> const& mesh, RangeType const& defaultRange,
-                       ModelPostprocessNorm const& ppNorm,  std::map<std::string,double> & res,
+                       ModelPostprocessNorm const& ppNorm, ModelMeasuresStorage & res,
                        SymbolsExpr const& symbolsExpr, FieldTupleType const& ... fieldTuple )
 {
     auto meshMarkers = ppNorm.markers();

@@ -38,6 +38,21 @@ ModelExpression::setExpr( std::string const& key, pt::ptree const& p, WorldComm 
     else if( boost::optional<std::string> itvals = p.get_optional<std::string>( key ) )
         this->setExpr( indexes.replace( *itvals ), worldComm, directoryLibExpr );
 }
+void
+ModelExpression::setExpr( nl::json const& jarg, WorldComm const& worldComm, std::string const& directoryLibExpr, ModelIndexes const& indexes )
+{
+    if ( jarg.is_number() )
+    {
+        double val = jarg.get<double>();
+        this->setExprScalar( Feel::vf::expr( val ) );
+    }
+    else if ( jarg.is_string() )
+    {
+        this->setExpr( indexes.replace( jarg.get<std::string>() ), worldComm, directoryLibExpr );
+    }
+    else
+        CHECK( false ) << "invalid json arg";
+}
 
 void
 ModelExpression::setExpr( std::string const& feelExprString, WorldComm const& worldComm, std::string const& directoryLibExpr )

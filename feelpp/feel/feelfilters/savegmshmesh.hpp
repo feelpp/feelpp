@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_SAVEGMSHMESH_HPP)
-#define FEELPP_SAVEGMSHMESH_HPP 1
+#ifndef FEELPP_FILTERS_SAVEGMSHMESH_H
+#define FEELPP_FILTERS_SAVEGMSHMESH_H
 
 #include <feel/feelfilters/exportergmsh.hpp>
 #include <feel/feelfilters/detail/mesh.hpp>
@@ -41,19 +41,15 @@ namespace Feel {
  * \arg mesh mesh data structure
  * \arg filename filename string (with extension)
  */
-BOOST_PARAMETER_FUNCTION(
-    ( void ),          // return type
-    saveGMSHMesh,    // 2. function name
-    tag,             // 3. namespace of tag types
-    ( required
-      ( mesh, * )
-      ( filename, * ) ) // 4. one required parameter, and
-    ( optional
-      ( parametricnodes,          *( boost::is_integral<mpl::_> ), 0 ) )
-    )
+template <typename ... Ts>
+void saveGMSHMesh( Ts && ... v )
 {
-    typedef typename Feel::detail::mesh<Args>::type _mesh_type;
-    typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && mesh = args.get(_mesh);
+    std::string const& filename = args.get(_filename);
+    bool parametricnodes = args.get_else(_parametricnodes,false);
+
+    using _mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
 
 #if BOOST_FILESYSTEM_VERSION == 3
     ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string(), 1,  mesh->worldCommPtr() );
@@ -64,18 +60,16 @@ BOOST_PARAMETER_FUNCTION(
 
 }
 
-BOOST_PARAMETER_FUNCTION(
-    ( void ),  // return type
-    saveGeoEntityAsGMSHMesh,    // 2. function name
-    tag,             // 3. namespace of tag types
-    ( required
-      ( geoentity, * )
-      ( filename, * ) ) // 4. one required parameter, and
-    ( optional
-      ( pointset, *, typename Feel::detail::meshFromGeoEntity<Args>::pointset_type() ) )
-    )
+template <typename ... Ts>
+void saveGeoEntityAsGMSHMesh( Ts && ... v )
 {
-    typedef typename Feel::detail::meshFromGeoEntity<Args>::type _mesh_type;
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && geoentity = args.get(_geoentity);
+    std::string const& filename = args.get(_filename);
+    using meshFromGeoEntity_helper_type = Feel::detail::meshFromGeoEntity<decltype(geoentity)>;
+    auto && pointset = args.get_else_invocable(_pointset, [](){ return typename meshFromGeoEntity_helper_type::pointset_type{}; });
+
+    using _mesh_type = typename meshFromGeoEntity_helper_type::type;
 
 #if BOOST_FILESYSTEM_VERSION == 3
     ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string(), 1,  Environment::worldComm().subWorldCommSeq() );

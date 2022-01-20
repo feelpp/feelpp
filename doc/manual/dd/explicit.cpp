@@ -51,14 +51,14 @@ template<int Dim,int Order>
 void
 Explicit<Dim,Order>::run()
 {
-    Environment::changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
+    Environment::changeRepository( _directory=boost::format( "%1%/%2%/P%3%/h_%4%/" )
                                    % this->about().appName()
                                    % Dim
                                    % Order
                                    % doption("gmsh.hsize") );
 
     auto commWorld = Environment::worldComm();
-    auto commSelf = Environment::worldComm().subWorldCommSeq();
+    auto commSelf = Environment::worldCommSeqPtr();//Environment::worldComm().subWorldCommSeq();
 
     auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<Dim>>(commSelf),
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER|MESH_PROPAGATE_MARKERS,
@@ -72,7 +72,7 @@ Explicit<Dim,Order>::run()
                                               _substructuring=true
                                               ),
                                 _structured=2,
-                                _partitions=commSelf.localSize(),
+                                _partitions=commSelf->localSize(),
                                 _worldcomm=commSelf );
 
 
