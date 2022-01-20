@@ -226,6 +226,39 @@ private :
 };
 
 template <uint16_type Dim>
+class ModelPhysicHeat : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+public :
+
+    struct HeatSource
+    {
+        HeatSource() = default;
+        HeatSource( HeatSource const& ) = default;
+        HeatSource( HeatSource && ) = default;
+
+        void setup( nl::json const& jarg ) {};
+    private:
+        std::string M_name;
+        std::string M_type;
+    };
+
+    ModelPhysicHeat( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicHeat( ModelPhysicHeat const& ) = default;
+    ModelPhysicHeat( ModelPhysicHeat && ) = default;
+
+    std::vector<HeatSource> heatSources() const { return M_heatSources; }
+
+    //! set parameter values in expression
+    void setParameterValues( std::map<std::string,double> const& mp ) override
+        {
+            super_type::setParameterValues( mp );
+        }
+private:
+    std::vector<HeatSource> M_heatSources;
+};
+
+template <uint16_type Dim>
 class ModelPhysicFluid : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
