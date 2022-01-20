@@ -15,14 +15,14 @@ class reducedbasis_time(reducedbasis):
         """Initialise the object
 
         Args:
-            Aq (list of PETSc.Mat)       : matrices Aq given by the affine decomposition
-            Fp (list of PETSc.Vec)       : vectors Fq given by the decomposition of right-hand side
-            model (ToolboxMor_{2|3}D)    : model DEIM used for the decomposition
-            mubar (ParameterSpaceElement): parameter mu_bar for the enrgy norm
-            alphaLB (func)               : function mu ↦ alphaLB(mu)
-            Mr (list of PETSc.Mat)       : matrices Mq of mass for the scalar product
-            tf (float)                   : final time
-            K (int)                      : number of time iterations
+            `Aq` (list of PETSc.Mat)       : matrices Aq given by the affine decomposition
+            `Fp` (list of PETSc.Vec)       : vectors Fq given by the decomposition of right-hand side
+            `model` (ToolboxMor_{2|3}D)    : model DEIM used for the decomposition
+            `mubar` (ParameterSpaceElement): parameter mu_bar for the enrgy norm
+            `alphaLB` (func)               : function mu ↦ alphaLB(mu)
+            `Mr` (list of PETSc.Mat)       : matrices Mq of mass for the scalar product
+            `tf` (float)                   : final time
+            `K` (int)                      : number of time iterations
         """
         super().__init__(Aq, Fp, model, mubar, alphaLB)
         self.Mr = Mr
@@ -106,7 +106,7 @@ class reducedbasis_time(reducedbasis):
         super().computeOfflineReducedBasis(mus, orth=orth)
         self.generateMNr()
 
-    def generateBasis(self, musk) -> None:
+    def generateBasis(self, musk, orth=True) -> None:
         """Generates the reduced basis matrix from different parameters and different instants
 
         Args:
@@ -115,8 +115,10 @@ class reducedbasis_time(reducedbasis):
 
         self.N = taille_dict(musk)
         self.Z = []
+        ind = 0
 
         def g(k): return 1 if k == 0 else 0
+        # def g(k): return 1 - float(np.cos(k*self.dt))
 
         for mu in musk:
             beta = self.model.computeBetaQm(mu)
@@ -136,13 +138,16 @@ class reducedbasis_time(reducedbasis):
                 self.ksp.setOperators(mat)
                 self.ksp.setConvergenceHistory()
                 sol = Fmu.duplicate()
+                sol.set(0)
                 self.ksp.solve(rhs, sol)
                 u = sol.copy()
 
                 if k+1 == musk[mu][cur]:
                     self.Z.append(sol.copy())
+                    ind += 1
                     cur += 1
 
+        if orth:
         self.orthonormalizeZ()
         self.generateANq()
         self.generateFNp()
