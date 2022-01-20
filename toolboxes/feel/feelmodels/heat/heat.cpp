@@ -365,9 +365,9 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
 
-    if ( this->modelProperties().postProcess().hasJsonPrperties( this->keyword() ) )
+    if ( this->modelProperties().postProcess().hasJsonProperties( this->keyword() ) )
     {
-        auto const& j_pp = this->modelProperties().postProcess().jsonPrperties( this->keyword() );
+        auto const& j_pp = this->modelProperties().postProcess().jsonProperties( this->keyword() );
         std::string ppTypeMeasures = "Measures";
         if ( j_pp.contains( ppTypeMeasures ) )
         {

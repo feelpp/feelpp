@@ -270,7 +270,7 @@ public :
         bool useBoussinesqApproximation() const;
         bool hasTurbulentKineticEnergy() const;
 
-        void setup( pt::ptree const& p );
+        void setup( nl::json const& jarg );
 
     private :
         bool M_isEnabled;
