@@ -2653,7 +2653,7 @@ public:
     template <typename SymbolsExprType>
     force_type computeForce( range_faces_type const& rangeFaces, SymbolsExprType const& se ) const;
     double computeFlowRate( std::string const& marker, bool useExteriorNormal=true ) const;
-    double computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal=true ) const;
+    double computeFlowRate( std::set<std::string> const& markers, bool useExteriorNormal=true ) const;
     double computePressureSum() const;
     double computePressureMean() const;
     double computeVelocityDivergenceSum() const;
@@ -3211,7 +3211,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::executePostProce
     // flow rate measures
     for ( auto const& ppFlowRate : M_postProcessMeasuresFlowRate )
     {
-        double valFlowRate = this->computeFlowRate( ppFlowRate.meshMarkers(), ppFlowRate.useExteriorNormal() );
+        double valFlowRate = this->computeFlowRate( ppFlowRate.markers(), ppFlowRate.useExteriorNormal() );
         this->postProcessMeasures().setValue( "flowrate_"+ppFlowRate.name(),valFlowRate);
     }
 
