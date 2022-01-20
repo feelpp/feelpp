@@ -93,7 +93,7 @@ class VectorUblas : public Vector<T>
         typedef T value_type;
         typedef typename type_traits<value_type>::real_type real_type;
 
-        typedef detail::VectorUblasBase<value_type> vector_impl_type;
+        typedef Feel::detail::VectorUblasBase<value_type> vector_impl_type;
         typedef std::unique_ptr<vector_impl_type> vector_impl_ptrtype;
         typedef std::unique_ptr<const vector_impl_type> vector_impl_cstptrtype;
 
@@ -1113,7 +1113,7 @@ template< typename T >
 inline std::shared_ptr<VectorPetsc<T>>
 toPETScPtr( const VectorUblas<T> & v )
 {
-    using namespace detail;
+    using namespace Feel::detail;
     if ( v.comm().size() > 1 )
     {
         const VectorUblasContiguousGhosts<T> * vecContiguousGhosts = dynamic_cast<const VectorUblasContiguousGhosts<T> *>( & v.vectorImpl() );
