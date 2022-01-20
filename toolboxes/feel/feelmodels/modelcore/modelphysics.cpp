@@ -148,7 +148,7 @@ template <uint16_type Dim>
 bool
 ModelPhysicFluid<Dim>::Turbulence::hasTurbulentKineticEnergy() const
 {
-    return (M_model == "k-epsilon");
+    return false;// (M_model == "k-epsilon");
 }
 
 template <uint16_type Dim>
