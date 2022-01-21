@@ -280,7 +280,7 @@ class reducedbasis():
             sol = F.duplicate()
             self.ksp.solve(F, sol)
             self.Z.append(sol)
-            print(i, self.Z[-1].min(), self.Z[-1].max())
+            # print(i, self.Z[-1].min(), self.Z[-1].max())
             # print(self.reshist)
             i += 1
 
