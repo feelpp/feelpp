@@ -7,21 +7,38 @@ from feelpp.toolboxes.cfpdes import *
 import pandas as pd
 
 cfpde_cases = [ ('fluid','TurekHron','cfd2.cfg', 2),
-                ('.', 'p-laplacian', 'regularized', 2 ),
-                ('.', 'square', 'square2d', 2), 
+                ('.', 'p-laplacian', 'regularized.cfg', 2 ),
+                ('.', 'square', 'square2d.cfg', 2), 
                 ('thermoelectric', 'ElectroMagnets_HL-31_H1', 'HL-31_H1.cfg', 3),
-                #('thermoelectric', 'ElectroMagnets_HL-31_H1','HL-31_H1_nonlinear.cfg', 3),
+                ('heat', 'ThermalBridgesENISO10211', 'thermo2dCase2.cfg', 2),
+                ('heat', 'thermo2d', 'testsuite_thermo2d.cfg', 2),
                 ]
 
 @pytest.mark.parametrize("prefix,case,casefile,dim", cfpde_cases)
-def test_cfpdes_cfd(prefix,case,casefile,dim):
-    feelpp.Environment.changeRepository(
-        directory="pyfeelpptoolboxes-tests/cfpdes/{}/{}".format(prefix,case))
+def test_cfpdes(prefix,case,casefile,dim):
     feelpp.Environment.setConfigFile('cfpdes/{}/{}/{}'.format(prefix,case,casefile))
     f = cfpdes(dim=dim)
+    if not f.isStationary():
+        # the code below is not working yet see #1763
+        f.setTimeFinal( f.timeStep()*10)
     simulate(f)
     return not f.checkResults()
     
+
+def test_cfpde_nlthermoelectric():
+    prefix, case, casefile, dim= ( 'thermoelectric', 'ElectroMagnets_HL-31_H1', 'HL-31_H1.cfg', 3)
+    feelpp.Environment.changeRepository(
+        directory="toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1")
+    feelpp.Environment.setConfigFile('cfpdes/{}/{}/{}'.format(prefix, case, casefile))
+    linear_case_t = cfpdes(dim=dim)
+    simulate(linear_case_t)
+    assert linear_case_t.checkResults()
+    # now run the nonlinear model using the linear solution as initial guess
+    casefile = 'HL-31_H1_nonlinear.cfg'
+    feelpp.Environment.setConfigFile('cfpdes/{}/{}/{}'.format(prefix, case, casefile))
+    nl_case_t = cfpdes(dim=dim)
+    simulate(nl_case_t)
+    return not nl_case_t.checkResults()
 
 def test_cfpdes_remesh():
     feelpp.Environment.changeRepository(
@@ -43,10 +60,8 @@ def test_cfpdes_remesh():
     e.step(0.).add("quality", q.etaQ(f.mesh()))
     e.save()
 
-    R = feelpp.remesher(mesh=f.mesh())
-    R.setMetric(metric)
-    new_mesh = R.execute()
-
+    new_mesh,cpt = feelpp.remesh(
+        mesh=f.mesh(), metric="gradedls({},{})".format(hclose, hfar),required_elts=[],required_facets=[],parent=None)
     
     fnew = cfpdes(dim=2)
     fnew.setMesh(new_mesh)
