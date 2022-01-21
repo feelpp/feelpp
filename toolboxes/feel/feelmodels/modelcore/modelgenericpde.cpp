@@ -92,7 +92,7 @@ ModelGenericPDE<Dim>::setupGenericPDE()
         mphysic->addMaterialPropertyDescription( this->curlCurlCoefficientName(), this->curlCurlCoefficientName(), { scalarShape } );
     }
 
-    this->M_physics.emplace( mphysic->name(), mphysic );
+    this->M_physics.emplace( std::make_pair(mphysic->type(),mphysic->name()), mphysic );
 }
 
 template <uint16_type Dim>
@@ -132,7 +132,7 @@ ModelGenericPDEs<Dim>::initGenericPDEs( std::string const& name )
 {
     this->M_physicDefault = name;
     auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(), name, *this );
-    this->M_physics.emplace( name, mphysic );
+    this->M_physics.emplace( std::make_pair(mphysic->type(),mphysic->name()), mphysic );
 }
 
 template <uint16_type Dim>
@@ -146,6 +146,7 @@ template <uint16_type Dim>
 void
 ModelGenericPDEs<Dim>::updateForUseGenericPDEs()
 {
+#if 0
     auto & mphysic = this->M_physics[this->physicDefault()];
     for ( auto const& [infos,pde] : M_pdes )
     {
@@ -154,6 +155,9 @@ ModelGenericPDEs<Dim>::updateForUseGenericPDEs()
         for ( auto const& subPhysic : pde->physics() ) // normally only one
             mphysic->addSubphysic( subPhysic.second );
     }
+#else
+    CHECK( false ) << "TODO";
+#endif
 }
 
 template class ModelGenericPDE<2>;

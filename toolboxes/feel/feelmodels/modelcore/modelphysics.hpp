@@ -72,12 +72,14 @@ template <uint16_type Dim>
 class ModelPhysics;
 
 template <uint16_type Dim>
-class ModelPhysic
+class ModelPhysic : public JournalWatcher
 {
+    using super_type = JournalWatcher;
 public :
     using material_property_description_type = MaterialPropertyDescription;
     using material_property_shape_dim_type = typename material_property_description_type::shape_dim_type;
     inline static const uint16_type nDim = Dim;
+    using physic_id_type = std::pair<std::string,std::string>;
 
     //ModelPhysic() = default;
     ModelPhysic( std::string const& type, std::string const& name, ModelBase const& mparent, ModelModel const& model = ModelModel{} );
@@ -88,12 +90,13 @@ public :
 
     std::string const& type() const { return M_type; }
     std::string const& name() const { return M_name; }
-
+#if 0
     //! return the types of subphysics
     std::set<std::string> const& subphysicsTypes() const { return M_subphysicsTypes; }
+#endif
 
     //! return the map of subphysics
-    std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> const& subphysics() const { return M_subphysics; }
+    std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> const& subphysics() const { return M_subphysics; }
 
     //! return a subphysic from the type of physic (the first one found, and return null shared ptr if not found)
     std::shared_ptr<ModelPhysic<nDim>> subphysicFromType( std::string const& type ) const
@@ -103,6 +106,9 @@ public :
                     return sp;
             return  std::shared_ptr<ModelPhysic<nDim>>{};
         }
+
+    //! return material names used by this physic
+    std::set<std::string> const& materialNames() const { return M_materialNames; }
 
     //! return the material properties description (.i.e. coefficients of pdes)
     std::map<std::string,material_property_description_type> const& materialPropertyDescription() const { return M_materialPropertyDescription; }
@@ -127,8 +133,11 @@ public :
                 subPhysic->physicsShared( res );
         }
 
+
+    bool hasSubphysic( physic_id_type const& pId ) const { return M_subphysics.find( pId ) != M_subphysics.end(); }
+
     //! add a subphysic model
-    void addSubphysic( std::shared_ptr<ModelPhysic<nDim>> const& sp ) { M_subphysics[sp->name()] = sp; }
+    void addSubphysic( std::shared_ptr<ModelPhysic<nDim>> const& sp ) { M_subphysics[std::make_pair(sp->type(),sp->name())] = sp; }
 
     //! add a constant (double) parameter called \pname and return the symbol associated
     std::string addParameter( std::string const& pname, double val )
@@ -145,6 +154,16 @@ public :
     std::string addParameter( std::string const& pname, std::string const& expr )
         {
             return this->addParameter( pname,expr, *M_worldComm, M_directoryLibExpr );
+        }
+    //! add a parameter called \pname describe by a json entry \jarg and return the symbol associated
+    std::string addParameter( std::string const& pname, nl::json const& jarg, WorldComm const& worldComm, std::string const& directoryLibExpr )
+        {
+            M_parameterNameToExpr[pname].setExpr( jarg, worldComm, directoryLibExpr );
+            return this->symbolFromParameter( pname );
+        }
+    std::string addParameter( std::string const& pname, nl::json const& jarg )
+        {
+            return this->addParameter( pname, jarg, *M_worldComm, M_directoryLibExpr );
         }
 
     //! set parameter values in expression
@@ -240,13 +259,21 @@ public :
             auto itFindParam = M_parameterNameToExpr.find( pname );
             return expr( itFindParam->second.template expr<M,N>(), se );
         }
+private :
+    template <uint16_type TheDim>
+    friend class ModelPhysics;
+
+    using subphysic_description_type = std::map<std::string,std::tuple<std::string,std::shared_ptr<ModelPhysics<Dim>>>>;
+    void initSubphysics( ModelPhysics<Dim> & mphysics, subphysic_description_type const& subPhysicsDesc, ModelModels const& models  );
 
 private :
     std::string M_type, M_name;
     worldcomm_ptr_t M_worldComm;
     std::string M_directoryLibExpr;
-    std::set<std::string> M_subphysicsTypes;
-    std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> M_subphysics;
+    //std::set<std::string> M_subphysicsTypes;
+    std::map<std::string,std::set<std::string>> M_mapSubphysicsTypeToNames; // only internal data
+    std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> M_subphysics;
+    std::set<std::string> M_materialNames;
     std::map<std::string,material_property_description_type> M_materialPropertyDescription; // name -> (symbol, shapes.. )
     std::map<std::string,ModelExpression> M_parameterNameToExpr;
 };
@@ -255,16 +282,27 @@ template <uint16_type Dim>
 class ModelPhysicHeat : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicHeat<Dim>;
 public :
 
     struct HeatSource
     {
-        HeatSource() = default;
+        HeatSource( self_type * mparent ) : M_parent( mparent ) {}
         HeatSource( HeatSource const& ) = default;
         HeatSource( HeatSource && ) = default;
 
-        void setup( nl::json const& jarg ) {};
+        void setup( nl::json const& jarg );
+
+        std::string const& type() const { return M_type; }
+
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto expr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+            {
+                return M_parent->template paramterExpr<1,1>( "heatsource", se );
+            }
+
     private:
+        self_type * M_parent;
         std::string M_name;
         std::string M_type;
     };
@@ -280,6 +318,8 @@ public :
         {
             super_type::setParameterValues( mp );
         }
+
+    void updateInformationObject( nl::json & p ) const override;
 private:
     std::vector<HeatSource> M_heatSources;
 };
@@ -481,6 +521,7 @@ public :
     using material_property_description_type = MaterialPropertyDescription;
     using material_property_shape_dim_type = typename material_property_description_type::shape_dim_type;
     inline static const uint16_type nDim = Dim;
+    using physic_id_type = std::pair<std::string,std::string>; // (type, name)
 
     using model_physic_type = ModelPhysic<nDim>;
     using model_physic_ptrtype = std::shared_ptr<model_physic_type>;
@@ -494,16 +535,23 @@ public :
     ModelPhysics( ModelPhysics && ) = default;
     virtual ~ModelPhysics() = default;
 
-    //void updateInformationObject( pt::ptree & p ) const override {}
+    //void updateInformationObject( nl::json & p ) const override {}
+    void updateInformationObjectFromCurrentType( nl::json & p ) const;
+
+    //! return true if physic id is already registered
+    bool hasPhysic( physic_id_type const& pId ) const { return M_physics.find( pId ) != M_physics.end(); }
+
+    //! return physic registerd from physic id
+    std::shared_ptr<ModelPhysic<Dim>> physic( physic_id_type const& pId ) const { CHECK( this->hasPhysic(pId) ) << "no physic id"; return M_physics.find( pId )->second; }
 
     //! return all physics registerd
-    std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> const& physics() const { return M_physics; }
+    std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> const& physics() const { return M_physics; }
 
     //! return all physics registerd related to a type of physic
-    std::map<std::string,std::shared_ptr<ModelPhysic<Dim>>> physics( std::string const& type ) const;
+    std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> physics( std::string const& type ) const;
 
     //! return all physics registerd related to the current type
-    std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> physicsFromCurrentType() const { return this->physics( this->physicType() ); }
+    std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> physicsFromCurrentType() const { return this->physics( this->physicType() ); }
 
     //! return the type of physic at top level
     std::string const& physicType() const { return M_physicType; }
@@ -512,23 +560,23 @@ public :
     std::string const& physicDefault() const { return M_physicDefault; }
 
     //! return name of all physics registered
-    std::set<std::string> physicsAvailable() const;
+    std::set<physic_id_type> physicsAvailable() const;
 
     //! return name of all physics registered related to a type of physic
-    std::set<std::string> physicsAvailable( std::string const& type ) const;
+    std::set<physic_id_type> physicsAvailable( std::string const& type ) const;
 
     //! return name of all physics registered related to the current type
-    std::set<std::string> physicsAvailableFromCurrentType() const { return this->physicsAvailable( this->physicType() ); }
-
+    std::set<physic_id_type> physicsAvailableFromCurrentType() const { return this->physicsAvailable( this->physicType() ); }
+#if 0
     //! return the name of all physic shared from the parent physic \pname
     std::set<std::string> physicsShared( std::string const& pname ) const;
-
+#endif
 
     void initPhysics( std::string const& name, ModelModels const& models, subphysic_description_type const& subPhyicsDesc = subphysic_description_type{} );
 
-    void setPhysics( std::map<std::string,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics, std::string const& physicDefault = "" );
+    void setPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics, std::string const& physicDefault = "" );
 
-    auto symbolsExprPhysics( std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> const& mphysics ) const
+    auto symbolsExprPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> const& mphysics ) const
         {
             using se_type = std::decay_t<decltype(mphysics.begin()->second->symbolsExpr())>;
             se_type res;
@@ -540,10 +588,15 @@ public :
         {
             return symbolsExprPhysics( this->physicsFromCurrentType() );
         }
+private :
+    template <uint16_type TheDim>
+    friend class ModelPhysic;
+
+    void addPhysicInternal( model_physic_ptrtype mphysic, ModelModels const& models, subphysic_description_type const& subPhysicsDesc );
 protected :
 
     std::string M_physicType;
-    std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> M_physics;
+    std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> M_physics;
     std::string M_physicDefault;
 };
 
