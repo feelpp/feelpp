@@ -166,49 +166,87 @@ class reducedbasis_time(reducedbasis):
             g (np.ndarray): g function of the right-hand side (g[k]=g(k*dt))
 
         Returns:
-            np.ndarray: solution uN of the equation at time t = k*dt
+            np.ndarray: solution uN of the equation at time t = K*dt
         """
         beta = self.model.computeBetaQm(mu)
         ANmu = self.assembleAN(beta[0][0])
         FNmu = self.assembleFN(beta[1][0][0])
-        MNmu = self.assembleMN(beta[2][0])
+        MNmu = np.array(self.assembleMN(beta[2][0]))
 
         mat = spsp.csc_matrix(MNmu + self.dt * ANmu)
         matLu = splu(mat)
-        u = np.zeros(self.N)
+        u = np.zeros(self.N)    # initial solution
 
         for k in range(1, self.K):
             sol = matLu.solve(g[k] * self.dt * FNmu + MNmu @ u)
             u = sol.copy()
         return u
 
-    # def solveTimeForStudy(self, mu, g):
-    #     beta = self.model.computeBetaQm(mu)
-    #     ANmu = self.assembleAN(beta[0][0])
-    #     FNmu = self.assembleFN(beta[1][0][0])
-    #     MNmu = self.assembleMN(beta[2][0])
+    def solveTimeForStudy(self, mu, g):
+        beta = self.model.computeBetaQm(mu)
+        ANmu = self.assembleAN(beta[0][0])
+        FNmu = self.assembleFN(beta[1][0][0])
+        MNmu = np.array(self.assembleMN(beta[2][0]))
 
-    #     mat = spsp.csc_matrix(MNmu + self.dt * ANmu)
-    #     matLu = splu(mat)
-    #     u = np.zeros(self.N)
+        Amu = self.assembleA(beta[0][0])
+        Fmu = self.assembleF(beta[1][0][0])
+        Mmu = self.assembleM(beta[2][0])
 
-    #     ones = self.Fq[0].duplicate()
-    #     ones.set(1)
+        mat = spsp.csc_matrix(MNmu + self.dt * ANmu)
+        matLu = splu(mat)
+        bigMat = Mmu + self.dt * Amu
+        self.ksp.setOperators(bigMat)
 
-    #     t = []
-    #     sN = []
-    #     s = []
-    #     sDiff = []
-    #     normN = []
-    #     norm = []
-    #     normDiff = []
+        uN = np.zeros(self.N)
+        u = self.Fq[0].duplicate()
 
-    #     for k in range(1, self.K):
-    #         t.append(k * self.dt)
-    #         sol = matLu.solve(g[k] * self.dt * FNmu + MNmu @ u)
-    #         u = sol.copy()
+        ones = self.Fq[0].duplicate()
+        ones.set(1)
+        onesN = np.ones(self.N)
 
-    #     return t, sN, s, sDiff, normN, norm, normDiff
+        t = []
+        sN = []
+        s = []
+        sDiff = []
+        normN = []
+        norm = []
+        normDiff = []
+
+        tmpN = np.zeros(self.K)
+        tmp = np.zeros(self.K)
+        tmpDiff = np.zeros(self.K)
+
+        # résoudre dans le cas stationnaire au lieu de la boucle en temps TODO
+
+        for k in range(1, self.K):
+            t.append(k * self.dt)
+
+            solN = matLu.solve(g[k] * self.dt * FNmu + MNmu @ uN)
+            uN = solN.copy()
+
+            rhs = float(g[k]) * self.dt * Fmu + Mmu * u
+            self.ksp.setConvergenceHistory()
+            sol = self.Fq[0].duplicate()
+            sol.set(0)
+            self.ksp.solve(rhs, sol)
+            u = sol.copy()
+
+            sN.append(onesN @ MNmu @ uN)
+            s.append(ones.dot(Mmu * u))
+            sDiff.append(np.abs(s[-1] - sN[-1]))
+
+            uplus = self.projFE(uN)
+            diff = u - uplus
+            
+            tmpN[k] = uplus.dot( Amu * uplus )
+            tmp[k] = u.dot( Amu * u )
+            tmpDiff[k] = diff.dot(Amu * diff)
+
+            normN.append( np.sqrt(uplus.dot(Mmu * uplus) + self.dt * tmpN.sum()) )
+            norm.append( np.sqrt(u.dot(Mmu * u) + self.dt * tmp.sum()) )
+            normDiff.append( np.sqrt(diff.dot(Mmu * diff) + self.dt * tmpDiff.sum()) )
+
+        return t, sN, s, sDiff, normN, norm, normDiff
 
 
     """
