@@ -89,7 +89,15 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
 
             for ( auto const& heatSource : physicHeatData->heatSources() )
             {
-                CHECK( false ) << "TODO VINCENT";
+                auto theExpr = heatSource.expr( symbolsExpr );
+                bool buildSourceTerm = theExpr.expression().isConstant()? buildCstPart : buildNonCstPart;
+                if ( doAssemblyRhs && buildSourceTerm )
+                {
+                    myLinearForm +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*theExpr*id(v),
+                                   _geomap=this->geomap() );
+                }
             }
 
             if ( this->hasVelocityConvectionExpr( matName ) || !this->isStationary() )
