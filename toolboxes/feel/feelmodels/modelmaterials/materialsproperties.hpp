@@ -90,6 +90,7 @@ class MaterialsProperties
     using modelphysics_ptrtype = std::shared_ptr<modelphysics_type>;
     using modelphysics_weakptrtype = std::weak_ptr<modelphysics_type>;
 public :
+    using physic_id_type = typename modelphysics_type::physic_id_type;
     static const uint16_type nDim = Dim;
 
     MaterialsProperties( modelphysics_ptrtype const& mphysics )
@@ -118,36 +119,18 @@ public :
                     continue;
                 auto const& mat = m.second;
 
-                std::set<std::string> currentPhysicsReaded;
-                if ( mat.hasPhysics() )
+                std::set<physic_id_type> currentPhysics;
+                for ( auto const& [physicId,physicObj] : mphysics->physics() )
                 {
-                    if ( !mat.hasPhysics( physicsAvailable ) )
-                        continue;
-                    for ( std::string const& p : mat.physics() )
-                        if ( physicsAvailable.find( p ) != physicsAvailable.end() )
-                            currentPhysicsReaded.insert( p );
-                }
-                else
-                {
-                    if ( physicsAvailable.find( defaultPhysics ) != physicsAvailable.end() )
-                        currentPhysicsReaded.insert( defaultPhysics );
-                }
-
-
-                std::set<std::string> currentPhysics;
-                for ( std::string const& p : currentPhysicsReaded )
-                {
-                    auto thePhysicsShared = mphysics->physicsShared( p );
-                    currentPhysics.insert( thePhysicsShared.begin(), thePhysicsShared.end() );
-                    // auto itFindPhysics = mapPhysicsToSubphysics.find( p );
-                    // if ( itFindPhysics != mapPhysicsToSubphysics.end() )
-                    //     currentPhysics.insert( itFindPhysics->second.begin(), itFindPhysics->second.end() );
+                    auto const& matOnPhysic = physicObj->materialNames();
+                    if ( matOnPhysic.empty() || matOnPhysic.find( matName ) != matOnPhysic.end() ) // empty say all physics applied on mat
+                        currentPhysics.insert( physicId );
                 }
 
                 if ( currentPhysics.empty() )
                     continue;
 
-                for ( std::string const& p : currentPhysics )
+                for ( physic_id_type const& p : currentPhysics )
                     M_materialsNames[p].insert( matName );
 
                 for ( std::string const& matmarker : mat.meshMarkers() )
@@ -286,15 +269,15 @@ public :
         }
 
     //! return a mapping between physics and materials names
-    std::map<std::string,std::set<std::string>> const& physicToMaterials() const { return M_materialsNames; }
+    std::map<physic_id_type,std::set<std::string>> const& physicToMaterials() const { return M_materialsNames; }
 
     //! return the materials names used with a set of physic
-    std::set<std::string> physicToMaterials( std::set<std::string> const& physics ) const
+    std::set<std::string> physicToMaterials( std::set<physic_id_type> const& physicIds ) const
         {
             std::set<std::string> res;
-            for ( std::string const& physic : physics )
+            for ( auto const& physicId : physicIds )
             {
-                auto itFindMat = M_materialsNames.find( physic );
+                auto itFindMat = M_materialsNames.find( physicId );
                 if( itFindMat != M_materialsNames.end() )
                     res.insert( itFindMat->second.begin(), itFindMat->second.end() );
             }
@@ -302,15 +285,15 @@ public :
         }
 
     //! return the materials names used with a physic
-    std::set<std::string> physicToMaterials( std::string const& physic ) const
+    std::set<std::string> physicToMaterials( physic_id_type const& physicId ) const
         {
-            return this->physicToMaterials( std::set<std::string>({ physic }) );
+            return this->physicToMaterials( std::set<physic_id_type>({ physicId }) );
         }
 
     //! return true if the physic is defined in a material
-    bool hasPhysic( std::string const& physic ) const
+    bool hasPhysic( physic_id_type const& physicId ) const
         {
-            return M_materialsNames.find( physic ) != M_materialsNames.end();
+            return M_materialsNames.find( physicId ) != M_materialsNames.end();
         }
 
 
@@ -910,7 +893,7 @@ public :
         }
 
     template <typename MeshType,typename SymbExprType>
-    auto exprPostProcessExports( std::shared_ptr<MeshType> mesh, std::set<std::string> const& physics, SymbExprType const& se, std::string const& prefix = "materials" ) const
+    auto exprPostProcessExports( std::shared_ptr<MeshType> mesh, std::set<physic_id_type> const& physics, SymbExprType const& se, std::string const& prefix = "materials" ) const
         {
             auto mom = this->materialsOnMesh( mesh );
             auto setOfMatNameUsed = this->physicToMaterials( physics );
@@ -989,7 +972,7 @@ public :
         }
 
     template <typename MeshType>
-    std::set<std::string> postProcessExportsAllFieldsAvailable( std::shared_ptr<MeshType> mesh, std::set<std::string> const& physics, std::string const& prefix = "materials" ) const
+    std::set<std::string> postProcessExportsAllFieldsAvailable( std::shared_ptr<MeshType> mesh, std::set<physic_id_type> const& physics, std::string const& prefix = "materials" ) const
         {
             std::set<std::string> res;
             auto mom = this->materialsOnMesh( mesh );
@@ -1039,7 +1022,7 @@ public :
 private :
     modelphysics_weakptrtype M_modelPhysics;
 
-    std::map<std::string,std::set<std::string>> M_materialsNames; // physic -> matNames
+    std::map<physic_id_type,std::set<std::string>> M_materialsNames; // physic -> matNames
 
     std::map<std::string, ModelExpressionScalar> M_rhoHeatCapacityByMaterial;
 
@@ -1070,6 +1053,7 @@ public :
 
     using materials_properties_type = MaterialsProperties<nRealDim>;
     using materials_properties_ptrtype = std::shared_ptr<materials_properties_type>;
+    using physic_id_type = typename materials_properties_type::physic_id_type;
 
     MaterialsOnMesh( materials_properties_type const& materialsProperties, mesh_ptrtype mesh )
         :
@@ -1109,29 +1093,29 @@ public :
 
     materials_properties_type const& materialsProperties() const { return M_materialsProperties; }
 
-    void markers( std::string const& p, std::set<std::string> & res ) const
+    void markers( physic_id_type const& p, std::set<std::string> & res ) const
         {
             auto itFindMarkers = M_markers.find( p );
             if ( itFindMarkers != M_markers.end() )
                 res.insert( itFindMarkers->second.begin(), itFindMarkers->second.end() );
         }
 
-    std::set<std::string> markers( std::string const& p ) const
+    std::set<std::string> markers( physic_id_type const& p ) const
         {
             std::set<std::string> res;
             this->markers( p, res );
             return res;
         }
 
-    std::set<std::string> markers( std::set<std::string> const& setOfPhysics ) const
+    std::set<std::string> markers( std::set<physic_id_type> const& setOfPhysics ) const
         {
             std::set<std::string> res;
-            for ( std::string p : setOfPhysics )
+            for ( physic_id_type const& p : setOfPhysics )
                 this->markers( p, res );
             return res;
         }
 
-    bool isDefinedOnWholeMesh( std::string const& p ) const
+    bool isDefinedOnWholeMesh( physic_id_type const& p ) const
         {
             auto itFindMarkers = M_isDefinedOnWholeMesh.find( p );
             if ( itFindMarkers == M_isDefinedOnWholeMesh.end() )
@@ -1141,7 +1125,7 @@ public :
         }
 
 
-    bool isDefinedOnWholeMesh( std::set<std::string> const& setOfPhysics ) const
+    bool isDefinedOnWholeMesh( std::set<physic_id_type> const& setOfPhysics ) const
         {
             return this->markers( setOfPhysics ).size() == M_eltMarkersInMesh.size();
         }
@@ -1160,8 +1144,8 @@ private :
     materials_properties_type const& M_materialsProperties;
 
     std::set<std::string> M_eltMarkersInMesh;
-    std::map<std::string,bool> M_isDefinedOnWholeMesh; // physics -> bool
-    std::map<std::string,std::set<std::string>> M_markers; // physic -> markers
+    std::map<physic_id_type,bool> M_isDefinedOnWholeMesh; // physics -> bool
+    std::map<physic_id_type,std::set<std::string>> M_markers; // physic -> markers
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial; // matName -> range
 
 };
