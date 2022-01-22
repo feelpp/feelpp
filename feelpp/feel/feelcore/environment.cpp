@@ -490,11 +490,9 @@ Environment::Environment( int argc, char** argv,
     }
 #else
     S_repository = Repository( config );
-//    S_repository.configure();
     S_rootdir = S_repository.root();
     S_appdir = S_repository.directory();
     S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
-    
 #endif
 
 
@@ -595,18 +593,8 @@ Environment::Environment( int argc, char** argv,
         d /= S_vm["repository.case"].as<std::string>();
         directory = d.string();
     }
-    if ( !directory.empty() )
-    {
-        S_repository.configure(directory);
-    }
-    else
-    {
-        S_repository.configure();
-    }
-    S_rootdir = S_repository.root();
-    S_appdir = S_repository.directory();
-    S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
-    changeRepository( _directory = boost::format{ S_repository.directory().string() } );
+    
+    changeRepository( _directory = boost::format{ directory.string() } );
 #endif
 
     if ( S_vm.count( "dirs" ) == 1 )
@@ -1881,6 +1869,24 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
     stopLogging( remove );
     fs::path rep_path;
     S_paths.push_back( S_appdir );
+    std::string directory = fmt.str();
+
+    if ( Environment::vm().count( "repository.append.np" ) )
+        S_repository.config().append_np = boption( "repository.append.np" );
+    if ( Environment::vm().count( "repository.append.date" ) )
+        S_repository.config().append_date = boption( "repository.append.date" );
+    if ( !directory.empty() )
+    {
+        S_repository.configure( directory );
+    }
+    else
+    {
+        S_repository.configure();
+    }
+    S_rootdir = S_repository.root();
+    S_appdir = S_repository.directory();
+    S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
+#if 0    
 
     typedef std::vector< std::string > split_vector_type;
 
@@ -1919,8 +1925,8 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
 
     S_appdirWithoutNumProc = rep_path;
 
-    bool append_np = (!S_repository.data().empty())?S_repository.data().value( "/directory/append/np"_json_pointer, false ):false;
-    if ( append_np ||add_subdir_np )
+#if 0
+    if ( S_repository.config().append_np ||add_subdir_np )
     {
         rep_path = rep_path / ( boost::format( "np_%1%" ) % Environment::numberOfProcessors() ).str();
 
@@ -1929,14 +1935,15 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
 
         //LOG( INFO ) << "changing directory to " << rep_path << "\n";
     }
-
+#endif
     S_appdir = rep_path;
 
     if ( worldcomm.isMasterRank() && !fs::exists( Environment::logsRepository() ) )
         fs::create_directory( Environment::logsRepository() );
-
     // wait all process in order to be sure that the dir has been created by master process
     worldcomm.barrier();
+#endif
+
 
     // we change directory for now but that may change in the future
     ::chdir( S_appdir.string().c_str() );

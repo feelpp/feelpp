@@ -19,7 +19,8 @@
                     "type": "BOOL",
                     "value": "ON"
                 },
-                "FEELPP_ENABLE_MOR": "ON"
+                "FEELPP_ENABLE_MOR": "ON",
+                "FEELPP_ENABLE_FMILIB": "OFF"
             },
             "environment": {
                 "MY_ENVIRONMENT_VARIABLE": "Test"
