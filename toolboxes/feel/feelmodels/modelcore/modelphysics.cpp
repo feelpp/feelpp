@@ -205,37 +205,60 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
 {
 
     auto const& j_setup = model.setup();
-    for ( std::string const& eqarg : { "equations", "equation" } )
-        if ( j_setup.contains( eqarg ) )
-        {
-            auto const& j_setup_eq = j_setup.at( eqarg );
-            if ( j_setup_eq.is_string() )
-                this->setEquation( j_setup_eq.get<std::string>() );
-        }
-
-
-    // setup gravity force
-    if ( j_setup.contains("gravity") )
+    if ( j_setup.is_string() )
     {
-        auto const& j_setup_gravity = j_setup.at("gravity");
-        if ( j_setup_gravity.is_boolean() )
-            M_gravityForceEnabled = j_setup_gravity.template get<bool>();
-        else if ( j_setup_gravity.is_string() )
-            M_gravityForceEnabled = boost::lexical_cast<bool>( j_setup_gravity.template get<std::string>() );
-        else if ( j_setup_gravity.is_object() )
-        {
-            if ( j_setup_gravity.contains( "enable" ) )
-            {
-                auto const& j_setup_gravity_enable =  j_setup_gravity.at("enable");
-                if ( j_setup_gravity_enable.is_boolean() )
-                    M_gravityForceEnabled = j_setup_gravity_enable.template get<bool>();
-                else if ( j_setup_gravity_enable.is_string() )
-                    M_gravityForceEnabled = boost::lexical_cast<bool>( j_setup_gravity_enable.template get<std::string>() );
-            }
-            if ( j_setup_gravity.contains( "expr" ) )
-                M_gravityForceExpr.setExpr( j_setup_gravity.at("expr"),mphysics.worldComm(),mphysics.repository().expr() );
-        }
+        this->setEquation( j_setup.get<std::string>() );
     }
+    else if ( j_setup.is_object() )
+    {
+        // equation
+        for ( std::string const& eqarg : { "equations", "equation" } )
+            if ( j_setup.contains( eqarg ) )
+            {
+                auto const& j_setup_eq = j_setup.at( eqarg );
+                if ( j_setup_eq.is_string() )
+                    this->setEquation( j_setup_eq.get<std::string>() );
+            }
+
+        // gravity force
+        if ( j_setup.contains("gravity") )
+        {
+            auto const& j_setup_gravity = j_setup.at("gravity");
+            if ( j_setup_gravity.is_boolean() )
+                M_gravityForceEnabled = j_setup_gravity.template get<bool>();
+            else if ( j_setup_gravity.is_string() )
+                M_gravityForceEnabled = boost::lexical_cast<bool>( j_setup_gravity.template get<std::string>() );
+            else if ( j_setup_gravity.is_object() )
+            {
+                if ( j_setup_gravity.contains( "enable" ) )
+                {
+                    auto const& j_setup_gravity_enable =  j_setup_gravity.at("enable");
+                    if ( j_setup_gravity_enable.is_boolean() )
+                        M_gravityForceEnabled = j_setup_gravity_enable.template get<bool>();
+                    else if ( j_setup_gravity_enable.is_string() )
+                        M_gravityForceEnabled = boost::lexical_cast<bool>( j_setup_gravity_enable.template get<std::string>() );
+                }
+                if ( j_setup_gravity.contains( "expr" ) )
+                    M_gravityForceExpr.setExpr( j_setup_gravity.at("expr"),mphysics.worldComm(),mphysics.repository().expr() );
+            }
+        }
+
+        if ( j_setup.contains("viscosity_law") )
+        {
+            auto const& j_setup_viscosity_law = j_setup.at("viscosity_law");
+            CHECK( j_setup_viscosity_law.is_string() ) << "viscosity_law must be a string";
+            M_dynamicViscosity.setLaw( j_setup_viscosity_law.template get<std::string>() );
+        }
+
+        if ( j_setup.contains("turbulence") )
+        {
+            auto const& j_setup_turbulence = j_setup.at("turbulence");
+            CHECK( j_setup_turbulence.is_object() ) << "turbulence must be an json object";
+            M_turbulence.setup( j_setup_turbulence );
+        }
+    } // is_object
+
+    // update for use
     if ( M_gravityForceEnabled && !M_gravityForceExpr.template hasExpr<Dim,1>() )
     {
         std::string gravityStr;
@@ -246,20 +269,6 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
         else if (Dim == 3 )
             gravityStr = "{0,0,-9.80665}";
         M_gravityForceExpr.setExpr( gravityStr,mphysics.worldComm(),mphysics.repository().expr() );
-    }
-
-    if ( j_setup.contains("viscosity_law") )
-    {
-        auto const& j_setup_viscosity_law = j_setup.at("viscosity_law");
-        CHECK( j_setup_viscosity_law.is_string() ) << "viscosity_law must be a string";
-            M_dynamicViscosity.setLaw( j_setup_viscosity_law.template get<std::string>() );
-    }
-
-    if ( j_setup.contains("turbulence") )
-    {
-        auto const& j_setup_turbulence = j_setup.at("turbulence");
-        CHECK( j_setup_turbulence.is_object() ) << "turbulence must be an json object";
-        M_turbulence.setup( j_setup_turbulence );
     }
 
 }
@@ -408,8 +417,6 @@ ModelPhysics<Dim>::initPhysics( std::string const& name, ModelModels const& mode
 {
     std::string const& type = M_physicType;
 
-    M_physicDefault = name;
-
     if ( models.hasType( type ) )
     {
         for ( auto const& [_name,_model] : models.models( type ) )
@@ -479,12 +486,9 @@ ModelPhysics<Dim>::physics( std::string const& type ) const
 
 template <uint16_type Dim>
 void
-ModelPhysics<Dim>::setPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics, std::string const& physicDefault )
+ModelPhysics<Dim>::setPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics )
 {
     M_physics.insert( thePhysics.begin(), thePhysics.end() );
-
-    if ( !physicDefault.empty() )
-        M_physicDefault = physicDefault;
 }
 
 template <uint16_type Dim>
