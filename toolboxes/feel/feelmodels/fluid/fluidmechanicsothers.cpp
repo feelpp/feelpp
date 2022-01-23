@@ -607,29 +607,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
 #endif
     }
 
-    for ( auto const& fieldUserScalar : this->fieldsUserScalar() )
-    {
-        std::string const& userFieldName = fieldUserScalar.first;
-        if ( fields.find( userFieldName ) != fields.end() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),userFieldName),
-                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),userFieldName)),
-                                         this->fieldUserScalar( userFieldName ) );
-            hasFieldToExport = true;
-        }
-    }
-    for ( auto const& fieldUserVectorial : this->fieldsUserVectorial() )
-    {
-        std::string const& userFieldName = fieldUserVectorial.first;
-        if ( fields.find( userFieldName ) != fields.end() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),userFieldName),
-                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),userFieldName)),
-                                         this->fieldUserVectorial( userFieldName ) );
-            hasFieldToExport = true;
-        }
-    }
-
     //----------------------//
     return hasFieldToExport;
 }
@@ -1352,8 +1329,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     if ( M_usePreviousSolution )
         *M_vectorPreviousSolution = *this->algebraicBlockVectorSolution()->vectorMonolithic();
 
-    // update user functions which depend of time only
-    this->updateUserFunctions(true);
     // update all expressions in bc or in house prec
     this->updateParameterValues();
 
