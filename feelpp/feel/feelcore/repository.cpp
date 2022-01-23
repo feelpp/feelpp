@@ -29,6 +29,9 @@
 #include <feel/feelcore/repository.hpp>
 #include <feel/feelcore/feelio.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <cpr/cpr.h>
+#include <fmt/core.h>
+
 namespace Feel
 {
 fs::path findHome()
@@ -51,59 +54,128 @@ std::optional<fs::path> findGitDirectory( fs::path p )
     else 
         return {};
 }
+GithubUser::GithubUser()
+{
+}
+
+bool
+GithubUser::update()
+{
+    fmt::print("githubuser update\n");
+    if (login && !login->empty())
+    {
+        //cpr::Response r = cpr::Get( cpr::Url{ fmt::format("https://api.github.com/users/",*login) } );
+        cpr::Response r = cpr::Get( cpr::Url{ "https://api.github.com/users/prudhomm" } );
+        if ( r.status_code == 200 )
+        {
+            nl::json j = nl::json::parse( r.text );
+            from_json(j, *this);
+            //std::cout << fmt::format( "github : {}\n\n", j.dump() );
+            return true;
+        }
+        else
+        {
+            LOG( WARNING ) << fmt::format( "invalid request to get the github user information: {}, status: {}", *login, r.status_code );
+        }
+    }
+    return false;
+}
+Repository::Config::Config()
+{
+    nl::json jc;
+    to_json( jc, *this );
+    auto home = findHome();
+    if ( fs::exists( home / ".feelppconfig" ) )
+    {
+        std::ifstream i( ( home / ".feelppconfig" ).string() );
+        nl::json j;
+        i >> j;
+        jc.merge_patch( j );
+    }
+    else
+    {
+        if ( fs::exists( home / "feel" ) && fs::is_directory( home / "feel" ) )
+            global_root = home / "feel";
+        else
+            global_root = home / feelppdb;
+    }
+    //std::cout << fmt::format("jc: {}",jc.dump(1)) << std::endl;
+    from_json( jc, *this );
+    //std::cout << fmt::format( "2jc: {}", jc.dump(1) ) << std::endl;
+#if 0    
+    if ( owner.github )
+    {
+        owner.github->update();
+        if ( fs::exists( home / ".feelppconfig" ) )
+        {
+            std::ofstream i( ( home / ".feelppconfig" ).string() );
+            nl::json j;
+            to_json( j, *this );
+            i << j.dump(1);
+        }
+    }
+#endif    
+}
+Repository::Config::Config( nl::json const& j ): Config()
+{
+    nl::json jc;
+    to_json( jc, *this );
+    jc.merge_patch( j );
+    to_json( jc, *this );
+}
+
+Repository::Config::Config( nl::json&& j )
+    : Config()
+{
+    nl::json jc;
+    to_json( jc, *this );
+    jc.merge_patch( std::move(j) );
+    to_json( jc, *this );
+}
+Repository::Config::Config( fs::path d, Location l ): Config()
+{
+    directory = d;
+    location = l;
+}
+Repository::Config::Config( fs::path d, Location l, nl::json const& dat )
+    : Config( dat )
+{
+    directory = d;
+    location = l;
+};
+
 Repository::Repository( Config c )
     :
     config_( c )
 {}
-void
+Repository&
 Repository::configure()
 {
-    fs::path home = findHome();
-    if ( fs::exists( home / "feel" ) && fs::is_directory( home / "feel" ) )
-        global_root_ = home / "feel";
-    else
-        global_root_ = home / "feelppdb";
-
     if ( config_.directory.is_absolute() )
     {
         root_= config_.directory;
         // force Location::given 
-        config_.location = Location::given;
+        config_.location = Location::absolute;
     }
     else
     {
-        if ( config_.location == Location::local )
-            root_ = fs::current_path() / "feelppdb";
+        if ( config_.location == Location::relative )
+            root_ = fs::current_path() / config_.feelppdb;
         if ( config_.location == Location::git )
         {
             if ( auto p = findGitDirectory( fs::current_path() ); p )
-                root_ = p.value() / "feelppdb";
+                root_ = p.value() / config_.feelppdb;
             else
                 throw std::invalid_argument( ("the current directory " + fs::current_path().string()  + "  is not inside a git repository").c_str() );
         }
         if ( config_.location == Location::global )
         {
-            root_ = global_root_;
+            root_ = config_.global_root;
         }
     }
-    geo_ = root_ / "geo";
-
-    // read config file in root_/.feelppconfig then try $HOME/.feelppconfig
-    if ( fs::exists( root_/".feelppconfig" ) )
-    {
-        std::ifstream i((root_/".feelppconfig").string());
-        i >> config_.data;
-    }
-    else if ( config_.location != Location::global && fs::exists( global_root_.parent_path()/".feelppconfig" ) )
-    {
-        Feel::cout << "[feelpp] reading config " << this->globalRoot().parent_path()/".feelppconfig" << std::endl;
-        std::ifstream i((this->globalRoot().parent_path()/".feelppconfig").string());
-        i >> config_.data;
-    }
-    std::string e_d = "exprs";
-    if ( Environment::vm().count( "subdir.expr" ) )
-        e_d = Environment::vm()["subdir.expr"].as<std::string>();
-    exprs_ = ( !config_.data.empty() ) ? directoryWithoutAppenders() / config_.data.value("/directory/exprs"_json_pointer,e_d): directoryWithoutAppenders() / e_d;
+    geo_ = root_ / config_.geos;
+    exprs_ = directoryWithoutAppenders() / config_.exprs;
+    logs_ = directory() / config_.logs;
 
     if ( Environment::isMasterRank() )
     {
@@ -127,11 +199,22 @@ Repository::configure()
             bool created = fs::create_directories( exprs() );
             Feel::cout << "[feelpp] create Feel++ exprs directory " << ( this->exprs() ) << " ..." << std::endl;
         }
+        if ( !fs::exists( logs() ) )
+        {
+            bool created = fs::create_directories( logs() );
+            Feel::cout << "[feelpp] create Feel++ logs directory " << ( this->logs() ) << " ..." << std::endl;
+        }
     }
     Environment::worldComm().barrier();
-    
+    return *this;
 }
 
+Repository&
+Repository::cd()
+{
+    ::chdir( directory().string().c_str() );
+    return *this;
+}
 
 fs::path
 Repository::directory() const 
@@ -141,38 +224,31 @@ Repository::directory() const
 fs::path
 Repository::directoryWithoutAppenders() const 
 { 
-    if ( isGiven() )
+    if ( isAbsolute() )
         return config_.directory;
     return root() / config_.directory;
 }
 fs::path 
 Repository::relativeDirectory() const 
 { 
-    if ( isGiven() ) return {};
-    else
+    fs::path p;
+    if ( !isAbsolute() )
+        p = config_.directory;
+    if ( config_.append_date )
     {
-        fs::path p = config_.directory;
-        if ( !config_.data.empty() )
-        {
-            std::cout << config_.data.dump( 1 ) << std::endl;
-            bool append_date = config_.data.value( "/directory/append/date"_json_pointer, false );
-            if ( append_date )
-            {
-                using boost::gregorian::day_clock;
-                using boost::posix_time::ptime;
-                using boost::posix_time::second_clock;
-                using boost::posix_time::to_simple_string;
-
-                ptime todayUtc( day_clock::universal_day(), second_clock::universal_time().time_of_day() );
-                std::string today = boost::replace_all_copy( boost::replace_all_copy( to_simple_string( todayUtc ), " ", "-" ), ":", "-" );
-                p = p / today;
-            }
-            bool append_np = config_.data.value( "/directory/append/np"_json_pointer, false );
-            if ( append_np )
-                p /= "np_" + std::to_string( Environment::numberOfProcessors() );
-        }
-        return p; 
-    }        
+        using boost::gregorian::day_clock;
+        using boost::posix_time::ptime;
+        using boost::posix_time::second_clock;
+        using boost::posix_time::to_simple_string;
+        ptime todayUtc( day_clock::universal_day(), second_clock::universal_time().time_of_day() );
+        std::string today = boost::replace_all_copy( boost::replace_all_copy( to_simple_string( todayUtc ), " ", "-" ), ":", "-" );
+        p = p / today;
+    }
+    if ( config_.append_np )
+    {
+        p /= fmt::format("np_{}", std::to_string( Environment::numberOfProcessors() ) );
+    }
+    return p;        
 }
 
 } // namespace Feel
