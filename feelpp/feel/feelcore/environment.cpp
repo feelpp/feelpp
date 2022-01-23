@@ -1860,13 +1860,8 @@ Environment::nameUUID( uuids::uuid const& dns_namespace_uuid, std::string const&
 }
 
 void
-Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfilename, bool add_subdir_np, WorldComm const& worldcomm, bool remove )
+Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfilename, Location location, bool add_subdir_np, WorldComm const& worldcomm, bool remove )
 {
-    if ( Environment::vm().count( "nochdir" ) )
-    {
-        S_appdir = fs::current_path();
-        return;
-    }
     stopLogging( remove );
     fs::path rep_path;
     S_paths.push_back( S_appdir );
@@ -1876,78 +1871,22 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
         S_repository.config().append_np = boption( "repository.append.np" );
     if ( Environment::vm().count( "repository.append.date" ) )
         S_repository.config().append_date = boption( "repository.append.date" );
+    // if we are in relative mode then first go back to the initial current path
+    if ( location == Location::relative )
+        ::chdir( S_paths.front().string().c_str() );
     if ( !directory.empty() )
     {
-        S_repository.configure( directory );
+        S_repository.configure( directory, location );
     }
     else
     {
         S_repository.configure();
     }
+    S_repository.cd();
+
     S_rootdir = S_repository.root();
     S_appdir = S_repository.directory();
     S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
-#if 0    
-
-    typedef std::vector< std::string > split_vector_type;
-
-    split_vector_type dirs; // #2: Search for tokens
-    std::string fmtstr = fmt.str();
-    boost::split( dirs, fmtstr, boost::is_any_of( "/" ) );
-
-    fs::path p = dirs.front();
-
-    if (fs::path(fmtstr).is_absolute())
-    {
-        rep_path=fs::path("/");
-    }
-    else if ( p.relative_path() != "." )
-    {
-        rep_path = Environment::rootRepository();
-
-        if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
-        {
-            //LOG( INFO ) << "Creating directory " << rep_path << "...";
-            fs::create_directory( rep_path );
-        }
-    }
-
-    for ( std::string const& dir : dirs )
-    {
-        if ( !dir.empty() )
-        {
-            //VLOG(2)<< " option: " << s << "\n";
-            rep_path = rep_path / dir;
-
-            if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
-                fs::create_directory( rep_path );
-        }
-    }
-
-    S_appdirWithoutNumProc = rep_path;
-
-#if 0
-    if ( S_repository.config().append_np ||add_subdir_np )
-    {
-        rep_path = rep_path / ( boost::format( "np_%1%" ) % Environment::numberOfProcessors() ).str();
-
-        if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
-            fs::create_directory( rep_path );
-
-        //LOG( INFO ) << "changing directory to " << rep_path << "\n";
-    }
-#endif
-    S_appdir = rep_path;
-
-    if ( worldcomm.isMasterRank() && !fs::exists( Environment::logsRepository() ) )
-        fs::create_directory( Environment::logsRepository() );
-    // wait all process in order to be sure that the dir has been created by master process
-    worldcomm.barrier();
-#endif
-
-
-    // we change directory for now but that may change in the future
-    ::chdir( S_appdir.string().c_str() );
 
     startLogging( Environment::about().appName() );
     cout << tc::red
