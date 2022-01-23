@@ -107,8 +107,6 @@ public :
             modelphysics_ptrtype mphysics = M_modelPhysics.lock();
             worldcomm_t const& worldComm = mphysics->worldComm();
             std::string const& exprRepository = mphysics->repository().expr();
-            auto const& defaultPhysics = mphysics->physicDefault();
-            auto const& physicsAvailable = mphysics->physicsAvailable();
 
             std::map<std::string,std::set<std::string>> markersByMaterial;
 
@@ -298,15 +296,15 @@ public :
 
 
     //! return the physics that are used in the material \matName from \physicsCollection
-    std::map<std::string,typename modelphysics_type::model_physic_ptrtype> physicsFromMaterial( std::string const& matName, std::map<std::string,typename modelphysics_type::model_physic_ptrtype> const& physicsCollection ) const
+    std::map<physic_id_type,typename modelphysics_type::model_physic_ptrtype> physicsFromMaterial( std::string const& matName, std::map<physic_id_type,typename modelphysics_type::model_physic_ptrtype> const& physicsCollection ) const
         {
-            std::map<std::string,typename modelphysics_type::model_physic_ptrtype> res;
-            for ( auto const& [physicName,physicData] : physicsCollection )
+            std::map<physic_id_type,typename modelphysics_type::model_physic_ptrtype> res;
+            for ( auto const& [physicId,physicData] : physicsCollection )
             {
-                auto const& matNames = this->physicToMaterials( physicName );
+                auto const& matNames = this->physicToMaterials( physicId );
                 if ( matNames.find( matName ) == matNames.end() )
                     continue;
-                res[physicName] = physicData;
+                res[physicId] = physicData;
             }
             return res;
         }
