@@ -20,25 +20,41 @@ ModelGenericPDE<Dim>::ModelGenericPDE( infos_type const& infos )
 }
 
 template <uint16_type Dim>
-ModelGenericPDE<Dim>::Infos::Infos( std::string const& name, pt::ptree const& eqPTree )
+ModelGenericPDE<Dim>::Infos::Infos( std::string const& name, nl::json const& jarg )
 {
     M_equationName = name;
 
-    if ( auto nameEqOpt =  eqPTree.template get_optional<std::string>( "name" ) )
-        M_equationName = *nameEqOpt;
-
-    if ( auto unknownPTree = eqPTree.get_child_optional("unknown") )
+    if ( jarg.contains("name") )
     {
-        if ( auto unknownNameOpt =  unknownPTree->template get_optional<std::string>( "name" ) )
-            M_unknownName = *unknownNameOpt;
+        auto const& j_name = jarg.at("name");
+        if ( j_name.is_string() )
+            M_equationName = j_name.template get<std::string>();
+    }
+
+    if ( jarg.contains("unknown") )
+    {
+        auto const& j_unknown = jarg.at("unknown");
+        CHECK( j_unknown.contains("name") ) << "require to define unknown.name";
+        auto const& j_unknown_name = j_unknown.at("name");
+        if ( j_unknown_name.is_string() )
+            M_unknownName = j_unknown_name.template get<std::string>();
+        CHECK( !M_unknownName.empty() ) << "require to define a non empty unknown.name";
+
+        if ( j_unknown.contains( "symbol" ) )
+        {
+            auto const& j_unknown_symbol = j_unknown.at( "symbol" );
+            if ( j_unknown_symbol.is_string() )
+                M_unknownSymbol = j_unknown_symbol.template get<std::string>();
+        }
         else
-            CHECK( false ) << "require to define unknown.name";
-        if ( auto unknownSymbolOpt =  unknownPTree->template get_optional<std::string>( "symbol" ) )
-            M_unknownSymbol = *unknownSymbolOpt;
-        else
-            M_unknownSymbol = M_unknownName;
-        if ( auto unknownBasisOpt =  unknownPTree->template get_optional<std::string>( "basis" ) )
-            M_unknownBasis = *unknownBasisOpt;
+             M_unknownSymbol = M_unknownName;
+
+        if ( j_unknown.contains( "basis" ) )
+        {
+            auto const& j_unknown_basis = j_unknown.at( "basis" );
+            if ( j_unknown_basis.is_string() )
+                M_unknownBasis = j_unknown_basis.template get<std::string>();
+        }
         else
             M_unknownBasis = "Pch1";
     }
@@ -56,9 +72,7 @@ template <uint16_type Dim>
 void
 ModelGenericPDE<Dim>::setupGenericPDE()
 {
-    this->M_physicDefault = M_infos.equationName();
-
-    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(),  this->physicDefault(), *this );
+    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(), M_infos.equationName(), *this );
 
     std::string unknownShape;
     if ( this->unknownBasis() == "Pch1" ||  this->unknownBasis() == "Pch2" || this->unknownBasis() == "Pdh1" )
@@ -104,24 +118,19 @@ ModelGenericPDEs<Dim>::ModelGenericPDEs( /*std::string const& physic*/ )
 
 template <uint16_type Dim>
 void
-ModelGenericPDEs<Dim>::setupGenericPDEs( pt::ptree const& modelPTree )
+ModelGenericPDEs<Dim>::setupGenericPDEs( nl::json const& jarg )
 {
-    if ( auto equationsOpt = modelPTree.get_child_optional("equations") )
+    if ( jarg.is_object() )
     {
-        if ( equationsOpt->empty() )
+        CHECK( false ) << "TODO";
+    }
+    else if ( jarg.is_array() )
+    {
+        for ( auto const& [jargkey,jargval] : jarg.items() )
         {
-            std::string equationName = equationsOpt->get_value<std::string>();
-            CHECK( false ) << "TODO";
-        }
-        else
-        {
-            for ( auto const& itemEq : *equationsOpt )
-            {
-                CHECK( itemEq.first.empty() ) << "should be an array, not a subtree";
-                std::string nameEqDefault = (boost::format("equation%1%")%M_pdes.size()).str();
-                typename ModelGenericPDE<nDim>::infos_type infos( nameEqDefault, itemEq.second );
-                M_pdes.push_back( std::make_tuple( std::move( infos ), std::shared_ptr<ModelGenericPDE<nDim>>{} ) );
-            }
+            std::string nameEqDefault = (boost::format("equation%1%")%M_pdes.size()).str();
+            typename ModelGenericPDE<nDim>::infos_type infos( nameEqDefault, jargval );
+            M_pdes.push_back( std::make_tuple( std::move( infos ), std::shared_ptr<ModelGenericPDE<nDim>>{} ) );
         }
     }
 }
@@ -130,7 +139,7 @@ template <uint16_type Dim>
 void
 ModelGenericPDEs<Dim>::initGenericPDEs( std::string const& name )
 {
-    this->M_physicDefault = name;
+    //this->M_physicDefault = name;
     auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(), name, *this );
     this->M_physics.emplace( std::make_pair(mphysic->type(),mphysic->name()), mphysic );
 }
@@ -144,10 +153,14 @@ ModelGenericPDEs<Dim>::addGenericPDE( typename ModelGenericPDE<nDim>::infos_type
 
 template <uint16_type Dim>
 void
-ModelGenericPDEs<Dim>::updateForUseGenericPDEs()
+ModelGenericPDEs<Dim>::updateForUseGenericPDEs( std::string const& name )
 {
-#if 0
-    auto & mphysic = this->M_physics[this->physicDefault()];
+    //TODO VINCENT add also name in arg as initGenericPDEs or save this info??
+
+    auto pId = std::make_pair( this->physicType(), name );
+    CHECK( this->hasPhysic(pId) ) << "physic not registered";
+    auto mphysic = this->physic(pId);
+    //zfor ( auto & [physicId,mphysic] : this->physicsFromCurrentType() )
     for ( auto const& [infos,pde] : M_pdes )
     {
         CHECK( pde ) <<"pde not defined";
@@ -155,9 +168,6 @@ ModelGenericPDEs<Dim>::updateForUseGenericPDEs()
         for ( auto const& subPhysic : pde->physics() ) // normally only one
             mphysic->addSubphysic( subPhysic.second );
     }
-#else
-    CHECK( false ) << "TODO";
-#endif
 }
 
 template class ModelGenericPDE<2>;
@@ -167,3 +177,4 @@ template class ModelGenericPDEs<3>;
 
 } // namespace FeelModels
 } // namespace Feel
+

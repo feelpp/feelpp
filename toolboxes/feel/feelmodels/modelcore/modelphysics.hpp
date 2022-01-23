@@ -556,9 +556,6 @@ public :
     //! return the type of physic at top level
     std::string const& physicType() const { return M_physicType; }
 
-    //! return the name of the physic used by default
-    std::string const& physicDefault() const { return M_physicDefault; }
-
     //! return name of all physics registered
     std::set<physic_id_type> physicsAvailable() const;
 
@@ -574,7 +571,7 @@ public :
 
     void initPhysics( std::string const& name, ModelModels const& models, subphysic_description_type const& subPhyicsDesc = subphysic_description_type{} );
 
-    void setPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics, std::string const& physicDefault = "" );
+    void setPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics );
 
     auto symbolsExprPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> const& mphysics ) const
         {
@@ -597,7 +594,6 @@ protected :
 
     std::string M_physicType;
     std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> M_physics;
-    std::string M_physicDefault;
 };
 
 } // namespace FeelModels
