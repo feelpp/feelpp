@@ -101,14 +101,14 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 
     auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
     // functionspace
-    if ( mom->isDefinedOnWholeMesh( this->physic() ) )
+    if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         this->M_rangeMeshElements = elements(this->mesh());
         M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_extended_doftable=useExtendedDoftable );
     }
     else
     {
-        this->M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physic() ));
+        this->M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
         M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=this->M_rangeMeshElements,_extended_doftable=useExtendedDoftable );
     }
 
