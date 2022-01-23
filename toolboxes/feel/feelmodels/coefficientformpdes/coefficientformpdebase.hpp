@@ -149,7 +149,8 @@ bool
 CoefficientFormPDEBase<ConvexType>::hasSymbolDependencyInCoefficients( std::set<std::string> const& symbs, SymbolsExprType const& se ) const
 {
     bool hasDependency = false;
-    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicDefault() ) )
+    for ( auto const& [physicId,physicData] : this->physicsFromCurrentType() )
+    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicId ) )
     {
         if ( ( this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) &&
                this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
