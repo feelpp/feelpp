@@ -360,7 +360,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 
     //--------------------------------------------------------//
     // init pressure space with displcaement-pressure formulation
-    std::set<std::string> physicUseDisplacementPressureFormulation;
+    std::set<typename materialsproperties_type::physic_id_type> physicUseDisplacementPressureFormulation;
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
         auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
@@ -622,7 +622,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
     {
         if ( !M_solid1dReduced )
             this->createsSolid1dReduced();
-        M_solid1dReduced->setPhysics( this->physicsFromCurrentType(), this->physicDefault() );
+        M_solid1dReduced->setPhysics( this->physicsFromCurrentType() );
         M_solid1dReduced->setMaterialsProperties( this->materialsProperties() );
 
         M_solid1dReduced->setManageParameterValues( false );
@@ -652,8 +652,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
         // update parameters values
         this->modelProperties().parameters().updateParameterValues();
-        // init function defined in json
-        this->initUserFunctions();
         // init post-processinig (exporter, measure at point, ...)
         this->initPostProcess();
     }
@@ -908,124 +906,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     this->log("SolidMechanics","initTimeStep", "finish" );
 }
 
-//---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initUserFunctions()
-{
-    if ( this->modelProperties().functions().empty() )
-        return;
-
-    for ( auto const& modelfunc : this->modelProperties().functions() )
-    {
-        auto const& funcData = modelfunc.second;
-        std::string funcName = funcData.name();
-
-        if ( funcData.isScalar() )
-        {
-            if ( this->hasFieldUserScalar( funcName ) )
-                continue;
-            M_fieldsUserScalar[funcName] = this->functionSpaceDisplacement()->compSpace()->elementPtr();
-        }
-        else if ( funcData.isVectorial2() )
-        {
-            if ( nDim != 2 ) continue;
-            if ( this->hasFieldUserVectorial( funcName ) )
-                continue;
-            M_fieldsUserVectorial[funcName] = this->functionSpaceDisplacement()->elementPtr();
-        }
-        else if ( funcData.isVectorial3() )
-        {
-            if ( nDim != 3 ) continue;
-            if ( this->hasFieldUserVectorial( funcName ) )
-                continue;
-            M_fieldsUserVectorial[funcName] = this->functionSpaceDisplacement()->elementPtr();
-        }
-    }
-
-    this->updateUserFunctions();
-}
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSymbol )
-{
-    if ( this->modelProperties().functions().empty() )
-        return;
-
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().functions().setParameterValues( paramValues );
-    for ( auto const& modelfunc : this->modelProperties().functions() )
-    {
-        auto const& funcData = modelfunc.second;
-        if ( onlyExprWithTimeSymbol && !funcData.hasSymbol("t") )
-            continue;
-
-        std::string funcName = funcData.name();
-        if ( funcData.isScalar() )
-        {
-            CHECK( this->hasFieldUserScalar( funcName ) ) << "user function " << funcName << "not registered";
-            M_fieldsUserScalar[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionScalar() );
-        }
-        else if ( funcData.isVectorial2() )
-        {
-            if constexpr( nDim == 2 )
-            {
-                CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
-                M_fieldsUserVectorial[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionVectorial2() );
-            }
-            else CHECK( false ) << "TODO";
-        }
-        else if ( funcData.isVectorial3() )
-        {
-            if constexpr( nDim == 3 )
-            {
-                CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
-                M_fieldsUserVectorial[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionVectorial3() );
-            }
-            else CHECK( false ) << "TODO";
-        }
-    }
-}
-
-//---------------------------------------------------------------------------------------------------//
-#if 0
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-std::set<std::string>
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix ) const
-{
-    std::set<std::string> res;
-    for ( auto const& o : ifields )
-    {
-        if ( o == prefixvm(prefix,"displacement") || o == prefixvm(prefix,"all") )
-            res.insert( "displacement" );
-        if ( o == prefixvm(prefix,"velocity") || o == prefixvm(prefix,"all") )
-            res.insert( "velocity" );
-        if ( o == prefixvm(prefix,"acceleration") || o == prefixvm(prefix,"all") )
-            res.insert( "acceleration" );
-        if ( o == prefixvm(prefix,"normal-stress") || o == prefixvm(prefix,"all") )
-            res.insert( "normal-stress" );
-        if ( o == prefixvm(prefix,"pid") || o == prefixvm(prefix,"all") )
-            res.insert( "pid" );
-        if ( o == prefixvm(prefix,"pressure") || o == prefixvm(prefix,"all") )
-            res.insert( "pressure" );
-        if ( o == prefixvm(prefix,"material-properties") || o == prefixvm(prefix,"all") )
-            res.insert( "material-properties" );
-        if ( o == prefixvm(prefix,"Von-Mises") || o == prefixvm(prefix,"all") )
-            res.insert( "Von-Mises" );
-        if ( o == prefixvm(prefix,"Tresca") || o == prefixvm(prefix,"all") )
-            res.insert( "Tresca" );
-        if ( o == prefixvm(prefix,"principal-stresses") || o == prefixvm(prefix,"all") )
-            res.insert( "principal-stresses" );
-
-        // add user functions
-        if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
-            res.insert( o );
-    }
-    return res;
-}
-#endif
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

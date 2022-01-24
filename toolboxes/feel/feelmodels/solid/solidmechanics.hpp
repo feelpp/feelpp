@@ -380,9 +380,6 @@ public :
     void updateTimeStep();
     void updateVelocity();
 
-    void initUserFunctions();
-    void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
-
     // post process
     void initPostProcess() override;
 
@@ -518,18 +515,6 @@ public :
     element_stress_tensor_ptrtype const& fieldStressTensorPtr() const { return M_fieldStressTensor; }
     element_stress_tensor_type const& fieldStressTensor() const { return *M_fieldStressTensor; }
 
-
-    // fields defined in json
-    std::map<std::string,element_displacement_scalar_ptrtype> const& fieldsUserScalar() const { return M_fieldsUserScalar; }
-    std::map<std::string,element_displacement_ptrtype> const& fieldsUserVectorial() const { return M_fieldsUserVectorial; }
-    bool hasFieldUserScalar( std::string const& key ) const { return M_fieldsUserScalar.find( key ) != M_fieldsUserScalar.end(); }
-    bool hasFieldUserVectorial( std::string const& key ) const { return M_fieldsUserVectorial.find( key ) != M_fieldsUserVectorial.end(); }
-    element_displacement_scalar_ptrtype const& fieldUserScalarPtr( std::string const& key ) const {
-        CHECK( this->hasFieldUserScalar( key ) ) << "field name " << key << " not registered"; return M_fieldsUserScalar.find( key )->second; }
-    element_displacement_ptrtype const& fieldUserVectorialPtr( std::string const& key ) const {
-        CHECK( this->hasFieldUserVectorial( key ) ) << "field name " << key << " not registered"; return M_fieldsUserVectorial.find( key )->second; }
-    element_displacement_scalar_type const& fieldUserScalar( std::string const& key ) const { return *this->fieldUserScalarPtr( key ); }
-    element_displacement_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
 
 
     //___________________________________________________________________________________//
@@ -850,9 +835,6 @@ private :
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
 
-    // fields defined in json
-    std::map<std::string,element_displacement_scalar_ptrtype> M_fieldsUserScalar;
-    std::map<std::string,element_displacement_ptrtype> M_fieldsUserVectorial;
 
 }; // SolidMechanics
 
