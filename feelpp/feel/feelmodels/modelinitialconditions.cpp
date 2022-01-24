@@ -29,7 +29,6 @@ namespace Feel {
 void
 ModelInitialCondition::setup( nl::json const& jarg, std::string const& typeIC )
 {
-    //M_p = jarg;
     if ( typeIC == "Expression" )
     {
         CHECK( jarg.contains("expr") ) << "an expression is required";
@@ -55,8 +54,8 @@ ModelInitialCondition::setup( nl::json const& jarg, std::string const& typeIC )
     {
         M_isExpression = false;
         M_isFile = false;
+        M_jsonSetup = jarg;
     }
-
 }
 
 void

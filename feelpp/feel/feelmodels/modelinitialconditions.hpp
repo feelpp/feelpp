@@ -49,8 +49,6 @@ class FEELPP_EXPORT ModelInitialCondition : public CommObject
     std::string const& name() const { return M_name; }
     void setName( std::string const& name ) { M_name = name; }
 
-    //pt::ptree const& pTree() const { return M_p; }
-
     bool isExpression() const { return M_isExpression; }
     bool isFile() const { return M_isFile; }
 
@@ -60,17 +58,19 @@ class FEELPP_EXPORT ModelInitialCondition : public CommObject
     std::string const& fileType() const { return M_fileType; }
     std::string const& fileDirectory() const { return M_fileDirectory; }
 
+    nl::json const& jsonSetup() const { return M_jsonSetup; }
+
     void setParameterValues( std::map<std::string,double> const& mp );
     void setup( nl::json const& jarg, std::string const& typeIC );
   private :
     std::string M_name;
-    //pt::ptree M_p;
     bool M_isExpression, M_isFile;
 
     std::string M_directoryLibExpr;
     ModelMarkers M_markers;
     ModelExpression M_modelExpr;
     std::string M_fileName, M_fileType, M_fileDirectory;
+    nl::json M_jsonSetup;
 };
 
 
@@ -88,13 +88,9 @@ class FEELPP_EXPORT ModelInitialConditionTimeSet : public CommObject, public std
     ModelInitialConditionTimeSet& operator=( ModelInitialConditionTimeSet const& ) = default;
     ModelInitialConditionTimeSet& operator=( ModelInitialConditionTimeSet && ) = default;
 
-    //! return the property tree
-    //pt::ptree const& pTree() const { return M_p; }
-
     void setParameterValues( std::map<std::string,double> const& mp );
     void setup( nl::json const& jarg );
   private :
-    //pt::ptree M_p;
     std::string M_directoryLibExpr;
 
 };
