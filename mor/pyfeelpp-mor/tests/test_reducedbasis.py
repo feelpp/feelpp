@@ -28,21 +28,21 @@ heatBox=heat(dim=DIM,order=1)
 heatBox.init()
 # model = toolboxmor_2d() if DIM==2 else toolboxmor_3d()
 model = toolboxmor(dim=DIM, time_dependent=False)
-model.setFunctionSpaces( Vh=heatBox.spaceTemperature())
+model.setFunctionSpaces(Vh=heatBox.spaceTemperature())
 
 
 
 # Offline computations
 
 def assembleDEIM(mu):
-    for i in range(0,mu.size()):
-        heatBox.addParameterInModelProperties(mu.parameterName(i),mu(i))
+    for i in range(0, mu.size()):
+        heatBox.addParameterInModelProperties(mu.parameterName(i), mu(i))
     heatBox.updateParameterValues()
     return heatBox.assembleRhs()
 
 def assembleMDEIM(mu):
-    for i in range(0,mu.size()):
-        heatBox.addParameterInModelProperties(mu.parameterName(i),mu(i))
+    for i in range(0, mu.size()):
+        heatBox.addParameterInModelProperties(mu.parameterName(i), mu(i))
     heatBox.updateParameterValues()
     return heatBox.assembleMatrix()
 
@@ -50,27 +50,27 @@ model.setAssembleDEIM(fct=assembleDEIM)
 model.setAssembleMDEIM(fct=assembleMDEIM)
 model.initModel()
 
-heatBoxDEIM=heat(dim=DIM,order=1)
+heatBoxDEIM = heat(dim=DIM, order=1)
 meshDEIM = model.getDEIMReducedMesh()
 heatBoxDEIM.setMesh(meshDEIM)
 heatBoxDEIM.init()
 
 def assembleOnlineDEIM(mu):
-    for i in range(0,mu.size()):
-        heatBoxDEIM.addParameterInModelProperties(mu.parameterName(i),mu(i))
+    for i in range(0, mu.size()):
+        heatBoxDEIM.addParameterInModelProperties(mu.parameterName(i), mu(i))
     heatBoxDEIM.updateParameterValues()
     return heatBoxDEIM.assembleRhs()
 
 model.setOnlineAssembleDEIM(assembleOnlineDEIM)
 
-heatBoxMDEIM=heat(dim=DIM,order=1)
+heatBoxMDEIM = heat(dim=DIM, order=1)
 meshMDEIM = model.getMDEIMReducedMesh()
 heatBoxMDEIM.setMesh(meshMDEIM)
 heatBoxMDEIM.init()
 
 def assembleOnlineMDEIM(mu):
-    for i in range(0,mu.size()):
-        heatBoxMDEIM.addParameterInModelProperties(mu.parameterName(i),mu(i))
+    for i in range(0, mu.size()):
+        heatBoxMDEIM.addParameterInModelProperties(mu.parameterName(i), mu(i))
     heatBoxMDEIM.updateParameterValues()
     return heatBoxMDEIM.assembleMatrix()
 
@@ -150,7 +150,7 @@ def test_for_param():
     # reduced basis only when RB not orthonormilized
     rbParam.computeOfflineReducedBasis(pytest.mus, orth=False)
     for i,mu in enumerate(pytest.mus):
-        print('check RB {} with mu:{}'.format(i,mu))
+        print('check RB {} with mu:{}'.format(i, mu))
         beta = model.computeBetaQm(mu)
         assert(len(beta) == 2)
         betaA = beta[0]
@@ -158,9 +158,9 @@ def test_for_param():
         A = rbParam.assembleA(betaA[0])
         F = rbParam.assembleF(betaF[0][0])
 
-        u,_ = pytest.rb.getSolutionsFE(mu)
+        u, _ = pytest.rb.getSolutionsFE(mu)
         uN = np.array(np.zeros((rbParam.N)))
-        uN[i]=1
+        uN[i] = 1
         AN = rbParam.assembleAN(betaA[0])
         FN = rbParam.assembleFN(betaF[0][0])
         # print('FN:',FN)
@@ -211,7 +211,7 @@ def test_comparRhs():
 
 @pytest.mark.dependency(depends=['test_computeBasis'])
 def test_comparSols():
-    """Compares the construction of the matrix to the toolbox one
+    """Compares the computation of the output
     """
     mu = Dmu.element(True, False)    # TODO : see how to get the values from json
     mu.setParameters({"Bi":0.01, "k_0":1, "k_1":0.1, "k_2":0.1, "k_3":0.1, "k_4":0.1})
@@ -221,14 +221,11 @@ def test_comparSols():
     # M_tb = heatBox.assembleMatrix().mat()
     assembleMDEIM(mu)
     heatBox.solve()
-    u_tb = heatBox.fieldTemperature().to_petsc().vec()
+    s_tb = feelpp.mean(range=feelpp.markedfaces(heatBox.mesh(), "Gamma_root"), expr=heatBox.fieldTemperature())[0]
 
-    u_rb,_ = pytest.rb.getSolutions(mu)
-    u_proj = pytest.rb.projFE(u_rb)
-
-    assert(u_proj.size == u_tb.size)
+    _,sN = pytest.rb.getSolutions(mu)
     
-    norm = (u_tb - u_proj).norm() / u_tb.norm()
+    norm = (sN - s_tb ) / s_tb
     assert norm < 1e-10, f"relative error {norm} is too high"
 
 
