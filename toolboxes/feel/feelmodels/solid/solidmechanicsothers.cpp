@@ -514,24 +514,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( exporter_ptrtype expor
          exporter->step( time )->add( prefixvm(this->prefix(),"velocity-interface-from-fluid"), this->fieldVelocityInterfaceFromFluid() );
          hasFieldToExport = true;
      }*/
-    for ( auto const& fieldUserScalar : this->fieldsUserScalar() )
-    {
-        std::string const& userFieldName = fieldUserScalar.first;
-        if ( fields.find( userFieldName ) != fields.end() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),userFieldName), this->fieldUserScalar( userFieldName ) );
-            hasFieldToExport = true;
-        }
-    }
-    for ( auto const& fieldUserVectorial : this->fieldsUserVectorial() )
-    {
-        std::string const& userFieldName = fieldUserVectorial.first;
-        if ( fields.find( userFieldName ) != fields.end() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),userFieldName), this->fieldUserVectorial( userFieldName ) );
-            hasFieldToExport = true;
-        }
-    }
 
     return hasFieldToExport;
 }
@@ -932,9 +914,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->updateTime( this->timeStepBase()->time() );
 
     this->updateParameterValues();
-
-    // update user functions which depend of time only
-    this->updateUserFunctions(true);
 
     this->timerTool("TimeStepping").stop("updateTimeStep");
 

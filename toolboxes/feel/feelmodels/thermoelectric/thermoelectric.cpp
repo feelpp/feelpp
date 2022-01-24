@@ -192,7 +192,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->materialsProperties()->addMesh( this->mesh() );
 
     // init heat toolbox
-    M_heatModel->setPhysics( this->physics( M_heatModel->physicType() ), M_heatModel->keyword() );
+    M_heatModel->setPhysics( this->physics( M_heatModel->physicType() ) );
     M_heatModel->setManageParameterValues( false );
     if ( !M_heatModel->modelPropertiesPtr() )
     {
@@ -204,7 +204,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_heatModel->init( false );
 
     // init electric toolbox
-    M_electricModel->setPhysics( this->physics( M_electricModel->physicType() ), M_electricModel->keyword() );
+    M_electricModel->setPhysics( this->physics( M_electricModel->physicType() ) );
     M_electricModel->setManageParameterValues( false );
     if ( !M_electricModel->modelPropertiesPtr() )
     {
