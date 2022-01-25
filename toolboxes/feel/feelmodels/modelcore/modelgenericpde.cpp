@@ -72,7 +72,7 @@ template <uint16_type Dim>
 void
 ModelGenericPDE<Dim>::setupGenericPDE()
 {
-    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(), M_infos.equationName(), *this );
+    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(), this->physicType(), M_infos.equationName(), *this ); // TOCHECK VINCENT
 
     std::string unknownShape;
     if ( this->unknownBasis() == "Pch1" ||  this->unknownBasis() == "Pch2" || this->unknownBasis() == "Pdh1" )
@@ -140,7 +140,7 @@ void
 ModelGenericPDEs<Dim>::initGenericPDEs( std::string const& name )
 {
     //this->M_physicDefault = name;
-    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(), name, *this );
+    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(), this->physicType(), name, *this ); // TOCHECK VINCENT
     this->M_physics.emplace( std::make_pair(mphysic->type(),mphysic->name()), mphysic );
 }
 

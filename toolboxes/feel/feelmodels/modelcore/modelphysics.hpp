@@ -82,12 +82,13 @@ public :
     using physic_id_type = std::pair<std::string,std::string>;
 
     //ModelPhysic() = default;
-    ModelPhysic( std::string const& type, std::string const& name, ModelBase const& mparent, ModelModel const& model = ModelModel{} );
+    ModelPhysic( std::string const& modeling, std::string const& type, std::string const& name, ModelBase const& mparent, ModelModel const& model = ModelModel{} );
     ModelPhysic( ModelPhysic const& ) = default;
     ModelPhysic( ModelPhysic && ) = default;
 
-    static std::shared_ptr<ModelPhysic<Dim>> New( ModelPhysics<Dim> const& mphysics, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    static std::shared_ptr<ModelPhysic<Dim>> New( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
 
+    std::string const& modeling() const { return M_modeling; }
     std::string const& type() const { return M_type; }
     std::string const& name() const { return M_name; }
 #if 0
@@ -263,11 +264,12 @@ private :
     template <uint16_type TheDim>
     friend class ModelPhysics;
 
-    using subphysic_description_type = std::map<std::string,std::tuple<std::string,std::shared_ptr<ModelPhysics<Dim>>>>;
-    void initSubphysics( ModelPhysics<Dim> & mphysics, subphysic_description_type const& subPhysicsDesc, ModelModels const& models  );
+    //using subphysic_description_type = std::map<std::string,std::tuple<std::string,std::shared_ptr<ModelPhysics<Dim>>>>;
+    using subphysic_description_type = std::map<std::string,std::shared_ptr<ModelPhysics<Dim>>>; // type -> mphysics
+    void initSubphysics( ModelPhysics<Dim> & mphysics, subphysic_description_type const& subPhysicsDesc, ModelModel const& model, ModelModels const& models  );
 
 private :
-    std::string M_type, M_name;
+    std::string M_modeling, M_type, M_name;
     worldcomm_ptr_t M_worldComm;
     std::string M_directoryLibExpr;
     //std::set<std::string> M_subphysicsTypes;
@@ -285,9 +287,29 @@ class ModelPhysicHeat : public ModelPhysic<Dim>
     using self_type = ModelPhysicHeat<Dim>;
 public :
 
+    struct Convection
+    {
+        Convection( self_type * mparent ) : M_parent( mparent ), M_enabled( false ) {}
+        Convection( Convection const& ) = default;
+        Convection( Convection && ) = default;
+
+        void setup( nl::json const& jarg );
+
+        bool enabled() const { return M_enabled; }
+
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto expr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+            {
+                return M_parent->template paramterExpr<Dim,1>( "convection", se );
+            }
+
+    private:
+        self_type * M_parent;
+        bool M_enabled;
+    };
     struct HeatSource
     {
-        HeatSource( self_type * mparent ) : M_parent( mparent ) {}
+        HeatSource( self_type * mparent, std::string const& name ) : M_parent( mparent ), M_name( name ) {}
         HeatSource( HeatSource const& ) = default;
         HeatSource( HeatSource && ) = default;
 
@@ -298,7 +320,7 @@ public :
         template <typename SymbolsExprType = symbols_expression_empty_t>
         auto expr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
             {
-                return M_parent->template paramterExpr<1,1>( "heatsource", se );
+                return M_parent->template paramterExpr<1,1>( M_name/*"heatsource"*/, se );
             }
 
     private:
@@ -307,11 +329,14 @@ public :
         std::string M_type;
     };
 
-    ModelPhysicHeat( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicHeat( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicHeat( ModelPhysicHeat const& ) = default;
     ModelPhysicHeat( ModelPhysicHeat && ) = default;
 
     std::vector<HeatSource> heatSources() const { return M_heatSources; }
+
+    bool hasConvectionEnabled() const { return M_convection && M_convection->enabled(); }
+    Convection const& convection() const { CHECK( M_convection ) << "no convection"; return *M_convection; }
 
     //! set parameter values in expression
     void setParameterValues( std::map<std::string,double> const& mp ) override
@@ -322,6 +347,7 @@ public :
     void updateInformationObject( nl::json & p ) const override;
 private:
     std::vector<HeatSource> M_heatSources;
+    std::optional<Convection> M_convection;
 };
 
 template <uint16_type Dim>
@@ -460,7 +486,7 @@ public :
         std::string M_model;
     };
 
-    ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicFluid( ModelPhysicFluid const& ) = default;
     ModelPhysicFluid( ModelPhysicFluid && ) = default;
 
@@ -496,7 +522,7 @@ class ModelPhysicSolid : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
 public :
-    ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicSolid( ModelPhysicSolid const& ) = default;
     ModelPhysicSolid( ModelPhysicSolid && ) = default;
 
@@ -525,12 +551,13 @@ public :
 
     using model_physic_type = ModelPhysic<nDim>;
     using model_physic_ptrtype = std::shared_ptr<model_physic_type>;
-    using subphysic_description_type = std::map<std::string,std::tuple<std::string,std::shared_ptr<ModelPhysics<Dim>>>>;
+    //using subphysic_description_type = std::map<std::string,std::tuple<std::string,std::shared_ptr<ModelPhysics<Dim>>>>;
+    using subphysic_description_type = typename model_physic_type::subphysic_description_type;
 
     //ModelPhysics() = default;
-    explicit ModelPhysics( std::string const& type ) : ModelBase(""), M_physicType( type ) {}
-    ModelPhysics( std::string const& type, ModelBase const& mbase ) : ModelBase(mbase), M_physicType( type ) {}
-    ModelPhysics( std::string const& type, ModelBase && mbase ) : ModelBase(std::move(mbase)), M_physicType( type ) {}
+    explicit ModelPhysics( std::string const& modeling ) : ModelBase(""), M_physicModeling( modeling ) {}
+    ModelPhysics( std::string const& modeling, ModelBase const& mbase ) : ModelBase(mbase), M_physicModeling( modeling ) {}
+    ModelPhysics( std::string const& modeling, ModelBase && mbase ) : ModelBase(std::move(mbase)), M_physicModeling( modeling ) {}
     ModelPhysics( ModelPhysics const& ) = default;
     ModelPhysics( ModelPhysics && ) = default;
     virtual ~ModelPhysics() = default;
@@ -553,6 +580,9 @@ public :
     //! return all physics registerd related to the current type
     std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> physicsFromCurrentType() const { return this->physics( this->physicType() ); }
 
+    //! return the physic modeling
+    std::string const& physicModeling() const { return M_physicModeling; }
+
     //! return the type of physic at top level
     std::string const& physicType() const { return M_physicType; }
 
@@ -569,7 +599,7 @@ public :
     std::set<std::string> physicsShared( std::string const& pname ) const;
 #endif
 
-    void initPhysics( std::string const& name, ModelModels const& models, subphysic_description_type const& subPhyicsDesc = subphysic_description_type{} );
+    void initPhysics( std::string const& type, ModelModels const& models, subphysic_description_type const& subPhyicsDesc = subphysic_description_type{} );
 
     void setPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics );
 
@@ -592,7 +622,7 @@ private :
     void addPhysicInternal( model_physic_ptrtype mphysic, ModelModels const& models, subphysic_description_type const& subPhysicsDesc );
 protected :
 
-    std::string M_physicType;
+    std::string M_physicModeling, M_physicType;
     std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> M_physics;
 };
 
