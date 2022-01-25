@@ -9,9 +9,10 @@ namespace FeelModels
 {
 
 template <uint16_type Dim>
-ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name, ModelBase const& mparent, ModelModel const& model )
+ModelPhysic<Dim>::ModelPhysic( std::string const& modeling, std::string const& type, std::string const& name, ModelBase const& mparent, ModelModel const& model )
     :
     super_type( "ModelPhysic", type+"/"+name ),
+    M_modeling( modeling ),
     M_type( type ),
     M_name( name ),
     M_worldComm( mparent.worldCommPtr() ),
@@ -84,8 +85,62 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name,
 
 template <uint16_type Dim>
 void
-ModelPhysic<Dim>::initSubphysics( ModelPhysics<Dim> & mphysics, subphysic_description_type const& subPhysicsDesc, ModelModels const& models  )
+ModelPhysic<Dim>::initSubphysics( ModelPhysics<Dim> & mphysics, subphysic_description_type const& subPhysicsDesc, ModelModel const& model, ModelModels const& models  )
 {
+#if 1 //TODO
+    auto submodels = model.submodels();
+    for ( auto & [_type,_msubphysics] : subPhysicsDesc )
+    {
+        std::set<std::string> submodelNames;
+        auto itFindSubmodel = submodels.find(_type);
+        if ( itFindSubmodel != submodels.end() )
+            submodelNames.insert( itFindSubmodel->second.begin(), itFindSubmodel->second.end());
+
+        if ( submodelNames.empty() && models.hasType( _type ) )
+        {
+            for ( auto const& [_name,_model] : models.models( _type ) )
+                submodelNames.insert( _name );
+        }
+
+        if ( submodelNames.empty() ) // if empty add all physics with same type
+        {
+            if ( mphysics.physics( _type ).empty() ) // if no physic, create default physic
+            {
+                std::string _name = "default";
+                auto _mphysic = ModelPhysic<Dim>::New( *_msubphysics, _msubphysics->physicModeling(),  _type, _name, ModelModel(_type,_name) );
+                mphysics.addPhysicInternal( _mphysic, models, subPhysicsDesc );
+            }
+            for ( auto const& [pId,_mphysic] : mphysics.physics( _type ) )
+                this->addSubphysic( _mphysic );
+        }
+        else
+        {
+            for ( std::string const& _name : submodelNames )
+            {
+                for ( auto const& [_name2,_model] : models.models( _type ) )
+                {
+                    if ( _name != _name2 )
+                        continue;
+
+                    auto pId = std::make_pair(_type, _name);
+                    if ( !mphysics.hasPhysic( pId ) )
+                    {
+                        auto _mphysic = ModelPhysic<Dim>::New( *_msubphysics, _msubphysics->physicModeling(), _type, _name, _model );
+                        mphysics.addPhysicInternal( _mphysic, models, subPhysicsDesc );
+                    }
+                    if ( !this->hasSubphysic( pId ) )
+                    {
+                        auto _mphysic = mphysics.physic( pId );
+                        this->addSubphysic( _mphysic );
+                    }
+                }
+            }
+        }
+
+    }
+#endif
+
+#if 0
     for ( auto & [_type,_subm] : M_mapSubphysicsTypeToNames )
     {
         if ( _subm.empty() && models.hasType( _type ) )
@@ -132,28 +187,36 @@ ModelPhysic<Dim>::initSubphysics( ModelPhysics<Dim> & mphysics, subphysic_descri
             }
          }
     }
+#endif
+
 }
 
 template <uint16_type Dim>
 std::shared_ptr<ModelPhysic<Dim>>
-ModelPhysic<Dim>::New( ModelPhysics<Dim> const& mphysics, std::string const& type, std::string const& name, ModelModel const& model )
+ModelPhysic<Dim>::New( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
 {
-    if ( type == "heat" )
-        return std::make_shared<ModelPhysicHeat<Dim>>( mphysics, name, model );
-    else if ( type == "fluid" )
-        return std::make_shared<ModelPhysicFluid<Dim>>( mphysics, name, model );
-    else if ( type == "solid" )
-        return std::make_shared<ModelPhysicSolid<Dim>>( mphysics, name, model );
+    if ( modeling == "heat" )
+        return std::make_shared<ModelPhysicHeat<Dim>>( mphysics, modeling, type, name, model );
+    else if ( modeling == "fluid" )
+        return std::make_shared<ModelPhysicFluid<Dim>>( mphysics, modeling, type, name, model );
+    else if ( modeling == "solid" )
+        return std::make_shared<ModelPhysicSolid<Dim>>( mphysics, modeling, type, name, model );
     else
-        return std::make_shared<ModelPhysic<Dim>>( type, name, mphysics, model );
+        return std::make_shared<ModelPhysic<Dim>>( modeling, type, name, mphysics, model );
 }
 
 template <uint16_type Dim>
-ModelPhysicHeat<Dim>::ModelPhysicHeat( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model )
+ModelPhysicHeat<Dim>::ModelPhysicHeat( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
     :
-    super_type( "heat", name, mphysics, model )
+    super_type( modeling, type, name, mphysics, model )
 {
     auto const& j_setup = model.setup();
+    if ( j_setup.contains( "convection" ) )
+    {
+        M_convection.emplace( this );
+        M_convection->setup( j_setup.at("convection" ) );
+    }
+
     if ( j_setup.contains( "heat-sources" ) )
     {
         auto const& j_setup_heatsources = j_setup.at( "heat-sources" );
@@ -162,14 +225,14 @@ ModelPhysicHeat<Dim>::ModelPhysicHeat( ModelPhysics<Dim> const& mphysics, std::s
             for ( auto const& [j_setup_heatsourceskey,j_setup_heatsourcesval] : j_setup_heatsources.items() )
             {
                 CHECK( j_setup_heatsourcesval.is_object() ) << "j_setup_heatsourcesval should be an object";
-                HeatSource hs( this );
+                HeatSource hs( this, fmt::format("heatsource{}",M_heatSources.size()) );
                 hs.setup( j_setup_heatsourcesval );
                 M_heatSources.push_back( std::move( hs ) );
             }
         }
         else if ( j_setup_heatsources.is_object() )
         {
-            HeatSource hs( this );
+            HeatSource hs( this, fmt::format("heatsource{}",M_heatSources.size()) );
             hs.setup( j_setup_heatsources );
             M_heatSources.push_back( std::move( hs ) );
         }
@@ -185,19 +248,39 @@ ModelPhysicHeat<Dim>::updateInformationObject( nl::json & p ) const
     p["name"] = this->name();
 }
 
+
+template <uint16_type Dim>
+void
+ModelPhysicHeat<Dim>::Convection::setup( nl::json const& jarg )
+{
+    std::string convectionExprName = "convection";
+    if ( jarg.is_string() )
+    {
+        M_parent->addParameter( convectionExprName, jarg );
+    }
+    else if ( jarg.is_object() )
+    {
+        CHECK( jarg.contains( "expr" ) ) << "no expr";
+        M_parent->addParameter( convectionExprName, jarg.at("expr") );
+    }
+    if ( !M_parent->template hasParameterExpr<Dim,1>( convectionExprName ) )
+        CHECK( false ) << "invalid convection setup";
+    M_enabled = true;
+}
+
 template <uint16_type Dim>
 void
 ModelPhysicHeat<Dim>::HeatSource::setup( nl::json const& jarg )
 {
     CHECK( jarg.contains( "expr" ) ) << "no expr";
-    M_parent->addParameter( "heatsource", jarg.at("expr") );
+    M_parent->addParameter( M_name/*"heatsource"*/, jarg.at("expr") );
 }
 
 
 template <uint16_type Dim>
-ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model )
+ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
     :
-    super_type( "fluid", name, mphysics, model ),
+    super_type( modeling, type, name, mphysics, model ),
     M_equation( "Navier-Stokes" ),
     M_gravityForceEnabled( boption(_name="use-gravity-force",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ),
     M_dynamicViscosity( soption(_name="viscosity.law",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ),
@@ -335,9 +418,9 @@ ModelPhysicFluid<Dim>::Turbulence::setup( nl::json const& jarg )
 }
 
 template <uint16_type Dim>
-ModelPhysicSolid<Dim>::ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model )
+ModelPhysicSolid<Dim>::ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
     :
-    super_type( "solid", name, mphysics, model ),
+    super_type( modeling, type, name, mphysics, model ),
     M_equation( "Hyper-Elasticity" ),
     M_materialModel( soption(_prefix=mphysics.prefix(), _name="material_law",_vm=mphysics.clovm() ) ),
     M_formulation( soption(_prefix=mphysics.prefix(), _name="formulation",_vm=mphysics.clovm() ) ),
@@ -408,14 +491,17 @@ void
 ModelPhysics<Dim>::addPhysicInternal( model_physic_ptrtype mphysic, ModelModels const& models, subphysic_description_type const& subPhysicsDesc )
 {
     M_physics.emplace( std::make_pair(mphysic->type(), mphysic->name()), mphysic );
+#if 0
     mphysic->initSubphysics( *this, subPhysicsDesc, models );
+#endif
 }
 
 template <uint16_type Dim>
 void
-ModelPhysics<Dim>::initPhysics( std::string const& name, ModelModels const& models, subphysic_description_type const& subPhyicsDesc )
+ModelPhysics<Dim>::initPhysics( std::string const& type, ModelModels const& models, subphysic_description_type const& subPhyicsDesc )
 {
-    std::string const& type = M_physicType;
+    M_physicType = type;
+    //std::string const& type = M_physicType;
 
     if ( models.hasType( type ) )
     {
@@ -423,18 +509,19 @@ ModelPhysics<Dim>::initPhysics( std::string const& name, ModelModels const& mode
         {
             if ( this->hasPhysic( std::make_pair(type, _name) ) )
                 continue;
-            auto _mphysic = ModelPhysic<Dim>::New( *this, type, _name, _model );
+            auto _mphysic = ModelPhysic<Dim>::New( *this, M_physicModeling, type, _name, _model );
             M_physics.emplace( std::make_pair(type, _name), _mphysic );
-            _mphysic->initSubphysics( *this, subPhyicsDesc, models );
+            _mphysic->initSubphysics( *this, subPhyicsDesc, _model, models );
         }
     }
     else if ( this->physics( type ).empty() )
     {
         // create default physic
         std::string _name = "default";
-        auto _mphysic = ModelPhysic<Dim>::New( *this, type, _name, ModelModel(type,_name) );
+        auto _model = ModelModel(type,_name);
+        auto _mphysic = ModelPhysic<Dim>::New( *this, M_physicModeling, type, _name, _model );
         M_physics.emplace( std::make_pair(type, _name), _mphysic );
-        _mphysic->initSubphysics( *this, subPhyicsDesc, models );
+        _mphysic->initSubphysics( *this, subPhyicsDesc, _model, models );
     }
 }
 
