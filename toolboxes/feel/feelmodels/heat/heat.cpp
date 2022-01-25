@@ -91,14 +91,6 @@ HEAT_CLASS_TEMPLATE_TYPE::initMaterialProperties()
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
-    if ( Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str()) )
-    {
-        auto theExpr = expr<nDim,1>( soption(_prefix=this->prefix(),_name="velocity-convection"),
-                                     "",this->worldComm(),this->repository().expr() );
-        for ( std::string const& matName : M_materialsProperties->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
-            this->setVelocityConvectionExpr( matName,theExpr );
-    }
-
     double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
     this->log("Heat","initMaterialProperties",(boost::format("finish in %1% s")%tElpased).str() );
 }
@@ -658,9 +650,6 @@ HEAT_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const
     M_bcDirichlet.setParameterValues( paramValues );
     M_bcNeumann.setParameterValues( paramValues );
     M_bcRobin.setParameterValues( paramValues );
-    M_volumicForcesProperties.setParameterValues( paramValues );
-    for ( auto & [matName, velConvExpr] : M_exprVelocityConvection )
-        velConvExpr.setParameterValues( paramValues );
 
     this->log("Heat","setParameterValues", "finish");
 }
@@ -683,8 +672,6 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "temperature", "Robin" );
     for( auto const& d : this->M_bcRobin )
         M_bcRobinMarkerManagement.addMarkerRobinBC( name(d),markers(d) );
-
-    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
 
 }
 
