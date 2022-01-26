@@ -149,8 +149,8 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("Heat","init", "start" );
     this->timerTool("Constructor").start();
 
-    if ( this->physics().empty() )
-        this->initPhysics( this->keyword(), this->modelProperties().models() );
+    // physics
+    this->initPhysics( this->keyword(), this->modelProperties().models() );
 
     this->initMaterialProperties();
 
