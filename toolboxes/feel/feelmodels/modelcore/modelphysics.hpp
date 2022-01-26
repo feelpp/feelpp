@@ -277,16 +277,10 @@ private :
     template <uint16_type TheDim>
     friend class ModelPhysics;
 
-    //using subphysic_description_type = std::map<std::string,std::tuple<std::string,std::shared_ptr<ModelPhysics<Dim>>>>;
-    using subphysic_description_type = std::map<std::string,std::shared_ptr<ModelPhysics<Dim>>>; // type -> mphysics
-    void initSubphysics( ModelPhysics<Dim> & mphysics, subphysic_description_type const& subPhysicsDesc, ModelModel const& model, ModelModels const& models  );
-
 private :
     std::string M_modeling, M_type, M_name;
     worldcomm_ptr_t M_worldComm;
     std::string M_directoryLibExpr;
-    //std::set<std::string> M_subphysicsTypes;
-    std::map<std::string,std::set<std::string>> M_mapSubphysicsTypeToNames; // only internal data
     std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> M_subphysics;
     std::set<std::string> M_materialNames;
     std::map<std::string,material_property_description_type> M_materialPropertyDescription; // name -> (symbol, shapes.. )
@@ -570,8 +564,36 @@ public :
 
     using model_physic_type = ModelPhysic<nDim>;
     using model_physic_ptrtype = std::shared_ptr<model_physic_type>;
-    //using subphysic_description_type = std::map<std::string,std::tuple<std::string,std::shared_ptr<ModelPhysics<Dim>>>>;
-    using subphysic_description_type = typename model_physic_type::subphysic_description_type;
+
+protected :
+    struct PhysicsTree {
+        using physics_ptrtype = std::shared_ptr<ModelPhysics<nDim>>;
+        PhysicsTree( std::string const& type, physics_ptrtype p ) : M_root( std::make_tuple(type,p) ) {}
+        PhysicsTree( physics_ptrtype p ) : PhysicsTree( p->keyword(), p ) {}
+        void addSubtree( PhysicsTree const& st ) { M_subtrees.push_back( st ); }
+        void addLeaf( std::string const& type, physics_ptrtype p ) { M_subtrees.push_back( PhysicsTree{type,p} ); }
+        void addLeaf( physics_ptrtype p ) { this->addLeaf( p->keyword(), p ); }
+
+        std::tuple<std::string,physics_ptrtype> const& root() const { return M_root; }
+        std::vector<PhysicsTree> subtrees() const { return M_subtrees; }
+
+        std::set<std::tuple<std::string,physics_ptrtype>> allPhysics() const
+            {
+                std::set<std::tuple<std::string,physics_ptrtype>> res;
+                res.insert( this->root() );
+                for ( auto const& st : M_subtrees )
+                {
+                    auto ast = st.allPhysics();
+                    res.insert( ast.begin(), ast.end() );
+                }
+                return res;
+            }
+    private :
+        std::tuple<std::string,physics_ptrtype> M_root;
+        std::vector<PhysicsTree> M_subtrees;
+    };
+
+public:
 
     //ModelPhysics() = default;
     explicit ModelPhysics( std::string const& modeling ) : ModelBase(""), M_physicModeling( modeling ) {}
@@ -621,7 +643,8 @@ public :
     std::set<std::string> physicsShared( std::string const& pname ) const;
 #endif
 
-    void initPhysics( std::string const& type, ModelModels const& models, subphysic_description_type const& subPhyicsDesc = subphysic_description_type{} );
+    void initPhysics( std::string const& type, ModelModels const& models );
+    void initPhysics( PhysicsTree const& physicTree, ModelModels const& models );
 
     void setPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics );
 
@@ -637,11 +660,11 @@ public :
         {
             return symbolsExprPhysics( this->physicsFromCurrentType() );
         }
+
 private :
     template <uint16_type TheDim>
     friend class ModelPhysic;
 
-    void addPhysicInternal( model_physic_ptrtype mphysic, ModelModels const& models, subphysic_description_type const& subPhysicsDesc );
 protected :
 
     std::string M_physicModeling, M_physicType;
