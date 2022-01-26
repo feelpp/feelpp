@@ -53,7 +53,7 @@ class Electric : public ModelNumerical,
                  public ModelPhysics<ConvexType::nDim>,
                  public std::enable_shared_from_this< Electric<ConvexType,BasisPotentialType> >
 {
-
+    typedef ModelPhysics<ConvexType::nDim> super_physics_type;
 public:
     typedef ModelNumerical super_type;
     typedef Electric<ConvexType,BasisPotentialType> self_type;
