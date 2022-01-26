@@ -20,42 +20,26 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& modeling, std::string const& t
 {
     M_materialNames = model.materials();
 
-    if ( type == "GenericPDE" || type == "GenericPDEs" )
+    if ( M_modeling == "GenericPDE" || M_modeling == "GenericPDEs" )
         return;
 
-    if ( M_type == "thermo-electric" )
-    {
-        M_mapSubphysicsTypeToNames["heat"];
-        M_mapSubphysicsTypeToNames["electric"];
-    }
-    else if ( M_type == "heat-fluid" )
-    {
-        M_mapSubphysicsTypeToNames["heat"];
-        M_mapSubphysicsTypeToNames["fluid"];
-    }
-
-    for ( auto const& [_type,_subm] : model.submodels() )
-    {
-        CHECK( M_mapSubphysicsTypeToNames.find( _type ) != M_mapSubphysicsTypeToNames.end() ) << "something wrong";
-        M_mapSubphysicsTypeToNames[_type].insert(_subm.begin(),_subm.end() );
-    }
-
+    //std::cout << "CREATE physics :  " << "M_modeling=" << M_modeling << " M_type=" << M_type << " M_name=" << M_name << std::endl;
 
     material_property_shape_dim_type scalarShape = std::make_pair(1,1);
     material_property_shape_dim_type matrixShape = std::make_pair(nDim,nDim);
 
     this->addMaterialPropertyDescription( "density", "rho", { scalarShape } );
-    if ( M_type == "heat" ||  M_type == "thermo-electric" || M_type == "heat-fluid" )
+    if ( M_modeling == "heat" ||  M_modeling == "thermo-electric" || M_modeling == "heat-fluid" )
     {
         this->addMaterialPropertyDescription( "specific-heat-capacity", "Cp", { scalarShape } );
         this->addMaterialPropertyDescription( "thermal-expansion", "beta", { scalarShape } );
         this->addMaterialPropertyDescription( "thermal-conductivity", "k", { scalarShape,matrixShape } );
     }
-    if ( M_type == "electric" || M_type == "thermo-electric" )
+    if ( M_modeling == "electric" || M_modeling == "thermo-electric" )
     {
         this->addMaterialPropertyDescription( "electric-conductivity", "sigma", { scalarShape } );
     }
-    if ( M_type == "solid" )
+    if ( M_modeling == "solid" )
     {
         this->addMaterialPropertyDescription( "Young-modulus", "E", { scalarShape } );
         this->addMaterialPropertyDescription( "Poisson-ratio", "nu", { scalarShape } );
@@ -63,7 +47,7 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& modeling, std::string const& t
         this->addMaterialPropertyDescription( "Lame-second-parameter", "mu", { scalarShape } );
         this->addMaterialPropertyDescription( "bulk-modulus", "K", { scalarShape } );
     }
-    if ( M_type == "fluid" || M_type == "heat-fluid" )
+    if ( M_modeling == "fluid" || M_modeling == "heat-fluid" )
     {
         this->addMaterialPropertyDescription( "dynamic-viscosity", "mu", { scalarShape } );
         this->addMaterialPropertyDescription( "turbulent-dynamic-viscosity", "mu_t", { scalarShape } );
@@ -80,115 +64,6 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& modeling, std::string const& t
         this->addMaterialPropertyDescription( "carreau-yasuda-law-n", "mu_carreau_yasuda_law_n", { scalarShape } );
         this->addMaterialPropertyDescription( "carreau-yasuda-law-a", "mu_carreau_yasuda_law_a", { scalarShape } );
     }
-}
-
-
-template <uint16_type Dim>
-void
-ModelPhysic<Dim>::initSubphysics( ModelPhysics<Dim> & mphysics, subphysic_description_type const& subPhysicsDesc, ModelModel const& model, ModelModels const& models  )
-{
-#if 1 //TODO
-    auto submodels = model.submodels();
-    for ( auto & [_type,_msubphysics] : subPhysicsDesc )
-    {
-        std::set<std::string> submodelNames;
-        auto itFindSubmodel = submodels.find(_type);
-        if ( itFindSubmodel != submodels.end() )
-            submodelNames.insert( itFindSubmodel->second.begin(), itFindSubmodel->second.end());
-
-        if ( submodelNames.empty() && models.hasType( _type ) )
-        {
-            for ( auto const& [_name,_model] : models.models( _type ) )
-                submodelNames.insert( _name );
-        }
-
-        if ( submodelNames.empty() ) // if empty add all physics with same type
-        {
-            if ( mphysics.physics( _type ).empty() ) // if no physic, create default physic
-            {
-                std::string _name = "default";
-                auto _mphysic = ModelPhysic<Dim>::New( *_msubphysics, _msubphysics->physicModeling(),  _type, _name, ModelModel(_type,_name) );
-                mphysics.addPhysicInternal( _mphysic, models, subPhysicsDesc );
-            }
-            for ( auto const& [pId,_mphysic] : mphysics.physics( _type ) )
-                this->addSubphysic( _mphysic );
-        }
-        else
-        {
-            for ( std::string const& _name : submodelNames )
-            {
-                for ( auto const& [_name2,_model] : models.models( _type ) )
-                {
-                    if ( _name != _name2 )
-                        continue;
-
-                    auto pId = std::make_pair(_type, _name);
-                    if ( !mphysics.hasPhysic( pId ) )
-                    {
-                        auto _mphysic = ModelPhysic<Dim>::New( *_msubphysics, _msubphysics->physicModeling(), _type, _name, _model );
-                        mphysics.addPhysicInternal( _mphysic, models, subPhysicsDesc );
-                    }
-                    if ( !this->hasSubphysic( pId ) )
-                    {
-                        auto _mphysic = mphysics.physic( pId );
-                        this->addSubphysic( _mphysic );
-                    }
-                }
-            }
-        }
-
-    }
-#endif
-
-#if 0
-    for ( auto & [_type,_subm] : M_mapSubphysicsTypeToNames )
-    {
-        if ( _subm.empty() && models.hasType( _type ) )
-        {
-            for ( auto const& [_name,_model] : models.models( _type ) )
-                _subm.insert( _name );
-        }
-
-        CHECK( subPhysicsDesc.find( _type ) != subPhysicsDesc.end() ) << "aiai";
-        auto mSubPhysics = std::get<1>( subPhysicsDesc.find( _type )->second );
-
-        if ( _subm.empty() ) // if empty add all physics with same type
-        {
-            if ( mphysics.physics( _type ).empty() ) // if no physic, create default physic
-            {
-                std::string _name = "default";
-                auto _mphysic = ModelPhysic<Dim>::New( *mSubPhysics, _type, _name, ModelModel(_type,_name) );
-                mphysics.addPhysicInternal( _mphysic, models, subPhysicsDesc );
-            }
-            for ( auto const& [pId,_mphysic] : mphysics.physics( _type ) )
-                this->addSubphysic( _mphysic );
-        }
-        else
-        {
-            for ( std::string const& _name : _subm )
-            {
-                for ( auto const& [_name2,_model] : models.models( _type ) )
-                {
-                    if ( _name != _name2 )
-                        continue;
-
-                    auto pId = std::make_pair(_type, _name);
-                    if ( !mphysics.hasPhysic( pId ) )
-                    {
-                        auto _mphysic = ModelPhysic<Dim>::New( *mSubPhysics, _type, _name, _model );
-                        mphysics.addPhysicInternal( _mphysic, models, subPhysicsDesc );
-                    }
-                    if ( !this->hasSubphysic( pId ) )
-                    {
-                        auto _mphysic = mphysics.physic( pId );
-                        this->addSubphysic( _mphysic );
-                    }
-                 }
-            }
-         }
-    }
-#endif
-
 }
 
 template <uint16_type Dim>
@@ -657,30 +532,19 @@ ModelPhysicSolid<Dim>::setEquation( std::string const& eq )
 
 template <uint16_type Dim>
 void
-ModelPhysics<Dim>::addPhysicInternal( model_physic_ptrtype mphysic, ModelModels const& models, subphysic_description_type const& subPhysicsDesc )
-{
-    M_physics.emplace( std::make_pair(mphysic->type(), mphysic->name()), mphysic );
-#if 0
-    mphysic->initSubphysics( *this, subPhysicsDesc, models );
-#endif
-}
-
-template <uint16_type Dim>
-void
-ModelPhysics<Dim>::initPhysics( std::string const& type, ModelModels const& models, subphysic_description_type const& subPhyicsDesc )
+ModelPhysics<Dim>::initPhysics( std::string const& type, ModelModels const& models )
 {
     M_physicType = type;
-    //std::string const& type = M_physicType;
 
     if ( models.hasType( type ) )
     {
-        for ( auto const& [_name,_model] : models.models( type ) )
+        for ( auto const& [_nameFromModels,_model] : models.models( type ) )
         {
+            std::string _name = _nameFromModels.empty()? type : _nameFromModels; // use name=type if not given
             if ( this->hasPhysic( std::make_pair(type, _name) ) )
                 continue;
             auto _mphysic = ModelPhysic<Dim>::New( *this, M_physicModeling, type, _name, _model );
             M_physics.emplace( std::make_pair(type, _name), _mphysic );
-            _mphysic->initSubphysics( *this, subPhyicsDesc, _model, models );
         }
     }
     else if ( this->physics( type ).empty() )
@@ -690,10 +554,79 @@ ModelPhysics<Dim>::initPhysics( std::string const& type, ModelModels const& mode
         auto _model = ModelModel(type,_name);
         auto _mphysic = ModelPhysic<Dim>::New( *this, M_physicModeling, type, _name, _model );
         M_physics.emplace( std::make_pair(type, _name), _mphysic );
-        _mphysic->initSubphysics( *this, subPhyicsDesc, _model, models );
     }
 }
 
+template <uint16_type Dim>
+void
+ModelPhysics<Dim>::initPhysics( PhysicsTree const& physicTree, ModelModels const& models )
+{
+    auto allMPhysics = physicTree.allPhysics();
+    for ( auto const& [type,mphysics] : allMPhysics )
+    {
+        if ( mphysics )
+            mphysics->initPhysics( type, models );
+    }
+
+    
+#if 0
+    for ( auto const& [type,mphysics] : allMPhysics )
+        for ( auto const& [type2,mphysics2] : allMPhysics )
+            mphysics->setPhysics( mphysics2->physics() );
+#endif
+
+
+    // up subphysics by using recursive lambda function
+    auto upSubphysics = [&models]( PhysicsTree const& _physicTree )
+                            {
+                                auto upSubphysicsImpl = [&models]( PhysicsTree const& _physicTreeBis, const auto& ff ) -> void
+                                                            {
+                                                                auto const& [rootType,rootPhysics] = _physicTreeBis.root();
+                                                                std::map<std::string,std::map<std::string,std::set<std::string>>> submodelsFromRoot; // subType -> ( rootName -> ( subNames ) )
+                                                                if ( models.hasType( rootType ) )
+                                                                    for ( auto const& [_rootname,_rootmodel] : models.models( rootType ) )
+                                                                        for ( auto const& [_subtype,_subnames] : _rootmodel.submodels() )
+                                                                            if ( !_subnames.empty() )
+                                                                                submodelsFromRoot[_subtype][_rootname] = _subnames;
+
+                                                                for ( auto st : _physicTreeBis.subtrees() )
+                                                                {
+                                                                    ff( st, ff );
+
+                                                                    auto const& [subType,subPhysics] = st.root();
+                                                                    rootPhysics->setPhysics( std::get<1>(st.root())->physics() );
+
+                                                                    auto itFind = submodelsFromRoot.find( subType );
+                                                                    if ( itFind != submodelsFromRoot.end() ) // link defined in models (i.e. from json)
+                                                                    {
+                                                                        for ( auto const& [_rootname,_subnames] : itFind->second )
+                                                                        {
+                                                                            auto rootPhysicId = std::make_pair( rootType, _rootname );
+                                                                            auto rootPhysic = rootPhysics->physic( rootPhysicId );
+
+                                                                            for ( auto const& _subname : _subnames )
+                                                                            {
+                                                                                auto subPhysic = rootPhysics->physic( std::make_pair( subType, _subname ) );
+                                                                                rootPhysic->addSubphysic( subPhysic );
+                                                                                std::cout << "addSubphysic " << rootType << "," << _rootname << " -> " << subType << "," << _subname << std::endl;
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    else // not defined, add all physic with same type
+                                                                    {
+                                                                        for ( auto const& [_rootPhysicId,_rootPhysic] : rootPhysics->physics( rootType ) )
+                                                                            for ( auto const& [_subPhysicId,_subPhysic] : rootPhysics->physics( subType ) )
+                                                                                _rootPhysic->addSubphysic( _subPhysic );
+                                                                    }
+                                                                }
+                                                            };
+                                upSubphysicsImpl( _physicTree, upSubphysicsImpl );
+                            };
+
+    upSubphysics( physicTree );
+
+
+}
 
 template <uint16_type Dim>
 std::set<typename ModelPhysics<Dim>::physic_id_type>
