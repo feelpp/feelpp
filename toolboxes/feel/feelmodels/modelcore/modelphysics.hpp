@@ -94,10 +94,6 @@ public :
     std::string const& modeling() const { return M_modeling; }
     std::string const& type() const { return M_type; }
     std::string const& name() const { return M_name; }
-#if 0
-    //! return the types of subphysics
-    std::set<std::string> const& subphysicsTypes() const { return M_subphysicsTypes; }
-#endif
 
     //! return the map of subphysics
     std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> const& subphysics() const { return M_subphysics; }
@@ -110,9 +106,21 @@ public :
                     return sp;
             return  std::shared_ptr<ModelPhysic<nDim>>{};
         }
+    //! return all subphysic from the type of physic
+    std::vector<std::shared_ptr<ModelPhysic<nDim>>> subphysicsFromType( std::string const& type ) const
+        {
+            std::vector<std::shared_ptr<ModelPhysic<nDim>>> res;
+            for ( auto const& [name,sp] : this->subphysics() )
+                if ( sp->type() == type )
+                    res.push_back( sp );
+            return res;
+        }
 
     //! return material names used by this physic
     std::set<std::string> const& materialNames() const { return M_materialNames; }
+
+    //! add material names
+    void addMaterialNames( std::set<std::string> const& matNames ) { return M_materialNames.insert( matNames.begin(), matNames.end() ); }
 
     //! return the material properties description (.i.e. coefficients of pdes)
     std::map<std::string,material_property_description_type> const& materialPropertyDescription() const { return M_materialPropertyDescription; }
@@ -141,7 +149,13 @@ public :
     bool hasSubphysic( physic_id_type const& pId ) const { return M_subphysics.find( pId ) != M_subphysics.end(); }
 
     //! add a subphysic model
-    void addSubphysic( std::shared_ptr<ModelPhysic<nDim>> const& sp ) { M_subphysics[std::make_pair(sp->type(),sp->name())] = sp; }
+    void addSubphysic( std::shared_ptr<ModelPhysic<nDim>> const& sp, bool force = false )
+        {
+            if ( force )
+                M_subphysics[std::make_pair(sp->type(),sp->name())] = sp;
+            else
+                M_subphysics.emplace( std::make_pair(sp->type(),sp->name()), sp );
+        }
 
     //! add a constant (double) parameter called \pname and return the symbol associated
     std::string addParameter( std::string const& pname, double val )
@@ -271,6 +285,7 @@ protected :
             return itFindParam->second;
         }
     void updateTabulateInformationsBasic( nl::json const& jsonInfo, tabulate_informations_sections_ptr_t & tabInfo, TabulateInformationProperties const& tabInfoProp ) const;
+    void updateTabulateInformationsSubphysics( nl::json const& jsonInfo, tabulate_informations_sections_ptr_t & tabInfo, TabulateInformationProperties const& tabInfoProp ) const;
     void updateTabulateInformationsParameters( nl::json const& jsonInfo, tabulate_informations_sections_ptr_t & tabInfo, TabulateInformationProperties const& tabInfoProp ) const;
 
 private :
@@ -362,6 +377,39 @@ private:
     std::vector<HeatSource> M_heatSources;
     std::optional<Convection> M_convection;
 };
+
+
+template <uint16_type Dim>
+class ModelPhysicElectric : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicHeat<Dim>;
+public :
+    ModelPhysicElectric( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicElectric( ModelPhysicElectric const& ) = default;
+    ModelPhysicElectric( ModelPhysicElectric && ) = default;
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+private :
+};
+
+template <uint16_type Dim>
+class ModelPhysicThermoElectric : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicHeat<Dim>;
+public :
+    ModelPhysicThermoElectric( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicThermoElectric( ModelPhysicThermoElectric const& ) = default;
+    ModelPhysicThermoElectric( ModelPhysicThermoElectric && ) = default;
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+private :
+};
+
+
 
 template <uint16_type Dim>
 class ModelPhysicFluid : public ModelPhysic<Dim>
