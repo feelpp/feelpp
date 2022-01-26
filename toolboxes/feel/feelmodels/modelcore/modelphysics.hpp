@@ -88,6 +88,9 @@ public :
 
     static std::shared_ptr<ModelPhysic<Dim>> New( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
 
+    void updateInformationObject( nl::json & p ) const override;
+    virtual tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
+
     std::string const& modeling() const { return M_modeling; }
     std::string const& type() const { return M_type; }
     std::string const& name() const { return M_name; }
@@ -253,13 +256,23 @@ public :
 
     //! return the expression of the parameter \pname
     template <int M,int N,typename SymbolsExprType = symbols_expression_empty_t>
-    auto paramterExpr( std::string const& pname, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+    auto parameterExpr( std::string const& pname, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
         {
             if ( !this->hasParameterExpr<M,N>( pname ) )
                 CHECK( false ) << "parameter " << pname << " not found or shape incompatible";
             auto itFindParam = M_parameterNameToExpr.find( pname );
             return expr( itFindParam->second.template expr<M,N>(), se );
         }
+protected :
+    ModelExpression const& parameterModelExpr( std::string const& pname ) const
+        {
+            auto itFindParam = M_parameterNameToExpr.find( pname );
+            CHECK( itFindParam!=M_parameterNameToExpr.end() ) << "no parmeter registered : "<< pname;
+            return itFindParam->second;
+        }
+    void updateTabulateInformationsBasic( nl::json const& jsonInfo, tabulate_informations_sections_ptr_t & tabInfo, TabulateInformationProperties const& tabInfoProp ) const;
+    void updateTabulateInformationsParameters( nl::json const& jsonInfo, tabulate_informations_sections_ptr_t & tabInfo, TabulateInformationProperties const& tabInfoProp ) const;
+
 private :
     template <uint16_type TheDim>
     friend class ModelPhysics;
@@ -300,9 +313,11 @@ public :
         template <typename SymbolsExprType = symbols_expression_empty_t>
         auto expr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
             {
-                return M_parent->template paramterExpr<Dim,1>( "convection", se );
+                return M_parent->template parameterExpr<Dim,1>( "convection", se );
             }
 
+        void updateInformationObject( nl::json & p ) const;
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
     private:
         self_type * M_parent;
         bool M_enabled;
@@ -320,9 +335,11 @@ public :
         template <typename SymbolsExprType = symbols_expression_empty_t>
         auto expr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
             {
-                return M_parent->template paramterExpr<1,1>( M_name/*"heatsource"*/, se );
+                return M_parent->template parameterExpr<1,1>( M_name/*"heatsource"*/, se );
             }
 
+        void updateInformationObject( nl::json & p ) const;
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
     private:
         self_type * M_parent;
         std::string M_name;
@@ -345,6 +362,8 @@ public :
         }
 
     void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
 private:
     std::vector<HeatSource> M_heatSources;
     std::optional<Convection> M_convection;
@@ -409,7 +428,7 @@ public :
         template <typename SymbolsExprType = symbols_expression_empty_t>
         auto frictionVelocityWallFunctionExpr( std::string const& matName, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
             {
-                return M_parent->template paramterExpr<1,1>( this->symbolBaseNameOnMaterial( matName, "u_tau_wallfunction" ), se );
+                return M_parent->template parameterExpr<1,1>( this->symbolBaseNameOnMaterial( matName, "u_tau_wallfunction" ), se );
             }
 
         std::string vonKarmanConstantSymbol() const { return M_parent->symbolFromParameter( this->symbolBaseNameNoMaterialNoModelLink("kappa") ); }
@@ -564,6 +583,9 @@ public :
 
     //void updateInformationObject( nl::json & p ) const override {}
     void updateInformationObjectFromCurrentType( nl::json & p ) const;
+
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
 
     //! return true if physic id is already registered
     bool hasPhysic( physic_id_type const& pId ) const { return M_physics.find( pId ) != M_physics.end(); }

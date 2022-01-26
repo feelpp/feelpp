@@ -11,7 +11,7 @@ namespace FeelModels
 template <uint16_type Dim>
 ModelPhysic<Dim>::ModelPhysic( std::string const& modeling, std::string const& type, std::string const& name, ModelBase const& mparent, ModelModel const& model )
     :
-    super_type( "ModelPhysic", type+"/"+name ),
+    super_type( "ModelPhysic"/*, type+"/"+name*/ ), // not put the name or need to use also object counter
     M_modeling( modeling ),
     M_type( type ),
     M_name( name ),
@@ -206,6 +206,71 @@ ModelPhysic<Dim>::New( ModelPhysics<Dim> const& mphysics, std::string const& mod
 }
 
 template <uint16_type Dim>
+void
+ModelPhysic<Dim>::updateInformationObject( nl::json & p ) const
+{
+    p["modeling"] = this->modeling();
+    p["type"] = this->type();
+    p["name"] = this->name();
+    if ( !M_materialNames.empty() )
+        p["materials"] = M_materialNames;
+
+    if ( !M_parameterNameToExpr.empty() )
+    {
+        nl::json::array_t jaParams;
+        for ( auto const& [pname,pmexpr] : M_parameterNameToExpr )
+        {
+            std::string symbolParam = this->symbolFromParameter( pname );
+            auto [exprStr,compInfo] = pmexpr.exprInformations();
+            jaParams.push_back( symbolExprInformations( symbolParam, exprStr, compInfo, pname ) );
+        }
+        p["parameters"] = jaParams;
+    }
+}
+
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysic<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    this->updateTabulateInformationsBasic( jsonInfo, tabInfo, tabInfoProp );
+    this->updateTabulateInformationsParameters( jsonInfo, tabInfo, tabInfoProp );
+    return tabInfo;
+}
+
+template <uint16_type Dim>
+void
+ModelPhysic<Dim>::updateTabulateInformationsBasic( nl::json const& jsonInfo, tabulate_informations_sections_ptr_t & tabInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    Feel::Table tabInfoGeneric;
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfoGeneric, jsonInfo, tabInfoProp, { "modeling","type","name" } );
+    if ( jsonInfo.contains( "materials" ) )
+    {
+        auto j_mats = jsonInfo.at( "materials" );
+        Feel::Table tabInfoMaterials;
+        if ( j_mats.is_array() )
+            tabInfoMaterials = TabulateInformationTools::FromJSON::createTableFromArray( j_mats, true );
+        if ( tabInfoMaterials.nRow() > 0 )
+            tabInfoGeneric.add_row( { "materials", tabInfoMaterials } );
+    }
+    tabInfoGeneric.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+    if ( tabInfoGeneric.nRow() > 0 )
+        tabInfo->add( "", TabulateInformations::New( tabInfoGeneric, tabInfoProp ) );
+}
+template <uint16_type Dim>
+void
+ModelPhysic<Dim>::updateTabulateInformationsParameters( nl::json const& jsonInfo, tabulate_informations_sections_ptr_t & tabInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    if ( jsonInfo.contains("parameters") )
+        tabInfo->add( "Parameters", TabulateInformationTools::FromJSON::tabulateInformationsSymbolsExpr( jsonInfo.at("parameters"),tabInfoProp,true) );
+}
+
+
+
+template <uint16_type Dim>
 ModelPhysicHeat<Dim>::ModelPhysicHeat( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
     :
     super_type( modeling, type, name, mphysics, model )
@@ -243,11 +308,73 @@ template <uint16_type Dim>
 void
 ModelPhysicHeat<Dim>::updateInformationObject( nl::json & p ) const
 {
-    // TODO move in base class
-    p["type"] = this->type();
-    p["name"] = this->name();
+    super_type::updateInformationObject( p["Generic"] );
+
+    nl::json & pHeat = p["Heat"];
+    std::string eqTermConvection, eqTermSource = "0", eqTermTimeDerivative;
+    if ( this->hasConvectionEnabled() )
+    {
+        eqTermConvection = "u dot nabla T";
+        M_convection->updateInformationObject( pHeat["Convection"] );
+    }
+    if ( !M_heatSources.empty() )
+    {
+        eqTermSource = "f";
+        nl::json & pHeatSources = pHeat["HeatSources"];
+        for ( auto const& hs : M_heatSources )
+        {
+            nl::json phs;
+            hs.updateInformationObject( phs );
+            pHeatSources.push_back( std::move( phs ) );
+        }
+    }
+    std::string heateq;
+    if ( !eqTermTimeDerivative.empty() )
+        heateq += eqTermTimeDerivative;
+    if ( !heateq.empty() )
+        heateq += " + ";
+    if ( !eqTermConvection.empty() )
+        heateq += eqTermConvection;
+    heateq += " - div( k grad T ) = " + eqTermSource;
+    pHeat["Equation"] = heateq;
 }
 
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicHeat<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        //tabInfo->add( "", super_type::tabulateInformations( jsonInfo.at("Generic"), tabInfoProp ) );
+    }
+    if ( jsonInfo.contains("Heat") )
+    {
+        auto const& jsonInfoHeat = jsonInfo.at("Heat");
+        //Feel::Table tabInfoHeat;
+        Feel::Table tabInfoHeatEquation;
+        TabulateInformationTools::FromJSON::addKeyToValues( tabInfoHeatEquation, jsonInfoHeat, tabInfoProp, { "Equation" } );
+        tabInfo->add( "", TabulateInformations::New( tabInfoHeatEquation, tabInfoProp ) );
+
+        if ( jsonInfoHeat.contains("Convection") )
+            tabInfo->add( "Convection", Convection::tabulateInformations( jsonInfoHeat.at("Convection"), tabInfoProp ) );
+        if ( jsonInfoHeat.contains("HeatSources") )
+        {
+            auto tabInfoHeatSources = TabulateInformationsSections::New( tabInfoProp );
+            for ( auto const& [hskey,hsval] : jsonInfoHeat.at("HeatSources").items() )
+                tabInfoHeatSources->add( "", HeatSource::tabulateInformations( hsval, tabInfoProp ) );
+            tabInfo->add( "Heat Sources", tabInfoHeatSources );
+        }
+    }
+
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+
+    return tabInfo;
+}
 
 template <uint16_type Dim>
 void
@@ -270,12 +397,54 @@ ModelPhysicHeat<Dim>::Convection::setup( nl::json const& jarg )
 
 template <uint16_type Dim>
 void
+ModelPhysicHeat<Dim>::Convection::updateInformationObject( nl::json & p ) const
+{
+    if ( !this->enabled() )
+        return;
+    auto [exprStr,compInfo] = M_parent->parameterModelExpr("convection").exprInformations();
+    p["expr"] = exprStr;
+}
+
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicHeat<Dim>::Convection::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    Feel::Table tabInfo;
+    if ( jsonInfo.contains("expr") )
+        TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "expr" } );
+    return TabulateInformations::New( tabInfo, tabInfoProp );
+}
+
+template <uint16_type Dim>
+void
 ModelPhysicHeat<Dim>::HeatSource::setup( nl::json const& jarg )
 {
     CHECK( jarg.contains( "expr" ) ) << "no expr";
     M_parent->addParameter( M_name/*"heatsource"*/, jarg.at("expr") );
 }
 
+template <uint16_type Dim>
+void
+ModelPhysicHeat<Dim>::HeatSource::updateInformationObject( nl::json & p ) const
+{
+    p["name"] = M_name;
+    p["type"] = M_type;
+    auto [exprStr,compInfo] = M_parent->parameterModelExpr(M_name).exprInformations();
+    p["expr"] = exprStr;
+}
+
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicHeat<Dim>::HeatSource::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    Feel::Table tabInfo;
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "name","type","expr" } );
+    tabInfo.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+    return TabulateInformations::New( tabInfo, tabInfoProp );
+}
 
 template <uint16_type Dim>
 ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
@@ -584,6 +753,36 @@ ModelPhysics<Dim>::updateInformationObjectFromCurrentType( nl::json & p ) const
 {
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         p[physicName.first][physicName.second] = physicData->journalSection().to_string();
+}
+
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysics<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New();
+
+    for ( auto const& [jsonInfokey,jsonInfoval] : jsonInfo.items() )
+    {
+        auto tabInfoByType = TabulateInformationsSections::New();
+        std::string const& type = jsonInfokey;
+        for ( auto const& [jsonInfovalkey,jsonInfovalval] : jsonInfoval.items() )
+        {
+            std::string const& name = jsonInfovalkey;
+            auto physicId = std::make_pair(type,name);
+            if ( !this->hasPhysic( physicId ) )
+                continue;
+            auto thephysic = this->physic( physicId );
+            nl::json::json_pointer jsonPointerInfoPhysic( jsonInfovalval.template get<std::string>() );
+            if ( JournalManager::journalData().contains( jsonPointerInfoPhysic ) )
+            {
+                auto const& jsonInfoPhysic = JournalManager::journalData().at( jsonPointerInfoPhysic );
+                tabInfoByType->add( name, thephysic->tabulateInformations( jsonInfoPhysic, tabInfoProp ) );
+            }
+        }
+        tabInfo->add( type, tabInfoByType );
+    }
+
+    return tabInfo;
 }
 
 
