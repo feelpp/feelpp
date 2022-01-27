@@ -226,6 +226,8 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
 
     // start or restart the export of measures
     if ( !this->isStationary() )
