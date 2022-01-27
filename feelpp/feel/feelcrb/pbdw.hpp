@@ -81,9 +81,69 @@ public:
      * @return Outputs
      */
     vectorN_type outputs(vectorN_type const& yobs) const;
+    /**
+     * Do online phase
+     * @param yobs Observation of sensors
+     * @param sensors Index of sensors to use
+     * @return Coefficients of solution
+     */
+    vectorN_type online(vectorN_type const& yobs, std::vector<int> const& sensors, bool toComplete = true) const;
+    /**
+     * Get outputs
+     * @param yobs Observation of sensors
+     * @param sensors Index of sensors to use
+     * @return Outputs
+     */
+    vectorN_type outputs(vectorN_type const& yobs, std::vector<int> const& sensors, bool toComplete = true) const;
+    /**
+     * Do online phase
+     * @param yobs Observation of sensors
+     * @param sensors Names of sensors to use
+     * @return Coefficients of solution
+     */
+    vectorN_type online(vectorN_type const& yobs, std::vector<std::string> const& sensors) const;
+    /**
+     * Get outputs
+     * @param yobs Observation of sensors
+     * @param sensors Names of sensors to use
+     * @return Outputs
+     */
+    vectorN_type outputs(vectorN_type const& yobs, std::vector<std::string> const& sensors) const;
+    /**
+     * Do online phase
+     * @param yobs Observation of sensors
+     * @param sensors Index of sensors not to use
+     * @return Coefficients of solution
+     */
+    vectorN_type onlineWithout(vectorN_type const& yobs, std::vector<int> const& sensors) const;
+    /**
+     * Get outputs
+     * @param yobs Observation of sensors
+     * @param sensors Index of sensors not to use
+     * @return Outputs
+     */
+    vectorN_type outputsWithout(vectorN_type const& yobs, std::vector<int> const& sensors) const;
+    /**
+     * Do online phase
+     * @param yobs Observation of sensors
+     * @param sensors Names of sensors not to use
+     * @return Coefficients of solution
+     */
+    vectorN_type onlineWithout(vectorN_type const& yobs, std::vector<std::string> const& sensors) const;
+    /**
+     * Get outputs
+     * @param yobs Observation of sensors
+     * @param sensors Names of sensors not to use
+     * @return Outputs
+     */
+    vectorN_type outputsWithout(vectorN_type const& yobs, std::vector<std::string> const& sensors) const;
 
 protected:
     void loadDB( std::string const& filename, crb::load l ) override;
+    std::vector<int> idsWith( std::vector<int> const& sensors ) const;
+    std::vector<int> idsWith( std::vector<std::string> const& sensors ) const;
+    std::vector<int> idsWithout( std::vector<int> const& sensors ) const;
+    std::vector<int> idsWithout( std::vector<std::string> const& sensors ) const;
 
     std::string M_name;
     matrixN_type M_matrix;
@@ -91,6 +151,7 @@ protected:
     int M_M;
     int M_N;
     int M_Nl;
+    std::vector<std::string> M_sensorNames;
 
     int M_dbLoad;
     std::string M_dbFilename;
@@ -140,6 +201,121 @@ PBDWOnline::outputs(vectorN_type const& yobs) const
     return vn;
 }
 
+std::vector<int>
+PBDWOnline::idsWith( std::vector<int> const& sensors ) const
+{
+    std::vector<int> ids(sensors.size()+this->M_N);
+    auto it = std::copy(sensors.begin(), sensors.end(), ids.begin());
+    std::iota(it, ids.end(), this->M_M);
+    return ids;
+}
+std::vector<int>
+PBDWOnline::idsWith( std::vector<std::string> const& sensors ) const
+{
+    std::vector<int> ids;
+    for( auto const& name : sensors )
+    {
+        auto it = std::find(this->M_sensorNames.begin(), this->M_sensorNames.end(), name);
+        if( it != this->M_sensorNames.end() )
+            ids.push_back(std::distance(this->M_sensorNames.begin(), it));
+        else
+            LOG(WARNING) << "sensor " << name << " does not exist !";
+    }
+    return idsWith(ids);
+}
+std::vector<int>
+PBDWOnline::idsWithout( std::vector<int> const& sensors ) const
+{
+    std::vector<int> ids(this->M_M+this->M_N);
+    std::iota(ids.begin(), ids.end(), 0);
+    for( auto const& i : sensors )
+        ids.erase(std::next(ids.begin(), i));
+    return ids;
+}
+std::vector<int>
+PBDWOnline::idsWithout( std::vector<std::string> const& sensors ) const
+{
+    std::vector<int> ids;
+    for( auto const& name : sensors )
+    {
+        auto it = std::find(this->M_sensorNames.begin(), this->M_sensorNames.end(), name);
+        if( it != this->M_sensorNames.end() )
+            ids.push_back(std::distance(this->M_sensorNames.begin(), it));
+        else
+            LOG(WARNING) << "sensor " << name << " does not exist !";
+    }
+    return idsWithout(ids);
+}
+
+typename PBDWOnline::vectorN_type
+PBDWOnline::online(vectorN_type const& yobs, std::vector<int> const& sensors, bool toComplete) const
+{
+    std::vector<int> ids;
+    if( toComplete )
+        ids = idsWith(sensors);
+    else
+        ids = sensors;
+    vectorN_type yobs2 = vectorN_type::Zero(ids.size());
+    yobs2.head(ids.size() - this->M_N) = yobs;
+    vectorN_type vn = M_matrix(ids,ids).colPivHouseholderQr().solve(yobs2);
+    return vn;
+}
+
+typename PBDWOnline::vectorN_type
+PBDWOnline::outputs(vectorN_type const& yobs, std::vector<int> const& sensors, bool toComplete) const
+{
+   std::vector<int> ids;
+    if( toComplete )
+        ids = idsWith(sensors);
+    else
+        ids = sensors;
+    vectorN_type coeffs = this->online(yobs, ids, false);
+    vectorN_type vn = M_F(Eigen::all, ids)*coeffs;
+    return vn;
+}
+
+typename PBDWOnline::vectorN_type
+PBDWOnline::online(vectorN_type const& yobs, std::vector<std::string> const& sensors) const
+{
+    std::vector<int> ids = idsWith(sensors);
+    return this->online(yobs, ids, false);
+}
+
+typename PBDWOnline::vectorN_type
+PBDWOnline::outputs(vectorN_type const& yobs, std::vector<std::string> const& sensors) const
+{
+    std::vector<int> ids = idsWith(sensors);
+    return this->outputs(yobs, ids, false);
+}
+
+typename PBDWOnline::vectorN_type
+PBDWOnline::onlineWithout(vectorN_type const& yobs, std::vector<int> const& sensors) const
+{
+    auto ids = idsWithout(sensors);
+    return online(yobs, ids, false);
+}
+
+typename PBDWOnline::vectorN_type
+PBDWOnline::outputsWithout(vectorN_type const& yobs, std::vector<int> const& sensors) const
+{
+    auto ids = idsWithout(sensors);
+    return outputs(yobs, ids, false);
+}
+
+typename PBDWOnline::vectorN_type
+PBDWOnline::onlineWithout(vectorN_type const& yobs, std::vector<std::string> const& sensors) const
+{
+    auto ids = idsWithout(sensors);
+    return online(yobs, ids, false);
+}
+
+typename PBDWOnline::vectorN_type
+PBDWOnline::outputsWithout(vectorN_type const& yobs, std::vector<std::string> const& sensors) const
+{
+    auto ids = idsWithout(sensors);
+    return outputs(yobs, ids, false);
+}
+
 void
 PBDWOnline::loadDB( std::string const& filename, crb::load l )
 {
@@ -160,6 +336,8 @@ PBDWOnline::loadDB( std::string const& filename, crb::load l )
             ia >> this->M_Nl;
             this->M_F.resize(this->M_Nl, this->M_M+this->M_N);
             ia >> this->M_F;
+            this->M_sensorNames.reserve(M_M);
+            ia >> this->M_sensorNames;
         }
     }
 }
@@ -292,6 +470,8 @@ PBDW<RBSpace>::PBDW(std::string const& name,
 {
     this->M_M = M_sigmas.size();
     this->M_N = M_XR->size();
+    for( auto const& [name,_] : M_sigmas )
+        M_sensorNames.push_back(name);
 
     if( ! this->findDBUuid(this->M_dbLoad, this->M_dbLoad ? this->M_dbId : this->M_dbFilename) )
         this->setDBDirectory(Environment::randomUUID(true));
@@ -426,6 +606,7 @@ PBDW<RBSpace>::saveDB()
             oa << this->M_matrix;
             oa << this->M_Nl;
             oa << this->M_F;
+            oa << this->M_sensorNames;
         }
     }
     if( ! fs::exists(this->absoluteMeshFilename()) )

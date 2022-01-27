@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE( test_pbdw_online )
     auto Pset = Dmu->sampling();
     Pset->randomize(20);
 
-    std::vector<double> errors, errorsOutput;
+    std::vector<double> errors, errorsOutput1, errorsOutput2, errorsOutput3;
     for( auto const& mu : *Pset )
     {
         auto phi = solver(mu);
@@ -210,16 +210,25 @@ BOOST_AUTO_TEST_CASE( test_pbdw_online )
         auto I = pbdw.solution(vn);
         errors.push_back( normL2(_range=elements(mesh),_expr=idv(phi)-idv(I)) );
 
-        Feel::cout << "outputs" << std::endl;
-        auto outs = pbdwOnline.outputs(vn);
-        Feel::cout << outs.size() << std::endl;
-        for( int i = 0; i < outs.size(); ++i )
-            errorsOutput.push_back( std::abs(outs(i)-inner_product(*Fs[i], phi)) );
+        auto outs1 = pbdwOnline.outputs(vn);
+        auto outs2 = pbdwOnline.outputs(vn({1,2,3,4,5,6,8,9}), {1, 2, 3, 4, 5, 6, 8, 9});
+        auto outs3 = pbdwOnline.outputsWithout(vn({0,1,2,3,5,6,7,8,9,10,12,13,14,15}),
+                                               std::vector<std::string>{"sensors_5","sensors_12"});
+        for( int i = 0; i < Fs.size(); ++i )
+        {
+            errorsOutput1.push_back( std::abs(outs1(i)-inner_product(*Fs[i], phi)) );
+            errorsOutput2.push_back( std::abs(outs2(i)-inner_product(*Fs[i], phi)) );
+            errorsOutput3.push_back( std::abs(outs3(i)-inner_product(*Fs[i], phi)) );
+        }
     }
     double max = *max_element(errors.begin(), errors.end());
     BOOST_CHECK_SMALL( max , 1e-5 );
-    double maxOutput = *max_element(errorsOutput.begin(), errorsOutput.end());
-    BOOST_CHECK_SMALL( maxOutput , 1e-5 );
+    double maxOutput1 = *max_element(errorsOutput1.begin(), errorsOutput1.end());
+    BOOST_CHECK_SMALL( maxOutput1 , 1e-5 );
+    double maxOutput2 = *max_element(errorsOutput2.begin(), errorsOutput2.end());
+    BOOST_CHECK_SMALL( maxOutput2 , 1e-4 );
+    double maxOutput3 = *max_element(errorsOutput3.begin(), errorsOutput3.end());
+    BOOST_CHECK_SMALL( maxOutput3 , 1e-5 );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
