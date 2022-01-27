@@ -65,34 +65,36 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "heat":
         {
-            "fields":["temperature"]
-        },
-        "Measures":
-        {
-            "Norm":
+            "Exports":
             {
-                "error":
-                {
-                    "markers":"omega",
-                    "type":"L2-error",
-                    "field":"temperature",
-                    "solution":"293+10*t*t:t"
-                }
-            }
-        },
-        "Checkers":
-        {
+                "fields":["temperature"]
+            },
             "Measures":
             {
-                "Norm_error_L2-error":
+                "Norm":
                 {
-                    "value":0,
-                    "tolerance":1e-9
+                    "error":
+                    {
+                        "markers":"omega",
+                        "type":"L2-error",
+                        "field":"temperature",
+                        "solution":"293+10*t*t:t"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Norm_error_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1e-9
+                    }
                 }
             }
         }
     }
-
 }

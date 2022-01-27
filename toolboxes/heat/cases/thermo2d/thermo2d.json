@@ -134,81 +134,83 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "heat":
         {
-            "fields":["temperature","all"],
-            "expr":
+            "Exports":
             {
-                "param1":"param1:param1",
-                "param2":"param2:param2",
-                "param3":"param3:param3",
-                "toto":"2*x*y:x:y",
-                "titi":
+                "fields":["temperature","all"],
+                "expr":
                 {
-                    //"tag":"todo",
-                    "parts": [
-                        {
-                            "expr":"3*x*y:x:y",
-                            "markers":"Omega1"
-                        },
-                        {
-                            "expr":"4*x*y:x:y",
-                            "markers":"Omega2"
-                        }
-                    ],
-                    "representation":["nodal","element"]
-                },
-                "tutu":
-                {
-                    "expr":"{materials_k_00,materials_k_01,materials_k_10,materials_k_11}:materials_k_00:materials_k_01:materials_k_10:materials_k_11",
-                    "representation":["nodal","element"]
-                }
-            }
-        },
-        "Measures":
-        {
-            "Normal-Heat-Flux":
-            {
-                "onRobin":
-                {
-                    "markers":"MarkerRobin"
-                },
-                "onNeumann":
-                {
-                    "markers":["MarkerNeumann_1","MarkerNeumann_2"]
+                    "param1":"param1:param1",
+                    "param2":"param2:param2",
+                    "param3":"param3:param3",
+                    "toto":"2*x*y:x:y",
+                    "titi":
+                    {
+                        //"tag":"todo",
+                        "parts": [
+                            {
+                                "expr":"3*x*y:x:y",
+                                "markers":"Omega1"
+                            },
+                            {
+                                "expr":"4*x*y:x:y",
+                                "markers":"Omega2"
+                            }
+                        ],
+                        "representation":["nodal","element"]
+                    },
+                    "tutu":
+                    {
+                        "expr":"{materials_k_00,materials_k_01,materials_k_10,materials_k_11}:materials_k_00:materials_k_01:materials_k_10:materials_k_11",
+                        "representation":["nodal","element"]
+                    }
                 }
             },
-            "Statistics":
+            "Measures":
             {
-                "fluxOnNeumann_1":
+                "Normal-Heat-Flux":
                 {
-                    "type":"integrate",
-                    "expr":"materials_mymat1_k*heat_dn_T:materials_mymat1_k:heat_dn_T",
-                    "markers":"MarkerNeumann_1"
+                    "onRobin":
+                    {
+                        "markers":"MarkerRobin"
+                    },
+                    "onNeumann":
+                    {
+                        "markers":["MarkerNeumann_1","MarkerNeumann_2"]
+                    }
                 },
-                "fluxOnRobin":
+                "Statistics":
                 {
-                    "type":"integrate",
-                    "expr":"-(materials_mymat2_k_00*heat_grad_T_0+materials_mymat2_k_01*heat_grad_T_1)*nx - (materials_mymat2_k_10*heat_grad_T_0+materials_mymat2_k_11*heat_grad_T_1)*ny :materials_mymat2_k_00:materials_mymat2_k_01:materials_mymat2_k_10:materials_mymat2_k_11:heat_grad_T_0:heat_grad_T_1:nx:ny",
-                    "markers":"MarkerRobin"
-                },
-                "fluxOnRobinBIS":
-                {
-                    "type":"integrate",
-                    "expr":"heat_nflux:heat_nflux",
-                    "markers":"MarkerRobin"
-                }
+                    "fluxOnNeumann_1":
+                    {
+                        "type":"integrate",
+                        "expr":"materials_mymat1_k*heat_dn_T:materials_mymat1_k:heat_dn_T",
+                        "markers":"MarkerNeumann_1"
+                    },
+                    "fluxOnRobin":
+                    {
+                        "type":"integrate",
+                        "expr":"-(materials_mymat2_k_00*heat_grad_T_0+materials_mymat2_k_01*heat_grad_T_1)*nx - (materials_mymat2_k_10*heat_grad_T_0+materials_mymat2_k_11*heat_grad_T_1)*ny :materials_mymat2_k_00:materials_mymat2_k_01:materials_mymat2_k_10:materials_mymat2_k_11:heat_grad_T_0:heat_grad_T_1:nx:ny",
+                        "markers":"MarkerRobin"
+                    },
+                    "fluxOnRobinBIS":
+                    {
+                        "type":"integrate",
+                        "expr":"heat_nflux:heat_nflux",
+                        "markers":"MarkerRobin"
+                    }
 
-            },
-            "Points":
-            {
-                "ptA":
+                },
+                "Points":
                 {
-                    "coord":"{-0.6,0.6}",
-                    "fields":"temperature"
+                    "ptA":
+                    {
+                        "coord":"{-0.6,0.6}",
+                        "fields":"temperature"
+                    }
                 }
             }
         }
     }
-
 }
