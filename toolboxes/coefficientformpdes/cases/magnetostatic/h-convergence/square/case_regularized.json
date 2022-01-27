@@ -4,8 +4,8 @@
     "ShortName":"magnetostatic_h-conv",
     "Models":
     {
-        "equations":[
-            {
+        "cfpdes":{
+            "equations":{
                 "name":"magneto",
                 "unknown":
                 {
@@ -13,7 +13,8 @@
                     "name":"potential",
                     "symbol":"A"
                 }
-            }]
+            }
+        }
     },
     "Meshes":
     {
@@ -57,7 +58,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

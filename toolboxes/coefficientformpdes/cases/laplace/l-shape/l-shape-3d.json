@@ -1,15 +1,15 @@
 {
-    "Name": "Square2d",
-    "ShortName": "Square2d",
+    "Name": "L-Shape",
+    "ShortName": "L-Shape",
     "Models":
     {
         "cfpdes":{
             "equations":{
-                "name":"equation1",
+                "name":"laplace",
                 "unknown":
                 {
                     "basis":"Pch1",
-                    "name":"solution",
+                    "name":"u",
                     "symbol":"u"
                 }
             }
@@ -21,8 +21,8 @@
         {
             "Import":
             {
-                "filename":"$cfgdir/square.geo",
-                "hsize":0.03
+                "filename":"$cfgdir/l-shape-3d.geo",
+                "hsize":0.05
             }
         }
     },
@@ -31,19 +31,19 @@
         "mymat1":
         {
             "markers":"Omega",
-            "equation1_c":"-1", // diffusion
-            "equation1_f":"-exp(equation1_u):equation1_u"
+            "laplace_c":"1", // diffusion
+            "laplace_f":"1"
         }
     },
     "BoundaryConditions":
     {
-        "equation1":
+        "laplace":
         {
             "Dirichlet":
             {
-                "mybc":
+                "zero":
                 {
-                    "markers":["Left","Bottom","Right","Top"],
+                    "markers":["Gamma"],
                     "expr":"0"
                 }
             }

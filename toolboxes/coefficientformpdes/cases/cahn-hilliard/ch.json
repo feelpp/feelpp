@@ -3,30 +3,43 @@
     "ShortName": "cahn-hilliard",
     "Models":
     {
-        "equations":[
-            {
-                "name":"equation1",
-                "unknown":
+        "cfpdes":{
+            "equations":[
                 {
-                    "basis":"Pch1",
-                    "name":"c",
-                    "symbol":"c"
-                }
-            },
-            {
-                "name":"equation2",
-                "unknown":
+                    "name":"equation1",
+                    "unknown":
+                    {
+                        "basis":"Pch1",
+                        "name":"c",
+                        "symbol":"c"
+                    }
+                },
                 {
-                    "basis":"Pch1",
-                    "name":"mu",
-                    "symbol":"mu"
+                    "name":"equation2",
+                    "unknown":
+                    {
+                        "basis":"Pch1",
+                        "name":"mu",
+                        "symbol":"mu"
+                    }
                 }
-            }
-        ]
+            ]
+        }
     },
     "Parameters": {
         "M": 1,
         "lambda":1e-5
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square2d.geo",
+                "hsize":0.1
+            }
+        }
     },
     "Materials":
     {
@@ -47,27 +60,30 @@
     },
     "InitialConditions":
     {
-        "c":{
-            "Expression": {
-                "myic": {
-                    "markers": "Omega",
-                    //"expr": "0.63 + 0.02*(0.5-uniform(0,1))",
-                    "expr": "sin(2*pi*x)*sin(2*pi*y):x:y"
+        "equation1":{
+            "c":{
+                "Expression": {
+                    "myic": {
+                        "markers": "Omega",
+                        //"expr": "0.63 + 0.02*(0.5-uniform(0,1))",
+                        "expr": "sin(2*pi*x)*sin(2*pi*y):x:y"
+                    }
                 }
             }
         },
-        "mu": {
-            "Expression": {
-                "myic": {
-                    "markers": "Omega",
-                    "expr": "0"
+        "equation2":{
+            "mu": {
+                "Expression": {
+                    "myic": {
+                        "markers": "Omega",
+                        "expr": "0"
+                    }
                 }
             }
         }
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

@@ -8,26 +8,28 @@
     "ShortName": "Square2d",
     "Models":
     {
-        "equations":[
-            {
-                "name":"equation1",
-                "unknown":
+        "cfpdes":{
+            "equations":[
                 {
-                    "basis":"Pch1",
-                    "name":"prey",
-                    "symbol":"u"
-                }
-            },
-            {
-                "name":"equation2",
-                "unknown":
+                    "name":"equation1",
+                    "unknown":
+                    {
+                        "basis":"Pch1",
+                        "name":"prey",
+                        "symbol":"u"
+                    }
+                },
                 {
-                    "basis":"Pch1",
-                    "name":"predator",
-                    "symbol":"v"
+                    "name":"equation2",
+                    "unknown":
+                    {
+                        "basis":"Pch1",
+                        "name":"predator",
+                        "symbol":"v"
+                    }
                 }
-            }
-        ]
+            ]
+        }
     },
     "Parameters":
     {
@@ -39,6 +41,17 @@
         // "vstar":"(1-ustar)*(ustar+thealpha):ustar:thealpha"
         "ustar":"6/35",
         "vstar":"116.0/245"
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square2d.geo",
+                "hsize":1 //10
+            }
+        }
     },
     "Materials":
     {
@@ -66,33 +79,29 @@
     // },
     "InitialConditions":
     {
-        "prey":
-        {
-            "Expression":
-            {
-                "myic":
-                {
-                    "markers":"Omega",
-                    "expr":"ustar-(2e-7)*(x-0.1*y-225)*(x-0.1*y-675):ustar:x:y"
+        "equation1":{
+            "prey":{
+                "Expression":{
+                    "myic":{
+                        "markers":"Omega",
+                        "expr":"ustar-(2e-7)*(x-0.1*y-225)*(x-0.1*y-675):ustar:x:y"
+                    }
                 }
             }
         },
-        "predator":
-        {
-            "Expression":
-            {
-                "myic":
-                {
-                    "markers":"Omega",
-                    "expr":"vstar-(3e-5)*(x-450) -(1.2e-4)*(y-150):vstar:x:y"
+        "equation2":{
+            "predator":{
+                "Expression":{
+                    "myic":{
+                        "markers":"Omega",
+                        "expr":"vstar-(3e-5)*(x-450) -(1.2e-4)*(y-150):vstar:x:y"
+                    }
                 }
             }
         }
     },
-
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

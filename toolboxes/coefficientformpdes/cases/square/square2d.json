@@ -3,26 +3,39 @@
     "ShortName": "Square2d",
     "Models":
     {
-        "equations":[
-            {
-                "name":"equation1",
-                "unknown":
+        "cfpdes":{
+            "equations":[
                 {
-                    "basis":"Pch1",
-                    "name":"toto",
-                    "symbol":"Y"
-                }
-            },
-            {
-                "name":"equation2",
-                "unknown":
+                    "name":"equation1",
+                    "unknown":
+                    {
+                        "basis":"Pch1",
+                        "name":"toto",
+                        "symbol":"Y"
+                    }
+                },
                 {
-                    "basis":"Pch2",
-                    "name":"toto",
-                    "symbol":"Y"
+                    "name":"equation2",
+                    "unknown":
+                    {
+                        "basis":"Pch2",
+                        "name":"toto",
+                        "symbol":"Y"
+                    }
                 }
+            ]
+        }
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square2d.geo",
+                "hsize":0.03
             }
-        ]
+        }
     },
     "Materials":
     {
@@ -67,7 +80,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

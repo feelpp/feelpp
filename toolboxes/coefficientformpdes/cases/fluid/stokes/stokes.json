@@ -3,26 +3,39 @@
     "ShortName": "stokes",
     "Models":
     {
-        "equations":[
-            {
-                "name":"momentum",
-                "unknown":
+        "cfpdes":{
+            "equations":[
                 {
-                    "basis":"Pchv2",
-                    "name":"velocity",
-                    "symbol":"u"
-                }
-            },
-            {
-                "name":"mass",
-                "unknown":
+                    "name":"momentum",
+                    "unknown":
+                    {
+                        "basis":"Pchv2",
+                        "name":"velocity",
+                        "symbol":"u"
+                    }
+                },
                 {
-                    "basis":"Pch1",
-                    "name":"pressure",
-                    "symbol":"p"
+                    "name":"mass",
+                    "unknown":
+                    {
+                        "basis":"Pch1",
+                        "name":"pressure",
+                        "symbol":"p"
+                    }
                 }
+            ]
+        }
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square2d.geo",
+                "hsize":0.03
             }
-        ]
+        }
     },
     "Materials":
     {
@@ -58,7 +71,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":
