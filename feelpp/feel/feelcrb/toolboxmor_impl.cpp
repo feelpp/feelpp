@@ -37,9 +37,9 @@ makeToolboxMorAbout( std::string const& str )
 }
 
 template<typename SpaceType, int Options>
-ToolboxMor<SpaceType, Options>::ToolboxMor(std::string const& prefix)
+ToolboxMor<SpaceType, Options>::ToolboxMor(std::string const& name, std::string const& prefix)
     :
-    super_type("ToolboxMor", Environment::worldCommPtr(), prefix),
+    super_type(name, Environment::worldCommPtr(), prefix),
     M_propertyPath(Environment::expand( soption("toolboxmor.filename"))),
     M_trainsetDeimSize(ioption("toolboxmor.trainset-deim-size")),
     M_trainsetMdeimSize(ioption("toolboxmor.trainset-mdeim-size"))
@@ -85,26 +85,47 @@ int ToolboxMor<SpaceType, Options>::mQA( int q )
 template<typename SpaceType, int Options>
 int ToolboxMor<SpaceType, Options>::Nl()
 {
-    return 1;
+    auto outputs = M_modelProperties->outputs();
+    return 1 + outputs.size();
 }
 
 template<typename SpaceType, int Options>
 int ToolboxMor<SpaceType, Options>::Ql( int l)
 {
-    return 1;
+    if( l == 0 )
+        return 1;
+    else if( l < Nl() )
+    {
+        auto outputs = M_modelProperties->outputs();
+        auto output = std::next(outputs.begin(), l-1)->second;
+        if( output.type() == "flux" )
+            return 1;
+        else if( output.type() == "average")
+            return 1;
+        else
+            return 0;
+    }
+    else
+        return 0;
 }
 template<typename SpaceType, int Options>
 int ToolboxMor<SpaceType, Options>::mLQF( int l, int q )
 {
-    switch( l )
-    {
-    case 0:
+    if( l == 0 )
         return this->deim()->size();
-    // case 1:
-    //     return 1;
-    default:
-        return 0;
+    else if( l < Nl() )
+    {
+        auto outputs = M_modelProperties->outputs();
+        auto output = std::next(outputs.begin(), l-1)->second;
+        if( output.type() == "flux" )
+            return 1;
+        else if( output.type() == "average")
+            return 1;
+        else
+            return 0;
     }
+    else
+        return 0;
 }
 template<typename SpaceType, int Options>
 void
@@ -227,7 +248,7 @@ ToolboxMor<SpaceType, Options>::initModel()
     this->mdeim()->run();
     Feel::cout << tc::green << "Electric MDEIM construction finished!!" << tc::reset << std::endl;
 
-} // ToolboxMor<SpaceType, Options>::init
+} // ToolboxMor<SpaceType, Options>::initModel
 
 template<typename SpaceType, int Options>
 void
@@ -254,7 +275,6 @@ ToolboxMor<SpaceType, Options>::updateBetaQ_impl( parameter_type const& mu , dou
 
 
     this->M_betaMqm.resize( 1 );
-    Feel::cout << this->M_betaMqm.size() << std::endl;
 
     // for now, only with M independant on mu
     int M_M = 1;
@@ -263,6 +283,21 @@ ToolboxMor<SpaceType, Options>::updateBetaQ_impl( parameter_type const& mu , dou
         this->M_betaMqm[0][i] = 1;
 
     // this->M_betaFqm[1][0][0] = 1./M_measureMarkedSurface["IC2"];
+    int output = 1;
+    auto outputs = M_modelProperties->outputs();
+    for( auto const& outp : outputs )
+    {
+        auto out = outp.second;
+        if( out.type() == "average" )
+        {
+            this->M_betaFqm[output][0][0] = 1;
+        }
+        else if( out.type() == "flux")
+        {
+            this->M_betaFqm[output][0][0] = 1; // ????????????? k ??
+        }
+        output++;
+    }
 }
 
 
@@ -293,27 +328,48 @@ ToolboxMor<SpaceType, Options>::assembleData()
     for( int i = 0; i < M_F; ++i )
         this->M_Fqm[0][0][i] = qf[i];
 
+    auto u = this->Xh->element();
+
     // output
-    // form1(_test=this->Xh, _vector=this->M_Fqm[1][0][0])
-    //     += integrate( _range=markedelements( this->Xh->mesh(), "IC2" ), _expr= id( v ) );
+    auto outputs = M_modelProperties->outputs();
+    int output = 1;
+    for( auto const& outp : outputs )
+    {
+        auto out = outp.second;
+        if( out.type() == "average" )
+        {
+            auto dim = out.dim();
+            auto fAvg = form1(_test=this->Xh);
+            if( dim == nDim )
+            {
+                auto range = markedelements(this->Xh->mesh(), out.markers());
+                double area = integrate( _range=range, _expr=cst(1.0) ).evaluate()(0,0) ;
+                fAvg += integrate( _range=range, _expr=id(u)/cst(area) );
+            }
+            else if( dim == nDim-1 )
+            {
+                auto range = markedfaces(this->Xh->mesh(), out.markers());
+                double area = integrate( _range=range, _expr=cst(1.0) ).evaluate()(0,0) ;
+                fAvg += integrate( _range=range, _expr=id(u)/cst(area) );
+            }
+            this->M_Fqm[output++][0][0] = fAvg.vectorPtr();
+        }
+        else if( out.type() == "flux")
+        {
+            auto fF = form1(_test=this->Xh);
+            fF += integrate( _range=markedfaces(this->Xh->mesh(), out.markers() ),
+                             _expr=-grad(u)*N() );
+            this->M_Fqm[output++][0][0] = fF.vectorPtr();
+        }
+    }
 
     // Energy matrix
-    auto mu = this->Dmu->element();
-    for( int i = 0; i < this->Dmu->dimension(); ++i )
-        mu(i) = 1;
+    auto mu = this->Dmu->min();
     auto m = this->assembleForMDEIM(mu,0);
-    // for( int i = 0; i < Dmu->dimension(); ++i )
-    //     M_heatBox->addParameterInModelProperties(Dmu->parameterName(i), 1);
-    // M_heatBox->updateParameterValues();
-    // M_heatBox->updateFieldVelocityConvection();
-    // M_heatBox->algebraicFactory()->assembleLinear(M_heatBox->blockVectorSolution().vectorMonolithic());
-    // auto m = M_heatBox->algebraicFactory()->matrix();
     this->M_energy_matrix = backend()->newMatrix(_test=this->Xh, _trial=this->Xh );
     m->symmetricPart(this->M_energy_matrix);
 
     // for now, only with M independant of mu
-    auto u = this->Xh->element();
-
     this->M_Mqm.resize( 1 );
     this->M_Mqm[0].resize( 1 );
     this->M_Mqm[0][0] = backend()->newMatrix(_test=this->Xh, _trial=this->Xh);
