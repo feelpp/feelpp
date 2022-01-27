@@ -17,17 +17,25 @@
             "rho":"2300" //[ kg/(m^3) ]
         }
     },
+    "Models":
+    {
+        "heat":
+        {
+            "name":"toto",
+            "materials":["omega"],
+            "setup": {
+                "heat-sources":
+                [{
+                    //"type":"heat-source",
+                    "expr":"20*880*2300*t:t"
+                }]
+            }
+        }
+    },
     "BoundaryConditions":
     {
         "temperature":
         {
-            "VolumicForces":
-            {
-                "omega":
-                {
-                    "expr":"20*880*2300*t:t"
-                }
-            },
             "Dirichlet":
             {
                 "gamma":

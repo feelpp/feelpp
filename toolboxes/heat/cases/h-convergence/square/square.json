@@ -1,7 +1,6 @@
 // -*- mode: javascript -*-
 {
-    "Name": "ISO 10211:2007 Thermal bridges in building construction",
-    "ShortName":"ThermalBridges",
+    "Name": "h-convergence heat square",
     "Parameters":
     {
         "alpha":4,
@@ -10,11 +9,33 @@
         "grad_exact_solution":"{-alpha*pi*sin(alpha*pi*x)*sin(beta*pi*y), beta*pi*cos(alpha*pi*x)*cos(beta*pi*y)}:x:y:alpha:beta",
         "laplacian_exact_solution":"-((alpha*pi)^2)*cos(alpha*pi*x)*sin(beta*pi*y)-((beta*pi)^2)*cos(alpha*pi*x)*sin(beta*pi*y):x:y:alpha:beta"
     },
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square.geo"
+                //"hsize":0.001
+            }
+        }
+    },
     "Materials":
     {
         "Omega":
         {
             "k":1
+        }
+    },
+    "Models":
+    {
+        "heat":
+        {
+            "setup": {
+                "heat-sources": {
+                    "expr":"-laplacian_exact_solution:laplacian_exact_solution"
+                }
+            }
         }
     },
     "BoundaryConditions":
@@ -27,13 +48,6 @@
                 {
                     "markers":["Left","Bottom","Right","Top"],
                     "expr":"exact_solution:exact_solution"
-                }
-            },
-            "VolumicForces":
-            {
-                "Omega":
-                {
-                    "expr":"-laplacian_exact_solution:laplacian_exact_solution"
                 }
             }
         }
@@ -66,6 +80,27 @@
                     "type":["L2-error","H1-error","SemiH1-error"],
                     "solution":"exact_solution:exact_solution",
                     "grad_solution":"{grad_exact_solution_0,grad_exact_solution_1}:grad_exact_solution_0:grad_exact_solution_1"
+                }
+            }
+        },
+        "Checkers":
+        {
+            "Measures":
+            {
+                "Norm_error-evaluated_L2-error":
+                {
+                    "value":0,
+                    "tolerance":1e-2
+                },
+                "Norm_error-evaluated_H1-error":
+                {
+                    "value":0,
+                    "tolerance":1
+                },
+                "Norm_error-evaluated_SemiH1-error":
+                {
+                    "value":0,
+                    "tolerance":1
                 }
             }
         }
