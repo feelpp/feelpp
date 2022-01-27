@@ -79,6 +79,9 @@ public :
     //! return true is the unknown is scalar
     virtual bool unknownIsScalar() const = 0;
 
+    //! return tabulate informations
+    virtual tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const = 0;
+
     //___________________________________________________________________________________//
     // mesh
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
