@@ -2,11 +2,33 @@
 {
     "Name": "Test heat toolbox",
     "ShortName":"TestHeat",
+    "Models":
+    {
+        "heat":
+        {
+            //"name":"toto",
+            //"materials":["mymat1","mymat2"],
+            "setup": {
+                "convection":"{-30*(y+-0.7)*(y-0.5)*(y>0.5)*(y<0.7),0}:y"
+            }
+        }
+    },
     "Parameters":
     {
         "param1":3.0,
         "param2":"2*param1:param1",
         "param3":"x*y*(param1+param2):x:y:param1:param2"
+    },
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/thermo2d.geo",
+                "hsize":0.04
+            }
+        }
     },
     "Materials":
     {
