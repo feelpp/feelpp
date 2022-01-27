@@ -721,7 +721,6 @@ ModelPhysics<Dim>::initPhysics( PhysicsTree const& physicTree, ModelModels const
                                                                 }
 
                                                                 // update maybe materials names
-#if 0
                                                                 for ( auto const& [_rootPhysicId,_rootPhysic] : rootPhysics->physics( rootType ) )
                                                                 {
                                                                     if ( _rootPhysic->subphysics().empty() )
@@ -758,8 +757,10 @@ ModelPhysics<Dim>::initPhysics( PhysicsTree const& physicTree, ModelModels const
                                                                             intersecMatNames = res;
                                                                         }
                                                                     }
+                                                                    CHECK( !intersecMatNames.empty() ) << "incompatible materials names";
+                                                                    _rootPhysic->addMaterialNames( intersecMatNames );
                                                                 }
-#endif
+
                                                                 // check materials names compatibility
                                                             };
                                 upSubphysicsImpl( _physicTree, upSubphysicsImpl );
