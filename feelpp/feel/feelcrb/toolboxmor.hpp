@@ -32,6 +32,7 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
     typedef typename super_type::element_ptrtype element_ptrtype;
     typedef typename super_type::space_type space_type;
     using mesh_ptrtype = typename super_type::mesh_ptrtype;
+    static constexpr uint16_type nDim = space_type::nDim;
 
     using super_type::computeBetaQm;
     using parameter_type = typename super_type::parameter_type;
@@ -51,7 +52,7 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
     using deim_function_type = std::function<vector_ptrtype(parameter_type const&)>;
     using mdeim_function_type = std::function<sparse_matrix_ptrtype(parameter_type const&)>;
 
-    explicit ToolboxMor(std::string const& prefix = "");
+    explicit ToolboxMor(std::string const& name = "ToolboxMor", std::string const& prefix = "");
 
     void setAssembleDEIM(deim_function_type const& fct ) { M_assembleForDEIM = fct; }
     void setAssembleMDEIM(mdeim_function_type const& fct ) { M_assembleForMDEIM = fct; }
