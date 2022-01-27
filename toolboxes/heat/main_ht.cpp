@@ -58,6 +58,8 @@ main(int argc, char**argv )
         ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
         ("case.mode", Feel::po::value<std::string>()->default_value( "simulation" ), "mode : simulation, h-convergence")
         ("case.mode.h-convergence.hsize", po::value<std::vector<double> >()->multitoken(), "mesh hsize used in h-convergence" )
+        ("case.mode.h-convergence.measures", po::value<std::vector<std::string> >()->multitoken(), "measures names used in fit checker" )
+        ("case.mode.h-convergence.slopes", po::value<std::vector<double> >()->multitoken(), "reference slope for the fit checker" )
         ;
 
 	Environment env( _argc=argc, _argv=argv,
