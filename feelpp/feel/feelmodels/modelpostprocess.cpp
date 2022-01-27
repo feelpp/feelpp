@@ -578,7 +578,7 @@ ModelPostprocessCheckerMeasure::setParameterValues( std::map<std::string,double>
 ModelPostprocess::ModelPostprocess( worldcomm_ptr_t const& world )
     :
     super( world ),
-    M_useModelName( false )
+    M_useModelName( true )
 {}
 
 ModelPostprocess::~ModelPostprocess()
