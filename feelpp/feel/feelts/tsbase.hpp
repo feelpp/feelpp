@@ -77,6 +77,9 @@ public:
 
     TSBase();
     TSBase( std::string name, std::string const& prefix, WorldComm const& worldComm, po::variables_map const& vm = Environment::vm() );
+    TSBase( std::string name, std::string const& prefix, WorldComm const& worldComm, po::variables_map const& vm,
+            double ti, double tf, double dt, bool steady, bool reverse, bool restart, std::string const& restart_path, bool restart_at_last_save,
+            bool save, int freq, bool rank_proc_in_files_name, std::string const& format );
     TSBase( std::string name, WorldComm const& worldComm );
     TSBase( TSBase const& b );
 
