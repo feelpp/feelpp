@@ -54,53 +54,56 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "heat":
         {
-            "fields":["temperature","pid"],
-            "expr":
+            "Exports":
             {
-                "exact_solution":"exact_solution:exact_solution"
-            }
-        },
-        "Measures":
-        {
-            "Normal-Heat-Flux":
-            {
-                "bottom":
+                "fields":["temperature","pid"],
+                "expr":
                 {
-                    "markers":"Top",
-                    "direction":"inward"
+                    "exact_solution":"exact_solution:exact_solution"
                 }
             },
-            "Norm":
-            {
-                "error-evaluated":
-                {
-                    "field":"temperature",
-                    "type":["L2-error","H1-error","SemiH1-error"],
-                    "solution":"exact_solution:exact_solution",
-                    "grad_solution":"{grad_exact_solution_0,grad_exact_solution_1}:grad_exact_solution_0:grad_exact_solution_1"
-                }
-            }
-        },
-        "Checkers":
-        {
             "Measures":
             {
-                "Norm_error-evaluated_L2-error":
+                "Normal-Heat-Flux":
                 {
-                    "value":0,
-                    "tolerance":1e-2
+                    "bottom":
+                    {
+                        "markers":"Top",
+                        "direction":"inward"
+                    }
                 },
-                "Norm_error-evaluated_H1-error":
+                "Norm":
                 {
-                    "value":0,
-                    "tolerance":1
-                },
-                "Norm_error-evaluated_SemiH1-error":
+                    "error-evaluated":
+                    {
+                        "field":"temperature",
+                        "type":["L2-error","H1-error","SemiH1-error"],
+                        "solution":"exact_solution:exact_solution",
+                        "grad_solution":"{grad_exact_solution_0,grad_exact_solution_1}:grad_exact_solution_0:grad_exact_solution_1"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
                 {
-                    "value":0,
-                    "tolerance":1
+                    "Norm_error-evaluated_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1e-2
+                    },
+                    "Norm_error-evaluated_H1-error":
+                    {
+                        "value":0,
+                        "tolerance":1
+                    },
+                    "Norm_error-evaluated_SemiH1-error":
+                    {
+                        "value":0,
+                        "tolerance":1
+                    }
                 }
             }
         }
