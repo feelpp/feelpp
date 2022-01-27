@@ -72,7 +72,8 @@ template <uint16_type Dim>
 void
 ModelGenericPDE<Dim>::setupGenericPDE()
 {
-    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(), this->physicType(), M_infos.equationName(), *this ); // TOCHECK VINCENT
+    this->M_physicType = M_infos.equationName();
+    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicModeling(), this->physicType(), M_infos.equationName(), *this );
 
     std::string unknownShape;
     if ( this->unknownBasis() == "Pch1" ||  this->unknownBasis() == "Pch2" || this->unknownBasis() == "Pdh1" )
@@ -122,13 +123,15 @@ ModelGenericPDEs<Dim>::setupGenericPDEs( nl::json const& jarg )
 {
     if ( jarg.is_object() )
     {
-        CHECK( false ) << "TODO";
+        std::string nameEqDefault = fmt::format("equation{}",M_pdes.size());
+        typename ModelGenericPDE<nDim>::infos_type infos( nameEqDefault, jarg );
+        M_pdes.push_back( std::make_tuple( std::move( infos ), std::shared_ptr<ModelGenericPDE<nDim>>{} ) );
     }
     else if ( jarg.is_array() )
     {
         for ( auto const& [jargkey,jargval] : jarg.items() )
         {
-            std::string nameEqDefault = (boost::format("equation%1%")%M_pdes.size()).str();
+            std::string nameEqDefault = fmt::format("equation{}",M_pdes.size());
             typename ModelGenericPDE<nDim>::infos_type infos( nameEqDefault, jargval );
             M_pdes.push_back( std::make_tuple( std::move( infos ), std::shared_ptr<ModelGenericPDE<nDim>>{} ) );
         }
@@ -139,8 +142,8 @@ template <uint16_type Dim>
 void
 ModelGenericPDEs<Dim>::initGenericPDEs( std::string const& name )
 {
-    //this->M_physicDefault = name;
-    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(), this->physicType(), name, *this ); // TOCHECK VINCENT
+    this->M_physicType = name;
+    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicModeling(), this->physicType(), name, *this );
     this->M_physics.emplace( std::make_pair(mphysic->type(),mphysic->name()), mphysic );
 }
 
@@ -155,12 +158,9 @@ template <uint16_type Dim>
 void
 ModelGenericPDEs<Dim>::updateForUseGenericPDEs( std::string const& name )
 {
-    //TODO VINCENT add also name in arg as initGenericPDEs or save this info??
-
     auto pId = std::make_pair( this->physicType(), name );
     CHECK( this->hasPhysic(pId) ) << "physic not registered";
     auto mphysic = this->physic(pId);
-    //zfor ( auto & [physicId,mphysic] : this->physicsFromCurrentType() )
     for ( auto const& [infos,pde] : M_pdes )
     {
         CHECK( pde ) <<"pde not defined";
