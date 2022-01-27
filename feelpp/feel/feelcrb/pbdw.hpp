@@ -39,14 +39,140 @@ namespace Feel
 {
 
 /**
+ * Class that implements the online phase of the Parameterized Background Data-Weak method.
+ */
+class PBDWOnline : public CRBDB
+{
+public:
+    using super_type = CRBDB;
+    using vectorN_type = Eigen::VectorXd;
+    using matrixN_type = Eigen::MatrixXd;
+
+    /**
+     * Constructor for the online phase
+     * @param name Name of pbdw
+     * @param l Loading type (rb,fe,all)
+     * @param uuid Uuid to use for the db
+     * @param dbLoad Loading type for the DB
+     * @param dbFilename Filename of the DB for load type filename
+     * @param dbIf If of the DB for load type id
+     * @param init If true, find and load DB
+     */
+    explicit PBDWOnline(std::string const& name,
+                        uuids::uuid const& uuid = uuids::nil_uuid(),
+                        int dbLoad = ioption("pbdw.db.load"),
+                        std::string const& dbFilename = soption("pbdw.db.filename"),
+                        std::string const& dbId = soption("pbdw.db.id"),
+                        bool init = true);
+    int dimensionN() const { return M_N; } /**< Dimension of Reduced Basis */
+    int dimensionM() const { return M_M; } /**< Number of sensors */
+    int dimension() const { return M_N+M_M; } /**< Dimension of PBDW */
+    int dimensionF() const { return M_Nl; } /**< Dimension of outputs */
+    matrixN_type matrix() const { return M_matrix; } /**< Matrix of PBDW */
+    /**
+     * Do online phase
+     * @param yobs Observation of sensors
+     * @return Coefficients of solution
+     */
+    vectorN_type online(vectorN_type const& yobs) const;
+    /**
+     * Get outputs
+     * @param yobs Observation of sensors
+     * @return Outputs
+     */
+    vectorN_type outputs(vectorN_type const& yobs) const;
+
+protected:
+    void loadDB( std::string const& filename, crb::load l ) override;
+
+    std::string M_name;
+    matrixN_type M_matrix;
+    matrixN_type M_F;
+    int M_M;
+    int M_N;
+    int M_Nl;
+
+    int M_dbLoad;
+    std::string M_dbFilename;
+    std::string M_dbId;
+};
+
+PBDWOnline::PBDWOnline(std::string const& name,
+                       uuids::uuid const& uuid,
+                       int dbLoad,
+                       std::string const& dbFilename,
+                       std::string const& dbId,
+                       bool init):
+    super_type(name, "pbdw", uuid),
+    M_name(name),
+    M_M(0),
+    M_N(0),
+    M_Nl(0),
+    M_matrix(matrixN_type::Zero(0,0)),
+    M_F(matrixN_type::Zero(0,0)),
+    M_dbLoad(dbLoad),
+    M_dbFilename(dbFilename),
+    M_dbId(dbId)
+{
+    if( init )
+    {
+        if( ! this->findDBUuid(M_dbLoad, M_dbLoad ? M_dbId : M_dbFilename) )
+            throw std::invalid_argument("Database not found during online phase");
+
+        this->loadDB(this->absoluteDbFilename(), crb::load::rb );
+    }
+}
+
+typename PBDWOnline::vectorN_type
+PBDWOnline::online(vectorN_type const& yobs) const
+{
+    vectorN_type yobs2 = vectorN_type::Zero(this->dimension());
+    yobs2.head(this->dimensionM()) = yobs;
+    vectorN_type vn = M_matrix.colPivHouseholderQr().solve(yobs2);
+    return vn;
+}
+
+typename PBDWOnline::vectorN_type
+PBDWOnline::outputs(vectorN_type const& yobs) const
+{
+    vectorN_type coeffs = this->online(yobs);
+    vectorN_type vn = M_F*coeffs;
+    return vn;
+}
+
+void
+PBDWOnline::loadDB( std::string const& filename, crb::load l )
+{
+    if( !fs::exists(filename) )
+        return;
+
+    fs::ifstream ifs( filename );
+    if ( ifs )
+    {
+        Feel::cout << "loading DB at " << filename << std::endl;
+        boost::archive::binary_iarchive ia( ifs );
+        if( l > crb::load::none )
+        {
+            ia >> this->M_N;
+            ia >> this->M_M;
+            this->M_matrix.resize(this->M_M+this->M_N, this->M_M+this->M_N);
+            ia >> this->M_matrix;
+            ia >> this->M_Nl;
+            this->M_F.resize(this->M_Nl, this->M_M+this->M_N);
+            ia >> this->M_F;
+        }
+    }
+}
+
+/**
  * Class that implements Parameterized Background Data-Weak method.
  * @tparam Reduced basis space
  */
 template<typename RBSpace>
-class PBDW : CRBDB
+class PBDW : public PBDWOnline
 {
 public:
-    using super_type = CRBDB;
+    using super_type = PBDWOnline;
     using reducedspace_type = RBSpace;
     using reducedspace_ptrtype = std::shared_ptr<reducedspace_type>;
     using space_type = typename reducedspace_type::fespace_type;
@@ -59,6 +185,7 @@ public:
     using sensormap_type = SensorMap<space_type>;
     using sparse_matrix_type = typename Backend<double>::sparse_matrix_type;
     using sparse_matrix_ptrtype = typename Backend<double>::sparse_matrix_ptrtype;
+    using vector_ptrtype = typename Backend<double>::vector_ptrtype;
     static const int nDim = space_type::mesh_type::nDim;
 
     /**
@@ -95,22 +222,17 @@ public:
          int dbLoad = ioption("pbdw.db.load"),
          std::string const& dbFilename = soption("pbdw.db.filename"),
          std::string const& dbId = soption("pbdw.db.id"));
-    int dimensionN() const { return M_N; } /**< Dimension of Reduced Basis */
-    int dimensionM() const { return M_M; } /**< Number of sensors */
-    int dimension() const { return M_N+M_M; } /**< Dimension of PBDW */
     space_ptrtype functionSpace() const { return M_XR->functionSpace(); } /**< Function Space */
     sensormap_type const& sensors() const { return M_sigmas; } /**< Sensors */
     std::vector<element_type> const& riesz() const { return M_qs; } /**< Riesz representant */
     reducedspace_ptrtype const& reducedBasis() const { M_XR; } /**< Reduced basis */
-    matrixN_type matrix() const { return M_matrix; } /**< Matrix of PBDW */
     sparse_matrix_ptrtype initRiesz(); /**< Initialize the Riesz representation of the sensors */
     void offline(); /** Do offline phase */
     /**
-     * Do online phase
-     * @param yobs Observation of sensors
-     * @return Coefficients of solution
+     * Adds outputs to PBDW
+     * @param Fs vector of functionals to apply to the basis
      */
-    vectorN_type online(vectorN_type const& yobs) const; /**< Do online phase */
+    void setOutputs( std::vector<vector_ptrtype> Fs );
     /**
      * Retrieve solution
      * @param yobs Observation of sensors
@@ -124,18 +246,12 @@ protected:
 
 
 private:
-    std::string M_name;
     reducedspace_ptrtype M_XR;
     sensormap_type M_sigmas;
     std::vector<element_type> M_qs;
-    matrixN_type M_matrix;
-    int M_M;
-    int M_N;
+    std::vector<vector_ptrtype> M_Fs;
 
     bool M_rebuildDb;
-    int M_dbLoad;
-    std::string M_dbFilename;
-    std::string M_dbId;
     crb::stage M_stage;
 };
 
@@ -146,18 +262,17 @@ PBDW<RBSpace>::PBDW(std::string const& name,
                     int dbLoad,
                     std::string const& dbFilename,
                     std::string const& dbId):
-    super_type(name, "pbdw", uuid),
-    M_name(name),
+    super_type(name, uuid, dbLoad, dbFilename, dbId, l == crb::load::rb),
     M_rebuildDb(false),
-    M_dbLoad(dbLoad),
-    M_dbFilename(dbFilename),
-    M_dbId(dbId),
     M_stage(crb::stage::online)
 {
-    if( ! this->findDBUuid(M_dbLoad, M_dbLoad ? M_dbId : M_dbFilename) )
-        throw std::invalid_argument("Database not found during online phase");
+    if( l > crb::load::rb )
+    {
+        if( ! this->findDBUuid(M_dbLoad, M_dbLoad ? M_dbId : M_dbFilename) )
+            throw std::invalid_argument("Database not found during online phase");
 
-    this->loadDB(this->absoluteDbFilename(), l );
+        this->loadDB(this->absoluteDbFilename(), l );
+    }
 }
 
 template<typename RBSpace>
@@ -169,19 +284,16 @@ PBDW<RBSpace>::PBDW(std::string const& name,
                     int dbLoad,
                     std::string const& dbFilename,
                     std::string const& dbId):
-    super_type(name, "pbdw", uuid),
-    M_name(name),
+    super_type(name, uuid, dbLoad, dbFilename, dbId, false),
     M_XR(XR),
     M_sigmas(sigmas),
-    M_M(M_sigmas.size()),
-    M_N(M_XR->size()),
     M_rebuildDb(rebuildDb),
-    M_dbLoad(dbLoad),
-    M_dbFilename(dbFilename),
-    M_dbId(dbId),
     M_stage(crb::stage::offline)
 {
-    if( ! this->findDBUuid(M_dbLoad, M_dbLoad ? M_dbId : M_dbFilename) )
+    this->M_M = M_sigmas.size();
+    this->M_N = M_XR->size();
+
+    if( ! this->findDBUuid(this->M_dbLoad, this->M_dbLoad ? this->M_dbId : this->M_dbFilename) )
         this->setDBDirectory(Environment::randomUUID(true));
 
     if( ! M_rebuildDb )
@@ -193,7 +305,7 @@ typename PBDW<RBSpace>::sparse_matrix_ptrtype
 PBDW<RBSpace>::initRiesz()
 {
     auto u = M_XR->functionSpace()->element();
-    M_qs = std::vector<element_type>(M_M, M_XR->functionSpace()->element());
+    M_qs = std::vector<element_type>(this->M_M, M_XR->functionSpace()->element());
     auto a = form2(_test=M_XR->functionSpace(), _trial=M_XR->functionSpace());
     a = integrate(_range=elements(M_XR->mesh()), _expr=inner(vf::id(u),vf::idt(u)) + inner(grad(u),gradt(u)) );
     auto am = a.matrixPtr();
@@ -212,34 +324,53 @@ template<typename RBSpace>
 void
 PBDW<RBSpace>::offline()
 {
-    Feel::cout << "offline phase start with M=" << M_M << " and N=" << M_N << std::endl;
+    Feel::cout << "offline phase start with M=" << this->M_M << " and N=" << this->M_N << std::endl;
     auto u = M_XR->functionSpace()->element();
     auto am = this->initRiesz();
-    M_matrix = matrixN_type::Zero(M_M+M_N, M_M+M_N);
-    for(int i = 0; i < M_M; ++i )
+    this->M_matrix = matrixN_type::Zero(this->M_M+this->M_N, this->M_M+this->M_N);
+    for(int i = 0; i < this->M_M; ++i )
     {
         for(int j = 0; j < i; ++j )
         {
-            M_matrix(i, j) = am->energy(M_qs[i], M_qs[j]);
-            M_matrix(j, i) = M_matrix(i, j);
+            this->M_matrix(i, j) = am->energy(M_qs[i], M_qs[j]);
+            this->M_matrix(j, i) = this->M_matrix(i, j);
         }
-        M_matrix(i, i) = am->energy(M_qs[i], M_qs[i]);
-        for(int j = 0; j < M_N; ++j )
-            M_matrix(i, M_M+j) = am->energy(M_qs[i], M_XR->primalBasisElement(j));
+        this->M_matrix(i, i) = am->energy(M_qs[i], M_qs[i]);
+        for(int j = 0; j < this->M_N; ++j )
+            this->M_matrix(i, this->M_M+j) = am->energy(M_qs[i], M_XR->primalBasisElement(j));
     }
-    M_matrix.bottomLeftCorner(M_N, M_M) = M_matrix.topRightCorner(M_M, M_N).transpose();
+    this->M_matrix.bottomLeftCorner(this->M_N, this->M_M) = this->M_matrix.topRightCorner(this->M_M, this->M_N).transpose();
+
+    Feel::cout << "computing outputs" << std::endl;
+    this->M_F = matrixN_type::Zero(this->M_Nl, this->M_M+this->M_N);
+    for( int i = 0; i < this->M_Nl; ++i )
+    {
+        for( int j = 0; j < this->M_M; ++j )
+            this->M_F(i,j) = inner_product( *this->M_Fs[i], this->M_qs[j] );
+        for( int j = this->M_M; j < this->M_M+this->M_N; ++j )
+            this->M_F(i,j) = inner_product( *this->M_Fs[i], this->M_XR->primalBasisElement(j) );
+    }
 
     this->saveDB();
 }
 
 template<typename RBSpace>
-typename PBDW<RBSpace>::vectorN_type
-PBDW<RBSpace>::online(vectorN_type const& yobs) const
+void
+PBDW<RBSpace>::setOutputs( std::vector<vector_ptrtype> Fs )
 {
-    vectorN_type yobs2 = vectorN_type::Zero(this->dimension());
-    yobs2.head(this->dimensionM()) = yobs;
-    vectorN_type vn = M_matrix.colPivHouseholderQr().solve(yobs2);
-    return vn;
+    this->M_Fs = Fs;
+    this->M_Nl = Fs.size();
+
+    this->M_F = matrixN_type::Zero(this->M_Nl, this->M_M+this->M_N);
+    for( int i = 0; i < this->M_Nl; ++i )
+    {
+        for( int j = 0; j < this->M_M; ++j )
+            this->M_F(i,j) = inner_product( *this->M_Fs[i], this->M_qs[j] );
+        for( int j = 0; j < this->M_N; ++j )
+            this->M_F(i,j+this->M_M) = inner_product( *this->M_Fs[i], this->M_XR->primalBasisElement(j) );
+    }
+    if( this->M_M > 0 || this->M_N > 0 )
+        this->saveDB();
 }
 
 template<typename RBSpace>
@@ -249,6 +380,7 @@ PBDW<RBSpace>::solution(vectorN_type const& yobs) const
     int M = this->dimensionM();
     int N = this->dimensionN();
     auto vn = this->online(yobs);
+    // Feel::cout << "basis coeffients:\n" << vn << std::endl;
     auto wn = M_XR->primalRB();
     auto Xh = M_XR->functionSpace();
     auto I = Xh->element();
@@ -291,7 +423,9 @@ PBDW<RBSpace>::saveDB()
             boost::archive::binary_oarchive oa( ofs );
             oa << this->dimensionN();
             oa << this->dimensionM();
-            oa << M_matrix;
+            oa << this->M_matrix;
+            oa << this->M_Nl;
+            oa << this->M_F;
         }
     }
     if( ! fs::exists(this->absoluteMeshFilename()) )
@@ -303,7 +437,7 @@ PBDW<RBSpace>::saveDB()
     if( ofsp )
     {
         boost::archive::binary_oarchive oa( ofsp );
-        for( int n = 0; n < M_N; ++n )
+        for( int n = 0; n < this->M_N; ++n )
             oa << M_XR->primalBasisElement(n);
         oa << M_sigmas;
     }
@@ -316,19 +450,8 @@ PBDW<RBSpace>::loadDB( std::string const& filename, crb::load l )
     if( !fs::exists(filename) )
         return;
 
-    fs::ifstream ifs( filename );
-    if ( ifs )
-    {
-        Feel::cout << "loading DB at " << filename << std::endl;
-        boost::archive::binary_iarchive ia( ifs );
-        if( l > crb::load::none )
-        {
-            ia >> M_N;
-            ia >> M_M;
-            M_matrix.resize(M_M+M_N, M_M+M_N);
-            ia >> M_matrix;
-        }
-    }
+    super_type::loadDB( filename, l);
+
     if( l > crb::load::rb )
     {
         if( ! M_XR )
@@ -344,7 +467,7 @@ PBDW<RBSpace>::loadDB( std::string const& filename, crb::load l )
             {
                 boost::archive::binary_iarchive ia( ifsp );
                 auto u = Xh->element();
-                for( int n = 0; n < M_N; ++n )
+                for( int n = 0; n < this->M_N; ++n )
                 {
                     ia >> u;
                     M_XR->addPrimalBasisElement(u);
