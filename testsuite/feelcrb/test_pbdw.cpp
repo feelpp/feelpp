@@ -155,21 +155,8 @@ BOOST_AUTO_TEST_CASE( test_pbdw_online )
     auto nbSensors = std::sqrt(M);
     auto N = pbdw.dimensionN();
     auto Xh = pbdw.functionSpace();
+    auto u = Xh->element();
     auto mesh = Xh->mesh();
-
-    SensorMap<space_type> sigmas;
-    for( int i = 1; i < nbSensors+1; ++i )
-    {
-        for( int j = 1; j < nbSensors+1; ++j )
-        {
-            node_t n(2);
-            n(0) = i*1./(nbSensors+1);
-            n(1) = j*1./(nbSensors+1);
-            std::string name = "sensors_"+std::to_string((i-1)*nbSensors+(j-1));
-            auto s = std::make_shared<sensor_type>(Xh, n, r,name);
-            sigmas[name] = s;
-        }
-    }
 
     auto solver = [mesh,Xh](parameter_type const& mu) -> element_type {
                       auto u = Xh->element();
@@ -187,6 +174,24 @@ BOOST_AUTO_TEST_CASE( test_pbdw_online )
                       return u;
                   };
 
+    // outputs
+    std::vector<vector_ptrtype> Fs(3);
+    auto f1 = form1(_test=Xh);
+    double area1 = integrate(_range=markedelements(mesh, "Omega1"), _expr=cst(1.0)).evaluate()(0,0);
+    f1 = integrate(_range=markedelements(mesh, "Omega1"), _expr=id(u)/cst(area1) );
+    Fs[0] = f1.vectorPtr();
+    auto f2 = form1(_test=Xh);
+    double area2 = integrate(_range=markedelements(mesh, "Omega2"), _expr=cst(1.0)).evaluate()(0,0);
+    f2 = integrate(_range=markedelements(mesh, "Omega2"), _expr=id(u)/cst(area2) );
+    Fs[1] = f2.vectorPtr();
+    auto f3 = form1(_test=Xh);
+    double area3 = integrate(_range=boundaryfaces(mesh), _expr=cst(1.0)).evaluate()(0,0);
+    f3 = integrate(_range=boundaryfaces(mesh), _expr=id(u)/cst(area3) );
+    Fs[2] = f3.vectorPtr();
+    pbdw.setOutputs(Fs);
+    auto pbdwOnline = PBDWOnline("test_pbdw");
+
+    // parameters
     auto Dmu = parameterspace_type::New(4);
     auto muMin = Dmu->element();
     muMin << 0.1, -2, -2, -2;
@@ -197,16 +202,24 @@ BOOST_AUTO_TEST_CASE( test_pbdw_online )
     auto Pset = Dmu->sampling();
     Pset->randomize(20);
 
-    std::vector<double> errors;
+    std::vector<double> errors, errorsOutput;
     for( auto const& mu : *Pset )
     {
         auto phi = solver(mu);
         auto vn = pbdw.sensors().apply(phi);
         auto I = pbdw.solution(vn);
         errors.push_back( normL2(_range=elements(mesh),_expr=idv(phi)-idv(I)) );
+
+        Feel::cout << "outputs" << std::endl;
+        auto outs = pbdwOnline.outputs(vn);
+        Feel::cout << outs.size() << std::endl;
+        for( int i = 0; i < outs.size(); ++i )
+            errorsOutput.push_back( std::abs(outs(i)-inner_product(*Fs[i], phi)) );
     }
     double max = *max_element(errors.begin(), errors.end());
     BOOST_CHECK_SMALL( max , 1e-5 );
+    double maxOutput = *max_element(errorsOutput.begin(), errorsOutput.end());
+    BOOST_CHECK_SMALL( maxOutput , 1e-5 );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
