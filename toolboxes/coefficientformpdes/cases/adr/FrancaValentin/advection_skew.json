@@ -3,8 +3,8 @@
     "ShortName": "advection_skew",
     "Models":
     {
-        "equations":[
-            {
+        "cfpdes":{
+            "equations":{
                 "name":"equation1",
                 "unknown":
                 {
@@ -13,7 +13,7 @@
                     "symbol":"u"
                 }
             }
-        ]
+        }
     },
     "Parameters":
     {
@@ -51,17 +51,12 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":
             {
                 "fields":["all"]
             }
-        },
-        "equation1":
-        {
-
         }
     }
 }

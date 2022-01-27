@@ -4,26 +4,39 @@
     "ShortName":"test2d",
     "Models":
     {
-        "equations":[
-            {
-                "name":"heat",
-                "unknown":
+        "cfpdes":{
+            "equations":[
                 {
-                    "basis":"Pch1",
-                    "name":"temperature",
-                    "symbol":"T"
-                }
-            },
-            {
-                "name":"electric",
-                "unknown":
+                    "name":"heat",
+                    "unknown":
+                    {
+                        "basis":"Pch1",
+                        "name":"temperature",
+                        "symbol":"T"
+                    }
+                },
                 {
-                    "basis":"Pch1",
-                    "name":"electric-potential",
-                    "symbol":"P"
+                    "name":"electric",
+                    "unknown":
+                    {
+                        "basis":"Pch1",
+                        "name":"electric-potential",
+                        "symbol":"P"
+                    }
                 }
+            ]
+        }
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/test-thermoelectric.geo",
+                "hsize":0.05
             }
-        ]
+        }
     },
     "Materials":
     {
@@ -85,7 +98,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":
