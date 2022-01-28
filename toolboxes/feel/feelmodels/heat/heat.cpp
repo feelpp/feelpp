@@ -744,6 +744,17 @@ HEAT_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
     this->executePostProcessMeasures( time, mfields, this->symbolsExpr( mfields ) );
 }
 #endif
+
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+bool
+HEAT_CLASS_TEMPLATE_TYPE::checkResults() const
+{
+    const_cast<self_type*>(this)->updateParameterValues();
+    auto se = this->symbolsExpr();
+    return super_type::checkResults( se );
+}
+
+
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::startTimeStep()

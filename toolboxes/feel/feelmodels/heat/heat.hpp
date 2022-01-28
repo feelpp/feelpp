@@ -203,6 +203,7 @@ class Heat : public ModelNumerical,
         template <typename ModelFieldsType,typename SymbolsExpr, typename ModelMeasuresQuantitiesType>
         void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities );
 
+        bool checkResults() const override;
         //___________________________________________________________________________________//
         // export expressions
         //___________________________________________________________________________________//
