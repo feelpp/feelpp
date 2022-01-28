@@ -985,8 +985,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("FluidMechanics","init", "start" );
     this->timerTool("Constructor").start();
 
-    if ( this->physics().empty() )
-        this->initPhysics( this->keyword(), this->modelProperties().models() );
+    this->initPhysics( this->keyword(), this->modelProperties().models() );
 
     this->initMaterialProperties();
 
