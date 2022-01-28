@@ -4,12 +4,25 @@
     "ShortName":"Solid",
     "Models":
     {
-        "equations":"Hyper-Elasticity",
-        "material-model":"StVenantKirchhoff"
+        "solid":{
+            "equations":"Hyper-Elasticity",
+            "material-model":"StVenantKirchhoff"
+        }
     },
     "Parameters":
     {
         "gravity":"2"
+    },
+    "Meshes":
+    {
+        "solid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/csm.geo",
+                "hsize":0.004
+            }
+        }
     },
     "Materials":
     {
@@ -48,37 +61,39 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "solid":
         {
-            "fields":["displacement","von-mises-criterion","tresca-criterion","principal-stresses"]
-        },
-        "Measures":
-        {
-            "Points":
+            "Exports":
             {
-                "pointA":
-                {
-                    "coord":"{0.6,0.2,0}",
-                    "fields":["displacement"]
-                }
-            }
-        },
-        "Checkers":
-        {
+                "fields":["displacement","von-mises-criterion","tresca-criterion","principal-stresses"]
+            },
             "Measures":
             {
-                "Points_pointA_field_displacement_0":
+                "Points":
                 {
-                    "value":-0.469e-3,
-                    "tolerance":1e-1
-                },
-                "Points_pointA_field_displacement_1":
+                    "pointA":
+                    {
+                        "coord":"{0.6,0.2,0}",
+                        "fields":["displacement"]
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
                 {
-                    "value":-16.97e-3,
-                    "tolerance":1e-1
+                    "Points_pointA_field_displacement_0":
+                    {
+                        "value":-0.469e-3,
+                        "tolerance":1e-1
+                    },
+                    "Points_pointA_field_displacement_1":
+                    {
+                        "value":-16.97e-3,
+                        "tolerance":1e-1
+                    }
                 }
             }
         }
     }
-
 }
