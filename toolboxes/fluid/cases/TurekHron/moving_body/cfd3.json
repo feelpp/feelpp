@@ -4,17 +4,32 @@
     "ShortName":"cfd3",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "fluid":{
+            "materials":"Fluid",
+            "equations":"Navier-Stokes"
+        }
+        //"body"
     },
     "Parameters":
     {
         "ubar":"2",
         "chi":"t<2:t"
     },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cfd.geo",
+                "hsize":0.03
+            }
+        }
+    },
     "Materials":
     {
         "Fluid":{
-            "physics":"fluid",
+            //"physics":"fluid",
             "rho":"1.0e3",
             "mu":"1.0"
         },
@@ -101,43 +116,46 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","pid","displacement"]
-        },
-        "Measures":
-        {
-            "Quantities":
+            "Exports":
             {
-                "names":"all"
+                "fields":["velocity","pressure","pid","displacement"]
             },
-            "Forces":"wall2",
-            "Statistics":
+            "Measures":
             {
-                "mybody_translational":
+                "Quantities":
                 {
-                    "type":"mean",
-                    "markers":["fluid-cylinder","fluid-beam"],
-                    "field":"body.p1_mark.translational-velocity"
+                    "names":"all"
                 },
-                "mybody_angular":
+                "Forces":"wall2",
+                "Statistics":
                 {
-                    "type":"mean",
-                    "markers":["fluid-cylinder","fluid-beam"],
-                    "field":"body.p1_mark.angular-velocity"
-                }
-            },
-            "Points":
-            {
-                "pointA":
-                {
-                    "coord":"{0.6,0.2,0}",
-                    "fields":"pressure"
+                    "mybody_translational":
+                    {
+                        "type":"mean",
+                        "markers":["fluid-cylinder","fluid-beam"],
+                        "field":"body.p1_mark.translational-velocity"
+                    },
+                    "mybody_angular":
+                    {
+                        "type":"mean",
+                        "markers":["fluid-cylinder","fluid-beam"],
+                        "field":"body.p1_mark.angular-velocity"
+                    }
                 },
-                "pointB":
+                "Points":
                 {
-                    "coord":"{0.15,0.2,0}",
-                    "fields":"pressure"
+                    "pointA":
+                    {
+                        "coord":"{0.6,0.2,0}",
+                        "fields":"pressure"
+                    },
+                    "pointB":
+                    {
+                        "coord":"{0.15,0.2,0}",
+                        "fields":"pressure"
+                    }
                 }
             }
         }

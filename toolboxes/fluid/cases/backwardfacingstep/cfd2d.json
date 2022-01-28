@@ -3,7 +3,20 @@
     "ShortName":"backwardfacingstep2d",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "fluid":{
+            "equations":"Navier-Stokes"
+        }
+    },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/step-elmann-2009.geo",
+                "hsize":0.05
+            }
+        }
     },
     "Materials":
     {
@@ -44,9 +57,12 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","pid"]
+            "Exports":
+            {
+                "fields":["velocity","pressure","pid"]
+            }
         }
     }
 
