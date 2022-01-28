@@ -15,11 +15,34 @@
         "param_h":0.08,
         "Tw":293
     },
+    "Meshes":
+    {
+        "thermoelectric":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/quarterturn.geo",
+                "hsize":0.05
+            }
+        }
+    },
     "Materials":
     {
         "omega":
         {
             "filename":"$cfgdir/omega.json"
+        }
+    },
+    "InitialConditions":
+    {
+        "heat":{
+            "temperature":{
+                "Expression":{
+                    "myic1":{
+                        "expr":"290"
+                    }
+                }
+            }
         }
     },
     "BoundaryConditions":
@@ -53,7 +76,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "thermoelectric":
         {
             "Exports":

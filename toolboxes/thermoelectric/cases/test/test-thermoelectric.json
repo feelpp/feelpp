@@ -2,11 +2,48 @@
 {
     "Name":"test2d",
     "ShortName":"test2d",
+    "Models":
+    {
+        "heat":
+        [
+            {
+                "name":"heat1",
+                //"materials":["OmegaTE","OmegaHT"]
+                "materials":["OmegaTE"]
+            },
+            {
+                "name":"heat2",
+                "materials":["OmegaHT"]
+            }
+        ],
+        "electric":
+        {
+            "name":"elec1",
+            "materials":["OmegaTE"]
+        },
+        "thermoelectric":
+        {
+            //"name":"bbb",
+            //"materials":["OmegaTE"],
+            "submodels":{ "heat":["heat1"], "electric":"elec1" }
+        }
+    },
+    "Meshes":
+    {
+        "thermoelectric":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/test-thermoelectric.geo",
+                "hsize":0.05
+            }
+        }
+    },
     "Materials":
     {
         "OmegaTE":
         {
-            "physics":"thermo-electric",
+            //"physics":"thermo-electric",
             //"k":"370",//[ W/(m*K) ]
             "k":"100+350*(x*x+y*y):x:y",//[ W/(m*K) ]
             //"Cp":"1000.005", //[ J/(kg*K) ]
@@ -16,7 +53,7 @@
         },
         "OmegaHT":
         {
-            "physics":"heat",
+            //"physics":"heat",
             //"k":"1"
             "k":"10+350*(x*x+y*y):x:y"
         }
@@ -58,19 +95,12 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "thermoelectric":
         {
             "Exports":
             {
                 "fields":["heat.temperature","electric.electric-potential","electric.electric-field","pid","all"]
             }
-        },
-        "heat":
-        {
-        },
-        "electric":
-        {
         }
     }
 
