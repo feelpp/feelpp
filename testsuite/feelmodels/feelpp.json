@@ -103,35 +103,38 @@
     }, // BoundaryConditions
     "PostProcess":
     {
-        "Force":["cylinder"],
-        "PressureDifference":
+        "test":
         {
-            "x1":"{0.15,0.2}",
-            "x2":"{0.25,0.2}"
-        },
-        "Measures":
-        {
-            "Statistics":
+            "Force":["cylinder"],
+            "PressureDifference":
             {
-                "my_%1%_%2%_eval1":
+                "x1":"{0.15,0.2}",
+                "x2":"{0.25,0.2}"
+            },
+            "Measures":
+            {
+                "Statistics":
                 {
-                    "type":"integrate",
-                    "expr":"3.5*%2%",
-                    "markers":
+                    "my_%1%_%2%_eval1":
                     {
-                        "name":"mat%1%%2%_%3%",
-                        "index3":["x","y","z"]
+                        "type":"integrate",
+                        "expr":"3.5*%2%",
+                        "markers":
+                        {
+                            "name":"mat%1%%2%_%3%",
+                            "index3":["x","y","z"]
+                        },
+                        "index1":["A","B"],
+                        "index2":["3:9:2"]
                     },
-                    "index1":["A","B"],
-                    "index2":["3:9:2"]
-                },
-                "my_%1%_%2_2%_eval2":
-                {
-                    "type":"integrate",
-                    "expr":"3.5*%2_1%",
-                    "markers":"mat%1%%2_1%",
-                    "index1":["A","B"],
-                    "index2":[ ["3","trois"],["5","cinq"],["7","sept"] ]
+                    "my_%1%_%2_2%_eval2":
+                    {
+                        "type":"integrate",
+                        "expr":"3.5*%2_1%",
+                        "markers":"mat%1%%2_1%",
+                        "index1":["A","B"],
+                        "index2":[ ["3","trois"],["5","cinq"],["7","sept"] ]
+                    }
                 }
             }
         }
