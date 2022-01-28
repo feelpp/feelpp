@@ -2,10 +2,21 @@
 {
     "Name":"cvg3d",
     "ShortName":"cvg3d",
-    "Models":
+    "Parameters":
     {
-        "v_expr":"0.25*(x/L):x:y",
-        "c_expr":"{-0.25/L,0.,0.}:x:y:z"
+        "v_expr":"0.25*(x/L):x:L",
+        "c_expr":"{-0.25/L,0.,0.}:L"
+    },
+    "Meshes":
+    {
+        "electric":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/3d.geo",
+                "hsize":0.1
+            }
+        }
     },
     "Materials":
     {
