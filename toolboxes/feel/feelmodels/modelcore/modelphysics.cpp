@@ -512,7 +512,26 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
             gravityStr = "{0,0,-9.80665}";
         M_gravityForceExpr.setExpr( gravityStr,mphysics.worldComm(),mphysics.repository().expr() );
     }
+}
 
+template <uint16_type Dim>
+void
+ModelPhysicFluid<Dim>::updateInformationObject( nl::json & p ) const
+{
+    super_type::updateInformationObject( p["Generic"] );
+}
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicFluid<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsSubphysics( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+    return tabInfo;
 }
 
 template <uint16_type Dim>
@@ -590,45 +609,82 @@ ModelPhysicSolid<Dim>::ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std:
         this->setEquation( soption(_name="model",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) );
 
     auto const& j_setup = model.setup();
-    for ( std::string const& eqarg : { "equations", "equation" } )
-        if ( j_setup.contains( eqarg ) )
+    if ( j_setup.is_string() )
+    {
+        this->setEquation( j_setup.get<std::string>() );
+    }
+    else
+    {
+        for ( std::string const& eqarg : { "equations", "equation" } )
+            if ( j_setup.contains( eqarg ) )
+            {
+                auto const& j_setup_eq = j_setup.at( eqarg );
+                if ( j_setup_eq.is_string() )
+                    this->setEquation( j_setup_eq.get<std::string>() );
+            }
+
+        if ( j_setup.contains( "material-model" ) )
         {
-            auto const& j_setup_eq = j_setup.at( eqarg );
-            if ( j_setup_eq.is_string() )
-                this->setEquation( j_setup_eq.get<std::string>() );
+            auto const& j_setup_matmodel = j_setup.at( "material-model" );
+            if ( j_setup_matmodel.is_string() )
+                M_materialModel = j_setup_matmodel.template get<std::string>();
         }
+        CHECK( M_materialModel == "StVenantKirchhoff" || M_materialModel == "NeoHookean" ) << "invalid material-model :" << M_materialModel;
 
-    if ( j_setup.contains( "material-model" ) )
-    {
-        auto const& j_setup_matmodel = j_setup.at( "material-model" );
-        if ( j_setup_matmodel.is_string() )
-            M_materialModel = j_setup_matmodel.template get<std::string>();
-    }
-    CHECK( M_materialModel == "StVenantKirchhoff" || M_materialModel == "NeoHookean" ) << "invalid material-model :" << M_materialModel;
-
-    if ( j_setup.contains( "formulation" ) )
-    {
-        auto const& j_setup_formulation = j_setup.at( "formulation" );
-        if ( j_setup_formulation.is_string() )
-            M_formulation = j_setup_formulation.template get<std::string>();
-    }
-    if ( j_setup.contains( "volumetric-strain-energy" ) )
-    {
-        auto const& j_setup_volstrainenergy = j_setup.at( "volumetric-strain-energy" );
-        if ( j_setup_volstrainenergy.is_string() )
-            M_decouplingEnergyVolumicLaw = j_setup_volstrainenergy.template get<std::string>();
-    }
-    if ( j_setup.contains( "neo-Hookean.variant" ) )
-    {
-        auto const& j_setup_neoHookeanVariant = j_setup.at( "neo-Hookean.variant" );
-        if ( j_setup_neoHookeanVariant.is_string() )
-            M_compressibleNeoHookeanVariantName = j_setup_neoHookeanVariant.template get<std::string>();
+        if ( j_setup.contains( "formulation" ) )
+        {
+            auto const& j_setup_formulation = j_setup.at( "formulation" );
+            if ( j_setup_formulation.is_string() )
+                M_formulation = j_setup_formulation.template get<std::string>();
+        }
+        if ( j_setup.contains( "volumetric-strain-energy" ) )
+        {
+            auto const& j_setup_volstrainenergy = j_setup.at( "volumetric-strain-energy" );
+            if ( j_setup_volstrainenergy.is_string() )
+                M_decouplingEnergyVolumicLaw = j_setup_volstrainenergy.template get<std::string>();
+        }
+        if ( j_setup.contains( "neo-Hookean.variant" ) )
+        {
+            auto const& j_setup_neoHookeanVariant = j_setup.at( "neo-Hookean.variant" );
+            if ( j_setup_neoHookeanVariant.is_string() )
+                M_compressibleNeoHookeanVariantName = j_setup_neoHookeanVariant.template get<std::string>();
+        }
     }
 
     CHECK( M_decouplingEnergyVolumicLaw == "classic" || M_decouplingEnergyVolumicLaw == "simo1985" ) << "invalid decouplingEnergyVolumicLaw : " << M_decouplingEnergyVolumicLaw;
     CHECK( M_compressibleNeoHookeanVariantName == "default" || M_compressibleNeoHookeanVariantName == "molecular-theory" ||
            M_compressibleNeoHookeanVariantName == "molecular-theory-simo1985" ) << "invalid compressibleNeoHookeanVariantName : " <<  M_compressibleNeoHookeanVariantName;
 
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicSolid<Dim>::updateInformationObject( nl::json & p ) const
+{
+    super_type::updateInformationObject( p["Generic"] );
+
+    nl::json & pSolid = p["Solid"];
+    pSolid["Equation"] = M_equation;
+}
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicSolid<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsSubphysics( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+    if ( jsonInfo.contains("Solid") )
+    {
+        Feel::Table tabInfoSolidEquation;
+        auto const& jsonInfoSolid = jsonInfo.at("Solid");
+        TabulateInformationTools::FromJSON::addKeyToValues( tabInfoSolidEquation, jsonInfoSolid, tabInfoProp, { "Equation" } );
+        tabInfo->add( "", TabulateInformations::New( tabInfoSolidEquation, tabInfoProp ) );
+    }
+    return tabInfo;
 }
 
 template <uint16_type Dim>
