@@ -24,13 +24,15 @@ transmittances and of surface temperature factors.
 
 more information link:http://www.iso.org/iso/catalogue_detail.htm?csnumber=40967[here].
 
-== Implementation
+== Test cases
 
-Only the 2D specifications have been implemented.
+* Case 2 : 2d, temperature distribution and heat flow within a roof construction
+* Case 3 : 3d, temperature distribution and heat flows through the wall-balcony junction
 
 == Running the testcase
 
 [source,sh]
 ----
-$ mpirun -np 4 /usr/local/bin/feelpp_toolbox_heat_2d --config-file thermo2dCase2.cfg
+$ feelpp_toolbox_heat --config-file case2.cfg
+$ feelpp_toolbox_heat --config-file case3.cfg
 ----

@@ -1,7 +1,7 @@
 // -*- mode: javascript -*-
 {
-    "Name": "ISO 10211:2007 Thermal bridges in building construction",
-    "ShortName":"ThermalBridges",
+    "Name": "ISO 10211:2007 Thermal bridges in building construction : Case 2",
+    "ShortName":"ThermalBridges : Case 2",
     "Parameters":
     {
         "h_top":"1.0/0.06",
@@ -15,7 +15,7 @@
         {
             "Import":
             {
-                "filename":"$cfgdir/thermo2dCase2.geo",
+                "filename":"$cfgdir/case2.geo",
                 "hsize":0.001
             }
         }
