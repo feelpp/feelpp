@@ -4,7 +4,9 @@
     "ShortName":"Fluidfsi",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "fluid":{
+            "equations":"Navier-Stokes"
+        }
     },
     "Parameters":
     {
@@ -54,10 +56,11 @@
     },
     "PostProcess":
     {
-        "Exports":
-        {
-            "fields":["velocity","pressure","displacement","pid"]
+        "fluid":{
+            "Exports":
+            {
+                "fields":["velocity","pressure","displacement","pid"]
+            }
         }
     }
-
 }

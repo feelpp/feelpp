@@ -4,7 +4,9 @@
     "ShortName":"moving_boundary",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "fluid":{
+            "equations":"Navier-Stokes"
+        }
     },
     "Parameters":
     {
@@ -46,9 +48,12 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","displacement","pid"]
+            "Exports":
+            {
+                "fields":["velocity","pressure","displacement","pid"]
+            }
         }
     }
 

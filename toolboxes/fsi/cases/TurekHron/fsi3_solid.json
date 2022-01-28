@@ -1,10 +1,12 @@
 // -*- mode: javascript -*-
 {
-    "Name": "2D beam ",
-    "ShortName":"beam2d",
+    "Name": "Fluid fsi",
+    "ShortName":"FluidFSI",
     "Models":
     {
-        "equations":"Hyper-Elasticity"
+        "solid":{
+            "equations":"Hyper-Elasticity"
+        }
     },
     "Materials":
     {
@@ -36,22 +38,24 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "solid":
         {
-            "fields":["displacement","velocity","pid"]
-        },
-        "Measures":
-        {
-            "Points":
+            "Exports":
             {
-                "pointA":
+                "fields":["displacement","velocity","pid"]
+            },
+            "Measures":
+            {
+                "Points":
                 {
-                    "coord":"{0.6,0.2,0}",
-                    "fields":["displacement","velocity"]
+                    "pointA":
+                    {
+                        "coord":"{0.6,0.2,0}",
+                        "fields":["displacement","velocity"]
+                    }
                 }
             }
         }
-
     }
 
 }

@@ -4,7 +4,9 @@
     "ShortName":"FluidFSI",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "fluid":{
+            "equations":"Navier-Stokes"
+        }
     },
     "Parameters":
     {
@@ -58,19 +60,22 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","displacement","pid"]
-        },
-        "Measures":
-        {
-            "Forces":["fsi-wall","fluid-cylinder"],
-            "Points":
+            "Exports":
             {
-                "pointB":
+                "fields":["velocity","pressure","displacement","pid"]
+            },
+            "Measures":
+            {
+                "Forces":["fsi-wall","fluid-cylinder"],
+                "Points":
                 {
-                    "coord":"{0.15,0.2,0}",
-                    "fields":"pressure"
+                    "pointB":
+                    {
+                        "coord":"{0.15,0.2,0}",
+                        "fields":"pressure"
+                    }
                 }
             }
         }

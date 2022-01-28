@@ -4,7 +4,9 @@
     "ShortName":"beam2d",
     "Models":
     {
-        "equations":"Generalised-String"
+        "solid":{
+            "equations":"Generalised-String"
+        }
     },
     "Materials":
     {
@@ -50,9 +52,12 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "solid":
         {
-            "fields":["displacement"]
+            "Exports":
+            {
+                "fields":["displacement"]
+            }
         }
     }
 
