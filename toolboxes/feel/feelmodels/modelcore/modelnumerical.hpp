@@ -364,7 +364,7 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
         return;
 
     CHECK( !dataToUpdate.empty() ) << "require a non empty vector";
-    CHECK( dataToUpdate.size() == priorTimes.size() ) << "priorTimes size is not the same as ts unknowns";
+    CHECK( dataToUpdate.size() >= priorTimes.size() ) << "dataToUpdate size should be >= than priorTimes size : " << dataToUpdate.size() << " versus " << priorTimes.size();
 
     for( auto const& [id, time] : priorTimes )
     {
