@@ -557,6 +557,9 @@ public :
     ModelPhysicFluid( ModelPhysicFluid const& ) = default;
     ModelPhysicFluid( ModelPhysicFluid && ) = default;
 
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
     std::string const& equation() const { return M_equation; }
     void setEquation( std::string const& eq );
 
@@ -592,6 +595,9 @@ public :
     ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicSolid( ModelPhysicSolid const& ) = default;
     ModelPhysicSolid( ModelPhysicSolid && ) = default;
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
     std::string const& equation() const { return M_equation; }
     void setEquation( std::string const& eq );

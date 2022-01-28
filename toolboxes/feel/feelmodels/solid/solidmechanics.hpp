@@ -69,6 +69,7 @@ class SolidMechanics : public ModelNumerical,
                        public ModelPhysics<ConvexType::nDim>,
                        public std::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType> >
 {
+    typedef ModelPhysics<ConvexType::nDim> super_physics_type;
 public:
     typedef ModelNumerical super_type;
     using size_type = typename super_type::size_type;

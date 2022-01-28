@@ -589,22 +589,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
     this->log("SolidMechanics","init", "start" );
     this->timerTool("Constructor").start();
-#if 0
-    if ( M_modelName.empty() )
-    {
-        std::string theSolidModel = this->modelProperties().models().model( this->keyword() ).equations();
-        this->setModelName( theSolidModel );
-    }
-    if ( M_solverName.empty() )
-    {
-        if ( M_modelName == "Elasticity" || M_modelName == "Generalised-String" )
-            this->setSolverName( "LinearSystem" );
-        else
-            this->setSolverName( "Newton" );
-    }
-#endif
-    if ( this->physics().empty() )
-        this->initPhysics( this->keyword(), this->modelProperties().models() );
+
+    this->initPhysics( this->keyword(), this->modelProperties().models() );
 
     this->initMaterialProperties();
 
