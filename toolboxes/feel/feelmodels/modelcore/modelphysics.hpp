@@ -160,12 +160,15 @@ public :
     //! add a constant (double) parameter called \pname and return the symbol associated
     std::string addParameter( std::string const& pname, double val )
         {
-            M_parameterNameToExpr.emplace( pname, ModelExpression(val) );
+            //M_parameterNameToExpr.emplace( pname, ModelExpression(val) );
+            M_parameterNameToExpr[pname].reset();
+            M_parameterNameToExpr[pname].setExpr( val );
             return this->symbolFromParameter( pname );
         }
     //! add a parameter called \pname describe by an expression \expr and return the symbol associated
     std::string addParameter( std::string const& pname, std::string const& expr, WorldComm const& worldComm, std::string const& directoryLibExpr )
         {
+            M_parameterNameToExpr[pname].reset();
             M_parameterNameToExpr[pname].setExpr( expr, worldComm, directoryLibExpr );
             return this->symbolFromParameter( pname );
         }
@@ -176,6 +179,7 @@ public :
     //! add a parameter called \pname describe by a json entry \jarg and return the symbol associated
     std::string addParameter( std::string const& pname, nl::json const& jarg, WorldComm const& worldComm, std::string const& directoryLibExpr )
         {
+            M_parameterNameToExpr[pname].reset();
             M_parameterNameToExpr[pname].setExpr( jarg, worldComm, directoryLibExpr );
             return this->symbolFromParameter( pname );
         }
@@ -363,6 +367,8 @@ public :
 
     bool hasConvectionEnabled() const { return M_convection && M_convection->enabled(); }
     Convection const& convection() const { CHECK( M_convection ) << "no convection"; return *M_convection; }
+
+    void setupConvection( nl::json & jarg );
 
     //! set parameter values in expression
     void setParameterValues( std::map<std::string,double> const& mp ) override

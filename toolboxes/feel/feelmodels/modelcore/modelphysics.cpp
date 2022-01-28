@@ -226,6 +226,15 @@ ModelPhysicHeat<Dim>::ModelPhysicHeat( ModelPhysics<Dim> const& mphysics, std::s
 
 template <uint16_type Dim>
 void
+ModelPhysicHeat<Dim>::setupConvection( nl::json & jarg )
+{
+    if ( !M_convection )
+        M_convection.emplace( this );
+    M_convection->setup( jarg );
+}
+
+template <uint16_type Dim>
+void
 ModelPhysicHeat<Dim>::updateInformationObject( nl::json & p ) const
 {
     super_type::updateInformationObject( p["Generic"] );
