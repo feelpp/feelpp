@@ -2,10 +2,21 @@
 {
     "Name":"cvg2d",
     "ShortName":"cvg2d",
-    "Models":
+    "Parameters":
     {
         "v_expr":"2*0.25/Pi*atan2(x,y):x:y",
         "c_expr":"{-2*0.25/Pi*y/(x*x+y*y),2*0.25/Pi*x/(x*x+y*y)}:x:y:z"
+    },
+    "Meshes":
+    {
+        "electric":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/2d.geo",
+                "hsize":0.1
+            }
+        }
     },
     "Materials":
     {
