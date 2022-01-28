@@ -487,7 +487,7 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space, std::string const& name, std:
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
     M_beta( BDF_MAX_ORDER ),
-    M_numberOfConsecutiveSave( M_order )
+    M_numberOfConsecutiveSave( n_consecutive_save )
 {
     computeCoefficients();
 
