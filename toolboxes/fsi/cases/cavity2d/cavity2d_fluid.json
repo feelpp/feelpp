@@ -2,7 +2,11 @@
 {
     "Name": "Fluid fsi",
     "ShortName":"FluidFSI",
-    "Models": { "equations":"Navier-Stokes" },
+    "Models": {
+        "fluid":{
+            "equations":"Navier-Stokes"
+        }
+    },
     "Parameters":
     {
         //"pi":3.1415926,
@@ -56,9 +60,12 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","displacement","pid"]
+            "Exports":
+            {
+                "fields":["velocity","pressure","displacement","pid"]
+            }
         }
     }
 
