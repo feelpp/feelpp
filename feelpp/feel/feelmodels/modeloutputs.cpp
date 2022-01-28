@@ -58,6 +58,8 @@ ModelOutput::ModelOutput( std::string name, nl::json const& jarg, worldcomm_ptr_
          auto const& j_topodim = jarg.at("topodim");
          if ( j_topodim.is_number_unsigned() )
              M_dim = j_topodim.get<int>();
+         else if ( j_topodim.is_string() )
+             M_dim = std::stoi( j_topodim.get<std::string>() );
      }
      // else LOG(WARNING) << "Output " << M_name << " does not have any dimension\n";
 }
