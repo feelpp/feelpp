@@ -28,6 +28,7 @@ more information link:http://www.iso.org/iso/catalogue_detail.htm?csnumber=40967
 
 * Case 2 : 2d, temperature distribution and heat flow within a roof construction
 * Case 3 : 3d, temperature distribution and heat flows through the wall-balcony junction
+* Case 4 : 3d, temperature distribution and heat flows within a three dimensional thermal bridge consisting of an iron bar penetrating an insulation layer
 
 == Running the testcase
 
@@ -35,4 +36,5 @@ more information link:http://www.iso.org/iso/catalogue_detail.htm?csnumber=40967
 ----
 $ feelpp_toolbox_heat --config-file case2.cfg
 $ feelpp_toolbox_heat --config-file case3.cfg
+$ feelpp_toolbox_heat --config-file case4.cfg
 ----
