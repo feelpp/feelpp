@@ -170,13 +170,12 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_fluidModel = std::make_shared<fluid_model_type>(prefixvm(this->prefix(),"fluid"), "fluid", this->worldCommPtr(),
                                                       this->subPrefix(), this->repository() );
 
-    if ( this->physics().empty() )
-    {
-        typename ModelPhysics<mesh_type::nDim>::subphysic_description_type subPhyicsDesc;
-        subPhyicsDesc[M_heatModel->physicType()] = std::make_tuple( M_heatModel->keyword(),M_heatModel );
-        subPhyicsDesc[M_fluidModel->physicType()] = std::make_tuple( M_fluidModel->keyword(), M_fluidModel );
-        this->initPhysics( this->keyword(), this->modelProperties().models(), subPhyicsDesc );
-    }
+    // physics
+    using physic_tree_type = typename super_physics_type::PhysicsTree;
+    physic_tree_type physicsTree( this->shared_from_this() );
+    physicsTree.addLeaf( M_heatModel );
+    physicsTree.addLeaf( M_fluidModel );
+    this->initPhysics( physicsTree, this->modelProperties().models() );
 
     // physical properties
     if ( !M_materialsProperties )
@@ -193,7 +192,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->materialsProperties()->addMesh( this->mesh() );
 
     // init heat toolbox
-    M_heatModel->setPhysics( this->physics( M_heatModel->physicType() ) );
     M_heatModel->setManageParameterValues( false );
     if ( !M_heatModel->modelPropertiesPtr() )
     {
@@ -205,7 +203,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_heatModel->init( false );
 
     // init fluid toolbox
-    M_fluidModel->setPhysics( this->physics( M_fluidModel->physicType() ) );
     M_fluidModel->setManageParameterValues( false );
     if ( !M_fluidModel->modelPropertiesPtr() )
     {
@@ -227,9 +224,17 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // defined the convection fluid velocity into heat toolbox
     std::string fluidVelocitySymbolUsed = M_useSemiImplicitTimeScheme? "beta_u" : "U"; // TODO : get this info from fluid toolbox
     std::string velConvExprStr = (boost::format( nDim==2? "{%1%_%2%_0,%1%_%2%_1}:%1%_%2%_0:%1%_%2%_1":"{%1%_%2%_0,%1%_%2%_1,%1%_%2%_2}:%1%_%2%_0:%1%_%2%_1:%1%_%2%_2" )%M_fluidModel->keyword() %fluidVelocitySymbolUsed ).str();
-    auto velConvExpr = expr<nDim,1>( velConvExprStr, "",this->worldComm(),this->repository().expr() );
-    for ( std::string const& matName : M_materialsProperties->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
-        M_heatModel->setVelocityConvectionExpr( matName,velConvExpr );
+    nl::json j_heatConvectionVelocity = { {"expr",velConvExprStr} };
+    for ( auto const& [physicId,physicObj] : this->physicsFromCurrentType() )
+    {
+        for ( auto subphysic : physicObj->subphysicsFromType( M_heatModel->physicType() ) )
+        {
+            auto physicHeatObj = std::dynamic_pointer_cast<ModelPhysicHeat<nDim>>(subphysic);
+            CHECK( physicHeatObj ) << "invalid cast";
+            physicHeatObj->setupConvection( j_heatConvectionVelocity );
+        }
+    }
+
 
     if ( M_useNaturalConvection )
         M_fluidModel->setStabilizationGLSDoAssembly( false );
