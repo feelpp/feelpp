@@ -102,7 +102,6 @@ PYBIND11_MODULE(_models, m )
         .def("hasPropertyScalar",&ModelMaterial::hasPropertyExprScalar, "returns true of the property exists and is a scalar expression, false otherwise")
         .def("propertyConstant",&ModelMaterial::propertyConstant, "return the value of the constant property")
         .def("setParameterValues",&ModelMaterial::setParameterValues, "set parameter values from a map of string/double pairs")
-        .def("getString",&ModelMaterial::getString, "returns the string from key if the value is a string")
         .def("__str__", [](const ModelMaterial &mat )
              {
                  std::ostringstream s;
