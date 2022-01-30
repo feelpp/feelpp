@@ -32,17 +32,17 @@ class InitFeelpp:
     def __init__(self,config):
         try:
             sys.argv=['test_feelpp']
-            self.e = feelpp.Environment(sys.argv,config=config)
+            self.feelpp_env = feelpp.Environment(sys.argv,config=config)
         except Exception:
             return 
 
 
 @pytest.fixture(scope="session")
 def init_feelpp():
-    return InitFeelpp(feelpp.globalRepository("pyfeelpp-tests")).e
+    return InitFeelpp(feelpp.globalRepository("pyfeelpp-tests")).feelpp_env
 
 @pytest.fixture(scope="session")
 def init_feelpp_config_local():
-    return InitFeelpp(feelpp.localRepository("feelppdb"))
+    return InitFeelpp(feelpp.localRepository("feelppdb")).feelpp_env
 
 
