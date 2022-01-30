@@ -67,7 +67,8 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    M_useNaturalConvection = boption(_prefix=this->prefix(),_name="use-natural-convection");//"Forced-Convection";
+    M_useNaturalConvection = boption(_prefix=this->prefix(),_name="use-natural-convection");
+    M_solverName = soption(_prefix=this->prefix(),_name="solver");
 
     M_BoussinesqRefTemperature = doption(_name="Boussinesq.ref-temperature",_prefix=this->prefix());
     std::string gravityStr;
@@ -199,7 +200,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
         M_heatModel->setManageParameterValuesOfModelProperties( false );
     }
-    M_heatModel->setMesh( this->mesh() );
+    M_heatModel->setModelMeshAsShared( this->modelMesh() );
     M_heatModel->setMaterialsProperties( M_materialsProperties );
     M_heatModel->init( false );
 
@@ -211,7 +212,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_fluidModel->setModelProperties( this->modelPropertiesPtr() );
         M_fluidModel->setManageParameterValuesOfModelProperties( false );
     }
-    M_fluidModel->setMesh( this->mesh() );
+    M_fluidModel->setModelMeshAsShared( this->modelMesh() );
     M_fluidModel->setMaterialsProperties( M_materialsProperties );
     M_fluidModel->init( false );
 
@@ -233,12 +234,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( M_useNaturalConvection )
         M_fluidModel->setStabilizationGLSDoAssembly( false );
 
-    if ( M_useSemiImplicitTimeScheme )
-    {
-        M_fluidModel->setUseVelocityExtrapolated( true );
-        //M_fluidModel->setUseSemiImplicitTimeScheme(true);
-    }
-
     // post-process
     this->initPostProcess();
 
@@ -247,6 +242,13 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // update initial conditions
     this->updateInitialConditions( this->symbolsExpr() );
+
+
+    // solver
+    if ( M_solverName == "automatic" )
+    {
+        M_solverName = "Newton";
+    }
 
     // backend
     this->initAlgebraicBackend();
@@ -373,6 +375,17 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
                 M_exporter->restart(this->timeInitial());
         }
     }
+
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
+
+    // start or restart the export of measures
+    if ( !this->isStationary() )
+    {
+        if ( this->doRestart() )
+            this->postProcessMeasures().restart( this->timeInitial() );
+    }
+
 
     double tElpased = this->timerTool("Constructor").stop("createExporters");
     this->log("HeatFluid","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
@@ -568,15 +581,24 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->timerTool("PostProcessing").start();
 
     auto mfields = this->modelFields();
-    auto symbolExpr = this->symbolsExpr( mfields );
-    M_heatModel->exportResults( time, symbolExpr );
-    M_fluidModel->exportResults( time, symbolExpr );
+    auto se = this->symbolsExpr( mfields );
+    M_heatModel->exportResults( time, se );
+    M_fluidModel->exportResults( time, se );
 
     //auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_fluidModel->allFields( M_fluidModel->keyword() ) );
-    auto exprExport = hana::concat( M_materialsProperties->exprPostProcessExports( this->mesh(),this->physicsAvailable(),symbolExpr ),
-                                    hana::concat( M_heatModel->exprPostProcessExportsToolbox( symbolExpr,M_heatModel->keyword() ),
-                                                  M_fluidModel->exprPostProcessExports( symbolExpr,M_fluidModel->keyword() ) ) );
-    this->executePostProcessExports( M_exporter, time, mfields, symbolExpr, exprExport );
+    auto exprExport = hana::concat( M_materialsProperties->exprPostProcessExports( this->mesh(),this->physicsAvailable(),se ),
+                                    hana::concat( M_heatModel->exprPostProcessExportsToolbox( se,M_heatModel->keyword() ),
+                                                  M_fluidModel->exprPostProcessExports( se,M_fluidModel->keyword() ) ) );
+    this->executePostProcessExports( M_exporter, time, mfields, se, exprExport );
+
+
+    auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
+    auto defaultRangeMeshElements = mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() )?
+        elements(this->mesh()) : markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
+    model_measures_quantities_empty_t mquantities;
+    // execute common post process and save measures
+    super_type::executePostProcessMeasures( time, this->mesh(), defaultRangeMeshElements, se, mfields, mquantities );
+
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -654,7 +676,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
             M_fluidModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
             M_heatModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat") );
 
-            this->algebraicFactory()->solve( "Newton", this->algebraicBlockVectorSolution()->vectorMonolithic() );
+            this->algebraicFactory()->solve( M_solverName, this->algebraicBlockVectorSolution()->vectorMonolithic() );
 
             this->algebraicBlockVectorSolution()->localize();
         }

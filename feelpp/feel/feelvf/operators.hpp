@@ -50,6 +50,8 @@
 #include <feel/feelvf/exproptionalconcat.hpp>
 #include <feel/feelvf/one.hpp>
 
+#include <feel/feeldiscr/detail/spacecontext.hpp>
+
 namespace Feel
 {
 struct ContextGeometricBase;
@@ -680,7 +682,16 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), M_mzero.constant(0.) ); \
                     /*M_expr.e().VF_OPERATOR_SYMBOL( O )( *ctx, M_loc );*/ \
                     /*M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_expr.e().selectContext( ctx...), M_loc );*/ \
-                    this->updateContext( M_expr.e().selectContext( ctx...), mpl::bool_<ctxspace_is_geometricspace>() ); \
+                    auto ctxSelected = M_expr.e().selectContext( ctx...); \
+                    if ( ctxSelected )                                  \
+                        this->updateContext( ctxSelected, mpl::bool_<ctxspace_is_geometricspace>() ); \
+                    else                                                \
+                    {                                                   \
+                        if ( auto geomapCtxSelected = Feel::detail::selectGeomapContextFromSpaceContext( M_expr.e().mesh(), ctx... ) ) \
+                            this->updateFromGeomapContext( geomapCtxSelected ); \
+                        else if ( false /*auto geoCtxSelected = selectGeometricContext<>(  ctx... )*/ ) \
+                            this->updateContext( hana::at_c<0>( hana::make_tuple(ctx...) )/* ctxGeo*/, mpl::true_{} ); \
+                    }                                                   \
                 }                                                       \
                 template <typename CTX>                                 \
                     void updateContext( CTX const& ctx, mpl::true_ /**/ ) \
@@ -690,6 +701,14 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&) M_pc ); \
                     M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
                 }                                                       \
+                template <typename GmcType>                             \
+                void updateFromGeomapContext( std::shared_ptr<GmcType> const& gmc ) \
+                {                                                       \
+                    M_pc->update( gmc->xRefs() ); \
+                    M_ctx->update( gmc,  (pc_ptrtype const&) M_pc ); \
+                    M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
+                }                                                       \
+                                                                        \
                 template <typename CTX>                                 \
                     void updateContext( CTX const& ctx, mpl::false_ /**/ ) \
                 {                                                       \

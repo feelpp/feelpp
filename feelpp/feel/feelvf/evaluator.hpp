@@ -249,8 +249,8 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
 
 
-    gm_context_ptrtype __c = initElt.gm()->template context<context>( initElt,__geopc );
-    gm1_context_ptrtype __c1 =  initElt.gm1()->template context<context>( initElt,__geopc1 );
+    gm_context_ptrtype __c = initElt.gm()->template context<context>( initElt,__geopc, M_expr.dynamicContext() );
+    gm1_context_ptrtype __c1 =  initElt.gm1()->template context<context>( initElt,__geopc1, M_expr.dynamicContext() );
 
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
     t_expr_type tensor_expr( M_expr, mapgmc );
@@ -460,8 +460,8 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
 
     auto const& initFace = boost::unwrap_ref( *__face_it );
     uint16_type __face_id = initFace.pos_first();
-    gmc_ptrtype __c = __gm->template context<context>( initFace.element( 0 ), __geopc, __face_id );
-    gmc1_ptrtype __c1 = __gm1->template context<context>( initFace.element( 0 ), __geopc1, __face_id );
+    gmc_ptrtype __c = __gm->template context<context>( initFace.element( 0 ), __geopc, __face_id, M_expr.dynamicContext() );
+    gmc1_ptrtype __c1 = __gm1->template context<context>( initFace.element( 0 ), __geopc1, __face_id, M_expr.dynamicContext() );
 
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
     t_expr_type expr( M_expr, mapgmc );

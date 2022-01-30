@@ -1967,7 +1967,7 @@ typename CRB<TruthModelType>::element_type
 CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptrtype & dual_initial_field) //const sparse_matrix_ptrtype & A, const element_type & u )
 {
     if ( M_model->isSteady() )
-        M_model->solveFemDualUsingAffineDecompositionFixedPoint( mu );
+        return M_model->solveFemDualUsingAffineDecompositionFixedPoint( mu );
 
     //M_backend_dual = backend_type::build( BACKEND_PETSC );
     bool reuse_prec = boption(_prefix=M_prefix,_name="crb.reuse-prec") ;
@@ -2190,6 +2190,7 @@ CRB<TruthModelType>::offlineSolve( element_type& u, element_type& udu, parameter
 {
     if ( M_model->isSteady()  )
     {
+        // TODO VINCENT : fix use of dual problem
         if ( M_model->hasEim() && boption(_prefix=M_prefix,_name="crb.solve-fem-monolithic") )
         {
             u = M_model->solve(mu);

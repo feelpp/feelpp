@@ -199,7 +199,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
         M_heatModel->setManageParameterValuesOfModelProperties( false );
     }
-    M_heatModel->setMesh( this->mesh() );
+    M_heatModel->setModelMeshAsShared( this->modelMesh() );
     M_heatModel->setMaterialsProperties( M_materialsProperties );
     M_heatModel->init( false );
 
@@ -211,7 +211,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_electricModel->setModelProperties( this->modelPropertiesPtr() );
         M_electricModel->setManageParameterValuesOfModelProperties( false );
     }
-    M_electricModel->setMesh( this->mesh() );
+    M_electricModel->setModelMeshAsShared( this->modelMesh() );
     M_electricModel->setMaterialsProperties( M_materialsProperties );
     M_electricModel->init( false );
 

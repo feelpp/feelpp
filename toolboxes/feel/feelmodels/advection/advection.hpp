@@ -204,10 +204,6 @@ public :
     typedef Exporter<mesh_type, nOrderGeo> exporter_type;
     typedef std::shared_ptr<exporter_type> exporter_ptrtype;
 
-    // Measure tools for points evaluation
-    typedef MeasurePointsEvaluation<space_advection_type> measure_points_evaluation_type;
-    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
-
     //--------------------------------------------------------------------//
     typedef map_scalar_field<2> map_scalar_field_type;
     typedef map_vector_field<nDim, 1, 2> map_vector_field_type;
@@ -261,11 +257,8 @@ public :
 
     //--------------------------------------------------------------------//
     // Mesh
-    virtual std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"AdvectionMesh.path"); }
-
-    mesh_ptrtype const& mesh() const { return M_mesh; }
-    void loadMesh( mesh_ptrtype m );
-    void setMesh( mesh_ptrtype const& m );
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
 
     //--------------------------------------------------------------------//
     // Ranges
@@ -538,7 +531,6 @@ protected:
     std::string M_solverName;
     //--------------------------------------------------------------------//
     // Mesh
-    mesh_ptrtype M_mesh;
     range_elements_type M_rangeMeshElements;
     // Periodicity
     periodicity_type M_periodicity;
@@ -583,7 +575,6 @@ protected:
     //--------------------------------------------------------------------//
     // Export
     exporter_ptrtype M_exporter;
-    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
     bool M_doExportAll;
     bool M_doExportAdvectionVelocity;
     bool M_doExportDiffusionCoefficient;
@@ -690,7 +681,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& 
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
     this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr );
-    this->executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), M_measurePointsEvaluation, symbolsExpr, mfields, tupleMeasuresQuantities );
+    this->executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields, tupleMeasuresQuantities );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdf->iteration(), mfields );
 
     this->timerTool("PostProcessing").stop("exportResults");

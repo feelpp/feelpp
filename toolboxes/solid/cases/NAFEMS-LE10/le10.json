@@ -60,7 +60,7 @@
             {
                 "Top":
                 {
-                    "expr":"-1e6"
+                    "expr":"1e6"
                 }
             }
         }
@@ -78,7 +78,21 @@
                 "pointD":
                 {
                     "coord":"{2,0,0.6}",
-                    "fields":["stress_yy"] // NOT AVAILABLE CURRENTLY
+                    "expressions":
+                    {
+                        "sigma_yy":"solid_stress_P_11:solid_stress_P_11"
+                    }
+                }
+            }
+        },
+        "Checkers":
+        {
+            "Measures":
+            {
+                "Points_pointD_expr_sigma_yy":
+                {
+                    "value":5.38e6,
+                    "tolerance":1e-1 //1e-2
                 }
             }
         }
