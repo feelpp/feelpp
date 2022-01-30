@@ -17,7 +17,7 @@ except ImportError as e:
     pass  # module doesn't exist, deal with it.
 
 
-def electric(dim=2, orderPotential=1, worldComm=None, subprefix="", modelRep=None ):
+def electric(dim=2, orderPotential=1, worldComm=None, keyword="electric", subprefix="", modelRep=None):
     """create a electric toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -35,4 +35,4 @@ def electric(dim=2, orderPotential=1, worldComm=None, subprefix="", modelRep=Non
         raise RuntimeError('Electric solver '+key+' not existing')
     if modelRep is None:
         modelRep = ModelBaseRepository()
-    return _electrics[key]( "electric", "electric", worldComm, "", modelRep  )
+    return _electrics[key]( prefix="electric", keyword=keyword, worldComm=worldComm, subprefix="", modelRep=modelRep  )

@@ -436,6 +436,38 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
                            _expr= timeSteppingScaling*theExpr1*idt(v)*id(v),
                            _geomap=this->geomap() );
         }
+
+        for( auto const& d : M_bcNeumann )
+        {
+            auto neumannExprBase = expression( d );
+            bool neumannnBcDependOnUnknown = neumannExprBase.hasSymbolDependency( trialSymbolNames, se );
+            if ( neumannnBcDependOnUnknown )
+            {
+                auto neumannExpr = expr( neumannExprBase, se );
+                hana::for_each( tse.map(), [this,&d,&neumannExpr,&u,&v,&J,&Xh,&timeSteppingScaling]( auto const& e )
+                {
+                    for ( auto const& trialSpacePair : hana::second(e).blockSpaceIndex() )
+                    {
+                        auto trialXh = trialSpacePair.first;
+                        auto trialBlockIndex = trialSpacePair.second;
+
+                        auto neumannDiffExpr = diffSymbolicExpr( neumannExpr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+
+                        if ( !neumannDiffExpr.expression().hasExpr() )
+                            continue;
+
+                        form2( _test=Xh,_trial=trialXh,_matrix=J,
+                               _pattern=size_type(Pattern::COUPLED),
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=trialBlockIndex ) +=
+                            integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
+                                       _expr= -timeSteppingScaling*inner(neumannDiffExpr, id(v)),
+                                       _geomap=this->geomap() );
+                    }
+                });
+            }
+        }
+
     }
 
 }
@@ -480,7 +512,10 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
     auto Xh = this->spaceTemperature();
     auto const& v = this->fieldTemperature();
     auto const& u = mctx.field( FieldTag::temperature(this), "temperature" );
-    auto const& symbolsExpr = mctx.symbolsExpr();
+    auto const& se = mctx.symbolsExpr();
+    auto const& tse = mctx.trialSymbolsExpr();
+    auto trialSymbolNames = tse.names();
+
     auto myLinearForm = form1( _test=Xh, _vector=R,
                                _rowstart=this->rowStartInVector() );
 
@@ -493,7 +528,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
 
         if ( thermalConductivity.template hasExpr<nDim,nDim>() )
         {
-            auto const& kappaExpr = expr( thermalConductivity.template expr<nDim,nDim>(), symbolsExpr );
+            auto const& kappaExpr = expr( thermalConductivity.template expr<nDim,nDim>(), se );
             bool buildDiffusion = kappaExpr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
             if ( buildDiffusion )
             {
@@ -505,7 +540,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
         }
         else
         {
-            auto kappaExpr = expr(thermalConductivity.expr(),symbolsExpr);
+            auto kappaExpr = expr(thermalConductivity.expr(),se);
             bool buildDiffusion = kappaExpr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
             if ( buildDiffusion )
             {
@@ -519,10 +554,10 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
         if ( this->hasVelocityConvectionExpr( matName ) || !this->isStationary() )
         {
             auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
-            auto rhoHeatCapacityExpr = expr(rhoHeatCapacity.expr(),symbolsExpr);
+            auto rhoHeatCapacityExpr = expr(rhoHeatCapacity.expr(),se);
             if ( buildNonCstPart && this->hasVelocityConvectionExpr( matName ) )
             {
-                auto velConvExpr = expr( this->velocityConvectionExpr( matName ), symbolsExpr );
+                auto velConvExpr = expr( this->velocityConvectionExpr( matName ), se );
                 myLinearForm +=
                     integrate( _range=range,
                                _expr= timeSteppingScaling*rhoHeatCapacityExpr*(gradv(u)*velConvExpr)*id(v),
@@ -564,7 +599,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
     {
         for( auto const& d : this->M_volumicForcesProperties )
         {
-            auto theExpr = expression(d,symbolsExpr);
+            auto theExpr = expression(d,se);
             auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
@@ -577,9 +612,12 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
     // update weak bc
     for( auto const& d : this->M_bcNeumann )
     {
-        if ( buildCstPart )
+        auto neumannExprBase = expression( d );
+        bool neumannnBcDependOnUnknown = neumannExprBase.hasSymbolDependency( trialSymbolNames, se );
+        bool assembleNeumannBcTerm = neumannnBcDependOnUnknown? buildNonCstPart : buildCstPart;
+        if ( assembleNeumannBcTerm )
         {
-            auto theExpr = expression(d,symbolsExpr);
+            auto theExpr = expr( neumannExprBase, se );
             myLinearForm +=
                 integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
                            _expr= -timeSteppingScaling*theExpr*id(v),
@@ -589,7 +627,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
 
     for( auto const& d : this->M_bcRobin )
     {
-        auto theExpr1 = expression1( d,symbolsExpr );
+        auto theExpr1 = expression1( d,se );
         if ( buildNonCstPart )
         {
             myLinearForm +=
@@ -599,7 +637,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
         }
         if ( buildCstPart )
         {
-            auto theExpr2 = expression2( d,symbolsExpr );
+            auto theExpr2 = expression2( d,se );
             myLinearForm +=
                 integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
                            _expr= -timeSteppingScaling*theExpr1*theExpr2*id(v),

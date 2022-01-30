@@ -59,8 +59,22 @@
             {
                 "pointD":
                 {
-                    "coord":"{2,0,0}",
-                    "fields":["stress_yy"] // NOT AVAILABLE CURRENTLY
+                    "coord":"{2,0}",
+                    "expressions":
+                    {
+                        "sigma_yy":"solid_stress_P_11:solid_stress_P_11"
+                    }
+                }
+            }
+        },
+        "Checkers":
+        {
+            "Measures":
+            {
+                "Points_pointD_expr_sigma_yy":
+                {
+                    "value":92.7e6,
+                    "tolerance":1e-2
                 }
             }
         }

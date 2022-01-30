@@ -1631,6 +1631,7 @@ void
 Environment::setConfigFile( std::string const& cfgfile )
 {
     if ( !fs::exists( findFile( cfgfile, {} ) ) ) return;
+    S_vm.clear();
     fs::path cfgAbsolutePath = fs::absolute( findFile( cfgfile ) );
     cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
     // LOG( INFO ) << "Reading " << cfgfile << "...";
