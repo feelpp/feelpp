@@ -201,9 +201,27 @@ using tensor_eigen_ublas_type = Eigen::TensorMap<Eigen::Tensor<const value_type,
 
 using d_tensor_eigen_ublas_type = Eigen::TensorMap<Eigen::Tensor<const double,2>> ;
 
-template<int Dim,typename T=double>
+template<int Dim= Eigen::Dynamic,typename T=double>
 using eigen_vector_type = Eigen::Matrix<T,Dim,1>;
 
+template<typename T=double>
+using em_vector_t = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,1>>;
+
+template<int Dim, typename T=double>
+using em_fixed_vector_t = Eigen::Map<Eigen::Matrix<T,Dim,1>>;
+
+template<typename T>
+em_vector_t<T>
+em( ublas::vector<T> const& v )
+{
+    return em_vector_t<T>{ const_cast<T*>(v.data().begin()), static_cast<Eigen::Index>(v.size()) };
+}
+template<typename T>
+em_vector_t<T>
+em( std::vector<T> const& v )
+{
+    return em_vector_t<T>{ const_cast<T*>(v.data()), v.size() };
+}
 template<int Dim,typename T=double>
 using vector_eigen_vector_type = std::vector<eigen_vector_type<Dim,T>,Eigen::aligned_allocator<eigen_vector_type<Dim,T>>>;
 
@@ -248,7 +266,8 @@ using tensor2_map_t = Eigen::TensorMap<Eigen::Tensor<const value_type,2>>;
 template<typename value_type=double>
 using tensor1_map_t = Eigen::TensorMap<Eigen::Tensor<const value_type,1>>;
 
-
+template<typename value_type=double>
+using em_matrix_t = Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic>>;
 
 template<int M,int N,typename value_type=double>
 using em_fixed_size_matrix_t = Eigen::Map<Eigen::Matrix<value_type,M,N>>;
