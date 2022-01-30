@@ -282,6 +282,11 @@ public:
             return M_geoParamMap;
         }
 
+    /**
+     * @brief get gmsh geo parameters 
+     * 
+     * @return std::map<std::string, std::string>& a dictionnary of parameters and their expressions
+     */
     std::map<std::string, std::string>& geoParameters() 
         {
             return M_geoParamMap;
