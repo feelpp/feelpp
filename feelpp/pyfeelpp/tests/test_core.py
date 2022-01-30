@@ -15,18 +15,22 @@ config_cases=[  ("pyfeelpp-tests/core/test_config",feelpp.Location.standard,Fals
 @pytest.mark.parametrize("dir,location,rm", config_cases)
 def test_config(init_feelpp,dir,location,rm):
     e=init_feelpp
-    if location == feelpp.Location.git:
-        shutil.rmtree("/tmp/test_config")
-        os.mkdir("/tmp/test_config")
-        os.chdir("/tmp/test_config")
-        subprocess.call(["git", "init"])
-        os.mkdir("/tmp/test_config/tutu")
+    if location == feelpp.Location.git :
+        if e.isMasterRank():
+            shutil.rmtree("/tmp/test_config")
+            os.mkdir("/tmp/test_config")
+            os.chdir("/tmp/test_config")
+            subprocess.call(["git", "init"])
+            os.mkdir("/tmp/test_config/tutu")
+        e.worldComm().globalComm().Barrier()
         os.chdir("/tmp/test_config/tutu")
+    
     e.changeRepository(directory=dir,location=location)
     thedir=Path(feelpp.Environment.rootRepository()) / Path(dir)
     assert thedir.is_dir()
     assert (Path(os.getcwd())/Path("logs")).is_dir()
-    if rm:
+    e.worldComm().globalComm().Barrier()
+    if rm and e.isMasterRank():
         os.chdir(Path(feelpp.Environment.rootRepository()).parent)
         shutil.rmtree(feelpp.Environment.rootRepository())
 
