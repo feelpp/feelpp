@@ -64,8 +64,7 @@ GithubUser::update()
     fmt::print("githubuser update\n");
     if (login && !login->empty())
     {
-        //cpr::Response r = cpr::Get( cpr::Url{ fmt::format("https://api.github.com/users/",*login) } );
-        cpr::Response r = cpr::Get( cpr::Url{ "https://api.github.com/users/prudhomm" } );
+        cpr::Response r = cpr::Get( cpr::Url{ fmt::format("https://api.github.com/users/",*login) } );
         if ( r.status_code == 200 )
         {
             nl::json j = nl::json::parse( r.text );
