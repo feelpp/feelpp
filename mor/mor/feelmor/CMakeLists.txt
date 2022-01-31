@@ -23,7 +23,7 @@
 #
 # set(CMAKE_CXX_FLAGS "-g -O0" )
 
-set(SRC crbdb.cpp crbmodeldb.cpp pfemapp.cpp opusapp.cpp crbplugin_interface.cpp )
+set(SRC toolboxmor.cpp crbdb.cpp crbmodeldb.cpp pfemapp.cpp opusapp.cpp crbplugin_interface.cpp )
 
 add_library( feelpp_mor SHARED ${SRC} )
 add_library(Feelpp::feelpp_mor ALIAS feelpp_mor )

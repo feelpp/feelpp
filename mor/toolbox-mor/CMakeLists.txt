@@ -1,20 +1,12 @@
-add_custom_target(toolbox-mor)
+add_custom_target(feelpp_mor_apps)
 
-add_library( feelpp_crb_toolbox-mor SHARED toolboxmor.cpp )
-add_library(Feelpp::feelpp_crb_toolbox-mor ALIAS feelpp_crb_toolbox-mor )
-set_target_properties(feelpp_crb_toolbox-mor PROPERTIES VERSION 1 SOVERSION 1)
-target_link_libraries( feelpp_crb_toolbox-mor PUBLIC Feelpp::feelpp   )
-INSTALL(TARGETS feelpp_crb_toolbox-mor EXPORT feelpp-mor-export-targets
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    )
+if ( TARGET Feelpp::feelpp_toolbox_heat_lib )
+    feelpp_add_application(mor_heat SRCS toolboxmor_heat.cpp LINK_LIBRARIES  Feelpp::feelpp_toolbox_heat_lib Feelpp::feelpp_mor INSTALL EXEC MOR_TOOLBOX_HEAT)
+    add_dependencies(feelpp_mor_apps ${MOR_TOOLBOX_HEAT} )
+endif()
+if ( TARGET Feelpp::feelpp_toolbox_coefficientformpdes_lib)    
+    feelpp_add_application(mor_cfpdes SRCS toolboxmor_cfpdes.cpp LINK_LIBRARIES Feelpp::feelpp_toolbox_coefficientformpdes_lib Feelpp::feelpp_mor INSTALL EXEC MOR_TOOLBOX_CFPDES)
+    add_dependencies(feelpp_mor_apps ${MOR_TOOLBOX_CFPDES} )
+endif()
 
-set(FEELPP_CRB_toolboxmor_LIBRARIES feelpp_crb_toolbox-mor PARENT_SCOPE)
-set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_toolboxmor_LIBRARIES PARENT_SCOPE)
-
-feelpp_add_application(toolboxmor-heat SRCS toolboxmor_heat.cpp LINK_LIBRARIES ${CRB_LIB_TOOLBOXMOR} Feelpp::feelpp_toolbox_heat_lib INSTALL EXEC MOR_TOOLBOX_HEAT)
-feelpp_add_application(toolboxmor-cfpdes SRCS toolboxmor_cfpdes.cpp LINK_LIBRARIES ${CRB_LIB_TOOLBOXMOR} Feelpp::feelpp_toolbox_coefficientformpdes_lib INSTALL EXEC MOR_TOOLBOX_CFPDES)
-
-feelpp_add_testcase(opusheat PREFIX feelpp_crb CATEGORY CRB)
-
-add_dependencies(toolbox-mor ${MOR_TOOLBOX_HEAT} ${MOR_TOOLBOX_CFPDES})
+feelpp_add_testcase(opusheat PREFIX mor CATEGORY MOR)
