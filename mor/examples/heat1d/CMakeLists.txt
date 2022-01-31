@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2011-04-23
 #
-#  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2011 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,20 +22,20 @@
 #
 #
 
-crb_add_library( heat1d SRCS heat1d.cpp EXEC CRB_LIB_HEAT1D EXPORT feelpp-mor-export-targets )
+mor_add_library( heat1d SRCS heat1d.cpp EXEC CRB_LIB_HEAT1D EXPORT feelpp-mor-export-targets )
 install(FILES heat1d.hpp DESTINATION include/feelpp/mor/heat1d COMPONENT Devel)
 
-#crb_add_executable(heat1dpfem heat1dpfem.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heat1dpfem.cfg )
-#crb_add_executable(heat1dpfem heat1dpfem.cpp LINK_LIBRARIES feel++_crb_crb CFG heat1dpfem.cfg )
-#crb_add_executable(heat1dscm heat1dscm.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heat1dscm.cfg )
-#crb_add_executable(heat1dcrb heat1dcrb.cpp LINK_LIBRARIES feel++_crb_crb ${FEELPP_LIBRARIES} CFG heat1dcrb.cfg )
+#mor_add_executable(heat1dpfem heat1dpfem.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heat1dpfem.cfg )
+#mor_add_executable(heat1dpfem heat1dpfem.cpp LINK_LIBRARIES feel++_crb_crb CFG heat1dpfem.cfg )
+#mor_add_executable(heat1dscm heat1dscm.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heat1dscm.cfg )
+#mor_add_executable(heat1dcrb heat1dcrb.cpp LINK_LIBRARIES feel++_crb_crb ${FEELPP_LIBRARIES} CFG heat1dcrb.cfg )
 
 #add_subdirectory(python)
 #add_subdirectory(octave)
 
-crb_add_model(heat1d Heat1D HDRS heat1d.hpp
+mor_add_model(heat1d Heat1D HDRS heat1d.hpp
   LINK_LIBRARIES ${CRB_LIB_HEAT1D}
   CFG heat1d.cfg XML heat1d.xml
   GEO heat1d.geo
   SCRIPTS heat1d.m)
-#crb_add_python_module( heat1dcrb opusheat1dcrb_wrapper.cpp LINK_LIBRARIES feel++_crb_models SCRIPTS heat1d.py )
+#mor_add_python_module( heat1dcrb opusheat1dcrb_wrapper.cpp LINK_LIBRARIES feel++_crb_models SCRIPTS heat1d.py )

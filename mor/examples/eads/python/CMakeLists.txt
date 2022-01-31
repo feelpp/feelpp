@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2010-02-24
 #
-#  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2010 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -28,10 +28,10 @@ include_directories(
 
 #files(GLOB pyfiles "*.py")
 if ( FEELPP_HAS_OPENTURNS )
- crb_add_python_module( opuseadsmfem opuseadsmfem_wrapper.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} SCRIPTS opuseadsmfemtest.py )
- crb_add_python_module( opuseadspfem opuseadspfem_wrapper.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} SCRIPTS opuseadspfemtest.py )
- #crb_add_python_module( opuseadscrb opuseadscrb_wrapper.cpp LINK_LIBRARIES feel++_crb_models SCRIPTS opuseadscrbtest.py )
- crb_add_python_module( opuseadscrb opuseadscrb_wrapper.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES}  )
+ mor_add_python_module( opuseadsmfem opuseadsmfem_wrapper.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} SCRIPTS opuseadsmfemtest.py )
+ mor_add_python_module( opuseadspfem opuseadspfem_wrapper.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} SCRIPTS opuseadspfemtest.py )
+ #mor_add_python_module( opuseadscrb opuseadscrb_wrapper.cpp LINK_LIBRARIES feel++_crb_models SCRIPTS opuseadscrbtest.py )
+ mor_add_python_module( opuseadscrb opuseadscrb_wrapper.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES}  )
 
  configure_file(ct_thermique.py ct_thermique.py)
 

@@ -21,4 +21,4 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-crb_add_model(geoheatdiffusion GeoHeatDiffusion HDRS geoheatdiffusion.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG geoheatdiffusion.cfg XML geoheatdiffusion.xml )
+mor_add_model(geoheatdiffusion GeoHeatDiffusion HDRS geoheatdiffusion.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG geoheatdiffusion.cfg XML geoheatdiffusion.xml )

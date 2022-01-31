@@ -23,12 +23,12 @@
 #
 
 
-crb_add_library( heat3d SRCS heat3d.cpp  EXEC CRB_LIB_HEAT3D )
+mor_add_library( heat3d SRCS heat3d.cpp  EXEC CRB_LIB_HEAT3D )
 install(FILES heat3d.hpp DESTINATION include/feelpp/crb/heat3d COMPONENT Devel)
 
 set(FEELPP_CRB_HEAT3D_LIBRARIES ${CRB_LIB_HEAT3D} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_HEAT3D_LIBRARIES PARENT_SCOPE)
 
-crb_add_model(heat3d Heat3d HDRS heat3d.hpp  LINK_LIBRARIES ${CRB_LIB_HEAT3D} )
+mor_add_model(heat3d Heat3d HDRS heat3d.hpp  LINK_LIBRARIES ${CRB_LIB_HEAT3D} )
 
 feelpp_add_testcase(heat3d PREFIX feelpp_crb CATEGORY CRB)

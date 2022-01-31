@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2011-04-23
 #
-#  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2011 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,8 +22,8 @@
 #
 #
 
-crb_add_python_module( opusthermalblockpfem opusthermalblockpfem_wrapper.cpp LINK_LIBRARIES feel++_crb_crb SCRIPTS opusthermalblockpfemtest.py )
-#crb_add_python_module( opusthermalblockcrb opusthermalblockcrb_wrapper.cpp LINK_LIBRARIES feel++_crb_crb SCRIPTS opusthermalblockcrbtest.py )
+mor_add_python_module( opusthermalblockpfem opusthermalblockpfem_wrapper.cpp LINK_LIBRARIES feel++_crb_crb SCRIPTS opusthermalblockpfemtest.py )
+#mor_add_python_module( opusthermalblockcrb opusthermalblockcrb_wrapper.cpp LINK_LIBRARIES feel++_crb_crb SCRIPTS opusthermalblockcrbtest.py )
 
 
 FILE(GLOB pyprogs "${CMAKE_CURRENT_SOURCE_DIR}/*.py" )

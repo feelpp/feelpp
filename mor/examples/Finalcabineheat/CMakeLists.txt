@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2011-04-23
 #
-#  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2011 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -31,5 +31,5 @@
 #add_subdirectory(octave)
 
 
-crb_add_model(Finalcabineheat FinalCabineHeat HDRS Finalcabineheat.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG Finalcabineheat.cfg XML Finalcabineheat.xml SCRIPTS Finalcabineheat.m)
+mor_add_model(Finalcabineheat FinalCabineHeat HDRS Finalcabineheat.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG Finalcabineheat.cfg XML Finalcabineheat.xml SCRIPTS Finalcabineheat.m)
 #opus_add_python_module( heat1dcrb opusheat1dcrb_wrapper.cpp LINK_LIBRARIES feel++_opus_models SCRIPTS heat1d.py )

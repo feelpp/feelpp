@@ -23,12 +23,12 @@
 #
 
 
-crb_add_library( thermalbuilding SRCS thermalbuilding.cpp EXEC CRB_LIB_THERMALBUILDING )
+mor_add_library( thermalbuilding SRCS thermalbuilding.cpp EXEC CRB_LIB_THERMALBUILDING )
 install(FILES thermalbuilding.hpp DESTINATION include/feelpp/crb/thermalbuilding COMPONENT Devel)
 set(FEELPP_CRB_thermalbuilding_LIBRARIES ${CRB_LIB_THERMALBUILDING} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_thermalbuilding_LIBRARIES PARENT_SCOPE)
 
-crb_add_model(thermalbuilding ThermalBuilding HDRS thermalbuilding.hpp
+mor_add_model(thermalbuilding ThermalBuilding HDRS thermalbuilding.hpp
   LINK_LIBRARIES ${CRB_LIB_THERMALBUILDING} )
 
 feelpp_add_testcase(thermalbuilding PREFIX feelpp_crb CATEGORY CRB)

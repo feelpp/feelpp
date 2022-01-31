@@ -76,7 +76,8 @@ set(FEELPP_MOR_LIBRARIES)
 INCLUDE(CTest)
 ENABLE_TESTING()
 
-
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+include(feelpp.macros.mor)
 add_subdirectory(mor/feel/feelmor)
 add_subdirectory(apps)
 

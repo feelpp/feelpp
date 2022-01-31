@@ -34,31 +34,31 @@ else()
   include_directories(${CMAKE_SOURCE_DIR}/toolboxes ${CMAKE_BINARY_DIR}/toolboxes)
 endif()
 
-# crb_add_library( electric SRCS electric.cpp EXEC CRB_LIB_ELECTRIC)
+# mor_add_library( electric SRCS electric.cpp EXEC CRB_LIB_ELECTRIC)
 # set(FEELPP_CRB_ELECTRIC_LIBRARIES ${CRB_LIB_ELECTRIC} PARENT_SCOPE)
 # set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_ELECTRIC_LIBRARIES PARENT_SCOPE)
 
-# crb_add_library( thermic SRCS thermic.cpp LINK_LIBRARIES ${CRB_LIB_ELECTRIC} EXEC CRB_LIB_THERMIC)
+# mor_add_library( thermic SRCS thermic.cpp LINK_LIBRARIES ${CRB_LIB_ELECTRIC} EXEC CRB_LIB_THERMIC)
 # set(FEELPP_CRB_THERMIC_LIBRARIES ${CRB_LIB_THERMIC} PARENT_SCOPE)
 # set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_THERMIC_LIBRARIES PARENT_SCOPE)
 
-# crb_add_library( thermoelectric-simple SRCS thermoelectric-simple.cpp EXEC CRB_LIB_THERMOELECTRIC_SIMPLE)
+# mor_add_library( thermoelectric-simple SRCS thermoelectric-simple.cpp EXEC CRB_LIB_THERMOELECTRIC_SIMPLE)
 # set(FEELPP_CRB_THERMOELECTRIC_SIMPLE_LIBRARIES ${CRB_LIB_THERMOELECTRIC_SIMPLE} PARENT_SCOPE)
 # set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_THERMOELECTRIC_SIMPLE_LIBRARIES PARENT_SCOPE)
 
-# crb_add_library( thermoelectric-linear SRCS thermoelectric-linear.cpp EXEC CRB_LIB_THERMOELECTRIC_LINEAR)
+# mor_add_library( thermoelectric-linear SRCS thermoelectric-linear.cpp EXEC CRB_LIB_THERMOELECTRIC_LINEAR)
 # set(FEELPP_CRB_THERMOELECTRIC_LINEAR_LIBRARIES ${CRB_LIB_THERMOELECTRIC_LINEAR} PARENT_SCOPE)
 # set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_THERMOELECTRIC_LINEAR_LIBRARIES PARENT_SCOPE)
 
-crb_add_library( thermoelectric-nonlinear SRCS thermoelectric-nonlinear.cpp EXEC CRB_LIB_THERMOELECTRIC_NONLINEAR)
+mor_add_library( thermoelectric-nonlinear SRCS thermoelectric-nonlinear.cpp EXEC CRB_LIB_THERMOELECTRIC_NONLINEAR)
 set(FEELPP_CRB_THERMOELECTRIC_NONLINEAR_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_THERMOELECTRIC_NONLINEAR_LIBRARIES PARENT_SCOPE)
 
-crb_add_library( electric-alpha SRCS electric-alpha.cpp EXEC CRB_LIB_ELECTRIC_ALPHA)
+mor_add_library( electric-alpha SRCS electric-alpha.cpp EXEC CRB_LIB_ELECTRIC_ALPHA)
 set(FEELPP_CRB_ELECTRIC_ALPHA_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_ELECTRIC_ALPHA_LIBRARIES PARENT_SCOPE)
 
-crb_add_library( biotsavart-electric-alpha SRCS biotsavart-electric-alpha.hpp biotsavart-electric-alpha.cpp LINK_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA} ${GLPK_LIBRARIES} EXEC CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA )
+mor_add_library( biotsavart-electric-alpha SRCS biotsavart-electric-alpha.hpp biotsavart-electric-alpha.cpp LINK_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA} ${GLPK_LIBRARIES} EXEC CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA )
 target_include_directories(feelpp_crb_biotsavart-electric-alpha PUBLIC ${GLPK_INCLUDE_DIR} )
 set(FEELPP_CRB_BIOTSAVART_ELECTRIC_ALPHA_LIBRARIES ${CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_BIOTSAVART_ELECTRIC_ALPHA_LIBRARIES PARENT_SCOPE)
@@ -105,7 +105,7 @@ feelpp_add_application( biotsavart-electric-alpha-app
 
 # feelpp_add_application( test SRCS test.cpp )
 
-# crb_add_model(thermoelectric-nonlinear ThermoElectric
+# mor_add_model(thermoelectric-nonlinear ThermoElectric
 # 	HDRS thermoelectric-nonlinear.hpp
 # 	LINK_LIBRARIES ${FEELPP_LIBRARIES} ${CRB_LIB_THERMOELECTRIC_NONLINEAR}
 #     )

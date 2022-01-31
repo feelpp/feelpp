@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2011-04-23
 #
-#  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2011 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@
 #
 #
 
-crb_add_executable(eegpfem eegpfem.cpp LINK_LIBRARIES feel++_crb_crb )
-crb_add_model(eeg EEG HDRS eeg.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG eeg.cfg XML eeg.xml SCRIPTS eeg.m)
-crb_add_executable(eegscm eegscm.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
+mor_add_executable(eegpfem eegpfem.cpp LINK_LIBRARIES feel++_crb_crb )
+mor_add_model(eeg EEG HDRS eeg.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG eeg.cfg XML eeg.xml SCRIPTS eeg.m)
+mor_add_executable(eegscm eegscm.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
 
