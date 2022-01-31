@@ -159,6 +159,9 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     this->materialsProperties()->addMesh( this->mesh() );
 
+    for ( auto & [physicId,physicObj] : this->physicsFromCurrentType() )
+        std::static_pointer_cast<ModelPhysicHeat<nDim>>(physicObj)->updateForUse( this->materialsProperties(), this->mesh() );
+
     this->initFunctionSpaces();
 
     this->initBoundaryConditions();

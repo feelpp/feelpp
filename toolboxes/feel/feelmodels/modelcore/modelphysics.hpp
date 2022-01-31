@@ -95,6 +95,8 @@ public :
     std::string const& type() const { return M_type; }
     std::string const& name() const { return M_name; }
 
+    physic_id_type id() const { return std::make_pair(this->type(),this->name()); }
+
     //! return the map of subphysics
     std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> const& subphysics() const { return M_subphysics; }
 
@@ -337,7 +339,7 @@ public :
     };
     struct HeatSource
     {
-        HeatSource( self_type * mparent, std::string const& name ) : M_parent( mparent ), M_name( name ) {}
+        HeatSource( self_type * mparent, std::string const& name ) : M_parent( mparent ), M_name( name ), M_type("heat-source") {}
         HeatSource( HeatSource const& ) = default;
         HeatSource( HeatSource && ) = default;
 
@@ -345,10 +347,12 @@ public :
 
         std::string const& type() const { return M_type; }
 
+        bool givenAsHeatRate() const { return M_type == "heat-rate"; }
+
         template <typename SymbolsExprType = symbols_expression_empty_t>
         auto expr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
             {
-                return M_parent->template parameterExpr<1,1>( M_name/*"heatsource"*/, se );
+                return M_parent->template parameterExpr<1,1>( M_name + "_heatsource", se );
             }
 
         void updateInformationObject( nl::json & p ) const;
@@ -379,6 +383,27 @@ public :
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
+    template <typename MaterialsPropertiesType, typename MeshType>
+    void updateForUse( std::shared_ptr<MaterialsPropertiesType> const& matProp, std::shared_ptr<MeshType> mesh )
+        {
+            bool requireMeasureMat = false;
+            for ( auto const& hs : M_heatSources )
+                if ( hs.givenAsHeatRate() )
+                {
+                    requireMeasureMat = true;
+                    break;
+                }
+            if ( requireMeasureMat )
+            {
+                double measureMat = 0;
+                for ( std::string const& matName : matProp->physicToMaterials( this->id() ) )
+                {
+                    auto const& rangeMat = matProp->rangeMeshElementsByMaterial( mesh,matName );
+                    measureMat += measure(_range=rangeMat);
+                }
+                this->addParameter( "measure_materials", measureMat );
+            }
+        }
 private:
     std::vector<HeatSource> M_heatSources;
     std::optional<Convection> M_convection;
