@@ -30,7 +30,7 @@
 
 #include <feel/options.hpp>
 #include <feel/feelalg/enums.hpp>
-#include <feel/feelcrb/crbenums.hpp>
+#include <feel/feelmor/crbenums.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
 
 #if defined(FEELPP_HAS_HARTS)
