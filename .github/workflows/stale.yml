@@ -30,4 +30,3 @@ jobs:
         days-before-issue-stale: 360
         days-before-pr-stale: 45
 
-

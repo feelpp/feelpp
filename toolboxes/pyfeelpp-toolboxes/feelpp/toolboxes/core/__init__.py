@@ -3,7 +3,7 @@ from ._modelmesh import *
 import feelpp
 
 
-def simulate(toolbox, export=True, buildModelAlgebraicFactory=True):
+def simulate(toolbox, export=True, buildModelAlgebraicFactory=True,data=None):
     """simulate a toolbox
 
     simulate execute the toolbox in steady or transient case and export the results
@@ -29,7 +29,7 @@ def simulate(toolbox, export=True, buildModelAlgebraicFactory=True):
         while not toolbox.timeStepBase().isFinished():
             if feelpp.Environment.isMasterRank():
                 print("============================================================\n")
-                print("time simulation: ", toolbox.time(), "s \n")
+                print("time simulation: {}s/{}s with step: {}".format(toolbox.time(),toolbox.timeFinal(),toolbox.timeStep()))
                 print("============================================================\n")
             toolbox.solve()
             if export:

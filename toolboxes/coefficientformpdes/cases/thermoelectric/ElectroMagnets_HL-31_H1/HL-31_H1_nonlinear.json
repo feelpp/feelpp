@@ -54,7 +54,7 @@
             {
                 "myic":
                 {
-                    "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/cfpdes.heat.save/temperature.h5",
+                    "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/heat.save/temperature.h5",
                     "format":"hdf5"
                 }
             }
@@ -65,7 +65,7 @@
             {
                 "myic":
                 {
-                    "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/cfpdes.electric.save/electric-potential.h5",
+                    "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/electric.save/electric-potential.h5",
                     "format":"hdf5"
                 }
             }
