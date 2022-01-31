@@ -22,8 +22,8 @@
 #include <pybind11/functional.h>
 // #include <pybind11/eigen.h>
 
-#include <feel/feelcrb/crb.hpp>
-#include <feel/feelcrb/toolboxmor.hpp>
+#include <feel/feelmor/crb.hpp>
+#include <feel/feelmor/toolboxmor.hpp>
 
 namespace py = pybind11;
 using namespace Feel;
