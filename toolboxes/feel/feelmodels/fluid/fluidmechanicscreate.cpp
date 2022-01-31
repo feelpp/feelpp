@@ -985,7 +985,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("FluidMechanics","init", "start" );
     this->timerTool("Constructor").start();
 
+#if 1
+    M_bodyMotion = std::make_shared<bodymotion_type>(prefixvm(this->prefix(),"body"), "body", this->worldCommPtr(), this->repository() );
+    typename super_physics_type::PhysicsTree physicsTree( this->shared_from_this() );
+    physicsTree.addLeaf( M_bodyMotion, false );
+    this->initPhysics( physicsTree, this->modelProperties().models() );
+#else
     this->initPhysics( this->keyword(), this->modelProperties().models() );
+#endif
 
     this->initMaterialProperties();
 
@@ -996,6 +1003,32 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // backend
     this->initAlgebraicBackend();
+    
+
+    if ( M_bodyMotion )
+    {
+        bool hasBodyPhyisc = false;
+        for ( auto const&[pId,pObj] : this->physicsFromCurrentType() )
+            if ( pObj->subphysicFromType( M_bodyMotion->physicType() ) )
+            {
+                hasBodyPhyisc = true;
+                break;
+            }
+        if ( hasBodyPhyisc )
+        {
+            if ( !M_bodyMotion->modelPropertiesPtr() )
+            {
+                M_bodyMotion->setModelProperties( this->modelPropertiesPtr() );
+                M_bodyMotion->setManageParameterValuesOfModelProperties( false );
+            }
+            M_bodyMotion->setModelMeshAsShared( this->modelMesh() );
+            M_bodyMotion->setMaterialsProperties( M_materialsProperties );
+            M_bodyMotion->init();
+        }
+    }
+
+
+    
 
     if ( M_solverName == "automatic" )
     {

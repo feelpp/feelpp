@@ -59,6 +59,7 @@
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 #include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
 
+#include <feel/feelmodels/body/bodymotion.hpp>
 //#define FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
 
 namespace Feel
@@ -303,6 +304,7 @@ class FluidMechanics : public ModelNumerical,
                        public MarkerManagementSlipBC,
                        public MarkerManagementPressureBC
 {
+    using super_physics_type = ModelPhysics<ConvexType::nDim>;
 public:
     using super_type = ModelNumerical;
     using super2_type = ModelPhysics<ConvexType::nDim>;
@@ -516,6 +518,10 @@ public:
 
 
     //___________________________________________________________________________________//
+
+
+    using bodymotion_type = BodyMotion<convex_type>;
+    using bodymotion_ptrtype = std::shared_ptr<bodymotion_type>;
 
     // fwd type
     class NBodyArticulated;
@@ -2847,6 +2853,7 @@ private :
     space_trace_velocity_component_ptrtype M_spaceLagrangeMultiplierPressureBC;
     element_trace_velocity_component_ptrtype M_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC2;
     // body bc
+    bodymotion_ptrtype M_bodyMotion;
     BodySetBoundaryCondition M_bodySetBC;
     // fluid inlet bc
     std::vector< std::tuple<std::string,std::string, scalar_field_expression<2> > > M_fluidInletDesc; // (marker,type,vmax expr)
