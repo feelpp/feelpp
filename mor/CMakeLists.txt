@@ -109,7 +109,7 @@ INCLUDE(CTest)
 ENABLE_TESTING()
 
 add_subdirectory(onlinerun)
-
+add_subdirectory(mor/feelmor)
 
 IF ( FEELPP_ENABLE_MOR_EADS )
   #add_subdirectory(eads)
