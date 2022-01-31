@@ -11,15 +11,14 @@ import feelpp
 from feelpp.mor.reducedbasis.reducedbasis import *
 
 
-cases = [ ('thermal-fin', '2d', 'thermal-fin.cfg', 2),
-        #   ('thermal-fin', '3d', 'thermal-fin.cfg', 3)
+cases = [ ('thermal-fin', '2d', 'thermal-fin.cfg', 2, False),
+        #   ('thermal-fin', '3d', 'thermal-fin.cfg', 3, False)
         ]
 
 
-@pytest.fixture
-# @pytest.mark.parametrize("prefix,case,casefile,dim", cases)
-def create_model():
-    prefix, case, casefile, dim = cases[0]
+# @pytest.fixture
+@pytest.mark.parametrize("prefix, case, casefile, dim, time_dependant", cases)
+def test_init_toolbox(prefix, case, casefile, dim, time_dependant):
     feelpp.Environment.setConfigFile(f'{prefix}/{case}/{casefile}')
 
     # Set the environment
@@ -27,69 +26,80 @@ def create_model():
     o.add(makeToolboxMorOptions())
     e = feelpp.Environment(sys.argv, opts = o)
 
-    # Set the toolboxes
-    # TODO: get DIM and time_dependent from cfg file
     heatBox = heat(dim=dim, order=1)
     heatBox.init()
-    print("[print] heat init-ed")
-    # model = toolboxmor_2d() if DIM==2 else toolboxmor_3d()
-    model = toolboxmor(dim=dim, time_dependent=False)
-    print("[print] toolboxmor created")
-    model.setFunctionSpaces(Vh=heatBox.spaceTemperature())
 
-    # Offline computations
-    def assembleDEIM(mu):
-        for i in range(0, mu.size()):
-            heatBox.addParameterInModelProperties(mu.parameterName(i), mu(i))
-        heatBox.updateParameterValues()
-        return heatBox.assembleRhs()
+# @pytest.fixture
+# # @pytest.mark.parametrize("prefix,case,casefile,dim", cases)
+# def create_model():
+#     prefix, case, casefile, dim = cases[0]
+#     feelpp.Environment.setConfigFile(f'{prefix}/{case}/{casefile}')
 
-    def assembleMDEIM(mu):
-        for i in range(0, mu.size()):
-            heatBox.addParameterInModelProperties(mu.parameterName(i), mu(i))
-        heatBox.updateParameterValues()
-        return heatBox.assembleMatrix()
 
-    model.setAssembleDEIM(fct=assembleDEIM)
-    model.setAssembleMDEIM(fct=assembleMDEIM)
-    print("[print] before initModel")
-    model.initModel()
-    print("[print] model init-ed")
 
-    heatBoxDEIM = heat(dim=dim, order=1)
-    meshDEIM = pytest.model.getDEIMReducedMesh()
-    heatBoxDEIM.setMesh(meshDEIM)
-    heatBoxDEIM.init()
+#     # Set the toolboxes
+#     # TODO: get DIM and time_dependent from cfg file
+#     heatBox = heat(dim=dim, order=1)
+#     heatBox.init()
+#     print("[print] heat init-ed")
+#     # model = toolboxmor_2d() if DIM==2 else toolboxmor_3d()
+#     model = toolboxmor(dim=dim, time_dependent=False)
+#     print("[print] toolboxmor created")
+#     model.setFunctionSpaces(Vh=heatBox.spaceTemperature())
 
-    def assembleOnlineDEIM(mu):
-        for i in range(0, mu.size()):
-            heatBoxDEIM.addParameterInModelProperties(mu.parameterName(i), mu(i))
-        heatBoxDEIM.updateParameterValues()
-        return heatBoxDEIM.assembleRhs()
+#     # Offline computations
+#     def assembleDEIM(mu):
+#         for i in range(0, mu.size()):
+#             heatBox.addParameterInModelProperties(mu.parameterName(i), mu(i))
+#         heatBox.updateParameterValues()
+#         return heatBox.assembleRhs()
 
-    model.setOnlineAssembleDEIM(assembleOnlineDEIM)
+#     def assembleMDEIM(mu):
+#         for i in range(0, mu.size()):
+#             heatBox.addParameterInModelProperties(mu.parameterName(i), mu(i))
+#         heatBox.updateParameterValues()
+#         return heatBox.assembleMatrix()
 
-    heatBoxMDEIM = heat(dim=dim, order=1)
-    meshMDEIM = model.getMDEIMReducedMesh()
-    heatBoxMDEIM.setMesh(meshMDEIM)
-    heatBoxMDEIM.init()
+#     model.setAssembleDEIM(fct=assembleDEIM)
+#     model.setAssembleMDEIM(fct=assembleMDEIM)
+#     print("[print] before initModel")
+#     model.initModel()
+#     print("[print] model init-ed")
 
-    def assembleOnlineMDEIM(mu):
-        for i in range(0, mu.size()):
-            heatBoxMDEIM.addParameterInModelProperties(mu.parameterName(i), mu(i))
-        heatBoxMDEIM.updateParameterValues()
-        return heatBoxMDEIM.assembleMatrix()
+#     heatBoxDEIM = heat(dim=dim, order=1)
+#     meshDEIM = pytest.model.getDEIMReducedMesh()
+#     heatBoxDEIM.setMesh(meshDEIM)
+#     heatBoxDEIM.init()
 
-    model.setOnlineAssembleMDEIM(assembleOnlineMDEIM)
+#     def assembleOnlineDEIM(mu):
+#         for i in range(0, mu.size()):
+#             heatBoxDEIM.addParameterInModelProperties(mu.parameterName(i), mu(i))
+#         heatBoxDEIM.updateParameterValues()
+#         return heatBoxDEIM.assembleRhs()
 
-    model.postInitModel()
-    model.setInitialized(True)
-    Dmu = model.parameterSpace()
+#     model.setOnlineAssembleDEIM(assembleOnlineDEIM)
 
-    mubar = Dmu.element(True, False)    # TODO : see how to get the values from json
-    mubar.setParameters({"Bi":0.1, "k_0":1, "k_1":1, "k_2":1, "k_3":1, "k_4":1})
+#     heatBoxMDEIM = heat(dim=dim, order=1)
+#     meshMDEIM = model.getMDEIMReducedMesh()
+#     heatBoxMDEIM.setMesh(meshMDEIM)
+#     heatBoxMDEIM.init()
 
-    return model, Dmu, mubar
+#     def assembleOnlineMDEIM(mu):
+#         for i in range(0, mu.size()):
+#             heatBoxMDEIM.addParameterInModelProperties(mu.parameterName(i), mu(i))
+#         heatBoxMDEIM.updateParameterValues()
+#         return heatBoxMDEIM.assembleMatrix()
+
+#     model.setOnlineAssembleMDEIM(assembleOnlineMDEIM)
+
+#     model.postInitModel()
+#     model.setInitialized(True)
+#     Dmu = model.parameterSpace()
+
+#     mubar = Dmu.element(True, False)    # TODO : see how to get the values from json
+#     mubar.setParameters({"Bi":0.1, "k_0":1, "k_1":1, "k_2":1, "k_3":1, "k_4":1})
+
+#     return model, Dmu, mubar
 
 
 def listOfParams(n):
@@ -101,10 +111,10 @@ def alphaLB(mu):
     return min(mu.parameterNamed("k_1"), 1)
 
 
-# @pytest.mark.dependency(depends=['test_first_initialisation'])
-def test_init_environment(create_model):
-    pytest.decomposition = create_model[0].getAffineDecomposition()
-    assert(len(pytest.decomposition) == 2)
+# # @pytest.mark.dependency(depends=['test_first_initialisation'])
+# def test_init_environment(create_model):
+#     pytest.decomposition = create_model[0].getAffineDecomposition()
+#     assert(len(pytest.decomposition) == 2)
 
 
 # # @pytest.mark.dependency(depends=['test_init_environment'])
