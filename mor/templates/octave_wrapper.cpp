@@ -32,7 +32,7 @@
 #include <feel/options.hpp>
 
 #include <@CRB_MODEL_SHORT_NAME@.hpp>
-#include <feel/feelcrb/opusapp.hpp>
+#include <feel/feelmor/opusapp.hpp>
 
 static std::shared_ptr<Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@ > > app;
 
