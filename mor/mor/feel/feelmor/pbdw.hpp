@@ -28,7 +28,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelmor/crbdb.hpp>
 #include <feel/feelcore/unwrapptr.hpp>
-#include <feel/feeldiscr/reducedbasisspace.hpp>
+#include <feel/feelmor/reducedbasisspace.hpp>
 #include <feel/feeldiscr/sensors.hpp>
 #include <feel/feelcore/json.hpp>
 #include <feel/feelfilters/loadmesh.hpp>

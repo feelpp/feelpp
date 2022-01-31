@@ -19,7 +19,7 @@
 #include <Eigen/Dense>
 
 #include <feel/feelmor/modelcrbbase.hpp>
-#include <feel/feeldiscr/reducedbasisspace.hpp>
+#include <feel/feelmor/reducedbasisspace.hpp>
 #include <feel/feelmor/crbtrilinearplugin.hpp>
 
 using namespace Feel;

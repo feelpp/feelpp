@@ -55,7 +55,7 @@
 #include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 
-#include <feel/feeldiscr/reducedbasisspace.hpp>
+#include <feel/feelmor/reducedbasisspace.hpp>
 #include <feel/feeldiscr/twospacesmap.hpp>
 
 
