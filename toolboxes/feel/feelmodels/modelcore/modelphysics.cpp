@@ -703,7 +703,7 @@ ModelPhysicSolid<Dim>::setEquation( std::string const& eq )
 
 template <uint16_type Dim>
 void
-ModelPhysics<Dim>::initPhysics( std::string const& type, ModelModels const& models )
+ModelPhysics<Dim>::initPhysics( std::string const& type, ModelModels const& models, bool isRequired )
 {
     M_physicType = type;
 
@@ -718,7 +718,7 @@ ModelPhysics<Dim>::initPhysics( std::string const& type, ModelModels const& mode
             M_physics.emplace( std::make_pair(type, _name), _mphysic );
         }
     }
-    else if ( this->physics( type ).empty() )
+    else if ( this->physics( type ).empty() && isRequired )
     {
         // create default physic
         std::string _name = "default";
@@ -733,10 +733,10 @@ void
 ModelPhysics<Dim>::initPhysics( PhysicsTree const& physicTree, ModelModels const& models )
 {
     auto allMPhysics = physicTree.allPhysics();
-    for ( auto const& [type,mphysics] : allMPhysics )
+    for ( auto const& [type,mphysics,isRequired] : allMPhysics )
     {
         if ( mphysics )
-            mphysics->initPhysics( type, models );
+            mphysics->initPhysics( type, models, isRequired );
     }
 
     // up subphysics by using recursive lambda function
@@ -744,7 +744,7 @@ ModelPhysics<Dim>::initPhysics( PhysicsTree const& physicTree, ModelModels const
                             {
                                 auto upSubphysicsImpl = [&models]( PhysicsTree const& _physicTreeBis, const auto& ff ) -> void
                                                             {
-                                                                auto const& [rootType,rootPhysics] = _physicTreeBis.root();
+                                                                auto const& [rootType,rootPhysics,rootIsRequiredxs] = _physicTreeBis.root();
                                                                 std::map<std::string,std::map<std::string,std::set<std::string>>> submodelsFromRoot; // subType -> ( rootName -> ( subNames ) )
                                                                 if ( models.hasType( rootType ) )
                                                                     for ( auto const& [_rootnameFromModels,_rootmodel] : models.models( rootType ) )
@@ -759,7 +759,7 @@ ModelPhysics<Dim>::initPhysics( PhysicsTree const& physicTree, ModelModels const
                                                                 {
                                                                     ff( st, ff );
 
-                                                                    auto const& [subType,subPhysics] = st.root();
+                                                                    auto const& [subType,subPhysics,subIsRequired] = st.root();
                                                                     rootPhysics->setPhysics( std::get<1>(st.root())->physics() );
 
                                                                     auto itFind = submodelsFromRoot.find( subType );
