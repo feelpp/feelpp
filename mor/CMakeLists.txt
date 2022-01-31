@@ -78,7 +78,7 @@ ENABLE_TESTING()
 
 add_subdirectory(onlinerun)
 add_subdirectory(mor/feelmor)
-  add_subdirectory(toolbox-mor)
+add_subdirectory(apps)
 
 
 
