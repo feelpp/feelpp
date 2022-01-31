@@ -25,15 +25,23 @@
 
 set(SRC toolboxmor.cpp crbdb.cpp crbmodeldb.cpp pfemapp.cpp opusapp.cpp crbplugin_interface.cpp )
 
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 add_library( feelpp_mor SHARED ${SRC} )
 add_library(Feelpp::feelpp_mor ALIAS feelpp_mor )
 set_target_properties(feelpp_mor PROPERTIES VERSION 1 SOVERSION 1)
 target_link_libraries( feelpp_mor PUBLIC Feelpp::feelpp   )
-INSTALL(TARGETS feelpp_mor EXPORT feelpp-mor-export-targets
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    )
 target_include_directories(feelpp_mor PUBLIC
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/mor>
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/mor>
   $<INSTALL_INTERFACE:include/feelpp> )  
+  
+#
+# Install
+#
+INSTALL(FILES ${HDR} DESTINATION include/feelpp/feel/feelmor COMPONENT Devel)
+INSTALL(TARGETS feelpp_mor EXPORT feelpp-mor-export-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
+
