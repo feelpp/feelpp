@@ -3,25 +3,30 @@
     "ShortName":"three_sphere swimmer",
     "Models":
     {
-        "equations":"Stokes"
+        "fluid":
+        {
+            "materials":"Fluid",
+            "setup":{
+                "equations":"Stokes"
+            }
+        },
+        "body":{
+            "materials":["SphLeft","SphCent","SphRight"]
+        }
     },
     "Materials":
     {
         "Fluid":{
-            "physics":"fluid",
             "rho":"1",
             "mu":"1"
         },
         "SphLeft":{
-            "physics":"body",
             "rho":1e-1//"1e-3"
         },
         "SphCent":{
-            "physics":"body",
             "rho":1e-1//"1e-3"
         },
         "SphRight":{
-            "physics":"body",
             "rho":1e-1//"1e-3"
         }
     },
@@ -89,22 +94,25 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","pid","displacement"]
-        },
-        "Measures":
-        {
-            //"Forces":"SphereCenter"
-            "Quantities":
+            "Exports":
             {
-                "names":"all"//"body_SphereLeft.fluid_forces"// ["body_SphereLeft.mass_center","body_SphereCenter.mass_center","body_SphereRight.mass_center"]
-                // "expr":
-                // {
-                //     "mc_Left":"{body_SphereLeft_mass_center_0,body_SphereLeft_mass_center_1,body_SphereLeft_mass_center_2}:body_SphereLeft_mass_center_0:body_SphereLeft_mass_center_1:body_SphereLeft_mass_center_2",
-                //     "mc_Center":"{body_SphereCenter_mass_center_0,body_SphereCenter_mass_center_1,body_SphereCenter_mass_center_2}:body_SphereCenter_mass_center_0:body_SphereCenter_mass_center_1:body_SphereCenter_mass_center_2",
-                //     "mc_Right":"{body_SphereRight_mass_center_0,body_SphereRight_mass_center_1,body_SphereRight_mass_center_2}:body_SphereRight_mass_center_0:body_SphereRight_mass_center_1:body_SphereRight_mass_center_2"
-                // }
+                "fields":["velocity","pressure","pid","displacement"]
+            },
+            "Measures":
+            {
+                //"Forces":"SphereCenter"
+                "Quantities":
+                {
+                    "names":"all"//"body_SphereLeft.fluid_forces"// ["body_SphereLeft.mass_center","body_SphereCenter.mass_center","body_SphereRight.mass_center"]
+                    // "expr":
+                    // {
+                    //     "mc_Left":"{body_SphereLeft_mass_center_0,body_SphereLeft_mass_center_1,body_SphereLeft_mass_center_2}:body_SphereLeft_mass_center_0:body_SphereLeft_mass_center_1:body_SphereLeft_mass_center_2",
+                    //     "mc_Center":"{body_SphereCenter_mass_center_0,body_SphereCenter_mass_center_1,body_SphereCenter_mass_center_2}:body_SphereCenter_mass_center_0:body_SphereCenter_mass_center_1:body_SphereCenter_mass_center_2",
+                    //     "mc_Right":"{body_SphereRight_mass_center_0,body_SphereRight_mass_center_1,body_SphereRight_mass_center_2}:body_SphereRight_mass_center_0:body_SphereRight_mass_center_1:body_SphereRight_mass_center_2"
+                    // }
+                }
             }
         }
     }
