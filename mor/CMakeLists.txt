@@ -76,7 +76,7 @@ set(FEELPP_MOR_LIBRARIES)
 INCLUDE(CTest)
 ENABLE_TESTING()
 
-add_subdirectory(onlinerun)
+
 add_subdirectory(mor/feelmor)
 add_subdirectory(apps)
 

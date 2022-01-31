@@ -1,5 +1,8 @@
 add_custom_target(feelpp_mor_apps)
 
+feelpp_add_application( onlinerun SRCS crbonlinerun.cpp  INSTALL  MAN onlinerun EXEC ONLINERUN )
+add_dependencies(feelpp_mor_apps feelpp_mor_onlinerun)
+
 if ( TARGET Feelpp::feelpp_toolbox_heat_lib )
     feelpp_add_application(heat SRCS toolboxmor_heat.cpp LINK_LIBRARIES  Feelpp::feelpp_toolbox_heat_lib Feelpp::feelpp_mor INSTALL EXEC MOR_TOOLBOX_HEAT)
     add_dependencies(feelpp_mor_apps ${MOR_TOOLBOX_HEAT} )
