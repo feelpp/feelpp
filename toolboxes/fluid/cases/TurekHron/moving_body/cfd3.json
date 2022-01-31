@@ -7,8 +7,11 @@
         "fluid":{
             "materials":"Fluid",
             "equations":"Navier-Stokes"
+        },
+        "body":{
+            "name":"bodyTOTO",
+            "materials":["MySolid","MySolid2"]
         }
-        //"body"
     },
     "Parameters":
     {
@@ -35,12 +38,12 @@
         },
         "MySolid":{
             "markers":["cylinder"],
-            "physics":"body",
+            //"physics":"body",
             "rho":"7.0e3"
         },
         "MySolid2":{
             "markers":["beam"],
-            "physics":"body",
+            //"physics":"body",
             "rho":"9.0e2"
         }
     },
