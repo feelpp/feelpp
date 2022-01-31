@@ -25,9 +25,9 @@
 #ifndef FEELPP_CRBTRILINEARPLUGIN_HPP
 #define FEELPP_CRBTRILINEARPLUGIN_HPP 1
 
-#include <feel/feelcrb/crb_trilinear.hpp>
-#include <feel/feelcrb/crbmodeltrilinear.hpp>
-#include <feel/feelcrb/crbplugin.hpp>
+#include <feel/feelmor/crb_trilinear.hpp>
+#include <feel/feelmor/crbmodeltrilinear.hpp>
+#include <feel/feelmor/crbplugin.hpp>
 
 namespace Feel {
 

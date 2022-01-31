@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-03-22
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -34,8 +34,8 @@
 #include <feel/options.hpp>
 
 
-#include <feel/feelcrb/crbmodel.hpp>
-#include <feel/feelcrb/pfemapp.hpp>
+#include <feel/feelmor/crbmodel.hpp>
+#include <feel/feelmor/pfemapp.hpp>
 
 
 namespace Feel

@@ -1,7 +1,7 @@
 
 #include <opusheat_impl.cpp>
 
-#include <feel/feelcrb/crbplugin.hpp>
+#include <feel/feelmor/crbplugin.hpp>
 
 namespace Feel
 {

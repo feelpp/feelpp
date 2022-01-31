@@ -23,8 +23,8 @@
 //!
 //!
 
-#include <feel/feelcrb/biotsavartrb.hpp>
-#include <feel/feelcrb/crbsaddlepoint.hpp>
+#include <feel/feelmor/biotsavartrb.hpp>
+#include <feel/feelmor/crbsaddlepoint.hpp>
 #include "biotsavart.hpp"
 #include "thermoelectric-nonlinear.hpp"
 

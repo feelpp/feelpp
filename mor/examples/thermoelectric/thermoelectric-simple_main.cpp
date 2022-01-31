@@ -23,8 +23,8 @@
 //!
 //!
 
-#include <feel/feelcrb/crbsaddlepoint.hpp>
-#include <feel/feelcrb/crbmodelsaddlepoint.hpp>
+#include <feel/feelmor/crbsaddlepoint.hpp>
+#include <feel/feelmor/crbmodelsaddlepoint.hpp>
 #include "thermoelectric-simple.hpp"
 
 using namespace Feel;

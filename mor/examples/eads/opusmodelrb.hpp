@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-12-10
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -44,9 +44,9 @@
 #include <opusmodelbase.hpp>
 #include <opusdefs.hpp>
 #include <eads.hpp>
-#include <feel/feelcrb/parameterspace.hpp>
+#include <feel/feelmor/parameterspace.hpp>
 #include <feel/feelts/bdf.hpp>
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
 
 /**/

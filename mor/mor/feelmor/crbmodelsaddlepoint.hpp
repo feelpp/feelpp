@@ -29,7 +29,7 @@
 #ifndef __CRBModelSaddlePoint_H
 #define __CRBModelSaddlePoint_H 1
 
-#include <feel/feelcrb/crbmodelblock.hpp>
+#include <feel/feelmor/crbmodelblock.hpp>
 
 namespace Feel
 {

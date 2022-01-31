@@ -1,7 +1,7 @@
 #ifndef CRBMODELBLOCK_H
 #define CRBMODELBLOCK_H
 
-#include <feel/feelcrb/crbmodel.hpp>
+#include <feel/feelmor/crbmodel.hpp>
 
 namespace Feel
 {

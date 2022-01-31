@@ -26,7 +26,7 @@
 
 
 #include <eadsmfemapp.hpp>
-#include <feel/feelcrb/crbwrapper.hpp>
+#include <feel/feelmor/crbwrapper.hpp>
 
 #include <WrapperCommon.h>
 #include <WrapperMacros.h>

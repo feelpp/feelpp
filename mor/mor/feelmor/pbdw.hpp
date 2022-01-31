@@ -26,7 +26,7 @@
 #define _FEELPP_PBDW_HPP 1
 
 #include <feel/feelalg/backend.hpp>
-#include <feel/feelcrb/crbdb.hpp>
+#include <feel/feelmor/crbdb.hpp>
 #include <feel/feelcore/unwrapptr.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
 #include <feel/feeldiscr/sensors.hpp>

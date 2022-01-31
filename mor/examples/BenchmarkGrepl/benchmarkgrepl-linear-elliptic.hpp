@@ -32,7 +32,7 @@
 #ifndef FEELPP_BENCHMARKGREPLLINEARELLIPTIC_HPP
 #define FEELPP_BENCHMARKGREPLLINEARELLIPTIC_HPP 1
 
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
 
 #include <benchmarkgrepl-options.hpp>
 

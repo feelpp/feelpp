@@ -29,12 +29,12 @@
 #include <feel/feelconfig.h>
 #include <feel/feelcore/info.hpp>
 #include <feel/feelcore/singleton.hpp>
-#include <feel/feelcrb/parameterspace.hpp>
-#include <feel/feelcrb/crbdata.hpp>
-#include <feel/feelcrb/crbenums.hpp>
+#include <feel/feelmor/parameterspace.hpp>
+#include <feel/feelmor/crbdata.hpp>
+#include <feel/feelmor/crbenums.hpp>
 #include <feel/feelmesh/meshbase.hpp>
 #include <feel/feeldiscr/doftablebase.hpp>
-#include <feel/feelcrb/crbmodelbase.hpp>
+#include <feel/feelmor/crbmodelbase.hpp>
 #include <feel/feelalg/vector.hpp>
 
 namespace Feel {

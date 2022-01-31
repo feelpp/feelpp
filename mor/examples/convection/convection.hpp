@@ -11,16 +11,16 @@
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelcrb/parameterspace.hpp>
-#include <feel/feelcrb/eim.hpp>
+#include <feel/feelmor/parameterspace.hpp>
+#include <feel/feelmor/eim.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
-#include <feel/feelcrb/crbtrilinearplugin.hpp>
+#include <feel/feelmor/crbtrilinearplugin.hpp>
 
 using namespace Feel;
 using namespace Feel::vf;

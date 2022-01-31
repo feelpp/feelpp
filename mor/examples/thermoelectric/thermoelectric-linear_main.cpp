@@ -24,12 +24,12 @@
 //!
 
 #if defined THERMOELECTRIC_SADDLEPOINT
-#include <feel/feelcrb/crbsaddlepoint.hpp>
-#include <feel/feelcrb/crbmodelsaddlepoint.hpp>
+#include <feel/feelmor/crbsaddlepoint.hpp>
+#include <feel/feelmor/crbmodelsaddlepoint.hpp>
 #endif
 
 #include "thermoelectric-linear.hpp"
-#include <feel/feelcrb/ser.hpp>
+#include <feel/feelmor/ser.hpp>
 
 
 using namespace Feel;

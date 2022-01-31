@@ -28,13 +28,13 @@
 #include <boost/dll/alias.hpp> // for BOOST_DLL_ALIAS
 #include <boost/algorithm/string.hpp>
 #include <feel/options.hpp>
-#include <feel/feelcrb/crbplugin_interface.hpp>
-#include <feel/feelcrb/crbenums.hpp>
-#include <feel/feelcrb/modelcrbbase.hpp>
-#include <feel/feelcrb/crb_trilinear.hpp>
-#include <feel/feelcrb/crbsaddlepoint.hpp>
-#include <feel/feelcrb/crbmodelsaddlepoint.hpp>
-#include <feel/feelcrb/biotsavartrb.hpp>
+#include <feel/feelmor/crbplugin_interface.hpp>
+#include <feel/feelmor/crbenums.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
+#include <feel/feelmor/crb_trilinear.hpp>
+#include <feel/feelmor/crbsaddlepoint.hpp>
+#include <feel/feelmor/crbmodelsaddlepoint.hpp>
+#include <feel/feelmor/biotsavartrb.hpp>
 
 
 namespace Feel {

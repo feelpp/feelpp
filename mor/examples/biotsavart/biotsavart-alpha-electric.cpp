@@ -23,7 +23,7 @@
 //!
 //!
 #define FEELPP_INSTANTIATE_BIOTSAVART_ALPHA_ELECTRIC
-#include <feel/feelcrb/crbplugin.hpp>
+#include <feel/feelmor/crbplugin.hpp>
 
 
 #include "biotsavart-alpha-electric.hpp"

@@ -4,7 +4,7 @@
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
 
 namespace Feel

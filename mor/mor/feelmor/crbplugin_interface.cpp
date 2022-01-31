@@ -22,7 +22,7 @@
 //! @copyright 2017 Feel++ Consortium
 //!
 #include <boost/dll.hpp>
-#include <feel/feelcrb/crbplugin_interface.hpp>
+#include <feel/feelmor/crbplugin_interface.hpp>
 
 
 

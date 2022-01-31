@@ -27,7 +27,7 @@
    \date 2011-06-27
  */
 #include <eeg.hpp>
-#include <feel/feelcrb/pfemapp.hpp>
+#include <feel/feelmor/pfemapp.hpp>
 
 
 

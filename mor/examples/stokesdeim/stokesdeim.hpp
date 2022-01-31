@@ -2,9 +2,9 @@
 #define FEELPP_STOKES_HPP 1
 
 #include <feel/options.hpp>
-#include <feel/feelcrb/modelcrbbase.hpp>
-#include <feel/feelcrb/crbsaddlepoint.hpp>
-#include <feel/feelcrb/crbmodelsaddlepoint.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
+#include <feel/feelmor/crbsaddlepoint.hpp>
+#include <feel/feelmor/crbmodelsaddlepoint.hpp>
 
 
 

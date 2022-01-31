@@ -29,7 +29,7 @@
 #ifndef FEELPP_CRB_MDEIM_H
 #define FEELPP_CRB_MDEIM_H
 
-#include <feel/feelcrb/deimmodel.hpp>
+#include <feel/feelmor/deimmodel.hpp>
 
 namespace Feel
 {

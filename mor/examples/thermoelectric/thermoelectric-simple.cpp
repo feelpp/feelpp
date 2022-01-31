@@ -23,7 +23,7 @@
 //!
 //!
 
-#include <feel/feelcrb/crbplugin.hpp>
+#include <feel/feelmor/crbplugin.hpp>
 #include "thermoelectric-simple.hpp"
 
 namespace Feel {

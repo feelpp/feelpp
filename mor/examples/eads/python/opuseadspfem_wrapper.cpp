@@ -32,8 +32,8 @@
 #include <WrapperMacros.h>
 
 
-#include <feel/feelcrb/crbwrapper.hpp>
-#include <feel/feelcrb/pfemapp.hpp>
+#include <feel/feelmor/crbwrapper.hpp>
+#include <feel/feelmor/pfemapp.hpp>
 #include <opusmodelrb.hpp>
 
 /* WARNING : Please read the following lines

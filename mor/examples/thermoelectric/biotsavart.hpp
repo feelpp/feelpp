@@ -26,12 +26,12 @@
 #ifndef BIOTSAVART_HPP
 #define BIOTSAVART_HPP 1
 
-#include <feel/feelcrb/ser.hpp>
-#include <feel/feelcrb/crbsaddlepoint.hpp>
-#include <feel/feelcrb/crbmodelsaddlepoint.hpp>
+#include <feel/feelmor/ser.hpp>
+#include <feel/feelmor/crbsaddlepoint.hpp>
+#include <feel/feelmor/crbmodelsaddlepoint.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
-#include <feel/feelcrb/crbplugin.hpp>
+#include <feel/feelmor/crbplugin.hpp>
 
 #include "thermoelectric-nonlinear.hpp"
 

@@ -22,7 +22,7 @@
 //! @copyright 2017 Feel++ Consortium
 //!
 
-#include <feel/feelcrb/crbplugin.hpp>
+#include <feel/feelmor/crbplugin.hpp>
 #include <heat2d.hpp>
 
 

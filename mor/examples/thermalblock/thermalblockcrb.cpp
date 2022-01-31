@@ -27,7 +27,7 @@
    \date 2011-06-8
  */
 #include <thermalblock.hpp>
-#include <feel/feelcrb/crbapp.hpp>
+#include <feel/feelmor/crbapp.hpp>
 
 int
 main( int argc, char** argv )

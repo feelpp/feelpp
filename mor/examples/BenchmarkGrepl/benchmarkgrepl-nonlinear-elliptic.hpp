@@ -34,7 +34,7 @@
 #define FEELPP_BENCHMARKGREPLNONLINEARELLIPTIC_HPP 1
 
 #include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
 #include <benchmarkgrepl-options.hpp>
 
 namespace Feel

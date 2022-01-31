@@ -30,7 +30,7 @@
 #ifndef _FEELPP_DEIMMODEL_HPP
 #define _FEELPP_DEIMMODEL_HPP 1
 
-#include <feel/feelcrb/deimbase.hpp>
+#include <feel/feelmor/deimbase.hpp>
 
 namespace Feel
 {

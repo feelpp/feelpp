@@ -26,7 +26,7 @@
 #ifndef FEELPP_THERMOELECTRIC_NONLINEAR_HPP
 #define FEELPP_THERMOELECTRIC_NONLINEAR_HPP
 
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
 #include <feel/options.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
 

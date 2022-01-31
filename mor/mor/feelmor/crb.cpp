@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-11-24
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -28,9 +28,9 @@
  */
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/solvereigen.hpp>
-#include <feel/feelcrb/crb.hpp>
-#include <feel/feelcrb/crbscm.hpp>
-#include <feel/feelcrb/eim.hpp>
+#include <feel/feelmor/crb.hpp>
+#include <feel/feelmor/crbscm.hpp>
+#include <feel/feelmor/eim.hpp>
 
 namespace Feel
 {

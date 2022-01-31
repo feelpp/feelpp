@@ -39,7 +39,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/commobject.hpp>
-#include <feel/feelcrb/crbenums.hpp>
+#include <feel/feelmor/crbenums.hpp>
 
 namespace Feel
 {

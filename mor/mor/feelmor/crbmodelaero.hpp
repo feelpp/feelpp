@@ -29,7 +29,7 @@
 #ifndef CRBMODELAERO_H
 #define CRBMODELAERO_H
 
-#include <feel/feelcrb/crbmodelsaddlepoint.hpp>
+#include <feel/feelmor/crbmodelsaddlepoint.hpp>
 
 namespace Feel
 {

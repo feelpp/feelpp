@@ -1,6 +1,6 @@
 /* this file is generated automatically */
 #include <heatshield-minimalversion.hpp>
-#include <feel/feelcrb/opusapp.hpp>
+#include <feel/feelmor/opusapp.hpp>
 
 int main( int argc, char** argv )
 {

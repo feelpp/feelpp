@@ -25,9 +25,9 @@
 #ifndef FEELPP_CRB_OPTIONS_HPP
 #define FEELPP_CRB_OPTIONS_HPP 1
 
-#include <feel/feelcrb/crboptions.hpp>
-#include <feel/feelcrb/eimoptions.hpp>
-#include <feel/feelcrb/podoptions.hpp>
+#include <feel/feelmor/crboptions.hpp>
+#include <feel/feelmor/eimoptions.hpp>
+#include <feel/feelmor/podoptions.hpp>
 
 
 #endif

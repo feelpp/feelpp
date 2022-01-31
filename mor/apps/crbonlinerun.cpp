@@ -25,8 +25,8 @@
 #include <boost/dll.hpp>
 #include <boost/algorithm/string/split.hpp>
 
-#include <feel/feelcrb/options.hpp>
-#include <feel/feelcrb/crbplugin_interface.hpp>
+#include <feel/feelmor/options.hpp>
+#include <feel/feelmor/crbplugin_interface.hpp>
 
 #include <iostream>
 
