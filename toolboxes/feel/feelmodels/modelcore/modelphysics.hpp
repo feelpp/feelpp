@@ -628,18 +628,18 @@ public :
 protected :
     struct PhysicsTree {
         using physics_ptrtype = std::shared_ptr<ModelPhysics<nDim>>;
-        PhysicsTree( std::string const& type, physics_ptrtype p ) : M_root( std::make_tuple(type,p) ) {}
-        PhysicsTree( physics_ptrtype p ) : PhysicsTree( p->keyword(), p ) {}
+        PhysicsTree( std::string const& type, physics_ptrtype p, bool isRequired = true ) : M_root( std::make_tuple(type,p,isRequired) ) {}
+        PhysicsTree( physics_ptrtype p, bool isRequired = true ) : PhysicsTree( p->keyword(), p, isRequired ) {}
         void addSubtree( PhysicsTree const& st ) { M_subtrees.push_back( st ); }
-        void addLeaf( std::string const& type, physics_ptrtype p ) { M_subtrees.push_back( PhysicsTree{type,p} ); }
-        void addLeaf( physics_ptrtype p ) { this->addLeaf( p->keyword(), p ); }
+        void addLeaf( std::string const& type, physics_ptrtype p, bool isRequired = true ) { M_subtrees.push_back( PhysicsTree{type,p,isRequired} ); }
+        void addLeaf( physics_ptrtype p, bool isRequired = true ) { this->addLeaf( p->keyword(), p, isRequired ); }
 
-        std::tuple<std::string,physics_ptrtype> const& root() const { return M_root; }
+        std::tuple<std::string,physics_ptrtype,bool> const& root() const { return M_root; }
         std::vector<PhysicsTree> subtrees() const { return M_subtrees; }
 
-        std::set<std::tuple<std::string,physics_ptrtype>> allPhysics() const
+        std::set<std::tuple<std::string,physics_ptrtype,bool>> allPhysics() const
             {
-                std::set<std::tuple<std::string,physics_ptrtype>> res;
+                std::set<std::tuple<std::string,physics_ptrtype,bool>> res;
                 res.insert( this->root() );
                 for ( auto const& st : M_subtrees )
                 {
@@ -649,7 +649,7 @@ protected :
                 return res;
             }
     private :
-        std::tuple<std::string,physics_ptrtype> M_root;
+        std::tuple<std::string,physics_ptrtype,bool> M_root;
         std::vector<PhysicsTree> M_subtrees;
     };
 
@@ -703,7 +703,7 @@ public:
     std::set<std::string> physicsShared( std::string const& pname ) const;
 #endif
 
-    void initPhysics( std::string const& type, ModelModels const& models );
+    void initPhysics( std::string const& type, ModelModels const& models, bool isRequired = true );
     void initPhysics( PhysicsTree const& physicTree, ModelModels const& models );
 
     void setPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics );
