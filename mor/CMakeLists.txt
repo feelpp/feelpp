@@ -77,7 +77,7 @@ INCLUDE(CTest)
 ENABLE_TESTING()
 
 
-add_subdirectory(mor/feelmor)
+add_subdirectory(mor/feel/feelmor)
 add_subdirectory(apps)
 
 

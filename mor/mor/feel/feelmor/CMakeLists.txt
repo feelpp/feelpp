@@ -34,6 +34,6 @@ INSTALL(TARGETS feelpp_mor EXPORT feelpp-mor-export-targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
 target_include_directories(feelpp_mor PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../..>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/mor>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/mor>
   $<INSTALL_INTERFACE:include/feelpp> )  
