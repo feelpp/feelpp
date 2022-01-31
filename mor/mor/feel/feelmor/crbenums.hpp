@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_CRBENUMS_HPP)
-#define FEELPP_CRBENUMS_HPP 1
+#if !defined(FEELPP_MOR_CRBENUMS_HPP)
+#define FEELPP_MOR_CRBENUMS_HPP 1
 
 namespace Feel {
 

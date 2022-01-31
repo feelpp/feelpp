@@ -23,14 +23,15 @@
 #
 add_custom_target(pyfeelppmor)
 
-message(STATUS "[pyfeelpp-mor] add pymodule mor")
-feelpp_add_pymodule(mor  SRCS crb.cpp DESTINATION feelpp/mor )
-add_dependencies(pyfeelppmor _mor)
 if (TARGET pyfeelpp)
     add_dependencies(pyfeelppmor pyfeelpp)
 endif()
 
 if ( TARGET Feelpp::feelpp_mor  )
+    message(STATUS "[pyfeelpp-mor] add pymodule mor")
+    feelpp_add_pymodule(mor  SRCS crb.cpp DESTINATION feelpp/mor  LINK_LIBRARIES Feelpp::feelpp_mor)
+    add_dependencies(pyfeelppmor _mor)
+
     message(STATUS "[pyfeelpp-mor] add pymodule toolboxmor")
     feelpp_add_pymodule(toolboxmor SRCS toolboxmor.cpp DESTINATION feelpp/mor LINK_LIBRARIES Feelpp::feelpp_mor )
     add_dependencies(pyfeelppmor  _toolboxmor)
