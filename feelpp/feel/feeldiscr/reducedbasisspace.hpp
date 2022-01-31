@@ -30,7 +30,7 @@
 #ifndef FEELPP_DISCR_REDUCEDBASISSPACE_H
 #define FEELPP_DISCR_REDUCEDBASISSPACE_H 1
 
-#include <feel/feelcrb/crb.hpp>
+#include <feel/feelmor/crb.hpp>
 
 
 namespace Feel
