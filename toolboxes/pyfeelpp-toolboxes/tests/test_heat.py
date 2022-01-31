@@ -9,15 +9,16 @@ heat_cases = [
     ('heat/Building/ThermalBridgesENISO10211/thermo2dCase2.cfg', 2, 2),
     ('heat/test-para/test.cfg', 2, 1),
     ('heat/test-para/test.cfg', 2, 2),
-    ('heat/thermo2d/testsuite_thermo2d.cfg', 2, 1),
-    ('heat/thermo2d/testsuite_thermo2d.cfg', 2, 2)]
+    ('heat/thermo2d/thermo2d.cfg', 2, 1),
+    ('heat/thermo2d/thermo2d.cfg', 2, 2)]
 
 
 @pytest.mark.parametrize("casefile,dim,order", heat_cases)
 def test_heat(casefile,dim,order):
     feelpp.Environment.setConfigFile(casefile)
     f = heat(dim=dim, order=order)
-    print("f: {}".format(f))
+    if not f.isStationary():
+        f.setTimeFinal(10*f.timeStep())
     simulate(f)
     meas = f.postProcessMeasures().values()
 
