@@ -57,7 +57,7 @@
 
 
 #include <feel/feelmor/modelcrbbase.hpp>
-#include <feel/feeldiscr/reducedbasisspace.hpp>
+#include <feel/feelmor/reducedbasisspace.hpp>
 
 namespace Feel
 {

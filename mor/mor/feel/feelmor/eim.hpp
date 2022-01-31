@@ -56,7 +56,7 @@
 
 #include <feel/feelmor/crb.hpp>
 #include <feel/feelmor/crbmodel.hpp>
-#include <feel/feeldiscr/reducedbasisspace.hpp>
+#include <feel/feelmor/reducedbasisspace.hpp>
 #include <feel/feeldiscr/geometricspace.hpp>
 
 //#include <Eigen/Core>

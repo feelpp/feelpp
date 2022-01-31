@@ -59,7 +59,7 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
-#include <feel/feeldiscr/reducedbasisspace.hpp>
+#include <feel/feelmor/reducedbasisspace.hpp>
 
 
 

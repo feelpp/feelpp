@@ -33,7 +33,7 @@
 #include <feel/feelmor/crbmodeldb.hpp>
 //#include <feel/feelmor/parameterspace.hpp>
 //#include <feel/feeldiscr/functionspace.hpp>
-//#include <feel/feeldiscr/reducedbasisspace.hpp>
+//#include <feel/feelmor/reducedbasisspace.hpp>
 //#include <feel/feelvf/vf.hpp>
 #include <feel/feelmor/eim.hpp>
 #include <feel/feelmor/deim.hpp>

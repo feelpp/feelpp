@@ -29,7 +29,7 @@
 #include <feel/feelmor/ser.hpp>
 #include <feel/feelmor/crbsaddlepoint.hpp>
 #include <feel/feelmor/crbmodelsaddlepoint.hpp>
-#include <feel/feeldiscr/reducedbasisspace.hpp>
+#include <feel/feelmor/reducedbasisspace.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelmor/crbplugin.hpp>
 
