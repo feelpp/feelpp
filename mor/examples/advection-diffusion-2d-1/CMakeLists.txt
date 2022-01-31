@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2011-04-23
 #
-#  Copyright (C) 2011-2017 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2011-2017 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,11 +22,11 @@
 #
 #
 
-crb_add_library( ad SRCS ad.cpp EXEC CRB_LIB_AD)
+mor_add_library( ad SRCS ad.cpp EXEC CRB_LIB_AD)
 install(FILES ad.hpp DESTINATION include/feelpp/crb/ad COMPONENT Devel)
 set(FEELPP_CRB_AD_LIBRARIES ${CRB_LIB_AD} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_AD_LIBRARIES PARENT_SCOPE)
 
-#crb_add_executable(ad1pfem ad1pfem.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} CFG ad1pfem.cfg )
-#crb_add_executable(ad1crb ad1crb.cpp LINK_LIBRARIES feel++_crb_crb ${FEELPP_LIBRARIES} CFG ad1crb.cfg)
-crb_add_model(ad AdvectionDiffusion HDRS ad.hpp LINK_LIBRARIES ${CRB_LIB_AD} CFG ad.cfg XML ad.xml SCRIPTS ad.m )
+#mor_add_executable(ad1pfem ad1pfem.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} CFG ad1pfem.cfg )
+#mor_add_executable(ad1crb ad1crb.cpp LINK_LIBRARIES feel++_crb_crb ${FEELPP_LIBRARIES} CFG ad1crb.cfg)
+mor_add_model(ad AdvectionDiffusion HDRS ad.hpp LINK_LIBRARIES ${CRB_LIB_AD} CFG ad.cfg XML ad.xml SCRIPTS ad.m )

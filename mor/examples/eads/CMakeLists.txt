@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2011-04-23
 #
-#  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2011 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -57,14 +57,14 @@ add_dependencies(crb feel++_crb_models)
 # executables
 #
 # mfem
-crb_add_executable( eadsmfem eadsmfemmain.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} CFG eadsmfem.cfg )
+mor_add_executable( eadsmfem eadsmfemmain.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} CFG eadsmfem.cfg )
 # pfem
-#crb_add_executable( eadspfem eadspfemmain.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} CFG eadspfem.cfg )
-crb_add_executable( eadspfem eadspfemmain.cpp  LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} CFG eadspfem.cfg )
+#mor_add_executable( eadspfem eadspfemmain.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} CFG eadspfem.cfg )
+mor_add_executable( eadspfem eadspfemmain.cpp  LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} CFG eadspfem.cfg )
 # SCM
-crb_add_executable( eadsscm eadsscmmain.cpp LINK_LIBRARIES feel++_crb_models   ${FEELPP_LIBRARIES} CFG eadsscm.cfg )
+mor_add_executable( eadsscm eadsscmmain.cpp LINK_LIBRARIES feel++_crb_models   ${FEELPP_LIBRARIES} CFG eadsscm.cfg )
 # CRB
-crb_add_executable( eadscrb eadscrbmain.cpp LINK_LIBRARIES  feel++_crb_models ${FEELPP_LIBRARIES} CFG eadscrb.cfg )
+mor_add_executable( eadscrb eadscrbmain.cpp LINK_LIBRARIES  feel++_crb_models ${FEELPP_LIBRARIES} CFG eadscrb.cfg )
 
 add_subdirectory(python)
 add_subdirectory(octave)

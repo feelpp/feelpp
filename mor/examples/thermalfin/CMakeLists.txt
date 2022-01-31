@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 #       Date: 2011-04-23
 #
-#  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2011 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@
 #
 #
 
-crb_add_model( thermalfin ThermalFin HDRS thermalfin.hpp
+mor_add_model( thermalfin ThermalFin HDRS thermalfin.hpp
   LINK_LIBRARIES ${FEELPP_LIBRARIES}
   CFG thermalfin.cfg
   GEO thermalfin.geo)

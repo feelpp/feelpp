@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2010-04-09
 #
-#  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2010 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -27,10 +27,10 @@ FOREACH(it ${cmake_include_directories})
   SET(octave_include_dirs ${octave_include_dirs} "-I${it}")
 ENDFOREACH(it)
 
-crb_add_octave_module( opuseadsmfem opuseadsmfem.cpp
+mor_add_octave_module( opuseadsmfem opuseadsmfem.cpp
   LINK_LIBRARIES feel++_crb_models ${Octave_LIBRARIES}
   SCRIPTS opuseadsmfemtest.m )
-crb_add_octave_module( opuseadspfem opuseadspfem.cpp
+mor_add_octave_module( opuseadspfem opuseadspfem.cpp
   LINK_LIBRARIES feel++_crb_models ${Octave_LIBRARIES}
   SCRIPTS opuseadspfemtest.m )
 

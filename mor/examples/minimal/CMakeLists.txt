@@ -22,7 +22,7 @@
 #
 #
 
-crb_add_library( poisson SRCS poissonCRB.cpp EXEC CRB_LIB_POISSON)
+mor_add_library( poisson SRCS poissonCRB.cpp EXEC CRB_LIB_POISSON)
 install(FILES poissonCRB.hpp DESTINATION include/feelpp/crb/poisson COMPONENT Devel)
 set(FEELPP_CRB_POISSON_LIBRARIES ${CRB_LIB_POISSON} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_POISSON_LIBRARIES PARENT_SCOPE)

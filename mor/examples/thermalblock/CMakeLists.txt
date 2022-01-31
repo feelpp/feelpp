@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2011-06-04
 #
-#  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2011 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,25 +22,25 @@
 #
 #
 
-#crb_add_executable(thermalblockpfem
+#mor_add_executable(thermalblockpfem
 #  thermalblockmain.cpp thermalblock.cpp  thermalblockgeo.cpp
 #  LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblock.cfg )
 #include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-#crb_add_executable(thermalblockpfem thermalblock.cpp thermalblockpfem.cpp thermalblockgeo.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblockpfem.cfg )
-#crb_add_executable(thermalblockcrb  thermalblock.cpp thermalblockcrb.cpp  thermalblockgeo.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblockcrb.cfg )
+#mor_add_executable(thermalblockpfem thermalblock.cpp thermalblockpfem.cpp thermalblockgeo.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblockpfem.cfg )
+#mor_add_executable(thermalblockcrb  thermalblock.cpp thermalblockcrb.cpp  thermalblockgeo.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblockcrb.cfg )
 
-crb_add_model(thermalblock ThermalBlock HDRS thermalblock.hpp  
+mor_add_model(thermalblock ThermalBlock HDRS thermalblock.hpp  
   CFG thermalblock.cfg
   XML thermalblock.xml
   SCRIPTS thermalblock.m
   )
-crb_add_model(thermalblockfree ThermalBlockFree HDRS thermalblock-operatorsfree.hpp  
+mor_add_model(thermalblockfree ThermalBlockFree HDRS thermalblock-operatorsfree.hpp  
   CFG thermalblockfree.cfg
   XML thermalblockfree.xml
   SCRIPTS thermalblockfree.m
   )
-crb_add_model(
+mor_add_model(
   thermalblockminimalversion ThermalBlockMinimalVersion HDRS thermalblock-minimalversion.hpp  
   CFG thermalblockminimalversion.cfg 
   GEO thermalblock33.geo

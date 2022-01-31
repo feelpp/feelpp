@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2011-04-23
 #
-#  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2011 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,11 +22,11 @@
 #
 #
 
-crb_add_library( heat2d SRCS heat2d.cpp EXEC CRB_LIB_HEAT2D)
+mor_add_library( heat2d SRCS heat2d.cpp EXEC CRB_LIB_HEAT2D)
 install(FILES heat2d.hpp DESTINATION include/feelpp/crb/heat2d COMPONENT Devel)
 set(FEELPP_CRB_HEAT2D_LIBRARIES ${CRB_LIB_HEAT2D} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_HEAT2D_LIBRARIES PARENT_SCOPE)
 
-crb_add_model(heat2d Heat2D HDRS heat2d.hpp LINK_LIBRARIES ${CRB_LIB_HEAT2D} )
+mor_add_model(heat2d Heat2D HDRS heat2d.hpp LINK_LIBRARIES ${CRB_LIB_HEAT2D} )
 
 feelpp_add_testcase(heat2d PREFIX feelpp_crb CATEGORY CRB)

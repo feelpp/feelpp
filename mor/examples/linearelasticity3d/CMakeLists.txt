@@ -23,12 +23,12 @@
 #
 
 
-crb_add_library( linearelasticity3d SRCS linearelasticity3d.cpp EXEC CRB_LIB_LINEARELASTICITY3D)
+mor_add_library( linearelasticity3d SRCS linearelasticity3d.cpp EXEC CRB_LIB_LINEARELASTICITY3D)
 install(FILES linearelasticity3d.hpp DESTINATION include/feelpp/crb/linearelasticity3d COMPONENT Devel)
 set(FEELPP_CRB_LINEARELASTICITY3D_LIBRARIES ${CRB_LIB_LINEARELASTICITY3D} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_LINEARELASTICITY3D_LIBRARIES PARENT_SCOPE)
 
-crb_add_model(linearelasticity3d LinearElasticity3d HDRS linearelasticity3d.hpp
+mor_add_model(linearelasticity3d LinearElasticity3d HDRS linearelasticity3d.hpp
   LINK_LIBRARIES ${CRB_LIB_LINEARELASTICITY3D} )
 
 feelpp_add_testcase(linearelasticity3d PREFIX feelpp_crb CATEGORY CRB)

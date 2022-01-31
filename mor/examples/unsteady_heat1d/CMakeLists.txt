@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2011-04-23
 #
-#  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2011 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,10 +22,10 @@
 #
 #
 
-crb_add_library( unsteadyheat1d SRCS unsteadyheat1d.cpp EXEC CRB_LIB_UNSTEADYHEAT1D EXPORT feelpp-mor-export-targets )
+mor_add_library( unsteadyheat1d SRCS unsteadyheat1d.cpp EXEC CRB_LIB_UNSTEADYHEAT1D EXPORT feelpp-mor-export-targets )
 install(FILES unsteadyheat1d.hpp DESTINATION include/feelpp/mor/unsteadyheat1d COMPONENT Devel)
 
-crb_add_model(unsteadyHeat1d UnsteadyHeat1D HDRS unsteadyheat1d.hpp
+mor_add_model(unsteadyHeat1d UnsteadyHeat1D HDRS unsteadyheat1d.hpp
   LINK_LIBRARIES ${CRB_LIB_UNSTEADYHEAT1D}
   CFG unsteadyHeat1d.cfg XML unsteadyHeat1d.xml SCRIPTS unsteadyHeat1d.m)
 

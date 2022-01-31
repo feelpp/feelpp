@@ -98,11 +98,11 @@ include::heat2d.hpp[lhs2]
  \snippet heat2d.hpp initmodel
 
 === How does the code run ?
- In the CmakeLists.txt, one has to call the crb_add_model macro with:
+ In the CmakeLists.txt, one has to call the mor_add_model macro with:
 
 [source]
 ----
- crb_add_model(heat2d Heat2D HDRS heat2d.hpp
+ mor_add_model(heat2d Heat2D HDRS heat2d.hpp
  LINK_LIBRARIES ${FEELPP_LIBRARIES}
  CFG heat2d.cfg
  GEO heat2d.geo )
