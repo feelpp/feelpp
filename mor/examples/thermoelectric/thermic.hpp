@@ -26,7 +26,7 @@
 #ifndef FEELPP_THERMIC_HPP
 #define FEELPP_THERMIC_HPP
 
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
 #include <feel/options.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
 

@@ -26,9 +26,9 @@
 #ifndef BIOTSAVART_RB_HPP
 #define BIOTSAVART_RB_HPP 1
 
-#include <feel/feelcrb/crbdb.hpp>
-#include <feel/feelcrb/crbdata.hpp>
-#include <feel/feelcrb/crbelementsdb.hpp>
+#include <feel/feelmor/crbdb.hpp>
+#include <feel/feelmor/crbdata.hpp>
+#include <feel/feelmor/crbelementsdb.hpp>
 #include <feel/feelcore/core.hpp>
 #include <feel/feeldiscr/expansion.hpp>
 

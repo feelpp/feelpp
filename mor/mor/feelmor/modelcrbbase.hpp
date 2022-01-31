@@ -30,13 +30,13 @@
 #ifndef ___ModelCrbBase_H
 #define ___ModelCrbBase_H 1
 
-#include <feel/feelcrb/crbmodeldb.hpp>
-//#include <feel/feelcrb/parameterspace.hpp>
+#include <feel/feelmor/crbmodeldb.hpp>
+//#include <feel/feelmor/parameterspace.hpp>
 //#include <feel/feeldiscr/functionspace.hpp>
 //#include <feel/feeldiscr/reducedbasisspace.hpp>
 //#include <feel/feelvf/vf.hpp>
-#include <feel/feelcrb/eim.hpp>
-#include <feel/feelcrb/deim.hpp>
+#include <feel/feelmor/eim.hpp>
+#include <feel/feelmor/deim.hpp>
 //#include<boost/tokenizer.hpp>
 #include<boost/regex.hpp>
 namespace Feel

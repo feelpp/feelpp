@@ -26,8 +26,8 @@
 #define _FEELPP_GEIM_HPP 1
 
 #include <feel/feelalg/backend.hpp>
-#include <feel/feelcrb/crbdb.hpp>
-#include <feel/feelcrb/parameterspace.hpp>
+#include <feel/feelmor/crbdb.hpp>
+#include <feel/feelmor/parameterspace.hpp>
 #include <feel/feelcore/unwrapptr.hpp>
 #include <feel/feeldiscr/fsfunctionallinear.hpp>
 #include <feel/feelcore/json.hpp>

@@ -50,8 +50,8 @@
 #include <feel/feelalg/solvereigen.hpp>
 
 #include <feel/feelvf/vf.hpp>
-#include <feel/feelcrb/parameterspace.hpp>
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelmor/parameterspace.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
 
 #include <feel/feelmesh/meshmover.hpp>
 

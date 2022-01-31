@@ -22,7 +22,7 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <feel/feelcrb/crbmodeldb.hpp>
+#include <feel/feelmor/crbmodeldb.hpp>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>

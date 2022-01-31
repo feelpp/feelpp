@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-08-10
 
-  Copyright (C) 2009-2011 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009-2011 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -36,8 +36,8 @@
 //#include <opusmodelrb.hpp>
 #include <heat1d.hpp>
 
-#include <feel/feelcrb/crbscm.hpp>
-#include <feel/feelcrb/crbmodel.hpp>
+#include <feel/feelmor/crbscm.hpp>
+#include <feel/feelmor/crbmodel.hpp>
 
 
 namespace Feel

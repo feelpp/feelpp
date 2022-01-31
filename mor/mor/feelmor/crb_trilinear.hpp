@@ -60,9 +60,9 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/parameter.hpp>
-#include <feel/feelcrb/parameterspace.hpp>
-#include <feel/feelcrb/crbdb.hpp>
-#include <feel/feelcrb/crbscm.hpp>
+#include <feel/feelmor/parameterspace.hpp>
+#include <feel/feelmor/crbdb.hpp>
+#include <feel/feelmor/crbscm.hpp>
 #include <feel/feelcore/serialization.hpp>
 #include <feel/feelfilters/exporter.hpp>
 

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-11-13
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -30,7 +30,7 @@
 #include <feel/feelcore/application.hpp>
 #include <feel/options.hpp>
 
-#include <feel/feelcrb/crbmodel.hpp>
+#include <feel/feelmor/crbmodel.hpp>
 #include <feel/feelmodels/Rbheat/Finalcabineheat.hpp>
 
 
@@ -49,7 +49,7 @@ makeAbout()
                            "0.1",
                            "FinalCabineHeat FEM model",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2010 Université de Grenoble 1 (Joseph Fourier)" );
+                           "Copyright (c) 2010 Universitï¿½ de Grenoble 1 (Joseph Fourier)" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;

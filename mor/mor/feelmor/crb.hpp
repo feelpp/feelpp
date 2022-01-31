@@ -74,14 +74,14 @@
 #include <feel/feeldiscr/expansion.hpp>
 #include <feel/feelts/bdf.hpp>
 
-#include <feel/feelcrb/crbenums.hpp>
-#include <feel/feelcrb/crbdata.hpp>
-#include <feel/feelcrb/options.hpp>
-#include <feel/feelcrb/parameterspace.hpp>
-#include <feel/feelcrb/crbdb.hpp>
-#include <feel/feelcrb/crbscm.hpp>
-#include <feel/feelcrb/crbelementsdb.hpp>
-#include <feel/feelcrb/pod.hpp>
+#include <feel/feelmor/crbenums.hpp>
+#include <feel/feelmor/crbdata.hpp>
+#include <feel/feelmor/options.hpp>
+#include <feel/feelmor/parameterspace.hpp>
+#include <feel/feelmor/crbdb.hpp>
+#include <feel/feelmor/crbscm.hpp>
+#include <feel/feelmor/crbelementsdb.hpp>
+#include <feel/feelmor/pod.hpp>
 
 //#include <feel/feelfilters/exporter.hpp>
 
@@ -104,8 +104,8 @@
 #include <CL/cl.hpp>
 #endif
 
-#include <feel/feelcrb/crbclcontext.hpp>
-//#include "feel/feelcrb/crb.cl.hpp"
+#include <feel/feelmor/crbclcontext.hpp>
+//#include "feel/feelmor/crb.cl.hpp"
 
 // declare that we want to use a custom context
 #define VIENNACL_WITH_OPENCL

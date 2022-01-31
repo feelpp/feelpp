@@ -23,7 +23,7 @@
 //!
 //!
 #define FEELPP_INSTANTIATE_BIOTSAVART_THERMOELECTRIC
-#include <feel/feelcrb/crbplugin.hpp>
+#include <feel/feelmor/crbplugin.hpp>
 
 
 #include "biotsavart.hpp"

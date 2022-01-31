@@ -32,11 +32,11 @@
 #ifndef __OpusApp_H
 #define __OpusApp_H 1
 
-#include <feel/feelcrb/options.hpp>
-#include <feel/feelcrb/crb.hpp>
-#include <feel/feelcrb/eim.hpp>
-#include <feel/feelcrb/ser.hpp>
-#include <feel/feelcrb/crbmodel.hpp>
+#include <feel/feelmor/options.hpp>
+#include <feel/feelmor/crb.hpp>
+#include <feel/feelmor/eim.hpp>
+#include <feel/feelmor/ser.hpp>
+#include <feel/feelmor/crbmodel.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/range/join.hpp>
 #include <boost/regex.hpp>
@@ -928,7 +928,7 @@ private:
 
 } // Feel
 
-#include <feel/feelcrb/opusapp_impl.hpp>
+#include <feel/feelmor/opusapp_impl.hpp>
 
 
 #endif /* __OpusApp_H */

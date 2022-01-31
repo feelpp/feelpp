@@ -27,7 +27,7 @@
    \date 2010-06-07
  */
 #include <thermalblock.hpp>
-#include <feel/feelcrb/pfemapp.hpp>
+#include <feel/feelmor/pfemapp.hpp>
 
 
 

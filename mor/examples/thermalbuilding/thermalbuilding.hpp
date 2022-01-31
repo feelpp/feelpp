@@ -5,7 +5,7 @@
 
 #include <feel/options.hpp>
 
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
 
 namespace Feel
 {

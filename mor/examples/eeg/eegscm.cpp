@@ -35,8 +35,8 @@
 
 #include <eeg.hpp>
 
-#include <feel/feelcrb/crbscm.hpp>
-#include <feel/feelcrb/crbmodel.hpp>
+#include <feel/feelmor/crbscm.hpp>
+#include <feel/feelmor/crbmodel.hpp>
 
 
 namespace Feel

@@ -25,7 +25,7 @@
 #ifndef FEELPP_EQ_HPP
 #define FEELPP_EQ_HPP
 
-#include <feel/feelcrb/parameterspace.hpp>
+#include <feel/feelmor/parameterspace.hpp>
 #include <feel/feelvf/expressionevaluator.hpp>
 #include <feel/feelopt/glpk.hpp>
 #include <boost/serialization/vector.hpp>

@@ -23,7 +23,7 @@
 //!
 //!
 
-#include <feel/feelcrb/crbplugin.hpp>
+#include <feel/feelmor/crbplugin.hpp>
 #include "electric-alpha.hpp"
 
 #include <boost/math/special_functions/binomial.hpp>

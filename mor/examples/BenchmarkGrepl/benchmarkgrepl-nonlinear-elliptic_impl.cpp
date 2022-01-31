@@ -1,6 +1,6 @@
 #include "benchmarkgrepl-nonlinear-elliptic.hpp"
 
-#include <feel/feelcrb/crbplugin.hpp>
+#include <feel/feelmor/crbplugin.hpp>
 
 namespace Feel
 {

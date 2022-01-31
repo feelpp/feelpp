@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-08-07
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -38,8 +38,8 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/solvereigen.hpp>
-#include <feel/feelcrb/parameterspace.hpp>
-#include <feel/feelcrb/crbdb.hpp>
+#include <feel/feelmor/parameterspace.hpp>
+#include <feel/feelmor/crbdb.hpp>
 #include <feel/feelcore/serialization.hpp>
 #if defined(FEELPP_HAS_GLPK_H)
 #include <glpk.h>
@@ -1261,7 +1261,7 @@ CRBSCM<TruthModelType>::lbSCM( parameter_type const& mu ,size_type K ,int indexm
 
         if ( M_C_alpha_lb[Xi_C_neighbors->indexInSuperSampling( m ) ].find( K-1 ) !=  M_C_alpha_lb[Xi_C_neighbors->indexInSuperSampling( m ) ].end() )
         {
-            //std::cout << "[CRBSCM::lb] lb déjà calculée\n" ;
+            //std::cout << "[CRBSCM::lb] lb dï¿½jï¿½ calculï¿½e\n" ;
         }
         else
         {

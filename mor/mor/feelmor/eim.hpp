@@ -49,13 +49,13 @@
 #include <boost/serialization/export.hpp>
 #include <boost/serialization/base_object.hpp>
 
-#include <feel/feelcrb/crbdb.hpp>
-#include <feel/feelcrb/parameterspace.hpp>
+#include <feel/feelmor/crbdb.hpp>
+#include <feel/feelmor/parameterspace.hpp>
 
 //#include <feel/feelvf/vf.hpp>
 
-#include <feel/feelcrb/crb.hpp>
-#include <feel/feelcrb/crbmodel.hpp>
+#include <feel/feelmor/crb.hpp>
+#include <feel/feelmor/crbmodel.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
 #include <feel/feeldiscr/geometricspace.hpp>
 

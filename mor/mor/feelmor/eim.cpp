@@ -29,7 +29,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/solvereigen.hpp>
-#include <feel/feelcrb/eim.hpp>
+#include <feel/feelmor/eim.hpp>
 
 
 namespace Feel

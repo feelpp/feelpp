@@ -4,7 +4,7 @@
 #define FEELPP_LINEARELASTICITY3D_HPP 1
 
 #include <feel/options.hpp>
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
 
 namespace Feel
 {

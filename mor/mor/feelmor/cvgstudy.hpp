@@ -1,11 +1,11 @@
 #ifndef CVG_STUDY_H
 #define CVG_STUDY_H 1
 
-#include <feel/feelcrb/crb.hpp>
-#include <feel/feelcrb/crbmodel.hpp>
-#include <feel/feelcrb/eim.hpp>
-#include <feel/feelcrb/deim.hpp>
-#include <feel/feelcrb/ser.hpp>
+#include <feel/feelmor/crb.hpp>
+#include <feel/feelmor/crbmodel.hpp>
+#include <feel/feelmor/eim.hpp>
+#include <feel/feelmor/deim.hpp>
+#include <feel/feelmor/ser.hpp>
 
 namespace Feel
 {

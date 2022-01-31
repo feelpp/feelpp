@@ -1,7 +1,7 @@
 /* this file is generated automatically */
 #include "stokesdeim.hpp"
-#include <feel/feelcrb/opusapp.hpp>
-#include <feel/feelcrb/cvgstudy.hpp>
+#include <feel/feelmor/opusapp.hpp>
+#include <feel/feelmor/cvgstudy.hpp>
 
 int main( int argc, char** argv )
 {

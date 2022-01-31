@@ -5,7 +5,7 @@
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelvf/vf.hpp>
-#include <feel/feelcrb/empiricalquadrature.hpp>
+#include <feel/feelmor/empiricalquadrature.hpp>
 
 #include <algorithm>
 #include <boost/math/special_functions/binomial.hpp>

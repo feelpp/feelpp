@@ -32,9 +32,9 @@
 #include <WrapperMacros.h>
 
 
-#include <feel/feelcrb/crbwrapper.hpp>
+#include <feel/feelmor/crbwrapper.hpp>
 #include <opusmodelrb.hpp>
-#include <feel/feelcrb/opusapp.hpp>
+#include <feel/feelmor/opusapp.hpp>
 
 /* WARNING : Please read the following lines
  *

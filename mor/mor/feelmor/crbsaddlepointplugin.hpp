@@ -25,9 +25,9 @@
 #ifndef FEELPP_CRBSADDLEPOINTPLUGIN_HPP
 #define FEELPP_CRBSADDLEPOINTPLUGIN_HPP 1
 
-#include <feel/feelcrb/crbsaddlepoint.hpp>
-#include <feel/feelcrb/crbmodelsaddlepoint.hpp>
-#include <feel/feelcrb/crbplugin.hpp>
+#include <feel/feelmor/crbsaddlepoint.hpp>
+#include <feel/feelmor/crbmodelsaddlepoint.hpp>
+#include <feel/feelmor/crbplugin.hpp>
 
 namespace Feel {
 

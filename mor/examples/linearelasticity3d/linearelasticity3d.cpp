@@ -1,5 +1,5 @@
 #include <boost/dll/alias.hpp> // for BOOST_DLL_ALIAS   
-#include <feel/feelcrb/crbplugin.hpp>
+#include <feel/feelmor/crbplugin.hpp>
 #include <linearelasticity3d.hpp>
 
 namespace Feel

@@ -26,10 +26,10 @@
 #ifndef FEELPP_ALPHAELECTRIC_HPP
 #define FEELPP_ALPHAELECTRIC_HPP
 
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
 #include <feel/options.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
-#include <feel/feelcrb/deim.hpp>
+#include <feel/feelmor/deim.hpp>
 
 namespace Feel
 {

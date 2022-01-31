@@ -30,11 +30,11 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feelcrb/crb.hpp>
-#include <feel/feelcrb/eim.hpp>
-#include <feel/feelcrb/deim.hpp>
-#include <feel/feelcrb/crbmodel.hpp>
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelmor/crb.hpp>
+#include <feel/feelmor/eim.hpp>
+#include <feel/feelmor/deim.hpp>
+#include <feel/feelmor/crbmodel.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <electric-alpha.hpp>
 

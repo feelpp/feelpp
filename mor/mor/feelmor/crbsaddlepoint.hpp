@@ -32,7 +32,7 @@
 #define __CRBSADDLEPOINT_H 1
 
 #include <feel/feelcore/environment.hpp>
-#include <feel/feelcrb/crbblock.hpp>
+#include <feel/feelmor/crbblock.hpp>
 
 namespace Feel
 {

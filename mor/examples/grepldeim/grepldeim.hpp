@@ -32,8 +32,8 @@
 
 
 #include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelcrb/modelcrbbase.hpp>
-#include <feel/feelcrb/deim.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
+#include <feel/feelmor/deim.hpp>
 
 using namespace Feel;
 

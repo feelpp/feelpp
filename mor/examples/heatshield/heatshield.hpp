@@ -37,7 +37,7 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 
-#include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
 
 #include <feel/feelts/bdf.hpp>
 
