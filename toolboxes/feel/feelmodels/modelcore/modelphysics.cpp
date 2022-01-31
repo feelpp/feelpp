@@ -347,8 +347,26 @@ template <uint16_type Dim>
 void
 ModelPhysicHeat<Dim>::HeatSource::setup( nl::json const& jarg )
 {
+    if ( jarg.contains("type") )
+    {
+        auto const& j_type = jarg.at("type");
+        if ( j_type.is_string() )
+            M_type = j_type.template get<std::string>();
+    }
+    CHECK( M_type == "heat-source" || M_type == "heat-rate" ) << "invalid heat source type " << M_type;
     CHECK( jarg.contains( "expr" ) ) << "no expr";
-    M_parent->addParameter( M_name/*"heatsource"*/, jarg.at("expr") );
+
+    if ( M_type == "heat-source" )
+    {
+        M_parent->addParameter( M_name + "_heatsource", jarg.at("expr") );
+    }
+    else if ( M_type == "heat-rate" )
+    {
+        std::string symbHeatRate = M_parent->addParameter( M_name + "_heatrate", jarg.at("expr") );
+        std::string symbMeasureMat = M_parent->symbolFromParameter( "measure_materials" );
+        std::string exprHeatSource = fmt::format("{0}/{1}:{0}:{1}",symbHeatRate,symbMeasureMat);
+        M_parent->addParameter( M_name + "_heatsource", exprHeatSource );
+    }
 }
 
 template <uint16_type Dim>
@@ -357,8 +375,16 @@ ModelPhysicHeat<Dim>::HeatSource::updateInformationObject( nl::json & p ) const
 {
     p["name"] = M_name;
     p["type"] = M_type;
-    auto [exprStr,compInfo] = M_parent->parameterModelExpr(M_name).exprInformations();
-    p["expr"] = exprStr;
+    if ( this->givenAsHeatRate() )
+    {
+        auto [exprStr,compInfo] = M_parent->parameterModelExpr(M_name+"_heatrate").exprInformations();
+        p["expr"] = exprStr;
+    }
+    else
+    {
+        auto [exprStr,compInfo] = M_parent->parameterModelExpr(M_name+"_heatsource").exprInformations();
+        p["expr"] = exprStr;
+    }
 }
 
 template <uint16_type Dim>
