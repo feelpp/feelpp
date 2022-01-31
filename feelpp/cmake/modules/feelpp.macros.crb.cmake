@@ -227,7 +227,7 @@ macro(crb_add_model)
     # generate pfem
   set(CODE "/* this file is generated automatically */
 #include <${CRB_MODEL_HDRS}>
-#include <feel/feelcrb/opusapp.hpp>
+#include <feel/feelmor/opusapp.hpp>
 
 int main( int argc, char** argv )
 {
@@ -320,7 +320,7 @@ int main( int argc, char** argv )
 
   # Install OpenCL source files
   if ( HARTS_LIBRARIES AND ENABLE_OPENCL )
-      set(CRB_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/feel/feelcrb")
+      set(CRB_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/feel/feelmor")
       if ( EXISTS ${CRB_INCLUDE_DIR} )
           file(GLOB OPENCL_SOURCE_FILES "${CRB_INCLUDE_DIR}/*.cl")
           if(OPENCL_SOURCE_FILES)
