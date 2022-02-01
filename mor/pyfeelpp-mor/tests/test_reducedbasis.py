@@ -11,23 +11,29 @@ import feelpp
 from feelpp.mor.reducedbasis.reducedbasis import *
 
 
-cases = [ ('thermal-fin', '2d', 'thermal-fin.cfg', 2, False),
-        #   ('thermal-fin', '3d', 'thermal-fin.cfg', 3, False)
+cases = [ (('thermal-fin', '2d', 'thermal-fin.cfg', 2, False), 'thermal-fin-2d'),
+          (('thermal-fin', '3d', 'thermal-fin.cfg', 3, False), 'thermal-fin-3d')
         ]
+cases_params, cases_ids = list(zip(*cases))
 
 
-# @pytest.fixture
-@pytest.mark.parametrize("prefix, case, casefile, dim, time_dependant", cases)
-def test_init_toolbox(prefix, case, casefile, dim, time_dependant):
+
+@pytest.fixture(params=cases_params, ids=cases_ids)
+def init_toolbox(request):
+    prefix, case, casefile, dim, time_dependant = request.param
     feelpp.Environment.setConfigFile(f'{prefix}/{case}/{casefile}')
-
-    # Set the environment
-    o = toolboxes_options("heat")
-    o.add(makeToolboxMorOptions())
-    e = feelpp.Environment(sys.argv, opts = o)
 
     heatBox = heat(dim=dim, order=1)
     heatBox.init()
+
+    return heatBox,dim,time_dependant
+
+def test_create_model(init_toolbox):
+    heatBox,dim,time_dependant = init_toolbox
+    print(type(heatBox), dim)
+    model = toolboxmor(dim=dim, time_dependent=time_dependant)
+
+    model.setFunctionSpaces(Vh=heatBox.spaceTemperature())
 
 # @pytest.fixture
 # # @pytest.mark.parametrize("prefix,case,casefile,dim", cases)

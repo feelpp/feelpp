@@ -4,6 +4,7 @@ import sys
 import py
 import pytest
 import feelpp
+import feelpp.mor as mor
 import feelpp.toolboxes.core as tb
 log = getLogger(__name__)
 MPI_ARGS = ("mpirun", "-n")
@@ -24,7 +25,7 @@ class InitFeelpp:
     def __init__(self,config):
         try:
             print('xxx call init_feelpp;', __file__)
-            sys.argv=['test_pyfeelpptoolboxes']
+            sys.argv=['test_pyfeelppmor']
             self.e = feelpp.Environment(
                 sys.argv, opts= feelpp.backend_options("Iv")
                                 .add(tb.toolboxes_options("electric"))
@@ -32,7 +33,8 @@ class InitFeelpp:
                                 .add(tb.toolboxes_options("heat"))
                                 .add(tb.toolboxes_options("solid"))
                                 .add(tb.toolboxes_options("solid"))
-                                .add(tb.toolboxes_options("coefficient-form-pdes", "cfpdes")),
+                                .add(tb.toolboxes_options("coefficient-form-pdes", "cfpdes"))
+                                .add(mor.makeToolboxMorOptions()),
                 config=config
                                 )
             print('is master? ', feelpp.Environment.worldCommPtr().isMasterRank())
@@ -44,9 +46,3 @@ class InitFeelpp:
 @pytest.fixture(scope="session", autouse=True)
 def init_feelpp():
     return InitFeelpp(feelpp.globalRepository("pyfeelppmor-tests"))
-
-def pytest_configure():
-    pytest.rb = None
-    pytest.decomposition = []
-    pytest.mus = []
-    pytest.rbGreedy = None
