@@ -371,7 +371,7 @@ class VectorUblasBase: public Vector<T>
         virtual self_type * clonePtr() const = 0;
 
         // Storage API
-        void init( const size_type n, const size_type n_local, const bool fast = false ) override = 0;
+        void init( const size_type n, const size_type n_local, const bool fast = false ) override;
         void init( const size_type n, const bool fast = false ) override;
         void init( const datamap_ptrtype & dm ) override;
         
@@ -428,6 +428,7 @@ class VectorUblasBase: public Vector<T>
         virtual void setConstant( value_type v ) override = 0;
         virtual void setZero() override = 0;
         void zero() override { this->setZero(); }
+        void zero( size_type /*start*/, size_type /*stop*/ ) override { CHECK(false) << "unsupported"; }
 
         void set( const size_type i, const value_type & value ) override;
         void set( const Vector<T> & v );
@@ -596,8 +597,6 @@ class VectorUblasContiguousGhostsBase:
 
         ~VectorUblasContiguousGhostsBase() override = default;
         
-        void init( const size_type n, const size_type n_local, const bool fast = false ) override = 0;
-        
         // Storage API
         virtual void resize( size_type n ) override = 0;
         virtual void clear() override = 0;
@@ -727,11 +726,11 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         
         virtual iterator_type beginActive() override { return iterator_type( M_vec.begin() ); }
         virtual const_iterator_type beginActive() const override { return const_iterator_type( M_vec.begin() ); }
-        virtual iterator_type endActive() override { return iterator_type( M_vec.find( this->map()->nLocalDofWithoutGhost() ) ); }
-        virtual const_iterator_type endActive() const override { return const_iterator_type( M_vec.find( this->map()->nLocalDofWithoutGhost() ) ); }
+        virtual iterator_type endActive() override { return iterator_type( M_vec.find( this->map().nLocalDofWithoutGhost() ) ); }
+        virtual const_iterator_type endActive() const override { return const_iterator_type( M_vec.find( this->map().nLocalDofWithoutGhost() ) ); }
 
-        virtual iterator_type beginGhost() override { return iterator_type( M_vec.find( this->map()->nLocalDofWithoutGhost() ) ); }
-        virtual const_iterator_type beginGhost() const override { return const_iterator_type( M_vec.find( this->map()->nLocalDofWithoutGhost() ) ); }
+        virtual iterator_type beginGhost() override { return iterator_type( M_vec.find( this->map().nLocalDofWithoutGhost() ) ); }
+        virtual const_iterator_type beginGhost() const override { return const_iterator_type( M_vec.find( this->map().nLocalDofWithoutGhost() ) ); }
         virtual iterator_type endGhost() override { return iterator_type( M_vec.end() ); }
         virtual const_iterator_type endGhost() const override { return const_iterator_type( M_vec.end() ); }
         
@@ -823,8 +822,6 @@ class VectorUblasNonContiguousGhostsBase:
         VectorUblasNonContiguousGhostsBase( size_type s, size_type n_local ): super_type( s, n_local ) { }
 
         ~VectorUblasNonContiguousGhostsBase() override = default;
-        
-        void init( const size_type n, const size_type n_local, const bool fast = false ) override = 0;
         
         // Storage API
         virtual void resize( size_type n ) override = 0;
