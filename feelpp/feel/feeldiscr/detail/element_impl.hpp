@@ -330,7 +330,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
                                                              size_type nActiveDof, value_type* arrayActiveDof,
                                                              size_type nGhostDof, value_type* arrayGhostDof )
     :
-    super( nActiveDof,arrayActiveDof,nGhostDof,arrayGhostDof, __functionspace->dof() ),
+    super( nActiveDof, arrayActiveDof, nGhostDof, arrayGhostDof, __functionspace->dof() ),
     M_functionspace( __functionspace ),
     //M_name( __name ),
     //M_desc( __desc ),
