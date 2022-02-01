@@ -26,6 +26,8 @@
 #include <feel/feelalg/vectorublas.hpp>
 #include <feel/feelcore/hdf5.hpp>
 
+#define FEELPP_INSTANTIATE_VECTORUBLAS 1
+
 namespace Feel {
 
 namespace detail {
@@ -1610,5 +1612,15 @@ VectorUblas<T>::VectorUblas( size_type nActiveDof, value_type * arrayActiveDof,
                 dm ) )
 {
 }
+
+/*-----------------------------------------------------------------------------*/
+// Explicit instantiations
+template class VectorUblas<double>;
+namespace detail {
+template class VectorUblasContiguousGhosts< double, ublas::vector<double> >;
+template class VectorUblasRange< double, ublas::vector<double> >;
+template class VectorUblasSlice< double, ublas::vector<double> >;
+}
+
 
 } // namespace Feel
