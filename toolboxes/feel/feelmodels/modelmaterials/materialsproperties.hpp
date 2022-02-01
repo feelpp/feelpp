@@ -181,7 +181,7 @@ public :
                     auto itFindSymbolInDesc = propSymbolToPropNameInDescription.find( propSymbol );
                     if ( itFindSymbolInDesc != propSymbolToPropNameInDescription.end() )
                         propName = itFindSymbolInDesc->second;
-                    this->addProperty( matProperties, propName, propExpr );
+                    this->addProperty( matProperties, propName, propExpr.mexpr() );
                 }
 
                 // TODO : move in heat toolbox
