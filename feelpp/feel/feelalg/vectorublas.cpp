@@ -529,13 +529,32 @@ typename VectorUblasContiguousGhosts<T, Storage>::value_type& VectorUblasContigu
 {
     return M_vec.operator()( i-this->firstLocalIndex() );
 }
-        
+
+template< typename T, typename Storage > 
+typename VectorUblasContiguousGhosts<T, Storage>::size_type
+VectorUblasContiguousGhosts<T, Storage>::startActive() const
+{
+    if constexpr ( is_vector_proxy )
+        return M_vec.start(); // should not happen but not dangerous
+    else
+        return 0;
+}
+
+template< typename T, typename Storage > 
+typename VectorUblasContiguousGhosts<T, Storage>::size_type
+VectorUblasContiguousGhosts<T, Storage>::startGhost() const
+{
+    if constexpr ( is_vector_proxy )
+        CHECK( false ) << "should not happen";
+    else
+        return this->map()->nLocalDofWithoutGhost();
+}
+
 template< typename T, typename Storage > 
 void VectorUblasContiguousGhosts<T, Storage>::setConstant( value_type v )
 {
     M_vec = ublas::scalar_vector<value_type>( M_vec.size(), v );
-}
-  
+}  
 
 template< typename T, typename Storage > 
 void VectorUblasContiguousGhosts<T, Storage>::setZero()
@@ -1009,6 +1028,26 @@ typename VectorUblasNonContiguousGhosts<T, Storage>::value_type& VectorUblasNonC
         return M_vec.operator()( i );
     else
         return M_vecNonContiguousGhosts.operator()( i-nLocalActiveDof );
+}
+
+template< typename T, typename Storage > 
+typename VectorUblasNonContiguousGhosts<T, Storage>::size_type
+VectorUblasNonContiguousGhosts<T, Storage>::startActive() const
+{
+    if constexpr ( is_vector_proxy )
+        return M_vec.start();
+    else
+        return 0;
+}
+
+template< typename T, typename Storage > 
+typename VectorUblasNonContiguousGhosts<T, Storage>::size_type
+VectorUblasNonContiguousGhosts<T, Storage>::startGhost() const
+{
+    if constexpr ( is_vector_proxy )
+        return M_vecNonContiguousGhosts.start();
+    else
+        return 0;
 }
         
 template< typename T, typename Storage > 
@@ -1532,18 +1571,20 @@ VectorUblas<T>::VectorUblas( size_type s, size_type n_local ):
 {
     this->init( this->size(), this->localSize(), false );
 }
-//template< typename T >
-//VectorUblas<T>::VectorUblas( VectorUblas<T>& v, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm ):
-    //super_type( dm ),
-    //M_vectorImpl( v.range( rangeActive, rangeGhost ) )
-//{
-//}
-//template< typename T >
-//VectorUblas<T>::VectorUblas( VectorUblas<T>& v, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm ):
-    //super_type( dm ),
-    //M_vectorImpl( v.slice( sliceActive, sliceGhost ) )
-//{
-//}
+template< typename T >
+VectorUblas<T>::VectorUblas( VectorUblas<T>& v, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm ):
+    super_type( dm ),
+    M_vectorImpl( v.range( rangeActive, rangeGhost ) )
+{
+    M_vectorImpl->setMap( dm );
+}
+template< typename T >
+VectorUblas<T>::VectorUblas( VectorUblas<T>& v, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm ):
+    super_type( dm ),
+    M_vectorImpl( v.slice( sliceActive, sliceGhost ) )
+{
+    M_vectorImpl->setMap( dm );
+}
 template< typename T >
 VectorUblas<T>::VectorUblas( ublas::vector<T>& v, range_type const& range, datamap_ptrtype const& dm ):
     super_type( dm ),

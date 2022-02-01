@@ -112,10 +112,10 @@ class VectorUblas : public Vector<T>
         VectorUblas( datamap_ptrtype const& dm );
         VectorUblas( size_type s, size_type n_local );
         //FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
-        //TODO:VectorUblas( VectorUblas<value_type>& v, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
+        VectorUblas( VectorUblas<value_type>& v, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
         //VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
         //FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, slice_type const& range, datamap_ptrtype const& dm );
-        //TODO:VectorUblas( VectorUblas<value_type>& v, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+        VectorUblas( VectorUblas<value_type>& v, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
         //VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
         //FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, range_type const& range );
         VectorUblas( ublas::vector<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
@@ -179,10 +179,14 @@ class VectorUblas : public Vector<T>
         //size_type rowStart() const { return M_vectorImpl->rowStart(); }
         //size_type rowStop() const { return M_vectorImpl->rowStop(); }
 
+        size_type startActive() const { return M_vectorImpl->startActive(); }
+        size_type startGhost() const { return M_vectorImpl->startGhost(); }
+
         // Setters API
         void setConstant( value_type a ) override { return M_vectorImpl->setConstant( a ); }
         void setZero() override { return M_vectorImpl->setZero(); }
         void zero() override { return this->setZero(); }
+        void zero( size_type /*start*/, size_type /*stop*/ ) override { CHECK(false) << "unsupported"; }
 
         void set( const size_type i, const value_type & value ) override { return M_vectorImpl->set( i, value ); }
         void setVector( int * i, int n, value_type * v ) override { return M_vectorImpl->setVector( i, v ); }
@@ -403,6 +407,9 @@ class VectorUblasBase: public Vector<T>
         virtual const_iterator_type beginGhost() const = 0;
         virtual iterator_type endGhost() = 0;
         virtual const_iterator_type endGhost() const = 0;
+        
+        virtual size_type startActive() const = 0;
+        virtual size_type startGhost() const = 0;
 
         //virtual size_type start() const = 0;
         //virtual size_type startNonContiguousGhosts() const = 0;
@@ -663,14 +670,16 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         using typename super_type::vector_map_storage_type;
         using typename super_type::vector_range_map_storage_type;
         using typename super_type::vector_slice_map_storage_type;
+        // VectorUblasContiguousGhosts can only hold simple vector or vector view, no proxy
         static_assert(
                 std::is_same_v< storage_type, vector_storage_type > ||
-                std::is_same_v< storage_type, vector_range_storage_type > ||
-                std::is_same_v< storage_type, vector_slice_storage_type > || 
-                std::is_same_v< storage_type, vector_map_storage_type > ||
-                std::is_same_v< storage_type, vector_range_map_storage_type > ||
-                std::is_same_v< storage_type, vector_slice_map_storage_type >,
+                //std::is_same_v< storage_type, vector_range_storage_type > ||
+                //std::is_same_v< storage_type, vector_slice_storage_type > || 
+                std::is_same_v< storage_type, vector_map_storage_type >,
+                //std::is_same_v< storage_type, vector_range_map_storage_type > ||
+                //std::is_same_v< storage_type, vector_slice_map_storage_type >,
                 "unsupported storage type" );
+        static constexpr bool is_vector_proxy = false;
 
         using typename super_type::vector_variant_type;
         using typename super_type::vector_ptr_variant_type;
@@ -719,6 +728,9 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         virtual const_iterator_type beginGhost() const override { return const_iterator_type( M_vec.find( this->map()->nLocalDofWithoutGhost() ) ); }
         virtual iterator_type endGhost() override { return iterator_type( M_vec.end() ); }
         virtual const_iterator_type endGhost() const override { return const_iterator_type( M_vec.end() ); }
+        
+        size_type startActive() const override;
+        size_type startGhost() const override;
 
         // Setters API
         virtual void setConstant( value_type v ) override;
@@ -898,6 +910,11 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
                 std::is_same_v< storage_type, vector_range_map_storage_type > ||
                 std::is_same_v< storage_type, vector_slice_map_storage_type >,
                 "unsupported storage type" );
+        static constexpr bool is_vector_proxy = 
+            std::is_same_v< storage_type, vector_range_storage_type > ||
+            std::is_same_v< storage_type, vector_slice_storage_type > || 
+            std::is_same_v< storage_type, vector_range_map_storage_type > ||
+            std::is_same_v< storage_type, vector_slice_map_storage_type >;
 
         using typename super_type::vector_variant_type;
         using typename super_type::vector_ptr_variant_type;
@@ -947,6 +964,9 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         virtual const_iterator_type beginGhost() const override { return const_iterator_type( M_vecNonContiguousGhosts.begin() ); }
         virtual iterator_type endGhost() override { return iterator_type( M_vecNonContiguousGhosts.end() ); }
         virtual const_iterator_type endGhost() const override { return const_iterator_type( M_vecNonContiguousGhosts.end() ); }
+
+        size_type startActive() const override;
+        size_type startGhost() const override;
 
         // Setters API
         virtual void setConstant( value_type v ) override;
