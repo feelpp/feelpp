@@ -163,7 +163,6 @@ class VectorUblas : public Vector<T>
         value_type operator[]( size_type i ) const { return this->operator()( i ); }
         value_type& operator[]( size_type i ) { return this->operator()( i ); }
 
-        Vector<T>& operator+=( const Vector<T>& v ) override { this->add( v ); return *this; }
         //VectorUblasExpression<T> operator+( const Vector<T>& v ) const;
 
         //// Iterators API
@@ -191,6 +190,7 @@ class VectorUblas : public Vector<T>
         void set( const size_type i, const value_type & value ) override { return M_vectorImpl->set( i, value ); }
         void setVector( int * i, int n, value_type * v ) override { return M_vectorImpl->setVector( i, v ); }
 
+        Vector<T>& operator+=( const Vector<T>& v ) override { this->add( v ); return *this; }
         void add( const size_type i, const value_type & value ) override { return M_vectorImpl->add( i, value ); }
         void add( const value_type & value ) override { return M_vectorImpl->add( value ); }
         void add( const Vector<T> & v ) override { return M_vectorImpl->add( v ); }
@@ -200,6 +200,10 @@ class VectorUblas : public Vector<T>
         void addVector( const Vector<T> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->addVector( v, dof_ids ); }
         void addVector( const ublas::vector<value_type> & v, const std::vector<size_type> & dof_ids ) { return M_vectorImpl->addVector( v, dof_ids ); }
         void addVector( const Vector<T> & v, const MatrixSparse<value_type> & A ) override { return M_vectorImpl->addVector( v, A ); }
+        
+        Vector<T>& operator-=( const Vector<T>& v ) override { this->sub( v ); return *this; }
+        void sub( const Vector<T> & v ) override { return M_vectorImpl->sub( v ); }
+        void sub( const value_type & a, const Vector<T> & v ) override { return M_vectorImpl->sub( a, v ); }
 
         void insert( const std::vector<value_type> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->insert( v, dof_ids ); }
         void insert( const Vector<value_type> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->insert( v, dof_ids ); }
