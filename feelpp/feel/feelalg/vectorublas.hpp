@@ -453,6 +453,25 @@ class VectorUblasBase: public Vector<T>
         void insert( const Vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
         void insert( const ublas::vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
 
+        // Multiple dispatch operations
+        virtual void setVector( const VectorUblasContiguousGhostsBase<T> & v ) = 0;
+        virtual void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
+
+        virtual void addVector( const VectorUblasContiguousGhostsBase<T> & v ) = 0;
+        virtual void addVector( const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
+
+        virtual void maddVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) = 0;
+        virtual void maddVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
+
+        virtual void subVector( const VectorUblasContiguousGhostsBase<T> & v ) = 0;
+        virtual void subVector( const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
+
+        virtual void msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) = 0;
+        virtual void msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
+
+        virtual value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const = 0;
+        virtual value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const = 0;
+
         // Utilities
         real_type min() const override { return this->min( true ); }
         virtual real_type min( bool parallel ) const = 0;
@@ -487,33 +506,21 @@ class VectorUblasBase: public Vector<T>
 
         void setVector( const VectorUblasBase<T> & v ) { return v.applySetVector( *this ); }
         virtual void applySetVector( VectorUblasBase<T> & v ) const = 0;
-        virtual void setVector( const VectorUblasContiguousGhostsBase<T> & v ) = 0;
-        virtual void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
         
         void addVector( const VectorUblasBase<T> & v ) { return v.applyAddVector( *this ); }
         virtual void applyAddVector( VectorUblasBase<T> & v ) const = 0;
-        virtual void addVector( const VectorUblasContiguousGhostsBase<T> & v ) = 0;
-        virtual void addVector( const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
 
         void maddVector( const value_type & a, const VectorUblasBase<T> & v ) { return v.applyMaddVector( a, *this ); }
         virtual void applyMaddVector( const value_type & a, VectorUblasBase<T> & v ) const = 0;
-        virtual void maddVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) = 0;
-        virtual void maddVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
         
         void subVector( const VectorUblasBase<T> & v ) { return v.applySubVector( *this ); }
         virtual void applySubVector( VectorUblasBase<T> & v ) const = 0;
-        virtual void subVector( const VectorUblasContiguousGhostsBase<T> & v ) = 0;
-        virtual void subVector( const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
 
         virtual void msubVector( const value_type & a, const VectorUblasBase<T> & v ) { return v.applyMsubVector( a, *this ); }
         virtual void applyMsubVector( const value_type & a, VectorUblasBase<T> & v ) const = 0;
-        virtual void msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) = 0;
-        virtual void msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
 
         virtual value_type dotVector( const VectorUblasBase<T> & v ) const { return v.applyDotVector( *this ); }
         virtual value_type applyDotVector( const VectorUblasBase<T> & v ) const = 0;
-        virtual value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const = 0;
-        virtual value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const = 0;
 
         virtual VectorUblasBase<T> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) = 0;
         virtual VectorUblasBase<T> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) = 0;
@@ -612,22 +619,8 @@ class VectorUblasContiguousGhostsBase:
         virtual void setZero() override = 0;
 
         virtual void scale( const value_type factor ) override = 0;
-        
-        // Utilities
-        virtual real_type min( bool parallel ) const override = 0;
-        virtual real_type max( bool parallel ) const override = 0;
 
-        virtual real_type l1Norm() const override = 0;
-        virtual real_type l2Norm() const override = 0;
-        virtual real_type linftyNorm() const override = 0;
-
-        virtual value_type sum() const override = 0;
-
-    protected:
-        virtual vector_ptr_variant_type vec() = 0;
-
-        void checkInvariants() const override = 0;
-
+        // Multiple dispatch operations
         void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
         void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
 
@@ -645,6 +638,21 @@ class VectorUblasContiguousGhostsBase:
 
         value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override = 0;
         value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override = 0;
+        
+        // Utilities
+        virtual real_type min( bool parallel ) const override = 0;
+        virtual real_type max( bool parallel ) const override = 0;
+
+        virtual real_type l1Norm() const override = 0;
+        virtual real_type l2Norm() const override = 0;
+        virtual real_type linftyNorm() const override = 0;
+
+        virtual value_type sum() const override = 0;
+
+    protected:
+        virtual vector_ptr_variant_type vec() = 0;
+
+        void checkInvariants() const override = 0;
 
         VectorUblasBase<T> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) override = 0;
         VectorUblasBase<T> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) override = 0;
@@ -742,22 +750,8 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         virtual void setZero() override;
 
         virtual void scale( const value_type factor ) override;
-        
-        // Utilities
-        virtual real_type min( bool parallel ) const override;
-        virtual real_type max( bool parallel ) const override;
 
-        virtual real_type l1Norm() const override;
-        virtual real_type l2Norm() const override;
-        virtual real_type linftyNorm() const override;
-
-        virtual value_type sum() const override;
-
-    protected:
-        virtual vector_ptr_variant_type vec() override { return &M_vec; }
-        
-        void checkInvariants() const override;
-        
+        // Multiple dispatch operations
         void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
         void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
@@ -776,6 +770,21 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override;
         value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override;
         
+        // Utilities
+        virtual real_type min( bool parallel ) const override;
+        virtual real_type max( bool parallel ) const override;
+
+        virtual real_type l1Norm() const override;
+        virtual real_type l2Norm() const override;
+        virtual real_type linftyNorm() const override;
+
+        virtual value_type sum() const override;
+
+    protected:
+        virtual vector_ptr_variant_type vec() override { return &M_vec; }
+        
+        void checkInvariants() const override;
+         
         VectorUblasRange<T, Storage> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) override;
         VectorUblasSlice<T, Storage> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) override;
 
@@ -840,22 +849,7 @@ class VectorUblasNonContiguousGhostsBase:
 
         virtual void scale( const value_type factor ) override = 0;
 
-        // Utilities
-        virtual real_type min( bool parallel ) const override = 0;
-        virtual real_type max( bool parallel ) const override = 0;
-
-        virtual real_type l1Norm() const override = 0;
-        virtual real_type l2Norm() const override = 0;
-        virtual real_type linftyNorm() const override = 0;
-
-        virtual value_type sum() const override = 0;
-
-    protected:
-        virtual vector_ptr_variant_type vec() = 0;
-        virtual vector_ptr_variant_type vecNonContiguousGhosts() = 0;
-        
-        void checkInvariants() const override = 0;
-
+        // Multiple dispatch operations
         void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
         void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
 
@@ -873,7 +867,23 @@ class VectorUblasNonContiguousGhostsBase:
 
         value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override = 0;
         value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override = 0;
+
+        // Utilities
+        virtual real_type min( bool parallel ) const override = 0;
+        virtual real_type max( bool parallel ) const override = 0;
+
+        virtual real_type l1Norm() const override = 0;
+        virtual real_type l2Norm() const override = 0;
+        virtual real_type linftyNorm() const override = 0;
+
+        virtual value_type sum() const override = 0;
+
+    protected:
+        virtual vector_ptr_variant_type vec() = 0;
+        virtual vector_ptr_variant_type vecNonContiguousGhosts() = 0;
         
+        void checkInvariants() const override = 0;
+ 
         VectorUblasBase<T> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) override = 0;
         VectorUblasBase<T> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) override = 0;
 
@@ -976,22 +986,7 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
 
         virtual void scale( const value_type factor ) override;
 
-        // Utilities
-        virtual real_type min( bool parallel ) const override;
-        virtual real_type max( bool parallel ) const override;
-
-        virtual real_type l1Norm() const override;
-        virtual real_type l2Norm() const override;
-        virtual real_type linftyNorm() const override;
-
-        virtual value_type sum() const override;
-
-    protected:
-        virtual vector_ptr_variant_type vec() override { return &M_vec; }
-        virtual vector_ptr_variant_type vecNonContiguousGhosts() override { return &M_vecNonContiguousGhosts; }
-        
-        void checkInvariants() const override;
-        
+        // Multiple dispatch operations
         void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
         void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
@@ -1009,7 +1004,23 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
 
         value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override;
         value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override;
+
+        // Utilities
+        virtual real_type min( bool parallel ) const override;
+        virtual real_type max( bool parallel ) const override;
+
+        virtual real_type l1Norm() const override;
+        virtual real_type l2Norm() const override;
+        virtual real_type linftyNorm() const override;
+
+        virtual value_type sum() const override;
+
+    protected:
+        virtual vector_ptr_variant_type vec() override { return &M_vec; }
+        virtual vector_ptr_variant_type vecNonContiguousGhosts() override { return &M_vecNonContiguousGhosts; }
         
+        void checkInvariants() const override;
+         
         VectorUblasBase<T> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) override;
         VectorUblasBase<T> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) override;
 
