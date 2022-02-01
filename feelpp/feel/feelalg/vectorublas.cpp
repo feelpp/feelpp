@@ -54,6 +54,10 @@ VectorUblasBase<T>::VectorUblasBase( size_type s, size_type n_local ):
 }
 
 template< typename T >
+void VectorUblasBase<T>::init( const size_type n, const size_type n_local, const bool fast )
+{}
+
+template< typename T >
 void VectorUblasBase<T>::init( const size_type n, const bool fast )
 {
     this->init( n, n, fast ); 
@@ -549,7 +553,7 @@ VectorUblasContiguousGhosts<T, Storage>::startGhost() const
     if constexpr ( is_vector_proxy )
         CHECK( false ) << "should not happen";
     else
-        return this->map()->nLocalDofWithoutGhost();
+        return this->map().nLocalDofWithoutGhost();
 }
 
 template< typename T, typename Storage > 
@@ -1576,14 +1580,14 @@ VectorUblas<T>::VectorUblas( size_type s, size_type n_local ):
 template< typename T >
 VectorUblas<T>::VectorUblas( VectorUblas<T>& v, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm ):
     super_type( dm ),
-    M_vectorImpl( v.range( rangeActive, rangeGhost ) )
+    M_vectorImpl( v.M_vectorImpl->range( rangeActive, rangeGhost ) )
 {
     M_vectorImpl->setMap( dm );
 }
 template< typename T >
 VectorUblas<T>::VectorUblas( VectorUblas<T>& v, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm ):
     super_type( dm ),
-    M_vectorImpl( v.slice( sliceActive, sliceGhost ) )
+    M_vectorImpl( v.M_vectorImpl->slice( sliceActive, sliceGhost ) )
 {
     M_vectorImpl->setMap( dm );
 }
@@ -1606,7 +1610,7 @@ VectorUblas<T>::VectorUblas( size_type nActiveDof, value_type * arrayActiveDof,
         size_type nGhostDof, value_type * arrayGhostDof,
         datamap_ptrtype const& dm ):
     super_type( dm ),
-    M_vectorImpl( new detail::VectorUblasNonContiguousGhosts<T, ublas::vector<T, ublas::vector<T, Feel::detail::shallow_array_adaptor<T>>>>( 
+    M_vectorImpl( new detail::VectorUblasNonContiguousGhosts<T, ublas::vector<T, Feel::detail::shallow_array_adaptor<T>>>( 
                 ublas::vector<T, Feel::detail::shallow_array_adaptor<T>>( Feel::detail::shallow_array_adaptor<T>( nActiveDof, arrayActiveDof ) ), 
                 ublas::vector<T, Feel::detail::shallow_array_adaptor<T>>( Feel::detail::shallow_array_adaptor<T>( nGhostDof, arrayGhostDof ) ), 
                 dm ) )
