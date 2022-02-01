@@ -949,13 +949,15 @@ VectorUblasContiguousGhosts<T, Storage>::dotVector( const VectorUblasNonContiguo
 template< typename T, typename Storage > 
 VectorUblasRange<T, Storage> * VectorUblasContiguousGhosts<T, Storage>::rangeImpl( const range_type & rangeActive, const range_type & rangeGhost )
 {
-    return new VectorUblasRange<T, Storage>( *this, rangeActive, rangeGhost );
+    static_assert( !is_vector_proxy, "unsupported range" );
+    return new VectorUblasRange<T, Storage>( M_vec, rangeActive, rangeGhost, this->mapPtr() );
 }
 
 template< typename T, typename Storage >
 VectorUblasSlice<T, Storage> * VectorUblasContiguousGhosts<T, Storage>::sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost )
 {
-    return new VectorUblasSlice<T, Storage>( *this, sliceActive, sliceGhost );
+    static_assert( !is_vector_proxy, "unsupported slice" );
+    return new VectorUblasSlice<T, Storage>( M_vec, sliceActive, sliceGhost, this->mapPtr() );
 }
 
 /*-----------------------------------------------------------------------------*/
@@ -1494,48 +1496,96 @@ VectorUblasNonContiguousGhosts<T, Storage>::dotVector( const VectorUblasNonConti
 template< typename T, typename Storage > 
 VectorUblasBase<T> * VectorUblasNonContiguousGhosts<T, Storage>::rangeImpl( const range_type & rangeActive, const range_type & rangeGhost )
 {
-    return new VectorUblasRange<T, Storage>( *this, rangeActive, rangeGhost );
+    if constexpr ( is_vector_range )
+    {
+        range_type rActive = range_type( M_vec.start() + rangeActive.start(), std::min( M_vec.size(), rangeActive.size() ) );
+        range_type rGhost = range_type( M_vecNonContiguousGhosts.start() + rangeGhost.start(), std::min( M_vecNonContiguousGhosts.size(), rangeGhost.size() ) );
+        return new VectorUblasRange<T, typename Storage::vector_type>( M_vec.data().expression(), rActive, M_vecNonContiguousGhosts.data().expression(), rGhost, this->mapPtr() );
+    }
+    else if constexpr ( is_vector_slice )
+    {
+        slice_type sActive = slice_type( M_vec.start() + rangeActive.start() * M_vec.stride(), M_vec.stride(), std::min( M_vec.size(), rangeActive.size() ) );
+        slice_type sGhost = slice_type( M_vecNonContiguousGhosts.start() + rangeGhost.start() * M_vecNonContiguousGhosts.stride(), M_vecNonContiguousGhosts.stride(), std::min( M_vecNonContiguousGhosts.size(), rangeGhost.size() ) );
+        return new VectorUblasSlice<T, typename Storage::vector_type>( M_vec.data().expression(), sActive, M_vecNonContiguousGhosts.data().expression(), sGhost, this->mapPtr() );
+    }
+    else
+    {
+        return new VectorUblasRange<T, Storage>( M_vec, rangeActive, M_vecNonContiguousGhosts, rangeGhost, this->mapPtr() );
+    }
 }
 
 template< typename T, typename Storage > 
 VectorUblasBase<T> * VectorUblasNonContiguousGhosts<T, Storage>::sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost )
 {
-    return new VectorUblasSlice<T, Storage>( *this, sliceActive, sliceGhost );
+    if constexpr ( is_vector_range )
+    {
+        slice_type sActive = slice_type( M_vec.start() + sliceActive.start(), sliceActive.stride(), std::min( M_vec.size(), sliceActive.size() ) );
+        slice_type sGhost = slice_type( M_vecNonContiguousGhosts.start() + sliceGhost.start(), sliceGhost.stride(), std::min( M_vecNonContiguousGhosts.size(), sliceGhost.size() ) );
+        return new VectorUblasSlice<T, typename Storage::vector_type>( M_vec.data().expression(), sActive, M_vecNonContiguousGhosts.data().expression(), sGhost, this->mapPtr() );
+    }
+    else if constexpr ( is_vector_slice )
+    {
+        slice_type sActive = slice_type( M_vec.start() + sliceActive.start() * M_vec.stride(), M_vec.stride() * sliceActive.stride(), std::min( M_vec.size(), sliceActive.size() ) );
+        slice_type sGhost = slice_type( M_vecNonContiguousGhosts.start() + sliceGhost.start() * M_vecNonContiguousGhosts.stride(), M_vecNonContiguousGhosts.stride() * sliceGhost.stride(), std::min( M_vecNonContiguousGhosts.size(), sliceGhost.size() ) );
+        return new VectorUblasSlice<T, typename Storage::vector_type>( M_vec.data().expression(), sActive, M_vecNonContiguousGhosts.data().expression(), sGhost, this->mapPtr() );
+    }
+    else
+    {
+        return new VectorUblasSlice<T, Storage>( M_vec, sliceActive, M_vecNonContiguousGhosts, sliceGhost, this->mapPtr() );
+    }
 }
 
-template< typename T, typename Storage >
-VectorUblasRange<T, Storage>::VectorUblasRange( VectorUblasContiguousGhosts<T, Storage> & v, const range_type & rangeActive, const range_type & rangeGhost ):
-    super_type( ublas::vector_range( v.M_vec, rangeActive ), ublas::vector_range( v.M_vec, rangeGhost ), v.mapPtr() )
-{
-}
+//template< typename T, typename Storage >
+//VectorUblasRange<T, Storage>::VectorUblasRange( VectorUblasContiguousGhosts<T, Storage> & v, const range_type & rangeActive, const range_type & rangeGhost ):
+    //super_type( ublas::vector_range( v.M_vec, rangeActive ), ublas::vector_range( v.M_vec, rangeGhost ), v.mapPtr() )
+//{
+//}
+
+//template< typename T, typename Storage >
+//VectorUblasRange<T, Storage>::VectorUblasRange( VectorUblasNonContiguousGhosts<T, Storage> & v, const range_type & rangeActive, const range_type & rangeGhost ):
+    //super_type( ublas::vector_range( v.M_vec, rangeActive ), ublas::vector_range( v.M_vecNonContiguousGhosts, rangeGhost ), v.mapPtr() )
+//{
+//}
 
 template< typename T, typename Storage >
-VectorUblasRange<T, Storage>::VectorUblasRange( VectorUblasNonContiguousGhosts<T, Storage> & v, const range_type & rangeActive, const range_type & rangeGhost ):
-    super_type( ublas::vector_range( v.M_vec, rangeActive ), ublas::vector_range( v.M_vecNonContiguousGhosts, rangeGhost ), v.mapPtr() )
-{
-}
-
-template< typename T, typename Storage >
-VectorUblasRange<T, Storage>::VectorUblasRange( ublas::vector<T> & v, const range_type & range, const datamap_ptrtype & dm ):
+VectorUblasRange<T, Storage>::VectorUblasRange( Storage & v, const range_type & range, const datamap_ptrtype & dm ):
     super_type( ublas::vector_range( v, range ), ublas::vector_range( v, range_type(0,0) ), dm )
 {
 }
 
 template< typename T, typename Storage >
-VectorUblasSlice<T, Storage>::VectorUblasSlice( VectorUblasContiguousGhosts<T, Storage> & v, const slice_type & sliceActive, const slice_type & sliceGhost ):
-    super_type( ublas::vector_slice( v.M_vec, sliceActive ), ublas::vector_slice( v.M_vec, sliceGhost ), v.mapPtr() )
+VectorUblasRange<T, Storage>::VectorUblasRange( Storage & v, const range_type & rangeActive, const range_type & rangeGhost, const datamap_ptrtype & dm ):
+    super_type( ublas::vector_range( v, rangeActive ), ublas::vector_range( v, rangeGhost ), dm )
 {
 }
 
 template< typename T, typename Storage >
-VectorUblasSlice<T, Storage>::VectorUblasSlice( VectorUblasNonContiguousGhosts<T, Storage> & v, const slice_type & sliceActive, const slice_type & sliceGhost ):
-    super_type( ublas::vector_slice( v.M_vec, sliceActive ), ublas::vector_slice( v.M_vecNonContiguousGhosts, sliceGhost ), v.mapPtr() )
+VectorUblasRange<T, Storage>::VectorUblasRange( Storage & vActive, const range_type & rangeActive, Storage & vGhost, const range_type & rangeGhost, const datamap_ptrtype & dm ):
+    super_type( ublas::vector_range( vActive, rangeActive ), ublas::vector_range( vGhost, rangeGhost ), dm )
 {
 }
+
+//template< typename T, typename Storage >
+//VectorUblasSlice<T, Storage>::VectorUblasSlice( VectorUblasContiguousGhosts<T, Storage> & v, const slice_type & sliceActive, const slice_type & sliceGhost ):
+    //super_type( ublas::vector_slice( v.M_vec, sliceActive ), ublas::vector_slice( v.M_vec, sliceGhost ), v.mapPtr() )
+//{
+//}
+
+//template< typename T, typename Storage >
+//VectorUblasSlice<T, Storage>::VectorUblasSlice( VectorUblasNonContiguousGhosts<T, Storage> & v, const slice_type & sliceActive, const slice_type & sliceGhost ):
+    //super_type( ublas::vector_slice( v.M_vec, sliceActive ), ublas::vector_slice( v.M_vecNonContiguousGhosts, sliceGhost ), v.mapPtr() )
+//{
+//}
 
 template< typename T, typename Storage >
 VectorUblasSlice<T, Storage>::VectorUblasSlice( Storage & v, const slice_type & slice, const datamap_ptrtype & dm ):
     super_type( ublas::vector_slice( v, slice ), ublas::vector_slice( v, slice_type(0,1,0) ), dm )
+{
+}
+
+template< typename T, typename Storage >
+VectorUblasSlice<T, Storage>::VectorUblasSlice( Storage & v, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm ):
+    super_type( ublas::vector_slice( v, sliceActive ), ublas::vector_slice( v, sliceGhost ), dm )
 {
 }
 
