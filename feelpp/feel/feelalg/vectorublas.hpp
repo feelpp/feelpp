@@ -922,11 +922,13 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
                 std::is_same_v< storage_type, vector_range_map_storage_type > ||
                 std::is_same_v< storage_type, vector_slice_map_storage_type >,
                 "unsupported storage type" );
-        static constexpr bool is_vector_proxy = 
+        static constexpr bool is_vector_range = 
             std::is_same_v< storage_type, vector_range_storage_type > ||
+            std::is_same_v< storage_type, vector_range_map_storage_type >;
+        static constexpr bool is_vector_slice = 
             std::is_same_v< storage_type, vector_slice_storage_type > || 
-            std::is_same_v< storage_type, vector_range_map_storage_type > ||
             std::is_same_v< storage_type, vector_slice_map_storage_type >;
+        static constexpr bool is_vector_proxy = is_vector_range || is_vector_proxy;
 
         using typename super_type::vector_variant_type;
         using typename super_type::vector_ptr_variant_type;
@@ -1057,9 +1059,12 @@ class VectorUblasRange: public VectorUblasNonContiguousGhosts<T, ublas::vector_r
         using typename super_type::slice_type;
 
     public:
-        VectorUblasRange( VectorUblasContiguousGhosts<T, Storage> & v, const range_type & rangeActive, const range_type & rangeGhost );
-        VectorUblasRange( VectorUblasNonContiguousGhosts<T, Storage> & v, const range_type & rangeActive, const range_type & rangeGhost );
-        VectorUblasRange( ublas::vector<T> & v, const range_type & range, const datamap_ptrtype & dm );
+        //VectorUblasRange( VectorUblasContiguousGhosts<T, Storage> & v, const range_type & rangeActive, const range_type & rangeGhost );
+        //VectorUblasRange( VectorUblasNonContiguousGhosts<T, Storage> & v, const range_type & rangeActive, const range_type & rangeGhost );
+        VectorUblasRange( Storage & v, const range_type & range, const datamap_ptrtype & dm );
+        VectorUblasRange( Storage & v, const range_type & rangeActive, const range_type & rangeGhost, const datamap_ptrtype & dm );
+        VectorUblasRange( Storage & vActive, const range_type & rangeActive, 
+                Storage & vGhost, const range_type & rangeGhost, const datamap_ptrtype & dm );
 
 };
 
@@ -1090,9 +1095,10 @@ class VectorUblasSlice: public VectorUblasNonContiguousGhosts<T, ublas::vector_s
         using typename super_type::slice_type;
 
     public:
-        VectorUblasSlice( VectorUblasContiguousGhosts<T, Storage> & v, const slice_type & sliceActive, const slice_type & sliceGhost );
-        VectorUblasSlice( VectorUblasNonContiguousGhosts<T, Storage> & v, const slice_type & sliceActive, const slice_type & sliceGhost );
+        //VectorUblasSlice( VectorUblasContiguousGhosts<T, Storage> & v, const slice_type & sliceActive, const slice_type & sliceGhost );
+        //VectorUblasSlice( VectorUblasNonContiguousGhosts<T, Storage> & v, const slice_type & sliceActive, const slice_type & sliceGhost );
         VectorUblasSlice( Storage & v, const slice_type & slice, const datamap_ptrtype & dm );
+        VectorUblasSlice( Storage & v, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
         VectorUblasSlice( Storage & vActive, slice_type const& sliceActive,
                 Storage & vGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
 
