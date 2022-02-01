@@ -34,16 +34,30 @@ namespace Feel {
 
 namespace pt =  boost::property_tree;
 
+struct FEELPP_EXPORT ModelMaterialProperty
+{
+    ModelMaterialProperty() = default;
+    ModelMaterialProperty( ModelMaterialProperty const& ) = default;
+    ModelMaterialProperty( ModelMaterialProperty && ) = default;
+
+    void setup( nl::json const& jarg, worldcomm_t const& worldComm, std::string const& directoryLibExpr, ModelIndexes const& indexes = ModelIndexes() );
+    ModelExpression const& mexpr() const { return M_mexpr; }
+
+    template <int M=1,int N=1>
+    auto const& expr() const { return M_mexpr.template expr<M,N>(); }
+
+    nl::json const& data() const { return M_data; }
+
+    void setParameterValues( std::map<std::string,double> const& mp ) { M_mexpr.setParameterValues( mp ); }
+  private:
+    ModelExpression M_mexpr;
+    nl::json M_data;
+};
+
 struct FEELPP_EXPORT ModelMaterial : public CommObject
 {
     using super = CommObject;
-    typedef ModelExpression mat_property_expr_type;
-    static const uint16_type expr_order = mat_property_expr_type::expr_order;
-    typedef mat_property_expr_type::expr_scalar_type expr_scalar_type;
-    typedef mat_property_expr_type::expr_vectorial2_type expr_vectorial2_type;
-    typedef mat_property_expr_type::expr_vectorial3_type expr_vectorial3_type;
-    typedef mat_property_expr_type::expr_matrix22_type expr_matrix22_type;
-    typedef mat_property_expr_type::expr_matrix33_type expr_matrix33_type;
+    using material_property_type = ModelMaterialProperty;
 
     ModelMaterial( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ModelMaterial( ModelMaterial const& ) = default;
@@ -71,34 +85,10 @@ struct FEELPP_EXPORT ModelMaterial : public CommObject
     void setProperty( std::string const& property, std::string const& e );
 
     bool hasProperty( std::string const& prop ) const;
-    bool hasPropertyConstant( std::string const& prop ) const;
-    bool hasPropertyExprScalar( std::string const& prop ) const;
-    bool hasPropertyExprVectorial2( std::string const& prop ) const;
-    bool hasPropertyExprVectorial3( std::string const& prop ) const;
-    template <int M,int N>
-    bool hasPropertyExprMatrix( std::string const& prop ) const
-    {
-        auto itFindProp = M_materialProperties.find( prop );
-        if ( itFindProp == M_materialProperties.end() )
-            return false;
-        auto const& matProp = itFindProp->second;
-        return matProp.template hasExprMatrix<M,N>();
-    }
 
-    std::map<std::string,mat_property_expr_type>& properties() { return M_materialProperties; }
-    std::map<std::string,mat_property_expr_type> const& properties() const { return M_materialProperties; }
-    mat_property_expr_type const& property( std::string const& prop ) const;
-    double propertyConstant( std::string const& prop ) const;
-    expr_scalar_type const& propertyExprScalar( std::string const& prop ) const;
-    expr_vectorial2_type const& propertyExprVectorial2( std::string const& prop ) const;
-    expr_vectorial3_type const& propertyExprVectorial3( std::string const& prop ) const;
-    template <int M,int N>
-    auto const& propertyExprMatrix( std::string const& prop ) const
-    {
-        bool hasProp = hasPropertyExprMatrix<M,N>( prop );
-        CHECK( hasProp ) << "no matrix expr";
-        return M_materialProperties.find( prop )->second.template exprMatrix<M,N>();
-    }
+    std::map<std::string,material_property_type> & properties() { return M_materialProperties; }
+    std::map<std::string,material_property_type> const& properties() const { return M_materialProperties; }
+    material_property_type const& property( std::string const& prop ) const;
 
     bool hasPhysics() const { return !M_physics.empty(); }
     bool hasPhysics( std::string const& physic ) const { return M_physics.find(physic) != M_physics.end(); }
@@ -110,63 +100,6 @@ struct FEELPP_EXPORT ModelMaterial : public CommObject
                 return true;
         return false;
     }
-    /*! Material mass density
-     */
-    double rho() const { return this->propertyConstant( "rho" ); }
-
-    /*! Molecular(dynamic) viscosity
-     */
-    double mu() const { return this->propertyConstant( "mu" ); }
-
-    /*! Specify the constant-pressure specific heat Cp.
-     */
-    double Cp() const { return this->propertyConstant( "Cp" ); }
-
-    /*! Specify the constant-volume specific heat Cv.
-     */
-    double Cv() const { return this->propertyConstant( "Cv" ); }
-
-    /*! heat diffusion coefficients
-     */
-    double k11() const {  return this->propertyConstant( "k11" ); }
-    double k12() const { return this->propertyConstant( "k12" ); }
-    double k13() const { return this->propertyConstant( "k13" ); }
-    double k22() const { return this->propertyConstant( "k22" ); }
-    double k23() const { return this->propertyConstant( "k23" ); }
-    double k33() const { return this->propertyConstant( "k33" ); }
-
-    /*! Material Reference temperature
-     */
-    double Tref() const { return this->propertyConstant( "Tref" ); }
-
-    /*! Material coefficient for thermal expansion
-     */
-    double beta() const { return this->propertyConstant( "beta" ); }
-
-    /*! heat capacity
-     */
-    double C() const { return this->propertyConstant( "C" ); }
-
-    double Cs() const { return this->propertyConstant( "Cs" ); }
-    double Cl() const { return this->propertyConstant( "Cl" ); }
-    double L() const { return this->propertyConstant( "L" ); }
-    double Ks() const { return this->propertyConstant( "Ks" ); }
-    double Kl() const { return this->propertyConstant( "Kl" ); }
-    double Tsol() const { return this->propertyConstant( "Tsol" ); }
-    double Tliq() const { return this->propertyConstant( "Tliq" ); }
-
-    // Mechanical properties
-    /*! Young's Modulus
-     */
-    double E() const { return this->propertyConstant( "E" ); }
-
-    /*! Poisson's ratio
-     */
-    double nu() const { return this->propertyConstant( "nu" ); }
-
-    /*! Electrical conductivity
-     */
-    double sigma() const { return this->propertyConstant( "sigma" ); }
 
     void load( std::string const& );
 
@@ -177,7 +110,7 @@ private:
     std::string M_directoryLibExpr;
 
     //! mat propeteries
-    std::map<std::string, mat_property_expr_type > M_materialProperties;
+    std::map<std::string, material_property_type > M_materialProperties;
     //! material physics
     std::set<std::string> M_physics;
     //! mesh markers
@@ -236,11 +169,12 @@ public:
             {
                 for( auto const& [symbName,mparam] : mat.properties() )
                 {
-                    if ( mparam.isEvaluable() && !add_evaluable )
+                    auto const& mexpr = mparam.mexpr();
+                    if ( mexpr.isEvaluable() && !add_evaluable )
                         continue;
-                    if ( !mparam.template hasExpr<ni,nj>() )
+                    if ( !mexpr.template hasExpr<ni,nj>() )
                         continue;
-                    auto const& theexpr = mparam.template expr<ni,nj>();
+                    auto const& theexpr = mexpr.template expr<ni,nj>();
                     VLOG(1) << "material " << cname << " has property " << symbName;
                     seParamValue.add( cname+"_"+symbName, theexpr, SymbolExprComponentSuffix( ni, nj ) );
                 }

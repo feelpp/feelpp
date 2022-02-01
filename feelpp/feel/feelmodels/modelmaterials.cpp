@@ -22,9 +22,7 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-//#include <iostream>
 #include <regex>
-//#include <boost/property_tree/json_parser.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 
@@ -33,6 +31,22 @@
 #include <feel/feelcore/utility.hpp>
 
 namespace Feel {
+
+
+void
+ModelMaterialProperty::setup( nl::json const& jarg, worldcomm_t const& worldComm, std::string const& directoryLibExpr, ModelIndexes const& indexes )
+{
+    if ( jarg.is_string() )
+        M_mexpr.setExpr( jarg,worldComm,directoryLibExpr,indexes );
+    else if ( jarg.is_object() )
+    {
+        if ( jarg.contains("expr") )
+            M_mexpr.setExpr( jarg.at("expr"),worldComm,directoryLibExpr,indexes );
+
+        if ( jarg.contains("data") )
+            M_data = jarg.at("data");
+    }
+}
 
 ModelMaterial::ModelMaterial( worldcomm_ptr_t const& worldComm )
     :
@@ -95,11 +109,13 @@ ModelMaterial::ModelMaterial( std::string const& name, nl::json const& jarg, wor
                                     VLOG(1) << "propName: " << propName;
 
                                     this->setProperty( propName,jargval,indexes );
+#if 0 // VINCENT CHECK IF REALLY NECESSARY
                                     if ( this->hasPropertyConstant( propName ) && this->hasPropertyExprScalar( propName ) )
                                     {
                                         VLOG(1) << "key: " << propName << " value: " << this->property( propName ).value() << "  constant prop";
                                         constantMaterialProperty[propName] = this->property( propName ).value();
                                     }
+#endif
                                 }
                             };
 
@@ -112,118 +128,35 @@ ModelMaterial::ModelMaterial( std::string const& name, nl::json const& jarg, wor
 bool
 ModelMaterial::hasProperty( std::string const& prop ) const
 {
-    auto itFindProp = M_materialProperties.find( prop );
-    if ( itFindProp == M_materialProperties.end() )
-        return false;
-    auto const& matProp = itFindProp->second;
-    return matProp.hasAtLeastOneExpr();
+    return M_materialProperties.find( prop ) != M_materialProperties.end();
 }
 
-bool
-ModelMaterial::hasPropertyConstant( std::string const& prop ) const
-{
-    auto itFindProp = M_materialProperties.find( prop );
-    if ( itFindProp == M_materialProperties.end() )
-        return false;
-    auto const& matProp = itFindProp->second;
-    return matProp.isConstant();//hasValue();
-}
-bool
-ModelMaterial::hasPropertyExprScalar( std::string const& prop ) const
-{
-    auto itFindProp = M_materialProperties.find( prop );
-    if ( itFindProp == M_materialProperties.end() )
-        return false;
-    auto const& matProp = itFindProp->second;
-    return matProp.hasExprScalar();
-}
-bool
-ModelMaterial::hasPropertyExprVectorial2( std::string const& prop ) const
-{
-    auto itFindProp = M_materialProperties.find( prop );
-    if ( itFindProp == M_materialProperties.end() )
-        return false;
-    auto const& matProp = itFindProp->second;
-    return matProp.hasExprVectorial2();
-}
-bool
-ModelMaterial::hasPropertyExprVectorial3( std::string const& prop ) const
-{
-    auto itFindProp = M_materialProperties.find( prop );
-    if ( itFindProp == M_materialProperties.end() )
-        return false;
-    auto const& matProp = itFindProp->second;
-    return matProp.hasExprVectorial3();
-}
-ModelMaterial::mat_property_expr_type const&
+
+ModelMaterial::material_property_type const&
 ModelMaterial::property( std::string const& prop ) const
 {
     CHECK( this->hasProperty( prop ) ) << "no prop";
     return M_materialProperties.find( prop )->second;
 }
-double
-ModelMaterial::propertyConstant( std::string const& prop ) const
-{
-    if ( this->hasPropertyConstant( prop ) )
-        return M_materialProperties.find( prop )->second.value();
-    else
-        return 0;
-}
-ModelMaterial::expr_scalar_type const&
-ModelMaterial::propertyExprScalar( std::string const& prop ) const
-{
-    CHECK( this->hasPropertyExprScalar( prop ) ) << "no scalar expr";
-    return M_materialProperties.find( prop )->second.exprScalar();
-}
-ModelMaterial::expr_vectorial2_type const&
-ModelMaterial::propertyExprVectorial2( std::string const& prop ) const
-{
-    CHECK( this->hasPropertyExprVectorial2( prop ) ) << "no vectorial2 expr";
-    return M_materialProperties.find( prop )->second.exprVectorial2();
-}
-ModelMaterial::expr_vectorial3_type const&
-ModelMaterial::propertyExprVectorial3( std::string const& prop ) const
-{
-    CHECK( this->hasPropertyExprVectorial3( prop ) ) << "no vectorial3 expr";
-    return M_materialProperties.find( prop )->second.exprVectorial3();
-}
 
 void
 ModelMaterial::setProperty( std::string const& property, nl::json const& jarg, ModelIndexes const& indexes )
 {
-    try
-    {
-        mat_property_expr_type mexpr;
-        mexpr.setExpr( jarg,this->worldComm(),M_directoryLibExpr,indexes );
-        M_materialProperties.emplace( std::make_pair( property, std::move( mexpr ) ) );
-    } catch (std::exception &p) {
-        LOG(WARNING) << p.what() << std::endl;
-        return;
-    }
+    M_materialProperties[property].setup( jarg,this->worldComm(),M_directoryLibExpr,indexes );
 }
 
 void
 ModelMaterial::setProperty( std::string const& property, std::string const& e )
 {
-    M_materialProperties[property] = mat_property_expr_type();
-    try
-    {
-        M_materialProperties[property].setExpr( e,this->worldComm(),M_directoryLibExpr );
-    } catch (std::exception &p) {
-        LOG(WARNING) << p.what() << std::endl;
-        M_materialProperties.erase(property);
-        return;
-    }
-
+    nl::json j_matprop( { { "expr",e } } );
+    this->setProperty( property, j_matprop );
 }
 
 void
 ModelMaterial::setParameterValues( std::map<std::string,double> const& mp )
 {
-    for ( auto & matPropPair : M_materialProperties )
-    {
-        matPropPair.second.setParameterValues( mp );
-    }
+    for ( auto & [matName,matProp] : M_materialProperties )
+        matProp.setParameterValues( mp );
 }
 
 
