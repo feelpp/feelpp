@@ -498,10 +498,10 @@ void VectorUblasContiguousGhosts<T, Storage>::init( const size_type n, const siz
 }
 
 template< typename T, typename Storage >
-typename VectorUblasContiguousGhosts<T, Storage>::clone_ptrtype 
-VectorUblasContiguousGhosts<T, Storage>::clone() const
+typename VectorUblasContiguousGhosts<T, Storage>::self_type *
+VectorUblasContiguousGhosts<T, Storage>::clonePtr() const
 {
-    return clone_ptrtype( new VectorUblasContiguousGhosts<T, Storage>( *this ) );
+    return new VectorUblasContiguousGhosts<T, Storage>( *this );
 }
 
 template< typename T, typename Storage >
@@ -987,10 +987,10 @@ void VectorUblasNonContiguousGhosts<T, Storage>::init( const size_type n, const 
 }
 
 template< typename T, typename Storage >
-typename VectorUblasNonContiguousGhosts<T, Storage>::clone_ptrtype 
-VectorUblasNonContiguousGhosts<T, Storage>::clone() const
+typename VectorUblasNonContiguousGhosts<T, Storage>::self_type *
+VectorUblasNonContiguousGhosts<T, Storage>::clonePtr() const
 {
-    return clone_ptrtype( new VectorUblasNonContiguousGhosts<T, Storage>( *this ) );
+    return new VectorUblasNonContiguousGhosts<T, Storage>( *this );
 }
 
 template< typename T, typename Storage >
