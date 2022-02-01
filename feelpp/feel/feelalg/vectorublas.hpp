@@ -1091,6 +1091,22 @@ class VectorUblasSlice: public VectorUblasNonContiguousGhosts<T, ublas::vector_s
 };
 
 } // detail
+
+/**
+ * FEELPP_INSTANTIATE_VECTORUBLAS is never defined except in vectorublas.cpp
+ * where we do the instantiate. This allows to reduce the VectorUblas
+ * instantiation to the strict minimum
+ */
+#if !defined( FEELPP_INSTANTIATE_VECTORUBLAS )
+extern template class VectorUblas<double>;
+namespace detail {
+extern template class VectorUblasContiguousGhosts< double, ublas::vector<double> >;
+//extern template class VectorUblasNonContiguousGhosts<double, ublas::vector_range<ublas::vector<double> > >;
+extern template class VectorUblasRange< double, ublas::vector<double> >;
+//extern template class VectorUblasNonContiguousGhosts< double, ublas::vector_slice<ublas::vector<double> > >;
+extern template class VectorUblasSlice< double, ublas::vector<double> >;
+}
+#endif
 } // Feel
 
 #if FEELPP_HAS_PETSC
