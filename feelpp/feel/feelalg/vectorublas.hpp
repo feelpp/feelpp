@@ -130,9 +130,10 @@ class VectorUblas : public Vector<T>
                      size_type nGhostDof, value_type * arrayGhostDof,
                      datamap_ptrtype const& dm );
 
-        VectorUblas( const VectorUblas & other ): M_vectorImpl( other.M_vectorImpl ? other.M_vectorImpl->clone() : nullptr ) { }
-        VectorUblas & swap( VectorUblas & other ) { std::swap( M_vectorImpl, other.M_vectorImpl ); return *this; }
-        ~VectorUblas() override { delete M_vectorImpl; }
+        VectorUblas( const VectorUblas<T> & other ): M_vectorImpl( other.M_vectorImpl ? other.M_vectorImpl->clonePtr() : nullptr ) { }
+        VectorUblas( VectorUblas<T> && other ): VectorUblas() { swap( *this, other ); }
+        friend void swap( VectorUblas<T> & first, VectorUblas<T> & other ) { using std::swap; swap( first.M_vectorImpl, other.M_vectorImpl ); }
+        ~VectorUblas() override = default;
 
         clone_ptrtype clone() const override { return clone_ptrtype( new self_type( *this ) ); }
 
@@ -156,7 +157,7 @@ class VectorUblas : public Vector<T>
 
         // Operators API
         Vector<value_type>& operator=( const Vector<value_type> & V ) override;
-        VectorUblas & operator=( const VectorUblas & other ) { swap( VectorUblas( other ) ); return *this; }
+        VectorUblas<T> & operator=( VectorUblas<T> other ) { swap( *this, other ); return *this; }
 
         virtual value_type operator()( size_type i ) const override { return M_vectorImpl->operator()( i ); }
         virtual value_type& operator()( size_type i ) override { return M_vectorImpl->operator()( i ); }
@@ -188,7 +189,7 @@ class VectorUblas : public Vector<T>
         void zero( size_type /*start*/, size_type /*stop*/ ) override { CHECK(false) << "unsupported"; }
 
         void set( const size_type i, const value_type & value ) override { return M_vectorImpl->set( i, value ); }
-        void setVector( int * i, int n, value_type * v ) override { return M_vectorImpl->setVector( i, v ); }
+        void setVector( int * i, int n, value_type * v ) override { return M_vectorImpl->setVector( i, n, v ); }
 
         Vector<T>& operator+=( const Vector<T>& v ) override { this->add( v ); return *this; }
         void add( const size_type i, const value_type & value ) override { return M_vectorImpl->add( i, value ); }
@@ -202,8 +203,8 @@ class VectorUblas : public Vector<T>
         void addVector( const Vector<T> & v, const MatrixSparse<value_type> & A ) override { return M_vectorImpl->addVector( v, A ); }
         
         Vector<T>& operator-=( const Vector<T>& v ) override { this->sub( v ); return *this; }
-        void sub( const Vector<T> & v ) override { return M_vectorImpl->sub( v ); }
-        void sub( const value_type & a, const Vector<T> & v ) override { return M_vectorImpl->sub( a, v ); }
+        void sub( const Vector<T> & v ) { return M_vectorImpl->sub( v ); }
+        void sub( const value_type & a, const Vector<T> & v ) { return M_vectorImpl->sub( a, v ); }
 
         void insert( const std::vector<value_type> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->insert( v, dof_ids ); }
         void insert( const Vector<value_type> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->insert( v, dof_ids ); }
@@ -249,6 +250,7 @@ class VectorUblasBase: public Vector<T>
     public:
         // Typedefs
         typedef Vector<T> super_type;
+        typedef VectorUblasBase<T> self_type;
 
         using clone_ptrtype = typename super_type::clone_ptrtype;
 
@@ -365,7 +367,8 @@ class VectorUblasBase: public Vector<T>
 
         ~VectorUblasBase() override = default;
 
-        virtual clone_ptrtype clone() const override = 0;
+        virtual clone_ptrtype clone() const override { return clone_ptrtype( this->clonePtr() ); }
+        virtual self_type * clonePtr() const = 0;
 
         // Storage API
         void init( const size_type n, const size_type n_local, const bool fast = false ) override = 0;
@@ -595,8 +598,6 @@ class VectorUblasContiguousGhostsBase:
         
         void init( const size_type n, const size_type n_local, const bool fast = false ) override = 0;
         
-        virtual clone_ptrtype clone() const override = 0;
-
         // Storage API
         virtual void resize( size_type n ) override = 0;
         virtual void clear() override = 0;
@@ -657,6 +658,7 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         // Typedefs
         typedef VectorUblasContiguousGhostsBase<T> super_type;
         typedef VectorUblasBase<T> base_type;
+        typedef VectorUblasContiguousGhosts<T, Storage> self_type;
 
         using typename super_type::clone_ptrtype;
 
@@ -705,7 +707,7 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
 
         void init( const size_type n, const size_type n_local, const bool fast = false ) override;
 
-        virtual clone_ptrtype clone() const override;
+        virtual self_type * clonePtr() const override;
 
         // Storage API
         virtual void resize( size_type n ) override;
@@ -824,8 +826,6 @@ class VectorUblasNonContiguousGhostsBase:
         
         void init( const size_type n, const size_type n_local, const bool fast = false ) override = 0;
         
-        virtual clone_ptrtype clone() const override = 0;
-
         // Storage API
         virtual void resize( size_type n ) override = 0;
         virtual void clear() override = 0;
@@ -889,6 +889,7 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         // Typedefs
         typedef VectorUblasNonContiguousGhostsBase<T> super_type;
         typedef VectorUblasBase<T> base_type;
+        typedef VectorUblasNonContiguousGhosts<T, Storage> self_type;
 
         using typename super_type::clone_ptrtype;
 
@@ -940,7 +941,7 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         
         void init( const size_type n, const size_type n_local, const bool fast = false ) override;
 
-        virtual clone_ptrtype clone() const override;
+        virtual self_type * clonePtr() const override;
 
         // Storage API
         virtual void resize( size_type n ) override;
