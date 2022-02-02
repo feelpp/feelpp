@@ -87,7 +87,7 @@ PYBIND11_MODULE(_models, m )
     py::class_<ModelMaterial>(m,pyclass_name.c_str())
         .def(py::init<>())
         .def("__getitem__", [](const ModelMaterial &map, std::string key) {
-                try { return map.property(key).exprScalar().expression().exprDesc(); }
+                try { return std::get<0>(map.property(key).mexpr().exprInformations()); }
                 catch (const std::out_of_range&) {
                     throw py::key_error("key '" + key + "' does not exist");
                 }
@@ -98,9 +98,6 @@ PYBIND11_MODULE(_models, m )
                  m.setProperty( prop, e );
              }, "returns true of the property exists, false otherwise")
         .def("hasProperty",&ModelMaterial::hasProperty, "returns true of the property exists, false otherwise")
-        .def("hasPropertyConstant",&ModelMaterial::hasPropertyConstant, "returns true of the property exists and is constant, false otherwise")
-        .def("hasPropertyScalar",&ModelMaterial::hasPropertyExprScalar, "returns true of the property exists and is a scalar expression, false otherwise")
-        .def("propertyConstant",&ModelMaterial::propertyConstant, "return the value of the constant property")
         .def("setParameterValues",&ModelMaterial::setParameterValues, "set parameter values from a map of string/double pairs")
         .def("__str__", [](const ModelMaterial &mat )
              {
@@ -115,16 +112,10 @@ PYBIND11_MODULE(_models, m )
                      s << p << " ";
                  s << std::endl;
                  s << " . properties: " << std::endl;
-                 for( auto const& [p,value] : mat.properties() )
+                 for( auto const& [p,matProp] : mat.properties() )
                  {
-                     if ( value.isConstant() )
-                         s << "   {" << p << ", " << value.value() << "}" << std::endl;
-                     if ( value.isScalar() )
-                         s << "   {" << p << ", " << value.exprScalar().expression().exprDesc() << "}" << std::endl;
-                     if ( value.hasExprVectorial2() )
-                         s << "   {" << p << ", " << value.exprVectorial2().expression().exprDesc() << "}" << std::endl;
-                     if ( value.hasExprVectorial3() )
-                         s << "   {" << p << ", " << value.exprVectorial3().expression().exprDesc() << "}" << std::endl;
+                     auto [exprStr,compInfo] = matProp.mexpr().exprInformations();
+                     s << "   {" << p << ", " << exprStr << "}" << std::endl;
                  }
                  s << std::endl;
                  return s.str();
