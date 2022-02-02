@@ -472,6 +472,15 @@ class VectorUblasBase: public Vector<T>
         virtual value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const = 0;
         virtual value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const = 0;
 
+#if FEELPP_HAS_PETSC
+        virtual void setVector( const VectorPetsc<T> & v ) = 0;
+        virtual void addVector( const VectorPetsc<T> & v ) = 0;
+        virtual void maddVector( const value_type & a, const VectorPetsc<T> & v ) = 0;
+        virtual void subVector( const VectorPetsc<T> & v ) = 0;
+        virtual void msubVector( const value_type & a, const VectorPetsc<T> & v ) = 0;
+        virtual value_type dotVector( const VectorPetsc<T> & v ) const = 0;
+#endif
+
         // Utilities
         real_type min() const override { return this->min( true ); }
         virtual real_type min( bool parallel ) const = 0;
@@ -501,6 +510,11 @@ class VectorUblasBase: public Vector<T>
         std::unique_ptr<VectorUblasBase<T>> range( const range_type & rangeActive, const range_type & rangeGhost ) { return std::unique_ptr<VectorUblasBase<T>>( this->rangeImpl( rangeActive, rangeGhost ) ); }
         std::unique_ptr<VectorUblasBase<T>> slice( const slice_type & sliceActive, const slice_type & sliceGhost ) { return std::unique_ptr<VectorUblasBase<T>>( this->sliceImpl( sliceActive, sliceGhost ) ); }
 
+        // Views
+#if FEELPP_HAS_PETSC
+        std::unique_ptr<VectorPetsc<T>> vectorPetsc() const { return std::unique_ptr<VectorPetsc<T>>( this->vectorPetscImpl() ); }
+#endif
+
     protected:
         virtual void checkInvariants() const = 0;
 
@@ -524,6 +538,9 @@ class VectorUblasBase: public Vector<T>
 
         virtual VectorUblasBase<T> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) = 0;
         virtual VectorUblasBase<T> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) = 0;
+#if FEELPP_HAS_PETSC
+        virtual VectorPetsc<T> * vectorPetscImpl() const = 0;
+#endif
 };
 
 template< template < typename > class V, typename T >
@@ -692,6 +709,8 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
                 //std::is_same_v< storage_type, vector_range_map_storage_type > ||
                 //std::is_same_v< storage_type, vector_slice_map_storage_type >,
                 "unsupported storage type" );
+        static constexpr bool is_vector_slice = false;
+        static constexpr bool is_vector_range = false;
         static constexpr bool is_vector_proxy = false;
 
         using typename super_type::vector_variant_type;
@@ -769,6 +788,15 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
 
         value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override;
         value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override;
+
+#if FEELPP_HAS_PETSC
+        virtual void setVector( const VectorPetsc<T> & v ) override;
+        virtual void addVector( const VectorPetsc<T> & v ) override;
+        virtual void maddVector( const value_type & a, const VectorPetsc<T> & v ) override;
+        virtual void subVector( const VectorPetsc<T> & v ) override;
+        virtual void msubVector( const value_type & a, const VectorPetsc<T> & v ) override;
+        virtual value_type dotVector( const VectorPetsc<T> & v ) const override;
+#endif
         
         // Utilities
         virtual real_type min( bool parallel ) const override;
@@ -787,6 +815,9 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
          
         VectorUblasRange<T, Storage> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) override;
         VectorUblasSlice<T, Storage> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) override;
+#if FEELPP_HAS_PETSC
+        VectorPetsc<T> * vectorPetscImpl() const override;
+#endif
 
     protected:
         storage_type M_vec;
@@ -1007,6 +1038,15 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override;
         value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override;
 
+#if FEELPP_HAS_PETSC
+        virtual void setVector( const VectorPetsc<T> & v ) override;
+        virtual void addVector( const VectorPetsc<T> & v ) override;
+        virtual void maddVector( const value_type & a, const VectorPetsc<T> & v ) override;
+        virtual void subVector( const VectorPetsc<T> & v ) override;
+        virtual void msubVector( const value_type & a, const VectorPetsc<T> & v ) override;
+        virtual value_type dotVector( const VectorPetsc<T> & v ) const override;
+#endif
+
         // Utilities
         virtual real_type min( bool parallel ) const override;
         virtual real_type max( bool parallel ) const override;
@@ -1025,6 +1065,9 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
          
         VectorUblasBase<T> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) override;
         VectorUblasBase<T> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) override;
+#if FEELPP_HAS_PETSC
+        VectorPetsc<T> * vectorPetscImpl() const override;
+#endif
 
     protected:
         storage_type M_vec;
@@ -1168,22 +1211,7 @@ template< typename T >
 inline std::shared_ptr<VectorPetsc<T>>
 toPETScPtr( const VectorUblas<T> & v )
 {
-    using namespace Feel::detail;
-    if ( v.comm().size() > 1 )
-    {
-        const VectorUblasContiguousGhosts<T> * vecContiguousGhosts = dynamic_cast<const VectorUblasContiguousGhosts<T> *>( & v.vectorImpl() );
-        if ( vecContiguousGhosts )
-            return std::make_shared<VectorPetscMPI<T>>( std::addressof( * vecContiguousGhosts->begin() ), vecContiguousGhosts->mapPtr() );
-
-        const VectorUblasNonContiguousGhosts<T> * vecNonContiguousGhosts = dynamic_cast<const VectorUblasNonContiguousGhosts<T> *>( & v.vectorImpl() );
-        if ( vecNonContiguousGhosts )
-            return std::make_shared<VectorPetscMPIRange<T>>( std::addressof( * vecNonContiguousGhosts->beginActive() ), std::addressof( * vecNonContiguousGhosts->beginGhost() ), vecNonContiguousGhosts->mapPtr() );
-        
-        else
-            CHECK( false ) << "Unsupported VectorUblas for VectorPetsc view";
-    }
-    else
-        return std::make_shared<VectorPetsc<T>>( std::addressof( * v.vectorImpl().begin() ), v.mapPtr() );
+    return std::shared_ptr<VectorPetsc<T>>( v.vectorImpl().vectorPetsc() );
 }
 
 template< typename T >
