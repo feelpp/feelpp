@@ -86,10 +86,12 @@ void VectorUblasBase<T>::set( const Vector<T> & v )
     const VectorUblasBase<T> * vecUblas = dynamic_cast<const VectorUblasBase<T> *>( &v );
     if( vecUblas )
         return this->setVector( *vecUblas );
+#if FEELPP_HAS_PETSC
     // Petsc case
     const VectorPetsc<T> * vecPetsc = dynamic_cast<const VectorPetsc<T> *>( &v );
     if( vecPetsc )
         return this->setVector( *vecPetsc );
+#endif
     // Default
     for( size_type i = 0; i < this->localSize(); ++i )
         this->operator()( i ) = v( i );
@@ -132,10 +134,12 @@ void VectorUblasBase<T>::add( const Vector<T> & v )
     const VectorUblasBase<T> * vecUblas = dynamic_cast<const VectorUblasBase<T> *>( &v );
     if( vecUblas )
         return this->addVector( *vecUblas );
+#if FEELPP_HAS_PETSC
     // Petsc case
     const VectorPetsc<T> * vecPetsc = dynamic_cast<const VectorPetsc<T> *>( &v );
     if( vecPetsc )
         return this->addVector( *vecPetsc );
+#endif
     // Default
     for( size_type i = 0; i < this->localSize(); ++i )
         this->operator()( i ) += v( i );
@@ -152,10 +156,12 @@ void VectorUblasBase<T>::add( const value_type & a, const Vector<T> & v )
     const VectorUblasBase<T> * vecUblas = dynamic_cast<const VectorUblasBase<T> *>( &v );
     if( vecUblas )
         return this->maddVector( a, *vecUblas );
+#if FEELPP_HAS_PETSC
     // Petsc case
     const VectorPetsc<T> * vecPetsc = dynamic_cast<const VectorPetsc<T> *>( &v );
     if( vecPetsc )
         return this->maddVector( a, *vecPetsc );
+#endif
     // Default
     for( size_type i = 0; i < this->localSize(); ++i )
         this->operator()( i ) += a * v( i );
@@ -172,10 +178,12 @@ void VectorUblasBase<T>::sub( const Vector<T> & v )
     const VectorUblasBase<T> * vecUblas = dynamic_cast<const VectorUblasBase<T> *>( &v );
     if( vecUblas )
         return this->subVector( *vecUblas );
+#if FEELPP_HAS_PETSC
     // Petsc case
     const VectorPetsc<T> * vecPetsc = dynamic_cast<const VectorPetsc<T> *>( &v );
     if( vecPetsc )
         return this->subVector( *vecPetsc );
+#endif
     // Default
     for( size_type i = 0; i < this->localSize(); ++i )
         this->operator()( i ) -= v( i );
@@ -192,10 +200,12 @@ void VectorUblasBase<T>::sub( const value_type & a, const Vector<T> & v )
     const VectorUblasBase<T> * vecUblas = dynamic_cast<const VectorUblasBase<T> *>( &v );
     if( vecUblas )
         return this->msubVector( a, *vecUblas );
+#if FEELPP_HAS_PETSC
     // Petsc case
     const VectorPetsc<T> * vecPetsc = dynamic_cast<const VectorPetsc<T> *>( &v );
     if( vecPetsc )
         return this->msubVector( a, *vecPetsc );
+#endif
     // Default
     for( size_type i = 0; i < this->localSize(); ++i )
         this->operator()( i ) -= a * v( i );
@@ -243,10 +253,12 @@ typename VectorUblasBase<T>::value_type VectorUblasBase<T>::dot( const Vector<T>
     const VectorUblasBase<T> * vecUblas = dynamic_cast<const VectorUblasBase<T> *>( &v );
     if( vecUblas )
         return this->dotVector( *vecUblas );
+#if FEELPP_HAS_PETSC
     // Petsc case
     const VectorPetsc<T> * vecPetsc = dynamic_cast<const VectorPetsc<T> *>( &v );
     if( vecPetsc )
         return this->dotVector( *vecPetsc );
+#endif
     // Default
     value_type localRes = 0;
     for( size_type i = 0; i < this->map().nLocalDofWithoutGhost(); ++i )
@@ -946,6 +958,101 @@ VectorUblasContiguousGhosts<T, Storage>::dotVector( const VectorUblasNonContiguo
     return globalResult;
 }   
 
+#if FEELPP_HAS_PETSC
+template< typename T, typename Storage > 
+void 
+VectorUblasContiguousGhosts<T, Storage>::setVector( const VectorPetsc<T> & v )
+{ 
+    if constexpr ( !is_vector_slice )
+    {
+        this->vectorPetsc()->operator=( v );
+    }
+    else
+    {
+        for( size_type i = 0; i < this->localSize(); ++i )
+            this->operator()( i ) = v( i );
+    }
+}  
+
+template< typename T, typename Storage > 
+void 
+VectorUblasContiguousGhosts<T, Storage>::addVector( const VectorPetsc<T> & v )
+{ 
+    if constexpr ( !is_vector_slice )
+    {
+        this->vectorPetsc()->add( 1., v );
+    }
+    else
+    {
+        for( size_type i = 0; i < this->localSize(); ++i )
+            this->operator()( i ) += v( i );
+    }
+}  
+template< typename T, typename Storage > 
+void 
+VectorUblasContiguousGhosts<T, Storage>::maddVector( const value_type & a, const VectorPetsc<T> & v )
+{ 
+    if constexpr ( !is_vector_slice )
+    {
+        this->vectorPetsc()->add( a, v );
+    }
+    else
+    {
+        for( size_type i = 0; i < this->localSize(); ++i )
+            this->operator()( i ) += a * v( i );
+    }
+}  
+template< typename T, typename Storage > 
+void 
+VectorUblasContiguousGhosts<T, Storage>::subVector( const VectorPetsc<T> & v )
+{
+    if constexpr ( !is_vector_slice )
+    {
+        this->vectorPetsc()->add( -1., v );
+    }
+    else
+    {
+        for( size_type i = 0; i < this->localSize(); ++i )
+            this->operator()( i ) -= v( i );
+    }
+}
+template< typename T, typename Storage > 
+void 
+VectorUblasContiguousGhosts<T, Storage>::msubVector( const value_type & a, const VectorPetsc<T> & v )
+{ 
+    if constexpr ( !is_vector_slice )
+    {
+        this->vectorPetsc()->add( -a, v );
+    }
+    else
+    {
+        for( size_type i = 0; i < this->localSize(); ++i )
+            this->operator()( i ) -= a * v( i );
+    }
+}  
+template< typename T, typename Storage > 
+typename VectorUblasContiguousGhosts<T, Storage>::value_type 
+VectorUblasContiguousGhosts<T, Storage>::dotVector( const VectorPetsc<T> & v ) const
+{
+    if constexpr ( !is_vector_slice )
+    {
+        return this->vectorPetsc()->dot( v );
+    }
+    else
+    {
+        value_type localRes = 0;
+        for( size_type i = 0; i < this->map().nLocalDofWithoutGhost(); ++i )
+            localRes += this->operator()( i ) * v( i );
+        value_type globalRes = localRes;
+#ifdef FEELPP_HAS_MPI
+        if( this->comm().size() > 1 )
+            mpi::all_reduce( this->comm(), localRes, globalRes, std::plus<value_type>() );
+#endif
+        return globalRes;
+    }
+}
+#endif // FEELPP_HAS_PETSC
+
 template< typename T, typename Storage > 
 VectorUblasRange<T, Storage> * VectorUblasContiguousGhosts<T, Storage>::rangeImpl( const range_type & rangeActive, const range_type & rangeGhost )
 {
@@ -959,6 +1066,17 @@ VectorUblasSlice<T, Storage> * VectorUblasContiguousGhosts<T, Storage>::sliceImp
     static_assert( !is_vector_proxy, "unsupported slice" );
     return new VectorUblasSlice<T, Storage>( M_vec, sliceActive, sliceGhost, this->mapPtr() );
 }
+
+#if FEELPP_HAS_PETSC
+template< typename T, typename Storage > 
+VectorPetsc<T> * VectorUblasContiguousGhosts<T, Storage>::vectorPetscImpl() const
+{
+    if ( this->comm().size() > 1 )
+        return new VectorPetscMPI<T>( std::addressof( * M_vec.begin() ), this->mapPtr() );
+    else
+        return new VectorPetsc<T>( std::addressof( * M_vec.begin() ), this->mapPtr() );
+}
+#endif
 
 /*-----------------------------------------------------------------------------*/
 
@@ -1493,6 +1611,101 @@ VectorUblasNonContiguousGhosts<T, Storage>::dotVector( const VectorUblasNonConti
     return globalResult;
 }   
 
+#if FEELPP_HAS_PETSC
+template< typename T, typename Storage > 
+void 
+VectorUblasNonContiguousGhosts<T, Storage>::setVector( const VectorPetsc<T> & v )
+{ 
+    if constexpr ( !is_vector_slice )
+    {
+        this->vectorPetsc()->operator=( v );
+    }
+    else
+    {
+        for( size_type i = 0; i < this->localSize(); ++i )
+            this->operator()( i ) = v( i );
+    }
+}  
+
+template< typename T, typename Storage > 
+void 
+VectorUblasNonContiguousGhosts<T, Storage>::addVector( const VectorPetsc<T> & v )
+{ 
+    if constexpr ( !is_vector_slice )
+    {
+        this->vectorPetsc()->add( 1., v );
+    }
+    else
+    {
+        for( size_type i = 0; i < this->localSize(); ++i )
+            this->operator()( i ) += v( i );
+    }
+}  
+template< typename T, typename Storage > 
+void 
+VectorUblasNonContiguousGhosts<T, Storage>::maddVector( const value_type & a, const VectorPetsc<T> & v )
+{ 
+    if constexpr ( !is_vector_slice )
+    {
+        this->vectorPetsc()->add( a, v );
+    }
+    else
+    {
+        for( size_type i = 0; i < this->localSize(); ++i )
+            this->operator()( i ) += a * v( i );
+    }
+}  
+template< typename T, typename Storage > 
+void 
+VectorUblasNonContiguousGhosts<T, Storage>::subVector( const VectorPetsc<T> & v )
+{
+    if constexpr ( !is_vector_slice )
+    {
+        this->vectorPetsc()->add( -1., v );
+    }
+    else
+    {
+        for( size_type i = 0; i < this->localSize(); ++i )
+            this->operator()( i ) -= v( i );
+    }
+}
+template< typename T, typename Storage > 
+void 
+VectorUblasNonContiguousGhosts<T, Storage>::msubVector( const value_type & a, const VectorPetsc<T> & v )
+{ 
+    if constexpr ( !is_vector_slice )
+    {
+        this->vectorPetsc()->add( -a, v );
+    }
+    else
+    {
+        for( size_type i = 0; i < this->localSize(); ++i )
+            this->operator()( i ) -= a * v( i );
+    }
+}  
+template< typename T, typename Storage > 
+typename VectorUblasNonContiguousGhosts<T, Storage>::value_type 
+VectorUblasNonContiguousGhosts<T, Storage>::dotVector( const VectorPetsc<T> & v ) const
+{
+    if constexpr ( !is_vector_slice )
+    {
+        return this->vectorPetsc()->dot( v );
+    }
+    else
+    {
+        value_type localRes = 0;
+        for( size_type i = 0; i < this->map().nLocalDofWithoutGhost(); ++i )
+            localRes += this->operator()( i ) * v( i );
+        value_type globalRes = localRes;
+#ifdef FEELPP_HAS_MPI
+        if( this->comm().size() > 1 )
+            mpi::all_reduce( this->comm(), localRes, globalRes, std::plus<value_type>() );
+#endif
+        return globalRes;
+    }
+}
+#endif // FEELPP_HAS_PETSC
+
 template< typename T, typename Storage > 
 VectorUblasBase<T> * VectorUblasNonContiguousGhosts<T, Storage>::rangeImpl( const range_type & rangeActive, const range_type & rangeGhost )
 {
@@ -1534,6 +1747,17 @@ VectorUblasBase<T> * VectorUblasNonContiguousGhosts<T, Storage>::sliceImpl( cons
         return new VectorUblasSlice<T, Storage>( M_vec, sliceActive, M_vecNonContiguousGhosts, sliceGhost, this->mapPtr() );
     }
 }
+
+#if FEELPP_HAS_PETSC
+template< typename T, typename Storage > 
+VectorPetsc<T> * VectorUblasNonContiguousGhosts<T, Storage>::vectorPetscImpl() const
+{
+    if ( this->comm().size() > 1 )
+        return new VectorPetscMPIRange<T>( std::addressof( * M_vec.begin() ), std::addressof( * M_vecNonContiguousGhosts.begin() ), this->mapPtr() );
+    else
+        return new VectorPetsc<T>( std::addressof( * M_vec.begin() ), this->mapPtr() );
+}
+#endif
 
 //template< typename T, typename Storage >
 //VectorUblasRange<T, Storage>::VectorUblasRange( VectorUblasContiguousGhosts<T, Storage> & v, const range_type & rangeActive, const range_type & rangeGhost ):
