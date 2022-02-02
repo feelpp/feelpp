@@ -586,13 +586,16 @@ public :
     template <typename ModelFieldsType>
     auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
         {
-            auto const& u = mfields.field( FieldTag::displacement(this), "displacement" );
-
-            using _expr_fpkt_type = std::decay_t<decltype(this->firstPiolaKirchhoffTensorExpr( u ))>;
+            using field_disp_type = std::decay_t<decltype( mfields.field( FieldTag::displacement(this), "displacement" ) )>;
+            using _expr_fpkt_type = std::decay_t<decltype(this->firstPiolaKirchhoffTensorExpr( std::declval<field_disp_type>() ))>;
             symbol_expression_t<_expr_fpkt_type> se_fpkt;
-            std::string symbol_fpkt = fmt::format("{}_stress_P",this->keyword());
-            se_fpkt.add( symbol_fpkt, this->firstPiolaKirchhoffTensorExpr( u ), SymbolExprComponentSuffix(nDim,nDim) );
 
+            if ( this->hasSolidEquationStandard() )
+            {
+                auto const& u = mfields.field( FieldTag::displacement(this), "displacement" );
+                std::string symbol_fpkt = fmt::format("{}_stress_P",this->keyword());
+                se_fpkt.add( symbol_fpkt, this->firstPiolaKirchhoffTensorExpr( u ), SymbolExprComponentSuffix(nDim,nDim) );
+            }
             return Feel::vf::symbolsExpr( se_fpkt );
         }
 
@@ -603,7 +606,7 @@ public :
         }
 
 
-    
+
     template <typename DispFieldType,typename SymbolsExprType = symbols_expression_empty_t>
     auto firstPiolaKirchhoffTensorExpr( DispFieldType const& u, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
         {

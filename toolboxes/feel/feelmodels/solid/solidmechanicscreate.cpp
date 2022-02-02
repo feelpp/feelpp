@@ -590,13 +590,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
     this->log("SolidMechanics","init", "start" );
     this->timerTool("Constructor").start();
 
+#if 0
     this->initPhysics( this->keyword(), this->modelProperties().models() );
+#else
 
-    this->initMaterialProperties();
-
-    // backend
-    this->initAlgebraicBackend();
-
+    this->initPhysics( this->keyword(), this->modelProperties().models() );
     bool hasSolid1dReduced = false;
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
@@ -608,7 +606,31 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
     {
         if ( !M_solid1dReduced )
             this->createsSolid1dReduced();
-        M_solid1dReduced->setPhysics( this->physicsFromCurrentType() );
+        typename super_physics_type::PhysicsTree physicsTree( this->shared_from_this() );
+        physicsTree.addLeaf( M_solid1dReduced );
+        this->initPhysics( physicsTree, this->modelProperties().models() );
+    }
+#endif
+
+    this->initMaterialProperties();
+
+    // backend
+    this->initAlgebraicBackend();
+
+#if 0
+    bool hasSolid1dReduced = false;
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    {
+        auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
+        if ( physicSolidData->equation() == "Generalised-String" )
+            hasSolid1dReduced = true;
+    }
+#endif
+    if ( hasSolid1dReduced )
+    {
+        if ( !M_solid1dReduced )
+            this->createsSolid1dReduced();
+        //M_solid1dReduced->setPhysics( this->physicsFromCurrentType() );
         M_solid1dReduced->setMaterialsProperties( this->materialsProperties() );
 
         M_solid1dReduced->setManageParameterValues( false );
@@ -620,6 +642,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
         M_solid1dReduced->init();
     }
+    else M_solid1dReduced.reset();// not very nice
 
     if ( this->hasSolidEquationStandard() )
     {

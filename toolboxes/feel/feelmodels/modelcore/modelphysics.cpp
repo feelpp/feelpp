@@ -639,7 +639,7 @@ ModelPhysicSolid<Dim>::ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std:
     {
         this->setEquation( j_setup.get<std::string>() );
     }
-    else
+    else if ( j_setup.is_object() )
     {
         for ( std::string const& eqarg : { "equations", "equation" } )
             if ( j_setup.contains( eqarg ) )
