@@ -23,4 +23,4 @@
 #
 #
 
-feelpp_add_fmu( test3d0d_constant CLASS test3d0d SRCS test3d0d_constant.mo )
+feelpp_add_fmu( test3d0d_constant CLASS test3d0d SRCS test3d0d_constant.mo CATEGORY toolboxes/hdg/cases/coupledpoisson/0-constant)

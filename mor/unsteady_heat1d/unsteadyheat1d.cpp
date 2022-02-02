@@ -140,42 +140,42 @@ UnsteadyHeat1D::assemble()
 
     //lhs
     auto a0 = form2( _trial=Xh, _test=Xh);
-    a0 = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
-         integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) );
+    a0 = integrate( _range=elements( mesh ), _expr=0.1*( gradt( u )*trans( grad( v ) ) ) ) +
+         integrate( _range=markedfaces( mesh,"right" ), _expr=idt( u )*id( v ) );
     this->addLhs( {a0 , "1"} );
 
     auto a1 = form2( _trial=Xh, _test=Xh);
-    a1 = integrate( markedelements( mesh,"k1_1" ),  gradt( u )*trans( grad( v ) )  );
+    a1 = integrate( _range=markedelements( mesh,"k1_1" ),  _expr=gradt( u )*trans( grad( v ) )  );
     this->addLhs(  {a1 , "mu0"} );
 
     auto a2 = form2( _trial=Xh, _test=Xh);
-    a2 = integrate( markedelements( mesh,"k2_1" ),  gradt( u )*trans( grad( v ) )  );
+    a2 = integrate( _range=markedelements( mesh,"k2_1" ),  _expr=gradt( u )*trans( grad( v ) )  );
     this->addLhs( {a2 , "mu1"} );
 
     //mass matrix
     auto m = form2( _trial=Xh, _test=Xh);
-    m = integrate ( elements( mesh ), alpha*idt( u )*id( v ) );
+    m = integrate ( _range=elements( mesh ), _expr=alpha*idt( u )*id( v ) );
     this->addMass( {m , "1"} );
 
     //rhs
     auto f0 = form1( _test=Xh );
     auto f1 = form1( _test=Xh );
-    f0 = integrate( markedfaces( mesh,"left" ), id( v ) );
+    f0 = integrate( _range=markedfaces( mesh,"left" ), _expr=id( v ) );
     this->addRhs( {f0 , "mu2"} );
-    f1 =  integrate( elements( mesh ), id( v ) );
+    f1 =  integrate( _range=elements( mesh ), _expr=id( v ) );
     this->addRhs( {f1 , "mu3"} );
 
     //output
     auto out = form1( _test=Xh );
-    out = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 ) +
-          integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
+    out = integrate( _range=markedelements( mesh,"k1_2" ), _expr=id( v )/0.2 ) +
+          integrate( _range=markedelements( mesh,"k2_1" ), _expr=id( v )/0.2 );
     this->addOutput( {out , "1" } );
 
     auto energy = form2( _trial=Xh, _test=Xh);
-    energy = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
-             integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) ) +
-             integrate( markedelements( mesh,"k1_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  +
-             integrate( markedelements( mesh,"k2_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  ;
+    energy = integrate( _range=elements( mesh ), _expr=0.1*( gradt( u )*trans( grad( v ) ) ) ) +
+             integrate( _range=markedfaces( mesh,"right" ), _expr=idt( u )*id( v ) ) +
+             integrate( _range=markedelements( mesh,"k1_1" ),  _expr=0.2 * gradt( u )*trans( grad( v ) ) )  +
+             integrate( _range=markedelements( mesh,"k2_1" ),  _expr=0.2 * gradt( u )*trans( grad( v ) ) )  ;
     this->addEnergyMatrix( energy.matrixPtr() );
 
     auto mass = form2( _trial=Xh, _test=Xh);
@@ -196,14 +196,14 @@ UnsteadyHeat1D::output( int output_index, parameter_type const& mu, element_type
     // right hand side (compliant)
     if ( output_index == 0 )
     {
-        output  = integrate( markedfaces( mesh,"left" ), mu(2)*idv( u ) ).evaluate()( 0,0 );
-        output += integrate( elements( mesh ), mu(3)*idv( u ) ).evaluate()( 0,0 );
+        output  = integrate( _range=markedfaces( mesh,"left" ), _expr=mu(2)*idv( u ) ).evaluate()( 0,0 );
+        output += integrate( _range=elements( mesh ), _expr=mu(3)*idv( u ) ).evaluate()( 0,0 );
     }
     // output
     else if ( output_index == 1 )
     {
-        output = integrate( elements( mesh ),
-                            chi( ( Px() >= -0.1 ) && ( Px() <= 0.1 ) )*idv( u ) ).evaluate()( 0,0 )/0.2;
+        output = integrate( _range=elements( mesh ),
+                            _expr=chi( ( Px() >= -0.1 ) && ( Px() <= 0.1 ) )*idv( u ) ).evaluate()( 0,0 )/0.2;
     }
     else
         throw std::logic_error( "[unsteadyHeat1d::output] error with output_index : only 0 or 1 " );

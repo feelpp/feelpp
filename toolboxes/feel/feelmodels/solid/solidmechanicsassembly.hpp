@@ -560,14 +560,14 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateJacobian( DataUpdateJaco
                     // stress tensor terms
                     this->timerTool("Solve").start();
 
-                    auto dFPK_disp = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobianTrialDisplacement(u,p,*physicSolidData,matProperties,se);
+                    auto dFPK_disp = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobianTrialDisplacement(u,p,physicSolidData,matProperties,se);
                     bilinearForm_PatternCoupled +=
                         integrate( _range=range,
                                    _expr= timeSteppingScaling*inner( dFPK_disp, grad(v) ),
                                    _geomap=this->geomap() );
                     if ( physicSolidData->useDisplacementPressureFormulation() )
                     {
-                        auto dFPK_pressure = solidMecFirstPiolaKirchhoffTensorJacobianTrialPressure(u,p,*physicSolidData,matProperties,se);
+                        auto dFPK_pressure = solidMecFirstPiolaKirchhoffTensorJacobianTrialPressure(u,p,physicSolidData,matProperties,se);
                         form2( _test=M_XhDisplacement, _trial=M_XhPressure, _matrix=J,
                                _rowstart=rowStartInMatrix,
                                _colstart=colStartInMatrix+blockIndexPressure ) +=
@@ -858,7 +858,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
                 {
                     this->timerTool("Solve").start();
 
-                    auto evalFPK = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,p,*physicSolidData,matProperties,se,timeSteppingScaling);
+                    auto evalFPK = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,p,physicSolidData,matProperties,se,timeSteppingScaling);
                     linearFormDisplacement +=
                         integrate( _range=range,
                                    _expr= inner(evalFPK,grad(v)),

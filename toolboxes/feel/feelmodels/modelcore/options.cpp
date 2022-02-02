@@ -205,6 +205,8 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"stabilization-gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
         (prefixvm(prefix,"stabilization-gls.convection-diffusion.location.expressions").c_str(), Feel::po::value<std::string>(), "expression which determinate the location where stab is applied")
 
+        (prefixvm(prefix,"stabilization-gls.check-viscosity-dependency-on-coordinates").c_str(), Feel::po::value<bool>()->default_value( true ), "Debug option") // allow to not compute the derivativn of viscosity
+
         (prefixvm(prefix,"stabilisation-pspg").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
         (prefixvm(prefix,"stabilisation-gls").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
         (prefixvm(prefix,"stabilisation-cip-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
@@ -390,8 +392,12 @@ heat_options(std::string const& prefix)
         (prefixvm(prefix,"stabilization-gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
         (prefixvm(prefix,"stabilization-gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
 
+        (prefixvm(prefix,"stabilization-gls.check-conductivity-dependency-on-coordinates").c_str(), Feel::po::value<bool>()->default_value( true ), "Debug option") // allow to not compute the derivativn of thermal conductivity
+
         (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
         (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "numeric solver : automatic, Newton, Picard, Linear")
         ;
     return heatOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
@@ -435,6 +441,7 @@ heatFluid_options(std::string const& prefix)
 {
     Feel::po::options_description heatFluidOptions("HeatFluid options");
     heatFluidOptions.add_options()
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "numeric solver : automatic, Newton, Picard")
         (prefixvm(prefix,"use-natural-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "use natural convection")
         (prefixvm(prefix,"Boussinesq.ref-temperature").c_str(), Feel::po::value<double>()->default_value( 300. ), "Boussinesq ref-temperature T0")
         (prefixvm(prefix,"gravity-force").c_str(), Feel::po::value<std::string>(), "gravity-force : (default is {0,-9.80665} or {0,0,-9.80665}")
@@ -695,6 +702,18 @@ alemesh_options(std::string const& prefix)
         .add( backend_options( prefixvm(prefix,"alemesh.ho") ) );
 }
 
+Feel::po::options_description
+mixedpoisson_options( std::string const& prefix )
+{
+    po::options_description desc_options("mixedpoisson options");
+    desc_options.add_options()
+        ( prefixvm( prefix, "tau_constant" ).c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
+        ( prefixvm( prefix, "use-sc" ).c_str(), po::value<bool>()->default_value( true ), "use static condensation" )
+        ( prefixvm( prefix, "time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
+        ( prefixvm( prefix, "time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+        ;
+    return desc_options.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).add( backend_options( prefix+".sc" ) );
+}
 
 Feel::po::options_description
 toolboxes_options( std::string const& type, std::string const& prefix )
@@ -728,8 +747,10 @@ toolboxes_options( std::string const& type, std::string const& prefix )
         toolboxesOptions.add(maxwell_options(prefix));
     else if (type == "coefficient-form-pdes")
         toolboxesOptions.add(coefficientformpdes_options(prefix));
+    else if (type == "mixedpoisson")
+        toolboxesOptions.add(mixedpoisson_options(prefix));
     else
-        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric, heat-fluid, heat-fluid, coefficient-form-pdes";
+        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric, heat-fluid, heat-fluid, coefficient-form-pdes, mixedpoisson";
 
     return toolboxesOptions;
 }

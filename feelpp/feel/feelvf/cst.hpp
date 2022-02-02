@@ -84,7 +84,7 @@ public:
     }
     constexpr explicit Cst( T&& value )
         :
-        M_constant( std::move(value) )
+        M_constant( std::forward<T>(value) )
         {
         }
 

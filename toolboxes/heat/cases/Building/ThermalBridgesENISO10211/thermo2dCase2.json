@@ -9,6 +9,17 @@
         "T0_top":0,
         "T0_bottom":20
     },
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/thermo2dCase2.geo",
+                "hsize":0.001
+            }
+        }
+    },
     "Materials":
     {
         "Concrete":
@@ -142,7 +153,7 @@
         {
             "Measures":
             {
-                "Points_point%1_1%_temperature":
+                "Points_point%1_1%_field_temperature":
                 {
                     "value":"%1_2%",
                     "tolerance":1e-1,

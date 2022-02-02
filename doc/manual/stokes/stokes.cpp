@@ -157,7 +157,7 @@ Stokes::Stokes()
 void
 Stokes::init()
 {
-    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%/P%3%P%4%/h_%5%/" )
+    Environment::changeRepository( _directory=boost::format( "doc/manual/tutorial/%1%/%2%/P%3%P%4%/h_%5%/" )
                                    % this->about().appName()
                                    % convex_type::name()
                                    % basis_u_type::nOrder % basis_p_type::nOrder
@@ -177,7 +177,7 @@ Stokes::init()
 void
 Stokes::run()
 {
-    mpi::timer chrono;
+    Feel::Timer chrono;
     this->init();
     LOG(INFO) << "chrono init: " << chrono.elapsed() << "\n";
 
@@ -235,13 +235,13 @@ Stokes::run()
     auto f = expr<2,1,2>( f_g, {x,y} );
 
     auto F = M_backend->newVector( Xh );
-    auto D =  M_backend->newMatrix( Xh, Xh );
+    auto D =  M_backend->newMatrix( _test=Xh, _trial=Xh );
 
-    chrono.restart();
+    chrono.start();
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
-    stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
-    stokes_rhs += integrate( boundaryfaces( mesh ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
+    stokes_rhs += integrate( _range=elements( mesh ),_expr=inner( f,id( v ) ) );
+    stokes_rhs += integrate( _range=boundaryfaces( mesh ), _expr=inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
 
     LOG(INFO) << "chrono lhs: " << chrono.elapsed() << "\n";
     LOG(INFO) << "[stokes] vector local assembly done\n";
@@ -252,27 +252,27 @@ Stokes::run()
     //# marker7 #
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
 
-    stokes += integrate( elements( mesh ), mu*inner( deft,def ) );
+    stokes += integrate( _range=elements( mesh ), _expr=mu*inner( deft,def ) );
     LOG(INFO) << "chrono mu*inner(deft,def): " << chrono.elapsed() << "\n";
-    chrono.restart();
-    stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
+    chrono.start();
+    stokes +=integrate( _range=elements( mesh ), _expr= - div( v )*idt( p ) + divt( u )*id( q ) );
     LOG(INFO) << "chrono (u,p): " << chrono.elapsed() << "\n";
-    chrono.restart();
+    chrono.start();
 #if defined( FEELPP_USE_LM )
-    stokes +=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ) );
+    stokes +=integrate( _range=elements( mesh ), _expr= id( q )*idt( lambda ) + idt( p )*id( nu ) );
     LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";
-    chrono.restart();
+    chrono.start();
 #endif
 
-    stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaNt,id( v ) ) );
-    stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaN,idt( u ) ) );
-    stokes +=integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
+    stokes +=integrate( _range=boundaryfaces( mesh ), _expr= -inner( SigmaNt,id( v ) ) );
+    stokes +=integrate( _range=boundaryfaces( mesh ), _expr= -inner( SigmaN,idt( u ) ) );
+    stokes +=integrate( _range=boundaryfaces( mesh ), _expr= +penalbc*inner( idt( u ),id( v ) )/hFace() );
     LOG(INFO) << "chrono bc: " << chrono.elapsed() << "\n";
-    chrono.restart();
+    chrono.start();
     //# endmarker7 #
 
 
-    chrono.restart();
+    chrono.start();
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
     LOG(INFO) << "chrono solver: " << chrono.elapsed() << "\n";
 
@@ -319,8 +319,8 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     double div_u_error_L2 = normL2( _range=elements( u.mesh() ), _expr=divv( u ) );
     LOG(INFO) << "[stokes] ||div(u)||_2=" << div_u_error_L2 << "\n";
 
-    v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
-    q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
+    v.on(_range=elements( u.mesh() ), _expr=u_exact );
+    q.on(_range=elements( p.mesh() ), _expr=p_exact );
 
     std::shared_ptr<export_type> exporter( export_type::New() );
     if ( exporter->doExport() )

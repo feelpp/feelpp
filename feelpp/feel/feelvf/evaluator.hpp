@@ -26,10 +26,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-05-27
  */
-#ifndef __FEELPP_EVALUATORS_H
-#define __FEELPP_EVALUATORS_H 1
+#ifndef FEELPP_VF_EVALUATORS_H
+#define FEELPP_VF_EVALUATORS_H
 
-#include <boost/timer.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
@@ -196,7 +195,6 @@ template<EvaluatorType iDim, typename Iterator, typename Pset, typename ExprT>
 typename Evaluator<iDim, Iterator, Pset, ExprT>::eval_element_type
 Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> ) const
 {
-    boost::timer __timer;
 
     typedef typename mesh_element_type::gm_type gm_type;
     typedef typename gm_type::template Context<mesh_element_type> gm_context_type;
@@ -251,8 +249,8 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
 
 
-    gm_context_ptrtype __c = initElt.gm()->template context<context>( initElt,__geopc );
-    gm1_context_ptrtype __c1 =  initElt.gm1()->template context<context>( initElt,__geopc1 );
+    gm_context_ptrtype __c = initElt.gm()->template context<context>( initElt,__geopc, M_expr.dynamicContext() );
+    gm1_context_ptrtype __c1 =  initElt.gm1()->template context<context>( initElt,__geopc1, M_expr.dynamicContext() );
 
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
     t_expr_type tensor_expr( M_expr, mapgmc );
@@ -374,7 +372,6 @@ typename Evaluator<iDim, Iterator, Pset, ExprT>::eval_element_type
 Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) const
 {
 
-    boost::timer __timer;
 
     VLOG(2) << "evaluator(MESH_FACES) " << "\n";
     //
@@ -463,8 +460,8 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
 
     auto const& initFace = boost::unwrap_ref( *__face_it );
     uint16_type __face_id = initFace.pos_first();
-    gmc_ptrtype __c = __gm->template context<context>( initFace.element( 0 ), __geopc, __face_id );
-    gmc1_ptrtype __c1 = __gm1->template context<context>( initFace.element( 0 ), __geopc1, __face_id );
+    gmc_ptrtype __c = __gm->template context<context>( initFace.element( 0 ), __geopc, __face_id, M_expr.dynamicContext() );
+    gmc1_ptrtype __c1 = __gm1->template context<context>( initFace.element( 0 ), __geopc1, __face_id, M_expr.dynamicContext() );
 
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
     t_expr_type expr( M_expr, mapgmc );
@@ -569,12 +566,13 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
 /// \cond DETAIL
 namespace detail
 {
-template<typename Args>
+//template<typename Args>
+template<typename ArgExprType,typename ArgPsetType,typename ArgRangeType>
 struct evaluate
 {
-    typedef clean_type<Args,tag::expr> _expr_type;
-    typedef clean_type<Args,tag::pset> _pset_type;
-    typedef clean_type<Args,tag::range> _range_type;
+    using _expr_type = std::decay_t<ArgExprType>;
+    using _pset_type = std::decay_t<ArgPsetType>;
+    using _range_type = std::decay_t<ArgRangeType>;
     typedef details::Evaluator<EVAL_NODAL, _range_type, _pset_type, Expr<_expr_type> > eval_t;
     typedef typename eval_t::mesh_element_type mesh_element_type;
     typedef typename eval_t::eval_element_type element_type;
@@ -607,23 +605,15 @@ evaluate_impl( IteratorRange const& range_it,
  * \arg expr the expression to project
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
  */
-BOOST_PARAMETER_FUNCTION(
-    ( typename vf::detail::evaluate<Args>::element_type ), // return type
-    evaluate,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( pset, * )
-      ( expr, * )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
-    )
-)
+template <typename ... Ts>
+auto evaluate( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && range = args.get(_range);
+    auto && pset = args.get(_pset);
+    auto && expr = args.get(_expr);
+    GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT );
+
     LOG(INFO) << "evaluate expression..." << std::endl;
     return evaluate_impl( range, pset, expr, geomap );
     LOG(INFO) << "evaluate expression done." << std::endl;
@@ -702,33 +692,27 @@ struct normLinfData : public boost::tuple<double, Eigen::Matrix<double, Dim,1> >
  * \arg expr the expression to project
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
  */
-BOOST_PARAMETER_FUNCTION(
-    ( normLinfData<vf::detail::evaluate<Args>::nRealDim> ), // return type
-    normLinf,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( pset, * )
-      ( expr, * )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( worldcomm,       (worldcomm_ptr_t), Environment::worldCommPtr() )
-      ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
-    )
-)
+template <typename ... Ts>
+auto normLinf( Ts && ... v )
 {
-    typedef detail::clean_type<Args,tag::expr> _expr_type;
-    typedef detail::clean_type<Args,tag::pset> _pset_type;
-    typedef detail::clean_type<Args,tag::range> _range_type;
-    typedef typename details::Evaluator<EVAL_NODAL, _range_type, _pset_type, Expr<_expr_type>>::eval_element_type eval_element_type;
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && range = args.get(_range);
+    auto && pset = args.get(_pset);
+    auto && expr = args.get(_expr);
+    worldcomm_ptr_t worldcomm =args.get_else(_worldcomm,Environment::worldCommPtr() );
+    GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT );
+
+    // using _expr_type = std::decay_t<decltype(expr)>;
+    // using _pset_type = std::decay_t<decltype(pset)>;
+    // using _range_type = std::decay_t<decltype(range)>;
+    //typedef typename details::Evaluator<EVAL_NODAL, _range_type, _pset_type, Expr<_expr_type>>::eval_element_type eval_element_type;
+    using evaluate_helper_type = vf::detail::evaluate<decltype(expr),decltype(pset),decltype(range)>;
+    using eval_element_type = typename evaluate_helper_type::eval_t;
     typedef typename eval_element_type::element_type element_type;
 
     int proc_number = worldcomm->globalRank();
     int world_size = worldcomm->size();
-    constexpr int nRealDim = vf::detail::evaluate<Args>::nRealDim;
+    constexpr int nRealDim = evaluate_helper_type::nRealDim;
 
 
     LOG(INFO) << "evaluate expression..." << std::endl;
@@ -859,31 +843,21 @@ struct minmaxData : public boost::tuple<double,double, Eigen::Matrix<double, Dim
  * \arg expr the expression to project
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
  */
-BOOST_PARAMETER_FUNCTION(
-    ( minmaxData<vf::detail::evaluate<Args>::nRealDim> ), // return type
-    minmax,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( pset, * )
-      ( expr, * )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( worldcomm,       (worldcomm_ptr_t), Environment::worldCommPtr() )
-      ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
-    )
-)
+template <typename ... Ts>
+auto minmax( Ts && ... v )
 {
-    typedef detail::clean_type<Args,tag::expr> _expr_type;
-    typedef detail::clean_type<Args,tag::pset> _pset_type;
-    typedef detail::clean_type<Args,tag::range> _range_type;
-    typedef typename details::Evaluator<EVAL_NODAL, _range_type, _pset_type, Expr<_expr_type>>::eval_element_type eval_element_type;
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && range = args.get(_range);
+    auto && pset = args.get(_pset);
+    auto && expr = args.get(_expr);
+    GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT );
+    worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr() );
+
+    using evaluate_helper_type = vf::detail::evaluate<decltype(expr),decltype(pset),decltype(range)>;
+    using eval_element_type = typename evaluate_helper_type::eval_t;
     typedef typename eval_element_type::element_type element_type;
 
-    constexpr int nRealDim = vf::detail::evaluate<Args>::nRealDim;
+    constexpr int nRealDim = evaluate_helper_type::nRealDim;
     int proc_number = worldcomm->globalRank();
 
     LOG(INFO) << "evaluate minmax(expression)..." << std::endl;
@@ -954,38 +928,16 @@ BOOST_PARAMETER_FUNCTION(
     return minmaxData<nRealDim> (boost::make_tuple( it_min->min(), it_max->max(), coords ));
 }
 
-/// \cond DETAIL
-namespace detail{
-template <typename Args>
-struct maxPerCellData
+template <typename ... Ts>
+auto maxPerCell( Ts && ... v )
 {
-    typedef clean_type<Args,tag::expr> _expr_type;
-    typedef typename _expr_type::value_type value_type;
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && range = args.get(_range);
+    auto && pset = args.get(_pset);
+    auto && expr = args.get(_expr);
+    GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT );
 
-    typedef Eigen::Tensor<value_type,3> element_type;
-}; // maxpercelldata
-
-} //detail
-
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename vf::detail::maxPerCellData<Args>::element_type ), // return type
-    maxPerCell,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( pset, * )
-      ( expr, * )
-      ) // 4. one required parameter, and
-
-    ( optional
-      ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
-      )
-)
-{
-    typedef detail::clean_type<Args,tag::expr> _expr_type;
+    using _expr_type = std::decay_t<decltype(expr)>;
     typedef typename _expr_type::value_type value_type;
 
     auto e = evaluate_impl( range, pset, expr, geomap );
@@ -1003,4 +955,4 @@ BOOST_PARAMETER_FUNCTION(
 } // feel
 
 
-#endif /* __FEELPP_EVALUATORS_H */
+#endif /* FEELPP_VF_EVALUATORS_H */

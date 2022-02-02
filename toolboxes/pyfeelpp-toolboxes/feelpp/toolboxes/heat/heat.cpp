@@ -58,7 +58,6 @@ void defSM(py::module &m)
         .def( "mesh", &toolbox_t::mesh, "get the mesh" )
         .def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
 
-     
         // elements
         .def( "spaceTemperature", &toolbox_t::spaceTemperature, "get the temperature function space" )
         .def( "fieldTemperature", static_cast<element_temperature_t const& (toolbox_t::*)() const>( &toolbox_t::fieldTemperature ), "returns the temperature field" )
@@ -69,6 +68,7 @@ void defSM(py::module &m)
 
         // time stepping
         .def( "timeStepBase", static_cast<std::shared_ptr<TSBase> ( toolbox_t::* )() const>( &toolbox_t::timeStepBase ), "get time stepping base" )
+        .def( "startTimeStep", &toolbox_t::startTimeStep, "start time stepping" )
         .def( "updateTimeStep", &toolbox_t::updateTimeStep, "update time stepping" )
 
         // solve
@@ -85,8 +85,7 @@ void defSM(py::module &m)
                 mat->zero();
                 auto rhsTMP = t.algebraicFactory()->rhs()->clone();
                 t.algebraicFactory()->applyAssemblyLinear( t.algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhsTMP, { "ignore-assembly.rhs" } );
-                return mat;
-            },
+                return mat; },
             "returns the assembled matrix" )
         .def(
             "assembleRhs", []( const toolbox_t& t )
@@ -95,9 +94,9 @@ void defSM(py::module &m)
                 rhs->zero();
                 auto matTMP = t.algebraicFactory()->matrix()->clone();
                 t.algebraicFactory()->applyAssemblyLinear( t.algebraicBlockVectorSolution()->vectorMonolithic(), matTMP, rhs, { "ignore-assembly.lhs" } );
-                return rhs;
-            },
+                return rhs; },
             "returns the assembled rhs" )
+
         // .def( "updateFieldVelocityConvection", static_cast<void (toolbox_t::*)(bool)>(&toolbox_t::updateFieldVelocityConvection), "update field velocity convection", py::arg("onlyExprWithTimeSymbol")=false )
         // .def( "assembleLinear", &toolbox_t::assembleLinear, "assemble linear matrix and vector" )
         // .def( "rhs", &toolbox_t::rhs, "returns the right hand side" )

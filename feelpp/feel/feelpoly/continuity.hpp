@@ -30,8 +30,15 @@
 #ifndef __Continuity_H
 #define __Continuity_H 1
 
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 106700 && BOOST_VERSION < 107100
+#include <contrib/boost/fusion/include/boost/fusion/container/vector/vector.hpp>
+#else
+#include <boost/fusion/container/vector.hpp>
+#endif
+
 #include <boost/fusion/sequence.hpp>
-#include <boost/fusion/container.hpp>
+//#include <boost/fusion/container.hpp>
 
 namespace Feel
 {

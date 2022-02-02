@@ -21,49 +21,36 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef FEELPP_CONVOLVE_HPP
-#define FEELPP_CONVOLVE_HPP 1
+#ifndef FEELPP_VF_CONVOLVE_H
+#define FEELPP_VF_CONVOLVE_H
 
 #include <feel/feelvf/expr.hpp>
-#include <feel/feelvf/integrator.hpp>
+//#include <feel/feelvf/integrator.hpp>
+#include <feel/feelvf/integrate.hpp>
 
 namespace Feel {
 
-namespace detail
+template <typename ... Ts>
+auto convolve( Ts && ... varg )
 {
-template<typename Args>
-struct convolve_type
-{
-    using space_type = decay_type<typename parameter::binding<Args,tag::space>::type>;
-    using element_type =  typename space_type::element_type;
-};
-} // detail
+    auto args = NA::make_arguments( std::forward<Ts>(varg)... );
+    auto && range = args.get(_range);
+    auto && expr = args.get(_expr);
+    auto && space = args.get(_space);
+    auto && quad = args.get_else( _quad, quad_order_from_expression );
+    auto && quad1 = args.get_else( _quad1, quad_order_from_expression );
+    GeomapStrategyType geomap = args.get_else( _geomap,GeomapStrategyType::GEOMAP_OPT );
+    bool use_tbb = args.get_else( _use_tbb, false );
+    bool use_harts = args.get_else( _use_harts, false );
+    int grainsize = args.get_else( _grainsize, 100 );
+    std::string const& partitioner = args.get_else( _partitioner, "auto");
+    bool verbose = args.get_else( _verbose, false );
 
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::convolve_type<Args>::element_type ), // return type
-    convolve,    // 2. function name
+    using _integrate_helper_type = Feel::detail::integrate_type<decltype(expr),decltype(range),decltype(quad),decltype(quad1)>;
+    auto && quadptloc = args.get_else(_quadptloc, typename _integrate_helper_type::_quadptloc_ptrtype{});
 
-    tag,           // 3. namespace of tag types
+    using space_type = std::decay_t<decltype(space)>;
 
-    ( required
-      ( range, *  )
-      ( expr,   * )
-      ( space, *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( quad,   *, quad_order_from_expression )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, quad_order_from_expression )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-      ( quadptloc, *, typename vf::detail::integrate_type<Args>::_quadptloc_ptrtype() )
-    )
-)
-{
     using T = double;
     constexpr int nDim = decay_type<space_type>::nDim;
     std::vector<Eigen::Matrix<T, nDim,1>> X,Z;

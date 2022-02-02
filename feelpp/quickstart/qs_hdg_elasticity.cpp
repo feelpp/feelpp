@@ -124,7 +124,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     auto Pi = M_PI;
     
     tic();
-    auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
     toc("mesh",true);
 
     // ****** Hybrid-mixed formulation ******
@@ -155,12 +155,12 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     auto nDofuhat  = uhat.functionSpace()->nDof();
 
     solve::strategy strategy = boption("sc.condense")?solve::strategy::static_condensation:solve::strategy::monolithic;
-	double sc_param = 1;
-    if( boption("sc.condense") )
-        sc_param = 0.5;
-	
+    double sc_param = 1;
 
-	tic();
+    if ( boption("sc.condense") )
+         sc_param = 0.5;
+
+    tic();
     auto ps = product( Vh, Wh, Mh );
 	auto a = blockform2( ps, strategy , backend() );
 	auto rhs = blockform1( ps, strategy , backend() );
@@ -344,8 +344,8 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
 			return { { "L2", l2 } , {  "H1", h1 } };
             };
 
-        status_displ = checker("L2/H1 displacement norms",displ_exact).runOnce( norms_displ, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
-        status_stress = checker("L2 stress norms",displ_exact).runOnce( norms_stress, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
+        status_displ = checker(_name="L2/H1 displacement norms",_solution_key=displ_exact).runOnce( norms_displ, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
+        status_stress = checker(_name="L2 stress norms",_solution_key=displ_exact).runOnce( norms_stress, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
         v.on( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) );
         w.on( _range=elements(mesh), _expr=expr<Dim,1>(displ_exact) );
     }

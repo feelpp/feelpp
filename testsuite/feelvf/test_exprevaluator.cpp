@@ -24,7 +24,7 @@ BOOST_AUTO_TEST_CASE( test_1 )
     muMax << 2;
     Dmu->setMax(muMax);
     auto mu = Dmu->element();
-    auto mesh = loadMesh( new Mesh<Simplex<3> > );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<3> > );
     auto r = elements(mesh);
     auto Vh = Pch<1>(mesh);
     auto u = Vh->element();

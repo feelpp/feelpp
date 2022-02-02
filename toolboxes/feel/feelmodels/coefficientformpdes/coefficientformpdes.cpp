@@ -85,7 +85,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                                 cfpde->setManageParameterValuesOfModelProperties( false );
                             }
                             cfpde->setMaterialsProperties( M_materialsProperties );
-                            cfpde->setMesh( this->mesh() );
+                            cfpde->setModelMeshAsShared( this->modelMesh() );
 
                             // TODO check if the same space has already built
                             cfpde->init( false );
@@ -219,6 +219,14 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initPostProcess()
             if ( M_exporter->doExport() )
                 M_exporter->restart(this->timeInitial());
         }
+    }
+
+
+    // start or restart the export of measures
+    if ( !this->isStationary() )
+    {
+        if ( this->doRestart() )
+            this->postProcessMeasures().restart( this->timeInitial() );
     }
 
     double tElpased = this->timerTool("Constructor").stop("createExporters");

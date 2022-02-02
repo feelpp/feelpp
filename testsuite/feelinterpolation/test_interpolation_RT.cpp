@@ -175,7 +175,7 @@ TestInterpolationHDiv<Dim>::testInterpolationOneElt( std::string one_element_mes
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
         {
             CHECK( mesh->hasMarkers( {faces[i]} ) );
-            U_h_int(i) = integrate( markedfaces( oneelement_mesh, faces[i] ), trans( N() )*myexpr ).evaluate()(0,0);
+            U_h_int(i) = integrate( _range=markedfaces( oneelement_mesh, faces[i] ), _expr=trans( N() )*myexpr ).evaluate()(0,0);
         }
 
     // raviart-thomas interpolant using on

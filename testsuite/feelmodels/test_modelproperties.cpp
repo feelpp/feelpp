@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_SUITE( modelproperties )
 
 BOOST_AUTO_TEST_CASE( test_materials )
 {
-    auto mesh = loadMesh(new Mesh<Simplex<3> >);
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<3> >);
     auto Xh = Pch<1>(mesh);
     auto g = Xh->element();
     auto d = Xh->element();

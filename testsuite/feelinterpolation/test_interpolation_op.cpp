@@ -153,13 +153,13 @@ struct test_interpolation_op
     typename imagespace_type::element_type w( Yh, "w" );
     w = fsv.container();
 
-    double err = math::sqrt( integrate( elements( Yh->mesh() ), ( idv( w )-idv( y ) )*( idv( w )-idv( y ) ) ).evaluate()( 0, 0 ) );
+    double err = math::sqrt( integrate( _range=elements( Yh->mesh() ), _expr=( idv( w )-idv( y ) )*( idv( w )-idv( y ) ) ).evaluate()( 0, 0 ) );
     BOOST_MESSAGE(  "[err] ||w-y||_2 = " << err << "\n" );
     BOOST_CHECK_SMALL( err, 1e-12 );
 
     //std::cout << "w=" << w << "\n" );
-    value_type xw = math::sqrt( integrate( elements( mesh1 ), ( u_exact-idv( w ) )*( u_exact-idv( w ) ) ).evaluate()( 0, 0 ) );
-    value_type vw = math::sqrt( integrate( elements( mesh1 ), ( idv( v )-idv( w ) )*( idv( v )-idv( w ) ) ).evaluate()( 0, 0 ) );
+    value_type xw = math::sqrt( integrate( _range=elements( mesh1 ), _expr=( u_exact-idv( w ) )*( u_exact-idv( w ) ) ).evaluate()( 0, 0 ) );
+    value_type vw = math::sqrt( integrate( _range=elements( mesh1 ), _expr=( idv( v )-idv( w ) )*( idv( v )-idv( w ) ) ).evaluate()( 0, 0 ) );
     BOOST_MESSAGE(  "[test_interpolation_op] ||x-w||_2 = " << xw << "\n" );
     BOOST_MESSAGE(  "[test_interpolation_op] ||v-w||_2 = " << vw << "\n" );
 
@@ -232,8 +232,8 @@ template<int DimDomain, int OrderDomain, int RealDimDomain,
     typename imagespace_type::element_type w( Yh, "w" );
     w = fsv.container();
     //std::cout << "w=" << w << "\n" );
-    value_type xw = math::sqrt( integrate( elements( mesh1 ), IM<Dim,Order,value_type,Simplex>(), ( Px()-idv( w ) )*( Px()-idv( w ) ) ).evaluate()( 0, 0 ) );
-    value_type vw = math::sqrt( integrate( elements( mesh1 ), IM<Dim,Order,value_type,Simplex>(), ( idv( v )-idv( w ) )*( idv( v )-idv( w ) ) ).evaluate()( 0, 0 ) );
+    value_type xw = math::sqrt( integrate( _range=elements( mesh1 ), _quad=IM<Dim,Order,value_type,Simplex>(), _expr=( Px()-idv( w ) )*( Px()-idv( w ) ) ).evaluate()( 0, 0 ) );
+    value_type vw = math::sqrt( integrate( _range=elements( mesh1 ), _quad=IM<Dim,Order,value_type,Simplex>(), _expr=( idv( v )-idv( w ) )*( idv( v )-idv( w ) ) ).evaluate()( 0, 0 ) );
     BOOST_MESSAGE(  "[test_interpolation_op] ||x-w||_2 = " << xw << "\n" );
     BOOST_MESSAGE(  "[test_interpolation_op] ||v-w||_2 = " << vw << "\n" );
 
@@ -309,9 +309,9 @@ struct test_lagrange_p1_op
     //std::cout << "u=" << u << "\n" );
     //std::cout << "w=" << w << "\n" );
 
-    value_type xw = math::sqrt( integrate( elements( Yh->mesh() ),
-          IM<Dim,2*Order,value_type,Simplex>(),
-          ( Px()-idv( w ) )*( Px()-idv( w ) ) ).evaluate()( 0, 0 ) );
+    value_type xw = math::sqrt( integrate( _range=elements( Yh->mesh() ),
+                                           _quad=IM<Dim,2*Order,value_type,Simplex>(),
+                                           _expr=( Px()-idv( w ) )*( Px()-idv( w ) ) ).evaluate()( 0, 0 ) );
     BOOST_MESSAGE(  "[test_lagrange_p1_op] ||x-w||_2 = " << xw << "\n" );
     e=w;
     e.setName( ( boost::format( "e_%1%.%2%.%3% " ) % Dim % Order % GeoOrder ).str() );

@@ -58,13 +58,13 @@ main( int argc, char** argv )
                                   _author="Vincent Chabannes",
                                   _email="vincent.chabannes@feelpp.org"));
 
-    double meshSize = option(_name="gmsh.hsize").as<double>();
-    double youngmodulus=option(_name="young-modulus").as<double>();
-    double coeffpoisson=option(_name="poisson-coeff").as<double>();
+    double meshSize = doption(_name="gmsh.hsize");
+    double youngmodulus= doption(_name="young-modulus");
+    double coeffpoisson= doption(_name="poisson-coeff");
     double coefflame2 = youngmodulus/(2*(1+coeffpoisson));// mu
     double coefflame1 = youngmodulus*coeffpoisson/((1+coeffpoisson)*(1-2*coeffpoisson));// lambda
-    double rho=option(_name="rho").as<double>();
-    double gravityCst=option(_name="gravity-cst").as<double>();
+    double rho= doption(_name="rho");
+    double gravityCst=doption(_name="gravity-cst");
 
     typedef Mesh<Simplex<2,1,2> > mesh_type;
     GeoTool::Node x1( (0.4+math::sqrt(0.0096))/2.,0.19 );
@@ -81,7 +81,7 @@ main( int argc, char** argv )
     auto v = Vh->element();
 
     auto Res = backend()->newVector( Vh );
-    auto Jac = backend()->newMatrix( Vh, Vh );
+    auto Jac = backend()->newMatrix( _test=Vh, _trial=Vh );
 
     auto e = exporter( _mesh=mesh );
 

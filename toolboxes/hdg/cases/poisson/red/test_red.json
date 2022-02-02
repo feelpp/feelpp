@@ -7,48 +7,43 @@
         "OmegaG":
         {
             "name":"silicium",
-	    	"k":"1e-10" // epsilon= epsR * eps0
+	    	"cond":"1e-10" // epsilon= epsR * eps0
         },
         "OmegaS":
         {
             "name":"silicium",
-            "k":"1e-10" // epsilon = epsR * eps0
+            "cond":"1e-10" // epsilon = epsR * eps0
         },
         "OmegaB":
         {
             "name":"silicium",
-            "k":"1e-10" // epsilon = epsR * eps0
+            "cond":"1e-10" // epsilon = epsR * eps0
         },
         "OmegaD":
         {
             "name":"silicium",
-            "k":"1e-10" // epsilon = epsR * eps0
+            "cond":"1e-10" // epsilon = epsR * eps0
+        }
+    },
+    "InitialConditions":
+    {
+        "potential":
+        {
+            "Expression":
+            {
+                "OmegaG":
+                {
+                    "markers":["omegaG","omegaS","omegaB","omegaD",],
+                    "expr":"0.0"
+                }
+            }
         }
     },
     "BoundaryConditions":
     {
         "potential":
         {
-            "InitialSolution":
-            {
-                "OmegaG":
-                {
-                    "expr":"0.0"
-                },
-                "OmegaS":
-                {
-                    "expr":"0.0"
-                },
-                "OmegaB":
-                {
-                    "expr":"0.0"
-                },
-                "OmegaD":
-                {
-                    "expr":"0.0"
-                }
-            },
-            "SourceTerm":
+            "VolumicForces":
             {
                 "OmegaG":
                 {

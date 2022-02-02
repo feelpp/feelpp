@@ -628,7 +628,7 @@ struct SymbolsExpr : public SymbolsExprBase
     struct TensorContext : public SymbolsExprTensorContextBase
     {
         using map_expr_tensor_type = MapExprTensorType;
-        using symbols_expr_type = symbols_expr_type;
+        using symbols_expr_type = typename SymbolsExpr<TupleExprType>::symbols_expr_type;
 
         TensorContext() = default;
 

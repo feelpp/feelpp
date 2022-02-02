@@ -125,16 +125,16 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( integration_opt, T, dim_types )
                                 _straighten=straighten );
     saveGMSHMesh( _mesh=mesh, _filename=( boost::format( "ellipsoid-%1%-%2%-%3%-saved.msh" ) % T::first::value % T::second::value % straighten ).str() );
 
-    boost::timer ti;
+    Feel::Timer ti;
     auto i1 = integrate( _range=elements( mesh ), _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate().norm();
     std::cout << "Ho: " << ti.elapsed() << "s\n";
-    ti.restart();
+    ti.start();
     auto i2 = integrate( _range=elements( mesh ), _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_OPT ).evaluate().norm();
     std::cout << "Opt: " << ti.elapsed() << "s\n";
-    ti.restart();
+    ti.start();
     auto i3 = integrate( _range=elements( mesh ),  _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_O1 ).evaluate().norm();
     std::cout << "P1: " << ti.elapsed() << "s\n";
-    ti.restart();
+    ti.start();
 
     BOOST_CHECK_CLOSE( i1, i2, 1e-12 );
     BOOST_TEST_MESSAGE( "ho = " << std::scientific << std::setprecision( 16 ) << i1 << "\n" <<
@@ -206,13 +206,13 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
         }
 
 
-        boost::timer ti;
+        Feel::Timer ti;
         double i1 =  integrate( _range=elements( mesh ), _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate().norm();
         ho["ho"].push_back( boost::make_tuple( meshSize, i1, math::abs( i1-exact ), ti.elapsed() ) );
-        ti.restart();
+        ti.start();
         double i2 = integrate( _range=elements( mesh ), _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_OPT ).evaluate().norm();
         ho["opt"].push_back( boost::make_tuple( meshSize, i2, math::abs( i2-exact ), ti.elapsed() ) );
-        ti.restart();
+        ti.start();
         BOOST_CHECK_CLOSE( i1, i2, 1e-12 );
         //std::cout << "Opt: " << ti.elapsed() << "s\n";
         double i3 = integrate( _range=elements( mesh ),  _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_O1 ).evaluate().norm();
