@@ -43,6 +43,8 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::init()
 
     this->log("SolidMechanics1dReduced","init", "start" );
 
+    this->initPhysics( this->keyword(), this->modelProperties().models() );
+
     if ( !this->mesh() )
         this->initMesh();
 
