@@ -45,6 +45,8 @@
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
+#include <feel/feeldiscr/geometricspace.hpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -94,27 +96,19 @@ class Heat : public ModelNumerical,
         typedef Exporter<mesh_type,nOrderGeo> export_type;
         typedef std::shared_ptr<export_type> export_ptrtype;
 
-        // measure tools for points evaluation
-        typedef MeasurePointsEvaluation<space_temperature_type> measure_points_evaluation_type;
-        typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
-
         struct FieldTag
         {
             static auto temperature( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
         };
 
-        BOOST_PARAMETER_MEMBER_FUNCTION(
-            ( self_ptrtype ), static New, tag,
-            ( required
-              ( prefix,*( boost::is_convertible<mpl::_,std::string> ) )
-              )
-            ( optional
-              //( prefix,*( boost::is_convertible<mpl::_,std::string> ),"heat" )   // there is a compilation error if BOOST_PARAMETER_MEMBER_FUNCTION in a class template has no required
-              ( keyword,*( boost::is_convertible<mpl::_,std::string> ),"heat" )
-              ( worldcomm, *, Environment::worldCommPtr() )
-              ( repository, *, ModelBaseRepository() )
-              ) )
+        template <typename ... Ts>
+        static self_ptrtype New( Ts && ... v )
             {
+                auto args = NA::make_arguments( std::forward<Ts>(v)... );
+                std::string const& prefix = args.get(_prefix);
+                std::string const& keyword = args.get_else(_keyword,"heat");
+                worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
+                auto && repository = args.get_else(_repository,ModelBaseRepository{});
                 return std::make_shared<self_type>( prefix, keyword, worldcomm, "", repository );
             }
 
@@ -143,6 +137,8 @@ class Heat : public ModelNumerical,
         bool stabilizationGLS() const { return M_stabilizationGLS; }
         std::string const& stabilizationGLSType() const { return M_stabilizationGLSType; }
         stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
+        bool stabilizationGLS_checkConductivityDependencyOnCoordinates() const { return M_stabilizationGLS_checkConductivityDependencyOnCoordinates; }
+
         //___________________________________________________________________________________//
         // physical parameters
         materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
@@ -482,11 +478,13 @@ class Heat : public ModelNumerical,
         bool M_stabilizationGLS;
         std::string M_stabilizationGLSType;
         stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
+        bool M_stabilizationGLS_checkConductivityDependencyOnCoordinates = true;
+
+        std::string M_solverName;
 
         // post-process
         export_ptrtype M_exporter;
         std::map<std::string,ModelMeasuresNormalFluxGeneric> M_postProcessMeasuresNormalHeatFlux;
-        measure_points_evaluation_ptrtype M_measurePointsEvaluation;
     };
 
 
@@ -498,12 +496,19 @@ Heat<ConvexType,BasisTemperatureType>::updateInitialConditions( SymbolsExprType 
     if ( !this->doRestart() )
     {
         std::vector<element_temperature_ptrtype> icTemperatureFields;
+        std::map<int, double> icPriorTimes;
         if ( this->isStationary() )
+        {
             icTemperatureFields = { this->fieldTemperaturePtr() };
+            icPriorTimes = {{0,0}};
+        }
         else
+        {
             icTemperatureFields = M_bdfTemperature->unknowns();
+            icPriorTimes = M_bdfTemperature->priorTimes();
+        }
 
-        super_type::updateInitialConditions( "temperature", M_rangeMeshElements, se, icTemperatureFields );
+        super_type::updateInitialConditions( "temperature", M_rangeMeshElements, se, icTemperatureFields, icPriorTimes );
 
         if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
         {
@@ -549,34 +554,18 @@ template <typename ModelFieldsType, typename SymbolsExpr, typename ModelMeasures
 void
 Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities )
 {
-    bool hasMeasure = false;
-
     auto const& t = mfields.field( FieldTag::temperature(this), "temperature" );
 
     // compute measures
     for ( auto const& [ppName,ppFlux] : M_postProcessMeasuresNormalHeatFlux )
     {
-        //auto const& t = this->fieldTemperature();
         double heatFlux = integrate(_range=markedfaces(this->mesh(),ppFlux.markers() ),
                                     _expr=this->normalHeatFluxExpr( t, ppFlux.isOutward(), symbolsExpr ) ).evaluate()(0,0);
-        this->postProcessMeasuresIO().setMeasure("Normal_Heat_Flux_"+ppName,heatFlux);
-        hasMeasure = true;
+        this->postProcessMeasures().setValue("Normal_Heat_Flux_"+ppName,heatFlux);
     }
 
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
-    bool hasMeasureQuantity = this->updatePostProcessMeasuresQuantities( mquantities, symbolsExpr );
-    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint || hasMeasureQuantity )
-        hasMeasure = true;
-
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
+    // execute common post process and save measures
+    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, symbolsExpr, mfields, mquantities );
 }
 
 } // namespace FeelModels

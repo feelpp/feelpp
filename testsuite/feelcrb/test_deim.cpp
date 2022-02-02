@@ -99,7 +99,7 @@ public :
     {
         Xh = Rh;
         if ( is_mat )
-            M = M_backend->newMatrix(Xh,Xh);
+            M = M_backend->newMatrix(_test=Xh,_trial=Xh);
         else
             V = M_backend->newVector(Xh);
     }
@@ -216,9 +216,9 @@ public :
         auto u = Xh->element();
 
         auto f = form1( _test=Xh, _trial=Xh, _backend=M_backend, _vector=V );
-        f = integrate( markedelements(mesh,"Omega1"), math::cos(mu[0])*id(u) );
-        f += integrate( markedelements(mesh,"Omega2"), math::sin(mu[1])*id(u) );
-        f += integrate( markedfaces(mesh,"Gamma1"), math::exp(mu[0])*mu[1]*id(u) );
+        f = integrate( _range=markedelements(mesh,"Omega1"), _expr=math::cos(mu[0])*id(u) );
+        f += integrate( _range=markedelements(mesh,"Omega2"), _expr=math::sin(mu[1])*id(u) );
+        f += integrate( _range=markedfaces(mesh,"Gamma1"), _expr=math::exp(mu[0])*mu[1]*id(u) );
 
         return V;
     }
@@ -228,9 +228,9 @@ public :
         auto u = Xh->element();
 
         auto f = form1( _test=Xh, _trial=Xh, _backend=M_backend, _vector=V );
-        f = integrate( markedelements(mesh,"Omega1"), math::cos(mu[0])*trans(id(u))*oneX() );
-        f += integrate( markedelements(mesh,"Omega2"), math::sin(mu[1])*trans(id(u))*oneY() );
-        f += integrate( markedfaces(mesh,"Gamma1"),math::exp( mu[0])*mu[1]*trans(id(u))*N() );
+        f = integrate( _range=markedelements(mesh,"Omega1"), _expr=math::cos(mu[0])*trans(id(u))*oneX() );
+        f += integrate( _range=markedelements(mesh,"Omega2"), _expr=math::sin(mu[1])*trans(id(u))*oneY() );
+        f += integrate( _range=markedfaces(mesh,"Gamma1"),_expr=math::exp( mu[0])*mu[1]*trans(id(u))*N() );
 
         return V;
     }
@@ -242,10 +242,10 @@ public :
         auto v = Xh->element();
 
         auto f = form2( _test=Xh, _trial=Xh, _backend=M_backend, _matrix=M );
-        f = integrate( markedelements(mesh,"Omega1"), mu[0]*inner(id(u),idt(v)) );
-        f += integrate( markedelements(mesh,"Omega2"), mu[1]*inner(grad(u),gradt(v)) );
-        f += integrate( markedfaces(mesh,"Gamma2"), (mu[1]*mu[0] + mu[0]*mu[0])*inner(grad(u)*N(),idt(v)) );
-        f += integrate( markedfaces(mesh,"Gamma1"), (mu[1]*mu[1])*inner(id(u),idt(v)) );
+        f = integrate( _range=markedelements(mesh,"Omega1"), _expr=mu[0]*inner(id(u),idt(v)) );
+        f += integrate( _range=markedelements(mesh,"Omega2"), _expr=mu[1]*inner(grad(u),gradt(v)) );
+        f += integrate( _range=markedfaces(mesh,"Gamma2"), _expr=(mu[1]*mu[0] + mu[0]*mu[0])*inner(grad(u)*N(),idt(v)) );
+        f += integrate( _range=markedfaces(mesh,"Gamma1"), _expr=(mu[1]*mu[1])*inner(id(u),idt(v)) );
 
         return M;
     }

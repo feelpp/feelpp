@@ -175,7 +175,7 @@ private:
     vector_ptrtype F;
 
     /*Timer*/
-    std::map<std::string,std::pair<boost::timer,double> > timers;
+    std::map<std::string,std::pair<Feel::Timer,double> > timers;
     std::ofstream timings;
 
     /*BDF */
@@ -252,15 +252,15 @@ void Steady_Ns::run()
             auto deft = sym(gradt( u ));
             auto def = sym(grad( v ));
 
-            if (!J) J = backend()->newMatrix( Vh, Vh );
+            if (!J) J = backend()->newMatrix( _test=Vh, _trial=Vh );
             auto a = form2( _test=Vh, _trial=Vh, _matrix=J );
 
-            a = integrate( elements( mesh ), 2*mu*inner(deft,def) );
-            a += integrate( elements( mesh ), - id(q)*divt(u) -idt(p)*div(v) );
+            a = integrate( _range=elements( mesh ), _expr=2*mu*inner(deft,def) );
+            a += integrate( _range=elements( mesh ), _expr=- id(q)*divt(u) -idt(p)*div(v) );
             // Convective terms
 #if 1       //Beta=u
-            a += integrate( elements( mesh ), rho*trans(id(v))*gradv(u)*idt(u));
-            a += integrate( elements( mesh ), rho*trans(id(v))*gradt(u)*idv(u));
+            a += integrate( _range=elements( mesh ), _expr=rho*trans(id(v))*gradv(u)*idt(u));
+            a += integrate( _range=elements( mesh ), _expr=rho*trans(id(v))*gradt(u)*idv(u));
 #elif 0     //Beta=u_exact
             std::string u1_str = option(_name="2D.u_exact_x").as<std::string>();
             std::string u2_str = option(_name="2D.u_exact_y").as<std::string>();
@@ -271,44 +271,44 @@ void Steady_Ns::run()
             u_exact_g = u1,u2 ;
             auto u_exact = expr<2,1,7>( u_exact_g, vars, "u_exact" );
 
-            a += integrate( elements( mesh ), trans(id(v))*gradt(u)*u_exact);
+            a += integrate( _range=elements( mesh ), _expr=trans(id(v))*gradt(u)*u_exact);
 #endif
 
 #if 0       //Use lagrange multiplier
-            a += integrate(elements(mesh), id(q)*idt(lambda)+idt(p)*id(nu));
+            a += integrate(_range=elements(mesh), _expr=id(q)*idt(lambda)+idt(p)*id(nu));
 #endif
 
 #if 0       //Weak Dirichlet conditions on all the boundary faces
-            a += integrate( boundaryfaces( mesh ),-trans( -idt(p)*N()+mu*gradt(u)*N() )*id( v ));
-            a += integrate( boundaryfaces( mesh ),-trans( -id(p)*N()+mu*grad(u)*N() )*idt( u ));
-            a += integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
+            a += integrate( _range=boundaryfaces( mesh ),_expr=-trans( -idt(p)*N()+mu*gradt(u)*N() )*id( v ));
+            a += integrate( _range=boundaryfaces( mesh ),_expr=-trans( -id(p)*N()+mu*grad(u)*N() )*idt( u ));
+            a += integrate( _range=boundaryfaces( mesh ), _expr=+penalbc*inner( idt( u ),id( v ) )/hFace() );
 #endif
 
 #if 0     //Neumann BC on inlet and outlet and Dirichlet BC on the wall
-            a += integrate( markedfaces(mesh,"wall1"),-trans( -idt(p)*N()+mu*gradt(u)*N() )*id( v ));
-            a += integrate( markedfaces(mesh,"wall2"),-trans( -idt(p)*N()+mu*gradt(u)*N() )*id( v ));
+            a += integrate( _range=markedfaces(mesh,"wall1"),_expr=-trans( -idt(p)*N()+mu*gradt(u)*N() )*id( v ));
+            a += integrate( _range=markedfaces(mesh,"wall2"),_expr=-trans( -idt(p)*N()+mu*gradt(u)*N() )*id( v ));
             std::cout << "Neumann " << "\n";
-            a += integrate( markedfaces(mesh,"wall1"),-trans( -id(p)*N()+mu*grad(u)*N() )*idt( u ));
-            a += integrate( markedfaces(mesh,"wall2"),-trans( -id(p)*N()+mu*grad(u)*N() )*idt( u ));
+            a += integrate( _range=markedfaces(mesh,"wall1"),_expr=-trans( -id(p)*N()+mu*grad(u)*N() )*idt( u ));
+            a += integrate( _range=markedfaces(mesh,"wall2"),_expr=-trans( -id(p)*N()+mu*grad(u)*N() )*idt( u ));
 
-            a += integrate( markedfaces(mesh,"wall1"), +penalbc*trans( idt( u ) )*id( v )/hFace() );
-            a += integrate( markedfaces(mesh,"wall2"), +penalbc*trans( idt( u ) )*id( v )/hFace() );
+            a += integrate( _range=markedfaces(mesh,"wall1"), _expr=+penalbc*trans( idt( u ) )*id( v )/hFace() );
+            a += integrate( _range=markedfaces(mesh,"wall2"), _expr=+penalbc*trans( idt( u ) )*id( v )/hFace() );
 #endif
 
 #if 1     //(For Passerni test case)Dirichlet Boundary condition on the inlet and wall and stress free on the outlet
-            a += integrate( markedfaces(mesh,"wall"),-trans( -idt(p)*N()+2*mu*deft*N() )*id( v ));
-            a += integrate( markedfaces(mesh,"wall"),-trans( -id(p)*N()+2*mu*def*N() )*idt( u ));
-            a += integrate( markedfaces(mesh,"wall"), +penalbc*trans( idt( u ) )*id( v )/hFace() );
+            a += integrate( _range=markedfaces(mesh,"wall"),_expr= -trans( -idt(p)*N()+2*mu*deft*N() )*id( v ));
+            a += integrate( _range=markedfaces(mesh,"wall"),_expr= -trans( -id(p)*N()+2*mu*def*N() )*idt( u ));
+            a += integrate( _range=markedfaces(mesh,"wall"),_expr= +penalbc*trans( idt( u ) )*id( v )/hFace() );
 
-            a += integrate( markedfaces(mesh,"inlet"),-trans( -idt(p)*N()+2*mu*deft*N() )*id( v ));
-            a += integrate( markedfaces(mesh,"inlet"),-trans( -id(p)*N()+2*mu*def*N() )*idt( u ));
-            a += integrate( markedfaces(mesh,"inlet"), +penalbc*trans( idt( u ) )*id( v )/hFace() );
+            a += integrate( _range=markedfaces(mesh,"inlet"),_expr=-trans( -idt(p)*N()+2*mu*deft*N() )*id( v ));
+            a += integrate( _range=markedfaces(mesh,"inlet"),_expr=-trans( -id(p)*N()+2*mu*def*N() )*idt( u ));
+            a += integrate( _range=markedfaces(mesh,"inlet"), _expr=+penalbc*trans( idt( u ) )*id( v )/hFace() );
 
 #endif
 
 
             //Time
-            a+= integrate(elements(mesh), trans(rho*idt(u))*id(v)*M_bdf->polyDerivCoefficient(0));
+            a+= integrate(_range=elements(mesh), _expr=trans(rho*idt(u))*id(v)*M_bdf->polyDerivCoefficient(0));
 
 
         };
@@ -366,38 +366,38 @@ void Steady_Ns::run()
             U=*X;
 
             auto r = form1( _test=Vh, _vector=R );
-            r = integrate( elements( mesh ),-inner( f,id( v ) ) );
-            r += integrate( elements( mesh ), trace(trans(2*mu*gradv( u ))*grad( v )) );
-            r +=  integrate( elements( mesh ),-idv(p)*div(v) - id(q)*divv(u));
+            r = integrate( _range=elements( mesh ),_expr=-inner( f,id( v ) ) );
+            r += integrate( _range=elements( mesh ), _expr=trace(trans(2*mu*gradv( u ))*grad( v )) );
+            r +=  integrate( _range=elements( mesh ),_expr=-idv(p)*div(v) - id(q)*divv(u));
             // convective terms
 #if 1       //Beta=u
-            r += integrate( elements( mesh ), trans(rho*gradv( u )*idv(u))*id(v));
+            r += integrate( _range=elements( mesh ), _expr=trans(rho*gradv( u )*idv(u))*id(v));
 #elif 0     //Beta=u_exact
-            r += integrate( elements( mesh ), trans(gradv( u )*u_exact)*id(v));
+            r += integrate( _range=elements( mesh ), _expr=trans(gradv( u )*u_exact)*id(v));
 #endif
 
 
 #if 0       //Lagrange multiplier
-            r += integrate ( elements( mesh ), +id( q )*idv( lambda )+(idv( p )-p_exact)*id( nu ) );
+            r += integrate ( _range=elements( mesh ), _expr= +id( q )*idv( lambda )+(idv( p )-p_exact)*id( nu ) );
 #endif
 
             auto SigmaNv = ( -idv( p )*N() + 2*mu*sym(gradv( u ))*N() );
             auto SigmaN = ( -id( q )*N() + 2*mu*sym(grad( v ))*N() );
 
 #if 0       //Weak Dirichlet BC on all the boundary faces
-            r +=integrate ( boundaryfaces(mesh), - trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) - u_exact ) + penalbc*trans( idv( u ) - u_exact )*id( v )/hFace() );
+            r +=integrate ( _range=boundaryfaces(mesh), _expr= - trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) - u_exact ) + penalbc*trans( idv( u ) - u_exact )*id( v )/hFace() );
 #endif
 
 #if 0     //Neumann BC on the inlet and outlet faces and Dirichlet BC on the wall
-            r +=integrate ( markedfaces(mesh,"inlet"),  -trans( -P_inlet*N() )*id( v ) );
-            r +=integrate ( markedfaces(mesh,"outlet"), -trans( -P_outlet*N())*id( v ) );
-            r +=integrate ( markedfaces(mesh,"wall1"),  -trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) - u_exact ) + penalbc*trans( idv( u ) - u_exact )*id( v )/hFace() );
-            r +=integrate ( markedfaces(mesh,"wall2"),  -trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) - u_exact ) + penalbc*trans( idv( u ) - u_exact )*id( v )/hFace() );
+            r +=integrate ( _range=markedfaces(mesh,"inlet"), _expr= -trans( -P_inlet*N() )*id( v ) );
+            r +=integrate ( _range=markedfaces(mesh,"outlet"), _expr= -trans( -P_outlet*N())*id( v ) );
+            r +=integrate ( _range=markedfaces(mesh,"wall1"), _expr= -trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) - u_exact ) + penalbc*trans( idv( u ) - u_exact )*id( v )/hFace() );
+            r +=integrate ( _range=markedfaces(mesh,"wall2"), _expr= -trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) - u_exact ) + penalbc*trans( idv( u ) - u_exact )*id( v )/hFace() );
 #endif
 
 #if 1    //(For Passerni test case)Dirichlet Boundary condition on the inlet and wall and stress free on the outlet
-            r +=integrate ( markedfaces(mesh,"wall"),  -trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) - u_exact ) + penalbc*trans( idv( u ) - u_exact )*id( v )/hFace() );
-            r +=integrate ( markedfaces(mesh,"inlet"),  -trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) - u_exact ) + penalbc*trans( idv( u ) - u_exact )*id( v )/hFace() );
+            r +=integrate ( _range=markedfaces(mesh,"wall"), _expr= -trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) - u_exact ) + penalbc*trans( idv( u ) - u_exact )*id( v )/hFace() );
+            r +=integrate ( _range=markedfaces(mesh,"inlet"), _expr= -trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) - u_exact ) + penalbc*trans( idv( u ) - u_exact )*id( v )/hFace() );
 #endif
 
 
@@ -405,8 +405,8 @@ void Steady_Ns::run()
             //Time
             auto bdf_poly = M_bdf->polyDeriv();
             auto bdfu_poly = bdf_poly.element<0>();
-            r += integrate( elements( mesh ), -rho*trans(idv(bdfu_poly))*id(v));
-            r += integrate( elements( mesh ), rho*trans(idv(u))*id(v)*M_bdf->polyDerivCoefficient(0));
+            r += integrate( _range=elements( mesh ), _expr= -rho*trans(idv(bdfu_poly))*id(v));
+            r += integrate( _range=elements( mesh ), _expr= rho*trans(idv(u))*id(v)*M_bdf->polyDerivCoefficient(0));
 
         };
 
@@ -448,8 +448,8 @@ void Steady_Ns::run()
     auto f=vec(cst(0.),cst(0.));
     ///////////////////////////////////////////////////////////////////////////////
 
-    u=vf::project(Vh->template functionSpace<0>(), elements(mesh), zero<2,1>());
-    p=vf::project(Vh->template functionSpace<1>(), elements(mesh), constant(0.0));
+    u.on(_range=elements(mesh), _expr=zero<2,1>());
+    p.on(_range=elements(mesh), _expr=constant(0.0));
 
     //u=vf::project(Vh->functionSpace<0>(), elements(mesh),u_exact);
     //p=vf::project(Vh->functionSpace<1>(), elements(mesh),p_exact);
@@ -467,7 +467,7 @@ void Steady_Ns::run()
             std::cout << "Time : " << M_bdf->time() << "\n";
             LOG( INFO ) << "Time : " << M_bdf->time() << "\n";
 
-            timers["solve"].first.restart();
+            timers["solve"].first.start();
             backend()->nlSolve( _solution = U );
             this->exportResults(U, M_bdf->time() );
             M_bdf->shiftRight(U);
@@ -490,14 +490,14 @@ void Steady_Ns::run()
 #endif
 
 
-    double u_errorL2 = integrate( elements( u.mesh() ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
+    double u_errorL2 = integrate( _range=elements( u.mesh() ), _expr=trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
 
-    double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p ) - p_exact )*( idv( p )-p_exact )).evaluate()( 0, 0 );
+    double p_errorL2 = integrate( _range=elements( u.mesh() ), _expr= ( idv( p ) - p_exact )*( idv( p )-p_exact )).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";
 
-    v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
-    q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
+    v.on(_range=elements( u.mesh() ), _expr=u_exact );
+    q.on(_range=elements( p.mesh() ), _expr=p_exact );
       if ( exporter->doExport() )
           {
               exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );

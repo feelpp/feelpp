@@ -57,7 +57,7 @@ int main( int argc, char** argv )
     Feel::Environment env( argc, argv );
 
     // mesh and high order space
-    auto mesh = loadMesh( _mesh=new mesh_type, _filename=option("gmsh.filename").as<std::string>(),
+    auto mesh = loadMesh( _mesh=new mesh_type, _filename=soption(_name="gmsh.filename"),
                           _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER);
 
     // defines the translation
@@ -71,7 +71,7 @@ int main( int argc, char** argv )
     auto Xh = space_type::New(_mesh=mesh );
 
     // operator lagrange P1 and associated space
-    auto opLagP1 = lagrangeP1( Xh );
+    auto opLagP1 = lagrangeP1( _space=Xh );
 
      auto XhP1 = Pch<1>( opLagP1->mesh() );
 
@@ -91,14 +91,14 @@ int main( int argc, char** argv )
     auto Z0 = Pz() - z0;
 
     // ellipse function (not exactly a distance function)
-    auto ellipseShape = vf::project(Xh, elements(mesh),
-                                    vf::sqrt( (X0/aAxis) * (X0/aAxis)
+    auto ellipseShape = vf::project(_space=Xh, _range=elements(mesh),
+                                    _expr=vf::sqrt( (X0/aAxis) * (X0/aAxis)
                                               + (Y0/bAxis) * (Y0/bAxis)
                                               + (Z0/bAxis) * (Z0/bAxis) ) - 1 );
 
     // interface local projection method on high order space
-    auto ilpEllipse = vf::project(Xh, elements(mesh),
-                                  idv(ellipseShape)
+    auto ilpEllipse = vf::project(_space=Xh, _range=elements(mesh),
+                                  _expr=idv(ellipseShape)
                                   / sqrt( inner( gradv(ellipseShape), gradv(ellipseShape) ) ) );
 
     auto ilpEllipseP1 = XhP1->element();

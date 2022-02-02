@@ -28,12 +28,11 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-01-20
  */
-#ifndef FEELPP_INTEGRATORS_HPP
-#define FEELPP_INTEGRATORS_HPP 1
+#ifndef FEELPP_VF_INTEGRATORS_HPP
+#define FEELPP_VF_INTEGRATORS_HPP 1
 
 #include <cxxabi.h>
 #include <typeinfo>
-#include <boost/timer.hpp>
 
 #include <Eigen/Eigen>
 
@@ -523,7 +522,7 @@ public:
     evaluate( bool parallel=true,
               worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
      {
-        typename eval::matrix_type loc =  evaluate( mpl::int_<iDim>() );
+         typename eval::matrix_type loc = this->evaluateImpl();
 
         if ( !parallel )
             return loc;
@@ -839,9 +838,12 @@ private:
     template<typename P0hType>
     typename P0hType::element_type  broken( std::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const;
 
-    typename eval::matrix_type evaluate( mpl::int_<MESH_ELEMENTS> ) const;
-    typename eval::matrix_type evaluate( mpl::int_<MESH_FACES> ) const;
-    typename eval::matrix_type evaluate( mpl::int_<MESH_POINTS> ) const;
+    template <int iDimDummy=iDim,std::enable_if_t< iDimDummy == MESH_ELEMENTS , bool> = true>
+    typename eval::matrix_type evaluateImpl() const;
+    template <int iDimDummy=iDim,std::enable_if_t< iDimDummy == MESH_FACES /*|| ( iDimDummy == MESH_EDGES && eval::gm_type::nDim == 2)*/ , bool> = true>
+    typename eval::matrix_type evaluateImpl() const;
+    template <int iDimDummy=iDim,std::enable_if_t< iDimDummy == MESH_POINTS , bool> = true>
+    typename eval::matrix_type evaluateImpl() const;
 
 private:
 
@@ -965,7 +967,6 @@ template<typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> /**/, bool /*hasRelation*/ ) const
 {
-    //boost::timer __timer;
     tic();
     LOG(INFO) << "[integrator::assemble FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true>\n";
 
@@ -1068,7 +1069,6 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 }
 
                 //int nelt = std::distance( this->beginElement(), this->endElement() );
-                boost::timer ti0,ti1, ti2, ti3;
 
                 //
                 // start the real intensive job:
@@ -1197,7 +1197,6 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 } // end loop on elements
             } // end loop on list of elements
 
-            //DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
             toc("Integrator::assemble form MESH_ELEMENTS", FLAGS_v>1);
         }
 
@@ -3234,8 +3233,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 {
     //DLOG(INFO) << "integrating over "
     //              << std::distance( this->beginElement(), this->endElement() )  << " faces\n";
-    boost::timer __timer;
-
+    tic();
     //
     // some typedefs
     //
@@ -3441,7 +3439,6 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             isInitConnectionTo0=true;
         }
 
-        boost::timer ti0,ti1, ti2, ti3;
         //double t0 = 0, t1 = 0,t2 = 0,t3 = 0;
         DLOG(INFO) << "[Integrator::faces/forms] starting...\n";
 
@@ -3689,8 +3686,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     DLOG(INFO) << "[faces] Overall local assembly time : " << t2 << "\n";
     DLOG(INFO) << "[faces] Overall global assembly time : " << t3 << "\n";
 #endif
-    DLOG(INFO) << "integrating over faces done in " << __timer.elapsed() << "s\n";
-    //std::cout << "integrating over faces done in " << __timer.elapsed() << "s\n";
+    toc("integrating over faces", FLAGS_v>1);
 }
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
@@ -5055,12 +5051,13 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
 
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
+template <int iDimDummy,std::enable_if_t< iDimDummy == MESH_ELEMENTS , bool> >
 typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
-Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
+Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 {
     DLOG(INFO)  << "integrating over "
                 << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
-    boost::timer __timer;
+    tic();
 
 #if defined(FEELPP_HAS_TBB)
     if ( boption(_name="parallel.cpu.enable") && M_use_tbb )
@@ -5349,7 +5346,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                       << perf_mng.getValueInSeconds("init2.2.2") << " "
                       << perf_mng.getValueInSeconds("init2.2.3") << std::endl;
 
-            DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+            toc("integrating over elements", FLAGS_v>1);
             return res;
         }
         else
@@ -5546,7 +5543,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                           << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
 #endif
 
-                DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+                toc("integrating over elements", FLAGS_v>1);
                 return res;
             }
             else
@@ -5705,18 +5702,18 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                     std::cout << Environment::worldComm().rank() <<  " Total: " << perf_mng.getValueInSeconds("total") << std::endl;
 #endif
 
-                    DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+                    toc("integrating over elements", FLAGS_v>1);
                     return res;
                 }
 }
 template<typename Elements, typename Im, typename Expr, typename Im2>
-    typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
-    Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
+template <int iDimDummy,std::enable_if_t< iDimDummy == MESH_FACES /*|| ( iDimDummy == MESH_EDGES && Integrator<Elements, Im, Expr, Im2>::eval::gm_type::nDim == 2)*/ , bool> >
+typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
+Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 {
     DLOG(INFO) << "integrating over "
                << std::distance( this->beginElement(), this->endElement() )  << "faces\n";
-    boost::timer __timer;
-
+    tic();
     //
     // some typedefs
     //
@@ -5909,13 +5906,14 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
     }
     //std::cout << "res=" << res << "\n";
     //std::cout << "res1=" << res1 << "\n";
-    DLOG(INFO) << "integrating over faces done in " << __timer.elapsed() << "s\n";
+    toc("integrating over faces", FLAGS_v>1);
     return res;
 }
 
  template<typename Elements, typename Im, typename Expr, typename Im2>
-     typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
-     Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_POINTS> ) const
+ template <int iDimDummy,std::enable_if_t< iDimDummy == MESH_POINTS , bool> >
+ typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
+ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
  {
      DLOG(INFO)  << "integrating over "
                  << std::distance( this->beginElement(), this->endElement() )  << " points\n";
@@ -5933,7 +5931,8 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
  {
      DLOG(INFO) << "integrating over "
                 << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
-     boost::timer __timer;
+
+     tic();
 
      //
      // some typedefs
@@ -6002,7 +6001,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
              }
          }
      }
-     DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+     toc("integrating [broken] over elements", FLAGS_v>1);
 
      return p0;
  }
@@ -6013,7 +6012,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
  {
      DLOG(INFO) << "integrating over "
                 << std::distance( this->beginElement(), this->endElement() )  << "faces\n";
-     boost::timer __timer;
+     tic();
 
      //
      // some typedefs
@@ -6201,7 +6200,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      }
      //std::cout << "res=" << res << "\n";
      //std::cout << "res1=" << res1 << "\n";
-     DLOG(INFO) << "integrating over faces done in " << __timer.elapsed() << "s\n";
+     toc("integrating [broken] over faces", FLAGS_v>1);
      return p0;
  }
  /// \endcond
@@ -6298,7 +6297,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
              return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
          }
  };
-
+#if 0
  template<typename Args>
  struct integrate_type
  {
@@ -6335,6 +6334,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      typedef std::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
 
  };
+ #endif
  } // detail
 
  /// \endcond

@@ -25,8 +25,8 @@ BOOST_AUTO_TEST_CASE( globaldof_recovery )
 
     auto expr = 20*abs(sin(2*Pi*Px())*exp(Px()*Py()+Py()*Py()));
 
-    auto f = form1( Xh );
-    f = integrate( elements(mesh), expr*id(u) );
+    auto f = form1( _test=Xh );
+    f = integrate( _range=elements(mesh), _expr=expr*id(u) );
     auto V = f.vectorPtr();
     V->close();
 
@@ -57,8 +57,8 @@ BOOST_AUTO_TEST_CASE( globaldof_recovery )
     auto Rh = Pch<1>(newmesh);
     auto v = Rh->element();
 
-    auto fR = form1(Rh);
-    fR = integrate( elements(newmesh), expr*id(v) );
+    auto fR = form1(_test=Rh);
+    fR = integrate( _range=elements(newmesh), _expr=expr*id(v) );
     auto VR = fR.vectorPtr();
     VR->close();
 
@@ -88,8 +88,8 @@ BOOST_AUTO_TEST_CASE( parallel_to_seq )
     auto Xh = space_type::New( _mesh=mesh );
     auto u = Xh->element();
 
-    auto f = form1( Xh );
-    f = integrate( elements(mesh), expr*id(u) );
+    auto f = form1( _test=Xh );
+    f = integrate( _range=elements(mesh), _expr=expr*id(u) );
     auto V = f.vectorPtr();
     V->close();
     // get the maximum entry of the vector and corresponding index (dof)
@@ -157,8 +157,8 @@ BOOST_AUTO_TEST_CASE( parallel_to_seq )
     auto Rh = space_type::New(_mesh=seqmesh );
 
     auto v = Rh->element();
-    auto fR = form1(Rh);
-    fR = integrate( elements(seqmesh), expr*id(v) );
+    auto fR = form1(_test=Rh);
+    fR = integrate( _range=elements(seqmesh), _expr=expr*id(v) );
     auto VR = fR.vectorPtr();
     VR->close();
     auto indexR = Rh->dof()->localToGlobalId( elt_idR, l_dof );

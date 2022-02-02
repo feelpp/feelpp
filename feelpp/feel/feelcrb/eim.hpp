@@ -42,7 +42,7 @@
 #include <boost/type_traits.hpp>
 #include <boost/tuple/tuple.hpp>
 #if BOOST_VERSION >= 104700
-#include <boost/math/special_functions/nonfinite_num_facets.hpp>
+//#include <boost/math/special_functions/nonfinite_num_facets.hpp>
 #endif
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/string.hpp>
@@ -52,14 +52,14 @@
 #include <feel/feelcrb/crbdb.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 
-#include <feel/feelvf/vf.hpp>
+//#include <feel/feelvf/vf.hpp>
 
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
 #include <feel/feeldiscr/geometricspace.hpp>
 
-#include <Eigen/Core>
+//#include <Eigen/Core>
 
 namespace Feel
 {
@@ -3363,15 +3363,14 @@ private:
 namespace detail
 {
 
-template<typename Args>
+template<typename ArgModelType,typename ArgExprType,typename ArgSpaceType,typename ArgElementType,typename ArgElement2Type>
 struct compute_eim_return
 {
-    typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type::element_type model1_type;
-    typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::expr>::type>::type expr_type;
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::element>::type>::type element_type;
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::element2,element_type>::type>::type element2_type;
+    using model_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<ArgModelType>>>;
+    using expr_type = std::decay_t<ArgExprType>;
+    using space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<ArgSpaceType>>>;
+    using element_type = std::decay_t<ArgElementType>;
+    using element2_type = std::decay_t<ArgElement2Type>;
     static const int subspaceid = mpl::if_< mpl::bool_< model_type::functionspace_type::is_composite>,
                                             mpl::int_<element_type::functionspace_type::basis_type::TAG>,// must be improve! loop on subspaces and detect the same
                                             mpl::int_<-1> >::type::value;
@@ -3384,41 +3383,31 @@ struct compute_eim_return
 };
 }
 
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::compute_eim_return<Args>::ptrtype ), // 1. return type
-    eim,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( in_out(model),          * )
-      ( in_out(element),        * )
-      ( in_out(parameter),        * )
-      ( in_out(expr),          * )
-      ( name, * )
-      ( space, *)
-        ) // required
-    ( optional
-      ( in_out(element2),        *, element )
-      //( space, *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ), model->functionSpace() )
-      //( space, *, model->functionSpace() )
-      ( sampling, *, model->parameterSpace()->sampling() )
-      ( verbose, (int), 0 )
-      ( filename, *( boost::is_convertible<mpl::_,std::string> ), "" )
-      ( directory, *( boost::is_convertible<mpl::_,std::string> ), "" )
-      ( prefix, (std::string), "")
-        ) // optionnal
-)
+template <typename ... Ts>
+auto eim( Ts && ... v )
 {
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
-    typedef typename Feel::detail::compute_eim_return<Args>::type eim_type;
-    typedef typename Feel::detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
-    // return std::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename );
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && model = args.get(_model);
+    auto && element = args.get(_element);
+    auto && parameter = args.get(_parameter);
+    auto && expr = args.get(_expr);
+    std::string const& name = args.get(_name);
+    auto && space = args.get(_space);
+    auto && element2 = args.get_else(_element2,element);
+    auto && sampling = args.get_else_invocable(_sampling,[&model](){ return model->parameterSpace()->sampling(); } );
+    std::string const& filename = args.get_else(_filename,"");
+    std::string const& directory = args.get_else(_directory,"");
+    std::string const& prefix = args.get_else(_prefix,"");
+
+    using eim_helper_args_type =  Feel::detail::compute_eim_return<decltype(model),decltype(expr),decltype(space),decltype(element),decltype(element2)>;
+    using eim_type = typename eim_helper_args_type::type;
+    using eim_ptrtype = std::shared_ptr<eim_type>;
+
     auto eimFunc = std::make_shared<eim_type>( model, space, element, element2, parameter, expr, sampling, name, filename, directory, prefix );
     if ( eim_type::model_use_nosolve )
         eimFunc->attachModel( model );
     return eimFunc;
-} // eim
+}
 
 
 template<typename ModelType>

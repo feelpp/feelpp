@@ -54,7 +54,7 @@
             {
                 "myic":
                 {
-                    "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/cfpdes.heat.save/temperature.h5",
+                    "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/heat.save/temperature.h5",
                     "format":"hdf5"
                 }
             }
@@ -65,7 +65,7 @@
             {
                 "myic":
                 {
-                    "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/cfpdes.electric.save/electric-potential.h5",
+                    "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/electric.save/electric-potential.h5",
                     "format":"hdf5"
                 }
             }
@@ -182,12 +182,12 @@
                         "value":1.9858752627481331e+00,
                         "tolerance":1e-1
                     },
-                    "Points_closeToV0_temperature":
+                    "Points_closeToV0_field_temperature":
                     {
                         "value":2.9228730968105037e+02,
                         "tolerance":1e-3
                     },
-                    "Points_closeToV1_temperature":
+                    "Points_closeToV1_field_temperature":
                     {
                         "value": 2.9130483450540504e+02,
                         "tolerance":1e-3
@@ -253,12 +253,12 @@
                         "value":-2.9492993990629227e+04,
                         "tolerance":1e-1
                     },
-                    "Points_closeToV0_electric-potential":
+                    "Points_closeToV0_field_electric-potential":
                     {
                         "value":0,
                         "tolerance":1e-3
                     },
-                    "Points_closeToV1_electric-potential":
+                    "Points_closeToV1_field_electric-potential":
                     {
                         "value":9,
                         "tolerance":1e-3

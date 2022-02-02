@@ -239,9 +239,9 @@ LShape<Dim>::zz_estimator(const element_type& U, const mesh_ptrtype& mesh)
     p1vec_space_ptrtype P1hvec = p1vec_space_type::New( mesh );
 
     auto GhUh = div( vf::sum( P1hvec, trans(gradv(U))*vf::meas()), vf::sum( P1hvec, vf::meas()*vf::one()) );
-    auto eta_k_U = integrate(elements(mesh), trans(idv(GhUh) - trans(gradv(U)))*(idv(GhUh) - trans(gradv(U))), _Q<10>() ).broken(P0h).sqrt();
+    auto eta_k_U = integrate(_range=elements(mesh), _expr=trans(idv(GhUh) - trans(gradv(U)))*(idv(GhUh) - trans(gradv(U))), _quad= _Q<10>() ).broken(P0h).sqrt();
 
-    auto h=vf::project(P0h, elements(mesh), vf::h() );
+    auto h=vf::project(_space=P0h, _range=elements(mesh), _expr=vf::h() );
 
     auto estimatorH1_U = math::sqrt( (eta_k_U.pow(2)).sum() );
     auto estimatorL2_U = math::sqrt( (element_product(eta_k_U,h).pow(2)).sum() );
@@ -275,7 +275,7 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     if ( X[1] == 0 ) shape = "simplex";
     if ( X[1] == 1 ) shape = "hypercube";
 
-    Environment::changeRepository( boost::format( "doc/manual/adapt/%1%/%2%-%3%/P%4%/h_%5%/" )
+    Environment::changeRepository( _directory=boost::format( "doc/manual/adapt/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()
                                    % shape
                                    % Dim
@@ -401,8 +401,8 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         std::string geofile_path = "./geoLShape.geo";
 
         if (criterion)
-            mesh = mesh_adaptation.adaptMesh(_initMesh=mesh, _geofile=geofile_path, _adaptType=meshadapt_type,
-                                             _var=var_list, _tol=mesh_eps);
+            mesh = mesh_adaptation.adaptMesh(_mesh=mesh, _geo=geofile_path, _type=meshadapt_type,
+                                             _element=var_list, _tolerance=mesh_eps);
 
         /// Make a pause between two adaptations : testing purpose
         // cout << "Press any key to continue: " << endl;

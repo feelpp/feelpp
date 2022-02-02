@@ -27,8 +27,8 @@
    \date 2006-11-16
  */
 
-#ifndef _FSFUNCTIONALLINEAR_HPP_
-#define _FSFUNCTIONALLINEAR_HPP_
+#ifndef FEELPP_DISCR_FSFUNCTIONALLINEAR_H
+#define FEELPP_DISCR_FSFUNCTIONALLINEAR_H
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/fsfunctional.hpp>
@@ -165,40 +165,20 @@ private:
     std::string M_name;
 }; // class FsFunctionalLinear
 
-namespace detail
-{
 
-template<typename Args>
-struct compute_functionalLinear_return
+template <typename ... Ts>
+auto functionalLinear( Ts && ... v )
 {
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && space = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_space);
+    using space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(space)>>>;
+    //auto && backend = args.get_else(_backend, Backend<typename space_type::value_type>::build( soption( _name="backend" ) ) );
+    auto && backend = args.get_else_invocable( _backend, [](){ return Feel::backend(); } );
 
-    typedef FsFunctionalLinear<space_type> type;
-    typedef std::shared_ptr<FsFunctionalLinear<space_type> > ptrtype;
-};
+    return std::make_shared<FsFunctionalLinear<space_type>>( space , backend );
 }
 
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::compute_functionalLinear_return<Args>::ptrtype ), // 1. return type
-    functionalLinear,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( space,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    ) // required
-    ( optional
-      ( backend,        *, Backend<typename Feel::detail::compute_functionalLinear_return<Args>::space_type::value_type>::build( soption( _name="backend" ) ) )
-    ) // optionnal
-)
-{
 
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
-    typedef typename Feel::detail::compute_functionalLinear_return<Args>::type functional_type;
-    typedef typename Feel::detail::compute_functionalLinear_return<Args>::ptrtype functional_ptrtype;
-    return functional_ptrtype ( new functional_type( space , backend ) );
-
-} // functionalLinear
 
 } // Feel
 

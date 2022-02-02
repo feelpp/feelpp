@@ -39,7 +39,7 @@ int main( int argc, char** argv )
 {
     const int dim = 3;
 
-    Feel::Environment env( argc, argv );
+    Feel::Environment env( _argc=argc, _argv=argv );
 
     auto mesh = unitHypercube<dim>();
     auto Xh = Pch<1>(mesh);
@@ -56,13 +56,13 @@ int main( int argc, char** argv )
     auto Z0 = Pz() - z0;
 
     // ellipse function (not exactly a distance function)
-    auto ellipseShape = vf::project(Xh, elements(mesh),
-                                    sqrt( (X0/aAxis) * (X0/aAxis)
+    auto ellipseShape = vf::project(_space=Xh, _range=elements(mesh),
+                                    _expr=sqrt( (X0/aAxis) * (X0/aAxis)
                                           + (Y0/bAxis) * (Y0/bAxis)
                                           + (Z0/bAxis) * (Z0/bAxis) ) - 1 );
     // interface local projection method
-    auto ilpEllipse = vf::project(Xh, elements(mesh),
-                                  idv(ellipseShape)
+    auto ilpEllipse = vf::project(_space=Xh, _range=elements(mesh),
+                                  _expr=idv(ellipseShape)
                                   / sqrt( inner( gradv(ellipseShape), gradv(ellipseShape) ) ) );
 
     auto fm = fms( Xh );

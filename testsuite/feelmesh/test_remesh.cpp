@@ -172,7 +172,8 @@ template <int Dim, int RDim>
 int
 TestRemesh<Dim, RDim>::execute( int niter )
 {
-    std::vector<std::tuple<int,std::string>> iters{ {0,"0.2"}, {1,"0.1"}, {2,"0.05"} };
+    //std::vector<std::tuple<int,std::string>> iters{ {0,"0.2"}, {1,"0.1"}, {2,"0.05"} };
+    std::vector<std::tuple<int,std::string>> iters{ {0,"0.5"}, {1,"0.25"}, {2,"0.125"} };
     for( auto [iter,metric]: iters) //ranges::views::ints( 0, niter ) )
     {
         auto Vh = createSpace<scalar,2>( mesh_ );

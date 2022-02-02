@@ -29,14 +29,14 @@
 #ifndef __CRBModel_H
 #define __CRBModel_H 1
 
-#include <boost/shared_ptr.hpp>
+//#include <boost/shared_ptr.hpp>
 
 #include <vector>
 
 
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelts/bdf.hpp>
-#include <feel/feelvf/vf.hpp>
+//#include <feel/feelvf/vf.hpp>
 
 #include <feel/feeldiscr/operatorlinearfree.hpp>
 #include <feel/feeldiscr/operatorlinearcomposite.hpp>
@@ -44,10 +44,10 @@
 #include <feel/feeldiscr/fsfunctionallinearcomposite.hpp>
 
 #include <feel/feelcrb/parameterspace.hpp>
-#include <feel/feelcore/pslogger.hpp>
+//#include <feel/feelcore/pslogger.hpp>
 #include <feel/feelalg/aitken.hpp>
 
-#include <feel/feelfilters/gmsh.hpp>
+//#include <feel/feelfilters/gmsh.hpp>
 
 #include <feel/feelcrb/crbmodelbase.hpp>
 
@@ -495,7 +495,7 @@ public:
     sparse_matrix_ptrtype newMatrix() const
     {
         auto Xh = M_model->functionSpace();
-        return M_backend->newMatrix( Xh, Xh );
+        return M_backend->newMatrix( _test=Xh, _trial=Xh );
     }
 
     /**
@@ -1664,7 +1664,7 @@ public:
         for(int q=0; q<qsize; q++)
         {
             M_Mqm[q].resize(1);
-            M_Mqm[q][0]=M_backend->newMatrix( Xh, Xh );
+            M_Mqm[q][0]=M_backend->newMatrix( _test=Xh, _trial=Xh );
             M_Mqm[q][0]=Mq[q];
         }
         qsize=Aq.size();
@@ -1672,7 +1672,7 @@ public:
         for(int q=0; q<qsize; q++)
         {
             M_Aqm[q].resize(1);
-            M_Aqm[q][0]=M_backend->newMatrix( Xh, Xh );
+            M_Aqm[q][0]=M_backend->newMatrix( _test=Xh, _trial=Xh );
             M_Aqm[q][0]=Aq[q];
         }
         int nb_output=Fq.size();
@@ -1700,7 +1700,7 @@ public:
         for(int q=0; q<qsize; q++)
         {
             M_Aqm[q].resize(1);
-            M_Aqm[q][0]=M_backend->newMatrix( Xh, Xh );
+            M_Aqm[q][0]=M_backend->newMatrix( _test=Xh, _trial=Xh );
             M_Aqm[q][0]=Aq[q];
         }
         int nb_output=Fq.size();
@@ -3682,7 +3682,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
             bool useAitkenRelaxation = M_fixedpointUseAitken;
             auto residual = Xh->element();
             auto aitkenRelax = aitken( _space=Xh, _tolerance=increment_fixedpoint_tol );
-            aitkenRelax.initialize( residual, u );
+            aitkenRelax.initialize( _residual=residual, _currentElt=u );
             aitkenRelax.restart();
             bool fixPointIsFinished = false;
             do {
@@ -4046,7 +4046,7 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
             bool useAitkenRelaxation = M_fixedpointUseAitken;
             auto residual = Xh->element();
             auto aitkenRelax = aitken( _space=Xh );
-            aitkenRelax.initialize( residual, udu );
+            aitkenRelax.initialize( _residual=residual, _currentElt=udu );
             aitkenRelax.restart();
             bool fixPointIsFinished = false;
             do {

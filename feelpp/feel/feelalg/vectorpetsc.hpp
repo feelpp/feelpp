@@ -767,7 +767,7 @@ private:
         ierr = VecGetArray(M_vec, &array);
         CHKERRABORT( this->comm(),ierr );
 
-        size_type n;
+        size_type n = invalid_v<size_type>;
         ar >> BOOST_SERIALIZATION_NVP( n );
         CHECK( n == this->map().nLocalDofWithoutGhost() ) << "vector is not compatible with array serialized";
         ar >>  boost::serialization::make_array( array, n );

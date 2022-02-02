@@ -47,7 +47,7 @@ struct ExprTraitsFromMeshElement
 template<typename ContextType, typename ExprType>
 struct ExprTraitsFromContext
 {
-    using gmc_type = typename ContextType::mapped_type::element_type::gmc_type;
+    using gmc_type = typename ContextType::mapped_type::first_type::element_type::gmc_type;
     using gmc_ptrtype = std::shared_ptr<gmc_type>;
     using map_gmc_type = fusion::map<fusion::pair<Feel::vf::detail::gmc<0>, gmc_ptrtype> >;
     using eval_expr_type = typename ExprType::template tensor<map_gmc_type>;

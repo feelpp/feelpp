@@ -335,7 +335,7 @@ public:
 
     typedef Element element_type;
     typedef std::shared_ptr<Element> element_ptrtype;
-    element_type element( bool broadcast = true, bool apply_log = false )
+    element_type element( bool broadcast = true, bool apply_log = true )
     {
 #if 0
         //first, pick a random element, then
@@ -481,9 +481,9 @@ public:
             int total_number_of_elements_per_proc=0;
             int proc_rcv_sampling=0;
 
-            int number_of_requests=2*(total_proc-1);
-            boost::mpi::request * reqs = new mpi::request[number_of_requests];
-            int count_reqs=0;
+            std::vector<boost::mpi::request> reqs;
+            if ( total_proc > 1 )
+                reqs.reserve( theworldcomm.isMasterRank()? total_proc -1 : 1 );
 
             int tag=0;
             int shift=0;
@@ -533,8 +533,7 @@ public:
                     {
                         if( proc_recv_sampling != master_proc )
                         {
-                            reqs[count_reqs]=theworldcomm.isend( proc_recv_sampling , tag, /**this*/boost::serialization::base_object<super>( *this ) );
-                            count_reqs++;
+                            reqs.push_back( theworldcomm.isend( proc_recv_sampling , tag, /**this*/boost::serialization::base_object<super>( *this ) ) );
                             super::clear();
                         }
                     }//total_proc > 1
@@ -564,11 +563,10 @@ public:
 
             if( proc != master_proc )
             {
-                reqs[count_reqs]=theworldcomm.irecv( master_proc, tag, /**this*/boost::serialization::base_object<super>( *this ));
-                count_reqs++;
+                reqs.push_back( theworldcomm.irecv( master_proc, tag, /**this*/boost::serialization::base_object<super>( *this )) );
             }//not master proc
 
-            boost::mpi::wait_all(reqs, reqs + number_of_requests);
+            boost::mpi::wait_all(reqs.begin(), reqs.end());
 
         }
 

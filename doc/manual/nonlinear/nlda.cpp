@@ -80,11 +80,12 @@ main( int argc, char** argv )
     // tag::jacobian[]
     auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
         {
-            if (!J) J = backend()->newMatrix( Vh, Vh );
+            if (!J) J = backend()->newMatrix( _test=Vh, _trial=Vh );
             auto a = form2( _test=Vh, _trial=Vh, _matrix=J );
-            a = integrate( elements( mesh ), (diffusion*gradt( u )+diffusion_diff*idt(u)*gradv(u))*trans( grad( v ) ) );
-            a += integrate( elements( mesh ), reaction_diff*idt( u )*id( v ) );
-            a += integrate( boundaryfaces( mesh ),
+            a = integrate( _range=elements( mesh ), _expr=(diffusion*gradt( u )+diffusion_diff*idt(u)*gradv(u))*trans( grad( v ) ) );
+            a += integrate( _range=elements( mesh ), _expr=reaction_diff*idt( u )*id( v ) );
+            a += integrate( _range=boundaryfaces( mesh ),
+                            _expr=
                             ( - trans( id( v ) )*( (diffusion*gradt( u )+diffusion_diff*idt(u)*gradv(u))*N() )
                               + trans( idt( u ) )*( (diffusion+diffusion_diff*idv(u))*grad( v )*N() )
                               + penalbc*trans( idt( u ) )*id( v )/hFace() ) );
@@ -96,9 +97,10 @@ main( int argc, char** argv )
             auto u = Vh->element();
             u = *X;
             auto r = form1( _test=Vh, _vector=R );
-            r = integrate( elements( mesh ), diffusion*gradv( u )*trans( grad( v ) ) );
-            r +=  integrate( elements( mesh ),  reaction*id( v ) );
-            r +=  integrate( boundaryfaces( mesh ),
+            r = integrate( _range=elements( mesh ), _expr=diffusion*gradv( u )*trans( grad( v ) ) );
+            r +=  integrate( _range=elements( mesh ),  _expr=reaction*id( v ) );
+            r +=  integrate( _range=boundaryfaces( mesh ),
+                             _expr=
                              ( - diffusion*trans( id( v ) )*( diffusion*gradv( u )*N() )
                                + diffusion*trans( idv( u ) )*( diffusion*grad( v )*N() )
                                + penalbc*trans( idv( u ) )*id( v )/hFace() ) );

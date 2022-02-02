@@ -1,0 +1,91 @@
+/**
+Example taken from :
+- BRUNE, Peter R., KNEPLEY, Matthew G., SMITH, Barry F., et al. Composing scalable nonlinear algebraic solvers. siam REVIEW, 2015, vol. 57, no 4, p. 535-565.
+*/
+{
+    "Name": "p-laplacian",
+    "ShortName": "p-laplacian",
+    "Models":
+    {
+        "equations":[
+            {
+                "name":"equation1",
+                "unknown":
+                {
+                    "basis":"Pch1",
+                    "name":"solution",
+                    "symbol":"u"
+                }
+            }
+        ]
+    },
+    "Parameters":
+    {
+        "epsilon":1e-5,
+        "p":5,//9,
+        "c":0.1,
+        "u0":"x*y*(1-x^2)*(1-y^2):x:y"
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square.geo",
+                "hsize":0.02
+            }
+        }
+    },
+    "Materials":
+    {
+        "Omega":
+        {
+            "equation1_c":"(epsilon^2+0.5*(equation1_grad_u_0^2+equation1_grad_u_1^2))^((p-2)/2):equation1_grad_u_0:equation1_grad_u_1:epsilon:p",
+            "equation1_f":"c:c"
+        }
+    },
+    "InitialConditions":
+    {
+        "solution":
+        {
+            "Expression":
+            {
+                "myic":
+                {
+                    //"markers":"Omega",
+                    "expr":"u0:u0"
+                }
+            }
+        }
+    },
+    "BoundaryConditions":
+    {
+        "equation1":
+        {
+            "Dirichlet":
+            {
+                "Border":
+                {
+                    "markers":["Top","Left","Bottom","Right"],
+                    "expr":0
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["equation1.solution"],
+                "expr":
+                {
+                    "u0":"u0:u0"
+                }
+            }
+        }
+    }
+}
