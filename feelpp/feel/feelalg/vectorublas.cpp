@@ -1891,6 +1891,31 @@ VectorUblas<T>::VectorUblas( size_type nActiveDof, value_type * arrayActiveDof,
 {
 }
 
+template< typename T >
+Vector<T> & VectorUblas<T>::operator=( const Vector<T> & v )
+{
+    if ( this == &v )
+        return *this;
+
+    if ( !this->map().isCompatible( v.map() ) )
+    {
+        this->setMap( v.mapPtr() );
+        this->resize( this->map().nLocalDofWithGhost() );
+    }
+
+#if !defined(NDEBUG)
+    //checkInvariants();
+
+    FEELPP_ASSERT( this->localSize() == v.localSize() &&
+                   this->map().nLocalDofWithoutGhost() == v.map().nLocalDofWithoutGhost() )
+    ( this->localSize() )( this->map().nLocalDofWithoutGhost() )
+    ( this->vec().size() )
+    ( v.localSize() )( v.map().nLocalDofWithoutGhost() ).warn( "may be vector invalid copy" );
+#endif
+
+    return M_vectorImpl->operator=( v );
+}
+
 /*-----------------------------------------------------------------------------*/
 // Explicit instantiations
 template class VectorUblas<double>;

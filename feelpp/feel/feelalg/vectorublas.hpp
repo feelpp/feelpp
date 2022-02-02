@@ -145,6 +145,8 @@ class VectorUblas : public Vector<T>
         void resize( size_type n ) { return M_vectorImpl->resize( n ); }
         void clear() override { return M_vectorImpl->clear(); }
 
+        void setMap( const datamap_ptrtype & dm ) { super_type::setMap( dm ); M_vectorImpl->setMap( dm ); }
+
         const vector_impl_type & vectorImpl() const { return *M_vectorImpl; }
 
         // Status API
@@ -155,8 +157,10 @@ class VectorUblas : public Vector<T>
         void updateGlobalValues() const { }
         void outdateGlobalValues() { }
 
+        //void checkInvariants() const { DCHECK( M_vectorImpl ) << "vector impl not initialized"; if( M_vectorImpl ) M_vectorImpl->checkInvariants(); }
+
         // Operators API
-        Vector<value_type>& operator=( const Vector<value_type> & V ) override;
+        Vector<T> & operator=( const Vector<T> & v ) override;
         VectorUblas<T> & operator=( VectorUblas<T> other ) { swap( *this, other ); return *this; }
 
         virtual value_type operator()( size_type i ) const override { return M_vectorImpl->operator()( i ); }
@@ -387,7 +391,7 @@ class VectorUblasBase: public Vector<T>
         void outdateGlobalValues() { }
 
         // Operators API
-        Vector<value_type>& operator=( const Vector<value_type> & v ) override { this->set( v ); return *this; }
+        Vector<T> & operator=( const Vector<T> & v ) override { this->set( v ); return *this; }
 
         virtual value_type operator()( size_type i ) const override = 0;
         virtual value_type& operator()( size_type i ) override = 0;
