@@ -78,9 +78,9 @@ public :
                 M_rangeMeshElementsByMaterial[matName] = range;
 
                 M_magneticPermeabilityByMaterial[matName];
-                if ( mat.hasPropertyExprScalar("mu") )
+                if ( mat.hasProperty("mu") )
                 {
-                    auto const& expr = mat.propertyExprScalar("mu");
+                    auto const& expr = mat.property("mu").template expr<1,1>();
                     M_magneticPermeabilityByMaterial[matName].setExpr( expr );
                     M_fieldMagneticPermeability->on(_range=range,_expr=expr);
                 }
