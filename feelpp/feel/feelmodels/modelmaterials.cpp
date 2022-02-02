@@ -135,8 +135,9 @@ ModelMaterial::hasProperty( std::string const& prop ) const
 ModelMaterial::material_property_type const&
 ModelMaterial::property( std::string const& prop ) const
 {
-    CHECK( this->hasProperty( prop ) ) << "no prop";
-    return M_materialProperties.find( prop )->second;
+    if ( !this->hasProperty( prop ) )
+        throw std::out_of_range( fmt::format("property {} is not registered",prop) );
+    return M_materialProperties.at( prop );
 }
 
 void
