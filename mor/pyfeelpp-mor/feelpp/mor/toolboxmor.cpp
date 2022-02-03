@@ -48,7 +48,7 @@ void defToolboxMor(py::module &m)
         opt += "_block";
     std::string pyclass_name = std::string("ToolboxMor_") + std::to_string(nDim) + std::string("D") + opt;
     py::class_<mor_t,std::shared_ptr<mor_t>>(m,pyclass_name.c_str())
-        .def(py::init<std::string const&>(),
+        .def(py::init<std::string const&,std::string const&>(),
              py::arg("name")=std::string("toolboxmor"),
              py::arg("prefix")=std::string(""),
              "Initialize the toolboxmor"
