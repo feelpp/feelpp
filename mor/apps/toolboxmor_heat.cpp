@@ -54,74 +54,11 @@ int runSimulation()
     auto heatBox = heat_tb_type::New(_prefix="heat");
     heatBox->init();
     heatBox->printAndSaveInfo();
+
     rb_model_ptrtype model = std::make_shared<rb_model_type>(soption("toolboxmor.name"));
     model->setFunctionSpaces(heatBox->spaceTemperature());
-    auto rhs = heatBox->algebraicFactory()->rhs()->clone();
-    auto mat = heatBox->algebraicFactory()->matrix();
-    deim_function_type assembleDEIM =
-        [&heatBox,&rhs,&mat](parameter_type const& mu)
-            {
-                for( int i = 0; i < mu.size(); ++i )
-                    heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
-                heatBox->updateParameterValues();
-                rhs->zero();
-                heatBox->algebraicFactory()->applyAssemblyLinear( heatBox->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.lhs"} );
-                return rhs;
-            };
-    model->setAssembleDEIM(assembleDEIM);
-    mdeim_function_type assembleMDEIM =
-        [&heatBox,&rhs,&mat](parameter_type const& mu)
-            {
-                for( int i = 0; i < mu.size(); ++i )
-                    heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
-                heatBox->updateParameterValues();
-                mat->zero();
-                heatBox->algebraicFactory()->applyAssemblyLinear( heatBox->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.rhs"} );
-                return mat;
-            };
-    model->setAssembleMDEIM(assembleMDEIM);
-    model->initModel();
-
-    auto deimHeatBox = std::make_shared<heat_tb_type>("heat");
-    deimHeatBox->setMesh(model->getDEIMReducedMesh());
-    deimHeatBox->init();
-    deimHeatBox->printAndSaveInfo();
-    auto rhsDeim = deimHeatBox->algebraicFactory()->rhs()->clone();
-    auto matDeim = deimHeatBox->algebraicFactory()->matrix()->clone();
-    deim_function_type assembleOnlineDEIM =
-        [&deimHeatBox,&rhsDeim,&matDeim](parameter_type const& mu)
-            {
-                for( int i = 0; i < mu.size(); ++i )
-                    deimHeatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
-                deimHeatBox->updateParameterValues();
-                rhsDeim->zero();
-                deimHeatBox->algebraicFactory()->applyAssemblyLinear( deimHeatBox->algebraicBlockVectorSolution()->vectorMonolithic(), matDeim, rhsDeim, {"ignore-assembly.lhs"} );
-                return rhsDeim;
-            };
-    model->setOnlineAssembleDEIM(assembleOnlineDEIM);
-    // model->setOnlineAssembleDEIM(assembleDEIM);
-
-    auto mdeimHeatBox = std::make_shared<heat_tb_type>("heat");
-    mdeimHeatBox->setMesh(model->getMDEIMReducedMesh());
-    mdeimHeatBox->init();
-    mdeimHeatBox->printAndSaveInfo();
-    auto rhsMdeim = deimHeatBox->algebraicFactory()->rhs()->clone();
-    auto matMdeim = deimHeatBox->algebraicFactory()->matrix()->clone();
-    mdeim_function_type assembleOnlineMDEIM =
-        [&mdeimHeatBox,&rhsMdeim,&matMdeim](parameter_type const& mu)
-            {
-                for( int i = 0; i < mu.size(); ++i )
-                    mdeimHeatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
-                mdeimHeatBox->updateParameterValues();
-                matMdeim->zero();
-                mdeimHeatBox->algebraicFactory()->applyAssemblyLinear( mdeimHeatBox->algebraicBlockVectorSolution()->vectorMonolithic(), matMdeim, rhsMdeim, {"ignore-assembly.rhs"} );
-                return matMdeim;
-            };
-    model->setOnlineAssembleMDEIM(assembleOnlineMDEIM);
-    // model->setOnlineAssembleMDEIM(assembleMDEIM);
-
-    model->postInitModel();
-    model->setInitialized(true);
+    auto heatBoxModel = ToolboxMorModel<heat_tb_type>::New(heatBox);
+    model->initToolbox(heatBoxModel);
 
     crb_model_ptrtype crbModel = std::make_shared<crb_model_type>(model);
     crb_ptrtype crb = crb_type::New(soption("toolboxmor.name"), crbModel, crb::stage::offline);
