@@ -17,6 +17,65 @@ makeToolboxMorOptions();
 FEELPP_EXPORT AboutData
 makeToolboxMorAbout( std::string const& str = "opusheat-tb" );
 
+template<typename MeshType>
+class ToolboxMorModelBase
+{
+public:
+    using mesh_type = MeshType;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
+    using parameter_type = typename ParameterSpace<>::element_type;
+    using backend_type = Backend<double>;
+    using vector_ptrtype = typename backend_type::vector_ptrtype;
+    using sparse_matrix_ptrtype = typename backend_type::sparse_matrix_ptrtype;
+    using deim_function_type = std::function<vector_ptrtype(parameter_type const&)>;
+    using mdeim_function_type = std::function<sparse_matrix_ptrtype(parameter_type const&)>;
+
+    virtual deim_function_type deimFunction() = 0;
+    virtual mdeim_function_type mdeimFunction() = 0;
+    virtual deim_function_type deimOnlineFunction(mesh_ptrtype const& mesh) = 0;
+    virtual mdeim_function_type mdeimOnlineFunction(mesh_ptrtype const& mesh) = 0;
+};
+
+template<typename ToolboxType>
+class ToolboxMorModel : public ToolboxMorModelBase<typename ToolboxType::mesh_type>
+{
+    using toolbox_type = ToolboxType;
+    using toolbox_ptrtype = std::shared_ptr<toolbox_type>;
+    using mesh_type = typename toolbox_type::mesh_type;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
+    using self_type = ToolboxMorModel<toolbox_type>;
+    using self_ptrtype = std::shared_ptr<self_type>;
+    using super_type = ToolboxMorModelBase<mesh_type>;
+    using parameter_type = typename super_type::parameter_type;
+    using vector_ptrtype = typename super_type::vector_ptrtype;
+    using sparse_matrix_ptrtype = typename super_type::sparse_matrix_ptrtype;
+    using deim_function_type = typename super_type::deim_function_type;
+    using mdeim_function_type = typename super_type::mdeim_function_type;
+
+public:
+    ToolboxMorModel(toolbox_ptrtype tb) : M_tb(tb) {
+        M_rhs = M_tb->algebraicFactory()->rhs()->clone();
+        M_mat = M_tb->algebraicFactory()->matrix();
+    }
+    static self_ptrtype New(toolbox_ptrtype tb) {return std::make_shared<self_type>(tb);}
+
+    deim_function_type deimFunction() override;
+    mdeim_function_type mdeimFunction() override;
+    deim_function_type deimOnlineFunction(mesh_ptrtype const& mesh) override;
+    mdeim_function_type mdeimOnlineFunction(mesh_ptrtype const& mesh) override;
+
+private:
+    toolbox_ptrtype M_tb;
+    vector_ptrtype M_rhs;
+    sparse_matrix_ptrtype M_mat;
+    toolbox_ptrtype M_tbDeim;
+    vector_ptrtype M_rhsDeim;
+    sparse_matrix_ptrtype M_matDeim;
+    toolbox_ptrtype M_tbMdeim;
+    vector_ptrtype M_rhsMdeim;
+    sparse_matrix_ptrtype M_matMdeim;
+};
+
 template<typename SpaceType, int Options = 0>
 class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceType, Options>
 {
@@ -31,6 +90,7 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
     typedef typename super_type::element_type element_type;
     typedef typename super_type::element_ptrtype element_ptrtype;
     typedef typename super_type::space_type space_type;
+    using mesh_type = typename super_type::mesh_type;
     using mesh_ptrtype = typename super_type::mesh_ptrtype;
     static constexpr uint16_type nDim = space_type::nDim;
 
@@ -60,6 +120,7 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
     mesh_ptrtype getMDEIMReducedMesh() { return M_mdeim->onlineModel()->functionSpace()->mesh(); }
     void setOnlineAssembleDEIM(deim_function_type const& fct ) { M_deim->onlineModel()->setAssembleDEIM(fct); }
     void setOnlineAssembleMDEIM(mdeim_function_type const& fct ) { M_mdeim->onlineModel()->setAssembleMDEIM(fct); }
+    void initToolbox(std::shared_ptr<ToolboxMorModelBase<mesh_type>> model );
 
     void initModel() override;
     void postInitModel();
