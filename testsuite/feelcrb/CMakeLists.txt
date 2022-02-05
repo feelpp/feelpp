@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-05-23
 #
-#  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2012 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -42,3 +42,4 @@ feelpp_add_test( pbdw GEO test_geim.geo )
 if (FEELPP_HAS_GLPK)
   feelpp_add_test( empiricalquadrature )
 endif()
+feelpp_add_test( exprevaluator )
