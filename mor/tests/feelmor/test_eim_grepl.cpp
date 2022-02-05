@@ -52,7 +52,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
-#include <feel/feelcrb/eim.hpp>
+#include <feel/feelmor/eim.hpp>
 
 namespace Feel
 {

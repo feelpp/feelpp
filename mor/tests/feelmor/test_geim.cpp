@@ -3,7 +3,7 @@
 #include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelcrb/geim.hpp>
+#include <feel/feelmor/geim.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
