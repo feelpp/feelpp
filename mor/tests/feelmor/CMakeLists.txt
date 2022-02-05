@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set_directory_properties(PROPERTIES LABEL testcrb )
+set_directory_properties(PROPERTIES LABEL testmor )
 feelpp_add_test( eim NO_MPI_TEST )
 feelpp_add_test( eim_grepl CLI "--eim.dimension-max=15 --trainset-eim-size=10 --eim.rebuild-database=true" )
 feelpp_add_test( eim_composite CFG test_eim_composite.cfg NO_MPI_TEST )
