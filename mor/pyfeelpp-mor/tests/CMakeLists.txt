@@ -11,19 +11,20 @@ foreach(item in ${TOOLBOXES} ${TOOLBOXES_CORE})                    # ??
 endforeach()
 
 
-add_test(NAME pyfeelpp-mor
+foreach(dim in 2d 3d)
+  add_test(NAME pyfeelpp-mor-${dim}
   COMMAND ${CMAKE_COMMAND} -E env
         LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
         PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}
-        ${PYTHON_EXECUTABLE} -m pytest -k -s ${CMAKE_CURRENT_SOURCE_DIR}
+        ${PYTHON_EXECUTABLE} -m pytest -k ${dim} -s ${CMAKE_CURRENT_SOURCE_DIR}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
+  )
 
-add_test(NAME pyfeelpp-mor-reducedbasis
+  add_test(NAME pyfeelpp-mor-mpi-${dim}
   COMMAND ${CMAKE_COMMAND} -E env
         LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
         PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}
-        ${PYTHON_EXECUTABLE} -m pytest -k -s ${CMAKE_CURRENT_SOURCE_DIR}
+        mpirun -np 2 ${PYTHON_EXECUTABLE} -m pytest -k ${dim} -s ${CMAKE_CURRENT_SOURCE_DIR}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
+  )
+endforeach()
