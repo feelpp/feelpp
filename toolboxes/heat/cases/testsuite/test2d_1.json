@@ -63,10 +63,16 @@
 		    	        "type": "integrate",
 		    	        "expr": "1",
 		    	        "markers": "%1%",
-                        //"requires_markers_connection":"toto",
                         "internalfaces_evaluation":"%2%",
 		    	        "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"],
                         "index2":["average","max","sum","one_side"]
+                    },
+                    "test_connection_mat1": {
+                        "type": "integrate",
+                        "expr": "1",
+                        "markers": ["interface_mat1_mat2","interface_mat1_mat3"],
+                        "requires_markers_connection":["mat1","mat2"],
+                        "internalfaces_evaluation":"sum"
                     },
                     "jump_temperature_%1%": {
                         "type": "integrate",
@@ -94,6 +100,11 @@
                         "tolerance":1e-8,
                         "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"],
                         "index2":[ ["average","0.5"],["max","0.5"],["sum","1"],["one_side","0.5"]]
+                    },
+                    "Statistics_test_connection_mat1_integrate":
+                    {
+                        "value":1.5,
+                        "tolerance":1e-8
                     },
                     "Statistics_jump_temperature_%1%_integrate_%2%":
                     {
