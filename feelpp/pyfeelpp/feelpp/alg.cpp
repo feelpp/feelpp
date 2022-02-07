@@ -28,7 +28,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <mpi4py/mpi4py.h>
 #include <petsc4py/petsc4py.h>
 
 #include "petsc_casters.hpp"
@@ -211,7 +210,7 @@ PYBIND11_MODULE(_alg, m )
 {
     using namespace Feel;
 
-    if (import_mpi4py()<0 && import_petsc4py()<0) return ;
+    if ( import_petsc4py()<0) return ;
 
     py::class_<datamap_t<uint32_type>, datamap_ptr_t<uint32_type>>( m, "DataMap" )
         .def( py::init<std::shared_ptr<WorldComm>>() )
