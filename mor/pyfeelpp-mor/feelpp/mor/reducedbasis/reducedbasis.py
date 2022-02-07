@@ -85,13 +85,26 @@ class reducedbasis():
         def monitor(ksp, its, rnorm):
             self.reshist[its] = rnorm
             print("[petsc4py] Iteration {} Residual norm: {}".format(its,rnorm))
+        
+        def monitor_nverbose(ksp, its, rnorm):
+            self.reshist[its] = rnorm
+        
+        self.monitorFunc = [monitor_nverbose, monitor]
 
-        # self.ksp.setMonitor(monitor)
+        self.ksp.setMonitor(monitor)
         pc = self.ksp.getPC()
         pc.setType(self.PC_TYPE)
 
         ## For greedy memory
         self.DeltaMax = None
+
+    def setVerbose(self, set=True):
+        """Set verbose when system is solved
+
+        Args:
+            set (bool, optional): Defaults to True.
+        """
+        self.ksp.setMonitor(self.monitorFunc[set])
 
 
     def fromConstructed(self, W):
