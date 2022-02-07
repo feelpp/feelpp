@@ -8,6 +8,7 @@
 #include <feel/feelvf/mean.hpp>
 #include <feel/feelmodels/modelcore/traits.hpp>
 #include <feel/feelcore/tuple_utils.hpp>
+#include <feel/feelmodels/modelvf/evalonentities.hpp>
 
 namespace Feel
 {
@@ -81,7 +82,8 @@ measureStatisticsEvaluationIntegrate( RangeType const& range, ExprType const& ex
     uint16_type quadOrder = (useQuadOrder)? ppStat.quadOrder() : quad_order_from_expression;
     uint16_type quad1Order = (useQuadOrder)? ppStat.quad1Order() : quad_order_from_expression;
 
-    auto statComputed = integrate(_range=range,_expr=expr, _quad=quadOrder,_quad1=quad1Order ).evaluate();
+    auto exprUsed = evalOnEntities( range,expr,ppStat.requiresMarkersConnection(),ppStat.internalFacesEvalutationType() );
+    auto statComputed = integrate(_range=range,_expr=exprUsed/*expr*/, _quad=quadOrder,_quad1=quad1Order ).evaluate();
 
     res.setValue( fmt::format("Statistics_{}_integrate",ppStat.name()), statComputed);
 #if 0
