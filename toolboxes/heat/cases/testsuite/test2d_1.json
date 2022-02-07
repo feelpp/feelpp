@@ -1,0 +1,89 @@
+// -*- mode: javascript -*-
+{
+    //"Name": "Test heat toolbox",
+    //"ShortName":"TestHeat",
+    "Models":
+    {
+        "heat":
+        {
+            "name":"heatAllMat",
+            "materials":["mat1","mat2","mat3","mat4"],
+            "setup": {
+                "heat-sources":
+                {
+                    "expr":1
+                }
+            }
+        }
+    },
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square_4mat.geo",
+                "hsize":0.01
+            }
+        }
+    },
+    "Materials":
+    {
+        "mat%1_1%":
+        {
+            "k":"%1_2%",
+            "index1":[ [ "1", "1" ], ["2","2.5"], ["3","3.8"], ["4","4.9"] ]
+        }
+    },
+    "BoundaryConditions":
+    {
+        "temperature":
+        {
+            "Dirichlet":
+            {
+                "MarkerDirichlet":
+                {
+                    "markers":["gamma_x0_mat3","gamma_x0_mat1","gamma_xH_mat2","gamma_xH_mat4","gamma_y0_mat3","gamma_y0_mat4","gamma_yH_mat1","gamma_yH_mat2"],
+                    "expr":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "heat":
+        {
+            "Exports":
+            {
+                "fields":["temperature","all"]
+            },
+            "Measures": {
+                "Statistics": {
+                    "Length_%1%_%2%": {
+		    	        "type": "integrate",
+		    	        "expr": "1",
+		    	        "markers": "%1%",
+                        "requires_markers_connection":"toto",
+                        "internalfaces_evaluation":"%2%",
+		    	        "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"],
+                        "index2":["mean","max","sum","one_side"]
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Statistics_Length_%1%_%2_1%_integrate":
+                    {
+                        "value":"%2_2%",
+                        "tolerance":1e-8,
+                        "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"],
+                        "index2":[ ["mean","0.5"],["max","0.5"],["sum","1"],["one_side","0.5"]]
+                    }
+                }
+            }
+        }
+    }
+
+}
