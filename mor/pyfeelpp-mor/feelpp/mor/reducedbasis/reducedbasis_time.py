@@ -96,6 +96,9 @@ class reducedbasis_time(reducedbasis):
                 for r in range(self.Qm):
                     self.MNr[r][i,j] = v.dot( self.Mr[r] * u)
 
+    def generateLN(self):
+        return np.ones(self.NN) @ self.M @ self.Z
+
     def computeOfflineReducedBasis(self, mus, orth=True):
         """Computes the reduced basis from a set of parameters
 
@@ -128,7 +131,7 @@ class reducedbasis_time(reducedbasis):
             mat = Mmu + self.dt * Amu
 
             u = Fmu.duplicate()
-            u.set(0)
+            u.set(0)    # initial solution TODO
 
             mx = musk[mu][-1]
             cur = 0
@@ -148,7 +151,7 @@ class reducedbasis_time(reducedbasis):
                     cur += 1
 
         if orth:
-        self.orthonormalizeZ()
+            self.orthonormalizeZ()
         self.generateANq()
         self.generateFNp()
         self.generateLNp()
