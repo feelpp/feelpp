@@ -81,7 +81,7 @@ auto diffSymbolicExpr( SymbolicExprType const& theExpr, TrialSymbolsExpr<SpaceTy
                                 // std::cout << "diffExprBIS se names : " << diffExprBIS.expression().symbolsExpression().names() << std::endl;
                                 // std::cout << "diffExpr    se names : " << diffExpr.expression().symbolsExpression().names() << std::endl;
 
-                                auto trialExpr = e2.expr();
+                                auto const& trialExpr = e2.expr();
                                 //std::cout << "diffSymbolicExpr add expr" << std::endl;
 
                                 resExpr.expression().add( trialExpr*diffExpr );
