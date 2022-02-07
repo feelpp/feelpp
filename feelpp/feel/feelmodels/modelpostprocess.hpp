@@ -390,6 +390,10 @@ public :
     uint16_type quadOrder() const { return M_quadOrder; }
     //! quad1 order used with ho geometry and the optimized geomap
     uint16_type quad1Order() const { return M_quad1Order; }
+    //! returnn requires markers connection
+    ModelMarkers const& requiresMarkersConnection() const { return M_requiresMarkersConnection; }
+    //! return internalfaces evalutation type (i.e. mean,sum,max,...)
+    std::string const& internalFacesEvalutationType() const { return M_internalFacesEvalutationType; }
 
     //! return true if an expression has been given
     bool hasExpr() const { return M_expr.hasAtLeastOneExpr(); }
@@ -407,6 +411,8 @@ private:
     ModelMarkers M_markers;
     ModelExpression M_expr;
     uint16_type M_quadOrder, M_quad1Order;
+    ModelMarkers M_requiresMarkersConnection;
+    std::string M_internalFacesEvalutationType;
 };
 
 class FEELPP_EXPORT ModelPostprocessCheckerMeasure : public CommObject
