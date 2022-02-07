@@ -5728,8 +5728,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
     //typedef typename eval_expr_type::value_type value_type;
     //typedef typename Im::value_type value_type;
 
+#if 0
     QuadMapped<im_type> qm;
     typename QuadMapped<im_type>::permutation_points_type ppts( qm( im() ) );
+#endif
     typedef typename QuadMapped<im_type>::permutation_type permutation_type;
 
     //
@@ -5779,7 +5781,11 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                   __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
                 //FEELPP_ASSERT( ppts[__f][__p]->size2() != 0 ).warn( "invalid quadrature type" );
+#if 0
                 __geopc[__f][__p] = pc_ptrtype(  new pc_type( gm, ppts[__f].find( __p )->second ) );
+#else
+                __geopc[__f][__p] = pc_ptrtype(  new pc_type( gm, this->im().fpoints(__f, __p.value() ) ) );
+#endif
             }
         }
 
@@ -5844,7 +5850,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                 }
 
                 __c0->template update<gmc_context_face_v>( faceCur.element( 0 ), __face_id_in_elt_0 );
-                __c1->template update<gmc_context_face_v>( faceCur.element( 1 ), __face_id_in_elt_1 );
+                //__c1->template update<gmc_context_face_v>( faceCur.element( 1 ), __face_id_in_elt_1 );
+                bool found_permutation = __c1->template updateFromNeighborMatchingFace<gmc_context_face_v>( faceCur.element( 1 ), __face_id_in_elt_1, __c0 );
+                CHECK(found_permutation) << "the permutation of quadrature points were not found\n";
 
 #if 0
                 std::cout << "face " << faceCur.id() << "\n"
