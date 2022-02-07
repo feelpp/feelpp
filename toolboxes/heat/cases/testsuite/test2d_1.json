@@ -67,7 +67,7 @@
 		    	        "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"],
                         "index2":["average","max","sum","one_side"]
                     },
-                    "test_connection_mat1": {
+                    "test_connection_mat1_mat2": {
                         "type": "integrate",
                         "expr": "1",
                         "markers": ["interface_mat1_mat2","interface_mat1_mat3"],
@@ -101,7 +101,7 @@
                         "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"],
                         "index2":[ ["average","0.5"],["max","0.5"],["sum","1"],["one_side","0.5"]]
                     },
-                    "Statistics_test_connection_mat1_integrate":
+                    "Statistics_test_connection_mat1_mat2_integrate":
                     {
                         "value":1.5,
                         "tolerance":1e-8
