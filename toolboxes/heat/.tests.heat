@@ -1,4 +1,5 @@
 testsuite_test2d_1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/testsuite/test2d_1.cfg --directory=toolboxes/testsuite/heat/testsuite/test2d_1
+testsuite_test3d_1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/testsuite/test3d_1.cfg --directory=toolboxes/testsuite/heat/testsuite/test3d_1
 ThermalBridgesENISO10211_case2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/Building/ThermalBridgesENISO10211/case2.cfg --directory=toolboxes/testsuite/heat/ThermalBridgesENISO10211/Case2
 ThermalBridgesENISO10211_case2_testsuite --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/Building/ThermalBridgesENISO10211/case2.cfg --heat.filename $cfgdir/testsuite_case2.json --directory=toolboxes/testsuite/heat/ThermalBridgesENISO10211/Case2_testsuite
 ThermalBridgesENISO10211_case3 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/Building/ThermalBridgesENISO10211/case3.cfg --directory=toolboxes/testsuite/heat/ThermalBridgesENISO10211/Case3
