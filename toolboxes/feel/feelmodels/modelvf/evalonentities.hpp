@@ -61,10 +61,11 @@ public :
         M_expr( std::forward<TheExprType>(e) )
         {}
 #else
-    EvalOnFaces( expression_type const& e, std::string const& type, std::set<std::string> const& markers )
+    EvalOnFaces( expression_type const& e, std::string const& type, std::set<std::string> const& requiresMarkersConnection )
         :
         M_expr( e ),
-        M_type( InternalFacesEvalType::One_Side )
+        M_type( InternalFacesEvalType::One_Side ),
+        M_requiresMarkersConnection( requiresMarkersConnection )
         {
             if ( type == "average" )
                 M_type = InternalFacesEvalType::Average;
@@ -74,12 +75,6 @@ public :
                 M_type = InternalFacesEvalType::Sum;
             else if ( type == "one_side" )
                 M_type = InternalFacesEvalType::One_Side;
- 
-            // if ( M_type == EvalType::Markers_Connection )
-            // {
-            //     M_markersConnection = markers;
-            //     CHECK( !M_markersConnection.empty() ) << "no markers";
-            // }
         }
 #endif
     EvalOnFaces( EvalOnFaces const& ) = default;
@@ -155,8 +150,11 @@ public :
             :
             M_expr( expr ),
             M_useLeft( false ), M_useRight( false ),
-            M_type( expr.type() )
-            {}
+            M_type( expr.type() ),
+            M_hasRequiresMarkersConnection( false )
+            {
+                this->updateRequiresMarkerForUse( geom );
+            }
 
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
         tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
@@ -164,16 +162,15 @@ public :
             :
             M_expr( expr ),
             M_useLeft( false ), M_useRight( false ),
-            M_type( expr.type() )
+            M_type( expr.type() ),
+            M_hasRequiresMarkersConnection( false )
             {
                 CHECK( false ) << "TODO";
             }
 
         template<typename IM>
-        void init( IM const& im )
-        {
-            //M_tensor_expr.init( im );
-        }
+        void init( IM const& im ) {}
+
         // template <typename ... TheArgsType>
         // void update( Geo_t const& geom, const TheArgsType&... theUpdateArgs )
         // {
@@ -191,24 +188,33 @@ public :
         {
             M_useLeft = true;
             M_useRight = has_two_side;
-#if 0
-            if ( M_type == EvalType::Markers_Connection )
-                upMarkerId; // only if mesh changed or not init
-#endif
+
+            if ( M_hasRequiresMarkersConnection )
+            {
+                auto leftGmc = fusion::at_key<gmcKey0>( geom );
+                auto const& leftElement = leftGmc->element();
+                if ( M_requiresMarkersConnectionIds.find( leftElement.marker().value() ) == M_requiresMarkersConnectionIds.end() )
+                    M_useLeft = false;
+
+                 if constexpr( has_two_side )
+                 {
+                     auto rightGmc = fusion::at_key<gmcKey1>( geom );
+                     auto const& rightElement = rightGmc->element();
+                     if ( M_requiresMarkersConnectionIds.find( rightElement.marker().value() ) == M_requiresMarkersConnectionIds.end() )
+                         M_useRight = false;
+                 }
+
+                 if ( !M_useLeft && !M_useRight )
+                     return;
+            }
+
             if constexpr( has_two_side )
             {
                 if ( M_type == InternalFacesEvalType::One_Side )
-                    M_useRight = false;
-#if 0
-                else if ( M_type == EvalType::Markers_Connection )
                 {
-                    auto leftGmc = fusion::at_key<gmcKey0>( geom );
-                    auto const& leftElement = leftGmc->element();
-
-                    //leftElement.marker()
-                    leftElement.mesh()->markerName( leftElement.marker() );
+                    if ( M_useLeft )
+                        M_useRight = false;
                 }
-#endif
             }
 
             if ( M_useLeft )
@@ -259,10 +265,13 @@ public :
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
             {
-                value_type res(0);
-
                 value_type evalLeft = M_useLeft ? M_leftTensor->evalq( c1,c2,q ) : 0;
                 value_type evalRight = M_useRight ? M_rightTensor->evalq( c1,c2,q ) : 0;
+
+                if ( !M_useLeft || !M_useRight )
+                    return evalLeft+evalRight;
+
+                value_type res(0);
                 switch ( M_type )
                 {
                 case InternalFacesEvalType::Average:
@@ -278,21 +287,37 @@ public :
                 return res;
             }
     private:
+        void updateRequiresMarkerForUse( Geo_t const& geom )
+            {
+                auto leftGmc = fusion::at_key<gmcKey0>( geom );
+                auto const& leftElement = leftGmc->element();
+                auto mesh = leftElement.mesh();
+                if ( mesh )
+                {
+                    for ( std::string const& marker : M_expr.M_requiresMarkersConnection )
+                    {
+                        if ( !mesh->hasElementMarker( marker ) )
+                            continue;
+                        M_requiresMarkersConnectionIds.insert( mesh->markerId( marker ) );
+                    }
+                }
+                if ( !M_requiresMarkersConnectionIds.empty() )
+                    M_hasRequiresMarkersConnection = true;
+            }
+    private:
         this_type const& M_expr;
         InternalFacesEvalType M_type;
         std::optional<left_tensor_expr_type> M_leftTensor;
         std::optional<right_tensor_expr_type> M_rightTensor;
         bool M_useLeft, M_useRight;
-        //map_left_gmc_type M_leftGeom;
-        //map_right_gmc_type M_rightGeom;
-        //std::set<flag_type> M_markersId;
-
+        bool M_hasRequiresMarkersConnection;
+        std::set<flag_type> M_requiresMarkersConnectionIds;
     };
 
 private :
     expression_type M_expr;
     InternalFacesEvalType M_type;
-    std::set<std::string> M_markersConnection;
+    std::set<std::string> M_requiresMarkersConnection;
 };
 
 
