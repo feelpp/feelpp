@@ -44,9 +44,7 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    // M_fieldVelocityConvectionIsUsed = boption(_name="use_velocity-convection",_prefix=this->prefix()) ||
-    //     Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str());
-    // M_fieldVelocityConvectionIsIncompressible = boption(_name="velocity-convection_is_incompressible",_prefix=this->prefix());
+    M_useExtendedDoftable = boption(_name="use-extended-doftable",_prefix=this->prefix());
 
     M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
     M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
@@ -107,12 +105,12 @@ HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(this->mesh());
-        M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+        M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(), _extended_doftable=M_useExtendedDoftable );
     }
     else
     {
         M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
-        M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
+        M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements, _extended_doftable=M_useExtendedDoftable );
     }
 
     //M_fieldTemperature.reset( new element_temperature_type(M_Xh,"temperature"));
