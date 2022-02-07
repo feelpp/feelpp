@@ -1441,7 +1441,8 @@ public:
         super( worldComm ),
         M_nDim( (Dimension == invalid_uint16_type_value)? dim : Dimension ),
         M_min(),
-        M_max()
+        M_max(),
+        M_mubar()
         {
             //M_min.setZero();
             //M_max.setZero();
@@ -1449,6 +1450,8 @@ public:
             M_min.setZero();
             M_max.resize( M_nDim,1 );
             M_max.setOnes();
+            M_mubar.resize( M_nDim, 1);
+            M_mubar.setZero();
             this->updateDefaultParameterNames();
         }
     //! copy constructor
@@ -1521,6 +1524,14 @@ public:
         }
 
     /**
+     * return the default value
+     */
+    element_type const& mubar() const
+    {
+        return M_mubar;
+    }
+
+    /**
      * \brief the log-middle point of the parameter space
      */
     element_type logMiddle() const
@@ -1573,6 +1584,8 @@ public:
                 M_min.setZero();
                 M_max.resize( M_nDim,1 );
                 M_max.setOnes();
+                M_mubar.resize( M_nDim, 1);
+                M_min.setZero();
                 this->updateDefaultParameterNames();
             }
         }
@@ -1595,6 +1608,15 @@ public:
             M_max = max;
             M_max.setParameterSpace( this->shared_from_this() );
         }
+
+    /**
+     * set the mubar element
+     */
+    void setMubar( element_type const& mubar )
+    {
+        M_mubar = mubar;
+        M_mubar.setParameterSpace( this->shared_from_this() );
+    }
 
     /**
      * \brief name of a parameter
@@ -1676,6 +1698,7 @@ public:
 
                 element_type mumin( this->shared_from_this() );
                 element_type mumax( this->shared_from_this() );
+                element_type mubar( this->shared_from_this() );
                 for ( auto const& ptreeParametersPair : ptreeParameterSpace.get_child("parameters") )
                 {
                     std::string const& paramName = ptreeParametersPair.first;
@@ -1685,9 +1708,11 @@ public:
                     auto const& ptreeParameters = ptreeParametersPair.second;
                     mumin( paramId ) = ptreeParameters.template get<double>("min");
                     mumax( paramId ) = ptreeParameters.template get<double>("max");
+                    mubar( paramId ) = ptreeParameters.template get<double>("value");
                 }
                 this->setMin( mumin );
                 this->setMax( mumax );
+                this->setMubar( mubar );
             }
         }
 
@@ -1731,6 +1756,7 @@ public:
                     boost::property_tree::ptree ptreeParameterDesc;
                     ptreeParameterDesc.add( "min", this->min()(d) );
                     ptreeParameterDesc.add( "max", this->max()(d) );
+                    ptreeParameterDesc.add( "value", this->mubar()(d) );
                     ptreeParametersDesc.add_child( this->parameterName(d), ptreeParameterDesc );
                 }
                 ptreeParameterSpace.add_child( "parameters", ptreeParametersDesc );
@@ -1983,6 +2009,7 @@ private:
             ar & M_nDim;
             ar & M_min;
             ar & M_max;
+            ar & M_mubar;
             ar & M_parameterNames;
         }
 
@@ -1992,6 +2019,7 @@ private:
             ar & M_nDim;
             ar & M_min;
             ar & M_max;
+            ar & M_mubar;
             ar & M_parameterNames;
         }
     BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -2009,6 +2037,9 @@ private:
 
     //! parameter names
     std::vector<std::string> M_parameterNames;
+
+    //! default parameter value
+    element_type M_mubar;
 };
 
 template<uint16_type P> const uint16_type ParameterSpace<P>::Dimension;
