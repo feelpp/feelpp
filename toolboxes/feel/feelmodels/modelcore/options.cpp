@@ -388,6 +388,8 @@ heat_options(std::string const& prefix)
         // (prefixvm(prefix,"velocity-convection").c_str(), Feel::po::value<std::string>(), "math expression")
         (prefixvm(prefix,"initial-solution.temperature").c_str(), Feel::po::value<std::string>(), "math expression")
 
+        (prefixvm(prefix,"use-extended-doftable").c_str(), Feel::po::value<bool>()->default_value( false ), "use-extended-doftable")
+
         (prefixvm(prefix,"stabilization-gls").c_str(), Feel::po::value<bool>()->default_value( false ), "apply stabilization method")
         (prefixvm(prefix,"stabilization-gls.type").c_str(), Feel::po::value<std::string>()->default_value( "gls" ), "supg,gls,unusual-gls")
         (prefixvm(prefix,"stabilization-gls.parameter.method").c_str(), Feel::po::value<std::string>()->default_value( "eigenvalue" ), "method used for compute tau : eigenvalue, doubly-asymptotic-approximation")

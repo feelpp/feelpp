@@ -453,6 +453,7 @@ class Heat : public ModelNumerical,
         elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
         space_temperature_ptrtype M_Xh;
+        bool M_useExtendedDoftable = false;
         element_temperature_ptrtype M_fieldTemperature;
 
         // time discretisation
