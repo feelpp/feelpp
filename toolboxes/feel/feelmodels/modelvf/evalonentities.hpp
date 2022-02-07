@@ -29,7 +29,7 @@ public :
     using this_type = EvalOnFaces<ExprType>;
     using expression_type = ExprType;
 
-    enum class InternalFacesEvalType { Mean=0,Max,Sum,One_Side };
+    enum class InternalFacesEvalType { Average=0,Max,Sum,One_Side };
 
     static const size_type context = expression_type::context;
     static const bool is_terminal = false;
@@ -66,8 +66,8 @@ public :
         M_expr( e ),
         M_type( InternalFacesEvalType::One_Side )
         {
-            if ( type == "mean" )
-                M_type = InternalFacesEvalType::Mean;
+            if ( type == "average" )
+                M_type = InternalFacesEvalType::Average;
             else if ( type == "max" )
                 M_type = InternalFacesEvalType::Max;
             else if ( type == "sum" )
@@ -265,7 +265,7 @@ public :
                 value_type evalRight = M_useRight ? M_rightTensor->evalq( c1,c2,q ) : 0;
                 switch ( M_type )
                 {
-                case InternalFacesEvalType::Mean:
+                case InternalFacesEvalType::Average:
                     res = 0.5*(evalLeft+evalRight);
                     break;
                 case InternalFacesEvalType::Max:
