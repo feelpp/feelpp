@@ -560,8 +560,11 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
     // compute measures
     for ( auto const& [ppName,ppFlux] : M_postProcessMeasuresNormalHeatFlux )
     {
-        double heatFlux = integrate(_range=markedfaces(this->mesh(),ppFlux.markers() ),
-                                    _expr=this->normalHeatFluxExpr( t, ppFlux.isOutward(), symbolsExpr ) ).evaluate()(0,0);
+        auto range = markedfaces(this->mesh(),ppFlux.markers() );
+        auto heatFluxExpr = this->normalHeatFluxExpr( t, ppFlux.isOutward(), symbolsExpr );
+        auto heatFluxExprUsed = evalOnFaces( std::move(heatFluxExpr),ppFlux.requiresMarkersConnection(),ppFlux.internalFacesEvalutationType() );
+        double heatFlux = integrate(_range=range,
+                                    _expr=heatFluxExprUsed ).evaluate()(0,0);
         this->postProcessMeasures().setValue("Normal_Heat_Flux_"+ppName,heatFlux);
     }
 
