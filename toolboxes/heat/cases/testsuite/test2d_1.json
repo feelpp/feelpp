@@ -88,6 +88,22 @@
                         "internalfaces_evaluation":"sum",
                         "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"]
                     }
+                },
+                "Normal-Heat-Flux":{
+                    "jump_%1%":
+                    {
+                        "markers":"%1%",
+                        "direction":"inward",
+                        "internalfaces_evaluation":"sum",
+                        "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"]
+                    },
+                    "connection_mat1":
+                    {
+                        "markers":["interface_mat1_mat2","interface_mat1_mat3"],
+                        "direction":"inward",
+                        "requires_markers_connection":["mat1"],
+                        "index1":["interface_mat1_mat2","interface_mat1_mat3"]
+                    }
                 }
             },
             "Checkers":
@@ -114,6 +130,12 @@
                         "index2":["0","1"]
                     },
                     "Statistics_jump_heatflux_%1%_integrate":
+                    {
+                        "value":0,
+                        "tolerance":1e-2,
+                        "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"]
+                    },
+                    "Normal_Heat_Flux_jump_%1%":
                     {
                         "value":0,
                         "tolerance":1e-2,
