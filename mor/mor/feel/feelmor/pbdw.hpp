@@ -504,6 +504,9 @@ template<typename RBSpace>
 void
 PBDW<RBSpace>::offline()
 {
+    if( ! M_rebuildDb )
+        return;
+
     Feel::cout << "offline phase start with M=" << this->M_M << " and N=" << this->M_N << std::endl;
     auto u = M_XR->functionSpace()->element();
     auto am = this->initRiesz();
@@ -528,7 +531,7 @@ PBDW<RBSpace>::offline()
         for( int j = 0; j < this->M_M; ++j )
             this->M_F(i,j) = inner_product( *this->M_Fs[i], this->M_qs[j] );
         for( int j = this->M_M; j < this->M_M+this->M_N; ++j )
-            this->M_F(i,j) = inner_product( *this->M_Fs[i], this->M_XR->primalBasisElement(j) );
+            this->M_F(i,j) = inner_product( *this->M_Fs[i], this->M_XR->primalBasisElement(j-M_M) );
     }
 
     this->saveDB();
@@ -540,17 +543,6 @@ PBDW<RBSpace>::setOutputs( std::vector<vector_ptrtype> Fs )
 {
     this->M_Fs = Fs;
     this->M_Nl = Fs.size();
-
-    this->M_F = matrixN_type::Zero(this->M_Nl, this->M_M+this->M_N);
-    for( int i = 0; i < this->M_Nl; ++i )
-    {
-        for( int j = 0; j < this->M_M; ++j )
-            this->M_F(i,j) = inner_product( *this->M_Fs[i], this->M_qs[j] );
-        for( int j = 0; j < this->M_N; ++j )
-            this->M_F(i,j+this->M_M) = inner_product( *this->M_Fs[i], this->M_XR->primalBasisElement(j) );
-    }
-    if( this->M_M > 0 || this->M_N > 0 )
-        this->saveDB();
 }
 
 template<typename RBSpace>
@@ -629,7 +621,10 @@ void
 PBDW<RBSpace>::loadDB( std::string const& filename, crb::load l )
 {
     if( !fs::exists(filename) )
+    {
+        this->M_rebuildDb = true;
         return;
+    }
 
     super_type::loadDB( filename, l);
 
