@@ -390,6 +390,16 @@ ModelMeasuresNormalFluxGeneric::setup( nl::json const& jarg, std::string const& 
         M_direction = "outward";
 
     CHECK( M_direction == "inward" || M_direction == "outward" ) << "invalid dir " << M_direction;
+
+    if ( jarg.contains( "requires_markers_connection") )
+        M_requiresMarkersConnection.setup( jarg.at( "requires_markers_connection"), indexes );
+
+    if ( jarg.contains( "internalfaces_evaluation") )
+    {
+          auto const& j_ifevaltype = jarg.at( "internalfaces_evaluation");
+          if ( j_ifevaltype.is_string() )
+              M_internalFacesEvalutationType = indexes.replace( j_ifevaltype.get<std::string>() );
+    }
 }
 
 

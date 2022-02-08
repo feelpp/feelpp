@@ -318,6 +318,10 @@ public :
     std::set<std::string> const& markers() const { return M_markers; }
     std::string const& direction() const { return M_direction; }
     bool isOutward() const { return M_direction == "outward"; }
+    //! returnn requires markers connection
+    ModelMarkers const& requiresMarkersConnection() const { return M_requiresMarkersConnection; }
+    //! return internalfaces evalutation type (i.e. mean,sum,max,...)
+    std::string const& internalFacesEvalutationType() const { return M_internalFacesEvalutationType; }
 
     void setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes );
 
@@ -325,6 +329,9 @@ private :
     std::string M_name;
     ModelMarkers M_markers;
     std::string M_direction;
+    ModelMarkers M_requiresMarkersConnection;
+    std::string M_internalFacesEvalutationType;
+
 };
 
 
