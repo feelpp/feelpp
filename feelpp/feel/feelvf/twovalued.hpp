@@ -936,20 +936,14 @@ public:
         }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
-            typedef mpl::int_<fusion::result_of::template size<Geo_t>::type::value> map_size;
-            FEELPP_ASSERT( map_size::value == 2 )( map_size::value ).error( "invalid map size (should be 2)" );
-
-            M_gmc_left = fusion::at_key<vf::detail::gmc<0> >( geom );
-            M_gmc_right =  fusion::at_key<gmc1 >( geom );
-            FEELPP_ASSERT( M_gmc_left != M_gmc_right )( M_gmc_left->id() )( M_gmc_right->id() ).error( "same geomap, something is wrong" );
-
-            M_left_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_left );
-            M_right_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_right );
-            M_tensor_expr_left.update(  M_left_map );
-            M_tensor_expr_right.update( M_right_map );
+            this->update( geom );
         }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/ )
         {
+            this->update( geom );
+        }
+        void update( Geo_t const& geom )
+        {
             typedef mpl::int_<fusion::result_of::template size<Geo_t>::type::value> map_size;
             FEELPP_ASSERT( map_size::value == 2 )( map_size::value ).error( "invalid map size (should be 2)" );
 
@@ -961,9 +955,7 @@ public:
             M_right_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_right );
             M_tensor_expr_left.update(  M_left_map );
             M_tensor_expr_right.update( M_right_map );
-        }
-        void update( Geo_t const& geom )
-        {
+
         }
         void update( Geo_t const& geom, uint16_type face )
         {
