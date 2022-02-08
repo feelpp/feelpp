@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     auto u = Vh->element();
     auto Wh=Pdh<1>(meshnd,true);
     auto p = Wh->element();
-    p.on(_range=elements(meshnd),_expr=cst(1.));
+    p.on(_range=elements(meshnd),_expr=cst(1.),_close=true);
     auto Mh=Pdh<1>(mesh,true);
     auto l=Mh->element();
     l.on(_range=elements(mesh),_expr=cst(1.));
