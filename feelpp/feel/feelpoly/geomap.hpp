@@ -1830,8 +1830,10 @@ class GeoMap
                 if ( M_gm->hasPermutationWithNeighborFace( elt.id(), face_in_elt ) == false )
                 {
                     auto [found_permutation,perm] = this->updateFromMatchingNodes<CTX>(elt, face_in_elt, gmc );
+#if 0 // NOT WORK IN ALL CASES
                     if ( found_permutation )
                         M_gm->setPermutationWithNeighborFace( elt.id(), face_in_elt, perm.value() );
+#endif
                     return found_permutation;
                 }
                 this->update<CTX>( elt, face_in_elt, permutation_type(M_gm->permutationWithNeighborFace(elt.id(), face_in_elt)) );
