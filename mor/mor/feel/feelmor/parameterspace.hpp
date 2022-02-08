@@ -1614,6 +1614,15 @@ public:
      */
     void setMubar( element_type const& mubar )
     {
+        size_t n = mubar.size();
+        for ( size_t i=0; i<n; ++i )
+        {
+            if ( (mubar[i] < M_min[i]) || (mubar[i] > M_max[i]) )
+            {
+                Feel::cerr << "Parameter not in range" << std::endl;
+                return;
+            }
+        }
         M_mubar = mubar;
         M_mubar.setParameterSpace( this->shared_from_this() );
     }
@@ -1708,7 +1717,7 @@ public:
                     auto const& ptreeParameters = ptreeParametersPair.second;
                     mumin( paramId ) = ptreeParameters.template get<double>("min");
                     mumax( paramId ) = ptreeParameters.template get<double>("max");
-                    mubar( paramId ) = ptreeParameters.template get<double>("value");
+                    mubar( paramId ) = ptreeParameters.template get<double>("value", mumin( paramId ));
                 }
                 this->setMin( mumin );
                 this->setMax( mumax );
