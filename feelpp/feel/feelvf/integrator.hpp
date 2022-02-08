@@ -5725,14 +5725,35 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
     static const size_type gmc_context_face_v = expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT;
     typedef typename gm_type::template Context<the_element_type,1> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-    //typedef typename eval_expr_type::value_type value_type;
-    //typedef typename Im::value_type value_type;
-
-#if 0
-    QuadMapped<im_type> qm;
-    typename QuadMapped<im_type>::permutation_points_type ppts( qm( im() ) );
-#endif
     typedef typename QuadMapped<im_type>::permutation_type permutation_type;
+
+    typename eval::matrix_type res( eval::matrix_type::Zero() );
+    //typename eval::matrix_type res0( eval::matrix_type::Zero() );
+    //typename eval::matrix_type res1( eval::matrix_type::Zero() );
+
+
+    element_iterator face_it, face_en;
+    bool findFaceForInit = false;
+    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len && !findFaceForInit; ++lit )
+    {
+        face_it = lit->template get<1>();
+        face_en = lit->template get<2>();
+
+        // check that we have elements to iterate over
+        if ( face_it == face_en )
+            continue;
+
+        auto const& faceInit = boost::unwrap_ref( *face_it );
+        if ( !faceInit.isConnectedTo0() )
+            continue;
+
+        findFaceForInit = true;
+    }
+    if ( !findFaceForInit )
+        return res;
+
+    auto const& faceInit = boost::unwrap_ref( *face_it );
+
 
     //
     // Precompute some data in the reference element for
@@ -5743,75 +5764,53 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
     std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( im().nFaces() );
     typedef typename im_type::face_quadrature_type face_im_type;
 
-    std::vector<im_face_type> __integrators;
+    CHECK( faceInit.isConnectedTo0() ) << "invalid face with id=" << faceInit.id();
+    CHECK( faceInit.element(0).gm() ) << "invalid geometric transformation assocated to face id="
+                                      <<  faceInit.id() << " and element id " << faceInit.element(0).id();
 
-    typename eval::matrix_type res( eval::matrix_type::Zero() );
-    typename eval::matrix_type res0( eval::matrix_type::Zero() );
-    typename eval::matrix_type res1( eval::matrix_type::Zero() );
+    gm_ptrtype gm = faceInit.element( 0 ).gm();
+
+    //DDLOG(INFO) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
+    std::vector<im_face_type> __integrators;
+    __integrators.reserve( this->im().nFaces() );
+    for ( uint16_type __f = 0; __f < this->im().nFaces(); ++__f )
+    {
+        __integrators.push_back( im( __f ) );
+        for ( permutation_type __p( permutation_type::IDENTITY );
+              __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+        {
+            __geopc[__f][__p] = pc_ptrtype(  new pc_type( gm, this->im().fpoints(__f, __p.value() ) ) );
+        }
+    }
+
+    //uint16_type __face_id_in_elt_0 = faceInit.pos_first();
+
+    // get the geometric mapping associated with element 0
+    gmc_ptrtype __c0 = gm->template context<gmc_context_face_v>( faceInit.element( 0 ), __geopc, /*__face_id_in_elt_0*/faceInit.pos_first(), this->expression().dynamicContext() );
+
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+
+    typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
+    typedef std::shared_ptr<eval_expr_type> eval_expr_ptrtype;
+    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
+    eval_expr_ptrtype expr( new eval_expr_type( expression(), mapgmc ) );
+
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
+    typedef typename expression_type::template tensor<map2_gmc_type> eval2_expr_type;
+    typedef std::shared_ptr<eval2_expr_type> eval2_expr_ptrtype;
+    eval2_expr_ptrtype expr2;
+
+    // true if connected to another element, false otherwise
+    //bool isConnectedTo1 = faceInit.isConnectedTo1();
+
+    // get the geometric mapping associated with element 1
+    gmc_ptrtype __c1;
 
 
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
     {
         auto it = lit->template get<1>();
         auto en = lit->template get<2>();
-
-        // make sure that we have elements to iterate over (return 0
-        // otherwise)
-        if ( it == en)
-            continue;
-
-        auto const& faceInit = boost::unwrap_ref( *it );
-        if ( !faceInit.isConnectedTo0() )
-            continue;
-
-        //return typename eval::matrix_type( eval::matrix_type::Zero() );
-
-        CHECK( faceInit.isConnectedTo0() ) << "invalid face with id=" << faceInit.id();
-        CHECK( faceInit.element(0).gm() ) << "invalid geometric transformation assocated to face id="
-                                          <<  faceInit.id() << " and element id " << faceInit.element(0).id();
-
-        gm_ptrtype gm = faceInit.element( 0 ).gm();
-
-        //DDLOG(INFO) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
-        for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
-        {
-            __integrators.push_back( im( __f ) );
-
-            for ( permutation_type __p( permutation_type::IDENTITY );
-                  __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
-            {
-                //FEELPP_ASSERT( ppts[__f][__p]->size2() != 0 ).warn( "invalid quadrature type" );
-#if 0
-                __geopc[__f][__p] = pc_ptrtype(  new pc_type( gm, ppts[__f].find( __p )->second ) );
-#else
-                __geopc[__f][__p] = pc_ptrtype(  new pc_type( gm, this->im().fpoints(__f, __p.value() ) ) );
-#endif
-            }
-        }
-
-        uint16_type __face_id_in_elt_0 = faceInit.pos_first();
-
-        // get the geometric mapping associated with element 0
-        gmc_ptrtype __c0 = gm->template context<gmc_context_face_v>( faceInit.element( 0 ), __geopc, __face_id_in_elt_0, this->expression().dynamicContext() );
-
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-
-        typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
-        typedef std::shared_ptr<eval_expr_type> eval_expr_ptrtype;
-        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
-        eval_expr_ptrtype expr( new eval_expr_type( expression(), mapgmc ) );
-        //expr->init( im() );
-
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
-        typedef typename expression_type::template tensor<map2_gmc_type> eval2_expr_type;
-        typedef std::shared_ptr<eval2_expr_type> eval2_expr_ptrtype;
-        eval2_expr_ptrtype expr2;
-
-        // true if connected to another element, false otherwise
-        bool isConnectedTo1 = faceInit.isConnectedTo1();
-
-        // get the geometric mapping associated with element 1
-        gmc_ptrtype __c1;
 
         //
         // start the real intensive job:
@@ -5846,13 +5845,15 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                                           fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
 
                     expr2 = eval2_expr_ptrtype( new eval2_expr_type( expression(), mapgmc ) );
-                    //expr2->init( im() );
                 }
 
                 __c0->template update<gmc_context_face_v>( faceCur.element( 0 ), __face_id_in_elt_0 );
-                //__c1->template update<gmc_context_face_v>( faceCur.element( 1 ), __face_id_in_elt_1 );
+#if 0
+                __c1->template update<gmc_context_face_v>( faceCur.element( 1 ), __face_id_in_elt_1 );
+#else
                 bool found_permutation = __c1->template updateFromNeighborMatchingFace<gmc_context_face_v>( faceCur.element( 1 ), __face_id_in_elt_1, __c0 );
                 CHECK(found_permutation) << "the permutation of quadrature points were not found\n";
+#endif
 
 #if 0
                 std::cout << "face " << faceCur.id() << "\n"
@@ -5873,12 +5874,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                           << " real nodes 1:" << __c1->xReal() << "\n";
 #endif
 
-                //__typeof__( im( __face_id_in_elt_0 ) ) im_face ( im( __face_id_in_elt_0 ) );
-                //std::cout << "pts = " << im_face.points() << "\n";
                 map2_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
                                       fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
 
-                expr2->update( mapgmc, __face_id_in_elt_0 );
+                expr2->update( mapgmc );
                 const gmc_type& gmc = *__c0;
 
                 __integrators[__face_id_in_elt_0].update( gmc );
@@ -5898,8 +5897,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                 uint16_type __face_id_in_elt_0 = faceCur.pos_first();
                 __c0->template update<gmc_context_face_v>( faceCur.element( 0 ), __face_id_in_elt_0 );
                 map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
-                expr->update( mapgmc, __face_id_in_elt_0 );
-                //expr->update( mapgmc );
+                expr->update( mapgmc );
+
                 const gmc_type& gmc = *__c0;
 
                 __integrators[__face_id_in_elt_0].update( gmc );
