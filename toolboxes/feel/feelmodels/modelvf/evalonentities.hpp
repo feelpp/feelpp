@@ -54,12 +54,23 @@ public :
     using value_type = typename expression_type::value_type;
     using evaluate_type = typename expression_type::evaluate_type;
 
-#if 0
+#if 1
     template <typename TheExprType>
-    EvalOnFaces( TheExprType && e )
+    EvalOnFaces( TheExprType && e, std::string const& type, std::set<std::string> const& requiresMarkersConnection )
         :
-        M_expr( std::forward<TheExprType>(e) )
-        {}
+        M_expr( std::forward<TheExprType>(e) ),
+        M_type( InternalFacesEvalType::One_Side ),
+        M_requiresMarkersConnection( requiresMarkersConnection )
+        {
+            if ( type == "average" )
+                M_type = InternalFacesEvalType::Average;
+            else if ( type == "max" )
+                M_type = InternalFacesEvalType::Max;
+            else if ( type == "sum" )
+                M_type = InternalFacesEvalType::Sum;
+            else if ( type == "one_side" )
+                M_type = InternalFacesEvalType::One_Side;
+        }
 #else
     EvalOnFaces( expression_type const& e, std::string const& type, std::set<std::string> const& requiresMarkersConnection )
         :
