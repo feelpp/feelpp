@@ -346,17 +346,10 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
               : M_v ( boost::cref(v) ),                                 \
               M_useInterpWithConfLoc( useInterpWithConfLoc )            \
             {                                                           \
-                if ( VF_OP_TYPE_IS_VALUE( T ) )                         \
-                    v.updateGlobalValues();                             \
                 DVLOG(2) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] default constructor\n"; \
             }                                                           \
-            VF_OPERATOR_NAME( O )( VF_OPERATOR_NAME( O ) const& op )    \
-              : M_v ( op.M_v ),                                         \
-              M_useInterpWithConfLoc( op.M_useInterpWithConfLoc )       \
-                                                                        \
-            {                                                           \
-                DVLOG(2) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] copy constructor\n"; \
-            }                                                           \
+            VF_OPERATOR_NAME( O )( VF_OPERATOR_NAME( O ) const& ) = default; \
+            VF_OPERATOR_NAME( O )( VF_OPERATOR_NAME( O ) && ) = default; \
             template<typename... TheExpr>                               \
             struct Lambda                                               \
             {                                                           \
@@ -518,27 +511,6 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                         \
                 static const bool isSameGeo = std::is_same_v<typename gmc_type::element_type,geoelement_type>; \
                                                                         \
-                tensor( tensor const& t )                               \
-                    :                                                   \
-                    M_expr( t.M_expr ),                                 \
-                    M_geot( t.M_geot/*new gmc_type( *t.M_geot )*/ ),    \
-                    M_fec( VF_OP_SWITCH( VF_OP_TYPE_IS_VALUE( T ), , t.M_fec/*new basis_context_type( *t.M_fec )*/ ) ), \
-                    M_np( M_geot->nPoints() ),                          \
-                    /*M_pc( new pc_type( M_expr.e().functionSpace()->fe(), M_geot->xRefs() )),*/ \
-                    M_pc( t.M_pc ), \
-                    /*M_pcf(),*/                                        \
-                    /*M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), (new ctx_type( M_expr.e().functionSpace()->fe(), M_geot, (pc_ptrtype const&)M_pc ) ) ) ),*/ \
-                    M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), t.M_ctx ) ), \
-                    M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), M_expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*M_geot) ) ), \
-                    M_mzero(),                                          \
-                    M_zero( eigen_matrix_mn_type::Zero() ),                         \
-                    M_returnEigenMatrix( eigen_matrix_mn_type::Zero() ),            \
-                    M_did_init( t.M_did_init ),                         \
-                    M_hasRelationMesh( t.M_hasRelationMesh ),           \
-                    M_same_mesh( t.M_same_mesh )                        \
-                        {                                               \
-                            M_mzero.setZero();                          \
-                        }                                               \
                                                                         \
                 tensor( this_type const& expr,                          \
                         Geo_t const& geom,                              \
@@ -546,107 +518,54 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                         Basis_j_t const& VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), feu ) ) \
                     :                                                   \
                     M_expr( expr ),                                     \
-                    M_geot( fusion::at_key<key_type>( geom ) ),         \
                     M_fec( VF_OP_SWITCH( VF_OP_TYPE_IS_TEST( T ),       \
                                          fusion::at_key<basis_context_key_type>( fev ).get() , \
                                          VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), \
                                                                   fusion::at_key<basis_context_key_type>( feu ).get() ) ) ), \
-                    M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
-                    M_pc( this->createPcIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() ) ) /*new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ))*/, \
-                    /*M_pcf(),*/                                        \
-                    M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
-                                                ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_mzero(),                                          \
-                    M_zero( eigen_matrix_mn_type::Zero() ),                         \
-                    M_returnEigenMatrix( eigen_matrix_mn_type::Zero() ),            \
-                    M_did_init( false ),                                \
+                    M_zero( eigen_matrix_mn_type::Zero() ),             \
                     M_hasRelationMesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ), \
-                    M_same_mesh( M_hasRelationMesh && isSameGeo )         \
-                        {                                               \
-                            M_mzero.setZero();                          \
-                            if(!M_same_mesh)                            \
-                                    expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
-                        }                                               \
+                    M_same_mesh( M_hasRelationMesh && isSameGeo )       \
+                    {                                                   \
+                        this->updateForUse( geom );                     \
+                    }                                                   \
                 tensor( this_type const& expr,                          \
                         Geo_t const& geom,                              \
                         Basis_i_t const& VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TEST( T ), fev  ) ) \
                     :                                                   \
                     M_expr( expr ),                                    \
-                    M_geot( fusion::at_key<key_type>( geom ) ),         \
                     M_fec( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TEST( T ), \
                                                      fusion::at_key<basis_context_key_type>( fev ).get() ) ), \
-                    M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
-                    M_pc( this->createPcIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() ) ) /*new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) )*/, \
-                    /*M_pcf(),*/                                        \
-                    M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
-                                                ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_mzero(),                                          \
-                    M_zero( eigen_matrix_mn_type::Zero() ),                         \
-                    M_returnEigenMatrix( eigen_matrix_mn_type::Zero() ),            \
-                    M_did_init( false ),                                \
+                    M_zero( eigen_matrix_mn_type::Zero() ),             \
                     M_hasRelationMesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ), \
-                    M_same_mesh( M_hasRelationMesh && isSameGeo )         \
-                        {                                               \
-                            M_mzero.setZero();                          \
-                            if(!M_same_mesh)                            \
-                                expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
-                            /*update( geom );*/                         \
-                        }                                               \
+                    M_same_mesh( M_hasRelationMesh && isSameGeo )       \
+                    {                                                   \
+                        this->updateForUse( geom );                     \
+                    }                                                   \
                 tensor( this_type const& expr,                          \
                         Geo_t const& geom )                             \
                     :                                                   \
                     M_expr( expr ),                                     \
-                    M_geot( fusion::at_key<key_type>( geom ) ),         \
-                    M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
-                    M_pc( this->createPcIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() ) ) /* new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) )*/, \
-                    /*M_pcf(),*/                                        \
-                    M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
-                                                    ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_mzero(),                                          \
                     M_zero( eigen_matrix_mn_type::Zero() ),                         \
-                    M_returnEigenMatrix( eigen_matrix_mn_type::Zero() ),            \
-                    M_did_init( false ),                                \
                     M_hasRelationMesh( ( expr.e().functionSpace() && expr.e().functionSpace()->mesh() )? fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) : false ), \
-                    M_same_mesh( M_hasRelationMesh && isSameGeo )         \
-                        {                                               \
-                            M_mzero.setZero();                          \
-                            if(!M_same_mesh && expr.e().functionSpace() && expr.e().functionSpace()->mesh() ) \
-                                expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
-                            /*update( geom ); */                        \
-                            BOOST_MPL_ASSERT_MSG( VF_OP_TYPE_IS_VALUE( T ), INVALID_CALL_TO_CONSTRUCTOR, ()); \
-                        }                                               \
+                    M_same_mesh( M_hasRelationMesh && isSameGeo )       \
+                    {                                                   \
+                        this->updateForUse( geom );                     \
+                        BOOST_MPL_ASSERT_MSG( VF_OP_TYPE_IS_VALUE( T ), INVALID_CALL_TO_CONSTRUCTOR, ()); \
+                    }                                                   \
+                                                                        \
                 template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
-                    tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
-                            this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs ) \
+                tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
+                        this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs ) \
                     :                                                   \
                     tensor( expr, geom, theInitArgs... )                \
                 {}                                                      \
                                                                         \
-                template<typename IM>                                   \
-                    void init( IM const& im )                           \
-                {                                                       \
-                    M_did_init = true;                                  \
-                    /*                                                  \
-                    QuadMapped<IM> qm;                                  \
-                    typedef typename QuadMapped<IM>::permutation_type permutation_type; \
-                    typename QuadMapped<IM>::permutation_points_type ppts( qm( im ) ); \
-                                                                        \
-                    M_pcf.resize( im.nFaces() );                       \
-                    for ( uint16_type __f = 0; __f < im.nFaces(); ++__f ) \
-                        {                                               \
-                            for( permutation_type __p( permutation_type::IDENTITY ); \
-                                 __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p ) \
-                                {                                       \
-                                    M_pcf[__f][__p.value()] = pc_ptrtype(  new pc_type( M_expr.e().functionSpace()->fe(), \
-                                                                                         ppts[__f].find(__p)->second ) ); \
-                                }                                       \
-                        }                                               \
-                    */                                                  \
-                    /* expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), */ \
-                }                                                       \
                                                                         \
                 void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) \
                 {                                                       \
@@ -725,48 +644,26 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 void update( Geo_t const& geom )                        \
                 {                                                       \
                     /*BOOST_STATIC_ASSERT( dim_ok );*/                  \
-                    update( geom, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
-                }                                                       \
-                void update( Geo_t const& geom, uint16_type face )      \
-                {                                                       \
-                    /*BOOST_STATIC_ASSERT( dim_ok );*/                  \
-                    update( geom, face, mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
-                }                                                       \
-                void update( Geo_t const& geom, uint16_type face1, mpl::bool_<true> ) \
-                {                                                       \
-                    std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), M_mzero.constant(0.) ); \
-                    this->updateCtxFaceIfSameGeom(geom,mpl::bool_<isSameGeo>() ); \
-                    if (M_same_mesh)                                   \
-                        M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
-                    else  {                                             \
-                        matrix_node_type __ptsreal = M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<2>()); \
-                        M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( /**M_ctx,*/ __ptsreal, M_loc, M_expr.useInterpWithConfLoc()/*false*//*true*/, \
-                                                                                      fusion::at_key<key_type>( geom )->element().face( fusion::at_key<key_type>( geom )->faceId() ).vertices() ); \
-                    }                                                   \
-                }                                                       \
-                void update( Geo_t const& geom, mpl::bool_<true> )      \
-                {                                                       \
-                    std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), M_mzero.constant(0.) ); \
-                    this->updateCtxIfSameGeom(geom,mpl::bool_<isSameGeo>() ); \
-                    if (M_same_mesh) {                                  \
-                        M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
-                    }                                                   \
-                    else  {                                            \
-                         /*std::cout << "\n idv with interp \n";*/       \
-                    /*auto gmcFromGeom = fusion::at_key<key_type>( geom );*/ \
-                    if constexpr ( gmc_type::subEntityCoDim <= 1 ) {    \
-                        matrix_node_type __ptsreal = M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<gmc_type::subEntityCoDim == 0? 1 : 2 >()); \
-                        auto setOfPts = ( gmc_type::subEntityCoDim > 0/*fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value*/ )? \
-                          fusion::at_key<key_type>( geom )->element().face( fusion::at_key<key_type>( geom )->faceId() ).vertices() : \
-                          fusion::at_key<key_type>( geom )->element().vertices(); \
-                        M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( /**M_ctx,*/ __ptsreal, M_loc, M_expr.useInterpWithConfLoc()/*false*//*true*/, setOfPts  ); \
-                    }                                                   \
-                    }                                                   \
-                }                                                       \
-                void update( Geo_t const& geom, mpl::bool_<false> )     \
-                {                                                       \
-                    /*std::cout << "\n idv no interp \n";*/             \
-                    Feel::detail::ignore_unused_variable_warning(geom); \
+                    if constexpr ( VF_OP_TYPE_IS_VALUE( T ) )           \
+                    {                                                   \
+                       std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), M_mzero.constant(0.) ); \
+                       this->updateCtxIfSameGeom(geom );                \
+                       if ( M_same_mesh ) {                             \
+                           M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
+                       }                                                \
+                       else  {                                          \
+                           /*std::cout << "\n idv with interp \n";*/    \
+                           /*TODO : not use ptsInContext but direcyly the gmc */ \
+                           /*auto gmcFromGeom = fusion::at_key<key_type>( geom );*/ \
+                           if constexpr ( gmc_type::subEntityCoDim <= 1 ) { \
+                                   matrix_node_type __ptsreal = M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<gmc_type::subEntityCoDim == 0? 1 : 2 >()); \
+                                   auto setOfPts = ( gmc_type::subEntityCoDim > 0/*fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value*/ )? \
+                                       fusion::at_key<key_type>( geom )->element().face( fusion::at_key<key_type>( geom )->faceId() ).vertices() : \
+                                       fusion::at_key<key_type>( geom )->element().vertices(); \
+                                   M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( /**M_ctx,*/ __ptsreal, M_loc, M_expr.useInterpWithConfLoc()/*false*//*true*/, setOfPts  ); \
+                               }                                        \
+                       }                                                \
+                   }                                                    \
                 }                                                       \
                                                                         \
                 template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
@@ -780,7 +677,6 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                              uint16_type VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), j ), \
                              uint16_type q  ) const                     \
                 {                                                       \
-                    Feel::detail::ignore_unused_variable_warning(i);    \
                     return evaliq( VF_OP_SWITCH( BOOST_PP_NOT( VF_OP_TYPE_IS_TRIAL( T ) ),i,j), q ); \
                 }                                                       \
                     result_type                                         \
@@ -788,7 +684,6 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                  uint16_type VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), j ), \
                              uint16_type c1, uint16_type c2, uint16_type q  ) const \
                 {                                                       \
-                    Feel::detail::ignore_unused_variable_warning(i);    \
                     return evaliq( VF_OP_SWITCH( BOOST_PP_NOT( VF_OP_TYPE_IS_TRIAL( T ) ),i,j), c1, c2, q ); \
                 }                                                       \
                                                                         \
@@ -803,23 +698,39 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                       \
                                                                         \
                 ret_type                                                \
-                    evaliq( uint16_type i, uint16_type q  ) const       \
+                evaliq( uint16_type i, uint16_type q  ) const           \
                 {                                                       \
-                    return evaliq_( i, q, mpl::bool_<dim_ok && fe_ok>() ); \
+                    if constexpr ( dim_ok && fe_ok )                    \
+                    {                                                   \
+                        if constexpr ( VF_OP_TYPE_IS_VALUE( T ) )       \
+                            return Feel::vf::detail::convertEigenMatrixTensor( M_loc[q]); \
+                        else                                            \
+                            return Feel::vf::detail::convertEigenMatrixTensor( M_fec->VF_OPERATOR_TERM( O )( i, q ) ); \
+                    }                                                   \
+                    else                                                \
+                        return ret_type(M_zero.data());                 \
                 }                                                       \
                 result_type                                             \
-                    evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q  ) const \
+                evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q  ) const \
                 {                                                       \
-                    return evaliq_( i, c1, c2, q, mpl::bool_<dim_ok && fe_ok>() ); \
+                    if constexpr ( dim_ok && fe_ok )                    \
+                    {                                                   \
+                        if constexpr ( VF_OP_TYPE_IS_VALUE( T ) )       \
+                            return evalq( c1, c2, q, mpl::int_<shape::rank>() ); \
+                        else                                            \
+                            return M_fec->VF_OPERATOR_TERM( O )( i, c1, c2, q ); \
+                    }                                                   \
+                    else                                                \
+                        return 0;                                       \
                 }                                                       \
                 result_type                                             \
-                    evalq( uint16_type c1, uint16_type c2, uint16_type q ) const \
+                evalq( uint16_type c1, uint16_type c2, uint16_type q ) const \
                 {                                                       \
                     BOOST_MPL_ASSERT_MSG( VF_OP_TYPE_IS_VALUE( T ), INVALID_CALL_TO_EVALQ, ()); \
                     return evalq( c1, c2, q, mpl::int_<shape::rank>() ); \
                 }                                                       \
                 ret_type                                                \
-                    evalq( uint16_type q ) const                        \
+                evalq( uint16_type q ) const                            \
                 {                                                       \
                     BOOST_MPL_ASSERT_MSG( VF_OP_TYPE_IS_VALUE( T ), INVALID_CALL_TO_EVALQ, ()); \
                     return Feel::vf::detail::convertEigenMatrixTensor( M_loc[q] ); \
@@ -828,147 +739,55 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 }                                                       \
             private:                                                    \
                                                                         \
-                result_type                                             \
-                    evaliq_( uint16_type /*i*/,                         \
-                    uint16_type /*c1*/, uint16_type /*c2*/,             \
-                    int /*q*/,                                          \
-                    mpl::bool_<false> ) const                           \
-                {                                                       \
-                    return 0;                                           \
-                }                                                       \
-                ret_type                                                \
-                    evaliq_( uint16_type /*i*/,                         \
-                    int /*q*/,                                          \
-                    mpl::bool_<false> ) const                           \
-                {                                                       \
-                    return ret_type(M_zero.data());                     \
-                }                                                       \
-                                                                        \
-                ret_type                                                \
-                    evaliq_( uint16_type i, uint16_type q, mpl::bool_<true> ) const \
-                {                                                       \
-                    return evaliq__( i, q, mpl::bool_<true>(), mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
-                }                                                           \
-                result_type                                             \
-                    evaliq_( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true> ) const \
-                {                                                       \
-                    return evaliq__( i, c1, c2, q, mpl::bool_<true>(), mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
-                }                                                       \
-                                                                        \
-                ret_type                                                \
-                    evaliq__( uint16_type /*i*/,  uint16_type q,        \
-                    mpl::bool_<true>, mpl::bool_<true> ) const          \
-                    {                                                   \
-                        return Feel::vf::detail::convertEigenMatrixTensor( M_loc[q]); \
-                        /*return M_returnEigenMatrix;*/                 \
-                        /*return M_loc[q];*/                            \
-                    }                                                   \
-                    result_type                                         \
-                    evaliq__( uint16_type /*i*/, uint16_type c1, uint16_type c2, uint16_type q, \
-                              mpl::bool_<true>, mpl::bool_<true> ) const \
-                {                                                       \
-                    return evalq( c1, c2, q, mpl::int_<shape::rank>() ); \
-                }                                                       \
-                                                                        \
-                    ret_type                                            \
-                        evaliq__( uint16_type i, uint16_type q, mpl::bool_<true>, mpl::bool_<false> ) const \
-                    {                                                   \
-                        return Feel::vf::detail::convertEigenMatrixTensor( M_fec->VF_OPERATOR_TERM( O )( i, q ) ); \
-                        /*return M_returnEigenMatrix;*/                 \
-                        /*return M_fec->VF_OPERATOR_TERM( O )( i, q );*/ \
-                    }                                                   \
-                    result_type                                         \
-                    evaliq__( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>, mpl::bool_<false> ) const \
-                    {                                                   \
-                        return M_fec->VF_OPERATOR_TERM( O )( i, c1, c2, q ); \
-                    }                                                   \
                                                                         \
                 result_type                                             \
-                    evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> ) const \
+                evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> ) const \
                 {                                                       \
-                    Feel::detail::ignore_unused_variable_warning(c1);   \
-                    Feel::detail::ignore_unused_variable_warning(c2);   \
                     return M_loc[q](0,0);                           \
                 }                                                       \
                 result_type                                             \
-                    evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const \
+                evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const \
                 {                                                       \
-                    return evalq( c1, c2, q, mpl::int_<1>(), mpl::bool_<shape::is_transposed>() ); \
-                }                                                       \
-                result_type                                             \
-                    evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1>, mpl::bool_<false> ) const \
-                {                                                       \
-                    Feel::detail::ignore_unused_variable_warning(c1);   \
-                    Feel::detail::ignore_unused_variable_warning(c2);   \
-                    return M_loc[q](c1,0);                                \
-                }                                                       \
-                result_type                                             \
-                    evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1>, mpl::bool_<true> ) const \
-                {                                                       \
-                    Feel::detail::ignore_unused_variable_warning(c1);   \
-                    Feel::detail::ignore_unused_variable_warning(c2);   \
-                    return M_loc[q](0,c2);                                \
-                }                                                       \
-                result_type                                             \
-                    evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<2> ) const \
-                {                                                       \
-                    return M_loc[q](c1,c2);                               \
-                }                                                      \
-                pc_ptrtype createPcIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<true>) \
-                {                                                       \
-                    if ( expr.e().functionSpace() && expr.e().functionSpace()->fe() ) \
-                        return pc_ptrtype (new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ); \
+                    if constexpr ( shape::is_transposed )               \
+                        return M_loc[q](0,c2);                          \
                     else                                                \
-                        return pc_ptrtype();                            \
+                        return M_loc[q](c1,0);                          \
                 }                                                       \
-                pc_ptrtype createPcIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<false>) \
+                result_type                                             \
+                evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<2> ) const \
                 {                                                       \
-                    return pc_ptrtype();                                \
+                    return M_loc[q](c1,c2);                             \
                 }                                                       \
-                ctx_ptrtype createCtxIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<true>) \
+                void updateForUse( Geo_t const& geom )                  \
                 {                                                       \
-                    if ( expr.e().functionSpace()  && expr.e().functionSpace()->fe() ) \
-                        return ctx_ptrtype( new ctx_type( expr.e().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_ptrtype const&)M_pc ) ); \
-                    else                                                \
-                        return ctx_ptrtype();                           \
+                    if constexpr( isSameGeo && VF_OP_TYPE_IS_VALUE( T ) ) \
+                    {                                                   \
+                        if ( M_expr.e().functionSpace() && M_expr.e().functionSpace()->fe() ) \
+                        {                                               \
+                            M_pc = std::make_shared<pc_type>( M_expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ); \
+                            M_ctx = std::make_shared<ctx_type>( M_expr.e().functionSpace()->fe(),fusion::at_key<key_type>( geom ),/*(pc_ptrtype const&)*/M_pc ); \
+                        }                                               \
+                    }                                                   \
+                    M_mzero.setZero();                                  \
+                    if( !M_same_mesh )                                  \
+                        M_expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
                 }                                                       \
-                ctx_ptrtype createCtxIfSameGeom(this_type const& expr, Geo_t const& geom,mpl::bool_<false>) \
+                void updateCtxIfSameGeom( Geo_t const& geom )           \
                 {                                                       \
-                    return ctx_ptrtype( /*new ctx_type( )*/ );          \
-                }                                                       \
-                void updateCtxIfSameGeom(Geo_t const& geom, mpl::bool_<true> )    \
-                {                                                       \
-                    if constexpr ( gmc_type::subEntityCoDim > 0 )       \
-                        M_pc->update(fusion::at_key<key_type>( geom )->pc()->nodes() ); \
-                    M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&) M_pc ); \
-                }                                                       \
-                void updateCtxIfSameGeom(Geo_t const& geom, mpl::bool_<false> ) \
-                {                                                       \
-                }                                                       \
-                void updateCtxFaceIfSameGeom(Geo_t const& geom, mpl::bool_<true> )    \
-                {                                                       \
-                    /*uint16_type face = fusion::at_key<key_type>( geom )->faceId(); \
-                    uint16_type perm = fusion::at_key<key_type>( geom )->permutation().value(); \
-                    M_ctx->update( fusion::at_key<key_type>( geom ), (pc_ptrtype const&) M_pcf[face][perm] );*/ \
-                    M_pc->update(fusion::at_key<key_type>( geom )->pc()->nodes() ); \
-                    M_ctx->update( fusion::at_key<key_type>( geom ), (pc_ptrtype const&) M_pc ); \
-                }                                                       \
-                void updateCtxFaceIfSameGeom(Geo_t const& geom, mpl::bool_<false> ) \
-                {                                                       \
+                    if constexpr( isSameGeo )                           \
+                    {                                                   \
+                        if constexpr ( gmc_type::subEntityCoDim > 0 )   \
+                            M_pc->update(fusion::at_key<key_type>( geom )->pc()->nodes() ); \
+                        M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&) M_pc ); \
+                     }                                                  \
                 }                                                       \
                 this_type const& M_expr;                               \
-                gmc_ptrtype M_geot;                                    \
                 basis_context_ptrtype M_fec;                           \
-                const uint16_type M_np;                                \
                 pc_ptrtype M_pc;                                       \
-                /*std::vector<std::map<uint16_type, pc_ptrtype> > M_pcf;*/ \
                 ctx_ptrtype M_ctx;                                      \
                 array_type M_loc;                                      \
                 loc_type M_mzero;                                       \
                 eigen_matrix_mn_type M_zero;                            \
-                mutable eigen_matrix_mn_type M_returnEigenMatrix;       \
-                /*typename element_type::BOOST_PP_CAT( VF_OPERATOR_TERM( O ), _type) M_loc;*/ \
-                bool M_did_init;                                        \
                 const bool M_hasRelationMesh;                           \
                 const bool M_same_mesh;                                 \
             };                                                          \
