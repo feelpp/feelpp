@@ -751,13 +751,16 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     if (M_same_mesh) {                                  \
                         M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
                     }                                                   \
-                    else {                                              \
-                        /*std::cout << "\n idv with interp \n";*/       \
-                        matrix_node_type __ptsreal = M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<1>()); \
-                        auto setOfPts = ( fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value )? \
+                    else  {                                            \
+                         /*std::cout << "\n idv with interp \n";*/       \
+                    /*auto gmcFromGeom = fusion::at_key<key_type>( geom );*/ \
+                    if constexpr ( gmc_type::subEntityCoDim <= 1 ) {    \
+                        matrix_node_type __ptsreal = M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<gmc_type::subEntityCoDim == 0? 1 : 2 >()); \
+                        auto setOfPts = ( gmc_type::subEntityCoDim > 0/*fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value*/ )? \
                           fusion::at_key<key_type>( geom )->element().face( fusion::at_key<key_type>( geom )->faceId() ).vertices() : \
                           fusion::at_key<key_type>( geom )->element().vertices(); \
                         M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( /**M_ctx,*/ __ptsreal, M_loc, M_expr.useInterpWithConfLoc()/*false*//*true*/, setOfPts  ); \
+                    }                                                   \
                     }                                                   \
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<false> )     \
