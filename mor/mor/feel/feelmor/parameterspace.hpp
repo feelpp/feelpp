@@ -51,6 +51,7 @@
 #include <feel/feelcore/ptreetools.hpp>
 #include <feel/feelcore/utility.hpp>
 #include <feel/feelcore/hashtables.hpp>
+#include <feel/feelmodels/modelproperties.hpp>
 
 namespace Feel
 {
@@ -1466,6 +1467,36 @@ public:
             //M_max.setParameterSpace( this->shared_from_this() );
         }
 #endif
+    //! constructor from ModelProperties
+    ParameterSpace( std::string filename = "toolboxmor.filename", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+        :
+        super( worldComm ),
+        M_nDim(),
+        M_min(),
+        M_max(),
+        M_mubar()
+    {
+        std::shared_ptr<ModelProperties> M_modelProperties = std::make_shared<ModelProperties>(Environment::expand( soption(filename) ));
+
+        auto parameters = M_modelProperties->parameters();
+        int nbCrbParameters = count_if(parameters.begin(), parameters.end(), [] (auto const& p)
+                                    {
+                                        return p.second.hasMinMax();
+                                    });
+        M_nDim = nbCrbParameters;
+
+        int i = 0;
+        for( auto const& parameterPair : parameters )
+        {
+            if( parameterPair.second.hasMinMax() )
+            {
+                M_min(i) = parameterPair.second.min();
+                M_max(i) = parameterPair.second.max();
+                M_mubar(i) = parameterPair.second.value();
+            }
+        }
+    }
+
     //! destructor
     ~ParameterSpace() override = default;
 
