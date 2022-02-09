@@ -229,12 +229,6 @@ public:
             M_loc(  boost::extents[M_gmc->nPoints()] )
             {}
 
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_left.init( im );
-            M_right.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update( geom );
@@ -250,21 +244,6 @@ public:
             M_right.update( geom );
 
             for ( int q = 0; q < npts; ++q )
-                for ( int c1 = 0; c1 < shape::M; ++c1 )
-                    for ( int c2 = 0; c2 < shape::N; ++c2 )
-                    {
-                        value_type left = M_left.evalq( c1, c2, q );
-                        value_type right = M_right.evalq( c1, c2, q );
-                        M_loc[q]( c1,c2 ) = std::pow( left, right );
-                    }
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_gmc = fusion::at_key<key_type>( geom ).get();
-            M_left.update( geom, face );
-            M_right.update( geom, face );
-
-            for ( int q = 0; q < M_gmc->nPoints(); ++q )
                 for ( int c1 = 0; c1 < shape::M; ++c1 )
                     for ( int c2 = 0; c2 < shape::N; ++c2 )
                     {

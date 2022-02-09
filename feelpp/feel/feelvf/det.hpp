@@ -182,11 +182,6 @@ class Det : public ExprDynamicBase
               M_det( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
         {
         }
-        template <typename IM>
-        void init( IM const& im )
-        {
-            M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update( geom );
@@ -198,11 +193,6 @@ class Det : public ExprDynamicBase
         void update( Geo_t const& geom )
         {
             M_tensor_expr.update( geom );
-            computeDet( mpl::int_<expr_shape::nDim>() );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_tensor_expr.update( geom, face );
             computeDet( mpl::int_<expr_shape::nDim>() );
         }
 

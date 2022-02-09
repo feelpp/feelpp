@@ -118,9 +118,6 @@ public :
             tensor( expr,geom,theInitArgs... )
             {}
 
-        template <typename IM>
-        void init( IM const& im ) {}
-
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             this->update( geom );
@@ -204,10 +201,6 @@ public :
             {
                 CHECK( false ) << "TODO data on points";
             }
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            this->update( geom );
         }
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
         void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
