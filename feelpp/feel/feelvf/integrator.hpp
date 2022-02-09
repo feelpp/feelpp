@@ -3567,9 +3567,9 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 }
                 else if ( swapElt0Elt1WithSameMesh )
                 {
-                    uint16_type __face_id_in_elt_1 = faceCur.pos_first();
-                    rank_type procIdElt1 = faceCur.proc_first();
-                    size_type idElt1Test = faceCur.element( 0 ).id();
+                    __face_id_in_elt_1 = faceCur.pos_first();
+                     procIdElt1 = faceCur.proc_first();
+                     idElt1Test = faceCur.element( 0 ).id();
                 }
                 CHECK( idElt1Test != invalid_v<size_type> ) << "mesh relation fail : no find a corresponding element\n";
 
@@ -5822,17 +5822,11 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
         for ( ; it != en; ++it )
         {
             auto const& faceCur = boost::unwrap_ref( *it );
-            if ( faceCur.isGhostFace() )
-            {
-                LOG(WARNING) << "face id : " << faceCur.id() << " is a ghost face";
-                continue;
-            }
-            // if is a interprocess faces, only integrate in one process
-            if ( faceCur.isInterProcessDomain() && faceCur.partition1() > faceCur.partition2() )
-                continue;
-
             if ( faceCur.isConnectedTo1() )
             {
+                if ( faceCur.isGhostFace() )
+                    continue;
+
                 DCHECK( !faceCur.isOnBoundary() ) << "face id " << faceCur.id() << " on boundary but connected on both sides";
                 uint16_type __face_id_in_elt_0 = faceCur.pos_first();
                 uint16_type __face_id_in_elt_1 = faceCur.pos_second();
@@ -5840,20 +5834,13 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                 if ( !__c1 )
                 {
                     __c1 = gm->template context<gmc_context_face_v>( faceCur.element( 1 ), __geopc, __face_id_in_elt_1, this->expression().dynamicContext() );
-
-                    map2_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
-                                          fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
-
+                    map2_gmc_type mapgmc = Feel::vf::mapgmc(__c0,__c1);
                     expr2 = eval2_expr_ptrtype( new eval2_expr_type( expression(), mapgmc ) );
                 }
 
                 __c0->template update<gmc_context_face_v>( faceCur.element( 0 ), __face_id_in_elt_0 );
-#if 0
-                __c1->template update<gmc_context_face_v>( faceCur.element( 1 ), __face_id_in_elt_1 );
-#else
                 bool found_permutation = __c1->template updateFromNeighborMatchingFace<gmc_context_face_v>( faceCur.element( 1 ), __face_id_in_elt_1, __c0 );
                 CHECK(found_permutation) << "the permutation of quadrature points were not found\n";
-#endif
 
 #if 0
                 std::cout << "face " << faceCur.id() << "\n"
@@ -5874,13 +5861,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                           << " real nodes 1:" << __c1->xReal() << "\n";
 #endif
 
-                map2_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
-                                      fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
-
+                map2_gmc_type mapgmc = Feel::vf::mapgmc(__c0,__c1);
                 expr2->update( mapgmc );
-                const gmc_type& gmc = *__c0;
-
-                __integrators[__face_id_in_elt_0].update( gmc );
+                __integrators[__face_id_in_elt_0].update( *__c0 );
 
                 for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                     for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
@@ -5891,17 +5874,14 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
             else
             {
-                //LOG_IF( !faceCur.isConnectedTo0(), WARN ) << "integration invalid boundary face";
-                if ( !faceCur.isConnectedTo0() || faceCur.pos_first() == invalid_uint16_type_value )
+                if ( !faceCur.isConnectedTo0() )
                     continue;
+
                 uint16_type __face_id_in_elt_0 = faceCur.pos_first();
                 __c0->template update<gmc_context_face_v>( faceCur.element( 0 ), __face_id_in_elt_0 );
-                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
+                map_gmc_type mapgmc = Feel::vf::mapgmc(__c0);
                 expr->update( mapgmc );
-
-                const gmc_type& gmc = *__c0;
-
-                __integrators[__face_id_in_elt_0].update( gmc );
+                __integrators[__face_id_in_elt_0].update( *__c0 );
 
                 for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                     for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
