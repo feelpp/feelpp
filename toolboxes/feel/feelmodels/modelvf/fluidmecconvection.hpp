@@ -273,11 +273,6 @@ public:
                 M_zeroLocId.setZero();
             }
 
-        template<typename IM>
-        void init( IM const& im )
-        {
-            //M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& feu )
         {
             std::fill( M_locId.data(), M_locId.data()+M_locId.num_elements(), M_zeroLocId/*loc_id_type::Zero()*/ );
@@ -360,9 +355,6 @@ public:
                 }
 #endif
             update(mpl::int_<gmc_type::nDim>(), mpl::int_<SpecificExprType::value>() );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
         }
 
         value_type

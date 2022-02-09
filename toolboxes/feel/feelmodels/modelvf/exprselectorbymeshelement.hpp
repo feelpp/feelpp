@@ -341,11 +341,6 @@ public :
 
 
 
-        template<typename IM>
-        void init( IM const& im )
-        {
-            //M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             this->selectSubTensor( geom );
@@ -371,15 +366,6 @@ public :
                             {
                                 if ( e.second )
                                     e.second->update( geom );
-                            });
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            this->selectSubTensor( geom );
-            hana::for_each( M_tupleTensorExprs, [&geom,&face]( auto & e )
-                            {
-                                if ( e.second )
-                                    e.second->update( geom, face );
                             });
         }
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
