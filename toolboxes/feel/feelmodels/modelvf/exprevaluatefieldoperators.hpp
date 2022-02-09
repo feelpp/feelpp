@@ -148,33 +148,6 @@ public :
                 }
                 this->updateImpl( geom, hasId, hasGrad, hasLaplacian );
             }
-        void update( Geo_t const& geom, uint16_type face )
-            {
-#if 0
-                bool hasId = false, hasGrad = false, hasLaplacian = false;
-                if ( M_tensorExprId )
-                {
-                    M_tensorExprId->update( geom, face );
-                    hasId = true;
-                }
-                if ( M_tensorExprGrad )
-                {
-                    M_tensorExprGrad->update( geom, face );
-                    hasGrad = true;
-                }
-                if constexpr ( !laplacian_is_zero )
-                {
-                    if ( M_tensorExprLaplacian )
-                    {
-                        M_tensorExprLaplacian->update( geom, face );
-                        hasLaplacian = true;
-                    }
-                }
-                this->updateImpl( geom, hasId, hasGrad, hasLaplacian );
-#else
-                CHECK(false) << "TODO : fix compilation";
-#endif
-            }
     private :
         template<typename... TheArgsType>
         void initTensor( this_type const& expr, const TheArgsType&... theInitArgs )
@@ -327,13 +300,6 @@ public :
                 if ( !M_expr.isEnabledGrad() )
                     return;
                 M_tensorExprGrad.update( geom );
-                this->updateImpl( geom );
-            }
-        void update( Geo_t const& geom, uint16_type face )
-            {
-                if ( !M_expr.isEnabledGrad() )
-                    return;
-                M_tensorExprGrad.update( geom, face );
                 this->updateImpl( geom );
             }
     private :

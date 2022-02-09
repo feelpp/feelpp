@@ -179,9 +179,6 @@ public :
                 CHECK( false ) << "TODO";
             }
 
-        template<typename IM>
-        void init( IM const& im ) {}
-
         // template <typename ... TheArgsType>
         // void update( Geo_t const& geom, const TheArgsType&... theUpdateArgs )
         // {
@@ -246,10 +243,6 @@ public :
                     M_rightTensor->update( rightGeom );
                 }
             }
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            this->update( geom );
         }
 #endif
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
