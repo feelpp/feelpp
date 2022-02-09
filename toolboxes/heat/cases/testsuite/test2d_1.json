@@ -87,6 +87,15 @@
                         "markers": "%1%",
                         "internalfaces_evaluation":"sum",
                         "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"]
+                    },
+                    "test_ifsum":{
+                        "type":"%1%",
+                        "expr":"materials_k*(x+y):materials_k:x:y",
+                        "internalfaces_evaluation":"sum",
+                        "requires_markers_connection":["mat1","mat2"],
+                        "markers":["interface_mat1_mat2"],
+                        "quad":15,
+                        "index1":["max","min","mean","integrate"]
                     }
                 },
                 "Normal-Heat-Flux":{
@@ -140,6 +149,11 @@
                         "value":0,
                         "tolerance":1e-2,
                         "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"]
+                    },
+                    "Statistics_test_ifsum_%1_1%":{
+                        "value":"%1_2%",
+                        "tolerance":"%1_3%",
+                        "index1":[ ["max","5.25","1e-3"],["min","3.5","1e-3"],["mean","4.375","1e-8"],["integrate","2.1875","1e-8"]]
                     }
                 }
             }
