@@ -380,24 +380,30 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     // start
     //
 
-    auto __face_it = boost::get<1>( M_range );
-    auto __face_en = boost::get<2>( M_range );
-
     int npoints = M_pset.fpoints(0,1).size2();
-    //element_type __v( M_pset.fpoints(0,1).size2()*std::distance( __face_it, __face_en )*shape::M );
-    element_type __v( std::distance( __face_it, __face_en ), npoints, shape::M, shape::N );
-    //node_type __p( mesh_element_type::nRealDim, M_pset.fpoints(0,1).size2()*std::distance( __face_it, __face_en ) );
-    node_type __p( std::distance( __face_it, __face_en ), npoints, mesh_element_type::nRealDim );
+
+    index_type nFaceUsed = 0;
+    for ( auto const& faceWrap : M_range )
+    {
+        auto const& faceCur = boost::unwrap_ref( faceWrap );
+        if ( faceCur.isGhostFace() )
+            continue;
+        ++nFaceUsed;
+    }
+
+    element_type __v( nFaceUsed, npoints, shape::M, shape::N );
+    node_type __p( nFaceUsed, npoints, mesh_element_type::nRealDim );
 
     __v.setZero();
     __p.setZero();
     VLOG(2) << "pset: " << M_pset.fpoints(0,1);
     VLOG(2) << "Checking trivial result...";
 
-    if ( __face_it == __face_en )
+    if ( nFaceUsed == 0 )
         return eval_element_type( __v, __p );
 
-
+    auto __face_it = boost::get<1>( M_range );
+    //auto __face_en = boost::get<2>( M_range );
     auto const& faceInit = boost::unwrap_ref( *__face_it );
     gm_ptrtype __gm = faceInit.element( 0 ).gm();
     gm1_ptrtype __gm1 = faceInit.element( 0 ).gm1();
@@ -453,9 +459,10 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
 
     size_type nbFaceDof = invalid_v<size_type>;
 
-    for ( index_type e = 0; __face_it != __face_en; ++__face_it, ++e )
+    index_type e = 0;
+    for ( auto const& faceWrap : M_range )
     {
-        auto const& faceCur = boost::unwrap_ref( *__face_it );
+        auto const& faceCur = boost::unwrap_ref( faceWrap );
 
         DVLOG(2) << "[evaluator] FACE_ID = " << faceCur.id()
                       << " element id= " << faceCur.ad_first()
@@ -534,8 +541,8 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
             break;
             }
         }
-
-    } // face_it
+        ++e;
+    } // loop over faces
 
 
     return eval_element_type( __v, __p );
