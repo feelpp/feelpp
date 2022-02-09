@@ -49,26 +49,28 @@ public:
     using matrixN_type = Eigen::MatrixXd;
 
     /**
+     * Constructor for the online phase from PBDW
+     * @param name Name of pbdw
+     * @param uuid Uuid to use for the db
+     */
+    explicit PBDWOnline(std::string const& name, uuids::uuid const& uuid);
+    /**
      * Constructor for the online phase
      * @param name Name of pbdw
-     * @param l Loading type (rb,fe,all)
-     * @param uuid Uuid to use for the db
      * @param dbLoad Loading type for the DB
      * @param dbFilename Filename of the DB for load type filename
      * @param dbIf If of the DB for load type id
-     * @param init If true, find and load DB
      */
     explicit PBDWOnline(std::string const& name,
-                        uuids::uuid const& uuid = uuids::nil_uuid(),
                         int dbLoad = ioption("pbdw.db.load"),
                         std::string const& dbFilename = soption("pbdw.db.filename"),
-                        std::string const& dbId = soption("pbdw.db.id"),
-                        bool init = true);
+                        std::string const& dbId = soption("pbdw.db.id"));
     int dimensionN() const { return M_N; } /**< Dimension of Reduced Basis */
     int dimensionM() const { return M_M; } /**< Number of sensors */
     int dimension() const { return M_N+M_M; } /**< Dimension of PBDW */
     int dimensionF() const { return M_Nl; } /**< Dimension of outputs */
     matrixN_type matrix() const { return M_matrix; } /**< Matrix of PBDW */
+    matrixN_type matrixF() const { return M_F; } /**< Matrix of outputs */
     /**
      * Do online phase
      * @param yobs Observation of sensors
@@ -152,36 +154,35 @@ protected:
     int M_N;
     int M_Nl;
     std::vector<std::string> M_sensorNames;
-
-    int M_dbLoad;
-    std::string M_dbFilename;
-    std::string M_dbId;
 };
 
 PBDWOnline::PBDWOnline(std::string const& name,
-                       uuids::uuid const& uuid,
-                       int dbLoad,
-                       std::string const& dbFilename,
-                       std::string const& dbId,
-                       bool init):
+                       uuids::uuid const& uuid):
     super_type(name, "pbdw", uuid),
     M_name(name),
     M_M(0),
     M_N(0),
     M_Nl(0),
     M_matrix(matrixN_type::Zero(0,0)),
-    M_F(matrixN_type::Zero(0,0)),
-    M_dbLoad(dbLoad),
-    M_dbFilename(dbFilename),
-    M_dbId(dbId)
-{
-    if( init )
-    {
-        if( ! this->findDBUuid(M_dbLoad, M_dbLoad ? M_dbId : M_dbFilename) )
-            throw std::invalid_argument("Database not found during online phase");
+    M_F(matrixN_type::Zero(0,0))
+{}
 
-        this->loadDB(this->absoluteDbFilename(), crb::load::rb );
-    }
+PBDWOnline::PBDWOnline(std::string const& name,
+                       int dbLoad,
+                       std::string const& dbFilename,
+                       std::string const& dbId):
+    super_type(name, "pbdw", uuids::nil_uuid()),
+    M_name(name),
+    M_M(0),
+    M_N(0),
+    M_Nl(0),
+    M_matrix(matrixN_type::Zero(0,0)),
+    M_F(matrixN_type::Zero(0,0))
+{
+    if( ! this->findDBUuid(dbLoad, dbLoad ? dbId : dbFilename) )
+        throw std::invalid_argument("Database not found during online phase");
+
+    this->loadDB(this->absoluteDbFilename(), crb::load::rb );
 }
 
 typename PBDWOnline::vectorN_type
@@ -440,17 +441,14 @@ PBDW<RBSpace>::PBDW(std::string const& name,
                     int dbLoad,
                     std::string const& dbFilename,
                     std::string const& dbId):
-    super_type(name, uuid, dbLoad, dbFilename, dbId, l == crb::load::rb),
+    super_type(name, uuid),
     M_rebuildDb(false),
     M_stage(crb::stage::online)
 {
-    if( l > crb::load::rb )
-    {
-        if( ! this->findDBUuid(M_dbLoad, M_dbLoad ? M_dbId : M_dbFilename) )
-            throw std::invalid_argument("Database not found during online phase");
+    if( ! this->findDBUuid(dbLoad, dbLoad ? dbId : dbFilename) )
+        throw std::invalid_argument("Database not found during online phase");
 
-        this->loadDB(this->absoluteDbFilename(), l );
-    }
+    this->loadDB(this->absoluteDbFilename(), l );
 }
 
 template<typename RBSpace>
@@ -462,7 +460,7 @@ PBDW<RBSpace>::PBDW(std::string const& name,
                     int dbLoad,
                     std::string const& dbFilename,
                     std::string const& dbId):
-    super_type(name, uuid, dbLoad, dbFilename, dbId, false),
+    super_type(name, uuid),
     M_XR(XR),
     M_sigmas(sigmas),
     M_rebuildDb(rebuildDb),
@@ -473,7 +471,7 @@ PBDW<RBSpace>::PBDW(std::string const& name,
     for( auto const& [name,_] : M_sigmas )
         M_sensorNames.push_back(name);
 
-    if( ! this->findDBUuid(this->M_dbLoad, this->M_dbLoad ? this->M_dbId : this->M_dbFilename) )
+    if( ! this->findDBUuid(dbLoad, dbLoad ? dbId : dbFilename) )
         this->setDBDirectory(Environment::randomUUID(true));
 
     if( ! M_rebuildDb )
