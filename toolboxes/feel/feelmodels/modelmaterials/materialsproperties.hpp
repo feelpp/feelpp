@@ -1080,13 +1080,30 @@ public :
                 }
                 M_isDefinedOnWholeMesh[p] = ( this->markers( p ).size() == M_eltMarkersInMesh.size() );
             }
-
+#if 0
             for ( auto const& [matName,matmarkers] : materialToMarkers )
             {
                 auto range = markedelements( mesh,matmarkers );
                 M_rangeMeshElementsByMaterial[matName] = range;
             }
+#else
+            std::map<int,std::set<std::string>> mapTagToMarkerName;
+            std::map<int,std::string> mapTagToMatName;
+            int tag=0;
+            for ( auto const& [matName,matmarkers] : materialToMarkers )
+            {
+                mapTagToMarkerName[tag] = matmarkers;
+                mapTagToMatName[tag] = matName;
+                ++tag;
+            }
 
+            auto collectMarkedElements = collectionOfMarkedelementsWithGhostsSplitted( mesh, mapTagToMarkerName );
+            for ( auto const& [_tag,pairRangeElt] : collectMarkedElements )
+            {
+                std::string const& matName = mapTagToMatName.at(_tag);
+                M_rangeMeshElementsByMaterial[matName] = pairRangeElt;
+            }
+#endif
         }
 
     materials_properties_type const& materialsProperties() const { return M_materialsProperties; }
@@ -1128,13 +1145,13 @@ public :
             return this->markers( setOfPhysics ).size() == M_eltMarkersInMesh.size();
         }
 
-    std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
+    std::map<std::string, std::tuple<elements_reference_wrapper_t<mesh_type>,elements_reference_wrapper_t<mesh_type>>> const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElementsByMaterial( std::string const& matName ) const
         {
             // CHECK( this->materialsProperties()->hasMaterial(matName) ) << "no material with name " << matName;
             auto itFindMat = M_rangeMeshElementsByMaterial.find( matName );
             CHECK( itFindMat != M_rangeMeshElementsByMaterial.end() ) << "no material with name " << matName;
-            return itFindMat->second;
+            return std::get<0>( itFindMat->second );
         }
 
 
@@ -1144,7 +1161,7 @@ private :
     std::set<std::string> M_eltMarkersInMesh;
     std::map<physic_id_type,bool> M_isDefinedOnWholeMesh; // physics -> bool
     std::map<physic_id_type,std::set<std::string>> M_markers; // physic -> markers
-    std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial; // matName -> range
+    std::map<std::string, std::tuple< elements_reference_wrapper_t<mesh_type>,elements_reference_wrapper_t<mesh_type> > > M_rangeMeshElementsByMaterial; // matName -> (range active elt, range ghost elt)
 
 };
 
