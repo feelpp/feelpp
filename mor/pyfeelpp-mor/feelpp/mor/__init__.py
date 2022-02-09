@@ -1,6 +1,7 @@
 import feelpp
 from ._mor import *
 from ._toolboxmor import *
+from ._pbdw import *
 
 _toolboxmor={
     'toolboxmor(2)':ToolboxMor_2D,
