@@ -29,7 +29,7 @@ public :
     using this_type = EvalOnFaces<ExprType>;
     using expression_type = ExprType;
 
-    enum class InternalFacesEvalType { Average=0,Max,Sum,One_Side };
+    enum class InternalFacesEvalType { Average=0,Max,Min,Sum,One_Side };
 
     static const size_type context = expression_type::context;
     static const bool is_terminal = false;
@@ -56,36 +56,40 @@ public :
 
 #if 1
     template <typename TheExprType>
-    EvalOnFaces( TheExprType && e, std::string const& type, std::set<std::string> const& requiresMarkersConnection )
+    EvalOnFaces( TheExprType && e, std::string const& internalFacesEvalutationType, std::set<std::string> const& requiresMarkersConnection )
         :
         M_expr( std::forward<TheExprType>(e) ),
-        M_type( InternalFacesEvalType::One_Side ),
+        M_internalFacesEvalutationType( InternalFacesEvalType::One_Side ),
         M_requiresMarkersConnection( requiresMarkersConnection )
         {
-            if ( type == "average" )
-                M_type = InternalFacesEvalType::Average;
-            else if ( type == "max" )
-                M_type = InternalFacesEvalType::Max;
-            else if ( type == "sum" )
-                M_type = InternalFacesEvalType::Sum;
-            else if ( type == "one_side" )
-                M_type = InternalFacesEvalType::One_Side;
+            if ( internalFacesEvalutationType == "average" )
+                M_internalFacesEvalutationType = InternalFacesEvalType::Average;
+            else if ( internalFacesEvalutationType == "max" )
+                M_internalFacesEvalutationType = InternalFacesEvalType::Max;
+            else if ( internalFacesEvalutationType == "min" )
+                M_internalFacesEvalutationType = InternalFacesEvalType::Min;
+            else if ( internalFacesEvalutationType == "sum" )
+                M_internalFacesEvalutationType = InternalFacesEvalType::Sum;
+            else if ( internalFacesEvalutationType == "one_side" )
+                M_internalFacesEvalutationType = InternalFacesEvalType::One_Side;
         }
 #else
-    EvalOnFaces( expression_type const& e, std::string const& type, std::set<std::string> const& requiresMarkersConnection )
+    EvalOnFaces( expression_type const& e, std::string const& internalFacesEvalutationType, std::set<std::string> const& requiresMarkersConnection )
         :
         M_expr( e ),
-        M_type( InternalFacesEvalType::One_Side ),
+        M_internalFacesEvalutationType( InternalFacesEvalType::One_Side ),
         M_requiresMarkersConnection( requiresMarkersConnection )
         {
-            if ( type == "average" )
-                M_type = InternalFacesEvalType::Average;
-            else if ( type == "max" )
-                M_type = InternalFacesEvalType::Max;
-            else if ( type == "sum" )
-                M_type = InternalFacesEvalType::Sum;
-            else if ( type == "one_side" )
-                M_type = InternalFacesEvalType::One_Side;
+            if ( internalFacesEvalutationType == "average" )
+                M_internalFacesEvalutationType = InternalFacesEvalType::Average;
+            else if ( internalFacesEvalutationType == "max" )
+                M_internalFacesEvalutationType = InternalFacesEvalType::Max;
+            else if ( internalFacesEvalutationType == "min" )
+                M_internalFacesEvalutationType = InternalFacesEvalType::Min;
+            else if ( internalFacesEvalutationType == "sum" )
+                M_internalFacesEvalutationType = InternalFacesEvalType::Sum;
+            else if ( internalFacesEvalutationType == "one_side" )
+                M_internalFacesEvalutationType = InternalFacesEvalType::One_Side;
         }
 #endif
     EvalOnFaces( EvalOnFaces const& ) = default;
@@ -127,7 +131,7 @@ public :
 
 
     expression_type const& expr() const { return M_expr; }
-    InternalFacesEvalType type() const { return M_type; }
+    InternalFacesEvalType internalFacesEvalutationType() const { return M_internalFacesEvalutationType; }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
@@ -161,7 +165,7 @@ public :
             :
             M_expr( expr ),
             M_useLeft( false ), M_useRight( false ),
-            M_type( expr.type() ),
+            M_internalFacesEvalutationType( expr.internalFacesEvalutationType() ),
             M_hasRequiresMarkersConnection( false )
             {
                 this->updateRequiresMarkerForUse( geom );
@@ -173,7 +177,7 @@ public :
             :
             M_expr( expr ),
             M_useLeft( false ), M_useRight( false ),
-            M_type( expr.type() ),
+            M_internalFacesEvalutationType( expr.internalFacesEvalutationType() ),
             M_hasRequiresMarkersConnection( false )
             {
                 CHECK( false ) << "TODO";
@@ -186,11 +190,13 @@ public :
 #if 1
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
-            CHECK( false ) << "TODO";
+            // NOTE :maybe handle trial/test expr?
+            this->update( geom );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev )
         {
-            CHECK( false ) << "TODO";
+            // NOTE : maybe handle test expr?
+            this->update( geom );
         }
         void update( Geo_t const& geom )
         {
@@ -218,7 +224,7 @@ public :
 
             if constexpr( has_two_side )
             {
-                if ( M_type == InternalFacesEvalType::One_Side )
+                if ( M_internalFacesEvalutationType == InternalFacesEvalType::One_Side )
                 {
                     if ( M_useLeft )
                         M_useRight = false;
@@ -255,41 +261,24 @@ public :
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            CHECK( false ) << "TODO";
-            value_type res(0);
-            return res;
+            value_type evalLeft = M_useLeft ? M_leftTensor->evalijq( i,j,c1,c2,q ) : 0;
+            value_type evalRight = M_useRight ? M_rightTensor->evalijq( i,j,c1,c2,q ) : 0;
+            return this->evalImpl( evalLeft,evalRight );
         }
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
-            {
-                CHECK( false ) << "TODO";
-                value_type res(0);
-                return res;
-            }
+        {
+            value_type evalLeft = M_useLeft ? M_leftTensor->evaliq( i,c1,c2,q ) : 0;
+            value_type evalRight = M_useRight ? M_rightTensor->evaliq( i,c1,c2,q ) : 0;
+            return this->evalImpl( evalLeft,evalRight );
+        }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
-            {
-                value_type evalLeft = M_useLeft ? M_leftTensor->evalq( c1,c2,q ) : 0;
-                value_type evalRight = M_useRight ? M_rightTensor->evalq( c1,c2,q ) : 0;
-
-                if ( !M_useLeft || !M_useRight )
-                    return evalLeft+evalRight;
-
-                value_type res(0);
-                switch ( M_type )
-                {
-                case InternalFacesEvalType::Average:
-                    res = 0.5*(evalLeft+evalRight);
-                    break;
-                case InternalFacesEvalType::Max:
-                    res = std::max(evalLeft,evalRight);
-                    break;
-                default: // all others cases can be take into account here
-                    res = evalLeft+evalRight;
-                    break;
-                }
-                return res;
-            }
+        {
+            value_type evalLeft = M_useLeft ? M_leftTensor->evalq( c1,c2,q ) : 0;
+            value_type evalRight = M_useRight ? M_rightTensor->evalq( c1,c2,q ) : 0;
+            return this->evalImpl( evalLeft,evalRight );
+        }
     private:
         void updateRequiresMarkerForUse( Geo_t const& geom )
             {
@@ -308,9 +297,35 @@ public :
                 if ( !M_requiresMarkersConnectionIds.empty() )
                     M_hasRequiresMarkersConnection = true;
             }
+
+        value_type
+        evalImpl( value_type evalLeft,value_type evalRight ) const
+            {
+                if ( !M_useLeft || !M_useRight )
+                    return evalLeft+evalRight;
+
+                value_type res(0);
+                switch ( M_internalFacesEvalutationType )
+                {
+                case InternalFacesEvalType::Average:
+                    res = 0.5*(evalLeft+evalRight);
+                    break;
+                case InternalFacesEvalType::Max:
+                    res = std::max(evalLeft,evalRight);
+                    break;
+                case InternalFacesEvalType::Min:
+                    res = std::min(evalLeft,evalRight);
+                    break;
+                default: // all others cases can be take into account here
+                    res = evalLeft+evalRight;
+                    break;
+                }
+                return res;
+            }
+
     private:
         this_type const& M_expr;
-        InternalFacesEvalType M_type;
+        InternalFacesEvalType M_internalFacesEvalutationType;
         std::optional<left_tensor_expr_type> M_leftTensor;
         std::optional<right_tensor_expr_type> M_rightTensor;
         bool M_useLeft, M_useRight;
@@ -320,7 +335,7 @@ public :
 
 private :
     expression_type M_expr;
-    InternalFacesEvalType M_type;
+    InternalFacesEvalType M_internalFacesEvalutationType;
     std::set<std::string> M_requiresMarkersConnection;
 };
 
