@@ -19,6 +19,7 @@
 //!
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
+#include <pybind11/stl.h>
 
 #include <feel/feelmor/pbdw.hpp>
 
@@ -43,6 +44,7 @@ PYBIND11_MODULE(_pbdw, m )
         .def("dimensionF", &pbdw_t::dimensionF, "Dimension of outputs" )
         .def("matrix", &pbdw_t::matrix, "Matrix of PBDW" )
         .def("matrixF", &pbdw_t::matrixF, "Matrix of outputs" )
+        .def("sensorNames", &pbdw_t::sensorNames, "Name of the sensors" )
         .def("online", py::overload_cast<vectorN_type const&>(&pbdw_t::online, py::const_), "returns the coefficients of the solution", py::arg("yobs") )
         .def("outputs", py::overload_cast<vectorN_type const&>(&pbdw_t::outputs, py::const_), "returns the outputs of the mode", py::arg("yobs") )
         .def("online", py::overload_cast<vectorN_type const&, std::vector<int> const&, bool>(&pbdw_t::online, py::const_), "returns the coefficients of the solution", py::arg("yobs"), py::arg("sensors"), py::arg("toComplete")=true )
