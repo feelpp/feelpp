@@ -459,6 +459,8 @@ ModelPostprocessNorm::setup( nl::json const& jarg, std::string const& name, Mode
         auto const& j_quad = jarg.at( "quad" );
         if ( j_quad.is_number_integer() )
             M_quadOrder = j_quad.get<int>();
+        else if ( j_quad.is_string() )
+            M_quadOrder = std::stoi( j_quad.get<std::string>() );
     }
 
     if ( jarg.contains( "quad1") )
@@ -466,6 +468,8 @@ ModelPostprocessNorm::setup( nl::json const& jarg, std::string const& name, Mode
         auto const& j_quad1 = jarg.at( "quad1" );
         if ( j_quad1.is_number_integer() )
             M_quad1Order = j_quad1.get<int>();
+        else if ( j_quad1.is_string() )
+            M_quad1Order = std::stoi( j_quad1.get<std::string>() );
     }
 }
 
@@ -513,6 +517,8 @@ ModelPostprocessStatistics::setup( nl::json const& jarg, std::string const& name
         auto const& j_quad = jarg.at( "quad" );
         if ( j_quad.is_number_integer() )
             M_quadOrder = j_quad.get<int>();
+        else if ( j_quad.is_string() )
+            M_quadOrder = std::stoi( j_quad.get<std::string>() );
     }
 
     if ( jarg.contains( "quad1") )
@@ -520,6 +526,8 @@ ModelPostprocessStatistics::setup( nl::json const& jarg, std::string const& name
         auto const& j_quad1 = jarg.at( "quad1" );
         if ( j_quad1.is_number_integer() )
             M_quad1Order = j_quad1.get<int>();
+        else if ( j_quad1.is_string() )
+            M_quad1Order = std::stoi( j_quad1.get<std::string>() );
     }
 
     if ( jarg.contains( "requires_markers_connection") )
