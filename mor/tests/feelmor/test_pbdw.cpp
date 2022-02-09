@@ -118,7 +118,23 @@ BOOST_AUTO_TEST_CASE( test_pbdw_offline )
     if( boption("do-ortho") )
         XR->orthonormalize("L2", false, doption("ortho-tol"));
 
+    // outputs
+    std::vector<vector_ptrtype> Fs(3);
+    auto f1 = form1(_test=Xh);
+    double area1 = integrate(_range=markedelements(mesh, "Omega1"), _expr=cst(1.0)).evaluate()(0,0);
+    f1 = integrate(_range=markedelements(mesh, "Omega1"), _expr=id(u)/cst(area1) );
+    Fs[0] = f1.vectorPtr();
+    auto f2 = form1(_test=Xh);
+    double area2 = integrate(_range=markedelements(mesh, "Omega2"), _expr=cst(1.0)).evaluate()(0,0);
+    f2 = integrate(_range=markedelements(mesh, "Omega2"), _expr=id(u)/cst(area2) );
+    Fs[1] = f2.vectorPtr();
+    auto f3 = form1(_test=Xh);
+    double area3 = integrate(_range=boundaryfaces(mesh), _expr=cst(1.0)).evaluate()(0,0);
+    f3 = integrate(_range=boundaryfaces(mesh), _expr=id(u)/cst(area3) );
+    Fs[2] = f3.vectorPtr();
+
     PBDW<decay_type<decltype(XR)>> pbdw("test_pbdw", XR, sigmas);
+    pbdw.setOutputs(Fs);
     pbdw.offline();
     auto m = pbdw.matrix();
 
@@ -188,8 +204,8 @@ BOOST_AUTO_TEST_CASE( test_pbdw_online )
     double area3 = integrate(_range=boundaryfaces(mesh), _expr=cst(1.0)).evaluate()(0,0);
     f3 = integrate(_range=boundaryfaces(mesh), _expr=id(u)/cst(area3) );
     Fs[2] = f3.vectorPtr();
-    pbdw.setOutputs(Fs);
     auto pbdwOnline = PBDWOnline("test_pbdw");
+    Feel::cout << "matrixF\n" << pbdwOnline.matrixF() << std::endl;
 
     // parameters
     auto Dmu = parameterspace_type::New(4);

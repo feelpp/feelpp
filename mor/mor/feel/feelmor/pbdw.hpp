@@ -71,6 +71,7 @@ public:
     int dimensionF() const { return M_Nl; } /**< Dimension of outputs */
     matrixN_type matrix() const { return M_matrix; } /**< Matrix of PBDW */
     matrixN_type matrixF() const { return M_F; } /**< Matrix of outputs */
+    std::vector<std::string> sensorNames() const { return M_sensorNames; } /**< Names of the sensors */
     /**
      * Do online phase
      * @param yobs Observation of sensors
@@ -404,7 +405,8 @@ public:
     space_ptrtype functionSpace() const { return M_XR->functionSpace(); } /**< Function Space */
     sensormap_type const& sensors() const { return M_sigmas; } /**< Sensors */
     std::vector<element_type> const& riesz() const { return M_qs; } /**< Riesz representant */
-    reducedspace_ptrtype const& reducedBasis() const { M_XR; } /**< Reduced basis */
+    reducedspace_ptrtype const& reducedBasis() const { return M_XR; } /**< Reduced basis */
+    std::vector<vector_ptrtype> const& outputsLinear() const { return M_Fs; } /**< Linear functional for outputs */
     sparse_matrix_ptrtype initRiesz(); /**< Initialize the Riesz representation of the sensors */
     void offline(); /** Do offline phase */
     /**
@@ -628,29 +630,25 @@ PBDW<RBSpace>::loadDB( std::string const& filename, crb::load l )
 
     if( l > crb::load::rb )
     {
-        if( ! M_XR )
+        std::ifstream i(this->absoluteJsonFilename());
+        json j = json::parse(i);
+        auto meshfilename = j["mesh"].get<std::string>();
+        auto mesh = loadMesh(_mesh=new mesh_type, _filename=meshfilename);
+        auto Xh = space_type::New(mesh);
+        M_XR = std::make_shared<reducedspace_type>(Xh);
+        fs::ifstream ifsp( this->absoluteDbFilenameProc() );
+        if( ifsp )
         {
-            std::ifstream i(this->absoluteJsonFilename());
-            json j = json::parse(i);
-            auto meshfilename = j["mesh"].get<std::string>();
-            auto mesh = loadMesh(_mesh=new mesh_type, _filename=meshfilename);
-            auto Xh = space_type::New(mesh);
-            M_XR = std::make_shared<reducedspace_type>(Xh);
-            fs::ifstream ifsp( this->absoluteDbFilenameProc() );
-            if( ifsp )
+            boost::archive::binary_iarchive ia( ifsp );
+            auto u = Xh->element();
+            for( int n = 0; n < this->M_N; ++n )
             {
-                boost::archive::binary_iarchive ia( ifsp );
-                auto u = Xh->element();
-                for( int n = 0; n < this->M_N; ++n )
-                {
-                    ia >> u;
-                    M_XR->addPrimalBasisElement(u);
-                }
-                node_t n(nDim);
-                M_sigmas = sensormap_type(Xh);
-                ia >> M_sigmas;
-                this->initRiesz();
+                ia >> u;
+                M_XR->addPrimalBasisElement(u);
             }
+            M_sigmas = sensormap_type(Xh);
+            ia >> M_sigmas;
+            this->initRiesz();
         }
     }
 }
