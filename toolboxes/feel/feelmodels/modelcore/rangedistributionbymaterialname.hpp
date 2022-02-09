@@ -33,13 +33,13 @@ public :
     RangeDistributionByMaterialName( RangeDistributionByMaterialName && ) = default;
 
     //! init material range of elements
-    void init( std::map<std::string, elements_reference_wrapper_t<MeshType> > const& rangeMeshElementsByMaterial )
+    void init( std::map<std::string, std::tuple<elements_reference_wrapper_t<MeshType>,elements_reference_wrapper_t<MeshType>> > const& rangeMeshElementsByMaterial )
         {
             for ( auto const& rangeMat : rangeMeshElementsByMaterial )
             {
                 std::string const& matName = rangeMat.first;
                 M_matNames.insert( matName );
-                for ( auto const& eltWrap : rangeMat.second )
+                for ( auto const& eltWrap : std::get<0>( rangeMat.second ) )
                 {
                     auto const& elt = unwrap_ref( eltWrap );
                     M_mapEltIdToMatName[elt.id()] = matName;

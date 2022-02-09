@@ -785,7 +785,7 @@ public:
                 double mass = 0;
                 for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
                 {
-                    auto const& range = rangeData.second;
+                    auto const& range = std::get<0>( rangeData.second );
                     mass += integrate(_range=range,_expr=densityExpr).evaluate()(0,0);
                 }
                 return mass;
@@ -810,7 +810,7 @@ public:
                 for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
                 {
                     std::string const& matName = rangeData.first;
-                    auto const& range = rangeData.second;
+                    auto const& range = std::get<0>( rangeData.second );
                     auto const& density = M_materialsProperties->density( matName );
                     auto const& densityExpr = density.exprScalar();
 
@@ -829,7 +829,7 @@ public:
                 for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
                 {
                     std::string const& matName = rangeData.first;
-                    auto const& range = rangeData.second;
+                    auto const& range = std::get<0>( rangeData.second );
                     auto const& density = M_materialsProperties->density( matName );
                     auto const& densityExpr = density.exprScalar();
 

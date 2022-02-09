@@ -2831,7 +2831,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::updateForUse()
     for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
     {
         std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
+        auto const& range = std::get<0>( rangeData.second );
         auto const& density = M_materialsProperties->density( matName );
         auto const& densityExpr = density.exprScalar();
 
