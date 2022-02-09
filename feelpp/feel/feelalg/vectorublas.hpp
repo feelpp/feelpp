@@ -963,7 +963,7 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         static constexpr bool is_vector_slice = 
             std::is_same_v< storage_type, vector_slice_storage_type > || 
             std::is_same_v< storage_type, vector_slice_map_storage_type >;
-        static constexpr bool is_vector_proxy = is_vector_range || is_vector_proxy;
+        static constexpr bool is_vector_proxy = is_vector_range || is_vector_slice;
 
         using typename super_type::vector_variant_type;
         using typename super_type::vector_ptr_variant_type;
