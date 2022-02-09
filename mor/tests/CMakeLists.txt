@@ -1,9 +1,9 @@
 ###  CMakeLists.txt ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2009-11-28
+#       Date: 2022-02-05
 #
-#  Copyright (C) 2009 Universit� Joseph Fourier (Grenoble I)
+#  Copyright (C) 2022 Université de Strasbourg
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,16 +22,26 @@
 #
 #
 cmake_minimum_required(VERSION 3.13.0)
-project(testsuite)
-set(PROJECT_SHORTNAME "test")
+project(testsuite-mor)
+set(PROJECT_SHORTNAME "test_mor")
 
-if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STREQUAL "testsuite")
-  find_package(Feel++ PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
-  if(NOT FEELPP_FOUND)
-    message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
-  else()
-    message(STATUS "[testsuite] found Feel++")
-  endif()
+if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STREQUAL "testsuite-mor")
+    find_package(Feel++ COMPONENTS Toolboxes MOR PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
+    if(NOT FEELPP_FOUND)
+        message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+    else()
+        message(STATUS "[testsuite-mor] found Feel++")
+    endif()
+    if(NOT FEELPP_TOOLBOXES_FOUND)
+        message(FATAL_ERROR "Feel++ Toolboxes were not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+    else()  
+        message(STATUS "[testsuite-mor] found Feel++ Toolboxes")
+    endif()
+    if(NOT FEELPP_MOR_FOUND)
+        message(FATAL_ERROR "Feel++ MOR were not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+    else()  
+        message(STATUS "[testsuite-mor] found Feel++ Toolboxes")
+    endif()
   SET(FEELPP_DEFAULT_TEST_TIMEOUT "300")
   if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "install prefix" FORCE)
@@ -46,10 +56,8 @@ endif()
 enable_testing()
 
 if ( NOT TARGET testsuite )
-  add_custom_target( testsuite )
+    add_custom_target( testsuite )
 endif()
-
-include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/..)
 
 option(FEELPP_DISABLE_COMPILE_FAILURE "disable compilation failure in testsuite" OFF)
 if (FEELPP_DISABLE_COMPILE_FAILURE )
@@ -59,8 +67,7 @@ message(STATUS "[feelpp/testsuite] disable compile failure: ${FEELPP_DISABLE_COM
 
 
 
-foreach( testdir core python math alg mesh poly filters material models interpolation integration discr ts vf leaks opt ls pde fit fmi event)
+foreach( testdir mor)
   add_custom_target( test${testdir} )
   add_subdirectory( feel${testdir} )
-
 endforeach()
