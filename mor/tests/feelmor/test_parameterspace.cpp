@@ -24,7 +24,7 @@
 #define BOOST_TEST_MODULE parameterspace testsuite
 #include <feel/feelcore/testsuite.hpp>
 
-#include <feel/feelcrb/parameterspace.hpp>
+#include <feel/feelmor/parameterspace.hpp>
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 

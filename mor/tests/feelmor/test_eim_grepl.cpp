@@ -4,7 +4,6 @@
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   Author(s): Stephane Veys <stephane.veys@imag.fr>
-  Author(s): Cecile Daversin <daversin@math.unistra.fr>
        Date: 2014-01-06
 
   Copyright (C) 2011 - 2014 Feel++ Consortium
@@ -27,7 +26,6 @@
    \file test_eim_grepl.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Stephane veys <stephane.veys@imag.fr>
-   \author Cecile Daversin <daversin@math.unistra.fr>
    \date 2014-01-06
  */
 
@@ -40,7 +38,7 @@
   ESAIM: Mathematical Modelling and Numerical Analysis
  */
 #define USE_BOOST_TEST 1
-#define BOOST_TEST_MODULE eim_composite testsuite
+#define BOOST_TEST_MODULE eim_grepl testsuite
 
 #include <feel/feelcore/testsuite.hpp>
 
@@ -54,15 +52,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
-#include <feel/feelcrb/eim.hpp>
-
-#define FEELAPP( argc, argv, about, options )                           \
-    Feel::Application app( argc, argv, about, options );                \
-    if ( app.vm().count( "help" ) )                                     \
-    {                                                                   \
-        std::cout << app.optionsDescription() << "\n";                  \
-    }
-
+#include <feel/feelmor/eim.hpp>
 
 namespace Feel
 {
@@ -70,32 +60,14 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description eimCompositeoptions( "test_eim_composite options" );
-    eimCompositeoptions.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+    po::options_description simgetoptions( "test_eim options" );
+    simgetoptions.add_options()
+    ( "trainset-eim-size", Feel::po::value<int>()->default_value( 40 ), "EIM trainset is built using a equidistributed grid 40 * 40 by default")
     ( "chrono-online-step" , po::value<bool>()->default_value( false ), "give access to computational time during online step if true" )
     ( "n-eval", po::value<int>()->default_value( 10 ), "number of evaluations" )
     ( "cvg-study" , po::value<bool>()->default_value( false ), "run a convergence study if true" )
     ;
-    return eimCompositeoptions.add( eimOptions() ).add( crbSEROptions() );
-}
-
-
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "test_eim_composite" ,
-                     "test_eim_composite" ,
-                     "0.1",
-                     "SimGet tests",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2012 Université Joseph Fourier" );
-
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    about.addAuthor( "Cecile Daversin", "developer", "daversin@math.unistra.fr", "" );
-    return about;
-
+    return simgetoptions.add( eimOptions() ).add( crbSEROptions() );
 }
 
 /**
@@ -108,20 +80,12 @@ class EimModel:
 public:
     typedef Mesh<Simplex<2> > mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-    //typedef FunctionSpace<mesh_type,bases<Lagrange<1> > > space_type;
-    typedef Lagrange<1> basis_type;
-    typedef bases<basis_type,basis_type> prod_basis_type;
-    typedef FunctionSpace<mesh_type, bases< Lagrange<1> > > u1_space_type;
-    typedef FunctionSpace<mesh_type, prod_basis_type > space_type;
+    typedef FunctionSpace<mesh_type,bases<Lagrange<1> > > space_type;
     typedef std::shared_ptr<space_type> space_ptrtype;
-    typedef std::shared_ptr<u1_space_type> u1_space_ptrtype;
     typedef space_type functionspace_type;
     typedef space_ptrtype functionspace_ptrtype;
     typedef space_type::element_type element_type;
-    typedef space_type::element_ptrtype element_ptrtype;
 
-    typedef u1_space_type::element_type u1_element_type;
-    typedef u1_space_type::element_ptrtype u1_element_ptrtype;
 
     typedef ParameterSpace<2> parameterspace_type;
     typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
@@ -130,7 +94,7 @@ public:
     typedef parameterspace_type::sampling_type sampling_type;
     typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
-    typedef EIMFunctionBase<u1_space_type, space_type, parameterspace_type> fun_type;
+    typedef EIMFunctionBase<space_type, space_type, parameterspace_type> fun_type;
     typedef std::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
@@ -146,18 +110,9 @@ public:
             mesh = unitSquare();
 
             Xh =  space_type::New( mesh );
-            Xh1 = u1_space_type::New( mesh );
-            LOG(INFO) << " nb dofs (composite): "<<Xh->nDof()<<"\n";
-            LOG(INFO) << " nb dofs (no composite): "<<Xh1->nDof()<<"\n";
+            LOG(INFO) << " nb dofs : "<<Xh->nDof()<<"\n";
             BOOST_CHECK( Xh );
             u = Xh->element();
-            std::cout << "u size = " << u.size() << std::endl;
-            u1 = Xh1->element();
-            u2 = Xh1->element();
-            u1 = u.element<0>();
-            u2 = u.element<1>();
-            LOG(INFO) << "u1 size = " << u1.size() << std::endl;
-            LOG(INFO) << "u2 size = " << u2.size() << std::endl;
             Dmu = parameterspace_type::New();
             BOOST_CHECK( Dmu );
             parameter_type mu_min( Dmu );
@@ -172,20 +127,19 @@ public:
             //specify how many elements we take in each direction
             std::vector<size_type> N(2);
             //40 elements in each direction
-            N[0]=40; N[1]=40;
+            int Ne = ioption(_name="trainset-eim-size");
+            N[0]=Ne; N[1]=Ne;
             Pset->equidistributeProduct( N );
             BOOST_TEST_MESSAGE( "Allocation done" );
             BOOST_TEST_MESSAGE( "pushing function to be empirically interpolated" );
 
             using namespace vf;
 
-            std::cout << "before eim" << std::endl;
             auto e = eim( _model=eim_no_solve(this->shared_from_this()),
-                          _element=u.element<0>(),//u,
-                          _space=Xh1,
+                          _element=u,
+                          _space=this->functionSpace(),
                           _parameter=mu,
                           _expr=1/sqrt( (Px()-cst_ref(mu(0)))*(Px()-cst_ref(mu(0))) + (Py()-cst_ref(mu(1)))*(Py()-cst_ref(mu(1))) ),
-                          //_expr = cst_ref( mu(0) ),
                           _sampling=Pset,
                           _name="q" );
             BOOST_CHECK( e );
@@ -196,9 +150,12 @@ public:
         {
             return Dmu;
         }
-    std::string modelName() const { return std::string("test_eim_composite" );}
+    std::string modelName() const { return std::string("test_eim_grepl" );}
     std::string prefix() const { return ""; }
-    uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
+    uuids::uuid uuid() const
+        {
+            return Environment::nameUUID( boost::uuids::nil_uuid(), (boost::format("%1%_%2%")%this->modelName() %Environment::worldComm().localSize()).str() );
+        }
     space_ptrtype const& functionSpace() const { return Xh; }
 
     element_type solve( parameter_type const& mu )
@@ -274,12 +231,9 @@ public:
         }
     void run( const double*, long unsigned int, double*, long unsigned int ) {}
 private:
-    double meshSize;
     mesh_ptrtype mesh;
     space_ptrtype Xh;
-    u1_space_ptrtype Xh1;
     element_type u;
-    u1_element_type u1,u2;
     parameterspace_ptrtype Dmu;
     parameter_type mu;
 
@@ -290,13 +244,13 @@ private:
 
 using namespace Feel;
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAboutDefault("test_eim_grepl"), makeOptions() )
 
-BOOST_AUTO_TEST_SUITE( eimsuite_composite )
+BOOST_AUTO_TEST_SUITE( eimsuite_grepl )
 
-BOOST_AUTO_TEST_CASE( test_eim_composite )
+BOOST_AUTO_TEST_CASE( test_eim_grepl )
 {
-    BOOST_TEST_MESSAGE( "test_eim_composite starts..." );
+    BOOST_TEST_MESSAGE( "test_eim_grepl starts..." );
 
     std::shared_ptr<EimModel> m( new EimModel);
     m->init();
