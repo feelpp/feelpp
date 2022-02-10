@@ -2428,6 +2428,11 @@ public:
             return *this;
         }
 
+        value_type globalValue( size_type i ) const
+        {
+            return this->operator()( i );
+        }
+
         /**
          * get the component of the element
          *
