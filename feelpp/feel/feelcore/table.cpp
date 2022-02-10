@@ -316,7 +316,7 @@ Table::exportCSV( std::ostream &o ) const
             auto cellFormatUsed = c.format().newFromParent( this->format() );
             auto ots = c.toOutputText( cellFormatUsed );
             if ( j > 0 )
-                o << " , ";
+                o << ",";
             for ( auto const& ot : ots )
                 o << ot;
 
