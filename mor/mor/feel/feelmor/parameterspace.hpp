@@ -1468,7 +1468,7 @@ public:
         }
 #endif
     //! constructor from ModelProperties
-    ParameterSpace( std::string filename = "toolboxmor.filename", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    ParameterSpace( std::shared_ptr<ModelProperties> modelProperties, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         super( worldComm ),
         M_nDim(),
@@ -1476,14 +1476,17 @@ public:
         M_max(),
         M_mubar()
     {
-        std::shared_ptr<ModelProperties> M_modelProperties = std::make_shared<ModelProperties>(Environment::expand( soption(filename) ));
 
-        auto parameters = M_modelProperties->parameters();
+        auto parameters = modelProperties->parameters();
         int nbCrbParameters = count_if(parameters.begin(), parameters.end(), [] (auto const& p)
                                     {
                                         return p.second.hasMinMax();
                                     });
         M_nDim = nbCrbParameters;
+
+        M_min.resize( M_nDim,1 );
+        M_max.resize( M_nDim,1 );
+        M_mubar.resize( M_nDim,1 );
 
         int i = 0;
         for( auto const& parameterPair : parameters )
@@ -1494,6 +1497,7 @@ public:
                 M_max(i) = parameterPair.second.max();
                 M_mubar(i) = parameterPair.second.value();
             }
+            ++i;
         }
     }
 
