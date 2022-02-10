@@ -271,6 +271,58 @@ typename VectorUblasBase<T>::value_type VectorUblasBase<T>::dot( const Vector<T>
     return globalRes;
 }
 
+namespace helpers {
+#if defined(FEELPP_HAS_TBB)
+template<typename VectorType>
+struct Sqrt
+{
+    VectorType M_in;
+    VectorType& M_out;
+    Sqrt( VectorType const& _in, VectorType& _out )
+        :
+        M_in( _in ), M_out( _out )
+    { }
+    void operator() ( const tbb::blocked_range<size_t>& r ) const
+    {
+        for ( size_t i = r.begin(); i != r.end(); ++i )
+        {
+            M_out[i] = math::sqrt( M_in[i] );
+        }
+    }
+};
+#endif // FEELPP_HAS_TBB
+}
+
+template< typename T >
+std::unique_ptr<VectorUblasBase<T>>
+VectorUblasBase<T>::sqrt() const
+{
+    std::unique_ptr<VectorUblasBase<T>> sqrtV( this->emptyPtr() );
+    sqrtV->init( this->mapPtr() );
+
+#if defined( FEELPP_HAS_TBB )
+    tbb::parallel_for( tbb::blocked_range<size_t>( 0, this->localSize() ),
+                       helpers::Sqrt<this_type>( *this, *sqrtV ) );
+#else
+    for ( size_type i = 0; i < this->localSize(); ++i )
+        sqrtV->operator()(i) = math::sqrt( this->operator()( i ) );
+#endif // FEELPP_HAS_TBB
+
+    return sqrtV;
+}
+
+template< typename T >
+std::unique_ptr<VectorUblasBase<T>>
+VectorUblasBase<T>::pow( int n ) const
+{
+    std::unique_ptr<VectorUblasBase<T>> powV( this->emptyPtr() );
+    powV->init( this->mapPtr() );
+
+    for ( size_type i = 0; i < this->localSize(); ++i )
+        powV->operator()(i) = math::pow( this->operator()( i ), n );
+
+    return powV;
+}
 
 template< typename T >
 void VectorUblasBase<T>::printMatlab( const std::string filename, bool renumber ) const
@@ -520,6 +572,16 @@ typename VectorUblasContiguousGhosts<T, Storage>::self_type *
 VectorUblasContiguousGhosts<T, Storage>::clonePtr() const
 {
     return new VectorUblasContiguousGhosts<T, Storage>( *this );
+}
+
+template< typename T, typename Storage >
+typename VectorUblasContiguousGhosts<T, Storage>::base_type *
+VectorUblasContiguousGhosts<T, Storage>::emptyPtr() const
+{
+    if constexpr ( is_vector_proxy ) // should not happen
+        return new VectorUblasContiguousGhosts<T, typename Storage::vector_type>( );
+    else
+        return new VectorUblasContiguousGhosts<T, Storage>( );
 }
 
 template< typename T, typename Storage >
@@ -1117,6 +1179,16 @@ typename VectorUblasNonContiguousGhosts<T, Storage>::self_type *
 VectorUblasNonContiguousGhosts<T, Storage>::clonePtr() const
 {
     return new VectorUblasNonContiguousGhosts<T, Storage>( *this );
+}
+
+template< typename T, typename Storage >
+typename VectorUblasNonContiguousGhosts<T, Storage>::base_type *
+VectorUblasNonContiguousGhosts<T, Storage>::emptyPtr() const
+{
+    if constexpr ( is_vector_proxy )
+        return new VectorUblasNonContiguousGhosts<T, typename Storage::vector_type>( );
+    else
+        return new VectorUblasNonContiguousGhosts<T, Storage>( );
 }
 
 template< typename T, typename Storage >
