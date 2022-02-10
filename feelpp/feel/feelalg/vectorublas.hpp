@@ -52,6 +52,7 @@ public:
     typedef typename base_type::size_type                   size_type;
     typedef typename base_type::pointer                     pointer;
 
+    shallow_array_adaptor() : base_type() {}
     shallow_array_adaptor(size_type n) : base_type(n) {}
     shallow_array_adaptor(size_type n, pointer data) : base_type(n,data) {}
     shallow_array_adaptor(const shallow_array_adaptor& c) : base_type(c) {}
@@ -229,6 +230,9 @@ class VectorUblas : public Vector<T>
         value_type sum() const override { return M_vectorImpl->sum(); }
 
         value_type dot( const Vector<T> & v ) const override { return M_vectorImpl->dot( v ); }
+
+        FEELPP_DONT_INLINE self_type sqrt() const { return self_type( M_vectorImpl->sqrt() ); }
+        self_type pow( int n ) const { return self_type( M_vectorImpl->pow( n ) ); }
         
         // Exports
         void printMatlab( const std::string filename = "NULL", bool renumber = false ) const override { return M_vectorImpl->printMatlab( filename, renumber ); }
@@ -240,6 +244,9 @@ class VectorUblas : public Vector<T>
         // Localization (parallel global to one proc local)
         void localizeToOneProcessor( ublas::vector<T> & v_local, const size_type proc_id = 0 ) const { return M_vectorImpl->localizeToOneProcessor( v_local, proc_id ); }
         void localizeToOneProcessor( std::vector<T> & v_local, const size_type proc_id = 0 ) const { return M_vectorImpl->localizeToOneProcessor( v_local, proc_id ); }
+
+    protected:
+        VectorUblas( vector_impl_ptrtype && vectorImpl ): super_type( vectorImpl->mapPtr() ), M_vectorImpl( std::move( vectorImpl ) ) { }
         
     private:
         vector_impl_ptrtype M_vectorImpl;
@@ -373,6 +380,7 @@ class VectorUblasBase: public Vector<T>
 
         virtual clone_ptrtype clone() const override { return clone_ptrtype( this->clonePtr() ); }
         virtual self_type * clonePtr() const = 0;
+        virtual self_type * emptyPtr() const = 0;
 
         // Storage API
         void init( const size_type n, const size_type n_local, const bool fast = false ) override;
@@ -498,6 +506,9 @@ class VectorUblasBase: public Vector<T>
         virtual value_type sum() const override = 0;
 
         value_type dot( const Vector<T> & v ) const override;
+
+        virtual std::unique_ptr<VectorUblasBase<T>> sqrt() const;
+        virtual std::unique_ptr<VectorUblasBase<T>> pow( int n ) const;
         
         // Exports
         void printMatlab( const std::string filename = "NULL", bool renumber = false ) const override;
@@ -738,6 +749,7 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         void init( const size_type n, const size_type n_local, const bool fast = false ) override;
 
         virtual self_type * clonePtr() const override;
+        virtual base_type * emptyPtr() const override;
 
         // Storage API
         virtual void resize( size_type n ) override;
@@ -986,6 +998,7 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         void init( const size_type n, const size_type n_local, const bool fast = false ) override;
 
         virtual self_type * clonePtr() const override;
+        virtual base_type * emptyPtr() const override;
 
         // Storage API
         virtual void resize( size_type n ) override;
