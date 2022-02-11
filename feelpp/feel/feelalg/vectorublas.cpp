@@ -962,6 +962,44 @@ void VectorUblasContiguousGhosts<T, Storage>::msubVector( const value_type & a, 
 }
 
 template< typename T, typename Storage >
+void VectorUblasContiguousGhosts<T, Storage>::mulVector( const VectorUblasContiguousGhostsBase<T> & v )
+{
+    //M_vec *= v.vec();
+    // [noalias] 
+    // We use "noalias" assignment to prevent unneeded copy. Despite the obvious M_vec aliasing, this should
+    // be safe as both element_prod and assignment work on a coefficient-wise level.
+    std::visit( [this]( auto && _v ) { ublas::noalias(this->M_vec) = ublas::element_prod( this->M_vec, *_v ); }, v.vec() );
+}
+
+template< typename T, typename Storage >
+void VectorUblasContiguousGhosts<T, Storage>::mulVector( const VectorUblasNonContiguousGhostsBase<T> & v )
+{
+    if ( this->comm().localSize() == 1 )
+    {
+        //M_vec *= v.vec();
+        // c.f. [noalias]
+        std::visit( [this]( auto && _v ) { ublas::noalias(this->M_vec) = ublas::element_prod( this->M_vec, *_v ); }, v.vec() );
+    }
+    else
+    {
+        size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
+        size_type nLocalGhosts = this->map().nLocalGhosts();
+        if ( nLocalDofWithoutGhost > 0 )
+        {
+            //ublas::project( M_vec, ublas::range( 0, nLocalDofWithoutGhost ) ) *= v.vec();
+            // c.f. [noalias]
+            std::visit( [this, nLocalDofWithoutGhost]( auto && _v ) { auto activeRange = ublas::project( this->M_vec, ublas::range( 0, nLocalDofWithoutGhost ) ); ublas::noalias( activeRange ) = ublas::element_prod( activeRange, *_v ); }, v.vec() );
+        }
+        if ( nLocalGhosts > 0 )
+        {
+            //ublas::project( M_vec, ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost+nLocalGhosts ) ) *= v.vecNonContiguousGhosts();
+            // c.f. [noalias]
+            std::visit( [this, nLocalDofWithoutGhost, nLocalGhosts]( auto && _v ) { auto ghostRange = ublas::project( this->M_vec, ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost+nLocalGhosts ) ); ublas::noalias( ghostRange ) = ublas::element_prod( ghostRange, *_v ); }, v.vecNonContiguousGhosts() );
+        }
+    }
+}
+
+template< typename T, typename Storage >
 typename VectorUblasContiguousGhosts<T, Storage>::value_type 
 VectorUblasContiguousGhosts<T, Storage>::dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const
 {
@@ -1635,6 +1673,61 @@ void VectorUblasNonContiguousGhosts<T, Storage>::msubVector( const value_type & 
         {
             //this->vecNonContiguousGhosts() -= a * v.vecNonContiguousGhosts();
             std::visit( [this, a]( auto && _v ) { this->M_vecNonContiguousGhosts -= a * (*_v); }, v.vecNonContiguousGhosts() );
+        }
+    }
+}
+
+template< typename T, typename Storage >
+void VectorUblasNonContiguousGhosts<T, Storage>::mulVector( const VectorUblasContiguousGhostsBase<T> & v )
+{
+    if ( this->comm().localSize() == 1 )
+    {
+        //M_vec *= v.vec();
+        // c.f. [noalias]
+        std::visit( [this]( auto && _v ) { ublas::noalias( this->M_vec ) = ublas::element_prod( this->M_vec, *_v ); }, v.vec() );
+    }
+    else
+    {
+        size_type nLocalDofWithoutGhostOther = v.map().nLocalDofWithoutGhost();
+        size_type nLocalGhostsOther = v.map().nLocalGhosts();
+        if ( nLocalDofWithoutGhostOther > 0 )
+        {
+            //this->vec() *= ublas::project( v.vec(), ublas::range( 0, nLocalDofWithoutGhostOther ) );
+            // c.f. [noalias]
+            std::visit( [this, nLocalDofWithoutGhostOther]( auto && _v) { ublas::noalias( this->M_vec ) = ublas::element_prod( this->M_vec, ublas::project( *_v, ublas::range( 0, nLocalDofWithoutGhostOther ) ) ); }, v.vec() );
+        }
+        if ( nLocalGhostsOther > 0 )
+        {
+            //this->vecNonContiguousGhosts() *= ublas::project( v.vec(), ublas::range( nLocalDofWithoutGhostOther, nLocalDofWithoutGhostOther+nLocalGhostsOther ) );
+            std::visit( [this, nLocalDofWithoutGhostOther, nLocalGhostsOther]( auto && _v ) { ublas::noalias( this->M_vecNonContiguousGhosts ) = ublas::element_prod( this->M_vecNonContiguousGhosts, ublas::project( *_v, ublas::range( nLocalDofWithoutGhostOther, nLocalDofWithoutGhostOther+nLocalGhostsOther ) ) ); }, v.vec() );
+        }
+    }
+}
+
+template< typename T, typename Storage >
+void VectorUblasNonContiguousGhosts<T, Storage>::mulVector( const VectorUblasNonContiguousGhostsBase<T> & v )
+{
+    if ( this->comm().localSize() == 1 )
+    {
+        //M_vec *= v.vec();
+        // c.f. [noalias]
+        std::visit( [this]( auto && _v ) { ublas::noalias( this->M_vec ) = ublas::element_prod( this->M_vec, *_v ); }, v.vec() );
+    }
+    else
+    {
+        size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
+        size_type nLocalGhosts = this->map().nLocalGhosts();
+        if ( nLocalDofWithoutGhost > 0 )
+        {
+            //this->vec() *= v.vec();
+            // c.f. [noalias]
+            std::visit( [this]( auto && _v ) { ublas::noalias( this->M_vec ) = ublas::element_prod( this->M_vec, *_v ); }, v.vec() );
+        }
+        if ( nLocalGhosts > 0 )
+        {
+            //this->vecNonContiguousGhosts() *= v.vecNonContiguousGhosts();
+            // c.f. [noalias]
+            std::visit( [this]( auto && _v ) { ublas::noalias( this->M_vecNonContiguousGhosts ) = ublas::element_prod( this->M_vecNonContiguousGhosts, *_v ); }, v.vecNonContiguousGhosts() );
         }
     }
 }

@@ -247,6 +247,8 @@ class VectorUblas : public Vector<T>
 
     protected:
         VectorUblas( vector_impl_ptrtype && vectorImpl ): super_type( vectorImpl->mapPtr() ), M_vectorImpl( std::move( vectorImpl ) ) { }
+
+        friend self_type element_product( const self_type &, const self_type & );
         
     private:
         vector_impl_ptrtype M_vectorImpl;
@@ -466,21 +468,31 @@ class VectorUblasBase: public Vector<T>
         void insert( const ublas::vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
 
         // Multiple dispatch operations
+        void setVector( const VectorUblasBase<T> & v ) { return v.applySetVector( *this ); }
         virtual void setVector( const VectorUblasContiguousGhostsBase<T> & v ) = 0;
         virtual void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
 
+        void addVector( const VectorUblasBase<T> & v ) { return v.applyAddVector( *this ); }
         virtual void addVector( const VectorUblasContiguousGhostsBase<T> & v ) = 0;
         virtual void addVector( const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
 
+        void maddVector( const value_type & a, const VectorUblasBase<T> & v ) { return v.applyMaddVector( a, *this ); }
         virtual void maddVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) = 0;
         virtual void maddVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
 
+        void subVector( const VectorUblasBase<T> & v ) { return v.applySubVector( *this ); }
         virtual void subVector( const VectorUblasContiguousGhostsBase<T> & v ) = 0;
         virtual void subVector( const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
 
+        virtual void msubVector( const value_type & a, const VectorUblasBase<T> & v ) { return v.applyMsubVector( a, *this ); }
         virtual void msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) = 0;
         virtual void msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
 
+        void mulVector( const VectorUblasBase<T> & v ) { return v.applyMulVector( *this ); }
+        virtual void mulVector( const VectorUblasContiguousGhostsBase<T> & v ) = 0;
+        virtual void mulVector( const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
+
+        value_type dotVector( const VectorUblasBase<T> & v ) const { return v.applyDotVector( *this ); }
         virtual value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const = 0;
         virtual value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const = 0;
 
@@ -533,22 +545,12 @@ class VectorUblasBase: public Vector<T>
     protected:
         virtual void checkInvariants() const = 0;
 
-        void setVector( const VectorUblasBase<T> & v ) { return v.applySetVector( *this ); }
         virtual void applySetVector( VectorUblasBase<T> & v ) const = 0;
-        
-        void addVector( const VectorUblasBase<T> & v ) { return v.applyAddVector( *this ); }
         virtual void applyAddVector( VectorUblasBase<T> & v ) const = 0;
-
-        void maddVector( const value_type & a, const VectorUblasBase<T> & v ) { return v.applyMaddVector( a, *this ); }
         virtual void applyMaddVector( const value_type & a, VectorUblasBase<T> & v ) const = 0;
-        
-        void subVector( const VectorUblasBase<T> & v ) { return v.applySubVector( *this ); }
         virtual void applySubVector( VectorUblasBase<T> & v ) const = 0;
-
-        virtual void msubVector( const value_type & a, const VectorUblasBase<T> & v ) { return v.applyMsubVector( a, *this ); }
         virtual void applyMsubVector( const value_type & a, VectorUblasBase<T> & v ) const = 0;
-
-        virtual value_type dotVector( const VectorUblasBase<T> & v ) const { return v.applyDotVector( *this ); }
+        virtual void applyMulVector( VectorUblasBase<T> & v ) const = 0;
         virtual value_type applyDotVector( const VectorUblasBase<T> & v ) const = 0;
 
         virtual VectorUblasBase<T> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) = 0;
@@ -591,6 +593,12 @@ class MsubtractableVectorUblas: public virtual VectorUblasBase<T>
         void applyMsubVector( const value_type & a, VectorUblasBase<T> & b ) const override { return b.msubVector( a, static_cast< const V<T>& >( *this ) ); }
 };
 template< template < typename > class V, typename T >
+class MultipliableVectorUblas: public virtual VectorUblasBase<T>
+{
+    protected:
+        void applyMulVector( VectorUblasBase<T> & b ) const override { return b.mulVector( static_cast< const V<T>& >( *this ) ); }
+};
+template< template < typename > class V, typename T >
 class DottableVectorUblas: public virtual VectorUblasBase<T>
 {
     protected:
@@ -605,6 +613,7 @@ class VectorUblasContiguousGhostsBase:
     public MaddableVectorUblas<VectorUblasContiguousGhostsBase, T>,
     public SubtractableVectorUblas<VectorUblasContiguousGhostsBase, T>,
     public MsubtractableVectorUblas<VectorUblasContiguousGhostsBase, T>,
+    public MultipliableVectorUblas<VectorUblasContiguousGhostsBase, T>,
     public DottableVectorUblas<VectorUblasContiguousGhostsBase, T>
 {
     public:
@@ -667,6 +676,9 @@ class VectorUblasContiguousGhostsBase:
 
         void msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
         void msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+        void mulVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void mulVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
 
         value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override = 0;
         value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override = 0;
@@ -802,6 +814,9 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         void msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override;
         void msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
+        void mulVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void mulVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
         value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override;
         value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override;
 
@@ -848,6 +863,7 @@ class VectorUblasNonContiguousGhostsBase:
     public MaddableVectorUblas<VectorUblasNonContiguousGhostsBase, T>,
     public SubtractableVectorUblas<VectorUblasNonContiguousGhostsBase, T>,
     public MsubtractableVectorUblas<VectorUblasNonContiguousGhostsBase, T>,
+    public MultipliableVectorUblas<VectorUblasNonContiguousGhostsBase, T>,
     public DottableVectorUblas<VectorUblasNonContiguousGhostsBase, T>
 {
     public:
@@ -1052,6 +1068,9 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         void msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override;
         void msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
+        void mulVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void mulVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
         value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override;
         value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override;
 
@@ -1242,5 +1261,28 @@ toPETSc( const VectorUblas<T> & v )
 
 #endif // FEELPP_HAS_PETSC
 
+namespace Feel {
+/* Utility functions */
+namespace detail {
+
+template< typename T >
+std::unique_ptr<VectorUblasBase<T>> 
+element_product( const VectorUblasBase<T> & v1, const VectorUblasBase<T> & v2 )
+{
+    VectorUblasBase<T> * prod = v1.clonePtr();
+    prod->mulVector( v2 );
+    return std::unique_ptr( prod );
+}
+
+} //detail
+
+template< typename T >
+VectorUblas<T>
+element_product( const VectorUblas<T> & v1, const VectorUblas<T> & v2 )
+{
+    return VectorUblas<T>( Feel::detail::element_product( v1.vectorImpl(), v2.vectorImpl() ) );
+}
+
+} // Feel
 
 #endif /* _FEELPP_VECTORUBLAS_HPP */
