@@ -9,23 +9,23 @@ from feelpp.toolboxes.core import *
 from feelpp.mor import *
 
 cases = [
-         (('thermal-fin', '2d', 'thermal-fin.cfg', 2, False, False), 'thermal-fin-2d'),
-         (('thermal-fin', '2d', 'thermal-fin.cfg', 2, True, False), 'thermal-fin-2d-cached'),
-         (('thermal-fin', '3d', 'thermal-fin.cfg', 3, False, False), 'thermal-fin-3d'),
-         (('thermal-fin', '3d', 'thermal-fin.cfg', 3, True, False), 'thermal-fin-3d-cached')
+         (('thermal-fin', '2d', 'thermal-fin.cfg', 2,
+            {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
+            {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
+            {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "k_0": 1, "Bi": 1}), 'thermal-fin-2d'),
+         (('thermal-fin', '3d', 'thermal-fin.cfg', 3,
+            {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
+            {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
+            {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "k_0": 1, "Bi": 1}), 'thermal-fin-3d'),
         ]
 cases_params, cases_ids = list(zip(*cases))
 
+mubar_th = {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01}
+mumin_th = {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01}
+mumax_th = {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "k_0": 1, "Bi": 1}
 
-def init_toolbox(prefix, case, casefile, dim, use_cache):
 
-    # if not use_cache:
-    #     print('removing cache...')
-    #     try:
-    #         shutil.rmtree(FEEL_PATH + '/crbdb')
-    #         shutil.rmtree(FEEL_PATH + f'{prefix}/{case}')
-    #     except FileNotFoundError:
-    #         print('You asked to remove cache, but there was none, so no problem !')
+def init_toolbox(prefix, case, casefile, dim):
 
     feelpp.Environment.setConfigFile(f'{prefix}/{case}/{casefile}')
     feelpp.Environment.changeRepository(directory=f'{prefix}/{case}')
@@ -37,79 +37,32 @@ def init_toolbox(prefix, case, casefile, dim, use_cache):
 
 
 
-def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
-    heatBox, dim = init_toolbox(prefix, case, casefile, dim, use_cache)
-    model = toolboxmor(dim=dim, time_dependent=time_dependent)
+@pytest.mark.parametrize("prefix,case,casefile,dim,mubar_th,mumin_th,mumax_th", cases_params, ids=cases_ids)
+def test_init_environment(prefix, case, casefile, dim, mubar_th, mumin_th, mumax_th,  init_feelpp):
+    e = init_feelpp
+    heatBox = init_toolbox(prefix, case, casefile, dim)
+
+    # modelProperties = heatBox.modelProperties()
+    model = toolboxmor(dim=dim, time_dependent=False)
 
     Dmu = model.parameterSpace()
     mubar = Dmu.element()
 
-    modelProperties = heatBox.modelProperties()
-    param = modelProperties.parameters()
-    for p in param:
-        assert(p[1].hasMinMax())    # check that parameters can vary
-        mubar.setParameterNamed(p[1].name(), p[1].value())
-
-    model.setFunctionSpaces(Vh=heatBox.spaceTemperature())
-
-    def assembleDEIM(mu):
-        for i in range(0,mu.size()):
-            heatBox.addParameterInModelProperties(mu.parameterName(i), mu(i))
-        heatBox.updateParameterValues()
-        return heatBox.assembleRhs()
-
-    def assembleMDEIM(mu):
-        for i in range(0,mu.size()):
-            heatBox.addParameterInModelProperties(mu.parameterName(i), mu(i))
-        heatBox.updateParameterValues()
-        return heatBox.assembleMatrix()
-
-    model.setAssembleDEIM(fct=assembleDEIM)
-
-
-    model.setAssembleDEIM(fct=assembleDEIM)
-    model.setAssembleMDEIM(fct=assembleMDEIM)
-
-    model.initModel()
-
-    heatBoxDEIM = heat(dim=dim, order=1)
-    meshDEIM = model.getDEIMReducedMesh()
-    heatBoxDEIM.setMesh(meshDEIM)
-    heatBoxDEIM.init()
-
-    def assembleOnlineDEIM(mu):
-        for i in range(0, mu.size()):
-            heatBoxDEIM.addParameterInModelProperties(mu.parameterName(i), mu(i))
-        heatBoxDEIM.updateParameterValues()
-        return heatBoxDEIM.assembleRhs()
-
-    model.setOnlineAssembleDEIM(assembleOnlineDEIM)
-
-    heatBoxMDEIM = heat(dim=dim, order=1)
-    meshMDEIM = model.getMDEIMReducedMesh()
-    heatBoxMDEIM.setMesh(meshMDEIM)
-    heatBoxMDEIM.init()
-
-    def assembleOnlineMDEIM(mu):
-        for i in range(0, mu.size()):
-            heatBoxMDEIM.addParameterInModelProperties(mu.parameterName(i), mu(i))
-        heatBoxMDEIM.updateParameterValues()
-        return heatBoxMDEIM.assembleMatrix()
-
-    model.setOnlineAssembleMDEIM(assembleOnlineMDEIM)
-
-    model.postInitModel()
-    model.setInitialized(True)
-
-    return heatBox, model, time_dependent, mubar
-
-
-@pytest.mark.parametrize("prefix,case,casefile,dim,use_cache,time_dependent", cases_params, ids=cases_ids)
-def test_init_environment(prefix, case, casefile, dim, use_cache, time_dependent):
-    heatBox, model, time_dependent, mubar = init_model(prefix, case, casefile, dim, use_cache, time_dependent)
 
     decomposition = model.getAffineDecomposition()
-    assert len(decomposition) == [2,3][time_dependent]
+    Dmu = model.parameterSpace()
+    mubar = Dmu.mubar()
+    mumin = Dmu.mumin()
+    mumax = Dmu.mumax()
+    assert len(decomposition) == 2
+
+    print("\n\n\n\n")
+    print(mubar)
+
+    for p in mubar_th:
+        assert( mumin.parameterNamed(p) == mumin_th[p] )
+        assert( mumax.parameterNamed(p) == mumax_th[p] )
+        # assert( mubar.parameterNamed(p) == mubar_th[p] )
 
 
     # return decomposition

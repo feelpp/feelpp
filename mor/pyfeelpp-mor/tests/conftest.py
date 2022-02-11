@@ -1,6 +1,7 @@
 from logging import getLogger
 import sys
 
+import py
 import pytest
 import feelpp
 import feelpp.mor as mor
@@ -52,10 +53,8 @@ class InitFeelpp:
 
 @pytest.fixture(scope="session")
 def init_feelpp():
-    return InitFeelpp(feelpp.globalRepository("pyfeelpp-mor-tests"))
+    return InitFeelpp(feelpp.globalRepository("pyfeelppmor-tests"))
 
 @pytest.fixture(scope="session")
 def init_feelpp_config_local():
     return InitFeelpp(feelpp.localRepository("feelppdb"))
-
-
