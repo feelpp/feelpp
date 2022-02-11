@@ -172,6 +172,15 @@ public:
             }
 
         /**
+         * @brief return the list of all parameter names
+         * 
+         */
+        std::vector<std::string> const& parameterNames() const
+        {
+            return M_space->parameterNames();
+        }
+
+        /**
          * access element by name
          */
         double const& parameterNamed( std::string name ) const
@@ -1487,12 +1496,14 @@ public:
         M_min.resize( M_nDim,1 );
         M_max.resize( M_nDim,1 );
         M_mubar.resize( M_nDim,1 );
+        M_parameterNames.resize( this->dimension() );
 
         int i = 0;
         for( auto const& parameterPair : parameters )
         {
             if( parameterPair.second.hasMinMax() )
             {
+                setParameterName( i, parameterPair.second.name() );
                 M_min(i) = parameterPair.second.min();
                 M_max(i) = parameterPair.second.max();
                 M_mubar(i) = parameterPair.second.value();
