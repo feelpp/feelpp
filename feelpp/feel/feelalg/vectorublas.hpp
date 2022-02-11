@@ -171,21 +171,28 @@ class VectorUblas : public Vector<T>
 
         //VectorUblasExpression<T> operator+( const Vector<T>& v ) const;
 
-        //// Iterators API
-        //virtual iterator_type begin() = 0;
-        //virtual iterator_type end() = 0;
+        // Iterators API
+        auto begin() { return M_vectorImpl->begin(); }
+        auto begin() const { return M_vectorImpl->begin(); }
+        auto end() { return M_vectorImpl->end(); }
+        auto end() const { return M_vectorImpl->end(); }
+        
+        auto beginActive() { return M_vectorImpl->beginActive(); }
+        auto beginActive() const { return M_vectorImpl->beginActive(); }
+        auto endActive() { return M_vectorImpl->endActive(); }
+        auto endActive() const { return M_vectorImpl->endActive(); }
 
-        //virtual iterator_type beginGhost() = 0;
-        //virtual iterator_type endGhost() = 0;
-
-        //virtual size_type start() const = 0;
-        //virtual size_type startNonContiguousGhosts() const = 0;
+        auto beginGhost() { return M_vectorImpl->beginGhost(); }
+        auto beginGhost() const { return M_vectorImpl->beginGhost(); }
+        auto endGhost() { return M_vectorImpl->endGhost(); }
+        auto endGhost() const { return M_vectorImpl->endGhost(); }
 
         //size_type rowStart() const { return M_vectorImpl->rowStart(); }
         //size_type rowStop() const { return M_vectorImpl->rowStop(); }
 
         size_type startActive() const { return M_vectorImpl->startActive(); }
         size_type startGhost() const { return M_vectorImpl->startGhost(); }
+        size_type start() const { return this->startActive(); }
 
         // Setters API
         void setConstant( value_type a ) override { return M_vectorImpl->setConstant( a ); }
@@ -310,11 +317,16 @@ class VectorUblasBase: public Vector<T>
         typedef ublas::basic_slice<typename vector_storage_type::size_type, typename vector_storage_type::difference_type> slice_type;
 
         // Iterator class
-        template< typename Ref >
+        template< typename ValueType >
         class iterator
         {
             public:
-                typedef Ref reference_type;
+                using iterator_category = std::random_access_iterator_tag;
+                using value_type = std::decay_t<ValueType>;
+                using reference = ValueType &;
+                using difference_type = std::ptrdiff_t;
+                using pointer = ValueType *;
+
             public:
                 template< typename It >
                 iterator( const It & it ): M_iteratorImpl( new iterator_impl<It>( it ) ) { }
@@ -325,7 +337,7 @@ class VectorUblasBase: public Vector<T>
                 ~iterator() { if( M_iteratorImpl ) delete M_iteratorImpl; }
 
                 iterator & operator=( const iterator & other ) { swap( iterator( other ) ); return *this; }
-                reference_type operator*() const { return M_iteratorImpl->current(); }
+                reference operator*() const { return M_iteratorImpl->current(); }
                 iterator & operator++() { M_iteratorImpl->next(); return *this; }
                 iterator & operator--() { M_iteratorImpl->previous(); return *this; }
                 bool operator==( const iterator & other ) const { return M_iteratorImpl->equal( *other.M_iteratorImpl ); }
@@ -338,7 +350,7 @@ class VectorUblasBase: public Vector<T>
 
                         virtual iterator_impl_base * clone() const = 0;
 
-                        virtual reference_type current() const = 0;
+                        virtual reference current() const = 0;
                         virtual void next() = 0;
                         virtual void previous() = 0;
                         virtual bool equal( const iterator_impl_base & other ) const = 0;
@@ -353,7 +365,7 @@ class VectorUblasBase: public Vector<T>
                         ~iterator_impl() override = default;
                         iterator_impl<It> * clone() const override { return new iterator_impl<It>( M_it ); }
 
-                        reference_type current() const override { return *M_it; }
+                        reference current() const override { return *M_it; }
                         void next() override { ++M_it; }
                         void previous() override { --M_it; }
                         bool equal( const iterator_impl_base & other ) const override { return M_it.operator==( dynamic_cast<const iterator_impl<It>&>( other ).M_it ); }
@@ -367,8 +379,8 @@ class VectorUblasBase: public Vector<T>
                 iterator_impl_base * M_iteratorImpl;
         };
 
-        typedef iterator<value_type &> iterator_type;
-        typedef iterator<const value_type &> const_iterator_type;
+        typedef iterator<value_type> iterator_type;
+        typedef iterator<const value_type> const_iterator_type;
 
     public:
         // Constructors/Destructor
