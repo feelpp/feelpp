@@ -32,11 +32,11 @@
 
 
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelcrb/crbenums.hpp>
-#include <feel/feelcrb/crbdata.hpp>
-#include <feel/feelcrb/parameterspace.hpp>
-#include <feel/feelcrb/crbplugin_interface.hpp>
-#include <feel/feelcrb/options.hpp>
+#include <feel/feelmor/crbenums.hpp>
+#include <feel/feelmor/crbdata.hpp>
+#include <feel/feelmor/parameterspace.hpp>
+#include <feel/feelmor/crbplugin_interface.hpp>
+#include <feel/feelmor/options.hpp>
 
 namespace py = pybind11;
 PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
