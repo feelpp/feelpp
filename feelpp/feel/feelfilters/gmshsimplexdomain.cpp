@@ -220,10 +220,10 @@ GmshSimplexDomain::getDescription3D() const
              << "Transfinite Line(5) = 1;\n"
              << "Transfinite Line(6) = 1;\n";
 
-        ostr << "Transfinite Surface(5)=1;\n"
-             << "Transfinite Surface(11)=1;\n"
-             << "Transfinite Surface(13)=1;\n"
-             << "Transfinite Surface(15)=1;\n";
+        ostr << "Transfinite Surface(5);\n"
+             << "Transfinite Surface(11);\n"
+             << "Transfinite Surface(13);\n"
+             << "Transfinite Surface(15);\n";
     }
 
     ostr << "Surface Loop(20) = {11, 13, 15, 5};" << "\n"
