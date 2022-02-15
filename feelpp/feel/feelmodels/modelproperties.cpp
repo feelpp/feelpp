@@ -142,14 +142,20 @@ ModelProperties::setup()
             M_params.setDirectoryLibExpr( M_directoryLibExpr );
         M_params.setPTree( jarg.at("Parameters") );
     }
-
-    auto bc = M_p.get_child_optional("BoundaryConditions");
+#if 1
+    auto bc = M_p.get_child_optional("BoundaryConditionsOldVersion");
     if ( bc )
     {
         LOG(INFO) << "Model with boundary conditions\n";
         if ( !M_directoryLibExpr.empty() )
             M_bc.setDirectoryLibExpr( M_directoryLibExpr );
         M_bc.setPTree( *bc );
+    }
+#endif
+    if ( jarg.contains("BoundaryConditions") )
+    {
+        LOG(INFO) << "Model with boundary conditions\n";
+        M_bcNEW.setup( jarg.at("BoundaryConditions") );
     }
 
     if ( jarg.contains("InitialConditions") )

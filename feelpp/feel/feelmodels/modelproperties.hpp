@@ -83,8 +83,8 @@ public:
     ModelMaterials & materials() {  return M_mat; }
     ModelMaterials const& materials() const {  return M_mat; }
 
-    BoundaryConditions & boundaryConditions()  { return M_bc; }
-    BoundaryConditions const& boundaryConditions() const { return M_bc; }
+    BoundaryConditions & boundaryConditionsOldVersion()  { return M_bc; }
+    BoundaryConditions const& boundaryConditionsOldVersion() const { return M_bc; }
 
     /**
      * enable BoundaryConditions2 class as a simplified BC class
@@ -99,6 +99,8 @@ public:
       return M_bc2; 
     }
     ModelBoundaryConditions const& boundaryConditions2() const { return M_bc2; }
+
+    ModelBoundaryConditionsNEW const& boundaryConditions() const { return M_bcNEW; }
 
     ModelInitialConditions & initialConditions() { return M_ic; }
     ModelInitialConditions const& initialConditions() const { return M_ic; }
@@ -141,6 +143,7 @@ private:
     ModelInitialConditions M_ic;
     bool M_bc2_enabled = false;
     ModelBoundaryConditions M_bc2;
+    ModelBoundaryConditionsNEW M_bcNEW;
     ModelPostprocess M_postproc;
     ModelOutputs M_outputs;
 };
