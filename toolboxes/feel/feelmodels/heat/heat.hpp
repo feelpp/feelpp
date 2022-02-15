@@ -45,7 +45,7 @@
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
-#include <feel/feeldiscr/geometricspace.hpp>
+#include <feel/feelmodels/heat/heatboundaryconditions.hpp>
 
 namespace Feel
 {
@@ -141,10 +141,6 @@ class Heat : public ModelNumerical,
         materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
         void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
-        // boundary condition + body forces
-        map_scalar_field<2> const& bcDirichlet() const { return M_bcDirichlet; }
-        map_scalar_field<2> const& bcNeumann() const { return M_bcNeumann; }
-        map_scalar_fields<2> const& bcRobin() const { return M_bcRobin; }
         //___________________________________________________________________________________//
         // time step scheme
         std::string const& timeStepping() const { return M_timeStepping; }
@@ -468,12 +464,7 @@ class Heat : public ModelNumerical,
         materialsproperties_ptrtype M_materialsProperties;
 
         // boundary conditions
-        map_scalar_field<2> M_bcDirichlet;
-        map_scalar_field<2> M_bcNeumann;
-        map_scalar_fields<2> M_bcRobin;
-        MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
-        MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
-        MarkerManagementRobinBC M_bcRobinMarkerManagement;
+        HeatBoundaryConditions M_boundaryConditions;
 
         // stabilization
         bool M_stabilizationGLS;

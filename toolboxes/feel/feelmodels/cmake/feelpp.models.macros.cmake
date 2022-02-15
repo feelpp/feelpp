@@ -108,7 +108,7 @@ macro( genLibHeat )
       ${HEAT_LIB_DIR}/heatassemblyjacobian_inst.cpp
       ${HEAT_LIB_DIR}/heatassemblyresidual_inst.cpp
       )
-    set(HEAT_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore  ) 
+    set(HEAT_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore feelpp_toolbox_heatbase ) 
     # generate the lib target
     genLibBase(
       LIB_NAME ${HEAT_LIB_NAME}
