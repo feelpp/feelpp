@@ -51,7 +51,7 @@
 #include <feel/feelcore/ptreetools.hpp>
 #include <feel/feelcore/utility.hpp>
 #include <feel/feelcore/hashtables.hpp>
-#include <feel/feelmodels/modelproperties.hpp>
+#include <feel/feelmodels/modelparameters.hpp>
 
 namespace Feel
 {
@@ -1477,7 +1477,7 @@ public:
         }
 #endif
     //! constructor from ModelProperties
-    ParameterSpace( std::shared_ptr<ModelProperties> modelProperties, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    ParameterSpace( ModelParameters modelParameters, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         super( worldComm ),
         M_nDim(),
@@ -1485,9 +1485,7 @@ public:
         M_max(),
         M_mubar()
     {
-
-        auto parameters = modelProperties->parameters();
-        int nbCrbParameters = count_if(parameters.begin(), parameters.end(), [] (auto const& p)
+        int nbCrbParameters = count_if(modelParameters.begin(), modelParameters.end(), [] (auto const& p)
                                     {
                                         return p.second.hasMinMax();
                                     });
@@ -1499,7 +1497,7 @@ public:
         M_parameterNames.resize( this->dimension() );
 
         int i = 0;
-        for( auto const& parameterPair : parameters )
+        for( auto const& parameterPair : modelParameters )
         {
             if( parameterPair.second.hasMinMax() )
             {
@@ -1507,8 +1505,8 @@ public:
                 M_min(i) = parameterPair.second.min();
                 M_max(i) = parameterPair.second.max();
                 M_mubar(i) = parameterPair.second.value();
+		++i;
             }
-            ++i;
         }
     }
 
@@ -1532,6 +1530,18 @@ public:
             auto ps = std::make_shared<parameterspace_type>( 0,worldComm );
             ps->loadJson( filename );
             return ps;
+        }
+    static parameterspace_ptrtype New( ModelParameters modelParameters, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr())
+        {
+	    auto ps = std::make_shared<parameterspace_type>( modelParameters, worldComm );
+	    ps->setSpaces();
+	    return ps;
+	}
+    void setSpaces()
+        {
+            M_min.setParameterSpace(this->shared_from_this() );
+            M_max.setParameterSpace(this->shared_from_this() );
+            M_mubar.setParameterSpace(this->shared_from_this() );
         }
     //@}
 
@@ -1643,7 +1653,8 @@ public:
         {
             M_min = min;
             M_min.setParameterSpace( this->shared_from_this() );
-
+            if( !checkMubar() )
+                M_mubar = M_min;
         }
 
     /**
@@ -1653,6 +1664,8 @@ public:
         {
             M_max = max;
             M_max.setParameterSpace( this->shared_from_this() );
+            if( !checkMubar() )
+                M_mubar = M_min;
         }
 
     /**
@@ -1663,7 +1676,7 @@ public:
         size_t n = mubar.size();
         for ( size_t i=0; i<n; ++i )
         {
-            if ( (mubar[i] < M_min[i]) || (mubar[i] > M_max[i]) )
+            if ( !checkMubar() )
             {
                 Feel::cerr << "Parameter not in range" << std::endl;
                 return;
@@ -1672,6 +1685,11 @@ public:
         M_mubar = mubar;
         M_mubar.setParameterSpace( this->shared_from_this() );
     }
+    bool checkMubar()
+    {
+        return ((M_min-M_mubar).maxCoeff() <= 0) && ((M_mubar-M_max).maxCoeff() <= 0);
+    }
+
 
     /**
      * \brief name of a parameter
@@ -1730,7 +1748,7 @@ public:
             try {
                 int nDim  = ptreeParameterSpace.template get<int>( "dimension" );
                 if ( Dimension == invalid_uint16_type_value )
-                    M_nDim = nDim;
+                    this->setDimension(nDim);
                 else
                     CHECK( Dimension == nDim && M_nDim == nDim ) << "invalid dimension in json " << nDim << " must be " << Dimension;
             }
