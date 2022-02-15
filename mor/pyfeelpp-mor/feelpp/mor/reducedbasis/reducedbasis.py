@@ -30,7 +30,7 @@ class reducedbasis():
     """ Reduced basis for stationnary problem
     """
 
-    def __init__(self, Aq, Fq, model, mubar, alphaLB) -> None:
+    def __init__(self, Aq, Fq, model, mubar) -> None:
         """Initialise the object
 
         Args:
@@ -38,7 +38,6 @@ class reducedbasis():
             Fq (list of PETSc.Vec): vectors Fq given by the decomposition of right-hand side
             model (ToolboxMor_{2|3}D): model DEIM used for the decomposition
             mubar (ParameterSpaceElement): parameter mu_bar for the enrgy norm
-            alphaLB (func): function mu ↦ alphaLB(mu)
         """
         
         self.Aq = Aq    # of len Qa
@@ -51,7 +50,6 @@ class reducedbasis():
 
         self.model = model
         self.mubar = mubar
-        self.alphaLB = alphaLB
 
         self.Z      : list  # len N,  each vector size NN
         self.ANq    : list  # len Qa, each matrix size (N,N)
@@ -71,7 +69,7 @@ class reducedbasis():
             A_tmp = self.assembleA(self.betaA_bar[0])
             AT_tmp = A_tmp.copy()
             AT_tmp.transpose()
-            self.Abar = 0.5*(A_tmp + AT_tmp) 
+            self.Abar = 0.5*(A_tmp + AT_tmp)
 
         # KSP to solve
         self.KSP_TYPE = PETSc.KSP.Type.GMRES
@@ -94,6 +92,16 @@ class reducedbasis():
         self.ksp.setMonitor(monitor)
         pc = self.ksp.getPC()
         pc.setType(self.PC_TYPE)
+
+
+        alphaMubar = 1      # CHANGE IT : this is uncorrect in general !
+        betaA_bar_np = np.array(self.betaA_bar)
+        
+        def alphaLB(mu):
+            betaMu = self.model.computeBetaQm(self.mubar)[0][0]
+            return alphaMubar * np.min( betaMu / betaA_bar_np )
+
+        self.alphaLB = alphaLB
 
         ## For greedy memory
         self.DeltaMax = None
