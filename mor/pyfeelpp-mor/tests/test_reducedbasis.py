@@ -107,25 +107,27 @@ def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
     model.postInitModel()
     model.setInitialized(True)
 
-    return heatBox, model, time_dependent, mubar
+    return model, time_dependent, mubar
 
 
-@pytest.mark.parametrize("prefix,case,casefile,dim,use_cache,time_dependent", cases_params, ids=cases_ids)
-def test_init_environment(prefix, case, casefile, dim, use_cache, time_dependent):
-    heatBox, model, time_dependent, mubar = init_model(prefix, case, casefile, dim, use_cache, time_dependent)
+def init_environment(prefix, case, casefile, dim, use_cache, time_dependent):
+    model, time_dependent, mubar = init_model(prefix, case, casefile, dim, use_cache, time_dependent)
 
     decomposition = model.getAffineDecomposition()
     assert len(decomposition) == [2,3][time_dependent]
 
-    # return decomposition
+    return model, decomposition, mubar
 
 
+def compar_from_sampling(rb, xi_test):
+    """Compare the solutions on the generating sample (should be computer 0)
+       xi_test has to be equal to xi_train used to generate the basis
+    """
+    for mu in xi_test:
+        relErrOnU = rb.compareSols(mu)
+        assert( relErrOnU < 1e-12 )
 
-# # @pytest.mark.dependency(depends=['test_init_environment'])
-# def test_init_reducedbasis():
 
-#     Aq = pytest.decomposition[0]
-#     Fq = pytest.decomposition[1]
 
 #     print("coucou")
 #     print(pytest.model)
@@ -147,91 +149,43 @@ def test_init_environment(prefix, case, casefile, dim, use_cache, time_dependent
 
 
 
-# @pytest.mark.dependency(depends=['test_init_reducedbasis'])
-# def test_computeBasis():
-#     """Checks that the reduced basis is well computed and orthonormalized
-#     """
-#     pytest.mus = listOfParams(40)
-#     pytest.rb.computeOfflineReducedBasis(pytest.mus, orth=True)
-#     # assert( rbTest.test_orth() == np.eye(rbTest.N)).all()
-#     assert( pytest.rb.test_orth() )
+
+@pytest.mark.parametrize("prefix,case,casefile,dim,use_cache,time_dependent", cases_params, ids=cases_ids)
+def test_init_reducedbasis(prefix, case, casefile, dim, use_cache, time_dependent, init_feelpp):
+    e = init_feelpp    
+    model, decomposition, mubar = init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
+
+    Aq = decomposition[0]
+    Fq = decomposition[1]
+
+    rb = reducedbasis(convertToPetscMat(Aq[0]), convertToPetscVec(Fq[0][0]), model, mubar)
+
+
+    print("\nCompute basis and orthonormalize it")
+
+    def listOfParams(n):
+        res = []
+        for i in range(n):
+            res.append(model.parameterSpace().element())
+        return res
+
+    mus = listOfParams(40)
+    rb.computeOfflineReducedBasis(mus, orth=True)
+    assert( rb.test_orth() )
+
+
+    print("\nCompute offline error")
+    rb.computeOfflineErrorRhs()
+    rb.computeOfflineError()
+
+    print("\nError with parameters from sampling")
+    compar_from_sampling(rb, mus)
+
+    print("\nCompar matrix")
+    # compar_matrix(model)    # TODO
 
 
 
-# @pytest.mark.dependency(depends=['test_computeBasis'])
-# def test_computeOfflineError():
-#     """Tests thaht the compute offline error is well run
-#     """
-#     pytest.rb.computeOfflineErrorRhs()
-#     pytest.rb.computeOfflineError()
-
-
-# @pytest.mark.dependency(depends=['test_computeBasis'])
-# def test_compar():
-#     """Compare the solutions on the generating sample (should be computer 0)
-#     """
-#     for mu in pytest.mus:
-#         relErrOnU = pytest.rb.compareSols(mu)
-#         assert( relErrOnU < 1e-12 )
-
-
-# # @pytest.mark.dependency(depends=['test_init_environment'])
-# def test_for_param():
-#     """check that the error on reduced basis for the generating sample is null, when the basis is not orthonormalized
-#     """
-#     Aq = pytest.decomposition[0]
-#     Fq = pytest.decomposition[1]
-    
-#     rbParam = reducedbasis(convertToPetscMat(Aq[0]), convertToPetscVec(Fq[0][0]), model, mubar, alphaLB)
-#     # reduced basis only when RB not orthonormilized
-#     rbParam.computeOfflineReducedBasis(pytest.mus, orth=False)
-#     for i,mu in enumerate(pytest.mus):
-#         print('check RB {} with mu:{}'.format(i, mu))
-#         beta = pytest.model.computeBetaQm(mu)
-#         assert(len(beta) == 2)
-#         betaA = beta[0]
-#         betaF = beta[1]
-#         A = rbParam.assembleA(betaA[0])
-#         F = rbParam.assembleF(betaF[0][0])
-
-#         u, _ = pytest.rb.getSolutionsFE(mu)
-#         uN = np.array(np.zeros((rbParam.N)))
-#         uN[i] = 1
-#         AN = rbParam.assembleAN(betaA[0])
-#         FN = rbParam.assembleFN(betaF[0][0])
-#         # print('FN:',FN)
-#         # print("_ NN", "N")
-#         # print("F", u.dot(F), uN.T @ FN)
-#         # print("A", u.dot(A * u), uN.T @ AN @ uN)
-#         assert(abs(u.dot(F) - uN.T @ FN)/abs(u.dot(F)) < 1e-10), "abs(u.dot(F) - uN.T @ FN)/abs(u.dot(F)) = {}".format(abs(u.dot(F) - uN.T @ FN)/abs(u.dot(F)))
-#         assert(abs(u.dot(A * u) - uN.T @ AN @ uN)/abs(u.dot(A * u)) < 1e-10), "abs(u.dot(A * u) - uN.T @ AN @ uN)/abs(u.dot(A * u)) = {}".format(abs(u.dot(A * u) - uN.T @ AN @ uN)/abs(u.dot(A * u)))
-
-
-# # @pytest.mark.dependency(depends=['test_init_reducedbasis'])
-# def test_comparMatrix():
-#     """Compares the construction of the matrix to the toolbox one
-#     """
-#     mu = Dmu.element(True, False)    # TODO : see how to get the values from json
-#     mu.setParameters({"Bi":0.01, "k_0":1, "k_1":0.1, "k_2":0.1, "k_3":0.1, "k_4":0.1})
-
-#     beta = model.computeBetaQm(mu)
-#     assert(len(beta) == 2)
-#     betaA = beta[0]
-#     M_tb = assembleMDEIM(mu).mat()
-#     M_tb.assemble()
-#     M_rb = pytest.rb.assembleA(betaA[0])
-
-#     assert(M_tb.size == M_rb.size)
-
-#     norm = (M_tb - M_rb).norm() / M_tb.norm()
-
-#     print(f"\n\n\n\nrelErr = {norm}\n||M_tb|| = {M_tb.norm()}, ||M_rb|| = {M_rb.norm()}\n\n\n\n")
-
-#     # a = M_tb.convert("dense").getDenseArray()
-#     # import matplotlib.pyplot as plt
-#     # plt.imshow(a)
-#     # plt.title('sta')
-#     # plt.show()
 
 
 # # @pytest.mark.dependency(depends=['test_init_reducedbasis'])
