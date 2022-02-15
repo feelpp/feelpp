@@ -1,4 +1,35 @@
 
+add_library(
+  feelpp_toolbox_heatbase
+  SHARED
+  heatboundaryconditions.cpp
+)
+target_link_libraries(feelpp_toolbox_heatbase PUBLIC feelpp_modelcore )
+add_library(Feelpp::feelpp_toolbox_heatbase ALIAS feelpp_toolbox_heatbase )  # to match exported target
+set_target_properties(feelpp_toolbox_heatbase PROPERTIES OUTPUT_NAME "feelpp_toolbox_heatbase")
+target_include_directories(feelpp_toolbox_heatbase PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include/feelpp/toolboxes>  )
+set_property(TARGET feelpp_toolbox_heatbase PROPERTY MACOSX_RPATH ON)
+if( FEELPP_ENABLE_PCH_MODELS )
+  add_precompiled_header( feelpp_toolbox_heatbase )
+endif()
+#include(GNUInstallDirs)
+set_target_properties(feelpp_toolbox_heatbase PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
+install(TARGETS feelpp_toolbox_heatbase EXPORT feelpp-toolboxes-targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+
+
+
+
+
+
+
+
 # geo order 1
 foreach(_DIM 2 3)
   math(EXPR _T_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")

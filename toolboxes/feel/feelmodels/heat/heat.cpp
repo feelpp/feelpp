@@ -200,15 +200,16 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                 isNonLinear = true;
                 break;
             }
-            for( auto const& d : M_bcNeumann )
+            for ( auto const& [bcName,bcData] : M_boundaryConditions.heatFlux() )
             {
-                auto neumannExpr = expression( d );
+                auto neumannExpr = bcData.expr();
                 if ( neumannExpr.hasSymbolDependency( tsName, se ) )
                 {
                     isNonLinear = true;
                     break;
                 }
             }
+
             if ( isNonLinear )
                 break;
         }
@@ -439,6 +440,8 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
     p["Physics2"] = subPt;
 
     // Boundary Conditions
+    M_boundaryConditions.updateInformationObject( p["Boundary Conditions"] );
+
 #if 0
     subPt.clear();
     subPt2.clear();
@@ -514,6 +517,8 @@ HEAT_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Tabula
         tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
 
     //tabInfoSections.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
+    if ( jsonInfo.contains("Boundary Conditions") )
+        tabInfo->add( "Boundary Conditions", HeatBoundaryConditions::tabulateInformations( jsonInfo.at("Boundary Conditions"), tabInfoProp ) );
 
     if ( jsonInfo.contains("Meshes") )
         tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
@@ -651,9 +656,7 @@ HEAT_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         physicData->setParameterValues( paramValues );
 
-    M_bcDirichlet.setParameterValues( paramValues );
-    M_bcNeumann.setParameterValues( paramValues );
-    M_bcRobin.setParameterValues( paramValues );
+    M_boundaryConditions.setParameterValues( paramValues );
 
     this->log("Heat","setParameterValues", "finish");
 }
@@ -662,21 +665,9 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
-    M_bcDirichletMarkerManagement.clearMarkerDirichletBC();
-    M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
-    M_bcRobinMarkerManagement.clearMarkerRobinBC();
-
-    this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Dirichlet" );
-    for( auto const& d : this->M_bcDirichlet )
-        M_bcDirichletMarkerManagement.addMarkerDirichletBC("elimination", name(d), markers(d) );
-    this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Neumann" );
-    for( auto const& d : this->M_bcNeumann )
-        M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d),markers(d));
-
-    this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "temperature", "Robin" );
-    for( auto const& d : this->M_bcRobin )
-        M_bcRobinMarkerManagement.addMarkerRobinBC( name(d),markers(d) );
-
+    if ( !this->modelProperties().boundaryConditions().hasSection( this->keyword() ) )
+        return;
+    M_boundaryConditions.setup( *this,this->modelProperties().boundaryConditions().section( this->keyword() ) );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -686,12 +677,9 @@ HEAT_CLASS_TEMPLATE_TYPE::updateAlgebraicDofEliminationIds()
     auto mesh = this->mesh();
     auto XhTemperature = this->spaceTemperature();
     std::set<std::string> temperatureMarkers;
-
-    // strong Dirichlet bc on temperature from expression
-    for( auto const& d : M_bcDirichlet )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions.temperatureImposed() )
     {
-        auto listMark = M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) );
-        temperatureMarkers.insert( listMark.begin(), listMark.end() );
+        temperatureMarkers.insert( bcData.markers().begin(), bcData.markers().end() );
     }
     auto meshMarkersTemperatureByEntities = detail::distributeMarkerListOnSubEntity( mesh, temperatureMarkers );
 
