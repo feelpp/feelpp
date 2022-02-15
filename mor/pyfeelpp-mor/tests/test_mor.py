@@ -55,19 +55,17 @@ def test_init_from_ModelPropeties(casefile, dim, mubar_th, mumin_th, mumax_th,  
     modelProperties = heatBox.modelProperties()
     Dmu = feelpp.mor.ParameterSpace(modelProperties)
 
-    Dmu = model.parameterSpace()
-    mubar = Dmu.element()
-
-
-    decomposition = model.getAffineDecomposition()
-    Dmu = model.parameterSpace()
     mubar = Dmu.mubar()
     mumin = Dmu.mumin()
     mumax = Dmu.mumax()
-    assert len(decomposition) == 2
 
     print("\n\n\n\n")
     print(mubar)
+    print(":/")
+    mu = Dmu.element()
+    print(mu.parameterNames())
+    print(mumin.parameterNames())
+
 
     for p in mubar_th:
         assert( mumin.parameterNamed(p) == mumin_th[p] )
