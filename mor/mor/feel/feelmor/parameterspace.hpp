@@ -1477,7 +1477,7 @@ public:
         }
 #endif
     //! constructor from ModelProperties
-    ParameterSpace( ModelParameters modelParameters, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    ParameterSpace( ModelParameters const& modelParameters, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         super( worldComm ),
         M_nDim(),
@@ -1528,7 +1528,7 @@ public:
             ps->loadJson( filename );
             return ps;
         }
-    static parameterspace_ptrtype New( ModelParameters modelParameters, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr())
+    static parameterspace_ptrtype New( ModelParameters const& modelParameters, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr())
         {
 	    auto ps = std::make_shared<parameterspace_type>( modelParameters, worldComm );
 	    ps->setSpaces();
