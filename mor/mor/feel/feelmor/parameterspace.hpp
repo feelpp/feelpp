@@ -1489,9 +1489,7 @@ public:
                                     {
                                         return p.second.hasMinMax();
                                     });
-        M_nDim = nbCrbParameters;
-
-        M_parameterNames.resize( this->dimension() );
+        this->setDimension( nbCrbParameters );
 
         int i = 0;
         for( auto const& parameterPair : modelParameters )
