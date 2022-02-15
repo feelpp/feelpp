@@ -1491,9 +1491,6 @@ public:
                                     });
         M_nDim = nbCrbParameters;
 
-        M_min.resize( M_nDim,1 );
-        M_max.resize( M_nDim,1 );
-        M_mubar.resize( M_nDim,1 );
         M_parameterNames.resize( this->dimension() );
 
         int i = 0;
@@ -1505,7 +1502,7 @@ public:
                 M_min(i) = parameterPair.second.min();
                 M_max(i) = parameterPair.second.max();
                 M_mubar(i) = parameterPair.second.value();
-		++i;
+                ++i;
             }
         }
     }
