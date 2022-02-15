@@ -1493,9 +1493,6 @@ public:
                                     });
         M_nDim = nbCrbParameters;
 
-        M_min.resize( M_nDim,1 );
-        M_max.resize( M_nDim,1 );
-        M_mubar.resize( M_nDim,1 );
         M_parameterNames.resize( this->dimension() );
 
         int i = 0;
@@ -1504,12 +1501,34 @@ public:
             if( parameterPair.second.hasMinMax() )
             {
                 setParameterName( i, parameterPair.second.name() );
-                M_min(i) = parameterPair.second.min();
-                M_max(i) = parameterPair.second.max();
-                M_mubar(i) = parameterPair.second.value();
+                // M_min(i) = parameterPair.second.min();
+                // M_max(i) = parameterPair.second.max();
+                // M_mubar(i) = parameterPair.second.value();
             }
             ++i;
         }
+
+
+        element_type mumin, mumax, mubar;
+        mumin.setParameterSpace( this->shared_from_this() );
+        mumax.setParameterSpace( this->shared_from_this() );
+        mubar.setParameterSpace( this->shared_from_this() );
+
+        int j = 0;
+        for( auto const& parameterPair : parameters )
+        {
+            if( parameterPair.second.hasMinMax() )
+            {
+                mumin(j) = parameterPair.second.min();
+                mumax(j) = parameterPair.second.max();
+                mubar(j) = parameterPair.second.value();
+            }
+            ++j;
+        }
+
+        setMin(mumin);
+        setMax(mumax);
+        setMubar(mubar);
     }
 
     //! destructor
