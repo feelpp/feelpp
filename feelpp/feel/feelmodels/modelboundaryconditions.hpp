@@ -143,6 +143,30 @@ class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::m
     std::map<std::string,ModelBoundaryCondition> M_emptyFieldType;
 };
 
+
+class FEELPP_EXPORT ModelBoundaryConditionsNEW// : public std::map<std::string,nl::json>
+{
+  public:
+  ModelBoundaryConditionsNEW() = default;
+  ModelBoundaryConditionsNEW( ModelBoundaryConditionsNEW && ) = default;
+  ModelBoundaryConditionsNEW( ModelBoundaryConditionsNEW const& ) = default;
+
+  bool hasSection( std::string const& sn ) const { return M_sections.find( sn ) != M_sections.end(); }
+  nl::json const& section( std::string const& sn ) const { return M_sections.at( sn ); }
+
+  void setup( nl::json const& jarg )
+  {
+      if ( !jarg.is_object() )
+          return;
+      for ( auto const& [jargkey,jargval] : jarg.items() )
+      {
+          M_sections.emplace( jargkey,jargval );
+      }
+  }
+  private:
+  std::map<std::string,nl::json> M_sections;
+};
+
 }
 
 #endif
