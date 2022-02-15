@@ -78,6 +78,7 @@ ENABLE_TESTING()
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 include(feelpp.macros.mor)
+add_subdirectory(cmake)
 add_subdirectory(mor/feel/feelmor)
 add_subdirectory(apps)
 
@@ -96,7 +97,12 @@ ENDIF()
 
 add_subdirectory(pyfeelpp-mor)
 
+OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ON)
+if (FEELPP_ENABLE_TESTS)
+  add_subdirectory(tests)
+endif()
 
+OPTION(FEELPP_ENABLE_EXAMPLES "enable Feel++ examples" OFF)
 if ( FEELPP_ENABLE_MOR_EXAMPLES )
   add_subdirectory( examples )
 endif()

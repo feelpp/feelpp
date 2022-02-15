@@ -32,7 +32,7 @@
 #include <feel/feelfilters/unithypercube.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelvf/vf.hpp>
-#include <feel/feeldiscr/reducedbasisspace.hpp>
+#include <feel/feelmor/reducedbasisspace.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
