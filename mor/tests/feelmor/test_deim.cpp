@@ -7,8 +7,8 @@
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/form.hpp>
-#include <feel/feelcrb/deim.hpp>
-#include <feel/feelcrb/parameterspace.hpp>
+#include <feel/feelmor/deim.hpp>
+#include <feel/feelmor/parameterspace.hpp>
 
 using namespace Feel;
 

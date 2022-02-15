@@ -38,8 +38,8 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 
-#include <feel/feelcrb/modelcrbbase.hpp>
-#include <feel/feelcrb/opusapp.hpp>
+#include <feel/feelmor/modelcrbbase.hpp>
+#include <feel/feelmor/opusapp.hpp>
 
 namespace Feel
 {
