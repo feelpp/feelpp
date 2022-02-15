@@ -43,6 +43,6 @@ class InitFeelpp:
             return 
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def init_feelpp():
     return InitFeelpp(feelpp.globalRepository("pyfeelppmor-tests"))
