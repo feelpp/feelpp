@@ -54,19 +54,19 @@
     },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Robin":
+            "convective_heat_flux":
             {
                 "top":
                 {
-                    "expr1":"h_top:h_top",// h coeff
-                    "expr2":"T0_top:T0_top"// temperature exterior
+                    "h":"h_top:h_top",// h coeff
+                    "Text":"T0_top:T0_top"// temperature exterior
                 },
                 "bottom":
                 {
-                    "expr1":"h_bottom:h_bottom",// h coeff
-                    "expr2":"T0_bottom:T0_bottom"// temperature exterior
+                    "h":"h_bottom:h_bottom",// h coeff
+                    "Text":"T0_bottom:T0_bottom"// temperature exterior
                 }
             }
         }

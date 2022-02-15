@@ -37,19 +37,19 @@
     },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Robin":
+            "convective_heat_flux":
             {
                 "Exterior_wall":
                 {
-                    "expr1":"h_exterior:h_exterior",// h coeff
-                    "expr2":"T0_exterior:T0_exterior"// temperature exterior
+                    "h":"h_exterior:h_exterior",// h coeff
+                    "Text":"T0_exterior:T0_exterior"// temperature exterior
                 },
                 "Interior_wall":
                 {
-                    "expr1":"h_interior:h_interior",// h coeff
-                    "expr2":"T0_interior:T0_interior"// temperature exterior
+                    "h":"h_interior:h_interior",// h coeff
+                    "Text":"T0_interior:T0_interior"// temperature exterior
                 }
             }
         }

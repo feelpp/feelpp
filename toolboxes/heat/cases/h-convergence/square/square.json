@@ -40,9 +40,9 @@
     },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Dirichlet":
+            "temperature":
             {
                 "mybc":
                 {
