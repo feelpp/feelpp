@@ -91,6 +91,17 @@
             }
         },
         {
+            "name": "research-mor",
+            "inherits": "default",
+            "displayName": "resarch-mor",
+            "description": "Build only the Feel++ MOR and Research Components",
+            "binaryDir": "${sourceDir}/build/research-mor",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "mor",
+                "FEELPP_ENABLE_RESEARCH": "ON"
+            }
+        },
+        {
             "name": "pyfeelpp",
             "inherits": "default",
             "displayName": "pyfeelpp",
