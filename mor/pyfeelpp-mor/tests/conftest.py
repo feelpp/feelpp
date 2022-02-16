@@ -36,12 +36,7 @@ class InitFeelpp:
             sys.argv=['test_pyfeelppmor']
             self.e = feelpp.Environment(
                 sys.argv, opts= feelpp.backend_options("Iv")
-                                .add(tb.toolboxes_options("electric"))
-                                .add(tb.toolboxes_options("fluid"))
                                 .add(tb.toolboxes_options("heat"))
-                                .add(tb.toolboxes_options("solid"))
-                                .add(tb.toolboxes_options("solid"))
-                                .add(tb.toolboxes_options("coefficient-form-pdes", "cfpdes"))
                                 .add(mor.makeToolboxMorOptions()),
                 config=config
                                 )
