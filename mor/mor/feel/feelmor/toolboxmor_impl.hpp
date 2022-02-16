@@ -45,29 +45,8 @@ ToolboxMor<SpaceType, Options>::ToolboxMor(std::string const& prefix)
     M_trainsetMdeimSize(ioption("toolboxmor.trainset-mdeim-size"))
 {
     M_modelProperties = std::make_shared<ModelProperties>(M_propertyPath);
-
     auto parameters = M_modelProperties->parameters();
-    int nbCrbParameters = count_if(parameters.begin(), parameters.end(), [] (auto const& p)
-                                   {
-                                       return p.second.hasMinMax();
-                                   });
-    this->Dmu->setDimension(nbCrbParameters);
-    auto mu_min = this->Dmu->element();
-    auto mu_max = this->Dmu->element();
-    int i = 0;
-    for( auto const& parameterPair : parameters )
-    {
-        if( parameterPair.second.hasMinMax() )
-        {
-            mu_min(i) = parameterPair.second.min();
-            mu_max(i) = parameterPair.second.max();
-            this->Dmu->setParameterName(i++, parameterPair.first );
-        }
-    }
-    this->Dmu->setMin(mu_min);
-    this->Dmu->setMax(mu_max);
-    // M_mu = Dmu->element();
-
+    this->Dmu = parameterspace_type::New(parameters);
 }
 
 template<typename SpaceType, int Options>
