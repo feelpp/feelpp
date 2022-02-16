@@ -4,6 +4,12 @@ import pandas as pd
 
 FEEL_PATH = os.environ['HOME'] + '/feel'
 
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+
+
 
 from feelpp.toolboxes.heat import *
 from feelpp.toolboxes.core import *
@@ -14,7 +20,7 @@ from feelpp.mor.reducedbasis.reducedbasis import *
 
 #        (( prefix, case, casefile, dim, use_cache, time_dependant), name     )
 cases = [
-         (('thermal-fin', '2d', 'thermal-fin.cfg', 2, False, False), 'thermal-fin-2d'),
+        #  (('thermal-fin', '2d', 'thermal-fin.cfg', 2, False, False), 'thermal-fin-2d'),
          (('thermal-fin', '2d', 'thermal-fin.cfg', 2, True, False), 'thermal-fin-2d-cached'),
          (('thermal-fin', '3d', 'thermal-fin.cfg', 3, False, False), 'thermal-fin-3d'),
          (('thermal-fin', '3d', 'thermal-fin.cfg', 3, True, False), 'thermal-fin-3d-cached')
@@ -107,16 +113,16 @@ def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
     model.postInitModel()
     model.setInitialized(True)
 
-    return model, time_dependent, mubar
+    return heatBox, model, time_dependent, mubar, assembleMDEIM, assembleDEIM
 
 
 def init_environment(prefix, case, casefile, dim, use_cache, time_dependent):
-    model, time_dependent, mubar = init_model(prefix, case, casefile, dim, use_cache, time_dependent)
+    heatBox, model, time_dependent, mubar, assembleMDEIM, assembleDEIM = init_model(prefix, case, casefile, dim, use_cache, time_dependent)
 
     decomposition = model.getAffineDecomposition()
     assert len(decomposition) == [2,3][time_dependent]
 
-    return model, decomposition, mubar
+    return heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM
 
 
 def compar_from_sampling(rb, xi_test):
@@ -129,40 +135,97 @@ def compar_from_sampling(rb, xi_test):
 
 
 
-#     print("coucou")
-#     print(pytest.model)
-#     print(pytest.mubar)
-#     beta = pytest.model.computeBetaQm(pytest.mubar)
-#     print("coucoIu")
+def compar_matrix(rb, assembleMDEIM):
+    """Compares the construction of the matrix to the toolbox one
+    """
+    model = rb.model
+    Dmu = model.parameterSpace()
+    
+    mu = Dmu.element(True, False)
 
-#     pytest.rb = reducedbasis(convertToPetscMat(Aq[0]), convertToPetscVec(Fq[0][0]), pytest.model, pytest.mubar, alphaLB)
+    beta = model.computeBetaQm(mu)
+    betaA = beta[0]
+    M_tb = assembleMDEIM(mu).mat()
+    M_tb.assemble()
+    M_rb = rb.assembleA(betaA[0])
 
-# # test_init_environment()
-# # test_init_reducedbasis()
+    assert(M_tb.size == M_rb.size)
+    norm = (M_tb - M_rb).norm() / M_tb.norm()
+    print(f"relErr = {norm}\n||M_tb|| = {M_tb.norm()}, ||M_rb|| = {M_rb.norm()}")
+    assert (norm < 1e-10)
 
 
-# # pytest.mus = listOfParams(10)
-# # r = pytest.rb
-# # r.computeOfflineReducedBasis(pytest.mus, orth=True)
+def compar_rhs(rb, assembleDEIM):
+    """Compares the construction of the rhs to the toolbox one
+    """
+    model = rb.model
+    Dmu = model.parameterSpace()
 
-# # r.test_orth()
+    mu = Dmu.element(True, False)
+    beta = model.computeBetaQm(mu)
+    assert len(beta) == 2, f"len(beta)={len(beta)} and should be 2"
+    betaF = beta[1]
+    F_tb = assembleDEIM(mu).vec()
+    F_tb.assemble()
+    F_rb = rb.assembleF(betaF[0][0])
+    assert F_tb.size == F_rb.size, f"F_tb = {F_tb.size} != {F_rb.size} = F_rb"
+    
+    norm = (F_tb-F_rb).norm() / F_tb.norm()
+    print(f"relErr = {norm}\n||F_tb|| = {F_tb.norm()}, ||F_rb|| = {F_rb.norm()}")
+    assert norm < 1e-10, f"relative error {norm} too high"
+
+def compar_sols(rb, assembleMDEIM, heatBox):
+    """Compares the computation of the output
+    """
+    model = rb.model
+    Dmu = model.parameterSpace()
+    mu = Dmu.element(True, False)
+    # mu.setParameters({"Bi":0.01, "k_0":1, "k_1":0.1, "k_2":0.1, "k_3":0.1, "k_4":0.1})
+    beta = model.computeBetaQm(mu)
+    assert(len(beta) == 2)
+    assembleMDEIM(mu)
+    heatBox.solve()
+    s_tb = feelpp.mean(range=feelpp.markedfaces(heatBox.mesh(), "Gamma_root"), expr=heatBox.fieldTemperature())[0]
+
+    _,sN = rb.getSolutions(mu)
+    
+    norm = (sN - s_tb ) / s_tb
+    print(f"relErr = {norm}\n||s_tb|| = {s_tb}, ||s_rb|| = {sN}")
+    assert norm < 1e-10, f"relative error {norm} is too high"
 
 
+def compar_solFE(rb, assembleMDEIM, heatBox):
+    """Compares the construction of the matrix to the toolbox one
+    """
+    model = rb.model
+    Dmu = model.parameterSpace()
+    mu = Dmu.element(True, False)
+    beta = model.computeBetaQm(mu)
+    assert(len(beta) == 2)
+    assembleMDEIM(mu)
+    heatBox.solve()
+    u_tb = heatBox.fieldTemperature().to_petsc().vec()
+
+    u_fe,_ = rb.getSolutionsFE(mu)
+
+    assert(u_tb.size == u_fe.size)
+    
+    norm = (u_tb - u_fe).norm() / u_tb.norm()
+    print(f"relErr = {norm}\n||u_tb|| = {u_tb}, ||u_fe|| = {u_fe}")
+    assert norm < 1e-10, f"relative error {norm} is too high"
 
 
 @pytest.mark.parametrize("prefix,case,casefile,dim,use_cache,time_dependent", cases_params, ids=cases_ids)
 def test_init_reducedbasis(prefix, case, casefile, dim, use_cache, time_dependent, init_feelpp):
     e = init_feelpp    
-    model, decomposition, mubar = init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
+    heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM = init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
 
     Aq = decomposition[0]
     Fq = decomposition[1]
 
     rb = reducedbasis(convertToPetscMat(Aq[0]), convertToPetscVec(Fq[0][0]), model, mubar)
 
-
     print("\nCompute basis and orthonormalize it")
-
     def listOfParams(n):
         res = []
         for i in range(n):
@@ -178,73 +241,26 @@ def test_init_reducedbasis(prefix, case, casefile, dim, use_cache, time_dependen
     rb.computeOfflineErrorRhs()
     rb.computeOfflineError()
 
-    print("\nError with parameters from sampling")
-    compar_from_sampling(rb, mus)
+    if size == 1:
+        print("\nError with parameters from sampling")
+        compar_from_sampling(rb, mus)
 
     print("\nCompar matrix")
-    # compar_matrix(model)    # TODO
+    compar_matrix(rb, assembleMDEIM)
+
+    print("\nCompar Rhs")
+    compar_rhs(rb, assembleDEIM)
+
+    print("\nCompar solutions")
+    compar_sols(rb, assembleDEIM, heatBox)
+
+    print("\nCompar FE solutions")
+    compar_solFE(rb, assembleDEIM, heatBox)
 
 
 
 
 
-# # @pytest.mark.dependency(depends=['test_init_reducedbasis'])
-# def test_comparRhs():
-#     """Compares the construction of the rhs to the toolbox one
-#     """
-#     mu = Dmu.element(True, False)    # TODO : see how to get the values from json
-#     beta = model.computeBetaQm(mu)
-#     assert len(beta) == 2, f"len(beta)={len(beta)} and should be 2"
-#     betaF = beta[1]
-#     F_tb = assembleDEIM(mu).vec()
-#     F_tb.assemble()
-#     F_rb = pytest.rb.assembleF(betaF[0][0])
-
-#     assert F_tb.size == F_rb.size, f"F_tb = {F_tb.size} != {F_rb.size} = F_rb"
-#     norm = (F_tb-F_rb).norm() / F_tb.norm()
-#     assert norm < 1e-10, f"relative error {norm} too high"
-
-
-# # @pytest.mark.dependency(depends=['test_computeBasis'])
-# def test_comparSols():
-#     """Compares the computation of the output
-#     """
-#     mu = Dmu.element(True, False)    # TODO : see how to get the values from json
-#     mu.setParameters({"Bi":0.01, "k_0":1, "k_1":0.1, "k_2":0.1, "k_3":0.1, "k_4":0.1})
-#     beta = model.computeBetaQm(mu)
-#     assert(len(beta) == 2)
-#     betaA = beta[0]
-#     # M_tb = heatBox.assembleMatrix().mat()
-#     assembleMDEIM(mu)
-#     heatBox.solve()
-#     s_tb = feelpp.mean(range=feelpp.markedfaces(heatBox.mesh(), "Gamma_root"), expr=heatBox.fieldTemperature())[0]
-
-#     _,sN = pytest.rb.getSolutions(mu)
-    
-#     norm = (sN - s_tb ) / s_tb
-#     assert norm < 1e-10, f"relative error {norm} is too high"
-
-
-# # @pytest.mark.dependency(depends=['test_computeBasis'])
-# def test_comparSolsFE():
-#     """Compares the construction of the matrix to the toolbox one
-#     """
-#     mu = pytest.Dmu.element(True, False)    # TODO : see how to get the values from json
-#     mu.setParameters({"Bi":0.01, "k_0":1, "k_1":0.1, "k_2":0.1, "k_3":0.1, "k_4":0.1})
-#     beta = pytest.model.computeBetaQm(mu)
-#     assert(len(beta) == 2)
-#     betaA = beta[0]
-#     # M_tb = heatBox.assembleMatrix().mat()
-#     assembleMDEIM(mu)
-#     heatBox.solve()
-#     u_tb = heatBox.fieldTemperature().to_petsc().vec()
-
-#     u_fe,_ = pytest.rb.getSolutionsFE(mu)
-
-#     assert(u_tb.size == u_fe.size)
-    
-#     norm = (u_tb - u_fe).norm() / u_tb.norm()
-#     assert norm < 1e-10, f"relative error {norm} is too high"
 
 
 
