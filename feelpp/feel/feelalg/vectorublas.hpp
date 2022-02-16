@@ -64,6 +64,8 @@ public:
     }
 };
 
+/*-----------------------------------------------------------------------------*/
+// Forward declarations
 template< typename T >
 class VectorUblasBase;
 template< typename T >
@@ -81,6 +83,12 @@ class VectorUblasSlice;
 
 } // namespace detail
 
+template< typename T > class VectorUblas;
+
+template< typename T > 
+VectorUblas<T> element_product( const VectorUblas<T> & v1, const VectorUblas<T> & v2 );
+
+/*-----------------------------------------------------------------------------*/
 template< typename T >
 class VectorUblas : public Vector<T>
 {
@@ -255,7 +263,7 @@ class VectorUblas : public Vector<T>
     protected:
         VectorUblas( vector_impl_ptrtype && vectorImpl ): super_type( vectorImpl->mapPtr() ), M_vectorImpl( std::move( vectorImpl ) ) { }
 
-        friend self_type element_product( const self_type &, const self_type & );
+        friend self_type element_product<>( const self_type &, const self_type & );
         
     private:
         vector_impl_ptrtype M_vectorImpl;
@@ -337,10 +345,29 @@ class VectorUblasBase: public Vector<T>
                 ~iterator() { if( M_iteratorImpl ) delete M_iteratorImpl; }
 
                 iterator & operator=( const iterator & other ) { swap( iterator( other ) ); return *this; }
+
                 reference operator*() const { return M_iteratorImpl->current(); }
+
                 iterator & operator++() { M_iteratorImpl->next(); return *this; }
+                iterator operator++(int) { iterator old = *this; operator++(); return old; }
+
                 iterator & operator--() { M_iteratorImpl->previous(); return *this; }
+                iterator operator--(int) { iterator old = *this; operator--(); return old; }
+
+                iterator & operator+=( difference_type n ) { M_iteratorImpl->incr( n ); return *this; }
+                iterator operator+( difference_type n ) { iterator tmp = *this; return tmp += n; }
+
+                iterator & operator-=( difference_type n ) { M_iteratorImpl->decr( n ); return *this; }
+                iterator operator-( difference_type n ) { iterator tmp = *this; return tmp -= n; }
+
+                difference_type operator-( const iterator & other ) const { return M_iteratorImpl->sub( *other.M_iteratorImpl ); }
+
                 bool operator==( const iterator & other ) const { return M_iteratorImpl->equal( *other.M_iteratorImpl ); }
+                bool operator!=( const iterator & other ) const { return !( *this == other ); }
+                bool operator<( const iterator & other ) const { return M_iteratorImpl->cmp( *other.M_iteratorImpl ); }
+                bool operator>( const iterator & other ) const { return other < *this; }
+                bool operator<=( const iterator & other ) const { return !( other < *this ); }
+                bool operator>=( const iterator & other ) const { return !( *this < other ); }
 
             private:
                 class iterator_impl_base
@@ -350,11 +377,16 @@ class VectorUblasBase: public Vector<T>
 
                         virtual iterator_impl_base * clone() const = 0;
 
+                        virtual void assign( const iterator_impl_base & other ) = 0;
+
                         virtual reference current() const = 0;
                         virtual void next() = 0;
+                        virtual void incr( difference_type n ) = 0;
                         virtual void previous() = 0;
+                        virtual void decr( difference_type n ) = 0;
+                        virtual difference_type sub( const iterator_impl_base & other ) const = 0;
                         virtual bool equal( const iterator_impl_base & other ) const = 0;
-                        virtual void assign( const iterator_impl_base & other ) = 0;
+                        virtual bool cmp( const iterator_impl_base & other ) const = 0;
                 };
                 
                 template< typename It >
@@ -365,11 +397,16 @@ class VectorUblasBase: public Vector<T>
                         ~iterator_impl() override = default;
                         iterator_impl<It> * clone() const override { return new iterator_impl<It>( M_it ); }
 
+                        void assign( const iterator_impl_base & other ) override { M_it = dynamic_cast<const iterator_impl<It>&>( other ).M_it; }
+
                         reference current() const override { return *M_it; }
                         void next() override { ++M_it; }
+                        void incr( difference_type n ) override { M_it += n; }
                         void previous() override { --M_it; }
+                        void decr( difference_type n ) override { M_it -= n; }
+                        difference_type sub( const iterator_impl_base & other ) const override { return M_it.operator-( dynamic_cast<const iterator_impl<It>&>( other ).M_it ); }
                         bool equal( const iterator_impl_base & other ) const override { return M_it.operator==( dynamic_cast<const iterator_impl<It>&>( other ).M_it ); }
-                        void assign( const iterator_impl_base & other ) override { M_it = dynamic_cast<const iterator_impl<It>&>( other ).M_it; }
+                        bool cmp( const iterator_impl_base & other ) const override { return M_it.operator<( dynamic_cast<const iterator_impl<It>&>( other ).M_it ); }
 
                     private:
                         It M_it;
@@ -1283,7 +1320,7 @@ element_product( const VectorUblasBase<T> & v1, const VectorUblasBase<T> & v2 )
 {
     VectorUblasBase<T> * prod = v1.clonePtr();
     prod->mulVector( v2 );
-    return std::unique_ptr( prod );
+    return std::unique_ptr<VectorUblasBase<T>>( prod );
 }
 
 } //detail
