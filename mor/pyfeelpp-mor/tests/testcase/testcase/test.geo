@@ -44,6 +44,11 @@ Plane Surface (3) = {3};
 Curve Loop (4) = {-3,-11,12,13};
 Plane Surface (4) = {4};
 
+Physical Curve("left", 16) = {13, 4};
+Physical Curve("up", 17) = {12, 10};
+Physical Curve("right", 18) = {9, 15};
+Physical Curve("in", 19) = {3, 11, 6, 2};
+
 Physical Surface("Omega1") = {1};
 Physical Surface("Omega2") = {2};
 Physical Surface("Omega3") = {3};
