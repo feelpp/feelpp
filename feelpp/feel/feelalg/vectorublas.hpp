@@ -114,6 +114,10 @@ class VectorUblas : public Vector<T>
         typedef ublas::basic_range<typename ublas::vector<value_type>::size_type, typename ublas::vector<value_type>::difference_type> range_type;
         typedef ublas::basic_slice<typename ublas::vector<value_type>::size_type, typename ublas::vector<value_type>::difference_type> slice_type;
 
+        // Iterators types
+        typedef typename Feel::detail::VectorUblasBase<T>::iterator_type iterator;
+        typedef typename Feel::detail::VectorUblasBase<T>::const_iterator_type const_iterator;
+
     public:
         // Constructors/Destructor
         VectorUblas();
@@ -255,6 +259,10 @@ class VectorUblas : public Vector<T>
         void saveHDF5( const std::string & filename, const std::string & tableName = "element", bool appendMode = false ) const { return M_vectorImpl->saveHDF5( filename, tableName, appendMode ); }
         void loadHDF5( const std::string & filename, const std::string & tableName = "element" ) { return M_vectorImpl->loadHDF5( filename, tableName ); }
 #endif
+
+        // Range and slice API
+        self_type range( const range_type & rangeActive, const range_type & rangeGhost, const datamap_ptrtype & dm ) { return self_type( *this, rangeActive, rangeGhost, dm ); }
+        self_type slice( const slice_type & sliceActive, const slice_type & sliceGhost, const datamap_ptrtype & dm ) { return self_type( *this, sliceActive, sliceGhost, dm ); }
 
         // Localization (parallel global to one proc local)
         void localizeToOneProcessor( ublas::vector<T> & v_local, const size_type proc_id = 0 ) const { return M_vectorImpl->localizeToOneProcessor( v_local, proc_id ); }
