@@ -61,6 +61,8 @@ class FEELPP_EXPORT ModelOutput : public CommObject
     std::string name() const { return M_name; }
     std::string type() const { return M_type; }
     std::set<std::string> markers() const { return M_markers; }
+    std::vector<double> coord() const { return M_coord; }
+    double radius() const { return M_radius; }
     int dim() const { return M_dim; }
     std::string getString( std::string const& key ) const;
 
@@ -71,6 +73,8 @@ class FEELPP_EXPORT ModelOutput : public CommObject
     std::string M_name;
     std::string M_type;
     ModelMarkers M_markers;
+    std::vector<double> M_coord;
+    double M_radius;
     int M_dim;
 };
 

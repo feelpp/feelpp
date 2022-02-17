@@ -72,6 +72,7 @@ public:
     matrixN_type matrix() const { return M_matrix; } /**< Matrix of PBDW */
     matrixN_type matrixF() const { return M_F; } /**< Matrix of outputs */
     std::vector<std::string> sensorNames() const { return M_sensorNames; } /**< Names of the sensors */
+    std::vector<std::string> outputNames() const { return M_outputNames; } /**< Names of the outputs */
     /**
      * Do online phase
      * @param yobs Observation of sensors
@@ -155,6 +156,7 @@ protected:
     int M_N;
     int M_Nl;
     std::vector<std::string> M_sensorNames;
+    std::vector<std::string> M_outputNames;
 };
 
 PBDWOnline::PBDWOnline(std::string const& name,
@@ -228,10 +230,10 @@ PBDWOnline::idsWith( std::vector<std::string> const& sensors ) const
 std::vector<int>
 PBDWOnline::idsWithout( std::vector<int> const& sensors ) const
 {
-    std::vector<int> ids(this->M_M+this->M_N);
-    std::iota(ids.begin(), ids.end(), 0);
-    for( auto const& i : sensors )
-        ids.erase(std::next(ids.begin(), i));
+    std::vector<int> ids;
+    for(int i = 0; i < this->M_M+this->M_N; ++i)
+        if( std::find(sensors.begin(), sensors.end(), i) == sensors.end() )
+            ids.push_back(i);
     return ids;
 }
 std::vector<int>
@@ -340,6 +342,7 @@ PBDWOnline::loadDB( std::string const& filename, crb::load l )
             ia >> this->M_F;
             this->M_sensorNames.reserve(M_M);
             ia >> this->M_sensorNames;
+            ia >> this->M_outputNames;
         }
     }
 }
@@ -413,7 +416,7 @@ public:
      * Adds outputs to PBDW
      * @param Fs vector of functionals to apply to the basis
      */
-    void setOutputs( std::vector<vector_ptrtype> Fs );
+    void setOutputs( std::vector<vector_ptrtype> const& Fs, std::vector<std::string> const& names = {} );
     /**
      * Retrieve solution
      * @param yobs Observation of sensors
@@ -524,7 +527,7 @@ PBDW<RBSpace>::offline()
     }
     this->M_matrix.bottomLeftCorner(this->M_N, this->M_M) = this->M_matrix.topRightCorner(this->M_M, this->M_N).transpose();
 
-    Feel::cout << "computing outputs" << std::endl;
+    Feel::cout << "computing " << this->M_Nl << " outputs" << std::endl;
     this->M_F = matrixN_type::Zero(this->M_Nl, this->M_M+this->M_N);
     for( int i = 0; i < this->M_Nl; ++i )
     {
@@ -539,10 +542,17 @@ PBDW<RBSpace>::offline()
 
 template<typename RBSpace>
 void
-PBDW<RBSpace>::setOutputs( std::vector<vector_ptrtype> Fs )
+PBDW<RBSpace>::setOutputs( std::vector<vector_ptrtype> const& Fs, std::vector<std::string> const& names )
 {
     this->M_Fs = Fs;
     this->M_Nl = Fs.size();
+    if( names.size() == this->M_Nl )
+        this->M_outputNames = names;
+    else
+    {
+        for(int i = 0; i < this->M_Nl; ++i)
+            M_outputNames.push_back("output_"+std::to_string(i));
+    }
 }
 
 template<typename RBSpace>
@@ -599,6 +609,7 @@ PBDW<RBSpace>::saveDB()
             oa << this->M_Nl;
             oa << this->M_F;
             oa << this->M_sensorNames;
+            oa << this->M_outputNames;
         }
     }
     if( ! fs::exists(this->absoluteMeshFilename()) )

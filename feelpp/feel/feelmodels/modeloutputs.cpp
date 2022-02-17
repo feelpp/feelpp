@@ -52,16 +52,25 @@ ModelOutput::ModelOutput( std::string name, pt::ptree const& p, worldcomm_ptr_t 
     if( auto markers = p.get_child_optional("markers") )
         M_markers.setPTree(*markers);
     else
-        LOG(WARNING) << "Output " << M_name << " does not have any range\n";
+        LOG(INFO) << "Output " << M_name << " does not have any range\n";
 
     if( auto t = p.get_optional<int>("topodim") )
-    {
         M_dim = *t;
+    else
+        LOG(INFO) << "Output " << M_name << " does not have any dimension\n";
+
+    if( auto t = p.get_child_optional("coord") )
+    {
+        for( auto const& c : *t )
+            M_coord.push_back(c.second.get_value<double>());
     }
     else
-    {
-        LOG(WARNING) << "Output " << M_name << " does not have any dimension\n";
-    }
+        LOG(INFO) << "Output " << M_name << " does not have any coordinates\n";
+
+    if( auto t = p.get_optional<double>("radius") )
+        M_radius = *t;
+    else
+        LOG(INFO) << "Output " << M_name << " does not have any radius\n";
 }
 
 std::string ModelOutput::getString( std::string const& key ) const

@@ -180,6 +180,8 @@ int ToolboxMor<SpaceType, Options>::Ql( int l)
             return 1;
         else if( output.type() == "average")
             return 1;
+        else if( output.type() == "sensor")
+            return 1;
         else
             return 0;
     }
@@ -198,6 +200,8 @@ int ToolboxMor<SpaceType, Options>::mLQF( int l, int q )
         if( output.type() == "flux" )
             return 1;
         else if( output.type() == "average")
+            return 1;
+        else if( output.type() == "sensor")
             return 1;
         else
             return 0;
@@ -390,6 +394,10 @@ ToolboxMor<SpaceType, Options>::updateBetaQ_impl( parameter_type const& mu , dou
         {
             this->M_betaFqm[output][0][0] = 1; // ????????????? k ??
         }
+        else if( out.type() == "sensor")
+        {
+            this->M_betaFqm[output][0][0] = 1;
+        }
         output++;
     }
 }
@@ -454,6 +462,34 @@ ToolboxMor<SpaceType, Options>::assembleData()
             fF += integrate( _range=markedfaces(this->Xh->mesh(), out.markers() ),
                              _expr=-grad(u)*N() );
             this->M_Fqm[output++][0][0] = fF.vectorPtr();
+        }
+        else if( out.type() == "sensor")
+        {
+            auto fS = form1(_test=this->Xh);
+            auto coord = out.coord();
+            auto radius = out.radius();
+            if( coord.size() == nDim )
+            {
+                if constexpr( nDim == 1 )
+                {
+                    auto phi = exp( -inner(P()-vec(cst(coord[0])))/(2*std::pow(radius,2)));
+                    auto n = integrate(_range=elements(support(this->Xh)), _expr=phi).evaluate()(0,0);
+                    fS += integrate( _range=elements(support(this->Xh)), _expr=id(u)*phi/n);
+                }
+                else if constexpr( nDim == 2 )
+                {
+                    auto phi = exp( -inner(P()-vec(cst(coord[0]),cst(coord[1])))/(2*std::pow(radius,2)));
+                    auto n = integrate(_range=elements(support(this->Xh)), _expr=phi).evaluate()(0,0);
+                    fS += integrate( _range=elements(support(this->Xh)), _expr=id(u)*phi/n);
+                }
+                else if constexpr( nDim == 3 )
+                {
+                    auto phi = exp( -inner(P()-vec(cst(coord[0]),cst(coord[1]),cst(coord[2])))/(2*std::pow(radius,2)));
+                    auto n = integrate(_range=elements(support(this->Xh)), _expr=phi).evaluate()(0,0);
+                    fS += integrate( _range=elements(support(this->Xh)), _expr=id(u)*phi/n);
+                }
+            }
+            this->M_Fqm[output++][0][0] = fS.vectorPtr();
         }
     }
 
