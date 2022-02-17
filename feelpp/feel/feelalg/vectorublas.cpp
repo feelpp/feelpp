@@ -1156,15 +1156,45 @@ VectorUblasContiguousGhosts<T, Storage>::dotVector( const VectorPetsc<T> & v ) c
 template< typename T, typename Storage > 
 VectorUblasRange<T, Storage> * VectorUblasContiguousGhosts<T, Storage>::rangeImpl( const range_type & rangeActive, const range_type & rangeGhost )
 {
-    static_assert( !is_vector_proxy, "unsupported range" );
-    return new VectorUblasRange<T, Storage>( M_vec, rangeActive, rangeGhost, this->mapPtr() );
+    if constexpr ( is_vector_range ) // should not happen, but still implemented
+    {
+        range_type rActive = range_type( this->startActive() + rangeActive.start(), std::min( this->map().nLocalDofWithoutGhost(), rangeActive.size() ) );
+        range_type rGhost = range_type( this->startGhost() + rangeGhost.start(), std::min( M_vec.size() - this->map().nLocalDofWithoutGhost(), rangeGhost.size() ) );
+        return new VectorUblasRange<T, typename Storage::vector_type>( M_vec.data().expression(), rActive, rGhost, this->mapPtr() );
+    }
+    else if constexpr ( is_vector_slice ) // should not happen, but still implemented
+    {
+        slice_type sActive = slice_type( this->startActive() + rangeActive.start() * M_vec.stride(), M_vec.stride(), std::min( this->map().nLocalDofWithoutGhost(), rangeActive.size() ) );
+        slice_type sGhost = slice_type( this->startGhost() + rangeGhost.start() * M_vec.stride(), M_vec.stride(), std::min( M_vec.size() - this->map().nLocalDofWithoutGhost(), rangeGhost.size() ) );
+        return new VectorUblasSlice<T, typename Storage::vector_type>( M_vec.data().expression(), sActive, sGhost, this->mapPtr() );
+    }
+    else
+    {
+        range_type rGhost = range_type( this->startGhost() + rangeGhost.start(), rangeGhost.size() );
+        return new VectorUblasRange<T, Storage>( M_vec, rangeActive, rGhost, this->mapPtr() );
+    }
 }
 
 template< typename T, typename Storage >
 VectorUblasSlice<T, Storage> * VectorUblasContiguousGhosts<T, Storage>::sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost )
 {
-    static_assert( !is_vector_proxy, "unsupported slice" );
-    return new VectorUblasSlice<T, Storage>( M_vec, sliceActive, sliceGhost, this->mapPtr() );
+    if constexpr ( is_vector_range ) // should not happen, but still implemented
+    {
+        slice_type sActive = slice_type( this->startActive() + sliceActive.start(), sliceActive.stride(), std::min( this->map().nLocalDofWithoutGhost(), sliceActive.size() ) );
+        slice_type sGhost = slice_type( this->startGhost() + sliceGhost.start(), sliceGhost.stride(), std::min( M_vec.size() - this->map().nLocalDofWithoutGhost(), sliceGhost.size() ) );
+        return new VectorUblasSlice<T, typename Storage::vector_type>( M_vec.data().expression(), sActive, sGhost, this->mapPtr() );
+    }
+    else if constexpr ( is_vector_slice ) // should not happen, but still implemented
+    {
+        slice_type sActive = slice_type( this->startActive() + sliceActive.start() * M_vec.stride(), M_vec.stride() * sliceActive.stride(), std::min( this->map().nLocalDofWithoutGhost(), sliceActive.size() ) );
+        slice_type sGhost = slice_type( this->startGhost() + sliceGhost.start() * M_vec.stride(), M_vec.stride() * sliceGhost.stride(), std::min( M_vec.size() - this->map().nLocalDofWithoutGhost(), sliceGhost.size() ) );
+        return new VectorUblasSlice<T, typename Storage::vector_type>( M_vec.data().expression(), sActive, sGhost, this->mapPtr() );
+    }
+    else
+    {
+        slice_type sGhost = slice_type( this->startGhost() + sliceGhost.start(), sliceGhost.stride(), sliceGhost.size() );
+        return new VectorUblasSlice<T, Storage>( M_vec, sliceActive, sGhost, this->mapPtr() );
+    }
 }
 
 #if FEELPP_HAS_PETSC
