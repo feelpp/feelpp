@@ -3816,10 +3816,11 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionNewton( parameter_type
 
     boost::tie( boost::tuples::ignore , M_Jqm, M_Rqm ) = this->computeAffineDecomposition();
 
-    M_backend_primal->nlSolver()->jacobian = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateJacobian,
-                                                          boost::ref( *this ), _1, _2, mu );
-    M_backend_primal->nlSolver()->residual = boost::bind( &CRBModel<TruthModelType>::solveFemUpdateResidual,
-                                                          boost::ref( *this ), _1, _2, mu );
+    using namespace std::placeholders;
+    M_backend_primal->nlSolver()->jacobian = std::bind( &CRBModel<TruthModelType>::solveFemUpdateJacobian,
+                                                          std::ref( *this ), _1, _2, mu );
+    M_backend_primal->nlSolver()->residual = std::bind( &CRBModel<TruthModelType>::solveFemUpdateResidual,
+                                                          std::ref( *this ), _1, _2, mu );
     //M_backend_primal->nlSolver()->setType( TRUST_REGION );
 
     auto solution = this->functionSpace()->element();
