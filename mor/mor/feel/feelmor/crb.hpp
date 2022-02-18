@@ -4377,8 +4377,9 @@ CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_ty
 
     computeProjectionInitialGuess( mu , N , uN );
 
-    M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , mu , N );
-    M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , mu , N );
+    using namespace std::placeholders;
+    M_nlsolver->map_dense_jacobian = std::bind( &self_type::updateJacobian, std::ref( *this ), _1, _2  , mu , N );
+    M_nlsolver->map_dense_residual = std::bind( &self_type::updateResidual, std::ref( *this ), _1, _2  , mu , N );
     M_nlsolver->setType( TRUST_REGION );
     M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
 
