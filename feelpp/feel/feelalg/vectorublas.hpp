@@ -90,7 +90,7 @@ VectorUblas<T> element_product( const VectorUblas<T> & v1, const VectorUblas<T> 
 
 /*-----------------------------------------------------------------------------*/
 template< typename T >
-class VectorUblas : public Vector<T>
+class FEELPP_EXPORT VectorUblas : public Vector<T>
 {
     public:
         // Typedefs
@@ -256,7 +256,9 @@ class VectorUblas : public Vector<T>
         // Exports
         void printMatlab( const std::string filename = "NULL", bool renumber = false ) const override { return M_vectorImpl->printMatlab( filename, renumber ); }
 #ifdef FEELPP_HAS_HDF5
+        FEELPP_DONT_INLINE 
         void saveHDF5( const std::string & filename, const std::string & tableName = "element", bool appendMode = false ) const { return M_vectorImpl->saveHDF5( filename, tableName, appendMode ); }
+        FEELPP_DONT_INLINE 
         void loadHDF5( const std::string & filename, const std::string & tableName = "element" ) { return M_vectorImpl->loadHDF5( filename, tableName ); }
 #endif
 
