@@ -18,7 +18,8 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
 {
-    if ( this->M_bcDirichlet.empty() ) return;
+    if ( !M_boundaryConditions.hasTypeDofElimination() )
+        return;
 
     this->log("Electric","updateResidualDofElimination","start" );
 
