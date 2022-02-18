@@ -39,6 +39,7 @@
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
+#include <feel/feelmodels/electric/electricboundaryconditions.hpp>
 
 namespace Feel
 {
@@ -358,6 +359,8 @@ private :
     materialsproperties_ptrtype M_materialsProperties;
 
     // boundary conditions
+    ElectricBoundaryConditions M_boundaryConditions;
+#if 0
     map_scalar_field<2> M_bcDirichlet;
     map_scalar_field<2> M_bcNeumann;
     map_scalar_fields<2> M_bcRobin;
@@ -365,7 +368,7 @@ private :
     MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
     MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
     MarkerManagementRobinBC M_bcRobinMarkerManagement;
-
+#endif
     // post-process
     export_ptrtype M_exporter;
 };

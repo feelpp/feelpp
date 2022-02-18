@@ -1,3 +1,39 @@
+macro(feelpp_toolboxes_add_library)
+  PARSE_ARGUMENTS(FEELPP_TOOLBOXES_ADD_LIB
+    "SRCS;LINK_LIBRARIES;DEPS"
+    ""
+    ${ARGN}
+    )
+
+  CAR(FEELPP_TOOLBOXES_LIB_BASE_NAME ${FEELPP_TOOLBOXES_ADD_LIB_DEFAULT_ARGS})
+  set(FEELPP_TOOLBOXES_TARGET_NAME feelpp_toolbox_${FEELPP_TOOLBOXES_LIB_BASE_NAME})
+  add_library(
+    ${FEELPP_TOOLBOXES_TARGET_NAME} SHARED ${FEELPP_TOOLBOXES_ADD_LIB_SRCS}
+   )
+  target_link_libraries(${FEELPP_TOOLBOXES_TARGET_NAME} PUBLIC ${FEELPP_TOOLBOXES_ADD_LIB_LINK_LIBRARIES} )
+  add_library(Feelpp::${FEELPP_TOOLBOXES_TARGET_NAME} ALIAS ${FEELPP_TOOLBOXES_TARGET_NAME} )  # to match exported target
+  set_target_properties(${FEELPP_TOOLBOXES_TARGET_NAME} PROPERTIES OUTPUT_NAME "${FEELPP_TOOLBOXES_TARGET_NAME}")
+  target_include_directories(${FEELPP_TOOLBOXES_TARGET_NAME} PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include/feelpp/toolboxes>  )
+  set_property(TARGET ${FEELPP_TOOLBOXES_TARGET_NAME} PROPERTY MACOSX_RPATH ON)
+  if ( FEELPP_TOOLBOXES_ADD_LIB_DEPS )
+    add_dependencies(${FEELPP_TOOLBOXES_TARGET_NAME} ${FEELPP_TOOLBOXES_ADD_LIB_DEPS})
+  endif()
+  if( FEELPP_ENABLE_PCH_MODELS )
+    add_precompiled_header( ${FEELPP_TOOLBOXES_TARGET_NAME} )
+  endif()
+  #include(GNUInstallDirs)
+  set_target_properties(${FEELPP_TOOLBOXES_TARGET_NAME} PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
+  install(TARGETS ${FEELPP_TOOLBOXES_TARGET_NAME} EXPORT feelpp-toolboxes-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+endmacro(feelpp_toolboxes_add_library)
+
 #############################################################################
 # create generic simple lib
 #############################################################################
@@ -42,6 +78,7 @@ macro(genLibBase)
       ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} )
   endforeach()
 
+  
    # message (CODEGEN_SOURCES   :    ${CODEGEN_SOURCES})
    # message( CODEGEN_FILES_TO_COPY  ${CODEGEN_FILES_TO_COPY})
   # generate library
@@ -160,7 +197,7 @@ macro( genLibElectric )
       ${ELECTRIC_LIB_DIR}/electricassemblyjacobian_inst.cpp
       ${ELECTRIC_LIB_DIR}/electricassemblyresidual_inst.cpp
       )
-    set(ELECTRIC_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore  )
+    set(ELECTRIC_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore feelpp_toolbox_electricbase )
     # generate the lib target
     genLibBase(
       LIB_NAME ${ELECTRIC_LIB_NAME}

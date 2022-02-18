@@ -205,6 +205,11 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
+    if ( !this->modelProperties().boundaryConditions().hasSection( this->keyword() ) )
+        return;
+    M_boundaryConditions.setup( *this,this->modelProperties().boundaryConditions().section( this->keyword() ) );
+
+#if 0
     M_bcDirichletMarkerManagement.clearMarkerDirichletBC();
     M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
     M_bcRobinMarkerManagement.clearMarkerRobinBC();
@@ -221,17 +226,16 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
          M_bcRobinMarkerManagement.addMarkerRobinBC( name(d),markers(d) );
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "VolumicForces" );
-
+#endif
     auto mesh = this->mesh();
     auto XhElectricPotential = this->spaceElectricPotential();
 
     std::set<std::string> electricPotentialMarkers;
 
     // strong Dirichlet bc on electric-potential from expression
-    for( auto const& d : M_bcDirichlet )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions.electricPotentialImposed() )
     {
-        auto listMark = M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) );
-        electricPotentialMarkers.insert( listMark.begin(), listMark.end() );
+        electricPotentialMarkers.insert( bcData->markers().begin(), bcData->markers().end() );
     }
     auto meshMarkersElectricPotentialByEntities = detail::distributeMarkerListOnSubEntity( mesh, electricPotentialMarkers );
 
@@ -311,22 +315,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
     p["Physics2"] = subPt;
 
     // Boundary Conditions
-#if 0
-    subPt.clear();
-    subPt2.clear();
-    M_bcDirichletMarkerManagement.updateInformationObjectDirichletBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    subPt2.clear();
-    M_bcNeumannMarkerManagement.updateInformationObjectNeumannBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    subPt2.clear();
-    M_bcRobinMarkerManagement.updateInformationObjectRobinBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    p.put_child( "Boundary Conditions",subPt );
-#endif
+    M_boundaryConditions.updateInformationObject( p["Boundary Conditions"] );
 
     // Materials properties
     if ( this->materialsProperties() )
@@ -366,7 +355,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Ta
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
         tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
 
-    //tabInfoSections.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
+    if ( jsonInfo.contains("Boundary Conditions") )
+        tabInfo->add( "Boundary Conditions", ElectricBoundaryConditions::tabulateInformations( jsonInfo.at("Boundary Conditions"), tabInfoProp ) );
 
     if ( jsonInfo.contains("Meshes") )
         tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
@@ -445,21 +435,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     auto se = this->symbolsExpr( mfields );
     this->exportResults( time, mfields, se, this->exprPostProcessExports( se ) );
 }
-#if 0
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
-{
-    std::string M_computeElectricFieldProjType = "nodal";
-    /*if ( M_computeElectricFieldProjType == "L2" )
-     *M_fieldElectricFieldContinuous = M_l2proj->operator()( -trans(gradv(this->fieldElectricPotential() ) ) );
-     else*/ if ( M_computeElectricFieldProjType == "nodal" )
-        M_fieldElectricField->on(_range=M_rangeMeshElements,
-                                 _expr=-trans(gradv( this->fieldElectricPotential() ) ) );
-    else
-        CHECK( false ) << "invalid M_computeElectricFieldProjType " << M_computeElectricFieldProjType << "\n";
-}
-#endif
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -471,6 +446,10 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateParameterValues()
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->materialsProperties()->updateParameterValues( paramValues );
+    for ( auto [physicName,physicData] : this->physics/*FromCurrentType*/() )
+        physicData->updateParameterValues( paramValues );
+
+    this->updateParameterValues_postProcess( paramValues, prefixvm("postprocess",this->keyword(),"_" ) );
 
     this->setParameterValues( paramValues );
 }
@@ -485,12 +464,13 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> c
     {
         this->modelProperties().parameters().setParameterValues( paramValues );
         this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
     }
-    M_bcDirichlet.setParameterValues( paramValues );
-    M_bcNeumann.setParameterValues( paramValues );
-    M_bcRobin.setParameterValues( paramValues );
-    M_volumicForcesProperties.setParameterValues( paramValues );
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->setParameterValues( paramValues );
+
+    M_boundaryConditions.setParameterValues( paramValues );
 
     this->log("Electric","setParameterValues", "finish");
 }

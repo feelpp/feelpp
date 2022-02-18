@@ -61,6 +61,7 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & dat
     // update source term
     if ( buildNonCstPart )
     {
+#if 0 //VINCENT
         for( auto const& d : this->M_volumicForcesProperties )
         {
             auto rangeEltUsed = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
@@ -69,34 +70,21 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & dat
                            _expr= expression(d,symbolsExpr)*id(v),
                            _geomap=this->geomap() );
         }
+#endif
     }
 
     // update weak bc
     if ( buildNonCstPart )
     {
-        for( auto const& d : this->M_bcNeumann )
+        for ( auto const& [bcName,bcData] : M_boundaryConditions.surfaceChargeDensity() )
         {
+            auto theExpr = bcData->expr( symbolsExpr );
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= expression(d,symbolsExpr)*id(v),
-                           _geomap=this->geomap() );
-        }
-
-        for( auto const& d : this->M_bcRobin )
-        {
-            auto theExpr1 = expression1( d,symbolsExpr );
-            bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
-                           _expr= theExpr1*idt(v)*id(v),
-                           _geomap=this->geomap() );
-            auto theExpr2 = expression2( d,symbolsExpr );
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
-                           _expr= theExpr1*theExpr2*id(v),
+                integrate( _range=markedfaces(mesh,bcData->markers()),
+                           _expr=-theExpr*id(v),
                            _geomap=this->geomap() );
         }
     }
-
 }
 
 
@@ -105,7 +93,8 @@ template <typename ModelContextType>
 void
 Electric<ConvexType,BasisPotentialType>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-    if ( this->M_bcDirichlet.empty() ) return;
+    if ( !M_boundaryConditions.hasTypeDofElimination() )
+        return;
 
     this->log("Electric","updateLinearPDEDofElimination","start" );
 
@@ -121,13 +110,13 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDEDofElimination( DataUpda
                                               _rowstart=this->rowStartInMatrix(),
                                               _colstart=this->colStartInMatrix() );
 
-    for( auto const& d : this->M_bcDirichlet )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions.electricPotentialImposed() )
     {
+        auto theExpr = bcData->expr( se );
         bilinearForm_PatternCoupled +=
-            on( _range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
-                _element=v,_rhs=F,_expr=expression(d,se) );
+            on( _range=markedfaces(mesh,bcData->markers()),
+                _element=v,_rhs=F,_expr=theExpr );
     }
-
     this->log("Electric","updateLinearPDEDofElimination","finish" );
 }
 
@@ -136,8 +125,8 @@ template <typename ModelContextType>
 void
 Electric<ConvexType,BasisPotentialType>::updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
 {
-    if ( M_bcDirichlet.empty() ) return;
-
+    if ( !M_boundaryConditions.hasTypeDofElimination() )
+        return;
     this->log("Electric","updateNewtonInitialGuess","start" );
 
     vector_ptrtype& U = data.initialGuess();
@@ -145,13 +134,12 @@ Electric<ConvexType,BasisPotentialType>::updateNewtonInitialGuess( DataNewtonIni
     size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
     auto v = this->spaceElectricPotential()->element( U, this->rowStartInVector()+startBlockIndexElectricPotential );
     auto const& se = mctx.symbolsExpr();
-
-    for( auto const& d : M_bcDirichlet )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions.electricPotentialImposed() )
     {
-        v.on(_range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
-             _expr=expression(d,se) );
+        auto theExpr = bcData->expr( se );
+        v.on(_range=markedfaces(mesh,bcData->markers()),
+             _expr=theExpr );
     }
-
     // update info for synchronization
     this->updateDofEliminationIds( "potential-electric", data );
 
@@ -230,20 +218,6 @@ Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & da
         }
     }
 
-    //--------------------------------------------------------------------------------------------------//
-    // weak bc
-    if ( buildNonCstPart )
-    {
-        for( auto const& d : this->M_bcRobin )
-        {
-            bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
-                           _expr= expression1(d,se)*idt(v)*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
-    //--------------------------------------------------------------------------------------------------//
-
 }
 
 template< typename ConvexType, typename BasisPotentialType>
@@ -295,6 +269,7 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
     // source term
     if ( buildCstPart )
     {
+#if 0 //VINCENT
         for( auto const& d : this->M_volumicForcesProperties )
         {
             auto rangeEltUsed = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
@@ -303,34 +278,19 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
                            _expr= -expression(d,symbolsExpr)*id(v),
                            _geomap=this->geomap() );
         }
+#endif
     }
 
     //--------------------------------------------------------------------------------------------------//
     // weak bc
     if ( buildCstPart )
     {
-        for( auto const& d : this->M_bcNeumann )
+        for ( auto const& [bcName,bcData] : M_boundaryConditions.surfaceChargeDensity() )
         {
+            auto theExpr = bcData->expr( symbolsExpr );
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= -expression(d,symbolsExpr)*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
-    for( auto const& d : this->M_bcRobin )
-    {
-        if ( buildNonCstPart )
-        {
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
-                           _expr= expression1(d,symbolsExpr)*idv(v)*id(v),
-                           _geomap=this->geomap() );
-        }
-        if ( buildCstPart )
-        {
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
-                           _expr= -expression1(d,symbolsExpr)*expression2(d,symbolsExpr)*id(v),
+                integrate( _range=markedfaces(mesh,bcData->markers()),
+                           _expr= theExpr*id(v),
                            _geomap=this->geomap() );
         }
     }
