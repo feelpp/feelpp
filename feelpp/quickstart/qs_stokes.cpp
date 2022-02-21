@@ -113,37 +113,45 @@ int main(int argc, char**argv )
 {
     ///[stokes-env]
     using namespace Feel;
-	po::options_description laplacianoptions( "Stokes options" );
-	laplacianoptions.add_options()
-        ( "mu", po::value<double>()->default_value( 1.0 ), "viscosity" )
-        ( "space", po::value<std::string>()->default_value( "P2P1" ), "space type: P2P1(default), P1P1, P1P0" )
-        ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
-		;
-
-	Environment env( _argc=argc, _argv=argv,
-                   _desc=laplacianoptions,
-                   _about=about(_name="qs_stokes",
-                                _author="Feel++ Consortium",
-                                _email="feelpp-devel@feelpp.org"));
-    ///[stokes-env]
-    
-    tic();
-    ///[stokes-mesh]
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
-    ///[stokes-mesh]
-    toc("loadMesh");
-
-    ///[stokes-space]
-    int status;
-    if ( soption("space") == "P1P0" )
-        status = stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<0,Scalar,Discontinuous>>( mesh ) );
-    else if ( soption("space") == "P1P1" )
-        status = stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<1,Scalar>>( mesh ) );
-    else
+    try
     {
-        // default P2P1: good space
-        status = stokes( THch<1>( mesh ) );
+	    po::options_description laplacianoptions( "Stokes options" );
+	    laplacianoptions.add_options()
+            ( "mu", po::value<double>()->default_value( 1.0 ), "viscosity" )
+            ( "space", po::value<std::string>()->default_value( "P2P1" ), "space type: P2P1(default), P1P1, P1P0" )
+            ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
+	    	;
+
+	    Environment env( _argc=argc, _argv=argv,
+                       _desc=laplacianoptions,
+                       _about=about(_name="qs_stokes",
+                                    _author="Feel++ Consortium",
+                                    _email="feelpp-devel@feelpp.org"));
+        ///[stokes-env]
+
+        tic();
+        ///[stokes-mesh]
+        auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
+        ///[stokes-mesh]
+        toc("loadMesh");
+
+        ///[stokes-space]
+        int status;
+        if ( soption("space") == "P1P0" )
+            status = stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<0,Scalar,Discontinuous>>( mesh ) );
+        else if ( soption("space") == "P1P1" )
+            status = stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<1,Scalar>>( mesh ) );
+        else
+        {
+            // default P2P1: good space
+            status = stokes( THch<1>( mesh ) );
+        }
+        ///[stokes-space]
+        return status;
     }
-    ///[stokes-space]
-    return status;
+    catch( ... ) 
+    {
+        handleExceptions();
+    }
+    return 1;
 }
