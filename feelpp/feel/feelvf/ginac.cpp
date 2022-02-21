@@ -192,7 +192,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
     parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
 
     LOG(INFO) <<"parse expression: " << strexpr;
-    if ( boost::algorithms::contains( strexpr, "// Not supported in C" ) )
+    if ( boost::algorithm::contains( strexpr, "// Not supported in C" ) )
     {
         LOG(INFO) <<"invalid code: " << table;
         throw std::invalid_argument( fmt::format( "invalid code: ", table ) );
