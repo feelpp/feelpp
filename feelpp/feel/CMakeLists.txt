@@ -25,30 +25,10 @@ CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
 CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 
 
-SET(DIRS core timing math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models python fmi hwsys event)
+SET(DIRS core timing math alg mesh partition poly opt discr ts filters material vf pde ls fit models python fmi hwsys event)
 foreach(dir ${DIRS})
   add_subdirectory(feel${dir})
 endforeach()
-
-# add_subdirectory (feelcore)
-# add_subdirectory (feelmath)
-# add_subdirectory (feelalg)
-# add_subdirectory (feelmesh)
-# add_subdirectory (feelpartition)
-# add_subdirectory (feelpoly)
-# add_subdirectory (feelopt)
-# add_subdirectory (feelcrb)
-# add_subdirectory (feeldiscr)
-# add_subdirectory (feelmodels)
-# add_subdirectory (feelts)
-# add_subdirectory (feelfilters)
-# add_subdirectory (feelmaterial)
-# add_subdirectory (feelvf )
-# add_subdirectory (feelpde)
-# add_subdirectory (feells)
-#
-# add_subdirectory (feelpython)
-
 
 # Add target for dynamic library
 #add_library(feelpp-dynamic SHARED $<TARGET_OBJECTS:feelpp-core>)

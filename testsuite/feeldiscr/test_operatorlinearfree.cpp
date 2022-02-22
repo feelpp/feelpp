@@ -35,7 +35,6 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/operatorlinearfree.hpp>
 #include <feel/feeldiscr/operatorlinearcomposite.hpp>
-#include <feel/feelcrb/eim.hpp>
 
 
 /** use Feel namespace */
