@@ -52,6 +52,7 @@ else()
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
 endif()
 
+
 OPTION(FEELPP_ENABLE_PYFEELPP_MOR "Enable PyFeel++ MOR" ON  )
 if (FEELPP_ENABLE_PYFEELPP_MOR)
   message(STATUS "Enabling pyfeelpp mor")
