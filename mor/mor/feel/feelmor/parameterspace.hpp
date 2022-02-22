@@ -208,16 +208,28 @@ public:
         void setParameterNamed( std::string name, double value )
         {
             auto paramNames = M_space->parameterNames();
+            element_type min = M_space->min(), max = M_space->max();
             auto it = std::find(paramNames.begin(), paramNames.end(), name);
             if( it != paramNames.end() )
-                this->operator()( it - paramNames.begin() ) = value;
+            {
+                double min_val = min.parameterNamed(name),
+                       max_val = max.parameterNamed(name);
+                if (value >= min_val && value <= max_val)
+                    this->operator()( it - paramNames.begin() ) = value;
+                else
+                    LOG( WARNING ) << value << " not in range [" << min_val << ", " << max_val << "]" << std::endl;
+            }
             else
                 LOG( WARNING ) << name << " is not a parameter" << std::endl;
         }
 
         void setParameter( int i, double value)
         {
-            this->operator()(i) = value;
+            element_type min = M_space->min(), max = M_space->max();
+            if (value >= min(i) && value <= max(i))
+                this->operator()(i) = value;
+            else
+                LOG( WARNING ) << value << " not in range [" << min(i) << ", " << max(i) << "]" << std::endl;
         }
 
         /**
@@ -229,8 +241,15 @@ public:
             if (n != this->size())
                 LOG( WARNING ) << "The size of the given vector (" << n << ") is different fom the size (" << this->size() << ")" << std::endl;
             size_t N = (n >= this->size()) ? n : this->size();
+            element_type min = M_space->min(), max = M_space->max();
             for (size_t i=0; i<N; ++i)
-                this->operator()(i) = values[i];
+            {
+                if (values[i] >= min(i) && values[i] <= max(i))
+                    this->operator()(i) = values[i];
+                else
+                    LOG( WARNING ) << values[i] << " not in range [" << min(i) << ", " << max(i) << "]" << std::endl;
+            }
+
         }
 
         void setParameters( const std::map<std::string, double> &values )
