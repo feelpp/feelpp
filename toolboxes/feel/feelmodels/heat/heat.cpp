@@ -202,7 +202,7 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             }
             for ( auto const& [bcName,bcData] : M_boundaryConditions.heatFlux() )
             {
-                auto neumannExpr = bcData.expr();
+                auto neumannExpr = bcData->expr();
                 if ( neumannExpr.hasSymbolDependency( tsName, se ) )
                 {
                     isNonLinear = true;
@@ -436,28 +436,11 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
     // Physics
     nl::json subPt;
     subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
-    //subPt.put( "velocity-convection",  std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" ) );
     p["Physics2"] = subPt;
 
     // Boundary Conditions
     M_boundaryConditions.updateInformationObject( p["Boundary Conditions"] );
 
-#if 0
-    subPt.clear();
-    subPt2.clear();
-    M_bcDirichletMarkerManagement.updateInformationObjectDirichletBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    subPt2.clear();
-    M_bcNeumannMarkerManagement.updateInformationObjectNeumannBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    subPt2.clear();
-    M_bcRobinMarkerManagement.updateInformationObjectRobinBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    p.put_child( "Boundary Conditions",subPt );
-#endif
     // Materials properties
     if ( this->materialsProperties() )
         this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
@@ -516,7 +499,6 @@ HEAT_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Tabula
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
         tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
 
-    //tabInfoSections.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
     if ( jsonInfo.contains("Boundary Conditions") )
         tabInfo->add( "Boundary Conditions", HeatBoundaryConditions::tabulateInformations( jsonInfo.at("Boundary Conditions"), tabInfoProp ) );
 
@@ -674,19 +656,8 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateAlgebraicDofEliminationIds()
 {
-    auto mesh = this->mesh();
-    auto XhTemperature = this->spaceTemperature();
-    std::set<std::string> temperatureMarkers;
     for ( auto const& [bcName,bcData] : M_boundaryConditions.temperatureImposed() )
-    {
-        temperatureMarkers.insert( bcData.markers().begin(), bcData.markers().end() );
-    }
-    auto meshMarkersTemperatureByEntities = detail::distributeMarkerListOnSubEntity( mesh, temperatureMarkers );
-
-    // on topological faces
-    auto const& listMarkedFacesTemperature = std::get<0>( meshMarkersTemperatureByEntities );
-    if ( !listMarkedFacesTemperature.empty() )
-        this->updateDofEliminationIds( "temperature", XhTemperature, markedfaces( mesh,listMarkedFacesTemperature ) );
+        bcData->updateDofEliminationIds( *this, "temperature", this->spaceTemperature() );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS

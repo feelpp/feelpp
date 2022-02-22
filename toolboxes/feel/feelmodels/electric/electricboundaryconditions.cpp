@@ -10,47 +10,6 @@ namespace FeelModels
 {
 
 void
-ElectricBoundaryConditions::ElectricPotentialImposed::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
-{
-    if ( jarg.contains( "expr" ) )
-        M_mexpr.setExpr( jarg.at( "expr" ), mparent.worldComm(), mparent.repository().expr(), indexes );
-     if ( jarg.contains( "markers" ) )
-     {
-         ModelMarkers markers;
-         markers.setup( jarg.at("markers"), indexes );
-         M_markers = markers;
-     }
-     else
-         M_markers = { M_name };
-}
-
-void
-ElectricBoundaryConditions::ElectricPotentialImposed::updateInformationObject( nl::json & p ) const
-{
-    auto [exprStr,compInfo] = M_mexpr.exprInformations();
-    p["expr"] = exprStr;
-    p["markers"] = M_markers;
-}
-
-tabulate_informations_ptr_t
-ElectricBoundaryConditions::ElectricPotentialImposed::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
-{
-    Feel::Table tabInfo;
-    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { /*"name","type",*/"expr" } );
-    tabInfo.format()
-        .setShowAllBorders( false )
-        .setColumnSeparator(":")
-        .setHasRowSeparator( false );
-    if ( jsonInfo.contains("markers") )
-    {
-        Feel::Table tabInfoMarkers = TabulateInformationTools::FromJSON::createTableFromArray( jsonInfo.at("markers") , true );
-        if ( tabInfoMarkers.nRow() > 0 )
-            tabInfo.add_row( { "markers", tabInfoMarkers } );
-    }
-    return TabulateInformations::New( tabInfo, tabInfoProp );
-}
-
-void
 ElectricBoundaryConditions::Ground::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
 {
     nl::json j_bc = jarg;
