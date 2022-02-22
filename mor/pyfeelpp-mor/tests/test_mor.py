@@ -69,3 +69,23 @@ def test_init_from_ModelPropeties(casefile, dim, mubar_th, mumin_th, mumax_th,  
         assert( mumin.parameterNamed(p) == mumin_th[p] )
         assert( mumax.parameterNamed(p) == mumax_th[p] )
         assert( mubar.parameterNamed(p) == mubar_th[p] )
+
+
+
+@pytest.mark.parametrize("casefile,dim,mubar", [cases_params[-1][:3]], ids=[cases_ids[-1]])
+def test_param_not_in_range(casefile, dim, mubar,  init_feelpp):
+    e = init_feelpp
+    heatBox = init_toolbox(casefile, dim)
+
+    modelParameters = heatBox.modelProperties().parameters()
+    Dmu = feelpp.mor._mor.ParameterSpace.New(modelParameters, feelpp.Environment.worldCommPtr())
+
+    mu = Dmu.element()
+    # just set values
+    mu.setParameters(mubar)
+
+    mu.setParameter(0, 5000)
+    assert( mu(0) != 5000)
+
+    mu.setParameterNamed('Bi', -666)
+    assert( mu.parameterNamed('Bi') != -666 )
