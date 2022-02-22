@@ -30,7 +30,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian &
 
     this->log("Electric","updateJacobianDofElimination","start" );
 
-    this->updateDofEliminationIds( "potential-electric", data );
+    this->updateDofEliminationIds( "electric-potential", data );
 
     this->log("Electric","updateJacobianDofElimination","finish" );
 }

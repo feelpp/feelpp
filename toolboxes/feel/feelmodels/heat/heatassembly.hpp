@@ -183,30 +183,30 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
     {
         for ( auto const& [bcName,bcData] : M_boundaryConditions.heatFlux() )
         {
-            auto theExpr = bcData.expr( symbolsExpr );
+            auto theExpr = bcData->expr( symbolsExpr );
             if ( doAssemblyRhs )
             {
                 myLinearForm +=
-                    integrate( _range=markedfaces(this->mesh(),bcData.markers()),
+                    integrate( _range=markedfaces(this->mesh(),bcData->markers()),
                                _expr= timeSteppingScaling*theExpr*id(v),
                                _geomap=this->geomap() );
             }
         }
         for ( auto const& [bcName,bcData] : M_boundaryConditions.convectiveHeatFlux() )
         {
-            auto theExpr_h = bcData.expr_h( symbolsExpr );
-            auto theExpr_Text = bcData.expr_Text( symbolsExpr );
+            auto theExpr_h = bcData->expr_h( symbolsExpr );
+            auto theExpr_Text = bcData->expr_Text( symbolsExpr );
             if ( doAssemblyLhs )
             {
                 bilinearForm_PatternCoupled +=
-                    integrate( _range=markedfaces(mesh,bcData.markers()),
+                    integrate( _range=markedfaces(mesh,bcData->markers()),
                                _expr= timeSteppingScaling*theExpr_h*idt(v)*id(v),
                                _geomap=this->geomap() );
             }
             if ( doAssemblyRhs )
             {
                 myLinearForm +=
-                    integrate( _range=markedfaces(mesh,bcData.markers()),
+                    integrate( _range=markedfaces(mesh,bcData->markers()),
                                _expr= timeSteppingScaling*theExpr_h*theExpr_Text*id(v),
                                _geomap=this->geomap() );
             }
@@ -236,18 +236,12 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEDofElimination( DataUpdate
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
     auto const& u = this->fieldTemperature();
-    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix(),
-                                              _colstart=this->colStartInMatrix() );
+    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
+                               _pattern=size_type(Pattern::COUPLED),
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=this->colStartInMatrix() );
 
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.temperatureImposed() )
-    {
-        auto theExpr = bcData.expr(se);
-        bilinearForm_PatternCoupled +=
-            on( _range=markedfaces(mesh, bcData.markers() ),
-                _element=u,_rhs=F,_expr=theExpr );
-    }
+    M_boundaryConditions.applyDofEliminationLinear( bilinearForm, F, mesh, u, se );
 
     this->log("Heat","updateLinearPDEDofElimination","finish" );
 }
@@ -267,12 +261,9 @@ Heat<ConvexType,BasisTemperatureType>::updateNewtonInitialGuess( DataNewtonIniti
     size_type startBlockIndexTemperature = this->startSubBlockSpaceIndex( "temperature" );
     auto u = this->spaceTemperature()->element( U, this->rowStartInVector()+startBlockIndexTemperature );
     auto const& se = mctx.symbolsExpr();
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.temperatureImposed() )
-    {
-        auto theExpr = bcData.expr(se);
-        u.on(_range=markedfaces(mesh, bcData.markers() ),
-             _expr=theExpr );
-    }
+
+    M_boundaryConditions.applyNewtonInitialGuess( mesh, u, se );
+
     // update info for synchronization
     this->updateDofEliminationIds( "temperature", data );
 
@@ -426,20 +417,20 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
     {
         for ( auto const& [bcName,bcData] : M_boundaryConditions.convectiveHeatFlux() )
         {
-            auto theExpr_h = bcData.expr_h( se );
+            auto theExpr_h = bcData->expr_h( se );
             bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,bcData.markers()),
+                integrate( _range=markedfaces(mesh,bcData->markers()),
                            _expr= timeSteppingScaling*theExpr_h*idt(v)*id(v),
                            _geomap=this->geomap() );
         }
         for ( auto const& bcDataPair : M_boundaryConditions.heatFlux() )
         {
             auto const& bcData = bcDataPair.second;
-            auto neumannExprBase = bcData.expr();
+            auto neumannExprBase = bcData->expr();
             bool neumannnBcDependOnUnknown = neumannExprBase.hasSymbolDependency( trialSymbolNames, se );
             if ( neumannnBcDependOnUnknown )
             {
-                auto neumannExpr = bcData.expr( se );
+                auto neumannExpr = bcData->expr( se );
                 //auto neumannExpr = expr( neumannExprBase, se );
                 hana::for_each( tse.map(), [this,&bcData,&neumannExpr,&u,&v,&J,&Xh,&timeSteppingScaling]( auto const& e )
                 {
@@ -457,7 +448,7 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
                                _pattern=size_type(Pattern::COUPLED),
                                _rowstart=this->rowStartInMatrix(),
                                _colstart=trialBlockIndex ) +=
-                            integrate( _range=markedfaces(this->mesh(),bcData.markers()),
+                            integrate( _range=markedfaces(this->mesh(),bcData->markers()),
                                        _expr= -timeSteppingScaling*inner(neumannDiffExpr, id(v)),
                                        _geomap=this->geomap() );
                     }
@@ -608,34 +599,34 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
     for ( auto const& [bcName,bcData] : M_boundaryConditions.heatFlux() )
     {
         //auto theExpr = bcData.expr( se );
-        auto neumannExprBase = bcData.expr();
+        auto neumannExprBase = bcData->expr();
         bool neumannnBcDependOnUnknown = neumannExprBase.hasSymbolDependency( trialSymbolNames, se );
         bool assembleNeumannBcTerm = neumannnBcDependOnUnknown? buildNonCstPart : buildCstPart;
         if ( assembleNeumannBcTerm )
         {
             //auto theExpr = expr( neumannExprBase, se );
-            auto theExpr = bcData.expr( se );
+            auto theExpr = bcData->expr( se );
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),bcData.markers()),
+                integrate( _range=markedfaces(this->mesh(),bcData->markers()),
                            _expr= -timeSteppingScaling*theExpr*id(v),
                            _geomap=this->geomap() );
         }
     }
     for ( auto const& [bcName,bcData] : M_boundaryConditions.convectiveHeatFlux() )
     {
-        auto theExpr_h = bcData.expr_h( se );
+        auto theExpr_h = bcData->expr_h( se );
         if ( buildNonCstPart )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,bcData.markers()),
+                integrate( _range=markedfaces(mesh,bcData->markers()),
                            _expr= timeSteppingScaling*theExpr_h*idv(u)*id(v),
                            _geomap=this->geomap() );
         }
         if ( buildCstPart )
         {
-            auto theExpr_Text = bcData.expr_Text( se );
+            auto theExpr_Text = bcData->expr_Text( se );
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,bcData.markers()),
+                integrate( _range=markedfaces(mesh,bcData->markers()),
                            _expr= -timeSteppingScaling*theExpr_h*theExpr_Text*id(v),
                            _geomap=this->geomap() );
         }

@@ -10,7 +10,7 @@ add_library(feelpp_modelcore
   SHARED
   options.cpp log.cpp timertool.cpp
   modelbase.cpp modelalgebraic.cpp modelnumerical.cpp modelphysics.cpp modelgenericpde.cpp modelmeshes.cpp
-  modelalgebraicfactory.cpp markermanagement.cpp modelmeasures.cpp
+  modelalgebraicfactory.cpp markermanagement.cpp modelmeasures.cpp genericboundaryconditions.cpp
   )
 target_link_libraries(feelpp_modelcore Feelpp::feelpp)
 add_library(Feelpp::feelpp_modelcore ALIAS feelpp_modelcore )  # to match exported target

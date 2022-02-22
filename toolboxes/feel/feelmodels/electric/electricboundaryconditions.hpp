@@ -4,9 +4,7 @@
 #ifndef FEELPP_TOOLBOXES_HEAT_HEATBOUNDARYCONDITIONS_HPP
 #define FEELPP_TOOLBOXES_HEAT_HEATBOUNDARYCONDITIONS_HPP
 
-#include <feel/feelcore/json.hpp>
-#include <feel/feelmodels/modelexpression.hpp>
-#include <feel/feelmodels/modelcore/modelbase.hpp>
+#include <feel/feelmodels/modelcore/genericboundaryconditions.hpp>
 
 namespace Feel
 {
@@ -20,49 +18,25 @@ public:
 
     enum class Type { ElectricPotentialImposed=0, Ground, SurfaceChargeDensity };
 
-    class ElectricPotentialImposed
+    class ElectricPotentialImposed : public GenericDirichletBoundaryCondition<1,1>
     {
+        using super_type = GenericDirichletBoundaryCondition<1,1>;
     public:
-        ElectricPotentialImposed( std::string const& name ) : M_name( name ) {}
+        ElectricPotentialImposed( std::string const& name ) : super_type( name ) {}
         ElectricPotentialImposed( ElectricPotentialImposed const& ) = default;
         ElectricPotentialImposed( ElectricPotentialImposed && ) = default;
 
-        //! setup bc from json
-        void setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes );
-
-        //! return expression
-        template <typename SymbolsExprType = symbols_expression_empty_t>
-        auto expr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
-        {
-            return Feel::vf::expr( M_mexpr.template expr<1,1>(), se );
-        }
-        //! return markers
-        std::set<std::string> const& markers() const { return M_markers; }
-
-        void setParameterValues( std::map<std::string,double> const& paramValues ) { M_mexpr.setParameterValues( paramValues ); }
-
         virtual self_type::Type type() const { return self_type::Type::ElectricPotentialImposed; }
-
-        //! update informations
-        virtual void updateInformationObject( nl::json & p ) const;
-        //! return tabulate information from json info
-        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
-
-    protected:
-        std::string M_name;
-        ModelExpression M_mexpr;
-        std::set<std::string> M_markers;
     };
 
     class Ground : public ElectricPotentialImposed
     {
         using super_type = ElectricPotentialImposed;
     public:
-
         Ground( std::string const& name ) : super_type( name ) {}
         Ground( Ground const& ) = default;
         Ground( Ground && ) = default;
-        void setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes );
+        void setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes ) override;
 
         self_type::Type type() const override { return self_type::Type::ElectricPotentialImposed; }
 
@@ -116,6 +90,22 @@ public:
 
     //! return true if a bc is type of dof eliminitation
     bool hasTypeDofElimination() const { return !M_electricPotentialImposed.empty(); }
+
+    //! apply dof elimination in linear context
+    template <typename BfType, typename RhsType,typename MeshType, typename EltType, typename SymbolsExprType>
+    void
+    applyDofEliminationLinear( BfType& bilinearForm, RhsType& F, MeshType const& mesh, EltType const& u, SymbolsExprType const& se ) const
+        {
+            Feel::FeelModels::detail::applyDofEliminationLinearOnBoundaryConditions( M_electricPotentialImposed, bilinearForm, F, mesh, u, se );
+        }
+
+    //! apply Newton initial guess (on dof elimination context)
+    template <typename MeshType, typename EltType, typename SymbolsExprType>
+    void
+    applyNewtonInitialGuess( MeshType const& mesh, EltType & u, SymbolsExprType const& se ) const
+        {
+            Feel::FeelModels::detail::applyNewtonInitialGuessOnBoundaryConditions( M_electricPotentialImposed, mesh, u, se );
+        }
 
     void setParameterValues( std::map<std::string,double> const& paramValues );
 

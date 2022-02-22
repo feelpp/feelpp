@@ -23,7 +23,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual &
 
     this->log("Electric","updateResidualDofElimination","start" );
 
-    this->updateDofEliminationIds( "potential-electric", data );
+    this->updateDofEliminationIds( "electric-potential", data );
 
     this->log("Electric","updateResidualDofElimination","finish" );
 }

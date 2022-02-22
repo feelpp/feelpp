@@ -162,9 +162,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // backend
     this->initAlgebraicBackend();
 
-    size_type currentStartIndex = 0;// velocity and pressure before
-    this->setStartSubBlockSpaceIndex( "potential-electric", currentStartIndex );
-
+    size_type currentStartIndex = 0;
+    this->setStartSubBlockSpaceIndex( "electric-potential", currentStartIndex );
 
     // vector solution
     int nBlock = this->nBlockMatrixGraph();
@@ -209,40 +208,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         return;
     M_boundaryConditions.setup( *this,this->modelProperties().boundaryConditions().section( this->keyword() ) );
 
-#if 0
-    M_bcDirichletMarkerManagement.clearMarkerDirichletBC();
-    M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
-    M_bcRobinMarkerManagement.clearMarkerRobinBC();
-
-    this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "Dirichlet" );
-    for( auto const& d : this->M_bcDirichlet )
-        M_bcDirichletMarkerManagement.addMarkerDirichletBC("elimination", name(d), markers(d) );
-    this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "Neumann" );
-    for( auto const& d : this->M_bcNeumann )
-        M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d),markers(d));
-
-    this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "electric-potential", "Robin" );
-    for( auto const& d : this->M_bcRobin )
-         M_bcRobinMarkerManagement.addMarkerRobinBC( name(d),markers(d) );
-
-    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "VolumicForces" );
-#endif
-    auto mesh = this->mesh();
-    auto XhElectricPotential = this->spaceElectricPotential();
-
-    std::set<std::string> electricPotentialMarkers;
-
-    // strong Dirichlet bc on electric-potential from expression
     for ( auto const& [bcName,bcData] : M_boundaryConditions.electricPotentialImposed() )
-    {
-        electricPotentialMarkers.insert( bcData->markers().begin(), bcData->markers().end() );
-    }
-    auto meshMarkersElectricPotentialByEntities = detail::distributeMarkerListOnSubEntity( mesh, electricPotentialMarkers );
-
-    // on topological faces
-    auto const& listMarkedFacesElectricPotential = std::get<0>( meshMarkersElectricPotentialByEntities );
-    if ( !listMarkedFacesElectricPotential.empty() )
-        this->updateDofEliminationIds( "potential-electric", XhElectricPotential, markedfaces( mesh,listMarkedFacesElectricPotential ) );
+        bcData->updateDofEliminationIds( *this, "electric-potential", this->spaceElectricPotential() );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS

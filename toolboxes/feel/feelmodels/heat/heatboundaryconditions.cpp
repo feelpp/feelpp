@@ -10,47 +10,6 @@ namespace FeelModels
 {
 
 void
-HeatBoundaryConditions::TemperatureImposed::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
-{
-    if ( jarg.contains( "expr" ) )
-        M_mexpr.setExpr( jarg.at( "expr" ), mparent.worldComm(), mparent.repository().expr(), indexes );
-     if ( jarg.contains( "markers" ) )
-     {
-         ModelMarkers markers;
-         markers.setup( jarg.at("markers"), indexes );
-         M_markers = markers;
-     }
-     else
-         M_markers = { M_name };
-}
-
-void
-HeatBoundaryConditions::TemperatureImposed::updateInformationObject( nl::json & p ) const
-{
-    auto [exprStr,compInfo] = M_mexpr.exprInformations();
-    p["expr"] = exprStr;
-    p["markers"] = M_markers;
-}
-
-tabulate_informations_ptr_t
-HeatBoundaryConditions::TemperatureImposed::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
-{
-    Feel::Table tabInfo;
-    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { /*"name","type",*/"expr" } );
-    tabInfo.format()
-        .setShowAllBorders( false )
-        .setColumnSeparator(":")
-        .setHasRowSeparator( false );
-    if ( jsonInfo.contains("markers") )
-    {
-        Feel::Table tabInfoMarkers = TabulateInformationTools::FromJSON::createTableFromArray( jsonInfo.at("markers") , true );
-        if ( tabInfoMarkers.nRow() > 0 )
-            tabInfo.add_row( { "markers", tabInfoMarkers } );
-    }
-    return TabulateInformations::New( tabInfo, tabInfoProp );
-}
-
-void
 HeatBoundaryConditions::HeatFlux::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
 {
     if ( jarg.contains( "expr" ) )
@@ -146,8 +105,8 @@ HeatBoundaryConditions::setup( ModelBase const& mparent, nl::json const& jarg )
             auto const& j_temp = jarg.at( bcKeyword );
             for ( auto const& [j_tempkey,j_tempval] : j_temp.items() )
             {
-                TemperatureImposed bc( j_tempkey );
-                bc.setup( mparent,j_tempval,indexes );
+                auto bc = std::make_shared<TemperatureImposed>( j_tempkey );
+                bc->setup( mparent,j_tempval,indexes );
                 M_temperatureImposed.emplace(j_tempkey, std::move( bc ) );
             }
         }
@@ -159,8 +118,8 @@ HeatBoundaryConditions::setup( ModelBase const& mparent, nl::json const& jarg )
             auto const& j_temp = jarg.at( bcKeyword );
             for ( auto const& [j_tempkey,j_tempval] : j_temp.items() )
             {
-                HeatFlux bc( j_tempkey );
-                bc.setup( mparent,j_tempval,indexes );
+                auto bc = std::make_shared<HeatFlux>( j_tempkey );
+                bc->setup( mparent,j_tempval,indexes );
                 M_heatFlux.emplace(j_tempkey, std::move( bc ) );
             }
         }
@@ -172,8 +131,8 @@ HeatBoundaryConditions::setup( ModelBase const& mparent, nl::json const& jarg )
             auto const& j_temp = jarg.at( bcKeyword );
             for ( auto const& [j_tempkey,j_tempval] : j_temp.items() )
             {
-                ConvectiveHeatFlux bc( j_tempkey );
-                bc.setup( mparent,j_tempval,indexes );
+                auto bc = std::make_shared<ConvectiveHeatFlux>( j_tempkey );
+                bc->setup( mparent,j_tempval,indexes );
                 M_convectiveHeatFlux.emplace(j_tempkey, std::move( bc ) );
             }
         }
@@ -184,11 +143,11 @@ void
 HeatBoundaryConditions::setParameterValues( std::map<std::string,double> const& paramValues )
 {
     for ( auto & [bcname,bcData] : M_temperatureImposed )
-        bcData.setParameterValues( paramValues );
+        bcData->setParameterValues( paramValues );
     for ( auto & [bcname,bcData] : M_heatFlux )
-        bcData.setParameterValues( paramValues );
+        bcData->setParameterValues( paramValues );
     for ( auto & [bcname,bcData] : M_convectiveHeatFlux )
-        bcData.setParameterValues( paramValues );
+        bcData->setParameterValues( paramValues );
 }
 
 void
@@ -198,19 +157,19 @@ HeatBoundaryConditions::updateInformationObject( nl::json & p ) const
     {
         nl::json & pBC = p["temperature_imposed"];
         for ( auto const& [bcname,bcData] : M_temperatureImposed )
-            bcData.updateInformationObject( pBC[bcname] );
+            bcData->updateInformationObject( pBC[bcname] );
     }
     if ( !M_heatFlux.empty() )
     {
         nl::json & pBC = p["heat_flux"];
         for ( auto const& [bcname,bcData] : M_heatFlux )
-            bcData.updateInformationObject( pBC[bcname] );
+            bcData->updateInformationObject( pBC[bcname] );
     }
     if ( !M_convectiveHeatFlux.empty() )
     {
         nl::json & pBC = p["convective_heat_flux"];
         for ( auto const& [bcname,bcData] : M_convectiveHeatFlux )
-            bcData.updateInformationObject( pBC[bcname] );
+            bcData->updateInformationObject( pBC[bcname] );
     }
 
 }

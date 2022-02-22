@@ -102,21 +102,16 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDEDofElimination( DataUpda
     vector_ptrtype& F = data.rhs();
     auto const& se = mctx.symbolsExpr();
     auto XhV = this->spaceElectricPotential();
-    auto const& v = this->fieldElectricPotential();
+    auto const& u = this->fieldElectricPotential();
     auto mesh = XhV->mesh();
 
-    auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=A,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix(),
-                                              _colstart=this->colStartInMatrix() );
+    auto bilinearForm = form2( _test=XhV,_trial=XhV,_matrix=A,
+                               _pattern=size_type(Pattern::COUPLED),
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=this->colStartInMatrix() );
 
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.electricPotentialImposed() )
-    {
-        auto theExpr = bcData->expr( se );
-        bilinearForm_PatternCoupled +=
-            on( _range=markedfaces(mesh,bcData->markers()),
-                _element=v,_rhs=F,_expr=theExpr );
-    }
+    M_boundaryConditions.applyDofEliminationLinear( bilinearForm, F, mesh, u, se );
+
     this->log("Electric","updateLinearPDEDofElimination","finish" );
 }
 
@@ -131,17 +126,14 @@ Electric<ConvexType,BasisPotentialType>::updateNewtonInitialGuess( DataNewtonIni
 
     vector_ptrtype& U = data.initialGuess();
     auto mesh = this->mesh();
-    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
-    auto v = this->spaceElectricPotential()->element( U, this->rowStartInVector()+startBlockIndexElectricPotential );
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "electric-potential" );
+    auto u = this->spaceElectricPotential()->element( U, this->rowStartInVector()+startBlockIndexElectricPotential );
     auto const& se = mctx.symbolsExpr();
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.electricPotentialImposed() )
-    {
-        auto theExpr = bcData->expr( se );
-        v.on(_range=markedfaces(mesh,bcData->markers()),
-             _expr=theExpr );
-    }
+
+    M_boundaryConditions.applyNewtonInitialGuess( mesh, u, se );
+
     // update info for synchronization
-    this->updateDofEliminationIds( "potential-electric", data );
+    this->updateDofEliminationIds( "electric-potential", data );
 
     this->log("Electric","updateNewtonInitialGuess","finish" );
 }
@@ -160,7 +152,7 @@ Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & da
 
     std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("Electric","updateJacobian", "start"+sc);
-    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "electric-potential" );
 
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
@@ -234,7 +226,7 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("Electric","updateResidual", "start"+sc);
 
-    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "electric-potential" );
 
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();

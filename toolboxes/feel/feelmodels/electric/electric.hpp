@@ -36,7 +36,6 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/modelphysics.hpp>
-#include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 #include <feel/feelmodels/electric/electricboundaryconditions.hpp>
@@ -206,7 +205,7 @@ public :
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
-            auto field_p = this->spaceElectricPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "potential-electric" ) );
+            auto field_p = this->spaceElectricPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "electric-potential" ) );
             return this->modelFields( field_p, prefix );
         }
     template <typename PotentialFieldType>
@@ -360,15 +359,7 @@ private :
 
     // boundary conditions
     ElectricBoundaryConditions M_boundaryConditions;
-#if 0
-    map_scalar_field<2> M_bcDirichlet;
-    map_scalar_field<2> M_bcNeumann;
-    map_scalar_fields<2> M_bcRobin;
-    map_scalar_field<2> M_volumicForcesProperties;
-    MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
-    MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
-    MarkerManagementRobinBC M_bcRobinMarkerManagement;
-#endif
+
     // post-process
     export_ptrtype M_exporter;
 };
