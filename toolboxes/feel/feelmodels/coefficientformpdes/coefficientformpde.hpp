@@ -14,6 +14,7 @@
 #include <feel/feelpoly/nedelec.hpp>
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
+#include <feel/feelmodels/coefficientformpdes/coefficientformpdeboundaryconditions.hpp>
 
 namespace Feel
 {
@@ -33,6 +34,7 @@ public:
     // mesh
     typedef ConvexType convex_type;
     static const uint16_type nDim = convex_type::nDim;
+    static const uint16_type nRealDim = convex_type::nRealDim;
     static const uint16_type nOrderGeo = convex_type::nOrder;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
@@ -301,16 +303,8 @@ private :
     bdf_unknown_ptrtype M_bdfUnknown;
 
     // boundary conditions
-    using map_field_dirichlet = typename mpl::if_c<unknown_is_scalar, map_scalar_field<2>, map_vector_field<nDim,1,2> >::type;
-    map_field_dirichlet M_bcDirichlet;
-    std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
-    map_scalar_field<2> M_bcNeumann;
-    map_scalar_fields<2> M_bcRobin;
-    MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
-    MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
-    MarkerManagementRobinBC M_bcRobinMarkerManagement;
-    // Comp -> ( Dirichlet bc Name -> markers distribute on entities )
-    std::map<ComponentType, std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > > M_meshMarkersDofEliminationUnknown;
+    using boundary_conditions_type = CoefficientFormPDEBoundaryConditions<nRealDim,unknown_is_scalar?0:1>;
+    boundary_conditions_type M_boundaryConditions;
 };
 
 template< typename ConvexType, typename BasisUnknownType>
@@ -319,9 +313,9 @@ bool
 CoefficientFormPDE<ConvexType,BasisUnknownType>::hasSymbolDependencyInBoundaryConditions( std::set<std::string> const& symbs, SymbolsExprType const& se ) const
 {
     bool hasDependency = false;
-    for( auto const& d : M_bcNeumann )
+    for ( auto const& [bcname,bcData] : M_boundaryConditions.neumann() )
     {
-        auto neumannExpr = expression( d );
+        auto neumannExpr = bcData->expr();
         if ( neumannExpr.hasSymbolDependency( symbs, se ) )
         {
             hasDependency = true;
@@ -331,15 +325,15 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::hasSymbolDependencyInBoundaryCo
     if ( hasDependency )
         return true;
 
-    for( auto const& d : this->M_bcRobin )
+    for ( auto const& [bcname,bcData] : M_boundaryConditions.robin() )
     {
-        auto theExpr1 = expression1( d );
+        auto theExpr1 = bcData->expr1();
         if ( theExpr1.hasSymbolDependency( symbs, se ) )
         {
             hasDependency = true;
             break;
         }
-        auto theExpr2 = expression2( d );
+        auto theExpr2 = bcData->expr2();
         if ( theExpr2.hasSymbolDependency( symbs, se ) )
         {
             hasDependency = true;

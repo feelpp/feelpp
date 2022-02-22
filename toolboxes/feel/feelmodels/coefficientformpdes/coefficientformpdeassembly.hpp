@@ -287,35 +287,27 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
     if ( buildNonCstPart )
     {
         // k \nabla u  n = g
-        for( auto const& d : this->M_bcNeumann )
+        for ( auto const& [bcName,bcData] : M_boundaryConditions.neumann() )
         {
-            auto theExpr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
-                                          [&d,&se] { return expression( d,se ); },
-                                          [&d,&se] { return expression( d,se )*N(); } );
+            auto theExpr = bcData->expr( se );
             linearForm +=
-                integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
+                integrate( _range=markedfaces(this->mesh(),bcData->markers()),
                            _expr= timeSteppingScaling*inner(theExpr,id(v)),
                            _geomap=this->geomap() );
         }
-
         // k \nabla u  n + g u = h  -> - k \nabla u  n = gu - h
-        for( auto const& d : this->M_bcRobin )
+        for ( auto const& [bcName,bcData] : M_boundaryConditions.robin() )
         {
-            if constexpr( unknown_is_scalar )
-            {
-                auto theExpr1 = expression1( d,se );
-                bilinearForm +=
-                    integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
-                               _expr= timeSteppingScaling*theExpr1*idt(v)*id(v),
-                               _geomap=this->geomap() );
-                auto theExpr2 = expression2( d,se );
-                linearForm +=
-                    integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
-                               _expr= timeSteppingScaling*theExpr2*id(v),
-                               _geomap=this->geomap() );
-            }
-            else
-                CHECK( false ) << "robin bc with vectorial unknown can not be implemented for now";
+            auto theExpr1 = bcData->expr1( se );
+            bilinearForm +=
+                integrate( _range=markedfaces(mesh,bcData->markers()),
+                           _expr= timeSteppingScaling*theExpr1*inner(idt(v),id(v)),
+                           _geomap=this->geomap() );
+            auto theExpr2 = bcData->expr2( se );
+            linearForm +=
+                integrate( _range=markedfaces(mesh,bcData->markers()),
+                           _expr= timeSteppingScaling*inner(theExpr2,id(v)),
+                           _geomap=this->geomap() );
         }
     }
 
@@ -325,139 +317,14 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
 
 }
 
-namespace detail
-{
-
-// TODO : create struct for DistributeMarker
-template <ElementsType ET>
-constexpr int indexInDistributeMarker()
-{
-    if constexpr ( ET == MESH_FACES )
-        return 0;
-    else if constexpr ( ET == MESH_EDGES )
-        return 1;
-    else if constexpr ( ET == MESH_POINTS )
-        return 2;
-    else //if constexpr ( ET == MESH_ELEMENTS )
-        return 3;
-}
-
-template <ElementsType ET, typename MeshType, typename MarkerType>
-auto rangeOfMarkedEntity( MeshType const& mesh, MarkerType const& markers )
-{
-    if constexpr ( ET == MESH_FACES )
-        return markedfaces(mesh,markers );
-    else if constexpr ( ET == MESH_EDGES )
-        return markededges(mesh,markers );
-    else if constexpr ( ET == MESH_POINTS )
-        return markedpoints(mesh,markers );
-    else //if constexpr ( ET == MESH_ELEMENTS )
-        return markedelements(mesh,markers );
-}
-
-template <ElementsType ET, typename BfType, typename MeshType, typename EltType, typename SymbolsExprType, typename BcType, typename BcCompType>
-void
-applyDofEliminationLinear( BfType& bilinearForm, vector_ptrtype& F, MeshType const& mesh, EltType const& u, SymbolsExprType const& se,
-                           std::map<ComponentType, std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > > const& M_meshMarkersDofEliminationUnknown,
-                           BcType const& M_bcDirichlet, BcCompType const& M_bcDirichletComponents )
-{
-    static const bool unknown_is_vectorial = EltType::functionspace_type::is_vectorial;
-    static const int indexDistrib = indexInDistributeMarker<ET>();
-    for ( auto const& [comp,mapMarkerBCToEntitiesMeshMarker] : M_meshMarkersDofEliminationUnknown )
-    {
-        if ( comp == ComponentType::NO_COMPONENT )
-        {
-            for( auto const& d : M_bcDirichlet )
-            {
-                auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
-                if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
-                    continue;
-                auto const& listMarkedEntities = std::get</*0*/indexDistrib >( itFindMarker->second );
-                if ( listMarkedEntities.empty() )
-                    continue;
-                auto theExpr = expression(d,se);
-                bilinearForm +=
-                    on( _range=rangeOfMarkedEntity<ET>(mesh,listMarkedEntities),
-                        _element=u,_rhs=F,_expr=theExpr );
-            }
-        }
-        else if constexpr ( unknown_is_vectorial )
-        {
-            auto itFindComp = M_bcDirichletComponents.find( comp );
-            if ( itFindComp == M_bcDirichletComponents.end() )
-                continue;
-            for( auto const& d : itFindComp->second )
-            {
-                auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
-                if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
-                    continue;
-                auto const& listMarkedEntities = std::get</*0*/indexDistrib>( itFindMarker->second );
-                if ( listMarkedEntities.empty() )
-                    continue;
-                auto theExpr = expression(d,se);
-                bilinearForm +=
-                    on( _range=rangeOfMarkedEntity<ET>(mesh, listMarkedEntities),
-                        _element=u.comp( comp ),_rhs=F,_expr=theExpr );
-            }
-        }
-    }
-}
-
-template <ElementsType ET, typename MeshType, typename EltType, typename SymbolsExprType, typename BcType, typename BcCompType>
-void
-applyNewtonInitialGuess( MeshType const& mesh, EltType & u, SymbolsExprType const& se,
-                         std::map<ComponentType, std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > > const& M_meshMarkersDofEliminationUnknown,
-                         BcType const& M_bcDirichlet, BcCompType const& M_bcDirichletComponents )
-{
-    static const bool unknown_is_vectorial = EltType::functionspace_type::is_vectorial;
-    static const int indexDistrib = indexInDistributeMarker<ET>();
-    for ( auto const& [comp,mapMarkerBCToEntitiesMeshMarker] : M_meshMarkersDofEliminationUnknown )
-    {
-        if ( comp == ComponentType::NO_COMPONENT )
-        {
-            for( auto const& d : M_bcDirichlet )
-            {
-                auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
-                if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
-                    continue;
-                auto const& listMarkedEntities = std::get</*0*/indexDistrib>( itFindMarker->second );
-                if ( listMarkedEntities.empty() )
-                    continue;
-                auto theExpr = expression(d,se);
-                u.on(_range=rangeOfMarkedEntity<ET>(mesh, listMarkedEntities),
-                     _expr=theExpr );
-            }
-        }
-        else if constexpr ( unknown_is_vectorial )
-        {
-            auto itFindComp = M_bcDirichletComponents.find( comp );
-            if ( itFindComp == M_bcDirichletComponents.end() )
-                continue;
-            for( auto const& d : itFindComp->second )
-            {
-                auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
-                if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
-                    continue;
-                auto const& listMarkedEntities = std::get</*0*/indexDistrib>( itFindMarker->second );
-                if ( listMarkedEntities.empty() )
-                    continue;
-                auto theExpr = expression(d,se);
-                u.comp( comp ).on(_range=rangeOfMarkedEntity<ET>(mesh, listMarkedEntities),
-                                  _expr=theExpr );
-            }
-        }
-    }
-}
-
-} // namespace detail
 
 template< typename ConvexType, typename BasisUnknownType>
 template <typename ModelContextType>
 void
 CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEDofElimination( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-    if ( !M_bcDirichletMarkerManagement.hasMarkerDirichletBCelimination() ) return;
-
+    if ( !M_boundaryConditions.hasTypeDofElimination() )
+        return;
     this->log("CoefficientFormPDE","updateLinearPDEDofElimination","start" );
 
     sparse_matrix_ptrtype& A = data.matrix();
@@ -473,15 +340,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEDofElimination( 
                                _rowstart=this->rowStartInMatrix(),
                                _colstart=this->colStartInMatrix() );
 
+    M_boundaryConditions.applyDofEliminationLinear( bilinearForm, F, mesh, u, se );
 
-    Feel::FeelModels::detail::applyDofEliminationLinear<MESH_ELEMENTS>( bilinearForm, F, mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
-    Feel::FeelModels::detail::applyDofEliminationLinear<MESH_FACES>( bilinearForm, F, mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
-    if constexpr ( !is_hcurl_conforming_v<typename space_unknown_type::fe_type> )
-    {
-    if constexpr ( nDim == 3 )
-         Feel::FeelModels::detail::applyDofEliminationLinear<MESH_EDGES>( bilinearForm, F, mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
-    Feel::FeelModels::detail::applyDofEliminationLinear<MESH_POINTS>( bilinearForm, F, mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
-    }
     this->log("CoefficientFormPDE","updateLinearPDEDofElimination","finish" );
 }
 
@@ -491,8 +351,8 @@ template <typename ModelContextType>
 void
 CoefficientFormPDE<ConvexType,BasisUnknownType>::updateNewtonInitialGuess( ModelAlgebraic::DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
 {
-    if ( !M_bcDirichletMarkerManagement.hasMarkerDirichletBCelimination() ) return;
-
+    if ( !M_boundaryConditions.hasTypeDofElimination() )
+        return;
     this->log("CoefficientFormPDE","updateNewtonInitialGuess","start" );
 
     vector_ptrtype& U = data.initialGuess();
@@ -501,14 +361,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateNewtonInitialGuess( Model
     auto u = this->spaceUnknown()->element( U, this->rowStartInVector()+startBlockIndexUnknown );
     auto const& se = mctx.symbolsExpr();
 
-    Feel::FeelModels::detail::applyNewtonInitialGuess<MESH_ELEMENTS>( mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
-    Feel::FeelModels::detail::applyNewtonInitialGuess<MESH_FACES>( mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
-    if constexpr ( !is_hcurl_conforming_v<typename space_unknown_type::fe_type> )
-    {
-    if constexpr ( nDim == 3 )
-        Feel::FeelModels::detail::applyNewtonInitialGuess<MESH_EDGES>( mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
-    Feel::FeelModels::detail::applyNewtonInitialGuess<MESH_POINTS>( mesh, u, se, M_meshMarkersDofEliminationUnknown, M_bcDirichlet, M_bcDirichletComponents );
-    }
+    M_boundaryConditions.applyNewtonInitialGuess( mesh, u, se );
+
     // update info for synchronization
     this->updateDofEliminationIds( this->unknownName(), data );
 
@@ -969,14 +823,15 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
     // Neumann bc :  k \nabla u  n = g
     if ( buildNonCstPart )
     {
-        for( auto const& d : M_bcNeumann )
+        for ( auto const& bcDataPair : M_boundaryConditions.neumann() )
         {
-            auto neumannExprBase = expression( d );
+            auto const& bcData = bcDataPair.second;
+            auto neumannExprBase = bcData->expr();
             bool neumannnBcDependOnUnknown = neumannExprBase.hasSymbolDependency( trialSymbolNames, se );
             if ( neumannnBcDependOnUnknown )
             {
-                auto neumannExpr = expr( neumannExprBase, se );
-                hana::for_each( tse.map(), [this,&d,&neumannExpr,&u,&v,&J,&Xh,&timeSteppingScaling]( auto const& e )
+                auto neumannExpr = bcData->expr( se );
+                hana::for_each( tse.map(), [this,&bcData,&neumannExpr,&u,&v,&J,&Xh,&timeSteppingScaling]( auto const& e )
                 {
                     for ( auto const& trialSpacePair : hana::second(e).blockSpaceIndex() )
                     {
@@ -988,15 +843,18 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                         if ( !neumannDiffExpr.expression().hasExpr() )
                             continue;
 
+#if 0
                         auto neumannDiffExprUsed = hana::eval_if( hana::bool_c<unknown_is_scalar>,
                                                                   [&neumannDiffExpr] { return neumannDiffExpr; },
                                                                   [&neumannDiffExpr] { return neumannDiffExpr*N(); } );
+#endif
+                        auto neumannDiffExprUsed = neumannDiffExpr;
 
                         form2( _test=Xh,_trial=trialXh,_matrix=J,
                                _pattern=size_type(Pattern::COUPLED),
                                _rowstart=this->rowStartInMatrix(),
                                _colstart=trialBlockIndex ) +=
-                            integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
+                            integrate( _range=markedfaces(this->mesh(),bcData->markers()),
                                        _expr= -timeSteppingScaling*inner(neumannDiffExprUsed, id(v)),
                                        _geomap=this->geomap() );
                     }
@@ -1006,30 +864,24 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
     }
 
     // Robin bc
-    for( auto const& d : this->M_bcRobin )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions.robin() )
     {
-        if constexpr( unknown_is_scalar )
-            {
-                auto theExpr1 = expression1( d,se );
-                bool build_BcRobinTermLhs = theExpr1.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
-                if ( !build_BcRobinTermLhs )
-                    continue;
+        auto theExpr1 = bcData->expr1( se );
+        bool build_BcRobinTermLhs = theExpr1.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+        if ( !build_BcRobinTermLhs )
+            continue;
 
-                bilinearForm +=
-                    integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
-                               _expr= timeSteppingScaling*theExpr1*idt(u)*id(v),
-                               _geomap=this->geomap() );
+        bilinearForm +=
+            integrate( _range=markedfaces(mesh,bcData->markers()),
+                       _expr= timeSteppingScaling*theExpr1*inner(idt(u),id(v)),
+                       _geomap=this->geomap() );
 
-                if ( theExpr1.hasSymbolDependency( trialSymbolNames ) )
-                    CHECK( false ) << "TODO";
-                auto theExpr2base = expression2( d );
-                if ( theExpr2base.hasSymbolDependency( trialSymbolNames, se ) )
-                    CHECK( false ) << "TODO";
-            }
-        else
-            CHECK( false ) << "robin bc with vectorial unknown can not be implemented for now";
+        if ( theExpr1.hasSymbolDependency( trialSymbolNames ) )
+            CHECK( false ) << "TODO";
+        auto theExpr2base = bcData->expr2();
+        if ( theExpr2base.hasSymbolDependency( trialSymbolNames, se ) )
+            CHECK( false ) << "TODO";
     }
-
 
 }
 
@@ -1312,49 +1164,47 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
 
 
     // Neumann bc
-    for( auto const& d : this->M_bcNeumann )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions.neumann() )
     {
-        auto neumannExprBase = expression( d );
+        auto neumannExprBase = bcData->expr();
         bool neumannnBcDependOnUnknown = neumannExprBase.hasSymbolDependency( trialSymbolNames, se );
         bool assembleNeumannBcTerm = neumannnBcDependOnUnknown? buildNonCstPart : buildCstPart;
         if ( assembleNeumannBcTerm )
         {
+#if 0
             auto theExpr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
                                           [&neumannExprBase,&se] { return expr( neumannExprBase, se ); },
                                           [&neumannExprBase,&se] { return expr( neumannExprBase, se )*N(); } );
+#endif
+            auto theExpr = bcData->expr( se );
             linearForm +=
-                integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
+                integrate( _range=markedfaces(this->mesh(),bcData->markers()),
                            _expr= -timeSteppingScaling*inner(theExpr,id(v)),
                            _geomap=this->geomap() );
         }
     }
 
     // Robin bc
-    for( auto const& d : this->M_bcRobin )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions.robin() )
     {
-        if constexpr( unknown_is_scalar )
-            {
-                auto theExpr1 = expression1( d,se );
-                bool build_BcRobinTermLhs = theExpr1.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
-                if ( build_BcRobinTermLhs )
-                {
-                    linearForm +=
-                        integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
-                                   _expr= timeSteppingScaling*theExpr1*idv(u)*id(v),
-                                   _geomap=this->geomap() );
-                }
-                auto theExpr2 = expression2( d,se );
-                bool build_BcRobinTermRhs = buildCstPart; // TODO : theExpr2 depends on unkwnon, then it's buildNonCstPart
-                if ( build_BcRobinTermRhs )
-                {
-                    linearForm +=
-                        integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
-                                   _expr= -timeSteppingScaling*theExpr2*id(v),
-                                   _geomap=this->geomap() );
-                }
-            }
-        else
-            CHECK( false ) << "robin bc with vectorial unknown can not be implemented for now";
+        auto theExpr1 = bcData->expr1( se );
+        bool build_BcRobinTermLhs = theExpr1.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+        if ( build_BcRobinTermLhs )
+        {
+            linearForm +=
+                integrate( _range=markedfaces(mesh,bcData->markers()),
+                           _expr= timeSteppingScaling*theExpr1*inner(idv(u),id(v)),
+                           _geomap=this->geomap() );
+        }
+        auto theExpr2 = bcData->expr2( se );
+        bool build_BcRobinTermRhs = buildCstPart; // TODO : theExpr2 depends on unkwnon, then it's buildNonCstPart
+        if ( build_BcRobinTermRhs )
+        {
+            linearForm +=
+                integrate( _range=markedfaces(mesh,bcData->markers()),
+                           _expr= -timeSteppingScaling*inner(theExpr2,id(v)),
+                           _geomap=this->geomap() );
+        }
     }
 
 }
