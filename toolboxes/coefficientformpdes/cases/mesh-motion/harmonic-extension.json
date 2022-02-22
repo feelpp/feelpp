@@ -52,14 +52,12 @@
                 {
                     "markers":["Bottom"],
                     "expr":"{0,0}"
-                }
-            },
-            "Dirichlet_x":
-            {
+                },
                 "GammaFixX":
                 {
                     "markers":["Left","Right"],
-                    "expr":"0"
+                    "expr":"0",
+                    "component":"x"
                 }
             }
         }
