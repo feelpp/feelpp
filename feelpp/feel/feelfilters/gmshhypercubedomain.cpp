@@ -278,7 +278,7 @@ GmshHypercubeDomain::getDescription3D() const
     if ( M_use_hypercube )
         ostr << "  Recombine;\n";
 
-    ostr << "};\n";
+    ostr << "}\n";
 
     // if one wants a mesh which is regular using transfinite, remove
     // the 'if' however tre is a bug in gmsh which prevent of doing

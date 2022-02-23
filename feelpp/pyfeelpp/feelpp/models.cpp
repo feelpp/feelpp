@@ -55,8 +55,13 @@ PYBIND11_MODULE(_models, m )
         //.def("hasExpression",&ModelParameter::hasExpression, "return true if the parameter has an expression, false otherwise")
         .def("hasFitInterpolator",&ModelParameter::hasFitInterpolator, "return true if the parameter has a fit interpolator, false otherwise")
         .def("setParameterValues",&ModelParameter::setParameterValues, "set parameter values from a map of string/double pairs")
-        .def("__str__", parameter_to_str, "");
-
+        .def("__str__", parameter_to_str, "")
+        .def("min", &ModelParameter::min, "get minimal value")
+        .def("setMin", &ModelParameter::setMin, "set minimal value")
+        .def("max", &ModelParameter::max, "get maximal value")
+        .def("setMax", &ModelParameter::setMax, "set maximal value")
+        .def("hasMinMax", &ModelParameter::hasMinMax, "check if the parameter has min and max values")
+        .def("description", &ModelParameter::description, "get description");
 
 
     pyclass_name = "ModelParameters";
@@ -96,10 +101,10 @@ PYBIND11_MODULE(_models, m )
         .def("setProperty",[](ModelMaterial& m, const std::string& prop, const std::string& e )
              {
                  m.setProperty( prop, e );
-             }, "returns true of the property exists, false otherwise")
+             }, "set a property to an expression")
         .def("hasProperty",&ModelMaterial::hasProperty, "returns true of the property exists, false otherwise")
-        .def("hasPropertyConstant",&ModelMaterial::hasPropertyConstant, "returns true of the property exists and is constant, false otherwise")
-        .def("hasPropertyScalar",&ModelMaterial::hasPropertyExprScalar, "returns true of the property exists and is a scalar expression, false otherwise")
+        .def("hasPropertyConstant",&ModelMaterial::hasPropertyConstant, "returns true if the property exists and is constant, false otherwise")
+        .def("hasPropertyScalar",&ModelMaterial::hasPropertyExprScalar, "returns true if the property exists and is a scalar expression, false otherwise")
         .def("propertyConstant",&ModelMaterial::propertyConstant, "return the value of the constant property")
         .def("setParameterValues",&ModelMaterial::setParameterValues, "set parameter values from a map of string/double pairs")
         .def("getString",&ModelMaterial::getString, "returns the string from key if the value is a string")
