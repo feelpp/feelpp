@@ -2,12 +2,20 @@
     deals with reduced basis, using PETSc matrices
 """
 
+import sys, slepc4py
 import numpy as np
 from petsc4py import PETSc
+from slepc4py import SLEPc
+slepc4py.init(sys.argv)
 # import plotly.graph_objects as go
 import sys, os
 from tqdm import tqdm
 from scipy.sparse.linalg import splu, spsolve
+
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
 
 
 
@@ -82,14 +90,15 @@ class reducedbasis():
 
         def monitor(ksp, its, rnorm):
             self.reshist[its] = rnorm
-            print("[petsc4py] Iteration {} Residual norm: {}".format(its,rnorm))
+            if rank == 0:
+                print("[petsc4py] Iteration {} Residual norm: {}".format(its,rnorm))
         
         def monitor_nverbose(ksp, its, rnorm):
             self.reshist[its] = rnorm
         
         self.monitorFunc = [monitor_nverbose, monitor]
 
-        self.ksp.setMonitor(monitor)
+        self.ksp.setMonitor(monitor_nverbose)
         pc = self.ksp.getPC()
         pc.setType(self.PC_TYPE)
 
@@ -122,6 +131,8 @@ class reducedbasis():
 
         ## For greedy memory
         self.DeltaMax = None
+        if rank == 0:
+            print("[reducedbasis] rb initialized")
 
     def setVerbose(self, set=True):
         """Set verbose when system is solved
@@ -195,7 +206,7 @@ class reducedbasis():
         # if not (self.test_orth() == np.eye(self.N)).all() and nb < 2:
         if not (self.test_orth() ) and nb < 10:
             self.orthonormalizeZ(nb=nb+1)
-        else:
+        elif rank == 0:
             # pass
             print(f"[reducedBasis] Gram-Schmidt orthonormalization done after {nb+1} step"+['','s'][nb>0])
 
@@ -301,9 +312,8 @@ class reducedbasis():
         v.setUp()
         v.set(0)
         v.assemble()
-        i=0
 
-        for mu in mus:
+        for i,mu in enumerate(tqdm(mus, desc=f"[reducedBasis] Offline generation of the basis", ascii=False, ncols=120)):
             beta = self.model.computeBetaQm(mu)
             A = self.assembleA(beta[0][0])
             F = self.assembleF(beta[1][0][0])
@@ -320,7 +330,6 @@ class reducedbasis():
             self.Z.append(sol)
             # print(i, self.Z[-1].min(), self.Z[-1].max())
             # print(self.reshist)
-            i += 1
 
         if orth:
             self.orthonormalizeZ()
@@ -652,6 +661,7 @@ class reducedbasis():
     def projFE(self, uN):
         """Project the reduced solution in FE space
         NB : this function is costly because it makes a loop on the big dimension NN
+        NB : this function only works in sequential
 
         Args:
             uN (np.ndarray): reduced solution of size N
@@ -664,6 +674,7 @@ class reducedbasis():
         for i in range(self.NN):
             for j in range(len(uN)):
                 u_proj[i] += self.Z[j][i] * uN[j]
+        u_proj.assemble()
         return u_proj
         
     def RB_toNumpy(self):
@@ -693,7 +704,8 @@ class reducedbasis():
         Returns:
             list of ParameterSpaceElement: parameters for the basis
         """
-        print("[reducedBasis] Start greedy algorithm")
+        if rank == 0:
+            print("[reducedBasis] Start greedy algorithm")
         self.N = 0
         S = []
         self.Z = []
@@ -772,11 +784,10 @@ class reducedbasis():
             Delta = Delta_max
             self.DeltaMax.append(Delta_max)
             mu = mu_max
-            print("[reducedBasis] Greedy alg.", self.N, Delta, mu)
-
-        
-        if self.N == Nmax:
-            print("[reducedBasis] Greedy alg : warning, max size reached")
+            if rank == 0:
+                print(f"[reducedBasis] Greedy algo, N={self.N}, Δ={Delta:e} (tol={eps_tol})".ljust(64), f"µ={mu}")
+        if rank == 0 and self.N == Nmax:
+            print("[reducedBasis] Greedy algo : warning, max size reached")
 
     #     fig.update_layout(
     #         # title="Energy for ",
@@ -808,6 +819,8 @@ class reducedbasis():
             return
         elif not os.path.isdir(path):
             os.mkdir(path)
+
+        print(f"[reducedbasis] saving reduced basis to {path}...", end=" ")
         
         if not os.path.isdir(path+'/ANq'):
             os.mkdir(path+'/ANq')
@@ -815,12 +828,11 @@ class reducedbasis():
             os.mkdir(path+'/FNp')
         if not os.path.isdir(path+'/offline'):
             os.mkdir(path+'/offline')
-
+        
         for q,Aq in enumerate(self.ANq):
             np.save(path+"/ANq/"+str(q), Aq)
         for p,Fp in enumerate(self.FNp):
             np.save(path+"/FNp/"+str(p), Fp)
-
 
         np.save(path+'/offline/SS', self.SS)
         np.save(path+'/offline/SL', self.SL)
@@ -828,6 +840,9 @@ class reducedbasis():
 
         if self.DeltaMax is not None:
             np.save(path+'/offline/DeltaMax', self.DeltaMax)
+
+        print("Done !")
+
 
     def loadReducedBasis(path, model):
         if not os.path.isdir(path):
