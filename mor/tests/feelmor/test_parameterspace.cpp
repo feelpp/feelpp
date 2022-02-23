@@ -247,9 +247,9 @@ BOOST_AUTO_TEST_CASE( test3 )
     parameters.setPTree(p);
     auto Dmu = parameterspace_type::New(parameters);
     BOOST_CHECK( Dmu->dimension() == 2 );
-    auto mubar = Dmu->mubar();
-    BOOST_CHECK( mubar.parameterNamed("p1") == 2 );
-    BOOST_CHECK( mubar.parameterNamed("p2") == -1 );
+    // auto mubar = Dmu->mubar();
+    // BOOST_CHECK( mubar.parameterNamed("p1") == 2 );
+    // BOOST_CHECK( mubar.parameterNamed("p2") == -1 );
     auto mumin = Dmu->min();
     BOOST_CHECK( mumin.parameterNamed("p1") == 1 );
     BOOST_CHECK( mumin.parameterNamed("p2") == -10 );
