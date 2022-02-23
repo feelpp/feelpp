@@ -21,6 +21,7 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#include <boost/core/demangle.hpp>
 #include <fmt/core.h>
 #include <feel/feelcore/environment.hpp>
 
@@ -32,6 +33,14 @@ void handleExceptions()
     try
     {
         throw; // re-throw exception already in flight } 
+    }
+    catch( boost::bad_lexical_cast const& e )
+    {
+        if ( Environment::isMasterRank() )
+            fmt::print( "[feel++.boost.bad_lexical_cast] {}, source type: {}, target type: {}", 
+                        e.what(), 
+                        boost::core::demangle(e.source_type().name()), 
+                        boost::core::demangle(e.target_type().name()) );
     }
     catch(const boost::filesystem::filesystem_error& e)
     {
@@ -87,6 +96,7 @@ void handleExceptions()
     {
         std::cerr << "WARN: failed to get the current git state. Is this a git repo?" << std::endl;
     }
+    Environment::abort(EXIT_FAILURE);
 }    
 
 } // namespace Feel
