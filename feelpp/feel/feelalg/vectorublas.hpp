@@ -174,7 +174,8 @@ class FEELPP_EXPORT VectorUblas : public Vector<T>
 
         // Operators API
         Vector<T> & operator=( const Vector<T> & v ) override;
-        VectorUblas<T> & operator=( VectorUblas<T> other ) { swap( *this, other ); return *this; }
+        //VectorUblas<T> & operator=( VectorUblas<T> other ) { swap( *this, other ); return *this; }
+        VectorUblas<T> & operator=( const VectorUblas<T> & other ) { this->operator=( static_cast<const Vector<T> &>( other ) ); return *this; }
 
         virtual value_type operator()( size_type i ) const override { return M_vectorImpl->operator()( i ); }
         virtual value_type& operator()( size_type i ) override { return M_vectorImpl->operator()( i ); }
