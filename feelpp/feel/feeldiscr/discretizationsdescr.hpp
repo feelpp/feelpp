@@ -23,6 +23,8 @@
 */
 #pragma once
 
+#include <fmt/core.h>
+#include <fmt/compile.h>
 #include <feel/feelcore/feel.hpp>
 
 namespace Feel
