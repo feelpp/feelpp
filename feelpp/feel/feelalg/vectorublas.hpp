@@ -696,12 +696,6 @@ class VectorUblasContiguousGhostsBase:
     public:
         // Constructors/Destructor
         VectorUblasContiguousGhostsBase( ) = default;
-        VectorUblasContiguousGhostsBase( VectorUblasContiguousGhostsBase<T> const& v ): super_type(v) { }
-        
-        VectorUblasContiguousGhostsBase( size_type s ): super_type( s ) { }
-        VectorUblasContiguousGhostsBase( const datamap_ptrtype & dm ): super_type( dm ) { }
-        VectorUblasContiguousGhostsBase( size_type s, size_type n_local ): super_type( s, n_local ) { }
-
         ~VectorUblasContiguousGhostsBase() override = default;
         
         // Storage API
@@ -812,10 +806,16 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         friend VectorUblasSlice<T, Storage>;
 
     public:
-        using super_type::VectorUblasContiguousGhostsBase;
-        VectorUblasContiguousGhosts( const Storage & s, const datamap_ptrtype & dm ): super_type( dm ), M_vec( s ) { }
-        VectorUblasContiguousGhosts( Storage && s, const datamap_ptrtype & dm ): super_type( dm ), M_vec( std::move(s) ) { }
-        VectorUblasContiguousGhosts( VectorUblasContiguousGhosts<T> const& v ): super_type(v), M_vec( v.M_vec ) { }
+        VectorUblasContiguousGhosts( ): base_type() { }
+        VectorUblasContiguousGhosts( size_type s ): base_type(s) { }
+        VectorUblasContiguousGhosts( const datamap_ptrtype & dm ): base_type( dm ) { }
+        VectorUblasContiguousGhosts( size_type s, size_type n_local ): base_type( s, n_local ) { }
+
+        VectorUblasContiguousGhosts( const Storage & s, const datamap_ptrtype & dm ): base_type( dm ), M_vec( s ) { }
+        VectorUblasContiguousGhosts( Storage && s, const datamap_ptrtype & dm ): base_type( dm ), M_vec( std::move(s) ) { }
+        VectorUblasContiguousGhosts( VectorUblasContiguousGhosts<T> const& v ): base_type(v), M_vec( v.M_vec ) { }
+
+        ~VectorUblasContiguousGhosts() override = default;
 
         void init( const size_type n, const size_type n_local, const bool fast = false ) override;
 
@@ -946,12 +946,6 @@ class VectorUblasNonContiguousGhostsBase:
     public:
         // Constructors/Destructor
         VectorUblasNonContiguousGhostsBase( ) = default;
-        VectorUblasNonContiguousGhostsBase( VectorUblasNonContiguousGhostsBase<T> const& v ): super_type(v) { }
-        
-        VectorUblasNonContiguousGhostsBase( size_type s ): super_type( s ) { }
-        VectorUblasNonContiguousGhostsBase( const datamap_ptrtype & dm ): super_type( dm ) { }
-        VectorUblasNonContiguousGhostsBase( size_type s, size_type n_local ): super_type( s, n_local ) { }
-
         ~VectorUblasNonContiguousGhostsBase() override = default;
         
         // Storage API
@@ -1065,10 +1059,17 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         friend VectorUblasSlice<T, Storage>;
 
     public:
-        using super_type::VectorUblasNonContiguousGhostsBase;
-        VectorUblasNonContiguousGhosts( const Storage & s, const Storage & sGhost, const datamap_ptrtype & dm ): super_type( dm ), M_vec( s ), M_vecNonContiguousGhosts( sGhost ) { }
-        VectorUblasNonContiguousGhosts( Storage && s, Storage && sGhost, const datamap_ptrtype & dm ): super_type( dm ), M_vec( std::move(s) ), M_vecNonContiguousGhosts( std::move(sGhost) ) { }
-        VectorUblasNonContiguousGhosts( VectorUblasNonContiguousGhosts<T, Storage> const& v ): super_type(v), M_vec( v.M_vec ), M_vecNonContiguousGhosts( v.M_vecNonContiguousGhosts ) { }
+        VectorUblasNonContiguousGhosts( ): base_type() { }
+        VectorUblasNonContiguousGhosts( size_type s ): base_type(s) { }
+        VectorUblasNonContiguousGhosts( const datamap_ptrtype & dm ): base_type( dm ) { }
+        VectorUblasNonContiguousGhosts( size_type s, size_type n_local ): base_type( s, n_local ) { }
+
+        VectorUblasNonContiguousGhosts( const Storage & s, const Storage & sGhost, const datamap_ptrtype & dm ): base_type( dm ), M_vec( s ), M_vecNonContiguousGhosts( sGhost ) { }
+        VectorUblasNonContiguousGhosts( Storage && s, Storage && sGhost, const datamap_ptrtype & dm ): base_type( dm ), M_vec( std::move(s) ), M_vecNonContiguousGhosts( std::move(sGhost) ) { }
+
+        VectorUblasNonContiguousGhosts( VectorUblasNonContiguousGhosts<T, Storage> const& v ): base_type(v), M_vec( v.M_vec ), M_vecNonContiguousGhosts( v.M_vecNonContiguousGhosts ) { }
+
+        ~VectorUblasNonContiguousGhosts() override = default;
         
         void init( const size_type n, const size_type n_local, const bool fast = false ) override;
 
