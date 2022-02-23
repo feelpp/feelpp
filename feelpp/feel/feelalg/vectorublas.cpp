@@ -520,7 +520,7 @@ void VectorUblasBase<T>::localizeToOneProcessor( ublas::vector<T> & v_local, con
     }
 #else
     FEELPP_ASSERT( this->localSize() == this->size() )( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
-    FEELPP_ASSERT( pid == 0  )( pid ).error( "invalid pid in non MPI mode" );
+    FEELPP_ASSERT( pid == 0 )( pid ).error( "invalid pid in non MPI mode" );
 #endif
 }
 
@@ -2104,7 +2104,7 @@ Vector<T> & VectorUblas<T>::operator=( const Vector<T> & v )
     FEELPP_ASSERT( this->localSize() == v.localSize() &&
                    this->map().nLocalDofWithoutGhost() == v.map().nLocalDofWithoutGhost() )
     ( this->localSize() )( this->map().nLocalDofWithoutGhost() )
-    ( this->vec().size() )
+    ( this->vectorImpl() )
     ( v.localSize() )( v.map().nLocalDofWithoutGhost() ).warn( "may be vector invalid copy" );
 #endif
 
