@@ -1593,7 +1593,7 @@ public:
      */
     element_type logMiddle() const
         {
-            return ( ( M_min.array().log() + M_max.array().log() )/2. ).log();
+            return ( ( M_min.array().log() + M_max.array().log() )/2. ).exp();
         }
 
     /**
