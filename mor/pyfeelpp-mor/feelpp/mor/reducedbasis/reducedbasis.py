@@ -94,7 +94,24 @@ class reducedbasis():
         pc.setType(self.PC_TYPE)
 
 
-        alphaMubar = 1      # CHANGE IT : this is uncorrect in general !
+        E = SLEPc.EPS()
+        E.create()
+        E.setOperators(self.Abar)
+
+        E.setFromOptions()
+        E.setWhichEigenpairs(E.Which.LARGEST_REAL)
+        # E.setDimensions(5)
+
+        E.solve()
+
+        nCv = E.getConverged()
+        if rank == 0:
+            print(f"[slepc4py] number of eigenvalues computed : {nCv}")
+
+        alphaMubar = E.getEigenvalue(0).real
+        # alphaMubar = 1
+        if rank == 0:
+            print(f"[reducedbasis] Constant of continuity : {alphaMubar}")
         betaA_bar_np = np.array(self.betaA_bar)
         
         def alphaLB(mu):
