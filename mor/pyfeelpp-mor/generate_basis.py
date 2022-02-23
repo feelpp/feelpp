@@ -23,30 +23,39 @@ parser.add_argument('--time-dependant', help="time dependand case", type=bool, d
 parser.add_argument('--greedy', help="compute using greedy algorithm", type=bool, default=True)
 parser.add_argument('--train-size', help="size of the (random) training set", type=int, default=40)
 
-
-args = parser.parse_args()
-dim = args.dim
-config_file = args.config_file
-time_dependant = args.time_dependant
-odir = args.odir
-compute_greedy = args.greedy
-size = args.train_size
-
-if dim not in [2,3]:
-    raise ValueError("dim must be 2 or 3")
-if config_file is None:
-    raise ValueError("invalid path to config-file")
-
-split = config_file.split('/')
-case = '/'.join(split[:-1])
-if odir is None:
-    dir = HOME + '/feel/reducedbasis/'+split[-2]
+if __name__ == '__main__':
+    args = parser.parse_args()
+    dim = args.dim
+    config_file = args.config_file
+    time_dependant = args.time_dependant
+    odir = args.odir
+    compute_greedy = args.greedy
+    size = args.train_size
 else:
-    dir = odir
-casefile = split[-1]
+    dim = None
+    config_file = None
+    time_dependant = None
+    odir = None
+    compute_greedy = None
+    size = None
+
+
+if config_file is not None:
+    split = config_file.split('/')
+    case = '/'.join(split[:-1])
+    if odir is None:
+        dir = HOME + '/feel/reducedbasis/'+split[-2]
+    else:
+        dir = odir
+    casefile = split[-1]
 
 
 def generate_basis():
+
+    if dim not in [2,3]:
+        raise ValueError("dim must be 2 or 3")
+    if config_file is None:
+        raise ValueError("invalid path to config-file")
 
 
     if rank == 0:
