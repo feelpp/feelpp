@@ -8,18 +8,18 @@ from feelpp.toolboxes.heat import *
 from feelpp.toolboxes.core import *
 from feelpp.mor import *
 
-# desc : (('path/to/cfg/file', dimension, {dict of mubar values in the model}, {mumin}, {mumax}), 'name-of-the-test')
+# desc : (('path/to/cfg/file', dimension, {mumin}, {mumax}), 'name-of-the-test')
 cases = [
          (('testcase/thermal-fin/2d/thermal-fin.cfg', 2,
-            {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
+            #{"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
             {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
             {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "k_0": 1, "Bi": 1}), 'thermal-fin-2d'),
          (('testcase/thermal-fin/3d/thermal-fin.cfg', 3,
-            {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
+            #{"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
             {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
             {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "k_0": 1, "Bi": 1}), 'thermal-fin-3d'),
          (('testcase/testcase/test.cfg', 3,
-            {"k_1": 5, "k_2": 2, "k_3": 10, "k_4": 0.1},
+            #{"k_1": 5, "k_2": 2, "k_3": 10, "k_4": 0.1},
             {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1},
             {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10}), 'test-case'),
         ]
@@ -37,8 +37,8 @@ def init_toolbox(casefile, dim):
 
 
 
-@pytest.mark.parametrize("casefile,dim,mubar_th,mumin_th,mumax_th", cases_params, ids=cases_ids)
-def test_init_from_ModelPropeties(casefile, dim, mubar_th, mumin_th, mumax_th,  init_feelpp):
+@pytest.mark.parametrize("casefile,dim,mumin_th,mumax_th", cases_params, ids=cases_ids)
+def test_init_from_ModelPropeties(casefile, dim, mumin_th, mumax_th,  init_feelpp):
     """Tests the initialisation from ModelProperties
 
     Args:
@@ -55,7 +55,7 @@ def test_init_from_ModelPropeties(casefile, dim, mubar_th, mumin_th, mumax_th,  
     modelParameters = heatBox.modelProperties().parameters()
     Dmu = feelpp.mor._mor.ParameterSpace.New(modelParameters, feelpp.Environment.worldCommPtr())
 
-    mubar = Dmu.mubar()
+    # mubar = Dmu.mubar()       # /!\ doesn't exist anymore !
     mumin = Dmu.mumin()
     mumax = Dmu.mumax()
 
@@ -65,15 +65,14 @@ def test_init_from_ModelPropeties(casefile, dim, mubar_th, mumin_th, mumax_th,  
     print(mumin.parameterNames())
 
 
-    for p in mubar_th:
+    for p in mumin_th:
         assert( mumin.parameterNamed(p) == mumin_th[p] )
         assert( mumax.parameterNamed(p) == mumax_th[p] )
-        assert( mubar.parameterNamed(p) == mubar_th[p] )
 
 
 
-@pytest.mark.parametrize("casefile,dim,mubar", [cases_params[-1][:3]], ids=[cases_ids[-1]])
-def test_param_not_in_range(casefile, dim, mubar,  init_feelpp):
+@pytest.mark.parametrize("casefile,dim,Mu", [cases_params[-1][:3]], ids=[cases_ids[-1]])
+def test_param_not_in_range(casefile, dim, Mu,  init_feelpp):
     e = init_feelpp
     heatBox = init_toolbox(casefile, dim)
 
@@ -82,7 +81,7 @@ def test_param_not_in_range(casefile, dim, mubar,  init_feelpp):
 
     mu = Dmu.element()
     # just set values
-    mu.setParameters(mubar)
+    mu.setParameters(Mu)
 
     mu.setParameter(0, 5000)
     assert( mu(0) != 5000)
