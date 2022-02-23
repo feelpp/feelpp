@@ -240,7 +240,7 @@ public:
             size_t n = values.size();
             if (n != this->size())
                 LOG( WARNING ) << "The size of the given vector (" << n << ") is different fom the size (" << this->size() << ")" << std::endl;
-            size_t N = (n >= this->size()) ? n : this->size();
+            size_t N = (n <= this->size()) ? n : this->size();
             element_type min = M_space->min(), max = M_space->max();
             for (size_t i=0; i<N; ++i)
             {
