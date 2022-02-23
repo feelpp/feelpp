@@ -55,6 +55,9 @@ endif()
 
 OPTION(FEELPP_ENABLE_PYFEELPP_MOR "Enable PyFeel++ MOR" ON  )
 if (FEELPP_ENABLE_PYFEELPP_MOR)
+  set(PYFILES generate_basis.py )
+  install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor)
+
   message(STATUS "Enabling pyfeelpp mor")
   add_subdirectory(feelpp)
   add_subdirectory(tests)
