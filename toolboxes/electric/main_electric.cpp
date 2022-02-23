@@ -40,7 +40,7 @@ main(int argc, char**argv )
         int dimension = ioption(_name="case.dimension");
         std::string discretization = soption(_name="case.discretization");
 
-        hana::for_each( Pc_t<>, [&discretization, &dimension]( auto const& d )
+        hana::for_each( Pc_t<2,3,1,2>, [&discretization, &dimension]( auto const& d )
                         {
                             constexpr int _dim = std::decay_t<decltype( hana::at_c<0>( d ) )>::value;
                             constexpr int _torder = std::decay_t<decltype( hana::at_c<1>( d ) )>::value;
