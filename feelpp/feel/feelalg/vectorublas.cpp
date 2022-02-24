@@ -2215,7 +2215,9 @@ VectorUblas<T> & VectorUblas<T>::operator=( const VectorUblas<T> & v )
 // Explicit instantiations
 template class VectorUblas<double>;
 namespace detail {
+template class VectorUblasBase< double >;
 template class VectorUblasContiguousGhosts< double, ublas::vector<double> >;
+template class VectorUblasNonContiguousGhosts< double, ublas::vector<double> >;
 template class VectorUblasRange< double, ublas::vector<double> >;
 template class VectorUblasSlice< double, ublas::vector<double> >;
 }

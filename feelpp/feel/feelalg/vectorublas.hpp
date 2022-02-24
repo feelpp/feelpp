@@ -90,7 +90,7 @@ VectorUblas<T> element_product( const VectorUblas<T> & v1, const VectorUblas<T> 
 
 /*-----------------------------------------------------------------------------*/
 template< typename T >
-class FEELPP_EXPORT VectorUblas : public Vector<T>
+class VectorUblas : public Vector<T>
 {
     public:
         // Typedefs
@@ -864,24 +864,31 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         virtual void scale( const value_type factor ) override;
 
         // Multiple dispatch operations
+        using base_type::setVector;
         void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
         void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
+        using base_type::addVector;
         void addVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
         void addVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
+        using base_type::maddVector;
         void maddVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override;
         void maddVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override;
         
+        using base_type::subVector;
         void subVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
         void subVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
+        using base_type::msubVector;
         void msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override;
         void msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
+        using base_type::mulVector;
         void mulVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
         void mulVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
+        using base_type::dotVector;
         value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override;
         value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override;
 
@@ -1122,24 +1129,31 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         virtual void scale( const value_type factor ) override;
 
         // Multiple dispatch operations
+        using base_type::setVector;
         void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
         void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
+        using base_type::addVector;
         void addVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
         void addVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
+        using base_type::maddVector;
         void maddVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override;
         void maddVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override;
         
+        using base_type::subVector;
         void subVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
         void subVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
+        using base_type::msubVector;
         void msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override;
         void msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
+        using base_type::mulVector;
         void mulVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
         void mulVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
 
+        using base_type::dotVector;
         value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override;
         value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override;
 
@@ -1262,10 +1276,10 @@ class VectorUblasSlice: public VectorUblasNonContiguousGhosts<T, ublas::vector_s
 #if !defined( FEELPP_INSTANTIATE_VECTORUBLAS )
 extern template class VectorUblas<double>;
 namespace detail {
+extern template class VectorUblasBase< double >;
 extern template class VectorUblasContiguousGhosts< double, ublas::vector<double> >;
-//extern template class VectorUblasNonContiguousGhosts<double, ublas::vector_range<ublas::vector<double> > >;
+extern template class VectorUblasNonContiguousGhosts< double, ublas::vector<double> >;
 extern template class VectorUblasRange< double, ublas::vector<double> >;
-//extern template class VectorUblasNonContiguousGhosts< double, ublas::vector_slice<ublas::vector<double> > >;
 extern template class VectorUblasSlice< double, ublas::vector<double> >;
 }
 #endif
