@@ -36,14 +36,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResi
 
     this->updateDofEliminationIds( "velocity", data );
 
-#if 0 // VINCENT
-    if ( this->hasMarkerPressureBC() )
+    if ( !M_boundaryConditions.pressureImposed().empty() )
     {
         this->updateDofEliminationIds( "pressurelm1", this->dofEliminationIds( "pressurebc-lm" ), data );
         if ( nDim == 3 )
             this->updateDofEliminationIds( "pressurelm2", this->dofEliminationIds( "pressurebc-lm" ), data );
     }
-
+#if 0 // VINCENT
     for ( auto const& [bpname,bpbc] : M_bodySetBC )
     {
         if ( bpbc.hasTranslationalVelocityExpr() )

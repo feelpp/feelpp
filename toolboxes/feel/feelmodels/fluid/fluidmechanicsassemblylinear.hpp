@@ -525,28 +525,33 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                            _expr= timeSteppingScaling*inner( expression(d,this->symbolsExpr())*N(),id(v) ),
                            _geomap=this->geomap() );
     }
-
+#endif // VINCENT
     //--------------------------------------------------------------------------------------------------//
 
-    if ( this->hasMarkerPressureBC() )
+    if ( !M_boundaryConditions.pressureImposed().empty() )
     {
         CHECK( this->hasStartSubBlockSpaceIndex("pressurelm1") ) << " start dof index for pressurelm1 is not present\n";
         size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
-        if (BuildCstPart)
+        if ( BuildCstPart )
         {
+            std::set<std::string> allmarkers;
+            for ( auto const& [bcName,bcData] : M_boundaryConditions.pressureImposed() )
+                allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
+            auto rangeFacesPressureBC = markedfaces( this->mesh(),allmarkers );
+
             if ( nDim == 2 )
             {
                 form2( _test=XhV,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,0)*idt(M_fieldLagrangeMultiplierPressureBC1),
                                _geomap=this->geomap() );
 
                 form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,_matrix=A,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
                        _colstart=colStartInMatrix ) +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr=-trans(cross(idt(u),N()))(0,0)*id(M_fieldLagrangeMultiplierPressureBC1),
                                _geomap=this->geomap() );
             }
@@ -556,14 +561,14 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 form2( _test=XhV,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,2)*idt(M_fieldLagrangeMultiplierPressureBC1)*alpha,
                                _geomap=this->geomap() );
 
                 form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,_matrix=A,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
                        _colstart=colStartInMatrix ) +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr=-trans(cross(idt(u),N()))(0,2)*id(M_fieldLagrangeMultiplierPressureBC1)*alpha,
                                _geomap=this->geomap() );
 
@@ -573,7 +578,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 form2( _test=XhV,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM2 ) +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr= -timeSteppingScaling*trans(cross(id(u),N()))(0,0)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Ny()
                                +timeSteppingScaling*trans(cross(id(u),N()))(0,1)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
                                _geomap=this->geomap() );
@@ -581,7 +586,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,_matrix=A,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix+startBlockIndexPressureLM2,
                        _colstart=colStartInMatrix ) +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr= -trans(cross(idt(u),N()))(0,0)*alpha*id(M_fieldLagrangeMultiplierPressureBC2)*Ny()
                                +trans(cross(idt(u),N()))(0,1)*alpha*id(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
                                _geomap=this->geomap() );
@@ -589,11 +594,11 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
         }
         if ( BuildNonCstPart )
         {
-            for( auto const& d : this->M_bcPressure )
+            for ( auto const& [bcName,bcData] : M_boundaryConditions.pressureImposed() )
             {
                 myLinearFormV +=
-                    integrate( _range=markedfaces(this->mesh(),this->markerPressureBC(name(d)) ),
-                               _expr= -timeSteppingScaling*expression(d,this->symbolsExpr())*trans(N())*id(v),
+                    integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                               _expr= -timeSteppingScaling*bcData->expr(se)*trans(N())*id(v),
                                _geomap=this->geomap() );
             }
         }
@@ -601,7 +606,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
     }
 
     //--------------------------------------------------------------------------------------------------//
-
+#if 0 // VINCENT
     if ( this->hasFluidOutletWindkessel() )
     {
         this->timerTool("Solve").start();
@@ -963,9 +968,9 @@ template <typename ModelContextType>
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-
-     if ( !M_boundaryConditions.hasTypeDofElimination() )
+    if ( !M_boundaryConditions.hasTypeDofElimination() )
         return;
+
     this->log("FluidMechanics","updateLinearPDEDofElimination","start" );
     this->timerTool("Solve").start();
 
@@ -981,6 +986,37 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDED
     auto const& se = mctx.symbolsExpr();
 
     M_boundaryConditions.applyDofEliminationLinear( bilinearFormVV, F, mesh, u, se );
+
+    // inlet bc
+    for ( auto const& [bcName,bcData] : M_boundaryConditions.inlet() )
+    {
+        auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(bcName)->second );
+        bilinearFormVV +=
+            on( _range=markedfaces(this->mesh(), bcData->markers()),
+                _element=u, _rhs=F,
+                _expr=-idv(inletVel)*N() );
+    }
+
+    if ( !M_boundaryConditions.pressureImposed().empty() )
+    {
+        auto rangePressureBC = boundaryfaces(M_meshLagrangeMultiplierPressureBC);
+        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
+        form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,
+               _rowstart=this->rowStartInMatrix()+startBlockIndexPressureLM1,
+               _colstart=this->colStartInMatrix()+startBlockIndexPressureLM1 ) +=
+            on( _range=rangePressureBC, _rhs=F,
+                _element=*M_fieldLagrangeMultiplierPressureBC1, _expr=cst(0.));
+        if constexpr ( nDim == 3 )
+        {
+            size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
+            form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,
+                   _rowstart=this->rowStartInMatrix()+startBlockIndexPressureLM2,
+                   _colstart=this->colStartInMatrix()+startBlockIndexPressureLM2 ) +=
+                on( _range=rangePressureBC, _rhs=F,
+                    _element=*M_fieldLagrangeMultiplierPressureBC2, _expr=cst(0.));
+        }
+    }
+
 
 #if 0 // VINCENT
     // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)

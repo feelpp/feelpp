@@ -25,8 +25,35 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateNewtonInit
 
     M_boundaryConditions.applyNewtonInitialGuess( mesh, u, se );
 
+    // inlet bc
+    for ( auto const& [bcName,bcData] : M_boundaryConditions.inlet() )
+    {
+        auto itFindMark = M_fluidInletVelocityInterpolated.find(bcName);
+        if ( itFindMark == M_fluidInletVelocityInterpolated.end() )
+            continue;
+        auto const& inletVel = std::get<0>( itFindMark->second );
+        u.on(_range=markedfaces(mesh, bcData->markers()),
+             _expr=-idv(inletVel)*N() );
+    }
+
     // update info for synchronization
     this->updateDofEliminationIds( "velocity", data );
+
+    if ( !M_boundaryConditions.pressureImposed().empty() )
+    {
+        auto rangePressureBC = boundaryfaces(M_meshLagrangeMultiplierPressureBC);
+        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
+        auto plm1 = M_spaceLagrangeMultiplierPressureBC->element( U, rowStartInVector+startBlockIndexPressureLM1 );
+        plm1.on( _range=rangePressureBC,_expr=cst(0.) );
+        this->updateDofEliminationIds( "pressurelm1", this->dofEliminationIds( "pressurebc-lm" ), data );
+        if ( nDim == 3 )
+        {
+            size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
+            auto plm2 = M_spaceLagrangeMultiplierPressureBC->element( U, rowStartInVector+startBlockIndexPressureLM2 );
+            plm2.on( _range=rangePressureBC,_expr=cst(0.) );
+            this->updateDofEliminationIds( "pressurelm2", this->dofEliminationIds( "pressurebc-lm" ), data );
+        }
+    }
 
 #if 0 // VINCENT
     if ( this->hasMarkerDirichletBCelimination() )
@@ -531,7 +558,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
     //--------------------------------------------------------------------------------------------------//
     //--------------------------------------------------------------------------------------------------//
     //--------------------------------------------------------------------------------------------------//
-
+#if 0 // VINCENT
     // Dirichlet bc by using Nitsche formulation
     if ( this->hasMarkerDirichletBCnitsche() && BuildCstPart )
     {
@@ -575,6 +602,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                            _expr= inner( idt(u),id(lambdaBC) ) );
         }
     }
+
     //--------------------------------------------------------------------------------------------------//
     // pressure bc
     if ( this->hasMarkerPressureBC() )
@@ -750,7 +778,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                        _geomap=this->geomap()
                        );
     }
-
+#endif
     //--------------------------------------------------------------------------------------------------//
     if ( !M_bodySetBC.empty() )
     {

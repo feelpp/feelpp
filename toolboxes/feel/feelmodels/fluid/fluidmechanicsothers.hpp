@@ -9,6 +9,54 @@ namespace FeelModels
 {
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
+template <typename SymbolsExprType>
+void
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateFluidInletVelocity( SymbolsExprType const& se )
+{
+    //auto se = this->symbolsExpr();
+    for ( auto const& [bcName,bcData] : M_boundaryConditions.inlet() )
+    {
+        typename boundary_conditions_type::Inlet::Constraint constraint = bcData->constraint();
+        auto exprFluidInlet = bcData->expr( se );
+        exprFluidInlet.setParameterValues( this->modelProperties().parameters().toParameterValues() ); // TODO!!
+        double evalExprFluidInlet = exprFluidInlet.evaluate()(0,0);
+
+        auto itVelRef = M_fluidInletVelocityRef.find(bcName);
+        CHECK( itVelRef != M_fluidInletVelocityRef.end() ) << "fluid inlet not init for this bcName" << bcName;
+        auto const& velRef = std::get<0>(itVelRef->second);
+        double maxVelRef = std::get<1>(itVelRef->second);
+        double flowRateRef = std::get<2>(itVelRef->second);
+
+        switch ( constraint )
+        {
+        case boundary_conditions_type::Inlet::Constraint::velocity_max :
+            M_fluidInletVelocity[bcName]->zero();
+            M_fluidInletVelocity[bcName]->add( evalExprFluidInlet/maxVelRef, *velRef );
+            break;
+        case boundary_conditions_type::Inlet::Constraint::flow_rate :
+            M_fluidInletVelocity[bcName]->zero();
+            M_fluidInletVelocity[bcName]->add( evalExprFluidInlet/flowRateRef, *velRef );
+            break;
+        }
+
+        auto const& velSubmesh = M_fluidInletVelocity.find(bcName)->second;
+        auto opI = std::get<1>( M_fluidInletVelocityInterpolated[bcName] );
+        auto & velInterp = std::get<0>( M_fluidInletVelocityInterpolated[bcName] );
+        opI->apply( *velSubmesh , *velInterp );
+
+#if 0
+        double flowRateComputed = integrate(_range=markedfaces(this->mesh(),marker),
+                                            _expr=-idv(velInterp)*N() ).evaluate()(0,0);
+        double maxVelComputed = velInterp->max();
+        if ( this->worldComm().isMasterRank() )
+            std::cout << "flowRateComputed : " << flowRateComputed << "\n"
+                      << "maxVelComputed : " << maxVelComputed << "\n";
+#endif
+   }
+}
+
+
+template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template <typename ModelContextType>
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePreconditioner( DataUpdateBase & data, ModelContextType const& mctx ) const

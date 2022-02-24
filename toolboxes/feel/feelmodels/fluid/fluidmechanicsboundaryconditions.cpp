@@ -42,9 +42,60 @@ FluidMechanicsBoundaryConditions<Dim>::MeshVelocityImposed::tabulateInformations
     return TabulateInformations::New( tabInfo, tabInfoProp );
 }
 
-#if 0
+template <uint16_type Dim>
 void
-HeatBoundaryConditions::HeatFlux::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
+FluidMechanicsBoundaryConditions<Dim>::Inlet::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
+{
+    if ( jarg.contains( "expr" ) )
+        M_mexpr.setExpr( jarg.at( "expr" ), mparent.worldComm(), mparent.repository().expr(), indexes );
+     if ( jarg.contains( "markers" ) )
+     {
+         ModelMarkers markers;
+         markers.setup( jarg.at("markers"), indexes );
+         M_markers = markers;
+     }
+     else
+         M_markers = { M_name };
+
+     // tODO
+}
+
+template <uint16_type Dim>
+void
+FluidMechanicsBoundaryConditions<Dim>::Inlet::updateInformationObject( nl::json & p ) const
+{
+    auto [exprStr,compInfo] = M_mexpr.exprInformations();
+    p["expr"] = exprStr;
+    p["markers"] = M_markers;
+
+    std::map<Shape,std::string> shapeToStr = { { Shape::constant, "constant" }, { Shape::parabolic, "parabolic" } };
+    p["shape"] = shapeToStr[M_shape];
+    std::map<Constraint,std::string> constraintToStr = { { Constraint::velocity_max, "velocity_max" }, { Constraint::flow_rate, "flow_rate" } };
+    p["constraint"] = constraintToStr[M_constraint];
+}
+
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+FluidMechanicsBoundaryConditions<Dim>::Inlet::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    Feel::Table tabInfo;
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { /*"name","type",*/"shape","constraint","expr" } );
+    tabInfo.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+    if ( jsonInfo.contains("markers") )
+    {
+        Feel::Table tabInfoMarkers = TabulateInformationTools::FromJSON::createTableFromArray( jsonInfo.at("markers") , true );
+        if ( tabInfoMarkers.nRow() > 0 )
+            tabInfo.add_row( { "markers", tabInfoMarkers } );
+    }
+    return TabulateInformations::New( tabInfo, tabInfoProp );
+}
+
+template <uint16_type Dim>
+void
+FluidMechanicsBoundaryConditions<Dim>::PressureImposed::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
 {
     if ( jarg.contains( "expr" ) )
         M_mexpr.setExpr( jarg.at( "expr" ), mparent.worldComm(), mparent.repository().expr(), indexes );
@@ -58,16 +109,18 @@ HeatBoundaryConditions::HeatFlux::setup( ModelBase const& mparent, nl::json cons
          M_markers = { M_name };
 }
 
+template <uint16_type Dim>
 void
-HeatBoundaryConditions::HeatFlux::updateInformationObject( nl::json & p ) const
+FluidMechanicsBoundaryConditions<Dim>::PressureImposed::updateInformationObject( nl::json & p ) const
 {
     auto [exprStr,compInfo] = M_mexpr.exprInformations();
     p["expr"] = exprStr;
     p["markers"] = M_markers;
 }
 
+template <uint16_type Dim>
 tabulate_informations_ptr_t
-HeatBoundaryConditions::HeatFlux::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+FluidMechanicsBoundaryConditions<Dim>::PressureImposed::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
 {
     Feel::Table tabInfo;
     TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { /*"name","type",*/"expr" } );
@@ -83,57 +136,11 @@ HeatBoundaryConditions::HeatFlux::tabulateInformations( nl::json const& jsonInfo
     }
     return TabulateInformations::New( tabInfo, tabInfoProp );
 }
-void
-HeatBoundaryConditions::ConvectiveHeatFlux::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
-{
-    if ( jarg.contains( "h" ) )
-        M_mexpr_h.setExpr( jarg.at( "h" ), mparent.worldComm(), mparent.repository().expr(), indexes );
-    if ( jarg.contains( "Text" ) )
-        M_mexpr_Text.setExpr( jarg.at( "Text" ), mparent.worldComm(), mparent.repository().expr(), indexes );
-     if ( jarg.contains( "markers" ) )
-     {
-         ModelMarkers markers;
-         markers.setup( jarg.at("markers"), indexes );
-         M_markers = markers;
-     }
-     else
-         M_markers = { M_name };
-}
-
-void
-HeatBoundaryConditions::ConvectiveHeatFlux::updateInformationObject( nl::json & p ) const
-{
-    auto [exprStr_h,compInfo_h] = M_mexpr_h.exprInformations();
-    p["expr_h"] = exprStr_h;
-    auto [exprStr_Text,compInfo_Text] = M_mexpr_Text.exprInformations();
-    p["expr_Text"] = exprStr_Text;
-    p["markers"] = M_markers;
-}
-
-tabulate_informations_ptr_t
-HeatBoundaryConditions::ConvectiveHeatFlux::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
-{
-    Feel::Table tabInfo;
-    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { /*"name","type",*/"expr_h","expr_Text" } );
-    tabInfo.format()
-        .setShowAllBorders( false )
-        .setColumnSeparator(":")
-        .setHasRowSeparator( false );
-    if ( jsonInfo.contains("markers") )
-    {
-        Feel::Table tabInfoMarkers = TabulateInformationTools::FromJSON::createTableFromArray( jsonInfo.at("markers") , true );
-        if ( tabInfoMarkers.nRow() > 0 )
-            tabInfo.add_row( { "markers", tabInfoMarkers } );
-    }
-    return TabulateInformations::New( tabInfo, tabInfoProp );
-}
-#endif
 
 template <uint16_type Dim>
 void
 FluidMechanicsBoundaryConditions<Dim>::setup( ModelBase const& mparent, nl::json const& jarg )
 {
-
     ModelIndexes indexes;
     for ( std::string const& bcKeyword : { "velocity_imposed", "velocity" } )
     {
@@ -159,6 +166,32 @@ FluidMechanicsBoundaryConditions<Dim>::setup( ModelBase const& mparent, nl::json
             M_velocityImposed.emplace( std::make_pair(Type::MeshVelocityImposed,bcName), std::move( bc ) );
         }
     }
+    for ( std::string const& bcKeyword : { "inlet" } )
+    {
+        if ( jarg.contains( bcKeyword ) )
+        {
+            auto const& j_bc = jarg.at( bcKeyword );
+            for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
+            {
+                auto bc = std::make_shared<Inlet>( j_bckey );
+                bc->setup( mparent,j_bcval,indexes );
+                M_inlet.emplace( j_bckey, std::move( bc ) );
+            }
+        }
+    }
+    for ( std::string const& bcKeyword : { "pressure_imposed", "pressure" } )
+    {
+        if ( jarg.contains( bcKeyword ) )
+        {
+            auto const& j_bc = jarg.at( bcKeyword );
+            for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
+            {
+                auto bc = std::make_shared<PressureImposed>( j_bckey );
+                bc->setup( mparent,j_bcval,indexes );
+                M_pressureImposed.emplace( j_bckey, std::move( bc ) );
+            }
+        }
+    }
 }
 
 template <uint16_type Dim>
@@ -167,22 +200,27 @@ FluidMechanicsBoundaryConditions<Dim>::setParameterValues( std::map<std::string,
 {
     for ( auto & [bcId,bcData] : M_velocityImposed )
         bcData->setParameterValues( paramValues );
+    for ( auto & [bcName,bcData] : M_inlet )
+        bcData->setParameterValues( paramValues );
+    for ( auto & [bcName,bcData] : M_pressureImposed )
+        bcData->setParameterValues( paramValues );
 }
 
 template <uint16_type Dim>
 void
 FluidMechanicsBoundaryConditions<Dim>::updateInformationObject( nl::json & p ) const
 {
-    if ( !M_velocityImposed.empty() )
+    for ( auto const& [bcId,bcData] : M_velocityImposed )
     {
-        for ( auto const& [bcId,bcData] : M_velocityImposed )
-        {
-            if ( bcId.first == Type::VelocityImposed )
-                bcData->updateInformationObject( p["velocity_imposed"][bcId.second] );
-            else if ( bcId.first == Type::MeshVelocityImposed )
-                bcData->updateInformationObject( p["mesh_velocity_imposed"][bcId.second] );
-        }
+        if ( bcId.first == Type::VelocityImposed )
+            bcData->updateInformationObject( p["velocity_imposed"][bcId.second] );
+        else if ( bcId.first == Type::MeshVelocityImposed )
+            bcData->updateInformationObject( p["mesh_velocity_imposed"][bcId.second] );
     }
+    for ( auto const& [bcName,bcData] : M_inlet )
+        bcData->updateInformationObject( p["inlet"][bcName] );
+    for ( auto const& [bcName,bcData] : M_pressureImposed )
+        bcData->updateInformationObject( p["pressure_imposed"][bcName] );
 }
 
 template <uint16_type Dim>
@@ -203,6 +241,20 @@ FluidMechanicsBoundaryConditions<Dim>::tabulateInformations( nl::json const& jso
         for ( auto const& [j_bckey,j_bcval]: jsonInfo.at( "mesh_velocity_imposed" ).items() )
             tabInfoBC->add( j_bckey, MeshVelocityImposed::tabulateInformations( j_bcval, tabInfoProp ) );
         tabInfo->add( "Mesh Velocity Imposed", tabInfoBC );
+    }
+    if ( jsonInfo.contains( "inlet" ) )
+    {
+        auto tabInfoBC = TabulateInformationsSections::New( tabInfoProp );
+        for ( auto const& [j_bckey,j_bcval]: jsonInfo.at( "inlet" ).items() )
+            tabInfoBC->add( j_bckey, Inlet::tabulateInformations( j_bcval, tabInfoProp ) );
+        tabInfo->add( "Inlet", tabInfoBC );
+    }
+    if ( jsonInfo.contains( "pressure_imposed" ) )
+    {
+        auto tabInfoBC = TabulateInformationsSections::New( tabInfoProp );
+        for ( auto const& [j_bckey,j_bcval]: jsonInfo.at( "pressure_imposed" ).items() )
+            tabInfoBC->add( j_bckey, PressureImposed::tabulateInformations( j_bcval, tabInfoProp ) );
+        tabInfo->add( "Pressure Imposed", tabInfoBC );
     }
     return tabInfo;
 }
