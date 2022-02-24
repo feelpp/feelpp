@@ -228,7 +228,7 @@ public :
     std::map<std::string,collection_data_by_mesh_entity_type> const& collectionOfDataByMeshEntity() const { return M_codbme; }
 
     template <typename MeshType>
-    auto modelFields( std::string const& prefix_symbol = "" ) const
+    auto modelFields( std::string const& prefix_field = "", std::string const& prefix_symbol = "" ) const
         {
             static constexpr auto tuple_t_basis = hana::to_tuple(hana::tuple_t<
                                                                  Lagrange<1,Scalar,Continuous,PointSetFekete>,
@@ -237,9 +237,7 @@ public :
                                                                  Lagrange<2,Vectorial,Continuous,PointSetFekete>
                                                                  >);
 
-            std::string prefix = prefix_symbol;
-
-            auto mf_fields = hana::fold( tuple_t_basis, model_fields_empty_t{}, [this,prefix,prefix_symbol]( auto const& r, auto const& cur )
+            auto mf_fields = hana::fold( tuple_t_basis, model_fields_empty_t{}, [this,prefix_field,prefix_symbol]( auto const& r, auto const& cur )
                                        {
                                            using basis_type = typename std::decay_t<decltype(cur)>::type;
                                            using space_type = FunctionSpace<MeshType, bases<basis_type> >;
@@ -252,7 +250,7 @@ public :
                                            for ( auto const& [name,fieldBase] : M_fields )
                                            {
                                                if ( auto u = std::dynamic_pointer_cast<field_type>( fieldBase ) )
-                                                   mf.add( mftag, prefix, name, u, name, prefixvm( prefix_symbol, "fields", "_" ) );
+                                                   mf.add( mftag, prefixvm( prefix_field,"fields" ), name, u, name, prefixvm( prefix_symbol, "fields", "_" ) );
                                            }
                                            return Feel::FeelModels::modelFields( r,mf );
                                        });
@@ -266,13 +264,13 @@ public :
             for ( auto const& [name,fieldBase] : M_distanceToRanges )
             {
                 if ( auto u = std::dynamic_pointer_cast<distange_to_range_field_type>( fieldBase ) )
-                    mf_distToRange.add( mftag_distToRange, prefix, name, u, name, prefixvm( prefix_symbol, "distanceToRange", "_" ) );
+                    mf_distToRange.add( mftag_distToRange, prefixvm( prefix_field, "distanceToRange" ), name, u, name, prefixvm( prefix_symbol, "distanceToRange", "_" ) );
             }
 
             using mf_meshmotion_type = std::decay_t<decltype(this->meshMotionTool<MeshType>()->modelFields(""))>;
             mf_meshmotion_type mf_meshmotion;
             if ( auto mmt = this->meshMotionTool<MeshType>() )
-                mf_meshmotion = mmt->modelFields( prefixvm( prefix,"meshMotion","_") );
+                mf_meshmotion = mmt->modelFields( prefixvm( prefix_field,"meshmotion") );
 
             return Feel::FeelModels::modelFields( std::move(mf_fields), std::move(mf_distToRange), std::move( mf_meshmotion ) );
         }
@@ -289,7 +287,7 @@ public :
 
             if constexpr( AddFields && !std::is_same_v<MeshType,mesh_base_type> )
             {
-                return Feel::vf::symbolsExpr( res, this->modelFields<MeshType>( prefix_symbol ).symbolsExpr() );
+                return Feel::vf::symbolsExpr( res, this->modelFields<MeshType>( "",prefix_symbol ).symbolsExpr() );
             }
             else
             {
@@ -518,6 +516,16 @@ public:
     {
         return this->modelMesh( meshName ).template mesh<MeshType>();
     }
+
+    template <typename MeshType>
+    auto modelFields( std::string const& prefix_field, std::string const& prefix_symbol = "" ) const
+        {
+            using _mf_type = std::decay_t< decltype( this->begin()->second->template modelFields<MeshType>() )>;
+            _mf_type res;
+            for ( auto const& [meshName,mMesh] : *this )
+                res = Feel::FeelModels::modelFields( res, mMesh->template modelFields<MeshType>( prefixvm( prefix_field, meshName ), prefixvm( prefix_symbol, meshName, "_" )  ) );
+            return res;
+        }
 
     template <typename MeshType = mesh_base_type, bool AddFields = true>
     auto symbolsExpr( std::string const& prefix_symbol = "meshes" ) const
