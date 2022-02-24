@@ -146,7 +146,12 @@ class FEELPP_EXPORT VectorUblas : public Vector<T>
         VectorUblas( const VectorUblas<T> & other ): super_type( other ), M_vectorImpl( other.M_vectorImpl ? other.M_vectorImpl->clonePtr() : nullptr ) { }
         VectorUblas( VectorUblas<T> && other ): super_type( std::move( other ) ) { swap( *this, other ); }
         friend void swap( VectorUblas<T> & first, VectorUblas<T> & other ) { using std::swap; swap( first.M_vectorImpl, other.M_vectorImpl ); }
+
         ~VectorUblas() override = default;
+
+        Vector<T> & operator=( const Vector<T> & v ) override;
+        //VectorUblas<T> & operator=( VectorUblas<T> other ) { swap( *this, other ); return *this; }
+        VectorUblas<T> & operator=( const VectorUblas<T> & other );
 
         clone_ptrtype clone() const override { return clone_ptrtype( new self_type( *this ) ); }
 
@@ -173,10 +178,6 @@ class FEELPP_EXPORT VectorUblas : public Vector<T>
         //void checkInvariants() const { DCHECK( M_vectorImpl ) << "vector impl not initialized"; if( M_vectorImpl ) M_vectorImpl->checkInvariants(); }
 
         // Operators API
-        Vector<T> & operator=( const Vector<T> & v ) override;
-        //VectorUblas<T> & operator=( VectorUblas<T> other ) { swap( *this, other ); return *this; }
-        VectorUblas<T> & operator=( const VectorUblas<T> & other );
-
         virtual value_type operator()( size_type i ) const override { return M_vectorImpl->operator()( i ); }
         virtual value_type& operator()( size_type i ) override { return M_vectorImpl->operator()( i ); }
         value_type operator[]( size_type i ) const { return this->operator()( i ); }
@@ -433,12 +434,15 @@ class VectorUblasBase: public Vector<T>
     public:
         // Constructors/Destructor
         VectorUblasBase( ) = default;
-        VectorUblasBase( VectorUblasBase<T> const & v ): super_type(v) { }
+        VectorUblasBase( const VectorUblasBase<T> & v ): super_type(v) { }
         VectorUblasBase( size_type s );
         VectorUblasBase( const datamap_ptrtype & dm );
         VectorUblasBase( size_type s, size_type n_local );
 
         ~VectorUblasBase() override = default;
+
+        Vector<T> & operator=( const Vector<T> & v ) override;
+        VectorUblasBase<T> & operator=( const VectorUblasBase<T> & v );
 
         virtual clone_ptrtype clone() const override { return clone_ptrtype( this->clonePtr() ); }
         virtual self_type * clonePtr() const = 0;
@@ -461,9 +465,6 @@ class VectorUblasBase: public Vector<T>
         void outdateGlobalValues() { }
 
         // Operators API
-        Vector<T> & operator=( const Vector<T> & v ) override;
-        VectorUblasBase<T> & operator=( const VectorUblasBase<T> & v );
-
         virtual value_type operator()( size_type i ) const override = 0;
         virtual value_type& operator()( size_type i ) override = 0;
         value_type operator[]( size_type i ) const { return this->operator()( i ); }
@@ -699,6 +700,7 @@ class VectorUblasContiguousGhostsBase:
         // Constructors/Destructor
         VectorUblasContiguousGhostsBase( ) = default;
         ~VectorUblasContiguousGhostsBase() override = default;
+        using super_type::operator=;
         
         // Storage API
         virtual void resize( size_type n ) override = 0;
@@ -818,6 +820,8 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         VectorUblasContiguousGhosts( VectorUblasContiguousGhosts<T> const& v ): base_type(v), M_vec( v.M_vec ) { }
 
         ~VectorUblasContiguousGhosts() override = default;
+
+        using base_type::operator=;
 
         void init( const size_type n, const size_type n_local, const bool fast = false ) override;
 
@@ -949,6 +953,7 @@ class VectorUblasNonContiguousGhostsBase:
         // Constructors/Destructor
         VectorUblasNonContiguousGhostsBase( ) = default;
         ~VectorUblasNonContiguousGhostsBase() override = default;
+        using super_type::operator=;
         
         // Storage API
         virtual void resize( size_type n ) override = 0;
@@ -1072,6 +1077,8 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         VectorUblasNonContiguousGhosts( VectorUblasNonContiguousGhosts<T, Storage> const& v ): base_type(v), M_vec( v.M_vec ), M_vecNonContiguousGhosts( v.M_vecNonContiguousGhosts ) { }
 
         ~VectorUblasNonContiguousGhosts() override = default;
+
+        using base_type::operator=;
         
         void init( const size_type n, const size_type n_local, const bool fast = false ) override;
 
@@ -1331,7 +1338,8 @@ template< typename T >
 std::unique_ptr<VectorUblasBase<T>> 
 element_product( const VectorUblasBase<T> & v1, const VectorUblasBase<T> & v2 )
 {
-    VectorUblasBase<T> * prod = v1.clonePtr();
+    VectorUblasContiguousGhosts<T> * prod = new VectorUblasContiguousGhosts<T>();
+    *prod = v1;
     prod->mulVector( v2 );
     return std::unique_ptr<VectorUblasBase<T>>( prod );
 }
