@@ -990,7 +990,21 @@ std::vector<double> vdoption( Ts && ... v )
     return optionT<std::vector<double>>( std::forward<Ts>(v)... );
 }
 
-
+/**
+ * @brief handle exceptions using a Lippincott function
+ * this funnction allows to handle the exceptions thrown in Feel++
+ * \code
+ * try {
+ *   Environment env(),
+ *   // Feel++ code here
+ * }
+ * catch( ... )
+ * {
+ *   handleExceptions()
+ * }
+ * \endcode
+ */
+void handleExceptions();
 
 
 } // Feel
