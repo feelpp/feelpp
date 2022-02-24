@@ -208,10 +208,10 @@ Checker::runScript()
         locals[M_gradient_key]=*M_gradient;
     else
         locals[M_gradient_key]="";
-    std::cout << "gradient(" << M_gradient_key << "):" << locals[M_gradient_key] << std::endl;
+    LOG(INFO) << fmt::format( "gradient({})={}", M_gradient_key, locals[M_gradient_key]) << std::endl;
     locals["compute_pde_coefficients"]=boption(_name="checker.compute-pde-coefficients")?"true":"false";
     Feel::pyexprFromFile( Environment::expand(M_script), locals );
-    std::cout << "gradient 2:" << locals[M_gradient_key] << std::endl;
+    LOG(INFO) << fmt::format( "gradient({})={}", M_gradient_key, locals[M_gradient_key] ) << std::endl;
     M_solution=locals[M_solution_key];
     M_gradient=locals[M_gradient_key];
     return locals;
