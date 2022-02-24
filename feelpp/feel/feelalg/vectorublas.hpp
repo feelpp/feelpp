@@ -143,8 +143,8 @@ class FEELPP_EXPORT VectorUblas : public Vector<T>
                      size_type nGhostDof, value_type * arrayGhostDof,
                      datamap_ptrtype const& dm );
 
-        VectorUblas( const VectorUblas<T> & other ): M_vectorImpl( other.M_vectorImpl ? other.M_vectorImpl->clonePtr() : nullptr ) { }
-        VectorUblas( VectorUblas<T> && other ): VectorUblas() { swap( *this, other ); }
+        VectorUblas( const VectorUblas<T> & other ): super_type( other ), M_vectorImpl( other.M_vectorImpl ? other.M_vectorImpl->clonePtr() : nullptr ) { }
+        VectorUblas( VectorUblas<T> && other ): super_type( std::move( other ) ) { swap( *this, other ); }
         friend void swap( VectorUblas<T> & first, VectorUblas<T> & other ) { using std::swap; swap( first.M_vectorImpl, other.M_vectorImpl ); }
         ~VectorUblas() override = default;
 
