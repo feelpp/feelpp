@@ -25,11 +25,7 @@ cmake_minimum_required(VERSION 3.3)
 
 feelpp_add_pymodule(modelcore SRCS modelcore.cpp DESTINATION feelpp/toolboxes/core LINK_LIBRARIES Feelpp::feelpp_modelcore )
 
-if( FEELPP_MODELS_HAS_MESHALE )
-  feelpp_add_pymodule(modelmesh SRCS modelmesh.cpp DESTINATION feelpp/toolboxes/core LINK_LIBRARIES Feelpp::feelpp_modelmesh Feelpp::feelpp_modelmeshale)
-else()
-  feelpp_add_pymodule(modelmesh SRCS modelmesh.cpp DESTINATION feelpp/toolboxes/core LINK_LIBRARIES Feelpp::feelpp_modelmesh )
-endif()
+feelpp_add_pymodule(modelmesh SRCS modelmesh.cpp DESTINATION feelpp/toolboxes/core LINK_LIBRARIES Feelpp::feelpp_modelmesh )
 
 install(FILES  __init__.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/core)
 
