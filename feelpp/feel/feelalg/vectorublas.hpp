@@ -175,7 +175,7 @@ class FEELPP_EXPORT VectorUblas : public Vector<T>
         // Operators API
         Vector<T> & operator=( const Vector<T> & v ) override;
         //VectorUblas<T> & operator=( VectorUblas<T> other ) { swap( *this, other ); return *this; }
-        VectorUblas<T> & operator=( const VectorUblas<T> & other ) { this->operator=( static_cast<const Vector<T> &>( other ) ); return *this; }
+        VectorUblas<T> & operator=( const VectorUblas<T> & other );
 
         virtual value_type operator()( size_type i ) const override { return M_vectorImpl->operator()( i ); }
         virtual value_type& operator()( size_type i ) override { return M_vectorImpl->operator()( i ); }
@@ -461,7 +461,8 @@ class VectorUblasBase: public Vector<T>
         void outdateGlobalValues() { }
 
         // Operators API
-        Vector<T> & operator=( const Vector<T> & v ) override { this->set( v ); return *this; }
+        Vector<T> & operator=( const Vector<T> & v ) override;
+        VectorUblasBase<T> & operator=( const VectorUblasBase<T> & v );
 
         virtual value_type operator()( size_type i ) const override = 0;
         virtual value_type& operator()( size_type i ) override = 0;

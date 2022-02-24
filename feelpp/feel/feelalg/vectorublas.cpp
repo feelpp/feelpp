@@ -71,6 +71,56 @@ void VectorUblasBase<T>::init( const datamap_ptrtype & dm )
 }
 
 template< typename T >
+Vector<T> & VectorUblasBase<T>::operator=( const Vector<T> & v )
+{
+    if ( this == &v )
+        return *this;
+
+    if ( !this->map().isCompatible( v.map() ) )
+    {
+        this->setMap( v.mapPtr() );
+        this->resize( this->map().nLocalDofWithGhost() );
+    }
+
+#if !defined(NDEBUG)
+    this->checkInvariants();
+    FEELPP_ASSERT( this->localSize() == v.localSize() &&
+                   this->map().nLocalDofWithoutGhost() == v.map().nLocalDofWithoutGhost() )
+    ( this->localSize() )( this->map().nLocalDofWithoutGhost() )
+    ( this->size() )
+    ( v.localSize() )( v.map().nLocalDofWithoutGhost() ).warn( "may be vector invalid copy" );
+#endif
+
+    this->set( v );
+    return *this;
+}
+
+template< typename T >
+VectorUblasBase<T> & VectorUblasBase<T>::operator=( const VectorUblasBase<T> & v )
+{
+    if ( this == &v )
+        return *this;
+
+    if ( !this->map().isCompatible( v.map() ) )
+    {
+        this->setMap( v.mapPtr() );
+        this->resize( this->map().nLocalDofWithGhost() );
+    }
+
+#if !defined(NDEBUG)
+    this->checkInvariants();
+    FEELPP_ASSERT( this->localSize() == v.localSize() &&
+                   this->map().nLocalDofWithoutGhost() == v.map().nLocalDofWithoutGhost() )
+    ( this->localSize() )( this->map().nLocalDofWithoutGhost() )
+    ( this->size() )
+    ( v.localSize() )( v.map().nLocalDofWithoutGhost() ).warn( "may be vector invalid copy" );
+#endif
+
+    this->setVector( v );
+    return *this;
+}
+
+template< typename T >
 void VectorUblasBase<T>::set( const size_type i, const value_type & value )
 {
 #ifndef NDEBUG
@@ -2122,7 +2172,43 @@ Vector<T> & VectorUblas<T>::operator=( const Vector<T> & v )
     ( v.localSize() )( v.map().nLocalDofWithoutGhost() ).warn( "may be vector invalid copy" );
 #endif
 
-    return M_vectorImpl->operator=( v );
+    //return M_vectorImpl->operator=( v );
+    // do not call M_vectorImpl->operator= since map setting and resizing has already been performed
+    // however, optimize for VectorUblas which can use setVector directly instead of for loop
+    const VectorUblas<T> * vecUblas = dynamic_cast<const VectorUblas<T> *>( &v );
+    if( vecUblas )
+        M_vectorImpl->setVector( *( vecUblas->M_vectorImpl ) );
+    else
+        M_vectorImpl->set( v );
+    return *this;
+}
+
+template< typename T >
+VectorUblas<T> & VectorUblas<T>::operator=( const VectorUblas<T> & v )
+{
+    if ( this == &v )
+        return *this;
+
+    if ( !this->map().isCompatible( v.map() ) )
+    {
+        this->setMap( v.mapPtr() );
+        this->resize( this->map().nLocalDofWithGhost() );
+    }
+
+#if !defined(NDEBUG)
+    //checkInvariants();
+
+    FEELPP_ASSERT( this->localSize() == v.localSize() &&
+                   this->map().nLocalDofWithoutGhost() == v.map().nLocalDofWithoutGhost() )
+    ( this->localSize() )( this->map().nLocalDofWithoutGhost() )
+    ( this->vectorImpl() )
+    ( v.localSize() )( v.map().nLocalDofWithoutGhost() ).warn( "may be vector invalid copy" );
+#endif
+
+    //return M_vectorImpl->operator=( v );
+    // do not call M_vectorImpl->operator= since map setting and resizing has already been performed
+    M_vectorImpl->setVector( *( v.M_vectorImpl ) );
+    return *this;
 }
 
 /*-----------------------------------------------------------------------------*/
