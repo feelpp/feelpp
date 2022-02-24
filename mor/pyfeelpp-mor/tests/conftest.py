@@ -20,6 +20,13 @@ def has_mpi4py():
         return False
 
 
+@pytest.fixture
+def has_petsc4py():
+    try:
+        import petsc4py
+        return True
+    except ImportError:
+        return False
 
 class InitFeelpp:
     def __init__(self,config):
@@ -28,12 +35,7 @@ class InitFeelpp:
             sys.argv=['test_pyfeelppmor']
             self.e = feelpp.Environment(
                 sys.argv, opts= feelpp.backend_options("Iv")
-                                .add(tb.toolboxes_options("electric"))
-                                .add(tb.toolboxes_options("fluid"))
                                 .add(tb.toolboxes_options("heat"))
-                                .add(tb.toolboxes_options("solid"))
-                                .add(tb.toolboxes_options("solid"))
-                                .add(tb.toolboxes_options("coefficient-form-pdes", "cfpdes"))
                                 .add(mor.makeToolboxMorOptions()),
                 config=config
                                 )
@@ -46,3 +48,7 @@ class InitFeelpp:
 @pytest.fixture(scope="session")
 def init_feelpp():
     return InitFeelpp(feelpp.globalRepository("pyfeelppmor-tests"))
+
+@pytest.fixture(scope="session")
+def init_feelpp_config_local():
+    return InitFeelpp(feelpp.localRepository("feelppdb"))
