@@ -2,6 +2,7 @@ var classFeel_1_1Info =
 [
     [ "buildId", "classFeel_1_1Info.html#afbe3a5ad059049957212c8f5b490f617", null ],
     [ "datadir", "classFeel_1_1Info.html#a7ee0feccafbebc6b049e6d178f02e9b6", null ],
+    [ "gitMetadata", "classFeel_1_1Info.html#a0af109535de1a284db3983496c6cbc88", null ],
     [ "libdir", "classFeel_1_1Info.html#a28705bbd644b2e6258cbe6fd7f26e537", null ],
     [ "operator=", "classFeel_1_1Info.html#af3a7a38f6b02790d36ddff961655c663", null ],
     [ "prefix", "classFeel_1_1Info.html#a0d68e99fbab25b8e9308d6b3e72b9879", null ],

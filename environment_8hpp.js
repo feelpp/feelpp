@@ -3,6 +3,7 @@ var environment_8hpp =
     [ "boption", "environment_8hpp.html#ac7abb8cf97363cbc64f605fce9097b69", null ],
     [ "countoption", "environment_8hpp.html#a6ae6026a4fc6546187531f40f3d21bdb", null ],
     [ "doption", "environment_8hpp.html#a3fda30b490bec69cc3742632ca061cfe", null ],
+    [ "handleExceptions", "environment_8hpp.html#a2785f8892f89d072d026f84d0225fd50", null ],
     [ "ioption", "environment_8hpp.html#a88ff134a5e5dbf8b9b74a782d595a779", null ],
     [ "makeAboutDefault", "environment_8hpp.html#ga04bfed51236168ad3de2687d7a6b06d0", null ],
     [ "option", "environment_8hpp.html#a43cc4c65d8405680fa1e45f731205535", null ],

@@ -344,6 +344,9 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GinacExprManagerImpl.html">GinacExprManagerImpl</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GitMetadata.html">GitMetadata</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">GitMetaData class holder.  <a href="classFeel_1_1GitMetadata.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1GT__Lagrange.html">GT_Lagrange</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a></td></tr>
@@ -2302,6 +2305,9 @@ template&lt;typename ... Ts&gt; </td></tr>
 <tr class="memitem:af7868e88a43dd6e1da7af2151a2fdaea"><td class="memTemplItemLeft" align="right" valign="top">SpaceT::element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#af7868e88a43dd6e1da7af2151a2fdaea">gradedfromls</a> (std::shared_ptr&lt; SpaceT &gt; const &amp;Xh, faces_reference_wrapper_t&lt; typename SpaceT::mesh_ptrtype &gt; const &amp;facets, <a class="el" href="classdouble.html">double</a> hclose, <a class="el" href="classdouble.html">double</a> hfar, <a class="el" href="classdouble.html">double</a> cst=0.)</td></tr>
 <tr class="memdesc:af7868e88a43dd6e1da7af2151a2fdaea"><td class="mdescLeft">&#160;</td><td class="mdescRight">create an isotropic metric field based on a levelset gradation  <a href="namespaceFeel.html#af7868e88a43dd6e1da7af2151a2fdaea">More...</a><br /></td></tr>
 <tr class="separator:af7868e88a43dd6e1da7af2151a2fdaea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2785f8892f89d072d026f84d0225fd50"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a2785f8892f89d072d026f84d0225fd50">handleExceptions</a> ()</td></tr>
+<tr class="memdesc:a2785f8892f89d072d026f84d0225fd50"><td class="mdescLeft">&#160;</td><td class="mdescRight">handle exceptions using a Lippincott function this funnction allows to handle the exceptions thrown in Feel++  <a href="namespaceFeel.html#a2785f8892f89d072d026f84d0225fd50">More...</a><br /></td></tr>
+<tr class="separator:a2785f8892f89d072d026f84d0225fd50"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06f98032a9e6dac4698cf0df19a89c62"><td class="memTemplParams" colspan="2">template&lt;typename EltType &gt; </td></tr>
 <tr class="memitem:a06f98032a9e6dac4698cf0df19a89c62"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a06f98032a9e6dac4698cf0df19a89c62">hasFaceWithAnyOfTheMarkers</a> (EltType const &amp;e, std::vector&lt; std::string &gt; const &amp;flags, std::enable_if_t&lt;(dimension_v&lt; EltType &gt; &gt; 0) &amp;&amp;<a class="el" href="namespaceFeel.html#a4787f01c56ce123c8f9d5e16ed90ceb7">is_geoelement_v</a>&lt; EltType &gt;&gt; *=nullptr)</td></tr>
 <tr class="memdesc:a06f98032a9e6dac4698cf0df19a89c62"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if a element as faces with any of the string markers  <a href="namespaceFeel.html#a06f98032a9e6dac4698cf0df19a89c62">More...</a><br /></td></tr>
@@ -6293,6 +6299,35 @@ template&lt;typename SpaceT , std::enable_if_t&lt; std::is_base_of_v&lt; Functio
 
 </div>
 </div>
+<a id="a2785f8892f89d072d026f84d0225fd50"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2785f8892f89d072d026f84d0225fd50">&#9670;&nbsp;</a></span>handleExceptions()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Feel::handleExceptions </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>handle exceptions using a Lippincott function this funnction allows to handle the exceptions thrown in Feel++ </p>
+<div class="fragment"><div class="line"><span class="keywordflow">try</span> {</div>
+<div class="line">  Environment env(),</div>
+<div class="line">  <span class="comment">// Feel++ code here</span></div>
+<div class="line">}</div>
+<div class="line"><span class="keywordflow">catch</span>( ... )</div>
+<div class="line">{</div>
+<div class="line">  <a class="code" href="namespaceFeel.html#a2785f8892f89d072d026f84d0225fd50">handleExceptions</a>()</div>
+<div class="line">}</div>
+</div><!-- fragment --> 
+<p class="reference">References <a class="el" href="classFeel_1_1Environment.html#af356d2c22a5301014908b690e272027a">Feel::Environment::isMasterRank()</a>.</p>
+
+</div>
+</div>
 <a id="a5cfaf8fad5de88aad1cad411a763e15a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5cfaf8fad5de88aad1cad411a763e15a">&#9670;&nbsp;</a></span>hasElement()</h2>
 
@@ -8660,6 +8695,7 @@ template&lt;typename... T&gt; </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <div class="ttc" id="anamespaceFeel_html_a56832218e29e9fbfcf68e24a60cee32c"><div class="ttname"><a href="namespaceFeel.html#a56832218e29e9fbfcf68e24a60cee32c">Feel::markedfaces</a></div><div class="ttdeci">markedfaces_t&lt; MeshType &gt; markedfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:531</div></div>
+<div class="ttc" id="anamespaceFeel_html_a2785f8892f89d072d026f84d0225fd50"><div class="ttname"><a href="namespaceFeel.html#a2785f8892f89d072d026f84d0225fd50">Feel::handleExceptions</a></div><div class="ttdeci">void handleExceptions()</div><div class="ttdoc">handle exceptions using a Lippincott function this funnction allows to handle the exceptions thrown i...</div><div class="ttdef"><b>Definition:</b> exceptions.cpp:31</div></div>
 <div class="ttc" id="anamespaceFeel_html_a229552e84736e331a5e2972379393aa0"><div class="ttname"><a href="namespaceFeel.html#a229552e84736e331a5e2972379393aa0">Feel::nelements</a></div><div class="ttdeci">size_type nelements(boost::tuple&lt; MT, Iterator, Iterator &gt; const &amp;its, bool global=false, worldcomm_t const &amp;worldComm=Environment::worldComm())</div><div class="ttdef"><b>Definition:</b> filters.hpp:902</div></div>
 <div class="ttc" id="anamespaceFeel_html_a4865c9737b1e5b536a3886ec57f134ff"><div class="ttname"><a href="namespaceFeel.html#a4865c9737b1e5b536a3886ec57f134ff">Feel::faces</a></div><div class="ttdeci">faces_pid_t&lt; MeshType &gt; faces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:468</div></div>
 <div class="ttc" id="anamespaceFeel_html_a5c5d7739b17b8c03ee6e3250e4523325"><div class="ttname"><a href="namespaceFeel.html#a5c5d7739b17b8c03ee6e3250e4523325">Feel::intersect</a></div><div class="ttdeci">FEELPP_EXPORT Feel::intersect_t&lt; IteratorType &gt; intersect(IteratorType &amp;&amp;it, Args &amp;&amp;... args)</div><div class="ttdoc">this function takes a set of iterators over geometrical entities of the same type (e....</div><div class="ttdef"><b>Definition:</b> intersect.hpp:53</div></div>

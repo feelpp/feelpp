@@ -113,20 +113,22 @@ Hello, Laplacian</h2>
 Hello, Stokes</h2>
 <p>First we define the environment</p>
 <div class="fragment"><div class="line">    <span class="keyword">using namespace </span><a class="code" href="namespaceFeel.html">Feel</a>;</div>
-<div class="line">    po::options_description laplacianoptions( <span class="stringliteral">&quot;Stokes options&quot;</span> );</div>
-<div class="line">    laplacianoptions.add_options()</div>
-<div class="line">        ( <span class="stringliteral">&quot;mu&quot;</span>, po::value&lt;double&gt;()-&gt;default_value( 1.0 ), <span class="stringliteral">&quot;viscosity&quot;</span> )</div>
-<div class="line">        ( <span class="stringliteral">&quot;space&quot;</span>, po::value&lt;std::string&gt;()-&gt;default_value( <span class="stringliteral">&quot;P2P1&quot;</span> ), <span class="stringliteral">&quot;space type: P2P1(default), P1P1, P1P0&quot;</span> )</div>
-<div class="line">        ( <span class="stringliteral">&quot;no-solve&quot;</span>, po::value&lt;bool&gt;()-&gt;default_value( <span class="keyword">false</span> ), <span class="stringliteral">&quot;No solve&quot;</span> )</div>
-<div class="line">        ;</div>
+<div class="line">    <span class="keywordflow">try</span></div>
+<div class="line">    {</div>
+<div class="line">        po::options_description laplacianoptions( <span class="stringliteral">&quot;Stokes options&quot;</span> );</div>
+<div class="line">        laplacianoptions.add_options()</div>
+<div class="line">            ( <span class="stringliteral">&quot;mu&quot;</span>, po::value&lt;double&gt;()-&gt;default_value( 1.0 ), <span class="stringliteral">&quot;viscosity&quot;</span> )</div>
+<div class="line">            ( <span class="stringliteral">&quot;space&quot;</span>, po::value&lt;std::string&gt;()-&gt;default_value( <span class="stringliteral">&quot;P2P1&quot;</span> ), <span class="stringliteral">&quot;space type: P2P1(default), P1P1, P1P0&quot;</span> )</div>
+<div class="line">            ( <span class="stringliteral">&quot;no-solve&quot;</span>, po::value&lt;bool&gt;()-&gt;default_value( <span class="keyword">false</span> ), <span class="stringliteral">&quot;No solve&quot;</span> )</div>
+<div class="line">            ;</div>
 <div class="line"> </div>
-<div class="line">    <a class="code" href="classFeel_1_1Environment.html">Environment</a> env( _argc=argc, _argv=argv,</div>
-<div class="line">                   _desc=laplacianoptions,</div>
-<div class="line">                   _about=about(_name=<span class="stringliteral">&quot;qs_stokes&quot;</span>,</div>
-<div class="line">                                _author=<span class="stringliteral">&quot;Feel++ Consortium&quot;</span>,</div>
-<div class="line">                                _email=<span class="stringliteral">&quot;feelpp-devel@feelpp.org&quot;</span>));</div>
+<div class="line">        <a class="code" href="classFeel_1_1Environment.html">Environment</a> env( _argc=argc, _argv=argv,</div>
+<div class="line">                       _desc=laplacianoptions,</div>
+<div class="line">                       _about=about(_name=<span class="stringliteral">&quot;qs_stokes&quot;</span>,</div>
+<div class="line">                                    _author=<span class="stringliteral">&quot;Feel++ Consortium&quot;</span>,</div>
+<div class="line">                                    _email=<span class="stringliteral">&quot;feelpp-devel@feelpp.org&quot;</span>));</div>
 </div><!-- fragment --><p> then the mesh</p>
-<div class="fragment"><div class="line">    <span class="keyword">auto</span> mesh = loadMesh(_mesh=<span class="keyword">new</span> Mesh&lt;Simplex&lt;FEELPP_DIM,1&gt;&gt;);</div>
+<div class="fragment"><div class="line">        <span class="keyword">auto</span> mesh = loadMesh(_mesh=<span class="keyword">new</span> Mesh&lt;Simplex&lt;FEELPP_DIM,1&gt;&gt;);</div>
 </div><!-- fragment --><p> then the function solving the Stokes equations</p>
 <div class="fragment"><div class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> SpacePtrType&gt;</div>
 <div class="line"><span class="keywordtype">int</span></div>
@@ -203,16 +205,16 @@ Hello, Stokes</h2>
 <li>P1P0, P1P0 which aren't inf-sup stable</li>
 <li>P2P1 (aka TaylorHood) which is inf-sup stable</li>
 </ul>
-<div class="fragment"><div class="line">    <span class="keywordtype">int</span> status;</div>
-<div class="line">    <span class="keywordflow">if</span> ( soption(<span class="stringliteral">&quot;space&quot;</span>) == <span class="stringliteral">&quot;P1P0&quot;</span> )</div>
-<div class="line">        status = stokes( P2ch&lt;Lagrange&lt;1,Vectorial&gt;,Lagrange&lt;0,Scalar,Discontinuous&gt;&gt;( mesh ) );</div>
-<div class="line">    <span class="keywordflow">else</span> <span class="keywordflow">if</span> ( soption(<span class="stringliteral">&quot;space&quot;</span>) == <span class="stringliteral">&quot;P1P1&quot;</span> )</div>
-<div class="line">        status = stokes( P2ch&lt;Lagrange&lt;1,Vectorial&gt;,Lagrange&lt;1,Scalar&gt;&gt;( mesh ) );</div>
-<div class="line">    <span class="keywordflow">else</span></div>
-<div class="line">    {</div>
-<div class="line">        <span class="comment">// default P2P1: good space</span></div>
-<div class="line">        status = stokes( THch&lt;1&gt;( mesh ) );</div>
-<div class="line">    }</div>
+<div class="fragment"><div class="line">        <span class="keywordtype">int</span> status;</div>
+<div class="line">        <span class="keywordflow">if</span> ( soption(<span class="stringliteral">&quot;space&quot;</span>) == <span class="stringliteral">&quot;P1P0&quot;</span> )</div>
+<div class="line">            status = stokes( P2ch&lt;Lagrange&lt;1,Vectorial&gt;,Lagrange&lt;0,Scalar,Discontinuous&gt;&gt;( mesh ) );</div>
+<div class="line">        <span class="keywordflow">else</span> <span class="keywordflow">if</span> ( soption(<span class="stringliteral">&quot;space&quot;</span>) == <span class="stringliteral">&quot;P1P1&quot;</span> )</div>
+<div class="line">            status = stokes( P2ch&lt;Lagrange&lt;1,Vectorial&gt;,Lagrange&lt;1,Scalar&gt;&gt;( mesh ) );</div>
+<div class="line">        <span class="keywordflow">else</span></div>
+<div class="line">        {</div>
+<div class="line">            <span class="comment">// default P2P1: good space</span></div>
+<div class="line">            status = stokes( THch&lt;1&gt;( mesh ) );</div>
+<div class="line">        }</div>
 </div><!-- fragment --></div></div><!-- contents -->
 </div><!-- PageDoc -->
 </div><!-- doc-content -->
