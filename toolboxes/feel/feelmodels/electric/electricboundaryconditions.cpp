@@ -167,7 +167,7 @@ ElectricBoundaryConditions::tabulateInformations( nl::json const& jsonInfo, Tabu
     {
         auto tabInfoGround = TabulateInformationsSections::New( tabInfoProp );
         for ( auto const& [j_bckey,j_bcval]: jsonInfo.at( "ground" ).items() )
-            tabInfoGround->add( j_bckey, ElectricBoundaryConditions::ElectricPotentialImposed::tabulateInformations( j_bcval, tabInfoProp ) );
+            tabInfoGround->add( j_bckey, ElectricBoundaryConditions::Ground::tabulateInformations( j_bcval, tabInfoProp ) );
         tabInfo->add( "Ground", tabInfoGround );
     }
     if ( jsonInfo.contains( "surface_charge_density" ) )
