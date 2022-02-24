@@ -38,7 +38,7 @@ public:
         Ground( Ground && ) = default;
         void setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes ) override;
 
-        self_type::Type type() const override { return self_type::Type::ElectricPotentialImposed; }
+        self_type::Type type() const override { return self_type::Type::Ground; }
 
         //! update informations
         void updateInformationObject( nl::json & p ) const override;
