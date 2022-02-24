@@ -306,6 +306,11 @@ class ModelNumerical : virtual public ModelBase,
             {
                 return super_model_meshes_type::template symbolsExpr<MeshType,AddFields>();
             }
+        template <typename MeshType>
+        auto modelFieldsMeshes( std::string const& prefix_field = "", std::string const& prefix_symbol = "" ) const
+            {
+                return super_model_meshes_type::template modelFields<MeshType>( prefixvm( prefix_field, "meshes" ), prefixvm(prefix_symbol, "meshes", "_" ) );
+            }
 
 
         template <typename ElementType, typename RangeType, typename SymbolsExpr>
