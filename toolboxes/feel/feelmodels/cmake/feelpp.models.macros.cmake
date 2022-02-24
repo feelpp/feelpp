@@ -332,10 +332,10 @@ macro(genLibFluidMechanics)
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatestabilisation_inst.cpp
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsassemblyturbulence_inst.cpp
       )
-    set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdes_${FLUIDMECHANICS_DIM}dG${FLUIDMECHANICS_ORDERGEO} )
-    if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
-      set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelmeshale ${FLUIDMECHANICS_LIB_DEPENDS})
-    endif()
+    set(FLUIDMECHANICS_LIB_DEPENDS feelpp_toolbox_fluidbase feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdes_${FLUIDMECHANICS_DIM}dG${FLUIDMECHANICS_ORDERGEO} )
+    # if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
+    #   set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelmeshale ${FLUIDMECHANICS_LIB_DEPENDS})
+    # endif()
 
     # generate the lib target
     genLibBase(

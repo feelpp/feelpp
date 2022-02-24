@@ -44,7 +44,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 {
-    std::string ALEmode;if (M_isMoveDomain) ALEmode="Yes"; else ALEmode="No";
+    std::string ALEmode;if ( this->hasMeshMotion() ) ALEmode="Yes"; else ALEmode="No";
     std::string StateTemporal;if (this->isStationary()) StateTemporal="Stationary"; else StateTemporal="Transient";
 
     std::string ResartMode;
@@ -140,8 +140,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
         }
     }
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-    if ( this->isMoveDomain() )
-    *_ostr << this->getInfoALEMeshBC();
+    // if ( this->isMoveDomain() )
+    // *_ostr << this->getInfoALEMeshBC();
 #endif
     *_ostr << "\n   Space Discretization";
 #if 0
@@ -215,10 +215,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- solver : " << M_solverName;
     if ( this->algebraicFactory() )
         *_ostr << this->algebraicFactory()->getInfo()->str();
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    if ( this->isMoveDomain() )
-        *_ostr << this->meshALE()->getInfo()->str();
-#endif
+// #if defined( FEELPP_MODELS_HAS_MESHALE )
+//     if ( this->isMoveDomain() )
+//         *_ostr << this->meshALE()->getInfo()->str();
+// #endif
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -255,6 +255,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
     if ( this->materialsProperties() )
         this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
 
+    // Boundary Conditions
+    M_boundaryConditions.updateInformationObject( p["Boundary Conditions"] );
+#if 0 // VINCENT
+    if ( !M_bodySetBC.empty() )
+        M_bodySetBC.updateInformationObject( p["Boundary Conditions"] );
+#endif
+
     // FunctionSpace
     subPt.clear();
     subPt["Velocity"] = this->functionSpaceVelocity()->journalSection().to_string();
@@ -265,9 +272,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
 
     if ( this->algebraicFactory() )
         this->algebraicFactory()->updateInformationObject( p["Algebraic Solver"] );
-
-    if ( !M_bodySetBC.empty() )
-        M_bodySetBC.updateInformationObject( p["Boundary Conditions"] );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -295,6 +299,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
         tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
 
+    // Boundary conditions
+    if ( jsonInfo.contains("Boundary Conditions") )
+        tabInfo->add( "Boundary Conditions", boundary_conditions_type::tabulateInformations( jsonInfo.at("Boundary Conditions"), tabInfoProp ) );
+
     // Meshes
     if ( jsonInfo.contains("Meshes") )
         tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
@@ -319,6 +327,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
 
 
     std::map<std::string,uint16_type> jsonPtrFunctionSpacesToLevel;
+#if 0 // VINCENT
     if ( jsonInfo.contains("Boundary Conditions") )
     {
         auto const& jsonInfoBoundaryConditions = jsonInfo.at("Boundary Conditions");
@@ -330,6 +339,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
 
         tabInfo->add( "Boundary Conditions", tabInfoBoundaryConditions );
     }
+#endif
 
     for ( auto const& [jsonPtrStr,level] :jsonPtrFunctionSpacesToLevel )
     {
@@ -430,192 +440,8 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     this->exportResults( time, this->symbolsExpr() );
-
-#if 0
-    if ( this->isMoveDomain() && this->hasPostProcessFieldExported( "alemesh" ) )
-    {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-        this->meshALE()->exportResults( time );
-#endif
-    }
-
-    if ( nOrderGeo == 1 )
-    {
-        this->exportFields( time );
-
-        if ( this->hasMarkerPressureBC() && M_spaceLagrangeMultiplierPressureBC &&
-             this->hasPostProcessFieldExported( "pressurebc" ) )
-        {
-            std::string geoExportType="static";//change_coords_only, change, static
-            if ( !M_exporterLagrangeMultiplierPressureBC )
-                M_exporterLagrangeMultiplierPressureBC = exporter( _mesh=M_spaceLagrangeMultiplierPressureBC->mesh(),
-                                                                   _name="ExportLagrangeMultiplierPressureBC",
-                                                                   _geo=geoExportType,
-                                                                   _worldcomm=M_spaceLagrangeMultiplierPressureBC->worldComm(),
-                                                                   _path=this->exporterPath() );
-            M_exporterLagrangeMultiplierPressureBC->step( time )->add( prefixvm(this->prefix(),"pressurebc-lambda1"),
-                                                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressurebc-lambda1")),
-                                                                       *M_fieldLagrangeMultiplierPressureBC1 );
-            if ( nDim == 3 )
-                M_exporterLagrangeMultiplierPressureBC->step( time )->add( prefixvm(this->prefix(),"pressurebc-lambda2"),
-                                                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressurebc-lambda2")),
-                                                                           *M_fieldLagrangeMultiplierPressureBC2 );
-            M_exporterLagrangeMultiplierPressureBC->save();
-        }
-    }
-
-    if ( M_isHOVisu )
-    {
-        this->exportResultsImplHO( time );
-    }
-
-
-    this->exportMeasures( time );
-
-#endif
-
-} // FluidMechanics::exportResult
-
-#if 0
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportFields( double time )
-{
-    bool hasFieldToExport = this->updateExportedFields( M_exporter, M_postProcessFieldExported, time );
-    if ( hasFieldToExport )
-    {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-        // TODO : only at the first export
-        if ( this->isMoveDomain() && M_exporter->exporterGeometry()==ExporterGeometry::EXPORTER_GEOMETRY_STATIC)
-            this->meshALE()->revertReferenceMesh( false );
-#endif
-
-        M_exporter->save();
-
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-        if ( this->isMoveDomain() && M_exporter->exporterGeometry()==ExporterGeometry::EXPORTER_GEOMETRY_STATIC)
-            this->meshALE()->revertMovingMesh( false );
-#endif
-
-        this->upload( M_exporter->path() );
-    }
-
-    bool hasFieldOnTraceToExport = this->updateExportedFieldsOnTrace( M_exporterTrace, M_postProcessFieldOnTraceExported, time );
-    if ( hasFieldOnTraceToExport )
-    {
-        M_exporterTrace->save();
-    }
-
-    if  ( hasFieldToExport || hasFieldOnTraceToExport )
-    {
-        if ( M_exporter )
-            this->upload( M_exporter->path() );
-        else
-            this->upload( M_exporterTrace->path() );
-    }
 }
 
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-bool
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time )
-{
-    if ( !exporter ) return false;
-    if ( !exporter->doExport() ) return false;
-
-    //exporter->step( time )->setMesh( M_mesh );
-    bool hasFieldToExport = false;
-    if ( fields.find( "pid" ) != fields.end() )
-    {
-        exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "velocity" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"velocity"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity")),
-                                     this->fieldVelocity() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "pressure" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"pressure"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressure")),
-                                     this->fieldPressure() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "vorticity" ) != fields.end() )
-    {
-        this->updateVorticity();
-        exporter->step( time )->add( prefixvm(this->prefix(),"vorticity"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"vorticity")),
-                                     this->fieldVorticity() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "density" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"density"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"density")),
-                                     this->materialProperties()->fieldDensity() );
-        hasFieldToExport = true;
-    }
-    if ( fields.find( "viscosity" ) != fields.end() )
-    {
-        //if ( !M_XhNormalBoundaryStress ) this->createFunctionSpacesNormalStress();
-        auto const& uCur = this->fieldVelocity();
-        auto const& pCur = this->fieldPressure();
-        auto viscosityField = this->materialProperties()->dynamicViscositySpace()->element();
-        for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
-        {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            //auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
-            auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(uCur),*this->materialProperties(),matName);
-            viscosityField.on( _range=range,_expr=myViscosity );
-        }
-        exporter->step( time )->add( prefixvm(this->prefix(),"viscosity"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"viscosity")),
-                                     viscosityField );
-        hasFieldToExport = true;
-    }
-    if ( this->isMoveDomain() )
-    {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-
-        if ( fields.find( "displacement" ) != fields.end() )
-        {
-            auto drm = M_meshALE->dofRelationShipMap();
-            auto thedisp = M_meshALE->functionSpace()->element();
-            for (size_type i=0;i<thedisp.nLocalDof();++i)
-                thedisp(drm->dofRelMap()[i])=(*(M_meshALE->displacementInRef()))(i);
-
-            exporter->step( time )->add( prefixvm(this->prefix(),"displacement"),
-                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),"displacement")),
-                                         thedisp );
-            hasFieldToExport = true;
-        }
-
-        if ( fields.find( "alemesh" ) != fields.end() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),"displacementOnInterface"),
-                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),"displacementOnInterface")),
-                                         this->meshDisplacementOnInterface() );
-            exporter->step( time )->add( prefixvm(this->prefix(),"mesh-velocity"),
-                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),"mesh-velocity")),
-                                         this->meshVelocity() );
-#if 0
-            exporter->step( time )->add( prefixvm(this->prefix(),"mesh-velocity-interface"),
-                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),"mesh-velocity-interface")),
-                                         this->meshVelocity2() );
-#endif
-            hasFieldToExport = true;
-        }
-#endif
-    }
-
-    //----------------------//
-    return hasFieldToExport;
-}
-#endif
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -648,7 +474,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
         hasFieldToExport = true;
     }
 
-    if ( this->isMoveDomain() )
+    if ( this->hasMeshMotion() )
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
 #if 0
@@ -667,7 +493,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
         if ( this->hasPostProcessExportsField( "displacement" ) )
         {
             //M_opImeshdisp->apply( thedisp , *M_meshdispVisuHO);
-            M_opImeshdisp->apply( *M_meshALE->displacement() , *M_meshdispVisuHO);
+            M_opImeshdisp->apply( *this->meshMotionTool()->displacement() , *M_meshdispVisuHO);
             M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"meshdisp_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"meshdisp_ho")), *M_meshdispVisuHO );
             hasFieldToExport = true;
         }
@@ -836,6 +662,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         physicData->setParameterValues( paramValues );
 
+
+    super_type::super_model_meshes_type::setParameterValues( paramValues );
+
+    M_boundaryConditions.setParameterValues( paramValues );
+
+#if 0 // VINCENT
     M_bcDirichlet.setParameterValues( paramValues );
     for ( auto & bcDirComp : M_bcDirichletComponents )
         bcDirComp.second.setParameterValues( paramValues );
@@ -847,7 +679,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
     M_volumicForcesProperties.setParameterValues( paramValues );
     this->updateFluidInletVelocity();
     M_bodySetBC.setParameterValues( paramValues );
-
+#endif
     if ( this->hasTurbulenceModel() )
         M_turbulenceModelType->setParameterValues( paramValues );
 }
@@ -865,8 +697,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
     this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
 
+    auto se = this->symbolsExpr();
+    if ( this->worldComm().isMasterRank() )
+        std::cout << "symbolsExpr : \n "<<  se.names() << std::endl;
+
+
+    // TODO move!!!!!
+    super_type::super_model_meshes_type::updateMeshMotion<mesh_type>( this->keyword(), se );
+    
+#if 0 // VINCENT
     if ( M_applyMovingMeshBeforeSolve && ( !M_bcMovingBoundaryImposed.empty() || !M_bodySetBC.empty() ) )
         this->updateALEmesh();
+#endif
 
     M_bodySetBC.updateForUse( *this );
     M_bodySetBC.updateAlgebraicFactoryForUse( *this, this->algebraicFactory() );
@@ -1296,8 +1138,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     }
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-    if (this->isMoveDomain())
-        M_meshALE->updateTimeStep();
+    if (this->hasMeshMotion())
+        this->meshMotionTool()->updateTimeStep();
 #endif
 
     M_bodySetBC.updateTimeStep();
@@ -1440,9 +1282,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate )
 {
-    bool meshIsOnRefAtBegin = this->meshALE()->isOnReferenceMesh();
+    auto mmt = this->meshMotionTool();
+    bool meshIsOnRefAtBegin = mmt->isOnReferenceMesh();
     if ( !meshIsOnRefAtBegin )
-        this->meshALE()->revertReferenceMesh( false );
+        mmt->revertReferenceMesh( false );
 
     // current solution
     auto const& u = this->fieldVelocity();
@@ -1450,7 +1293,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::stri
     // identity Matrix
     auto const Id = eye<nDim,nDim>();
     // deformation tensor
-    auto Fa = Id+gradv(*M_meshALE->displacement());
+    auto Fa = Id+gradv(*mmt->displacement());
 
     //auto itFindRange = M_rangeMeshFacesByMaterial.find( "moving-boundary" );
     //CHECK( itFindRange != M_rangeMeshFacesByMaterial.end() ) << "not find range moving-boundary";
@@ -1476,18 +1319,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::stri
 #if 0
         //
         auto resRef = integrate(_range=rangeFaces,_expr=idv(fieldToUpdate)).evaluate();
-        this->meshALE()->revertMovingMesh( false );
+        mmt->revertMovingMesh( false );
         // current solution
         auto const& u = this->fieldVelocity();
         auto const& p = this->fieldPressure();
         // identity Matrix
         auto const Id = eye<nDim,nDim>();
         // deformation tensor
-        auto Fa = Id+gradv(*M_meshALE->displacement());
+        auto Fa = Id+gradv(*mmt->displacement());
         auto InvFa = det(Fa)*inv(Fa);
         auto const Sigmav = Feel::FeelModels::fluidMecStressTensor(gradv(u),idv(p),*this->materialProperties(),matName,true);
         auto resMove = integrate(_range=rangeFaces,_expr=Sigmav*N() ).evaluate();
-        this->meshALE()->revertReferenceMesh( false );
+        mmt->revertReferenceMesh( false );
         if ( this->worldComm().isMasterRank() )
         {
             std::cout << "resRef " << resRef << "\n";
@@ -1498,7 +1341,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::stri
     }
 
     if ( !meshIsOnRefAtBegin )
-        this->meshALE()->revertMovingMesh( false );
+        mmt->revertMovingMesh( false );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -1518,17 +1361,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmeshImpl()
 {
+    // VINCENT TODO move this code
+#if 0
     //-------------------------------------------------------------------//
     // compute ALE map
     //std::vector< mesh_ale_type::ale_map_element_type> polyBoundarySet = { *M_meshDisplacementOnInterface };
     //M_meshALE->update(*M_meshDisplacementOnInterface/*polyBoundarySet*/);
     M_meshALE->updateMovingMesh();
-
+#endif
     //-------------------------------------------------------------------//
 
     if ( this->doCIPStabConvection() )
     {
-        M_fieldMeshVelocityUsedWithStabCIP->on(_range=M_rangeMeshElements,_expr=idv(M_meshALE->velocity()) );
+        M_fieldMeshVelocityUsedWithStabCIP->on(_range=M_rangeMeshElements,_expr=idv(this->meshMotionTool()->velocity()) );
         sync( *M_fieldMeshVelocityUsedWithStabCIP, "=" );
     }
     //-------------------------------------------------------------------//
@@ -1673,7 +1518,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::blockPattern() const
           this->stabilizationGLSType() == "gls" );
     if ( doStabPSPG ||
          (this->definePressureCst() && this->definePressureCstMethod() == "penalisation") ||
-         (this->isMoveDomain() && ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "nitsche" ) )
+         (this->hasMeshMotion() && ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "nitsche" ) )
          )
         pat_pp = size_type(Pattern::COUPLED);
 
@@ -1987,6 +1832,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
 {
+#if 0 //VINCENT
     auto XhVelocity = this->functionSpaceVelocity();
     auto XhCompVelocity = XhVelocity->compSpace();
     static const uint16_type nDofComponentsVelocity = XhVelocity->dof()->nDofComponents();
@@ -2110,6 +1956,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         }
 
     }
+#endif
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

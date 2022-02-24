@@ -31,10 +31,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
 {
-    if ( !this->hasStrongDirichletBC() ) return;
+    if ( !M_boundaryConditions.hasTypeDofElimination() )
+        return;
 
     this->updateDofEliminationIds( "velocity", data );
 
+#if 0 // VINCENT
     if ( this->hasMarkerPressureBC() )
     {
         this->updateDofEliminationIds( "pressurelm1", this->dofEliminationIds( "pressurebc-lm" ), data );
@@ -57,6 +59,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResi
             this->updateDofEliminationIds( spaceName, data );
         }
     }
+#endif
 }
 
 

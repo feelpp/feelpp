@@ -11,6 +11,9 @@ template <typename ModelContextType>
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
 {
+    if ( !M_boundaryConditions.hasTypeDofElimination() )
+        return;
+
     this->log("FluidMechanics","updateNewtonInitialGuess","start");
 
     vector_ptrtype& U = data.initialGuess();
@@ -20,6 +23,12 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateNewtonInit
     auto mesh = this->mesh();
     auto const& se = mctx.symbolsExpr();
 
+    M_boundaryConditions.applyNewtonInitialGuess( mesh, u, se );
+
+    // update info for synchronization
+    this->updateDofEliminationIds( "velocity", data );
+
+#if 0 // VINCENT
     if ( this->hasMarkerDirichletBCelimination() )
     {
         // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
@@ -197,7 +206,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateNewtonInit
                   _expr=idv(bpbc.fieldElasticVelocityPtr()) );
         }
     }
-
+#endif
     // imposed mean pressure (TODO use updateDofEliminationIds)
     if ( this->definePressureCst() && this->definePressureCstMethod() == "algebraic" )
     {
@@ -215,6 +224,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateNewtonInit
     }
 
     this->log("FluidMechanics","updateNewtonInitialGuess","finish");
+
 }
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
@@ -390,13 +400,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
             } // Navier-Stokes
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( this->isMoveDomain() && BuildCstPart && ( physicFluidData->equation() == "Navier-Stokes" ||  physicFluidData->equation() == "StokesTransient" ) )
+            if ( this->hasMeshMotion() && BuildCstPart && ( physicFluidData->equation() == "Navier-Stokes" ||  physicFluidData->equation() == "StokesTransient" ) )
             {
                 auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
                 bilinearFormVV +=
                     //bilinearForm_PatternDefault +=
                     integrate (_range=range,
-                               _expr= -timeSteppingScaling*trans(gradt(u)*densityExpr*idv( this->meshVelocity() ))*id(v),
+                               _expr= -timeSteppingScaling*trans(gradt(u)*densityExpr*idv( this->meshMotionTool()->velocity() ))*id(v),
                                _geomap=this->geomap() );
             }
 #endif

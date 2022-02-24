@@ -154,13 +154,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
             }
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( this->isMoveDomain() && !BuildCstPart && !UseJacobianLinearTerms && ( physicFluidData->equation() == "Navier-Stokes" ||  physicFluidData->equation() == "StokesTransient" ) )
+            if ( this->hasMeshMotion() && !BuildCstPart && !UseJacobianLinearTerms && ( physicFluidData->equation() == "Navier-Stokes" ||  physicFluidData->equation() == "StokesTransient" ) )
             {
                 auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
                 // mesh velocity (convection) term
                 linearFormV +=
                     integrate( _range=range,
-                               _expr= -timeSteppingScaling*val(densityExpr*trans( gradv(u)*( idv( this->meshVelocity() ))))*id(v),
+                               _expr= -timeSteppingScaling*val(densityExpr*trans( gradv(u)*( idv( this->meshMotionTool()->velocity() ))))*id(v),
                                _geomap=this->geomap() );
             }
 #endif
@@ -287,6 +287,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
     //--------------------------------------------------------------------------------------------------//
 
     // body forces
+#if 0 // VINCENT
     if (BuildCstPart && doAssemblyRhs)
     {
         if ( this->M_overwritemethod_updateSourceTermResidual != NULL )
@@ -313,6 +314,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                            _geomap=this->geomap() );
         }
     }
+#endif
 
     //------------------------------------------------------------------------------------//
     // define pressure cst
@@ -382,6 +384,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
     //------------------------------------------------------------------------------------//
     //------------------------------------------------------------------------------------//
 
+#if 0 // VINCENT
     //--------------------------------------------------------------------------------------------------//
     // Neumann boundary condition
     if ( BuildCstPart && doAssemblyRhs )
@@ -870,6 +873,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
 
     }
 
+#endif // VINCENT
     //------------------------------------------------------------------------------------//
 
     this->updateResidualStabilisation( data, unwrap_ptr(u), unwrap_ptr(p) );

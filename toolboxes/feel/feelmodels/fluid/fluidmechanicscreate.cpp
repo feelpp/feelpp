@@ -350,6 +350,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createALE()
 {
+    if ( this->hasMeshMotion() && this->doCIPStabConvection() )
+        M_fieldMeshVelocityUsedWithStabCIP.reset( new element_velocity_type( this->functionSpaceVelocity() ) );
+
+#if 0
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if ( !this->markerALEMeshBC( "moving" ).empty() )
     {
@@ -375,7 +379,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createALE()
         this->log("FluidMechanics","createALE", (boost::format("finish in %1% s") %tElapsed).str() );
     }
 #endif
-
+#endif
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -383,6 +387,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
+    if ( !this->modelProperties().boundaryConditions().hasSection( this->keyword() ) )
+        return;
+    M_boundaryConditions.setup( *this,this->modelProperties().boundaryConditions().section( this->keyword() ) );
+
+    for ( auto const& [bcName,bcData] : M_boundaryConditions.velocityImposed() )
+        bcData->updateDofEliminationIds( *this, "velocity", this->functionSpaceVelocity() );
+
+#if 0 // VINCENT
     // clear
     this->clearMarkerDirichletBC();
     this->clearMarkerNeumannBC();
@@ -655,6 +667,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
 
     this->updateBoundaryConditionsForUse();
+#endif
 }
 //---------------------------------------------------------------------------------------------------------//
 
@@ -724,8 +737,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
         else if ( hovisuSpaceUsed == "p1" )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( M_meshALE )
-                meshVisuHO = M_meshALE->referenceMesh();
+            if ( this->hasMeshMotion() )
+                meshVisuHO = this->meshMotionTool()->referenceMesh();
             else
                 meshVisuHO = this->mesh()->createP1mesh();
 #else
@@ -747,7 +760,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
 
         M_velocityVisuHO.reset( new element_vectorial_visu_ho_type(M_XhVectorialVisuHO,"u_visuHO"));
         M_pressureVisuHO.reset( new element_scalar_visu_ho_type(M_XhScalarVisuHO,"p_visuHO"));
-        if (M_isMoveDomain) M_meshdispVisuHO.reset( new element_vectorial_visu_ho_type(M_XhVectorialVisuHO,"meshdisp_visuHO"));
+        if ( this->hasMeshMotion() )
+            M_meshdispVisuHO.reset( new element_vectorial_visu_ho_type(M_XhVectorialVisuHO,"meshdisp_visuHO"));
 
         this->log("FluidMechanics","createPostProcessExporters", "start opInterpolation" );
         boost::mpi::timer timerOpI;
@@ -783,10 +797,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
 #endif
         this->log("FluidMechanics","createPostProcessExporters", "step2 done" );
 
-        if (M_isMoveDomain )
+        if ( this->hasMeshMotion() )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            M_opImeshdisp = opInterpolation(_domainSpace=M_meshALE->functionSpace(),
+            M_opImeshdisp = opInterpolation(_domainSpace=this->meshMotionTool()->functionSpace(),
                                             _imageSpace=M_XhVectorialVisuHO,
                                             _range=elements(M_XhVectorialVisuHO->mesh()),
                                             _backend=this->algebraicBackend(),
@@ -1103,6 +1117,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // init post-processinig (exporter, measure at point, ...)
     this->initPostProcess();
     //-------------------------------------------------//
+#if 0 // VINCENT
     // update ALE mesh for use
     if (this->isMoveDomain())
     {
@@ -1112,11 +1127,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
 
         std::set<std::string> markersbcMovingBoundaryImposed;
+#if 0 // VINCENT
         for( auto const& d : M_bcMovingBoundaryImposed )
         {
             auto bcmarkers = markers(d);
             markersbcMovingBoundaryImposed.insert( bcmarkers.begin(), bcmarkers.end() );
         }
+#endif
         if ( !markersbcMovingBoundaryImposed.empty() )
             M_meshALE->setDisplacementImposedOnInitialDomainOverFaces( this->keyword(), markersbcMovingBoundaryImposed );
 
@@ -1148,7 +1165,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->log("FluidMechanics","finish init", "meshALE done" );
 #endif
     }
-
+#endif
     //-------------------------------------------------//
     // bc body (call after meshALE->init() in case of restart)
     M_bodySetBC.updateForUse( *this );
@@ -1222,7 +1239,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     remeshInterp.interpolate( old_fieldPressure, M_fieldPressure );
 
     this->log("FluidMechanics","applyRemesh", "interpolation velocity/pressure done" );
-
+#if 0 // VINCENT
     if ( M_meshALE )
     {
         std::vector<std::tuple<std::string,elements_reference_wrapper_t<mesh_type>>> computationDomains;
@@ -1231,7 +1248,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
         M_meshALE->applyRemesh( newMesh, computationDomains );
         this->log("FluidMechanics","applyRemesh", "mesh ale done" );
     }
-
+#endif
     // time stepping
     if ( M_bdfVelocity )
         M_bdfVelocity->applyRemesh( this->functionSpaceVelocity(), matrixInterpolation_velocity );
@@ -2043,7 +2060,7 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 {
 
-
+#if 0 // VINCENT
     if ( M_preconditionerAttachPCD )
     {
         typedef Feel::Alternatives::OperatorPCD<space_velocity_type,space_pressure_type> op_pcd_type;
@@ -2104,7 +2121,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         opPCD->initialize();
         M_operatorPCD = opPCD;
     }
-
+#endif
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -3175,9 +3192,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
     {
         M_body->updateForUse();
     }
-    else if ( fluidToolbox.isMoveDomain() )
+    else if ( fluidToolbox.hasMeshMotion() )
     {
-        auto disp = mean(_range=M_rangeMarkedFacesOnFluid,_expr=idv(fluidToolbox.meshALE()->displacement()) );
+        auto disp = mean(_range=M_rangeMarkedFacesOnFluid,_expr=idv(fluidToolbox.meshMotionTool()->displacement()) );
         //M_massCenter = M_massCenterRef + disp;
         M_body->setMassCenter( M_massCenterRef + disp );
     }
