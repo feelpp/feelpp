@@ -1158,8 +1158,14 @@ VectorUblasRange<T, Storage> * VectorUblasContiguousGhosts<T, Storage>::rangeImp
 {
     if constexpr ( is_vector_range ) // should not happen, but still implemented
     {
-        range_type rActive = range_type( this->startActive() + rangeActive.start(), std::min( this->map().nLocalDofWithoutGhost(), rangeActive.size() ) );
-        range_type rGhost = range_type( this->startGhost() + rangeGhost.start(), std::min( M_vec.size() - this->map().nLocalDofWithoutGhost(), rangeGhost.size() ) );
+        size_type rActiveStart = this->startActive() + rangeActive.start();
+        size_type rActiveSize = std::min( this->map().nLocalDofWithoutGhost(), rangeActive.size() );
+        range_type rActive = range_type( rActiveStart, rActiveStart + rActiveSize );
+
+        size_type rGhostStart = this->startGhost() + rangeGhost.start();
+        size_type rGhostSize = std::min( M_vec.size() - this->map().nLocalDofWithoutGhost(), rangeGhost.size() );
+        range_type rGhost = range_type( rGhostStart, rGhostStart + rGhostSize );
+
         return new VectorUblasRange<T, typename Storage::vector_type>( M_vec.data().expression(), rActive, rGhost, this->mapPtr() );
     }
     else if constexpr ( is_vector_slice ) // should not happen, but still implemented
@@ -1170,7 +1176,9 @@ VectorUblasRange<T, Storage> * VectorUblasContiguousGhosts<T, Storage>::rangeImp
     }
     else
     {
-        range_type rGhost = range_type( this->startGhost() + rangeGhost.start(), rangeGhost.size() );
+        size_type rGhostStart = this->startGhost() + rangeGhost.start();
+        size_type rGhostSize = rangeGhost.size();
+        range_type rGhost = range_type( rGhostStart, rGhostStart + rGhostSize );
         return new VectorUblasRange<T, Storage>( M_vec, rangeActive, rGhost, this->mapPtr() );
     }
 }
@@ -1906,8 +1914,14 @@ VectorUblasBase<T> * VectorUblasNonContiguousGhosts<T, Storage>::rangeImpl( cons
 {
     if constexpr ( is_vector_range )
     {
-        range_type rActive = range_type( M_vec.start() + rangeActive.start(), std::min( M_vec.size(), rangeActive.size() ) );
-        range_type rGhost = range_type( M_vecNonContiguousGhosts.start() + rangeGhost.start(), std::min( M_vecNonContiguousGhosts.size(), rangeGhost.size() ) );
+        size_type rActiveStart = M_vec.start() + rangeActive.start();
+        size_type rActiveSize = std::min( M_vec.size(), rangeActive.size() );
+        range_type rActive = range_type( rActiveStart, rActiveStart + rActiveSize );
+
+        size_type rGhostStart = M_vecNonContiguousGhosts.start() + rangeGhost.start();
+        size_type rGhostSize = std::min( M_vecNonContiguousGhosts.size(), rangeGhost.size() );
+        range_type rGhost = range_type( rGhostStart, rGhostStart + rGhostSize );
+
         return new VectorUblasRange<T, typename Storage::vector_type>( M_vec.data().expression(), rActive, M_vecNonContiguousGhosts.data().expression(), rGhost, this->mapPtr() );
     }
     else if constexpr ( is_vector_slice )
