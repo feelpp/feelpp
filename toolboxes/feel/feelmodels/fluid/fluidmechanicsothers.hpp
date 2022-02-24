@@ -94,10 +94,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePre
 
             if ( physicFluidData->equation() == "Stokes" || physicFluidData->equation() == "StokesTransient" )
             {
-                if (this->isMoveDomain() )
+                if (this->hasMeshMotion() )
                 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, -rhoExpr*idv(this->meshVelocity()), true );
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, -rhoExpr*idv(this->meshMotionTool()->velocity()), true );
 #endif
                 }
                 else
@@ -108,10 +108,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePre
             else if ( physicFluidData->equation() == "Navier-Stokes" && this->useSemiImplicitTimeScheme() )
             {
                 auto betaU = *M_fieldVelocityExtrapolated;//this->timeStepBDF()->poly();
-                if (this->isMoveDomain() )
+                if (this->hasMeshMotion() )
                 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(betaU)-idv(this->meshVelocity()) ), true );
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(betaU)-idv(this->meshMotionTool()->velocity()) ), true );
 #endif
                 }
                 else
@@ -121,10 +121,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePre
             }
             else if ( physicFluidData->equation() == "Navier-Stokes" )
             {
-                if (this->isMoveDomain() )
+                if (this->hasMeshMotion() )
                 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(u)-idv(this->meshVelocity()) ), true );
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(u)-idv(this->meshMotionTool()->velocity()) ), true );
 #endif
                 }
                 else
@@ -162,6 +162,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePre
 
     if ( !dynamic_cast<DataUpdateJacobian*>(&data) || !boption(_name="pcd.apply-homogeneous-dirichlet-in-newton",_prefix=this->prefix()) )
     {
+#if 0 // VINCENT
         // auto const& fieldRho = this->materialProperties()->fieldRho();
         // auto rhoExpr = idv( fieldRho );
         //auto se = this->symbolsExpr();
@@ -176,6 +177,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePre
             auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
             myOpPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, marker, -idv(inletVel)*N() );
         }
+#endif
     }
     else
         Feel::cout << "PCD NOT UP BC \n";

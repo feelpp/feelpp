@@ -13,6 +13,7 @@
 #include <feel/feelmodels/modelcore/modelfields.hpp>
 
 #include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
+#include <feel/feelmodels/modelmesh/meshale.hpp>
 
 namespace Feel
 {
@@ -121,6 +122,16 @@ public:
             return std::dynamic_pointer_cast<MeasurePointsEvaluation<MeshType>>( M_measurePointsEvaluation );
         }
 
+    bool hasMeshMotion() const { return M_meshMotionTool? true : false; }
+
+    template <typename MeshType>
+    auto meshMotionTool() const
+        {
+            return std::dynamic_pointer_cast<MeshALE<typename MeshType::shape_type>>( M_meshMotionTool );
+        }
+
+    void setMeshMotionTool( std::shared_ptr<ModelBase> meshMotionTool ) { M_meshMotionTool = meshMotionTool; }
+
     template <typename SpaceType>
     auto createFunctionSpace( std::string const& basis )
         {
@@ -152,6 +163,7 @@ private:
     std::string M_meshFilename;
     std::map<std::string, std::shared_ptr<FunctionSpaceBase> > M_functionSpaces;
     std::shared_ptr<MeasurePointsEvaluationBase> M_measurePointsEvaluation;
+    std::shared_ptr<ModelBase> M_meshMotionTool;
 };
 
 template <typename IndexType>
@@ -204,6 +216,15 @@ public :
     template <typename MeshType = mesh_base_type>
     auto mesh() const { return M_mmeshCommon->template mesh<MeshType>(); }
 
+    bool hasMeshMotion() const { return M_mmeshCommon->hasMeshMotion(); }
+
+    template <typename MeshType>
+    auto meshMotionTool() const
+        {
+            return M_mmeshCommon->template meshMotionTool<MeshType>();
+        }
+
+
     std::map<std::string,collection_data_by_mesh_entity_type> const& collectionOfDataByMeshEntity() const { return M_codbme; }
 
     template <typename MeshType>
@@ -248,7 +269,12 @@ public :
                     mf_distToRange.add( mftag_distToRange, prefix, name, u, name, prefixvm( prefix_symbol, "distanceToRange", "_" ) );
             }
 
-            return Feel::FeelModels::modelFields( std::move(mf_fields), std::move(mf_distToRange) );
+            using mf_meshmotion_type = std::decay_t<decltype(this->meshMotionTool<MeshType>()->modelFields(""))>;
+            mf_meshmotion_type mf_meshmotion;
+            if ( auto mmt = this->meshMotionTool<MeshType>() )
+                mf_meshmotion = mmt->modelFields( prefixvm( prefix,"meshMotion","_") );
+
+            return Feel::FeelModels::modelFields( std::move(mf_fields), std::move(mf_distToRange), std::move( mf_meshmotion ) );
         }
 
     template <typename MeshType = mesh_base_type, bool AddFields = true>
@@ -282,6 +308,47 @@ public :
 
     static tabulate_informations_ptr_t tabulateInformations( nl::json const& p, TabulateInformationProperties const& tabInfoProp );
 
+
+    void setParameterValues( std::map<std::string,double> const& paramValues )
+        {
+            if ( M_meshMotionSetup )
+                M_meshMotionSetup->setParameterValues( paramValues );
+        }
+#if 1
+    template <typename MeshType,typename SymbolsExprType>
+    void
+    updateMeshMotion( SymbolsExprType const& se )
+        {
+            auto meshALE = this->meshMotionTool<MeshType>();
+            if ( !meshALE )
+                return;
+            if ( !M_meshMotionSetup )
+                return;
+
+            if ( !M_meshMotionSetup->displacementImposed().empty() )
+            {
+                bool meshIsOnRefAtBegin = meshALE->isOnReferenceMesh();
+                if ( !meshIsOnRefAtBegin )
+                    meshALE->revertReferenceMesh( false );
+                meshALE->revertInitialDomain( false );
+
+                auto mesh = this->mesh<MeshType>();
+                for ( auto const& [name,dispData] : M_meshMotionSetup->displacementImposed() )
+                {
+                    auto const& [mexpr,markers] = dispData;
+                    meshALE->updateDisplacementImposedOnInitialDomain( M_name/*this->keyword()*/,
+                                                                       Feel::vf::expr( mexpr.template expr<MeshType::nRealDim,1>(), se ),
+                                                                       markedfaces(mesh,markers) );
+                }
+
+                meshALE->revertReferenceMesh( false );
+                if ( !meshIsOnRefAtBegin )
+                    meshALE->revertMovingMesh( false );
+            }
+
+            meshALE->updateMovingMesh();
+        }
+#endif
 
 
 private:
@@ -337,11 +404,32 @@ private:
         std::string M_name;
         std::set<std::string> M_markers;
     };
+    struct MeshMotionSetup
+    {
+        MeshMotionSetup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
+
+        std::set<std::string> const& computationalDomainMarkers() { return M_computationalDomainMarkers; }
+        std::map<std::string,std::tuple<ModelExpression,std::set<std::string>>> const& displacementImposed() const { return M_displacementImposed; }
+        std::set<std::string> const& displacementZeroMarkers() const { return M_displacementZeroMarkers; }
+        std::set<std::string> const& displacementFreeMarkers() const { return M_displacementFreeMarkers; }
+
+        void setParameterValues( std::map<std::string,double> const& paramValues )
+            {
+                for ( auto & [name,dispData] : M_displacementImposed )
+                    std::get<0>( dispData ).setParameterValues( paramValues );
+            }
+
+    private :
+        std::set<std::string> M_computationalDomainMarkers;
+        std::map<std::string,std::tuple<ModelExpression,std::set<std::string>>> M_displacementImposed;
+        std::set<std::string> M_displacementZeroMarkers, M_displacementFreeMarkers;
+    };
 
     std::vector<FieldsSetup> M_fieldsSetup;
     std::vector<DistanceToRangeSetup> M_distanceToRangeSetup;
     std::map<std::string, std::shared_ptr<Vector<double>> > M_fields;
     std::map<std::string, std::shared_ptr<Vector<double>> > M_distanceToRanges;
+    std::optional<MeshMotionSetup> M_meshMotionSetup;
 };
 
 template <typename IndexType>
@@ -450,6 +538,32 @@ public:
     void updateInformationObject( nl::json & p ) const override;
 
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
+    void setParameterValues( std::map<std::string,double> const& paramValues )
+        {
+            for ( auto & [name,mmesh] : *this )
+                mmesh->setParameterValues( paramValues );
+        }
+
+    bool hasMeshMotion( std::string const& meshName ) const
+        {
+            if ( !hasModelMesh( meshName ) )
+                return false;
+            return this->modelMesh( meshName ).hasMeshMotion();
+        }
+
+    template <typename MeshType>
+    auto meshMotionTool( std::string const& meshName ) const
+        {
+            return this->modelMesh( meshName ).template meshMotionTool<MeshType>();
+        }
+
+    template <typename MeshType,typename SymbolsExprType>
+    void
+    updateMeshMotion( std::string const& meshName, SymbolsExprType const& se )
+    {
+        return this->modelMesh( meshName ).template updateMeshMotion<MeshType>( se );
+    }
 
 };
 

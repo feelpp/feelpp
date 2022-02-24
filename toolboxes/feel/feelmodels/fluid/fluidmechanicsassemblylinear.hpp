@@ -159,12 +159,12 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 }
                 auto myVelXEXPR = vec( cst(myvelX), cst(0.) );
 #endif
-                if ( this->isMoveDomain() )
+                if ( this->hasMeshMotion() )
                 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
                     bilinearFormVV_PatternDefault +=
                         integrate( _range=range,
-                                   _expr= timeSteppingScaling*densityExpr*trans( gradt(u)*( idv(beta_u) -idv( this->meshVelocity() )   /*-  myVelXEXPR*/  ))*id(v),
+                                   _expr= timeSteppingScaling*densityExpr*trans( gradt(u)*( idv(beta_u) -idv( this->meshMotionTool()->velocity() )   /*-  myVelXEXPR*/  ))*id(v),
                                    _geomap=this->geomap() );
 #endif
                 }
@@ -188,13 +188,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 this->log("FluidMechanics","updateLinearPDE","assembly convection in "+(boost::format("%1% s") %timeElapsedConvection).str() );
             }
             else if ( (  /*physicFluidData->equation() == "Stokes" ||*/  physicFluidData->equation() == "StokesTransient")
-                      && build_ConvectiveTerm && this->isMoveDomain() )
+                      && build_ConvectiveTerm && this->hasMeshMotion() )
             {
                 auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
 #if defined( FEELPP_MODELS_HAS_MESHALE )
                 bilinearFormVV_PatternDefault +=
                     integrate( _range=range,
-                               _expr= -timeSteppingScaling*densityExpr*trans( gradt(u)*(idv( this->meshVelocity() )))*id(v),
+                               _expr= -timeSteppingScaling*densityExpr*trans( gradt(u)*(idv( this->meshMotionTool()->velocity() )))*id(v),
                                _geomap=this->geomap() );
 #endif
             }
@@ -312,6 +312,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
 
     //--------------------------------------------------------------------------------------------------//
     // body forces
+#if 0 // VINCENT
     if ( this->M_overwritemethod_updateSourceTermLinearPDE != NULL )
     {
         this->M_overwritemethod_updateSourceTermLinearPDE(F,BuildCstPart);
@@ -339,6 +340,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                        _expr= timeSteppingScaling*trans(idv(*M_SourceAdded))*id(v),
                        _geomap=this->geomap() );
     }
+#endif
 
     //--------------------------------------------------------------------------------------------------//
     // define pressure cst
@@ -405,7 +407,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
     //--------------------------------------------------------------------------------------------------//
     //--------------------------------------------------------------------------------------------------//
     //--------------------------------------------------------------------------------------------------//
-
+#if 0 // VINCENT
     bool build_BoundaryNeumannTerm = BuildNonCstPart;
     if ( this->useFSISemiImplicitScheme() )
     {
@@ -945,7 +947,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
     }
 #endif
 
-
+#endif // VINCENT
     //--------------------------------------------------------------------------------------------------//
 
     this->updateLinearPDEStabilisation( data );
@@ -961,9 +963,10 @@ template <typename ModelContextType>
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-    if ( !this->hasStrongDirichletBC() ) return;
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateLinearPDEDofElimination", "start",
-                                               this->worldComm(),this->verboseAllProc());
+
+     if ( !M_boundaryConditions.hasTypeDofElimination() )
+        return;
+    this->log("FluidMechanics","updateLinearPDEDofElimination","start" );
     this->timerTool("Solve").start();
 
     sparse_matrix_ptrtype& A = data.matrix();
@@ -977,6 +980,9 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDED
     auto const& u = this->fieldVelocity();
     auto const& se = mctx.symbolsExpr();
 
+    M_boundaryConditions.applyDofEliminationLinear( bilinearFormVV, F, mesh, u, se );
+
+#if 0 // VINCENT
     // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
     std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > mapMarkerBCToEntitiesMeshMarker;
     for( auto const& d : this->M_bcDirichlet )
@@ -1172,6 +1178,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDED
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("FluidMechanics","updateLinearPDEDofElimination","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+#endif
 }
 
 } // namespace Feel

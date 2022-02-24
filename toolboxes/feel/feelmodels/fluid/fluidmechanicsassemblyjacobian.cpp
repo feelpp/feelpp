@@ -28,13 +28,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
 {
-    if ( !this->hasStrongDirichletBC() ) return;
+    if ( !M_boundaryConditions.hasTypeDofElimination() )
+        return;
+
     this->log("FluidMechanics","updateJacobianDofElimination", "start" );
 
     this->timerTool("Solve").start();
 
     this->updateDofEliminationIds( "velocity", data );
-
+#if 0 //VINCENT
     if ( this->hasMarkerPressureBC() )
     {
         this->updateDofEliminationIds( "pressurelm1", this->dofEliminationIds( "pressurebc-lm" ), data );
@@ -57,7 +59,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJaco
             this->updateDofEliminationIds( spaceName, data );
         }
     }
-
+#endif
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("FluidMechanics","updateJacobianDofElimination","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }

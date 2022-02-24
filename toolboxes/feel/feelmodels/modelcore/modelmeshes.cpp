@@ -150,6 +150,56 @@ ModelMeshCommon<IndexType>::ImportConfig::tabulateInformations( nl::json const& 
 }
 
 template <typename IndexType>
+ModelMesh<IndexType>::MeshMotionSetup::MeshMotionSetup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
+{
+    if ( jarg.contains("ComputationalDomain") )
+    {
+        auto const& j_cd = jarg.at("ComputationalDomain");
+        if ( j_cd.contains( "markers" ) )
+        {
+            ModelMarkers markers;
+            markers.setup( j_cd.at("markers")/*, indexes*/ );
+            M_computationalDomainMarkers = markers;
+        }
+    }
+
+    if ( jarg.contains("Displacement") )
+    {
+        auto const& j_disp = jarg.at("Displacement");
+        if ( j_disp.contains( "Imposed" ) )
+        {
+            for ( auto const& [j_dispimposedkey,j_dispimposedval] : j_disp.at( "Imposed" ).items() )
+            {
+                std::set<std::string> markers = { j_dispimposedkey };
+                if ( j_dispimposedval.contains( "markers") )
+                {
+                    ModelMarkers _markers;
+                    _markers.setup( j_dispimposedval.at("markers")/*, indexes*/ );
+                    markers = _markers;
+                }
+                ModelExpression mexpr;
+                if ( j_dispimposedval.contains( "expr" ) )
+                    mexpr.setExpr( j_dispimposedval.at( "expr" ), mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
+                M_displacementImposed.emplace( j_dispimposedkey, std::make_tuple( std::move(mexpr),std::move( markers ) ) );
+            }
+        }
+        if ( j_disp.contains( "Zero" ) )
+        {
+             ModelMarkers _markers;
+             _markers.setup( j_disp.at("Zero")/*, indexes*/ );
+             M_displacementZeroMarkers.insert( M_displacementZeroMarkers.begin(), M_displacementZeroMarkers.end() );
+        }
+        if ( j_disp.contains( "Free" ) )
+        {
+             ModelMarkers _markers;
+             _markers.setup( j_disp.at("Free")/*, indexes*/ );
+             M_displacementFreeMarkers.insert( M_displacementZeroMarkers.begin(), M_displacementZeroMarkers.end() );
+        }
+    }
+}
+
+
+template <typename IndexType>
 ModelMesh<IndexType>::ModelMesh( std::string const& name, ModelMeshes<IndexType> const& mMeshes )
     :
     M_name( name ),
@@ -194,6 +244,11 @@ ModelMesh<IndexType>::setup( nl::json const& jarg, ModelMeshes<IndexType> const&
         }
     }
 
+    if ( jarg.contains("MeshMotion") )
+    {
+        MeshMotionSetup mms( mMeshes, jarg.at("MeshMotion") );
+        M_meshMotionSetup.emplace( std::move( mms ) );
+    }
 }
 
 template <typename IndexType>
@@ -360,9 +415,40 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
         *u = distanceToRange( Vh, rangeFaces );
         M_distanceToRanges[dtrs.name()] = u;
     }
+
+    if constexpr ( mesh_type::nDim>1 )
+    {
+        if ( M_meshMotionSetup )
+        {
+            auto themesh = this->mesh<MeshType>();
+            auto meshALE = meshale( _mesh=themesh,
+                                    _prefix=mMeshes.prefix(),
+                                    _keyword=fmt::format("meshes_{}_meshmotion",M_name),
+                                    _directory=mMeshes.repository() );
+
+            auto const& cdm = M_meshMotionSetup->computationalDomainMarkers();
+            if ( cdm.find( "@elements@" ) != cdm.end() )
+                meshALE->setWholeMeshAsComputationalDomain( M_name/*mMeshes.keyword()*/ );
+            else
+                meshALE->setComputationalDomain( M_name/*mMeshes.keyword()*/, markedelements(themesh, cdm) );
+            meshALE->init();
+
+            std::set<std::string> markersDispImposedOverFaces;
+            for ( auto const& [name,dispData] : M_meshMotionSetup->displacementImposed() )
+                markersDispImposedOverFaces.insert(  std::get<1>( dispData ).begin(),  std::get<1>( dispData ).end() );
+            if ( !markersDispImposedOverFaces.empty() )
+                meshALE->setDisplacementImposedOnInitialDomainOverFaces( M_name/*this->keyword()*/, markersDispImposedOverFaces );
+
+            meshALE->addMarkersInBoundaryCondition( "fixed", M_meshMotionSetup->displacementZeroMarkers() );
+            meshALE->addMarkersInBoundaryCondition( "free", M_meshMotionSetup->displacementFreeMarkers() );
+            for ( auto const& [name,dispData] : M_meshMotionSetup->displacementImposed() )
+                meshALE->addMarkersInBoundaryCondition( "moving", std::get<1>( dispData ) );
+
+            M_mmeshCommon->setMeshMotionTool( meshALE );
+        }
+    }
+
 }
-
-
 template <typename IndexType>
 void
 ModelMesh<IndexType>::updateInformationObject( nl::json & p ) const
