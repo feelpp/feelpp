@@ -391,8 +391,29 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         return;
     M_boundaryConditions.setup( *this,this->modelProperties().boundaryConditions().section( this->keyword() ) );
 
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.velocityImposed() )
+    // init fluid inlet
+    this->initFluidInlet();
+
+    // pressure bc
+    if ( !M_boundaryConditions.pressureImposed().empty() )
+    {
+        std::set<std::string> allmarkers;
+        for ( auto const& [bcName,bcData] : M_boundaryConditions.pressureImposed() )
+            allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
+        M_meshLagrangeMultiplierPressureBC = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),allmarkers),_view=true );
+        M_spaceLagrangeMultiplierPressureBC = space_trace_velocity_component_type::New( _mesh=M_meshLagrangeMultiplierPressureBC );
+        M_fieldLagrangeMultiplierPressureBC1 = M_spaceLagrangeMultiplierPressureBC->elementPtr();
+        if constexpr ( nDim == 3 )
+            M_fieldLagrangeMultiplierPressureBC2 =  M_spaceLagrangeMultiplierPressureBC->elementPtr();
+
+        this->updateDofEliminationIds( "pressurebc-lm", M_spaceLagrangeMultiplierPressureBC, boundaryfaces(M_meshLagrangeMultiplierPressureBC) );
+    }
+
+    for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposed() )
         bcData->updateDofEliminationIds( *this, "velocity", this->functionSpaceVelocity() );
+
+    for ( auto const& [bcName,bcData] : M_boundaryConditions.inlet() )
+        this->updateDofEliminationIds( "velocity", this->functionSpaceVelocity(), markedfaces(this->functionSpaceVelocity()->mesh(),bcData->markers()) );
 
 #if 0 // VINCENT
     // clear
@@ -855,41 +876,41 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFluidInlet()
 {
-    if ( !this->hasFluidInlet() ) return;
+    if ( M_boundaryConditions.inlet().empty() ) return;
 
     M_fluidInletMesh.clear();
     M_fluidInletSpace.clear();
     M_fluidInletVelocity.clear();
-    for ( auto const& inletbc : M_fluidInletDesc )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions.inlet() )
     {
-        std::string const& marker = std::get<0>( inletbc );
-        std::string const& type = std::get<1>( inletbc );
-        auto const& valMaxExpr = std::get<2>( inletbc );
-        auto meshinlet = createSubmesh( _mesh=this->mesh(),_range=markedfaces(this->mesh(),marker), _view=true );
+        auto const& markers = bcData->markers();
+        typename boundary_conditions_type::Inlet::Shape shape = bcData->shape();
+        auto rangeFaces = markedfaces(this->mesh(),markers);
+        auto meshinlet = createSubmesh( _mesh=this->mesh(),_range=rangeFaces, _view=true );
         auto spaceinlet = space_fluidinlet_type::New( _mesh=meshinlet,_worldscomm=this->localNonCompositeWorldsComm() );
         auto velinlet = spaceinlet->elementPtr();
         auto velinletInterpolated = functionSpaceVelocity()->compSpace()->elementPtr();
         auto opIfluidinlet = opInterpolation(_domainSpace=spaceinlet,
                                              _imageSpace=this->functionSpaceVelocity()->compSpace(),
-                                             _range=markedfaces(this->mesh(),marker),
+                                             _range=rangeFaces,
                                              _backend=this->backend() );
-        M_fluidInletMesh[marker] = meshinlet;
-        M_fluidInletSpace[marker] = spaceinlet;
-        M_fluidInletVelocity[marker] = velinlet;
-        M_fluidInletVelocityInterpolated[marker] = std::make_tuple(velinletInterpolated,opIfluidinlet);
+        M_fluidInletMesh[bcName] = meshinlet;
+        M_fluidInletSpace[bcName] = spaceinlet;
+        M_fluidInletVelocity[bcName] = velinlet;
+        M_fluidInletVelocityInterpolated[bcName] = std::make_tuple(velinletInterpolated,opIfluidinlet);
 
         double areainlet = integrate(_range=elements(meshinlet),
                                      _expr=cst(1.)).evaluate()(0,0);
         auto velinletRef = spaceinlet->elementPtr();
         double maxVelRef = 0.;
-        if ( type == "velocity_max_constant" || type == "flow_rate_constant" )
+        switch ( shape )
         {
+        case boundary_conditions_type::Inlet::Shape::constant :
             maxVelRef = areainlet;
             velinletRef->on(_range=elements(meshinlet),_expr=cst(areainlet) );
             velinletRef->on(_range=boundaryfaces(meshinlet),_expr=cst(0.) );
-        }
-        else if ( type == "velocity_max_parabolic" || type == "flow_rate_parabolic" )
-        {
+            break;
+        case boundary_conditions_type::Inlet::Shape::parabolic :
             auto l = form1( _test=spaceinlet );
             l = integrate(_range=elements(meshinlet),
                           _expr=cst(areainlet)*id(velinlet));
@@ -901,67 +922,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFluidInlet()
             auto backendinlet = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"fluidinlet"), this->worldCommPtr() );
             backendinlet->solve(_matrix=a.matrixPtr(),_rhs=l.vectorPtr(),_solution=*velinletRef );
             maxVelRef = velinletRef->max();
+            break;
         }
-        double flowRateRef = integrate(_range=markedfaces(this->mesh(),marker),
+        double flowRateRef = integrate(_range=rangeFaces,
                                        _expr=inner( idv(velinletRef)*N(),N() ) ).evaluate()(0,0);
-        M_fluidInletVelocityRef[marker] = std::make_tuple(velinletRef,maxVelRef,flowRateRef);
+        M_fluidInletVelocityRef[bcName] = std::make_tuple(velinletRef,maxVelRef,flowRateRef);
 
     }
 
-    this->updateFluidInletVelocity();
+    //this->updateFluidInletVelocity();
 }
 
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateFluidInletVelocity()
-{
-   for ( auto & inletbc : M_fluidInletDesc )
-   {
-        std::string const& marker = std::get<0>( inletbc );
-        std::string const& type = std::get<1>( inletbc );
-        auto & exprFluidInlet = std::get<2>( inletbc );
-        exprFluidInlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-        double evalExprFluidInlet = expr( exprFluidInlet, this->symbolsExpr() ).evaluate()(0,0);
-
-        auto itMesh = M_fluidInletMesh.find( marker );
-        CHECK( itMesh != M_fluidInletMesh.end() ) << "fluid inlet not init for this marker" << marker;
-        auto meshinlet = itMesh->second;
-
-        auto itVelRef = M_fluidInletVelocityRef.find(marker);
-        CHECK( itVelRef != M_fluidInletVelocityRef.end() ) << "fluid inlet not init for this marker" << marker;
-        auto const& velRef = std::get<0>(itVelRef->second);
-        double maxVelRef = std::get<1>(itVelRef->second);
-        double flowRateRef = std::get<2>(itVelRef->second);
-
-        if ( type == "velocity_max_constant" || type == "velocity_max_parabolic" )
-        {
-            M_fluidInletVelocity[marker]->zero();
-            M_fluidInletVelocity[marker]->add( evalExprFluidInlet/maxVelRef, *velRef );
-            //M_fluidInletVelocity[marker]->on(_range=elements(meshinlet),_expr=cst(evalExprFluidInlet) );
-            //M_fluidInletVelocity[marker]->on(_range=boundaryfaces(meshinlet),_expr=cst(0.) );
-
-        }
-        else if ( type == "flow_rate_constant" || type == "flow_rate_parabolic" )
-        {
-            M_fluidInletVelocity[marker]->zero();
-            M_fluidInletVelocity[marker]->add( evalExprFluidInlet/flowRateRef, *velRef );
-        }
-
-        auto const& velSubmesh = M_fluidInletVelocity.find(marker)->second;
-        auto opI = std::get<1>( M_fluidInletVelocityInterpolated[marker] );
-        auto & velInterp = std::get<0>( M_fluidInletVelocityInterpolated[marker] );
-        opI->apply( *velSubmesh , *velInterp );
-
-#if 0
-        double flowRateComputed = integrate(_range=markedfaces(this->mesh(),marker),
-                                            _expr=-idv(velInterp)*N() ).evaluate()(0,0);
-        double maxVelComputed = velInterp->max();
-        if ( this->worldComm().isMasterRank() )
-            std::cout << "flowRateComputed : " << flowRateComputed << "\n"
-                      << "maxVelComputed : " << maxVelComputed << "\n";
-#endif
-   }
-}
 
 
 namespace detail
@@ -1263,7 +1234,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     // body bc
     M_bodySetBC.applyRemesh( *this, remeshInterp );
     this->log("FluidMechanics","applyRemesh", "body bc done" );
-
+#if 0 // VINCENT
     // velocity imposed by using a lagrange multiplier
     if ( M_meshDirichletLM )
     {
@@ -1299,7 +1270,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
             remeshInterp.interpolate( old_fieldLagrangeMultiplierPressureBC2, M_fieldLagrangeMultiplierPressureBC2 );
         }
     }
-
+#endif
     // fluid inlet bc
     this->initFluidInlet();
 
@@ -1932,21 +1903,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
         this->setStartSubBlockSpaceIndex( "define-pressure-cst-lm", currentStartIndex );
         currentStartIndex += M_XhMeanPressureLM.size();
     }
+#if 0 // VINCENT
     if (this->hasMarkerDirichletBClm())
     {
         this->setStartSubBlockSpaceIndex( "dirichletlm", currentStartIndex++ );
     }
-    if ( this->hasMarkerPressureBC() )
+#endif
+    if ( !M_boundaryConditions.pressureImposed().empty() )
     {
         this->setStartSubBlockSpaceIndex( "pressurelm1", currentStartIndex++ );
         if ( nDim == 3 )
             this->setStartSubBlockSpaceIndex( "pressurelm2", currentStartIndex++ );
     }
+#if 0 // VINCENT
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
         this->setStartSubBlockSpaceIndex( "windkessel", currentStartIndex++ );
     }
-
+#endif
     for ( auto const& [bpname,bbc] : M_bodySetBC )
     {
         this->setStartSubBlockSpaceIndex( "body-bc."+bbc.name()+".translational-velocity", currentStartIndex++ );
@@ -2012,18 +1986,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
         for ( int k=0;k<M_XhMeanPressureLM.size();++k )
             bvs->operator()(cptBlock++) = this->backend()->newVector( M_XhMeanPressureLM[k] );
     }
+#if 0 // VINCENT
     // lagrange multiplier for Dirichlet BC
     if (this->hasMarkerDirichletBClm())
     {
         bvs->operator()(cptBlock) = M_fieldDirichletLM;//this->backend()->newVector( this->XhDirichletLM() );
         ++cptBlock;
     }
-    if ( this->hasMarkerPressureBC() )
+#endif
+    if ( !M_boundaryConditions.pressureImposed().empty() )
     {
         bvs->operator()(cptBlock++) = M_fieldLagrangeMultiplierPressureBC1;
         if ( nDim == 3 )
             bvs->operator()(cptBlock++) = M_fieldLagrangeMultiplierPressureBC2;
     }
+#if 0
     // windkessel outel with implicit scheme
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
@@ -2033,6 +2010,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
             ++cptBlock;
         }
     }
+#endif
 
     if ( !M_bodySetBC.empty() )
     {

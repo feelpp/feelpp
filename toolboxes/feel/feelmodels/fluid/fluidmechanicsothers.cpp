@@ -113,6 +113,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
              *_ostr << "\n     -- gravity force expr  : " << str( physicFluidData->gravityForceExpr().expression() );
     }
     *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
+#if 0
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
            << this->getInfoNeumannBC()
@@ -139,6 +140,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
             }
         }
     }
+#endif
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     // if ( this->isMoveDomain() )
     // *_ostr << this->getInfoALEMeshBC();
@@ -694,10 +696,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 
     this->setStartBlockSpaceIndex( 0 );
 
+    auto se = this->symbolsExpr();
+    this->updateFluidInletVelocity( se ); // TODO VINCENT : create an updateBoundaryConditionForUse?
+
     // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
     this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
 
-    auto se = this->symbolsExpr();
     if ( this->worldComm().isMasterRank() )
         std::cout << "symbolsExpr : \n "<<  se.names() << std::endl;
 
@@ -774,14 +778,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     int cptBlock=1;
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
         ++cptBlock;
+#if 0 // VINCENT
     if (this->hasMarkerDirichletBClm())
         ++cptBlock;
-    if ( this->hasMarkerPressureBC() )
+#endif
+    if ( !M_boundaryConditions.pressureImposed().empty() )
     {
         ++cptBlock;
         if ( nDim == 3 )
             ++cptBlock;
     }
+#if 0 // VINCENT
     if (this->hasFluidOutletWindkesselImplicit() )
     {
         for (int k=0;k<this->nFluidOutlet();++k)
@@ -797,6 +804,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
             ++cptBlock;
         }
     }
+#endif
     //--------------------------------------------------
 #if 0
     for ( auto const& [bpname,bbc] : M_bodySetBC )
@@ -1540,17 +1548,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     int nBlock = 2;
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
         nBlock+=M_XhMeanPressureLM.size();
+#if 0 // VINCENT
     if (this->hasMarkerDirichletBClm())
         ++nBlock;
-    if ( this->hasMarkerPressureBC() )
+#endif
+    if ( !M_boundaryConditions.pressureImposed().empty() )
     {
         ++nBlock;
         if ( nDim == 3 )
             ++nBlock;
     }
+#if 0 // VINCENT
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
-
+#endif
     for ( auto const& [bpname,bbc] : M_bodySetBC )
     {
         ++nBlock; // translational velocity
@@ -1617,6 +1628,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         }
     }
 
+#if 0 // VINCENT
     if (this->hasMarkerDirichletBClm())
     {
         myblockGraph(indexBlock,0) = stencil(_test=this->XhDirichletLM(),_trial=XhV,
@@ -1625,7 +1637,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                              _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
     }
-    if ( this->hasMarkerPressureBC() )
+#endif
+    if ( !M_boundaryConditions.pressureImposed().empty() )
     {
         myblockGraph(indexBlock,0) = stencil(_test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,
                                              _diag_is_nonzero=false,_close=false)->graph();
@@ -1639,6 +1652,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
             ++indexBlock;
         }
     }
+#if 0 // VINCENT
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
         BlocksStencilPattern patCouplingFirstCol(space_fluidoutlet_windkessel_type::nSpaces,1,size_type(Pattern::ZERO));
@@ -1681,7 +1695,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         }
         indexBlock += this->nFluidOutletWindkesselImplicit();//this->nFluidOutlet();
     }
-
+#endif
     for ( auto const& [bpname,bbc] : M_bodySetBC )
     {
         size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".translational-velocity");
@@ -1781,7 +1795,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 }
 
 //---------------------------------------------------------------------------------------------------------//
-
+#if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::size_type
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nLocalDof() const
@@ -1798,6 +1812,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nLocalDof() const
         res += 2*this->nFluidOutletWindkesselImplicit();
     return res;
 }
+#endif
 
 #if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

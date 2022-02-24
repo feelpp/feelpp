@@ -47,13 +47,53 @@ public:
     };
 
 
-#if 0
-    class HeatFlux
+    class Inlet
     {
     public:
-        HeatFlux( std::string const& name ) : M_name( name ) {}
-        HeatFlux( HeatFlux const& ) = default;
-        HeatFlux( HeatFlux && ) = default;
+        enum class Shape { constant=0,parabolic };
+        enum class Constraint { velocity_max=0,flow_rate };
+
+        Inlet( std::string const& name ) : M_name( name ), M_shape( Shape::parabolic ), M_constraint( Constraint::velocity_max ) {}
+        Inlet( Inlet const& ) = default;
+        Inlet( Inlet && ) = default;
+
+        //! setup bc from json
+        void setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes );
+
+        Shape shape() const { return M_shape; }
+        Constraint constraint() const { return M_constraint; }
+
+        //! return expression
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto expr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            return Feel::vf::expr( M_mexpr.template expr<1,1>(), se );
+        }
+        //! return markers
+        std::set<std::string> const& markers() const { return M_markers; }
+
+        void setParameterValues( std::map<std::string,double> const& paramValues ) { M_mexpr.setParameterValues( paramValues ); }
+
+        //! update informations
+        void updateInformationObject( nl::json & p ) const;
+        //! return tabulate information from json info
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+
+    private:
+        std::string M_name;
+        Shape M_shape;
+        Constraint M_constraint;
+        ModelExpression M_mexpr;
+        std::set<std::string> M_markers;
+    };
+
+    class PressureImposed
+    {
+    public:
+
+        PressureImposed( std::string const& name ) : M_name( name ) {}
+        PressureImposed( PressureImposed const& ) = default;
+        PressureImposed( PressureImposed && ) = default;
 
         //! setup bc from json
         void setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes );
@@ -79,62 +119,19 @@ public:
         ModelExpression M_mexpr;
         std::set<std::string> M_markers;
     };
-
-    class ConvectiveHeatFlux
-    {
-    public:
-        ConvectiveHeatFlux( std::string const& name ) : M_name( name ) {}
-        ConvectiveHeatFlux( ConvectiveHeatFlux const& ) = default;
-        ConvectiveHeatFlux( ConvectiveHeatFlux && ) = default;
-
-        //! setup bc from json
-        void setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes );
-
-        //! return h expression
-        template <typename SymbolsExprType = symbols_expression_empty_t>
-        auto expr_h( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
-        {
-            return Feel::vf::expr( M_mexpr_h.template expr<1,1>(), se );
-        }
-        //! return T exterior expression
-        template <typename SymbolsExprType = symbols_expression_empty_t>
-        auto expr_Text( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
-        {
-            return Feel::vf::expr( M_mexpr_Text.template expr<1,1>(), se );
-        }
-        //! return markers
-        std::set<std::string> const& markers() const { return M_markers; }
-
-        void setParameterValues( std::map<std::string,double> const& paramValues )
-            {
-                M_mexpr_h.setParameterValues( paramValues );
-                M_mexpr_Text.setParameterValues( paramValues );
-            }
-
-        //! update informations
-        void updateInformationObject( nl::json & p ) const;
-        //! return tabulate information from json info
-        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
-
-    private:
-        std::string M_name;
-        ModelExpression M_mexpr_h, M_mexpr_Text;
-        std::set<std::string> M_markers;
-    };
-#endif
     FluidMechanicsBoundaryConditions() = default;
     FluidMechanicsBoundaryConditions( FluidMechanicsBoundaryConditions const& ) = default;
     FluidMechanicsBoundaryConditions( FluidMechanicsBoundaryConditions && ) = default;
 
-    //! return temperature imposed
+    //! return velocity imposed
     std::map<std::pair<Type,std::string>,std::shared_ptr<VelocityImposed>> const& velocityImposed() const { return M_velocityImposed; }
-    //! return heat flux
-    //std::map<std::string,std::shared_ptr<HeatFlux>> const& heatFlux() const { return M_heatFlux; }
-    //! return convective heat flux
-    //std::map<std::string,std::shared_ptr<ConvectiveHeatFlux>> const& convectiveHeatFlux() const { return M_convectiveHeatFlux; }
+    //! return inlet
+    std::map<std::string,std::shared_ptr<Inlet>> const& inlet() const { return M_inlet; }
+    //! return pressure imposed
+    std::map<std::string,std::shared_ptr<PressureImposed>> const& pressureImposed() const { return M_pressureImposed; }
 
     //! return true if a bc is type of dof eliminitation
-    bool hasTypeDofElimination() const { return !M_velocityImposed.empty(); }
+    bool hasTypeDofElimination() const { return !M_velocityImposed.empty() || !M_inlet.empty() || !M_pressureImposed.empty(); }
 
     //! apply dof elimination in linear context
     template <typename BfType, typename RhsType,typename MeshType, typename EltType, typename SymbolsExprType>
@@ -164,10 +161,10 @@ public:
 
 private:
     std::map<std::pair<Type,std::string>,std::shared_ptr<VelocityImposed>> M_velocityImposed;
-    //std::map<std::string,std::shared_ptr<HeatFlux>> M_heatFlux;
-    //std::map<std::string,std::shared_ptr<ConvectiveHeatFlux>> M_convectiveHeatFlux;
+    std::map<std::string,std::shared_ptr<Inlet>> M_inlet;
+    std::map<std::string,std::shared_ptr<PressureImposed>> M_pressureImposed;
 
-}; // HeatBoundaryConditions
+}; // FluidMechanicsBoundaryConditions
 
 } // namespace FeelModels
 } // namespace Feel

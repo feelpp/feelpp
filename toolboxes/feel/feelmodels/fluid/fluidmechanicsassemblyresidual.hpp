@@ -634,14 +634,19 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
 #endif
 
     }
-
+#endif
         //------------------------------------------------------------------------------------//
 
-    if ( this->hasMarkerPressureBC() )
+    if ( !M_boundaryConditions.pressureImposed().empty() )
     {
 
         if ( !BuildCstPart && !UseJacobianLinearTerms )
         {
+            std::set<std::string> allmarkers;
+            for ( auto const& [bcName,bcData] : M_boundaryConditions.pressureImposed() )
+                allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
+            auto rangeFacesPressureBC = markedfaces( this->mesh(),allmarkers );
+
             CHECK( this->hasStartSubBlockSpaceIndex("pressurelm1") ) << " start dof index for pressurelm1 is not present\n";
             size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
 
@@ -650,13 +655,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
             if ( nDim==2 )
             {
                 linearFormV +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,0)*idv(lambdaPressure1),
                                _geomap=this->geomap() );
 
                 form1( _test=M_spaceLagrangeMultiplierPressureBC,_vector=R,
                        _rowstart=rowStartInVector+startBlockIndexPressureLM1 ) +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr=-trans(cross(idv(u),N()))(0,0)*id(lambdaPressure1),
                                _geomap=this->geomap() );
             }
@@ -664,13 +669,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
             {
                 auto alpha = 1./sqrt(1-Nz()*Nz());
                 linearFormV +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,2)*idv(lambdaPressure1)*alpha,
                                _geomap=this->geomap() );
 
                 form1( _test=M_spaceLagrangeMultiplierPressureBC,_vector=R,
                        _rowstart=rowStartInVector+startBlockIndexPressureLM1 ) +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr=-trans(cross(idv(u),N()))(0,2)*id(lambdaPressure1)*alpha,
                                _geomap=this->geomap() );
 
@@ -680,14 +685,14 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                 auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( XVec, rowStartInVector+startBlockIndexPressureLM2 );
 
                 linearFormV +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr= -timeSteppingScaling*trans(cross(id(u),N()))(0,0)*alpha*idv(lambdaPressure2)*Ny()
                                +timeSteppingScaling*trans(cross(id(u),N()))(0,1)*alpha*idv(lambdaPressure2)*Nx(),
                                _geomap=this->geomap() );
 
                 form1( _test=M_spaceLagrangeMultiplierPressureBC,_vector=R,
                        _rowstart=rowStartInVector+startBlockIndexPressureLM2 ) +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr= -trans(cross(idv(u),N()))(0,0)*alpha*id(M_fieldLagrangeMultiplierPressureBC2)*Ny()
                                +trans(cross(idv(u),N()))(0,1)*alpha*id(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
                                _geomap=this->geomap() );
@@ -695,11 +700,11 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
         }
         if ( BuildCstPart && doAssemblyRhs )
         {
-            for( auto const& d : this->M_bcPressure )
+            for ( auto const& [bcName,bcData] : M_boundaryConditions.pressureImposed() )
             {
                 linearFormV +=
-                    integrate( _range=markedfaces(this->mesh(),this->markerPressureBC(name(d)) ),
-                               _expr= timeSteppingScaling*expression(d,se)*trans(N())*id(v),
+                    integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                               _expr= timeSteppingScaling*bcData->expr(se)*trans(N())*id(v),
                                _geomap=this->geomap() );
             }
         }
@@ -707,7 +712,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
     }
 
     //--------------------------------------------------------------------------------------------------//
-
+#if 0 // VINCENT
     if ( !M_bodySetBC.empty() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
     {
         this->log("FluidMechanics","updateJacobianWeakBC","assembly of body bc");
