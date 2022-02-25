@@ -42,6 +42,7 @@
 
 #include <feel/feelvf/ginac.hpp>
 
+#include <feel/feeldiscr/discretizationsdescr.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelmodels/modelcore/modelmeasures.hpp>
 #include <feel/feelfit/fit.hpp>
