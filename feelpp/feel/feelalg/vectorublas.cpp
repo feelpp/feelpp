@@ -1259,10 +1259,11 @@ VectorUblasSlice<T, Storage> * VectorUblasContiguousGhosts<T, Storage>::sliceImp
 template< typename T, typename Storage > 
 VectorPetsc<T> * VectorUblasContiguousGhosts<T, Storage>::vectorPetscImpl() const
 {
+    const T * beginV = ( this->map().nLocalDofWithGhost() > 0 ) ? std::addressof( * M_vec.begin() ) : nullptr;
     if ( this->comm().size() > 1 )
-        return new VectorPetscMPI<T>( std::addressof( * M_vec.begin() ), this->mapPtr() );
+        return new VectorPetscMPI<T>( beginV, this->mapPtr() );
     else
-        return new VectorPetsc<T>( std::addressof( * M_vec.begin() ), this->mapPtr() );
+        return new VectorPetsc<T>( beginV, this->mapPtr() );
 }
 #endif
 
@@ -2012,7 +2013,11 @@ template< typename T, typename Storage >
 VectorPetsc<T> * VectorUblasNonContiguousGhosts<T, Storage>::vectorPetscImpl() const
 {
     if ( this->comm().size() > 1 )
-        return new VectorPetscMPIRange<T>( std::addressof( * M_vec.begin() ), std::addressof( * M_vecNonContiguousGhosts.begin() ), this->mapPtr() );
+    {
+        const T * beginA = ( this->map().nLocalDofWithoutGhost() > 0 ) ? std::addressof( * M_vec.begin() ) : nullptr;
+        const T * beginG = ( this->map().nLocalGhosts() > 0 ) ? std::addressof( * M_vecNonContiguousGhosts.begin() ) : nullptr;
+        return new VectorPetscMPIRange<T>( beginA, beginG, this->mapPtr() );
+    }
     else
         return new VectorPetsc<T>( std::addressof( * M_vec.begin() ), this->mapPtr() );
 }
