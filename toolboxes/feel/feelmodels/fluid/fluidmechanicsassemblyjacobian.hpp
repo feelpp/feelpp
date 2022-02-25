@@ -55,155 +55,6 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateNewtonInit
         }
     }
 
-#if 0 // VINCENT
-    if ( this->hasMarkerDirichletBCelimination() )
-    {
-        // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
-        std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > mapMarkerBCToEntitiesMeshMarker;
-        for( auto const& d : M_bcDirichlet )
-        {
-            mapMarkerBCToEntitiesMeshMarker[name(d)] =
-                detail::distributeMarkerListOnSubEntity( mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) );
-        }
-        std::map<std::pair<std::string,ComponentType>, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > mapCompMarkerBCToEntitiesMeshMarker;
-        for ( auto const& bcDirComp : M_bcDirichletComponents )
-        {
-            ComponentType comp = bcDirComp.first;
-            for( auto const& d : bcDirComp.second )
-            {
-                mapCompMarkerBCToEntitiesMeshMarker[std::make_pair(name(d),comp)] =
-                    detail::distributeMarkerListOnSubEntity(mesh, this->markerDirichletBCByNameId( "elimination",name(d), comp )   );
-            }
-        }
-
-        // strong Dirichlet bc with velocity field : on faces
-        for( auto const& d : M_bcDirichlet )
-        {
-            // all components
-            auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
-            if ( itFindMarker != mapMarkerBCToEntitiesMeshMarker.end() )
-            {
-                auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
-                if ( !listMarkerFaces.empty() )
-                    u.on(_range=markedfaces(mesh,listMarkerFaces ),
-                         _expr=expression(d,se) );
-            }
-            // by component
-            for ( auto const& bcDirComp : M_bcDirichletComponents )
-            {
-                ComponentType comp = bcDirComp.first;
-                for( auto const& d : bcDirComp.second )
-                {
-                    auto itFindMarker = mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(name(d),comp) );
-                    if ( itFindMarker == mapCompMarkerBCToEntitiesMeshMarker.end() )
-                        continue;
-                    auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
-                    if ( !listMarkerFaces.empty() )
-                        u[comp].on(_range=markedfaces(mesh,listMarkerFaces ),
-                                   _expr=expression(d,se) );
-                }
-            }
-        }
-        // strong Dirichlet bc with velocity field : on edges (overwrite faces)
-        if constexpr ( nDim == 3 )
-        {
-            for( auto const& d : M_bcDirichlet )
-            {
-                // all components
-                auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
-                if ( itFindMarker != mapMarkerBCToEntitiesMeshMarker.end() )
-                {
-                    auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
-                    if ( !listMarkerEdges.empty() )
-                        u.on(_range=markededges(mesh,listMarkerEdges ),
-                             _expr=expression(d,se) );
-                }
-                // by component
-                for ( auto const& bcDirComp : M_bcDirichletComponents )
-                {
-                    ComponentType comp = bcDirComp.first;
-                    for( auto const& d : bcDirComp.second )
-                    {
-                        auto itFindMarker = mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(name(d),comp) );
-                        if ( itFindMarker == mapCompMarkerBCToEntitiesMeshMarker.end() )
-                            continue;
-                        auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
-                        if ( !listMarkerEdges.empty() )
-                            u[comp].on(_range=markededges(mesh,listMarkerEdges ),
-                                       _expr=expression(d,se) );
-                    }
-                }
-            }
-        }
-        // strong Dirichlet bc with velocity field : on points (overwrite faces/edges)
-        for( auto const& d : M_bcDirichlet )
-        {
-            // all components
-            auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
-            if ( itFindMarker != mapMarkerBCToEntitiesMeshMarker.end() )
-            {
-                auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
-                if ( !listMarkerPoints.empty() )
-                    u.on(_range=markedpoints(mesh,listMarkerPoints ),
-                         _expr=expression(d,se) );
-            }
-            // by component
-            for ( auto const& bcDirComp : M_bcDirichletComponents )
-            {
-                ComponentType comp = bcDirComp.first;
-                for( auto const& d : bcDirComp.second )
-                {
-                    auto itFindMarker = mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(name(d),comp) );
-                    if ( itFindMarker == mapCompMarkerBCToEntitiesMeshMarker.end() )
-                        continue;
-                    auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
-                    if ( !listMarkerPoints.empty() )
-                        u[comp].on(_range=markedpoints(mesh,listMarkerPoints ),
-                                   _expr=expression(d,se) );
-                }
-            }
-        }
-
-    } // hasMarkerDirichletBCelimination
-
-    for ( auto const& inletbc : M_fluidInletDesc )
-    {
-        std::string const& marker = std::get<0>( inletbc );
-        auto itFindMark = M_fluidInletVelocityInterpolated.find(marker);
-        if ( itFindMark == M_fluidInletVelocityInterpolated.end() )
-            continue;
-        auto const& inletVel = std::get<0>( itFindMark->second );
-        u.on(_range=markedfaces(mesh, marker),
-             _expr=-idv(inletVel)*N() );
-    }
-
-    for( auto const& d : M_bcMovingBoundaryImposed )
-    {
-        auto listMarkerFaces = M_bcMarkersMovingBoundaryImposed.markerDirichletBCByNameId( "elimination",name(d) );
-        u.on( _range=markedfaces(this->mesh(),listMarkerFaces),
-              _expr=idv(M_meshALE->velocity()) );
-    }
-
-    // update info for synchronization
-    this->updateDofEliminationIds( "velocity", data );
-
-    // dofs imposed with pressure Dirichlet bc
-    if ( this->hasMarkerPressureBC() )
-    {
-        auto rangePressureBC = boundaryfaces(M_meshLagrangeMultiplierPressureBC);
-        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
-        auto plm1 = M_spaceLagrangeMultiplierPressureBC->element( U, rowStartInVector+startBlockIndexPressureLM1 );
-        plm1.on( _range=rangePressureBC,_expr=cst(0.) );
-        this->updateDofEliminationIds( "pressurelm1", this->dofEliminationIds( "pressurebc-lm" ), data );
-        if ( nDim == 3 )
-        {
-            size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
-            auto plm2 = M_spaceLagrangeMultiplierPressureBC->element( U, rowStartInVector+startBlockIndexPressureLM2 );
-            plm2.on( _range=rangePressureBC,_expr=cst(0.) );
-            this->updateDofEliminationIds( "pressurelm2", this->dofEliminationIds( "pressurebc-lm" ), data );
-        }
-    }
-
     // body bc
     bool hasDofEliminationIds_bodyBC_translationalVelocity = false, hasDofEliminationIds_bodyBC_angularVelocity = false;
     for ( auto const& [bpname,bpbc] : M_bodySetBC )
@@ -233,7 +84,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateNewtonInit
                   _expr=idv(bpbc.fieldElasticVelocityPtr()) );
         }
     }
-#endif
+
     // imposed mean pressure (TODO use updateDofEliminationIds)
     if ( this->definePressureCst() && this->definePressureCstMethod() == "algebraic" )
     {
@@ -558,15 +409,19 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
     //--------------------------------------------------------------------------------------------------//
     //--------------------------------------------------------------------------------------------------//
     //--------------------------------------------------------------------------------------------------//
-#if 0 // VINCENT
+
     // Dirichlet bc by using Nitsche formulation
-    if ( this->hasMarkerDirichletBCnitsche() && BuildCstPart )
+    if ( M_boundaryConditions.hasVelocityImposedNitsche() && BuildCstPart )
     {
+        std::set<std::string> allmarkers;
+        for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedNitsche() )
+            allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
+
         //auto deft = sym(gradt(u));
         //auto viscousStressTensor = 2*idv(mu)*deft;
         auto viscousStressTensor = 2*this->dynamicViscosityExpr( se )*deft;
          bilinearFormVV +=
-             integrate( _range=markedfaces(mesh, this->markerDirichletBCnitsche()),
+             integrate( _range=markedfaces(mesh,allmarkers),
                         _expr= -timeSteppingScaling*inner(viscousStressTensor*N(),id(v) )
                         /**/   + timeSteppingScaling*this->dirichletBCnitscheGamma()*inner(idt(u),id(v))/hFace(),
                         _geomap=this->geomap() );
@@ -575,13 +430,14 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                                      _rowstart=rowStartInMatrix,
                                      _colstart=colStartInMatrix+1 );
          bilinearFormVP +=
-             integrate( _range=markedfaces(mesh, this->markerDirichletBCnitsche()),
+             integrate( _range=markedfaces(mesh,allmarkers),
                         _expr= timeSteppingScaling*inner( idt(p)*N(),id(v) ),
                         _geomap=this->geomap() );
     }
+
     //--------------------------------------------------------------------------------------------------//
     // Dirichlet bc by using Lagrange-multiplier
-    if ( this->hasMarkerDirichletBClm() )
+    if ( M_boundaryConditions.hasVelocityImposedLagrangeMultiplier() )
     {
         if ( BuildCstPart )
         {
@@ -605,25 +461,30 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
 
     //--------------------------------------------------------------------------------------------------//
     // pressure bc
-    if ( this->hasMarkerPressureBC() )
+    if ( !M_boundaryConditions.pressureImposed().empty() )
     {
         CHECK( this->hasStartSubBlockSpaceIndex("pressurelm1") ) << " start dof index for pressurelm1 is not present\n";
         size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
         if (BuildCstPart)
         {
+            std::set<std::string> allmarkers;
+            for ( auto const& [bcName,bcData] : M_boundaryConditions.pressureImposed() )
+                allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
+            auto rangeFacesPressureBC = markedfaces( this->mesh(),allmarkers );
+
             if ( nDim==2 )
             {
                 form2( _test=XhV,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,0)*idt(M_fieldLagrangeMultiplierPressureBC1),
                                _geomap=this->geomap() );
 
                 form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
                        _colstart=colStartInMatrix ) +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr=-trans(cross(idt(u),N()))(0,0)*id(M_fieldLagrangeMultiplierPressureBC1),
                                _geomap=this->geomap() );
             }
@@ -633,14 +494,14 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                 form2( _test=XhV,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,2)*idt(M_fieldLagrangeMultiplierPressureBC1)*alpha,
                                _geomap=this->geomap() );
 
                 form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
                        _colstart=colStartInMatrix ) +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr=-trans(cross(idt(u),N()))(0,2)*id(M_fieldLagrangeMultiplierPressureBC1)*alpha,
                                _geomap=this->geomap() );
 
@@ -650,7 +511,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                 form2( _test=XhV,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM2 ) +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr= -timeSteppingScaling*trans(cross(id(u),N()))(0,0)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Ny()
                                +timeSteppingScaling*trans(cross(id(u),N()))(0,1)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
                                _geomap=this->geomap() );
@@ -658,7 +519,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                 form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix+startBlockIndexPressureLM2,
                        _colstart=colStartInMatrix ) +=
-                    integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
+                    integrate( _range=rangeFacesPressureBC,
                                _expr= -trans(cross(idt(u),N()))(0,0)*alpha*id(M_fieldLagrangeMultiplierPressureBC2)*Ny()
                                +trans(cross(idt(u),N()))(0,1)*alpha*id(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
                                _geomap=this->geomap() );
@@ -666,6 +527,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
         }
     }
     //--------------------------------------------------------------------------------------------------//
+#if 0 // VINCENT
     // windkessel implicit
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
