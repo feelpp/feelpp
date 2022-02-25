@@ -95,7 +95,9 @@ template <uint16_type Dim1,uint16_type Dim2>
 class GenericDirichletBoundaryCondition
 {
 public:
-    GenericDirichletBoundaryCondition( std::string const& name ) : M_name( name ), M_comp( ComponentType::NO_COMPONENT ) {}
+    enum class Method { elimination=0, nitsche, lagrange_multiplier };
+
+    GenericDirichletBoundaryCondition( std::string const& name ) : M_name( name ), M_comp( ComponentType::NO_COMPONENT ), M_method( Method::elimination ) {}
     GenericDirichletBoundaryCondition( GenericDirichletBoundaryCondition const& ) = default;
     GenericDirichletBoundaryCondition( GenericDirichletBoundaryCondition && ) = default;
 
@@ -119,6 +121,17 @@ public:
 
     void setParameterValues( std::map<std::string,double> const& paramValues ) { M_mexpr.setParameterValues( paramValues ); }
 
+    //! return method used for apply Dirichlet treatment
+    Method method() const { return M_method; }
+    //! return true if this method is used
+    bool isMethod( Method method ) const { return M_method == method; }
+    //! return true if method is elimination
+    bool isMethodElimination() const { return this->isMethod( Method::elimination ); }
+    //! return true if method is nitsche
+    bool isMethodNitsche() const { return this->isMethod( Method::nitsche ); }
+    //! return true if method is lagrange_multiplier
+    bool isMethodLagrangeMultiplier() const { return this->isMethod( Method::lagrange_multiplier ); }
+
     //! update informations
     virtual void updateInformationObject( nl::json & p ) const;
     //! return tabulate information from json info
@@ -128,6 +141,8 @@ public:
     template <typename ToolboxType,typename SpaceType>
     void updateDofEliminationIds( ToolboxType & tb, std::string const& fieldName, std::shared_ptr<SpaceType> const& space ) const
         {
+            if ( !this->isMethodElimination() )
+                return;
             auto mesh = space->mesh();
             using mesh_type = typename SpaceType::mesh_type;
 
@@ -159,6 +174,8 @@ public:
     void
     applyDofEliminationLinear( BfType& bilinearForm, RhsType& F, MeshType const& mesh, EltType const& u, SymbolsExprType const& se ) const
         {
+            if ( !this->isMethodElimination() )
+                return;
             auto meshMarkersByEntities = Feel::FeelModels::detail::distributeMarkerListOnSubEntity( mesh, M_markers );
             ComponentType comp = M_comp;
             static const int indexDistrib = Feel::FeelModels::detail::indexInDistributeMarker<ET>();
@@ -185,6 +202,8 @@ public:
     void
     applyNewtonInitialGuess( MeshType const& mesh, EltType & u, SymbolsExprType const& se ) const
         {
+            if ( !this->isMethodElimination() )
+                return;
             auto meshMarkersByEntities = Feel::FeelModels::detail::distributeMarkerListOnSubEntity( mesh, M_markers );
             ComponentType comp = ComponentType::NO_COMPONENT;
             static const int indexDistrib = Feel::FeelModels::detail::indexInDistributeMarker<ET>();
@@ -210,6 +229,7 @@ protected:
     ModelExpression M_mexpr;
     std::set<std::string> M_markers;
     ComponentType M_comp;
+    Method M_method;
 };
 
 } // namespace FeelModels

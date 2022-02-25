@@ -778,10 +778,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     int cptBlock=1;
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
         ++cptBlock;
-#if 0 // VINCENT
-    if (this->hasMarkerDirichletBClm())
+
+    if ( M_boundaryConditions.hasVelocityImposedLagrangeMultiplier() )
         ++cptBlock;
-#endif
+
     if ( !M_boundaryConditions.pressureImposed().empty() )
     {
         ++cptBlock;
@@ -1548,10 +1548,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     int nBlock = 2;
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
         nBlock+=M_XhMeanPressureLM.size();
-#if 0 // VINCENT
-    if (this->hasMarkerDirichletBClm())
+
+    if ( M_boundaryConditions.hasVelocityImposedLagrangeMultiplier() )
         ++nBlock;
-#endif
+
     if ( !M_boundaryConditions.pressureImposed().empty() )
     {
         ++nBlock;
@@ -1628,8 +1628,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         }
     }
 
-#if 0 // VINCENT
-    if (this->hasMarkerDirichletBClm())
+    if ( M_boundaryConditions.hasVelocityImposedLagrangeMultiplier() )
     {
         myblockGraph(indexBlock,0) = stencil(_test=this->XhDirichletLM(),_trial=XhV,
                                              _diag_is_nonzero=false,_close=false)->graph();
@@ -1637,7 +1636,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                              _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
     }
-#endif
+
     if ( !M_boundaryConditions.pressureImposed().empty() )
     {
         myblockGraph(indexBlock,0) = stencil(_test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,

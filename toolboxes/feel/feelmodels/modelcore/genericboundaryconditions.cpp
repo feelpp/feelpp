@@ -41,6 +41,17 @@ GenericDirichletBoundaryCondition<Dim1,Dim2>::setup( ModelBase const& mparent, n
              }
          }
      }
+
+     if ( jarg.contains( "method" ) )
+     {
+         std::string const& methodStr = jarg.at( "method" ).template get<std::string>();
+         if ( methodStr == "elimination" )
+             M_method = Method::elimination;
+         else if ( methodStr == "nitsche" )
+             M_method = Method::nitsche;
+         else if ( methodStr == "lagrange_multiplier" ||  methodStr == "lm" )
+             M_method = Method::lagrange_multiplier;
+     }
 }
 
 template <uint16_type Dim1,uint16_type Dim2>
@@ -52,6 +63,9 @@ GenericDirichletBoundaryCondition<Dim1,Dim2>::updateInformationObject( nl::json 
     p["markers"] = M_markers;
     if ( M_comp != ComponentType::NO_COMPONENT )
         p["components"] = M_comp;
+
+    std::map<Method,std::string> methodToStr = { { Method::elimination, "elimination" }, { Method::nitsche, "Nitsche" }, { Method::lagrange_multiplier, "lagrange_multiplier" } };
+    p["method"] = methodToStr[M_method];
 }
 
 template <uint16_type Dim1,uint16_type Dim2>
@@ -59,7 +73,7 @@ tabulate_informations_ptr_t
 GenericDirichletBoundaryCondition<Dim1,Dim2>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
 {
     Feel::Table tabInfo;
-    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { /*"name","type",*/"expr" } );
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { /*"name","type",*/"method","expr" } );
     tabInfo.format()
         .setShowAllBorders( false )
         .setColumnSeparator(":")

@@ -131,7 +131,13 @@ public:
     std::map<std::string,std::shared_ptr<PressureImposed>> const& pressureImposed() const { return M_pressureImposed; }
 
     //! return true if a bc is type of dof eliminitation
-    bool hasTypeDofElimination() const { return !M_velocityImposed.empty() || !M_inlet.empty() || !M_pressureImposed.empty(); }
+    bool hasTypeDofElimination() const
+        {
+            for ( auto const& [bcId,bcData] : M_velocityImposed )
+                if ( bcData->isMethodElimination() )
+                    return true;
+            return !M_inlet.empty() || !M_pressureImposed.empty();
+        }
 
     //! apply dof elimination in linear context
     template <typename BfType, typename RhsType,typename MeshType, typename EltType, typename SymbolsExprType>
@@ -149,6 +155,19 @@ public:
             Feel::FeelModels::detail::applyNewtonInitialGuessOnBoundaryConditions( M_velocityImposed, mesh, u, se );
         }
 
+    bool hasVelocityImposedLagrangeMultiplier() const { return hasVelocityImposed( VelocityImposed::Method::lagrange_multiplier ); }
+
+    std::map<std::pair<Type,std::string>,std::shared_ptr<VelocityImposed>> velocityImposedLagrangeMultiplier() const
+        {
+            return this->velocityImposed( VelocityImposed::Method::lagrange_multiplier );
+        }
+    bool hasVelocityImposedNitsche() const { return hasVelocityImposed( VelocityImposed::Method::nitsche ); }
+
+    std::map<std::pair<Type,std::string>,std::shared_ptr<VelocityImposed>> velocityImposedNitsche() const
+        {
+            return this->velocityImposed( VelocityImposed::Method::nitsche );
+        }
+
     void setParameterValues( std::map<std::string,double> const& paramValues );
 
     //! setup bc from json
@@ -158,6 +177,24 @@ public:
     void updateInformationObject( nl::json & p ) const;
     //! return tabulate information from json info
     static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+
+private:
+    bool hasVelocityImposed( typename VelocityImposed::Method method ) const
+        {
+            for ( auto const& [bcId,bcData] : M_velocityImposed )
+                if ( bcData->isMethod( method ) )
+                    return true;
+            return false;
+        }
+
+    std::map<std::pair<Type,std::string>,std::shared_ptr<VelocityImposed>> velocityImposed( typename VelocityImposed::Method method ) const
+        {
+            std::map<std::pair<Type,std::string>,std::shared_ptr<VelocityImposed>> ret;
+            for ( auto const& [bcId,bcData] : M_velocityImposed )
+                if ( bcData->isMethod( method ) )
+                    ret.emplace( bcId, bcData );
+            return ret;
+        }
 
 private:
     std::map<std::pair<Type,std::string>,std::shared_ptr<VelocityImposed>> M_velocityImposed;

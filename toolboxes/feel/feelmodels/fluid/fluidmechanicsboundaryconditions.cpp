@@ -57,7 +57,23 @@ FluidMechanicsBoundaryConditions<Dim>::Inlet::setup( ModelBase const& mparent, n
      else
          M_markers = { M_name };
 
-     // tODO
+     if ( jarg.contains( "shape" ) )
+     {
+         std::string shapeStr = jarg.at( "shape" ).template get<std::string>();
+         if ( shapeStr == "constant" )
+             M_shape = Shape::constant;
+         else if ( shapeStr == "parabolic" )
+             M_shape = Shape::parabolic;
+     }
+
+     if ( jarg.contains( "constraint" ) )
+     {
+         std::string constraintStr = jarg.at( "constraint" ).template get<std::string>();
+         if ( constraintStr == "velocity_max" )
+             M_constraint = Constraint::velocity_max;
+         else if ( constraintStr == "flow_rate" )
+             M_constraint = Constraint::flow_rate;
+     }
 }
 
 template <uint16_type Dim>

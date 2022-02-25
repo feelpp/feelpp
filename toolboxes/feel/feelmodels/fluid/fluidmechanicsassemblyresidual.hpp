@@ -571,71 +571,83 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                        _geomap=this->geomap()
                        );
     }
-
+#endif // VINCENT
     //--------------------------------------------------------------------------------------------------//
 
     // weak formulation of the boundaries conditions
-    if ( this->hasMarkerDirichletBCnitsche() )
+    if ( M_boundaryConditions.hasVelocityImposedNitsche() )
     {
         if ( !BuildCstPart && !UseJacobianLinearTerms )
         {
+            std::set<std::string> allmarkers;
+            for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedNitsche() )
+                allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
+
             auto Sigmav = this->stressTensorExpr(u,p,se);
             linearFormV +=
-                integrate( _range=markedfaces(mesh,this->markerDirichletBCnitsche() ),
+                integrate( _range=markedfaces(mesh,allmarkers),
                            _expr= -timeSteppingScaling*trans(Sigmav*N())*id(v)
                            /**/   + timeSteppingScaling*this->dirichletBCnitscheGamma()*inner( idv(u),id(v) )/hFace(),
                            _geomap=this->geomap() );
         }
         if ( BuildCstPart && doAssemblyRhs )
         {
-            for( auto const& d : this->M_bcDirichlet )
+            for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedNitsche() )
+            {
                 linearFormV +=
-                    integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "nitsche",name(d) ) ),
-                               _expr= -timeSteppingScaling*this->dirichletBCnitscheGamma()*inner( expression(d,se),id(v) )/hFace(),
+                    integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                               _expr= -timeSteppingScaling*this->dirichletBCnitscheGamma()*inner( bcData->expr(se),id(v) )/hFace(),
                                _geomap=this->geomap() );
+            }
         }
     }
 
     //------------------------------------------------------------------------------------//
     // Dirichlet with Lagrange-mulitplier
-    if ( this->hasMarkerDirichletBClm() )
+    if ( M_boundaryConditions.hasVelocityImposedLagrangeMultiplier() )
     {
         CHECK( this->hasStartSubBlockSpaceIndex("dirichletlm") ) << " start dof index for dirichletlm is not present\n";
         size_type startBlockIndexDirichletLM = this->startSubBlockSpaceIndex("dirichletlm");
 
         if ( !BuildCstPart && !UseJacobianLinearTerms )
         {
+            std::set<std::string> allmarkers;
+            for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedLagrangeMultiplier() )
+                allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
+
             auto lambdaBC = this->XhDirichletLM()->element( XVec, rowStartInVector+startBlockIndexDirichletLM );
             //int dataBaseIdLM = XVec->map().basisIndexFromGp( rowStartInVector+startBlockIndexDirichletLM );
             //this->algebraicBlockVectorSolution()->setSubVector( lambdaBC, *XVec, rowStartInVector+startBlockIndexDirichletLM );
 
             linearFormV +=
-                integrate( _range=markedfaces(mesh,this->markerDirichletBClm() ),
+                integrate( _range=markedfaces(mesh,allmarkers),
                            _expr= inner( idv(lambdaBC),id(u) ) );
 
             form1( _test=this->XhDirichletLM(),_vector=R,
                    _rowstart=rowStartInVector+startBlockIndexDirichletLM ) +=
                 integrate( //_range=elements(this->meshDirichletLM()),
-                    _range=markedfaces( this->mesh(),this->markerDirichletBClm() ),
+                    _range=markedfaces( this->mesh(),allmarkers),
                            _expr= inner(idv(u),id(lambdaBC) ) );
         }
 #if 1
         if ( BuildCstPart && doAssemblyRhs )
         {
             auto lambdaBC = this->XhDirichletLM()->element();
-            for( auto const& d : this->M_bcDirichlet )
+            for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedLagrangeMultiplier() )
+            {
                 form1( _test=this->XhDirichletLM(),_vector=R,
                        _rowstart=rowStartInVector+startBlockIndexDirichletLM ) +=
-                    integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "lm",name(d) ) ),
+                    integrate( _range=markedfaces(this->mesh(),bcData->markers()),
                                //_range=markedelements(this->meshDirichletLM(),PhysicalName),
-                               _expr= -inner( expression(d,se),id(lambdaBC) ),
+                               _expr= -inner( bcData->expr(se),id(lambdaBC) ),
                                _geomap=this->geomap() );
+            }
         }
 #endif
 
     }
-#endif
-        //------------------------------------------------------------------------------------//
+
+    //------------------------------------------------------------------------------------//
 
     if ( !M_boundaryConditions.pressureImposed().empty() )
     {
@@ -712,7 +724,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
     }
 
     //--------------------------------------------------------------------------------------------------//
-#if 0 // VINCENT
+
     if ( !M_bodySetBC.empty() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
     {
         this->log("FluidMechanics","updateJacobianWeakBC","assembly of body bc");
@@ -878,7 +890,6 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
 
     }
 
-#endif // VINCENT
     //------------------------------------------------------------------------------------//
 
     this->updateResidualStabilisation( data, unwrap_ptr(u), unwrap_ptr(p) );
