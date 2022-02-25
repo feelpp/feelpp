@@ -223,7 +223,7 @@ def test_init_reducedbasis(prefix, case, casefile, dim, use_cache, time_dependen
     Aq = decomposition[0]
     Fq = decomposition[1]
 
-    rb = reducedbasis(convertToPetscMat(Aq[0]), convertToPetscVec(Fq[0][0]), model, mubar)
+    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), convertToPetscVec(Fq[0][0]), model, mubar)
 
     print("\nCompute basis and orthonormalize it")
     def listOfParams(n):

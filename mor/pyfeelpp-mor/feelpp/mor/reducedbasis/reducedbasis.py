@@ -35,10 +35,8 @@ def convertToPetscVec(Fq):
 
 
 class reducedbasis():
-    """ Reduced basis for stationnary problem
-    """
 
-    def __init__(self, Aq, Fq, model, mubar) -> None:
+    def __init__(self, model, mubar) -> None:
         """Initialise the object
 
         Args:
@@ -47,37 +45,215 @@ class reducedbasis():
             model (ToolboxMor_{2|3}D): model DEIM used for the decomposition
             mubar (ParameterSpaceElement): parameter mu_bar for the enrgy norm
         """
-        
-        self.Aq = Aq    # of len Qa
-        self.Fq = Fq    # of len Qf
-
-        self.NN = Aq[0].size[0] if Aq is not None else 0
-        self.Qa = len(Aq) if Aq is not None else 0
-        self.Qf = len(Fq) if Fq is not None else 0
+        self.Qa = 0
+        self.Qf = 0
         self.N = 0
 
-        self.model = model
+        self.model = model  # TODO : load online model
         self.mubar = mubar
 
-        self.Z      : list  # len N,  each vector size NN
         self.ANq    : list  # len Qa, each matrix size (N,N)
         self.FNp    : list  # len Qf, each vector size N
-
-        self.Sp     : list  # len Qf, each vector of size NN
-        self.Lnq    : dict  # size N*Qa : self.Lnq[n,q] <-> L^{n,q}
 
         self.SS = np.zeros((self.Qf, self.Qf))            # SS[p,p_] = (Sp,sp_)X
         self.SL     : np.ndarray    # shape (Qf, Qa, N)     SL[p,n,q] = (Sp,Lnq)X
         self.LL     : np.ndarray    # shape (Qa, N, Qa, N)  LL[n,p,n_,p_] = (Lnq,Ln_p_)X
 
-        if self.mubar is not None:
-            beta = self.model.computeBetaQm(self.mubar)
-            self.betaA_bar = beta[0]
-            self.betaF_bar = beta[1]
-            A_tmp = self.assembleA(self.betaA_bar[0])
-            AT_tmp = A_tmp.copy()
-            AT_tmp.transpose()
-            self.Abar = 0.5*(A_tmp + AT_tmp)
+
+        ## For greedy memory
+        self.DeltaMax = None
+        if rank == 0:
+            print("[reducedbasis] rb initialized")
+    
+
+
+    """
+    Online computation
+    """
+    def getSolutions(self, mu, size=None):
+        """Return solution uN and output sN
+
+        Args:
+            mu (ParameterSpaceElement) : parameter
+            size (int, optional): size of the sub-basis wanted. Defaults to None, meaning the whole basis is used.
+
+        Returns:
+            tuple (np.ndarray,float) : (uN, sN)
+        """
+        beta = self.model.computeBetaQm(mu)
+        A_mu = self.assembleAN(beta[0][0], size=size)
+        F_mu = self.assembleFN(beta[1][0][0], size=size)
+
+        sol = np.linalg.solve(A_mu, F_mu)
+
+        return sol, sol @ F_mu
+
+
+
+    def computeOnlineError(self, mu, precalc=None):
+        """compute a posteriori online error, from a parameter mu
+
+        Args:
+            mu (ParameterSpaceElement): parameter
+            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already been calculated. Defaults to None.\
+                If None is given, the quantities are calculated in the function
+
+        Returns:
+            float: a posteriori error SQUARED
+        """
+
+        if precalc is None:
+            beta_ = self.model.computeBetaQm(mu)
+            betaA = beta_[0][0]
+            betaF = beta_[1][0][0]
+            A_mu = self.assembleAN(betaA)
+            F_mu = self.assembleFN(betaF)
+
+            uN = np.linalg.solve(A_mu, F_mu)
+        else:
+            betaA = precalc["betaA"]
+            betaF = precalc["betaF"]
+            uN = precalc["uN"]
+
+        s1 = betaF @ self.SS @ betaF    # beta_p*beta_p'*(Sp,Sp')
+        s2 = 0
+        s3 = 0
+
+        # s1 = 0
+        # for p in range(self.Qf):
+        #     for p_ in range(self.Qf):
+        #         s1 += betaA[p] * betaA[p_] * self.SS[p,p_]
+        s2 = 0
+        for p in range(self.Qf):
+            for q in range(self.Qa):
+                for n in range(self.N):
+                    s2 += betaF[p] * betaA[q] * uN[n] * self.SL[q,p,n]
+
+        s3 = 0
+        for q in range(self.Qa):
+            for q_ in range(self.Qa):
+                for n in range(self.N):
+                    for n_ in range(self.N):
+                        s3 += betaA[q] * betaA[q_] * uN[n] * uN[n_] * self.LL[q,n,q_,n_]
+
+        return s1 + 2*s2 + s3
+
+
+
+    def computeEnergyBound(self, mu, precalc=None):
+        """computes ernergy bound
+
+        Args:
+            mu (ParameterSpaceElement): parameter
+            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already been calculated. Defaults to None.\
+                If None is given, the quantities are calculated in the function
+
+        Returns:
+            float: energy error bound
+        """
+        normHatE = self.computeOnlineError(mu, precalc=precalc)
+        alp = self.alphaLB(mu)
+        return normHatE / np.sqrt(alp)
+
+
+
+
+    """
+    Save and load results
+    """
+    def saveReducedBasis(self, path, force=False):
+        """save the reduced basis in files
+
+        Args:
+            path (str): path of the directory whre data are to be saved
+            force (bool, optional): Force saving, even if files are already present. Defaults to False.
+        """
+        if os.path.isdir(path) and not force:
+            print(f"[reducedBasis] Directory {path} already exists. Rerun with force=True to force saving")
+            return
+        elif not os.path.isdir(path):
+            os.mkdir(path)
+
+        print(f"[reducedbasis] saving reduced basis to {path}...", end=" ")
+        
+        if not os.path.isdir(path+'/ANq'):
+            os.mkdir(path+'/ANq')
+        if not os.path.isdir(path+'/FNp'):
+            os.mkdir(path+'/FNp')
+        if not os.path.isdir(path+'/offline'):
+            os.mkdir(path+'/offline')
+        
+        for q,Aq in enumerate(self.ANq):
+            np.save(path+"/ANq/"+str(q), Aq)
+        for p,Fp in enumerate(self.FNp):
+            np.save(path+"/FNp/"+str(p), Fp)
+
+        np.save(path+'/offline/SS', self.SS)
+        np.save(path+'/offline/SL', self.SL)
+        np.save(path+'/offline/LL', self.LL)
+
+        if self.DeltaMax is not None:
+            np.save(path+'/offline/DeltaMax', self.DeltaMax)
+
+        print("Done !")
+
+
+    def loadReducedBasis(path, model):
+        if not os.path.isdir(path):
+            print(f"[reducedBasis] Error : could not find {path}")
+            return None
+        if not os.path.isdir(path + '/ANq'):
+            print(f"[reducedBasis] Error : could not find {path}/ANq")
+            return None
+        if not os.path.isdir(path + '/FNp'):
+            print(f"[reducedBasis] Error : could not find {path}/FNp")
+            return None
+        if not os.path.isdir(path + '/offline'):
+            print(f"[reducedBasis] Error : could not find {path}/offline")
+            return None
+        
+        rbLoaded = reducedbasis(None, None, model, None, None)
+        rbLoaded.Qa = len(os.listdir(path+'/ANq'))
+        rbLoaded.Qf = len(os.listdir(path+'/FNp'))
+        rbLoaded.ANq = []
+        rbLoaded.FNp = []
+
+        for q in range(rbLoaded.Qa):
+            rbLoaded.ANq.append(np.load(path+'/ANq/'+str(q)+'.npy'))
+        for p in range(rbLoaded.Qf):
+            rbLoaded.FNp.append(np.load(path+'/FNp/'+str(p)+'.npy'))
+        rbLoaded.SS = np.load(path+'/offline/SS.npy')
+        rbLoaded.SL = np.load(path+'/offline/SL.npy')
+        rbLoaded.LL = np.load(path+'/offline/LL.npy')
+
+        rbLoaded.N = rbLoaded.ANq[0].shape[0]
+
+        if os.path.isfile(path+'/offline/DeltaMax.npy'):
+            rbLoaded.DeltaMax = np.load(path+'/offline/DeltaMax.npy')
+
+        return rbLoaded
+
+
+
+
+
+class reducedbasisOffline(reducedbasis):
+    """ Reduced basis for stationnary problem
+    """
+
+    
+    def __init__(self, Aq, Fq, model, mubar):
+
+        super().__init__(model, mubar)
+
+        self.Aq = Aq
+        self.Fq = Fq
+
+        self.Qa = len(Aq)
+        self.Qf = len(Fq)
+
+        self.NN = Aq[0].size[0]
+
 
         # KSP to solve
         self.KSP_TYPE = PETSc.KSP.Type.GMRES
@@ -129,11 +305,9 @@ class reducedbasis():
 
         self.alphaLB = alphaLB
 
-        ## For greedy memory
-        self.DeltaMax = None
-        if rank == 0:
-            print("[reducedbasis] rb initialized")
 
+
+    
     def setVerbose(self, set=True):
         """Set verbose when system is solved
 
@@ -148,7 +322,7 @@ class reducedbasis():
         The offline erros are not computed in this function
 
         Args:
-            W (list of PETSc.Vec): rediced basis
+            W (list of PETSc.Vec): reduced basis
 
         Returns:
             reducedBasis: an object with W as basis
@@ -209,6 +383,9 @@ class reducedbasis():
         elif rank == 0:
             # pass
             print(f"[reducedBasis] Gram-Schmidt orthonormalization done after {nb+1} step"+['','s'][nb>0])
+
+
+
 
 
     """
@@ -431,26 +608,6 @@ class reducedbasis():
 
         return sol, sol.dot(F_mu)
 
-    """
-    Online computation
-    """
-    def getSolutions(self, mu, size=None):
-        """Return solution uN and output sN
-
-        Args:
-            mu (ParameterSpaceElement) : parameter
-            size (int, optional): size of the sub-basis wanted. Defaults to None, meaning the whole basis is used.
-
-        Returns:
-            tuple (np.ndarray,float) : (uN, sN)
-        """
-        beta = self.model.computeBetaQm(mu)
-        A_mu = self.assembleAN(beta[0][0], size=size)
-        F_mu = self.assembleFN(beta[1][0][0], size=size)
-
-        sol = np.linalg.solve(A_mu, F_mu)
-
-        return sol, sol @ F_mu
 
     """
     Error computation
@@ -531,58 +688,7 @@ class reducedbasis():
                     self.LL[q,n,q_,-1] = self.scalarA( self.Lnq[n,q], self.Lnq[self.N,q_] )
                     self.LL[q,-1,q_,n] = self.scalarA( self.Lnq[self.N,q], self.Lnq[n,q_] )
 
-        
 
-            
-
-
-    def computeOnlineError(self, mu, precalc=None):
-        """compute a posteriori online error, from a parameter mu
-
-        Args:
-            mu (ParameterSpaceElement): parameter
-            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already been calculated. Defaults to None.\
-                If None is given, the quantities are calculated in the function
-
-        Returns:
-            float: a posteriori error SQUARED
-        """
-
-        if precalc is None:
-            beta_ = self.model.computeBetaQm(mu)
-            betaA = beta_[0][0]
-            betaF = beta_[1][0][0]
-            A_mu = self.assembleAN(betaA)
-            F_mu = self.assembleFN(betaF)
-
-            uN = np.linalg.solve(A_mu, F_mu)
-        else:
-            betaA = precalc["betaA"]
-            betaF = precalc["betaF"]
-            uN = precalc["uN"]
-
-        s1 = betaF @ self.SS @ betaF    # beta_p*beta_p'*(Sp,Sp')
-        s2 = 0
-        s3 = 0
-
-        # s1 = 0
-        # for p in range(self.Qf):
-        #     for p_ in range(self.Qf):
-        #         s1 += betaA[p] * betaA[p_] * self.SS[p,p_]
-        s2 = 0
-        for p in range(self.Qf):
-            for q in range(self.Qa):
-                for n in range(self.N):
-                    s2 += betaF[p] * betaA[q] * uN[n] * self.SL[q,p,n]
-
-        s3 = 0
-        for q in range(self.Qa):
-            for q_ in range(self.Qa):
-                for n in range(self.N):
-                    for n_ in range(self.N):
-                        s3 += betaA[q] * betaA[q_] * uN[n] * uN[n_] * self.LL[q,n,q_,n_]
-
-        return s1 + 2*s2 + s3
 
     def computeDirectError(self, mu, precalc=None):
         """compute a posteriori error using a direct method (costly), from a parameter mu
@@ -623,22 +729,6 @@ class reducedbasis():
         self.ksp.solve(F_mu - A_mu * u_proj, E)
         
         return self.normA(E)
-
-
-    def computeEnergyBound(self, mu, precalc=None):
-        """computes ernergy bound
-
-        Args:
-            mu (ParameterSpaceElement): parameter
-            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already been calculated. Defaults to None.\
-                If None is given, the quantities are calculated in the function
-
-        Returns:
-            float: energy error bound
-        """
-        normHatE = self.computeOnlineError(mu, precalc=precalc)
-        alp = self.alphaLB(mu)
-        return normHatE / np.sqrt(alp)
 
 
 
@@ -803,78 +893,3 @@ class reducedbasis():
         return S
 
 
-
-    """
-    Save and load results
-    """
-    def saveReducedBasis(self, path, force=False):
-        """save the reduced basis in files
-
-        Args:
-            path (str): path of the directory whre data are to be saved
-            force (bool, optional): Force saving, even if files are already present. Defaults to False.
-        """
-        if os.path.isdir(path) and not force:
-            print(f"[reducedBasis] Directory {path} already exists. Rerun with force=True to force saving")
-            return
-        elif not os.path.isdir(path):
-            os.mkdir(path)
-
-        print(f"[reducedbasis] saving reduced basis to {path}...", end=" ")
-        
-        if not os.path.isdir(path+'/ANq'):
-            os.mkdir(path+'/ANq')
-        if not os.path.isdir(path+'/FNp'):
-            os.mkdir(path+'/FNp')
-        if not os.path.isdir(path+'/offline'):
-            os.mkdir(path+'/offline')
-        
-        for q,Aq in enumerate(self.ANq):
-            np.save(path+"/ANq/"+str(q), Aq)
-        for p,Fp in enumerate(self.FNp):
-            np.save(path+"/FNp/"+str(p), Fp)
-
-        np.save(path+'/offline/SS', self.SS)
-        np.save(path+'/offline/SL', self.SL)
-        np.save(path+'/offline/LL', self.LL)
-
-        if self.DeltaMax is not None:
-            np.save(path+'/offline/DeltaMax', self.DeltaMax)
-
-        print("Done !")
-
-
-    def loadReducedBasis(path, model):
-        if not os.path.isdir(path):
-            print(f"[reducedBasis] Error : could not find {path}")
-            return None
-        if not os.path.isdir(path + '/ANq'):
-            print(f"[reducedBasis] Error : could not find {path}/ANq")
-            return None
-        if not os.path.isdir(path + '/FNp'):
-            print(f"[reducedBasis] Error : could not find {path}/FNp")
-            return None
-        if not os.path.isdir(path + '/offline'):
-            print(f"[reducedBasis] Error : could not find {path}/offline")
-            return None
-        
-        rbLoaded = reducedbasis(None, None, model, None, None)
-        rbLoaded.Qa = len(os.listdir(path+'/ANq'))
-        rbLoaded.Qf = len(os.listdir(path+'/FNp'))
-        rbLoaded.ANq = []
-        rbLoaded.FNp = []
-
-        for q in range(rbLoaded.Qa):
-            rbLoaded.ANq.append(np.load(path+'/ANq/'+str(q)+'.npy'))
-        for p in range(rbLoaded.Qf):
-            rbLoaded.FNp.append(np.load(path+'/FNp/'+str(p)+'.npy'))
-        rbLoaded.SS = np.load(path+'/offline/SS.npy')
-        rbLoaded.SL = np.load(path+'/offline/SL.npy')
-        rbLoaded.LL = np.load(path+'/offline/LL.npy')
-
-        rbLoaded.N = rbLoaded.ANq[0].shape[0]
-
-        if os.path.isfile(path+'/offline/DeltaMax.npy'):
-            rbLoaded.DeltaMax = np.load(path+'/offline/DeltaMax.npy')
-
-        return rbLoaded
