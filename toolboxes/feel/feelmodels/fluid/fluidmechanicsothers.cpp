@@ -668,6 +668,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
     super_type::super_model_meshes_type::setParameterValues( paramValues );
 
     M_boundaryConditions.setParameterValues( paramValues );
+    M_bodySetBC.setParameterValues( paramValues );
 
 #if 0 // VINCENT
     M_bcDirichlet.setParameterValues( paramValues );
@@ -680,8 +681,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
     M_bcMovingBoundaryImposed.setParameterValues( paramValues );
     M_volumicForcesProperties.setParameterValues( paramValues );
     this->updateFluidInletVelocity();
-    M_bodySetBC.setParameterValues( paramValues );
 #endif
+
     if ( this->hasTurbulenceModel() )
         M_turbulenceModelType->setParameterValues( paramValues );
 }
@@ -706,12 +707,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
         std::cout << "symbolsExpr : \n "<<  se.names() << std::endl;
 
 
-    // TODO move!!!!!
-    super_type::super_model_meshes_type::updateMeshMotion<mesh_type>( this->keyword(), se );
-    
+    // // TODO move!!!!!
+    // super_type::super_model_meshes_type::updateMeshMotion<mesh_type>( this->keyword(), se );
+
+    if ( this->hasMeshMotion() && M_applyMovingMeshBeforeSolve )
+        this->updateALEmesh();
 #if 0 // VINCENT
     if ( M_applyMovingMeshBeforeSolve && ( !M_bcMovingBoundaryImposed.empty() || !M_bodySetBC.empty() ) )
-        this->updateALEmesh();
+        this->updateALEmesh( se );
 #endif
 
     M_bodySetBC.updateForUse( *this );

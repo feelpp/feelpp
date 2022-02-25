@@ -555,7 +555,7 @@ public:
         Body( Body const& ) = default;
         Body( Body && ) = default;
 
-        void setup( pt::ptree const& p, ModelMaterials const& mats, mesh_ptrtype mesh );
+        void setup( nl::json const& jarg, ModelMaterials const& mats, mesh_ptrtype mesh );
         void applyRemesh( mesh_ptrtype const& newMesh );
         void updateForUse();
 
@@ -1219,7 +1219,7 @@ public:
         BodyBoundaryCondition( BodyBoundaryCondition const& ) = default;
         BodyBoundaryCondition( BodyBoundaryCondition && ) = default;
 
-        void setup( std::string const& bodyName, pt::ptree const& p, self_type const& fluidToolbox );
+        void setup( std::string const& bodyName, typename FluidMechanicsBoundaryConditions<nDim>::BodyInterface const& bi, self_type const& fluidToolbox );
         void init( self_type const& fluidToolbox );
         void applyRemesh( self_type const& fluidToolbox, RemeshInterpolation & remeshInterp );
         void updateForUse( self_type const& fluidToolbox );
@@ -3020,22 +3020,17 @@ template <typename SymbolsExprType>
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( SymbolsExprType const& se )
 {
-#if 0 // VINCENT
+
     this->log("FluidMechanics","updateALEmesh", "start");
 
-    if ( !M_bcMovingBoundaryImposed.empty() || !M_bodySetBC.empty() )
+    if ( !M_bodySetBC.empty() )
     {
-        // Warning : evaluate expression on reference mesh (maybe it will better to change the API in order to avoid tjese meshmoves)
-        bool meshIsOnRefAtBegin = this->meshALE()->isOnReferenceMesh();
+        // Warning : evaluate expression on reference mesh (maybe it will better to change the API in order to avoid these meshmoves)
+        auto mmt = this->meshMotionTool();
+        bool meshIsOnRefAtBegin = mmt->isOnReferenceMesh();
         if ( !meshIsOnRefAtBegin )
-            this->meshALE()->revertReferenceMesh( false );
-
-
-        this->meshALE()->revertInitialDomain( false );
-
-        for( auto const& d : M_bcMovingBoundaryImposed )
-            this->meshALE()->updateDisplacementImposedOnInitialDomain( this->keyword(), expression(d,se),markedfaces(this->mesh(),markers(d)) );
-
+            mmt->revertReferenceMesh( false );
+        mmt->revertInitialDomain( false );
 
         for ( auto & [bpname,bbc] : M_bodySetBC )
         {
@@ -3051,80 +3046,22 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
         for ( auto & [bpname,bbc] : M_bodySetBC )
         {
             //this->meshALE()->updateDisplacementImposed( idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
-            this->meshALE()->updateDisplacementImposedOnInitialDomain( this->keyword(), idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
+            mmt->updateDisplacementImposedOnInitialDomain( this->keyword()+"_body", idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
 
             if ( bbc.hasElasticVelocity() )
                 bbc.updateElasticVelocityWithRotation();
         }
 
-        this->meshALE()->revertReferenceMesh( false );
-
+        mmt->revertReferenceMesh( false );
         if ( !meshIsOnRefAtBegin )
-            this->meshALE()->revertMovingMesh( false );
+            mmt->revertMovingMesh( false );
     }
 
-#if 0
-    for ( auto /*const*/& [bpname,bpbc] : M_bodySetBC )
-    {
-        if ( bpbc.body().hasMaterialsProperties() )
-        {
-            // update rigid disp
-            auto range = elements(support(bpbc.body().fieldRigidDisplacement().functionSpace()));
-#if 0
-            if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() )
-                this->meshALE()->updateDisplacementFieldFromVelocity( bpbc.body().fieldRigidDisplacement(), bpbc.rigidVelocityExpr(), range );
-            else
-                this->meshALE()->updateDisplacementFieldFromVelocity( bpbc.body().fieldRigidDisplacement(), bpbc.rigidVelocityExprFromFields(), range );
-#else
-            double dt = this->timeStep();
-            if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() )
-                bpbc.body().updateRigidDisplacementFromRigidVelocity( range, bpbc.rigidVelocityExpr(), dt );
-            else
-                bpbc.body().updateRigidDisplacementFromRigidVelocity( range, bpbc.rigidVelocityExprFromFields(), dt );
-#endif
+    super_type::super_model_meshes_type::updateMeshMotion<mesh_type>( this->keyword(), se );
 
-            if ( bpbc.body().hasElasticDisplacement() )
-                this->meshALE()->updateDisplacementImposed( idv(bpbc.body().fieldRigidDisplacement()) + idv(bpbc.body().fieldElasticDisplacement()), range );
-            else
-                this->meshALE()->updateDisplacementImposed( idv(bpbc.body().fieldRigidDisplacement()), range );
-        }
-        else
-        {
-            CHECK( false ) << "TODO";
-#if 0
-            auto velocityMeshSupport = this->functionSpaceVelocity()->template meshSupport<0>();
-            //auto rangeMFOF = bpbc.rangeMarkedFacesOnFluid();
-            // temporary fix of interpolation with meshale space
-            auto rangeMFOF = FluidToolbox_detail::removeBadFace( velocityMeshSupport,bpbc.rangeMarkedFacesOnFluid() );
-            if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() && !bpbc.hasElasticVelocity() )
-                this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExpr(), rangeMFOF );
-            else if ( bpbc.hasElasticVelocityFromExpr() )
-                this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), rangeMFOF );
-            else
-                this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields(), rangeMFOF ); // TO FIX : use idv(this->fieldVelocity() require to need a range with partial support mesh info
-            //this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, idv(this->fieldVelocity())/*bpbc.rigidVelocityExprFromFields()*/, rangeMFOF );
-#endif
-        }
-#if 0
-        (*M_meshDisplacementOnInterface)[Component::X].on(_range=bpbc.rangeMarkedFacesOnFluid(),_expr=cst(0.) );
-#endif
-#if 0
-        if ( velocityMeshSupport->isPartialSupport() )
-        {
-            auto _thedof = M_meshDisplacementOnInterface->functionSpace()->dofs(rangeMFOF,ComponentType::NO_COMPONENT,true);
-            dofToSync.insert(_thedof.begin(),_thedof.end());
-        }
-#endif
-    }
+    this->updateALEmeshImpl(); // TODO : rename or move code here
 
-#endif
-#if 0
-    if ( !M_bodySetBC.empty() && velocityMeshSupport->isPartialSupport() )
-        sync( *M_meshDisplacementOnInterface, "=", dofToSync );
-#endif
-    this->updateALEmeshImpl();
     this->log("FluidMechanics","updateALEmesh", "finish");
-#endif
 }
 
 

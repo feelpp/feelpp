@@ -36,8 +36,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJaco
     this->timerTool("Solve").start();
 
     this->updateDofEliminationIds( "velocity", data );
-#if 0 //VINCENT
-    if ( this->hasMarkerPressureBC() )
+
+    if ( !M_boundaryConditions.pressureImposed().empty() )
     {
         this->updateDofEliminationIds( "pressurelm1", this->dofEliminationIds( "pressurebc-lm" ), data );
         if ( nDim == 3 )
@@ -59,7 +59,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJaco
             this->updateDofEliminationIds( spaceName, data );
         }
     }
-#endif
+
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("FluidMechanics","updateJacobianDofElimination","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }

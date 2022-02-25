@@ -187,13 +187,13 @@ ModelMesh<IndexType>::MeshMotionSetup::MeshMotionSetup( ModelMeshes<IndexType> c
         {
              ModelMarkers _markers;
              _markers.setup( j_disp.at("Zero")/*, indexes*/ );
-             M_displacementZeroMarkers.insert( M_displacementZeroMarkers.begin(), M_displacementZeroMarkers.end() );
+             M_displacementZeroMarkers = _markers;
         }
         if ( j_disp.contains( "Free" ) )
         {
              ModelMarkers _markers;
              _markers.setup( j_disp.at("Free")/*, indexes*/ );
-             M_displacementFreeMarkers.insert( M_displacementZeroMarkers.begin(), M_displacementZeroMarkers.end() );
+             M_displacementFreeMarkers = _markers;
         }
     }
 }
