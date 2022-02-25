@@ -119,6 +119,39 @@ public:
         ModelExpression M_mexpr;
         std::set<std::string> M_markers;
     };
+
+    class BodyInterface
+    {
+    public :
+        BodyInterface( std::string const& name ) : M_name( name ) {}
+        BodyInterface( BodyInterface const& ) = default;
+        BodyInterface( BodyInterface && ) = default;
+
+        //! setup bc from json
+        void setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes );
+
+        //! return markers
+        std::set<std::string> const& markers() const { return M_markers; }
+
+        ModelExpression const& mexprTranslationalVelocity() const { return M_mexprTranslationalVelocity; }
+        ModelExpression const& mexprAngularVelocity() const { return M_mexprAngularVelocity; }
+        nl::json const& jsonMaterials() const { return M_jsonMaterials; }
+
+        void setParameterValues( std::map<std::string,double> const& paramValues ) { /*M_mexpr.setParameterValues( paramValues );*/ }
+
+        //! update informations
+        void updateInformationObject( nl::json & p ) const;
+        //! return tabulate information from json info
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+
+    private:
+        std::string M_name;
+        std::set<std::string> M_markers;
+        ModelExpression M_mexprTranslationalVelocity, M_mexprAngularVelocity;
+        nl::json M_jsonMaterials;
+    };
+
+
     FluidMechanicsBoundaryConditions() = default;
     FluidMechanicsBoundaryConditions( FluidMechanicsBoundaryConditions const& ) = default;
     FluidMechanicsBoundaryConditions( FluidMechanicsBoundaryConditions && ) = default;
@@ -129,6 +162,8 @@ public:
     std::map<std::string,std::shared_ptr<Inlet>> const& inlet() const { return M_inlet; }
     //! return pressure imposed
     std::map<std::string,std::shared_ptr<PressureImposed>> const& pressureImposed() const { return M_pressureImposed; }
+    //! return body interface
+    std::map<std::string,std::shared_ptr<BodyInterface>> const& bodyInterface() const { return M_bodyInterface; }
 
     //! return true if a bc is type of dof eliminitation
     bool hasTypeDofElimination() const
@@ -200,6 +235,7 @@ private:
     std::map<std::pair<Type,std::string>,std::shared_ptr<VelocityImposed>> M_velocityImposed;
     std::map<std::string,std::shared_ptr<Inlet>> M_inlet;
     std::map<std::string,std::shared_ptr<PressureImposed>> M_pressureImposed;
+    std::map<std::string,std::shared_ptr<BodyInterface>> M_bodyInterface;
 
 }; // FluidMechanicsBoundaryConditions
 

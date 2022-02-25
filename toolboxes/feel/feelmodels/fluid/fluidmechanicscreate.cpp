@@ -394,21 +394,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // init fluid inlet
     this->initFluidInlet();
 
-    // pressure bc
-    if ( !M_boundaryConditions.pressureImposed().empty() )
-    {
-        std::set<std::string> allmarkers;
-        for ( auto const& [bcName,bcData] : M_boundaryConditions.pressureImposed() )
-            allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
-        M_meshLagrangeMultiplierPressureBC = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),allmarkers),_view=true );
-        M_spaceLagrangeMultiplierPressureBC = space_trace_velocity_component_type::New( _mesh=M_meshLagrangeMultiplierPressureBC );
-        M_fieldLagrangeMultiplierPressureBC1 = M_spaceLagrangeMultiplierPressureBC->elementPtr();
-        if constexpr ( nDim == 3 )
-            M_fieldLagrangeMultiplierPressureBC2 =  M_spaceLagrangeMultiplierPressureBC->elementPtr();
-
-        this->updateDofEliminationIds( "pressurebc-lm", M_spaceLagrangeMultiplierPressureBC, boundaryfaces(M_meshLagrangeMultiplierPressureBC) );
-    }
-
     for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposed() )
         bcData->updateDofEliminationIds( *this, "velocity", this->functionSpaceVelocity() );
 
@@ -432,6 +417,71 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         M_XhDirichletLM = space_trace_velocity_type::New( _mesh=M_meshDirichletLM );
         M_fieldDirichletLM = M_XhDirichletLM->elementPtr();
     }
+
+    // pressure bc
+    if ( !M_boundaryConditions.pressureImposed().empty() )
+    {
+        std::set<std::string> allmarkers;
+        for ( auto const& [bcName,bcData] : M_boundaryConditions.pressureImposed() )
+            allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
+        M_meshLagrangeMultiplierPressureBC = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),allmarkers),_view=true );
+        M_spaceLagrangeMultiplierPressureBC = space_trace_velocity_component_type::New( _mesh=M_meshLagrangeMultiplierPressureBC );
+        M_fieldLagrangeMultiplierPressureBC1 = M_spaceLagrangeMultiplierPressureBC->elementPtr();
+        if constexpr ( nDim == 3 )
+            M_fieldLagrangeMultiplierPressureBC2 =  M_spaceLagrangeMultiplierPressureBC->elementPtr();
+
+        this->updateDofEliminationIds( "pressurebc-lm", M_spaceLagrangeMultiplierPressureBC, boundaryfaces(M_meshLagrangeMultiplierPressureBC) );
+    }
+
+
+    // body
+    for ( auto const& [bcName,bcData] : M_boundaryConditions.bodyInterface() )
+    {
+        std::string bodyName = bcName;
+        BodyBoundaryCondition bpbc( *this );
+        bpbc.setup( bodyName, *bcData, *this );
+        if ( true ) // check if setup is enough
+        {
+            M_bodySetBC.emplace(bpbc.name(), bpbc );
+        }
+    }
+    // init bc body
+    M_bodySetBC.init( *this );
+    // body bc
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        if ( bpbc.hasTranslationalVelocityExpr() )
+        {
+#if 0
+            this->updateDofEliminationIds( "body-bc.translational-velocity",  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
+            // only do for one, dof ids are the same for all
+            break;
+#else
+            std::string spaceName = "body-bc."+bpbc.name()+".translational-velocity";
+            this->updateDofEliminationIds( spaceName,  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
+#endif
+        }
+
+        if ( bpbc.hasAngularVelocityExpr() )
+        {
+#if 0
+            this->updateDofEliminationIds( "body-bc.angular-velocity",  bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
+            // only do for one, dof ids are the same for all
+            break;
+#else
+            std::string spaceName = "body-bc."+bpbc.name()+".angular-velocity";
+            this->updateDofEliminationIds( spaceName, bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
+#endif
+        }
+
+        if ( true )
+        {
+            this->updateDofEliminationIds( "velocity", this->functionSpaceVelocity(), bpbc.rangeMarkedFacesOnFluid() );
+        }
+
+    }
+
+
 
 #if 0 // VINCENT
     // clear
@@ -1106,31 +1156,32 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // init post-processinig (exporter, measure at point, ...)
     this->initPostProcess();
     //-------------------------------------------------//
-#if 0 // VINCENT
+
     // update ALE mesh for use
-    if (this->isMoveDomain())
+    if ( this->hasMeshMotion() )
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-        for ( auto const& [bcName,markers] : this->markerALEMeshBC() )
-            M_meshALE->addMarkersInBoundaryCondition( bcName, markers );
 
+        auto mmt = this->meshMotionTool();
+        // for ( auto const& [bcName,markers] : this->markerALEMeshBC() )
+        //     M_meshALE->addMarkersInBoundaryCondition( bcName, markers );
 
-        std::set<std::string> markersbcMovingBoundaryImposed;
 #if 0 // VINCENT
+        std::set<std::string> markersbcMovingBoundaryImposed;
         for( auto const& d : M_bcMovingBoundaryImposed )
         {
             auto bcmarkers = markers(d);
             markersbcMovingBoundaryImposed.insert( bcmarkers.begin(), bcmarkers.end() );
         }
-#endif
         if ( !markersbcMovingBoundaryImposed.empty() )
             M_meshALE->setDisplacementImposedOnInitialDomainOverFaces( this->keyword(), markersbcMovingBoundaryImposed );
-
+#endif
 
         // if ( !M_bodySetBC.empty() )
         std::set<std::string> markersbcBodyOnlyBoundaryFaces, markersbcBodyWithElements;
         for ( auto const& [bname,bbc] : M_bodySetBC )
         {
+            mmt->addMarkersInBoundaryCondition( "moving", bbc.markers() );
             if ( bbc.body().hasMaterialsProperties() )
             {
                 auto mom = bbc.body().materialsProperties()->materialsOnMesh( this->mesh() );
@@ -1142,19 +1193,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                 markersbcBodyOnlyBoundaryFaces.insert( bbc.markers().begin(),  bbc.markers().end() );
             }
         }
-        if ( !markersbcBodyOnlyBoundaryFaces.empty() )
-            M_meshALE->setDisplacementImposedOnInitialDomainOverFaces( this->keyword(), markersbcBodyOnlyBoundaryFaces );
 
+        // TODO : define a method in ModelMesh for assign this prop (else name can be in conflict)
+        if ( !markersbcBodyOnlyBoundaryFaces.empty() )
+            mmt->setDisplacementImposedOnInitialDomainOverFaces( this->keyword()+"_body", markersbcBodyOnlyBoundaryFaces );
         if ( !markersbcBodyWithElements.empty() )
-            M_meshALE->setDisplacementImposedOnInitialDomainOverElements( this->keyword(), markersbcBodyWithElements );
+            mmt->setDisplacementImposedOnInitialDomainOverElements( this->keyword()+"_body", markersbcBodyWithElements );
 
 
         if ( this->doRestart() )
-            M_meshALE->revertMovingMesh();
+            mmt->revertMovingMesh();
         this->log("FluidMechanics","finish init", "meshALE done" );
 #endif
     }
-#endif
+
     //-------------------------------------------------//
     // bc body (call after meshALE->init() in case of restart)
     M_bodySetBC.updateForUse( *this );
@@ -2739,29 +2791,31 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
 
 }
 
+
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::setup( pt::ptree const& p, ModelMaterials const& mats, mesh_ptrtype mesh )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::setup( nl::json const& jarg, ModelMaterials const& mats, mesh_ptrtype mesh )
 {
     M_mesh = mesh;
     std::set<std::string> matNames;
-    if ( auto ptMatNames = p.get_child_optional("names") )
+    if ( jarg.contains( "names" ) )
     {
-        if ( ptMatNames->empty() ) // value case
-            matNames.insert( ptMatNames->get_value<std::string>() );
-        else // array case
+        auto const& j_names = jarg.at( "names" );
+        if ( j_names.is_string() )
+            matNames.insert( j_names.template get<std::string>() );
+        else if ( j_names.is_array() )
         {
-            for ( auto const& item : *ptMatNames )
+            for ( auto const& [j_nameskey,j_namesval] : j_names.items() )
             {
-                CHECK( item.first.empty() ) << "should be an array, not a subtree";
-                matNames.insert( item.second.template get_value<std::string>() );
+                CHECK( j_namesval.is_string() ) << "should be a string";
+                matNames.insert( j_namesval.template get<std::string>() );
             }
         }
     }
 
     ModelMarkers onlyMarkers;
-    if ( auto ptmarkers = p.get_child_optional("markers") )
-        onlyMarkers.setPTree(*ptmarkers/*, indexes*/);
+    if ( jarg.contains( "markers" ) )
+        onlyMarkers.setup( jarg.at( "markers" ) /*, indexes*/ );
 
     M_materialsProperties.reset( new materialsproperties_type( M_modelPhysics ) );
     M_materialsProperties->updateForUse( mats, matNames, onlyMarkers );
@@ -2774,7 +2828,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::setup( pt::ptree const& p, ModelMateri
     M_fieldDisplacement = M_spaceDisplacement->elementPtr();
 
     this->updateForUse();
-
 }
 
 
@@ -2867,6 +2920,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::BodyBoundaryCondition
     M_gravityForceEnabled( false )
 {}
 
+#if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string const& bodyName, pt::ptree const& pt, self_type const& fluidToolbox )
@@ -2986,6 +3040,59 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string co
         //M_articulationBodiesUsed->begin()->second M_articulationTranslationalVelocityExpr.setExpr( "translational-velocity", *ptArticulation, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
 
     }
+}
+#endif
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string const& bodyName, typename FluidMechanicsBoundaryConditions<nDim>::BodyInterface const& bi, self_type const& fluidToolbox )
+{
+    M_name = bodyName;
+    M_markers.insert( bi.markers().begin(), bi.markers().end() );
+
+    if ( !bi.jsonMaterials().is_null() )
+    {
+        auto bodyPhysics = std::make_shared<ModelPhysics<nRealDim>>( "body", fluidToolbox );
+        if ( bodyPhysics->physics().empty() )
+            bodyPhysics->initPhysics( "body", ModelModels{}/*fluidToolbox.modelProperties().models()*/ );
+        //if ( M_body->physics().empty() )
+        //M_body->initPhysics( "body", ModelModels{}/*fluidToolbox.modelProperties().models()*/ );
+        M_body.reset( new Body( bodyPhysics ) );
+        M_body->setup( bi.jsonMaterials(), fluidToolbox.modelProperties().materials(), fluidToolbox.mesh() );
+    }
+    else
+    {
+#if 0 // VINCENT
+        M_body.reset( new Body );
+
+        ModelExpression massExpr, momentOfInertiaExpr, initialMassCenterExpr;
+        massExpr.setExpr( "mass", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+        if ( massExpr.template hasExpr<1,1>() )
+            M_body->setMass( massExpr.template expr<1,1>().evaluate()(0,0) );
+        momentOfInertiaExpr.setExpr( "moment-of-inertia", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+        if constexpr ( nDim == 2 )
+        {
+            if ( momentOfInertiaExpr.template hasExpr<1,1>() )
+                M_body->setMomentOfInertia_bodyFrame( momentOfInertiaExpr.template expr<1,1>().evaluate()(0,0) );
+        }
+        else
+        {
+            if ( momentOfInertiaExpr.template hasExpr<nDim,nDim>() )
+                M_body->setMomentOfInertia_bodyFrame( momentOfInertiaExpr.template expr<nDim,nDim>().evaluate() );
+        }
+        initialMassCenterExpr.setExpr( "mass-center", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+        if ( initialMassCenterExpr.template hasExpr<nRealDim,1>() )
+        {
+            auto initMassCenter = initialMassCenterExpr.template expr<nRealDim,1>();
+            M_massCenterRef = initMassCenter.evaluate();
+            M_body->setMassCenter( M_massCenterRef );
+        }
+#endif
+    }
+
+    M_translationalVelocityExpr = bi.mexprTranslationalVelocity();
+    M_angularVelocityExpr = bi.mexprAngularVelocity();
+
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
