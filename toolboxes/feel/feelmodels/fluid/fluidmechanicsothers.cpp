@@ -702,20 +702,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 
     // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
     this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
-
+#if 0
     if ( this->worldComm().isMasterRank() )
         std::cout << "symbolsExpr : \n "<<  se.names() << std::endl;
-
-
-    // // TODO move!!!!!
-    // super_type::super_model_meshes_type::updateMeshMotion<mesh_type>( this->keyword(), se );
-
+#endif
     if ( this->hasMeshMotion() && M_applyMovingMeshBeforeSolve )
         this->updateALEmesh();
-#if 0 // VINCENT
-    if ( M_applyMovingMeshBeforeSolve && ( !M_bcMovingBoundaryImposed.empty() || !M_bodySetBC.empty() ) )
-        this->updateALEmesh( se );
-#endif
 
     M_bodySetBC.updateForUse( *this );
     M_bodySetBC.updateAlgebraicFactoryForUse( *this, this->algebraicFactory() );
