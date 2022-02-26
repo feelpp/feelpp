@@ -175,6 +175,63 @@ FluidMechanicsBoundaryConditions<Dim>::BodyInterface::setup( ModelBase const& mp
           M_mexprTranslationalVelocity.setExpr( jarg.at( "translational-velocity"), mparent.worldComm(), mparent.repository().expr(), indexes );
       if ( jarg.contains( "angular-velocity" ) )
           M_mexprAngularVelocity.setExpr( jarg.at( "angular-velocity"), mparent.worldComm(), mparent.repository().expr(), indexes );
+
+
+      if ( jarg.contains( "elastic-velocity" ) )
+      {
+          auto const& j_es = jarg.at( "elastic-velocity" );
+          if ( j_es.is_string() )
+          {
+              std::tuple< ModelExpression, std::set<std::string>> dataExpr;
+              std::get<0>( dataExpr ).setExpr( j_es, mparent.worldComm(), mparent.repository().expr(), indexes );
+              if ( std::get<0>( dataExpr ).template hasExpr<Dim,1>() )
+                  M_elasticVelocityExprBC.emplace( "", std::move(dataExpr) );
+          }
+          else if ( j_es.is_object() )
+          {
+              for ( auto const& [j_eskey,j_esval] : j_es.items() )
+              {
+                  std::string bcElasticVelocityName = j_eskey;
+                  std::tuple< ModelExpression, std::set<std::string>> dataExpr;
+                  std::get<0>( dataExpr ).setExpr( j_esval.at("expr"), mparent.worldComm(), mparent.repository().expr(), indexes );
+                  if ( !std::get<0>( dataExpr ).template hasExpr<Dim,1>() )
+                      continue;
+                  ModelMarkers bcElasticVelocityMarkers;
+                  if ( j_esval.contains("markers") )
+                      bcElasticVelocityMarkers.setup( j_esval.at("markers"), indexes );
+                  std::get<1>( dataExpr ) = bcElasticVelocityMarkers;
+                  M_elasticVelocityExprBC.emplace( bcElasticVelocityName, std::move(dataExpr) );
+              }
+          }
+      }
+      if ( jarg.contains( "elastic-displacement" ) )
+      {
+          auto const& j_ed = jarg.at( "elastic-displacement" );
+          if ( j_ed.is_string() )
+          {
+              std::tuple< ModelExpression, std::set<std::string>> dataExpr;
+              std::get<0>( dataExpr ).setExpr( j_ed, mparent.worldComm(), mparent.repository().expr(), indexes );
+              if ( std::get<0>( dataExpr ).template hasExpr<Dim,1>() )
+                  M_elasticDisplacementExprBC.emplace( "", std::move(dataExpr) );
+          }
+          else if ( j_ed.is_object() )
+          {
+              for ( auto const& [j_edkey,j_edval] : j_ed.items() )
+              {
+                  std::string bcElasticDisplacementName = j_edkey;
+                  std::tuple< ModelExpression, std::set<std::string>> dataExpr;
+                  std::get<0>( dataExpr ).setExpr( j_edval.at("expr"), mparent.worldComm(), mparent.repository().expr(), indexes );
+                  if ( !std::get<0>( dataExpr ).template hasExpr<Dim,1>() )
+                      continue;
+                  ModelMarkers bcElasticDisplacementMarkers;
+                  if ( j_edval.contains("markers") )
+                      bcElasticDisplacementMarkers.setup( j_edval.at("markers"), indexes );
+                  std::get<1>( dataExpr ) = bcElasticDisplacementMarkers;
+                  M_elasticDisplacementExprBC.emplace( bcElasticDisplacementName, std::move(dataExpr) );
+              }
+          }
+      }
+
 }
 
 template <uint16_type Dim>

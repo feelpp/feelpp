@@ -1163,21 +1163,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 #if defined( FEELPP_MODELS_HAS_MESHALE )
 
         auto mmt = this->meshMotionTool();
-        // for ( auto const& [bcName,markers] : this->markerALEMeshBC() )
-        //     M_meshALE->addMarkersInBoundaryCondition( bcName, markers );
 
-#if 0 // VINCENT
-        std::set<std::string> markersbcMovingBoundaryImposed;
-        for( auto const& d : M_bcMovingBoundaryImposed )
-        {
-            auto bcmarkers = markers(d);
-            markersbcMovingBoundaryImposed.insert( bcmarkers.begin(), bcmarkers.end() );
-        }
-        if ( !markersbcMovingBoundaryImposed.empty() )
-            M_meshALE->setDisplacementImposedOnInitialDomainOverFaces( this->keyword(), markersbcMovingBoundaryImposed );
-#endif
-
-        // if ( !M_bodySetBC.empty() )
         std::set<std::string> markersbcBodyOnlyBoundaryFaces, markersbcBodyWithElements;
         for ( auto const& [bname,bbc] : M_bodySetBC )
         {
@@ -1199,7 +1185,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             mmt->setDisplacementImposedOnInitialDomainOverFaces( this->keyword()+"_body", markersbcBodyOnlyBoundaryFaces );
         if ( !markersbcBodyWithElements.empty() )
             mmt->setDisplacementImposedOnInitialDomainOverElements( this->keyword()+"_body", markersbcBodyWithElements );
-
 
         if ( this->doRestart() )
             mmt->revertMovingMesh();
@@ -2112,41 +2097,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 {
-
-#if 0 // VINCENT
     if ( M_preconditionerAttachPCD )
     {
         typedef Feel::Alternatives::OperatorPCD<space_velocity_type,space_pressure_type> op_pcd_type;
         auto opPCD = std::make_shared<op_pcd_type>( this->functionSpaceVelocity(), this->functionSpacePressure(),
                                                     this->backend(), this->prefix(), true);
 
-        for( auto const& d : M_bcDirichlet )
-        {
-            std::set<std::string> themarkers;
-            for ( std::string const& type : std::vector<std::string>( { "elimination", "nitsche", "lm" } ) )
-            {
-                auto ret = detail::distributeMarkerListOnSubEntity( this->mesh(),this->markerDirichletBCByNameId( type, name(d) ) );
-                themarkers.insert( std::get<0>( ret ).begin(), std::get<0>( ret ).end() );
-            }
-            opPCD->addRangeDirichletBC( name(d), markedfaces( this->mesh(), themarkers ) );
-        }
-        for( auto const& d : M_bcMovingBoundaryImposed )
-        {
-            std::set<std::string> themarkers;
-            for ( std::string const& type : std::vector<std::string>( { "elimination", "nitsche", "lm" } ) )
-            {
-                auto ret = detail::distributeMarkerListOnSubEntity( this->mesh(), M_bcMarkersMovingBoundaryImposed.markerDirichletBCByNameId( type, name(d) ) );
-                themarkers.insert( std::get<0>( ret ).begin(), std::get<0>( ret ).end() );
-            }
-            opPCD->addRangeDirichletBC( name(d), markedfaces( this->mesh(), themarkers ) );
-        }
-        for ( auto const& inletbc : M_fluidInletDesc )
-        {
-            std::string const& themarker = std::get<0>( inletbc );
-            opPCD->addRangeDirichletBC( themarker, markedfaces( this->mesh(), themarker ) ); // warning marker is the name
-        }
+        for ( auto & [bcId,bcData] : M_boundaryConditions.velocityImposed() )
+            opPCD->addRangeDirichletBC( "velocityImposed_" + bcId.second, markedfaces( this->mesh(), bcData->markers() ) ); // TODO : what to do when markers are not on faces
+        for ( auto & [bcName,bcData] : M_boundaryConditions.inlet() )
+            opPCD->addRangeDirichletBC( "inlet_" + bcName, markedfaces( this->mesh(), bcData->markers() ) );
 
         std::set<std::string> markersNeumann;
+#if 0 // VINCENT
         for( auto const& d : M_bcNeumannScalar )
         {
             auto themarkers = this->markerNeumannBC(NeumannBCShape::SCALAR,name(d));
@@ -2166,6 +2129,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         {
             markersNeumann.insert( std::get<0>(bcOutlet) );
         }
+#endif
         opPCD->addRangeNeumannBC( "FluidNeumann", markedfaces( this->mesh(), markersNeumann ) );
 
         for ( auto const& f : M_addUpdateInHousePreconditionerPCD )
@@ -2174,7 +2138,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         opPCD->initialize();
         M_operatorPCD = opPCD;
     }
-#endif
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -3093,6 +3056,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string co
     M_translationalVelocityExpr = bi.mexprTranslationalVelocity();
     M_angularVelocityExpr = bi.mexprAngularVelocity();
 
+    M_elasticVelocityExprBC = bi.elasticVelocityExprBC();
+    M_elasticDisplacementExprBC = bi.elasticDisplacementExprBC();
+    M_articulationTranslationalVelocityExpr = bi.articulationTranslationalVelocityExpr();
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
