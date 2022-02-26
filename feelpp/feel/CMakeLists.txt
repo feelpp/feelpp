@@ -24,6 +24,11 @@
 CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
 CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 
+# Define the two required variables before including
+# the source code for watching a git repository.
+set(PRE_CONFIGURE_FILE "feelcore/git.cpp.in")
+set(POST_CONFIGURE_FILE "${CMAKE_CURRENT_BINARY_DIR}/feelcore/git.cpp")
+include(GitWatcher)
 
 SET(DIRS core timing math alg mesh partition poly opt discr ts filters material vf pde ls fit models python fmi hwsys event)
 foreach(dir ${DIRS})
@@ -35,12 +40,13 @@ endforeach()
 #if(FEELPP_ENABLE_BUILD_STATIC)
 #  add_library(feelpp STATIC options.cpp ${FEELPP_SRCS})
 #else()
-  add_library(feelpp SHARED options.cpp ${FEELPP_SRCS})
+  add_library(feelpp SHARED options.cpp ${POST_CONFIGURE_FILE} ${FEELPP_SRCS})
   set_target_properties(feelpp PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
   set_property(TARGET feelpp PROPERTY MACOSX_RPATH ON)
   set_property(TARGET feelpp PROPERTY CXX_STANDARD ${FEELPP_STD_CPP})
 #endif()
 add_library(Feelpp::feelpp ALIAS feelpp )  # to match exported target
+add_dependencies(feelpp check_git)
 set_target_properties(feelpp PROPERTIES OUTPUT_NAME "feelpp")
 #set_target_properties(feelpp PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
 if ( ${CMAKE_VERSION} VERSION_GREATER 3.7.2 )
