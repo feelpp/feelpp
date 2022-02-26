@@ -402,24 +402,29 @@ Environment::initPetsc( int * argc, char *** argv )
     {
         int ierr;
         if( (*argc > 0) && ( argv != nullptr ) )
-        {
-#if defined( FEELPP_HAS_SLEPC )
-            ierr = SlepcInitialize( argc, argv, PETSC_NULL, PETSC_NULL );
-#else
             ierr = PetscInitialize( argc, argv, PETSC_NULL, PETSC_NULL );
-#endif
-        }
         else
-        {
             ierr = PetscInitializeNoArguments();
-        }
-        boost::ignore_unused_variable_warning( ierr );
         CHKERRABORT( *S_worldcomm,ierr );
     }
 
     // make sure that petsc do not catch signals and hence do not print long
     //and often unuseful messages
     PetscPopSignalHandler();
+
+#if defined( FEELPP_HAS_SLEPC )
+    PetscBool is_slepc_initialized;
+    SlepcInitialized( &is_slepc_initialized );
+    if ( !is_slepc_initialized )
+    {
+        int ierr;
+        if( (*argc > 0) && ( argv != nullptr ) )
+            ierr = SlepcInitialize( argc, argv, PETSC_NULL, PETSC_NULL );
+        else
+            ierr = SlepcInitializeNoArguments();
+        CHKERRABORT( *S_worldcomm,ierr );
+    }
+#endif
 }
 #endif // FEELPP_HAS_PETSC_H
 
@@ -844,6 +849,8 @@ Environment::~Environment()
     VLOG( 2 ) << "cleaning mongocxxInstance";
     MongoCxx::reset();
 #endif
+
+#if 0
 #if defined( FEELPP_HAS_GMSH_H )
 #if defined( FEELPP_HAS_GMSH_API )
     gmsh::finalize();
@@ -851,7 +858,7 @@ Environment::~Environment()
     GmshFinalize();
 #endif
 #endif
-
+#endif
 
     VLOG( 2 ) << "clearing known paths\n";
     S_paths.clear();
@@ -892,6 +899,16 @@ Environment::~Environment()
             fs::remove_all( S_repository.root()/"crbdb"/S_about.appName() );
         }
     }
+
+    // call gmsh::finalize() at the end because if gmsh is compiled with MPI support, the gmsh lib call MPI_Finalize
+#if defined( FEELPP_HAS_GMSH_H )
+#if defined( FEELPP_HAS_GMSH_API )
+        gmsh::finalize();
+#else
+        GmshFinalize();
+#endif
+#endif
+
 }
 
 
