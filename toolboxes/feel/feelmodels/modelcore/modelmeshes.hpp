@@ -312,7 +312,7 @@ public :
             if ( M_meshMotionSetup )
                 M_meshMotionSetup->setParameterValues( paramValues );
         }
-#if 1
+
     template <typename MeshType,typename SymbolsExprType>
     void
     updateMeshMotion( SymbolsExprType const& se )
@@ -346,8 +346,33 @@ public :
 
             meshALE->updateMovingMesh();
         }
-#endif
 
+
+    template <typename MeshType>
+    void applyRemesh( std::shared_ptr<MeshType> const& newMesh )
+        {
+            auto oldmesh = this->mesh<MeshType>();
+            if ( oldmesh == newMesh )
+                return;
+
+            this->setMesh( newMesh );
+
+            if ( this->hasMeshMotion() )
+            {
+                auto mmt = this->meshMotionTool<MeshType>();
+
+                std::vector<std::tuple<std::string,elements_reference_wrapper_t<MeshType>>> computationDomains;
+                if ( M_meshMotionSetup )
+                {
+                    auto const& cdm = M_meshMotionSetup->computationalDomainMarkers();
+                    if ( cdm.find( "@elements@" ) == cdm.end() )
+                        computationDomains.push_back( std::make_tuple( M_name, markedelements(newMesh, cdm) ) );
+                }
+                mmt->applyRemesh( newMesh, computationDomains );
+            }
+
+            // TODO : other fields
+        }
 
 private:
     std::string M_name;
@@ -573,6 +598,11 @@ public:
         return this->modelMesh( meshName ).template updateMeshMotion<MeshType>( se );
     }
 
+    template <typename MeshType>
+    void applyRemesh( std::string const& meshName, std::shared_ptr<MeshType> const& newMesh )
+        {
+            this->modelMesh( meshName ).applyRemesh( newMesh );
+        }
 };
 
 

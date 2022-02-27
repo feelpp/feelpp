@@ -157,8 +157,6 @@ template <uint16_type Dim>
 void
 FluidMechanicsBoundaryConditions<Dim>::BodyInterface::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
 {
-    // if ( jarg.contains( "expr" ) )
-    //     M_mexpr.setExpr( jarg.at( "expr" ), mparent.worldComm(), mparent.repository().expr(), indexes );
      if ( jarg.contains( "markers" ) )
      {
          ModelMarkers markers;
@@ -231,7 +229,14 @@ FluidMechanicsBoundaryConditions<Dim>::BodyInterface::setup( ModelBase const& mp
               }
           }
       }
-
+      if ( jarg.contains( "articulation" ) )
+      {
+          auto const& j_art = jarg.at( "articulation" );
+          std::string const& bodyMasterName = j_art.at( "body").template get<std::string>();
+          M_articulationTranslationalVelocityExpr[bodyMasterName].setExpr( j_art.at("translational-velocity"), mparent.worldComm(), mparent.repository().expr(), indexes );
+          if ( !M_articulationTranslationalVelocityExpr[bodyMasterName].template hasExpr<1,1>() )
+              CHECK( false ) << "required a scalar expr";
+      }
 }
 
 template <uint16_type Dim>
