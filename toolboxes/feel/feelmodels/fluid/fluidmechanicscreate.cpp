@@ -1244,8 +1244,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     this->materialsProperties()->removeMesh( oldMesh );
     this->materialsProperties()->addMesh( newMesh );
 
-    this->setMesh( newMesh );
-    this->log("FluidMechanics","applyRemesh", "mesh done" );
+    //this->setMesh( newMesh );
+    super_type::super_model_meshes_type::applyRemesh( this->keyword(), newMesh );
+    this->log("FluidMechanics","applyRemesh", "model mesh done" );
 
     // function space and fields
     space_velocity_ptrtype old_spaceVelocity = M_XhVelocity;
@@ -1265,16 +1266,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     remeshInterp.interpolate( old_fieldPressure, M_fieldPressure );
 
     this->log("FluidMechanics","applyRemesh", "interpolation velocity/pressure done" );
-#if 0 // VINCENT
-    if ( M_meshALE )
-    {
-        std::vector<std::tuple<std::string,elements_reference_wrapper_t<mesh_type>>> computationDomains;
-        if ( this->functionSpaceVelocity()->dof()->hasMeshSupport() && this->functionSpaceVelocity()->dof()->meshSupport()->isPartialSupport() )
-            computationDomains.push_back( std::make_tuple( this->keyword(), M_rangeMeshElements ) );
-        M_meshALE->applyRemesh( newMesh, computationDomains );
-        this->log("FluidMechanics","applyRemesh", "mesh ale done" );
-    }
-#endif
+
     // time stepping
     if ( M_bdfVelocity )
         M_bdfVelocity->applyRemesh( this->functionSpaceVelocity(), matrixInterpolation_velocity );
@@ -1834,7 +1826,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    this->setPostProcessExportsAllFieldsAvailable( {"velocity","pressure","vorticity","displacement","alemesh"} );
+    this->setPostProcessExportsAllFieldsAvailable( {"velocity","pressure","vorticity","mesh-displacement","alemesh"} );
     this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessExportsAllFieldsAvailable( "trace_mesh", {"trace.normal-stress","trace.wall-shear-stress" /*, "trace.body.translational-velocity", "trace.body.angular-velocity"*/ } );
@@ -1848,7 +1840,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
                                                                    (boost::format("body_%1%.fluid_forces")%bname).str(), (boost::format("body_%1%.fluid_torques")%bname).str() } );
     }
     this->setPostProcessExportsPidName( "trace_mesh", "trace.pid" );
-    this->setPostProcessSaveAllFieldsAvailable( {"velocity","pressure","vorticity","displacement"} );
+    this->setPostProcessSaveAllFieldsAvailable( {"velocity","pressure","vorticity"/*,"displacement"*/} );
     super_type::initPostProcess();
 
     // init exporters
