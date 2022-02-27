@@ -30,7 +30,6 @@
 
 #include <feel/options.hpp>
 #include <feel/feelalg/enums.hpp>
-#include <feel/feelcrb/crbenums.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
 
 #if defined(FEELPP_HAS_HARTS)
@@ -689,7 +688,7 @@ crbOptions( std::string const& prefix )
         ( prefixvm( prefix, "crb.absolute-error").c_str() , Feel::po::value<bool>()->default_value( false ), "Impose to compute absolute error PFEM/CRB instead of relative" )
         ( prefixvm( prefix, "crb.dimension-max").c_str()   , Feel::po::value<int>()->default_value( 1 ),       "Offline max WN size, set to 1 by default to avoid to enrich the existing database if this option doesn't appear in onefeel interface or in the config file." )
         ( prefixvm( prefix, "crb.dimension").c_str()   , Feel::po::value<int>()->default_value( -1 ),       "Online  WN size" )
-        ( prefixvm( prefix, "crb.error-type").c_str()   , Feel::po::value<int>()->default_value( ( int )CRB_RESIDUAL_SCM ),       "CRB error type to be computed" )
+        ( prefixvm( prefix, "crb.error-type").c_str()   , Feel::po::value<int>()->default_value( 1 ),       "CRB error type to be computed: =0 residual, =1 residual scm, =2 random, =3 empirical" )
         ( prefixvm( prefix, "crb.compute-apee-for-each-time-step").c_str(),Feel::po::value<bool>()->default_value( true ),"Compute error estimation for each time step (parabolic problems) is true, else compute only for the last one")
         ( prefixvm( prefix, "crb.factor").c_str()   , Feel::po::value<int>()->default_value( -1 ),  "factor useful to estimate error by empirical method" )
         ( prefixvm( prefix, "crb.Nm").c_str()   , Feel::po::value<int>()->default_value( 1 ),       "Offline  number of modes per mu (for the POD) " )

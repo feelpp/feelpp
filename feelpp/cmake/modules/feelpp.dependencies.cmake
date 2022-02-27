@@ -534,6 +534,13 @@ if(FEELPP_ENABLE_PYTHON)
       message(STATUS "[feelpp] petsc4py python wrapper will not be enabled")
     endif()
       
+    find_program(FEELPP_MO2FMU mo2fmu HINTS "$ENV{HOME}/.local/bin" PATHS "$ENV{HOME}/.local/bin")
+    if ( NOT FEELPP_MO2FMU-NOTFOUND )
+      set(FEELPP_HAS_MO2FMU 1)
+      message(STATUS "[feelpp] mo2fmu found: ${FEELPP_MO2FMU}")
+    else()
+      message(STATUS "[feelpp] mo2fmu not found")
+    endif()
   endif()
 
   if (DEFINED PYTHON_SITE_PACKAGES)

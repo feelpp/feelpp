@@ -386,35 +386,41 @@ int main( int argc, char** argv )
     // tag::env[]
     using namespace Feel;
 
-	Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
-                     _about=about(_name="qs_hdg_elasticity",
-                                  _author="Feel++ Consortium",
-                                  _email="feelpp-devel@feelpp.org"));
-    // end::env[]
+    try 
+    {
+	    Environment env( _argc=argc, _argv=argv,
+                         _desc=makeOptions(),
+                         _about=about(_name="qs_hdg_elasticity",
+                                      _author="Feel++ Consortium",
+                                      _email="feelpp-devel@feelpp.org"));
+        // end::env[]
 
-    // Exact solutions
-    std::map<std::string,std::string> locals{
-        {"dim",std::to_string(FEELPP_DIM)},
-        {"exact",std::to_string(boption("exact"))}, 
-        {"lam1",soption("Mu")},
-        {"lam2",soption("Lambda")},
-        {"displ", soption("displ")},
-        {"grad_displ",""},
-        {"strain",""},
-        {"stress",""},
-        {"stressn",soption("stressn")},
-        {"f",soption("f")},
-        {"c1",""},
-        {"c2",""}};
-    Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals  );
+        // Exact solutions
+        std::map<std::string,std::string> locals{
+            {"dim",std::to_string(FEELPP_DIM)},
+            {"exact",std::to_string(boption("exact"))}, 
+            {"lam1",soption("Mu")},
+            {"lam2",soption("Lambda")},
+            {"displ", soption("displ")},
+            {"grad_displ",""},
+            {"strain",""},
+            {"stress",""},
+            {"stressn",soption("stressn")},
+            {"f",soption("f")},
+            {"c1",""},
+            {"c2",""}};
+        Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals  );
 
-    for( auto d: locals )
-        Feel::cout << d.first << ":" << d.second << std::endl;
-    if ( ioption( "order" ) == 1 )
-        return !hdg_elasticity<FEELPP_DIM,1>( locals );
-    if ( ioption( "order" ) == 2 )
-        return !hdg_elasticity<FEELPP_DIM,2>( locals );
-
+        for( auto d: locals )
+            Feel::cout << d.first << ":" << d.second << std::endl;
+        if ( ioption( "order" ) == 1 )
+            return !hdg_elasticity<FEELPP_DIM,1>( locals );
+        if ( ioption( "order" ) == 2 )
+            return !hdg_elasticity<FEELPP_DIM,2>( locals );
+    }
+    catch( ... )
+    {
+        handleExceptions();
+    }
     return 1;
 }
