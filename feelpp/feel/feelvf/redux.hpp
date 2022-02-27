@@ -172,11 +172,6 @@ class Redux : public ExprDynamicBase
               M_op( expr.op() )
         {
         }
-        template <typename IM>
-        void init( IM const& im )
-        {
-            M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update( geom );
@@ -188,10 +183,6 @@ class Redux : public ExprDynamicBase
         void update( Geo_t const& geom )
         {
             M_tensor_expr.update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_tensor_expr.update( geom, face );
         }
 
         value_type

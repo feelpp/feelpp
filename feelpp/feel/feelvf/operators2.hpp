@@ -190,10 +190,6 @@ public:
             M_mat( expr.exactMass() )
         {}
 
-        template<typename IM>
-        void init( IM const& /*im*/ )
-            {
-            }
         void update( Geo_t const& geom, Basis_i_t const& , Basis_j_t const&  )
             {
                 M_gmc = fusion::at_key<key_type>( geom ).get();
@@ -202,9 +198,6 @@ public:
             {
             }
         void update( Geo_t const& )
-            {
-            }
-        void update( Geo_t const&, uint16_type )
             {
             }
         template<typename ... CTX>

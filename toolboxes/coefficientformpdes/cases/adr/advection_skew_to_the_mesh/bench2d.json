@@ -3,8 +3,8 @@
     "ShortName": "advection_skew_to_the_mesh",
     "Models":
     {
-        "equations":[
-            {
+        "cfpdes":{
+            "equations":{
                 "name":"equation1",
                 "unknown":
                 {
@@ -13,11 +13,22 @@
                     "symbol":"u"
                 }
             }
-        ]
+        }
     },
     "Parameters":
     {
         "alpha":"atan(1)"
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/bench2d.geo",
+                "hsize":0.03
+            }
+        }
     },
     "Materials":
     {
@@ -46,7 +57,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

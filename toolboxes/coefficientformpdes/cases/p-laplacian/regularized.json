@@ -7,8 +7,8 @@ Example taken from :
     "ShortName": "p-laplacian",
     "Models":
     {
-        "equations":[
-            {
+        "cfpdes":{
+            "equations":{
                 "name":"equation1",
                 "unknown":
                 {
@@ -17,7 +17,7 @@ Example taken from :
                     "symbol":"u"
                 }
             }
-        ]
+        }
     },
     "Parameters":
     {
@@ -75,7 +75,6 @@ Example taken from :
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

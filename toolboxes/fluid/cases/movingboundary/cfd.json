@@ -4,11 +4,24 @@
     "ShortName":"moving_boundary",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "fluid":{
+            "equations":"Navier-Stokes"
+        }
     },
     "Parameters":
     {
         "ubar":"0.02"
+    },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cfd.geo",
+                "hsize":0.03
+            }
+        }
     },
     "Materials":
     {
@@ -49,9 +62,12 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","displacement","pid"]
+            "Exports":
+            {
+                "fields":["velocity","pressure","displacement","pid"]
+            }
         }
     }
 

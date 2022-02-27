@@ -8,7 +8,9 @@
     "ShortName":"lid-driven-cavity",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "fluid":{
+            "equations":"Navier-Stokes"
+        }
     },
     "Parameters":
     {
@@ -55,53 +57,56 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","pid"]
-        },
-        "Measures":
-        {
-            "Points":
+            "Exports":
             {
-                "vertical_centerline":
+                "fields":["velocity","pressure","pid"]
+            },
+            "Measures":
+            {
+                "Points":
                 {
-                    "over_geometry":
+                    "vertical_centerline":
                     {
-                        "segment":
+                        "over_geometry":
                         {
-                            "point1":"{0.5,0}",
-                            "point2":"{0.5,1}",
-                            "n_points":100
+                            "segment":
+                            {
+                                "point1":"{0.5,0}",
+                                "point2":"{0.5,1}",
+                                "n_points":100
+                            }
+                        },
+                        "fields":"velocity",
+                        "include_coordinates":1,
+                        "output":
+                        {
+                            "type":"table"
+                            //"name":"vertical_centerline"
                         }
                     },
-                    "fields":"velocity",
-                    "include_coordinates":1,
-                    "output":
+                    "horizontal_centerline":
                     {
-                        "type":"table"
-                        //"name":"vertical_centerline"
-                    }
-                },
-                "horizontal_centerline":
-                {
-                    "over_geometry":
-                    {
-                        "segment":
+                        "over_geometry":
                         {
-                            "point1":"{0,0.5}",
-                            "point2":"{1,0.5}",
-                            "n_points":100
+                            "segment":
+                            {
+                                "point1":"{0,0.5}",
+                                "point2":"{1,0.5}",
+                                "n_points":100
+                            }
+                        },
+                        "fields":"velocity",
+                        "include_coordinates":1,
+                        "output":
+                        {
+                            "type":"table"
+                            //"name":"horizontal_centerline"
                         }
-                    },
-                    "fields":"velocity",
-                    "include_coordinates":1,
-                    "output":
-                    {
-                        "type":"table"
-                        //"name":"horizontal_centerline"
                     }
-                }
 
+                }
             }
         }
     }
