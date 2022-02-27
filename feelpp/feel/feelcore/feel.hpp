@@ -91,7 +91,7 @@
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
 
-#include <boost/hana.hpp>
+#include <feel/feelcore/hana.hpp>
 #include <boost/ref.hpp>
 
 #include <boost/property_tree/ptree.hpp>

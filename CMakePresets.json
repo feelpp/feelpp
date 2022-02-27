@@ -87,7 +87,19 @@
             "description": "Build only the Feel++ MOR Component",
             "binaryDir": "${sourceDir}/build/mor",
             "cacheVariables": {
-                "FEELPP_COMPONENT": "mor"
+                "FEELPP_COMPONENT": "mor",
+                "FEELPP_ENABLE_RESEARCH": "OFF"
+            }
+        },
+        {
+            "name": "research-mor",
+            "inherits": "default",
+            "displayName": "resarch-mor",
+            "description": "Build only the Feel++ MOR and Research Components",
+            "binaryDir": "${sourceDir}/build/research-mor",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "mor",
+                "FEELPP_ENABLE_RESEARCH": "ON"
             }
         },
         {
@@ -213,22 +225,18 @@
         {
             "name": "mor",
             "inherits": "default",
-            "configurePreset": "mor"
+            "configurePreset": "mor",
+            "targets": [
+                "feelpp_mor",
+                "pyfeelppmor",
+                "feelpp_mor_apps",
+                "install"
+            ]
         },
         {
             "name": "pyfeelpp",
             "inherits": "default",
             "configurePreset": "pyfeelpp"
-        },
-        {
-            "name": "pyfeelpp-toolboxes",
-            "inherits": "default",
-            "configurePreset": "pyfeelpp-toolboxes"
-        },
-        {
-            "name": "pyfeelpp-mor",
-            "inherits": "default",
-            "configurePreset": "pyfeelpp-mor"
         },
         {
             "name": "pyfeelpp-all",

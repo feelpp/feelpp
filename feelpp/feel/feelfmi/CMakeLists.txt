@@ -30,3 +30,7 @@ set( SRC
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 feel_append_src(feelfmi "${SRC};${HDR}")
 endif()
+if( FEELPP_HAS_FMI4CPP )
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} fmi4cpp*.hpp)
+feel_append_src(feelfmi "${SRC};${HDR}")
+endif()

@@ -71,27 +71,15 @@ main(int argc, char**argv )
     std::string mode = soption(_name="case.mode");
     int dimension = ioption(_name="case.dimension");
     std::string discretization = soption(_name="case.discretization");
-
-    auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
-#if FEELPP_INSTANTIATION_ORDER_MAX >= 3
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
-                                             hana::make_tuple("P2", hana::int_c<2> ),
-                                             hana::make_tuple("P3", hana::int_c<3> ) );
-#elif FEELPP_INSTANTIATION_ORDER_MAX >= 2
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
-                                             hana::make_tuple("P2", hana::int_c<2> ) );
-#else
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
-#endif
     int status = 0;
 
     if ( mode == "simulation" || mode == "h-convergence" )
     {
-        hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension,&status,&mode]( auto const& d )
+        hana::for_each( Pc_t<>, [&discretization,&dimension,&status,&mode]( auto const& d )
                         {
-                            constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
-                            std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
-                            constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
+                            constexpr int _dim = std::decay_t<decltype( hana::at_c<0>( d ) )>::value;
+                            constexpr int _torder = std::decay_t<decltype( hana::at_c<1>( d ) )>::value;
+                            std::string const& _discretization = hana::at_c<2>( d );
                             if ( dimension == _dim && discretization == _discretization )
                             {
                                 typedef Feel::FeelModels::Heat< Simplex<_dim,1>,
