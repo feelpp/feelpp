@@ -8,8 +8,11 @@ var classFeel_1_1FeelModels_1_1ModelPhysicFluid =
     [ "gravityForceExpr", "classFeel_1_1FeelModels_1_1ModelPhysicFluid.html#aed9f2e3472262603d8912ab0611f2a95", null ],
     [ "setEquation", "classFeel_1_1FeelModels_1_1ModelPhysicFluid.html#a1d160c39b316597d0ad57d781d983f0d", null ],
     [ "setParameterValues", "classFeel_1_1FeelModels_1_1ModelPhysicFluid.html#a415fbb56ea174d681fdcbafc693d0e09", null ],
+    [ "tabulateInformations", "classFeel_1_1FeelModels_1_1ModelPhysicFluid.html#a5ec91d744f0e84aa76e477a2fed15cd4", null ],
+    [ "turbulence", "classFeel_1_1FeelModels_1_1ModelPhysicFluid.html#ab1533a2c14bb6fe5c08612ed53428d26", null ],
     [ "turbulence", "classFeel_1_1FeelModels_1_1ModelPhysicFluid.html#a8d8a0a3628dd6e137ae856d4129ee283", null ],
-    [ "ModelPhysicFluid", "classFeel_1_1FeelModels_1_1ModelPhysicFluid.html#a466f1574d267db3497e207299708f37f", null ],
+    [ "updateInformationObject", "classFeel_1_1FeelModels_1_1ModelPhysicFluid.html#a8672b9744d645e348a67809c70c14a4f", null ],
+    [ "ModelPhysicFluid", "classFeel_1_1FeelModels_1_1ModelPhysicFluid.html#ab4ed3d40a032a11e74de1c170075f28a", null ],
     [ "ModelPhysicFluid", "classFeel_1_1FeelModels_1_1ModelPhysicFluid.html#ad10e1efd369991ac18987c5d2201fc53", null ],
     [ "ModelPhysicFluid", "classFeel_1_1FeelModels_1_1ModelPhysicFluid.html#afcddff3d5d2a999c2f9a9da1ce9f082c", null ]
 ];

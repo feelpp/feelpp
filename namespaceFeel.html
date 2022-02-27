@@ -399,6 +399,7 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__face.html">is_face</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__filter.html">is_filter</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Filters.  <a href="structFeel_1_1is__filter.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__filter_3_01boost_1_1tuple_3_01T_8_8_8_01_4_01_4.html">is_filter&lt; boost::tuple&lt; T... &gt; &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1524,7 +1525,7 @@ template&lt;typename... T&gt; </td></tr>
 <tr class="separator:a063718b9d752656a387bb75b4aeab5b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6e2804852c2acf9dcf87299bb8cd6559"><td class="memTemplParams" colspan="2"><a id="a6e2804852c2acf9dcf87299bb8cd6559"></a>
 template&lt;typename IteratorRangeT &gt; </td></tr>
-<tr class="memitem:a6e2804852c2acf9dcf87299bb8cd6559"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>submeshrange_t</b> = typename Feel::detail::submeshrangetype&lt; IteratorRangeT &gt;::type</td></tr>
+<tr class="memitem:a6e2804852c2acf9dcf87299bb8cd6559"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>submeshrange_t</b> = typename <a class="el" href="structFeel_1_1detail_1_1submeshrangetype.html">Feel::detail::submeshrangetype</a>&lt; IteratorRangeT &gt;::type</td></tr>
 <tr class="separator:a6e2804852c2acf9dcf87299bb8cd6559"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae738a0c6a98549e30df5cc2f69b5e651"><td class="memTemplParams" colspan="2"><a id="ae738a0c6a98549e30df5cc2f69b5e651"></a>
 template&lt;typename MeshSupportType , std::enable_if_t&lt; std::is_base_of_v&lt; MeshSupportBase, unwrap_ptr_t&lt; MeshSupportType &gt;&gt;, int &gt;  = 0&gt; </td></tr>
@@ -1974,6 +1975,9 @@ Feel::po::options_description&#160;</td><td class="memItemRight" valign="bottom"
 <tr class="memitem:ae2388a3da46e7abf91df2e1402f705dd"><td class="memTemplParams" colspan="2">template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:ae2388a3da46e7abf91df2e1402f705dd"><td class="memTemplItemLeft" align="right" valign="top">std::map&lt; <a class="el" href="classint.html">int</a>, markedelements_t&lt; MeshType &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#ae2388a3da46e7abf91df2e1402f705dd">collectionOfMarkedelements</a> (MeshType const &amp;mesh, std::any const &amp;collectionOfMarkersFlag)</td></tr>
 <tr class="separator:ae2388a3da46e7abf91df2e1402f705dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a009acc335f4ebc610c23e8e84177ab5c"><td class="memTemplParams" colspan="2">template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:a009acc335f4ebc610c23e8e84177ab5c"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a009acc335f4ebc610c23e8e84177ab5c">collectionOfMarkedelementsWithGhostsSplitted</a> (MeshType const &amp;mesh, std::any const &amp;collectionOfMarkersFlag)</td></tr>
+<tr class="separator:a009acc335f4ebc610c23e8e84177ab5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa79d85d22d0861cbfa891e5936e0d80d"><td class="memTemplParams" colspan="2">template&lt;typename IteratorType , typename Predicate &gt; </td></tr>
 <tr class="memitem:aa79d85d22d0861cbfa891e5936e0d80d"><td class="memTemplItemLeft" align="right" valign="top">ext_entities_from_iterator_t&lt; IteratorType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#aa79d85d22d0861cbfa891e5936e0d80d">complement</a> (IteratorType &amp;&amp;it, Predicate pred)</td></tr>
 <tr class="memdesc:aa79d85d22d0861cbfa891e5936e0d80d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Provides the complement of the set of entities given by <code></code>[begin(it),end(it)] with respect to the negation of predicate <code>pred</code>.  <a href="namespaceFeel.html#aa79d85d22d0861cbfa891e5936e0d80d">More...</a><br /></td></tr>
@@ -4479,8 +4483,9 @@ parts_map_type const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><
 <tr class="separator:a3e723253ad85803e3b6f4a4aeca0a1f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac7d1b3f0d519fba7a4bc6055c14394fc"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; element_reference_wrapper_const_iterator, element_reference_wrapper_const_iterator, elements_reference_wrapper_ptrtype &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#ac7d1b3f0d519fba7a4bc6055c14394fc">elementsWithMarker3</a> (flag_type m, <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p=<a class="el" href="namespaceFeel.html#ab3a0f136b2980f14f6111a9daf2fa483">invalid_rank_type_value</a>) const</td></tr>
 <tr class="separator:ac7d1b3f0d519fba7a4bc6055c14394fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a11b2681b23e7462afe08f7a761e19d42"><td class="memItemLeft" align="right" valign="top">std::map&lt; <a class="el" href="classint.html">int</a>, std::tuple&lt; element_reference_wrapper_const_iterator, element_reference_wrapper_const_iterator, elements_reference_wrapper_ptrtype &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a11b2681b23e7462afe08f7a761e19d42">collectionOfElementsWithMarkerByType</a> (uint16_type markerType, std::map&lt; <a class="el" href="classint.html">int</a>, std::set&lt; flag_type &gt;&gt; const &amp;collectionOfMarkerFlagSet, <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p=<a class="el" href="namespaceFeel.html#ab3a0f136b2980f14f6111a9daf2fa483">invalid_rank_type_value</a>) const</td></tr>
-<tr class="separator:a11b2681b23e7462afe08f7a761e19d42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57c5d8affb40fa8bc4880a6096bb95ee"><td class="memTemplParams" colspan="2">template&lt;int TheType = 0&gt; </td></tr>
+<tr class="memitem:a57c5d8affb40fa8bc4880a6096bb95ee"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a57c5d8affb40fa8bc4880a6096bb95ee">collectionOfElementsWithMarkerByType</a> (uint16_type markerType, std::map&lt; <a class="el" href="classint.html">int</a>, std::set&lt; flag_type &gt;&gt; const &amp;collectionOfMarkerFlagSet, <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p=<a class="el" href="namespaceFeel.html#ab3a0f136b2980f14f6111a9daf2fa483">invalid_rank_type_value</a>) const</td></tr>
+<tr class="separator:a57c5d8affb40fa8bc4880a6096bb95ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6acbd1558a94669f56992211a0766b0d"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; element_reference_wrapper_const_iterator, element_reference_wrapper_const_iterator, elements_reference_wrapper_ptrtype &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a6acbd1558a94669f56992211a0766b0d">elementsWithProcessId</a> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p=<a class="el" href="namespaceFeel.html#ab3a0f136b2980f14f6111a9daf2fa483">invalid_rank_type_value</a>) const</td></tr>
 <tr class="separator:a6acbd1558a94669f56992211a0766b0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a81f9fd901bd7561bed7c8fc6b17b3d4d"><td class="memItemLeft" align="right" valign="top">element_const_iterator&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a81f9fd901bd7561bed7c8fc6b17b3d4d">firstElementIteratorWithProcessId</a> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p=<a class="el" href="namespaceFeel.html#ab3a0f136b2980f14f6111a9daf2fa483">invalid_rank_type_value</a>) const</td></tr>
@@ -5119,14 +5124,16 @@ template&lt;typename ... Ts&gt; </div>
 
 </div>
 </div>
-<a id="a11b2681b23e7462afe08f7a761e19d42"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a11b2681b23e7462afe08f7a761e19d42">&#9670;&nbsp;</a></span>collectionOfElementsWithMarkerByType()</h2>
+<a id="a57c5d8affb40fa8bc4880a6096bb95ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57c5d8affb40fa8bc4880a6096bb95ee">&#9670;&nbsp;</a></span>collectionOfElementsWithMarkerByType()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;int TheType = 0&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::map&lt;<a class="el" href="classint.html">int</a>, std::tuple&lt;element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype&gt; &gt; Feel::collectionOfElementsWithMarkerByType </td>
+          <td class="memname">auto Feel::collectionOfElementsWithMarkerByType </td>
           <td>(</td>
           <td class="paramtype">uint16_type&#160;</td>
           <td class="paramname"><em>markerType</em>, </td>
@@ -5150,7 +5157,14 @@ template&lt;typename ... Ts&gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>the range of iterator <code></code>(begin,end) over the elements with <code>Marker1</code> <code>markerFlags</code> on processor <code>p</code> </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>the range of iterator <code></code>(begin,end) over the elements with <code>Marker1</code> <code>markerFlags</code> on processor <code>p</code> <ul>
+<li>TheType=0 : only actives elements</li>
+</ul>
+</dd></dl>
+<ul>
+<li>TheType=1 : only ghosts elements</li>
+<li>TheType=2 : actives and ghosts elements (container splited) </li>
+</ul>
 
 <p class="reference">References <a class="el" href="namespaceFeel.html#ab3a0f136b2980f14f6111a9daf2fa483">invalid_rank_type_value</a>, and <a class="el" href="classFeel_1_1WorldComm.html#aac08779f8d3178c2c9b88426ffa76246">Feel::WorldComm::localRank()</a>.</p>
 
@@ -5184,6 +5198,37 @@ template&lt;typename MeshType &gt; </div>
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a mapping between a id and pair of iterators to iterate over elements of the mesh with marker <code>flag</code> </dd></dl>
+
+</div>
+</div>
+<a id="a009acc335f4ebc610c23e8e84177ab5c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a009acc335f4ebc610c23e8e84177ab5c">&#9670;&nbsp;</a></span>collectionOfMarkedelementsWithGhostsSplitted()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::collectionOfMarkedelementsWithGhostsSplitted </td>
+          <td>(</td>
+          <td class="paramtype">MeshType const &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::any const &amp;&#160;</td>
+          <td class="paramname"><em>collectionOfMarkersFlag</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>a mapping between a id and pair of (range active element, range ghost elements) </dd></dl>
 
 </div>
 </div>
@@ -5431,7 +5476,7 @@ template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; MeshB
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a pair of edge iterators (begin,end) </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a2b5fed3968ca8777189f58f744062464">idelements()</a>, and <a class="el" href="namespaceFeel.html#aeb29bac2a3e332bb2282ce149f33bcc3">worldComm()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#aeb29bac2a3e332bb2282ce149f33bcc3">worldComm()</a>.</p>
 
 </div>
 </div>
@@ -6143,6 +6188,8 @@ template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; MeshB
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a pair of face iterators (begin,end) </dd></dl>
 
+<p class="reference">References <a class="el" href="namespaceFeel.html#a1f80717436f1b0141af08578915d9c61">markedelementsByType()</a>.</p>
+
 </div>
 </div>
 <a id="a81f9fd901bd7561bed7c8fc6b17b3d4d"></a>
@@ -6479,6 +6526,8 @@ template&lt;typename MeshType &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over elements with id <code>flag</code> </dd></dl>
 
+<p class="reference">References <a class="el" href="namespaceFeel.html#a1f80717436f1b0141af08578915d9c61">markedelementsByType()</a>.</p>
+
 </div>
 </div>
 <a id="a7f1d8bad099e05c773b93577644292d1"></a>
@@ -6509,8 +6558,6 @@ template&lt;typename MeshType &gt; </div>
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over elements with id <code>id</code> </dd></dl>
-
-<p class="reference">References <a class="el" href="namespaceFeel.html#a6b69ad4292ceeb6b52d5090d7afe2ddb">unwrap_ptr()</a>.</p>
 
 </div>
 </div>
@@ -7177,6 +7224,8 @@ template&lt;typename MeshType &gt; </div>
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over elements of the mesh with marker <code>flag</code> </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a4865c9737b1e5b536a3886ec57f134ff">faces()</a>, and <a class="el" href="namespaceFeel.html#a33538f3c396236735baa001c539a0934">idedelements()</a>.</p>
 
 </div>
 </div>
@@ -8467,7 +8516,7 @@ template&lt;typename SpaceT , typename  = std::enable_if_t&lt;is_functionspace_v
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the support of a function space </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a97b28f49a9b3e562625b6890c2112fdb">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::Body::momentOfInertia_inertialFrame()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#af69f23263f0e2cab777a6e1e566f6817">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::Body::massExpr()</a>, and <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a97b28f49a9b3e562625b6890c2112fdb">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::Body::momentOfInertia_inertialFrame()</a>.</p>
 
 </div>
 </div>
@@ -8558,7 +8607,7 @@ template&lt;typename C &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the c++ objet pointed by c++ pointer or shared_ptr or same object otherwise </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#aa86bef326f47d85434525962153a2523">boundarypoints()</a>, <a class="el" href="namespaceFeel.html#affd58b7d24b04852404899355eb31f93">expansion()</a>, and <a class="el" href="namespaceFeel.html#a7f1d8bad099e05c773b93577644292d1">idedfaces()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#aa86bef326f47d85434525962153a2523">boundarypoints()</a>, and <a class="el" href="namespaceFeel.html#affd58b7d24b04852404899355eb31f93">expansion()</a>.</p>
 
 </div>
 </div>
@@ -8581,7 +8630,7 @@ template&lt;size_t S, class ITERATOR , class CONTAINER &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the worldcomm associated to the mesh stored in the range </dd></dl>
 
-<p class="reference">References <a class="el" href="namespaceFeel.html#a08ef32dc7bae1241b100e90dc7dd5d82">edges()</a>, and <a class="el" href="namespaceFeel.html#ab3a0f136b2980f14f6111a9daf2fa483">invalid_rank_type_value</a>.</p>
+<p class="reference">References <a class="el" href="namespaceFeel.html#a08ef32dc7bae1241b100e90dc7dd5d82">edges()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="classFeel_1_1Mesh.html#a5128e9a88c09dbaa672bd3f717ed5a7f">Feel::Mesh&lt; GeoShape, double, 0, uint32_type &gt;::check()</a>, <a class="el" href="classFeel_1_1MeshBase.html#a1ed60f60a82b72efd8624027150ccc45">Feel::MeshBase&lt; index_type &gt;::isPartitioned()</a>, and <a class="el" href="classFeel_1_1Mesh.html#a01a52cf1a36fa217975b92c1f3023cb6">Feel::Mesh&lt; GeoShape, double, 0, uint32_type &gt;::numGlobalEdges()</a>.</p>
 
@@ -8694,17 +8743,17 @@ template&lt;typename... T&gt; </div>
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="anamespaceFeel_html_a56832218e29e9fbfcf68e24a60cee32c"><div class="ttname"><a href="namespaceFeel.html#a56832218e29e9fbfcf68e24a60cee32c">Feel::markedfaces</a></div><div class="ttdeci">markedfaces_t&lt; MeshType &gt; markedfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:531</div></div>
+<div class="ttc" id="anamespaceFeel_html_a56832218e29e9fbfcf68e24a60cee32c"><div class="ttname"><a href="namespaceFeel.html#a56832218e29e9fbfcf68e24a60cee32c">Feel::markedfaces</a></div><div class="ttdeci">markedfaces_t&lt; MeshType &gt; markedfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:379</div></div>
 <div class="ttc" id="anamespaceFeel_html_a2785f8892f89d072d026f84d0225fd50"><div class="ttname"><a href="namespaceFeel.html#a2785f8892f89d072d026f84d0225fd50">Feel::handleExceptions</a></div><div class="ttdeci">void handleExceptions()</div><div class="ttdoc">handle exceptions using a Lippincott function this funnction allows to handle the exceptions thrown i...</div><div class="ttdef"><b>Definition:</b> exceptions.cpp:31</div></div>
-<div class="ttc" id="anamespaceFeel_html_a229552e84736e331a5e2972379393aa0"><div class="ttname"><a href="namespaceFeel.html#a229552e84736e331a5e2972379393aa0">Feel::nelements</a></div><div class="ttdeci">size_type nelements(boost::tuple&lt; MT, Iterator, Iterator &gt; const &amp;its, bool global=false, worldcomm_t const &amp;worldComm=Environment::worldComm())</div><div class="ttdef"><b>Definition:</b> filters.hpp:902</div></div>
-<div class="ttc" id="anamespaceFeel_html_a4865c9737b1e5b536a3886ec57f134ff"><div class="ttname"><a href="namespaceFeel.html#a4865c9737b1e5b536a3886ec57f134ff">Feel::faces</a></div><div class="ttdeci">faces_pid_t&lt; MeshType &gt; faces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:468</div></div>
+<div class="ttc" id="anamespaceFeel_html_a229552e84736e331a5e2972379393aa0"><div class="ttname"><a href="namespaceFeel.html#a229552e84736e331a5e2972379393aa0">Feel::nelements</a></div><div class="ttdeci">size_type nelements(boost::tuple&lt; MT, Iterator, Iterator &gt; const &amp;its, bool global=false, worldcomm_t const &amp;worldComm=Environment::worldComm())</div><div class="ttdef"><b>Definition:</b> filters.hpp:750</div></div>
+<div class="ttc" id="anamespaceFeel_html_a4865c9737b1e5b536a3886ec57f134ff"><div class="ttname"><a href="namespaceFeel.html#a4865c9737b1e5b536a3886ec57f134ff">Feel::faces</a></div><div class="ttdeci">faces_pid_t&lt; MeshType &gt; faces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:316</div></div>
 <div class="ttc" id="anamespaceFeel_html_a5c5d7739b17b8c03ee6e3250e4523325"><div class="ttname"><a href="namespaceFeel.html#a5c5d7739b17b8c03ee6e3250e4523325">Feel::intersect</a></div><div class="ttdeci">FEELPP_EXPORT Feel::intersect_t&lt; IteratorType &gt; intersect(IteratorType &amp;&amp;it, Args &amp;&amp;... args)</div><div class="ttdoc">this function takes a set of iterators over geometrical entities of the same type (e....</div><div class="ttdef"><b>Definition:</b> intersect.hpp:53</div></div>
 <div class="ttc" id="anamespaceFeel_html_a5804d131a2d677bdc39e050c75553d7d"><div class="ttname"><a href="namespaceFeel.html#a5804d131a2d677bdc39e050c75553d7d">Feel::concatenate</a></div><div class="ttdeci">FEELPP_EXPORT Feel::concatenate_t&lt; IteratorType &gt; concatenate(IteratorType &amp;&amp;it, Args &amp;&amp;... args)</div><div class="ttdoc">this function takes a set of iterators over geometrical entities of the same type (e....</div><div class="ttdef"><b>Definition:</b> concatenate.hpp:54</div></div>
 <div class="ttc" id="anamespaceFeel_html_aa79d85d22d0861cbfa891e5936e0d80d"><div class="ttname"><a href="namespaceFeel.html#aa79d85d22d0861cbfa891e5936e0d80d">Feel::complement</a></div><div class="ttdeci">ext_entities_from_iterator_t&lt; IteratorType &gt; complement(IteratorType &amp;&amp;it, Predicate pred)</div><div class="ttdoc">Provides the complement of the set of entities given by [begin(it),end(it)] with respect to the negat...</div><div class="ttdef"><b>Definition:</b> complement.hpp:44</div></div>
-<div class="ttc" id="anamespaceFeel_html_a3d0d5acdc1a40d6942f44cf5e9373387"><div class="ttname"><a href="namespaceFeel.html#a3d0d5acdc1a40d6942f44cf5e9373387">Feel::internalelements</a></div><div class="ttdeci">internalelements_t&lt; MeshType &gt; internalelements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:289</div></div>
-<div class="ttc" id="anamespaceFeel_html_af464ea7e12b67aec0df1ea574a1653c4"><div class="ttname"><a href="namespaceFeel.html#af464ea7e12b67aec0df1ea574a1653c4">Feel::markedelements</a></div><div class="ttdeci">markedelements_t&lt; MeshType &gt; markedelements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:349</div></div>
+<div class="ttc" id="anamespaceFeel_html_a3d0d5acdc1a40d6942f44cf5e9373387"><div class="ttname"><a href="namespaceFeel.html#a3d0d5acdc1a40d6942f44cf5e9373387">Feel::internalelements</a></div><div class="ttdeci">internalelements_t&lt; MeshType &gt; internalelements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:143</div></div>
+<div class="ttc" id="anamespaceFeel_html_af464ea7e12b67aec0df1ea574a1653c4"><div class="ttname"><a href="namespaceFeel.html#af464ea7e12b67aec0df1ea574a1653c4">Feel::markedelements</a></div><div class="ttdeci">markedelements_t&lt; MeshType &gt; markedelements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:203</div></div>
 <div class="ttc" id="anamespaceFeel_html_aeae4be2a1bdc7033742a68a8574cf194"><div class="ttname"><a href="namespaceFeel.html#aeae4be2a1bdc7033742a68a8574cf194">Feel::ipow</a></div><div class="ttdeci">constexpr int64_t ipow(int64_t base, int exp, int64_t result=1)</div><div class="ttdoc">compute integer power</div><div class="ttdef"><b>Definition:</b> feelmath.hpp:39</div></div>
-<div class="ttc" id="anamespaceFeel_html_a0d298e3fefe95598404e21c7d99570ed"><div class="ttname"><a href="namespaceFeel.html#a0d298e3fefe95598404e21c7d99570ed">Feel::internalfaces</a></div><div class="ttdeci">internalfaces_t&lt; MeshType &gt; internalfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:610</div></div>
+<div class="ttc" id="anamespaceFeel_html_a0d298e3fefe95598404e21c7d99570ed"><div class="ttname"><a href="namespaceFeel.html#a0d298e3fefe95598404e21c7d99570ed">Feel::internalfaces</a></div><div class="ttdeci">internalfaces_t&lt; MeshType &gt; internalfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:458</div></div>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>

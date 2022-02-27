@@ -1,11 +1,26 @@
 var structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence =
 [
+    [ "frictionVelocityWallFunctionExpr", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a7bf65e4267a4ff2df2a1c52c06bce47a", null ],
+    [ "frictionVelocityWallFunctionSymbol", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#ae043a72bad33b1c16106dd48b034555e", null ],
     [ "hasTurbulentKineticEnergy", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a473c495cefdf506d11b67a49bdeee988", null ],
     [ "isEnabled", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a768f207e2a08560d41576fef15f84106", null ],
+    [ "kEpsilon_c_1epsilonSymbol", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a4d53f05ddfd8ef6fad99917a42768bbc", null ],
+    [ "kEpsilon_c_2epsilonSymbol", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a3bc0f351bc908c3d40493c0711a02a82", null ],
+    [ "kEpsilon_c_muSymbol", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a0c6cdf31a520f665713f0f10e2b70de1", null ],
+    [ "kEpsilon_sigma_epsilonSymbol", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#ac5f05eb0489ffa8d184f1e3aa739ed44", null ],
+    [ "kEpsilon_sigma_kSymbol", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a0eba18481d56de26c016a9d13f9d0879", null ],
+    [ "mixingLengthLimitSymbol", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a323f800de74e2e993edce12b4654d257", null ],
     [ "model", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#aea1be6a35b1c280569a72512d2794337", null ],
-    [ "setup", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a2309fa00bb8916bc1cc5c8f1924bd07c", null ],
+    [ "setFrictionVelocityWallFunction", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#ad6d48ec4df08c1b83e37e121433a160e", null ],
+    [ "setParameterNoMaterialLink", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a5b1a6ee0001d71d709470aa3f947d2dc", null ],
+    [ "setParameterNoMaterialLink", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a086abe2c4432fa398c6370483c09dd85", null ],
+    [ "setParameterNoMaterialNoModelLink", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a80fa689d03d5a72ae6e0fbb4d695d4ca", null ],
+    [ "setParameterOnMaterial", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#aa4b8aa6a6361f67967d0f29deda9aa2e", null ],
+    [ "setParameterOnMaterial", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a7a4d1a1b9dfc2e175d1d5ece736dea21", null ],
+    [ "setup", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a30aaed4637a671db20a147c134eaa992", null ],
     [ "useBoussinesqApproximation", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#ac8d1c5b50373daf07c6ca277a7b936d1", null ],
-    [ "Turbulence", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#aa9d578686e0cef47698077ac5f2dde5f", null ],
+    [ "vonKarmanConstantSymbol", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a942912bcd15b5959d40a3c640facc518", null ],
+    [ "Turbulence", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#ae717734067991b02506c31d3e11256fd", null ],
     [ "Turbulence", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#abd65de12bf752fa1f0edee107669145b", null ],
     [ "Turbulence", "structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html#a6e11b3255cb79e412abb86bbc3aeecf5", null ]
 ];

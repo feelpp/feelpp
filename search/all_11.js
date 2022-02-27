@@ -1,9 +1,9 @@
 var searchData=
 [
-  ['qdim_1752',['qDim',['../classFeel_1_1FunctionSpace.html#a37562bbc81477310bd0c12ddba7c8c83',1,'Feel::FunctionSpace']]],
-  ['quad_5forder_5ffrom_5fexpression_1753',['quad_order_from_expression',['../namespaceFeel.html#a1d9f0d87bd325ffed641f92f6d12c3c8',1,'Feel']]],
-  ['quad_5forder_5ftype_1754',['quad_order_type',['../namespaceFeel.html#ab5c8580ef17780030985306d08f00eef',1,'Feel']]],
-  ['quadptlocalization_1755',['QuadPtLocalization',['../classFeel_1_1QuadPtLocalization.html',1,'Feel']]],
-  ['quadptlocalization_2ehpp_1756',['quadptlocalization.hpp',['../quadptlocalization_8hpp.html',1,'']]],
-  ['quadptlocrangetype_1757',['quadptlocrangetype',['../structFeel_1_1detail_1_1quadptlocrangetype.html',1,'Feel::detail']]]
+  ['qdim_1765',['qDim',['../classFeel_1_1FunctionSpace.html#a37562bbc81477310bd0c12ddba7c8c83',1,'Feel::FunctionSpace']]],
+  ['quad_5forder_5ffrom_5fexpression_1766',['quad_order_from_expression',['../namespaceFeel.html#a1d9f0d87bd325ffed641f92f6d12c3c8',1,'Feel']]],
+  ['quad_5forder_5ftype_1767',['quad_order_type',['../namespaceFeel.html#ab5c8580ef17780030985306d08f00eef',1,'Feel']]],
+  ['quadptlocalization_1768',['QuadPtLocalization',['../classFeel_1_1QuadPtLocalization.html',1,'Feel']]],
+  ['quadptlocalization_2ehpp_1769',['quadptlocalization.hpp',['../quadptlocalization_8hpp.html',1,'']]],
+  ['quadptlocrangetype_1770',['quadptlocrangetype',['../structFeel_1_1detail_1_1quadptlocrangetype.html',1,'Feel::detail']]]
 ];

@@ -10,7 +10,7 @@ var elements_8hpp =
     [ "boundaryElements", "elements_8hpp.html#af577df48a45188bea43961d967412bce", null ],
     [ "buildOrderedElements", "elements_8hpp.html#aee3ebb8d3c55a0e35f839977b3346543", null ],
     [ "clear", "elements_8hpp.html#ad460a09a7434015813f67e4968bd2cc7", null ],
-    [ "collectionOfElementsWithMarkerByType", "elements_8hpp.html#a11b2681b23e7462afe08f7a761e19d42", null ],
+    [ "collectionOfElementsWithMarkerByType", "elements_8hpp.html#a57c5d8affb40fa8bc4880a6096bb95ee", null ],
     [ "element", "elements_8hpp.html#ad763c14b3c0f7efec9eb0e520d000994", null ],
     [ "element", "elements_8hpp.html#a12ddfc67ec5a7eac6b159f254ed8b0a1", null ],
     [ "elementIterator", "elements_8hpp.html#a1333c3a4e4025f34c588bd73c741eb23", null ],

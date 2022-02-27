@@ -8,11 +8,10 @@ var structFeel_1_1vf_1_1Pow_1_1tensor =
     [ "evalq", "structFeel_1_1vf_1_1Pow_1_1tensor.html#a94d499756874f1cc088887da12d6e06d", null ],
     [ "evalq", "structFeel_1_1vf_1_1Pow_1_1tensor.html#aaa9ba134b94f88bf927845ded321e96f", null ],
     [ "evalq", "structFeel_1_1vf_1_1Pow_1_1tensor.html#acac83c69ed6b804f9e4cbcc53dd031c6", null ],
-    [ "init", "structFeel_1_1vf_1_1Pow_1_1tensor.html#a0945ea2bbcdf9ef7ee2a609b9c625af9", null ],
     [ "update", "structFeel_1_1vf_1_1Pow_1_1tensor.html#a8316104fcae790ca6fcd2c116be1aa95", null ],
     [ "update", "structFeel_1_1vf_1_1Pow_1_1tensor.html#a2ddc6fb76be3f7ede55facdc8e98ddff", null ],
     [ "update", "structFeel_1_1vf_1_1Pow_1_1tensor.html#aec7e8828f1c514f1921910dc9d09c6aa", null ],
-    [ "update", "structFeel_1_1vf_1_1Pow_1_1tensor.html#acdc1cce50d5430fd687c9e4d85f60eb1", null ],
+    [ "update", "structFeel_1_1vf_1_1Pow_1_1tensor.html#a470255a0ee7a573fea5b6d92190eb3f4", null ],
     [ "expression_type", "structFeel_1_1vf_1_1Pow_1_1tensor.html#a903904903cd8181ed9bfb6c9a37fd5b1", null ],
     [ "gmc_ptrtype", "structFeel_1_1vf_1_1Pow_1_1tensor.html#ae8058c3c264a39a1aec3ea0ade2357ab", null ],
     [ "gmc_type", "structFeel_1_1vf_1_1Pow_1_1tensor.html#af04f36d4c482fade065f13033a45f055", null ],
@@ -24,5 +23,6 @@ var structFeel_1_1vf_1_1Pow_1_1tensor =
     [ "value_type", "structFeel_1_1vf_1_1Pow_1_1tensor.html#a9def5aa3b7a5499a29e0b6a8d30a4353", null ],
     [ "tensor", "structFeel_1_1vf_1_1Pow_1_1tensor.html#a099abdc1c22b89576de361d73f15c0b3", null ],
     [ "tensor", "structFeel_1_1vf_1_1Pow_1_1tensor.html#a08243155ee5b82a12ffb2d5d8d0e31db", null ],
-    [ "tensor", "structFeel_1_1vf_1_1Pow_1_1tensor.html#a499bcad83339bc85335f7745388a71d2", null ]
+    [ "tensor", "structFeel_1_1vf_1_1Pow_1_1tensor.html#a499bcad83339bc85335f7745388a71d2", null ],
+    [ "tensor", "structFeel_1_1vf_1_1Pow_1_1tensor.html#a6d1191007e363d118c6ccd4bdec572df", null ]
 ];

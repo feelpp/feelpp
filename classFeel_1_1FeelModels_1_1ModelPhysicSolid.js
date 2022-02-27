@@ -6,8 +6,10 @@ var classFeel_1_1FeelModels_1_1ModelPhysicSolid =
     [ "formulation", "classFeel_1_1FeelModels_1_1ModelPhysicSolid.html#ac5d0a80eca31fa2cc44cf82a3fc5713f", null ],
     [ "materialModel", "classFeel_1_1FeelModels_1_1ModelPhysicSolid.html#a824d130822d59ac6d2b1b158e174e5cf", null ],
     [ "setEquation", "classFeel_1_1FeelModels_1_1ModelPhysicSolid.html#a0c63d146dfc77d86040521b3ba00f5c8", null ],
+    [ "tabulateInformations", "classFeel_1_1FeelModels_1_1ModelPhysicSolid.html#abc2a779b6f304c4323ebb99700bb7a17", null ],
+    [ "updateInformationObject", "classFeel_1_1FeelModels_1_1ModelPhysicSolid.html#ac4ea4145331e6a5dc3419fcee5694497", null ],
     [ "useDisplacementPressureFormulation", "classFeel_1_1FeelModels_1_1ModelPhysicSolid.html#a3c1edf554ec0dbd76348c071355d52ac", null ],
-    [ "ModelPhysicSolid", "classFeel_1_1FeelModels_1_1ModelPhysicSolid.html#a3c15bf96381ac31e91d32d43dc1802a8", null ],
+    [ "ModelPhysicSolid", "classFeel_1_1FeelModels_1_1ModelPhysicSolid.html#a491c8dd017bffabb4766627af7f83c7e", null ],
     [ "ModelPhysicSolid", "classFeel_1_1FeelModels_1_1ModelPhysicSolid.html#a8d980881f0bddd61c4abc6cba259d8d0", null ],
     [ "ModelPhysicSolid", "classFeel_1_1FeelModels_1_1ModelPhysicSolid.html#a683a7c7798a342c88484dc0d7e396cd9", null ]
 ];
