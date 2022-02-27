@@ -25,20 +25,20 @@ def test_cfpdes(prefix,case,casefile,dim):
     return not f.checkResults()
     
 
-def test_cfpde_nlthermoelectric():
-    prefix, case, casefile, dim= ( 'thermoelectric', 'ElectroMagnets_HL-31_H1', 'HL-31_H1.cfg', 3)
-    feelpp.Environment.changeRepository(
-        directory="toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1")
-    feelpp.Environment.setConfigFile('cfpdes/{}/{}/{}'.format(prefix, case, casefile))
-    linear_case_t = cfpdes(dim=dim)
-    simulate(linear_case_t)
-    assert linear_case_t.checkResults()
-    # now run the nonlinear model using the linear solution as initial guess
-    casefile = 'HL-31_H1_nonlinear.cfg'
-    feelpp.Environment.setConfigFile('cfpdes/{}/{}/{}'.format(prefix, case, casefile))
-    nl_case_t = cfpdes(dim=dim)
-    simulate(nl_case_t)
-    return not nl_case_t.checkResults()
+# def test_cfpde_nlthermoelectric():
+#     prefix, case, casefile, dim= ( 'thermoelectric', 'ElectroMagnets_HL-31_H1', 'HL-31_H1.cfg', 3)
+#     feelpp.Environment.changeRepository(
+#         directory="toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1")
+#     feelpp.Environment.setConfigFile('cfpdes/{}/{}/{}'.format(prefix, case, casefile))
+#     linear_case_t = cfpdes(dim=dim)
+#     simulate(linear_case_t)
+#     assert linear_case_t.checkResults()
+#     # now run the nonlinear model using the linear solution as initial guess
+#     casefile = 'HL-31_H1_nonlinear.cfg'
+#     feelpp.Environment.setConfigFile('cfpdes/{}/{}/{}'.format(prefix, case, casefile))
+#     nl_case_t = cfpdes(dim=dim)
+#     simulate(nl_case_t)
+#     return not nl_case_t.checkResults()
 
 def test_cfpdes_remesh():
     feelpp.Environment.changeRepository(

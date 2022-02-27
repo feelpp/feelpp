@@ -311,7 +311,7 @@ private :
                                     using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
                                     auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
                                     res = Feel::FeelModels::modelFields( res, cfpde->modelFields( sol,
-                                                                                                  rowStartInVector + this->startSubBlockSpaceIndex( cfpdeBase->physicDefault() ),
+                                                                                                  rowStartInVector + this->startSubBlockSpaceIndex( cfpdeBase->equationName() ),
                                                                                                   prefixvm( prefix, cfpde->keyword() ) ) );
                                 }
                             });
@@ -330,7 +330,7 @@ private :
                                     using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
                                     auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
 
-                                    res = Feel::FeelModels::selectorModelFields( res, cfpde->trialSelectorModelFields( startBlockSpaceIndex + this->startSubBlockSpaceIndex( cfpdeBase->physicDefault() ) ) );
+                                    res = Feel::FeelModels::selectorModelFields( res, cfpde->trialSelectorModelFields( startBlockSpaceIndex + this->startSubBlockSpaceIndex( cfpdeBase->equationName() ) ) );
                                 }
                             });
         }

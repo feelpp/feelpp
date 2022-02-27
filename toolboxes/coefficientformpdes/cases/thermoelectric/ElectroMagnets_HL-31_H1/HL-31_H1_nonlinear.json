@@ -4,26 +4,28 @@
     "ShortName":"HL-31_H1",
     "Models":
     {
-        "equations":[
-            {
-                "name":"heat",
-                "unknown":
+        "cfpdes":{
+            "equations":[
                 {
-                    "basis":"Pch1",
-                    "name":"temperature",
-                    "symbol":"T"
-                }
-            },
-            {
-                "name":"electric",
-                "unknown":
+                    "name":"heat",
+                    "unknown":
+                    {
+                        "basis":"Pch1",
+                        "name":"temperature",
+                        "symbol":"T"
+                    }
+                },
                 {
-                    "basis":"Pch1",
-                    "name":"electric-potential",
-                    "symbol":"P"
+                    "name":"electric",
+                    "unknown":
+                    {
+                        "basis":"Pch1",
+                        "name":"electric-potential",
+                        "symbol":"P"
+                    }
                 }
-            }
-        ]
+            ]
+        }
     },
     "Parameters":
     {
@@ -31,6 +33,20 @@
         "T0":290,
         "alpha":3.6e-3,
         "Lorentz":2.47e-8
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                //"filename":"girder:{file:5af862d6b0e9574027047fc8}"
+                //"partition":1
+                // WARNING only good in parallel (np>1), else use the mesh from girder
+                "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/cfpdes.mesh.json",
+                "partition":0
+            }
+        }
     },
     "Materials":
     {
@@ -48,25 +64,23 @@
     },
     "InitialConditions":
     {
-        "temperature":
-        {
-            "File":
-            {
-                "myic":
-                {
-                    "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/heat.save/temperature.h5",
-                    "format":"hdf5"
+        "heat":{
+            "temperature":{
+                "File":{
+                    "myic":{
+                        "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/heat.save/temperature.h5",
+                        "format":"hdf5"
+                    }
                 }
             }
         },
-        "electric-potential":
-        {
-            "File":
-            {
-                "myic":
-                {
-                    "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/electric.save/electric-potential.h5",
-                    "format":"hdf5"
+        "electric":{
+            "electric-potential":{
+                "File":{
+                    "myic":{
+                        "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/electric.save/electric-potential.h5",
+                        "format":"hdf5"
+                    }
                 }
             }
         }
@@ -117,7 +131,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

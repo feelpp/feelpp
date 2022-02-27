@@ -431,10 +431,6 @@ public:
                                      } ) )
             {}
 
-        template<typename IM>
-        void init( IM const& im )
-        {
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             hana::for_each( M_expr, [&geom,&fev,&feu]( auto & e ) { e.update( geom, fev, feu ); } );
@@ -446,10 +442,6 @@ public:
         void update( Geo_t const& geom )
         {
             hana::for_each( M_expr, [&geom]( auto & e ) { e.update( geom ); } );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            hana::for_each( M_expr, [&geom,&face]( auto & e ) { e.update( geom, face ); } );
         }
         template<typename ... CTX>
         void updateContext( CTX const& ... ctx )

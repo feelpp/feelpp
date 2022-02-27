@@ -203,10 +203,22 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
     using expr_diffusion_scalar_test_type = std::decay_t<decltype( -coeffNatureStabilization*expr_coeff_diffusion_scalar_type{}*laplacian(u) )>;
     using expr_diffusion_matrix_test_type = typename mpl::if_c<unknown_is_scalar,
                                                                std::decay_t<decltype( -coeffNatureStabilization*inner(expr_coeff_diffusion_matrix_type{},hess(u)) )>,
-                                                               std::decay_t<decltype( cst(0.) )> >::type;
-    auto stab_test = exprOptionalConcat<expr_convection_test_type,expr_reaction_test_type,expr_diffusion_scalar_test_type,expr_diffusion_matrix_test_type>();
+                                                               std::decay_t<decltype( Feel::vf::zero<nDim,1>() /*cst(0.)*/ )> // TODO
+                                                               >::type;
+    using expr_diffusion_variable_scalar_test_type = typename mpl::if_c<unknown_is_scalar,
+                                                                        std::decay_t<decltype( -inner( grad<nDim>(expr_coeff_diffusion_scalar_type{}),grad(u)) )>,
+                                                                        std::decay_t<decltype( Feel::vf::zero<nDim,1>() )> // TODO
+                                                                         >::type;
+    auto stab_test = exprOptionalConcat<expr_convection_test_type,expr_reaction_test_type,expr_diffusion_scalar_test_type,expr_diffusion_matrix_test_type,
+                                        expr_diffusion_variable_scalar_test_type>();
 
-    auto tauExprScalarDiffusion = Feel::FeelModels::stabilizationGLSParameterExpr<expr_coeff_convection_type,expr_coeff_diffusion_scalar_type,expr_coeff_reaction_type>( *this->stabilizationGLSParameter() );
+    using expr_grad_coeff_diffusion_scalar_type = std::decay_t<decltype( grad<nDim>(expr_coeff_diffusion_scalar_type{}) )>;
+    using expr_convection_from_diffusion_variable_scalar_type = std::decay_t<decltype( -trans(expr_grad_coeff_diffusion_scalar_type{}) )>;
+    auto exprConvectionUseByTauScalarDiffusion = exprOptionalConcat<expr_coeff_convection_type,expr_convection_from_diffusion_variable_scalar_type>();
+    using expr_convection_tau_scalar_diffusion_type = std::decay_t<decltype( exprConvectionUseByTauScalarDiffusion )>;
+
+
+    auto tauExprScalarDiffusion = Feel::FeelModels::stabilizationGLSParameterExpr<expr_convection_tau_scalar_diffusion_type/*expr_coeff_convection_type*/,expr_coeff_diffusion_scalar_type,expr_coeff_reaction_type>( *this->stabilizationGLSParameter() );
     auto tauExprMatrixDiffusion = Feel::FeelModels::stabilizationGLSParameterExpr<expr_coeff_convection_type,expr_coeff_diffusion_matrix_type,expr_coeff_reaction_type>( *this->stabilizationGLSParameter() );
 
     // convection
@@ -216,7 +228,11 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
         auto const& coeff_beta_expr = expr( coeff_beta.template expr<nDim,1>(), se );
         residual_lhs.expression().add( timeSteppingScaling*(gradt(u)*coeff_beta_expr) );
         stab_test.expression().add( grad(u)*coeff_beta_expr );
+#if 0
         tauExprScalarDiffusion.expression().setConvection( coeff_beta_expr );
+#else
+        exprConvectionUseByTauScalarDiffusion.expression().add( coeff_beta_expr );
+#endif
         tauExprMatrixDiffusion.expression().setConvection( coeff_beta_expr );
     }
 
@@ -269,9 +285,16 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
             {
                 auto grad_coeff_c_expr = grad<nDim>(coeff_c_expr,"",this->worldComm(),this->repository().expr());
                 if constexpr( unknown_is_scalar )
+                {
                     residual_lhs.expression().add( -timeSteppingScaling*inner( grad_coeff_c_expr, gradt(u) ) );
+                    stab_test.expression().add( -inner( grad_coeff_c_expr,grad(u) ) );
+                    exprConvectionUseByTauScalarDiffusion.expression().add( -trans(grad_coeff_c_expr) );
+                }
                 else
+                {
                     residual_lhs.expression().add( -timeSteppingScaling*gradt(u)*trans(grad_coeff_c_expr) );
+                    // TODO stab_test
+                }
             }
             tauExprScalarDiffusion.expression().setDiffusion( coeff_c_expr );
         }
@@ -306,6 +329,14 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
         if ( data.hasParameterValuesInfo( "time-stepping.previous-parameter-values" ) )
             previousResidualExpr.setParameterValues( data.parameterValuesInfo( "time-stepping.previous-parameter-values" ) );
         residual_rhs.expression().add( -previousResidualExpr );
+    }
+
+    if ( exprConvectionUseByTauScalarDiffusion.expression().hasExpr() )
+    {
+        //if ( thermalConductivityIsMatrix )
+        //  tauExprMatrixDiffusion.expression().setConvection( exprCoeffConvection );
+        //else
+        tauExprScalarDiffusion.expression().setConvection( exprConvectionUseByTauScalarDiffusion );
     }
 
     auto tauFieldPtr = this->stabilizationGLSParameter()->fieldTauPtr();
