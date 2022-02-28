@@ -616,7 +616,29 @@ template <uint16_type Dim>
 class ModelPhysicSolid : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicSolid<Dim>;
 public :
+    struct BodyForces
+    {
+        BodyForces( self_type * mparent, std::string const& name ) : M_parent( mparent ), M_name( name ) {}
+        BodyForces( BodyForces const& ) = default;
+        BodyForces( BodyForces && ) = default;
+
+        void setup( nl::json const& jarg );
+
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto expr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+            {
+                return M_parent->template parameterExpr<Dim,1>( M_name + "_bodyforce", se );
+            }
+
+        void updateInformationObject( nl::json & p ) const;
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+    private:
+        self_type * M_parent;
+        std::string M_name;
+    };
+
     ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicSolid( ModelPhysicSolid const& ) = default;
     ModelPhysicSolid( ModelPhysicSolid && ) = default;
@@ -633,9 +655,12 @@ public :
     std::string const& compressibleNeoHookeanVariantName() const { return M_compressibleNeoHookeanVariantName; }
 
     bool useDisplacementPressureFormulation() const { return M_formulation == "displacement-pressure"; }
+
+    std::vector<BodyForces> bodyForces() const { return M_bodyForces; }
 private :
     std::string M_equation, M_materialModel, M_formulation;
     std::string M_decouplingEnergyVolumicLaw, M_compressibleNeoHookeanVariantName;
+    std::vector<BodyForces> M_bodyForces;
 };
 
 template <uint16_type Dim>

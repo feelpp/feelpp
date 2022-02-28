@@ -52,8 +52,8 @@
 
 #include <feel/feelmodels/modelcore/options.hpp>
 
+#include <feel/feelmodels/solid/solidmechanicsboundaryconditions.hpp>
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
-
 #include <feel/feelmodels/solid/solidmechanics1dreduced.hpp>
 
 namespace Feel
@@ -339,7 +339,7 @@ public :
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { CHECK( !this->isUpdatedForUse() ) << "setMaterialsProperties can be called only before called isUpdatedForUse";  M_materialsProperties = mp; }
 
-
+#if 0
     bool hasDirichletBC() const
         {
             return ( !M_bcDirichlet.empty() ||
@@ -347,7 +347,7 @@ public :
                      !M_bcDirichletComponents.find(Component::Y)->second.empty() ||
                      !M_bcDirichletComponents.find(Component::Z)->second.empty() );
         }
-
+#endif
     std::string const& timeStepping() const { return M_timeStepping; }
 
 #if 0
@@ -689,7 +689,9 @@ public :
     std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
 
+#if 0 // VINCENT
     std::set<std::string> const& markerNameFSI() const { return M_bcFSIMarkerManagement.markerFluidStructureInterfaceBC(); }
+#endif
 
     void updateNormalStressFromStruct();
     //void updateStressCriterions();
@@ -747,8 +749,11 @@ private :
     // physical parameter
     materialsproperties_ptrtype M_materialsProperties;
 
-
     // boundary conditions
+    using boundary_conditions_type = SolidMechanicsBoundaryConditions<nDim>;
+    boundary_conditions_type M_boundaryConditions;
+
+#if 0
     map_vector_field<nDim,1,2> M_bcDirichlet;
     std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
     map_scalar_field<2> M_bcNeumannScalar,M_bcInterfaceFSI;
@@ -764,7 +769,7 @@ private :
     MarkerManagementNeumannEulerianFrameBC M_bcNeumannEulerianFrameMarkerManagement;
     MarkerManagementRobinBC M_bcRobinMarkerManagement;
     MarkerManagementFluidStructureInterfaceBC M_bcFSIMarkerManagement;
-
+#endif
     //-------------------------------------------//
     // standard model
     //-------------------------------------------//

@@ -218,8 +218,10 @@ private :
     newmark_ptrtype M_timeStepNewmark;
 
     // boundary conditions
+#if 0
     map_scalar_field<2> M_bcDirichlet;
     map_scalar_field<2> M_volumicForcesProperties;
+#endif
 
     // exporter
     exporter_ptrtype M_exporter;
@@ -360,6 +362,7 @@ SolidMechanics1dReduced<ConvexType,BasisDisplacementType>::updateLinearPDE( Data
                 // linearFormDisplacement +=
                 //     integrate( _range=M_rangeMeshElements1dReduced,
                 //                _expr=idv(*M_stress_1dReduced)*id(v) );
+#if 0 // VINCENT
                 for( auto const& d : M_volumicForcesProperties )
                 {
                     //std::cout << "apply
@@ -369,6 +372,7 @@ SolidMechanics1dReduced<ConvexType,BasisDisplacementType>::updateLinearPDE( Data
                                    _expr= expression(d,se)*id(v),
                                    _geomap=this->geomap() );
                 }
+#endif
             }
         }
     }
@@ -410,13 +414,13 @@ SolidMechanics1dReduced<ConvexType,BasisDisplacementType>::updateLinearPDEDofEli
         auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
                                    _rowstart=this->rowStartInMatrix(),
                                    _colstart=this->colStartInMatrix() );
-
+#if 0 // VINCENT
         for( auto const& d : M_bcDirichlet )
             bilinearForm +=
                 on( _range=markedfaces(this->mesh(),markers(d)),
                     _element=u, _rhs=F, _expr=expression(d,se),
                     _prefix=this->prefix() );
-
+#endif
 }
 
 

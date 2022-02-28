@@ -20,7 +20,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
 {
-    if ( !M_bcDirichletMarkerManagement.hasMarkerDirichletBCelimination() ) return;
+    if ( !M_boundaryConditions.hasTypeDofElimination() )
+        return;
 
     this->log("SolidMechanics","updateJacobianDofElimination","start" );
 

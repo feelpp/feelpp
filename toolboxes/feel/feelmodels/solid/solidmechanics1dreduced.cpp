@@ -129,10 +129,12 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
+#if 0 // VINCENT
     std::string thekey = this->keyword();
     M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( std::move(thekey), "displacement_imposed" );
     thekey = this->keyword();
     M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( { { this->keyword(), "VolumicForces" } } );
+#endif
 }
 
 SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_DECLARATIONS
@@ -329,9 +331,10 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::
         this->modelProperties().postProcess().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
     }
-
+#if 0 // VINCENT
     M_bcDirichlet.setParameterValues( paramValues );
     M_volumicForcesProperties.setParameterValues( paramValues );
+#endif
 }
 
 
