@@ -178,30 +178,38 @@ Repository::configure()
 
     if ( Environment::isMasterRank() )
     {
+        auto create_dir = []( fs::path const& d, std::string const& str )
+        {
+            try
+            {
+                bool created = fs::create_directories( d );
+                Feel::cout << fmt::format("[feelpp] create Feel++ {}: {}\n", str, d.string()) << std::endl;
+            }
+            catch ( const boost::filesystem::filesystem_error& e )
+            {
+                std::cerr << fmt::format("[feelpp.boost.filesystem.filesystem_error] cannot create directory {}: {}", str, d.string()) << std::endl;
+                throw;
+            }
+        };
         if ( !fs::exists( root_ ) )
         {
-            bool created = fs::create_directories( root_ );
-            Feel::cout << "[feelpp] create Feel++ repository " << root_ << " ..." << std::endl;
+            create_dir(root_, "root repository");
         }
         if ( !fs::exists( geo_ ) )
         {
-            bool created = fs::create_directories( geo_ );
-            Feel::cout << "[feelpp] create Feel++ geo repository " << geo_ << " ..." << std::endl;
+            create_dir( geo_, "geo repository");
         }
         if ( !fs::exists( directory() ) )
         {
-            bool created = fs::create_directories( directory() );
-            Feel::cout << "[feelpp] create Feel++ results directory " << this->directory() << " ..." << std::endl;
+            create_dir( directory(), "results directory" );
         }
         if ( !fs::exists( exprs() ) )
         {
-            bool created = fs::create_directories( exprs() );
-            Feel::cout << "[feelpp] create Feel++ exprs directory " << ( this->exprs() ) << " ..." << std::endl;
+            create_dir( exprs(), "expressions directory" );
         }
         if ( !fs::exists( logs() ) )
         {
-            bool created = fs::create_directories( logs() );
-            Feel::cout << "[feelpp] create Feel++ logs directory " << ( this->logs() ) << " ..." << std::endl;
+            create_dir( logs(), "logs directory" );
         }
     }
     Environment::worldComm().barrier();
