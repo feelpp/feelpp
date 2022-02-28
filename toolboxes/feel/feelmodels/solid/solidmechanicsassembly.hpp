@@ -295,6 +295,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
     } // physics
 
     //---------------------------------------------------------------------------------------//
+#if 0 // VINCENT
     // source term
     if ( BuildNonCstPart_SourceTerm )
     {
@@ -342,7 +343,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
                            _geomap=this->geomap() );
         }
     }
-
+#endif
     //---------------------------------------------------------------------------------------//
     double timeElapsed = this->timerTool("Solve").stop("createMesh");
     this->log("SolidMechanics","updateLinearPDE",
@@ -360,61 +361,17 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDEDofElimination(
 
     if ( this->hasSolidEquationStandard() )
     {
-        if ( !M_bcDirichletMarkerManagement.hasMarkerDirichletBCelimination() ) return;
+        if ( !M_boundaryConditions.hasTypeDofElimination() )
+            return;
 
         auto Xh = this->functionSpace();
+        auto mesh = Xh->mesh();
         auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
                                    _rowstart=this->rowStartInMatrix(),
                                    _colstart=this->colStartInMatrix() );
         auto const& u = this->fieldDisplacement();
-        for( auto const& d : this->M_bcDirichlet )
-        {
-            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) );
-            auto const& listMarkerFaces = std::get<0>( ret );
-            auto const& listMarkerEdges = std::get<1>( ret );
-            auto const& listMarkerPoints = std::get<2>( ret );
-            if ( !listMarkerFaces.empty() )
-                bilinearForm +=
-                    on( _range=markedfaces(this->mesh(), listMarkerFaces),
-                        _element=u,_rhs=F,_expr=expression(d,se),
-                        _prefix=this->prefix() );
-            if ( !listMarkerEdges.empty() )
-                bilinearForm +=
-                    on( _range=markededges(this->mesh(), listMarkerEdges),
-                        _element=u,_rhs=F,_expr=expression(d,se),
-                        _prefix=this->prefix() );
-            if ( !listMarkerPoints.empty() )
-                bilinearForm +=
-                    on( _range=markedpoints(this->mesh(), listMarkerPoints),
-                        _element=u,_rhs=F,_expr=expression(d,se),
-                        _prefix=this->prefix() );
-        }
-        for ( auto const& bcDirComp : this->M_bcDirichletComponents )
-        {
-            ComponentType comp = bcDirComp.first;
-            for( auto const& d : bcDirComp.second )
-            {
-                auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d),comp ) );
-                auto const& listMarkerFaces = std::get<0>( ret );
-                auto const& listMarkerEdges = std::get<1>( ret );
-                auto const& listMarkerPoints = std::get<2>( ret );
-                if ( !listMarkerFaces.empty() )
-                    bilinearForm +=
-                        on( _range=markedfaces(this->mesh(), listMarkerFaces),
-                            _element=u[comp],_rhs=F,_expr=expression(d,se),
-                            _prefix=this->prefix() );
-                if ( !listMarkerEdges.empty() )
-                    bilinearForm +=
-                        on( _range=markededges(this->mesh(), listMarkerEdges),
-                            _element=u[comp],_rhs=F,_expr=expression(d,se),
-                            _prefix=this->prefix() );
-                if ( !listMarkerPoints.empty() )
-                    bilinearForm +=
-                        on( _range=markedpoints(this->mesh(), listMarkerPoints),
-                            _element=u[comp],_rhs=F,_expr=expression(d,se),
-                            _prefix=this->prefix() );
-            }
-        }
+
+        M_boundaryConditions.applyDofEliminationLinear( bilinearForm, F, mesh, u, se );
     }
 
     if ( this->hasSolidEquation1dReduced() )
@@ -427,7 +384,8 @@ template <typename ModelContextType>
 void
 SolidMechanics<ConvexType,BasisDisplacementType>::updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
 {
-    if ( !this->hasDirichletBC() ) return;
+    if ( !M_boundaryConditions.hasTypeDofElimination() )
+        return;
 
     this->log("SolidMechanics","updateNewtonInitialGuess","start" );
 
@@ -437,42 +395,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateNewtonInitialGuess( Data
     auto u = this->functionSpaceDisplacement()->element( U, this->rowStartInVector() );
     auto const& se = mctx.symbolsExpr();
 
-    for( auto const& d : M_bcDirichlet )
-    {
-        auto ret = detail::distributeMarkerListOnSubEntity(mesh,M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) );
-        auto const& listMarkerFaces = std::get<0>( ret );
-        auto const& listMarkerEdges = std::get<1>( ret );
-        auto const& listMarkerPoints = std::get<2>( ret );
-        if ( !listMarkerFaces.empty() )
-            u.on(_range=markedfaces(mesh,listMarkerFaces ),
-                 _expr=expression(d,se) );
-        if ( !listMarkerEdges.empty() )
-            u.on(_range=markededges(mesh,listMarkerEdges),
-                 _expr=expression(d,se) );
-        if ( !listMarkerPoints.empty() )
-            u.on(_range=markedpoints(mesh,listMarkerPoints),
-                 _expr=expression(d,se) );
-    }
-    for ( auto const& bcDirComp : M_bcDirichletComponents )
-    {
-        ComponentType comp = bcDirComp.first;
-        for( auto const& d : bcDirComp.second )
-        {
-            auto ret = detail::distributeMarkerListOnSubEntity(mesh,M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d), comp ) );
-            auto const& listMarkerFaces = std::get<0>( ret );
-            auto const& listMarkerEdges = std::get<1>( ret );
-            auto const& listMarkerPoints = std::get<2>( ret );
-            if ( !listMarkerFaces.empty() )
-                u[comp].on(_range=markedfaces(mesh,listMarkerFaces ),
-                           _expr=expression(d,se) );
-            if ( !listMarkerEdges.empty() )
-                u[comp].on(_range=markededges(mesh,listMarkerEdges),
-                           _expr=expression(d,se) );
-            if ( !listMarkerPoints.empty() )
-                u[comp].on(_range=markedpoints(mesh,listMarkerPoints),
-                           _expr=expression(d,se) );
-        }
-    }
+    M_boundaryConditions.applyNewtonInitialGuess( mesh, u, se );
 
     // update info for synchronization
     this->updateDofEliminationIds( "displacement", data );
@@ -735,6 +658,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateJacobian( DataUpdateJaco
     this->updateJacobianViscoElasticityTerms(u,J);
 #endif
     //--------------------------------------------------------------------------------------------------//
+#if 0 // VINCENT
     // follower pressure bc
     if ( !buildCstPart )
     {
@@ -771,6 +695,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateJacobian( DataUpdateJaco
                            _expr= timeSteppingScaling*expression1(d,se)(0,0)*inner( idt(u) ,id(u) ),
                            _geomap=this->geomap() );
     }
+#endif
     //--------------------------------------------------------------------------------------------------//
 
     double timeElapsed = this->timerTool("Solve").stop();
@@ -914,6 +839,22 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
             }
 
             //--------------------------------------------------------------------------------------------------//
+            // body forces
+            //--------------------------------------------------------------------------------------------------//
+            for ( auto const& bodyForce : physicSolidData->bodyForces() )
+            {
+                auto theExpr = bodyForce.expr( se );
+                bool buildBodyForceTerm = buildCstPart;//theExpr.expression().isConstant()? buildCstPart : buildNonCstPart;
+                if ( buildBodyForceTerm )
+                {
+                    linearFormDisplacement +=
+                        integrate( _range=range,
+                                   _expr= -timeSteppingScaling*inner( theExpr,id(v) ),
+                                   _geomap=this->geomap() );
+                }
+            }
+
+            //--------------------------------------------------------------------------------------------------//
             // discretisation acceleration term
             //--------------------------------------------------------------------------------------------------//
             if (!this->isStationary())
@@ -1053,6 +994,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
     this->updateResidualViscoElasticityTerms(u,R);
 #endif
     //--------------------------------------------------------------------------------------------------//
+#if 0 // VINCENT
     // source term
     if (buildCstPart)
     {
@@ -1120,7 +1062,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
                            _expr= timeSteppingScaling*inner( expression1(d,se)(0,0)*idv(u) - expression2(d,se) ,id(u) ),
                            _geomap=this->geomap() );
     }
-
+#endif
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("SolidMechanics","updateResidual",
               "finish"+sc+" in "+(boost::format("%1% s") % timeElapsed).str() );

@@ -19,10 +19,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 {
-    this->log("SolidMechanics","getInfo", "start" );
 
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-
+#if 0
+    this->log("SolidMechanics","getInfo", "start" );
     std::string StateTemporal = (this->isStationary())? "Stationary" : "Transient";
     size_type nElt,nDof;
     if (this->hasSolidEquationStandard()) {/*nElt=M_mesh->numGlobalElements();*/ nDof=M_XhDisplacement->nDof();}
@@ -152,7 +152,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n";
 
     this->log("SolidMechanics","getInfo", "finish" );
-
+#endif
     return _ostr;
 }
 
@@ -180,6 +180,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
     if (this->hasSolidEquationStandard())
     {
         super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
+
+        // Boundary Conditions
+        M_boundaryConditions.updateInformationObject( p["Boundary Conditions"] );
 
         subPt.clear();
         this->functionSpaceDisplacement()->updateInformationObject( subPt["Displacement"] );
@@ -222,6 +225,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
     // Materials Properties
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
         tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
+
+    // Boundary conditions
+    if ( jsonInfo.contains("Boundary Conditions") )
+        tabInfo->add( "Boundary Conditions", boundary_conditions_type::tabulateInformations( jsonInfo.at("Boundary Conditions"), tabInfoProp ) );
 
     // Meshes
     if ( jsonInfo.contains("Meshes") )
@@ -1002,6 +1009,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->materialsProperties()->updateParameterValues( paramValues );
+    for ( auto [physicName,physicData] : this->physics/*FromCurrentType*/() )
+        physicData->updateParameterValues( paramValues );
 
     this->setParameterValues( paramValues );
 }
@@ -1016,6 +1025,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
         this->materialsProperties()->setParameterValues( paramValues );
     }
 
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->setParameterValues( paramValues );
+
+    M_boundaryConditions.setParameterValues( paramValues );
+
+
+#if 0 // VINCENT
     this->M_bcDirichlet.setParameterValues( paramValues );
     for ( auto & bcDirComp : this->M_bcDirichletComponents )
         bcDirComp.second.setParameterValues( paramValues );
@@ -1027,7 +1043,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
     this->M_bcNeumannEulerianFrameTensor2.setParameterValues( paramValues );
     this->M_bcRobin.setParameterValues( paramValues );
     this->M_volumicForcesProperties.setParameterValues( paramValues );
-
+#endif
     if ( this->hasSolidEquation1dReduced() )
         M_solid1dReduced->setParameterValues( paramValues );
 }

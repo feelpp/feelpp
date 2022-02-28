@@ -254,7 +254,7 @@ macro( genLibSolidMechanics )
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatejacobian_inst.cpp
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdateresidual_inst.cpp
       )
-    set(SOLIDMECHANICS_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore ) 
+    set(SOLIDMECHANICS_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore feelpp_toolbox_solidbase ) 
     # generate the lib target
     genLibBase(
       LIB_NAME ${SOLIDMECHANICS_LIB_NAME}

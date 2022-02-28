@@ -143,6 +143,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
+    if ( !this->modelProperties().boundaryConditions().hasSection( this->keyword() ) )
+        return;
+    M_boundaryConditions.setup( *this,this->modelProperties().boundaryConditions().section( this->keyword() ) );
+
+    for ( auto const& [bcId,bcData] : M_boundaryConditions.displacementImposed() )
+        bcData->updateDofEliminationIds( *this, "displacement", this->functionSpaceDisplacement() );
+
+#if 0
     M_bcDirichletMarkerManagement.clearMarkerDirichletBC();
     M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
     M_bcFSIMarkerManagement.clearMarkerFluidStructureInterfaceBC();
@@ -283,7 +291,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
             this->dofEliminationIdsMultiProcess("displacement",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
     }
-
+#endif
 
 }
 

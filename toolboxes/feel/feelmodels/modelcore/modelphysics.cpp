@@ -649,6 +649,29 @@ ModelPhysicSolid<Dim>::ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std:
                     this->setEquation( j_setup_eq.get<std::string>() );
             }
 
+        for ( std::string const& eqarg : { "body-forces" } )
+            if ( j_setup.contains( eqarg ) )
+            {
+                auto const& j_setup_bodyforces = j_setup.at( eqarg );
+                if ( j_setup_bodyforces.is_array() )
+                {
+                    for ( auto const& [j_setup_bodyforceskey,j_setup_bodyforcesval] : j_setup_bodyforces.items() )
+                    {
+                        CHECK( j_setup_bodyforcesval.is_object() ) << "j_setup_bodyforcesval should be an object";
+                        BodyForces bf( this, fmt::format("bodyforce{}",M_bodyForces.size()) );
+                        bf.setup( j_setup_bodyforcesval );
+                        M_bodyForces.push_back( std::move( bf ) );
+                    }
+                }
+                else
+                {
+                    BodyForces bf( this, fmt::format("bodyforce{}",M_bodyForces.size()) );
+                    bf.setup( j_setup_bodyforces );
+                    M_bodyForces.push_back( std::move( bf ) );
+                }
+            }
+
+
         if ( j_setup.contains( "material-model" ) )
         {
             auto const& j_setup_matmodel = j_setup.at( "material-model" );
@@ -691,11 +714,25 @@ ModelPhysicSolid<Dim>::updateInformationObject( nl::json & p ) const
 
     nl::json & pSolid = p["Solid"];
     pSolid["Equation"] = M_equation;
+
+    if ( !M_bodyForces.empty() )
+    {
+        //eqTermSource = "f";
+        nl::json & pBodyForces = pSolid["BodyForces"];
+        for ( auto const& bf : M_bodyForces )
+        {
+            nl::json pbf;
+            bf.updateInformationObject( pbf );
+            pBodyForces.push_back( std::move( pbf ) );
+        }
+    }
+
 }
 template <uint16_type Dim>
 tabulate_informations_ptr_t
 ModelPhysicSolid<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
+#if 0
     auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
     if ( jsonInfo.contains("Generic") )
     {
@@ -711,6 +748,39 @@ ModelPhysicSolid<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateI
         tabInfo->add( "", TabulateInformations::New( tabInfoSolidEquation, tabInfoProp ) );
     }
     return tabInfo;
+#endif
+
+
+
+    
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsSubphysics( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+    if ( jsonInfo.contains("Solid") )
+    {
+        auto const& jsonInfoSolid = jsonInfo.at("Solid");
+        Feel::Table tabInfoSolidEquation;
+        TabulateInformationTools::FromJSON::addKeyToValues( tabInfoSolidEquation, jsonInfoSolid, tabInfoProp, { "Equation" } );
+        tabInfo->add( "", TabulateInformations::New( tabInfoSolidEquation, tabInfoProp ) );
+
+        if ( jsonInfoSolid.contains("BodyForces") )
+        {
+            auto tabInfoBodyForces = TabulateInformationsSections::New( tabInfoProp );
+            for ( auto const& [bfkey,bfval] : jsonInfoSolid.at("BodyForces").items() )
+                tabInfoBodyForces->add( "", BodyForces::tabulateInformations( bfval, tabInfoProp ) );
+            tabInfo->add( "Body Forces", tabInfoBodyForces );
+        }
+
+    }
+
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+    return tabInfo;
 }
 
 template <uint16_type Dim>
@@ -723,6 +793,43 @@ ModelPhysicSolid<Dim>::setEquation( std::string const& eq )
     if ( M_equation == "Elasticity" )
         M_equation = "linear-elasticity";
 #endif
+}
+
+
+
+template <uint16_type Dim>
+void
+ModelPhysicSolid<Dim>::BodyForces::setup( nl::json const& jarg )
+{
+    if ( jarg.is_string() )
+    {
+        M_parent->addParameter( M_name + "_bodyforce", jarg );
+    }
+    else if ( jarg.is_object() )
+    {
+        CHECK( jarg.contains( "expr" ) ) << "no expr";
+        M_parent->addParameter( M_name + "_bodyforce", jarg.at("expr") );
+    }
+}
+template <uint16_type Dim>
+void
+ModelPhysicSolid<Dim>::BodyForces::updateInformationObject( nl::json & p ) const
+{
+    p["name"] = M_name;
+    auto [exprStr,compInfo] = M_parent->parameterModelExpr(M_name+"_bodyforce").exprInformations();
+    p["expr"] = exprStr;
+}
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicSolid<Dim>::BodyForces::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    Feel::Table tabInfo;
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "name","expr" } );
+    tabInfo.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+    return TabulateInformations::New( tabInfo, tabInfoProp );
 }
 
 
