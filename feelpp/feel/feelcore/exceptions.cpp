@@ -44,32 +44,34 @@ void handleExceptions()
     }
     catch(const boost::filesystem::filesystem_error& e)
     {
-        if ( Environment::isMasterRank() )
-        {
-            if ( e.code() == boost::system::errc::permission_denied )
-                fmt::print( "[feel++.boost.filesystem.filesystem_error.permission_denied] {}", e.what() );
-            else
-                fmt::print( "[feel++.boost.filesystem.filesystem_error] {}", e.what() );
-        }
+        if ( e.code() == boost::system::errc::permission_denied )
+            fmt::print( "[feel++.boost.filesystem.filesystem_error.permission_denied] {}\n", e.what() );
+        else
+            fmt::print( "[feel++.boost.filesystem.filesystem_error] {}\n", e.what() );
     }
     catch (json::exception& e)
     {
-        if ( Environment::isMasterRank() )
-            fmt::print("[feel++.json.exception] {}",e.what());
+        fmt::print("[feel++.json.exception] {}\n",e.what());
     }
     catch ( std::invalid_argument const& e )
     {
-        Feel::cout << fmt::format( "[feelpp.std.invalid_argument] {}",e.what()) << std::endl;
+        fmt::print( "[feelpp.std.invalid_argument] {}\n",e.what());
     }
     catch (const std::runtime_error & e) 
     {
-        if ( Environment::isMasterRank() )
-            fmt::print( "[feel++.std.runtime_error] {}", e.what() );
+        fmt::print( "[feel++.std.runtime_error] {}", e.what() );
+    }
+    catch ( const boost::mpi::exception& e )
+    {
+        fmt::print( "[feel++.boost.mpi.exception] {}, routine: {}, result_code: {}\n", e.what(), e.routine(), e.result_code() );
     }
     catch ( const std::exception& e )
     {
-        if ( Environment::isMasterRank() )
-            fmt::print( "[feel++.std.exception] {}", e.what() );
+        fmt::print( "[feel++.std.exception] {}", e.what() );
+    }
+    catch(...)
+    {
+        fmt::print( "[feel++.unknown.exception] {}" );
     }
     LOG(WARNING) << fmt::format("[feel++] report status\n");
     if ( GitMetadata::populated() )
