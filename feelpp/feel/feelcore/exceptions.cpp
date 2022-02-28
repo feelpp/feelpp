@@ -45,9 +45,9 @@ void handleExceptions()
     catch(const boost::filesystem::filesystem_error& e)
     {
         if ( e.code() == boost::system::errc::permission_denied )
-            fmt::print( "[feel++.boost.filesystem.filesystem_error.permission_denied] {}\n", e.what() );
+            fmt::print( "[feel++.boost.filesystem.filesystem_error.permission_denied] {}, path1: {}, path2: {}\n", e.what(), e.path1().string(), e.path2().string() );
         else
-            fmt::print( "[feel++.boost.filesystem.filesystem_error] {}\n", e.what() );
+            fmt::print( "[feel++.boost.filesystem.filesystem_error] {}, path1: {}, path2: {}\n", e.what(), e.path1().string(), e.path2().string() );
     }
     catch (json::exception& e)
     {
