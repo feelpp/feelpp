@@ -8,6 +8,7 @@
 #include <feel/feelvf/mean.hpp>
 #include <feel/feelmodels/modelcore/traits.hpp>
 #include <feel/feelcore/tuple_utils.hpp>
+#include <feel/feelmodels/modelvf/evalonentities.hpp>
 
 namespace Feel
 {
@@ -53,23 +54,6 @@ measureStatisticsEvaluationMean( RangeType const& range, ExprType const& expr,
     auto statComputed = mean(_range=range,_expr=expr, _quad=quadOrder,_quad1=quad1Order );
 
     res.setValue( fmt::format("Statistics_{}_mean", ppStat.name()), statComputed);
-#if 0
-    for ( int i=0;i<statComputed.rows() ;++i )
-        for ( int j=0;j<statComputed.cols() ;++j )
-        {
-            double val = statComputed(i,j);
-            std::string statNameOutput;
-            if ( statComputed.rows() == 1 && statComputed.cols() == 1 )
-                statNameOutput = (boost::format("Statistics_%1%_mean")%ppStat.name() ).str();
-            else if ( statComputed.rows() == 1 )
-                statNameOutput = (boost::format("Statistics_%1%_mean_%2%")%ppStat.name()%j ).str();
-            else if ( statComputed.cols() == 1 )
-                statNameOutput = (boost::format("Statistics_%1%_mean_%2%")%ppStat.name()%i ).str();
-            else
-                statNameOutput = (boost::format("Statistics_%1%_mean_%2%_%3%")%ppStat.name()%i%j ).str();
-            res.setValue(statNameOutput, val);
-        }
-#endif
 }
 
 template<typename RangeType, typename ExprType >
@@ -84,23 +68,6 @@ measureStatisticsEvaluationIntegrate( RangeType const& range, ExprType const& ex
     auto statComputed = integrate(_range=range,_expr=expr, _quad=quadOrder,_quad1=quad1Order ).evaluate();
 
     res.setValue( fmt::format("Statistics_{}_integrate",ppStat.name()), statComputed);
-#if 0
-    for ( int i=0;i<statComputed.rows() ;++i )
-        for ( int j=0;j<statComputed.cols() ;++j )
-        {
-            double val = statComputed(i,j);
-            std::string statNameOutput;
-             if ( statComputed.rows() == 1 && statComputed.cols() == 1 )
-                 statNameOutput = (boost::format("Statistics_%1%_integrate")%ppStat.name() ).str();
-             else if ( statComputed.rows() == 1 )
-                statNameOutput = (boost::format("Statistics_%1%_integrate_%2%")%ppStat.name()%j ).str();
-            else if ( statComputed.cols() == 1 )
-                statNameOutput = (boost::format("Statistics_%1%_integrate_%2%")%ppStat.name()%i ).str();
-            else
-                statNameOutput = (boost::format("Statistics_%1%_integrate_%2%_%3%")%ppStat.name()%i%j ).str();
-             res.setValue( statNameOutput, val );
-        }
-#endif
 }
 template<typename RangeType, typename SymbolsExpr, typename... FieldTupleType >
 void
@@ -144,14 +111,15 @@ measureStatisticsEvaluation( RangeType const& range,
                                         if ( ppStat.field() == fieldName )
                                         {
                                             mfield.applyUpdateFunction();
+                                            auto exprUsed = evalOnEntities( range,idv(fieldFunc),ppStat.requiresMarkersConnection(),ppStat.internalFacesEvalutationType() );
                                             for ( std::string const& statType : ppStatType )
                                             {
                                                 if ( statType == "min" || statType == "max" || statType == "min-max"  )
-                                                    measureStatisticsEvaluationMinMax( range, idv(fieldFunc), ppStat, res, statType, false );
+                                                    measureStatisticsEvaluationMinMax( range, exprUsed, ppStat, res, statType, false );
                                                 else if ( statType == "mean" )
-                                                    measureStatisticsEvaluationMean( range, idv(fieldFunc), ppStat, res, false );
+                                                    measureStatisticsEvaluationMean( range, exprUsed, ppStat, res, false );
                                                 else if ( statType == "integrate" )
-                                                    measureStatisticsEvaluationIntegrate( range, idv(fieldFunc), ppStat, res, false );
+                                                    measureStatisticsEvaluationIntegrate( range, exprUsed, ppStat, res, false );
                                             }
                                         }
                                     }
@@ -199,12 +167,13 @@ measureStatisticsEvaluation( RangeType const& range,
                                 if ( exprGeneric.template hasExpr<i,j>() )
                                 {
                                     auto statExpr = expr( exprGeneric.expr<i,j>(), symbolsExpr );
+                                    auto exprUsed = evalOnEntities( range,statExpr,ppStat.requiresMarkersConnection(),ppStat.internalFacesEvalutationType() );
                                     if ( statType == "min" || statType == "max" || statType == "min-max"  )
-                                        measureStatisticsEvaluationMinMax( range, statExpr, ppStat, res, statType );
+                                        measureStatisticsEvaluationMinMax( range, exprUsed, ppStat, res, statType );
                                     else if ( statType == "mean" )
-                                        measureStatisticsEvaluationMean( range, statExpr, ppStat, res );
+                                        measureStatisticsEvaluationMean( range, exprUsed, ppStat, res );
                                     else if ( statType == "integrate" )
-                                        measureStatisticsEvaluationIntegrate( range, statExpr, ppStat, res );
+                                        measureStatisticsEvaluationIntegrate( range, exprUsed, ppStat, res );
                                 }
                             });
         }

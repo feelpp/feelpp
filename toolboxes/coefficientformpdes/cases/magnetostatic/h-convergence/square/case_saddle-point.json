@@ -4,26 +4,28 @@
     "ShortName":"magnetostatic_h-conv",
     "Models":
     {
-        "equations":[
-            {
-                "name":"magneto",
-                "unknown":
+        "cfpdes":{
+            "equations":[
                 {
-                    "basis":"Ned1h0",
-                    "name":"potential",
-                    "symbol":"A"
-                }
-            },
-            {
-                "name":"constraint",
-                "unknown":
+                    "name":"magneto",
+                    "unknown":
+                    {
+                        "basis":"Ned1h0",
+                        "name":"potential",
+                        "symbol":"A"
+                    }
+                },
                 {
-                    "basis":"Pch1",
-                    "name":"lm",
-                    "symbol":"p"
+                    "name":"constraint",
+                    "unknown":
+                    {
+                        "basis":"Pch1",
+                        "name":"lm",
+                        "symbol":"p"
+                    }
                 }
-            }
-        ]
+            ]
+        }
     },
     "Meshes":
     {
@@ -77,7 +79,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

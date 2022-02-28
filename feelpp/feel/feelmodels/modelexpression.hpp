@@ -174,15 +174,17 @@ public :
     template <int M,int N>
         expr_matrix33_type const& exprMatrix( typename std::enable_if< M==3 && N == 3>::type* = nullptr ) const { return this->exprMatrix33(); }
 
-    void setExprScalar( expr_scalar_type const& expr ) { M_exprScalar = boost::optional<expr_scalar_type>( expr ); }
-    void setExprVectorial2( expr_vectorial2_type const& expr ) { M_exprVectorial2 = boost::optional<expr_vectorial2_type>( expr ); }
-    void setExprVectorial3( expr_vectorial3_type const& expr ) { M_exprVectorial3 = boost::optional<expr_vectorial3_type>( expr ); }
-    void setExprMatrix22( expr_matrix22_type const& expr ) { M_exprMatrix22 = boost::optional<expr_matrix22_type>( expr ); }
-    void setExprMatrix33( expr_matrix33_type const& expr ) { M_exprMatrix33 = boost::optional<expr_matrix33_type>( expr ); }
+    void setExprScalar( expr_scalar_type const& expr ) { M_exprScalar = std::make_optional<expr_scalar_type>( expr ); }
+    void setExprVectorial2( expr_vectorial2_type const& expr ) { M_exprVectorial2 = std::make_optional<expr_vectorial2_type>( expr ); }
+    void setExprVectorial3( expr_vectorial3_type const& expr ) { M_exprVectorial3 = std::make_optional<expr_vectorial3_type>( expr ); }
+    void setExprMatrix22( expr_matrix22_type const& expr ) { M_exprMatrix22 = std::make_optional<expr_matrix22_type>( expr ); }
+    void setExprMatrix33( expr_matrix33_type const& expr ) { M_exprMatrix33 = std::make_optional<expr_matrix33_type>( expr ); }
 
     //! set an expression from a key of a ptree p
     void setExpr( std::string const& key, pt::ptree const& p, WorldComm const& worldComm, std::string const& directoryLibExpr, ModelIndexes const& indexes = ModelIndexes() );
+    void setExpr( nl::json const& jarg, WorldComm const& worldComm, std::string const& directoryLibExpr, ModelIndexes const& indexes = ModelIndexes() );
     void setExpr( std::string const& expr, WorldComm const& worldComm = Environment::worldComm(), std::string const& directoryLibExpr = "" );
+    void setExpr( value_type val ) { this->setExprScalar( Feel::vf::expr( val ) ); }
 
     void setParameterValues( std::map<std::string,double> const& mp )
     {
@@ -383,12 +385,21 @@ public :
     }
 
 
+    void reset()
+    {
+        M_exprScalar.reset();
+        M_exprVectorial2.reset();
+        M_exprVectorial3.reset();
+        M_exprMatrix22.reset();
+        M_exprMatrix33.reset();
+    }
+
 private :
-    boost::optional<expr_scalar_type> M_exprScalar;
-    boost::optional<expr_vectorial2_type> M_exprVectorial2;
-    boost::optional<expr_vectorial3_type> M_exprVectorial3;
-    boost::optional<expr_matrix22_type> M_exprMatrix22;
-    boost::optional<expr_matrix33_type> M_exprMatrix33;
+    std::optional<expr_scalar_type> M_exprScalar;
+    std::optional<expr_vectorial2_type> M_exprVectorial2;
+    std::optional<expr_vectorial3_type> M_exprVectorial3;
+    std::optional<expr_matrix22_type> M_exprMatrix22;
+    std::optional<expr_matrix33_type> M_exprMatrix33;
 };
 
 class FEELPP_EXPORT ModelExpressionScalar : private ModelExpression

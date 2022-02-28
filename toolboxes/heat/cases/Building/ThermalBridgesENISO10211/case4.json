@@ -1,0 +1,105 @@
+// -*- mode: javascript -*-
+{
+    "Name": "ISO 10211:2007 Thermal bridges in building construction : Case 4",
+    "ShortName":"ThermalBridges : Case 4",
+    "Parameters":
+    {
+        "h_interior":"1.0/0.1",
+        "h_exterior":"1.0/0.1",
+        "T0_interior":1,
+        "T0_exterior":0
+    },
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/case4.geo",
+                "hsize":0.02
+            }
+        }
+    },
+    "Materials":
+    {
+        "Insulation_layer":
+        {
+            "k":"0.1",//[ W/(m*K) ]
+            "Cp":"750", //[ J/(kg*K) ]
+            "rho":"2240" //[ kg/(m^3) ]
+        },
+        "Iron_bar":
+        {
+            "k":"50",//[ W/(m*K) ]
+            "Cp":"480", //[ J/(kg*K) ]
+            "rho":"7870" //[ kg/(m^3) ]
+        }
+    },
+    "BoundaryConditions":
+    {
+        "temperature":
+        {
+            "Robin":
+            {
+                "Exterior_wall":
+                {
+                    "expr1":"h_exterior:h_exterior",// h coeff
+                    "expr2":"T0_exterior:T0_exterior"// temperature exterior
+                },
+                "Interior_wall":
+                {
+                    "expr1":"h_interior:h_interior",// h coeff
+                    "expr2":"T0_interior:T0_interior"// temperature exterior
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "heat":
+        {
+            "Exports":
+            {
+                "fields":["temperature","pid"]
+            },
+            "Measures":
+            {
+                "Normal-Heat-Flux":
+                {
+                    "%1%":
+                    {
+                        "markers":"%1%",
+                        "direction":"outward",//"inward",
+                        "index1":["Interior_wall","Exterior_wall"]
+                    }
+                },
+                "Statistics":
+                {
+                    "temperature_%1%":
+                    {
+                        "type":["min","max"],
+                        "field":"temperature",
+                        "markers":"%1%",
+                        "index1":["Interior_wall","Exterior_wall"]
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Statistics_temperature_Exterior_wall_max":
+                    {
+                        "value":0.805,
+                        "tolerance":1e-1
+                    },
+                    "Normal_Heat_Flux_Exterior_wall":
+                    {
+                        "value":0.54,
+                        "tolerance":1e-1
+                    }
+                }
+            }
+        }
+    }
+}

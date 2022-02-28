@@ -83,6 +83,37 @@ TSBase::TSBase( std::string name, std::string const& prefix, WorldComm const& wo
     M_displayStats( boption(_prefix=prefix,_name="ts.display-stats",_vm=vm) )
 {}
 
+TSBase::TSBase( std::string name, std::string const& prefix, WorldComm const& worldComm, po::variables_map const& vm,
+                double ti, double tf, double dt, bool steady, bool reverse, bool restart, std::string const& restart_path, bool restart_at_last_save,
+                bool save, int freq, bool rank_proc_in_files_name, std::string const& format )
+    :
+    M_name( name ),
+    M_time( ti ),
+    M_iteration( 0 ),
+    M_steady( false ),
+    M_Ti( ti ),
+    M_Tf( tf ),
+    M_dt( dt ),
+    M_state( TS_UNITIALIZED ),
+    M_reverse( false ),
+    M_reverseLoad( false ),
+    M_n_restart( 0 ),
+    M_restart( restart ),
+    M_restartPath( restart_path ),
+    M_restartStepBeforeLastSave( ioption(_prefix=prefix,_name="ts.restart.step-before-last-save",_vm=vm) ),
+    M_restartAtLastSave( restart_at_last_save ),
+    M_saveInFile( save ),
+    M_saveFreq( freq ),
+    M_rankProcInNameOfFiles( rank_proc_in_files_name ),
+    M_fileFormat( format ),
+    M_worldComm( worldComm ),
+    M_prefix( prefix ),
+    M_displayStats( boption(_prefix=prefix,_name="ts.display-stats",_vm=vm) )
+{
+    this->setSteady( steady );
+    this->setReverse( reverse );
+}
+
 TSBase::TSBase( std::string name, WorldComm const& worldComm )
     :
     M_name( name ),

@@ -178,8 +178,9 @@ public:
     auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
                TheSymbolExprType const& se ) const
     {
-        CHECK( false ) << "TODO";
-        return *this;
+        auto diffExpr = M_expr.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
+        using expr_diff_type = std::decay_t<decltype(diffExpr)>;
+        return Sym<expr_diff_type,Part>{ diffExpr };
     }
 
 

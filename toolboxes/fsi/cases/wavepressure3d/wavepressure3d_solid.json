@@ -4,7 +4,9 @@
     "ShortName":"ArterialWall",
     "Models":
     {
-        "equations":"Elasticity"
+        "solid":{
+            "equations":"Elasticity"
+        }
     },
     "Materials":
     {
@@ -51,19 +53,22 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "solid":
         {
-            "fields":["displacement","pid"]
-        },
-        "Measures":
-        {
-            "Statistics":
+            "Exports":
             {
-                "disp":
+                "fields":["displacement","pid"]
+            },
+            "Measures":
+            {
+                "Statistics":
                 {
-                    "markers":"fsiWall",
-                    "type":"max",
-                    "expr":"solid_D_magnitude:solid_D_magnitude"
+                    "disp":
+                    {
+                        "markers":"fsiWall",
+                        "type":"max",
+                        "expr":"solid_D_magnitude:solid_D_magnitude"
+                    }
                 }
             }
         }

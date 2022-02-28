@@ -24,7 +24,7 @@
 
 SET( SRC
   modelproperties.cpp modelmodels.cpp modelparameters.cpp modelmaterials.cpp modelpostprocess.cpp
-  modelfunctions.cpp modeloutputs.cpp modelexpression.cpp modelboundaryconditions.cpp modelinitialconditions.cpp
+  modeloutputs.cpp modelexpression.cpp modelboundaryconditions.cpp modelinitialconditions.cpp
   modelmarkers.cpp modelindexes.cpp
   )
 

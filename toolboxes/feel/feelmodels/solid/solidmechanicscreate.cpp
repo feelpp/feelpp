@@ -360,7 +360,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 
     //--------------------------------------------------------//
     // init pressure space with displcaement-pressure formulation
-    std::set<std::string> physicUseDisplacementPressureFormulation;
+    std::set<typename materialsproperties_type::physic_id_type> physicUseDisplacementPressureFormulation;
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
         auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
@@ -589,28 +589,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
     this->log("SolidMechanics","init", "start" );
     this->timerTool("Constructor").start();
+
 #if 0
-    if ( M_modelName.empty() )
-    {
-        std::string theSolidModel = this->modelProperties().models().model( this->keyword() ).equations();
-        this->setModelName( theSolidModel );
-    }
-    if ( M_solverName.empty() )
-    {
-        if ( M_modelName == "Elasticity" || M_modelName == "Generalised-String" )
-            this->setSolverName( "LinearSystem" );
-        else
-            this->setSolverName( "Newton" );
-    }
-#endif
-    if ( this->physics().empty() )
-        this->initPhysics( this->keyword(), this->modelProperties().models() );
+    this->initPhysics( this->keyword(), this->modelProperties().models() );
+#else
 
-    this->initMaterialProperties();
-
-    // backend
-    this->initAlgebraicBackend();
-
+    this->initPhysics( this->keyword(), this->modelProperties().models() );
     bool hasSolid1dReduced = false;
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
@@ -622,7 +606,31 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
     {
         if ( !M_solid1dReduced )
             this->createsSolid1dReduced();
-        M_solid1dReduced->setPhysics( this->physicsFromCurrentType(), this->physicDefault() );
+        typename super_physics_type::PhysicsTree physicsTree( this->shared_from_this() );
+        physicsTree.addLeaf( M_solid1dReduced );
+        this->initPhysics( physicsTree, this->modelProperties().models() );
+    }
+#endif
+
+    this->initMaterialProperties();
+
+    // backend
+    this->initAlgebraicBackend();
+
+#if 0
+    bool hasSolid1dReduced = false;
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    {
+        auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
+        if ( physicSolidData->equation() == "Generalised-String" )
+            hasSolid1dReduced = true;
+    }
+#endif
+    if ( hasSolid1dReduced )
+    {
+        if ( !M_solid1dReduced )
+            this->createsSolid1dReduced();
+        //M_solid1dReduced->setPhysics( this->physicsFromCurrentType() );
         M_solid1dReduced->setMaterialsProperties( this->materialsProperties() );
 
         M_solid1dReduced->setManageParameterValues( false );
@@ -634,6 +642,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
         M_solid1dReduced->init();
     }
+    else M_solid1dReduced.reset();// not very nice
 
     if ( this->hasSolidEquationStandard() )
     {
@@ -652,8 +661,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
         // update parameters values
         this->modelProperties().parameters().updateParameterValues();
-        // init function defined in json
-        this->initUserFunctions();
         // init post-processinig (exporter, measure at point, ...)
         this->initPostProcess();
     }
@@ -908,124 +915,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     this->log("SolidMechanics","initTimeStep", "finish" );
 }
 
-//---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initUserFunctions()
-{
-    if ( this->modelProperties().functions().empty() )
-        return;
-
-    for ( auto const& modelfunc : this->modelProperties().functions() )
-    {
-        auto const& funcData = modelfunc.second;
-        std::string funcName = funcData.name();
-
-        if ( funcData.isScalar() )
-        {
-            if ( this->hasFieldUserScalar( funcName ) )
-                continue;
-            M_fieldsUserScalar[funcName] = this->functionSpaceDisplacement()->compSpace()->elementPtr();
-        }
-        else if ( funcData.isVectorial2() )
-        {
-            if ( nDim != 2 ) continue;
-            if ( this->hasFieldUserVectorial( funcName ) )
-                continue;
-            M_fieldsUserVectorial[funcName] = this->functionSpaceDisplacement()->elementPtr();
-        }
-        else if ( funcData.isVectorial3() )
-        {
-            if ( nDim != 3 ) continue;
-            if ( this->hasFieldUserVectorial( funcName ) )
-                continue;
-            M_fieldsUserVectorial[funcName] = this->functionSpaceDisplacement()->elementPtr();
-        }
-    }
-
-    this->updateUserFunctions();
-}
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSymbol )
-{
-    if ( this->modelProperties().functions().empty() )
-        return;
-
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().functions().setParameterValues( paramValues );
-    for ( auto const& modelfunc : this->modelProperties().functions() )
-    {
-        auto const& funcData = modelfunc.second;
-        if ( onlyExprWithTimeSymbol && !funcData.hasSymbol("t") )
-            continue;
-
-        std::string funcName = funcData.name();
-        if ( funcData.isScalar() )
-        {
-            CHECK( this->hasFieldUserScalar( funcName ) ) << "user function " << funcName << "not registered";
-            M_fieldsUserScalar[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionScalar() );
-        }
-        else if ( funcData.isVectorial2() )
-        {
-            if constexpr( nDim == 2 )
-            {
-                CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
-                M_fieldsUserVectorial[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionVectorial2() );
-            }
-            else CHECK( false ) << "TODO";
-        }
-        else if ( funcData.isVectorial3() )
-        {
-            if constexpr( nDim == 3 )
-            {
-                CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
-                M_fieldsUserVectorial[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionVectorial3() );
-            }
-            else CHECK( false ) << "TODO";
-        }
-    }
-}
-
-//---------------------------------------------------------------------------------------------------//
-#if 0
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-std::set<std::string>
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix ) const
-{
-    std::set<std::string> res;
-    for ( auto const& o : ifields )
-    {
-        if ( o == prefixvm(prefix,"displacement") || o == prefixvm(prefix,"all") )
-            res.insert( "displacement" );
-        if ( o == prefixvm(prefix,"velocity") || o == prefixvm(prefix,"all") )
-            res.insert( "velocity" );
-        if ( o == prefixvm(prefix,"acceleration") || o == prefixvm(prefix,"all") )
-            res.insert( "acceleration" );
-        if ( o == prefixvm(prefix,"normal-stress") || o == prefixvm(prefix,"all") )
-            res.insert( "normal-stress" );
-        if ( o == prefixvm(prefix,"pid") || o == prefixvm(prefix,"all") )
-            res.insert( "pid" );
-        if ( o == prefixvm(prefix,"pressure") || o == prefixvm(prefix,"all") )
-            res.insert( "pressure" );
-        if ( o == prefixvm(prefix,"material-properties") || o == prefixvm(prefix,"all") )
-            res.insert( "material-properties" );
-        if ( o == prefixvm(prefix,"Von-Mises") || o == prefixvm(prefix,"all") )
-            res.insert( "Von-Mises" );
-        if ( o == prefixvm(prefix,"Tresca") || o == prefixvm(prefix,"all") )
-            res.insert( "Tresca" );
-        if ( o == prefixvm(prefix,"principal-stresses") || o == prefixvm(prefix,"all") )
-            res.insert( "principal-stresses" );
-
-        // add user functions
-        if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
-            res.insert( o );
-    }
-    return res;
-}
-#endif
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1063,26 +953,24 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
             this->restartExporters( this->timeInitial() );
     }
 
-    auto const& ptree = this->modelProperties().postProcess().pTree( this->keyword() );
 
-    // volume variation
-    std::string ppTypeMeasures = "Measures";
-    std::string ppTypeMeasuresVolumeVariation = "VolumeVariation";
-    for( auto const& ptreeLevel0 : ptree )
+
+    if ( this->modelProperties().postProcess().hasJsonProperties( this->keyword() ) )
     {
-        std::string ptreeLevel0Name = ptreeLevel0.first;
-        if ( ptreeLevel0Name != ppTypeMeasures ) continue;
-        for( auto const& ptreeLevel1 : ptreeLevel0.second )
+        auto const& j_pp = this->modelProperties().postProcess().jsonProperties( this->keyword() );
+        std::string ppTypeMeasures = "Measures";
+        if ( j_pp.contains( ppTypeMeasures ) )
         {
-            std::string ptreeLevel1Name = ptreeLevel1.first;
-            if ( ptreeLevel1Name == ppTypeMeasuresVolumeVariation )
+            auto j_pp_measures = j_pp.at( ppTypeMeasures );
+            for ( auto const& [j_pp_measureskey,j_pp_measuresval] : j_pp_measures.items() )
             {
-                // TODO : init name and markers from ptree
-                std::string vvname = "volume_variation";
-                std::set<std::string> markers; markers.insert( "" );
-                if ( !markers.empty() )
+                if ( j_pp_measureskey == "VolumeVariation" )
                 {
-                    M_postProcessVolumeVariation[vvname] = markers;
+                    ModelMarkers _markers;
+                    _markers.setup( j_pp_measuresval /*,indexes*/);
+                    std::string vvname = "volume_variation";
+                    if ( !_markers.empty() )
+                        M_postProcessVolumeVariation[vvname] = _markers;
                 }
             }
         }
@@ -1091,56 +979,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     auto se = this->symbolsExpr();
     this->template initPostProcessMeshes<mesh_type>( se );
 
-#if 0
-    std::set<std::string> fieldNameStressScalar = { "Von-Mises","Tresca","princial-stress-1","princial-stress-2","princial-stress-3",
-                                                    "stress_xx","stress_xy","stress_xz","stress_yx","stress_yy","stress_yz","stress_zx","stress_zy","stress_zz" };
-    // points evaluation
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-    {
-        if (!this->isStandardModel()) break;// TODO
-
-        auto const& ptPos = evalPoints.pointPosition();
-        node_type ptCoord(3);
-        for ( int c=0;c<3;++c )
-            ptCoord[c]=ptPos.value()(c);
-
-        auto const& fields = evalPoints.fields();
-        for ( std::string const& field : fields )
-        {
-            if ( field == "displacement" || field == "velocity" || field == "acceleration" )
-            {
-                if ( !M_postProcessMeasuresContextDisplacement )
-                    M_postProcessMeasuresContextDisplacement.reset( new context_displacement_type( this->functionSpaceDisplacement()->context() ) );
-                int ctxId = M_postProcessMeasuresContextDisplacement->nPoints();
-                M_postProcessMeasuresContextDisplacement->add( ptCoord );
-                std::string ptNameExport = (boost::format("%1%_%2%")%field %ptPos.name()).str();
-                this->postProcessMeasuresEvaluatorContext().add( field, ctxId, ptNameExport );
-            }
-            else if ( field == "pressure" )
-            {
-                if ( !M_useDisplacementPressureFormulation )
-                    continue;
-                if ( !M_postProcessMeasuresContextPressure )
-                    M_postProcessMeasuresContextPressure.reset( new context_pressure_type( this->functionSpacePressure()->context() ) );
-                int ctxId = M_postProcessMeasuresContextPressure->nPoints();
-                M_postProcessMeasuresContextPressure->add( ptCoord );
-                std::string ptNameExport = (boost::format("pressure_%1%")%ptPos.name()).str();
-                this->postProcessMeasuresEvaluatorContext().add("pressure", ctxId, ptNameExport );
-            }
-            else if ( fieldNameStressScalar.find( field ) != fieldNameStressScalar.end() )
-            {
-                this->createAdditionalFunctionSpacesStressTensor();
-                if (!M_postProcessMeasuresContextStressScalar )
-                    M_postProcessMeasuresContextStressScalar.reset( new context_stress_scal_type( M_XhStressTensor->compSpace()->context() ) );
-                int ctxId = M_postProcessMeasuresContextStressScalar->nPoints();
-                M_postProcessMeasuresContextStressScalar->add( ptCoord );
-                std::string ptNameExport = (boost::format("%1%_%2%")%field %ptPos.name()).str();
-                this->postProcessMeasuresEvaluatorContext().add( field, ctxId, ptNameExport );
-            }
-
-        }
-    }
-#endif
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )

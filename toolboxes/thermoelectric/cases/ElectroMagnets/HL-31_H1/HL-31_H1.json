@@ -2,6 +2,17 @@
 {
     "Name":"HL-31_H1",
     "ShortName":"HL-31_H1",
+    "Meshes":
+    {
+        "thermoelectric":
+        {
+            "Import":
+            {
+                "filename":"girder:{file:5af862d6b0e9574027047fc8}",
+                "partition":1
+            }
+        }
+    },
     "Materials":
     {
         "Cu":
@@ -59,7 +70,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "thermoelectric":
         {
             "Exports":

@@ -1,0 +1,125 @@
+// -*- mode: javascript -*-
+{
+    "Models":
+    {
+        "heat":
+        {
+            "name":"heatAllMat",
+            "materials":["mat1","mat2","mat3","mat4","mat4","mat5","mat6","mat7","mat8"],
+            "setup": {
+                "heat-sources":
+                {
+                    "expr":1
+                }
+            }
+        }
+    },
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cube_8mat.geo",
+                "hsize":0.05
+            }
+        }
+    },
+    "Materials":
+    {
+        "mat%1_1%":
+        {
+            "k":"%1_2%",
+            "index1":[ [ "1", "1" ], ["2","2.5"], ["3","3.8"], ["4","4.9"], ["5","5.3"], ["6","6.6"], ["7","7.9"], ["8","8.1"] ]
+        }
+    },
+    "BoundaryConditions":
+    {
+        "temperature":
+        {
+            "Dirichlet":
+            {
+                "MarkerDirichlet":
+                {
+                    "markers":["gamma_x0","gamma_xH","gamma_y0","gamma_yH","gamma_z0","gamma_zH"],
+                    "expr":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "heat":
+        {
+            "Exports":
+            {
+                "fields":["temperature","all"]
+            },
+            "Measures": {
+                "Statistics": {
+                    "Area_%1%_%2%": {
+		    	        "type": "integrate",
+		    	        "expr": "1",
+		    	        "markers": "%1%",
+                        "internalfaces_evaluation":"%2%",
+		    	        "index1":["interface_mat2_mat8","interface_mat2_mat3","interface_mat1_mat7","interface_mat1_mat2","interface_mat1_mat4","interface_mat3_mat4","interface_mat6_mat7","interface_mat5_mat8"],
+                        "index2":["average","max","sum","one_side"]
+                    },
+                    "test_connection_mat1_mat2": {
+                        "type": "integrate",
+                        "expr": "1",
+                        "markers": ["interface_mat1_mat7","interface_mat1_mat2","interface_mat1_mat4"],
+                        "requires_markers_connection":["mat1","mat2"],
+                        "internalfaces_evaluation":"sum"
+                    },
+                    "jump_temperature_%1%": {
+                        "type": "integrate",
+                        "expr": "{heat_T*nx,heat_T*ny,heat_T*nz}:heat_T:nx:ny:nz",
+                        "markers": "%1%",
+                        "internalfaces_evaluation":"sum",
+                        "index1":["interface_mat2_mat8","interface_mat2_mat3","interface_mat1_mat7","interface_mat1_mat2","interface_mat1_mat4","interface_mat3_mat4","interface_mat6_mat7","interface_mat5_mat8"]
+                    },
+                    "jump_heatflux_%1%": {
+                        "type": "integrate",
+                        "expr": "materials_k*(heat_grad_T_0*nx+heat_grad_T_1*ny+heat_grad_T_2*nz):materials_k:heat_grad_T_0:heat_grad_T_1:heat_grad_T_2:nx:ny:nz",
+                        "markers": "%1%",
+                        "internalfaces_evaluation":"sum",
+                        "index1":["interface_mat2_mat8","interface_mat2_mat3","interface_mat1_mat7","interface_mat1_mat2","interface_mat1_mat4","interface_mat3_mat4","interface_mat6_mat7","interface_mat5_mat8"]
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Statistics_Area_%1%_%2_1%_integrate":
+                    {
+                        "value":"%2_2%",
+                        "tolerance":1e-8,
+                        "index1":["interface_mat2_mat8","interface_mat2_mat3","interface_mat1_mat7","interface_mat1_mat2","interface_mat1_mat4","interface_mat3_mat4","interface_mat6_mat7","interface_mat5_mat8"],
+                        "index2":[ ["average","0.25"],["max","0.25"],["sum","0.5"],["one_side","0.25"]]
+                    },
+                    "Statistics_test_connection_mat1_mat2_integrate":
+                    {
+                        "value":1,
+                        "tolerance":1e-8
+                    },
+                    "Statistics_jump_temperature_%1%_integrate_%2%":
+                    {
+                        "value":0,
+                        "tolerance":1e-8,
+                        "index1":["interface_mat2_mat8","interface_mat2_mat3","interface_mat1_mat7","interface_mat1_mat2","interface_mat1_mat4","interface_mat3_mat4","interface_mat6_mat7","interface_mat5_mat8"],
+                        "index2":["0","1","2"]
+                    },
+                    "Statistics_jump_heatflux_%1%_integrate":
+                    {
+                        "value":0,
+                        "tolerance":1e-2,
+                        "index1":["interface_mat2_mat8","interface_mat2_mat3","interface_mat1_mat7","interface_mat1_mat2","interface_mat1_mat4","interface_mat3_mat4","interface_mat6_mat7","interface_mat5_mat8"]
+                    }
+                }
+            }
+        }
+    }
+
+}

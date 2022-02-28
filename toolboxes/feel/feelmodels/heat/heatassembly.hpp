@@ -54,75 +54,90 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
 
     //--------------------------------------------------------------------------------------------------//
 
-    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+    for ( auto const& [physicId,physicData] : this->physicsFromCurrentType() )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
-        auto const& matProps = this->materialsProperties()->materialProperties( matName );
-        auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
-        if ( thermalConductivity.isMatrix() )
+        auto physicHeatData = std::static_pointer_cast<ModelPhysicHeat<nDim>>(physicData);
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicId ) )
         {
-            auto const& kappa = expr( thermalConductivity.template expr<nDim,nDim>(), symbolsExpr );
-            bool buildDiffusion = kappa.expression().isConstant()? buildCstPart : buildNonCstPart;
-            if ( doAssemblyLhs && buildDiffusion )
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            auto const& matProps = this->materialsProperties()->materialProperties( matName );
+            auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
+            if ( thermalConductivity.isMatrix() )
             {
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling*grad(v)*(kappa*trans(gradt(u))),
-                               _geomap=this->geomap() );
-            }
-        }
-        else
-        {
-            auto const& kappa = expr( thermalConductivity.expr(), symbolsExpr );
-            bool buildDiffusion = kappa.expression().isConstant()? buildCstPart : buildNonCstPart;
-            if ( doAssemblyLhs && buildDiffusion )
-            {
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling*kappa*inner(gradt(u),grad(v)),
-                               _geomap=this->geomap() );
-            }
-        }
-
-
-        if ( this->hasVelocityConvectionExpr( matName ) || !this->isStationary() )
-        {
-            auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
-            auto const& rhoHeatCapacityExpr = expr( rhoHeatCapacity.expr(), symbolsExpr );
-            if ( doAssemblyLhs && buildNonCstPart && this->hasVelocityConvectionExpr( matName ) )
-            {
-                auto velConvExpr = expr( this->velocityConvectionExpr( matName ), symbolsExpr );
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling*rhoHeatCapacityExpr*(gradt(u)*velConvExpr)*id(v),
-                               _geomap=this->geomap() );
-            }
-
-            if ( !this->isStationary() )
-            {
-                if ( doAssemblyLhs && BuildNonCstPart_Form2TransientTerm )
+                auto const& kappa = expr( thermalConductivity.template expr<nDim,nDim>(), symbolsExpr );
+                bool buildDiffusion = kappa.expression().isConstant()? buildCstPart : buildNonCstPart;
+                if ( doAssemblyLhs && buildDiffusion )
                 {
-                    auto thecoeff = rhoHeatCapacityExpr*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
                     bilinearForm_PatternCoupled +=
                         integrate( _range=range,
-                                   _expr= thecoeff*idt(u)*id(v),
+                                   _expr= timeSteppingScaling*grad(v)*(kappa*trans(gradt(u))),
                                    _geomap=this->geomap() );
                 }
-                if ( doAssemblyRhs && BuildNonCstPart_Form1TransientTerm )
+            }
+            else
+            {
+                auto const& kappa = expr( thermalConductivity.expr(), symbolsExpr );
+                bool buildDiffusion = kappa.expression().isConstant()? buildCstPart : buildNonCstPart;
+                if ( doAssemblyLhs && buildDiffusion )
                 {
-                    auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
-                    myLinearForm +=
+                    bilinearForm_PatternCoupled +=
                         integrate( _range=range,
-                                   _expr= rhoHeatCapacityExpr*idv(rhsTimeStep)*id(v),
+                                   _expr= timeSteppingScaling*kappa*inner(gradt(u),grad(v)),
                                    _geomap=this->geomap() );
                 }
             }
 
-            // update stabilization gls
-            if ( M_stabilizationGLS && buildNonCstPart && this->hasVelocityConvectionExpr( matName ) )
+            for ( auto const& heatSource : physicHeatData->heatSources() )
             {
-                this->updateLinearPDEStabilizationGLS( data, mctx, *physicData, matProps, range );
+                auto theExpr = heatSource.expr( symbolsExpr );
+                bool buildSourceTerm = theExpr.expression().isConstant()? buildCstPart : buildNonCstPart;
+                if ( doAssemblyRhs && buildSourceTerm )
+                {
+                    myLinearForm +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*theExpr*id(v),
+                                   _geomap=this->geomap() );
+                }
+            }
+
+            if ( physicHeatData->hasConvectionEnabled() || !this->isStationary() )
+            {
+                auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
+                auto const& rhoHeatCapacityExpr = expr( rhoHeatCapacity.expr(), symbolsExpr );
+                if ( doAssemblyLhs && buildNonCstPart && physicHeatData->hasConvectionEnabled() )
+                {
+                    auto velConvExpr = physicHeatData->convection().expr( symbolsExpr );
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*rhoHeatCapacityExpr*(gradt(u)*velConvExpr)*id(v),
+                                   _geomap=this->geomap() );
+                }
+
+                if ( !this->isStationary() )
+                {
+                    if ( doAssemblyLhs && BuildNonCstPart_Form2TransientTerm )
+                    {
+                        auto thecoeff = rhoHeatCapacityExpr*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
+                        bilinearForm_PatternCoupled +=
+                            integrate( _range=range,
+                                       _expr= thecoeff*idt(u)*id(v),
+                                       _geomap=this->geomap() );
+                    }
+                    if ( doAssemblyRhs && BuildNonCstPart_Form1TransientTerm )
+                    {
+                        auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
+                        myLinearForm +=
+                            integrate( _range=range,
+                                       _expr= rhoHeatCapacityExpr*idv(rhsTimeStep)*id(v),
+                                       _geomap=this->geomap() );
+                    }
+                }
+
+                // update stabilization gls
+                if ( M_stabilizationGLS && buildNonCstPart && physicHeatData->hasConvectionEnabled() )
+                {
+                    this->updateLinearPDEStabilizationGLS( data, mctx, *physicHeatData, matProps, range );
+                }
             }
         }
     }
@@ -161,22 +176,6 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
         }
     }
 #endif
-
-    //--------------------------------------------------------------------------------------------------//
-    // update source term
-    for( auto const& d : this->M_volumicForcesProperties )
-    {
-        auto theExpr = expression( d,symbolsExpr );
-        bool buildSourceTerm = theExpr.expression().isConstant()? buildCstPart : buildNonCstPart;
-        if ( doAssemblyRhs && buildSourceTerm )
-        {
-            auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
-            myLinearForm +=
-                integrate( _range=rangeBodyForceUsed,
-                           _expr= timeSteppingScaling*theExpr*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
 
     //--------------------------------------------------------------------------------------------------//
     // update weak bc
@@ -324,45 +323,47 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
                                               _rowstart=this->rowStartInMatrix(),
                                               _colstart=this->colStartInMatrix() );
 
-    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+    for ( auto const& [physicId,physicData] : this->physicsFromCurrentType() )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
-        auto const& matProps = this->materialsProperties()->materialProperties( matName );
-        auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
-
-        bool thermalConductivityDependOnTrialSymbol = thermalConductivity.hasSymbolDependency( trialSymbolNames,se );
-        if ( thermalConductivity.template hasExpr<nDim,nDim>() )
+        auto physicHeatData = std::static_pointer_cast<ModelPhysicHeat<nDim>>(physicData);
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicId ) )
         {
-            auto const& kappaExpr = expr( thermalConductivity.template expr<nDim,nDim>(), se );
-            bool buildDiffusion = kappaExpr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
-            if ( buildDiffusion )
-            {
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling*grad(v)*(kappaExpr*trans(gradt(u))),
-                               _geomap=this->geomap() );
-            }
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            auto const& matProps = this->materialsProperties()->materialProperties( matName );
+            auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
 
-            if ( thermalConductivityDependOnTrialSymbol && buildNonCstPart )
+            bool thermalConductivityDependOnTrialSymbol = thermalConductivity.hasSymbolDependency( trialSymbolNames,se );
+            if ( thermalConductivity.template hasExpr<nDim,nDim>() )
             {
-                CHECK( false ) << "TODO";
+                auto const& kappaExpr = expr( thermalConductivity.template expr<nDim,nDim>(), se );
+                bool buildDiffusion = kappaExpr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+                if ( buildDiffusion )
+                {
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*grad(v)*(kappaExpr*trans(gradt(u))),
+                                   _geomap=this->geomap() );
+                }
+
+                if ( thermalConductivityDependOnTrialSymbol && buildNonCstPart )
+                {
+                    CHECK( false ) << "TODO";
+                }
             }
-        }
-        else
-        {
-            auto kappaExpr = expr( thermalConductivity.expr(), se );
-            bool buildDiffusion = kappaExpr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
-            if ( buildDiffusion )
+            else
             {
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling*kappaExpr*inner(gradt(u),grad(v)),
-                               _geomap=this->geomap() );
-            }
-            if ( thermalConductivityDependOnTrialSymbol && buildNonCstPart )
-            {
-                hana::for_each( tse.map(), [this,&kappaExpr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
+                auto kappaExpr = expr( thermalConductivity.expr(), se );
+                bool buildDiffusion = kappaExpr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+                if ( buildDiffusion )
+                {
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*kappaExpr*inner(gradt(u),grad(v)),
+                                   _geomap=this->geomap() );
+                }
+                if ( thermalConductivityDependOnTrialSymbol && buildNonCstPart )
+                {
+                    hana::for_each( tse.map(), [this,&kappaExpr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
                     {
                         // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
                         for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
@@ -384,44 +385,42 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
                                            _geomap=this->geomap() );
                         }
                     });
-            }
-        }
-
-
-        if ( this->hasVelocityConvectionExpr( matName ) || !this->isStationary() )
-        {
-            auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
-            auto rhoHeatCapacityExpr = expr(rhoHeatCapacity.expr(),se);
-
-            if ( buildNonCstPart && this->hasVelocityConvectionExpr( matName ) )
-            {
-                auto velConvExpr = expr( this->velocityConvectionExpr( matName ), se );
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling*rhoHeatCapacityExpr*(gradt(u)*velConvExpr)*id(v),
-                               _geomap=this->geomap() );
-            }
-
-            if ( !this->isStationary() )
-            {
-                if ( BuildNonCstPart_Form2TransientTerm )
-                {
-                    auto thecoeff = rhoHeatCapacityExpr*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
-                    bilinearForm_PatternCoupled +=
-                        integrate( _range=range,
-                                   _expr= thecoeff*idt(u)*id(v),
-                                   _geomap=this->geomap() );
                 }
             }
 
-            // update stabilization gls
-            if ( M_stabilizationGLS && buildNonCstPart && this->hasVelocityConvectionExpr( matName ) )
+            if ( physicHeatData->hasConvectionEnabled() || !this->isStationary() )
             {
-                this->updateJacobianStabilizationGLS( data, mctx, *physicData, matProps, range );
+                auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
+                auto rhoHeatCapacityExpr = expr(rhoHeatCapacity.expr(),se);
+
+                if ( buildNonCstPart && physicHeatData->hasConvectionEnabled() )
+                {
+                    auto velConvExpr = physicHeatData->convection().expr( se );
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*rhoHeatCapacityExpr*(gradt(u)*velConvExpr)*id(v),
+                                   _geomap=this->geomap() );
+                }
+
+                if ( !this->isStationary() )
+                {
+                    if ( BuildNonCstPart_Form2TransientTerm )
+                    {
+                        auto thecoeff = rhoHeatCapacityExpr*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
+                        bilinearForm_PatternCoupled +=
+                            integrate( _range=range,
+                                       _expr= thecoeff*idt(u)*id(v),
+                                       _geomap=this->geomap() );
+                    }
+                }
+
+                // update stabilization gls
+                if ( M_stabilizationGLS && buildNonCstPart && physicHeatData->hasConvectionEnabled() )
+                {
+                    this->updateJacobianStabilizationGLS( data, mctx, *physicHeatData, matProps, range );
+                }
             }
-
         }
-
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -519,92 +518,91 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
     auto myLinearForm = form1( _test=Xh, _vector=R,
                                _rowstart=this->rowStartInVector() );
 
-    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+    for ( auto const& [physicId,physicData] : this->physicsFromCurrentType() )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
-        auto const& matProps = this->materialsProperties()->materialProperties( matName );
-        auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
+        auto physicHeatData = std::static_pointer_cast<ModelPhysicHeat<nDim>>(physicData);
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicId ) )
+        {
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            auto const& matProps = this->materialsProperties()->materialProperties( matName );
+            auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
 
-        if ( thermalConductivity.template hasExpr<nDim,nDim>() )
-        {
-            auto const& kappaExpr = expr( thermalConductivity.template expr<nDim,nDim>(), se );
-            bool buildDiffusion = kappaExpr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
-            if ( buildDiffusion )
+            if ( thermalConductivity.template hasExpr<nDim,nDim>() )
             {
-                myLinearForm +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling*grad(v)*(kappaExpr*trans(gradv(u))),
-                               _geomap=this->geomap() );
-            }
-        }
-        else
-        {
-            auto kappaExpr = expr(thermalConductivity.expr(),se);
-            bool buildDiffusion = kappaExpr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
-            if ( buildDiffusion )
-            {
-                myLinearForm +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling*kappaExpr*inner(gradv(u),grad(v)),
-                               _geomap=this->geomap() );
-            }
-        }
-
-        if ( this->hasVelocityConvectionExpr( matName ) || !this->isStationary() )
-        {
-            auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
-            auto rhoHeatCapacityExpr = expr(rhoHeatCapacity.expr(),se);
-            if ( buildNonCstPart && this->hasVelocityConvectionExpr( matName ) )
-            {
-                auto velConvExpr = expr( this->velocityConvectionExpr( matName ), se );
-                myLinearForm +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling*rhoHeatCapacityExpr*(gradv(u)*velConvExpr)*id(v),
-                               _geomap=this->geomap() );
-            }
-            if ( !this->isStationary() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
-            {
-                if ( Build_TransientTerm )
+                auto const& kappaExpr = expr( thermalConductivity.template expr<nDim,nDim>(), se );
+                bool buildDiffusion = kappaExpr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+                if ( buildDiffusion )
                 {
-                    auto thecoeff = rhoHeatCapacityExpr*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
                     myLinearForm +=
                         integrate( _range=range,
-                                   _expr= thecoeff*idv(u)*id(v),
+                                   _expr= timeSteppingScaling*grad(v)*(kappaExpr*trans(gradv(u))),
                                    _geomap=this->geomap() );
                 }
-                if (buildCstPart)
+            }
+            else
+            {
+                auto kappaExpr = expr(thermalConductivity.expr(),se);
+                bool buildDiffusion = kappaExpr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+                if ( buildDiffusion )
                 {
-                    auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
                     myLinearForm +=
                         integrate( _range=range,
-                                   _expr= -rhoHeatCapacityExpr*idv(rhsTimeStep)*id(v),
+                                   _expr= timeSteppingScaling*kappaExpr*inner(gradv(u),grad(v)),
                                    _geomap=this->geomap() );
                 }
             }
 
-            // update stabilization gls
-            if ( M_stabilizationGLS && buildNonCstPart && this->hasVelocityConvectionExpr( matName ) )
+            for ( auto const& heatSource : physicHeatData->heatSources() )
             {
-                this->updateResidualStabilizationGLS( data, mctx, *physicData, matProps, range );
+                auto theExpr = heatSource.expr( se );
+                bool buildSourceTerm = buildCstPart;
+                if ( buildSourceTerm )
+                {
+                    myLinearForm +=
+                        integrate( _range=range,
+                                   _expr= -timeSteppingScaling*theExpr*id(v),
+                                   _geomap=this->geomap() );
+                }
             }
 
-        }
+            if ( physicHeatData->hasConvectionEnabled() || !this->isStationary() )
+            {
+                auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
+                auto rhoHeatCapacityExpr = expr(rhoHeatCapacity.expr(),se);
+                if ( buildNonCstPart && physicHeatData->hasConvectionEnabled() )
+                {
+                    auto velConvExpr = physicHeatData->convection().expr( se );
+                    myLinearForm +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*rhoHeatCapacityExpr*(gradv(u)*velConvExpr)*id(v),
+                                   _geomap=this->geomap() );
+                }
+                if ( !this->isStationary() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
+                {
+                    if ( Build_TransientTerm )
+                    {
+                        auto thecoeff = rhoHeatCapacityExpr*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
+                        myLinearForm +=
+                            integrate( _range=range,
+                                       _expr= thecoeff*idv(u)*id(v),
+                                       _geomap=this->geomap() );
+                    }
+                    if (buildCstPart)
+                    {
+                        auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
+                        myLinearForm +=
+                            integrate( _range=range,
+                                       _expr= -rhoHeatCapacityExpr*idv(rhsTimeStep)*id(v),
+                                       _geomap=this->geomap() );
+                    }
+                }
 
-    }
-
-    //--------------------------------------------------------------------------------------------------//
-    // update source term
-    if ( buildCstPart )
-    {
-        for( auto const& d : this->M_volumicForcesProperties )
-        {
-            auto theExpr = expression(d,se);
-            auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
-            myLinearForm +=
-                integrate( _range=rangeBodyForceUsed,
-                           _expr= -timeSteppingScaling*theExpr*id(v),
-                           _geomap=this->geomap() );
+                // update stabilization gls
+                if ( M_stabilizationGLS && buildNonCstPart && physicHeatData->hasConvectionEnabled() )
+                {
+                    this->updateResidualStabilizationGLS( data, mctx, *physicHeatData, matProps, range );
+                }
+            }
         }
     }
 
