@@ -39,6 +39,7 @@ ModelIndexes::generateIndexFromString( std::string const& input )
         res.push_back( input );
     else
     {
+        try {
         std::vector<int> rangeDef;
         for( auto const& r : kvlist )
             rangeDef.push_back(std::stoi(r));
@@ -47,6 +48,12 @@ ModelIndexes::generateIndexFromString( std::string const& input )
         auto rangeOfInt = boost::irange(rangeDef[0],rangeDef[1],rangeDef[2]);
         for( auto const& i : rangeOfInt )
             res.push_back( std::to_string(i) );
+        }
+        catch ( std::invalid_argument const& )
+        {
+            // the char : come from an expression
+            res.push_back( input );
+        }
     }
     return res;
 }

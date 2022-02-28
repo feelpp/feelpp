@@ -218,12 +218,17 @@ public:
         {
             update( geom );
         }
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_left.init( im );
-            M_right.init( im );
-        }
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                expression_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_gmc( fusion::at_key<key_type>( geom ).get() ),
+            M_left( std::true_type{}, exprExpanded.left(), ttse, expr.left(), geom, theInitArgs... ),
+            M_right( std::true_type{}, exprExpanded.right(), ttse, expr.right(), geom, theInitArgs... ),
+            M_loc(  boost::extents[M_gmc->nPoints()] )
+            {}
+
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update( geom );
@@ -247,11 +252,14 @@ public:
                         M_loc[q]( c1,c2 ) = std::pow( left, right );
                     }
         }
-        void update( Geo_t const& geom, uint16_type face )
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
         {
             M_gmc = fusion::at_key<key_type>( geom ).get();
-            M_left.update( geom, face );
-            M_right.update( geom, face );
+            M_left.update( std::true_type{}, exprExpanded.left(), ttse, geom, theUpdateArgs... );
+            M_right.update( std::true_type{}, exprExpanded.right(), ttse, geom, theUpdateArgs... );
 
             for ( int q = 0; q < M_gmc->nPoints(); ++q )
                 for ( int c1 = 0; c1 < shape::M; ++c1 )
@@ -262,6 +270,7 @@ public:
                         M_loc[q]( c1,c2 ) = std::pow( left, right );
                     }
         }
+
 
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q  ) const

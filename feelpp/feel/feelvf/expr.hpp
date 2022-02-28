@@ -240,11 +240,6 @@ public:
             M_c2( exprExpanded.M_c2 )
             {}
 
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             M_tensor_expr.update( geom, fev, feu );
@@ -256,10 +251,6 @@ public:
         void update( Geo_t const& geom )
         {
             M_tensor_expr.update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_tensor_expr.update( geom, face );
         }
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
         void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
@@ -563,6 +554,7 @@ public:
                   M_expr.updateParameterValues( pv );
         }
 
+#if 0
     template<typename ExprTT>
     explicit Expr( ExprTT const& )
         {
@@ -573,6 +565,7 @@ public:
         {
             
         }
+#endif
     //! @return the dynamic context of the expression
     size_type dynamicContext() const
         {
@@ -706,11 +699,6 @@ public:
 
         int nPoints() const { return M_geo->nPoints(); }
 
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) noexcept
         {
             M_tensor_expr.update( geom, fev, feu );
@@ -722,10 +710,6 @@ public:
         void update( Geo_t const& geom ) noexcept 
         {
             M_tensor_expr.update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face ) noexcept
-        {
-            M_tensor_expr.update( geom, face );
         }
         template<typename ... CTX>
         void updateContext( CTX const& ... ctx ) noexcept 
@@ -1092,176 +1076,7 @@ struct ExpressionOrder
 
 
 
-
-
-/**
- * \class EvalFace
- * \brief Variational Formulation Expression
- *
- * @author Christophe Prud'homme
- * @see
- */
-template<int GeoId, typename ExprT>
-class EvalFace
-{
-public:
-
-    static const size_type context = ExprT::context;
-    static const bool is_terminal = false;
-
-    /** @name Typedefs
-     */
-    //@{
-
-    typedef ExprT expression_type;
-    typedef typename expression_type::value_type value_type;
-    typedef EvalFace<GeoId,ExprT> this_type;
-
-    //@}
-
-    /** @name Constructors, destructor
-     */
-    //@{
-
-    explicit EvalFace( expression_type const & __expr )
-        :
-        M_expr( __expr )
-    {}
-    ~EvalFace()
-    {}
-
-    //@}
-
-    //! polynomial order
-    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
-
-    //! expression is polynomial?
-    bool isPolynomial() const { return M_expr.isPolynomial(); }
-
-    /** @name Operator overloads
-     */
-    //@{
-
-    template<typename VecGeo_t, typename Basis_i_t = boost::none_t, typename Basis_j_t = Basis_i_t>
-    struct tensor
-    {
-        typedef typename fusion::result_of::at_c<VecGeo_t,GeoId>::type Geo_t;
-
-        typedef typename expression_type::template tensor<Geo_t,
-                Basis_i_t,
-                Basis_j_t> tensor_expr_type;
-        typedef typename tensor_expr_type::value_type value_type;
-
-        template <class Args> struct sig
-        {
-            typedef value_type type;
-        };
-
-        tensor( this_type const& expr,
-                VecGeo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            :
-            M_tensor_expr( expr.expression(), fusion::at_c<GeoId>(  geom ), fev, feu )
-        {}
-
-        tensor( this_type const& expr,
-                VecGeo_t const& geom, Basis_i_t const& fev )
-            :
-            M_tensor_expr( expr.expression(), fusion::at_c<GeoId>(  geom ), fev )
-        {}
-
-        tensor( this_type const& expr,
-                VecGeo_t const& geom )
-            :
-            M_tensor_expr( expr.expression(), fusion::at_c<GeoId>(  geom ) )
-        {}
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_tensor_expr.init( im );
-        }
-        void update( VecGeo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-        {
-            M_tensor_expr.update( fusion::at_c<GeoId>(  geom ), fev, feu );
-        }
-        void update( VecGeo_t const& geom, Basis_i_t const& fev )
-        {
-            M_tensor_expr.update( fusion::at_c<GeoId>(  geom ), fev );
-        }
-        void update( VecGeo_t const& geom )
-        {
-            M_tensor_expr.update( fusion::at_c<GeoId>(  geom ) );
-        }
-
-
-        value_type
-        evalij( uint16_type i, uint16_type j ) const
-        {
-            return M_tensor_expr.evalij( i, j );
-        }
-
-
-        value_type
-        evalijq( uint16_type i, uint16_type j, int q ) const
-        {
-            return M_tensor_expr.evalijq( i, j, q );
-        }
-
-
-        value_type
-        evaliq( uint16_type i, int q ) const
-        {
-            return M_tensor_expr.evaliq( i, q );
-        }
-
-        value_type
-        evalq( int q, int c ) const
-        {
-            return M_tensor_expr.evalq( q, c );
-        }
-
-        tensor_expr_type M_tensor_expr;
-    };
-
-    //@}
-
-    /** @name Accessors
-     */
-    //@{
-
-    expression_type const& expression() const
-    {
-        return M_expr;
-    }
-
-    //@}
-
-    /** @name  Mutators
-     */
-    //@{
-
-    //@}
-
-    /** @name  Methods
-     */
-    //@{
-    //@}
-
-protected:
-
-private:
-
-    mutable expression_type  M_expr;
-};
-
-template<int GeoId, typename ExprT>
-inline
-Expr< EvalFace<GeoId, ExprT> >
-evalface( ExprT const& v )
-{
-    typedef EvalFace<GeoId, ExprT> eval_t;
-    return Expr< eval_t >(  eval_t( v ) );
-}
-
+#if 0
 template < class Element, int Type>
 class GElem
 {
@@ -1477,6 +1292,7 @@ basis( std::map<size_type,std::vector<std::shared_ptr<Elem> > > const& v )
     typedef GElem<Elem,0> expr_t;
     return Expr< expr_t >(  expr_t( v ) );
 }
+#endif
 
 /// \endcond
 } // vf

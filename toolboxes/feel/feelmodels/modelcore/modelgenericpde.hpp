@@ -22,7 +22,7 @@ public :
     struct Infos
     {
         Infos() = default;
-        Infos( std::string const& name, pt::ptree const& p );
+        Infos( std::string const& name, nl::json const& jarg );
         Infos( std::string const& name, std::string const& unknownName, std::string const& unknownSymbol, std::string const& unknownBasis )
             :
             M_equationName( name ),
@@ -46,7 +46,8 @@ public :
     ModelGenericPDE( ModelGenericPDE const& ) = default;
     ModelGenericPDE( ModelGenericPDE && ) = default;
 
-    std::string const& physic() const { return this->physicDefault(); }
+    //std::string const& physic() const { return this->physicDefault(); }
+    std::string const& physic() const { return this->equationName(); }
     std::string const& equationName() const { return M_infos.equationName(); }
     std::string const& unknownName() const { return M_infos.unknownName(); }
     std::string const& unknownSymbol() const { return M_infos.unknownSymbol(); }
@@ -85,8 +86,8 @@ public :
     void addGenericPDE( typename ModelGenericPDE<nDim>::infos_type const& infos );
 protected :
     void initGenericPDEs( std::string const& name );
-    void setupGenericPDEs( pt::ptree const& p );
-    void updateForUseGenericPDEs();
+    void setupGenericPDEs( nl::json const& jarg );
+    void updateForUseGenericPDEs( std::string const& name );
 private :
     std::vector<std::tuple<typename ModelGenericPDE<nDim>::infos_type,std::shared_ptr<ModelGenericPDE<nDim>>>> M_pdes;
 };
