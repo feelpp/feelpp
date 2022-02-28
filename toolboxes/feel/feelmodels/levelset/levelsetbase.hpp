@@ -253,7 +253,6 @@ public:
     void createMesh();
     void init();
     void initLevelsetValue();
-    void initUserFunctions();
     void initPostProcess() override;
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
@@ -458,9 +457,7 @@ public:
                 std::make_pair( prefixvm( prefix, "modgradphi" ), this->modGradPhi() ),
                 std::make_pair( prefixvm( prefix, "distance" ), this->distance() ),
                 std::make_pair( prefixvm( prefix, "distance-normal" ), this->distanceNormal() ),
-                std::make_pair( prefixvm( prefix, "distance-curvature" ), this->distanceCurvature() ),
-                this->fieldsUserScalar(),
-                this->fieldsUserVectorial()
+                std::make_pair( prefixvm( prefix, "distance-curvature" ), this->distanceCurvature() )
                 );
     }
 #endif
@@ -567,50 +564,6 @@ public:
     template<typename SymbolsExpr, typename TupleFieldsType, typename TupleMeasuresQuantitiesType>
     void exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& fields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities );
 
-    //--------------------------------------------------------------------//
-    // User-defined fields
-    std::map<std::string, element_scalar_ptrtype> const& fieldsUserScalar() const { return M_fieldsUserScalar; }
-    std::map<std::string, element_vectorial_ptrtype> const& fieldsUserVectorial() const { return M_fieldsUserVectorial; }
-    bool hasFieldUserScalar( std::string const& key ) const { return M_fieldsUserScalar.find( key ) != M_fieldsUserScalar.end(); }
-    bool hasFieldUserVectorial( std::string const& key ) const { return M_fieldsUserVectorial.find( key ) != M_fieldsUserVectorial.end(); }
-    element_scalar_ptrtype const& fieldUserScalarPtr( std::string const& key ) const {
-        CHECK( this->hasFieldUserScalar( key ) ) << "field name " << key << " not registered"; return M_fieldsUserScalar.find( key )->second; }
-    element_vectorial_ptrtype const& fieldUserVectorialPtr( std::string const& key ) const {
-        CHECK( this->hasFieldUserVectorial( key ) ) << "field name " << key << " not registered"; return M_fieldsUserVectorial.find( key )->second; }
-    element_scalar_type const& fieldUserScalar( std::string const& key ) const { return *this->fieldUserScalarPtr( key ); }
-    element_vectorial_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
-
-    void registerCustomFieldScalar( std::string const& name )
-    {
-        if ( M_fieldsUserScalar.find( name ) == M_fieldsUserScalar.end() )
-            M_fieldsUserScalar[name];
-    }
-    void registerCustomFieldVectorial( std::string const& name )
-    {
-        if ( M_fieldsUserVectorial.find( name ) == M_fieldsUserVectorial.end() )
-            M_fieldsUserVectorial[name];
-    }
-    template <typename ExprT>
-    void updateCustomField( std::string const& name, vf::Expr<ExprT> const& e )
-    {
-        this->updateCustomField( name, e, M_rangeMeshElements );
-    }
-    template <typename ExprT, typename OnRangeType>
-    void updateCustomField( std::string const& name, vf::Expr<ExprT> const& e, OnRangeType const& range, std::enable_if_t< ExprTraits<OnRangeType, vf::Expr<ExprT>>::shape::is_scalar>* = nullptr )
-    {
-        if ( M_fieldsUserScalar.find( name ) == M_fieldsUserScalar.end() || !M_fieldsUserScalar[name] )
-            M_fieldsUserScalar[name] = this->functionSpaceScalar()->elementPtr();
-        M_fieldsUserScalar[name]->on(_range=range,_expr=e );
-    }
-    template <typename ExprT, typename OnRangeType>
-    void updateCustomField( std::string const& name, vf::Expr<ExprT> const& e, OnRangeType const& range, std::enable_if_t< ExprTraits<OnRangeType, vf::Expr<ExprT>>::shape::is_vectorial>* = nullptr )
-    {
-        if ( M_fieldsUserVectorial.find( name ) == M_fieldsUserVectorial.end() || !M_fieldsUserVectorial[name] )
-            M_fieldsUserVectorial[name] = this->functionSpaceVectorial()->elementPtr();
-        M_fieldsUserVectorial[name]->on(_range=range,_expr=e );
-    }
-
-    void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
 
     //--------------------------------------------------------------------//
     // Physical quantities
@@ -690,7 +643,7 @@ private:
 
     //--------------------------------------------------------------------//
     void addShape( 
-            pt::ptree const& shapeParameters, 
+            nl::json const& shapeParameters, 
             element_levelset_type & phi );
 
 

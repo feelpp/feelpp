@@ -195,7 +195,6 @@ struct SolidMecFirstPiolaKirchhoffBase
             }
 
         void update( Geo_t const& geom ) override { CHECK( false ) << "should be override"; };
-        void update( Geo_t const& geom, uint16_type face ) override { CHECK( false ) << "should be override"; };
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) override { CHECK( false ) << "should be override"; }
         void update( Geo_t const& geom, Basis_i_t const& fev ) override { CHECK( false ) << "should be override"; }
 
@@ -409,22 +408,6 @@ public :
                     this->M_tensorExprEvaluateDisplacementOperators->update( geom );
                     if constexpr ( useDispPresForm )
                           this->M_tensorExprEvaluatePressureOperators->update( geom );
-                }
-
-                this->updateImpl();
-            }
-
-        void update( Geo_t const& geom, uint16_type face ) override
-            {
-                M_tensorLameSecondParameter.update( geom, face );
-                if constexpr ( !useDispPresForm )
-                    M_tensorLameFirstParameter->update( geom, face );
-
-                if constexpr ( this_type::is_applied_as_eval )
-                {
-                    this->M_tensorExprEvaluateDisplacementOperators->update( geom,face );
-                    if constexpr ( useDispPresForm )
-                         this->M_tensorExprEvaluatePressureOperators->update( geom,face );
                 }
 
                 this->updateImpl();
@@ -752,22 +735,6 @@ public :
                 {
                     if constexpr ( useDispPresForm )
                           this->M_tensorExprEvaluatePressureOperators->update( geom );
-                }
-
-                this->updateImpl();
-            }
-
-        void update( Geo_t const& geom, uint16_type face ) override
-            {
-                M_tensorLameSecondParameter.update( geom, face );
-                if constexpr ( !useDispPresForm )
-                    M_tensorLameFirstParameter->update( geom, face );
-
-                this->M_tensorExprEvaluateDisplacementOperators->update( geom,face );
-                if constexpr ( this_type::is_applied_as_eval || this_type::is_applied_as_jacobian_displacement )
-                {
-                    if constexpr ( useDispPresForm )
-                         this->M_tensorExprEvaluatePressureOperators->update( geom,face );
                 }
 
                 this->updateImpl();
@@ -4214,11 +4181,6 @@ public:
 
         tensor( tensor const& t ) = default;
 
-        template<typename IM>
-        void init( IM const& im )
-        {
-            //M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update(geom);
@@ -4230,10 +4192,6 @@ public:
         void update( Geo_t const& geom )
         {
             M_tensorbase->update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_tensorbase->update( geom, face );
         }
 
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>

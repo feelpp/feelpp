@@ -4,8 +4,8 @@
     "ShortName": "rotating_hill_advection",
     "Models":
     {
-        "equations":[
-            {
+        "cfpdes":{
+            "equations":{
                 "name":"equation1",
                 "unknown":
                 {
@@ -14,7 +14,7 @@
                     "symbol":"u"
                 }
             }
-        ]
+        }
     },
     "Meshes":
     {
@@ -38,21 +38,19 @@
     },
     "InitialConditions":
     {
-        "solution":
-        {
-            "Expression":
-            {
-                "myic":
-                {
-                    "markers":"Omega",
-                    "expr":"exp(-10*((x-0.3)^2 +(y-0.3)^2)):x:y"
+        "equation1":{
+            "solution":{
+                "Expression":{
+                    "myic":{
+                        "markers":"Omega",
+                        "expr":"exp(-10*((x-0.3)^2 +(y-0.3)^2)):x:y"
+                    }
                 }
             }
         }
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

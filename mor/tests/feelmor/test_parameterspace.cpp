@@ -241,8 +241,10 @@ BOOST_AUTO_TEST_CASE( test3 )
 
     auto json = removeComments(readFromFile(Environment::expand(soption("json_filename"))));
     std::istringstream istr( json );
-    pt::ptree p;
-    pt::read_json(istr, p);
+    nl::json p;
+    istr >> p;
+    //pt::ptree p;
+    //pt::read_json(istr, p);
     auto parameters = ModelParameters();
     parameters.setPTree(p);
     auto Dmu = parameterspace_type::New(parameters);

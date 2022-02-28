@@ -113,13 +113,9 @@ struct tensorSolidMecPressureFormulationMultiplierBase : public tensorBase<Geo_t
         M_locIdPressure( expr.pressure().idExtents(*this->gmc()) )
         {}
 
-    template<typename IM>
-    void init( IM const& im ) {}
-
     void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) { update(geom); }
     void update( Geo_t const& geom, Basis_i_t const& /*fev*/ ) { update(geom); }
     virtual void update( Geo_t const& geom ) = 0;
-    void update( Geo_t const& geom, uint16_type face ) { CHECK( false ) << "TODO"; }
 
     using super_type::evalijq; // fix clang warning
 
@@ -743,11 +739,6 @@ public:
             else
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationMultiplierClassic<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom) );
         }
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_tensorbase->init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             M_tensorbase->update(geom,fev,feu);
@@ -759,10 +750,6 @@ public:
         void update( Geo_t const& geom )
         {
             M_tensorbase->update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_tensorbase->update( geom, face );
         }
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
@@ -866,13 +853,9 @@ struct tensorSolidMecPressureFormulationConstraintBase : public tensorBase<Geo_t
         M_locGradDisplacement( expr.disp().gradExtents(*this->gmc()) )
         {}
 
-    template<typename IM>
-    void init( IM const& im ) {}
-
     void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) override { this->update(geom); }
     void update( Geo_t const& geom, Basis_i_t const& /*fev*/ ) override { this->update(geom); }
     virtual void update( Geo_t const& geom ) override = 0;
-    void update( Geo_t const& geom, uint16_type face ) override { CHECK( false ) << "TODO"; }
 
     value_type evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const override
     {
@@ -1245,11 +1228,6 @@ public:
             else
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationConstraintClassic<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom) );
         }
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_tensorbase->init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             M_tensorbase->update(geom,fev,feu);
@@ -1261,10 +1239,6 @@ public:
         void update( Geo_t const& geom )
         {
             M_tensorbase->update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_tensorbase->update( geom, face );
         }
 #if 0
         typename tensorbase_type::matrix_shape_type const&
