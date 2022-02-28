@@ -4,9 +4,7 @@
     "ShortName":"Fluid",
     "Models":
     {
-        "use-model-name":1,
-        "fluid":
-        {
+        "fluid":{
             "equations":"Navier-Stokes"
         }
     },
@@ -14,6 +12,17 @@
     {
         "ubar":"2",
         "chi":"t<2:t"
+    },
+    "Meshes":
+    {
+        "heatfluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cfd.geo",
+                "hsize":0.03 //0.01
+            }
+        }
     },
     "Materials":
     {
@@ -26,14 +35,13 @@
     },
     "InitialConditions":
     {
-        "temperature":
-        {
-            "Expression":
-            {
-                "myic":
-                {
-                    "markers":"Fluid",
-                    "expr":293.15
+        "heat":{
+            "temperature":{
+                "Expression":{
+                    "myic":{
+                        "markers":"Fluid",
+                        "expr":293.15
+                    }
                 }
             }
         }
@@ -102,7 +110,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "heatfluid":
         {
             "Exports":

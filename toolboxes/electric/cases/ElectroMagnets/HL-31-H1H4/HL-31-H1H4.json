@@ -2,6 +2,17 @@
 {
     "Name":"HL-31-H1H4",
     "ShortName":"HL-31-H1H4",
+    "Meshes":
+    {
+        "electric":
+        {
+            "Import":
+            {
+                "filename":"girder:{file:5e37ea0db0e95704757e24b0}",
+                "partition":1
+            }
+        }
+    },
     "Materials":
     {
         "Cu":
@@ -34,19 +45,22 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "electric":
         {
-            "fields":["electric-potential","current-density","electric-field"]
-        },
-        "Measures":
-        {
-            "Statistics":
+            "Exports":
             {
-                "meanH2V0": 
+                "fields":["electric-potential","current-density","electric-field"]
+            },
+            "Measures":
+            {
+                "Statistics":
                 {
-                    "type":"mean", 
-                    "field":"electric-potential",
-                    "markers":"H2_V0"
+                    "meanH2V0": 
+                    {
+                        "type":"mean", 
+                        "field":"electric-potential",
+                        "markers":"H2_V0"
+                    }
                 }
             }
         }

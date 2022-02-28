@@ -3,8 +3,8 @@
     "ShortName": "L-Shape",
     "Models":
     {
-        "equations":[
-            {
+        "cfpdes":{
+            "equations":{
                 "name":"laplace",
                 "unknown":
                 {
@@ -13,7 +13,18 @@
                     "symbol":"u"
                 }
             }
-        ]
+        }
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/l-shape.geo",
+                "hsize":0.05
+            }
+        }
     },
     "Materials":
     {
@@ -40,7 +51,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

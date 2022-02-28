@@ -26,81 +26,88 @@
 
 namespace Feel {
 
-ModelModel::ModelModel( std::string const& name, pt::ptree const& p, bool addVariants )
+ModelModel::ModelModel( std::string const& type, std::string const& name, nl::json const& jarg )
     :
-    M_name( name ),
-    M_ptree( p )
+    M_type( type ),
+    M_name( name )
 {
-    if ( auto eq = M_ptree.get_optional<std::string>("equations") )
-        M_equations = *eq;
-
-    if ( auto submodels = M_ptree.get_child_optional("submodels") )
+    if ( jarg.contains( "name" ) )
     {
-        if ( submodels->empty() ) // value case
-            M_submodels.insert( submodels->get_value<std::string>() );
-        else // array case
-        {
-            for ( auto const& item : *submodels )
-            {
-                CHECK( item.first.empty() ) << "should be an array, not a subtree";
-                std::string const& mname = item.second.template get_value<std::string>();
-                M_submodels.insert( mname );
-            }
-        }
+        auto const& j_name = jarg.at( "name" );
+        if ( j_name.is_string() )
+            M_name = j_name.get<std::string>();
     }
 
-    if ( addVariants )
-    {
-        for( auto const& [key,ptreeVariant] : M_ptree )
+    for ( std::string const& submodelName : { "submodels", "subphysics" } )
+        if ( jarg.contains( submodelName ) )
         {
-            if ( key == "equations" || key == "submodels" )
-                continue;
-            if ( ptreeVariant.empty() )
-                continue;
-
-            bool ptreeVariantIsArray = false;
-            for ( auto const& item : ptreeVariant )
+            auto const& j_submodels = jarg.at( submodelName );
+            if ( j_submodels.is_object() )
             {
-                if ( item.first.empty() )
+                for ( auto const& [j_submodelskey,j_submodelsval]: j_submodels.items() )
                 {
-                    ptreeVariantIsArray = true;
-                    break;
+                    if ( j_submodelsval.is_string() )
+                        M_submodels[j_submodelskey].insert( j_submodelsval.get<std::string>() );
+                    else if ( j_submodelsval.is_array() )
+                        for ( auto const& [j_submodels_namekey,j_submodels_nameval] : j_submodelsval.items() )
+                            if ( j_submodels_nameval.is_string() )
+                                M_submodels[j_submodelskey].insert( j_submodels_nameval.get<std::string>() );
                 }
             }
-            if ( ptreeVariantIsArray )
-                continue;
+            else if ( j_submodels.is_array() )
+            {
+            }
+    }
 
-            M_variants.emplace( key, ModelModel( key, ptreeVariant, false ) );
+    for ( std::string const& setupName : { "equations", "equation", "setup" } )
+        if ( jarg.contains( setupName ) )
+            M_setup = jarg.at( setupName );
+
+
+    if ( jarg.contains( "materials" ) )
+    {
+        auto const& j_materials = jarg.at( "materials" );
+        if ( j_materials.is_string() )
+            M_materials.insert( j_materials.get<std::string>() );
+        else if ( j_materials.is_array() )
+        {
+            for ( auto const& [j_materialskey,j_materialsval]: j_materials.items() )
+                if ( j_materialsval.is_string() )
+                    M_materials.insert( j_materialsval.get<std::string>() );
         }
     }
 }
 
-ModelModels::ModelModels()
-    :
-    M_useModelName( false )
-{}
+
 
 void
-ModelModels::setup()
+ModelModelsSameType::setup( std::string type, nl::json const& jarg )
 {
-    if ( auto useModelName = M_p.get_optional<bool>("use-model-name") )
-        M_useModelName = *useModelName;
+    ModelModel m( type, jarg );
+    this->insert( std::make_pair( m.name(), std::move( m ) ) );
+}
 
-    if ( M_useModelName )
+void
+ModelModels::setup( nl::json const& jarg )
+{
+    for (auto const& [jargkey,jargval] : jarg.items())
     {
-        for( auto const& p1 : M_p )
+        std::string const& type = jargkey;
+        if ( jargval.is_array() )
         {
-            std::string const& name = p1.first;
-            this->insert( std::make_pair( name,ModelModel( name, p1.second ) ) );
+            for (auto const& [j_modeltypekey,j_modeltypeval] : jargval.items())
+            {
+                this->operator[]( type ).setup( type, j_modeltypeval );
+            }
         }
-    }
-    else
-    {
-        std::string name = "";
-        this->insert( std::make_pair( name, ModelModel(name, M_p ) ) );
+        else if ( jargval.is_object() )
+        {
+            this->operator[]( type ).setup( type, jargval );
+        }
     }
 }
 
+#if 0
 bool
 ModelModels::hasModel( std::string const& name ) const
 {
@@ -117,5 +124,5 @@ ModelModels::model( std::string const& name ) const
         return itFindModel->second;
     return M_emptyModel;
 }
-
+#endif
 }

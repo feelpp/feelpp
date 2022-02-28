@@ -221,7 +221,6 @@ struct tensorShockCapturingGaleaoCarmo : public tensorBase<Geo_t,Basis_i_t,Basis
             }
 
         }
-    void update( Geo_t const& geom, uint16_type face ) override { CHECK( false ) << "TODO"; }
 
     value_type
     evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const override
@@ -429,11 +428,6 @@ public:
             }
         tensor( tensor const& t ) = default;
 
-        template<typename IM>
-        void init( IM const& im )
-        {
-            //M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             M_tensorbase->update( geom, fev, feu );
@@ -447,10 +441,6 @@ public:
         void update( Geo_t const& geom )
         {
             M_tensorbase->update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_tensorbase->update( geom, face );
         }
 #if 0
         ret_type
