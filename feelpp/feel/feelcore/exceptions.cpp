@@ -71,6 +71,7 @@ void handleExceptions()
         if ( Environment::isMasterRank() )
             fmt::print( "[feel++.std.exception] {}", e.what() );
     }
+    LOG(WARNING) << fmt::format("[feel++] report status\n");
     if ( GitMetadata::populated() )
     {
         if ( GitMetadata::anyUncommittedChanges() )
@@ -90,12 +91,13 @@ void handleExceptions()
                         GitMetadata::authorName(),GitMetadata::authorEmail(),
                         GitMetadata::commitDate(),
                         GitMetadata::commitSubject(),
-                        GitMetadata::commitBody() );
+                        GitMetadata::commitBody() ) << std::endl;
     }
     else
     {
         std::cerr << "WARN: failed to get the current git state. Is this a git repo?" << std::endl;
     }
+    LOG(WARNING) << fmt::format("[feel++] abort all mpi processes...\n");
     Environment::abort(EXIT_FAILURE);
 }    
 
