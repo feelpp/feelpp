@@ -41,7 +41,7 @@ else
 fi
 
 if [ "${component}" = "feelpp" ] ; then
-    CTEST_FLAGS="-R feelpp_qs_ -T test --no-compress-output"
+    CTEST_FLAGS="-R feelpp_qs_ -T test --no-compress-output -VV"
 elif [ "${component}" = "toolboxes" ] ; then
     CTEST_FLAGS="-R feelpp_toolbox_ -T test --no-compress-output --output-on-failure"
 elif [ "${component}" = "testsuite" ] ; then
