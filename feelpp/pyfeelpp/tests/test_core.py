@@ -8,7 +8,7 @@ import subprocess
 
 config_cases=[  ("pyfeelpp-tests/core/test_config",feelpp.Location.standard,False),
                 ("pyfeelpp-tests/core/test_config",feelpp.Location.relative,True),
-                ("pyfeelpp-tests/core/test_config",feelpp.Location.git,True),
+                #("pyfeelpp-tests/core/test_config",feelpp.Location.git,True),
                 ("/tmp/toto/pyfeelpp-tests/core/test_config",feelpp.Location.absolute,True),
             ]
 
