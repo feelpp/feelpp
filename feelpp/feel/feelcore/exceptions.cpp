@@ -44,33 +44,36 @@ void handleExceptions()
     }
     catch(const boost::filesystem::filesystem_error& e)
     {
-        if ( Environment::isMasterRank() )
-        {
-            if ( e.code() == boost::system::errc::permission_denied )
-                fmt::print( "[feel++.boost.filesystem.filesystem_error.permission_denied] {}", e.what() );
-            else
-                fmt::print( "[feel++.boost.filesystem.filesystem_error] {}", e.what() );
-        }
+        if ( e.code() == boost::system::errc::permission_denied )
+            fmt::print( "[feel++.boost.filesystem.filesystem_error.permission_denied] {}, path1: {}, path2: {}\n", e.what(), e.path1().string(), e.path2().string() );
+        else
+            fmt::print( "[feel++.boost.filesystem.filesystem_error] {}, path1: {}, path2: {}\n", e.what(), e.path1().string(), e.path2().string() );
     }
     catch (json::exception& e)
     {
-        if ( Environment::isMasterRank() )
-            fmt::print("[feel++.json.exception] {}",e.what());
+        fmt::print("[feel++.json.exception] {}\n",e.what());
     }
     catch ( std::invalid_argument const& e )
     {
-        Feel::cout << fmt::format( "[feelpp.std.invalid_argument] {}",e.what()) << std::endl;
+        fmt::print( "[feelpp.std.invalid_argument] {}\n",e.what());
     }
     catch (const std::runtime_error & e) 
     {
-        if ( Environment::isMasterRank() )
-            fmt::print( "[feel++.std.runtime_error] {}", e.what() );
+        fmt::print( "[feel++.std.runtime_error] {}", e.what() );
+    }
+    catch ( const boost::mpi::exception& e )
+    {
+        fmt::print( "[feel++.boost.mpi.exception] {}, routine: {}, result_code: {}\n", e.what(), e.routine(), e.result_code() );
     }
     catch ( const std::exception& e )
     {
-        if ( Environment::isMasterRank() )
-            fmt::print( "[feel++.std.exception] {}", e.what() );
+        fmt::print( "[feel++.std.exception] {}", e.what() );
     }
+    catch(...)
+    {
+        fmt::print( "[feel++.unknown.exception] {}" );
+    }
+    LOG(WARNING) << fmt::format("[feel++] report status\n");
     if ( GitMetadata::populated() )
     {
         if ( GitMetadata::anyUncommittedChanges() )
@@ -90,12 +93,13 @@ void handleExceptions()
                         GitMetadata::authorName(),GitMetadata::authorEmail(),
                         GitMetadata::commitDate(),
                         GitMetadata::commitSubject(),
-                        GitMetadata::commitBody() );
+                        GitMetadata::commitBody() ) << std::endl;
     }
     else
     {
         std::cerr << "WARN: failed to get the current git state. Is this a git repo?" << std::endl;
     }
+    LOG(WARNING) << fmt::format("[feel++] abort all mpi processes...\n");
     Environment::abort(EXIT_FAILURE);
 }    
 
