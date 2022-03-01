@@ -347,6 +347,7 @@ var namespaceFeel =
     [ "GinacExprManagerDefaultFileNameImpl", "classFeel_1_1GinacExprManagerDefaultFileNameImpl.html", "classFeel_1_1GinacExprManagerDefaultFileNameImpl" ],
     [ "GinacExprManagerDeleterImpl", "structFeel_1_1GinacExprManagerDeleterImpl.html", "structFeel_1_1GinacExprManagerDeleterImpl" ],
     [ "GinacExprManagerImpl", "classFeel_1_1GinacExprManagerImpl.html", "classFeel_1_1GinacExprManagerImpl" ],
+    [ "GithubUser", "structFeel_1_1GithubUser.html", "structFeel_1_1GithubUser" ],
     [ "GitMetadata", "classFeel_1_1GitMetadata.html", "classFeel_1_1GitMetadata" ],
     [ "GT_Lagrange", "structFeel_1_1GT__Lagrange.html", null ],
     [ "Hypercube", "classFeel_1_1Hypercube.html", "classFeel_1_1Hypercube" ],

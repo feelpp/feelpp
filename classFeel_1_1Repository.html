@@ -110,24 +110,38 @@ $(document).ready(function(){initNavTree('classFeel_1_1Repository.html',''); ini
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><p>data structure to handle repository of results </p>
+<div class="textblock"><p>@ structure to handle repository of results </p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Instances and minimal complete definitions</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1Repository_1_1Config.html">Config</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1Repository_1_1Owner.html">Owner</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a75eb8dd647b083d73f671a58d31eeb9a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a75eb8dd647b083d73f671a58d31eeb9a">configure</a> ()</td></tr>
-<tr class="memdesc:a75eb8dd647b083d73f671a58d31eeb9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">configure the repository directories based on <code><a class="el" href="structFeel_1_1Repository_1_1Config.html">Config</a></code>  <a href="classFeel_1_1Repository.html#a75eb8dd647b083d73f671a58d31eeb9a">More...</a><br /></td></tr>
-<tr class="separator:a75eb8dd647b083d73f671a58d31eeb9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6a0e1a6490165e2c3f85bfc9c865f611"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a6a0e1a6490165e2c3f85bfc9c865f611">configure</a> (fs::path const &amp;d)</td></tr>
-<tr class="memdesc:a6a0e1a6490165e2c3f85bfc9c865f611"><td class="mdescLeft">&#160;</td><td class="mdescRight">configure for a given directory  <a href="classFeel_1_1Repository.html#a6a0e1a6490165e2c3f85bfc9c865f611">More...</a><br /></td></tr>
-<tr class="separator:a6a0e1a6490165e2c3f85bfc9c865f611"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a42a0e0fd1244ea81f8e6388f01fcaa13"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classnlohmann_1_1basic__json.html">json</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a42a0e0fd1244ea81f8e6388f01fcaa13">data</a> () const</td></tr>
-<tr class="memdesc:a42a0e0fd1244ea81f8e6388f01fcaa13"><td class="mdescLeft">&#160;</td><td class="mdescRight">data configuration  <a href="classFeel_1_1Repository.html#a42a0e0fd1244ea81f8e6388f01fcaa13">More...</a><br /></td></tr>
-<tr class="separator:a42a0e0fd1244ea81f8e6388f01fcaa13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2a08c8d19c2df332926ce321fcdbbc1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Repository.html">Repository</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#af2a08c8d19c2df332926ce321fcdbbc1">cd</a> ()</td></tr>
+<tr class="memdesc:af2a08c8d19c2df332926ce321fcdbbc1"><td class="mdescLeft">&#160;</td><td class="mdescRight">change directory to current configuration  <a href="classFeel_1_1Repository.html#af2a08c8d19c2df332926ce321fcdbbc1">More...</a><br /></td></tr>
+<tr class="separator:af2a08c8d19c2df332926ce321fcdbbc1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a3621348dbe2456c8b583afccc8f4f3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structFeel_1_1Repository_1_1Config.html">Config</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a6a3621348dbe2456c8b583afccc8f4f3">config</a> ()</td></tr>
+<tr class="memdesc:a6a3621348dbe2456c8b583afccc8f4f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the configuration of the repository  <a href="classFeel_1_1Repository.html#a6a3621348dbe2456c8b583afccc8f4f3">More...</a><br /></td></tr>
+<tr class="separator:a6a3621348dbe2456c8b583afccc8f4f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f420f28d8c3ea43b544a9e94d6d6cc6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structFeel_1_1Repository_1_1Config.html">Config</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a5f420f28d8c3ea43b544a9e94d6d6cc6">config</a> () const</td></tr>
+<tr class="memdesc:a5f420f28d8c3ea43b544a9e94d6d6cc6"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the configuration of the repository  <a href="classFeel_1_1Repository.html#a5f420f28d8c3ea43b544a9e94d6d6cc6">More...</a><br /></td></tr>
+<tr class="separator:a5f420f28d8c3ea43b544a9e94d6d6cc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a539ef21415dda6a947189ede402f301d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Repository.html">Repository</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a539ef21415dda6a947189ede402f301d">configure</a> ()</td></tr>
+<tr class="memdesc:a539ef21415dda6a947189ede402f301d"><td class="mdescLeft">&#160;</td><td class="mdescRight">configure the repository directories based on <code><a class="el" href="structFeel_1_1Repository_1_1Config.html">Config</a></code>  <a href="classFeel_1_1Repository.html#a539ef21415dda6a947189ede402f301d">More...</a><br /></td></tr>
+<tr class="separator:a539ef21415dda6a947189ede402f301d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f500a7714694d03fd1d6c5e0a0b1afb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Repository.html">Repository</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a1f500a7714694d03fd1d6c5e0a0b1afb">configure</a> (fs::path const &amp;d)</td></tr>
+<tr class="memdesc:a1f500a7714694d03fd1d6c5e0a0b1afb"><td class="mdescLeft">&#160;</td><td class="mdescRight">configure for a given directory  <a href="classFeel_1_1Repository.html#a1f500a7714694d03fd1d6c5e0a0b1afb">More...</a><br /></td></tr>
+<tr class="separator:a1f500a7714694d03fd1d6c5e0a0b1afb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab16b1d7b72889c818b141286fc873534"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Repository.html">Repository</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#ab16b1d7b72889c818b141286fc873534">configure</a> (fs::path const &amp;d, <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6">Location</a> const &amp;l)</td></tr>
+<tr class="memdesc:ab16b1d7b72889c818b141286fc873534"><td class="mdescLeft">&#160;</td><td class="mdescRight">configure for a given directory  <a href="classFeel_1_1Repository.html#ab16b1d7b72889c818b141286fc873534">More...</a><br /></td></tr>
+<tr class="separator:ab16b1d7b72889c818b141286fc873534"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33fb7759f2aa1dc0ab5e0a31ad565a93"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Repository.html">Repository</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a33fb7759f2aa1dc0ab5e0a31ad565a93">configure</a> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;j)</td></tr>
+<tr class="memdesc:a33fb7759f2aa1dc0ab5e0a31ad565a93"><td class="mdescLeft">&#160;</td><td class="mdescRight">configure for a json configuration  <a href="classFeel_1_1Repository.html#a33fb7759f2aa1dc0ab5e0a31ad565a93">More...</a><br /></td></tr>
+<tr class="separator:a33fb7759f2aa1dc0ab5e0a31ad565a93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab6f60083e5ba3fb0f53606a74e430e87"><td class="memItemLeft" align="right" valign="top">fs::path&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#ab6f60083e5ba3fb0f53606a74e430e87">directory</a> () const</td></tr>
 <tr class="memdesc:ab6f60083e5ba3fb0f53606a74e430e87"><td class="mdescLeft">&#160;</td><td class="mdescRight">the result repository absolute directory  <a href="classFeel_1_1Repository.html#ab6f60083e5ba3fb0f53606a74e430e87">More...</a><br /></td></tr>
 <tr class="separator:ab6f60083e5ba3fb0f53606a74e430e87"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -142,15 +156,19 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a69633884773071a83a28f4b0546c3fd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2de6a6d0f0d9c1d32ef05fa48749007"><td class="memItemLeft" align="right" valign="top">fs::path const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#aa2de6a6d0f0d9c1d32ef05fa48749007">globalRoot</a> () const</td></tr>
 <tr class="separator:aa2de6a6d0f0d9c1d32ef05fa48749007"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae4bbf2a958d6af11ad4e0cc5acd4cf5f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#ae4bbf2a958d6af11ad4e0cc5acd4cf5f">isAbsolute</a> () const</td></tr>
+<tr class="separator:ae4bbf2a958d6af11ad4e0cc5acd4cf5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f07bf456f23917853a0ceb1ce6d6416"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a0f07bf456f23917853a0ceb1ce6d6416">isGit</a> () const</td></tr>
 <tr class="separator:a0f07bf456f23917853a0ceb1ce6d6416"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2fb36bba563a9853666f4b79a38d57f6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a2fb36bba563a9853666f4b79a38d57f6">isGiven</a> () const</td></tr>
-<tr class="memdesc:a2fb36bba563a9853666f4b79a38d57f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">if Config.directory is absolute, then the repository is considered given  <a href="classFeel_1_1Repository.html#a2fb36bba563a9853666f4b79a38d57f6">More...</a><br /></td></tr>
-<tr class="separator:a2fb36bba563a9853666f4b79a38d57f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6bc79ed362ea44062208bba40edffa94"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a6bc79ed362ea44062208bba40edffa94">isGlobal</a> () const</td></tr>
 <tr class="separator:a6bc79ed362ea44062208bba40edffa94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a076dbbe2c1fc7fdc2f7cfe194326fa41"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a076dbbe2c1fc7fdc2f7cfe194326fa41">isLocal</a> () const</td></tr>
 <tr class="separator:a076dbbe2c1fc7fdc2f7cfe194326fa41"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1885fe3a00ec66c65ee58d208654c6d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#ac1885fe3a00ec66c65ee58d208654c6d">isRelative</a> () const</td></tr>
+<tr class="separator:ac1885fe3a00ec66c65ee58d208654c6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af1a367d1bfa296a79bcdc9cef038359f"><td class="memItemLeft" align="right" valign="top">fs::path const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#af1a367d1bfa296a79bcdc9cef038359f">logs</a> () const</td></tr>
+<tr class="memdesc:af1a367d1bfa296a79bcdc9cef038359f"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the logs directory The logs directory contains feelpp apps log files  <a href="classFeel_1_1Repository.html#af1a367d1bfa296a79bcdc9cef038359f">More...</a><br /></td></tr>
+<tr class="separator:af1a367d1bfa296a79bcdc9cef038359f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a29f62013c6e366c25ae0551253c0743f"><td class="memItemLeft" align="right" valign="top">fs::path&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a29f62013c6e366c25ae0551253c0743f">relativeDirectory</a> () const</td></tr>
 <tr class="memdesc:a29f62013c6e366c25ae0551253c0743f"><td class="mdescLeft">&#160;</td><td class="mdescRight">the result repository directory relative to root  <a href="classFeel_1_1Repository.html#a29f62013c6e366c25ae0551253c0743f">More...</a><br /></td></tr>
 <tr class="separator:a29f62013c6e366c25ae0551253c0743f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -167,14 +185,74 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a7bff71c4ecc9ce2a43388b5277bb944b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a75eb8dd647b083d73f671a58d31eeb9a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a75eb8dd647b083d73f671a58d31eeb9a">&#9670;&nbsp;</a></span>configure() <span class="overload">[1/2]</span></h2>
+<a id="af2a08c8d19c2df332926ce321fcdbbc1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af2a08c8d19c2df332926ce321fcdbbc1">&#9670;&nbsp;</a></span>cd()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void Feel::Repository::configure </td>
+          <td class="memname"><a class="el" href="classFeel_1_1Repository.html">Repository</a> &amp; Feel::Repository::cd </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>change directory to current configuration </p>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classFeel_1_1Repository.html" title="@ structure to handle repository of results">Repository</a>&amp; return the current directory </dd></dl>
+
+</div>
+</div>
+<a id="a6a3621348dbe2456c8b583afccc8f4f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a3621348dbe2456c8b583afccc8f4f3">&#9670;&nbsp;</a></span>config() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structFeel_1_1Repository_1_1Config.html">Config</a>&amp; Feel::Repository::config </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>get the configuration of the repository </p>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structFeel_1_1Repository_1_1Config.html">Config</a> &amp; </dd></dl>
+
+</div>
+</div>
+<a id="a5f420f28d8c3ea43b544a9e94d6d6cc6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f420f28d8c3ea43b544a9e94d6d6cc6">&#9670;&nbsp;</a></span>config() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structFeel_1_1Repository_1_1Config.html">Config</a> const&amp; Feel::Repository::config </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>get the configuration of the repository </p>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structFeel_1_1Repository_1_1Config.html">Config</a> const&amp; </dd></dl>
+
+</div>
+</div>
+<a id="a539ef21415dda6a947189ede402f301d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a539ef21415dda6a947189ede402f301d">&#9670;&nbsp;</a></span>configure() <span class="overload">[1/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classFeel_1_1Repository.html">Repository</a> &amp; Feel::Repository::configure </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -184,16 +262,20 @@ Public Member Functions</h2></td></tr>
 
 <p>configure the repository directories based on <code><a class="el" href="structFeel_1_1Repository_1_1Config.html">Config</a></code> </p>
 
+<p class="reference">References <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6adc4d53aa0d117d8b189b36d161af4e96">Feel::absolute</a>, <a class="el" href="classFeel_1_1Repository.html#ab6f60083e5ba3fb0f53606a74e430e87">directory()</a>, <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6aba9f11ecc3497d9993b933fdc2bd61e5">Feel::git</a>, <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6a9c70933aff6b2a6d08c687a6cbb6b765">Feel::global</a>, and <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6a99c483e1d11b1a279a2a1a3960528487">Feel::relative</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1Repository.html#a33fb7759f2aa1dc0ab5e0a31ad565a93">configure()</a>.</p>
+
 </div>
 </div>
-<a id="a6a0e1a6490165e2c3f85bfc9c865f611"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6a0e1a6490165e2c3f85bfc9c865f611">&#9670;&nbsp;</a></span>configure() <span class="overload">[2/2]</span></h2>
+<a id="a1f500a7714694d03fd1d6c5e0a0b1afb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f500a7714694d03fd1d6c5e0a0b1afb">&#9670;&nbsp;</a></span>configure() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void Feel::Repository::configure </td>
+          <td class="memname"><a class="el" href="classFeel_1_1Repository.html">Repository</a>&amp; Feel::Repository::configure </td>
           <td>(</td>
           <td class="paramtype">fs::path const &amp;&#160;</td>
           <td class="paramname"><em>d</em></td><td>)</td>
@@ -212,22 +294,68 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a42a0e0fd1244ea81f8e6388f01fcaa13"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a42a0e0fd1244ea81f8e6388f01fcaa13">&#9670;&nbsp;</a></span>data()</h2>
+<a id="ab16b1d7b72889c818b141286fc873534"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab16b1d7b72889c818b141286fc873534">&#9670;&nbsp;</a></span>configure() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classnlohmann_1_1basic__json.html">json</a> const&amp; Feel::Repository::data </td>
+          <td class="memname"><a class="el" href="classFeel_1_1Repository.html">Repository</a>&amp; Feel::Repository::configure </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
+          <td class="paramtype">fs::path const &amp;&#160;</td>
+          <td class="paramname"><em>d</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6">Location</a> const &amp;&#160;</td>
+          <td class="paramname"><em>l</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>data configuration </p>
+<p>configure for a given directory </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">d</td><td>directory path </td></tr>
+    <tr><td class="paramname">l</td><td>type of location </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a33fb7759f2aa1dc0ab5e0a31ad565a93"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a33fb7759f2aa1dc0ab5e0a31ad565a93">&#9670;&nbsp;</a></span>configure() <span class="overload">[4/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classFeel_1_1Repository.html">Repository</a>&amp; Feel::Repository::configure </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;&#160;</td>
+          <td class="paramname"><em>j</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>configure for a json configuration </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">j</td><td>json file to configure the repo </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="reference">References <a class="el" href="classFeel_1_1Repository.html#a539ef21415dda6a947189ede402f301d">configure()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#a7fedb961e05f46f1ad75ec05289172dc">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::get()</a>.</p>
 
 </div>
 </div>
@@ -248,6 +376,8 @@ Public Member Functions</h2></td></tr>
 
 <p>the result repository absolute directory </p>
 <dl class="section return"><dt>Returns</dt><dd>fs::path </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1Repository.html#a539ef21415dda6a947189ede402f301d">configure()</a>.</p>
 
 </div>
 </div>
@@ -327,7 +457,27 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>get the global root repository </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>get the global root repository associated to the global location </dd></dl>
+
+</div>
+</div>
+<a id="ae4bbf2a958d6af11ad4e0cc5acd4cf5f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae4bbf2a958d6af11ad4e0cc5acd4cf5f">&#9670;&nbsp;</a></span>isAbsolute()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> Feel::Repository::isAbsolute </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>true if repository is absolute, false otherwise </dd></dl>
+
+<p class="reference">References <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6adc4d53aa0d117d8b189b36d161af4e96">Feel::absolute</a>.</p>
 
 </div>
 </div>
@@ -347,25 +497,7 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>true if repository is relative to a git repository, false otherwise </dd></dl>
 
-</div>
-</div>
-<a id="a2fb36bba563a9853666f4b79a38d57f6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2fb36bba563a9853666f4b79a38d57f6">&#9670;&nbsp;</a></span>isGiven()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> Feel::Repository::isGiven </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>if Config.directory is absolute, then the repository is considered given </p>
-<dl class="section return"><dt>Returns</dt><dd>true if repository is given, false otherwise </dd></dl>
+<p class="reference">References <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6aba9f11ecc3497d9993b933fdc2bd61e5">Feel::git</a>.</p>
 
 </div>
 </div>
@@ -385,6 +517,8 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>true if repository is global, false otherwise </dd></dl>
 
+<p class="reference">References <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6a9c70933aff6b2a6d08c687a6cbb6b765">Feel::global</a>.</p>
+
 </div>
 </div>
 <a id="a076dbbe2c1fc7fdc2f7cfe194326fa41"></a>
@@ -402,6 +536,48 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>true if repository is local, false otherwise </dd></dl>
+
+<p class="reference">References <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6a99c483e1d11b1a279a2a1a3960528487">Feel::relative</a>.</p>
+
+</div>
+</div>
+<a id="ac1885fe3a00ec66c65ee58d208654c6d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1885fe3a00ec66c65ee58d208654c6d">&#9670;&nbsp;</a></span>isRelative()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> Feel::Repository::isRelative </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>true if repository is local, false otherwise </dd></dl>
+
+<p class="reference">References <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6a99c483e1d11b1a279a2a1a3960528487">Feel::relative</a>.</p>
+
+</div>
+</div>
+<a id="af1a367d1bfa296a79bcdc9cef038359f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af1a367d1bfa296a79bcdc9cef038359f">&#9670;&nbsp;</a></span>logs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">fs::path const&amp; Feel::Repository::logs </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>get the logs directory The logs directory contains feelpp apps log files </p>
+<dl class="section return"><dt>Returns</dt><dd>get the logs directory of the repository </dd></dl>
 
 </div>
 </div>
@@ -439,7 +615,7 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>get the root of the repository </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>get the root of the repository where the results will be stored </dd></dl>
 
 </div>
 </div>
@@ -461,8 +637,6 @@ Public Member Functions</h2></td></tr>
 <p>the user email </p>
 <dl class="section return"><dt>Returns</dt><dd>std::string </dd></dl>
 
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a02c9bc4d0f33b7dec20b2798301d6971">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::contains()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#a7fedb961e05f46f1ad75ec05289172dc">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::get()</a>.</p>
-
 </div>
 </div>
 <a id="a7bff71c4ecc9ce2a43388b5277bb944b"></a>
@@ -482,8 +656,6 @@ Public Member Functions</h2></td></tr>
 
 <p>the user name </p>
 <dl class="section return"><dt>Returns</dt><dd>std::string </dd></dl>
-
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a02c9bc4d0f33b7dec20b2798301d6971">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::contains()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#a7fedb961e05f46f1ad75ec05289172dc">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::get()</a>.</p>
 
 </div>
 </div>

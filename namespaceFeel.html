@@ -344,6 +344,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GinacExprManagerImpl.html">GinacExprManagerImpl</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1GithubUser.html">GithubUser</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GitMetadata.html">GitMetadata</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">GitMetaData class holder.  <a href="classFeel_1_1GitMetadata.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -671,7 +673,7 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1remove__std__vector_3_01std_1_1vector_3_01T_01_4_01_4.html">remove_std_vector&lt; std::vector&lt; T &gt; &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html">Repository</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">data structure to handle repository of results  <a href="classFeel_1_1Repository.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">@ structure to handle repository of results  <a href="classFeel_1_1Repository.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1SensorBase.html">SensorBase</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">base class for sensors  <a href="classFeel_1_1SensorBase.html#details">More...</a><br /></td></tr>
@@ -1703,13 +1705,13 @@ Enumerations</h2></td></tr>
 <b>isSaving</b>
  }</td></tr>
 <tr class="separator:a8e3ae6a7ba68a31e70d659aa0e27e927"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad150a39999969f8618dff7d7ee98b8d6"><td class="memItemLeft" align="right" valign="top"><a id="ad150a39999969f8618dff7d7ee98b8d6"></a>enum &#160;</td><td class="memItemRight" valign="bottom"><b>Location</b> { <br />
+<tr class="memitem:ad150a39999969f8618dff7d7ee98b8d6"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6">Location</a> { <br />
 &#160;&#160;<b>unknown</b> =0, 
-<b>global</b> =10, 
-<b>local</b>, 
-<b>git</b>, 
+<a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6a9c70933aff6b2a6d08c687a6cbb6b765">Location::global</a> =10, 
+<a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6a99c483e1d11b1a279a2a1a3960528487">Location::relative</a>, 
+<a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6adc4d53aa0d117d8b189b36d161af4e96">Location::absolute</a>, 
 <br />
-&#160;&#160;<b>given</b>
+&#160;&#160;<a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6aba9f11ecc3497d9993b933fdc2bd61e5">Location::git</a>
 <br />
  }</td></tr>
 <tr class="separator:ad150a39999969f8618dff7d7ee98b8d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2441,15 +2443,12 @@ Feel::po::options_description&#160;</td><td class="memItemRight" valign="bottom"
 <tr class="memitem:a1ee41138f4dfe731bf2b482b82b6d846"><td class="memItemLeft" align="right" valign="top"><a id="a1ee41138f4dfe731bf2b482b82b6d846"></a>
 <a class="el" href="structFeel_1_1Repository_1_1Config.html">Repository::Config</a>&#160;</td><td class="memItemRight" valign="bottom"><b>localRepository</b> (std::string reldir, <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> d={})</td></tr>
 <tr class="separator:a1ee41138f4dfe731bf2b482b82b6d846"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a123f20e1a3831e374de2279014d262f4"><td class="memItemLeft" align="right" valign="top">Location&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a123f20e1a3831e374de2279014d262f4">location</a> (const std::string &amp;location_string) noexcept</td></tr>
+<tr class="memitem:a123f20e1a3831e374de2279014d262f4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6">Location</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a123f20e1a3831e374de2279014d262f4">location</a> (const std::string &amp;location_string) noexcept</td></tr>
 <tr class="memdesc:a123f20e1a3831e374de2279014d262f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the Location enum from string  <a href="namespaceFeel.html#a123f20e1a3831e374de2279014d262f4">More...</a><br /></td></tr>
 <tr class="separator:a123f20e1a3831e374de2279014d262f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af5dfc3ae349e82f53acd32557fcd9211"><td class="memItemLeft" align="right" valign="top">const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#af5dfc3ae349e82f53acd32557fcd9211">location</a> (Location location_enum) noexcept</td></tr>
+<tr class="memitem:af5dfc3ae349e82f53acd32557fcd9211"><td class="memItemLeft" align="right" valign="top">const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#af5dfc3ae349e82f53acd32557fcd9211">location</a> (<a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6">Location</a> location_enum) noexcept</td></tr>
 <tr class="memdesc:af5dfc3ae349e82f53acd32557fcd9211"><td class="mdescLeft">&#160;</td><td class="mdescRight">get location string from Location enum the string is empty if the Location is unknown  <a href="namespaceFeel.html#af5dfc3ae349e82f53acd32557fcd9211">More...</a><br /></td></tr>
 <tr class="separator:af5dfc3ae349e82f53acd32557fcd9211"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac6622a424479e5adb7ff5d01a81680a0"><td class="memItemLeft" align="right" valign="top">const std::map&lt; Location, std::string &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#ac6622a424479e5adb7ff5d01a81680a0">location_strings</a> ()</td></tr>
-<tr class="memdesc:ac6622a424479e5adb7ff5d01a81680a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the location strings assocation to enum Location  <a href="namespaceFeel.html#ac6622a424479e5adb7ff5d01a81680a0">More...</a><br /></td></tr>
-<tr class="separator:ac6622a424479e5adb7ff5d01a81680a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af26c1400449d75d57e5c9f150de6e6ae"><td class="memItemLeft" align="right" valign="top"><a id="af26c1400449d75d57e5c9f150de6e6ae"></a>
 DebugStream&#160;</td><td class="memItemRight" valign="bottom"><b>Log</b> (<a class="el" href="classbool.html">bool</a> cond, <a class="el" href="classint.html">int</a> area, DebugStream::stprintf)</td></tr>
 <tr class="separator:af26c1400449d75d57e5c9f150de6e6ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2769,6 +2768,9 @@ template&lt;typename MT , typename Iterator , typename Container &gt; </td></tr>
 template&lt;typename MT , typename Iterator , typename Container &gt; </td></tr>
 <tr class="memitem:a266ef7c95beee712d164b44eb46ac549"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>nelements</b> (std::list&lt; boost::tuple&lt; MT, Iterator, Iterator, Container &gt;&gt; const &amp;its, <a class="el" href="namespaceFeel.html#a277c080cab932bfd954d9e25fa59886c">Zone</a> const &amp;z, <a class="el" href="group__Core.html#ga092633e7720ec4d42cf92197b9c35c3a">worldcomm_t</a> const &amp;<a class="el" href="namespaceFeel.html#aeb29bac2a3e332bb2282ce149f33bcc3">worldComm</a>=<a class="el" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">Environment::worldComm</a>())</td></tr>
 <tr class="separator:a266ef7c95beee712d164b44eb46ac549"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8abd8e8158424ade591184996a7b8799"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a8abd8e8158424ade591184996a7b8799">NLOHMANN_JSON_SERIALIZE_ENUM</a> (<a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6">Location</a>, { { Location::unknown, nullptr }, { <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6a9c70933aff6b2a6d08c687a6cbb6b765">Location::global</a>, &quot;global&quot; }, { Location::relative, &quot;relative&quot; }, { Location::absolute, &quot;absolute&quot; }, { Location::git, &quot;git&quot; } }) inline const std</td></tr>
+<tr class="memdesc:a8abd8e8158424ade591184996a7b8799"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the location strings assocation to enum Location  <a href="namespaceFeel.html#a8abd8e8158424ade591184996a7b8799">More...</a><br /></td></tr>
+<tr class="separator:a8abd8e8158424ade591184996a7b8799"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab7f982a6571b67d2a09bacac3cf059ba"><td class="memTemplParams" colspan="2"><a id="ab7f982a6571b67d2a09bacac3cf059ba"></a>
 template&lt;typename ... Ts&gt; </td></tr>
 <tr class="memitem:ab7f982a6571b67d2a09bacac3cf059ba"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classdouble.html">double</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>normH1</b> (Ts &amp;&amp;... v)</td></tr>
@@ -3686,6 +3688,9 @@ constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_lice
 <tr class="memitem:ae0e703ea9efeb1e99c0c16194fd29a76"><td class="memItemLeft" align="right" valign="top"><a id="ae0e703ea9efeb1e99c0c16194fd29a76"></a>
 constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_local</b> = NA::identifier&lt;na::local&gt;</td></tr>
 <tr class="separator:ae0e703ea9efeb1e99c0c16194fd29a76"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6270396dbf0089356bf60db2d8f7587f"><td class="memItemLeft" align="right" valign="top"><a id="a6270396dbf0089356bf60db2d8f7587f"></a>
+constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_location</b> = NA::identifier&lt;na::location&gt;</td></tr>
+<tr class="separator:a6270396dbf0089356bf60db2d8f7587f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18668bbc2733b683af17156d42259c4a"><td class="memItemLeft" align="right" valign="top"><a id="a18668bbc2733b683af17156d42259c4a"></a>
 constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_logging</b> = NA::identifier&lt;na::logging&gt;</td></tr>
 <tr class="separator:a18668bbc2733b683af17156d42259c4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -4675,6 +4680,39 @@ template&lt;typename DomainSpaceType , typename ImageSpaceType , typename Iterat
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a5df59a8b1a63f40c3c1d5a65162254d5ab58df77c4224c0712d878f278a68ffb3"></a>MESH_ENTITY_INTERNAL&#160;</td><td class="fielddoc"><p>internal entity </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a5df59a8b1a63f40c3c1d5a65162254d5a8cf391070355f4b58e4187176f4eccc2"></a>MESH_ENTITY_BOUNDARY&#160;</td><td class="fielddoc"><p>boundary entity </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a id="ad150a39999969f8618dff7d7ee98b8d6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad150a39999969f8618dff7d7ee98b8d6">&#9670;&nbsp;</a></span>Location</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6">Feel::Location</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ad150a39999969f8618dff7d7ee98b8d6a9c70933aff6b2a6d08c687a6cbb6b765"></a>global&#160;</td><td class="fielddoc"><p>! unknown directory </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ad150a39999969f8618dff7d7ee98b8d6a99c483e1d11b1a279a2a1a3960528487"></a>relative&#160;</td><td class="fielddoc"><p>! global repository </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ad150a39999969f8618dff7d7ee98b8d6adc4d53aa0d117d8b189b36d161af4e96"></a>absolute&#160;</td><td class="fielddoc"><p>! relative to current directory </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ad150a39999969f8618dff7d7ee98b8d6aba9f11ecc3497d9993b933fdc2bd61e5"></a>git&#160;</td><td class="fielddoc"><p>! absolute directory given </p>
+<p>! relative to git repository </p>
 </td></tr>
 </table>
 
@@ -6883,7 +6921,7 @@ template&lt;typename IteratorType , typename... Args&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Location Feel::location </td>
+          <td class="memname"><a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6">Location</a> Feel::location </td>
           <td>(</td>
           <td class="paramtype">const std::string &amp;&#160;</td>
           <td class="paramname"><em>location_string</em></td><td>)</td>
@@ -6920,7 +6958,7 @@ template&lt;typename IteratorType , typename... Args&gt; </div>
         <tr>
           <td class="memname">const std::string&amp; Feel::location </td>
           <td>(</td>
-          <td class="paramtype">Location&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6">Location</a>&#160;</td>
           <td class="paramname"><em>location_enum</em></td><td>)</td>
           <td></td>
         </tr>
@@ -6940,30 +6978,6 @@ template&lt;typename IteratorType , typename... Args&gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>const std::string&amp; </dd></dl>
-
-<p class="reference">References <a class="el" href="namespaceFeel.html#ac6622a424479e5adb7ff5d01a81680a0">location_strings()</a>.</p>
-
-</div>
-</div>
-<a id="ac6622a424479e5adb7ff5d01a81680a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac6622a424479e5adb7ff5d01a81680a0">&#9670;&nbsp;</a></span>location_strings()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">const std::map&lt;Location, std::string&gt;&amp; Feel::location_strings </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>get the location strings assocation to enum Location </p>
-<dl class="section return"><dt>Returns</dt><dd>const std::map&lt;location, std::string&gt;&amp; </dd></dl>
-
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#af5dfc3ae349e82f53acd32557fcd9211">location()</a>.</p>
 
 </div>
 </div>
@@ -7644,6 +7658,37 @@ template&lt;typename MT , typename Iterator , typename Container &gt; </div>
 <p>The following code prints in the logfile the number of elements in the mesh that are marked with marker1 equal to 1:</p>
 <div class="fragment"><div class="line">LOG(INFO) &lt;&lt; <span class="stringliteral">&quot;number of elements = &quot;</span> &lt;&lt; <a class="code" href="namespaceFeel.html#a229552e84736e331a5e2972379393aa0">nelements</a>( <a class="code" href="namespaceFeel.html#af464ea7e12b67aec0df1ea574a1653c4">markedelements</a>(mesh,{1,2,3}) ) &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
 </div><!-- fragment --> 
+</div>
+</div>
+<a id="a8abd8e8158424ade591184996a7b8799"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8abd8e8158424ade591184996a7b8799">&#9670;&nbsp;</a></span>NLOHMANN_JSON_SERIALIZE_ENUM()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::NLOHMANN_JSON_SERIALIZE_ENUM </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6">Location</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">{ { Location::unknown, nullptr }, { <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6a9c70933aff6b2a6d08c687a6cbb6b765">Location::global</a>, &quot;global&quot; }, { Location::relative, &quot;relative&quot; }, { Location::absolute, &quot;absolute&quot; }, { Location::git, &quot;git&quot; } }&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>get the location strings assocation to enum Location </p>
+<dl class="section return"><dt>Returns</dt><dd>const std::map&lt;location, std::string&gt;&amp; </dd></dl>
+
 </div>
 </div>
 <a id="a306256cd29c9fd9d54ecab89a3399ee4"></a>

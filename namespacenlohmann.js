@@ -8,6 +8,7 @@ var namespacenlohmann =
       [ "would_call_std_end", "structnlohmann_1_1detail2_1_1would__call__std__end.html", "structnlohmann_1_1detail2_1_1would__call__std__end" ]
     ] ],
     [ "adl_serializer", "structnlohmann_1_1adl__serializer.html", "structnlohmann_1_1adl__serializer" ],
+    [ "adl_serializer< boost::filesystem::path >", "structnlohmann_1_1adl__serializer_3_01boost_1_1filesystem_1_1path_01_4.html", "structnlohmann_1_1adl__serializer_3_01boost_1_1filesystem_1_1path_01_4" ],
     [ "adl_serializer< py::bool_ >", "structnlohmann_1_1adl__serializer_3_01py_1_1bool___01_4.html", "structnlohmann_1_1adl__serializer_3_01py_1_1bool___01_4" ],
     [ "adl_serializer< py::detail::item_accessor >", "structnlohmann_1_1adl__serializer_3_01py_1_1detail_1_1item__accessor_01_4.html", "structnlohmann_1_1adl__serializer_3_01py_1_1detail_1_1item__accessor_01_4" ],
     [ "adl_serializer< py::detail::list_accessor >", "structnlohmann_1_1adl__serializer_3_01py_1_1detail_1_1list__accessor_01_4.html", "structnlohmann_1_1adl__serializer_3_01py_1_1detail_1_1list__accessor_01_4" ],

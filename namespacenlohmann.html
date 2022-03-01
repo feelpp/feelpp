@@ -125,6 +125,8 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1adl__serializer.html">adl_serializer</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">default JSONSerializer template argument  <a href="structnlohmann_1_1adl__serializer.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1adl__serializer_3_01boost_1_1filesystem_1_1path_01_4.html">adl_serializer&lt; boost::filesystem::path &gt;</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1adl__serializer_3_01py_1_1bool___01_4.html">adl_serializer&lt; py::bool_ &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1adl__serializer_3_01py_1_1detail_1_1item__accessor_01_4.html">adl_serializer&lt; py::detail::item_accessor &gt;</a></td></tr>
@@ -186,6 +188,14 @@ Typedefs</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:ad5728536458885880cd16bdbad9c3a07"><td class="memTemplParams" colspan="2"><a id="ad5728536458885880cd16bdbad9c3a07"></a>
+template&lt;class T &gt; </td></tr>
+<tr class="memitem:ad5728536458885880cd16bdbad9c3a07"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>from_json</b> (const <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nlohmann::json</a> &amp;j, std::optional&lt; T &gt; &amp;v)</td></tr>
+<tr class="separator:ad5728536458885880cd16bdbad9c3a07"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a019dcba5d73b158e81276f0d2d17f1e0"><td class="memTemplParams" colspan="2"><a id="a019dcba5d73b158e81276f0d2d17f1e0"></a>
+template&lt;class T &gt; </td></tr>
+<tr class="memitem:a019dcba5d73b158e81276f0d2d17f1e0"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>to_json</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nlohmann::json</a> &amp;j, const std::optional&lt; T &gt; &amp;v)</td></tr>
+<tr class="separator:a019dcba5d73b158e81276f0d2d17f1e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad567589424d944bc2c8082d0541f0fdf"><td class="memTemplParams" colspan="2">template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class BinaryType &gt; </td></tr>
 <tr class="memitem:ad567589424d944bc2c8082d0541f0fdf"><td class="memTemplItemLeft" align="right" valign="top">std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacenlohmann.html#ad567589424d944bc2c8082d0541f0fdf">to_string</a> (const <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt; &amp;j)</td></tr>
 <tr class="memdesc:ad567589424d944bc2c8082d0541f0fdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">user-defined to_string function for JSON values  <a href="namespacenlohmann.html#ad567589424d944bc2c8082d0541f0fdf">More...</a><br /></td></tr>

@@ -39,6 +39,7 @@ var classFeel_1_1Environment =
     [ "optionsDescriptionLibrary", "classFeel_1_1Environment.html#aae55d49e75a6d3a68df407e54db6b03f", null ],
     [ "randomUUID", "classFeel_1_1Environment.html#a40378b093d00bf01642a284fd37de678", null ],
     [ "rank", "classFeel_1_1Environment.html#aa09f0629660a77fd416e0c66da2e7ba4", null ],
+    [ "repository", "classFeel_1_1Environment.html#a64f5ae7079ee7d17b6848d62616a0e4a", null ],
     [ "rootRepository", "classFeel_1_1Environment.html#afd49f17202ebc86ad12e811d939bf662", null ],
     [ "saveTimers", "classFeel_1_1Environment.html#a29b2eeaca395bba470dc395348692677", null ],
     [ "saveTimersMD", "classFeel_1_1Environment.html#a03c354cd6b80d01548ccb01f7626e2d4", null ],
