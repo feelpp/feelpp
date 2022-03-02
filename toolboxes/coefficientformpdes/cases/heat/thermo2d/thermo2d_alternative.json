@@ -4,8 +4,8 @@
     "ShortName":"TestHeat",
     "Models":
     {
-        "equations":[
-            {
+        "cfpdes":{
+            "equations":{
                 "name":"heat",
                 "unknown":
                 {
@@ -13,12 +13,24 @@
                     "name":"temperature",
                     "symbol":"T"
                 }
-            }]
+            }
+        }
     },
     "Parameters":
     {
         "velocity_convection":"{-30*(y+-0.7)*(y-0.5)*(y>0.5)*(y<0.7),0}:y"
         //"velocity_convection":"{-300*(y+-0.7)*(y-0.5)*(y>0.5)*(y<0.7),0}:y"
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/thermo2d.geo",
+                "hsize":0.01
+            }
+        }
     },
     "Materials":
     {
@@ -88,32 +100,29 @@
     },
     "InitialConditions":
     {
-        "temperature":
-        {
-            "Expression":
-            {
-                "myic1":
-                {
-                    "markers":"Omega1",
-                    "expr":"293"
-                },
-                "myic2":
-                {
-                    "markers":"Omega2",
-                    //"expr":"305"
-                    "expr":"293+(305-293)*(x-1)/0.4:x"
-                }/*,
-                "myic3":
-                {
-                    "markers":"Interface_1_2",
-                    "expr":"310"
-                }*/
+        "heat":{
+            "temperature":{
+                "Expression": {
+                    "myic1":{
+                        "markers":"Omega1",
+                        "expr":"293"
+                    },
+                    "myic2":{
+                        "markers":"Omega2",
+                        //"expr":"305"
+                        "expr":"293+(305-293)*(x-1)/0.4:x"
+                    }/*,
+                       "myic3":
+                       {
+                       "markers":"Interface_1_2",
+                       "expr":"310"
+                       }*/
+                }
             }
         }
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

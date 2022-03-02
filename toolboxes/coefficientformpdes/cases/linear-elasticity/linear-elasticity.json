@@ -3,8 +3,8 @@
     "ShortName": "Elasticity",
     "Models":
     {
-        "equations":[
-            {
+        "cfpdes":{
+            "equations":{
                 "name":"elas",
                 "unknown":
                 {
@@ -13,13 +13,24 @@
                     "symbol":"eta"
                 }
             }
-        ]
+        }
     },
     "Parameters": {
         "E": 204e6,
         "nu": 0.29,
         "mu": "E/(2*(1+nu)):E:nu",
         "lambda":"E*nu/((1+nu)*(1-2*nu)):E:nu"
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/beam.geo",
+                "hsize":0.01
+            }
+        }
     },
     "Materials":
     {
@@ -48,7 +59,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

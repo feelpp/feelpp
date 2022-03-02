@@ -51,7 +51,7 @@ class FEELPP_EXPORT ModelPostprocessExports : public CommObject
     vector_export_expr_type const& expressions() const { return M_exprs; }
     std::string const& format() const { return M_format; }
 
-    void setup( pt::ptree const& p );
+    void setup( nl::json const& jarg );
 
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
@@ -74,7 +74,7 @@ class FEELPP_EXPORT ModelPostprocessSave
     std::set<std::string> const& fieldsNames() const { return M_fieldsNames; }
     std::string const& fieldsFormat() const { return M_fieldsFormat; }
 
-    void setup( pt::ptree const& p );
+    void setup( nl::json const& jarg );
   private :
     std::set<std::string> M_fieldsNames;
     std::string M_fieldsFormat;
@@ -96,7 +96,7 @@ class FEELPP_EXPORT ModelPostprocessQuantities : public CommObject
     std::set<std::string> const& quantities() const { return M_quantities; }
     std::map<std::string,ModelExpression> const& expressions() const { return M_exprs; }
 
-    void setup( pt::ptree const& p );
+    void setup( nl::json const& jarg );
 
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
@@ -273,7 +273,7 @@ public :
     std::string const& tag() const { return M_tag; }
 
 
-    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
+    void setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setFields( std::set<std::string> const& fields ) { M_fields = fields; }
     void addFields( std::string const& field ) { M_fields.insert( field ); }
@@ -295,10 +295,7 @@ public :
     }
 
   private:
-    void setup( std::string const& name, ModelIndexes const& indexes );
-  private:
     std::string M_name;
-    pt::ptree M_p;
     std::string M_directoryLibExpr;
     std::vector<std::shared_ptr<PointsOverGeometry>> M_pointsOverAllGeometry;
     std::set<std::string> M_fields;
@@ -350,14 +347,11 @@ public :
     //! return true if a field has been given
     bool hasField() const { return !M_field.empty(); }
 
-    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
+    void setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
 
 private:
-    void setup( std::string const& name, ModelIndexes const& indexes );
-private:
-    pt::ptree M_p;
     std::string M_directoryLibExpr;
     std::string M_name, M_field;
     std::set<std::string> M_types;
@@ -396,26 +390,29 @@ public :
     uint16_type quadOrder() const { return M_quadOrder; }
     //! quad1 order used with ho geometry and the optimized geomap
     uint16_type quad1Order() const { return M_quad1Order; }
+    //! returnn requires markers connection
+    ModelMarkers const& requiresMarkersConnection() const { return M_requiresMarkersConnection; }
+    //! return internalfaces evalutation type (i.e. mean,sum,max,...)
+    std::string const& internalFacesEvalutationType() const { return M_internalFacesEvalutationType; }
 
     //! return true if an expression has been given
     bool hasExpr() const { return M_expr.hasAtLeastOneExpr(); }
     //! return true if a field has been given
     bool hasField() const { return !M_field.empty(); }
 
-    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
+    void setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
 
 private:
-    void setup( std::string const& name, ModelIndexes const& indexes );
-private:
-    pt::ptree M_p;
     std::string M_directoryLibExpr;
     std::string M_name, M_field;
     std::set<std::string> M_types;
     ModelMarkers M_markers;
     ModelExpression M_expr;
     uint16_type M_quadOrder, M_quad1Order;
+    ModelMarkers M_requiresMarkersConnection;
+    std::string M_internalFacesEvalutationType;
 };
 
 class FEELPP_EXPORT ModelPostprocessCheckerMeasure : public CommObject
@@ -441,29 +438,29 @@ class FEELPP_EXPORT ModelPostprocessCheckerMeasure : public CommObject
     double tolerance() const { return M_tolerance; }
     //! check if the arg val is close at tolerance to the reference value
     //! \return tuple ( check is true, diff value )
-    std::tuple<bool,double> run( double val ) const;
+    //std::tuple<bool,double> run( double val ) const;
     //! check if the arg val is close at tolerance to the reference value (the target value can be an expression which depending on symbols expr given in arg)
     //! \return tuple ( check is true, diff value )
     template <typename SymbolsExprType>
     std::tuple<bool,double> run( double val, SymbolsExprType const& se ) const
     {
         M_value = expr( M_valueExpr.exprScalar(), se ).evaluate()(0,0);
+        M_tolerance = expr( M_toleranceExpr.exprScalar(), se ).evaluate()(0,0);
         return this->runImpl( val );
     }
 
-    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
+    void setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
   private:
     std::tuple<bool,double> runImpl( double val ) const;
-    void setup( std::string const& name, ModelIndexes const& indexes );
   private :
-    pt::ptree M_p;
     std::string M_name;
     std::string M_directoryLibExpr;
     ModelExpression M_valueExpr;
     mutable double M_value;
-    double M_tolerance;
+    ModelExpression M_toleranceExpr;
+    mutable double M_tolerance;
 };
 
 class FEELPP_EXPORT ModelPostprocess : public CommObject
@@ -471,11 +468,9 @@ class FEELPP_EXPORT ModelPostprocess : public CommObject
 public:
     using super = CommObject;
     ModelPostprocess( worldcomm_ptr_t const& world = Environment::worldCommPtr() );
-    ModelPostprocess( pt::ptree const& p, worldcomm_ptr_t const& world = Environment::worldCommPtr() );
     virtual ~ModelPostprocess();
-    pt::ptree const& pTree() const { return M_p; }
-    pt::ptree & pTree() { return M_p; }
-    pt::ptree pTree( std::string const& name ) const;
+    bool hasJsonProperties( std::string const& name = "" ) const;
+    nl::json const& jsonProperties( std::string const& name = "" ) const;
     bool useModelName() const { return M_useModelName; }
     std::map<std::string,ModelPostprocessExports> const& allExports() const { return M_exports; }
     std::map<std::string,ModelPostprocessSave> const& allSave() const { return M_save; }
@@ -500,7 +495,7 @@ public:
     std::vector<ModelPostprocessStatistics> const& measuresStatistics( std::string const& name = "" ) const;
     std::vector<ModelPostprocessCheckerMeasure> const& checkersMeasure( std::string const& name = "" ) const;
 
-    void setPTree( pt::ptree const& _p );
+    void setPTree( nl::json const& jarg );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
 
     void setParameterValues( std::map<std::string,double> const& mp );
@@ -517,9 +512,9 @@ public:
     void saveMD(std::ostream &os);
 private:
     void setup();
-    void setup( std::string const& name, pt::ptree const& p );
+    void setup( std::string const& name, nl::json const& jarg );
 private:
-    pt::ptree M_p;
+    nl::json M_p;
     bool M_useModelName;
     std::map<std::string,ModelPostprocessExports> M_exports;
     std::map<std::string,ModelPostprocessSave> M_save;

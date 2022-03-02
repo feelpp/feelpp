@@ -42,6 +42,7 @@
 
 #include <feel/feelvf/ginac.hpp>
 
+#include <feel/feeldiscr/discretizationsdescr.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelmodels/modelcore/modelmeasures.hpp>
 #include <feel/feelfit/fit.hpp>
@@ -314,8 +315,9 @@ class ModelNumerical : virtual public ModelBase,
                                  std::vector< std::shared_ptr<ElementType> > & dataToUpdate,
                                  std::map<int, double> const& priorTimes = {{0,0}} )
             {
-                ModelNumerical::updateInitialConditions( this->modelProperties().initialConditions().get( fieldName ),
-                                                         defaultRange, symbolsExpr, this->geomap(), dataToUpdate, priorTimes );
+                if ( this->modelProperties().initialConditions().has( this->keyword(), fieldName ) )
+                    ModelNumerical::updateInitialConditions( this->modelProperties().initialConditions().get( this->keyword(), fieldName ),
+                                                             defaultRange, symbolsExpr, this->geomap(), dataToUpdate, priorTimes );
             }
     private :
         template <typename ElementType, typename RangeType, typename SymbolsExpr>
@@ -363,7 +365,7 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
         return;
 
     CHECK( !dataToUpdate.empty() ) << "require a non empty vector";
-    CHECK( dataToUpdate.size() == priorTimes.size() ) << "priorTimes size is not the same as ts unknowns";
+    CHECK( dataToUpdate.size() >= priorTimes.size() ) << "dataToUpdate size should be >= than priorTimes size : " << dataToUpdate.size() << " versus " << priorTimes.size();
 
     for( auto const& [id, time] : priorTimes )
     {

@@ -51,6 +51,7 @@
 #include <feel/feelcore/ptreetools.hpp>
 #include <feel/feelcore/utility.hpp>
 #include <feel/feelcore/hashtables.hpp>
+#include <feel/feelmodels/modelparameters.hpp>
 
 namespace Feel
 {
@@ -171,6 +172,15 @@ public:
             }
 
         /**
+         * @brief return the list of all parameter names
+         * 
+         */
+        std::vector<std::string> const& parameterNames() const
+        {
+            return M_space->parameterNames();
+        }
+
+        /**
          * access element by name
          */
         double const& parameterNamed( std::string name ) const
@@ -198,16 +208,28 @@ public:
         void setParameterNamed( std::string name, double value )
         {
             auto paramNames = M_space->parameterNames();
+            element_type min = M_space->min(), max = M_space->max();
             auto it = std::find(paramNames.begin(), paramNames.end(), name);
             if( it != paramNames.end() )
-                this->operator()( it - paramNames.begin() ) = value;
+            {
+                double min_val = min.parameterNamed(name),
+                       max_val = max.parameterNamed(name);
+                if (value >= min_val && value <= max_val)
+                    this->operator()( it - paramNames.begin() ) = value;
+                else
+                    LOG( WARNING ) << value << " not in range [" << min_val << ", " << max_val << "]" << std::endl;
+            }
             else
                 LOG( WARNING ) << name << " is not a parameter" << std::endl;
         }
 
         void setParameter( int i, double value)
         {
-            this->operator()(i) = value;
+            element_type min = M_space->min(), max = M_space->max();
+            if (value >= min(i) && value <= max(i))
+                this->operator()(i) = value;
+            else
+                LOG( WARNING ) << value << " not in range [" << min(i) << ", " << max(i) << "]" << std::endl;
         }
 
         /**
@@ -218,9 +240,16 @@ public:
             size_t n = values.size();
             if (n != this->size())
                 LOG( WARNING ) << "The size of the given vector (" << n << ") is different fom the size (" << this->size() << ")" << std::endl;
-            size_t N = (n >= this->size()) ? n : this->size();
+            size_t N = (n <= this->size()) ? n : this->size();
+            element_type min = M_space->min(), max = M_space->max();
             for (size_t i=0; i<N; ++i)
-                this->operator()(i) = values[i];
+            {
+                if (values[i] >= min(i) && values[i] <= max(i))
+                    this->operator()(i) = values[i];
+                else
+                    LOG( WARNING ) << values[i] << " not in range [" << min(i) << ", " << max(i) << "]" << std::endl;
+            }
+
         }
 
         void setParameters( const std::map<std::string, double> &values )
@@ -1442,9 +1471,8 @@ public:
         M_nDim( (Dimension == invalid_uint16_type_value)? dim : Dimension ),
         M_min(),
         M_max()
+        // M_mubar()
         {
-            //M_min.setZero();
-            //M_max.setZero();
             M_min.resize( M_nDim,1 );
             M_min.setZero();
             M_max.resize( M_nDim,1 );
@@ -1463,6 +1491,33 @@ public:
             //M_max.setParameterSpace( this->shared_from_this() );
         }
 #endif
+    //! constructor from ModelProperties
+    ParameterSpace( ModelParameters const& modelParameters, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+        :
+        super( worldComm ),
+        M_nDim(),
+        M_min(),
+        M_max()
+    {
+        int nbCrbParameters = count_if(modelParameters.begin(), modelParameters.end(), [] (auto const& p)
+                                    {
+                                        return p.second.hasMinMax();
+                                    });
+        this->setDimension( nbCrbParameters );
+
+        int i = 0;
+        for( auto const& parameterPair : modelParameters )
+        {
+            if( parameterPair.second.hasMinMax() )
+            {
+                setParameterName( i, parameterPair.second.name() );
+                M_min(i) = parameterPair.second.min();
+                M_max(i) = parameterPair.second.max();
+                ++i;
+            }
+        }
+    }
+
     //! destructor
     ~ParameterSpace() override = default;
 
@@ -1483,6 +1538,17 @@ public:
             auto ps = std::make_shared<parameterspace_type>( 0,worldComm );
             ps->loadJson( filename );
             return ps;
+        }
+    static parameterspace_ptrtype New( ModelParameters const& modelParameters, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr())
+        {
+	    auto ps = std::make_shared<parameterspace_type>( modelParameters, worldComm );
+	    ps->setSpaces();
+	    return ps;
+	}
+    void setSpaces()
+        {
+            M_min.setParameterSpace(this->shared_from_this() );
+            M_max.setParameterSpace(this->shared_from_this() );
         }
     //@}
 
@@ -1519,6 +1585,8 @@ public:
         {
             return M_max;
         }
+
+
 
     /**
      * \brief the log-middle point of the parameter space
@@ -1584,7 +1652,6 @@ public:
         {
             M_min = min;
             M_min.setParameterSpace( this->shared_from_this() );
-
         }
 
     /**
@@ -1595,6 +1662,8 @@ public:
             M_max = max;
             M_max.setParameterSpace( this->shared_from_this() );
         }
+
+
 
     /**
      * \brief name of a parameter
@@ -1653,7 +1722,7 @@ public:
             try {
                 int nDim  = ptreeParameterSpace.template get<int>( "dimension" );
                 if ( Dimension == invalid_uint16_type_value )
-                    M_nDim = nDim;
+                    this->setDimension(nDim);
                 else
                     CHECK( Dimension == nDim && M_nDim == nDim ) << "invalid dimension in json " << nDim << " must be " << Dimension;
             }

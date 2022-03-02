@@ -182,11 +182,6 @@ public:
             M_t_expr( std::true_type{}, exprExpanded.expression(), ttse, expr.expression(), geom, theInitArgs... )
             {}
 
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_t_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev , Basis_j_t const& feu )
         {
             M_t_expr.update( geom, fev, feu );
@@ -198,10 +193,6 @@ public:
         void update( Geo_t const& geom )
         {
             M_t_expr.update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_t_expr.update( geom, face );
         }
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
         void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,

@@ -552,22 +552,36 @@ public:
         /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker1 \p markerFlags on processor \p p
+     *  - TheType=0 : only actives elements
+     * - TheType=1 : only ghosts elements
+     * - TheType=2 : actives and ghosts elements (container splited)
      */
-    std::map<int, std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype> >
+    template <int TheType=0>
+    auto
     collectionOfElementsWithMarkerByType( uint16_type markerType,  std::map<int,std::set<flag_type>> const& collectionOfMarkerFlagSet, rank_type p = invalid_rank_type_value ) const
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
 
-            std::map<int,elements_reference_wrapper_ptrtype> collectionOfElements;
+            std::map<int,elements_reference_wrapper_ptrtype> collectionOfElements, collectionOfGhostElements;
             for ( auto const& [part,markersFlag] : collectionOfMarkerFlagSet )
+            {
                 collectionOfElements[part].reset( new elements_reference_wrapper_type );
+                if constexpr ( TheType == 2 )
+                    collectionOfGhostElements[part].reset( new elements_reference_wrapper_type );
+            }
             auto it = this->beginOrderedElement();
             auto en = this->endOrderedElement();
             for ( ; it!=en;++it )
             {
                 auto const& elt = unwrap_ref( *it );
-                if ( elt.processId() != part )
-                    continue;
+                bool isActiveElt = elt.processId() == part;
+                if constexpr ( TheType == 0 )
+                    if ( !isActiveElt )
+                        continue;
+                if constexpr ( TheType == 1 )
+                    if ( isActiveElt )
+                        continue;
+
                 if ( !elt.hasMarker( markerType ) )
                     continue;
                 if ( elt.marker( markerType ).isOff() )
@@ -576,18 +590,45 @@ public:
                 {
                     if ( markersFlag.find( elt.marker( markerType ).value() ) == markersFlag.end() )
                         continue;
-                    collectionOfElements[part]->push_back(boost::cref(elt));
+                    if constexpr ( TheType == 0 || TheType == 1 )
+                    {
+                        collectionOfElements[part]->push_back(boost::cref(elt));
+                    }
+                    else
+                    {
+                        if ( isActiveElt )
+                            collectionOfElements[part]->push_back(boost::cref(elt));
+                        else
+                            collectionOfGhostElements[part]->push_back(boost::cref(elt));
+                    }
                     break;
                 }
             }
 
-            std::map<int, std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype> > collectionOfRangeElement;
-            for ( auto & [part,myelements] : collectionOfElements )
+            if constexpr ( TheType == 0 || TheType == 1 )
             {
-                myelements->shrink_to_fit();
-                collectionOfRangeElement[part] = std::make_tuple( myelements->begin(), myelements->end(), myelements );
+                std::map<int, std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype> > collectionOfRangeElement;
+                for ( auto & [part,myelements] : collectionOfElements )
+                {
+                    myelements->shrink_to_fit();
+                    collectionOfRangeElement[part] = std::make_tuple( myelements->begin(), myelements->end(), myelements );
+                }
+                return collectionOfRangeElement;
             }
-            return collectionOfRangeElement;
+            else
+            {
+                using range_base_type = std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>;
+                std::map<int, std::tuple<range_base_type,range_base_type> > collectionOfRangeElement;
+                for ( auto & [part,myelements] : collectionOfElements )
+                {
+                    myelements->shrink_to_fit();
+                    auto & myghostelements = collectionOfGhostElements.at(part);
+                    myghostelements->shrink_to_fit();
+                    collectionOfRangeElement[part] = std::make_tuple(  std::make_tuple( myelements->begin(), myelements->end(), myelements ),
+                                                                       std::make_tuple( myghostelements->begin(), myghostelements->end(), myghostelements ) );
+                }
+                return collectionOfRangeElement;
+            }
         }
 
     /**

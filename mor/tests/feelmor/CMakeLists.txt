@@ -33,7 +33,7 @@ feelpp_add_test( rbspacevector LINK_LIBRARIES Feelpp::feelpp_mor )
 
 feelpp_add_test( db CFG test_db.cfg GEO test_db.geo LINK_LIBRARIES Feelpp::feelpp_mor CLI "-st_pc_factor_mat_solver_package mumps" )
 
-feelpp_add_test( parameterspace LINK_LIBRARIES Feelpp::feelpp_mor )
+feelpp_add_test( parameterspace CFG parameterspace.cfg GEO parameterspace.json LINK_LIBRARIES Feelpp::feelpp_mor )
 feelpp_add_test( reducedglobaldof LINK_LIBRARIES Feelpp::feelpp_mor )
 
 feelpp_add_test( geim GEO test_geim.geo LINK_LIBRARIES Feelpp::feelpp_mor )

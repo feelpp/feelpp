@@ -3,8 +3,8 @@
     "ShortName": "Square2d",
     "Models":
     {
-        "equations":[
-            {
+        "cfpdes":{
+            "equations":{
                 "name":"equation1",
                 "unknown":
                 {
@@ -13,7 +13,18 @@
                     "symbol":"u"
                 }
             }
-        ]
+        }
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square.geo",
+                "hsize":0.03
+            }
+        }
     },
     "Materials":
     {
@@ -40,7 +51,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

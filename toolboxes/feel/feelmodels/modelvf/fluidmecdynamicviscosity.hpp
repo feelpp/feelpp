@@ -183,12 +183,6 @@ public :
                 this->updateImpl();
             }
 
-        void update( Geo_t const& geom, uint16_type face ) override
-            {
-                M_muExprTensor.update( geom, face );
-                this->updateImpl();
-            }
-
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
         void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
                      Geo_t const& geom, const TheArgsType&... theUpdateArgs )
@@ -405,16 +399,6 @@ public :
                 M_nExprTensor.update( geom );
                 M_muMinExprTensor.update( geom );
                 M_muMaxExprTensor.update( geom );
-                this->updateImpl();
-            }
-
-        void update( Geo_t const& geom, uint16_type face ) override
-            {
-                this->setGmc( geom );
-                M_kExprTensor.update( geom, face );
-                M_nExprTensor.update( geom, face );
-                M_muMinExprTensor.update( geom, face );
-                M_muMaxExprTensor.update( geom, face );
                 this->updateImpl();
             }
 
@@ -724,16 +708,6 @@ public :
                 this->updateImpl();
             }
 
-        void update( Geo_t const& geom, uint16_type face ) override
-            {
-                this->setGmc( geom );
-                M_mu0ExprTensor.update( geom, face );
-                M_muInfExprTensor.update( geom, face );
-                M_lambdaExprTensor.update( geom, face );
-                M_nExprTensor.update( geom, face );
-                this->updateImpl();
-            }
-
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
         void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
                      Geo_t const& geom, const TheArgsType&... theUpdateArgs )
@@ -1018,17 +992,6 @@ public :
                 M_lambdaExprTensor.update( geom );
                 M_nExprTensor.update( geom );
                 M_aExprTensor.update( geom );
-                this->updateImpl();
-            }
-
-        void update( Geo_t const& geom, uint16_type face ) override
-            {
-                this->setGmc( geom );
-                M_mu0ExprTensor.update( geom, face );
-                M_muInfExprTensor.update( geom, face );
-                M_lambdaExprTensor.update( geom, face );
-                M_nExprTensor.update( geom, face );
-                M_aExprTensor.update( geom, face );
                 this->updateImpl();
             }
 
@@ -1563,9 +1526,6 @@ public:
         std::shared_ptr<tensor_expr_evaluate_velocity_opertors_type> tensorExprEvaluateVelocityOperatorsPtr() const { return M_tensorExprEvaluateVelocityOperators; }
         tensor_expr_evaluate_velocity_opertors_type const& tensorExprEvaluateVelocityOperators() const { return *M_tensorExprEvaluateVelocityOperators; }
 
-        template<typename IM>
-        void init( IM const& im ) {}
-
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update(geom);
@@ -1579,12 +1539,6 @@ public:
             if ( upEvaluateVelocityOperators )
                 M_tensorExprEvaluateVelocityOperators->update( geom );
             M_tensorbase->update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face, bool upEvaluateVelocityOperators = true  )
-        {
-            if ( upEvaluateVelocityOperators )
-                M_tensorExprEvaluateVelocityOperators->update( geom, face );
-            M_tensorbase->update( geom, face );
         }
 
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>

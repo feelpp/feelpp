@@ -93,7 +93,6 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
         LOG(INFO) << "mortar Phi context ";
         fusion::at_key<gmc<0>>( M_test_fec0 ).get()->print();
     }
-    M_eval_expr00->init( im );
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
@@ -136,8 +135,6 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_integrator( im )
 {
     this->initDynamicEigenMatrix();
-    // faces
-    M_eval_expr00->init( im2 );
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
@@ -178,8 +175,6 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_integrator( im )
 {
     this->initDynamicEigenMatrix();
-    // faces
-    M_eval_expr00->init( im2 );
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
@@ -225,8 +220,6 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_integrator( im )
 {
     this->initDynamicEigenMatrix();
-    // faces
-    M_eval_expr00->init( im );
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
@@ -274,11 +267,6 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     FEELPP_ASSERT( fusion::at_key<trial_gmc1 >( M_trial_fec1 ).get() != 0 ).error( "invalid trial_fec" );
 
     this->initDynamicEigenMatrix();
-
-    M_eval_expr00->init( im2 );
-    M_eval_expr01->init( im2 );
-    M_eval_expr10->init( im2 );
-    M_eval_expr11->init( im2 );
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
@@ -335,14 +323,6 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     FEELPP_ASSERT( fusion::at_key<trial_gmc1 >( M_trial_fec1 ).get() != 0 ).error( "invalid trial_fec" );
 
     this->initDynamicEigenMatrix();
-
-    M_eval_expr00->init( im2 );
-    if ( M_form.isPatternExtended() )
-    {
-        M_eval_expr01->init( im2 );
-        M_eval_expr10->init( im2 );
-    }
-    M_eval_expr11->init( im2 );
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>

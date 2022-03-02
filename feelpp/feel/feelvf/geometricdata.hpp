@@ -315,10 +315,6 @@ const size_type mctx = vm::MEASURE;
                 tensor( expr, geom, theInitArgs... )                    \
             {}                                                          \
                                                                         \
-            template<typename IM>                                       \
-                void init( IM const& im )                               \
-            {                                                           \
-            }                                                           \
             void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) \
             {                                                           \
                 update( geom );                                         \
@@ -330,11 +326,6 @@ const size_type mctx = vm::MEASURE;
             void update( Geo_t const& geom )                            \
             {                                                           \
                 M_gmc = fusion::at_key<key_type>( geom ).get();        \
-            }                                                           \
-            void update( Geo_t const& geom, uint16_type face )          \
-            {                                                           \
-                /*BOOST_STATIC_ASSERT( dim_ok );*/                      \
-                update( geom );                                         \
             }                                                           \
             template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
                 void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \

@@ -4,7 +4,9 @@
     "ShortName":"Blood",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "fluid":{
+            "equations":"Navier-Stokes"
+        }
     },
     "Parameters":
     {
@@ -63,23 +65,26 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","displacement","pid"]
-        },
-        "Measures":
-        {
-            "FlowRate":
+            "Exports":
             {
-                "inlet":
+                "fields":["velocity","pressure","displacement","pid"]
+            },
+            "Measures":
+            {
+                "FlowRate":
                 {
-                    "markers":"inletBlood",
-                    "direction":"interior_normal"
-                },
-                "outlet":
-                {
-                    "markers":"outletBlood",
-                    "direction":"exterior_normal"
+                    "inlet":
+                    {
+                        "markers":"inletBlood",
+                        "direction":"interior_normal"
+                    },
+                    "outlet":
+                    {
+                        "markers":"outletBlood",
+                        "direction":"exterior_normal"
+                    }
                 }
             }
         }

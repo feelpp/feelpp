@@ -69,6 +69,7 @@ class SolidMechanics : public ModelNumerical,
                        public ModelPhysics<ConvexType::nDim>,
                        public std::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType> >
 {
+    typedef ModelPhysics<ConvexType::nDim> super_physics_type;
 public:
     typedef ModelNumerical super_type;
     using size_type = typename super_type::size_type;
@@ -380,9 +381,6 @@ public :
     void updateTimeStep();
     void updateVelocity();
 
-    void initUserFunctions();
-    void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
-
     // post process
     void initPostProcess() override;
 
@@ -519,18 +517,6 @@ public :
     element_stress_tensor_type const& fieldStressTensor() const { return *M_fieldStressTensor; }
 
 
-    // fields defined in json
-    std::map<std::string,element_displacement_scalar_ptrtype> const& fieldsUserScalar() const { return M_fieldsUserScalar; }
-    std::map<std::string,element_displacement_ptrtype> const& fieldsUserVectorial() const { return M_fieldsUserVectorial; }
-    bool hasFieldUserScalar( std::string const& key ) const { return M_fieldsUserScalar.find( key ) != M_fieldsUserScalar.end(); }
-    bool hasFieldUserVectorial( std::string const& key ) const { return M_fieldsUserVectorial.find( key ) != M_fieldsUserVectorial.end(); }
-    element_displacement_scalar_ptrtype const& fieldUserScalarPtr( std::string const& key ) const {
-        CHECK( this->hasFieldUserScalar( key ) ) << "field name " << key << " not registered"; return M_fieldsUserScalar.find( key )->second; }
-    element_displacement_ptrtype const& fieldUserVectorialPtr( std::string const& key ) const {
-        CHECK( this->hasFieldUserVectorial( key ) ) << "field name " << key << " not registered"; return M_fieldsUserVectorial.find( key )->second; }
-    element_displacement_scalar_type const& fieldUserScalar( std::string const& key ) const { return *this->fieldUserScalarPtr( key ); }
-    element_displacement_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
-
 
     //___________________________________________________________________________________//
     // toolbox fields
@@ -600,13 +586,16 @@ public :
     template <typename ModelFieldsType>
     auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
         {
-            auto const& u = mfields.field( FieldTag::displacement(this), "displacement" );
-
-            using _expr_fpkt_type = std::decay_t<decltype(this->firstPiolaKirchhoffTensorExpr( u ))>;
+            using field_disp_type = std::decay_t<decltype( mfields.field( FieldTag::displacement(this), "displacement" ) )>;
+            using _expr_fpkt_type = std::decay_t<decltype(this->firstPiolaKirchhoffTensorExpr( std::declval<field_disp_type>() ))>;
             symbol_expression_t<_expr_fpkt_type> se_fpkt;
-            std::string symbol_fpkt = fmt::format("{}_stress_P",this->keyword());
-            se_fpkt.add( symbol_fpkt, this->firstPiolaKirchhoffTensorExpr( u ), SymbolExprComponentSuffix(nDim,nDim) );
 
+            if ( this->hasSolidEquationStandard() )
+            {
+                auto const& u = mfields.field( FieldTag::displacement(this), "displacement" );
+                std::string symbol_fpkt = fmt::format("{}_stress_P",this->keyword());
+                se_fpkt.add( symbol_fpkt, this->firstPiolaKirchhoffTensorExpr( u ), SymbolExprComponentSuffix(nDim,nDim) );
+            }
             return Feel::vf::symbolsExpr( se_fpkt );
         }
 
@@ -617,7 +606,7 @@ public :
         }
 
 
-    
+
     template <typename DispFieldType,typename SymbolsExprType = symbols_expression_empty_t>
     auto firstPiolaKirchhoffTensorExpr( DispFieldType const& u, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
         {
@@ -850,9 +839,6 @@ private :
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
 
-    // fields defined in json
-    std::map<std::string,element_displacement_scalar_ptrtype> M_fieldsUserScalar;
-    std::map<std::string,element_displacement_ptrtype> M_fieldsUserVectorial;
 
 }; // SolidMechanics
 

@@ -196,12 +196,6 @@ class Trans : public ExprDynamicBase
             M_tensor_expr( std::true_type{}, exprExpanded.expression(), ttse,  expr.expression(), geom, theInitArgs... )
             {}
 
-        template <typename IM>
-        void init( IM const& im )
-        {
-            M_tensor_expr.init( im );
-        }
-
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             M_tensor_expr.update( geom, fev, feu );
@@ -213,10 +207,6 @@ class Trans : public ExprDynamicBase
         void update( Geo_t const& geom )
         {
             M_tensor_expr.update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_tensor_expr.update( geom, face );
         }
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
         void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,

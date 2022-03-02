@@ -59,6 +59,7 @@
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 #include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
 
+#include <feel/feelmodels/body/bodymotion.hpp>
 //#define FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
 
 namespace Feel
@@ -303,6 +304,7 @@ class FluidMechanics : public ModelNumerical,
                        public MarkerManagementSlipBC,
                        public MarkerManagementPressureBC
 {
+    using super_physics_type = ModelPhysics<ConvexType::nDim>;
 public:
     using super_type = ModelNumerical;
     using super2_type = ModelPhysics<ConvexType::nDim>;
@@ -510,11 +512,16 @@ public:
         //static auto body_translational_velocity( BodyBoundaryCondition const* t ) { return BodyBoundaryCondition::FieldTag::translational_velocity( t ); }
         //static auto body_angular_velocity( BodyBoundaryCondition const* t ) { return BodyBoundaryCondition::FieldTag::angular_velocity( t ); }
         static auto dist2wall( self_type const* t ) { return ModelFieldTag<self_type,3>( t ); }
-        static auto velocity_extrapolated( self_type const* t ) { return ModelFieldTag<self_type,4>( t ); }
+        static auto last_velocity( self_type const* t ) { return ModelFieldTag<self_type,4>( t ); }
+        static auto velocity_extrapolated( self_type const* t ) { return ModelFieldTag<self_type,5>( t ); }
     };
 
 
     //___________________________________________________________________________________//
+
+
+    using bodymotion_type = BodyMotion<convex_type>;
+    using bodymotion_ptrtype = std::shared_ptr<bodymotion_type>;
 
     // fwd type
     class NBodyArticulated;
@@ -778,7 +785,7 @@ public:
                 double mass = 0;
                 for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
                 {
-                    auto const& range = rangeData.second;
+                    auto const& range = std::get<0>( rangeData.second );
                     mass += integrate(_range=range,_expr=densityExpr).evaluate()(0,0);
                 }
                 return mass;
@@ -803,7 +810,7 @@ public:
                 for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
                 {
                     std::string const& matName = rangeData.first;
-                    auto const& range = rangeData.second;
+                    auto const& range = std::get<0>( rangeData.second );
                     auto const& density = M_materialsProperties->density( matName );
                     auto const& densityExpr = density.exprScalar();
 
@@ -822,7 +829,7 @@ public:
                 for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
                 {
                     std::string const& matName = rangeData.first;
-                    auto const& range = rangeData.second;
+                    auto const& range = std::get<0>( rangeData.second );
                     auto const& density = M_materialsProperties->density( matName );
                     auto const& densityExpr = density.exprScalar();
 
@@ -1962,7 +1969,6 @@ private :
     void initFluidOutlet();
     void initDist2Wall();
     void initTurbulenceModel();
-    void initUserFunctions();
     void initPostProcess() override;
     void createPostProcessExporters();
 
@@ -2011,47 +2017,6 @@ public :
 
     bool useExtendedDofTable() const;
 
-    // fields defined by user (in json or external to this class)
-    std::map<std::string,component_element_velocity_ptrtype> const& fieldsUserScalar() const { return M_fieldsUserScalar; }
-    std::map<std::string,element_velocity_ptrtype> const& fieldsUserVectorial() const { return M_fieldsUserVectorial; }
-    bool hasFieldUserScalar( std::string const& key ) const { return M_fieldsUserScalar.find( key ) != M_fieldsUserScalar.end(); }
-    bool hasFieldUserVectorial( std::string const& key ) const { return M_fieldsUserVectorial.find( key ) != M_fieldsUserVectorial.end(); }
-    component_element_velocity_ptrtype const& fieldUserScalarPtr( std::string const& key ) const {
-        CHECK( this->hasFieldUserScalar( key ) ) << "field name " << key << " not registered"; return M_fieldsUserScalar.find( key )->second; }
-    element_velocity_ptrtype const& fieldUserVectorialPtr( std::string const& key ) const {
-        CHECK( this->hasFieldUserVectorial( key ) ) << "field name " << key << " not registered"; return M_fieldsUserVectorial.find( key )->second; }
-    component_element_velocity_type const& fieldUserScalar( std::string const& key ) const { return *this->fieldUserScalarPtr( key ); }
-    element_velocity_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
-
-    void registerCustomFieldScalar( std::string const& name )
-        {
-            if ( M_fieldsUserScalar.find( name ) == M_fieldsUserScalar.end() )
-                M_fieldsUserScalar[name];
-        }
-    void registerCustomFieldVectorial( std::string const& name )
-        {
-            if ( M_fieldsUserVectorial.find( name ) == M_fieldsUserVectorial.end() )
-                M_fieldsUserVectorial[name];
-        }
-    template <typename ExprT>
-    void updateCustomField( std::string const& name, vf::Expr<ExprT> const& e )
-        {
-            this->updateCustomField( name, e, M_rangeMeshElements );
-        }
-    template <typename ExprT, typename OnRangeType>
-    void updateCustomField( std::string const& name, vf::Expr<ExprT> const& e, OnRangeType const& range, std::enable_if_t< ExprTraits<OnRangeType, vf::Expr<ExprT>>::shape::is_scalar>* = nullptr )
-        {
-            if ( M_fieldsUserScalar.find( name ) == M_fieldsUserScalar.end() || !M_fieldsUserScalar[name] )
-                M_fieldsUserScalar[name] = this->functionSpaceVelocity()->compSpace()->elementPtr();
-             M_fieldsUserScalar[name]->on(_range=range,_expr=e );
-        }
-    template <typename ExprT, typename OnRangeType>
-    void updateCustomField( std::string const& name, vf::Expr<ExprT> const& e, OnRangeType const& range, std::enable_if_t< ExprTraits<OnRangeType, vf::Expr<ExprT>>::shape::is_vectorial>* = nullptr )
-        {
-            if ( M_fieldsUserVectorial.find( name ) == M_fieldsUserVectorial.end() || !M_fieldsUserVectorial[name] )
-                M_fieldsUserVectorial[name] = this->functionSpaceVelocity()->elementPtr();
-            M_fieldsUserVectorial[name]->on(_range=range,_expr=e );
-        }
 
     //___________________________________________________________________________________//
     // algebraic data
@@ -2081,9 +2046,6 @@ public :
     //! update initial conditions with symbols expression \se
     template <typename SymbolsExprType>
     void updateInitialConditions( SymbolsExprType const& se );
-
-    // init/update user functions defined in json
-    void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
 
     // post process
     void exportResults() { this->exportResults( this->currentTime() ); }
@@ -2277,7 +2239,8 @@ public :
 
             return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::velocity(this), prefix, "velocity", field_u, "U", this->keyword() ),
                                                   modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix, "pressure", field_p, "P", this->keyword() ),
-                                                  modelField<FieldCtx::ID>( FieldTag::velocity_extrapolated(this), prefix, "velocity_extrapolated", field_beta_u, "beta_u", this->keyword() ),
+                                                  modelField<FieldCtx::FULL>( FieldTag::last_velocity(this), prefix, "last_velocity", this->fieldVelocityPtr(), "last_u", this->keyword() ),
+                                                  modelField<FieldCtx::FULL>( FieldTag::velocity_extrapolated(this), prefix, "velocity_extrapolated", field_beta_u, "beta_u", this->keyword() ),
                                                   mfields_body, mfields_ale, mfields_turbulence,
                                                   modelField<FieldCtx::ID>( FieldTag::dist2wall(this), prefix, "dist2wall", M_fieldDist2Wall, "dist2wall", this->keyword() )
                                                   );
@@ -2653,7 +2616,7 @@ public:
     template <typename SymbolsExprType>
     force_type computeForce( range_faces_type const& rangeFaces, SymbolsExprType const& se ) const;
     double computeFlowRate( std::string const& marker, bool useExteriorNormal=true ) const;
-    double computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal=true ) const;
+    double computeFlowRate( std::set<std::string> const& markers, bool useExteriorNormal=true ) const;
     double computePressureSum() const;
     double computePressureMean() const;
     double computeVelocityDivergenceSum() const;
@@ -2810,9 +2773,6 @@ private :
     space_normalstress_ptrtype M_XhNormalBoundaryStress;
     element_normalstress_ptrtype M_fieldNormalStress;
     element_normalstress_ptrtype M_fieldWallShearStress;
-    // fields defined in json
-    std::map<std::string,component_element_velocity_ptrtype> M_fieldsUserScalar;
-    std::map<std::string,element_velocity_ptrtype> M_fieldsUserVectorial;
     //----------------------------------------------------
     // mesh ale tool and space
     bool M_isMoveDomain;
@@ -2893,6 +2853,7 @@ private :
     space_trace_velocity_component_ptrtype M_spaceLagrangeMultiplierPressureBC;
     element_trace_velocity_component_ptrtype M_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC2;
     // body bc
+    bodymotion_ptrtype M_bodyMotion;
     BodySetBoundaryCondition M_bodySetBC;
     // fluid inlet bc
     std::vector< std::tuple<std::string,std::string, scalar_field_expression<2> > > M_fluidInletDesc; // (marker,type,vmax expr)
@@ -3211,7 +3172,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::executePostProce
     // flow rate measures
     for ( auto const& ppFlowRate : M_postProcessMeasuresFlowRate )
     {
-        double valFlowRate = this->computeFlowRate( ppFlowRate.meshMarkers(), ppFlowRate.useExteriorNormal() );
+        double valFlowRate = this->computeFlowRate( ppFlowRate.markers(), ppFlowRate.useExteriorNormal() );
         this->postProcessMeasures().setValue( "flowrate_"+ppFlowRate.name(),valFlowRate);
     }
 

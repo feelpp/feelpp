@@ -5,10 +5,10 @@ from feelpp.toolboxes.core import *
 from feelpp.toolboxes.heat import *
 
 heat_cases = [
-    ('heat/Building/ThermalBridgesENISO10211/thermo2dCase2.cfg', 2, 1),
-    ('heat/Building/ThermalBridgesENISO10211/thermo2dCase2.cfg', 2, 2),
-    ('heat/test-para/test.cfg', 2, 1),
-    ('heat/test-para/test.cfg', 2, 2),
+    ('heat/Building/ThermalBridgesENISO10211/case2.cfg', 2, 1),
+    ('heat/Building/ThermalBridgesENISO10211/case2.cfg', 2, 2),
+    ('heat/test_time-stepping/test.cfg', 2, 1),
+    ('heat/test_time-stepping/test.cfg', 2, 2),
     ('heat/thermo2d/thermo2d.cfg', 2, 1),
     ('heat/thermo2d/thermo2d.cfg', 2, 2)]
 
@@ -34,7 +34,7 @@ def test_heat(casefile,dim,order):
 
 def test_heat_alg():
     feelpp.Environment.setConfigFile(
-        'heat/Building/ThermalBridgesENISO10211/thermo2dCase2.cfg')
+        'heat/Building/ThermalBridgesENISO10211/case2.cfg')
     f = heat(dim=2, order=1)
     f.init()
     if f.isStationary():

@@ -37,12 +37,14 @@ public :
     ExprSelectorByMeshElementMapping() = default;
 
     template <typename MeshType>
-    void updateForUse( std::map<std::string, elements_reference_wrapper_t<MeshType> > const& data )
+    void updateForUse( std::map<std::string, std::tuple<elements_reference_wrapper_t<MeshType>,elements_reference_wrapper_t<MeshType>> > const& data )
         {
             uint16_type cpt=0;
-            for ( auto const& [name,rangeElt] : data )
+            for ( auto const& [name,pairRangeElt] : data )
             {
-                for ( auto const& eltWrap : rangeElt )
+                for ( auto const& eltWrap : std::get<0>( pairRangeElt ) ) // active elements
+                    M_eltIdToTag[ unwrap_ref( eltWrap ).id() ] = cpt;
+                for ( auto const& eltWrap : std::get<1>( pairRangeElt ) ) // ghost elements
                     M_eltIdToTag[ unwrap_ref( eltWrap ).id() ] = cpt;
                 M_nameToTag[name] = cpt++;
             }
@@ -341,11 +343,6 @@ public :
 
 
 
-        template<typename IM>
-        void init( IM const& im )
-        {
-            //M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             this->selectSubTensor( geom );
@@ -371,15 +368,6 @@ public :
                             {
                                 if ( e.second )
                                     e.second->update( geom );
-                            });
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            this->selectSubTensor( geom );
-            hana::for_each( M_tupleTensorExprs, [&geom,&face]( auto & e )
-                            {
-                                if ( e.second )
-                                    e.second->update( geom, face );
                             });
         }
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>

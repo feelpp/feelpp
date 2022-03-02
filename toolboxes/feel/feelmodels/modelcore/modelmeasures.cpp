@@ -343,31 +343,11 @@ ModelMeasuresStorageTable::saveCSV( std::string const& directory, size_type inde
 
 
 
-template <typename T>
-std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
-{
-    std::vector<T> r;
-    for (auto& item : pt.get_child(key))
-        r.push_back(item.second.template get_value<T>());
-    return r;
-}
-
-
-
-
-
-
 ModelMeasuresFlowRate::ModelMeasuresFlowRate()
 {
     this->setDirection( "interior_normal" );
 }
 
-void
-ModelMeasuresFlowRate::addMarker( std::string const& mark )
-{
-    if ( std::find( M_meshMarkers.begin(),M_meshMarkers.end(), mark ) == M_meshMarkers.end() )
-        M_meshMarkers.push_back( mark );
-}
 void
 ModelMeasuresFlowRate::setDirection( std::string const& dir )
 {
@@ -376,38 +356,50 @@ ModelMeasuresFlowRate::setDirection( std::string const& dir )
 }
 
 void
-ModelMeasuresFlowRate::setup( pt::ptree const& ptree, std::string const& name )
+ModelMeasuresFlowRate::setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes )
 {
-    std::vector<std::string> markerList = as_vector<std::string>( ptree, "markers" );
-    if ( markerList.empty() )
+    M_name = name;
+
+    if ( jarg.contains("markers") )
+        M_markers.setup( jarg.at("markers"), indexes);
+
+    if ( jarg.contains("direction" ) )
     {
-        std::string markerUnique = ptree.get<std::string>( "markers" );
-        if ( !markerUnique.empty() )
-            markerList = { markerUnique };
+        auto const& j_dir = jarg.at("direction");
+        if ( j_dir.is_string() )
+            this->setDirection( indexes.replace( j_dir.get<std::string>() ) );
     }
-    std::string direction = ptree.get<std::string>( "direction" );
-    //std::cout << "markerList " << markerList.front() << " direction " << direction << "\n";
-    this->setName( name );
-    for ( auto const& marker : markerList )
-        this->addMarker( marker );
-    this->setDirection( direction );
 }
 
 
 void
-ModelMeasuresNormalFluxGeneric::setup( pt::ptree const& _pt, std::string const& name, ModelIndexes const& indexes )
+ModelMeasuresNormalFluxGeneric::setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes )
 {
     M_name = name;
 
-    if ( auto ptmarkers = _pt.get_child_optional("markers") )
-        M_markers.setPTree(*ptmarkers, indexes);
+    if ( jarg.contains("markers") )
+        M_markers.setup( jarg.at("markers"), indexes);
 
-    if ( auto itDir = _pt.get_optional<std::string>("direction") )
-        M_direction = indexes.replace( *itDir );
+    if ( jarg.contains("direction") )
+    {
+        auto const& j_direction = jarg.at("direction");
+        if ( j_direction.is_string() )
+            M_direction = indexes.replace( j_direction.get<std::string>() );
+    }
     else
         M_direction = "outward";
 
     CHECK( M_direction == "inward" || M_direction == "outward" ) << "invalid dir " << M_direction;
+
+    if ( jarg.contains( "requires_markers_connection") )
+        M_requiresMarkersConnection.setup( jarg.at( "requires_markers_connection"), indexes );
+
+    if ( jarg.contains( "internalfaces_evaluation") )
+    {
+          auto const& j_ifevaltype = jarg.at( "internalfaces_evaluation");
+          if ( j_ifevaltype.is_string() )
+              M_internalFacesEvalutationType = indexes.replace( j_ifevaltype.get<std::string>() );
+    }
 }
 
 
