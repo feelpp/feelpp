@@ -208,41 +208,48 @@ int runSimulation(std::shared_ptr<FeelModels::coefficient_form_PDEs_t<ConvexType
 
 int main( int argc, char** argv)
 {
-    po::options_description opt("options");
-    opt.add_options()
-        ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
-        ( "toolboxmor.sampling-size", po::value<int>()->default_value(10), "size of the sampling" )
-        ;
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=opt.add(makeToolboxMorOptions())
-                     .add(toolboxes_options( "coefficient-form-pdes", "cfpdes" ) ) );
+    try 
+    {
+        po::options_description opt("options");
+        opt.add_options()
+            ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
+            ( "toolboxmor.sampling-size", po::value<int>()->default_value(10), "size of the sampling" )
+            ;
+        Environment env( _argc=argc, _argv=argv,
+                        _desc=opt.add(makeToolboxMorOptions())
+                        .add(toolboxes_options( "coefficient-form-pdes", "cfpdes" ) ) );
 
-    int dimension = ioption(_name="case.dimension");
-    auto dimt = hana::make_tuple(hana::int_c<2>/*,hana::int_c<3>*/);
-    int status = 0;
-    hana::for_each( dimt,
-                    [&dimension,&status]( auto const& d ) {
-                        constexpr int _dim = std::decay_t<decltype(d)>::value;
-                        if ( dimension == _dim  ) {
-                            using model_type = FeelModels::coefficient_form_PDEs_t< Simplex<_dim> >;
-                            using model_ptrtype = std::shared_ptr<model_type>;
+        int dimension = ioption(_name="case.dimension");
+        int status = 0;
+        hana::for_each( dim_t<2,3>,
+                        [&dimension,&status]( auto const& d ) {
+                            constexpr int _dim = std::decay_t<decltype(d)>::value;
+                            if ( dimension == _dim  ) {
+                                using model_type = FeelModels::coefficient_form_PDEs_t< Simplex<_dim> >;
+                                using model_ptrtype = std::shared_ptr<model_type>;
 
-                            std::shared_ptr<model_type> cfpdes( new model_type("cfpdes") );
-                            cfpdes->init();
-                            cfpdes->printAndSaveInfo();
-                            auto cfpde = std::get<1>(cfpdes->pdes()[0]);
-                            auto unknownBasis = cfpde->unknownBasis();
+                                std::shared_ptr<model_type> cfpdes( new model_type("cfpdes") );
+                                cfpdes->init();
+                                cfpdes->printAndSaveInfo();
+                                auto cfpde = std::get<1>(cfpdes->pdes()[0]);
+                                auto unknownBasis = cfpde->unknownBasis();
 
-                            using cfpdes_type = unwrap_ptr_t<std::decay_t<decltype(cfpdes)>>;
-                            hana::for_each( cfpdes_type::tuple_type_unknown_basis,
-                                            [&cfpdes,&_dim,&status,&unknownBasis]( auto & e ) {
-                                                if ( cfpdes_type::unknowBasisTag( e ) == unknownBasis )
-                                                {
-                                                    status = runSimulation<Simplex<_dim>, typename std::decay_t<decltype(e)>::type>(cfpdes);
-                                                }
-                                            });
+                                using cfpdes_type = unwrap_ptr_t<std::decay_t<decltype(cfpdes)>>;
+                                hana::for_each( cfpdes_type::tuple_type_unknown_basis,
+                                                [&cfpdes,&_dim,&status,&unknownBasis]( auto & e ) {
+                                                    if ( cfpdes_type::unknowBasisTag( e ) == unknownBasis )
+                                                    {
+                                                        status = runSimulation<Simplex<_dim>, typename std::decay_t<decltype(e)>::type>(cfpdes);
+                                                    }
+                                                });
 
-                        }
-                    } );
-    return status;
+                            }
+                        } );
+        return status;
+    }
+    catch(...)
+    {
+        handleExceptions();
+    }
+    return EXIT_FAILURE;
 }

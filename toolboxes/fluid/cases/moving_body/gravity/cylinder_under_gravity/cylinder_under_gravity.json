@@ -6,13 +6,20 @@
     {
         "fluid":
         {
-            "equations":"Navier-Stokes",
-            //"gravity":1
-             "gravity":
-             {
-                 "enable":1,
-                 "expr":"{0,980}:t"
-             }
+            "materials":"Fluid",
+            "setup":
+            {
+                "equations":"Navier-Stokes",
+                //"gravity":1
+                "gravity":
+                {
+                    "enable":1,
+                    "expr":"{0,980}:t"
+                }
+            }
+        },
+        "body":{
+            "materials":"MySolid"
         }
     },
     "Materials":
@@ -69,15 +76,18 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","pid","displacement"]
-        },
-        "Measures":
-        {
-            "Quantities":
+            "Exports":
             {
-                "names":"all"
+                "fields":["velocity","pressure","pid","displacement"]
+            },
+            "Measures":
+            {
+                "Quantities":
+                {
+                    "names":"all"
+                }
             }
         }
     }

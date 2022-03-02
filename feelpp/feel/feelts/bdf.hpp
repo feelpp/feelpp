@@ -132,6 +132,10 @@ public:
      */
     Bdf( space_ptrtype const& space, std::string const& name, std::string const& prefix="", po::variables_map const& vm =  Environment::vm() );
 
+    Bdf( space_ptrtype const& __space, std::string const& name, std::string const& prefix, po::variables_map const& vm, int order,
+         double ti, double tf, double dt, bool steady, bool reverse, bool restart, std::string const& restart_path, bool restart_at_last_save,
+         bool save, int freq, bool rank_proc_in_files_name, std::string const& format, int n_consecutive_save );
+
     //! copy operator
     Bdf( Bdf const& b );
 
@@ -467,9 +471,37 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     }
 
     this->computePolyAndPolyDeriv();
-
-
 }
+
+template <typename SpaceType>
+Bdf<SpaceType>::Bdf( space_ptrtype const& __space, std::string const& name, std::string const& prefix, po::variables_map const& vm, int order,
+                     double ti, double tf, double dt, bool steady, bool reverse, bool restart, std::string const& restart_path, bool restart_at_last_save,
+                     bool save, int freq, bool rank_proc_in_files_name, std::string const& format, int n_consecutive_save )
+    :
+    super( name, prefix, __space->worldComm(), vm, ti, tf, dt, steady, reverse, restart, restart_path, restart_at_last_save,
+           save, freq, rank_proc_in_files_name, format ),
+    M_order( order ),
+    M_strategyHighOrderStart( ioption(_prefix=prefix,_name="bdf.strategy-high-order-start",_vm=vm) ),
+    M_order_cur( M_order ),
+    M_iterations_between_order_change( ioption(_prefix=prefix,_name="bdf.iterations-between-order-change",_vm=vm) ),
+    M_space( __space ),
+    M_alpha( BDF_MAX_ORDER ),
+    M_beta( BDF_MAX_ORDER ),
+    M_numberOfConsecutiveSave( n_consecutive_save )
+{
+    computeCoefficients();
+
+    CHECK( this->numberOfConsecutiveSave() >= this->bdfOrder() ) << "numberOfConsecutiveSave is too small, should be >= bdfOrder";
+    M_unknowns.resize( std::max(this->bdfOrder(), this->numberOfConsecutiveSave()) );
+    for ( uint8_type __i = 0; __i < M_unknowns.size(); ++__i )
+    {
+        M_unknowns[__i] = element_ptrtype( new element_type( M_space ) );
+        M_unknowns[__i]->zero();
+    }
+
+    this->computePolyAndPolyDeriv();
+}
+
 
 //! copy operator
 template <typename SpaceType>
@@ -978,21 +1010,12 @@ auto bdf( Ts && ... v )
     int n_consecutive_save = args.get_else( _n_consecutive_save, order );
 
     using _space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(space)>>>;
-    auto thebdf = std::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>( space,name,prefix,vm ) );
-    thebdf->setTimeInitial( initial_time );
-    thebdf->setTimeFinal( final_time );
-    thebdf->setTimeStep( time_step );
-    thebdf->setOrder( order );
-    thebdf->setSteady( steady );
-    thebdf->setReverse( reverse );
-    thebdf->setRestart( restart );
-    thebdf->setRestartPath( restart_path );
-    thebdf->setRestartAtLastSave( restart_at_last_save );
-    thebdf->setSaveInFile( save );
-    thebdf->setSaveFreq( freq );
-    thebdf->setRankProcInNameOfFiles( rank_proc_in_files_name );
-    thebdf->setfileFormat( format );
-    thebdf->setNumberOfConsecutiveSave( n_consecutive_save );
+    auto thebdf = std::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>( space,name,prefix,vm,order,
+                                                                            initial_time, final_time, time_step, steady, reverse,
+                                                                            restart, restart_path, restart_at_last_save,
+                                                                            save, freq, rank_proc_in_files_name, format, n_consecutive_save
+                                                                            ) );
+
     return thebdf;
 }
 

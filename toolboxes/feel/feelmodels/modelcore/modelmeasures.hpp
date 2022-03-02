@@ -290,19 +290,17 @@ public :
     ModelMeasuresFlowRate& operator=( ModelMeasuresFlowRate && ) = default;
 
     std::string const& name() const { return M_name; }
-    std::list<std::string> const& meshMarkers() const { return M_meshMarkers; }
+    std::set<std::string> const& markers() const { return M_markers; }
     std::string const& direction() const { return M_direction; }
     bool useExteriorNormal() const { return M_direction == "exterior_normal"; }
 
-    void setName( std::string const& s ) { M_name = s; }
-    void addMarker( std::string const& mark );
     void setDirection( std::string const& dir );
 
-    void setup( pt::ptree const& _pt, std::string const& name );
+    void setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes );
 
 private :
     std::string M_name;
-    std::list<std::string> M_meshMarkers;
+    ModelMarkers M_markers;
     std::string M_direction;
 };
 
@@ -320,13 +318,20 @@ public :
     std::set<std::string> const& markers() const { return M_markers; }
     std::string const& direction() const { return M_direction; }
     bool isOutward() const { return M_direction == "outward"; }
+    //! returnn requires markers connection
+    ModelMarkers const& requiresMarkersConnection() const { return M_requiresMarkersConnection; }
+    //! return internalfaces evalutation type (i.e. mean,sum,max,...)
+    std::string const& internalFacesEvalutationType() const { return M_internalFacesEvalutationType; }
 
-    void setup( pt::ptree const& _pt, std::string const& name, ModelIndexes const& indexes );
+    void setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes );
 
 private :
     std::string M_name;
     ModelMarkers M_markers;
     std::string M_direction;
+    ModelMarkers M_requiresMarkersConnection;
+    std::string M_internalFacesEvalutationType;
+
 };
 
 

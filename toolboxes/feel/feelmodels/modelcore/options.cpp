@@ -75,6 +75,7 @@ Feel::po::options_description modelalgebraic_options(std::string const& prefix)
         (prefixvm(prefix,"pseudo-transient-continuation.expur.beta-high").c_str(), Feel::po::value<double>()->default_value( 1.5 ), "pseudo-transient-continuation parameter : beta-high")
         (prefixvm(prefix,"pseudo-transient-continuation.expur.beta-low").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "pseudo-transient-continuation parameter : beta-low")
 
+        (prefixvm(prefix,"solver.picard.relaxation-parameter").c_str(), Feel::po::value<double>()->default_value( 1.0 ), "solver.picard.relaxation-parameter")
         ;
     return appliBaseOptions.add( modelbase_options(prefix ) ).add( on_options( prefix ) );//.add( backend_options( prefix ) );
 }
@@ -281,6 +282,8 @@ fluidMechanics_options(std::string const& prefix)
         .add( densityviscosity_options( prefix ) )
         .add( pcd_options( prefix ) )
         .add( coefficientformpdes_options( prefixvm(prefix,"turbulence") ) )
+
+        .add( modelnumerical_options( prefixvm(prefix,"body") ) )
         ;
 
     return fluidOptions;
@@ -381,10 +384,12 @@ heat_options(std::string const& prefix)
         (prefixvm(prefix,"rho").c_str(), Feel::po::value<double>()->default_value( 1 ), "density [ kg/(m^3) ]")
         (prefixvm(prefix,"heat-capacity").c_str(), Feel::po::value<double>()->default_value( 1 ), "heat-capacity [ J/(kg*K) ]")
         (prefixvm(prefix,"thermal-expansion").c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "thermal-conductivity [ 1/K) ]")
-        (prefixvm(prefix,"use_velocity-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "use-velocity-convection")
-        (prefixvm(prefix,"velocity-convection_is_incompressible").c_str(), Feel::po::value<bool>()->default_value( false ), "velocity-convection-is-incompressible")
-        (prefixvm(prefix,"velocity-convection").c_str(), Feel::po::value<std::string>(), "math expression")
+        // (prefixvm(prefix,"use_velocity-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "use-velocity-convection")
+        // (prefixvm(prefix,"velocity-convection_is_incompressible").c_str(), Feel::po::value<bool>()->default_value( false ), "velocity-convection-is-incompressible")
+        // (prefixvm(prefix,"velocity-convection").c_str(), Feel::po::value<std::string>(), "math expression")
         (prefixvm(prefix,"initial-solution.temperature").c_str(), Feel::po::value<std::string>(), "math expression")
+
+        (prefixvm(prefix,"use-extended-doftable").c_str(), Feel::po::value<bool>()->default_value( false ), "use-extended-doftable")
 
         (prefixvm(prefix,"stabilization-gls").c_str(), Feel::po::value<bool>()->default_value( false ), "apply stabilization method")
         (prefixvm(prefix,"stabilization-gls.type").c_str(), Feel::po::value<std::string>()->default_value( "gls" ), "supg,gls,unusual-gls")

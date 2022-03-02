@@ -26,7 +26,30 @@
 
 #include <feel/feelmor/parameterspace.hpp>
 
-FEELPP_ENVIRONMENT_NO_OPTIONS
+using namespace Feel;
+
+inline
+po::options_description
+makeOptions()
+{
+    po::options_description modelopt( "test parameter space options" );
+    modelopt.add_options()
+        ("json_filename" , Feel::po::value<std::string>()->default_value( "$cfgdir/parameterspace.json" ), "json file" )
+        ;
+    return  modelopt.add( Feel::feel_options() ) ;
+}
+
+inline
+AboutData
+makeAbout()
+{
+    AboutData about( "test_parameterspace",
+                     "test_parameterspace" );
+    return about;
+
+}
+
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( parameterspace )
 
@@ -190,9 +213,9 @@ BOOST_AUTO_TEST_CASE( test2 )
 
     auto muspace = parameterspace_type::New(4);
     auto muMin = muspace->element();
-    muMin << 2,3,-4,5;
+    muMin << 2,3,-4,3;
     auto muMax = muspace->element();
-    muMax << 8,7,-2,3;
+    muMax << 8,7,-2,5;
     muspace->setMin( muMin );
     muspace->setMax( muMax );
     muspace->setParameterName( 0, "myparamA" );
@@ -209,5 +232,31 @@ BOOST_AUTO_TEST_CASE( test2 )
         BOOST_CHECK_CLOSE( muspace->min()(d),muspaceReloaded->min()(d),1e-9 );
         BOOST_CHECK( muspace->parameterName(d) == muspaceReloaded->parameterName(d) );
     }
+}
+BOOST_AUTO_TEST_CASE( test3 )
+{
+    using namespace Feel;
+    using parameterspace_type = ParameterSpace<>;
+    namespace pt =  boost::property_tree;
+
+    auto json = removeComments(readFromFile(Environment::expand(soption("json_filename"))));
+    std::istringstream istr( json );
+    nl::json p;
+    istr >> p;
+    //pt::ptree p;
+    //pt::read_json(istr, p);
+    auto parameters = ModelParameters();
+    parameters.setPTree(p);
+    auto Dmu = parameterspace_type::New(parameters);
+    BOOST_CHECK( Dmu->dimension() == 2 );
+    // auto mubar = Dmu->mubar();
+    // BOOST_CHECK( mubar.parameterNamed("p1") == 2 );
+    // BOOST_CHECK( mubar.parameterNamed("p2") == -1 );
+    auto mumin = Dmu->min();
+    BOOST_CHECK( mumin.parameterNamed("p1") == 1 );
+    BOOST_CHECK( mumin.parameterNamed("p2") == -10 );
+    auto mumax = Dmu->max();
+    BOOST_CHECK( mumax.parameterNamed("p1") == 3 );
+    BOOST_CHECK( mumax.parameterNamed("p2") == 10 );
 }
 BOOST_AUTO_TEST_SUITE_END()
