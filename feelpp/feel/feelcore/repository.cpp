@@ -25,22 +25,31 @@
 //! \file environment.hpp
 //! \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! \date 2020-11-10
-//! 
-#include <feel/feelcore/repository.hpp>
-#include <feel/feelcore/feelio.hpp>
+//!
 #include <boost/algorithm/string/replace.hpp>
 #include <cpr/cpr.h>
+#include <feel/feelcore/feelio.hpp>
+#include <feel/feelcore/repository.hpp>
 #include <fmt/core.h>
+#include <pwd.h>
 
 namespace Feel
 {
+std::string findUser()
+{
+    auto pw = getpwuid(geteuid());
+    if (pw)
+    {
+        return std::string { pw->pw_name };
+    }
+    return std::string{};
+}
 fs::path findHome()
 {
     const char * home = getenv ("HOME");
     if (home == NULL) 
     {
-      std::cerr << "error: HOME variable not set." << std::endl;
-      throw std::invalid_argument ("error: HOME environment variable not set.");
+        home = getpwuid( getuid() )->pw_dir;
     }
     return fs::path( home );
 }
@@ -84,23 +93,28 @@ Repository::Config::Config()
     nl::json jc;
     to_json( jc, *this );
     auto home = findHome();
+    VLOG(2) << fmt::format( "home: {}\n", home.string() ) << std::endl;
     if ( fs::exists( home / ".feelppconfig" ) )
     {
+        VLOG(2) << fmt::format("loading {}\n", ( home / ".feelppconfig" ).string() );
         std::ifstream i( ( home / ".feelppconfig" ).string() );
         nl::json j;
         i >> j;
         jc.merge_patch( j );
+        from_json( jc, *this );
     }
-    else
+    else 
     {
         if ( fs::exists( home / "feel" ) && fs::is_directory( home / "feel" ) )
             global_root = home / "feel";
         else
             global_root = home / feelppdb;
+        owner.name = findUser();
+        to_json( jc, *this );
+        std::ofstream i( ( home / ".feelppconfig" ).string() );
+        i << jc.dump( 1 );
     }
-    //std::cout << fmt::format("jc: {}",jc.dump(1)) << std::endl;
-    from_json( jc, *this );
-    //std::cout << fmt::format( "2jc: {}", jc.dump(1) ) << std::endl;
+    VLOG(2) << fmt::format( "config: {}", jc.dump(1) ) << std::endl;
 #if 0    
     if ( owner.github )
     {
