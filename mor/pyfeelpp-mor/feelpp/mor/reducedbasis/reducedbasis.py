@@ -9,6 +9,8 @@ from slepc4py import SLEPc
 slepc4py.init(sys.argv)
 # import plotly.graph_objects as go
 import sys, os
+import h5py
+import json
 from tqdm import tqdm
 from scipy.sparse.linalg import splu, spsolve
 
@@ -175,65 +177,60 @@ class reducedbasis():
             os.mkdir(path)
 
         print(f"[reducedbasis] saving reduced basis to {path}...", end=" ")
-        
-        if not os.path.isdir(path+'/ANq'):
-            os.mkdir(path+'/ANq')
-        if not os.path.isdir(path+'/FNp'):
-            os.mkdir(path+'/FNp')
-        if not os.path.isdir(path+'/offline'):
-            os.mkdir(path+'/offline')
-        
-        for q,Aq in enumerate(self.ANq):
-            np.save(path+"/ANq/"+str(q), Aq)
-        for p,Fp in enumerate(self.FNp):
-            np.save(path+"/FNp/"+str(p), Fp)
 
-        np.save(path+'/offline/SS', self.SS)
-        np.save(path+'/offline/SL', self.SL)
-        np.save(path+'/offline/LL', self.LL)
+        content = {'Qa': self.Qa, 'Qf': self.Qf, 'N': self.N, "path": path}
+        os.system('pwd')
+        h5f = h5py.File(path+"/reducedbasis.h5", "w")
+        f = open('reducedbasis.json', 'w')
+
+        for q, Aq in enumerate(self.ANq):
+            h5f.create_dataset(f"AN{q}", data=Aq)
+        for p, Fp in enumerate(self.FNp):
+            h5f.create_dataset(f"FN{p}", data=Fp)
+        h5f.create_dataset(f"SS", data=self.SS)
+        h5f.create_dataset(f"SL", data=self.SL)
+        h5f.create_dataset(f"LL", data=self.LL)
 
         if self.DeltaMax is not None:
-            np.save(path+'/offline/DeltaMax', self.DeltaMax)
+            h5f.create_dataset("DeltaMax", data=self.DeltaMax)
+        else:
+            h5f.create_dataset("DeltaMax", data=np.array([]))
 
+
+        json.dump(content, f, indent = 4)
+        h5f.close()
+        f.close()
         print("Done !")
 
 
-    def loadReducedBasis(path, model):
-        if not os.path.isdir(path):
-            print(f"[reducedBasis] Error : could not find {path}")
-            return None
-        if not os.path.isdir(path + '/ANq'):
-            print(f"[reducedBasis] Error : could not find {path}/ANq")
-            return None
-        if not os.path.isdir(path + '/FNp'):
-            print(f"[reducedBasis] Error : could not find {path}/FNp")
-            return None
-        if not os.path.isdir(path + '/offline'):
-            print(f"[reducedBasis] Error : could not find {path}/offline")
-            return None
-        
-        rbLoaded = reducedbasis(None, None, model, None, None)
-        rbLoaded.Qa = len(os.listdir(path+'/ANq'))
-        rbLoaded.Qf = len(os.listdir(path+'/FNp'))
-        rbLoaded.ANq = []
-        rbLoaded.FNp = []
+    def loadReducedBasis(self, path, model):
+        """Load reduced basis from json
 
-        for q in range(rbLoaded.Qa):
-            rbLoaded.ANq.append(np.load(path+'/ANq/'+str(q)+'.npy'))
-        for p in range(rbLoaded.Qf):
-            rbLoaded.FNp.append(np.load(path+'/FNp/'+str(p)+'.npy'))
-        rbLoaded.SS = np.load(path+'/offline/SS.npy')
-        rbLoaded.SL = np.load(path+'/offline/SL.npy')
-        rbLoaded.LL = np.load(path+'/offline/LL.npy')
+        Args:
+            path (str): path to the json description file
+            model (toolboxmor): toolboxmor used to create the model
+        """
+        f = open(path, "r")
+        j = json.load(f)
+        f.close()
 
-        rbLoaded.N = rbLoaded.ANq[0].shape[0]
+        self.N = j['n']
+        self.Qa = j['Qa']
+        self.Qf = j['Qf']
 
-        if os.path.isfile(path+'/offline/DeltaMax.npy'):
-            rbLoaded.DeltaMax = np.load(path+'/offline/DeltaMax.npy')
+        h5f = h5py.File(j['path'], "r")
 
-        return rbLoaded
+        for q in range(self.Qa):
+            self.ANq.append(h5f[f'AN{q}'][:])
+        for p in range(self.Qf):
+            self.FNp.append(h5f[f'FN{p}'][:])
 
+        self.SS = h5f["SS"][:]
+        self.SL = h5f["SL"][:]
+        self.LL = h5f["LL"][:]
 
+        tmpDeltaMax = h5f["DeltaMax"][:]
+        self.DeltaMax = None if tmpDeltaMax.shape == (0,) else tmpDeltaMax
 
 
 
@@ -252,7 +249,18 @@ class reducedbasisOffline(reducedbasis):
         self.Qa = len(Aq)
         self.Qf = len(Fq)
 
+        self.SS = np.zeros((self.Qf, self.Qf))
+
         self.NN = Aq[0].size[0]
+
+
+        beta = self.model.computeBetaQm(self.mubar)
+        self.betaA_bar = beta[0]
+        self.betaF_bar = beta[1]
+        A_tmp = self.assembleA(self.betaA_bar[0])
+        AT_tmp = A_tmp.copy()
+        AT_tmp.transpose()
+        self.Abar = 0.5*(A_tmp + AT_tmp)
 
 
         # KSP to solve

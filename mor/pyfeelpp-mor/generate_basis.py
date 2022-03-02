@@ -155,9 +155,9 @@ def generate_basis():
     Aq = affineDecomposition[0]
     Fq = affineDecomposition[1]
 
-    rb = mor_rb.reducedbasis(mor_rb.convertToPetscMat(Aq[0]),
-                             mor_rb.convertToPetscVec(Fq[0][0]),
-                             model, mubar)
+    rb = mor_rb.reducedbasisOffline(mor_rb.convertToPetscMat(Aq[0]),
+                                    mor_rb.convertToPetscVec(Fq[0][0]),
+                                    model, mubar)
     rb.setVerbose(False)
     if rank == 0:
         print("Size of the big problem :", rb.NN)
