@@ -250,7 +250,10 @@ struct ModelField1
                 p.emplace( "prefix", this->prefix() );
             p.emplace( "base symbol", this->symbol() );
             p.emplace( "prefix symbol", this->prefixSymbol() );
-            p.emplace( "function space", unwrap_ptr( M_field ).functionSpace()->journalSection().to_string() );
+            if constexpr ( is_cached_model_field_v<field_type> ) // M_field is a CachedModelField
+                p.emplace( "function space", "unknown (cached model field)" );
+            else
+                p.emplace( "function space", unwrap_ptr( M_field ).functionSpace()->journalSection().to_string() );
 
             nl::json::array_t jaSE;
 
