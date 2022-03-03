@@ -15,8 +15,11 @@ os.system(f"rm -rf {OUTDIR}")
 
 
 @pytest.mark.parametrize("prefix,case,casefile,dim,time_dependent", cases_params, ids=cases_ids)
-def test_compute_basis_sample(prefix, case, casefile, dim, time_dependent):
+def test_compute_basis_sample(prefix, case, casefile, dim, time_dependent, init_feelpp):
 
+    e = init_feelpp
+
+    os.system(f"rm -rf {OUTDIR}/sample")
     g.dim = dim
     g.time_dependant = time_dependent
     g.compute_greedy = False
@@ -32,8 +35,10 @@ def test_compute_basis_sample(prefix, case, casefile, dim, time_dependent):
 
 
 @pytest.mark.parametrize("prefix,case,casefile,dim,time_dependent", cases_params, ids=cases_ids)
-def test_compute_basis_greedy(prefix, case, casefile, dim, time_dependent):
+def test_compute_basis_greedy(prefix, case, casefile, dim, time_dependent, init_feelpp):
 
+    e = init_feelpp
+    os.system(f"rm -rf {OUTDIR}/greedy")
     g.dim = dim
     g.time_dependant = time_dependent
     g.compute_greedy = True

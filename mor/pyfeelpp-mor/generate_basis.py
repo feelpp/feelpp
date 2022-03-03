@@ -65,12 +65,6 @@ def generate_basis():
         print("Data will be stored in :", dir)
         print("===============================================")
 
-    config = feelpp.globalRepository(f'{dir}')
-    sys.argv = ['generate-basis']
-    o = toolboxes_options("heat")
-    o.add(makeToolboxMorOptions())
-
-    e = feelpp.Environment(sys.argv, opts=o, config=config)
 
     feelpp.Environment.setConfigFile(f'{case}/{casefile}')
     feelpp.Environment.changeRepository(directory=f'{dir}/{case}')
@@ -181,4 +175,11 @@ def generate_basis():
 
 
 if __name__ == '__main__':
+    config = feelpp.globalRepository(f'{dir}')
+    sys.argv = ['generate-basis']
+    o = toolboxes_options("heat")
+    o.add(makeToolboxMorOptions())
+
+    e = feelpp.Environment(sys.argv, opts=o, config=config)
+
     generate_basis()
