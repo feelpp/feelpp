@@ -30,6 +30,7 @@ PYBIND11_MODULE(_pbdw, m )
     using namespace Feel;
     using pbdw_t = PBDWOnline;
     using vectorN_type = typename pbdw_t::vectorN_type;
+    using matrixN_type = typename pbdw_t::matrixN_type;
     py::class_<pbdw_t,std::shared_ptr<pbdw_t>>(m, "Pbdw")
         .def(py::init<std::string const&, int, std::string const&, std::string const&>(),
              py::arg("name")=std::string("pbdw"),
@@ -46,16 +47,12 @@ PYBIND11_MODULE(_pbdw, m )
         .def("matrixF", &pbdw_t::matrixF, "Matrix of outputs" )
         .def("sensorNames", &pbdw_t::sensorNames, "Name of the sensors" )
         .def("outputNames", &pbdw_t::outputNames, "Name of the outputs" )
-        .def("online", py::overload_cast<vectorN_type const&>(&pbdw_t::online, py::const_), "returns the coefficients of the solution", py::arg("yobs") )
-        .def("outputs", py::overload_cast<vectorN_type const&>(&pbdw_t::outputs, py::const_), "returns the outputs of the mode", py::arg("yobs") )
-        .def("online", py::overload_cast<vectorN_type const&, std::vector<int> const&, bool>(&pbdw_t::online, py::const_), "returns the coefficients of the solution", py::arg("yobs"), py::arg("sensors"), py::arg("toComplete")=true )
-        .def("outputs", py::overload_cast<vectorN_type const&, std::vector<int> const&, bool>(&pbdw_t::outputs, py::const_), "returns the outputs of the mode", py::arg("yobs"), py::arg("sensors"), py::arg("toComplete")=true )
-        .def("online", py::overload_cast<vectorN_type const&, std::vector<std::string> const&>(&pbdw_t::online, py::const_), "returns the coefficients of the solution", py::arg("yobs"), py::arg("sensors") )
-        .def("outputs", py::overload_cast<vectorN_type const&, std::vector<std::string> const&>(&pbdw_t::outputs, py::const_), "returns the outputs of the mode", py::arg("yobs"), py::arg("sensors") )
-        .def("onlineWithout", py::overload_cast<vectorN_type const&, std::vector<int> const&>(&pbdw_t::onlineWithout, py::const_), "returns the coefficients of the solution", py::arg("yobs"), py::arg("sensors") )
-        .def("outputsWithout", py::overload_cast<vectorN_type const&, std::vector<int> const&>(&pbdw_t::outputsWithout, py::const_), "returns the outputs of the mode", py::arg("yobs"), py::arg("sensors") )
-        .def("onlineWithout", py::overload_cast<vectorN_type const&, std::vector<std::string> const&>(&pbdw_t::onlineWithout, py::const_), "returns the coefficients of the solution", py::arg("yobs"), py::arg("sensors") )
-        .def("outputsWithout", py::overload_cast<vectorN_type const&, std::vector<std::string> const&>(&pbdw_t::outputsWithout, py::const_), "returns the outputs of the mode", py::arg("yobs"), py::arg("sensors") )
+        .def("online", py::overload_cast<matrixN_type const&>(&pbdw_t::online, py::const_), "returns the coefficients of the solution", py::arg("yobs") )
+        .def("outputs", py::overload_cast<matrixN_type const&>(&pbdw_t::outputs, py::const_), "returns the outputs of the mode", py::arg("yobs") )
+        .def("online", py::overload_cast<matrixN_type const&, std::vector<int> const&, bool>(&pbdw_t::online, py::const_), "returns the coefficients of the solution", py::arg("yobs"), py::arg("sensors"), py::arg("toComplete")=true )
+        .def("outputs", py::overload_cast<matrixN_type const&, std::vector<int> const&, bool>(&pbdw_t::outputs, py::const_), "returns the outputs of the mode", py::arg("yobs"), py::arg("sensors"), py::arg("toComplete")=true )
+        .def("online", py::overload_cast<matrixN_type const&, std::vector<std::string> const&>(&pbdw_t::online, py::const_), "returns the coefficients of the solution", py::arg("yobs"), py::arg("sensors") )
+        .def("outputs", py::overload_cast<matrixN_type const&, std::vector<std::string> const&>(&pbdw_t::outputs, py::const_), "returns the outputs of the mode", py::arg("yobs"), py::arg("sensors") )
         ;
 
     m.def("makePbdwOptions", &pbdw_options, "make PBDW options" );
