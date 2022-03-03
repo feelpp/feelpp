@@ -180,6 +180,7 @@ nlopt_options( std::string const& prefix )
     po::options_description _options( "NLopt " + prefix + " options" );
     _options.add_options()
     // solver options
+        ( prefixvm( prefix,"nlopt.algo" ).c_str(), Feel::po::value<std::string>()->default_value( "LN_COBYLA" ), "NLopt algorithm: refer to /feel/feelopt/enums.cpp for a list" )
         ( prefixvm( prefix,"nlopt.ftol_rel" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "NLopt objective function relative tolerance" )
         ( prefixvm( prefix,"nlopt.ftol_abs" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "NLopt objective function  absolute tolerance" )
         ( prefixvm( prefix,"nlopt.xtol_rel" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "NLopt variables  relative tolerance" )
