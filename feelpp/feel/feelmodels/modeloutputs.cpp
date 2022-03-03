@@ -63,14 +63,14 @@ ModelOutput::ModelOutput( std::string name, nl::json const& jarg, worldcomm_ptr_
      }
      // else LOG(WARNING) << "Output " << M_name << " does not have any dimension\n";
 
-     if ( jarg.contains("coord") && jarg.at("coord").is_arraay() )
+     if ( jarg.contains("coord") && jarg.at("coord").is_array() )
      {
-         for( auto const& el : jarg.at("coord").items() )
+         for( auto const& [key,value] : jarg.at("coord").items() )
          {
-             if ( el.is_number() )
-                 M_coord.push_back(el.get<double>());
-             else if ( el.is_string() )
-                 M_coord.push_back(std::stod( el.get<std::string>() ) );
+             if ( value.is_number() )
+                 M_coord.push_back(value.get<double>());
+             else if ( value.is_string() )
+                 M_coord.push_back(std::stod( value.get<std::string>() ) );
          }
      }
 
