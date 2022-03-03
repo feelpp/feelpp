@@ -2561,15 +2561,14 @@ public:
          * @param i component id
          * @return the i-th component of the element
          */
+        //component_type
+        //comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT )
+        //{
+            //return comp( i, j, typename mpl::not_< mpl::or_< boost::is_same<container_type,VectorUblas<value_type> >,
+                         //boost::is_same<container_type,typename VectorUblas<value_type>::shallow_array_adaptor::type > > >::type() );
+        //}
         component_type
         comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT )
-        {
-            //return comp( i, mpl::bool_<is_composite>() );
-            return comp( i, j, typename mpl::not_< mpl::or_< boost::is_same<container_type,VectorUblas<value_type> >,
-                         boost::is_same<container_type,typename VectorUblas<value_type>::shallow_array_adaptor::type > > >::type() );
-        }
-        component_type
-        comp( ComponentType i, ComponentType j, mpl::bool_<true> )
         {
             CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int)i;
             int startSlice = ((int)i);
@@ -2590,22 +2589,23 @@ public:
 
             }
 
-            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
-            auto sActive = ublas::slice( this->container().start()+startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( this->container().startNonContiguousGhosts()+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
+            auto sActive = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
+            auto sGhost = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
 
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
-                              typename component_type::container_type( this->vec().data().expression(), sActive,
-                                                                       this->vecNonContiguousGhosts().data().expression(), sGhost,
-                                                                       this->compSpace()->dof() ),
-                              __name,
-                              startContainerIndex,//start()+(size_type)i,
-                              i,j );
+                    //typename component_type::container_type( this->vec().data().expression(), sActive,
+                    //this->vecNonContiguousGhosts().data().expression(), sGhost,
+                    //this->compSpace()->dof() ),
+                    this->container().slice( sActive, sGhost, this->compSpace()->dof() ),
+                    __name,
+                    startContainerIndex,
+                    i,j );
             return c;
         }
+#if 0
         component_type
         comp( ComponentType i, ComponentType j, mpl::bool_<false> )
         {
@@ -2642,6 +2642,7 @@ public:
                               i,j );
             return c;
         }
+#endif
         component_type
         operator[]( ComponentType i )
             {
@@ -4424,8 +4425,8 @@ public:
                 ar & boost::serialization::make_nvp( "family", family );
                 //std::cout << "saving family done" << std::endl;
 
-                typename container_type::const_iterator it = this->begin();
-                typename container_type::const_iterator en = this->end();
+                auto it = this->begin();
+                auto en = this->end();
 
                 for ( size_type i = 0; it != en; ++it, ++i )
                 {
