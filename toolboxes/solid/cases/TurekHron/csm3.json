@@ -4,12 +4,25 @@
     "ShortName":"Solid",
     "Models":
     {
-        "equations":"Hyper-Elasticity",
-        "material-model":"StVenantKirchhoff"
+        "solid":{
+            "equations":"Hyper-Elasticity",
+            "material-model":"StVenantKirchhoff"
+        }
     },
     "Parameters":
     {
         "gravity":"2"
+    },
+    "Meshes":
+    {
+        "solid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/csm.geo",
+                "hsize":0.004
+            }
+        }
     },
     "Materials":
     {
@@ -48,30 +61,32 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "solid":
         {
-            "fields":["displacement","velocity","pid"]
-        },
-        "Measures":
-        {
-            "Points":
+            "Exports":
             {
-                "pointA":
-                {
-                    "coord":"{0.6,0.2,0}",
-                    "fields":["displacement","velocity"]
-                }
+                "fields":["displacement","velocity","pid"]
             },
-            "Statistics":
+            "Measures":
             {
-                "disp":
+                "Points":
                 {
-                    "markers":"free-wall",
-                    "type":"max",
-                    "expr":"solid_s_magnitude:solid_s_magnitude"
+                    "pointA":
+                    {
+                        "coord":"{0.6,0.2,0}",
+                        "fields":["displacement","velocity"]
+                    }
+                },
+                "Statistics":
+                {
+                    "disp":
+                    {
+                        "markers":"free-wall",
+                        "type":"max",
+                        "expr":"solid_s_magnitude:solid_s_magnitude"
+                    }
                 }
             }
         }
     }
-
 }

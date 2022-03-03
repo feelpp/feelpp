@@ -3,7 +3,16 @@
     "ShortName":"2dsperm",
     "Models":
     {
-	    "equations":"Navier-Stokes"
+        "fluid":
+        {
+            "materials":"Fluid",
+            "setup":{
+                "equations":"Navier-Stokes"
+            }
+        },
+        "body":{
+            "materials":["MySolid"]
+        }
     },
     "Parameters":
     {
@@ -25,13 +34,11 @@
     "Materials":
     {
 	    "Fluid":{
-            "physics":"fluid",
 	        "rho":"1.0e-9", // All the mesh units are in micrometers; as a result I put these constants in micrometers too
 	        "mu":"1e-3"//.524e3"     // I use also micrograms -> density [micrograms/(micrometer)^3; mu [micrograms/(micrometers*second)]
 	    },
         "MySolid":{
             "markers":["Swimmer"],
-            "physics":"body",
             "rho":"1.0e-9"
         }
     },
@@ -99,18 +106,21 @@
     },
     "PostProcess":
     {
-	    "Exports":
-	    {
-	        "fields":["velocity","pressure","pid","displacement"]
-	    },
-	    "Measures":
-	    {
-            "Forces":"Head",
-            "Quantities":
-            {
-                "names":"all"
-            }
-	    }
+        "fluid":
+        {
+	        "Exports":
+	        {
+	            "fields":["velocity","pressure","pid","displacement"]
+	        },
+	        "Measures":
+	        {
+                "Forces":"Head",
+                "Quantities":
+                {
+                    "names":"all"
+                }
+	        }
+        }
     }
     
 }

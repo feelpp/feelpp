@@ -2,7 +2,11 @@
 {
     "Name": "2D beam ",
     "ShortName":"beam2d",
-    "Models": { "equations":"Hyper-Elasticity" },
+    "Models": {
+        "solid":{
+            "equations":"Hyper-Elasticity"
+        }
+    },
     "Materials":
     {
         "Solid": {
@@ -40,18 +44,21 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "solid":
         {
-            "fields":["displacement","velocity","pid"]
-        },
-        "Measures":
-        {
-            "Points":
+            "Exports":
             {
-                "pointA":
+                "fields":["displacement","velocity","pid"]
+            },
+            "Measures":
+            {
+                "Points":
                 {
-                    "coord":"{0.5,0}",
-                    "fields":["displacement"]
+                    "pointA":
+                    {
+                        "coord":"{0.5,0}",
+                        "fields":["displacement"]
+                    }
                 }
             }
         }

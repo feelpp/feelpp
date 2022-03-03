@@ -1,0 +1,126 @@
+{
+    "Name": "turbulence-plane-channel",
+    "ShortName":"turbulence-plane-channel",
+    "Models":
+    {
+        "fluid":
+        {
+            "equations":"Navier-Stokes",
+            "turbulence":
+            {
+                "enable":1,//0,//1,
+                "model":"k-epsilon"//"Spalart-Allmaras"
+            }
+        }
+    },
+    "Parameters":
+    {
+        "umax":15.6,
+        "tfix":0.01,
+        "chi":"t<tfix:t:tfix",
+        //"umax_inlet":"umax*((1-chi) +  ((1-cos(pi*t/tfix))/2)*chi):t:tfix:chi:umax",
+        "umax_inlet":"umax:umax",
+        "H":0.0635,
+        "Re":32000
+        //"Re":3200//100 //500 //3200 //16000//32000//12000//3200
+    },
+    "Materials":
+    {
+        "Omega":{
+            "rho":"1",
+            "mu":"(rho*umax*(H/2))/Re:rho:umax:H:Re"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "velocity_y":
+         {
+             "Dirichlet": { "walls2": {  "markers":["Gamma1","Gamma3"], "expr":"0"  ,"turbulence_bc":"wall" } }
+         },                           
+        // "fluid":
+        //  {
+        //      "slip": {
+        //          "Gamma1": {  "markers":["Gamma1","Gamma3"], "expr":"0"  ,"turbulence_bc":"wall" },
+        //          "Gamma3": {  "markers":["Gamma1","Gamma3"], "expr":"0"  ,"turbulence_bc":"wall" }
+        //      }
+        //  },                           
+
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "Gamma4":
+                {
+                    //"expr":"{ umax_inlet*(2*fluid_dist2wall/H)^(1/7),0 }:umax_inlet:fluid_dist2wall:H"
+                    "expr":"{ 10,0 }:umax"
+                    ,"turbulence_bc":"inlet"
+                    //,"method":"nitsche"
+                },
+                // "walls":
+                // {
+                //     "markers":["Gamma1","Gamma3"],
+                //     "expr":"{0,0}"
+                //     ,"turbulence_bc":"wall"
+                // },
+                "AACorners":
+                {
+                    //"markers":["Gamma1","Gamma3"],
+                    "expr":"{0,0}"
+                    //,"turbulence_bc":"wall"
+                }
+            }
+            ,"AANeumann_vectorial":
+            {
+                "wall_func":{
+                    "markers":["Gamma1","Gamma3"],
+                    //"expr":"{-(physics_fluid_fluid_fluid_Omega_turbulence_k_epsilon_u_tau/11.06)*fluid_U_0,-(physics_fluid_fluid_fluid_Omega_turbulence_k_epsilon_u_tau/11.06)*fluid_U_1}:fluid_U_0:fluid_U_1:physics_fluid_fluid_fluid_Omega_turbulence_k_epsilon_u_tau"
+                    "expr":"{-(physics_fluid_fluid_fluid_Omega_turbulence_k_epsilon_u_tauBC_V2/11.06)*fluid_U_0,-(physics_fluid_fluid_fluid_Omega_turbulence_k_epsilon_u_tauBC_V2/11.06)*fluid_U_1}:fluid_U_0:fluid_U_1:physics_fluid_fluid_fluid_Omega_turbulence_k_epsilon_u_tauBC_V2"
+                    //"expr":"{0.545,0545}"
+                }
+            }
+        },
+        "AApressure":
+        {
+            "Dirichlet":
+            {
+                "Gamma2":{ "expr":"1.2" }
+            }
+        },
+        "fluid":
+        {
+            // "inlet":
+            // {
+            //     "Gamma4": { "shape":"parabolic","constraint":"velocity_max","expr":"umax_inlet:umax_inlet" }
+            // },
+            "AAoutlet":
+            {
+                "outlet":
+                {
+                    "expr":"0" 
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["velocity","pressure"],
+            "expr":{
+                "dist2wall":"fluid_dist2wall:fluid_dist2wall",
+                "mu_t":"materials_mu_t:materials_mu_t",
+                "curl_U_magnitude":"fluid_curl_U_magnitude:fluid_curl_U_magnitude",
+                "sol_k":"fluid_turbulence_k_k:fluid_turbulence_k_k",
+                "sol_epsilon":"fluid_turbulence_epsilon_epsilon:fluid_turbulence_epsilon_epsilon",
+                "gamma":"physics_fluid_fluid_fluid_Omega_turbulence_k_epsilon_gamma:physics_fluid_fluid_fluid_Omega_turbulence_k_epsilon_gamma",
+                "l_star":"physics_fluid_fluid_fluid_Omega_turbulence_k_epsilon_l_star:physics_fluid_fluid_fluid_Omega_turbulence_k_epsilon_l_star",
+                "toto_chi":"physics_fluid_fluid_fluid_Omega_turbulence_k_epsilon_toto_chi:physics_fluid_fluid_fluid_Omega_turbulence_k_epsilon_toto_chi"
+                // "SA_nu":"fluid_turbulence_SA_nu:fluid_turbulence_SA_nu",
+                // "SA_S":"physics_fluid_fluid_fluid_turbulence_SA_S:physics_fluid_fluid_fluid_turbulence_SA_S",
+                // "SA_S_bar":"physics_fluid_fluid_fluid_turbulence_SA_S_bar:physics_fluid_fluid_fluid_turbulence_SA_S_bar",
+                // "strain_rate_magnitude":"fluid_strain_rate_magnitude:fluid_strain_rate_magnitude"
+            }
+        }
+    }
+
+}

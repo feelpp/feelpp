@@ -39,7 +39,7 @@ class HeatFluid : public ModelNumerical,
                   public ModelPhysics<HeatType::convex_type::nDim>,
                   public std::enable_shared_from_this< HeatFluid<HeatType,FluidType> >
 {
-
+    typedef ModelPhysics<HeatType::convex_type::nDim> super_physics_type;
 public:
     typedef ModelNumerical super_type;
     typedef HeatFluid<HeatType,FluidType> self_type;
