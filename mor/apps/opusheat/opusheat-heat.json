@@ -99,6 +99,22 @@
             "rho":"1"
         }
     },
+    "InitialConditions":
+    {
+        "heat":
+        {
+            "temperature":
+            {
+                "Expression":
+                {
+                    "myic1":
+                    {
+                        "expr":300
+                    }
+                }
+            }
+        }
+    },
     "BoundaryConditions":
     {
         "temperature":
