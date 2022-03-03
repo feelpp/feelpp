@@ -107,14 +107,14 @@ void defToolboxMor(py::module &m)
                               }, "compute the coefficients for parameter mu" )
         ;
     std::string modelnew_name = std::string("toolboxmor_") + std::to_string(nDim) +std::string("d");
-    m.def(modelnew_name.c_str(), []() { return std::make_shared<mor_t>(); }," return a pointer on model");
+    m.def(modelnew_name.c_str(), [](std::string const& name="toolboxmor") { return std::make_shared<mor_t>(name); }," return a pointer on model");
 
     std::string crbmodelclass_name = std::string("CRBModel_") + pyclass_name;
     py::class_<CRBModel<mor_t>,std::shared_ptr<CRBModel<mor_t> > >(m, crbmodelclass_name.c_str())
         .def(py::init<>(), "init")
         ;
     std::string crbmodelnew_name = std::string("crbmodel_toolboxmor_") + std::to_string(nDim) +std::string("d");
-    m.def(crbmodelnew_name.c_str(), [](std::shared_ptr<mor_t>& m) { return std::make_shared<CRBModel<mor_t> >(m); }," return a pointer on crbmodel");
+    m.def(crbmodelnew_name.c_str(), [](std::shared_ptr<mor_t>& m) { return std::make_shared<CRBModel<mor_t> >(m, crb::stage::offline); }," return a pointer on crbmodel");
 
     std::string crbclass_name = std::string("CRB_") + pyclass_name;
     py::class_<CRB<CRBModel<mor_t> >,std::shared_ptr<CRB<CRBModel<mor_t> > > >(m, crbclass_name.c_str())
@@ -129,9 +129,16 @@ void defToolboxMor(py::module &m)
              "init")
         // get rid of the return
         .def("offline", [](CRB<CRBModel<mor_t> >& c) { c.offline(); }, "run the offline step")
+        .def("online", [](CRB<CRBModel<mor_t>>& c, ParameterSpaceX::Element const& mu) {
+                           int timeSteps = 1, N = c.dimension();
+                           std::vector<Feel::vectorN_type> uNs(timeSteps), uNolds(timeSteps), uNdus(timeSteps), uNduolds(timeSteps);
+                           std::vector<double> outputs(timeSteps, 0);
+                           c.fixedPoint(N, mu, uNs, uNdus, uNolds, uNduolds, outputs, 0, false);
+                           return uNs[0];
+                       })
         ;
     std::string crbnew_name = std::string("crb_toolboxmor_") + std::to_string(nDim) +std::string("d");
-    m.def(crbnew_name.c_str(), [](std::shared_ptr<CRBModel<mor_t> >& m/*, crb::stage stage = crb::stage::online*/) { return std::make_shared<CRB<CRBModel<mor_t> > >("ToolboxMor", m, crb::stage::offline); }," return a pointer on crb");
+    m.def(crbnew_name.c_str(), [](std::shared_ptr<CRBModel<mor_t> >& m, std::string const& name = "toolboxmor"/*, crb::stage stage = crb::stage::online*/) { return CRB<CRBModel<mor_t> >::New(name, m, crb::stage::offline); }," return a pointer on crb");
 }
 
 
