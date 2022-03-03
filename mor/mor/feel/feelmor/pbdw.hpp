@@ -326,6 +326,7 @@ public:
          int dbLoad = ioption("pbdw.db.load"),
          std::string const& dbFilename = soption("pbdw.db.filename"),
          std::string const& dbId = soption("pbdw.db.id"));
+    void setFunctionSpaceSupport(std::set<std::string> const& markers) { M_markers = markers; }
     space_ptrtype functionSpace() const { return M_XR->functionSpace(); } /**< Function Space */
     sensormap_type const& sensors() const { return M_sigmas; } /**< Sensors */
     std::vector<element_type> const& riesz() const { return M_qs; } /**< Riesz representant */
@@ -358,6 +359,7 @@ private:
 
     bool M_rebuildDb;
     crb::stage M_stage;
+    std::set<std::string> M_markers;
 };
 
 template<typename RBSpace>
@@ -516,6 +518,7 @@ PBDW<RBSpace>::saveDB()
         ss << std::put_time(std::localtime(&t), "%c %Z");
         j["date"] = ss.str();
         j["mesh"] = this->absoluteMeshFilename();
+        j["markers"] = M_markers;
         std::ofstream o(this->absoluteJsonFilename());
         o << j.dump(2) << std::endl;
 
@@ -567,8 +570,13 @@ PBDW<RBSpace>::loadDB( std::string const& filename, crb::load l )
         std::ifstream i(this->absoluteJsonFilename());
         json j = json::parse(i);
         auto meshfilename = j["mesh"].get<std::string>();
+        M_markers = j["markers"].get<std::set<std::string>>();
         auto mesh = loadMesh(_mesh=new mesh_type, _filename=meshfilename);
-        auto Xh = space_type::New(mesh);
+        space_ptrtype Xh;
+        if( M_markers.empty() )
+            Xh = space_type::New(_mesh=mesh, _range=elements(mesh));
+        else
+            Xh = space_type::New(_mesh=mesh, _range=markedelements(mesh, M_markers));
         M_XR = std::make_shared<reducedspace_type>(Xh);
         fs::ifstream ifsp( this->absoluteDbFilenameProc() );
         if( ifsp )
