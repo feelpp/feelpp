@@ -48,8 +48,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
     size_type nbdof_start = this->functionSpace()->nLocalDofWithoutGhostStart( i );
     size_type nbdofWithGhost_start = this->functionSpace()->nLocalDofWithGhostStart( i );
     size_type startDofIndexGhost = nbdofWithGhost_start - nbdof_start;
-    if ( !Cont::is_shallow_array_adaptor_vector )
-        startDofIndexGhost += this->functionSpace()->dof()->nLocalDofWithoutGhost();
+    //if ( !Cont::is_shallow_array_adaptor_vector )
+        //startDofIndexGhost += this->functionSpace()->dof()->nLocalDofWithoutGhost();
 
 
     typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
@@ -74,8 +74,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
             fusion::for_each( *M_containersOffProcess, Feel::detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
         }
 
-        DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
-        DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
+        DVLOG(2) << "Element <" << i << ">::range.size :  "<< ct.size() << "\n";
+        DVLOG(2) << "Element <" << i << ">::range.start :  "<< ct.start() << "\n";
         return typename sub_element<i>::type( space, ct, name );
     }
 
