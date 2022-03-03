@@ -18,7 +18,7 @@ FEELPP_EXPORT AboutData
 makeToolboxMorAbout( std::string const& str = "opusheat-tb" );
 
 template<typename MeshType>
-class ToolboxMorModelBase
+class DeimMorModelBase
 {
 public:
     using mesh_type = MeshType;
@@ -37,15 +37,15 @@ public:
 };
 
 template<typename ToolboxType>
-class ToolboxMorModel : public ToolboxMorModelBase<typename ToolboxType::mesh_type>
+class DeimMorModelToolbox : public DeimMorModelBase<typename ToolboxType::mesh_type>
 {
     using toolbox_type = ToolboxType;
     using toolbox_ptrtype = std::shared_ptr<toolbox_type>;
     using mesh_type = typename toolbox_type::mesh_type;
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
-    using self_type = ToolboxMorModel<toolbox_type>;
+    using self_type = DeimMorModelToolbox<toolbox_type>;
     using self_ptrtype = std::shared_ptr<self_type>;
-    using super_type = ToolboxMorModelBase<mesh_type>;
+    using super_type = DeimMorModelBase<mesh_type>;
     using parameter_type = typename super_type::parameter_type;
     using vector_ptrtype = typename super_type::vector_ptrtype;
     using sparse_matrix_ptrtype = typename super_type::sparse_matrix_ptrtype;
@@ -53,7 +53,7 @@ class ToolboxMorModel : public ToolboxMorModelBase<typename ToolboxType::mesh_ty
     using mdeim_function_type = typename super_type::mdeim_function_type;
 
 public:
-    ToolboxMorModel(toolbox_ptrtype tb) : M_tb(tb) {
+    DeimMorModelToolbox(toolbox_ptrtype tb) : M_tb(tb) {
         M_rhs = M_tb->algebraicFactory()->rhs()->clone();
         M_mat = M_tb->algebraicFactory()->matrix();
     }
@@ -120,7 +120,7 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
     mesh_ptrtype getMDEIMReducedMesh() { return M_mdeim->onlineModel()->functionSpace()->mesh(); }
     void setOnlineAssembleDEIM(deim_function_type const& fct ) { M_deim->onlineModel()->setAssembleDEIM(fct); }
     void setOnlineAssembleMDEIM(mdeim_function_type const& fct ) { M_mdeim->onlineModel()->setAssembleMDEIM(fct); }
-    void initToolbox(std::shared_ptr<ToolboxMorModelBase<mesh_type>> model );
+    void initToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model );
 
     void initModel() override;
     void postInitModel();
