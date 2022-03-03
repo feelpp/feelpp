@@ -98,6 +98,8 @@ public:
     typedef typename edge_tangents_type::const_iterator edge_tangent_const_iterator;
 
     typedef typename super::permutation_type permutation_type;
+
+    using marker_type = Marker<flag_type/*uint16_type*/>;
     //@}
 
     /** @name Constructors, destructor
@@ -472,9 +474,9 @@ public:
     {
         return 0;
     }
-    std::map<uint16_type,Marker1> markers() const
+    std::map<uint16_type,marker_type> markers() const
     {
-        return std::map<uint16_type,Marker1>();
+        return std::map<uint16_type,marker_type>{};
     }
     flag_type marker() const
     {

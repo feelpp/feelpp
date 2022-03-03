@@ -188,7 +188,7 @@ ImporterSamcefMesh<MeshType>::visit( mesh_type* mesh )
         // case hexa
         if ( _mId == 34 ) continue; // TO REMOVE
 #endif
-        if ( _mId > 3 ) continue; // TO REMOVE
+        //if ( _mId > 3 ) continue; // TO REMOVE
         std::string const& markerName = std::get<0>( _gData );
         for ( auto const& _gRange : std::get<1>( _gData ) )
         {
@@ -198,7 +198,7 @@ ImporterSamcefMesh<MeshType>::visit( mesh_type* mesh )
                 auto itFindElt = mapSamcefEltIdToFeelElt.find( eId );
                 CHECK( itFindElt !=mapSamcefEltIdToFeelElt.end() ) << "not find samcef elt id " << eId;
                 auto & feelElt = unwrap_ref( itFindElt->second );
-                feelElt.setMarker( _mId );
+                feelElt.addMarker( _mId );
             }
         }
         mesh->addMarkerName( markerName, _mId, mesh_type::nDim );
