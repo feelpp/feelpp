@@ -93,6 +93,7 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
     using mesh_type = typename super_type::mesh_type;
     using mesh_ptrtype = typename super_type::mesh_ptrtype;
     static constexpr uint16_type nDim = space_type::nDim;
+    static constexpr bool is_scalar = space_type::is_scalar;
 
     using super_type::computeBetaQm;
     using parameterspace_type = typename super_type::parameterspace_type;
