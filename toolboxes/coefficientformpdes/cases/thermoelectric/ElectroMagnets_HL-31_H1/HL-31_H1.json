@@ -4,26 +4,39 @@
     "ShortName":"HL-31_H1",
     "Models":
     {
-        "equations":[
-            {
-                "name":"heat",
-                "unknown":
+        "cfpdes":{
+            "equations":[
                 {
-                    "basis":"Pch1",
-                    "name":"temperature",
-                    "symbol":"T"
-                }
-            },
-            {
-                "name":"electric",
-                "unknown":
+                    "name":"heat",
+                    "unknown":
+                    {
+                        "basis":"Pch1",
+                        "name":"temperature",
+                        "symbol":"T"
+                    }
+                },
                 {
-                    "basis":"Pch1",
-                    "name":"electric-potential",
-                    "symbol":"P"
+                    "name":"electric",
+                    "unknown":
+                    {
+                        "basis":"Pch1",
+                        "name":"electric-potential",
+                        "symbol":"P"
+                    }
                 }
+            ]
+        }
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"girder:{file:5af862d6b0e9574027047fc8}",
+                "partition":1
             }
-        ]
+        }
     },
     "Materials":
     {
@@ -38,14 +51,13 @@
     },
     "InitialConditions":
     {
-        "temperature":
-        {
-            "Expression":
-            {
-                "myic":
-                {
-                    "markers":"Cu",
-                    "expr":"290"
+        "heat":{
+            "temperature":{
+                "Expression":{
+                    "myic":{
+                        "markers":"Cu",
+                        "expr":"290"
+                    }
                 }
             }
         }
@@ -96,7 +108,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":
@@ -169,12 +180,12 @@
                         "value":3.3909146510666401,
                         "tolerance":1e-1
                     },
-                    "Points_closeToV0_temperature":
+                    "Points_closeToV0_field_temperature":
                     {
                         "value":2.9394488510371184e+02,
                         "tolerance":1e-3
                     },
-                    "Points_closeToV1_temperature":
+                    "Points_closeToV1_field_temperature":
                     {
                         "value":2.9224208112364721e+02,
                         "tolerance":1e-3
@@ -249,12 +260,12 @@
                         "value":-3.8648718034652833e+04,
                         "tolerance":1e-1
                     },
-                    "Points_closeToV0_electric-potential":
+                    "Points_closeToV0_field_electric-potential":
                     {
                         "value":0,
                         "tolerance":1e-3
                     },
-                    "Points_closeToV1_electric-potential":
+                    "Points_closeToV1_field_electric-potential":
                     {
                         "value":9,
                         "tolerance":1e-3

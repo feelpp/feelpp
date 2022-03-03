@@ -65,5 +65,49 @@ ModelMarkers::setPTree( pt::ptree const& p, ModelIndexes const& indexes )
     }
 }
 
+void
+ModelMarkers::setup( nl::json const& jarg, ModelIndexes const& indexes )
+{
+    this->clear();
+
+    if ( jarg.is_string() ) // markers = mark
+        this->insert( indexes.replace( jarg.get<std::string>() ) );
+    else
+    {
+        auto indexesAllCases = ModelIndexes::generateAllCases( jarg, indexes );
+        for ( auto const& indexesNew : indexesAllCases )
+        {
+            if ( jarg.is_array() ) // markers = [mark1,mark2]
+            {
+                for ( auto const& el : jarg.items() )
+                    this->insert( indexesNew.replace( el.value() ) );
+            }
+            else if ( jarg.is_object() )
+            {
+                if ( jarg.contains("name") )
+                {
+                    auto const& jName = jarg.at("name");
+                     if ( jName.is_string() ) // markers : { name = mark }
+                         this->insert( indexesNew.replace( jName.get<std::string>() ) );
+                     else if ( jName.is_array() ) // markers : { name = [mark1, mark2] }
+                     {
+                         for ( auto const& el : jName.items() )
+                             this->insert( indexesNew.replace( el.value() ) );
+                     }
+                }
+            }
+        }
+    }
+}
+
+bool
+ModelMarkers::empty() const
+{
+    if( this->size() > 1 )
+        return false;
+    if( this->size() == 0 )
+        return true;
+    return this->begin()->empty();
+}
 
 }

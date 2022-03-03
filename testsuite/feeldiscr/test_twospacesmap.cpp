@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE( onespace )
 
     my_map.project( ur, u );
 
-    double diff = normL2( elements(newmesh), idv(u)-idv(ur) );
+    double diff = normL2( _range=elements(newmesh), _expr=idv(u)-idv(ur) );
     BOOST_CHECK_SMALL( diff, 1e-9 );
 }
 
@@ -199,10 +199,10 @@ BOOST_AUTO_TEST_CASE( composite )
     }
     my_map.project( Ur, U );
 
-    double diff = normL2( elements(newmesh), idv(u)-idv(ur) );
+    double diff = normL2( _range=elements(newmesh), _expr=idv(u)-idv(ur) );
     BOOST_CHECK_SMALL( diff, 1e-9 );
 
-    diff = normL2( elements(newmesh), idv(p)-idv(pr) );
+    diff = normL2( _range=elements(newmesh), _expr=idv(p)-idv(pr) );
     BOOST_CHECK_SMALL( diff, 1e-9 );
 
     auto Rh0 = Rh->functionSpace<0>();
@@ -219,10 +219,10 @@ BOOST_AUTO_TEST_CASE( composite )
     my_map.template project<0>( vr, v );
     my_map.template project<1>( qr, q );
 
-    diff = normL2( elements(newmesh), idv(v)-idv(vr) );
+    diff = normL2( _range=elements(newmesh), _expr=idv(v)-idv(vr) );
     BOOST_CHECK_SMALL( diff, 1e-9 );
 
-    diff = normL2( elements(newmesh), idv(q)-idv(qr) );
+    diff = normL2( _range=elements(newmesh), _expr=idv(q)-idv(qr) );
     BOOST_CHECK_SMALL( diff, 1e-9 );
 
 }

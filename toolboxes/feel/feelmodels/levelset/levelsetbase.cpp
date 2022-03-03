@@ -137,8 +137,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::init()
     this->initLevelsetValue();
     //}
 
-    // Init user-defined functions
-    this->initUserFunctions();
     // Init post-process
     this->initPostProcess();
 
@@ -167,7 +165,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initLevelsetValue()
 
             this->updateInitialConditions( this->prefix(), this->rangeMeshElements(), this->symbolsExpr(), icLevelSetFields );
 
-            ModelInitialConditionTimeSet const& icts = this->modelProperties().initialConditions().get( this->prefix() );
+            ModelInitialConditionTimeSet const& icts = this->modelProperties().initialConditions().get( this->keyword(),this->prefix() );
             for( auto const& [time,icByType]: icts )
             {
                 auto itFindIcShapes = icByType.find( "Shapes" );
@@ -175,7 +173,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initLevelsetValue()
                 {
                     for( auto const& icShape: itFindIcShapes->second )
                     {
-                        this->addShape( icShape.pTree(), *phiInit );
+                        this->addShape( icShape.jsonSetup(), *phiInit );
                     }
                 }
             }
@@ -207,13 +205,16 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initLevelsetValue()
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::addShape( 
-        pt::ptree const& shapeParameters,
+        nl::json const& shapeParameters,
         element_levelset_type & phi 
         )
 {
-    boost::optional<std::string> shapeStr = shapeParameters.get_optional<std::string>( "shape" );
-    CHECK( shapeStr ) << "missing shape type\n";
-    auto const& shapeTypeIt = ShapeTypeMap.find( *shapeStr );
+    CHECK( shapeParameters.contains( "shape" ) ) << "missing shape type";
+    std::string shapeStr;
+    if ( shapeParameters.at( "shape" ).is_string() )
+        shapeStr = shapeParameters.at( "shape" ).get<std::string>();
+
+    auto const& shapeTypeIt = ShapeTypeMap.find( shapeStr );
     if( shapeTypeIt != ShapeTypeMap.end() )
     {
         ShapeType shapeType = shapeTypeIt->second;
@@ -222,10 +223,10 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::addShape(
         {
             case ShapeType::SPHERE:
             {
-                auto X = Px() - shapeParameters.get("xc", 0.);
-                auto Y = Py() - shapeParameters.get("yc", 0.);
-                auto Z = Pz() - shapeParameters.get("zc", 0.); 
-                auto R = shapeParameters.get("radius", 0.);
+                auto X = Px() - shapeParameters.value("xc", 0.);
+                auto Y = Py() - shapeParameters.value("yc", 0.);
+                auto Z = Pz() - shapeParameters.value("zc", 0.); 
+                auto R = shapeParameters.value("radius", 0.);
                 phi = vf::project(
                         _space=this->functionSpace(),
                         _range=elements(this->functionSpace()->mesh()),
@@ -237,14 +238,14 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::addShape(
 
             case ShapeType::ELLIPSE:
             {
-                auto X = Px() - shapeParameters.get("xc", 0.);
-                auto Y = Py() - shapeParameters.get("yc", 0.);
-                auto Z = Pz() - shapeParameters.get("zc", 0.);
-                double A = shapeParameters.get("a", 0.);
-                double B = shapeParameters.get("b", 0.);
-                double C = shapeParameters.get("c", 0.);
-                double psi = shapeParameters.get("psi", 0.);
-                double theta = shapeParameters.get("theta", 0.);
+                auto X = Px() - shapeParameters.value("xc", 0.);
+                auto Y = Py() - shapeParameters.value("yc", 0.);
+                auto Z = Pz() - shapeParameters.value("zc", 0.);
+                double A = shapeParameters.value("a", 0.);
+                double B = shapeParameters.value("b", 0.);
+                double C = shapeParameters.value("c", 0.);
+                double psi = shapeParameters.value("psi", 0.);
+                double theta = shapeParameters.value("theta", 0.);
                 // Apply inverse ZYX TaitBryan rotation
                 double cosPsi = std::cos(psi); double sinPsi = std::sin(psi);
                 double cosTheta = std::cos(theta); double sinTheta = std::sin(theta);
@@ -264,7 +265,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::addShape(
     }
     else
     {
-        CHECK( false ) << "unknown shape type " << *shapeStr << std::endl;
+        CHECK( false ) << "unknown shape type " << shapeStr << std::endl;
     }
 }
 
@@ -300,101 +301,12 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::interfaceRectangularFunction( element_levelset
             );
 }
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::initUserFunctions()
-{
-    for ( auto const& modelfunc : this->modelProperties().functions() )
-    {
-        auto const& funcData = modelfunc.second;
-        std::string funcName = funcData.name();
-
-        if ( funcData.isScalar() )
-        {
-            if ( this->hasFieldUserScalar( funcName ) )
-                continue;
-            M_fieldsUserScalar[funcName] = this->functionSpaceScalar()->elementPtr();
-        }
-        else if ( funcData.isVectorial2() )
-        {
-            if ( nDim != 2 ) continue;
-            if ( this->hasFieldUserVectorial( funcName ) )
-                continue;
-            M_fieldsUserVectorial[funcName] = this->functionSpaceVectorial()->elementPtr();
-        }
-        else if ( funcData.isVectorial3() )
-        {
-            if ( nDim != 3 ) continue;
-            if ( this->hasFieldUserVectorial( funcName ) )
-                continue;
-            M_fieldsUserVectorial[funcName] = this->functionSpaceVectorial()->elementPtr();
-        }
-    }
-
-    // update custom field given by registerCustomField
-    for ( auto & [name,uptr] : M_fieldsUserScalar )
-        if ( !uptr )
-            uptr = this->functionSpaceScalar()->elementPtr();
-    for ( auto & [name,uptr] : M_fieldsUserVectorial )
-        if ( !uptr )
-            uptr = this->functionSpaceVectorial()->elementPtr();
-
-    this->updateUserFunctions();
-}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSymbol )
-{
-    if ( this->modelProperties().functions().empty() )
-        return;
-
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().functions().setParameterValues( paramValues );
-    for ( auto const& modelfunc : this->modelProperties().functions() )
-    {
-        auto const& funcData = modelfunc.second;
-        if ( onlyExprWithTimeSymbol && !funcData.hasSymbol("t") )
-            continue;
-
-        std::string funcName = funcData.name();
-        if ( funcData.isScalar() )
-        {
-            CHECK( this->hasFieldUserScalar( funcName ) ) << "user function " << funcName << "not registered";
-            M_fieldsUserScalar[funcName]->on(_range=this->rangeMeshElements(),_expr=funcData.expressionScalar() );
-        }
-        else if ( funcData.isVectorial2() )
-        {
-            if constexpr ( nDim == 2 )
-            {
-                CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
-                M_fieldsUserVectorial[funcName]->on(_range=this->rangeMeshElements(),_expr=funcData.expressionVectorial2() );
-            }
-        }
-        else if ( funcData.isVectorial3() )
-        {
-            if constexpr ( nDim == 3 )
-            {
-                CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
-                M_fieldsUserVectorial[funcName]->on(_range=this->rangeMeshElements(),_expr=funcData.expressionVectorial3() );
-            }
-        }
-    }
-}
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 std::set<std::string>
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::postProcessSaveAllFieldsAvailable() const
 {
     std::set<std::string> postProcessSaveAllFieldsAvailable( { "phi", "dirac", "heaviside", "normal", "curvature", "gradphi", "modgradphi", "distance", "distance-normal", "distance-curvature" } );
-    // Add possible user defined fields
-    for( auto const& f : this->modelProperties().postProcess().exports( this->keyword() ).fields() )
-    {
-        if ( this->hasFieldUserScalar( f ) || this->hasFieldUserVectorial( f ) )
-        {
-            postProcessSaveAllFieldsAvailable.insert( f );
-        }
-    }
     return postProcessSaveAllFieldsAvailable;
 }
 
@@ -427,12 +339,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcessExportsAndMeasures()
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
-    // Point measures
-    auto fieldNamesWithSpaceLevelset = std::make_pair( std::set<std::string>({"levelset"}), this->functionSpace() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceLevelset );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-        M_measurePointsEvaluation->init( evalPoints );
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -612,9 +520,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcessMeasures()
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
-            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-        else
-            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
+            this->postProcessMeasures().restart( this->timeInitial() );
     }
 }
 
@@ -1596,7 +1502,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::grad( element_levelset_type const& phi, LevelS
             return this->projectorL2Vectorial()->derivate( idv(phi) );
         case LevelSetDerivationMethod::SMOOTH_PROJECTION:
             this->log("LevelSetBase", "grad", "perform smooth projection");
-            return this->smootherVectorial()->project( trans(gradv(phi)) );
+            return this->smootherVectorial()->project( _expr=trans(gradv(phi)) );
         case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
             this->log("LevelSetBase", "grad", "perform PN-nodal projection");
             CHECK( M_useSpaceIsoPN ) << "use-space-iso-pn must be enabled to use PN_NODAL_PROJECTION \n";
@@ -1625,10 +1531,10 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::modGrad( element_levelset_type const& phi, Lev
                     );
         case LevelSetDerivationMethod::L2_PROJECTION:
             this->log("LevelSetBase", "modGrad", "perform L2 projection");
-            return this->projectorL2()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
+            return this->projectorL2()->project( _expr=sqrt( gradv(phi)*trans(gradv(phi)) ) );
         case LevelSetDerivationMethod::SMOOTH_PROJECTION:
             this->log("LevelSetBase", "modGrad", "perform smooth projection");
-            return this->smoother()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
+            return this->smoother()->project( _expr=sqrt( gradv(phi)*trans(gradv(phi)) ) );
         case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
             this->log("LevelSetBase", "modGrad", "perform PN-nodal projection");
             CHECK( M_useSpaceIsoPN ) << "use-space-iso-pn must be enabled to use PN_NODAL_PROJECTION \n";
@@ -1944,7 +1850,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::submeshDirac() const
     if( M_doUpdateSubmeshDirac )
     {
         this->mesh()->updateMarker2( *this->markerDirac() );
-        M_submeshDirac = createSubmesh( this->mesh(), marked2elements( this->mesh(), 1 ) );
+        M_submeshDirac = createSubmesh( _mesh=this->mesh(), _range=marked2elements( this->mesh(), 1 ) );
         M_doUpdateSubmeshDirac = false;
     }
     return M_submeshDirac;
@@ -1957,7 +1863,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::submeshOuter( double cut ) const
     if( M_doUpdateSubmeshOuter || cut != M_markerOuterCut )
     {
         this->mesh()->updateMarker2( *this->markerOuter( cut ) );
-        M_submeshOuter = createSubmesh( this->mesh(), marked2elements( this->mesh(), 1 ) );
+        M_submeshOuter = createSubmesh( _mesh=this->mesh(), _range=marked2elements( this->mesh(), 1 ) );
         M_doUpdateSubmeshOuter = false;
     }
     return M_submeshOuter;
@@ -1970,7 +1876,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::submeshInner( double cut ) const
     if( M_doUpdateSubmeshInner || cut != M_markerInnerCut )
     {
         this->mesh()->updateMarker2( *this->markerInner( cut ) );
-        M_submeshInner = createSubmesh( this->mesh(), marked2elements( this->mesh(), 1 ) );
+        M_submeshInner = createSubmesh( _mesh=this->mesh(), _range=marked2elements( this->mesh(), 1 ) );
         M_doUpdateSubmeshInner = false;
     }
     return M_submeshInner;

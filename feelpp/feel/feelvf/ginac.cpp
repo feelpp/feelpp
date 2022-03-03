@@ -27,8 +27,11 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-10-24
 */
+#include <boost/algorithm/string/predicate.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelvf/ginac.hpp>
+#include <fmt/core.h>
+#include <fmt/ostream.h>
 
 namespace GiNaC
 {
@@ -72,18 +75,6 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
     symtab table;
     LOG(INFO) <<"Inserting symbols in symbol table";
 
-#if 0
-    table["x"]=syms[0];
-    if ( syms.size() == 2 )
-    {
-        table["y"]=syms[1];
-    }
-    if ( syms.size() == 3 )
-    {
-        table["y"]=syms[1];
-        table["z"]=syms[2];
-    }
-#endif
     std::vector<symbol> total_syms;
     boost::for_each( syms, [&table, &total_syms]( symbol const& param )
                      {
@@ -107,17 +98,6 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
     try
     {
         e = reader(str);
-#if 0
-        if (!reader.strict)
-        {
-            symtab table_symbols = reader.get_syms();
-            boost::for_each( table_symbols, [](std::pair<std::string, ex> const& s )
-                             {
-                                 LOG(INFO) << "Symbol " << s.first << " added\n";
-                             }
-                );
-        }
-#endif
     }
     catch (std::invalid_argument& err)
     {
@@ -212,22 +192,28 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
     parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
 
     LOG(INFO) <<"parse expression: " << strexpr;
+    if ( boost::algorithm::contains( strexpr, "// Not supported in C" ) )
+    {
+        LOG(INFO) <<"invalid code: " << table;
+        throw std::invalid_argument( fmt::format( "invalid code: ", table ) );
+    }
     ex e; // = reader(str);
     try
     {
+        LOG( INFO ) << "parse expression 2: " << strexpr;
         e = reader(strexpr);
+        LOG( INFO ) << "parse expression 3: " << strexpr;
     }
     catch (std::invalid_argument& err)
     {
+        throw std::invalid_argument( fmt::format( "GiNaC error parsing {}: {}", e, err.what() ) );
         reader.strict = false;
         e =reader(strexpr);
-
-        std::cerr << "GiNaC error parsing " << e << " : " << err.what() << std::endl;
-        exit(1);
+        throw std::invalid_argument( fmt::format( "GiNaC error parsing {}: {}", e, err.what() ) );
     }
     catch ( ... )
     {
-        std::cerr << "Exception of unknown type!\n";
+        throw;
     }
 
     LOG(INFO) << "e=" << e << "\n";

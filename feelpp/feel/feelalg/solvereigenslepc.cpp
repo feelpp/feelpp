@@ -839,7 +839,7 @@ SolverEigenSlepc<T>::setSlepcPCSolverPackage()
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     // EPSKrylovSchurSetDetectZeros(eps,PETSC_TRUE);  /* enforce zero detection */
-    MatSolverPackageType matsp = matSolverPackageConvertStrToEnum(soption("solvereigen.st-pc-factor-mat-solver-package-type"));
+    MatSolverPackageType matsp = matSolverPackageConvertStrToEnum(soption(_name="solvereigen.st-pc-factor-mat-solver-package-type"));
     Feel::PetscPCFactorSetMatSolverPackage( pc, matsp);
     // ierr = PCFactorSetMatSolverPackage(pc,MATSOLVERMUMPS);
     // CHKERRABORT( PETSC_COMM_WORLD,ierr );
@@ -864,7 +864,7 @@ void
 SolverEigenSlepc<T>::setSlepcEPSTarget()
 {
     int ierr = 0;
-    double target = doption("solvereigen.eps-target");
+    double target = doption(_name="solvereigen.eps-target");
     if ( !isnan( target) )
     {
         ierr = EPSSetTarget( M_eps, target);

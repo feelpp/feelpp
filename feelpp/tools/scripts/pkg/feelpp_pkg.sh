@@ -6,25 +6,12 @@ set -eo pipefail
 # this script must be executed at the top level of the Feel++ directories
 
 scriptdir=$PWD/$(dirname $0)
-BUILDKITE_AGENT_NAME=${BUILDKITE_AGENT_NAME:-default}
-# default values
-CHANNEL=latest
-if [ "$BUILDKITE_BRANCH" = "develop" -o  "$BRANCH" = "develop" ]; then
-    CHANNEL=latest
-fi
-if [ "$BUILDKITE_BRANCH" = "master" -o  "$BRANCH" = "master" ]; then
-    CHANNEL=stable
-fi 
-DIST=${DIST:-focal}
-if [ "$DIST" = "bionic" -o "$DIST" = "eoan" -o "$DIST" = "focal"  -o "$DIST" = "groovy"  -o "$DIST" = "hirsute"  ]; then
-   FLAVOR=ubuntu
-elif [ "$DIST" = "buster" -o "$DIST" = "bullseye" -o "$DIST" = "sid" ]; then
-    FLAVOR=debian
-fi
+source $(dirname $0)/feelpp_pkg_common.sh
 
+echo "DIST: ${DIST}"
+echo "BRANCH: ${BRANCH}"
+echo "FLAVOR: ${FLAVOR}"
 
-
-COMPONENT=${COMPONENT:-feelpp}
 #OTHERMIRROR=
 #if [ "$COMPONENT" = "feelpp-toolboxes" ]; then
 #    OTHERMIRROR="deb https://dl.bintray.com/feelpp/ubuntu $DIST $CHANNEL"
@@ -43,19 +30,19 @@ fi
 
 #PBUILDER_RESULTS=/var/lib/buildkite-agent/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
 # local debug build
-PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
+PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}/${CHANNEL}/
 if [ ! -f $HOME/pbuilder/${DIST}_base.tgz ]; then
-    echo "--- creating distribution $DIST"
+    echo "--- creating distribution $DIST results: ${PBUILDER_RESULTS}"
     pbuilder-dist $DIST create
 fi
-echo "--- start from clean slate"
+echo "--- start from clean slate in ${PBUILDER_RESULTS}"
 if [ -d build-$DIST ]; then rm -rf build-$DIST; fi
 
 if [ -n "$(ls -A ${PBUILDER_RESULTS}/ 2>/dev/null)" ];
 then
     echo "removing previous builds in $PBUILDER_RESULTS";
     ls -1 ${PBUILDER_RESULTS}/
-    rm -f "${PBUILDER_RESULTS}/*";
+    rm -f ${PBUILDER_RESULTS}/*;
 else
     echo "no files in ${PBUILDER_RESULTS}/";
 fi
@@ -99,7 +86,8 @@ apt-get install -y apt-transport-https ca-certificates gnupg software-properties
 if [ "$DIST" = "buster" ]; then
     echo "deb http://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
 fi
-# echo "deb https://apt.feelpp.org/debian/$FLAVOR $DIST $CHANNEL" | tee -a /etc/apt/sources.list
+echo "deb http://apt.feelpp.org/$FLAVOR $DIST $CHANNEL" | tee -a /etc/apt/sources.list
+wget -qO - http://apt.feelpp.org/apt.gpg | apt-key add
 # wget -qO  - https://feelpp.jfrog.io/artifactory/api/security/keypair/gpg-debian/public | apt-key add -
 apt update
 EOF
@@ -116,8 +104,12 @@ elif [ "$COMPONENT" = "feelpp-mor" ]; then
     cd build-$DIST && ../configure -r --root=../mor    
 fi
 make package_source
-echo "--- cloning feelpp.pkg"
-git clone -q https://github.com/feelpp/feelpp.pkg.git
+echo "--- cloning feelpp.pkg: ${BRANCH}"
+if  [ -z "$BRANCH" ]; then
+    git clone -q https://github.com/feelpp/feelpp.pkg.git
+else
+    git clone -b $BRANCH -q https://github.com/feelpp/feelpp.pkg.git
+fi
 # local debug build
 #ln -s ../../Debian/feelpp.pkg
 
@@ -148,10 +140,6 @@ pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  ../${COMPONENT}_${v
 
 echo "+++ uploading ${PBUILDER_RESULTS} to bintray $COMPONENT $FLAVOR/$DIST"
 ls  -1 ${PBUILDER_RESULTS}
-echo "$scriptdir/publish.sh $main_version ${PBUILDER_RESULTS} $HOME/debian $DIST $CHANNEL $COMPONENT"
-$scriptdir/publish.sh  $main_version ${PBUILDER_RESULTS} $HOME/debian $DIST $CHANNEL $COMPONENT
-#repreprocmd=reprepro -Vb $HOME/debian/$DIST -C $COMPONENT 
 
-## echo "../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT"
-## ../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT
-
+echo "upload to local repo: aptly repo add -force-replace feelpp-$DIST-$CHANNEL ${PBUILDER_RESULTS}..."
+aptly repo add -force-replace feelpp-$DIST-$CHANNEL ${PBUILDER_RESULTS}

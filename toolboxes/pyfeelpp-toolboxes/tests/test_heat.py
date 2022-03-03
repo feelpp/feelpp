@@ -1,34 +1,40 @@
 import sys
 import feelpp
+import pytest
 from feelpp.toolboxes.core import *
 from feelpp.toolboxes.heat import *
 
-def test_heat():
-    feelpp.Environment.setConfigFile(
-        'heat/Building/ThermalBridgesENISO10211/thermo2dCase2.cfg')
-    f = heat(dim=2, order=1)
-    f.init()
-    #f.printAndSaveInfo()
-    if f.isStationary():
-        f.solve()
-        f.exportResults()
-    else:
-        if not f.doRestart():
-            f.exportResults(f.timeInitial())
-        while not f.timeStepBase().isFinished():
-            if f.worldComm().isMasterRank():
-                print("============================================================\n")
-                print("time simulation: ", f.time(), "s \n")
-                print("============================================================\n")
-            f.solve()
-            f.exportResults()
-            f.updateTimeStep()
+heat_cases = [
+    ('heat/Building/ThermalBridgesENISO10211/case2.cfg', 2, 1),
+    ('heat/Building/ThermalBridgesENISO10211/case2.cfg', 2, 2),
+    ('heat/test_time-stepping/test.cfg', 2, 1),
+    ('heat/test_time-stepping/test.cfg', 2, 2),
+    ('heat/thermo2d/thermo2d.cfg', 2, 1),
+    ('heat/thermo2d/thermo2d.cfg', 2, 2)]
+
+
+@pytest.mark.parametrize("casefile,dim,order", heat_cases)
+def test_heat(casefile,dim,order):
+    feelpp.Environment.setConfigFile(casefile)
+    f = heat(dim=dim, order=order)
+    if not f.isStationary():
+        f.setTimeFinal(10*f.timeStep())
+    simulate(f)
+    meas = f.postProcessMeasures().values()
+
+    try:
+        import pandas as pd
+
+        df=pd.DataFrame([meas])
+    except ImportError:
+        print("cannot import pandas, no problem it was just a test")
+
     return not f.checkResults()
 
 
 def test_heat_alg():
     feelpp.Environment.setConfigFile(
-        'heat/Building/ThermalBridgesENISO10211/thermo2dCase2.cfg')
+        'heat/Building/ThermalBridgesENISO10211/case2.cfg')
     f = heat(dim=2, order=1)
     f.init()
     if f.isStationary():
@@ -47,7 +53,7 @@ def test_heat_alg():
 
         def monitor(ksp, its, rnorm):
             reshist[its] = rnorm
-            print("[petsc4py] Iteration {} Residual norm: {}".format(its,rnorm))
+            #print("[petsc4py] Iteration {} Residual norm: {}".format(its,rnorm))
         ksp.setMonitor(monitor)
         pc = ksp.getPC()
         pc.setType(PC_TYPE)

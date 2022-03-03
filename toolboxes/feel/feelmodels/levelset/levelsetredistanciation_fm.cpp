@@ -1,4 +1,4 @@
-//! -*- mode: c++; coding: utf-9; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//! -*- mode: c++; coding: utf8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 //!
 //! This file is part of the Feel++ library
 //!
@@ -224,7 +224,7 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
         case FastMarchingInitialisationMethod::ILP_L2 :
         {
             *phiRedist = phi;
-            auto const modGradPhi = this->projectorL2()->project( norm2( gradv(phi) ) );
+            auto const modGradPhi = this->projectorL2()->project( _expr=norm2( gradv(phi) ) );
             phiRedist->on( 
                     _range=rangeInitialElts, 
                     _expr=idv(phi)/idv(modGradPhi)
@@ -235,7 +235,7 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
         case FastMarchingInitialisationMethod::ILP_SMOOTH :
         {
             *phiRedist = phi;
-            auto const modGradPhi = this->projectorSM()->project( norm2( gradv(phi) ) );
+            auto const modGradPhi = this->projectorSM()->project( _expr=norm2( gradv(phi) ) );
             phiRedist->on( 
                     _range=rangeInitialElts, 
                     _expr=idv(phi)/idv(modGradPhi) 

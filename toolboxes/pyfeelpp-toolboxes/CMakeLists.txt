@@ -21,7 +21,28 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
+cmake_minimum_required(VERSION 3.13)
+project(pyfeelpp-toolboxes)
+if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STREQUAL "toolboxes/pyfeelpp-toolboxes" )
+  find_package(Feel++ COMPONENTS Toolboxes PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
+  if(NOT FEELPP_FOUND)
+    message(FATAL_ERROR "[pyfeelpp-toolboxes] Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+  else()
+    message(STATUS "[pyfeelpp-toolboxes] found Feel++ library")
+  endif()
+  if (NOT FEELPP_TOOLBOXES_FOUND)
+    message(WARNING "[pyfeelpp-toolboxes] Feel++ was not installed with toolboxes component")
+  else()
+    message(STATUS "[pyfeelpp-toolboxes] found Feel++ toolboxes")
+  endif()
+  if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "install prefix" FORCE)
+    # SKIP RPATH if we set CMAKE_INSTALL_PREFIX
+    SET(CMAKE_SKIP_RPATH ON)
+  endif()
+else()
+  set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
+endif()
 #
 # setup pyfeelpp-toolboxes
 #

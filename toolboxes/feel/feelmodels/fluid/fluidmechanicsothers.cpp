@@ -245,9 +245,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
 
     super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
+    super_physics_type::updateInformationObjectFromCurrentType( p["Physics"] );
+
     nl::json subPt;
     subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
-    p["Physics"] = subPt;
+    p["Physics2"] = subPt;
 
     // Materials properties
     if ( this->materialsProperties() )
@@ -278,12 +280,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
     if ( jsonInfo.contains("Environment") )
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
-    // Physics
     if ( jsonInfo.contains("Physics") )
+        tabInfo->add( "Physics", super_physics_type::tabulateInformations( jsonInfo.at("Physics"), tabInfoProp ) );
+
+    // Physics
+    if ( jsonInfo.contains("Physics2") )
     {
         Feel::Table tabInfoPhysics;
-        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
-        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics, tabInfoProp ) );
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics2"), tabInfoProp );
+        tabInfo->add( "Physics2", TabulateInformations::New( tabInfoPhysics, tabInfoProp ) );
     }
 
     // Materials Properties
@@ -607,29 +612,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
 #endif
     }
 
-    for ( auto const& fieldUserScalar : this->fieldsUserScalar() )
-    {
-        std::string const& userFieldName = fieldUserScalar.first;
-        if ( fields.find( userFieldName ) != fields.end() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),userFieldName),
-                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),userFieldName)),
-                                         this->fieldUserScalar( userFieldName ) );
-            hasFieldToExport = true;
-        }
-    }
-    for ( auto const& fieldUserVectorial : this->fieldsUserVectorial() )
-    {
-        std::string const& userFieldName = fieldUserVectorial.first;
-        if ( fields.find( userFieldName ) != fields.end() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),userFieldName),
-                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),userFieldName)),
-                                         this->fieldUserVectorial( userFieldName ) );
-            hasFieldToExport = true;
-        }
-    }
-
     //----------------------//
     return hasFieldToExport;
 }
@@ -669,8 +651,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
     if ( this->isMoveDomain() )
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-        auto drm = M_meshALE->dofRelationShipMap();
 #if 0
+        auto drm = M_meshALE->dofRelationShipMap();
         auto thedisp = M_meshALE->functionSpace()->element();
         for (size_type i=0;i<thedisp.nLocalDof();++i)
         {
@@ -987,7 +969,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 #endif
 
     if ( this->hasTurbulenceModel() && M_useSemiImplicitTurbulenceCoupling )
-        M_turbulenceModelType->solve();
+    {
+        for (int k=0;k<ioption(_name="solver-inner-turbulence.nit");++k)
+            M_turbulenceModelType->solve();
+    }
 
     // if ( this->hasTurbulenceModel() )
     //     M_turbulenceModelType->solve();
@@ -1134,6 +1119,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
     {
         auto p = this->functionSpacePressure()->element();
 
+        M_definePressureCstAlgebraicOperatorMeanPressure.clear();
         M_definePressureCstAlgebraicOperatorMeanPressure.resize(M_definePressureCstMeshRanges.size());
         auto dofTablePressure = this->functionSpacePressure()->dof();
         for ( int k=0;k<M_definePressureCstMeshRanges.size();++k )
@@ -1237,7 +1223,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep( bool applyPreProcess )
     // up current time
     this->updateTime( M_bdfVelocity->time() );
 
-    if ( true )//M_useVelocityExtrapolated )
+    if ( true )
     {
         *M_vectorPreviousVelocityExtrapolated = *M_vectorVelocityExtrapolated;
         this->updateVelocityExtrapolated();
@@ -1339,7 +1325,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     if ( rebuildCstAssembly )
         this->setNeedToRebuildCstPart(true);
 
-    if ( true )//M_useVelocityExtrapolated )
+    if ( true )
     {
         *M_vectorPreviousVelocityExtrapolated = *M_vectorVelocityExtrapolated;
         this->updateVelocityExtrapolated();
@@ -1348,8 +1334,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     if ( M_usePreviousSolution )
         *M_vectorPreviousSolution = *this->algebraicBlockVectorSolution()->vectorMonolithic();
 
-    // update user functions which depend of time only
-    this->updateUserFunctions(true);
     // update all expressions in bc or in house prec
     this->updateParameterValues();
 
@@ -1537,7 +1521,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmeshImpl()
     //-------------------------------------------------------------------//
     // compute ALE map
     //std::vector< mesh_ale_type::ale_map_element_type> polyBoundarySet = { *M_meshDisplacementOnInterface };
-    M_meshALE->update(*M_meshDisplacementOnInterface/*polyBoundarySet*/);
+    //M_meshALE->update(*M_meshDisplacementOnInterface/*polyBoundarySet*/);
+    M_meshALE->updateMovingMesh();
 
     //-------------------------------------------------------------------//
 
@@ -1593,12 +1578,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate( std::string const& marker, bool useExteriorNormal ) const
 {
-    return this->computeFlowRate( std::list<std::string>( { marker } ),useExteriorNormal );
+    return this->computeFlowRate( std::set<std::string>( { marker } ),useExteriorNormal );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate( std::set<std::string> const& markers, bool useExteriorNormal ) const
 {
     using namespace Feel::vf;
 
@@ -1721,9 +1706,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
 
-    nBlock += 2*M_bodySetBC.size();
+    for ( auto const& [bpname,bbc] : M_bodySetBC )
+    {
+        ++nBlock; // translational velocity
+        if ( !bbc.isInNBodyArticulated() )
+            ++nBlock; // angular velocity
+    }
     for ( auto const& nba : M_bodySetBC.nbodyArticulated() )
     {
+        ++nBlock; // angular velocity
         if ( nba.articulationMethod() != "lm" )
             continue;
         nBlock += nba.articulations().size();
@@ -1849,16 +1840,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     for ( auto const& [bpname,bbc] : M_bodySetBC )
     {
         size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".translational-velocity");
-        size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".angular-velocity");
         myblockGraph(startBlockIndexTranslationalVelocity,startBlockIndexTranslationalVelocity) = stencil(_test=bbc.spaceTranslationalVelocity(),_trial=bbc.spaceTranslationalVelocity(),
                                                                                                           _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(startBlockIndexAngularVelocity,startBlockIndexAngularVelocity) = stencil(_test=bbc.spaceAngularVelocity(),_trial=bbc.spaceAngularVelocity(),
-                                                                                              _diag_is_nonzero=false,_close=false)->graph();
-        indexBlock +=2;
+        if ( !bbc.isInNBodyArticulated() )
+        {
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".angular-velocity");
+            myblockGraph(startBlockIndexAngularVelocity,startBlockIndexAngularVelocity) = stencil(_test=bbc.spaceAngularVelocity(),_trial=bbc.spaceAngularVelocity(),
+                                                                                                  _diag_is_nonzero=false,_close=false)->graph();
+        }
+        //indexBlock +=2;
     }
 
     for ( auto const& nba : M_bodySetBC.nbodyArticulated() )
     {
+        size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+nba.name()+".angular-velocity");
+        myblockGraph(startBlockIndexAngularVelocity,startBlockIndexAngularVelocity) = stencil(_test=nba.spaceAngularVelocity(),_trial=nba.spaceAngularVelocity(),
+                                                                                              _diag_is_nonzero=false,_close=false)->graph();
         if ( nba.articulationMethod() != "lm" )
             continue;
         for ( auto const& ba : nba.articulations() )
@@ -1912,7 +1909,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
             myblockGraph(startBlockIndexArticulationLMTranslationalVelocity,startBlockIndexTranslationalVelocityBody2) = createArticulationGraph( ba.dataMapLagrangeMultiplierTranslationalVelocity(),
                                                                                                                                                   bbc2.spaceTranslationalVelocity()->mapPtr(),
                                                                                                                                                   false, Pattern::DEFAULT );
-            ++indexBlock;
+            //++indexBlock;
 
         }
     }
@@ -2085,19 +2082,33 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     {
         if ( bpbc.hasTranslationalVelocityExpr() )
         {
+#if 0
             this->updateDofEliminationIds( "body-bc.translational-velocity",  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
             // only do for one, dof ids are the same for all
             break;
+#else
+            std::string spaceName = "body-bc."+bpbc.name()+".translational-velocity";
+            this->updateDofEliminationIds( spaceName,  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
+#endif
         }
-    }
-    for ( auto const& [bpname,bpbc] : M_bodySetBC )
-    {
+
         if ( bpbc.hasAngularVelocityExpr() )
         {
+#if 0
             this->updateDofEliminationIds( "body-bc.angular-velocity",  bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
             // only do for one, dof ids are the same for all
             break;
+#else
+            std::string spaceName = "body-bc."+bpbc.name()+".angular-velocity";
+            this->updateDofEliminationIds( spaceName, bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
+#endif
         }
+
+        if ( true )
+        {
+            this->updateDofEliminationIds( "velocity", XhVelocity, bpbc.rangeMarkedFacesOnFluid() );
+        }
+
     }
 }
 

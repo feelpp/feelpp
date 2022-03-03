@@ -47,7 +47,14 @@ ifdef::badges[]
 image:https://github-basic-badges.herokuapp.com/release/feelpp/feelpp.svg[link=https://github.com/feelpp/feelpp/releases/latest]
 image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 image:https://api.codacy.com/project/badge/Grade/ee741577e2454024a18d44603be62a6d[link="https://www.codacy.com/app/prudhomm/feelpp?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=feelpp/feelpp&amp;utm_campaign=Badge_Grade"]
+
+image:https://img.shields.io/github/stars/feelpp/feelpp?color=009688&logo=Riseup&style=flat-square[link=https://github.com/feelpp/feelpp/stargazers]
+image:https://img.shields.io/github/forks/feelpp/feelpp?color=009688&logo=Moleculer&logoColor=white&style=flat-square[link=https://github.com/feelpp/feelpp/network/members]
+image:https://img.shields.io/github/watchers/feelpp/feelpp?color=009688&logo=Bilibili&logoColor=white&style=flat-square[link=https://github.com/feelpp/feelpp/watchers]
+image:https://img.shields.io/github/contributors/feelpp/feelpp?logo=Draugiem.lv&logoColor=white&color=009688&style=flat-square[link=https://github.com/feelpp/feelpp/graphs/contributors]
+image:https://img.shields.io/github/repo-size/feelpp/feelpp?color=009688&style=flat-square&logo=Hack The Box&logoColor=white[link=https://github.com/feelpp/feelpp]
 endif::[]
+
 
 toc::[]
 
@@ -93,21 +100,21 @@ The following tables present the Continuous Integration status of the packaging 
 
 | feelpp
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
-| image:https://badge.buildkite.com/8b8635a2a63929d7d2087b5169d8d6e4e1e3d5417ee83d0754.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp]
+| image:https://badge.buildkite.com/8b8635a2a63929d7d2087b5169d8d6e4e1e3d5417ee83d0754.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-buster]
 | image:https://badge.buildkite.com/62d58af01a599314b4ecf5751cedc062d386fbb636d0039b32.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-bionic]
 | image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-focal]
 
 | feelpp-toolboxes
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
-| image:https://badge.buildkite.com/90ee47c7b5c62a516f7ef0911058f7a41626ccd752147119f0.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-toolboxes-buster"]
+| image:https://badge.buildkite.com/8b8635a2a63929d7d2087b5169d8d6e4e1e3d5417ee83d0754.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-buster]
 | image:https://badge.buildkite.com/62d58af01a599314b4ecf5751cedc062d386fbb636d0039b32.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-toolboxes-bionic"]
-| image:https://badge.buildkite.com/c9763aa25f307c5d404c9354780d4d0eca94d0c0c6343b5cc2.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-toolboxes-focal"]
+| image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-focal]
 
 | feelpp-mor
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+| image:https://badge.buildkite.com/8b8635a2a63929d7d2087b5169d8d6e4e1e3d5417ee83d0754.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-buster]
 |
-|
-| image:https://badge.buildkite.com/67c2155af0d97f29f825af63b112cfa79db0da6f5b12cbea69.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/pkg-feelpp-mor-focal"]
+| image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-focal]
 |===
 
 

@@ -1116,11 +1116,11 @@ macro( genLibMixedPoisson )
     # configure the lib
     set(MIXEDPOISSON_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/hdg/mixedpoisson/${MIXEDPOISSON_LIB_VARIANTS})
     set(MIXEDPOISSON_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedpoissoncreate_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedpoissonassembly_inst.cpp )
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedpoisson_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedpoissonassemblylinear_inst.cpp )
     set(MIXEDPOISSON_CODEGEN_SOURCES
-      ${MIXEDPOISSON_LIB_DIR}/mixedpoissoncreate_inst.cpp
-      ${MIXEDPOISSON_LIB_DIR}/mixedpoissonassembly_inst.cpp )
+      ${MIXEDPOISSON_LIB_DIR}/mixedpoisson_inst.cpp
+      ${MIXEDPOISSON_LIB_DIR}/mixedpoissonassemblylinear_inst.cpp )
     set(MIXEDPOISSON_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore )
     # generate the lib target
     genLibBase(

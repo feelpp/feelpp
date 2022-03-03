@@ -44,7 +44,7 @@ class ThermoElectric : public ModelNumerical,
                        public ModelPhysics<HeatType::convex_type::nDim>,
                        public std::enable_shared_from_this< ThermoElectric<HeatType,ElectricType> >
 {
-
+    typedef ModelPhysics<HeatType::convex_type::nDim> super_physics_type;
 public:
     typedef ModelNumerical super_type;
     typedef ThermoElectric<HeatType,ElectricType> self_type;
@@ -72,7 +72,7 @@ public:
     //___________________________________________________________________________________//
     // constructor
     ThermoElectric( std::string const& prefix,
-                    std::string const& keyword = "thermo-electric",
+                    std::string const& keyword = "thermoelectric",
                     worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                     std::string const& subPrefix = "",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );

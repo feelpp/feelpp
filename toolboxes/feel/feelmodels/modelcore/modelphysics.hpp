@@ -72,31 +72,36 @@ template <uint16_type Dim>
 class ModelPhysics;
 
 template <uint16_type Dim>
-class ModelPhysic
+class ModelPhysic : public JournalWatcher
 {
+    using super_type = JournalWatcher;
 public :
     using material_property_description_type = MaterialPropertyDescription;
     using material_property_shape_dim_type = typename material_property_description_type::shape_dim_type;
     inline static const uint16_type nDim = Dim;
+    using physic_id_type = std::pair<std::string,std::string>;
 
     //ModelPhysic() = default;
-    ModelPhysic( std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysic( std::string const& modeling, std::string const& type, std::string const& name, ModelBase const& mparent, ModelModel const& model = ModelModel{} );
     ModelPhysic( ModelPhysic const& ) = default;
     ModelPhysic( ModelPhysic && ) = default;
 
-    static std::shared_ptr<ModelPhysic<Dim>> New( ModelPhysics<Dim> const& mphysics, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    static std::shared_ptr<ModelPhysic<Dim>> New( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
 
+    void updateInformationObject( nl::json & p ) const override;
+    virtual tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
+
+    std::string const& modeling() const { return M_modeling; }
     std::string const& type() const { return M_type; }
     std::string const& name() const { return M_name; }
 
-    //! return the types of subphysics
-    std::set<std::string> const& subphysicsTypes() const { return M_subphysicsTypes; }
+    physic_id_type id() const { return std::make_pair(this->type(),this->name()); }
 
     //! add a type of subphysics
     void addSubphysicsType( std::string const& subType ) { M_subphysicsTypes.insert( subType ); }
 
     //! return the map of subphysics
-    std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> const& subphysics() const { return M_subphysics; }
+    std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> const& subphysics() const { return M_subphysics; }
 
     //! return a subphysic from the type of physic (the first one found, and return null shared ptr if not found)
     std::shared_ptr<ModelPhysic<nDim>> subphysicFromType( std::string const& type ) const
@@ -106,6 +111,21 @@ public :
                     return sp;
             return  std::shared_ptr<ModelPhysic<nDim>>{};
         }
+    //! return all subphysic from the type of physic
+    std::vector<std::shared_ptr<ModelPhysic<nDim>>> subphysicsFromType( std::string const& type ) const
+        {
+            std::vector<std::shared_ptr<ModelPhysic<nDim>>> res;
+            for ( auto const& [name,sp] : this->subphysics() )
+                if ( sp->type() == type )
+                    res.push_back( sp );
+            return res;
+        }
+
+    //! return material names used by this physic
+    std::set<std::string> const& materialNames() const { return M_materialNames; }
+
+    //! add material names
+    void addMaterialNames( std::set<std::string> const& matNames ) { return M_materialNames.insert( matNames.begin(), matNames.end() ); }
 
     //! return the material properties description (.i.e. coefficients of pdes)
     std::map<std::string,material_property_description_type> const& materialPropertyDescription() const { return M_materialPropertyDescription; }
@@ -130,20 +150,47 @@ public :
                 subPhysic->physicsShared( res );
         }
 
+
+    bool hasSubphysic( physic_id_type const& pId ) const { return M_subphysics.find( pId ) != M_subphysics.end(); }
+
     //! add a subphysic model
-    void addSubphysic( std::shared_ptr<ModelPhysic<nDim>> const& sp ) { M_subphysics[sp->name()] = sp; }
+    void addSubphysic( std::shared_ptr<ModelPhysic<nDim>> const& sp, bool force = false )
+        {
+            if ( force )
+                M_subphysics[std::make_pair(sp->type(),sp->name())] = sp;
+            else
+                M_subphysics.emplace( std::make_pair(sp->type(),sp->name()), sp );
+        }
 
     //! add a constant (double) parameter called \pname and return the symbol associated
     std::string addParameter( std::string const& pname, double val )
         {
-            M_parameterNameToExpr.emplace( pname, ModelExpression(val) );
+            //M_parameterNameToExpr.emplace( pname, ModelExpression(val) );
+            M_parameterNameToExpr[pname].reset();
+            M_parameterNameToExpr[pname].setExpr( val );
             return this->symbolFromParameter( pname );
         }
     //! add a parameter called \pname describe by an expression \expr and return the symbol associated
     std::string addParameter( std::string const& pname, std::string const& expr, WorldComm const& worldComm, std::string const& directoryLibExpr )
         {
+            M_parameterNameToExpr[pname].reset();
             M_parameterNameToExpr[pname].setExpr( expr, worldComm, directoryLibExpr );
             return this->symbolFromParameter( pname );
+        }
+    std::string addParameter( std::string const& pname, std::string const& expr )
+        {
+            return this->addParameter( pname,expr, *M_worldComm, M_directoryLibExpr );
+        }
+    //! add a parameter called \pname describe by a json entry \jarg and return the symbol associated
+    std::string addParameter( std::string const& pname, nl::json const& jarg, WorldComm const& worldComm, std::string const& directoryLibExpr )
+        {
+            M_parameterNameToExpr[pname].reset();
+            M_parameterNameToExpr[pname].setExpr( jarg, worldComm, directoryLibExpr );
+            return this->symbolFromParameter( pname );
+        }
+    std::string addParameter( std::string const& pname, nl::json const& jarg )
+        {
+            return this->addParameter( pname, jarg, *M_worldComm, M_directoryLibExpr );
         }
 
     //! set parameter values in expression
@@ -220,18 +267,189 @@ public :
     //! return the full symbol from parameter name
     std::string symbolFromParameter( std::string const& pname ) const { return "physics_" + prefixvm( prefixvm( M_type, M_name, "_" ), pname, "_" ); }
 
+    //! return true if parameter \pname of shape MxN is present, false otherwise
+    template <int M,int N>
+    bool hasParameterExpr( std::string const& pname ) const
+        {
+            auto itFindParam = M_parameterNameToExpr.find( pname );
+            if ( itFindParam == M_parameterNameToExpr.end() )
+                return false;
+            return itFindParam->second.template hasExpr<M,N>();
+        }
+
+    //! return the expression of the parameter \pname
+    template <int M,int N,typename SymbolsExprType = symbols_expression_empty_t>
+    auto parameterExpr( std::string const& pname, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            if ( !this->hasParameterExpr<M,N>( pname ) )
+                CHECK( false ) << "parameter " << pname << " not found or shape incompatible";
+            auto itFindParam = M_parameterNameToExpr.find( pname );
+            return expr( itFindParam->second.template expr<M,N>(), se );
+        }
+protected :
+    ModelExpression const& parameterModelExpr( std::string const& pname ) const
+        {
+            auto itFindParam = M_parameterNameToExpr.find( pname );
+            CHECK( itFindParam!=M_parameterNameToExpr.end() ) << "no parmeter registered : "<< pname;
+            return itFindParam->second;
+        }
+    void updateTabulateInformationsBasic( nl::json const& jsonInfo, tabulate_informations_sections_ptr_t & tabInfo, TabulateInformationProperties const& tabInfoProp ) const;
+    void updateTabulateInformationsSubphysics( nl::json const& jsonInfo, tabulate_informations_sections_ptr_t & tabInfo, TabulateInformationProperties const& tabInfoProp ) const;
+    void updateTabulateInformationsParameters( nl::json const& jsonInfo, tabulate_informations_sections_ptr_t & tabInfo, TabulateInformationProperties const& tabInfoProp ) const;
+
 private :
-    std::string M_type, M_name;
-    std::set<std::string> M_subphysicsTypes;
-    std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> M_subphysics;
+    template <uint16_type TheDim>
+    friend class ModelPhysics;
+
+private :
+    std::string M_modeling, M_type, M_name;
+    worldcomm_ptr_t M_worldComm;
+    std::string M_directoryLibExpr;
+    std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> M_subphysics;
+    std::set<std::string> M_materialNames;
     std::map<std::string,material_property_description_type> M_materialPropertyDescription; // name -> (symbol, shapes.. )
     std::map<std::string,ModelExpression> M_parameterNameToExpr;
 };
 
 template <uint16_type Dim>
+class ModelPhysicHeat : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicHeat<Dim>;
+public :
+
+    struct Convection
+    {
+        Convection( self_type * mparent ) : M_parent( mparent ), M_enabled( false ) {}
+        Convection( Convection const& ) = default;
+        Convection( Convection && ) = default;
+
+        void setup( nl::json const& jarg );
+
+        bool enabled() const { return M_enabled; }
+
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto expr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+            {
+                return M_parent->template parameterExpr<Dim,1>( "convection", se );
+            }
+
+        void updateInformationObject( nl::json & p ) const;
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+    private:
+        self_type * M_parent;
+        bool M_enabled;
+    };
+    struct HeatSource
+    {
+        HeatSource( self_type * mparent, std::string const& name ) : M_parent( mparent ), M_name( name ), M_type("heat-source") {}
+        HeatSource( HeatSource const& ) = default;
+        HeatSource( HeatSource && ) = default;
+
+        void setup( nl::json const& jarg );
+
+        std::string const& type() const { return M_type; }
+
+        bool givenAsHeatRate() const { return M_type == "heat-rate"; }
+
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto expr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+            {
+                return M_parent->template parameterExpr<1,1>( M_name + "_heatsource", se );
+            }
+
+        void updateInformationObject( nl::json & p ) const;
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+    private:
+        self_type * M_parent;
+        std::string M_name;
+        std::string M_type;
+    };
+
+    ModelPhysicHeat( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicHeat( ModelPhysicHeat const& ) = default;
+    ModelPhysicHeat( ModelPhysicHeat && ) = default;
+
+    std::vector<HeatSource> heatSources() const { return M_heatSources; }
+
+    bool hasConvectionEnabled() const { return M_convection && M_convection->enabled(); }
+    Convection const& convection() const { CHECK( M_convection ) << "no convection"; return *M_convection; }
+
+    void setupConvection( nl::json & jarg );
+
+    //! set parameter values in expression
+    void setParameterValues( std::map<std::string,double> const& mp ) override
+        {
+            super_type::setParameterValues( mp );
+        }
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
+    template <typename MaterialsPropertiesType, typename MeshType>
+    void updateForUse( std::shared_ptr<MaterialsPropertiesType> const& matProp, std::shared_ptr<MeshType> mesh )
+        {
+            bool requireMeasureMat = false;
+            for ( auto const& hs : M_heatSources )
+                if ( hs.givenAsHeatRate() )
+                {
+                    requireMeasureMat = true;
+                    break;
+                }
+            if ( requireMeasureMat )
+            {
+                double measureMat = 0;
+                for ( std::string const& matName : matProp->physicToMaterials( this->id() ) )
+                {
+                    auto const& rangeMat = matProp->rangeMeshElementsByMaterial( mesh,matName );
+                    measureMat += measure(_range=rangeMat);
+                }
+                this->addParameter( "measure_materials", measureMat );
+            }
+        }
+private:
+    std::vector<HeatSource> M_heatSources;
+    std::optional<Convection> M_convection;
+};
+
+
+template <uint16_type Dim>
+class ModelPhysicElectric : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicHeat<Dim>;
+public :
+    ModelPhysicElectric( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicElectric( ModelPhysicElectric const& ) = default;
+    ModelPhysicElectric( ModelPhysicElectric && ) = default;
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+private :
+};
+
+template <uint16_type Dim>
+class ModelPhysicThermoElectric : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicHeat<Dim>;
+public :
+    ModelPhysicThermoElectric( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicThermoElectric( ModelPhysicThermoElectric const& ) = default;
+    ModelPhysicThermoElectric( ModelPhysicThermoElectric && ) = default;
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+private :
+};
+
+
+
+template <uint16_type Dim>
 class ModelPhysicFluid : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicFluid<Dim>;
 public :
     struct DynamicViscosity
     {
@@ -263,7 +481,7 @@ public :
 
     struct Turbulence
     {
-        Turbulence() : M_isEnabled( false ) {}
+        Turbulence( self_type * mparent ) : M_parent( mparent ), M_isEnabled( false ) {}
         Turbulence( Turbulence const& ) = default;
         Turbulence( Turbulence && ) = default;
 
@@ -273,16 +491,102 @@ public :
         bool useBoussinesqApproximation() const;
         bool hasTurbulentKineticEnergy() const;
 
-        void setup( pt::ptree const& p );
+        void setup( nl::json const& jarg );
+
+        void setFrictionVelocityWallFunction( std::string const& matName, std::string const& expr )
+            {
+                this->setParameterOnMaterial( matName, "u_tau_wallfunction", expr );
+            }
+        std::string frictionVelocityWallFunctionSymbol( std::string const& matName ) const
+            {
+                return M_parent->symbolFromParameter( this->symbolBaseNameOnMaterial( matName, "u_tau_wallfunction" ) );
+            }
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto frictionVelocityWallFunctionExpr( std::string const& matName, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+            {
+                return M_parent->template parameterExpr<1,1>( this->symbolBaseNameOnMaterial( matName, "u_tau_wallfunction" ), se );
+            }
+
+        std::string vonKarmanConstantSymbol() const { return M_parent->symbolFromParameter( this->symbolBaseNameNoMaterialNoModelLink("kappa") ); }
+        // upper limit on the mixing length (used by k-epsilon)
+        std::string mixingLengthLimitSymbol() const { return M_parent->symbolFromParameter( this->symbolBaseNameNoMaterialNoModelLink("l_mix_lim") ); }
+
+        std::string kEpsilon_c_muSymbol() const { return M_parent->symbolFromParameter( this->symbolBaseNameNoMaterialLink( "c_mu", "k-epsilon" ) ); }
+        std::string kEpsilon_c_1epsilonSymbol() const { return M_parent->symbolFromParameter( this->symbolBaseNameNoMaterialLink( "c_1epsilon", "k-epsilon" ) ); }
+        std::string kEpsilon_c_2epsilonSymbol() const { return M_parent->symbolFromParameter( this->symbolBaseNameNoMaterialLink( "c_2epsilon", "k-epsilon" ) ); }
+        std::string kEpsilon_sigma_kSymbol() const { return M_parent->symbolFromParameter( this->symbolBaseNameNoMaterialLink( "sigma_k", "k-epsilon" ) ); }
+        std::string kEpsilon_sigma_epsilonSymbol() const { return M_parent->symbolFromParameter( this->symbolBaseNameNoMaterialLink( "sigma_epsilon", "k-epsilon" ) ); }
+
+
+        void setParameterOnMaterial( std::string const& matName, std::string const& propName, std::string const& expr )
+            {
+                M_parent->addParameter( this->symbolBaseNameOnMaterial( matName,propName ), expr );
+            }
+        void setParameterOnMaterial( std::string const& matName, std::string const& propName, std::string const& tmodel, std::string const& expr )
+            {
+                M_parent->addParameter( this->symbolBaseNameOnMaterial( matName,propName,tmodel ), expr );
+            }
+        void setParameterNoMaterialLink( std::string const& propName, std::string const& expr, std::string const& tmodel )
+            {
+                M_parent->addParameter( this->symbolBaseNameNoMaterialLink( propName, tmodel ), expr );
+            }
+        void setParameterNoMaterialLink( std::string const& propName, std::string const& expr )
+            {
+                M_parent->addParameter( this->symbolBaseNameNoMaterialLink( propName ), expr );
+            }
+        void setParameterNoMaterialNoModelLink( std::string const& propName, std::string const& expr )
+            {
+                M_parent->addParameter( this->symbolBaseNameNoMaterialNoModelLink( propName ), expr );
+            }
 
     private :
+        std::string prefixSymbolTurbulenceModel() const { return this->prefixSymbolTurbulenceModel( M_model ); }
+
+        std::string prefixSymbolTurbulenceModel( std::string const& tmodel ) const
+            {
+                std::string prefix = "turbulence";
+                if ( tmodel.empty() )
+                    return prefix;
+                else if ( tmodel == "k-epsilon" )
+                    return prefixvm( prefix, "k_epsilon", "_" );
+                return prefix;
+            }
+        std::string symbolBaseNameOnMaterial( std::string const& matName, std::string const& propName, std::string const& tmodel ) const
+            {
+                std::string prefix = this->prefixSymbolTurbulenceModel( tmodel );
+                if ( !matName.empty() )
+                    prefix += "_" + matName;
+                return prefixvm( prefix,propName,"_");
+            }
+        std::string symbolBaseNameOnMaterial( std::string const& matName, std::string const& propName ) const
+            {
+                return this->symbolBaseNameOnMaterial( matName, propName, M_model );
+            }
+        std::string symbolBaseNameNoMaterialLink( std::string const& propName ) const
+            {
+                return this->symbolBaseNameNoMaterialLink( propName, M_model );
+            }
+        std::string symbolBaseNameNoMaterialLink( std::string const& propName, std::string const& tmodel ) const
+            {
+                return this->symbolBaseNameOnMaterial( "", propName, tmodel );
+            }
+        std::string symbolBaseNameNoMaterialNoModelLink( std::string const& propName ) const
+            {
+                return this->symbolBaseNameOnMaterial( "", propName, "" );
+            }
+
+    private :
+        self_type * M_parent;
         bool M_isEnabled;
         std::string M_model;
     };
 
-    ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicFluid( ModelPhysicFluid const& ) = default;
     ModelPhysicFluid( ModelPhysicFluid && ) = default;
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
     std::string const& equation() const { return M_equation; }
     void setEquation( std::string const& eq );
@@ -292,6 +596,7 @@ public :
 
     DynamicViscosity const& dynamicViscosity() const { return M_dynamicViscosity; }
     Turbulence const& turbulence() const { return M_turbulence; }
+    Turbulence & turbulence() { return M_turbulence; }
 
     //! set parameter values in expression
     void setParameterValues( std::map<std::string,double> const& mp ) override
@@ -315,9 +620,12 @@ class ModelPhysicSolid : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
 public :
-    ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicSolid( ModelPhysicSolid const& ) = default;
     ModelPhysicSolid( ModelPhysicSolid && ) = default;
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
     std::string const& equation() const { return M_equation; }
     void setEquation( std::string const& eq );
@@ -340,54 +648,95 @@ public :
     using material_property_description_type = MaterialPropertyDescription;
     using material_property_shape_dim_type = typename material_property_description_type::shape_dim_type;
     inline static const uint16_type nDim = Dim;
+    using physic_id_type = std::pair<std::string,std::string>; // (type, name)
 
     using model_physic_type = ModelPhysic<nDim>;
     using model_physic_ptrtype = std::shared_ptr<model_physic_type>;
-    using subphysic_description_type = std::map<std::string,std::tuple<std::string,std::shared_ptr<ModelPhysics<Dim>>>>;
+
+protected :
+    struct PhysicsTree {
+        using physics_ptrtype = std::shared_ptr<ModelPhysics<nDim>>;
+        PhysicsTree( std::string const& type, physics_ptrtype p, bool isRequired = true ) : M_root( std::make_tuple(type,p,isRequired) ) {}
+        PhysicsTree( physics_ptrtype p, bool isRequired = true ) : PhysicsTree( p->keyword(), p, isRequired ) {}
+        void addSubtree( PhysicsTree const& st ) { M_subtrees.push_back( st ); }
+        void addLeaf( std::string const& type, physics_ptrtype p, bool isRequired = true ) { M_subtrees.push_back( PhysicsTree{type,p,isRequired} ); }
+        void addLeaf( physics_ptrtype p, bool isRequired = true ) { this->addLeaf( p->keyword(), p, isRequired ); }
+
+        std::tuple<std::string,physics_ptrtype,bool> const& root() const { return M_root; }
+        std::vector<PhysicsTree> subtrees() const { return M_subtrees; }
+
+        std::set<std::tuple<std::string,physics_ptrtype,bool>> allPhysics() const
+            {
+                std::set<std::tuple<std::string,physics_ptrtype,bool>> res;
+                res.insert( this->root() );
+                for ( auto const& st : M_subtrees )
+                {
+                    auto ast = st.allPhysics();
+                    res.insert( ast.begin(), ast.end() );
+                }
+                return res;
+            }
+    private :
+        std::tuple<std::string,physics_ptrtype,bool> M_root;
+        std::vector<PhysicsTree> M_subtrees;
+    };
+
+public:
 
     //ModelPhysics() = default;
-    explicit ModelPhysics( std::string const& type ) : ModelBase(""), M_physicType( type ) {}
-    ModelPhysics( std::string const& type, ModelBase const& mbase ) : ModelBase(mbase), M_physicType( type ) {}
-    ModelPhysics( std::string const& type, ModelBase && mbase ) : ModelBase(std::move(mbase)), M_physicType( type ) {}
+    explicit ModelPhysics( std::string const& modeling ) : ModelBase(""), M_physicModeling( modeling ) {}
+    ModelPhysics( std::string const& modeling, ModelBase const& mbase ) : ModelBase(mbase), M_physicModeling( modeling ) {}
+    ModelPhysics( std::string const& modeling, ModelBase && mbase ) : ModelBase(std::move(mbase)), M_physicModeling( modeling ) {}
     ModelPhysics( ModelPhysics const& ) = default;
     ModelPhysics( ModelPhysics && ) = default;
     virtual ~ModelPhysics() = default;
 
-    //void updateInformationObject( pt::ptree & p ) const override {}
+    //void updateInformationObject( nl::json & p ) const override {}
+    void updateInformationObjectFromCurrentType( nl::json & p ) const;
+
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
+
+    //! return true if physic id is already registered
+    bool hasPhysic( physic_id_type const& pId ) const { return M_physics.find( pId ) != M_physics.end(); }
+
+    //! return physic registerd from physic id
+    std::shared_ptr<ModelPhysic<Dim>> physic( physic_id_type const& pId ) const { CHECK( this->hasPhysic(pId) ) << "no physic id"; return M_physics.find( pId )->second; }
 
     //! return all physics registerd
-    std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> const& physics() const { return M_physics; }
+    std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> const& physics() const { return M_physics; }
 
     //! return all physics registerd related to a type of physic
-    std::map<std::string,std::shared_ptr<ModelPhysic<Dim>>> physics( std::string const& type ) const;
+    std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> physics( std::string const& type ) const;
 
     //! return all physics registerd related to the current type
-    std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> physicsFromCurrentType() const { return this->physics( this->physicType() ); }
+    std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> physicsFromCurrentType() const { return this->physics( this->physicType() ); }
+
+    //! return the physic modeling
+    std::string const& physicModeling() const { return M_physicModeling; }
 
     //! return the type of physic at top level
     std::string const& physicType() const { return M_physicType; }
 
-    //! return the name of the physic used by default
-    std::string const& physicDefault() const { return M_physicDefault; }
-
     //! return name of all physics registered
-    std::set<std::string> physicsAvailable() const;
+    std::set<physic_id_type> physicsAvailable() const;
 
     //! return name of all physics registered related to a type of physic
-    std::set<std::string> physicsAvailable( std::string const& type ) const;
+    std::set<physic_id_type> physicsAvailable( std::string const& type ) const;
 
     //! return name of all physics registered related to the current type
-    std::set<std::string> physicsAvailableFromCurrentType() const { return this->physicsAvailable( this->physicType() ); }
-
+    std::set<physic_id_type> physicsAvailableFromCurrentType() const { return this->physicsAvailable( this->physicType() ); }
+#if 0
     //! return the name of all physic shared from the parent physic \pname
     std::set<std::string> physicsShared( std::string const& pname ) const;
+#endif
 
+    void initPhysics( std::string const& type, ModelModels const& models, bool isRequired = true );
+    void initPhysics( PhysicsTree const& physicTree, ModelModels const& models );
 
-    void initPhysics( std::string const& name, ModelModels const& models, subphysic_description_type const& subPhyicsDesc = subphysic_description_type{} );
+    void setPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics );
 
-    void setPhysics( std::map<std::string,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics, std::string const& physicDefault = "" );
-
-    auto symbolsExprPhysics( std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> const& mphysics ) const
+    auto symbolsExprPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> const& mphysics ) const
         {
             using se_type = std::decay_t<decltype(mphysics.begin()->second->symbolsExpr())>;
             se_type res;
@@ -399,11 +748,15 @@ public :
         {
             return symbolsExprPhysics( this->physicsFromCurrentType() );
         }
+
+private :
+    template <uint16_type TheDim>
+    friend class ModelPhysic;
+
 protected :
 
-    std::string M_physicType;
-    std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> M_physics;
-    std::string M_physicDefault;
+    std::string M_physicModeling, M_physicType;
+    std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> M_physics;
 };
 
 } // namespace FeelModels

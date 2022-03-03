@@ -169,13 +169,13 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), "electric", this->worldCommPtr(),
                                                    this->subPrefix(), this->repository() ) );
 
-    if ( this->physics().empty() )
-    {
-        typename ModelPhysics<mesh_type::nDim>::subphysic_description_type subPhyicsDesc;
-        subPhyicsDesc[M_heatModel->physicType()] = std::make_tuple( M_heatModel->keyword(), M_heatModel );
-        subPhyicsDesc[M_electricModel->physicType()] = std::make_tuple( M_electricModel->keyword(), M_electricModel );
-        this->initPhysics( this->keyword(), this->modelProperties().models(), subPhyicsDesc );
-    }
+    // physics
+    using physic_tree_type = typename super_physics_type::PhysicsTree;
+    physic_tree_type physicsTree( this->shared_from_this() );
+    physicsTree.addLeaf( M_heatModel );
+    physicsTree.addLeaf( M_electricModel );
+    this->initPhysics( physicsTree, this->modelProperties().models() );
+
 
     // physical properties
     if ( !M_materialsProperties )
@@ -192,26 +192,24 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->materialsProperties()->addMesh( this->mesh() );
 
     // init heat toolbox
-    M_heatModel->setPhysics( this->physics( M_heatModel->physicType() ), M_heatModel->keyword() );
     M_heatModel->setManageParameterValues( false );
     if ( !M_heatModel->modelPropertiesPtr() )
     {
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
         M_heatModel->setManageParameterValuesOfModelProperties( false );
     }
-    M_heatModel->setMesh( this->mesh() );
+    M_heatModel->setModelMeshAsShared( this->modelMesh() );
     M_heatModel->setMaterialsProperties( M_materialsProperties );
     M_heatModel->init( false );
 
     // init electric toolbox
-    M_electricModel->setPhysics( this->physics( M_electricModel->physicType() ), M_electricModel->keyword() );
     M_electricModel->setManageParameterValues( false );
     if ( !M_electricModel->modelPropertiesPtr() )
     {
         M_electricModel->setModelProperties( this->modelPropertiesPtr() );
         M_electricModel->setManageParameterValuesOfModelProperties( false );
     }
-    M_electricModel->setMesh( this->mesh() );
+    M_electricModel->setModelMeshAsShared( this->modelMesh() );
     M_electricModel->setMaterialsProperties( M_materialsProperties );
     M_electricModel->init( false );
 
@@ -355,6 +353,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
 
     super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
+    super_physics_type::updateInformationObjectFromCurrentType( p["Physics"] );
+
     // p.put( "toolbox-heat", M_heatModel->journalSectionName() );
     // p.put( "toolbox-electric", M_electricModel->journalSectionName() );
 
@@ -397,6 +397,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
     auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
     if ( jsonInfo.contains("Environment") )
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Physics") )
+        tabInfo->add( "Physics", super_physics_type::tabulateInformations( jsonInfo.at("Physics"), tabInfoProp ) );
 
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
         tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );

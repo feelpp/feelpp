@@ -833,7 +833,7 @@ Application::changeRepository( boost::format fmt )
         return *this;
     }
 
-    Environment::changeRepository( fmt, M_about.appName() );
+    Environment::changeRepository( _directory=fmt,_filename=M_about.appName() );
     this->setLogs();
     return *this;
 }

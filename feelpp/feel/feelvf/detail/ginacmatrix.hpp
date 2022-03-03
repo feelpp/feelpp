@@ -24,7 +24,8 @@
 #ifndef FEELPP_DETAIL_GINACMATRIX_HPP
 #define FEELPP_DETAIL_GINACMATRIX_HPP 1
 
-
+#include <fmt/core.h>
+#include <fmt/ranges.h>
 #include <any>
 
 namespace Feel
@@ -659,7 +660,7 @@ public:
     //! return true if the expression can be evaluated (TODO : iterate over symbols expression)
     bool isEvaluable() const
     {
-        return M_isNumericExpression || ( M_indexSymbolXYZ.empty() && M_indexSymbolN.empty() && (M_syms.size() == M_symbolNameToValue.size()) );
+        return M_isNumericExpression || ( M_indexSymbolXYZ.empty() && M_indexSymbolN.empty() & M_indexSymbolGeom.empty()&& (M_syms.size() == M_symbolNameToValue.size()) );
     }
     bool isConstant() const { return this->isEvaluable(); }
 
@@ -860,9 +861,6 @@ public:
                 this->initSubTensorBIS2( exprExpanded.expandSymbolsExpression(), ttse, geom );
             }
 
-        template<typename IM>
-        void init( IM const& im ) {}
-
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             {
                 this->updateImpl( geom, fev, feu );
@@ -874,10 +872,6 @@ public:
         void update( Geo_t const& geom )
             {
                 this->updateImpl( geom );
-            }
-        void update( Geo_t const& geom, uint16_type face )
-            {
-                this->updateImpl( geom, face );
             }
 #if 0
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
@@ -897,6 +891,27 @@ public:
 
                 int no = M*N;
                 int ni = M_nsyms;//gmc_type::nDim;
+                for ( auto const& comp : exprExpanded.indexSymbolGeom() )
+                {
+                    switch ( comp.first )
+                    {
+                        case 6:
+                            M_x[comp.second] = M_gmc->h();
+                            break;
+                        case 7:
+                            M_x[comp.second] = M_gmc->meas();
+                            break;
+                        case 8:
+                            M_x[comp.second] = M_gmc->measPEN();
+                            break;
+                        case 9:
+                            M_x[comp.second] = M_gmc->nPEN();
+                            break;
+                        case 10:
+                            M_x[comp.second] = M_gmc->emarker();
+                            break;
+                    }
+                }
                 for(int q = 0; q < M_gmc->nPoints();++q )
                 {
                     for ( auto const& comp : exprExpanded.indexSymbolXYZ() )
@@ -951,6 +966,28 @@ public:
 
                 int no = M*N;
                 int ni = M_nsyms;//gmc_type::nDim;
+                for ( auto const& comp : M_expr.indexSymbolGeom() )
+                {
+                    switch ( comp.first )
+                    {
+                        case 6:
+                            M_x[comp.second] = M_gmc->h();
+                            
+                            break;
+                        case 7:
+                            M_x[comp.second] = M_gmc->meas();
+                            break;
+                        case 8:
+                            M_x[comp.second] = M_gmc->measurePointElementNeighbors();
+                            break;
+                        case 9:
+                            M_x[comp.second] = M_gmc->element().numberOfPointElementNeighbors();
+                            break;
+                        case 10:
+                            M_x[comp.second] = M_gmc->marker().value();
+                            break;
+                    }
+                }
                 for(int q = 0; q < M_gmc->nPoints();++q )
                 {
                     for ( auto const& comp : M_expr/*exprExpanded*/.indexSymbolXYZ() )

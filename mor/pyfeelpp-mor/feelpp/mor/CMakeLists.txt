@@ -23,12 +23,23 @@
 #
 add_custom_target(pyfeelppmor)
 
-feelpp_add_pymodule(mor  SRCS crb.cpp DESTINATION feelpp/mor )
-feelpp_add_pymodule(toolboxmor SRCS toolboxmor.cpp DESTINATION feelpp/mor  )
+if (TARGET pyfeelpp)
+    add_dependencies(pyfeelppmor pyfeelpp)
+endif()
+
+if ( TARGET Feelpp::feelpp_mor  )
+    message(STATUS "[pyfeelpp-mor] add pymodule mor")
+    feelpp_add_pymodule(mor  SRCS crb.cpp DESTINATION feelpp/mor  LINK_LIBRARIES Feelpp::feelpp_mor)
+    add_dependencies(pyfeelppmor _mor)
+
+    message(STATUS "[pyfeelpp-mor] add pymodule toolboxmor")
+    feelpp_add_pymodule(toolboxmor SRCS toolboxmor.cpp DESTINATION feelpp/mor LINK_LIBRARIES Feelpp::feelpp_mor )
+    add_dependencies(pyfeelppmor  _toolboxmor)
+endif() 
+if (TARGET pyfeelppoolboxes)
+    add_dependencies(pyfeelppmor pyfeelpptoolboxes)
+endif()
 
 set(PYFILES __init__.py online.py test_heat3d.py test_parameterspace.py )
 install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor)
 
-if ( TARGET pyfeelpptoolboxes  AND TARGET pyfeelpp )
-    add_dependencies(pyfeelppmor _mor _toolboxmor pyfeelpptoolboxes pyfeelpp)
-endif()

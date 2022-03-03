@@ -52,8 +52,11 @@ ModelAlgebraicFactory::ModelAlgebraicFactory( std::string const& prefix, po::var
     M_pseudoTransientContinuationExpurThresholdHigh( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.threshold-high",_vm=vm) ),
     M_pseudoTransientContinuationExpurThresholdLow( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.threshold-low",_vm=vm) ),
     M_pseudoTransientContinuationExpurBetaHigh( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.beta-high",_vm=vm) ),
-    M_pseudoTransientContinuationExpurBetaLow( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.beta-low",_vm=vm) )
-{}
+    M_pseudoTransientContinuationExpurBetaLow( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.beta-low",_vm=vm) ),
+    M_solverPicardRelaxationParameter( doption(_prefix=prefix,_name="solver.picard.relaxation-parameter",_vm=vm) )
+{
+    CHECK( M_solverPicardRelaxationParameter>0 && M_solverPicardRelaxationParameter <=1 ) << "invalid solver.picard.relaxation-parameter : " << M_solverPicardRelaxationParameter;
+}
 
 ModelAlgebraicFactory::ModelAlgebraicFactory( model_ptrtype const& model, backend_ptrtype const& backend )
     :
@@ -656,13 +659,13 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             M_functionLinearDofElimination( dataLinearPtAP );
             for ( auto const& func : M_addFunctionLinearDofElimination )
                 func.second( dataLinearPtAP );
-            // others dof eliminations (not need an expression)
+            // others dof eliminations (not need an expression,just for fix maybe the well posed system)
             if ( M_solverPtAP_dofEliminationIds )
             {
                 // we assume that all shared dofs are present, not need to appy a sync
                 std::vector<int> _dofs;_dofs.assign( M_solverPtAP_dofEliminationIds->begin(), M_solverPtAP_dofEliminationIds->end());
                 auto tmp = M_solverPtAP_backend->newVector( U->mapPtr() );
-                M_solverPtAP_matPtAP->zeroRows( _dofs, *tmp, *tmp, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
+                M_solverPtAP_matPtAP->zeroRows( _dofs, *tmp, *M_solverPtAP_PtF, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
             }
 
             // post-assembly
@@ -1449,6 +1452,12 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
                                       (boost::format("picard iteration[%1%] finish sub solve in %2% s")%cptIteration %tSolveElapsed ).str(),
                                       this->model()->worldComm(),this->model()->verboseSolverTimerAllProc());
 
+            double relaxParam = M_solverPicardRelaxationParameter;
+            if ( relaxParam < 1 )
+            {
+                U->scale( relaxParam );
+                U->add( 1.0 - relaxParam, Uold );
+            }
 
             if ( useConvergenceAlgebraic )
             {
@@ -1461,6 +1470,7 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
                     break;
                 }
             }
+
             *Uold = *U;
         } // for ( ; cptIteration < fixPointMaxIt ; ++cptIteration )
 

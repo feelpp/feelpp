@@ -23,7 +23,8 @@
 //!
 #include <feel/feelcore/pybind11_json.hpp>
 #include <pybind11/pybind11.h>
-
+#include <pybind11/stl.h>
+#include <vector>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
@@ -33,6 +34,14 @@
 namespace py = pybind11;
 using namespace Feel;
 
+#if 0
+class PyModelBase : public Feel::FeelModels::ModelBase
+{
+public:
+    using Feel::FeelModels::ModelBase;
+
+};
+#endif
 
 PYBIND11_MODULE(_modelcore, m )
 {
@@ -57,7 +66,7 @@ PYBIND11_MODULE(_modelcore, m )
     py::class_<ModelBase, std::shared_ptr<ModelBase>>(m,"ModelBase")
         .def(py::init<std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
-             py::arg("worldComm")=Environment::worldCommPtr(),
+             py::arg("worldComm"),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize ModelBase base class"
@@ -82,54 +91,62 @@ PYBIND11_MODULE(_modelcore, m )
         .def("printAndSaveInfo", &ModelBase::printAndSaveInfo, "print and save model info")
         ;
 
-   py::class_<ModelAlgebraicFactory, std::shared_ptr<ModelAlgebraicFactory>>( m, "ModelAlgebraicFactory" )
+    py::class_<ModelAlgebraicFactory, std::shared_ptr<ModelAlgebraicFactory>>( m, "ModelAlgebraicFactory" )
         //.def( py::init<std::string, backend_ptr_t<double>>(),"Initialize ModelAlgebraicFactory" )
         .def( "matrix", &ModelAlgebraicFactory::matrix, "get the matrix" )
         .def( "rhs", &ModelAlgebraicFactory::rhs, "get the right hand side" )
         .def( "backend", &ModelAlgebraicFactory::backend, "get the backend" );
 
     py::class_<ModelAlgebraic, std::shared_ptr<ModelAlgebraic>, ModelBase>(m,"ModelAlgebraic")
-        .def(py::init<std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
-             py::arg("prefix"),
-             py::arg("worldComm")=Environment::worldCommPtr(),
-             py::arg("subprefix")=std::string(""),
-             py::arg("modelRep") = ModelBaseRepository(),
-             "Initialize ModelAlgebraic"
-             )
-        // Algrebraic factory
-        .def( "algebraicFactory", static_cast<typename ModelAlgebraic::model_algebraic_factory_ptrtype (ModelAlgebraic::*)( std::string const& ) const>(&ModelAlgebraic::algebraicFactory), py::arg("name")=std::string{}, "get the algebraic factory" )
-        ;
+       .def( py::init<std::string const&, worldcomm_ptr_t const&, std::string const&, ModelBaseRepository const&>(),
+             py::arg( "prefix" ),
+             py::arg( "worldComm" ),
+             py::arg( "subprefix" ) = std::string( "" ),
+             py::arg( "modelRep" ) = ModelBaseRepository(),
+             "Initialize ModelAlgebraic" )
+       // Algrebraic factory
+       .def( "algebraicFactory", static_cast<typename ModelAlgebraic::model_algebraic_factory_ptrtype ( ModelAlgebraic::* )( std::string const& ) const>( &ModelAlgebraic::algebraicFactory ), py::arg( "name" ) = std::string{}, "get the algebraic factory" );
+
+   py::class_<ModelMeasuresStorage>( m, "ModelMeasuresStorage" )
+       .def( "hasValue", static_cast<bool ( ModelMeasuresStorage::* )( std::string const& ) const>( &ModelMeasuresStorage::hasValue ), py::arg( "key" ), "check if a value 'key' exists in the default storage" )
+       .def( "hasValue", static_cast<bool ( ModelMeasuresStorage::* )( std::string const&, std::string const& ) const>( &ModelMeasuresStorage::hasValue ), py::arg( "name" ), py::arg( "key" ), "check if a value 'key' exists in the storage 'name'" )
+       .def( "value", static_cast<double ( ModelMeasuresStorage::* )( std::string const& ) const>( &ModelMeasuresStorage::value ), py::arg( "key" ), "get the value 'key' from the default storage" )
+       .def( "value", static_cast<double ( ModelMeasuresStorage::* )( std::string const&, std::string const& ) const>( &ModelMeasuresStorage::value ), py::arg( "name" ), py::arg( "key" ), "get the value 'key' exists from the storage 'name'" )
+       .def( "values", static_cast<std::map<std::string, double> const& (ModelMeasuresStorage::*)() const>( &ModelMeasuresStorage::values ), "get the values in the default storage" )
+       .def( "values", static_cast<std::map<std::string, double> const& (ModelMeasuresStorage::*)( std::string const& ) const>( &ModelMeasuresStorage::values ), py::arg( "name" ), "get the values in the storage 'name'" );
 
     py::class_<ModelNumerical, std::shared_ptr<ModelNumerical>, ModelAlgebraic>( m, "ModelNumerical" )
-        .def( py::init<std::string const&, worldcomm_ptr_t const&, std::string const&, ModelBaseRepository const&>(),
-              py::arg( "prefix" ),
-              py::arg( "worldComm" ) = Environment::worldCommPtr(),
-              py::arg( "subprefix" ) = std::string( "" ),
-              py::arg( "modelRep" ) = ModelBaseRepository(),
-              "Initialize ModelNumerical" )
-        .def( "isStationary", &ModelNumerical::isStationary, "return if steady state model, false otherwise" )
-        .def( "setStationary", &ModelNumerical::setStationary, "set model steady state to true or false", py::arg( "state" ) )
-        .def( "doRestart", &ModelNumerical::doRestart, "return if model is restarted, false otherwise" )
-        .def( "setRestart", &ModelNumerical::setRestart, "set model restart status", py::arg( "state" ) )
+       .def( py::init<std::string const&, worldcomm_ptr_t const&, std::string const&, ModelBaseRepository const&>(),
+             py::arg( "prefix" ),
+             py::arg( "worldComm" ),
+             py::arg( "subprefix" ) = std::string( "" ),
+             py::arg( "modelRep" ) = ModelBaseRepository(),
+             "Initialize ModelNumerical" )
+       .def( "isStationary", &ModelNumerical::isStationary, "return if steady state model, false otherwise" )
+       .def( "setStationary", &ModelNumerical::setStationary, "set model steady state to true or false", py::arg( "state" ) )
+       .def( "doRestart", &ModelNumerical::doRestart, "return if model is restarted, false otherwise" )
+       .def( "setRestart", &ModelNumerical::setRestart, "set model restart status", py::arg( "state" ) )
 
-        .def( "hasModelProperties", &ModelNumerical::hasModelProperties, "returns true if model properties are defined, false otherwise" )
-        .def( "modelProperties", &ModelNumerical::modelPropertiesPtr, "return model properties", py::return_value_policy::reference )
-        .def( "setModelProperties", static_cast<void ( ModelNumerical::* )( std::string const& )>( &ModelNumerical::setModelProperties ), "set model properties from filename", py::arg( "model" ) )
-        .def( "setModelProperties", static_cast<void ( ModelNumerical::* )( nl::json const& )>( &ModelNumerical::setModelProperties ), "set model properties from json", py::arg( "model" ) )
-        .def( "addParameterInModelProperties", &ModelNumerical::addParameterInModelProperties, "add new parameter in model properties" )
+       .def( "hasModelProperties", &ModelNumerical::hasModelProperties, "returns true if model properties are defined, false otherwise" )
+       .def( "modelProperties", &ModelNumerical::modelPropertiesPtr, "return model properties", py::return_value_policy::reference )
+       .def( "setModelProperties", static_cast<void ( ModelNumerical::* )( std::string const& )>( &ModelNumerical::setModelProperties ), "set model properties from filename", py::arg( "model" ) )
+       .def( "setModelProperties", static_cast<void ( ModelNumerical::* )( nl::json const& )>( &ModelNumerical::setModelProperties ), "set model properties from json", py::arg( "model" ) )
+       .def( "addParameterInModelProperties", &ModelNumerical::addParameterInModelProperties, "add new parameter in model properties" )
 
-        .def( "time", &ModelNumerical::time, "get the current time" )
-        .def( "currentTime", &ModelNumerical::currentTime, "get the current time" )
-        .def( "updateTime", &ModelNumerical::updateTime, "update the current time", py::arg( "time" ) )
-        .def( "timeInitial", &ModelNumerical::timeInitial, "get the initial time" )
-        .def( "setTimeInitial", &ModelNumerical::setTimeInitial, "set the initial time", py::arg( "time" ) )
-        .def( "timeFinal", &ModelNumerical::timeFinal, "get the final time" )
-        .def( "setTimeFinal", &ModelNumerical::setTimeFinal, "set the final time", py::arg( "time" ) )
-        .def( "timeStep", &ModelNumerical::timeStep, "get the time step" )
-        .def( "setTimeStep", &ModelNumerical::setTimeStep, "set the time step", py::arg( "step" ) )
+       .def( "time", &ModelNumerical::time, "get the current time" )
+       .def( "currentTime", &ModelNumerical::currentTime, "get the current time" )
+       .def( "updateTime", &ModelNumerical::updateTime, "update the current time", py::arg( "time" ) )
+       .def( "timeInitial", &ModelNumerical::timeInitial, "get the initial time" )
+       .def( "setTimeInitial", &ModelNumerical::setTimeInitial, "set the initial time", py::arg( "time" ) )
+       .def( "timeFinal", &ModelNumerical::timeFinal, "get the final time" )
+       .def( "setTimeFinal", &ModelNumerical::setTimeFinal, "set the final time", py::arg( "time" ) )
+       .def( "timeStep", &ModelNumerical::timeStep, "get the time step" )
+       .def( "setTimeStep", &ModelNumerical::setTimeStep, "set the time step", py::arg( "step" ) )
 
-        .def( "checkResults", static_cast<bool ( ModelNumerical::* )() const>( &ModelNumerical::checkResults ), "check results in toolbox case if Checkers section present" )
+       .def( "postProcessMeasures", static_cast<ModelMeasuresStorage& (ModelNumerical::*)()>( &ModelNumerical::postProcessMeasures ), "get measures from toolbox" )
 
-        ;
+       .def( "checkResults", static_cast<bool ( ModelNumerical::* )() const>( &ModelNumerical::checkResults ), "check results in toolbox case if Checkers section present" )
+
+       ;
 }
 

@@ -24,9 +24,9 @@
  */
 #include <signal.h>
 
-#include <feel/feelcrb/crbwrapper.hpp>
+#include <feel/feelmor/crbwrapper.hpp>
 #include <@CRB_MODEL_HDRS@>
-#include <feel/feelcrb/opusapp.hpp>
+#include <feel/feelmor/opusapp.hpp>
 
 #include <WrapperCommon.h>
 #include <WrapperMacros.h>

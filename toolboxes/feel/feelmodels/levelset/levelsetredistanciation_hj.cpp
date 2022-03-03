@@ -1,4 +1,4 @@
-//! -*- mode: c++; coding: utf-9; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 //!
 //! This file is part of the Feel++ library
 //!
@@ -99,8 +99,8 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) co
     // Init convergence test utilities
     double err_dist;
     double err_disto = integrate(
-            elements(this->mesh()),
-            vf::abs( sqrt(gradv(phi)*trans(gradv(phi))) - 1.0 )
+        _range=elements(this->mesh()),
+        _expr=vf::abs( sqrt(gradv(phi)*trans(gradv(phi))) - 1.0 )
             ).evaluate()(0,0);
 
     double rateChangePhiL2;
@@ -190,7 +190,7 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) co
 
             //auto modGradPhiReinit = vf::sqrt(gradv(phi_redist)*trans(gradv(phi_redist)));
             auto modGradPhiReinit = vf::sqrt( trans(idv(gradPhiReinit))*idv(gradPhiReinit) );
-            auto Delta = Feel::FeelModels::levelsetDelta( *phi_redist, M_thicknessHeaviside );
+            auto Delta = Feel::FeelModels::levelsetDelta( _element=*phi_redist, _thickness=M_thicknessHeaviside );
             auto spaceP0 = this->functionSpaceP0();
             auto LambdaNum = integrate(
                     _range=elements(mesh),
@@ -219,15 +219,15 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) co
 
         // Test convergence
         err_dist = integrate(
-                elements(this->mesh()),
-                vf::abs( sqrt(gradv(phi_redist)*trans(gradv(phi_redist))) - 1.0 )
+                _range=elements(this->mesh()),
+                _expr=vf::abs( sqrt(gradv(phi_redist)*trans(gradv(phi_redist))) - 1.0 )
                 ).evaluate()(0,0);
         double delta_err = std::abs(err_disto - err_dist) / err_disto;
         LOG(INFO)<<"delta err = "<<delta_err<<"\n";
 
         rateChangePhiL2 = std::sqrt( integrate(
-                elements(mesh),
-                (idv(phi_redist) - idv(phi_redisto))*(idv(phi_redist) - idv(phi_redisto))
+                                         _range=elements(mesh),
+                                         _expr=(idv(phi_redist) - idv(phi_redisto))*(idv(phi_redist) - idv(phi_redisto))
                 ).evaluate()(0,0) );
         relativeRateChangePhiL2 = std::abs( rateChangePhiL2 - rateChangePhiL2o) / rateChangePhiL2o;
 

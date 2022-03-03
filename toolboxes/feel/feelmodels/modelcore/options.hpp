@@ -49,7 +49,7 @@ Feel::po::options_description interfaceforces_options(std::string const& prefix)
 Feel::po::options_description multifluid_options(std::string const& prefix, unsigned int nls = 3);
 Feel::po::options_description coefficientformpde_options(std::string const& prefix);
 Feel::po::options_description coefficientformpdes_options(std::string const& prefix);
-
+Feel::po::options_description mixedpoisson_options(std::string const& prefix);
 
 Feel::po::options_description toolboxes_options(std::string const& type, std::string const& prefix);
 inline

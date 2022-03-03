@@ -4,28 +4,46 @@
     "ShortName":"cfd3",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "fluid":{
+            "materials":"Fluid",
+            "equations":"Navier-Stokes"
+        },
+        "body":{
+            "name":"bodyTOTO",
+            "materials":["MySolid","MySolid2"]
+        }
     },
     "Parameters":
     {
         "ubar":"2",
         "chi":"t<2:t"
     },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cfd.geo",
+                "hsize":0.03
+            }
+        }
+    },
     "Materials":
     {
         "Fluid":{
-            "physics":"fluid",
+            //"physics":"fluid",
             "rho":"1.0e3",
             "mu":"1.0"
         },
         "MySolid":{
             "markers":["cylinder"],
-            "physics":"body",
+            //"physics":"body",
             "rho":"7.0e3"
         },
         "MySolid2":{
             "markers":["beam"],
-            "physics":"body",
+            //"physics":"body",
             "rho":"9.0e2"
         }
     },
@@ -38,6 +56,7 @@
                 "inlet":
                 {
                     "expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y)*( ((1-cos(pi*t/2))/2)*chi + (1-chi) ),0}:ubar:y:t:chi"
+                    //"expr":"{0,0}"
                 },
                 "wall":
                 {
@@ -68,9 +87,19 @@
                      // "mass":"1",
                      // "mass-center":"{0.2,0.2}",
                      // "moment-of-inertia":"1"
+
                      "translational-velocity":"{0,0}"
                      //,"angular-velocity":"sin(8*t):t"//10"
-                     // ,"elastic-velocity":"{0, (x>0.25)*(exp(x-0.25)-1)*20*sin(10*x)*0.1*sin(2*pi*t/0.3)*( (sin(1*pi*t/0.3) > -0.00000001) - (sin(1*pi*t/0.3) < 0) ) }:x:t"
+                     //,"angular-velocity":"0"
+                     //"elastic-velocity":"{0, (x>0.25)*(exp(x-0.25)-1)*20*sin(10*x)*0.1*sin(2*pi*t/0.3)*( (sin(1*pi*t/0.3) > -0.00000001) - (sin(1*pi*t/0.3) < 0) ) }:x:t"
+                     //,"elastic-displacement":"{0, (x>0.25)*(exp(x-0.25)-1)*1*sin(10*x)*0.1*sin(2*pi*t/0.3)*( (sin(1*pi*t/0.3) > -0.00000001) - (sin(1*pi*t/0.3) < 0) ) }:x:t"
+
+                     
+                     //"elastic-velocity":"{0, (x>0.25)*(pi/0.3)*(cos(pi*t/0.3)*2e-4)*(exp(10*x)-exp(10*0.25))}:x:t"
+                     ,"elastic-displacement":"{0, 0.8*(x>0.25)*(sin(pi*t/0.3)*2e-4)*(exp(10*x)-exp(10*0.25))}:x:t"
+
+
+                     //"elastic-velocity":"{0, (t>0.08)*(x>0.25)*(exp(x-0.25)-1)*1*sin(10*x)*0.1*sin(2*pi*t/0.3)*( (sin(1*pi*t/0.3) > -0.00000001) - (sin(1*pi*t/0.3) < 0) ) }:x:t"
                      // ,"elastic-velocity":
                      // {
                      //     "tit":
@@ -90,39 +119,46 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","pid","displacement"]
-        },
-        "Measures":
-        {
-            "Forces":"wall2",
-            "Statistics":
+            "Exports":
             {
-                "mybody_translational":
-                {
-                    "type":"mean",
-                    "markers":["fluid-cylinder","fluid-beam"],
-                    "field":"body.p1_mark.translational-velocity"
-                },
-                "mybody_angular":
-                {
-                    "type":"mean",
-                    "markers":["fluid-cylinder","fluid-beam"],
-                    "field":"body.p1_mark.angular-velocity"
-                }
+                "fields":["velocity","pressure","pid","displacement"]
             },
-            "Points":
+            "Measures":
             {
-                "pointA":
+                "Quantities":
                 {
-                    "coord":"{0.6,0.2,0}",
-                    "fields":"pressure"
+                    "names":"all"
                 },
-                "pointB":
+                "Forces":"wall2",
+                "Statistics":
                 {
-                    "coord":"{0.15,0.2,0}",
-                    "fields":"pressure"
+                    "mybody_translational":
+                    {
+                        "type":"mean",
+                        "markers":["fluid-cylinder","fluid-beam"],
+                        "field":"body.p1_mark.translational-velocity"
+                    },
+                    "mybody_angular":
+                    {
+                        "type":"mean",
+                        "markers":["fluid-cylinder","fluid-beam"],
+                        "field":"body.p1_mark.angular-velocity"
+                    }
+                },
+                "Points":
+                {
+                    "pointA":
+                    {
+                        "coord":"{0.6,0.2,0}",
+                        "fields":"pressure"
+                    },
+                    "pointB":
+                    {
+                        "coord":"{0.15,0.2,0}",
+                        "fields":"pressure"
+                    }
                 }
             }
         }

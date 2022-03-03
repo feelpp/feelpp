@@ -30,10 +30,7 @@
 #include <cstring>
 #include <iostream>
 
-#include <boost/parameter.hpp>
-
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/about.hpp>
 
 namespace Feel

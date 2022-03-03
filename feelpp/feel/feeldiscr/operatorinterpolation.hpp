@@ -28,8 +28,8 @@
    \author Chabannes Vincent <vincent.chabannes@imag.fr>
    \date 2008-02-01
  */
-#ifndef FEELPP_OPERATORINTERPOLATION_HPP
-#define FEELPP_OPERATORINTERPOLATION_HPP 1
+#ifndef FEELPP_DISCR_OPERATORINTERPOLATION_H
+#define FEELPP_DISCR_OPERATORINTERPOLATION_H 1
 
 #include <feel/feeldiscr/operatorlinear.hpp>
 
@@ -442,11 +442,26 @@ struct PrecomputeDomainBasisFunction
         M_XhImage( XhImage ),
         M_expr( expr )
     {
-        auto itElt = M_XhDomain->mesh()->firstElementIteratorWithProcessId();
-        if ( itElt == M_XhDomain->mesh()->endElement() )
+        geoelement_type const * eltInitPtr = nullptr;
+        if ( M_XhDomain->dof()->hasMeshSupport() && M_XhDomain->dof()->meshSupport()->isPartialSupport() )
+        {
+            for ( auto const& eltWrap : elements(support(M_XhDomain)) )
+            {
+                auto const& elt = unwrap_ref(eltWrap);
+                eltInitPtr = &elt;
+                break;
+            }
+        }
+        else
+        {
+            auto itElt = M_XhDomain->mesh()->firstElementIteratorWithProcessId();
+            if ( itElt != M_XhDomain->mesh()->endElement() )
+                eltInitPtr = &(itElt->second);
+        }
+        if ( !eltInitPtr )
             return;
 
-        this->init( itElt->second );
+        this->init( *eltInitPtr );
     }
 
 
@@ -504,7 +519,7 @@ struct PrecomputeDomainBasisFunction
                     break;
                 }
             }
-            CHECK( find ) << "not find a compatible dof\n ";
+            CHECK( find ) << "[OperatorInterpolation::update] Compatible dof not found";
             return image_fe_changedim_type::nLocalDof * comp + thelocDofToFind;
 
         }
@@ -787,13 +802,24 @@ private :
                 {
                     auto const& theface = M_meshDomain->face( M_meshImage->subMeshToMesh( imageEltId ) );
                     size_type domainEltId = invalid_v<size_type>;
-                    if ( !theface.element0().isGhostCell() )
-                        domainEltId = theface.element0().id();
-                    else if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
-                        domainEltId = theface.element1().id();
+                    if ( M_hasMeshSupportPartialDomain )
+                    {
+                        if ( M_meshSupportDomain->hasElement( theface.element0().id() ) && !M_meshSupportDomain->hasGhostElement( theface.element0().id() ) )
+                            domainEltId = theface.element0().id();
+                        else if ( theface.isConnectedTo1() && M_meshSupportDomain->hasElement( theface.element1().id() ) && !M_meshSupportDomain->hasGhostElement( theface.element1().id() ) )
+                            domainEltId = theface.element1().id();
+                        else
+                            CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
+                    }
                     else
-                        CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
-
+                    {
+                        if ( !theface.element0().isGhostCell() )
+                            domainEltId = theface.element0().id();
+                        else if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
+                            domainEltId = theface.element1().id();
+                        else
+                            CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
+                    }
                     VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
                     if ( domainEltId != invalid_v<size_type> ) idsFind.insert( domainEltId );
                 }
@@ -1686,12 +1712,19 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     //-----------------------------------------
     //init the localization tool
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
-    if ( this->interpolationType().onlyLocalizeOnBoundary() ) locTool->updateForUseBoundaryFaces();
-    else locTool->updateForUse();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
+    if ( this->interpolationType().onlyLocalizeOnBoundary() )
+        locTool->updateForUseBoundaryFaces();
+    else
+        locTool->updateForUse();
     // kdtree parameter
     locTool->kdtree()->nbNearNeighbor(this->interpolationType().nbNearNeighborInKdTree());
+#if 0
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
+#else
+    bool notUseOptLocTest = true;
+#endif
     //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
     //locTool->kdtree()->nbNearNeighbor(3);
@@ -1710,7 +1743,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     std::vector< std::list<std::pair<size_type,double> > > memory_valueInMatrix( this->dualImageSpace()->nLocalDof() );
 
     //-----------------------------------------
-    size_type eltIdLocalised = 0;
+    size_type eltIdLocalised = invalid_v<size_type>;
 
     // for each element in range
     auto itListRange = M_listRange.begin();
@@ -1743,11 +1776,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     ublas::column(ptsReal,0 ) = boost::get<0>(imagedof->dofPoint(gdof));
                                     //------------------------
                                     // localisation process
-                                    if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
+                                    //if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
                                     auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,theImageElt.vertices()/*theImageElt.G()*/,mpl::int_<interpolation_type::isConforming()>());
                                     for ( bool hasFindPtLocalised : resLocalisation.template get<0>()  )
                                          LOG_IF(ERROR, !hasFindPtLocalised ) << "OperatorInterpolation::updateNoRelationMesh : point localisation fail!\n";
-                                    eltIdLocalised = resLocalisation.template get<1>();
+                                    if ( !notUseOptLocTest )
+                                        eltIdLocalised = resLocalisation.template get<1>();
                                     //------------------------
                                     // for each localised points
                                     itanal = locTool->result_analysis_begin();
@@ -2011,7 +2045,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     extrapolation_memory_type dof_extrapolationData(this->dualImageSpace()->nLocalDof());
 
     //init the localization tool
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
     bool doExtrapolationAtStart = locTool->doExtrapolation();
     // kdtree parameter
     locTool->kdtree()->nbNearNeighbor(this->interpolationType().nbNearNeighborInKdTree());
@@ -2022,7 +2057,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     if ( doExtrapolationAtStart && this->interpolationType().searchWithCommunication() ) locTool->setExtrapolation(false);
 
 
+#if 0
     uint16_type nMPIsearch=15;//5;
+#else
+    // TODO : put 15 not work when a partition is not gather in one group.
+    // we should compute these group and compute barycenter in each of them
+    uint16_type nMPIsearch = this->domainSpace()->mesh()->worldCommPtr()->localSize();
+#endif
     if( InterpType::isConforming()) nMPIsearch=this->domainSpace()->mesh()->worldCommPtr()->localSize();
     else if (this->domainSpace()->mesh()->worldCommPtr()->localSize()<nMPIsearch) nMPIsearch=this->domainSpace()->mesh()->worldCommPtr()->localSize();
    // only one int this case
@@ -2365,7 +2406,8 @@ OperatorInterpolation<DomainSpaceType,
     auto const* domaindof = this->domainSpace()->dof().get();
     auto const* domainbasis = this->domainSpace()->basis().get();
 
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
     //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
@@ -2607,7 +2649,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     const size_type nProc_domain = this->domainSpace()->mesh()->worldCommPtr()->localSize();
 
     // localisation tool with matrix node
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
     //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
@@ -3070,7 +3113,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     const size_type nProc_domain = this->domainSpace()->mesh()->worldCommPtr()->localSize();
 
     // localisation tool with matrix node
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
     bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
     //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
@@ -3464,7 +3508,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     auto const* imagedof = this->dualImageSpace()->dof().get();
     //iterator_type it, en;
 
-    auto locTool = this->domainSpace()->mesh()->tool_localization();
+    //auto locTool = this->domainSpace()->mesh()->tool_localization();
+    auto locTool = support(this->domainSpace())->tool_localization();
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
     std::vector< std::list<boost::tuple<size_type,uint16_type> > > memSetGdofAndComp( nProc_domain );
@@ -3702,7 +3747,7 @@ using Div_ptr_t = std::shared_ptr<Div_t<DomainSpaceType,
                                           ImageSpaceType,
                                           IteratorRange,
                                           InterpType>>;
-
+#if 0
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
 decltype(auto)
 opInterp( std::shared_ptr<DomainSpaceType> const& domainspace,
@@ -3725,7 +3770,7 @@ opInterp( std::shared_ptr<DomainSpaceType> const& domainspace,
                                    ddmethod );
     return o;
 }
-
+#endif
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
 decltype(auto)
 opInterpPtr( std::shared_ptr<DomainSpaceType> const& domainspace,
@@ -3753,182 +3798,88 @@ opInterpPtr( std::shared_ptr<DomainSpaceType> const& domainspace,
 }
 
 
-
-template<typename Args,typename DefaultType = InterpolationNonConforming>
-struct compute_opInterpolation_return
+template <typename ... Ts>
+auto opInterpolation( Ts && ... v )
 {
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::domainSpace>::type>::type::element_type domain_space_type;
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::imageSpace>::type>::type::element_type image_space_type;
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && domainSpace = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_domainSpace);
+    auto && imageSpace = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_imageSpace);
+    auto && range = args.get_else_invocable(_range, [&imageSpace]() { return elements(support(imageSpace)); } );
+    using domain_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(domainSpace)>>>;
+    using image_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(imageSpace)>>>;
+    auto && backend = args.get_else_invocable(_backend, [](){ return Feel::backend(); } );//Backend<typename domain_space_type::value_type>::build( soption( _name="backend" ) ) );
+    auto && type = args.get_else(_type,InterpolationNonConforming() );
+    bool ddmethod = args.get_else(_ddmethod,false);
+    auto && matrix = args.get_else(_matrix, OperatorInterpolationMatrixSetup<typename image_space_type::value_type>{});
 
-    typedef typename boost::remove_const<
-    typename boost::remove_reference<
-    typename parameter::binding<Args,
-             tag::range,
-             typename OperatorInterpolation<domain_space_type, image_space_type>::range_iterator
-             >::type >::type >::type iterator_base_range_type;
-
-    typedef typename Feel::detail::opinterprangetype<iterator_base_range_type>::type iterator_range_type;
-
-    using interpolation_type = std::remove_const_t<
-        std::remove_reference_t<
-            typename parameter::binding<Args,tag::type,DefaultType>::type >>;
-    
-
-    typedef OperatorInterpolation<domain_space_type, image_space_type,iterator_range_type,std::remove_const_t<interpolation_type>> type;
-    typedef std::shared_ptr<OperatorInterpolation<domain_space_type, image_space_type,iterator_range_type,std::remove_const_t<interpolation_type>> > ptrtype;
-};
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_opInterpolation_return<Args>::ptrtype ), // 1. return type
-    opInterpolation,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    ) // required
-    ( optional
-      ( range,          *, elements( imageSpace->mesh() )  )
-      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
-      ( type,           *, InterpolationNonConforming()  )
-      ( ddmethod,  (bool),  false )
-      ( matrix,         *, typename compute_opInterpolation_return<Args>::type::matrix_setup_type{} )
-    ) // optional
-)
-{
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
     std::decay_t<decltype(type)> t( type );
     return opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod,matrix );
+}
 
-} // opInterpolation
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_opInterpolation_return<Args>::type ), // 1. return type
-    I,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    ) // required
-    ( optional
-      ( range,          *, elements( imageSpace->mesh() )  )
-      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
-      ( type,           *, InterpolationNonConforming() )
-      ( ddmethod,  (bool),  false )
-    ) // optional
-)
+template <typename ... Ts>
+auto IPtr( Ts && ... v )
 {
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
-
-    return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
-
-} // opInterpolation
-
-
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_opInterpolation_return<Args>::ptrtype ), // 1. return type
-    IPtr,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    ) // required
-    ( optional
-      ( range,          *, elements( imageSpace->mesh() )  )
-      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
-      ( type,           *, InterpolationNonConforming() )
-      ( ddmethod,  (bool),  false )
-    ) // optional
-)
+    return opInterpolation( std::forward<Ts>(v)... );
+}
+template <typename ... Ts>
+auto I( Ts && ... v )
 {
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
+    return *opInterpolation( std::forward<Ts>(v)... );
+}
 
-    return opInterpPtr( domainSpace,imageSpace,range,backend,type,ddmethod );
-
-} // opInterpolation
-
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_opInterpolation_return<Args,InterpolationGradient<nonconforming_t>>::type ), // 1. return type
-    Grad,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    ) // required
-    ( optional
-      ( range,          *, elements( imageSpace->mesh() )  )
-      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
-      ( type,           *, makeGradientInterpolation<nonconforming_t>( nonconforming_t() ) )
-      ( ddmethod,  (bool),  false )
-    ) // optional
-)
+template <typename ... Ts>
+auto Grad( Ts && ... v )
 {
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && domainSpace = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_domainSpace);
+    auto && imageSpace = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_imageSpace);
+    auto && range = args.get_else_invocable(_range, [&imageSpace]() { return elements(support(imageSpace)); } );
+    using domain_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(domainSpace)>>>;
+    using image_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(imageSpace)>>>;
+    auto && backend = args.get_else_invocable(_backend, [](){ return Feel::backend(); } );
+    auto && type = args.get_else(_type, makeGradientInterpolation<nonconforming_t>( nonconforming_t() ) );
+    bool ddmethod = args.get_else(_ddmethod,false);
+    auto && matrix = args.get_else(_matrix, OperatorInterpolationMatrixSetup<typename image_space_type::value_type>{});
 
-    return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
+    std::decay_t<decltype(type)> t( type );
+    return *opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod,matrix );
+}
 
-} // Grad
-
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_opInterpolation_return<Args,InterpolationCurl<nonconforming_t>>::type ), // 1. return type
-    Curl,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    ) // required
-    ( optional
-      ( range,          *, elements( imageSpace->mesh() )  )
-      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
-      ( type,           *, makeCurlInterpolation<nonconforming_t>( nonconforming_t() ) )
-      ( ddmethod,  (bool),  false )
-    ) // optional
-)
+template <typename ... Ts>
+auto Curl( Ts && ... v )
 {
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && domainSpace = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_domainSpace);
+    auto && imageSpace = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_imageSpace);
+    auto && range = args.get_else_invocable(_range, [&imageSpace]() { return elements(support(imageSpace)); } );
+    using domain_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(domainSpace)>>>;
+    using image_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(imageSpace)>>>;
+    auto && backend = args.get_else_invocable(_backend, [](){ return Feel::backend(); } );
+    auto && type = args.get_else(_type, makeCurlInterpolation<nonconforming_t>( nonconforming_t() ) );
+    bool ddmethod = args.get_else(_ddmethod,false);
+    auto && matrix = args.get_else(_matrix, OperatorInterpolationMatrixSetup<typename image_space_type::value_type>{});
 
-    return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
+    std::decay_t<decltype(type)> t( type );
+    return *opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod,matrix );
+}
 
-} // opInterpolation
-
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_opInterpolation_return<Args,InterpolationDiv<nonconforming_t>>::type ), // 1. return type
-    Div,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    ) // required
-    ( optional
-      ( range,          *, elements( imageSpace->mesh() )  )
-      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
-      ( type,           *, makeDivInterpolation<nonconforming_t>( nonconforming_t() ) )
-      ( ddmethod,  (bool),  false )
-    ) // optional
-)
+template <typename ... Ts>
+auto Div( Ts && ... v )
 {
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && domainSpace = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_domainSpace);
+    auto && imageSpace = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_imageSpace);
+    auto && range = args.get_else_invocable(_range, [&imageSpace]() { return elements(support(imageSpace)); } );
+    using domain_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(domainSpace)>>>;
+    using image_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(imageSpace)>>>;
+    auto && backend = args.get_else_invocable(_backend, [](){ return Feel::backend(); } );
+    auto && type = args.get_else(_type, makeDivInterpolation<nonconforming_t>( nonconforming_t() ) );
+    bool ddmethod = args.get_else(_ddmethod,false);
+    auto && matrix = args.get_else(_matrix, OperatorInterpolationMatrixSetup<typename image_space_type::value_type>{});
 
-    return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
-
-} // opInterpolation
-
-
+    std::decay_t<decltype(type)> t( type );
+    return *opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod,matrix );
+}
 
 
 } // Feel
