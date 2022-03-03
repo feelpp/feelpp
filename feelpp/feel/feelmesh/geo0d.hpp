@@ -74,6 +74,8 @@ class Geo0D
     using index_type = typename super::index_type;
     using size_type = typename super::size_type;
     using meshbase_type = MeshBase<index_type>;
+
+    using marker_type = Marker<flag_type/*uint16_type*/>;
     /**
      * default constructor
      *
@@ -501,12 +503,12 @@ class Geo0D
         return *this;
     }
 
-    std::map<uint16_type, Marker1> const&
+    std::map<uint16_type, marker_type> const&
     markers() const
     {
         return M_markers;
     }
-    void setMarkers( std::map<uint16_type, Marker1> const& markers )
+    void setMarkers( std::map<uint16_type, marker_type> const& markers )
     {
         M_markers = markers;
     }
@@ -519,11 +521,11 @@ class Geo0D
             return false;
         return true;
     }
-    Marker1 const& marker( uint16_type k ) const
+    marker_type const& marker( uint16_type k ) const
     {
         return M_markers.find( k )->second;
     }
-    Marker1& marker( uint16_type k )
+    marker_type& marker( uint16_type k )
     {
         return M_markers[k];
     }
@@ -536,29 +538,14 @@ class Geo0D
     {
         return this->hasMarker( 1 );
     }
-    Marker1 const& marker() const
+    marker_type const& marker() const
     {
         return M_markers.find( 1 )->second;
     }
-    Marker1& marker()
+    marker_type& marker()
     {
         return M_markers[1];
     }
-    Marker1 markerOr( uint16_type v ) const
-    {
-        if ( hasMarker() )
-            return M_markers.find( 1 )->second;
-        else
-            return Marker1{v};
-    }
-    Marker1 markerOr( uint16_type v  = 0 )
-    {
-        if ( hasMarker() )
-            return M_markers[1];
-        else
-            return Marker1{v};
-    }
-    
     void setMarker( flag_type v )
     {
         M_markers[1].assign( v );
@@ -568,11 +555,11 @@ class Geo0D
     {
         return this->hasMarker( 2 );
     }
-    Marker1 const& marker2() const
+    marker_type const& marker2() const
     {
         return M_markers.find( 2 )->second;
     }
-    Marker1& marker2()
+    marker_type& marker2()
     {
         return M_markers[2];
     }
@@ -585,11 +572,11 @@ class Geo0D
     {
         return this->hasMarker( 3 );
     }
-    Marker1 const& marker3() const
+    marker_type const& marker3() const
     {
         return M_markers.find( 3 )->second;
     }
-    Marker1& marker3()
+    marker_type& marker3()
     {
         return M_markers[3];
     }
@@ -673,7 +660,7 @@ class Geo0D
     // mesh to which the geond element belongs to
     meshbase_type const* M_mesh;
 
-    std::map<uint16_type, Marker1> M_markers;
+    std::map<uint16_type, marker_type> M_markers;
 
     std::optional<std::tuple<int,int,parametric_node_type>> M_uv;
 };

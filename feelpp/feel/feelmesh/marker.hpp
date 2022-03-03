@@ -24,149 +24,52 @@
  *
  * this is based on Luca Formaggia marker class in Feel
  */
-#ifndef HH_MARKERS_HH_
-#define HH_MARKERS_HH_
+#ifndef FEELPP_MESH_MARKERS_H
+#define FEELPP_MESH_MARKERS_H
 
-#include <limits>
-
+//#include <limits>
 #include <boost/serialization/serialization.hpp>
-
 #include <feel/feelcore/feel.hpp>
-#include <boost/detail/identifier.hpp>
+//#include <boost/detail/identifier.hpp>
 
 namespace Feel
 {
-/// \cond detail
-class Marker1 : public boost::detail::identifier< size_type, Marker1 >
+
+template <typename ValueType = flag_type>
+class Marker : public std::set<ValueType>
 {
+    using super_type = std::set<ValueType>;
 public:
-    typedef boost::detail::identifier< size_type, Marker1 >::value_type value_type;
-    Marker1()                           : boost::detail::identifier<size_type,Marker1>( 0 ) {}
-    explicit Marker1( value_type v )    : boost::detail::identifier<size_type,Marker1>( v ) {}
-    Marker1 & operator=( value_type v )
-    {
-        this->assign( v );
-        return *this;
-    }
-    bool isOn() const { return value() != 0; }
-    bool isOff() const { return value() == 0; }
+    using value_type = ValueType;
+
+    Marker() = default;
+    explicit Marker( value_type v ) : super_type({ v }) {}
+    Marker( super_type const& s ) : super_type(s) {}
+    Marker( Marker const& ) = default;
+    Marker( Marker && ) = default;
+
+    Marker & operator=( Marker const& ) = default;
+    Marker & operator=( Marker && ) = default;
+
+    bool isOn() const { return !this->empty(); }
+    bool isOff() const { return this->empty(); }
+
+    void assign( value_type v ) { super_type::operator=({v}); }
+
+    value_type value() const { CHECK( !this->empty() ) << "no marker"; return *this->begin(); }
 
 private:
 
     friend class boost::serialization::access;
-    // When the class Archive corresponds to an output archive, the
-    // & operator is defined similar to <<.  Likewise, when the class Archive
-    // is a type of input archive the & operator is defined similar to >>.
-    template<class Archive>
-    void save( Archive & ar, const unsigned int version ) const
-        {
-            size_type v = this->value();
-            ar & v;
-        }
 
-    template<class Archive>
-    void load( Archive & ar, const unsigned int version )
-        {
-            size_type v;
-            ar &  v;
-            this->assign( v );
-        }
-
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
-
-};
-
-class Marker2 : public boost::detail::identifier< size_type, Marker2 >
-{
-public:
-    typedef boost::detail::identifier< size_type, Marker2 >::value_type value_type;
-    Marker2()                           : boost::detail::identifier<size_type,Marker2>( 0 ) {}
-    explicit Marker2( value_type v )    : boost::detail::identifier<size_type,Marker2>( v ) {}
-    Marker2 & operator=( value_type v )
+    template <class Archive>
+    void serialize( Archive& ar, const unsigned int version )
     {
-        this->assign( v );
-        return *this;
+        ar& boost::serialization::base_object<super_type>( *this );
     }
-    bool isOn() const { return value() != 0; }
-    bool isOff() const { return value() == 0; }
-
-private:
-
-    friend class boost::serialization::access;
-    // When the class Archive corresponds to an output archive, the
-    // & operator is defined similar to <<.  Likewise, when the class Archive
-    // is a type of input archive the & operator is defined similar to >>.
-    template<class Archive>
-    void save( Archive & ar, const unsigned int version ) const
-        {
-            size_type v = this->value();
-            ar & v;
-        }
-
-    template<class Archive>
-    void load( Archive & ar, const unsigned int version )
-        {
-            size_type v;
-            ar &  v;
-            this->assign( v );
-        }
-
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
-
-};
-class Marker3 : public boost::detail::identifier< size_type, Marker3 >
-{
-public:
-    typedef boost::detail::identifier< size_type, Marker3 >::value_type value_type;
-    Marker3()                           : boost::detail::identifier<size_type,Marker3>( 0 ) {}
-    explicit Marker3( value_type v )    : boost::detail::identifier<size_type,Marker3>( v ) {}
-    Marker3 & operator=( value_type v )
-    {
-        this->assign( v );
-        return *this;
-    }
-    bool isOn() const { return value() != 0; }
-    bool isOff() const { return value() == 0; }
-
-private:
-
-    friend class boost::serialization::access;
-    // When the class Archive corresponds to an output archive, the
-    // & operator is defined similar to <<.  Likewise, when the class Archive
-    // is a type of input archive the & operator is defined similar to >>.
-    template<class Archive>
-    void save( Archive & ar, const unsigned int version ) const
-        {
-            size_type v = this->value();
-            ar & v;
-        }
-
-    template<class Archive>
-    void load( Archive & ar, const unsigned int version )
-        {
-            size_type v;
-            ar &  v;
-            this->assign( v );
-        }
-
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
-
 };
 
 
-namespace detail
-{
-struct by_marker {};
-struct by_marker2 {};
-struct by_marker3 {};
-struct by_interprocessdomain {};
-struct by_location {};
-struct by_pid {};
-struct by_element {};
-struct by_entity {};
-struct by_ghostcell {};
-}
-/// \endcond detail
 } // Feel
 #endif
 

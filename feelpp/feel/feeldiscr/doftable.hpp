@@ -172,6 +172,7 @@ public:
     typedef typename mesh_type::edge_type edge_type;
     typedef typename mesh_type::gm_ptrtype gm_ptrtype;
     typedef typename mesh_type::gm_type gm_type;
+    using mesh_marker_type = typename element_type::marker_type;
 
     typedef typename fe_type::matrix_type matrix_type;
     typedef typename fe_type::value_type value_type;
@@ -1208,7 +1209,7 @@ public:
                     int32_type sign = 1,
                     bool is_dof_periodic = false,
                     size_type shift = 0,
-                    Marker1 const& marker = Marker1( 0 ) )
+                    mesh_marker_type const& marker = mesh_marker_type{} )
         {
             bool res = true;
             const int ncdof = is_product?nComponents:1;
