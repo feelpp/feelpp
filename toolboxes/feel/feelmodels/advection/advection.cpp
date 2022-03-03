@@ -77,8 +77,15 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     if( this->modelName().empty() )
     {
-        std::string advection_model = this->modelProperties().models().model().equations();
-        this->setModelName( advection_model );
+        if ( this->modelProperties().models().hasType( this->keyword() ) )
+        {
+            for ( auto const& [_name,_model] : this->modelProperties().models().models( this->keyword() ) )
+            {
+                auto const& j_setup = _model.setup();
+                if ( j_setup.is_string() )
+                    this->setModelName( j_setup.template get<std::string>() );
+            }
+        }
     }
 
     // Boundary conditions

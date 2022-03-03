@@ -160,10 +160,10 @@ cgLaplacianModel( std::shared_ptr<SpaceType> const& Vh, ModelProperties const& p
     tic();
     for ( auto const& [ name, mat ] : props.materials() )
     {
-        if ( mat.hasPropertyExprScalar( "k" ) )
+        if ( mat.hasProperty( "k" ) )
         {
             Feel::cout << " - Material " << name << std::endl;
-            auto k = mat.propertyExprScalar( "k" );
+            auto k = mat.property( "k" ).template expr<1,1>();
             a = integrate( _range = markedelements( support( Vh ), mat.meshMarkers() ),
                            _expr = inner( k * gradt( u ), grad( v ) ) );
         }

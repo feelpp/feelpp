@@ -2,6 +2,17 @@
 {
     "Name":"HL-31_H1",
     "ShortName":"HL-31_H1",
+    "Meshes":
+    {
+        "electric":
+        {
+            "Import":
+            {
+                "filename":"girder:{file:5af862d6b0e9574027047fc8}",
+                "partition":1
+            }
+        }
+    },
     "Materials":
     {
         "Cu":
@@ -28,19 +39,22 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "electric":
         {
-            "fields":["electric-potential","current-density","electric-field"]
-        },
-        "Measures":
-        {
-            "Statistics":
+            "Exports":
             {
-                "mystatA": 
+                "fields":["electric-potential","current-density","electric-field"]
+            },
+            "Measures":
+            {
+                "Statistics":
                 {
-                    "type":"mean", 
-                    "field":"electric-potential",
-                    "markers":"V1"
+                    "mystatA": 
+                    {
+                        "type":"mean", 
+                        "field":"electric-potential",
+                        "markers":"V1"
+                    }
                 }
             }
         }
