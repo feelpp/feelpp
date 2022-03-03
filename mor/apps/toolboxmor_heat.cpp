@@ -59,7 +59,7 @@ int runSimulation()
 
     rb_model_ptrtype model = std::make_shared<rb_model_type>(soption("toolboxmor.name"));
     model->setFunctionSpaces(heatBox->spaceTemperature());
-    auto heatBoxModel = ToolboxMorModel<heat_tb_type>::New(heatBox);
+    auto heatBoxModel = DeimMorModelToolbox<heat_tb_type>::New(heatBox);
     model->initToolbox(heatBoxModel);
 
     crb_model_ptrtype crbModel = std::make_shared<crb_model_type>(model);

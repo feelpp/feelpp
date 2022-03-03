@@ -112,7 +112,7 @@ void defToolboxMor(py::module &m)
 
     std::string crbmodelclass_name = std::string("CRBModel_") + pyclass_name;
     py::class_<CRBModel<mor_t>,std::shared_ptr<CRBModel<mor_t> > >(m, crbmodelclass_name.c_str())
-        .def(py::init<>(), "init")
+        // .def(py::init<>(), "init")
         ;
     std::string crbmodelnew_name = std::string("crbmodel_toolboxmor_") + std::to_string(nDim) +std::string("d");
     m.def(crbmodelnew_name.c_str(), [](std::shared_ptr<mor_t>& m) { return std::make_shared<CRBModel<mor_t> >(m, crb::stage::offline); }," return a pointer on crbmodel");
