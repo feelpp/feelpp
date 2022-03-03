@@ -415,23 +415,30 @@ int main( int argc, char** argv )
     // tag::env[]
     using namespace Feel;
 
-	Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
-                     _about=about(_name="qs_hdg_laplacian",
-                                  _author="Feel++ Consortium",
-                                  _email="feelpp-devel@feelpp.org"));
-    // end::env[]
-    if ( ioption( "order" ) == 1 )
-        return hdg_laplacian<FEELPP_DIM,1>();
-    if ( ioption( "order" ) == 2 )
-        return hdg_laplacian<FEELPP_DIM,2>();
+    try 
+    {
+	    Environment env( _argc=argc, _argv=argv,
+                         _desc=makeOptions(),
+                         _about=about(_name="qs_hdg_laplacian",
+                                      _author="Feel++ Consortium",
+                                      _email="feelpp-devel@feelpp.org"));
+        // end::env[]
+        if ( ioption( "order" ) == 1 )
+            return hdg_laplacian<FEELPP_DIM,1>();
+        if ( ioption( "order" ) == 2 )
+            return hdg_laplacian<FEELPP_DIM,2>();
 
  #if 0   
-    if ( ioption( "order" ) == 3 )
-        return hdg_laplacian<FEELPP_DIM,3>();
+        if ( ioption( "order" ) == 3 )
+            return hdg_laplacian<FEELPP_DIM,3>();
 
-    if ( ioption( "order" ) == 4 )
-        return hdg_laplacian<FEELPP_DIM,4>();
+        if ( ioption( "order" ) == 4 )
+            return hdg_laplacian<FEELPP_DIM,4>();
 #endif
+    }
+    catch( ... )
+    {
+        handleExceptions();
+    }
     return 1;
 }

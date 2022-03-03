@@ -95,6 +95,7 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
     static constexpr uint16_type nDim = space_type::nDim;
 
     using super_type::computeBetaQm;
+    using parameterspace_type = typename super_type::parameterspace_type;
     using parameter_type = typename super_type::parameter_type;
     using vectorN_type = typename super_type::vectorN_type;
     using beta_vector_type = typename super_type::beta_vector_type;
