@@ -92,6 +92,9 @@ public :
     //! return the types of subphysics
     std::set<std::string> const& subphysicsTypes() const { return M_subphysicsTypes; }
 
+    //! add a type of subphysics
+    void addSubphysicsType( std::string const& subType ) { M_subphysicsTypes.insert( subType ); }
+
     //! return the map of subphysics
     std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> const& subphysics() const { return M_subphysics; }
 
