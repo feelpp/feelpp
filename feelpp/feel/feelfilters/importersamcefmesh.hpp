@@ -201,7 +201,6 @@ ImporterSamcefMesh<MeshType>::visit( mesh_type* mesh )
                 feelElt.setMarker( _mId );
             }
         }
-        mesh->addParts( {(int)_mId} );
         mesh->addMarkerName( markerName, _mId, mesh_type::nDim );
     }
 }

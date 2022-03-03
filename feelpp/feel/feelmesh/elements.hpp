@@ -245,7 +245,6 @@ public:
             M_orderedElements.clear();
             M_elements.clear();
             M_needToOrderElements = false;
-            M_parts.clear();
         }
     //@}
 
@@ -409,17 +408,6 @@ public:
             return M_orderedElements.end();
         }
 
-
-    parts_const_iterator_type beginParts() const
-    {
-        return M_parts.begin();
-    }
-    parts_const_iterator_type endParts() const
-    {
-        return M_parts.end();
-    }
-
-    parts_map_type const& parts() const { return M_parts; }
 
     /**
      * \return the range of iterator \c (begin,end) over the elements
@@ -788,8 +776,6 @@ public:
     //!
     std::pair<element_iterator,bool> addElement( element_type& f, bool setid = true )
     {
-        if ( f.hasMarker() )
-            M_parts[f.marker().value()]++;
         if ( setid )
             f.setId( M_elements.size() );
         auto ret = M_elements.emplace( std::make_pair( f.id(), f ) );
@@ -810,9 +796,6 @@ public:
     //!
     std::pair<element_iterator,bool> addElement( element_type&& f )
         {
-            if ( f.hasMarker() )
-                M_parts[f.marker().value()]++;
-            //return *M_elements.insert( f );
             auto ret = M_elements.emplace( std::make_pair( f.id(), f ) );
 
             if ( ret.second )
@@ -942,13 +925,6 @@ public:
         }
 
     //@}
-protected :
-
-    void addParts( std::set<int> const& someParts )
-        {
-            for ( int p : someParts )
-                M_parts.try_emplace( p, 0 );
-        }
 
 private:
 
@@ -968,7 +944,6 @@ private:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
-            ar & M_parts;
             if ( Archive::is_loading::value )
             {
                 M_elements.clear();
@@ -999,7 +974,6 @@ private:
     elements_type M_elements;
     ordered_elements_reference_wrapper_type M_orderedElements;
     bool M_needToOrderElements;
-    parts_map_type M_parts;
 };
 /// \endcond
 } // Feel
