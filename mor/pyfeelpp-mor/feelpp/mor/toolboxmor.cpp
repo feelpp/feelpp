@@ -105,6 +105,7 @@ void defToolboxMor(py::module &m)
                                      return std::make_tuple(betaAqm, betaFqm);
                                  }
                               }, "compute the coefficients for parameter mu" )
+        .def("modelProperties", &mor_t::modelProperties, "return model properties")
         ;
     std::string modelnew_name = std::string("toolboxmor_") + std::to_string(nDim) +std::string("d");
     m.def(modelnew_name.c_str(), [](std::string const& name="toolboxmor") { return std::make_shared<mor_t>(name); }," return a pointer on model");
