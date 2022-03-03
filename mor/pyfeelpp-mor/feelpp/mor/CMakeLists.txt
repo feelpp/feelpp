@@ -35,6 +35,11 @@ if ( TARGET Feelpp::feelpp_mor  )
     message(STATUS "[pyfeelpp-mor] add pymodule toolboxmor")
     feelpp_add_pymodule(toolboxmor SRCS toolboxmor.cpp DESTINATION feelpp/mor LINK_LIBRARIES Feelpp::feelpp_mor )
     add_dependencies(pyfeelppmor  _toolboxmor)
+    # debug
+    # target_link_libraries(_toolboxmor PRIVATE pybind11::module)
+    # add_library(restore_default_visibility INTERFACE)
+    # target_compile_options(restore_default_visibility INTERFACE -fvisibility=default)
+    # target_link_libraries(_toolboxmor PRIVATE restore_default_visibility)
 
     message(STATUS "[pyfeelpp-mor] add pymodule pbdw")
     feelpp_add_pymodule(pbdw SRCS pbdw.cpp DESTINATION feelpp/mor LINK_LIBRARIES Feelpp::feelpp_mor )
