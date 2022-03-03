@@ -3,6 +3,7 @@
  This file is part of the Feel++ library
  
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ Author(s): Thibaut Metivet <thibaut.metivet@inria.fr>
  Date: 27 sept. 2015
  
  Copyright (C) 2015 Feel++ Consortium
@@ -60,6 +61,31 @@ FEELPP_EXPORT int getOneChar();
 //
 //! \note: This function is unix specific. 
 FEELPP_EXPORT std::string askPassword( std::string const& message );
+
+namespace utils {
+    //! Utility function which "stringifies" a type T for e.g. printing or debugging purposes
+    //! \return string corresponding to type T
+    template <typename T>
+    constexpr auto type_name() noexcept {
+        std::string_view name = "Error: unsupported compiler", prefix, suffix;
+#ifdef __clang__
+        name = __PRETTY_FUNCTION__;
+        prefix = "auto type_name() [T = ";
+        suffix = "]";
+#elif defined(__GNUC__)
+        name = __PRETTY_FUNCTION__;
+        prefix = "constexpr auto type_name() [with T = ";
+        suffix = "]";
+#elif defined(_MSC_VER)
+        name = __FUNCSIG__;
+        prefix = "auto __cdecl type_name<";
+        suffix = ">(void) noexcept";
+#endif
+        name.remove_prefix(prefix.size());
+        name.remove_suffix(suffix.size());
+        return name;
+    }
+}
 
 }
 #endif
