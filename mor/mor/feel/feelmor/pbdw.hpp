@@ -78,13 +78,13 @@ public:
      * @param yobs Observation of sensors
      * @return Coefficients of solution
      */
-    vectorN_type online(vectorN_type const& yobs) const;
+    matrixN_type online(matrixN_type const& yobs) const;
     /**
      * Get outputs
      * @param yobs Observation of sensors
      * @return Outputs
      */
-    vectorN_type outputs(vectorN_type const& yobs) const;
+    matrixN_type outputs(matrixN_type const& yobs) const;
     /**
      * Do online phase
      * @param yobs Observation of sensors
@@ -92,7 +92,7 @@ public:
      * @param toComplete complete indexes to M+N dimension
      * @return Coefficients of solution
      */
-    vectorN_type online(vectorN_type const& yobs, std::vector<int> const& sensors, bool toComplete = true) const;
+    matrixN_type online(matrixN_type const& yobs, std::vector<int> const& sensors, bool toComplete = true) const;
     /**
      * Get outputs
      * @param yobs Observation of sensors
@@ -100,56 +100,26 @@ public:
      * @param toComplete complete indexes to M+N dimension
      * @return Outputs
      */
-    vectorN_type outputs(vectorN_type const& yobs, std::vector<int> const& sensors, bool toComplete = true) const;
+    matrixN_type outputs(matrixN_type const& yobs, std::vector<int> const& sensors, bool toComplete = true) const;
     /**
      * Do online phase
      * @param yobs Observation of sensors
      * @param sensors Names of sensors to use
      * @return Coefficients of solution
      */
-    vectorN_type online(vectorN_type const& yobs, std::vector<std::string> const& sensors) const;
+    matrixN_type online(matrixN_type const& yobs, std::vector<std::string> const& sensors) const;
     /**
      * Get outputs
      * @param yobs Observation of sensors
      * @param sensors Names of sensors to use
      * @return Outputs
      */
-    vectorN_type outputs(vectorN_type const& yobs, std::vector<std::string> const& sensors) const;
-    /**
-     * Do online phase
-     * @param yobs Observation of sensors
-     * @param sensors Index of sensors not to use
-     * @return Coefficients of solution
-     */
-    vectorN_type onlineWithout(vectorN_type const& yobs, std::vector<int> const& sensors) const;
-    /**
-     * Get outputs
-     * @param yobs Observation of sensors
-     * @param sensors Index of sensors not to use
-     * @return Outputs
-     */
-    vectorN_type outputsWithout(vectorN_type const& yobs, std::vector<int> const& sensors) const;
-    /**
-     * Do online phase
-     * @param yobs Observation of sensors
-     * @param sensors Names of sensors not to use
-     * @return Coefficients of solution
-     */
-    vectorN_type onlineWithout(vectorN_type const& yobs, std::vector<std::string> const& sensors) const;
-    /**
-     * Get outputs
-     * @param yobs Observation of sensors
-     * @param sensors Names of sensors not to use
-     * @return Outputs
-     */
-    vectorN_type outputsWithout(vectorN_type const& yobs, std::vector<std::string> const& sensors) const;
+    matrixN_type outputs(matrixN_type const& yobs, std::vector<std::string> const& sensors) const;
 
 protected:
     void loadDB( std::string const& filename, crb::load l ) override;
     std::vector<int> idsWith( std::vector<int> const& sensors ) const;
     std::vector<int> idsWith( std::vector<std::string> const& sensors ) const;
-    std::vector<int> idsWithout( std::vector<int> const& sensors ) const;
-    std::vector<int> idsWithout( std::vector<std::string> const& sensors ) const;
 
     std::string M_name;
     matrixN_type M_matrix;
@@ -190,20 +160,20 @@ PBDWOnline::PBDWOnline(std::string const& name,
     this->loadDB(this->absoluteDbFilename(), crb::load::rb );
 }
 
-typename PBDWOnline::vectorN_type
-PBDWOnline::online(vectorN_type const& yobs) const
+typename PBDWOnline::matrixN_type
+PBDWOnline::online(matrixN_type const& yobs) const
 {
-    vectorN_type yobs2 = vectorN_type::Zero(this->dimension());
-    yobs2.head(this->dimensionM()) = yobs;
-    vectorN_type vn = M_matrix.colPivHouseholderQr().solve(yobs2);
+    matrixN_type yobs2 = matrixN_type::Zero(this->dimension(),yobs.cols());
+    yobs2.topRows(this->dimensionM()) = yobs;
+    matrixN_type vn = M_matrix.colPivHouseholderQr().solve(yobs2);
     return vn;
 }
 
-typename PBDWOnline::vectorN_type
-PBDWOnline::outputs(vectorN_type const& yobs) const
+typename PBDWOnline::matrixN_type
+PBDWOnline::outputs(matrixN_type const& yobs) const
 {
-    vectorN_type coeffs = this->online(yobs);
-    vectorN_type vn = M_F*coeffs;
+    matrixN_type coeffs = this->online(yobs);
+    matrixN_type vn = M_F*coeffs;
     return vn;
 }
 
@@ -229,97 +199,46 @@ PBDWOnline::idsWith( std::vector<std::string> const& sensors ) const
     }
     return idsWith(ids);
 }
-std::vector<int>
-PBDWOnline::idsWithout( std::vector<int> const& sensors ) const
-{
-    std::vector<int> ids;
-    for(int i = 0; i < this->M_M+this->M_N; ++i)
-        if( std::find(sensors.begin(), sensors.end(), i) == sensors.end() )
-            ids.push_back(i);
-    return ids;
-}
-std::vector<int>
-PBDWOnline::idsWithout( std::vector<std::string> const& sensors ) const
-{
-    std::vector<int> ids;
-    for( auto const& name : sensors )
-    {
-        auto it = std::find(this->M_sensorNames.begin(), this->M_sensorNames.end(), name);
-        if( it != this->M_sensorNames.end() )
-            ids.push_back(std::distance(this->M_sensorNames.begin(), it));
-        else
-            LOG(WARNING) << "sensor " << name << " does not exist !";
-    }
-    return idsWithout(ids);
-}
 
-typename PBDWOnline::vectorN_type
-PBDWOnline::online(vectorN_type const& yobs, std::vector<int> const& sensors, bool toComplete) const
+typename PBDWOnline::matrixN_type
+PBDWOnline::online(matrixN_type const& yobs, std::vector<int> const& sensors, bool toComplete) const
 {
     std::vector<int> ids;
     if( toComplete )
         ids = idsWith(sensors);
     else
         ids = sensors;
-    vectorN_type yobs2 = vectorN_type::Zero(ids.size());
-    yobs2.head(ids.size() - this->M_N) = yobs;
-    vectorN_type vn = M_matrix(ids,ids).colPivHouseholderQr().solve(yobs2);
+    matrixN_type yobs2 = matrixN_type::Zero(ids.size(),yobs.cols());
+    yobs2.topRows(ids.size() - this->M_N) = yobs;
+    matrixN_type vn = M_matrix(ids,ids).colPivHouseholderQr().solve(yobs2);
     return vn;
 }
 
-typename PBDWOnline::vectorN_type
-PBDWOnline::outputs(vectorN_type const& yobs, std::vector<int> const& sensors, bool toComplete) const
+typename PBDWOnline::matrixN_type
+PBDWOnline::outputs(matrixN_type const& yobs, std::vector<int> const& sensors, bool toComplete) const
 {
    std::vector<int> ids;
     if( toComplete )
         ids = idsWith(sensors);
     else
         ids = sensors;
-    vectorN_type coeffs = this->online(yobs, ids, false);
-    vectorN_type vn = M_F(Eigen::all, ids)*coeffs;
+    matrixN_type coeffs = this->online(yobs, ids, false);
+    matrixN_type vn = M_F(Eigen::all, ids)*coeffs;
     return vn;
 }
 
-typename PBDWOnline::vectorN_type
-PBDWOnline::online(vectorN_type const& yobs, std::vector<std::string> const& sensors) const
+typename PBDWOnline::matrixN_type
+PBDWOnline::online(matrixN_type const& yobs, std::vector<std::string> const& sensors) const
 {
     std::vector<int> ids = idsWith(sensors);
     return this->online(yobs, ids, false);
 }
 
-typename PBDWOnline::vectorN_type
-PBDWOnline::outputs(vectorN_type const& yobs, std::vector<std::string> const& sensors) const
+typename PBDWOnline::matrixN_type
+PBDWOnline::outputs(matrixN_type const& yobs, std::vector<std::string> const& sensors) const
 {
     std::vector<int> ids = idsWith(sensors);
     return this->outputs(yobs, ids, false);
-}
-
-typename PBDWOnline::vectorN_type
-PBDWOnline::onlineWithout(vectorN_type const& yobs, std::vector<int> const& sensors) const
-{
-    auto ids = idsWithout(sensors);
-    return online(yobs, ids, false);
-}
-
-typename PBDWOnline::vectorN_type
-PBDWOnline::outputsWithout(vectorN_type const& yobs, std::vector<int> const& sensors) const
-{
-    auto ids = idsWithout(sensors);
-    return outputs(yobs, ids, false);
-}
-
-typename PBDWOnline::vectorN_type
-PBDWOnline::onlineWithout(vectorN_type const& yobs, std::vector<std::string> const& sensors) const
-{
-    auto ids = idsWithout(sensors);
-    return online(yobs, ids, false);
-}
-
-typename PBDWOnline::vectorN_type
-PBDWOnline::outputsWithout(vectorN_type const& yobs, std::vector<std::string> const& sensors) const
-{
-    auto ids = idsWithout(sensors);
-    return outputs(yobs, ids, false);
 }
 
 void
@@ -492,7 +411,7 @@ PBDW<RBSpace>::initRiesz()
     auto u = M_XR->functionSpace()->element();
     M_qs = std::vector<element_type>(this->M_M, M_XR->functionSpace()->element());
     auto a = form2(_test=M_XR->functionSpace(), _trial=M_XR->functionSpace());
-    a = integrate(_range=elements(M_XR->mesh()), _expr=inner(vf::id(u),vf::idt(u)) + inner(grad(u),gradt(u)) );
+    a = integrate(_range=elements(support(M_XR->functionSpace())), _expr=inner(vf::id(u),vf::idt(u)) + inner(grad(u),gradt(u)) );
     auto am = a.matrixPtr();
     int m = 0;
     for( auto const& it /*[name, sensor]*/ : M_sigmas )
@@ -663,13 +582,13 @@ PBDW<RBSpace>::loadDB( std::string const& filename, crb::load l )
             }
             M_sigmas = sensormap_type(Xh);
             ia >> M_sigmas;
+            M_qs.resize(this->M_M);
             for( int m = 0; m < this->M_M; ++m )
             {
                 ia >> u;
                 M_qs[m] = Xh->element();
                 M_qs[m] = u;
             }
-            // this->initRiesz();
         }
     }
 }
