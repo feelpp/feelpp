@@ -37,8 +37,8 @@ makeToolboxMorAbout( std::string const& str )
 }
 
 template<typename ToolboxType>
-typename ToolboxMorModel<ToolboxType>::deim_function_type
-ToolboxMorModel<ToolboxType>::deimFunction()
+typename DeimMorModelToolbox<ToolboxType>::deim_function_type
+DeimMorModelToolbox<ToolboxType>::deimFunction()
 {
     deim_function_type assembleDEIM =
         [&tb=M_tb,&rhs=M_rhs,&mat=M_mat](parameter_type const& mu)
@@ -54,8 +54,8 @@ ToolboxMorModel<ToolboxType>::deimFunction()
 }
 
 template<typename ToolboxType>
-typename ToolboxMorModel<ToolboxType>::mdeim_function_type
-ToolboxMorModel<ToolboxType>::mdeimFunction()
+typename DeimMorModelToolbox<ToolboxType>::mdeim_function_type
+DeimMorModelToolbox<ToolboxType>::mdeimFunction()
 {
     mdeim_function_type assembleMDEIM =
         [&tb=M_tb,&rhs=M_rhs,&mat=M_mat](parameter_type const& mu)
@@ -71,8 +71,8 @@ ToolboxMorModel<ToolboxType>::mdeimFunction()
 }
 
 template<typename ToolboxType>
-typename ToolboxMorModel<ToolboxType>::deim_function_type
-ToolboxMorModel<ToolboxType>::deimOnlineFunction(mesh_ptrtype const& mesh)
+typename DeimMorModelToolbox<ToolboxType>::deim_function_type
+DeimMorModelToolbox<ToolboxType>::deimOnlineFunction(mesh_ptrtype const& mesh)
 {
     M_tbDeim = std::make_shared<toolbox_type>(M_tb->prefix());
     M_tbDeim->setMesh(mesh);
@@ -93,8 +93,8 @@ ToolboxMorModel<ToolboxType>::deimOnlineFunction(mesh_ptrtype const& mesh)
 }
 
 template<typename ToolboxType>
-typename ToolboxMorModel<ToolboxType>::mdeim_function_type
-ToolboxMorModel<ToolboxType>::mdeimOnlineFunction(mesh_ptrtype const& mesh)
+typename DeimMorModelToolbox<ToolboxType>::mdeim_function_type
+DeimMorModelToolbox<ToolboxType>::mdeimOnlineFunction(mesh_ptrtype const& mesh)
 {
     M_tbMdeim = std::make_shared<toolbox_type>(M_tb->prefix());
     M_tbMdeim->setMesh(mesh);
@@ -334,7 +334,7 @@ ToolboxMor<SpaceType, Options>::initModel()
 
 template<typename SpaceType, int Options>
 void
-ToolboxMor<SpaceType, Options>::initToolbox(std::shared_ptr<ToolboxMorModelBase<mesh_type>> model )
+ToolboxMor<SpaceType, Options>::initToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model )
 {
     this->setAssembleDEIM(model->deimFunction());
     this->setAssembleMDEIM(model->mdeimFunction());
@@ -504,7 +504,7 @@ ToolboxMor<SpaceType, Options>::assembleData()
     this->M_Mqm[0].resize( 1 );
     this->M_Mqm[0][0] = backend()->newMatrix(_test=this->Xh, _trial=this->Xh);
     form2(_test=this->Xh, _trial=this->Xh, _matrix=this->M_Mqm[0][0])
-        = integrate(_range=elements(this->Xh->mesh()), _expr=inner(id(u),idt(u)));
+        = integrate(_range=elements(support(this->Xh)), _expr=inner(id(u),idt(u)));
 
 }
 
