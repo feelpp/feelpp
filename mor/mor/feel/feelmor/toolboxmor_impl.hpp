@@ -416,60 +416,65 @@ ToolboxMor<SpaceType, Options>::assembleData()
     int output = 1;
     for( auto const& outp : outputs )
     {
+        auto fO = form1(_test=this->Xh);
         auto out = outp.second;
         if( out.type() == "average" )
         {
-            auto dim = out.dim();
-            auto fAvg = form1(_test=this->Xh);
-            if( dim == nDim )
+            if constexpr( is_scalar )
             {
-                auto range = markedelements(this->Xh->mesh(), out.markers());
-                double area = integrate( _range=range, _expr=cst(1.0) ).evaluate()(0,0) ;
-                fAvg += integrate( _range=range, _expr=id(u)/cst(area) );
+                auto dim = out.dim();
+                if( dim == nDim )
+                {
+                    auto range = markedelements(this->Xh->mesh(), out.markers());
+                    double area = integrate( _range=range, _expr=cst(1.0) ).evaluate()(0,0) ;
+                    fO += integrate( _range=range, _expr=id(u)/cst(area) );
+                }
+                else if( dim == nDim-1 )
+                {
+                    auto range = markedfaces(this->Xh->mesh(), out.markers());
+                    double area = integrate( _range=range, _expr=cst(1.0) ).evaluate()(0,0) ;
+                    fO += integrate( _range=range, _expr=id(u)/cst(area) );
+                }
             }
-            else if( dim == nDim-1 )
-            {
-                auto range = markedfaces(this->Xh->mesh(), out.markers());
-                double area = integrate( _range=range, _expr=cst(1.0) ).evaluate()(0,0) ;
-                fAvg += integrate( _range=range, _expr=id(u)/cst(area) );
-            }
-            this->M_Fqm[output++][0][0] = fAvg.vectorPtr();
         }
         else if( out.type() == "flux")
         {
-            auto fF = form1(_test=this->Xh);
-            fF += integrate( _range=markedfaces(this->Xh->mesh(), out.markers() ),
-                             _expr=-grad(u)*N() );
-            this->M_Fqm[output++][0][0] = fF.vectorPtr();
+            if constexpr( is_scalar )
+            {
+                fO += integrate( _range=markedfaces(this->Xh->mesh(), out.markers() ),
+                                 _expr=-grad(u)*N() );
+            }
         }
         else if( out.type() == "sensor")
         {
-            auto fS = form1(_test=this->Xh);
-            auto coord = out.coord();
-            auto radius = out.radius();
-            if( coord.size() == nDim )
+            if constexpr( is_scalar )
             {
-                if constexpr( nDim == 1 )
+                auto coord = out.coord();
+                auto radius = out.radius();
+                if( coord.size() == nDim )
                 {
-                    auto phi = exp( -inner(P()-vec(cst(coord[0])))/(2*std::pow(radius,2)));
-                    auto n = integrate(_range=elements(support(this->Xh)), _expr=phi).evaluate()(0,0);
-                    fS += integrate( _range=elements(support(this->Xh)), _expr=id(u)*phi/n);
-                }
-                else if constexpr( nDim == 2 )
-                {
-                    auto phi = exp( -inner(P()-vec(cst(coord[0]),cst(coord[1])))/(2*std::pow(radius,2)));
-                    auto n = integrate(_range=elements(support(this->Xh)), _expr=phi).evaluate()(0,0);
-                    fS += integrate( _range=elements(support(this->Xh)), _expr=id(u)*phi/n);
-                }
-                else if constexpr( nDim == 3 )
-                {
-                    auto phi = exp( -inner(P()-vec(cst(coord[0]),cst(coord[1]),cst(coord[2])))/(2*std::pow(radius,2)));
-                    auto n = integrate(_range=elements(support(this->Xh)), _expr=phi).evaluate()(0,0);
-                    fS += integrate( _range=elements(support(this->Xh)), _expr=id(u)*phi/n);
+                    if constexpr( nDim == 1 )
+                    {
+                        auto phi = exp( -inner(P()-vec(cst(coord[0])))/(2*std::pow(radius,2)));
+                        auto n = integrate(_range=elements(support(this->Xh)), _expr=phi).evaluate()(0,0);
+                        fO += integrate( _range=elements(support(this->Xh)), _expr=id(u)*phi/n);
+                    }
+                    else if constexpr( nDim == 2 )
+                    {
+                        auto phi = exp( -inner(P()-vec(cst(coord[0]),cst(coord[1])))/(2*std::pow(radius,2)));
+                        auto n = integrate(_range=elements(support(this->Xh)), _expr=phi).evaluate()(0,0);
+                        fO += integrate( _range=elements(support(this->Xh)), _expr=id(u)*phi/n);
+                    }
+                    else if constexpr( nDim == 3 )
+                    {
+                        auto phi = exp( -inner(P()-vec(cst(coord[0]),cst(coord[1]),cst(coord[2])))/(2*std::pow(radius,2)));
+                        auto n = integrate(_range=elements(support(this->Xh)), _expr=phi).evaluate()(0,0);
+                        fO += integrate( _range=elements(support(this->Xh)), _expr=id(u)*phi/n);
+                    }
                 }
             }
-            this->M_Fqm[output++][0][0] = fS.vectorPtr();
         }
+        this->M_Fqm[output++][0][0] = fO.vectorPtr();
     }
 
     // Energy matrix
