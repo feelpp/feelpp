@@ -1,3 +1,5 @@
+#include <fmt/core.h>
+#include <fmt/compile.h>
 #include <feel/feelmor/toolboxmor.hpp>
 #include <feel/feelmodels/heat/heat.hpp>
 
@@ -148,45 +150,42 @@ int runSimulation()
     return 0;
 }
 
+
 int main( int argc, char** argv)
 {
-    po::options_description opt("options");
-    opt.add_options()
-        ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
-        ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
-        ( "toolboxmor.name", po::value<std::string>()->default_value( "toolboxmor" ), "Name of the db directory" )
-        ( "toolboxmor.sampling-size", po::value<int>()->default_value(10), "size of the sampling" )
-        ;
+    using namespace Feel;
+    try
+    {
+        po::options_description opt("options");
+        opt.add_options()
+            ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
+            ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
+            ( "toolboxmor.name", po::value<std::string>()->default_value( "toolboxmor" ), "Name of the db directory" )
+            ( "toolboxmor.sampling-size", po::value<int>()->default_value(10), "size of the sampling" )
+            ;
 
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=opt.add(makeToolboxMorOptions())
-                     .add(toolboxes_options("heat")) );
+        Environment env( _argc=argc, _argv=argv,
+                         _desc=opt.add(makeToolboxMorOptions())
+                         .add(toolboxes_options("heat")) );
 
-    int dimension = ioption(_name="case.dimension");
-    std::string discretization = soption(_name="case.discretization");
+        int dimension = ioption(_name="case.dimension");
+        std::string discretization = soption(_name="case.discretization");
+        
 
-    auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
-#if FEELPP_INSTANTIATION_ORDER_MAX >= 3
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> )// ,
-                                             // hana::make_tuple("P2", hana::int_c<2> ),
-                                             // hana::make_tuple("P3", hana::int_c<3> )
-                                             );
-#elif FEELPP_INSTANTIATION_ORDER_MAX >= 2
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> )// ,
-                                             // hana::make_tuple("P2", hana::int_c<2> )
-                                             );
-#else
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
-#endif
-    int status = 0;
-    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)),
-                    [&discretization,&dimension,&status]( auto const& d )
-                        {
-                            constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
-                            std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
-                            constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
+        int status = 0;
+        hana::for_each( Pc_t<>,
+                        [&discretization, &dimension, &status]( auto const& d ) {
+                            constexpr int _dim = std::decay_t<decltype( hana::at_c<0>( d ) )>::value;
+                            constexpr int _torder = std::decay_t<decltype( hana::at_c<1>( d ) )>::value;
+                            std::string const& _discretization = hana::at_c<2>( d );
                             if ( dimension == _dim && discretization == _discretization )
-                                status = runSimulation<_dim,_torder>();
+                                status = runSimulation<_dim, _torder>();
                         } );
-    return status;
+        return status;
+    }
+    catch( ... )
+    {
+        handleExceptions();
+    }
+    return EXIT_FAILURE;
 }
