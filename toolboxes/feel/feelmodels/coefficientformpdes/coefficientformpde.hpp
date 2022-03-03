@@ -15,6 +15,8 @@
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
+//#define FEELPP_TOOLBOXES_COEFFICIENTFORMPDE_REDUCE_COMPILATION_TIME
+
 namespace Feel
 {
 namespace FeelModels
@@ -192,17 +194,22 @@ public:
     template <typename ModelFieldsType>
     auto symbolsExpr( ModelFieldsType const& mfields ) const
     {
+#ifndef FEELPP_TOOLBOXES_COEFFICIENTFORMPDE_REDUCE_COMPILATION_TIME
         auto seToolbox = this->symbolsExprToolbox( mfields );
         auto seParam = this->symbolsExprParameter();
         auto seMat = this->materialsProperties()->symbolsExpr();
         auto seFields = mfields.symbolsExpr(); // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dn_T
         return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+#else
+        return symbols_expression_empty_t{};
+#endif
     }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
     template <typename ModelFieldsType>
     auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
     {
+#ifndef FEELPP_TOOLBOXES_COEFFICIENTFORMPDE_REDUCE_COMPILATION_TIME
         using _expr_first_time_derivative_rhs_type = std::decay_t<decltype(idv(M_bdfUnknown->polyDeriv()))>;
         symbol_expression_t<_expr_first_time_derivative_rhs_type> se_firstTimeDerivative_rhs;
         using _expr_first_time_derivative_lhs_type = std::decay_t<decltype( expr<space_unknown_type::nComponents1,space_unknown_type::nComponents2>( "" )*cst(1.) )>;
@@ -262,6 +269,9 @@ public:
         }
 
         return Feel::vf::symbolsExpr( se_firstTimeDerivative_rhs,se_firstTimeDerivative_lhs,se_firstTimeDerivative );
+#else
+        return symbols_expression_empty_t{};
+#endif
     }
 
     template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
