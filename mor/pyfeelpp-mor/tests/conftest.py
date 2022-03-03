@@ -6,7 +6,6 @@ import pytest
 import feelpp
 import feelpp.mor as mor
 import feelpp.toolboxes.core as tb
-
 log = getLogger(__name__)
 MPI_ARGS = ("mpirun", "-n")
 PYTEST_ARGS = (sys.executable, "-mpytest")

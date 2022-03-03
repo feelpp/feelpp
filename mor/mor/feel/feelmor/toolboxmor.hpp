@@ -141,6 +141,7 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
     void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
     void updateSpecificityModel( boost::property_tree::ptree & ptree ) const override;
 
+    std::shared_ptr<ModelProperties> const& modelProperties() const { return M_modelProperties; }
 
   private :
     void assembleData();
