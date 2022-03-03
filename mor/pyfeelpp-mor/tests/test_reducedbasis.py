@@ -20,10 +20,10 @@ from feelpp.mor.reducedbasis.reducedbasis import *
 
 #        (( prefix, case, casefile, dim, use_cache, time_dependant), name     )
 cases = [
-        #  (('thermal-fin', '2d', 'thermal-fin.cfg', 2, False, False), 'thermal-fin-2d'),
-         (('thermal-fin', '2d', 'thermal-fin.cfg', 2, True, False), 'thermal-fin-2d-cached'),
-         (('thermal-fin', '3d', 'thermal-fin.cfg', 3, False, False), 'thermal-fin-3d'),
-         (('thermal-fin', '3d', 'thermal-fin.cfg', 3, True, False), 'thermal-fin-3d-cached')
+         (('testcase/thermal-fin', '2d', 'thermal-fin.cfg', 2, False, False), 'thermal-fin-2d'),
+         (('testcase/thermal-fin', '2d', 'thermal-fin.cfg', 2, True, False), 'thermal-fin-2d-cached'),
+         (('testcase/thermal-fin', '3d', 'thermal-fin.cfg', 3, False, False), 'thermal-fin-3d'),
+         (('testcase/thermal-fin', '3d', 'thermal-fin.cfg', 3, True, False), 'thermal-fin-3d-cached')
         ]
 cases_params, cases_ids = list(zip(*cases))
 
@@ -215,8 +215,41 @@ def compar_solFE(rb, assembleMDEIM, heatBox):
     assert norm < 1e-10, f"relative error {norm} is too high"
 
 
+
+
+def save_and_load(rb):
+    """Tests that the loaded matrices are identical to the ones saved
+    """
+    os.system("rm -rf /tmp/test_reducedbasis")
+
+    path = rb.saveReducedBasis("/tmp/test_reducedbasis")
+
+    rbLoaded = reducedbasis(None)
+    rbLoaded.loadReducedBasis(path, rb.model)
+
+    assert( rb.Qa == rbLoaded.Qa )
+    assert( rb.Qf == rbLoaded.Qf )
+    assert( rb.N == rbLoaded.N )
+
+    for q in range(rbLoaded.Qa):
+        assert( (rb.ANq[q] == rbLoaded.ANq[q]).all() ), f"q = {q}"
+    for p in range(rbLoaded.Qf):
+        assert( (rb.FNp[p] == rbLoaded.FNp[p]).all() ), f"p = {p}"
+
+    assert( (rb.SS == rbLoaded.SS).all() ), f"SS"
+    assert( (rb.SL == rbLoaded.SL).all() ), f"SL"
+    assert( (rb.LL == rbLoaded.LL).all() ), f"LL"
+    
+    if rb.DeltaMax is None:
+        assert rbLoaded.DeltaMax is None, "DeltaMax"
+    else:
+        assert( (rb.DeltaMax == rbLoaded.DeltaMax).all() ), f"DeltaMax"
+
+
+
+
 @pytest.mark.parametrize("prefix,case,casefile,dim,use_cache,time_dependent", cases_params, ids=cases_ids)
-def test_init_reducedbasis(prefix, case, casefile, dim, use_cache, time_dependent, init_feelpp):
+def test_reducedbasis_sample(prefix, case, casefile, dim, use_cache, time_dependent, init_feelpp):
     e = init_feelpp    
     heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM = init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
 
@@ -257,30 +290,58 @@ def test_init_reducedbasis(prefix, case, casefile, dim, use_cache, time_dependen
     print("\nCompar FE solutions")
     compar_solFE(rb, assembleDEIM, heatBox)
 
+    print("\n Save and reload basis")
+    save_and_load(rb)
 
 
 
 
+@pytest.mark.parametrize("prefix,case,casefile,dim,use_cache,time_dependent", cases_params, ids=cases_ids)
+def test_reducedbasis_greedy(prefix, case, casefile, dim, use_cache, time_dependent, init_feelpp):
+    e = init_feelpp    
+    heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM = init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
+
+    Aq = decomposition[0]
+    Fq = decomposition[1]
+
+    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), convertToPetscVec(Fq[0][0]), model, mubar)
+
+    print("\nCompute basis and orthonormalize it")
+    def listOfParams(n):
+        res = []
+        for i in range(n):
+            res.append(model.parameterSpace().element())
+        return res
+
+    Xi_train = listOfParams(50)
+    mu0 = model.parameterSpace().element()
+    rb.greedy(mu0, Xi_train)
+    assert( rb.test_orth() )
+    assert( rb.DeltaMax[-1] < 1e-6 )
+
+
+    print("\nCompute offline error")
+    rb.computeOfflineErrorRhs()
+    rb.computeOfflineError()
+
+
+    print("\nCompar matrix")
+    compar_matrix(rb, assembleMDEIM)
+
+    print("\nCompar Rhs")
+    compar_rhs(rb, assembleDEIM)
+
+    print("\nCompar solutions")
+    compar_sols(rb, assembleDEIM, heatBox)
+
+    print("\nCompar FE solutions")
+    compar_solFE(rb, assembleDEIM, heatBox)
+
+    print("\n Save and reload basis")
+    save_and_load(rb)
 
 
 
-# # Greedy Tests
-
-# @pytest.mark.long
-# # @pytest.mark.dependency(depends=['test_init_environment'])
-# def test_runGreedy():
-#     """runs the greedy algorithm to generate a basis
-#        (this test is quite long)
-#     """
-#     Aq = pytest.decomposition[0]
-#     Fq = pytest.decomposition[1]
-#     pytest.rbGreedy = reducedbasis(convertToPetscMat(Aq[0]), convertToPetscVec(Fq[0][0]), model, mubar, alphaLB)
-
-#     Xi_train = listOfParams(100)
-#     mu0 = pytest.Dmu.element(True, True)
-#     S = pytest.rbGreedy.greedy(mu0, Xi_train, Nmax=60)
-
-#     assert( pytest.rbGreedy.DeltaMax[-1] < 1e-6 )
 
 # # @pytest.mark.greedy
 # # @pytest.mark.dependency(depends=['test_runGreedy'])
@@ -315,24 +376,3 @@ def test_init_reducedbasis(prefix, case, casefile, dim, use_cache, time_dependen
 
 
 
-
-# # Other tests
-
-# # @pytest.mark.dependency(depends=['test_computeBasis'])
-# def test_save_load():
-#     """Tests that the loaded matrices are identical to the ones saved
-#     """
-#     os.system("rm -rf /tmp/rb")
-#     assert( reducedbasis.loadReducedBasis('/tmp/rb', pytest.model) == None )
-
-#     pytest.rb.saveReducedBasis('/tmp/rb')
-#     rbLoaded = reducedbasis.loadReducedBasis('/tmp/rb', pytest.model)
-
-#     assert( pytest.rb.Qa == rbLoaded.Qa )
-#     assert( pytest.rb.Qf == rbLoaded.Qf )
-#     assert( pytest.rb.N == rbLoaded.N )
-
-#     for q in range(rbLoaded.Qa):
-#         assert( (pytest.rb.ANq[q] == rbLoaded.ANq[q]).all() ), f"q = {q}"
-#     for p in range(rbLoaded.Qf):
-#         assert( (pytest.rb.FNp[p] == rbLoaded.FNp[p]).all() ), f"p = {p}"

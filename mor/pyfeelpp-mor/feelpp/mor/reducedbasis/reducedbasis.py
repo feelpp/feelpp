@@ -38,24 +38,22 @@ def convertToPetscVec(Fq):
 
 class reducedbasis():
 
-    def __init__(self, model, mubar) -> None:
+    def __init__(self, model) -> None:
         """Initialise the object
 
         Args:
             Aq (list of PETSc.Mat): matrices Aq given by the affine decomposition
             Fq (list of PETSc.Vec): vectors Fq given by the decomposition of right-hand side
             model (ToolboxMor_{2|3}D): model DEIM used for the decomposition
-            mubar (ParameterSpaceElement): parameter mu_bar for the enrgy norm
         """
         self.Qa = 0
         self.Qf = 0
         self.N = 0
 
         self.model = model  # TODO : load online model
-        self.mubar = mubar
-
-        self.ANq    : list  # len Qa, each matrix size (N,N)
-        self.FNp    : list  # len Qf, each vector size N
+        
+        self.ANq = []   # len Qa, each matrix size (N,N)
+        self.FNp = []   # len Qf, each vector size N
 
         self.SS = np.zeros((self.Qf, self.Qf))            # SS[p,p_] = (Sp,sp_)X
         self.SL     : np.ndarray    # shape (Qf, Qa, N)     SL[p,n,q] = (Sp,Lnq)X
@@ -176,9 +174,9 @@ class reducedbasis():
         elif not os.path.isdir(path):
             os.mkdir(path)
 
-        print(f"[reducedbasis] saving reduced basis to {path}...", end=" ")
+        print(f"[reducedbasis] saving reduced basis to {os.getcwd()}/reducedbasis.json...", end=" ")
 
-        content = {'Qa': self.Qa, 'Qf': self.Qf, 'N': self.N, "path": path}
+        content = {'Qa': self.Qa, 'Qf': self.Qf, 'N': self.N, "path": path+"/reducedbasis.h5"}
         os.system('pwd')
         h5f = h5py.File(path+"/reducedbasis.h5", "w")
         f = open('reducedbasis.json', 'w')
@@ -201,6 +199,7 @@ class reducedbasis():
         h5f.close()
         f.close()
         print("Done !")
+        return os.getcwd() + "/reducedbasis.json"
 
 
     def loadReducedBasis(self, path, model):
@@ -214,7 +213,9 @@ class reducedbasis():
         j = json.load(f)
         f.close()
 
-        self.N = j['n']
+        self.model = model
+
+        self.N = j['N']
         self.Qa = j['Qa']
         self.Qf = j['Qf']
 
@@ -241,13 +242,15 @@ class reducedbasisOffline(reducedbasis):
     
     def __init__(self, Aq, Fq, model, mubar):
 
-        super().__init__(model, mubar)
+        super().__init__(model)
 
         self.Aq = Aq
         self.Fq = Fq
 
         self.Qa = len(Aq)
         self.Qf = len(Fq)
+
+        self.mubar = mubar
 
         self.SS = np.zeros((self.Qf, self.Qf))
 
