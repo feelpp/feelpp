@@ -124,6 +124,7 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
     void setOnlineAssembleMDEIM(mdeim_function_type const& fct ) { M_mdeim->onlineModel()->setAssembleMDEIM(fct); }
     void initToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model );
 
+    void preInitOnlineModel();
     void initModel() override;
     void postInitModel();
 
@@ -140,7 +141,6 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
     // element_type solve(parameter_type const& mu) override;
 
     void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
-    void updateSpecificityModel( boost::property_tree::ptree & ptree ) const override;
 
     std::shared_ptr<ModelProperties> const& modelProperties() const { return M_modelProperties; }
 
