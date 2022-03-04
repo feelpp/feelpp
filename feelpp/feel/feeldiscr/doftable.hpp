@@ -1261,7 +1261,8 @@ public:
                                     ie << "," << lc_dof << ")";
                                 //(Dof  itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
 
-                                M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
+                                if ( !marker.empty() )
+                                    M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
                             }
                             M_ldof.setLocalDof( fe_type::nLocalDof*(nComponents1*c1+c1)+l_dof );
                             const int k = Feel::detail::symmetricIndex(c1,c1,nComponents1);
@@ -1269,7 +1270,8 @@ public:
                             auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
                             DCHECK( res.second ) << "global dof " << itdof->second+shift+k << " not inserted in local dof (" <<
                                 ie << "," << lc_dof << ")";
-                            M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
+                            if ( !marker.empty() )
+                                M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
                         }
                     }
                     else
@@ -1282,7 +1284,8 @@ public:
                             //(Dof  itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
                             DCHECK( res.second ) << "global dof " << itdof->second+shift << " not inserted in local dof (" <<
                                 ie << "," << lc_dof << ")";
-                            M_dof_marker.insert( dof2marker( itdof->second+shift+c,  marker.value() ) );
+                            if ( !marker.empty() )
+                                M_dof_marker.insert( dof2marker( itdof->second+shift+c,  marker.value() ) );
                         }
                     }
 
