@@ -729,6 +729,48 @@ class Mesh
         }
     }
 
+
+    template <typename ContType>
+    struct UpdateSetForAllReduce : public std::binary_function<ContType,ContType,ContType>
+    {
+        using cont_type = ContType;
+        cont_type operator()( cont_type const& x, cont_type const& y ) const
+            {
+                cont_type ret = x;
+                for ( auto const& yVal : y )
+                    ret.insert( yVal );
+                return ret;
+            }
+    };
+
+
+    void updateMeshFragmentation()
+        {
+            using _marker_element_type = typename element_type::marker_type;
+            std::set<_marker_element_type> collectMarkerIds;
+            _marker_element_type emptyMarker;
+            auto it = this->beginOrderedElement();
+            auto en = this->endOrderedElement();
+            for ( ; it != en; ++it )
+            {
+                auto const& elt = unwrap_ref( *it );
+                if ( elt.isGhostCell() )
+                    continue;
+                _marker_element_type const& eltMarkers = elt.hasMarker()? elt.marker() : emptyMarker;
+                collectMarkerIds.insert( eltMarkers );
+            }
+
+            mpi::all_reduce( MeshBase<>::worldComm().localComm(), mpi::inplace( collectMarkerIds ), UpdateSetForAllReduce<std::set<_marker_element_type>>() );
+
+            M_meshFragmentationByMarker.clear();
+            int fragmentId = 0;
+            for ( _marker_element_type const& mIds : collectMarkerIds )
+                M_meshFragmentationByMarker.emplace( fragmentId++, mIds );
+        }
+
+    //! return mesg fragmentation : mapping fragment id to elements marker ids
+    std::map<int,typename element_type::marker_type> const& meshFragmentationByMarker() const { return M_meshFragmentationByMarker; }
+
     //! !
     //! ! @return the topological dimension
     //! ! @code
@@ -1669,6 +1711,10 @@ public:
     FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type& elt, face_type const& face, mpl::false_ );
 
   private:
+
+    // fragment id to elements marker ids
+    std::map<int,typename element_type::marker_type> M_meshFragmentationByMarker;
+
     //! ! communicator
     size_type M_numGlobalElements, M_numGlobalFaces, M_numGlobalEdges, M_numGlobalPoints, M_numGlobalVertices;
     size_type M_maxNumElements, M_maxNumFaces, M_maxNumEdges, M_maxNumPoints, M_maxNumVertices;

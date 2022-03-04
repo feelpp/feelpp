@@ -55,11 +55,10 @@ struct MeshContiguousNumberingMapping
 
             if ( M_partIdToRangeElement.empty() )
             {
-                auto mdbyme = meshDistributionByMarkedElements( mesh );
-                for ( int rangeId=0;rangeId<mdbyme.size();++rangeId )
+                for ( auto const& [fragmentId,fragmentData] : fragmentationMarkedElements( mesh ) )
                 {
-                    auto const& [range,mIds,rangeName] = mdbyme[rangeId];
-                    M_partIdToRangeElement[rangeId] = std::make_tuple(rangeName,range);
+                    auto const& [range,mIds,fragmentName] = fragmentData;
+                    M_partIdToRangeElement[fragmentId] = std::make_tuple(fragmentName,range);
                 }
             }
 
