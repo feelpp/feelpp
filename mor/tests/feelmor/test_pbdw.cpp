@@ -164,6 +164,8 @@ BOOST_AUTO_TEST_CASE( test_pbdw_online )
     using sensorbase_ptrtype = std::shared_ptr<sensorbase_type>;
     using sensor_type = SensorGaussian<space_type>;
     using node_t = typename sensor_type::node_t;
+    using pbdw_type = PBDW<reducedspace_type>;
+    using matrixN_type = typename pbdw_type::matrixN_type;
 
     double r = doption("radius");
     auto pbdw = PBDW<reducedspace_type>("test_pbdw", crb::load::fe);
@@ -205,7 +207,6 @@ BOOST_AUTO_TEST_CASE( test_pbdw_online )
     f3 = integrate(_range=boundaryfaces(mesh), _expr=id(u)/cst(area3) );
     Fs[2] = f3.vectorPtr();
     auto pbdwOnline = PBDWOnline("test_pbdw");
-    Feel::cout << "matrixF\n" << pbdwOnline.matrixF() << std::endl;
 
     // parameters
     auto Dmu = parameterspace_type::New(4);
@@ -218,23 +219,35 @@ BOOST_AUTO_TEST_CASE( test_pbdw_online )
     auto Pset = Dmu->sampling();
     Pset->randomize(20);
 
-    std::vector<double> errors, errorsOutput1, errorsOutput2, errorsOutput3;
+    std::vector<double> errors, errorsOutput1, errorsOutput2, errorsOutput3;;
+    matrixN_type sensorsData = matrixN_type::Zero(pbdw.dimensionM(), Pset->size());
+    matrixN_type outs1 = matrixN_type::Zero(Fs.size(), Pset->size());
+    matrixN_type outs2 = matrixN_type::Zero(Fs.size(), Pset->size());
+    matrixN_type outputs = matrixN_type::Zero(Fs.size(), Pset->size());
+    int k=0;
     for( auto const& mu : *Pset )
     {
         auto phi = solver(mu);
         auto vn = pbdw.sensors().apply(phi);
+        sensorsData.col(k) = vn;
         auto I = pbdw.solution(vn);
         errors.push_back( normL2(_range=elements(mesh),_expr=idv(phi)-idv(I)) );
 
-        auto outs1 = pbdwOnline.outputs(vn);
-        auto outs2 = pbdwOnline.outputs(vn({1,2,3,4,5,6,8,9}), {1, 2, 3, 4, 5, 6, 8, 9});
-        auto outs3 = pbdwOnline.outputsWithout(vn({0,1,2,3,5,6,7,8,9,10,12,13,14,15}),
-                                               std::vector<std::string>{"sensors_5","sensors_12"});
+        outs1.col(k) = pbdwOnline.outputs(vn);
+        outs2.col(k) = pbdwOnline.outputs(vn({1,2,3,4,5,6,8,9}), {1, 2, 3, 4, 5, 6, 8, 9});
+        for( int i = 0; i < Fs.size(); ++i )
+            outputs(i,k) = inner_product(*Fs[i], phi);
+        k++;
+    }
+    auto outs3 = pbdwOnline.outputs(sensorsData({0,1,2,5,6,7,8,10,11,13},Eigen::all),
+                                    {0,1,2,5,6,7,8,10,11,13});
+    for( int j = 0; j < k; ++j )
+    {
         for( int i = 0; i < Fs.size(); ++i )
         {
-            errorsOutput1.push_back( std::abs(outs1(i)-inner_product(*Fs[i], phi)) );
-            errorsOutput2.push_back( std::abs(outs2(i)-inner_product(*Fs[i], phi)) );
-            errorsOutput3.push_back( std::abs(outs3(i)-inner_product(*Fs[i], phi)) );
+            errorsOutput1.push_back( std::abs(outs1(i,j)-outputs(i,j)) );
+            errorsOutput2.push_back( std::abs(outs2(i,j)-outputs(i,j)) );
+            errorsOutput3.push_back( std::abs(outs3(i,j)-outputs(i,j)) );
         }
     }
     double max = *max_element(errors.begin(), errors.end());
