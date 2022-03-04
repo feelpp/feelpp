@@ -39,7 +39,7 @@
             {
                 "wall":
                 {
-                    "expr":"{uexx,uexy}:uexx:uexy"
+                    "expr":"{0,0}"//"{uexx,uexy}:uexx:uexy"
                 }
             }
         },

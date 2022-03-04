@@ -1,27 +1,24 @@
 {
-    "Name": "straight-pipe",
-    "ShortName":"sp",
+    "Name": "gravity",
+    "ShortName":"gravity",
     "Models":
     {
-        "equations":"Stokes"
+        "equations":"Navier-Stokes"
     },
     "Parameters":
     {
-        "pi":3.141592653589793,
         "nu":1,
         "L":1,
-        "pin":10,
-        "pout":1,
-        "R":0.2,
-        "ugradexyx":"-y*(pin-pout)/(2*L*nu):y:pin:pout:L:nu",
-        "ugradexzx":"-z*(pin-pout)/(2*L*nu):z:pin:pout:L:nu",
-        "uex":"(pin-pout)*R^2*(1-(y^2+z^2)/(R^2))/(4*nu*L):x:y:z:R:pin:pout:nu:L",
-        "pex":"pin+(pout-pin)*x/L:x:y:z:L:pin:pout"
+        "pin":1,
+        "pout":0,
+        "H":4,
+        "uex":"(pin-pout)*(L-x)*x/(2*H*nu):pin:pout:L:x:H:nu",
+        "pex":"pin+(pout-pin)*y/H:y:z:H:pin:pout",
+        "ugradex":"-x*(pin - pout)/(2*H*nu) + (-x + L)*(pin - pout)/(2*H*nu):x:pin:pout:H:nu:L"
     },
     "Materials":
     {
-        "Omega":
-        {
+        "Omega":{
             "rho":"1",
             "mu":"nu:nu"
         }
@@ -30,11 +27,22 @@
     {
         "velocity":
         {
+            "VolumicForces":
+            {
+                "Omega":
+                {
+                    "expr":"{0,0}"
+                }
+            },
             "Dirichlet":
             {
-                "wall":
+                "left":
                 {
-                    "expr":"{uex,0,0}:uex"
+                    "expr":"{0,0}"
+                },
+                "right":
+                {
+                    "expr":"{0,0}"
                 }
             }
         },
@@ -42,14 +50,31 @@
         {
             "Dirichlet":
             {
-                "outlet":
+                "top":
                 {
                     "expr":"pout:pout"
                 },
-                "inlet":
+                "bottom":
                 {
                     "expr":"pin:pin"
                 }
+            }
+        }
+    },
+	"Exact solution":
+	{
+	    "p_exact":
+	    {
+		    "Omega":
+		    {
+		        "expr":"pex:pex"
+		    }
+	    },
+        "u_exact":
+        {
+            "Omega":
+            {
+                "expr":"{0,uex}:uex"
             }
         }
     },
@@ -62,8 +87,7 @@
                 "p": 
                 {
                     "type":"L2-error", 
-                    "field":"pressure",
-                    "quad":8,
+                    "field":"pressure", 
                     "solution":"pex:pex",
                     "markers":"Omega" 
                 },
@@ -71,9 +95,8 @@
                 {
                     "type":["L2-error", "H1-error"], 
                     "field":"velocity", 
-                    "quad":8,
-                    "solution":"{uex,0,0}:uex",
-                    "grad_solution":"{0,ugradexyx,ugradexzx,0,0,0,0,0,0}:ugradexyx:ugradexzx",
+                    "solution":"{0,uex}:uex",
+                    "grad_solution":"{0,0,ugradex,0}:ugradex",
                     "markers":"Omega" 
                 }
             }
@@ -104,10 +127,10 @@
             "fields":["velocity","pressure","pid"],
             "expr":
             {
-                "u_ex":"{uex,0,0}:uex",
-                "p_ex":"pex:pex",
-                "ugrad_ex":"{0,ugradexyx,ugradexzx,0,0,0,0,0,0}:ugradexyx:ugradexzx"
+                "u_ex":"{0,uex}:uex",
+                "p_ex":"pex:pex"
             }
         }
     }
+
 }

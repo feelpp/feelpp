@@ -1,9 +1,9 @@
 {
-    "Name": "curved pipe Navier-Stokes 2d",
-    "ShortName":"cpns2d",
+    "Name": "curved pipe 3d",
+    "ShortName":"cp3d",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "equations":"Stokes"
     },
     "Parameters":
     {
@@ -41,14 +41,14 @@
             {
                 "Omega":
                 {
-                    "expr":"{Cx,Cy}:Cx:Cy"
+                    "expr":"{Cx,Cy,0}:Cx:Cy"
                 }
             },
             "Dirichlet":
             {
                 "wall":
                 {
-                    "expr":"{uexx,uexy}:uexx:uexy"
+                    "expr":"{uexx,uexy,0}:uexx:uexy"
                 }
             }
         },
@@ -86,8 +86,8 @@
                     "type":["L2-error","H1-error"], 
                     "field":"velocity",
                     "quad":8,
-                    "solution":"{uexx,uexy}:uexx:uexy",
-                    "grad_solution":"{ugradexxx, ugradexyx, ugradexxy, ugradexyy}:ugradexxx:ugradexyx:ugradexxy:ugradexyy",
+                    "solution":"{uexx,uexy,0}:uexx:uexy",
+                    "grad_solution":"{ugradexxx, ugradexyx, 0, ugradexxy, ugradexyy, 0, 0, 0, 0}:ugradexxx:ugradexyx:ugradexxy:ugradexyy",
                     "markers":"Omega" 
                 }
             }
@@ -118,7 +118,7 @@
             "fields":["velocity","pressure","pid"],
             "expr":
             {
-                "u_ex":"{uexx,uexy}:uexx:uexy",
+                "u_ex":"{uexx,uexy,0}:uexx:uexy",
                 "p_ex":"pex:pex"
             }
         }

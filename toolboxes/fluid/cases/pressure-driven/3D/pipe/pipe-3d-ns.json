@@ -30,6 +30,13 @@
     {
         "velocity":
         {
+            "VolumicForces":
+            {
+                "Omega":
+                {
+                    "expr":"{0,0,0}"
+                }
+            },
             "Dirichlet":
             {
                 "wall":

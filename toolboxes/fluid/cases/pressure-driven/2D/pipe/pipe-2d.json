@@ -3,7 +3,7 @@
     "ShortName":"gravity",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "equations":"Stokes"
     },
     "Parameters":
     {
