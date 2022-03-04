@@ -117,14 +117,8 @@ DeimMorModelToolbox<ToolboxType>::mdeimOnlineFunction(mesh_ptrtype const& mesh)
 template<typename SpaceType, int Options>
 ToolboxMor<SpaceType, Options>::ToolboxMor(std::string const& name, std::string const& prefix)
     :
-    super_type(name, Environment::worldCommPtr(), prefix),
-    M_propertyPath(Environment::expand( soption("toolboxmor.filename"))),
-    M_trainsetDeimSize(ioption("toolboxmor.trainset-deim-size")),
-    M_trainsetMdeimSize(ioption("toolboxmor.trainset-mdeim-size"))
+    super_type(name, Environment::worldCommPtr(), prefix)
 {
-    M_modelProperties = std::make_shared<ModelProperties>(M_propertyPath);
-    auto parameters = M_modelProperties->parameters();
-    this->Dmu = parameterspace_type::New(parameters);
 }
 
 template<typename SpaceType, int Options>
@@ -244,24 +238,43 @@ template<typename SpaceType, int Options>
 void
 ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
 {
-    auto ptreeSpecificityOfModel = ptree.get_child_optional( "specifity-of-model" );
-    CHECK( ptreeSpecificityOfModel ) << "invalid ptree : section specifity-of-model is missing";
-    // M_measureMarkedSurface["IC2"] = ptreeSpecificityOfModel->template get<double>( "surface-measure-IC2" );
-    //std::cout << "surface loaded " << M_surface << "\n";
-}
-template<typename SpaceType, int Options>
-void
-ToolboxMor<SpaceType, Options>::updateSpecificityModel( boost::property_tree::ptree & ptree ) const
-{
-    // ptree.add( "surface-measure-IC2", M_measureMarkedSurface.find("IC2")->second );
-}
+    Feel::cout << "setupSpecificityModel" << std::endl;
 
+    if( this->hasModelFile("property-file") )
+        M_propertyPath = this->additionalModelFiles().find("property-file")->second;
+    else
+        Feel::cerr << "Warning!! the database does not contain the property file! Expect bugs!"
+                   << std::endl;
+
+    M_modelProperties = std::make_shared<ModelProperties>(M_propertyPath);
+    auto parameters = M_modelProperties->parameters();
+    this->Dmu = parameterspace_type::New(parameters);
+
+    M_deim = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _prefix="vec");
+    this->addDeim(M_deim);
+    // this->deim()->run();
+    Feel::cout << tc::green << "Electric DEIM construction finished!!" << tc::reset << std::endl;
+
+    M_mdeim = Feel::mdeim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _prefix="mat");
+    this->addMdeim(M_mdeim);
+    // this->mdeim()->run();
+    Feel::cout << tc::green << "Electric MDEIM construction finished!!" << tc::reset << std::endl;
+
+    // this->resizeQm(false);
+}
 
 template<typename SpaceType, int Options>
 void
 ToolboxMor<SpaceType, Options>::initModel()
 {
+    M_propertyPath = Environment::expand( soption("toolboxmor.filename"));
+    M_trainsetDeimSize = ioption("toolboxmor.trainset-deim-size");
+    M_trainsetMdeimSize = ioption("toolboxmor.trainset-mdeim-size");
     this->addModelFile("property-file", M_propertyPath);
+
+    M_modelProperties = std::make_shared<ModelProperties>(M_propertyPath);
+    auto parameters = M_modelProperties->parameters();
+    this->Dmu = parameterspace_type::New(parameters);
 
     if( Environment::worldComm().isMasterRank() )
     {
@@ -310,6 +323,15 @@ ToolboxMor<SpaceType, Options>::initModel()
     Feel::cout << tc::green << "Electric MDEIM construction finished!!" << tc::reset << std::endl;
 
 } // ToolboxMor<SpaceType, Options>::initModel
+
+template<typename SpaceType, int Options>
+void
+ToolboxMor<SpaceType, Options>::preInitOnlineModel()
+{
+    // this->deim()->run();
+    // this->mdeim()->run();
+    this->resizeQm(false);
+}
 
 template<typename SpaceType, int Options>
 void
