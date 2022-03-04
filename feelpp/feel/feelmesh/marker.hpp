@@ -56,7 +56,17 @@ public:
 
     void assign( value_type v ) { super_type::operator=({v}); }
 
-    value_type value() const { CHECK( !this->empty() ) << "no marker"; return *this->begin(); }
+    value_type value() const {
+#if 1
+        CHECK( !this->empty() ) << "no marker";
+        return *this->begin();
+#else
+        if ( !this->empty() )
+            return *this->begin();
+        else
+            return 0;
+#endif
+    }
 
 private:
 

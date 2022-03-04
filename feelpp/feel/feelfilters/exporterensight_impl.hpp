@@ -606,18 +606,17 @@ ExporterEnsight<MeshType,N>::saveFields( typename timeset_type::step_ptrtype __s
             }
         else
         {
-            auto elementsDistribMesh = meshDistributionByMarkedElements( __step->mesh() );
-            for ( int rangeId=0;rangeId<elementsDistribMesh.size();++rangeId )
+            for ( auto const& [fragmentId,fragmentData] : fragmentationMarkedElements( __step->mesh() ) )
             {
-                auto const& [range,mIds,rangeName] = elementsDistribMesh[rangeId];
-                sprintf( buffer, "part %d",rangeId );
+                auto const& [range,mIds,fragmentName] = fragmentData;
+                sprintf( buffer, "part %d",fragmentId );
                 __out.write( ( char * ) & buffer, sizeof( buffer ) );
                 DVLOG(2) << "part " << buffer << "\n";
                 strcpy( buffer, this->elementType().c_str() );
                 __out.write( ( char * ) & buffer, sizeof( buffer ) );
                 DVLOG(2) << "element type " << buffer << "\n";
 
-                auto itFindMapElementArrayToDofId = M_mapElementArrayToDofId.find(rangeId);
+                auto itFindMapElementArrayToDofId = M_mapElementArrayToDofId.find(fragmentId);
                 if ( itFindMapElementArrayToDofId == M_mapElementArrayToDofId.end() )
                 {
                     auto rangeMarkedElements = range;
@@ -625,7 +624,7 @@ ExporterEnsight<MeshType,N>::saveFields( typename timeset_type::step_ptrtype __s
                     auto const elt_m_en = boost::get<2>( rangeMarkedElements );
                     index_type nValuesPerComponent = std::distance( elt_m_it, elt_m_en );
                     m_field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
-                    auto & mapArrayToDofId =  M_mapElementArrayToDofId[rangeId];
+                    auto & mapArrayToDofId =  M_mapElementArrayToDofId[fragmentId];
                     mapArrayToDofId.resize( nValuesPerComponent,invalid_size_type_value );
 
                     for ( index_type e=0; elt_m_it != elt_m_en; ++elt_m_it,++e )
@@ -715,16 +714,15 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
     __out.write( ( char * ) & mp.ids.front(), mp.ids.size() * sizeof( int ) );
     __out.write( ( char * ) mp.coords.data(), mp.coords.size() * sizeof( float ) );
 
-    auto elementsDistribMesh = meshDistributionByMarkedElements( __mesh );
-    for ( int rangeId=0;rangeId<elementsDistribMesh.size();++rangeId )
+    for ( auto const& [fragmentId,fragmentData] : fragmentationMarkedElements( __mesh ) )
     {
-        auto const& [range,mIds,rangeName] = elementsDistribMesh[rangeId];
+        auto const& [range,mIds,fragmentName] = fragmentData;
 
-        sprintf( buffer, "part %d",rangeId );
+        sprintf( buffer, "part %d",fragmentId );
         //    strcpy( buffer, "part 1" );
 
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
-        sprintf( buffer, "Marker %d (%s)", rangeId, rangeName.substr(0, 32).c_str());
+        sprintf( buffer, "Marker %d (%s)", fragmentId, fragmentName.substr(0, 32).c_str());
 
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
