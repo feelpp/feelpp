@@ -70,6 +70,52 @@ class reducedbasis():
     """
     Online computation
     """
+    def assembleAN(self, beta, size=None):
+        """Assemble the reduced matrix from a given vector of parameters
+           AN = sum_q beta[q]*ANq[q]
+
+        Args:
+            beta (list): list of parameters betaA
+            size (int, optional): size of the sub-basis wanted. Defaults to None, meaning the whole basis is used.
+
+        Returns:
+            PETSc.Mat: assemble matrix
+        """
+        assert( len(beta) == self.Qa ), f"Number of param ({len(beta)}) should be {self.Qa}"
+
+        AN = self.ANq[0].copy()
+        # AN = np.zeros_like(self.ANq[0])
+        AN.fill(0)
+        for q in range(0, self.Qa):
+            AN += self.ANq[q] * beta[q]
+        if size is None:
+            return AN
+        else:
+            return AN[:size,:size]
+
+    def assembleFN(self, beta, size=None):
+        """Assemble the rhs from a given vector of parameters
+           FN = sum_q beta[q]*FNp[q]
+
+        Args:
+            beta (list): list of parameters betaF
+            size (int, optional): size of the sub-basis wanted. Defaults to None, meaning the whole basis is used.
+
+        Returns:
+            PETSc.Vec: assemble vector
+        """
+        assert( len(beta) == self.Qf ), f"Number of param ({len(beta)}) should be {self.Qf}"
+
+        FN = self.FNp[0].copy()
+        FN.fill(0)
+        for q in range(0, self.Qf):
+            FN += self.FNp[q] * beta[q]
+        if size is None:
+            return FN
+        else:
+            return FN[:size]
+
+
     def getSolutions(self, mu, size=None):
         """Return solution uN and output sN
 
@@ -116,23 +162,24 @@ class reducedbasis():
             uN = precalc["uN"]
 
         s1 = betaF @ self.SS @ betaF    # beta_p*beta_p'*(Sp,Sp')
-        s2 = 0
+        s2 = np.einsum('q,p,n,qpn', betaA, betaF, uN, self.SL)
         s3 = 0
 
         # s1 = 0
         # for p in range(self.Qf):
         #     for p_ in range(self.Qf):
         #         s1 += betaA[p] * betaA[p_] * self.SS[p,p_]
-        s2 = 0
-        for p in range(self.Qf):
-            for q in range(self.Qa):
-                for n in range(self.N):
-                    s2 += betaF[p] * betaA[q] * uN[n] * self.SL[q,p,n]
+        # s2 = 0
+        # for p in range(self.Qf):
+        #     for q in range(self.Qa):
+        #         for n in range(self.N):
+        #             s2 += betaF[p] * betaA[q] * uN[n] * self.SL[q,p,n]
+
 
         s3 = 0
         for q in range(self.Qa):
+            for n in range(self.N):
             for q_ in range(self.Qa):
-                for n in range(self.N):
                     for n_ in range(self.N):
                         s3 += betaA[q] * betaA[q_] * uN[n] * uN[n_] * self.LL[q,n,q_,n_]
 
@@ -232,6 +279,8 @@ class reducedbasis():
 
         tmpDeltaMax = h5f["DeltaMax"][:]
         self.DeltaMax = None if tmpDeltaMax.shape == (0,) else tmpDeltaMax
+
+        print(f"[reduced basis] Basis loaded from {path}")
 
 
 
@@ -436,49 +485,6 @@ class reducedbasisOffline(reducedbasis):
             F += self.Fq[q] * beta[q]
         return F
 
-    def assembleAN(self, beta, size=None):
-        """Assemble the reduced matrix from a given vector of parameters
-           AN = sum_q beta[q]*ANq[q]
-
-        Args:
-            beta (list): list of parameters betaA
-            size (int, optional): size of the sub-basis wanted. Defaults to None, meaning the whole basis is used.
-
-        Returns:
-            PETSc.Mat: assemble matrix
-        """
-        assert( len(beta) == self.Qa ), f"Number of param ({len(beta)}) should be {self.Qa}"
-
-        AN = self.ANq[0].copy()
-        AN.fill(0)
-        for q in range(0, self.Qa):
-            AN += self.ANq[q] * beta[q]
-        if size is None:
-            return AN
-        else:
-            return AN[:size,:size]
-
-    def assembleFN(self, beta, size=None):
-        """Assemble the rhs from a given vector of parameters
-           FN = sum_q beta[q]*FNp[q]
-
-        Args:
-            beta (list): list of parameters betaF
-            size (int, optional): size of the sub-basis wanted. Defaults to None, meaning the whole basis is used.
-
-        Returns:
-            PETSc.Vec: assemble vector
-        """
-        assert( len(beta) == self.Qf ), f"Number of param ({len(beta)}) should be {self.Qf}"
-
-        FN = self.FNp[0].copy()
-        FN.fill(0)
-        for q in range(0, self.Qf):
-            FN += self.FNp[q] * beta[q]
-        if size is None:
-            return FN
-        else:
-            return FN[:size]
 
 
 

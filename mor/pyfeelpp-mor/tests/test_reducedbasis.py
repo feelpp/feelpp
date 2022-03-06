@@ -278,6 +278,9 @@ def test_reducedbasis_sample(prefix, case, casefile, dim, use_cache, time_depend
         print("\nError with parameters from sampling")
         compar_from_sampling(rb, mus)
 
+    # compute_time_for_offline_solution(rb)
+    # compute_time_for_online_error_computation(rb)
+
     print("\nCompar matrix")
     compar_matrix(rb, assembleMDEIM)
 
@@ -310,14 +313,14 @@ def test_reducedbasis_greedy(prefix, case, casefile, dim, use_cache, time_depend
     def listOfParams(n):
         res = []
         for i in range(n):
-            res.append(model.parameterSpace().element())
+            res.append( model.parameterSpace().element())
         return res
 
     Xi_train = listOfParams(50)
     mu0 = model.parameterSpace().element()
-    rb.greedy(mu0, Xi_train)
+    rb.greedy(mu0, Xi_train, eps_tol=1e-3)
     assert( rb.test_orth() )
-    assert( rb.DeltaMax[-1] < 1e-6 )
+    assert( rb.DeltaMax[-1] < 1e-3 )
 
 
     print("\nCompute offline error")
@@ -339,6 +342,105 @@ def test_reducedbasis_greedy(prefix, case, casefile, dim, use_cache, time_depend
 
     print("\n Save and reload basis")
     save_and_load(rb)
+
+
+
+def compute_time_for_offline_solution(rb):
+    #function rb.getSolutions
+
+    print(f"File is saved in {os.getcwd()}")
+    f = open("compute_time_for_offline_solution.dat", "w")
+    f.write("function time(s)\n")
+    t_computeBetaQm = 0
+    t_assembleAN = 0
+    t_assembleFN = 0
+    t_solve = 0
+
+    N = 1000
+    for i in range(N):
+        mu = rb.model.parameterSpace().element()
+        t0 = time.process_time()
+        beta = rb.model.computeBetaQm(mu)
+        t1 = time.process_time()
+        A_mu = rb.assembleAN(beta[0][0], size=size)
+        t2 = time.process_time()
+        F_mu = rb.assembleFN(beta[1][0][0], size=size)
+        t3 = time.process_time()
+
+        sol = np.linalg.solve(A_mu, F_mu)
+        t4 = time.process_time()
+
+        t_computeBetaQm = t1-t0
+        t_assembleAN = t2-t1
+        t_assembleFN = t3 - t2
+        t_solve = t4 - t3
+
+    f.write(f"computeBetaQm {t_computeBetaQm/N}\nassembleAN {t_assembleAN/N}\nassembleFN {t_assembleFN/N}\nsolve {t_solve/N}")
+    f.close()
+
+
+def compute_time_for_online_error_computation(rb):
+    # function rb.computeOnlineError
+    print(f"File is saved in {os.getcwd()}")
+    f = open("compute_time_for_online_error_computation.dat", "w")
+    f.write("function time(s)\n")
+    t_computeBetaQm = 0
+    t_assemble = 0
+    t_solve = 0
+    t_compute_numpy = 0
+    t_compute_loop = 0
+
+    N = 1000
+    for i in range(N):
+        mu = rb.model.parameterSpace().element()
+
+        t0 = time.process_time()
+        beta = rb.model.computeBetaQm(mu)
+        t1 = time.process_time()
+        betaA = beta[0][0]
+        betaF = beta[1][0][0]
+        A_mu = rb.assembleAN(betaA)
+        F_mu = rb.assembleFN(betaF)
+        t2 = time.process_time()
+        uN = np.linalg.solve(A_mu, F_mu)
+
+
+        t3 = time.process_time()
+        s1_ = betaF @ rb.SS @ betaF    # beta_p*beta_p'*(Sp,Sp')
+        s2_ = np.einsum('q,p,n,qpn', betaA, betaF, uN, rb.SL)
+        # s3_ = np.einsum
+        t4 = time.process_time()
+
+        s1 = 0
+        for p in range(rb.Qf):
+            for p_ in range(rb.Qf):
+                s1 += betaF[p] * betaF[p_] * rb.SS[p,p_]
+        s2 = 0
+        for p in range(rb.Qf):
+            for q in range(rb.Qa):
+                for n in range(rb.N):
+                    s2 += betaF[p] * betaA[q] * uN[n] * rb.SL[q,p,n]
+        t5 = time.process_time()
+        s3 = 0
+        for q in range(rb.Qa):
+            for q_ in range(rb.Qa):
+                for n in range(rb.N):
+                    for n_ in range(rb.N):
+                        s3 += betaA[q] * betaA[q_] * uN[n] * uN[n_] * rb.LL[q,n,q_,n_]
+        
+        assert((s1_-s1)/s1 < 1e-10)
+        assert((s2_-s2)/s2 < 1e-10)
+        # assert((s3_-s3)/s3 < 1e-10)
+
+        t_computeBetaQm += t1 - t0
+        t_assemble += t2 - t1
+        t_solve += t3 - t2
+        t_compute_numpy += t4 - t3
+        t_compute_loop += t5 - t4
+
+    f.write(f"computeBetaQm {t_computeBetaQm/N:e}\nassemble {t_assemble/N:e}\nsolve {t_solve/N:e}\ncomputeNumpy {t_compute_numpy/N:e}\ncomputeLoop {t_compute_loop/N:e}")
+    f.close()
+
 
 
 
