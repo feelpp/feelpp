@@ -116,7 +116,7 @@ class reducedbasis():
             return FN[:size]
 
 
-    def getSolutions(self, mu, size=None):
+    def getSolutions(self, mu, beta = None, size=None):
         """Return solution uN and output sN
 
         Args:
@@ -126,6 +126,7 @@ class reducedbasis():
         Returns:
             tuple (np.ndarray,float) : (uN, sN)
         """
+        if beta is None:
         beta = self.model.computeBetaQm(mu)
         A_mu = self.assembleAN(beta[0][0], size=size)
         F_mu = self.assembleFN(beta[1][0][0], size=size)
@@ -162,8 +163,8 @@ class reducedbasis():
             uN = precalc["uN"]
 
         s1 = betaF @ self.SS @ betaF    # beta_p*beta_p'*(Sp,Sp')
-        s2 = np.einsum('q,p,n,qpn', betaA, betaF, uN, self.SL)
-        s3 = np.einsum('q,r,n,m,qnrm', betaA, betaA, uN, uN, self.LL)
+        s2 = np.einsum('q,p,n,qpn', betaA, betaF, uN, self.SL, optimize=True)
+        s3 = np.einsum('q,r,n,m,qnrm', betaA, betaA, uN, uN, self.LL, optimize=True)
 
         # s1 = 0
         # for p in range(self.Qf):
@@ -198,7 +199,10 @@ class reducedbasis():
             float: energy error bound
         """
         normHatE = self.computeOnlineError(mu, precalc=precalc)
+        if precalc is None:
         alp = self.alphaLB(mu)
+        else:
+            alp = self.alphaLB_(precalc["betaA"])
         return normHatE / np.sqrt(alp)
 
 
@@ -359,10 +363,16 @@ class reducedbasisOffline(reducedbasis):
         betaA_bar_np = np.array(self.betaA_bar)
         
         def alphaLB(mu):
-            betaMu = self.model.computeBetaQm(self.mubar)[0][0]
+            # From a parameter
+            betaMu = self.model.computeBetaQm(self.mu)[0][0]
             return alphaMubar * np.min( betaMu / betaA_bar_np )
 
+        def alphaLB_(betaA):
+            # From a decomposition
+            return alphaMubar * np.min( betaA / betaA_bar_np )
+
         self.alphaLB = alphaLB
+        self.alphaLB_ = alphaLB_
 
 
 
@@ -823,6 +833,10 @@ class reducedbasisOffline(reducedbasis):
 
         mu = mu_0
 
+        betas = {}
+        for mu in Dmu:
+            betas[mu] = self.model.computeBetaQm(mu)
+
         # fig = go.Figure()
         
         while Delta > eps_tol and self.N < Nmax:
@@ -836,7 +850,7 @@ class reducedbasisOffline(reducedbasis):
                 self.computeOfflineReducedBasis(S)
                 self.computeOfflineError()
             else:
-                beta = self.model.computeBetaQm(mu)
+                beta = betas[mu]
                 A = self.assembleA(beta[0][0])
                 F = self.assembleF(beta[1][0][0])
                 
@@ -868,7 +882,7 @@ class reducedbasisOffline(reducedbasis):
             # m = []
 
             for i,mu_tmp in enumerate(tqdm(Dmu, desc=f"[reducedBasis] Greedy, step {self.N}", ascii=False, ncols=120)):
-                beta = self.model.computeBetaQm(mu_tmp)
+                beta = betas[mu_tmp]
                 ANmu = self.assembleAN(beta[0][0])
                 uN,_ = self.getSolutions(mu_tmp)
                 norm_uMu = np.sqrt( uN.T @ ANmu @ uN )
@@ -890,8 +904,9 @@ class reducedbasisOffline(reducedbasis):
             Delta = Delta_max
             self.DeltaMax.append(Delta_max)
             mu = mu_max
+
             if rank == 0:
-                print(f"[reducedBasis] Greedy algo, N={self.N}, Δ={Delta:e} (tol={eps_tol})".ljust(64), f"µ={mu}")
+                print(f"[reducedBasis] Greedy algo, N={self.N}, Δ={Delta:e} (tol={eps_tol:e})".ljust(64), f"µ={mu}")
         if rank == 0 and self.N == Nmax:
             print("[reducedBasis] Greedy algo : warning, max size reached")
 

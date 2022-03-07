@@ -317,9 +317,10 @@ def test_reducedbasis_greedy(prefix, case, casefile, dim, use_cache, time_depend
             res.append( model.parameterSpace().element())
         return res
 
-    Xi_train = listOfParams(50)
+    Xi_train = listOfParams(500)
     mu0 = model.parameterSpace().element()
     rb.greedy(mu0, Xi_train, eps_tol=1e-3)
+
     assert( rb.test_orth() )
     assert( rb.DeltaMax[-1] < 1e-3 )
 
@@ -409,7 +410,7 @@ def compute_time_for_online_error_computation(rb):
         t3 = time.process_time()
         s1_ = betaF @ rb.SS @ betaF    # beta_p*beta_p'*(Sp,Sp')
         s2_ = np.einsum('q,p,n,qpn', betaA, betaF, uN, rb.SL)
-        s3_ = np.einsum('q,r,n,m,qnrm', betaA, betaA, uN, uN, rb.LL)
+        s3_ = np.einsum('q,r,n,m,qnrm', betaA, betaA, uN, uN, rb.LL, optimize=True)
         t4 = time.process_time()
 
         s1 = 0

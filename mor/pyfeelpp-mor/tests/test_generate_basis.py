@@ -47,6 +47,7 @@ def test_compute_basis_greedy(prefix, case, casefile, dim, time_dependent, init_
     g.casefile = casefile
     g.dir = OUTDIR + "/greedy"
     g.config_file = ''
+    g.tol = 1e-3
 
     # compute and save the basis
     g.generate_basis()
