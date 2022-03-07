@@ -28,8 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2004-11-09
  */
-#ifndef __Exporter_H
-#define __Exporter_H 1
+#ifndef FEELPP_FILTERS_EXPORTER_H
+#define FEELPP_FILTERS_EXPORTER_H
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/visitor.hpp>
@@ -562,44 +562,19 @@ protected:
 
 
 
+template <typename ... Ts>
+auto exporter( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && mesh = args.get(_mesh);
+    bool fileset = args.get_else_invocable(_fileset,[](){ return boption(_name="exporter.fileset"); } );
+    std::string const& name = args.get_else_invocable(_name,[](){ return Environment::about().appName(); } );
+    std::string const& geo = args.get_else_invocable(_geo, [](){ return soption(_name="exporter.geometry"); } );
+    auto && path = args.get_else_invocable(_path, [&name](){ return std::string((fs::path(Environment::exportsRepository())/fs::path(soption("exporter.format"))/name).string()); } );
 
-namespace detail
-{
-template<typename Args>
-struct compute_exporter_return
-{
-    typedef typename boost::remove_pointer<
-        typename boost::remove_const<
-            typename boost::remove_reference<
-                typename parameter::binding<Args, tag::mesh>::type
-                >::type
-            >::type
-        >::type::element_type mesh_type;
-    //typename Feel::vf::detail::clean_type<Args, tag::mesh>::type::element_type mesh_type;
-    //typedef typename parameter::value_type<Args, tag::order>::type order_type;
-    //typedef std::shared_ptr<Exporter<mesh_type,order_type::value> > type;
-    typedef Exporter<mesh_type,mesh_type::nOrder> type;
-    typedef std::shared_ptr<type> ptrtype;
-    //typedef std::shared_ptr<Exporter<Mesh<Simplex<2> >,1> > type;
+    using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
+    using exporter_type = Exporter<mesh_type,mesh_type::nOrder>;
 
-};
-}
-using namespace std::string_literals;
-BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>::ptrtype ),
-                          exporter,                                       // 2. name of the function template
-                          tag,                                        // 3. namespace of tag types
-                           ( required                                  // 4. one required parameter, and
-                            ( mesh, * )
-                          ) // required
-                          ( optional                                  // 4. one required parameter, and
-                            ( fileset, *, boption(_name="exporter.fileset") )
-                            ( order, *, mpl::int_<1>() )
-                            ( name,  *, Environment::about().appName() )
-                            ( geo,   *, soption(_name="exporter.geometry") )
-                            ( path, *( boost::is_convertible<mpl::_,std::string> ), (fs::path(Environment::exportsRepository())/fs::path(soption("exporter.format"))/name).string() )
-                          ) )
-{
-    typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
     auto e =  exporter_type::New( name,mesh->worldCommPtr() );
     e->setPrefix( name );
     e->setUseSingleTransientFile( fileset );

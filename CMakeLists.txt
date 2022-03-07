@@ -26,6 +26,7 @@ cmake_minimum_required (VERSION 3.13.0)
 if ( FEELPP_COMPONENT STREQUAL "toolboxes" OR 
       FEELPP_COMPONENT STREQUAL "mor" OR
       FEELPP_COMPONENT STREQUAL "testsuite" OR
+      FEELPP_COMPONENT STREQUAL "benchmarks" OR
       FEELPP_COMPONENT STREQUAL "feelpp/pyfeelpp" OR
       FEELPP_COMPONENT STREQUAL "toolboxes/pyfeelpp-toolboxes" OR
       FEELPP_COMPONENT STREQUAL "mor/pyfeelpp-mor" OR
@@ -122,7 +123,7 @@ endif()
 OPTION(FEELPP_ENABLE_ASAN "enable asan flags" OFF)
 OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
 OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" ${FEELPP_DEFAULT})
-OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
+OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" OFF)
 OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" OFF)
 option(FEELPP_ENABLE_MOR "Enable MOR(Model Order Reduction) Applications in Feel++" OFF)
 

@@ -124,9 +124,12 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "thermoelectric":
         {
-            "fields":["electric-potential","current-density","temperature","heat-flux"]
+            "Exports":
+            {
+                "fields":["electric-potential","current-density","temperature","heat-flux"]
+            }
         }
     }
 }

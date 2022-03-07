@@ -297,11 +297,6 @@ sign( T const& x )
                 M_gmc( vf::detail::ExtractGm<Geo_t>::get( geom ) )      \
             {}                                                          \
                                                                         \
-            template<typename IM>                                       \
-                void init( IM const& im )                               \
-            {                                                           \
-                M_expr.init( im );                                     \
-            }                                                           \
             void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) \
             {                                                           \
                 update( geom );                                         \
@@ -313,10 +308,6 @@ sign( T const& x )
             void update( Geo_t const& geom )                            \
             {                                                           \
                 M_expr.update( geom );                                 \
-            }                                                           \
-            void update( Geo_t const& geom, uint16_type face )          \
-            {                                                           \
-                M_expr.update( geom, face );                           \
             }                                                           \
             template<typename ... CTX>                                  \
                 void updateContext( CTX const& ... ctx )                \
@@ -566,12 +557,6 @@ sign( T const& x )
                 M_gmc( vf::detail::ExtractGm<Geo_t>::get( geom ) )      \
                 {}                                                      \
                                                                         \
-            template<typename IM>                                       \
-                void init( IM const& im )                               \
-            {                                                           \
-                M_expr1.init( im );                                     \
-                M_expr2.init( im );                                     \
-            }                                                           \
             void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) \
             {                                                           \
                 update( geom );                                         \
@@ -584,11 +569,6 @@ sign( T const& x )
             {                                                           \
                 M_expr1.update( geom );                                 \
                 M_expr2.update( geom );                                 \
-            }                                                           \
-            void update( Geo_t const& geom, uint16_type face )          \
-            {                                                           \
-                M_expr1.update( geom, face );                           \
-                M_expr2.update( geom, face );                           \
             }                                                           \
             template<typename ... CTX>                                  \
                 void updateContext( CTX const& ... ctx )                \

@@ -26,11 +26,19 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-01-21
  */
-#ifndef __Bases_H
-#define __Bases_H 1
+#ifndef FEELPP_DISCR_BASES_H
+#define FEELPP_DISCR_BASES_H 1
 
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/vector.hpp>
+
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 106700 && BOOST_VERSION < 107100
+#include <contrib/boost/fusion/include/boost/fusion/container/vector/vector.hpp>
+#else
+#include <boost/fusion/container/vector.hpp>
+#endif
+#include <boost/fusion/container/generation/make_vector.hpp>
 #include <boost/fusion/support/is_sequence.hpp>
 #include <boost/fusion/sequence.hpp>
 #include <feel/feeldiscr/mortar.hpp>

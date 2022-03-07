@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE( test_element_1 )
     auto u = Xh->element();
     u.setOnes();
     auto a = form2( _test=Xh, _trial=Xh );
-    a = integrate( elements(mesh), idt(u)*id(u));
+    a = integrate( _range=elements(mesh), _expr=idt(u)*id(u));
     a.close();
     auto v = backend()->newVector( Xh );
     auto w = backend()->newVector( Xh );

@@ -17,7 +17,7 @@
  */
 #include <feel/feel.hpp>
 #include <feel/feelpde/boundaryconditions.hpp>
-#include <feel/feelpde/preconditionerblockns.hpp>
+//#include <feel/feelpde/preconditionerblockns.hpp>
 #include <feel/options.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -274,13 +274,16 @@ int main(int argc, char**argv )
     d.matrixPtr()->printMatlab("d.m");
     e.matrixPtr()->printMatlab("e.m");
     g.matrixPtr()->printMatlab("g.m");
-    
+
+
 #if 1
+#if 0
     u3.on(_range=elements(mesh3d), _expr=idf(f_evaluate<decltype(u1),decltype(u2)>( u1, u2,R)));
     e3->step(0)->add( "u3", u3 );
     u1.on(_range=elements(mesh1d), _expr=cst(0.));
     u2.on(_range=elements(mesh1d), _expr=cst(1.));
     v3.on(_range=elements(mesh3d), _expr=idf(f_evaluate<decltype(u1),decltype(u2)>( u1, u2,R)));
+#endif
     e3->step(0)->add( "u3_exact", v3 );
 
         //e3->step(0)->add( "p", p );

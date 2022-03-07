@@ -167,9 +167,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
 
     super_type::super_model_base_type::updateInformationObject( p["Environment"] );
 
+    super_physics_type::updateInformationObjectFromCurrentType( p["Physics"] );
+
     nl::json subPt;
     subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
-    p["Physics"] = subPt;
+    p["Physics2"] = subPt;
 
     // Materials properties
     if ( this->materialsProperties() )
@@ -208,10 +210,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
 
     // Physics
     if ( jsonInfo.contains("Physics") )
+        tabInfo->add( "Physics", super_physics_type::tabulateInformations( jsonInfo.at("Physics"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Physics2") )
     {
         Feel::Table tabInfoPhysics;
-        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
-        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics ) );
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics2"), tabInfoProp );
+        tabInfo->add( "Physics2", TabulateInformations::New( tabInfoPhysics ) );
     }
 
     // Materials Properties
@@ -514,24 +519,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( exporter_ptrtype expor
          exporter->step( time )->add( prefixvm(this->prefix(),"velocity-interface-from-fluid"), this->fieldVelocityInterfaceFromFluid() );
          hasFieldToExport = true;
      }*/
-    for ( auto const& fieldUserScalar : this->fieldsUserScalar() )
-    {
-        std::string const& userFieldName = fieldUserScalar.first;
-        if ( fields.find( userFieldName ) != fields.end() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),userFieldName), this->fieldUserScalar( userFieldName ) );
-            hasFieldToExport = true;
-        }
-    }
-    for ( auto const& fieldUserVectorial : this->fieldsUserVectorial() )
-    {
-        std::string const& userFieldName = fieldUserVectorial.first;
-        if ( fields.find( userFieldName ) != fields.end() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),userFieldName), this->fieldUserVectorial( userFieldName ) );
-            hasFieldToExport = true;
-        }
-    }
 
     return hasFieldToExport;
 }
@@ -932,9 +919,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->updateTime( this->timeStepBase()->time() );
 
     this->updateParameterValues();
-
-    // update user functions which depend of time only
-    this->updateUserFunctions(true);
 
     this->timerTool("TimeStepping").stop("updateTimeStep");
 

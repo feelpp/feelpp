@@ -152,7 +152,9 @@ void defDiscr(py::module &m, std::string const& suffix = "")
         //        .def(py::self *= py::self)
         //        .def(py::self /= py::self)
         ;
-
+    elt.def("printMatlab", []( element_t& element, std::string const& fname ) {
+        element.printMatlab(fname);
+    }, py::arg("filename"), "print element to matlab format");
     if constexpr ( space_t::is_scalar )
     {
         elt.def( "on", static_cast<void ( element_t::* )( elements_reference_wrapper_t<mesh_ptr_t> const&, Expr<GinacEx<2>> const&, std::string const&, GeomapStrategyType, bool, bool )>( &element_t::template onImpl<elements_reference_wrapper_t<mesh_ptr_t>, Expr<GinacEx<2>>> ),

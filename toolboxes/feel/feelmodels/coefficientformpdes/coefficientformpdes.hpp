@@ -311,7 +311,7 @@ private :
                                     using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
                                     auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
                                     res = Feel::FeelModels::modelFields( res, cfpde->modelFields( sol,
-                                                                                                  rowStartInVector + this->startSubBlockSpaceIndex( cfpdeBase->physicDefault() ),
+                                                                                                  rowStartInVector + this->startSubBlockSpaceIndex( cfpdeBase->equationName() ),
                                                                                                   prefixvm( prefix, cfpde->keyword() ) ) );
                                 }
                             });
@@ -330,7 +330,7 @@ private :
                                     using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
                                     auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
 
-                                    res = Feel::FeelModels::selectorModelFields( res, cfpde->trialSelectorModelFields( startBlockSpaceIndex + this->startSubBlockSpaceIndex( cfpdeBase->physicDefault() ) ) );
+                                    res = Feel::FeelModels::selectorModelFields( res, cfpde->trialSelectorModelFields( startBlockSpaceIndex + this->startSubBlockSpaceIndex( cfpdeBase->equationName() ) ) );
                                 }
                             });
         }
@@ -600,24 +600,14 @@ template <typename ModelFieldsType, typename SymbolsExpr>
 void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
 {
-    bool hasMeasure = false;
-
     if ( M_coefficientFormPDEs.empty() )
         return;
-    auto defaultRangeMeshElements = M_coefficientFormPDEs.front()->rangeMeshElements(); // TODO compute intersection
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), defaultRangeMeshElements/*M_rangeMeshElements*/, symbolsExpr, mfields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), defaultRangeMeshElements/*M_rangeMeshElements*/, symbolsExpr, mfields );
-    //bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
-    if ( hasMeasureNorm || hasMeasureStatistics /*|| hasMeasurePoint*/ )
-        hasMeasure = true;
 
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
+    auto defaultRangeMeshElements = M_coefficientFormPDEs.front()->rangeMeshElements(); // TODO compute intersection
+
+    model_measures_quantities_empty_t mquantities;
+    // execute common post process and save measures
+    super_type::executePostProcessMeasures( time, this->mesh(), defaultRangeMeshElements, symbolsExpr, mfields, mquantities );
 }
 
 

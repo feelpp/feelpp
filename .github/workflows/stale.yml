@@ -25,3 +25,8 @@ jobs:
         stale-pr-message: 'Stale pull request message'
         stale-issue-label: 'no-issue-activity'
         stale-pr-label: 'no-pr-activity'
+        exempt-issue-labels: 'type:bug,type:ftbs,type:fte,type:feature,type:refactoring,priority:Urgent,priority:High,status:confirmed,pinned,security'
+        exempt-pr-labels: 'type:bug,type:ftbs,type:fte,type:feature,type:refactoring,priority:Urgent,priority:High,status:confirmed,pinned,security'
+        days-before-issue-stale: 360
+        days-before-pr-stale: 45
+

@@ -114,7 +114,7 @@ public:
             M_mesh = meshCommon;
 
 
-            M_PoissonModel = mp_type::New("hdg.poisson");
+            M_PoissonModel = mp_type::New(_prefix="hdg.poisson");
             M_PoissonModel->setMesh( _meshPoisson );
             M_PoissonModel->init();
             M_PoissonModel->algebraicFactory()->addFunctionLinearAssembly(std::bind( &self_type::poissonAssembly, std::ref(*this), std::placeholders::_1 ));
@@ -216,7 +216,10 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::assembleF_Elasticity()
     for( auto const& pairMat : M_ElasticityModel->modelProperties().materials() )
     {
         auto material = pairMat.second;
+#if 0
+        // ???
         marker = material.getString("special_neumann");
+#endif
     }
 
     if (!marker.empty())

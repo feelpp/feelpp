@@ -132,8 +132,8 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::ThermoElectricHDG( std::string p
     M_outputMarker(soption(prefixvm( M_prefix, "output-marker")))
 {
     tic();
-    M_heatModel = heat_type::New(M_prefixHeat, MixedPoissonPhysics::Heat);
-    M_electricModel = electric_type::New(M_prefixElectric, MixedPoissonPhysics::Electric);
+    M_heatModel = heat_type::New(_prefix=M_prefixHeat, _physic=MixedPoissonPhysics::Heat);
+    M_electricModel = electric_type::New(_prefix=M_prefixElectric, _physic=MixedPoissonPhysics::Electric);
     toc("construct");
 }
 
@@ -145,7 +145,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::init( mesh_ptrtype const& mesh )
     if( mesh )
         M_mesh = mesh;
     else
-        M_mesh = loadMesh( new mesh_type );
+        M_mesh = loadMesh( _mesh=new mesh_type );
 
     M_heatModel->setMesh( M_mesh );
     M_heatModel->init();
@@ -234,10 +234,10 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
         M_temperature = M_heatModel->fieldPotential();
         M_tempFlux = M_heatModel->fieldFlux();
 
-        incrV = normL2( elements(M_mesh), idv(M_potential) - idv(oldPotential) );
-        incrT = normL2( elements(M_mesh), idv(M_temperature) - idv(oldTemperature) );
-        normV = normL2( elements(M_mesh), idv(oldPotential) );
-        normT = normL2( elements(M_mesh), idv(oldTemperature) );
+        incrV = normL2( _range=elements(M_mesh), _expr=idv(M_potential) - idv(oldPotential) );
+        incrT = normL2( _range=elements(M_mesh), _expr=idv(M_temperature) - idv(oldTemperature) );
+        normV = normL2( _range=elements(M_mesh), _expr=idv(oldPotential) );
+        normT = normL2( _range=elements(M_mesh), _expr=idv(oldTemperature) );
         relV = incrV/normV;
         relT = incrT/normT;
 
