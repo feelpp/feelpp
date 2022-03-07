@@ -163,7 +163,7 @@ class reducedbasis():
 
         s1 = betaF @ self.SS @ betaF    # beta_p*beta_p'*(Sp,Sp')
         s2 = np.einsum('q,p,n,qpn', betaA, betaF, uN, self.SL)
-        s3 = 0
+        s3 = np.einsum('q,r,n,m,qnrm', betaA, betaA, uN, uN, self.LL)
 
         # s1 = 0
         # for p in range(self.Qf):
@@ -174,14 +174,13 @@ class reducedbasis():
         #     for q in range(self.Qa):
         #         for n in range(self.N):
         #             s2 += betaF[p] * betaA[q] * uN[n] * self.SL[q,p,n]
-
-
-        s3 = 0
-        for q in range(self.Qa):
-            for n in range(self.N):
-            for q_ in range(self.Qa):
-                    for n_ in range(self.N):
-                        s3 += betaA[q] * betaA[q_] * uN[n] * uN[n_] * self.LL[q,n,q_,n_]
+        #
+        # s3 = 0
+        # for q in range(self.Qa):
+        #     for n in range(self.N):
+        #         for q_ in range(self.Qa):
+        #             for n_ in range(self.N):
+        #                 s3 += betaA[q] * betaA[q_] * uN[n] * uN[n_] * self.LL[q,n,q_,n_]
 
         return s1 + 2*s2 + s3
 

@@ -1,6 +1,7 @@
 import shutil, os
 import pytest
 import pandas as pd
+import time
 
 FEEL_PATH = os.environ['HOME'] + '/feel'
 
@@ -408,7 +409,7 @@ def compute_time_for_online_error_computation(rb):
         t3 = time.process_time()
         s1_ = betaF @ rb.SS @ betaF    # beta_p*beta_p'*(Sp,Sp')
         s2_ = np.einsum('q,p,n,qpn', betaA, betaF, uN, rb.SL)
-        # s3_ = np.einsum
+        s3_ = np.einsum('q,r,n,m,qnrm', betaA, betaA, uN, uN, rb.LL)
         t4 = time.process_time()
 
         s1 = 0
@@ -420,17 +421,17 @@ def compute_time_for_online_error_computation(rb):
             for q in range(rb.Qa):
                 for n in range(rb.N):
                     s2 += betaF[p] * betaA[q] * uN[n] * rb.SL[q,p,n]
-        t5 = time.process_time()
         s3 = 0
         for q in range(rb.Qa):
             for q_ in range(rb.Qa):
                 for n in range(rb.N):
                     for n_ in range(rb.N):
                         s3 += betaA[q] * betaA[q_] * uN[n] * uN[n_] * rb.LL[q,n,q_,n_]
+        t5 = time.process_time()
         
         assert((s1_-s1)/s1 < 1e-10)
         assert((s2_-s2)/s2 < 1e-10)
-        # assert((s3_-s3)/s3 < 1e-10)
+        assert((s3_-s3)/s3 < 1e-10)
 
         t_computeBetaQm += t1 - t0
         t_assemble += t2 - t1
