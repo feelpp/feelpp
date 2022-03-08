@@ -74,7 +74,7 @@ template<typename ToolboxType>
 typename DeimMorModelToolbox<ToolboxType>::deim_function_type
 DeimMorModelToolbox<ToolboxType>::deimOnlineFunction(mesh_ptrtype const& mesh)
 {
-    M_tbDeim = std::make_shared<toolbox_type>(M_tb->prefix());
+    M_tbDeim = std::make_shared<toolbox_type>(M_prefix);
     M_tbDeim->setMesh(mesh);
     M_tbDeim->init();
     M_rhsDeim = M_tbDeim->algebraicFactory()->rhs()->clone();
@@ -96,7 +96,7 @@ template<typename ToolboxType>
 typename DeimMorModelToolbox<ToolboxType>::mdeim_function_type
 DeimMorModelToolbox<ToolboxType>::mdeimOnlineFunction(mesh_ptrtype const& mesh)
 {
-    M_tbMdeim = std::make_shared<toolbox_type>(M_tb->prefix());
+    M_tbMdeim = std::make_shared<toolbox_type>(M_prefix);
     M_tbMdeim->setMesh(mesh);
     M_tbMdeim->init();
     M_rhsMdeim = M_tbMdeim->algebraicFactory()->rhs()->clone();
@@ -252,15 +252,13 @@ ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptr
 
     M_deim = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _prefix="vec");
     this->addDeim(M_deim);
-    // this->deim()->run();
     Feel::cout << tc::green << "Electric DEIM construction finished!!" << tc::reset << std::endl;
 
     M_mdeim = Feel::mdeim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _prefix="mat");
     this->addMdeim(M_mdeim);
-    // this->mdeim()->run();
     Feel::cout << tc::green << "Electric MDEIM construction finished!!" << tc::reset << std::endl;
 
-    // this->resizeQm(false);
+    this->resizeQm(false);
 }
 
 template<typename SpaceType, int Options>
@@ -281,9 +279,6 @@ ToolboxMor<SpaceType, Options>::initModel()
         std::cout << "Number of local dof " << this->Xh->nLocalDof() << "\n";
         std::cout << "Number of dof " << this->Xh->nDof() << "\n";
     }
-
-    // for ( std::string const& marker : std::vector<std::string>({"AIR","PCB","IC1","IC2"}) )
-    //     M_measureMarkedSurface[marker] = measure(_range=markedelements(M_heatBox->mesh(), marker) );
 
     auto PsetV = this->Dmu->sampling();
     std::string supersamplingname =(boost::format("DmuDEim-P%1%-Ne%2%-generated-by-master-proc") % this->Dmu->dimension() % M_trainsetDeimSize ).str();
@@ -326,15 +321,6 @@ ToolboxMor<SpaceType, Options>::initModel()
 
 template<typename SpaceType, int Options>
 void
-ToolboxMor<SpaceType, Options>::preInitOnlineModel()
-{
-    // this->deim()->run();
-    // this->mdeim()->run();
-    this->resizeQm(false);
-}
-
-template<typename SpaceType, int Options>
-void
 ToolboxMor<SpaceType, Options>::initToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model )
 {
     this->setAssembleDEIM(model->deimFunction());
@@ -347,6 +333,14 @@ ToolboxMor<SpaceType, Options>::initToolbox(std::shared_ptr<DeimMorModelBase<mes
 
     this->postInitModel();
     this->setInitialized(true);
+}
+
+template<typename SpaceType, int Options>
+void
+ToolboxMor<SpaceType, Options>::initOnlineToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model )
+{
+    this->setOnlineAssembleDEIM(model->deimOnlineFunction(this->getDEIMReducedMesh()));
+    this->setOnlineAssembleMDEIM(model->mdeimOnlineFunction(this->getMDEIMReducedMesh()));
 }
 
 template<typename SpaceType, int Options>

@@ -53,10 +53,17 @@ class DeimMorModelToolbox : public DeimMorModelBase<typename ToolboxType::mesh_t
     using mdeim_function_type = typename super_type::mdeim_function_type;
 
 public:
-    DeimMorModelToolbox(toolbox_ptrtype tb) : M_tb(tb) {
+    DeimMorModelToolbox(std::string const& prefix) :
+        M_prefix(prefix)
+        {}
+    DeimMorModelToolbox(toolbox_ptrtype tb) :
+        M_prefix(tb->prefix()),
+        M_tb(tb)
+    {
         M_rhs = M_tb->algebraicFactory()->rhs()->clone();
         M_mat = M_tb->algebraicFactory()->matrix();
     }
+    static self_ptrtype New(std::string const& prefix) {return std::make_shared<self_type>(prefix);}
     static self_ptrtype New(toolbox_ptrtype tb) {return std::make_shared<self_type>(tb);}
 
     deim_function_type deimFunction() override;
@@ -65,6 +72,7 @@ public:
     mdeim_function_type mdeimOnlineFunction(mesh_ptrtype const& mesh) override;
 
 private:
+    std::string M_prefix;
     toolbox_ptrtype M_tb;
     vector_ptrtype M_rhs;
     sparse_matrix_ptrtype M_mat;
@@ -123,8 +131,8 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
     void setOnlineAssembleDEIM(deim_function_type const& fct ) { M_deim->onlineModel()->setAssembleDEIM(fct); }
     void setOnlineAssembleMDEIM(mdeim_function_type const& fct ) { M_mdeim->onlineModel()->setAssembleMDEIM(fct); }
     void initToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model );
+    void initOnlineToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model);
 
-    void preInitOnlineModel();
     void initModel() override;
     void postInitModel();
 
