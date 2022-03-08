@@ -43,8 +43,11 @@ namespace FeelModels
 {
 
 template< class FluidType, class SolidType >
-class FSI : public ModelNumerical
+class FSI : public ModelNumerical,
+            public ModelPhysics<FluidType::convex_type::nRealDim>,
+            public std::enable_shared_from_this< FSI<FluidType,SolidType> >
 {
+    using super_physics_type = ModelPhysics<FluidType::convex_type::nRealDim>;
 public :
     typedef ModelNumerical super_type;
     typedef FSI<FluidType,SolidType> self_type;
@@ -59,6 +62,10 @@ public :
     typedef typename solid_type::mesh_type mesh_solid_type;
     typedef typename solid_type::trace_mesh_type trace_mesh_solid_type;
     typedef typename solid_type::solid_1dreduced_type::mesh_type mesh_solid_1dreduced_type;
+
+    // materials properties
+    typedef MaterialsProperties<fluid_type::mesh_type::nRealDim> materialsproperties_type;
+    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
 
     // mesh velocity on FSI boundary
@@ -214,11 +221,13 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
-    FSI( std::string const& prefix, worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
-         std::string const& rootRepository = "" );
+    FSI( std::string const& prefix,
+         std::string const& keyword = "fsi",
+         worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
+         ModelBaseRepository const& modelRep = ModelBaseRepository() );
     FSI( self_type const & M ) = default;
 
-    static std::string expandStringFromSpec( std::string const& expr );
+    //static std::string expandStringFromSpec( std::string const& expr );
 
     //---------------------------------------------------------------------------------------------------------//
 
@@ -316,6 +325,15 @@ public :
         this->solidModel()->exportResults(time);
     }
 
+
+    void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
+
+    // physical parameters
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
+
     //---------------------------------------------------------------------------------------------------------//
     void updateLinearPDE_Fluid( DataUpdateLinear & data ) const;
     void updateJacobian_Fluid( DataUpdateJacobian & data ) const;
@@ -344,6 +362,8 @@ private :
 
     fluid_ptrtype M_fluidModel;
     solid_ptrtype M_solidModel;
+
+    materialsproperties_ptrtype M_materialsProperties;
 
     double M_meshSize;
     fs::path M_mshfilepathFluidPart1,M_mshfilepathSolidPart1;
