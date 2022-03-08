@@ -556,7 +556,7 @@ ModelMesh<IndexType>::tabulateInformations( nl::json const& jsonInfo, TabulateIn
 
 template <typename IndexType>
 void
-ModelMeshes<IndexType>::setup( pt::ptree const& pt )
+ModelMeshes<IndexType>::setup( pt::ptree const& pt, std::set<std::string> const& keywordsToSetup )
 {
     std::ostringstream pt_ostr;
     write_json( pt_ostr, pt );
@@ -567,6 +567,9 @@ ModelMeshes<IndexType>::setup( pt::ptree const& pt )
     for ( auto const& el : jarg.items() )
     {
          std::string const& meshName = el.key();
+         if ( keywordsToSetup.find( meshName ) == keywordsToSetup.end() )
+             continue;
+
          if ( this->hasModelMesh( meshName ) )
             this->at( meshName )->setup( el.value(), *this );
         else
