@@ -87,6 +87,63 @@ public:
         std::set<std::string> M_markers;
     };
 
+    class NormalStress
+    {
+    public:
+
+        NormalStress( std::string const& name ) : M_name( name ) {}
+        NormalStress( NormalStress const& ) = default;
+        NormalStress( NormalStress && ) = default;
+
+        //! setup bc from json
+        void setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes );
+
+        //! return true if expr is scalar
+        bool isScalarExpr() const { return M_mexpr.template hasExpr<1,1>(); }
+
+        //! return true if expr is vectorial
+        bool isVectorialExpr() const { return M_mexpr.template hasExpr<Dim,1>(); }
+
+        //! return true if expr is matrix
+        bool isMatrixExpr() const { return M_mexpr.template hasExpr<Dim,Dim>(); }
+
+        //! return scalar expression
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto exprScalar( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            return Feel::vf::expr( M_mexpr.template expr<1,1>(), se );
+        }
+
+        //! return vectorial expression
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto exprVectorial( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            return Feel::vf::expr( M_mexpr.template expr<Dim,1>(), se );
+        }
+
+        //! return matrix expression
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto exprMatrix( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            return Feel::vf::expr( M_mexpr.template expr<Dim,Dim>(), se );
+        }
+
+        //! return markers
+        std::set<std::string> const& markers() const { return M_markers; }
+
+        void setParameterValues( std::map<std::string,double> const& paramValues ) { M_mexpr.setParameterValues( paramValues ); }
+
+        //! update informations
+        void updateInformationObject( nl::json & p ) const;
+        //! return tabulate information from json info
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+
+    private:
+        std::string M_name;
+        ModelExpression M_mexpr;
+        std::set<std::string> M_markers;
+    };
+
     class PressureImposed
     {
     public:
@@ -165,6 +222,8 @@ public:
 
     //! return velocity imposed
     std::map<std::pair<Type,std::string>,std::shared_ptr<VelocityImposed>> const& velocityImposed() const { return M_velocityImposed; }
+    //! return normal stress
+    std::map<std::string,std::shared_ptr<NormalStress>> const& normalStress() const { return M_normalStress; }
     //! return inlet
     std::map<std::string,std::shared_ptr<Inlet>> const& inlet() const { return M_inlet; }
     //! return pressure imposed
@@ -240,6 +299,7 @@ private:
 
 private:
     std::map<std::pair<Type,std::string>,std::shared_ptr<VelocityImposed>> M_velocityImposed;
+    std::map<std::string,std::shared_ptr<NormalStress>> M_normalStress;
     std::map<std::string,std::shared_ptr<Inlet>> M_inlet;
     std::map<std::string,std::shared_ptr<PressureImposed>> M_pressureImposed;
     std::map<std::string,std::shared_ptr<BodyInterface>> M_bodyInterface;

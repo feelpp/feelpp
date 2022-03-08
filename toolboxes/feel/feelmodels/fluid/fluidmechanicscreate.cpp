@@ -215,6 +215,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("FluidMechanics","initMesh", "start");
     this->timerTool("Constructor").start();
 
+    if ( auto ptMeshes = this->modelProperties().pTree().get_child_optional("Meshes") )
+        super_type::super_model_meshes_type::setup( *ptMeshes, {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
@@ -229,7 +231,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initMaterialProperties()
 {
-    this->log("FluidMechanics","initMesh", "start");
+    this->log("FluidMechanics","initMaterialProperties", "start");
     this->timerTool("Constructor").start();
 
     // auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -256,8 +258,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initMaterialProperties()
         }
     }
 
-    double tElapsed = this->timerTool("Constructor").stop("initMesh");
-    this->log("FluidMechanics","initMesh", (boost::format("finish in %1% s") %tElapsed).str() );
+    double tElapsed = this->timerTool("Constructor").stop("initMaterialProperties");
+    this->log("FluidMechanics","initMaterialProperties", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 //---------------------------------------------------------------------------------------------------------//
 #if 0
@@ -1049,8 +1051,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     this->initMaterialProperties();
 
-    if ( !this->mesh() )
-        this->initMesh();
+    //if ( !this->mesh() )
+    this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
 

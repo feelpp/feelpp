@@ -111,6 +111,51 @@ FluidMechanicsBoundaryConditions<Dim>::Inlet::tabulateInformations( nl::json con
 
 template <uint16_type Dim>
 void
+FluidMechanicsBoundaryConditions<Dim>::NormalStress::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
+{
+    if ( jarg.contains( "expr" ) )
+        M_mexpr.setExpr( jarg.at( "expr" ), mparent.worldComm(), mparent.repository().expr(), indexes );
+     if ( jarg.contains( "markers" ) )
+     {
+         ModelMarkers markers;
+         markers.setup( jarg.at("markers"), indexes );
+         M_markers = markers;
+     }
+     else
+         M_markers = { M_name };
+}
+
+template <uint16_type Dim>
+void
+FluidMechanicsBoundaryConditions<Dim>::NormalStress::updateInformationObject( nl::json & p ) const
+{
+    auto [exprStr,compInfo] = M_mexpr.exprInformations();
+    p["expr"] = exprStr;
+    p["markers"] = M_markers;
+}
+
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+FluidMechanicsBoundaryConditions<Dim>::NormalStress::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    Feel::Table tabInfo;
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { /*"name","type",*/"expr" } );
+    tabInfo.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+    if ( jsonInfo.contains("markers") )
+    {
+        Feel::Table tabInfoMarkers = TabulateInformationTools::FromJSON::createTableFromArray( jsonInfo.at("markers") , true );
+        if ( tabInfoMarkers.nRow() > 0 )
+            tabInfo.add_row( { "markers", tabInfoMarkers } );
+    }
+    return TabulateInformations::New( tabInfo, tabInfoProp );
+}
+
+
+template <uint16_type Dim>
+void
 FluidMechanicsBoundaryConditions<Dim>::PressureImposed::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
 {
     if ( jarg.contains( "expr" ) )
@@ -311,6 +356,19 @@ FluidMechanicsBoundaryConditions<Dim>::setup( ModelBase const& mparent, nl::json
             }
         }
     }
+    for ( std::string const& bcKeyword : { "normal_stress" } )
+    {
+        if ( jarg.contains( bcKeyword ) )
+        {
+            auto const& j_bc = jarg.at( bcKeyword );
+            for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
+            {
+                auto bc = std::make_shared<NormalStress>( j_bckey );
+                bc->setup( mparent,j_bcval,indexes );
+                M_normalStress.emplace( j_bckey, std::move( bc ) );
+            }
+        }
+    }
     for ( std::string const& bcKeyword : { "pressure_imposed", "pressure" } )
     {
         if ( jarg.contains( bcKeyword ) )
@@ -347,6 +405,8 @@ FluidMechanicsBoundaryConditions<Dim>::setParameterValues( std::map<std::string,
         bcData->setParameterValues( paramValues );
     for ( auto & [bcName,bcData] : M_inlet )
         bcData->setParameterValues( paramValues );
+    for ( auto & [bcId,bcData] : M_normalStress )
+        bcData->setParameterValues( paramValues );
     for ( auto & [bcName,bcData] : M_pressureImposed )
         bcData->setParameterValues( paramValues );
     for ( auto & [bcName,bcData] : M_bodyInterface )
@@ -366,6 +426,8 @@ FluidMechanicsBoundaryConditions<Dim>::updateInformationObject( nl::json & p ) c
     }
     for ( auto const& [bcName,bcData] : M_inlet )
         bcData->updateInformationObject( p["inlet"][bcName] );
+    for ( auto const& [bcName,bcData] : M_normalStress )
+        bcData->updateInformationObject( p["normal_stress"][bcName] );
     for ( auto const& [bcName,bcData] : M_pressureImposed )
         bcData->updateInformationObject( p["pressure_imposed"][bcName] );
     for ( auto const& [bcName,bcData] : M_bodyInterface )
@@ -397,6 +459,13 @@ FluidMechanicsBoundaryConditions<Dim>::tabulateInformations( nl::json const& jso
         for ( auto const& [j_bckey,j_bcval]: jsonInfo.at( "inlet" ).items() )
             tabInfoBC->add( j_bckey, Inlet::tabulateInformations( j_bcval, tabInfoProp ) );
         tabInfo->add( "Inlet", tabInfoBC );
+    }
+    if ( jsonInfo.contains( "normal_stress" ) )
+    {
+        auto tabInfoBC = TabulateInformationsSections::New( tabInfoProp );
+        for ( auto const& [j_bckey,j_bcval]: jsonInfo.at( "normal_stress" ).items() )
+            tabInfoBC->add( j_bckey, NormalStress::tabulateInformations( j_bcval, tabInfoProp ) );
+        tabInfo->add( "Normal Stress", tabInfoBC );
     }
     if ( jsonInfo.contains( "pressure_imposed" ) )
     {

@@ -2138,7 +2138,7 @@ public :
     /*FEELPP_DEPRECATED*/ std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     /*FEELPP_DEPRECATED*/ void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
 
-    std::set<std::string> const& markersFSI() const { return M_markersFSI; }
+    //std::set<std::string> const& markersFSI() const { return M_markersFSI; }
     //___________________________________________________________________________________//
     // stabilization
     bool stabilizationGLS() const { return M_stabilizationGLS; }
@@ -2822,7 +2822,7 @@ private :
 
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
-    std::set<std::string> M_markersFSI;
+    //std::set<std::string> M_markersFSI;
 
     bool M_startBySolveNewtonian, M_hasSolveNewtonianAtKickOff;
     bool M_startBySolveStokesStationary, M_hasSolveStokesStationaryAtKickOff;
