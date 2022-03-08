@@ -464,8 +464,11 @@ Backend<T,SizeT>::nlSolve( sparse_matrix_ptrtype& A,
     }
     else if ( !ret.isConverged() )
     {
-        LOG(ERROR) << "\n[backend] non-linear solver fail";
-        LOG(ERROR) << "Backend " << M_prefix << " : non-linear solver failed to converge" << std::endl;
+        if ( this->worldComm().isMasterRank() )
+        {
+            LOG(ERROR) << "\n[backend] non-linear solver fail";
+            LOG(ERROR) << "Backend " << M_prefix << " : non-linear solver failed to converge" << std::endl;
+        }
     }
 
     this->setPrecMatrixStructure( matStructInitial );
@@ -552,7 +555,7 @@ template <typename T, typename SizeT>
 void
 Backend<T,SizeT>::start()
 {
-    M_timer.restart();
+    M_timer.start();
 }
 
 template <typename T, typename SizeT>

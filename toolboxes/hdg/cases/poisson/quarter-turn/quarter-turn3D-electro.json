@@ -174,12 +174,12 @@
                     "value":3.6799872684964548e-02,
                     "tolerance":1e-1
                 },
-                "Points_V0_potential":
+                "Points_V0_field_potential":
                 {
                     "value":3.1238703842923307e-02,
                     "tolerance":1e-1
                 },
-                "Points_V1_potential":
+                "Points_V1_field_potential":
                 {
                     "value":0,
                     "tolerance":1e-4

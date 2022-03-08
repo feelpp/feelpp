@@ -13,7 +13,7 @@
         "dif":0.05,
         "re":2,
         "ri":1,
-        "hc":0.08,
+        "param_h":0.08,
         "Tw":293// ,
         // "A":"-sigma0/(2*k0)*(dif/angle)*(dif/angle):sigma0:k0:dif:angle",
         // "B":"k0/(h*ri)+k0/(h*re)+log(re/ri):k0:h:ri:re",
@@ -21,11 +21,34 @@
         // "r0":"exp(A*C/(2*A*B)):A:B:C",
         // "Tm":"2*A*k0/(h*(ri+re))*log(re/ri)+(h*Tw*(ri+re))/(h*(re+ri))+A/(h*(re+ri))*(h*ri*log(ri/r0)*log(ri/r0)+h*re*log(re/r0)*log(re/r0)):A:k0:h:ri:re:Tw:r0"
     },
+    "Meshes":
+    {
+        "thermoelectric":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/quarterturn.geo",
+                "hsize":0.05
+            }
+        }
+    },
     "Materials":
     {
         "omega":
         {
             "filename":"$cfgdir/omega.json"
+        }
+    },
+    "InitialConditions":
+    {
+        "heat":{
+            "temperature":{
+                "Expression":{
+                    "myic1":{
+                        "expr":"290"
+                    }
+                }
+            }
         }
     },
     "BoundaryConditions":
@@ -37,7 +60,7 @@
                 "cooling":
                 {
                     "markers":["Rint","Rext"],
-                    "expr1":"hc:hc", // h
+                    "expr1":"param_h:param_h", // h
                     "expr2":"Tw:Tw" // T_c
                 }
             }
@@ -59,8 +82,7 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
-        "thermo-electric":
+        "thermoelectric":
         {
             "Exports":
             {

@@ -129,7 +129,7 @@ private:
 
     export_ptrtype exporter;
 
-    std::map<std::string,std::pair<boost::timer,double> > timers;
+    std::map<std::string,std::pair<Feel::Timer,double> > timers;
 
 }; // Periodic
 
@@ -188,7 +188,7 @@ template<int Dim, int Order>
 void
 PeriodicStokes<Dim, Order>::run()
 {
-    timers["init"].first.restart();
+    timers["init"].first.start();
 
     auto U = Xh->element( "u" );
     auto u = U.template element<0>();
@@ -198,10 +198,10 @@ PeriodicStokes<Dim, Order>::run()
     auto q = V.template element<1>();
 
 
-    auto M = backend()->newMatrix( Xh, Xh );
+    auto M = backend()->newMatrix( _test=Xh, _trial=Xh );
     auto F = backend()->newVector( Xh );
 
-    auto a = form2( Xh, Xh, _matrix=M );
+    auto a = form2( _test=Xh, _trial=Xh, _matrix=M );
     a = integrate( _range=elements( mesh ), _expr=trace(gradt( u )*trans( grad( v ) ) ));
     if ( ioption("wp") )
     {
@@ -220,7 +220,7 @@ PeriodicStokes<Dim, Order>::run()
     a+= integrate( _range=elements( mesh ), _expr=-idt(p)*div(v)+id(q)*divt(u) );
     a+= integrate( _range=elements( mesh ), _expr=1e-6*idt(p)*id(q) );
 
-    auto b = form1( Xh, _vector=F );
+    auto b = form1( _test=Xh, _vector=F );
 
     std::list<int> bdys = {1,3};
     BOOST_FOREACH( auto bdy, bdys )
@@ -243,7 +243,7 @@ template<int Dim, int Order>
 void
 PeriodicStokes<Dim, Order>::exportResults( element_type& U )
 {
-    timers["export"].first.restart();
+    timers["export"].first.start();
 
     LOG(INFO) << "exportResults starts\n";
 

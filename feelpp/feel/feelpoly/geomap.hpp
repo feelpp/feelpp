@@ -988,6 +988,24 @@ class GeoMap
         }
 
 
+        template<size_type CTX>
+        void updateContext( size_type dynctx = 0 )
+            {
+                M_dynamic_context = M_dynamic_context | dynctx;
+
+                if ( M_dynamic_context != 0 )
+                {
+                    this->resize<CTX|vm::DYNAMIC,true>();
+                    this->updateImpl<CTX|vm::DYNAMIC>();
+                }
+                else
+                {
+                    this->resize<CTX,true>();
+                    this->updateImpl<CTX>();
+                }
+            }
+
+
         FEELPP_STRONG_INLINE
         void setElement( element_type const& __e )
             {
@@ -1812,8 +1830,10 @@ class GeoMap
                 if ( M_gm->hasPermutationWithNeighborFace( elt.id(), face_in_elt ) == false )
                 {
                     auto [found_permutation,perm] = this->updateFromMatchingNodes<CTX>(elt, face_in_elt, gmc );
+#if 0 // NOT WORK IN ALL CASES
                     if ( found_permutation )
                         M_gm->setPermutationWithNeighborFace( elt.id(), face_in_elt, perm.value() );
+#endif
                     return found_permutation;
                 }
                 this->update<CTX>( elt, face_in_elt, permutation_type(M_gm->permutationWithNeighborFace(elt.id(), face_in_elt)) );

@@ -86,7 +86,8 @@ class PyTSBase : public TSBase
 {
 public:
     using TSBase::TSBase;
-    
+    //double next() const override  { PYBIND11_OVERRIDE(double, TSBase, next); }
+    //void shiftRight() override { PYBIND11_OVERRIDE( void, TSBase, shiftRight ); }
 };
 PYBIND11_MODULE(_ts, m )
 {
@@ -94,9 +95,14 @@ PYBIND11_MODULE(_ts, m )
     using namespace hana::literals;
     if (import_mpi4py()<0) return ;
 
-    py::class_<TSBase, PyTSBase, std::shared_ptr<TSBase>>(m,"TSBase")
-        .def(py::init<>())
-        .def("isFinished", &TSBase::isFinished, "return if time stepping is finished, false otherwise")
+    py::class_<TSBase, PyTSBase, std::shared_ptr<TSBase>>( m, "TSBase" )
+        .def( py::init<>() )
+        .def( "isFinished", &TSBase::isFinished, "return if time stepping is finished, false otherwise" )
+        .def( "timeInitial", &TSBase::timeInitial, "return the initial time" )
+        .def( "timeStep", &TSBase::timeStep, "return the  time step" )
+        .def( "timeFinal", &TSBase::timeFinal, "return the final time " )
+        .def( "time", &TSBase::time, "return if the current time" )
+
         ;
     auto ordert = hana::make_tuple( 1_c, 2_c );
     hana::for_each( ordert, [&m](auto const& o ){

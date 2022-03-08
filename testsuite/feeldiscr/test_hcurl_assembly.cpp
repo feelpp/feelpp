@@ -193,7 +193,7 @@ TestHCurl::twoElementsMesh()
 
     // assembly curl(curl(u)) + u
     auto a = form2( _test=Xh, _trial=Xh);
-    a = integrate(elements( mesh ), curlxt(u)*curlx(phi) + trans(idt(u))*id(phi) );
+    a = integrate(_range=elements( mesh ), _expr=curlxt(u)*curlx(phi) + trans(idt(u))*id(phi) );
     a.matrix().printMatlab( "mass_assembly.m" );
 
     //Check each component of the mass matrix

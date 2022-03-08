@@ -23,14 +23,14 @@ def download(data,worldComm):
 _meshes={
     'mesh(3,1,3)':Mesh_S3DG1R3,
     #'mesh(3,2,3)':Mesh_3DG2R3,
-    #'mesh(2,1,3)':Mesh_2DG1R3,
+    'mesh(2,1,3)':Mesh_S2DG1R3,
     #'mesh(2,2,3)':Mesh_2DG2R3,
     #'mesh(1,1,3)':Mesh_1DG1R3,
     #'mesh(1,2,3)':Mesh_1DG2R3,
     'mesh(2,1,2)':Mesh_S2DG1R2,
     'meshstructured(2,1,2)':Mesh_H2DG1R2,
     'mesh(2,2,2)':Mesh_S2DG2R2,
-    #'mesh(1,1,2)':Mesh_1DG1R2,
+    'mesh(1,1,2)':Mesh_S1DG1R2,
     #'mesh(1,2,2)':Mesh_1DG2R2,
     'mesh(1,1,1)':Mesh_S1DG1R1,
     #'mesh(1,2,1)':Mesh_1DG2R1
@@ -127,14 +127,19 @@ def functionSpace( mesh, space="Pch", order=1, worldscomm=None):
     return _spaces[key]( mesh=mesh, worldsComm=worldscomm )
 
 
-def expr(e,filename=None,worldComm=None,directory=None):
+def expr(e,dim=1,filename=None,worldComm=None,directory=None):
     if filename is None:
         filename=""
     if directory is None:
         directory=""
     if worldComm is None:
         worldComm=Environment.worldComm()
-    return expr_(e,filename=filename,dir=directory,worldComm=worldComm)
+    if dim==1:
+        return expr_(e,filename=filename,dir=directory,worldComm=worldComm)
+    elif dim==2:
+        return exprv2_(e,filename=filename,dir=directory,worldComm=worldComm)
+    elif dim == 3:
+        return exprv3_(e, filename=filename, dir=directory, worldComm=worldComm)
 
 def gmshGenerate(dim, fname):
     mshname = '{}-{}.msh'.format(fname,

@@ -60,7 +60,7 @@ void defFM(py::module &m)
         // function spaces and elements
         .def("functionSpaceVelocity",&fm_t::functionSpaceVelocity, "get the velocity function space")
         //.def("fieldVelocity",static_cast<typename fm_t::element_velocity_ptrtype& (fm_t::*)()>(&fm_t::fieldVelocityPtr), "get the velocity field")
-        .def("fieldVelocity", []( std::shared_ptr<fm_t>& self ) {
+        .def("fieldVelocity",[]( std::shared_ptr<fm_t>& self ) {
             self->fieldVelocityPtr()->printMatlab("velocityptr.m");
             return self->fieldVelocityPtr();
         } )

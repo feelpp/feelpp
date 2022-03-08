@@ -6,26 +6,30 @@
     {
         "fluid":
         {
-            "equations":"Navier-Stokes",
-            //"gravity":1
-             "gravity":
-             {
-                 "enable":1,
-                 "expr":"{0,980}:t"
-             }
+            "materials":"Fluid",
+            "setup":{
+                "equations":"Navier-Stokes",
+                //"gravity":1
+                "gravity":
+                {
+                    "enable":1,
+                    "expr":"{0,980}:t"
+                }
+            }
+        },
+        "body":{
+            "materials":"MySolid"
         }
     },
     "Materials":
     {
         "Fluid":{
             "markers":"Fluid",
-            "physics":"fluid",
             "rho":"1",
             "mu":"0.01"
         },
         "MySolid":{
             "markers":"Body",
-            "physics":"body",
             "rho":"1.5"
             //"rho":"2.0e3+1e3*sin((t/0.1)*pi/2):t"
         }
@@ -58,15 +62,18 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","pid","displacement"]
-        },
-        "Measures":
-        {
-            "Quantities":
+            "Exports":
             {
-                "names":"all"
+                "fields":["velocity","pressure","pid","displacement"]
+            },
+            "Measures":
+            {
+                "Quantities":
+                {
+                    "names":"all"
+                }
             }
         }
     }

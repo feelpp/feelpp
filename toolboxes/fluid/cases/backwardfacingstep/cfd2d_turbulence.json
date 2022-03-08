@@ -9,17 +9,17 @@
             "turbulence":
             {
                 "enable":1,
-                "model":"Spalart-Allmaras"
+                "model":"k-epsilon"//"Spalart-Allmaras"
             }
         }
     },
     "Parameters":
     {
-        "umax":10,//44.2,
+        "umax":18.2,//10,//1,//10,//44.2,
         "tfix":0.1,//0.1,
         "chi":"t<tfix:t:tfix",
-        "umax_inlet":"umax*((1-chi) +  ((1-cos(pi*t/tfix))/2)*chi):t:tfix:chi:umax"
-        //"umax_inlet":"umax:umax"
+        //"umax_inlet":"umax*((1-chi) +  ((1-cos(pi*t/tfix))/2)*chi):t:tfix:chi:umax"
+        "umax_inlet":"umax:umax"
         // "H":0.0635,
         // "Re":32000
         // //"Re":16000//32000//12000//3200
@@ -27,9 +27,9 @@
     "Materials":
     {
         "fluid":{
-            "rho":"1",
+            "rho":1.23,
             //"mu":"(rho*umax*(H/2))/Re:rho:umax:H:Re"
-            "mu":1.56e-05
+            "mu":1.79e-05
         }
     },
     "BoundaryConditions":
@@ -38,23 +38,51 @@
         {
             "Dirichlet":
             {
-                "wall":
+                // "wall":
+                // {
+                //     "expr":"{0,0}",
+                //     "turbulence_bc":"wall"
+                // },
+                "inlet":
                 {
-                    "expr":"{0,0}",
+                    "expr":"{ umax_inlet,0 }:umax_inlet",
+                    "turbulence_bc":"inlet"
+                }
+            }
+        },
+        "velocity_y":
+        {
+            "Dirichlet":
+            {
+                "wall_horizontal":
+                {
+                    "expr":"0",
+                    "turbulence_bc":"wall"
+                }
+            }
+        },
+        "velocity_x":
+        {
+            "Dirichlet":
+            {
+                "wall_vertical":
+                {
+                    "expr":"0",
                     "turbulence_bc":"wall"
                 }
             }
         },
         "fluid":
         {
-            "inlet":
+            "AAinlet":
             {
                 "inlet":
                 {
                     "shape":"constant",
                     "constraint":"velocity_max",
                     //"expr":"44.2"
-                    "expr":"umax_inlet:umax_inlet"
+                    "expr":"umax_inlet:umax_inlet",
+                    "turbulence_bc":"inlet"
                 }
             }
         },
@@ -77,8 +105,10 @@
             "expr":{
                 "dist2wall":"fluid_dist2wall:fluid_dist2wall",
                 "mu_t":"materials_mu_t:materials_mu_t",
-                "curl_U_magnitude":"fluid_curl_U_magnitude:fluid_curl_U_magnitude",
-                "SA_nu":"fluid_turbulence_SA_nu:fluid_turbulence_SA_nu"
+                "sol_k":"fluid_turbulence_k_k:fluid_turbulence_k_k",
+                "sol_epsilon":"fluid_turbulence_epsilon_epsilon:fluid_turbulence_epsilon_epsilon"
+                //"curl_U_magnitude":"fluid_curl_U_magnitude:fluid_curl_U_magnitude",
+                //"SA_nu":"fluid_turbulence_SA_nu:fluid_turbulence_SA_nu"
             }
         }
     }

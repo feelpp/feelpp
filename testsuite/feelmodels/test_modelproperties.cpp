@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_SUITE( modelproperties )
 
 BOOST_AUTO_TEST_CASE( test_materials )
 {
-    auto mesh = loadMesh(new Mesh<Simplex<3> >);
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<3> >);
     auto Xh = Pch<1>(mesh);
     auto g = Xh->element();
     auto d = Xh->element();
@@ -74,11 +74,11 @@ BOOST_AUTO_TEST_CASE( test_materials )
         auto physics = mat.physics();
         auto name = mat.name();
         auto meshMarkers = mat.meshMarkers();
-        auto rhoInt = mat.getInt("rho");
-        auto etaDouble = mat.getDouble("eta");
 
-        auto rho = mat.getScalar( "rho" );
-        auto f = mat.getScalar("f","g",idv(g));
+        auto rho = mat.property("rho");
+        auto eta = mat.property("eta");
+        auto f = mat.property("f");
+#if 0
         auto fParam = mat.getScalar("f",{{"g",1.}});
         auto hList = mat.getScalar("h",{"g","t"},{idv(g),idv(d)});
         auto fVec = mat.getScalar("f",std::vector<std::string>(1,"g"), std::vector<decltype(idv(g))>(1,idv(g)));
@@ -92,7 +92,7 @@ BOOST_AUTO_TEST_CASE( test_materials )
         auto chi = mat.getMatrix<2>( "chi" );
         auto xhiPair = mat.getMatrix<3>( "xhi", {"t",2.} );
         auto xhiMap = mat.getMatrix<3,3>( "xhi", {{"t",3.}});
-
+#endif
 #if 0
         Feel::cout << "properties for " << matPair.first << std::endl;
         Feel::cout << "\t" << name << std::endl;
@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE( test_postprocess )
     }
 
     std::map<std::string,std::tuple<double,std::set<std::string>> > ppStatRegistered;
-    for (auto const& stat : model_props.postProcess().measuresStatistics() )
+    for (auto const& stat : model_props.postProcess().measuresStatistics("test") )
     {
         //std::cout << "stat.name() " << stat.name() << " " << stat.markers()  << std::endl;
         std::get<0>( ppStatRegistered[stat.name()] ) = stat.expr().exprScalar().evaluate()(0,0);

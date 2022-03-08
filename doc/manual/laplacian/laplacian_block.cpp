@@ -29,7 +29,7 @@ createSubMeshLaplacianBlock(std::shared_ptr<Mesh<Simplex<2> > > mesh)
     auto proj = vf::project(_space=P0d,_range=elements(mesh),
                             _expr=vf::chi( (Px()*Px()+Py()*Py()) < r*r ) );
     mesh->updateMarker3( proj );
-    auto submesh = createSubmesh( mesh, marked3elements(mesh,1) );
+    auto submesh = createSubmesh( _mesh=mesh, _range=marked3elements(mesh,1) );
     //saveGMSHMesh(_mesh=submesh,_filename="mysubmesh.msh");
     return submesh;
 }

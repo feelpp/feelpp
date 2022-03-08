@@ -154,7 +154,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "electric":
         {
             "Exports":

@@ -3,7 +3,7 @@ name: Deploy Doxygen
 on: 
   push:
     branches:
-      - develop
+      - develop 
 
 jobs:
 #  docs:
@@ -20,28 +20,25 @@ jobs:
     runs-on: ubuntu-20.04
     if: "!contains(github.event.head_commit.message, 'doc skip')"
     steps:
-    - uses: actions/checkout@v2.3.4
+    - uses: actions/checkout@v2.4.0
       with:
         lfs: true
     - name: Update Dependencies
       run: |
-        sudo apt install -y gnupg
-        wget -qO - https://feelpp.jfrog.io/artifactory/api/security/keypair/gpg-debian/public | gpg --dearmor > feelpp.gpg
-        sudo mv feelpp.gpg /etc/apt/trusted.gpg.d
-        echo "deb [signed-by=/etc/apt/trusted.gpg.d/feelpp.gpg] https://feelpp.jfrog.io/artifactory/ubuntu focal ${CHANNEL}" | tee -a feelpp.list
-        sudo mv feelpp.list /etc/apt/sources.list.d/
+        sudo apt install -y gpg
+        wget -qO - http://apt.feelpp.org/apt.gpg | gpg --dearmor > feelpp.gpg
+        sudo install -o root -g root -m 644 feelpp.gpg /etc/apt/trusted.gpg.d
+        echo "deb [signed-by=/etc/apt/trusted.gpg.d/feelpp.gpg] http://apt.feelpp.org/ubuntu focal latest" | sudo tee -a /etc/apt/sources.list.d/feelpp.list
+        rm -f feelpp.gpg 
         sudo apt update
         sudo apt --reinstall install -y libfeelpp1 libfeelpp-dev feelpp-tools doxygen
-    - name: Configure Feelpp
-      run: |
-        mkdir build && cd build
-        CXX=clang++ cmake -DFEELPP_ENABLE_DOXYGEN=ON ..
+    - name: Configure Doxygen Preset
+      run: cmake --preset doxygen
     - name: Build Doxygen
-      run: make doxygen
-      working-directory: build
+      run: cmake --build --preset doxygen
     - name: Deploy
-      uses: JamesIves/github-pages-deploy-action@4.1.1
+      uses: JamesIves/github-pages-deploy-action@4.1.5
       with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages # The branch the action should deploy to.
-          FOLDER: build/doc/api/html # The folder the action should deploy.
+          FOLDER: build/doxygen/doc/api/html # The folder the action should deploy.

@@ -29,8 +29,17 @@
 #if !defined(FEELPP_DETAIL_GMC_HPP)
 #define FEELPP_DETAIL_GMC_HPP 1
 
+#include <boost/version.hpp>
+
+#if BOOST_VERSION >= 106700 && BOOST_VERSION < 107100
+#include <contrib/boost/fusion/include/boost/fusion/container/vector/vector.hpp>
+#endif
+//#include <boost/fusion/sequence.hpp>
+#include <boost/fusion/container/map.hpp>
 #include <boost/fusion/sequence.hpp>
 #include <boost/fusion/support/pair.hpp>
+#include <boost/fusion/container/generation/make_map.hpp>
+
 
 #pragma GCC visibility push(default)
 namespace Feel {

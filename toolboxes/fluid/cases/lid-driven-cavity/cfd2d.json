@@ -1,16 +1,37 @@
 // -*- mode: javascript -*-
 {
+    /*
+      References :
+      - https://www.comsol.fr/model/download/507571/lid_driven_cavity.pdf
+     */
     "Name": "lid-driven-cavity",
     "ShortName":"lid-driven-cavity",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "fluid":{
+            "equations":"Navier-Stokes"
+        }
+    },
+    "Parameters":
+    {
+        "Re":"400"
+    },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cfd2d.geo"
+                //"hsize":0.01
+            }
+        }
     },
     "Materials":
     {
         "Fluid":{
             "rho":"1",
-            "mu":"1e-5"
+            "mu":"1/Re:Re"
         }
     },
     "BoundaryConditions":
@@ -26,15 +47,67 @@
                 "noslip-wall":
                 {
                     "expr":"{0,0}"
+                },
+                "noslip-corner":
+                {
+                    "expr":"{0,0}"
                 }
             }
         }
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","pid"]
+            "Exports":
+            {
+                "fields":["velocity","pressure","pid"]
+            },
+            "Measures":
+            {
+                "Points":
+                {
+                    "vertical_centerline":
+                    {
+                        "over_geometry":
+                        {
+                            "segment":
+                            {
+                                "point1":"{0.5,0}",
+                                "point2":"{0.5,1}",
+                                "n_points":100
+                            }
+                        },
+                        "fields":"velocity",
+                        "include_coordinates":1,
+                        "output":
+                        {
+                            "type":"table"
+                            //"name":"vertical_centerline"
+                        }
+                    },
+                    "horizontal_centerline":
+                    {
+                        "over_geometry":
+                        {
+                            "segment":
+                            {
+                                "point1":"{0,0.5}",
+                                "point2":"{1,0.5}",
+                                "n_points":100
+                            }
+                        },
+                        "fields":"velocity",
+                        "include_coordinates":1,
+                        "output":
+                        {
+                            "type":"table"
+                            //"name":"horizontal_centerline"
+                        }
+                    }
+
+                }
+            }
         }
     }
 
