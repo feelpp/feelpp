@@ -17,6 +17,13 @@ makeToolboxMorOptions();
 FEELPP_EXPORT AboutData
 makeToolboxMorAbout( std::string const& str = "opusheat-tb" );
 
+/**
+ * @brief Model for ToolboxMor
+ * 
+ * Should give the assembly process for the rhs and lhs, both in offline and online phase
+ * 
+ * @tparam MeshType The type of the mesh used by ToolboxMor
+ */
 template<typename MeshType>
 class DeimMorModelBase
 {
@@ -30,12 +37,39 @@ public:
     using deim_function_type = std::function<vector_ptrtype(parameter_type const&)>;
     using mdeim_function_type = std::function<sparse_matrix_ptrtype(parameter_type const&)>;
 
+    /**
+     * @brief Should return the function assembling the rhs
+     * 
+     * @return deim_function_type The function assembling the rhs
+     */
     virtual deim_function_type deimFunction() = 0;
+    /**
+     * @brief Should return the function assembling the lhs
+     * 
+     * @return mdeim_function_type The function assembling the lhs
+     */
     virtual mdeim_function_type mdeimFunction() = 0;
+    /**
+     * @brief Should return the function assembling the rhs for the online phase
+     * 
+     * @param mesh the mesh used for the online phase
+     * @return deim_function_type the function assembling the rhs
+     */
     virtual deim_function_type deimOnlineFunction(mesh_ptrtype const& mesh) = 0;
+    /**
+     * @brief Should return the function assembling the lhs for the online phase
+     * 
+     * @param mesh the mesh used for the online phase
+     * @return mdeim_function_type the function assembling the lhs
+     */
     virtual mdeim_function_type mdeimOnlineFunction(mesh_ptrtype const& mesh) = 0;
 };
 
+/**
+ * @brief A model for ToolboxMor when the assembly is done by a Toolbox
+ * 
+ * @tparam ToolboxType The type of the toolbox
+ */
 template<typename ToolboxType>
 class DeimMorModelToolbox : public DeimMorModelBase<typename ToolboxType::mesh_type>
 {
@@ -53,9 +87,19 @@ class DeimMorModelToolbox : public DeimMorModelBase<typename ToolboxType::mesh_t
     using mdeim_function_type = typename super_type::mdeim_function_type;
 
 public:
+    /**
+    * @brief Construct a new Deim Mor Model Toolbox object for the online phase
+    * 
+    * @param prefix the prefix used for the toolbox
+    */
     DeimMorModelToolbox(std::string const& prefix) :
         M_prefix(prefix)
         {}
+    /**
+     * @brief Construct a new Deim Mor Model Toolbox object
+     * 
+     * @param tb The toolbox used for the offline assembly
+     */
     DeimMorModelToolbox(toolbox_ptrtype tb) :
         M_prefix(tb->prefix()),
         M_tb(tb)
@@ -84,6 +128,14 @@ private:
     sparse_matrix_ptrtype M_matMdeim;
 };
 
+/**
+ * @brief A class handling the decomposition of a parametrized problem
+ * 
+ * Given a function to assemble the rhs and one to assemble the lhs, the class uses DEIM to get an affine decomposition
+ * 
+ * @tparam SpaceType The function space of the solution
+ * @tparam Options The options of the ModelCrbBase class
+ */
 template<typename SpaceType, int Options = 0>
 class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceType, Options>
 {
@@ -122,18 +174,73 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
     using deim_function_type = std::function<vector_ptrtype(parameter_type const&)>;
     using mdeim_function_type = std::function<sparse_matrix_ptrtype(parameter_type const&)>;
 
+    /**
+     * @brief Construct a new Toolbox Mor object
+     * 
+     * @param name Name of the database
+     * @param prefix Prefix for options
+     */
     explicit ToolboxMor(std::string const& name = "ToolboxMor", std::string const& prefix = "");
 
+    /**
+     * @brief Set the Assemble DEIM function
+     * 
+     * @param fct Function to assemble the rhs during the offline phase
+     */
     void setAssembleDEIM(deim_function_type const& fct ) { M_assembleForDEIM = fct; }
+    /**
+     * @brief Set the Assemble MDEIM function
+     * 
+     * @param fct Function to assemble the lhs during the offline phase
+     */
     void setAssembleMDEIM(mdeim_function_type const& fct ) { M_assembleForMDEIM = fct; }
+    /**
+     * @brief Returns the reduced mesh used by DEIM
+     * 
+     * @return mesh_ptrtype The reduced mesh used by DEIM
+     */
     mesh_ptrtype getDEIMReducedMesh() { return M_deim->onlineModel()->functionSpace()->mesh(); }
+    /**
+     * @brief Returns the reduced mesh used by MDEIM
+     * 
+     * @return mesh_ptrtype The reduced mesh used by MDEIM
+     */
     mesh_ptrtype getMDEIMReducedMesh() { return M_mdeim->onlineModel()->functionSpace()->mesh(); }
+    /**
+     * @brief Set the Online Assemble DEIM function
+     * 
+     * @param fct Function to assemble the rhs during the online phase
+     */
     void setOnlineAssembleDEIM(deim_function_type const& fct ) { M_deim->onlineModel()->setAssembleDEIM(fct); }
+    /**
+     * @brief Set the Online Assemble MDEIM function
+     * 
+     * @param fct Function to assemble the lhs during the online phase
+     */
     void setOnlineAssembleMDEIM(mdeim_function_type const& fct ) { M_mdeim->onlineModel()->setAssembleMDEIM(fct); }
+    /**
+     * @brief Initialized the assembly process using a DeimMorModel
+     * 
+     * @param model The DeimMorModel
+     */
     void initToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model );
+    /**
+     * @brief Initialized the online assembly process using a DeimMorModel
+     * 
+     * @param model The DeimMorModel
+     */
     void initOnlineToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model);
 
+    /**
+     * @brief Initialized the model for the offline phase
+     * 
+     * Construct the parameter space from a ModelParameters and run the DEIM and MDEIM algorithms
+     */
     void initModel() override;
+    /**
+     * @brief Need to be called after the initModel to assemble the data
+     * 
+     */
     void postInitModel();
 
     sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag ) override;
@@ -150,6 +257,11 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
 
     void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
 
+    /**
+     * @brief Returns the ModelProperties used by ToolboxMor
+     * 
+     * @return std::shared_ptr<ModelProperties> const& The ModelProperties used by ToolboxMor
+     */
     std::shared_ptr<ModelProperties> const& modelProperties() const { return M_modelProperties; }
 
   private :
