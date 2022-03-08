@@ -414,7 +414,7 @@ template <uint16_type Dim>
 class ModelPhysicElectric : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
-    using self_type = ModelPhysicHeat<Dim>;
+    using self_type = ModelPhysicElectric<Dim>;
 public :
     ModelPhysicElectric( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicElectric( ModelPhysicElectric const& ) = default;
@@ -662,6 +662,26 @@ private :
     std::string M_decouplingEnergyVolumicLaw, M_compressibleNeoHookeanVariantName;
     std::vector<BodyForces> M_bodyForces;
 };
+
+template <uint16_type Dim>
+class ModelPhysicFSI : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicFSI<Dim>;
+public :
+    ModelPhysicFSI( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicFSI( ModelPhysicFSI const& ) = default;
+    ModelPhysicFSI( ModelPhysicFSI && ) = default;
+
+    std::set<std::string> const& interfaceFluid() const { return M_interfaceFluid; }
+    std::set<std::string> const& interfaceSolid() const { return M_interfaceSolid; }
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+private :
+    std::set<std::string> M_interfaceFluid, M_interfaceSolid;
+};
+
 
 template <uint16_type Dim>
 class ModelPhysics : virtual public ModelBase

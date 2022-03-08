@@ -2,6 +2,8 @@
  */
 
 #include <feel/feelmodels/modelcore/modelphysics.hpp>
+#include <feel/feelmodels/modelmarkers.hpp>
+
 
 namespace Feel
 {
@@ -39,15 +41,15 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& modeling, std::string const& t
     {
         this->addMaterialPropertyDescription( "electric-conductivity", "sigma", { scalarShape } );
     }
-    if ( M_modeling == "solid" )
+    if ( M_modeling == "solid" || M_modeling == "fsi" )
     {
         this->addMaterialPropertyDescription( "Young-modulus", "E", { scalarShape } );
         this->addMaterialPropertyDescription( "Poisson-ratio", "nu", { scalarShape } );
-        this->addMaterialPropertyDescription( "Lame-first-parameter", "lambda", { scalarShape } );
-        this->addMaterialPropertyDescription( "Lame-second-parameter", "mu", { scalarShape } );
+        this->addMaterialPropertyDescription( "Lame-first-parameter", "lambdaLame", { scalarShape } );
+        this->addMaterialPropertyDescription( "Lame-second-parameter", "muLame", { scalarShape } );
         this->addMaterialPropertyDescription( "bulk-modulus", "K", { scalarShape } );
     }
-    if ( M_modeling == "fluid" || M_modeling == "heat-fluid" )
+    if ( M_modeling == "fluid" || M_modeling == "heat-fluid" || M_modeling == "fsi" )
     {
         this->addMaterialPropertyDescription( "dynamic-viscosity", "mu", { scalarShape } );
         this->addMaterialPropertyDescription( "turbulent-dynamic-viscosity", "mu_t", { scalarShape } );
@@ -80,6 +82,8 @@ ModelPhysic<Dim>::New( ModelPhysics<Dim> const& mphysics, std::string const& mod
         return std::make_shared<ModelPhysicFluid<Dim>>( mphysics, modeling, type, name, model );
     else if ( modeling == "solid" )
         return std::make_shared<ModelPhysicSolid<Dim>>( mphysics, modeling, type, name, model );
+    else if ( modeling == "fsi" )
+        return std::make_shared<ModelPhysicFSI<Dim>>( mphysics, modeling, type, name, model );
     else
         return std::make_shared<ModelPhysic<Dim>>( modeling, type, name, mphysics, model );
 }
@@ -832,6 +836,44 @@ ModelPhysicSolid<Dim>::BodyForces::tabulateInformations( nl::json const& jsonInf
     return TabulateInformations::New( tabInfo, tabInfoProp );
 }
 
+template <uint16_type Dim>
+ModelPhysicFSI<Dim>::ModelPhysicFSI( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
+    :
+    super_type( modeling, type, name, mphysics, model )
+{
+    auto const& j_setup = model.setup();
+    if ( j_setup.contains( "interface" ) )
+    {
+        ModelMarkers markers;
+        markers.setup( j_setup.at("interface")/*, indexes*/ );
+        M_interfaceFluid = markers;
+        M_interfaceSolid = markers;
+    }
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicFSI<Dim>::updateInformationObject( nl::json & p ) const
+{
+    super_type::updateInformationObject( p["Generic"] );
+
+    nl::json & pFSI = p["FSI"];
+    pFSI["interface_fluid"] = M_interfaceFluid;
+    pFSI["interface_solid"] = M_interfaceSolid;
+}
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicFSI<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsSubphysics( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+    return tabInfo;
+}
 
 
 template <uint16_type Dim>
@@ -1071,6 +1113,10 @@ template class ModelPhysicThermoElectric<2>;
 template class ModelPhysicThermoElectric<3>;
 template class ModelPhysicFluid<2>;
 template class ModelPhysicFluid<3>;
+template class ModelPhysicSolid<2>;
+template class ModelPhysicSolid<3>;
+template class ModelPhysicFSI<2>;
+template class ModelPhysicFSI<3>;
 
 } // namespace FeelModels
 } // namespace Feel
