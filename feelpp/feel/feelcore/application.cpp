@@ -85,7 +85,6 @@ bool IsGoogleLoggingInitialized();
 
 namespace Feel
 {
-namespace fs = boost::filesystem;
 namespace ptree = boost::property_tree;
 
 //!
@@ -1000,15 +999,15 @@ Application::run()
         if ( !prepare && has_stats == true )
         {
             std::string fname = (boost::format( "%1%-%2%.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
-            fs::ofstream ofs( cp / fname );
+            std::ofstream ofs( cp / fname );
             std::string fnameall = (boost::format( "%1%-%2%-all.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
-            fs::ofstream ofsall( cp / fnameall );
+            std::ofstream ofsall( cp / fnameall );
             std::string fnameerrors = (boost::format( "%1%-%2%-errors.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
-            fs::ofstream ofserrors( cp / fnameerrors );
+            std::ofstream ofserrors( cp / fnameerrors );
             std::string fnametime = (boost::format( "%1%-%2%-timings.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
-            fs::ofstream ofstime( cp / fnametime );
+            std::ofstream ofstime( cp / fnametime );
             std::string fnamedata = (boost::format( "%1%-%2%-data.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
-            fs::ofstream ofsdata( cp / fnamedata );
+            std::ofstream ofsdata( cp / fnamedata );
 
             this->printStats( ofs, Application::ALL );
             this->printStats( ofsall, Application::ALL|Application::FLAT );

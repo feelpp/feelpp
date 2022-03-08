@@ -136,7 +136,7 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
             if( fs::exists(json_fname) )
             {
                 if ( verbose ) 
-                    cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(json_fname) << "\n";
+                    cout << "[loadMesh] Loading mesh in format json+h5: " << fs::absolute(json_fname) << "\n";
                 LOG(INFO) << " Loading mesh in format json+h5: " << json_fname;
                 CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
                 _mesh_ptrtype m( mesh );
@@ -153,7 +153,7 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
 #endif
 
         if ( verbose )
-            cout << "[loadMesh] Loading mesh in format geo+msh: " << fs::system_complete(mesh_name) << "\n";
+            cout << "[loadMesh] Loading mesh in format geo+msh: " << fs::absolute(mesh_name) << "\n";
         if ( !desc && verbose )
             cout << "[loadMesh] Use default geo desc: " << mesh_name.string() << " " << h << " " << depends << "\n";
 
@@ -201,7 +201,7 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
 
     {
         if ( verbose )
-            cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << "\n";
+            cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::absolute(mesh_name) << "\n";
 
         tic();
         auto m = loadGMSHMesh( _vm=vm,
@@ -224,7 +224,7 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
 
         toc("loadMesh.loadGMSHMesh", FLAGS_v>0);
         if ( verbose )
-            cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << " done\n";
+            cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::absolute(mesh_name) << " done\n";
 
 #if defined(FEELPP_HAS_HDF5)
         if ( savehdf5 )
@@ -233,7 +233,7 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
             m->saveHDF5( mesh_name.stem().string()+".json", 1./scale );
             toc("loadMesh.saveHDF5", FLAGS_v>0);
             if ( verbose )
-                cout << "[loadMesh] Saving HDF5 mesh: " << fs::system_complete(mesh_name.stem().string()+".json") << std::endl;
+                cout << "[loadMesh] Saving HDF5 mesh: " << fs::absolute(mesh_name.stem().string()+".json") << std::endl;
         }
 #endif
         return m;
@@ -243,8 +243,8 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
     if ( mesh_name.extension() == ".json"  )
     {
         if ( verbose )
-            cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(mesh_name) << "\n";
-        LOG(INFO) << " Loading mesh in json+h5 format " << fs::system_complete(mesh_name);
+            cout << "[loadMesh] Loading mesh in format json+h5: " << fs::absolute(mesh_name) << "\n";
+        LOG(INFO) << " Loading mesh in json+h5 format " << fs::absolute(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         _mesh_ptrtype m( mesh );
         m->setWorldComm( worldcomm );
@@ -262,8 +262,8 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
     if ( mesh_name.extension() == ".arm"  )
     {
         if ( verbose )
-            cout << "[loadMesh] Loading mesh in format arm(acusolve)h5: " << fs::system_complete(mesh_name) << "\n";
-        LOG(INFO) << " Loading mesh in arm(acusolve) format " << fs::system_complete(mesh_name);
+            cout << "[loadMesh] Loading mesh in format arm(acusolve)h5: " << fs::absolute(mesh_name) << "\n";
+        LOG(INFO) << " Loading mesh in arm(acusolve) format " << fs::absolute(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         _mesh_ptrtype m( mesh );
         m->setWorldComm( worldcomm );

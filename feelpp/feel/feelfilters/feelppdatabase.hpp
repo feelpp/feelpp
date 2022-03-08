@@ -317,7 +317,7 @@ public :
             else if ( this->vectorFileFormat() == "boost")
             {
                 std::string filename = (boost::format("%1%-%2%_p%3%")%nameUsed %timeIndexInDatabase %u.worldComm().globalRank() ).str();
-                fs::ofstream ofs( M_dbRepository / filename );
+                std::ofstream ofs( M_dbRepository / filename );
                 boost::archive::binary_oarchive oa( ofs );
                 oa << u;
             }
@@ -340,7 +340,7 @@ public :
             else if ( this->vectorFileFormat() == "binary")
             {
                 std::string filename = (boost::format("%1%-%2%_p%3%")%nameUsed %timeIndex %u.worldComm().globalRank() ).str();
-                fs::ifstream ifs( M_dbRepository / filename );
+                std::ifstream ifs( M_dbRepository / filename );
                 boost::archive::binary_iarchive ia( ifs );
                 ia >> u;
             }

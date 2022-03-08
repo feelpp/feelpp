@@ -41,7 +41,6 @@
 
 namespace Feel
 {
-namespace fs = boost::filesystem;
 
 /**
  * \class ExporterExodus

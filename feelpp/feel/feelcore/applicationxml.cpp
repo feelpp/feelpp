@@ -34,7 +34,6 @@
 
 namespace Feel
 {
-namespace fs = boost::filesystem;
 namespace detail
 {
 po::options_description

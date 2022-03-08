@@ -33,33 +33,32 @@ namespace Feel
 
 bool filename_is_dot( fs::path const& p )
 {
-#if BOOST_VERSION >= 106300
-    return p.filename_is_dot();
-#else
+//#if BOOST_VERSION >= 106300
+    //return p.filename_is_dot();
+//#else
 #ifdef BOOST_WINDOWS_API
     CHECK( false ) << "not patched for window api"
 #else
-    fs::path q(p.filename());
-    char dot = '.';
-    return q.size() == 1 && *q.c_str() == dot;
+    std::string pStr = p.filename().string();
+    return pStr.size() == 1 && pStr == ".";
 #endif
-#endif
+//#endif
 }
 bool filename_is_dot_dot( fs::path const& p )
 {
-#if BOOST_VERSION >= 106300
-    return p.filename_is_dot_dot();
-#else
+//#if BOOST_VERSION >= 106300
+    //return p.filename_is_dot_dot();
+//#else
 #ifdef BOOST_WINDOWS_API
     CHECK( false ) << "not patched for window api"
 #else
-    std::string m_pathname = p.string();
+    std::string pStr = p.string();
     char dot = '.';
     char separator = '/';
-    return p.size() >= 2 && m_pathname[p.size()-1] == dot && m_pathname[p.size()-2] == dot
-        && (m_pathname.size() == 2 || m_pathname[p.size()-3] == separator );
+    return pStr.size() >= 2 && pStr[pStr.size()-1] == dot && pStr[pStr.size()-2] == dot
+        && (pStr.size() == 2 || pStr[pStr.size()-3] == separator );
 #endif
-#endif
+//#endif
 }
 
 
