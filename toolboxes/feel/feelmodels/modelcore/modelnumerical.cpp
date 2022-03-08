@@ -76,8 +76,10 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         if ( !modelPropFilename.empty() )
         {
             this->setModelProperties( modelPropFilename );
+#if 0
             if ( auto ptMeshes = M_modelProps->pTree().get_child_optional("Meshes"))
                 super_model_meshes_type::setup( *ptMeshes );
+#endif
         }
     }
 
