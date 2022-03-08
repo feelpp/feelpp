@@ -339,9 +339,7 @@ public:
                     continue;
                 if ( !face.hasMarker( markerType ) )
                     continue;
-                if ( face.marker( markerType ).isOff() )
-                    continue;
-                if ( markerFlags.find( face.marker( markerType ).value() ) == markerFlags.end() )
+                if ( !face.marker( markerType ).hasOneOf( markerFlags ) )
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }

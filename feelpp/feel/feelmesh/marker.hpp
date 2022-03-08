@@ -28,8 +28,9 @@
 #define FEELPP_MESH_MARKERS_H
 
 //#include <limits>
-#include <boost/serialization/serialization.hpp>
+//#include <boost/serialization/serialization.hpp>
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/traits.hpp>
 //#include <boost/detail/identifier.hpp>
 
 namespace Feel
@@ -56,6 +57,13 @@ public:
 
     void assign( value_type v ) { super_type::operator=({v}); }
 
+    template <typename TT,std::enable_if_t< is_iterable_of_v<TT,value_type>, bool> = true >
+    void assign( TT const& vs )
+        {
+            this->clear();
+            super_type::insert( vs.begin(), vs.end() );
+        }
+
     value_type value() const {
 #if 1
         CHECK( !this->empty() ) << "no marker";
@@ -67,6 +75,17 @@ public:
             return 0;
 #endif
     }
+
+    bool has( value_type v ) const { return this->find( v ) != this->end(); }
+
+    template <typename TT,std::enable_if_t< is_iterable_of_v<TT,value_type>, bool> = true >
+    bool hasOneOf( TT const& vs ) const
+        {
+            for ( auto const& v : vs )
+                if ( this->has( v ) )
+                    return true;
+            return false;
+        }
 
 private:
 

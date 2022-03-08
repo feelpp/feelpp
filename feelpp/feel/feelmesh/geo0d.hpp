@@ -202,7 +202,6 @@ class Geo0D
         M_master_vertex( G.M_master_vertex ),
         M_is_vertex( G.M_is_vertex ),
         M_mesh( G.M_mesh ), //??
-        M_markers( G.M_markers ),
         M_uv( G.M_uv )
         {}
 
@@ -215,7 +214,6 @@ class Geo0D
         M_master_vertex( std::move( G.M_master_vertex ) ),
         M_is_vertex( std::move( G.M_is_vertex ) ),
         M_mesh( std::move( G.M_mesh ) ), //??
-        M_markers( std::move( G.M_markers ) ),
         M_uv( std::move( G.M_uv ) )
         {
             G.M_node = nullptr;
@@ -242,7 +240,6 @@ class Geo0D
             M_master_vertex = G.M_master_vertex;
             M_is_vertex = G.M_is_vertex;
             M_mesh = G.M_mesh; //??
-            M_markers = G.M_markers;
             M_uv = G.M_uv;
         }
         return *this;
@@ -260,7 +257,6 @@ class Geo0D
             M_master_vertex = std::move( G.M_master_vertex );
             M_is_vertex = std::move( G.M_is_vertex );
             M_mesh = std::move( G.M_mesh ); //??
-            M_markers = std::move( G.M_markers );
             M_uv = std::move( G.M_uv );
         }
         return *this;
@@ -503,95 +499,13 @@ class Geo0D
         return *this;
     }
 
-    std::map<uint16_type, marker_type> const&
-    markers() const
-    {
-        return M_markers;
-    }
-    void setMarkers( std::map<uint16_type, marker_type> const& markers )
-    {
-        M_markers = markers;
-    }
-    bool hasMarker( uint16_type k ) const
-    {
-        auto itFindMarker = M_markers.find( k );
-        if ( itFindMarker == M_markers.end() )
-            return false;
-        if ( itFindMarker->second.isOff() )
-            return false;
-        return true;
-    }
-    marker_type const& marker( uint16_type k ) const
-    {
-        return M_markers.find( k )->second;
-    }
-    marker_type& marker( uint16_type k )
-    {
-        return M_markers[k];
-    }
-    void setMarker( uint16_type k, flag_type v )
-    {
-        M_markers[k].assign( v );
-    }
-
-    bool hasMarker() const
-    {
-        return this->hasMarker( 1 );
-    }
-    marker_type const& marker() const
-    {
-        return M_markers.find( 1 )->second;
-    }
-    marker_type& marker()
-    {
-        return M_markers[1];
-    }
-    void setMarker( flag_type v )
-    {
-        M_markers[1].assign( v );
-    }
-
-    bool hasMarker2() const
-    {
-        return this->hasMarker( 2 );
-    }
-    marker_type const& marker2() const
-    {
-        return M_markers.find( 2 )->second;
-    }
-    marker_type& marker2()
-    {
-        return M_markers[2];
-    }
-    void setMarker2( flag_type v )
-    {
-        M_markers[2].assign( v );
-    }
-
-    bool hasMarker3() const
-    {
-        return this->hasMarker( 3 );
-    }
-    marker_type const& marker3() const
-    {
-        return M_markers.find( 3 )->second;
-    }
-    marker_type& marker3()
-    {
-        return M_markers[3];
-    }
-    void setMarker3( flag_type v )
-    {
-        M_markers[3].assign( v );
-    }
-
     /**
      * set the tags associated to the points
      * - tags[0] physical region
      * - tags[1] elementary region
      * - tags[2] particular region
      */
-    void setTags( std::vector<int> const& tags )
+    void setTags( std::vector<int> const& tags ) override
     {
         this->setMarker( tags[0] );
 
@@ -601,7 +515,8 @@ class Geo0D
         if ( tags.size() > 2 )
             this->setProcessId( tags[2] );
     }
-
+#if 1
+    // TODO REMOVE THIS METHOD
     std::vector<int> tags() const
     {
         std::vector<int> thetags( 3 );
@@ -610,7 +525,7 @@ class Geo0D
         thetags[2] = this->processId();
         return thetags;
     }
-
+#endif
     /**
      * set the parametric coordinates of the node (if it is on an point, edge or
      * surface geometric entity)
@@ -640,7 +555,6 @@ class Geo0D
         ar& boost::serialization::base_object<super>( *this );
         //ar & M_is_vertex;
         ar & *(M_node);
-        ar& M_markers;
         /*
             ar & M_gdim;
             ar & M_gtag;
@@ -659,8 +573,6 @@ class Geo0D
 
     // mesh to which the geond element belongs to
     meshbase_type const* M_mesh;
-
-    std::map<uint16_type, marker_type> M_markers;
 
     std::optional<std::tuple<int,int,parametric_node_type>> M_uv;
 };

@@ -291,9 +291,7 @@ class Points
                 continue;
             if ( !point.hasMarker( markerType ) )
                 continue;
-            if ( point.marker( markerType ).isOff() )
-                continue;
-            if ( markerFlags.find( point.marker( markerType ).value() ) == markerFlags.end() )
+            if ( !point.marker( markerType ).hasOneOf( markerFlags ) )
                 continue;
             mypoints->push_back( boost::cref( point ) );
         }
