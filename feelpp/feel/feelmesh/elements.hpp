@@ -485,9 +485,7 @@ public:
                     continue;
                 if ( !elt.hasMarker( markerType ) )
                     continue;
-                if ( elt.marker( markerType ).isOff() )
-                    continue;
-                if ( markerFlags.find( elt.marker( markerType ).value() ) == markerFlags.end() )
+                if ( !elt.marker( markerType ).hasOneOf( markerFlags ) )
                     continue;
                 myelements->push_back(boost::cref(elt));
             }
@@ -576,8 +574,9 @@ public:
                     continue;
                 for ( auto const& [part,markersFlag] : collectionOfMarkerFlagSet )
                 {
-                    if ( markersFlag.find( elt.marker( markerType ).value() ) == markersFlag.end() )
+                    if ( !elt.marker( markerType ).hasOneOf( markersFlag ) )
                         continue;
+
                     if constexpr ( TheType == 0 || TheType == 1 )
                     {
                         collectionOfElements[part]->push_back(boost::cref(elt));
@@ -886,18 +885,19 @@ public:
 
             auto & eltModified = this->elementIterator( elt )->second;
 
-            std::map<uint16_type,flag_type> newEltMarkers;
+            //std::map<uint16_type,std::set<typename element_type::marker_type::value_type>> newEltMarkers;
             for (uint16_type f=0;f<elt.numTopologicalFaces; ++f)
             {
                 auto const& theface = elt.face(f);
                 for ( uint16_type const& markerType : markersType )
                 {
                     if ( theface.hasMarker( markerType ) )
-                        newEltMarkers[ markerType ] = theface.marker( markerType ).value();
+                        eltModified.addMarker( theface.marker( markerType ) );
+                    //newEltMarkers[ markerType ].insert( theface.marker( markerType ).begin();
                 }
             }
-            for ( auto const& newMark : newEltMarkers )
-                eltModified.setMarker( newMark.first, newMark.second );
+            //for ( auto const& newMark : newEltMarkers )
+            //  eltModified.setMarker( newMark.first, newMark.second );
 
         }
     }

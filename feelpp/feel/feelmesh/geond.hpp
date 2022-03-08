@@ -278,7 +278,6 @@ class GeoND
     typedef typename GetImMeasure<1>::type quad_meas1_type;
 
 
-    using marker_type = Marker<flag_type/*uint16_type*/>;
     /**
      * default constructor
      */
@@ -312,7 +311,6 @@ class GeoND
           super2( std::move( e ) ),
           M_points( std::move( e.M_points ) ),
           M_neighbors( std::move( e.M_neighbors ) ),
-          M_markers( std::move( e.M_markers ) ),
           M_commonData( std::move( e.M_commonData ) )
     {
         //std::cout << "GeoND move ctor\n";
@@ -325,7 +323,6 @@ class GeoND
         super2::operator=( std::move( e ) );
         M_points = std::move( e.M_points );
         M_neighbors = std::move( e.M_neighbors );
-        M_markers = std::move( e.M_markers );
         M_commonData = std::move( e.M_commonData );
         //M_face_measures = std::move( e.M_face_measures );
         //std::cout << "GeoND move assign\n";
@@ -924,146 +921,6 @@ class GeoND
     {
         // ublas::column( M_G, i ) += u;
     }
-    /**
-     * set the tags associated to the points
-     * - tags[0] physical region
-     * - tags[1] elementary region
-     * - tags[2] particular region
-     */
-    void setTags( std::vector<int> const& tags )
-    {
-        M_markers[1].assign( tags[0] );
-        if ( tags.size() > 1 )
-            M_markers[2].assign( tags[1] );
-
-        if ( tags.size() > 2 )
-        {
-            this->setProcessId( tags[3] );
-
-            if ( tags[2] > 1 )
-            {
-                // ghosts
-                std::vector<rank_type> p( tags[2] - 1 );
-
-                for ( size_type i = 0; i < p.size(); ++i )
-                {
-                    p[i] = tags[4 + i];
-                }
-
-                this->setNeighborPartitionIds( p );
-            }
-        }
-    }
-
-    std::map<uint16_type, marker_type> const&
-    markers() const
-    {
-        return M_markers;
-    }
-    void setMarkers( std::map<uint16_type, marker_type> const& markers )
-    {
-        M_markers = markers;
-    }
-    bool hasMarker( uint16_type k ) const
-    {
-        auto itFindMarker = M_markers.find( k );
-        if ( itFindMarker == M_markers.end() )
-            return false;
-        if ( itFindMarker->second.isOff() )
-            return false;
-        return true;
-    }
-    marker_type const& marker( uint16_type k ) const
-    {
-        DCHECK( this->hasMarker( k ) ) << "no marker type " << k;
-        return M_markers.find( k )->second;
-    }
-    marker_type& marker( uint16_type k )
-    {
-        return M_markers[k];
-    }
-    void setMarker( uint16_type k, flag_type v )
-    {
-        M_markers[k].assign( v );
-    }
-    void addMarker( uint16_type k, flag_type v )
-    {
-        M_markers[k].insert( v );
-    }
-
-    bool hasMarker() const
-    {
-        return this->hasMarker( 1 );
-    }
-    marker_type const& marker() const
-    {
-        DCHECK( this->hasMarker( 1 ) ) << "no marker type 1";
-        return M_markers.find( 1 )->second;
-    }
-    marker_type& marker()
-    {
-        return M_markers[1];
-    }
-#if 0
-    marker_type markerOr( uint16_type v = 0 ) const
-    {
-        if ( hasMarker() )
-            return M_markers.find( 1 )->second;
-        else
-            return marker_type{v};
-    }
-    marker_type markerOr( uint16_type v = 0 )
-    {
-        if ( hasMarker() )
-            return M_markers[1];
-        else
-            return marker_type{v};
-    }
-#endif
-    void setMarker( flag_type v )
-    {
-        this->setMarker( 1, v );
-    }
-    void addMarker( flag_type v )
-    {
-        this->addMarker( 1, v );
-    }
-
-    bool hasMarker2() const
-    {
-        return this->hasMarker( 2 );
-    }
-    marker_type const& marker2() const
-    {
-        DCHECK( this->hasMarker( 2 ) ) << "no marker type 2";
-        return M_markers.find( 2 )->second;
-    }
-    marker_type& marker2()
-    {
-        return M_markers[2];
-    }
-    void setMarker2( flag_type v )
-    {
-        M_markers[2].assign( v );
-    }
-
-    bool hasMarker3() const
-    {
-        return this->hasMarker( 3 );
-    }
-    marker_type const& marker3() const
-    {
-        DCHECK( this->hasMarker( 3 ) ) << "no marker type 3";
-        return M_markers.find( 3 )->second;
-    }
-    marker_type& marker3()
-    {
-        return M_markers[3];
-    }
-    void setMarker3( flag_type v )
-    {
-        M_markers[3].assign( v );
-    }
 
     //! \return the number of point element neighbors
     size_type numberOfPointElementNeighbors() const
@@ -1189,8 +1046,6 @@ class GeoND
         }
         // DVLOG(2) << "  - G...\n";
         // ar & M_G;
-        DVLOG( 2 ) << "  - markers...\n";
-        ar& M_markers;
     }
 
   private:
@@ -1199,9 +1054,6 @@ class GeoND
 
     //! store neighbor element id
     std::vector<size_type> M_neighbors;
-
-    //! mapping from marker index to marker flag
-    std::map<uint16_type, marker_type> M_markers;
 
     //! common data shared in a collection of multi-dimensional geometrical entity
     mutable GeoNDCommon<self_type> * M_commonData;

@@ -111,6 +111,7 @@ public:
     template<typename TT = double>
     using reference_convex_type =  Reference<Entity, nDim, nOrder, nRealDim, TT>;
 
+    using marker_type = Marker<flag_type/*uint16_type*/>;
     //@}
 
     /** @name Constructors, destructor
@@ -160,7 +161,8 @@ public:
         M_neighor_pids( std::move( __me.M_neighor_pids ) ),
         M_idInOtherPartitions( std::move( __me.M_idInOtherPartitions ) ),
         M_elist( std::move( __me.M_elist ) ),
-        M_elistGhost( std::move( __me.M_elistGhost ) )
+        M_elistGhost( std::move( __me.M_elistGhost ) ),
+        M_markers( std::move( __me.M_markers ) )
         {
             //std::cout << "GeoEntity moved ctor\n";
         }
@@ -177,6 +179,7 @@ public:
             M_idInOtherPartitions= std::move( __me.M_idInOtherPartitions );
             M_elist= std::move( __me.M_elist );
             M_elistGhost= std::move( __me.M_elistGhost );
+            M_markers = std::move( __me.M_markers );
             //std::cout << "GeoEntity moved assign\n";
             return *this;
         }
@@ -769,6 +772,163 @@ public:
 
     //@}
 
+    /**
+     * set the tags associated to the points
+     * - tags[0] physical region
+     * - tags[1] elementary region
+     * - tags[2] particular region
+     */
+    virtual void setTags( std::vector<int> const& tags )
+    {
+        M_markers[1].assign( tags[0] );
+        if ( tags.size() > 1 )
+            M_markers[2].assign( tags[1] );
+
+        if ( tags.size() > 2 )
+        {
+            this->setProcessId( tags[3] );
+
+            if ( tags[2] > 1 )
+            {
+                // ghosts
+                std::vector<rank_type> p( tags[2] - 1 );
+
+                for ( size_type i = 0; i < p.size(); ++i )
+                {
+                    p[i] = tags[4 + i];
+                }
+
+                this->setNeighborPartitionIds( p );
+            }
+        }
+    }
+
+    std::map<uint16_type, marker_type> const&
+    markers() const
+    {
+        return M_markers;
+    }
+    void setMarkers( std::map<uint16_type, marker_type> const& markers )
+    {
+        M_markers = markers;
+    }
+    bool hasMarker( uint16_type k ) const
+    {
+        auto itFindMarker = M_markers.find( k );
+        if ( itFindMarker == M_markers.end() )
+            return false;
+        if ( itFindMarker->second.isOff() )
+            return false;
+        return true;
+    }
+    marker_type const& marker( uint16_type k ) const
+    {
+        DCHECK( this->hasMarker( k ) ) << "no marker type " << k;
+        return M_markers.find( k )->second;
+    }
+    marker_type& marker( uint16_type k )
+    {
+        return M_markers[k];
+    }
+    void setMarker( uint16_type k, flag_type v )
+    {
+        M_markers[k].assign( v );
+    }
+    void addMarker( uint16_type k, flag_type v )
+    {
+        M_markers[k].insert( v );
+    }
+
+    bool hasMarker() const
+    {
+        return this->hasMarker( 1 );
+    }
+    marker_type const& marker() const
+    {
+        DCHECK( this->hasMarker( 1 ) ) << "no marker type 1";
+        return M_markers.find( 1 )->second;
+    }
+    marker_type& marker()
+    {
+        return M_markers[1];
+    }
+#if 0
+    marker_type markerOr( uint16_type v = 0 ) const
+    {
+        if ( hasMarker() )
+            return M_markers.find( 1 )->second;
+        else
+            return marker_type{v};
+    }
+    marker_type markerOr( uint16_type v = 0 )
+    {
+        if ( hasMarker() )
+            return M_markers[1];
+        else
+            return marker_type{v};
+    }
+#endif
+    void setMarker( flag_type v )
+    {
+        this->setMarker( 1, v );
+    }
+    void addMarker( flag_type v )
+    {
+        this->addMarker( 1, v );
+    }
+    template <typename TT,std::enable_if_t< is_iterable_of_v<TT,flag_type>, bool> = true >
+    //template <typename TT,std::enable_if_t< is_iterable_v<TT>, bool> = true >
+    void addMarkers( TT const& vs )
+        {
+            for ( auto const& v : vs )
+                this->addMarker( v );
+        }
+    template <typename TT,std::enable_if_t< is_iterable_of_v<TT,flag_type>, bool> = true >
+    void setMarkers( TT const& vs )
+        {
+            M_markers[1].assign( vs );
+        }
+    template <typename TT,std::enable_if_t< is_iterable_of_v<TT,flag_type>, bool> = true >
+    void setMarker( TT const& vs )
+        {
+            M_markers[1].assign( vs );
+        }
+
+    bool hasMarker2() const
+    {
+        return this->hasMarker( 2 );
+    }
+    marker_type const& marker2() const
+    {
+        DCHECK( this->hasMarker( 2 ) ) << "no marker type 2";
+        return M_markers.find( 2 )->second;
+    }
+    marker_type& marker2()
+    {
+        return M_markers[2];
+    }
+    void setMarker2( flag_type v )
+    {
+        M_markers[2].assign( v );
+    }
+
+    bool hasMarker3() const
+    {
+        return this->hasMarker( 3 );
+    }
+    marker_type const& marker3() const
+    {
+        DCHECK( this->hasMarker( 3 ) ) << "no marker type 3";
+        return M_markers.find( 3 )->second;
+    }
+    marker_type& marker3()
+    {
+        return M_markers[3];
+    }
+    void setMarker3( flag_type v )
+    {
+        M_markers[3].assign( v );
+    }
 
 
 protected:
@@ -792,6 +952,8 @@ private:
             ar & M_pidInPartition;
             ar & M_neighor_pids;
             ar & M_idInOtherPartitions;
+            DVLOG( 2 ) << "  - markers...\n";
+            ar& M_markers;
         }
 
 private:
@@ -815,6 +977,8 @@ private:
     //! ghost elements which share the entity
     std::map<rank_type,std::set<size_type > > M_elistGhost;
 
+    //! mapping from marker index to marker flag
+    std::map<uint16_type, marker_type> M_markers;
 };
 
 typedef GeoEntity<Simplex<0, 1> > GeoPoint;

@@ -261,9 +261,7 @@ public:
                     continue;
                 if ( !edge.hasMarker( markerType ) )
                     continue;
-                if ( edge.marker( markerType ).isOff() )
-                    continue;
-                if ( markerFlags.find( edge.marker( markerType ).value() ) == markerFlags.end() )
+                if ( !edge.marker( markerType ).hasOneOf( markerFlags ) )
                     continue;
                 myedges->push_back( boost::cref( edge ) );
             }
