@@ -52,8 +52,8 @@ class reducedbasis():
 
         self.model = model  # TODO : load online model
         
-        self.ANq = []   # len Qa, each matrix size (N,N)
-        self.FNp = []   # len Qf, each vector size N
+        self.ANq    : np.ndarray   # tensor of shape (Qa, N, N)
+        self.FNp    : np.ndarray   # tensor of shape (Qf, N)
 
         self.SS = np.zeros((self.Qf, self.Qf))            # SS[p,p_] = (Sp,sp_)X
         self.SL     : np.ndarray    # shape (Qf, Qa, N)     SL[p,n,q] = (Sp,Lnq)X
@@ -79,15 +79,16 @@ class reducedbasis():
             size (int, optional): size of the sub-basis wanted. Defaults to None, meaning the whole basis is used.
 
         Returns:
-            PETSc.Mat: assemble matrix
+            np.ndarray: assembled matrix
         """
         assert( len(beta) == self.Qa ), f"Number of param ({len(beta)}) should be {self.Qa}"
 
-        AN = self.ANq[0].copy()
-        # AN = np.zeros_like(self.ANq[0])
-        AN.fill(0)
-        for q in range(0, self.Qa):
-            AN += self.ANq[q] * beta[q]
+        AN = np.einsum('q,qnm->nm', beta, self.ANq, optimize=True)
+        # AN = self.ANq[0].copy()
+        # AN.fill(0)
+        # for q in range(0, self.Qa):
+        #     AN += self.ANq[q] * beta[q]
+        
         if size is None:
             return AN
         else:
@@ -102,14 +103,16 @@ class reducedbasis():
             size (int, optional): size of the sub-basis wanted. Defaults to None, meaning the whole basis is used.
 
         Returns:
-            PETSc.Vec: assemble vector
+            np.ndarray: assembled vector
         """
         assert( len(beta) == self.Qf ), f"Number of param ({len(beta)}) should be {self.Qf}"
 
-        FN = self.FNp[0].copy()
-        FN.fill(0)
-        for q in range(0, self.Qf):
-            FN += self.FNp[q] * beta[q]
+        FN = np.einsum('p,pn->n', beta, self.FNp, optimize=True)
+        # FN = self.FNp[0].copy()
+        # FN.fill(0)
+        # for q in range(0, self.Qf):
+        #     FN += self.FNp[q] * beta[q]
+        
         if size is None:
             return FN
         else:
@@ -231,10 +234,12 @@ class reducedbasis():
         h5f = h5py.File(path+"/reducedbasis.h5", "w")
         f = open('reducedbasis.json', 'w')
 
-        for q, Aq in enumerate(self.ANq):
-            h5f.create_dataset(f"AN{q}", data=Aq)
-        for p, Fp in enumerate(self.FNp):
-            h5f.create_dataset(f"FN{p}", data=Fp)
+        h5f.create_dataset("ANq", data=self.ANq)
+        h5f.create_dataset("FNp", data=self.FNp)
+        # for q, Aq in enumerate(self.ANq):
+        #     h5f.create_dataset(f"AN{q}", data=Aq)
+        # for p, Fp in enumerate(self.FNp):
+        #     h5f.create_dataset(f"FN{p}", data=Fp)
         h5f.create_dataset(f"SS", data=self.SS)
         h5f.create_dataset(f"SL", data=self.SL)
         h5f.create_dataset(f"LL", data=self.LL)
@@ -271,14 +276,22 @@ class reducedbasis():
 
         h5f = h5py.File(j['path'], "r")
 
-        for q in range(self.Qa):
-            self.ANq.append(h5f[f'AN{q}'][:])
-        for p in range(self.Qf):
-            self.FNp.append(h5f[f'FN{p}'][:])
+        self.ANq = h5f["ANq"][:]
+        self.FNp = h5f["FNp"][:]
 
         self.SS = h5f["SS"][:]
         self.SL = h5f["SL"][:]
         self.LL = h5f["LL"][:]
+
+        try:
+            assert self.ANq.shape == (self.Qa, self.N, self.N), f"Wrong shape for ANq (excepted {(self.Qa, self.N, self.N)}, got {self.ANq.shape}"
+            assert self.FNp.shape == (self.Qf, self.N), f"Wrong shape for ANq (excepted {(self.Qf, self.N)}, got {self.FNp.shape}"
+            assert self.SS.shape == (self.Qf, self.Qf), f"Wrong shape for SS (excepted {(self.Qf, self.Qf)}, got {self.SS.shape}"
+            assert self.SL.shape == (self.Qa, self.Qf, self.N), f"Wrong shape for SL (excepted {(self.Qa, self.Qf, self.N)}, got {self.SL.shape}"
+            assert self.LL.shape == (self.Qa, self.N, self.Qa, self.N), f"Wrong shape for LL (excepted {(self.Qa, self.N, self.Qa, self.N)}, got {self.LL.shape}"
+        except AssertionError as e:
+            print(f"[reduced basis] Something went wrong when loading {path} : {e}")
+
 
         tmpDeltaMax = h5f["DeltaMax"][:]
         self.DeltaMax = None if tmpDeltaMax.shape == (0,) else tmpDeltaMax
@@ -564,35 +577,54 @@ class reducedbasisOffline(reducedbasis):
     def generateANq(self):
         """Generate the reduced matrices ANq
         """
-        self.ANq = []
-        for q in range(self.Qa):
-            self.ANq.append(np.zeros((self.N,self.N)))
+        # self.ANq = []
+        # for q in range(self.Qa):
+        #     self.ANq.append(np.zeros((self.N,self.N)))
+        self.ANq = np.zeros((self.Qa, self.N, self.N))
         for i,u in enumerate(self.Z):
             for j,v in enumerate(self.Z):
                 for q in range(self.Qa):
-                    self.ANq[q][i,j] = v.dot( self.Aq[q] * u )
+                    self.ANq[q,i,j] = v.dot( self.Aq[q] * u )
                     # print(i, j, self.ANq[q][i,j]) # uT.A.u
+    
+    def expandANq(self):
+        """Expand the reduced matrices ANq
+        """
+        print(self.ANq.shape, (self.Qa, self.N-1, 1))
+        self.ANq = np.concatenate( (self.ANq, np.zeros((self.Qa, self.N-1, 1))), axis=2)    # N has already been increased
+        print(self.ANq.shape, (self.Qa, 1, self.N))
+        self.ANq = np.concatenate( (self.ANq, np.zeros((self.Qa, 1, self.N))), axis=1)
+        for q in range(self.Qa):
+            for i,u in enumerate(self.Z):
+                self.ANq[q, -1, i] = u.dot( self.Aq[q] * self.Z[-1] )
+                self.ANq[q, i, -1] = self.Z[-1].dot( self.Aq[q] * u )
     
     def generateLNp(self):
         """Generate the reduced vectors LNq
         """
-        self.LNp = []
-        for q in range(self.Qf):
-            self.LNp.append(np.zeros((self.N)))
+        self.LNp = np.zeros((self.Qf, self.N))
         for i,u in enumerate(self.Z):
             for q in range(self.Qf):
-                self.LNp[q][i] = self.Fq[q].dot(u)
-                # print(i, self.LNp[q][i])
+                self.LNp[q,i] = self.Fq[q].dot(u)
     
     def generateFNp(self):
         """Generate the reduced vectors FNp
         """
-        self.FNp = []
-        for q in range(self.Qf):
-           self.FNp.append(np.zeros((self.N)))
+        self.FNp = np.zeros((self.Qf, self.N))
         for i,u in enumerate(self.Z):
             for q in range(self.Qf):
-                self.FNp[q][i] = self.Fq[q].dot(u)
+                self.FNp[q,i] = self.Fq[q].dot(u)
+    
+    def expandFNp(self):
+        self.FNp = np.concatenate( (self.FNp, np.zeros((self.Qf,1))), axis=1)
+        for q in range(self.Qf):
+            self.FNp[q, -1] = self.Fq[q].dot(self.Z[-1])
+
+    def expandLNp(self):
+        self.LNp = np.concatenate( (self.LNp, np.zeros((self.Qf,1))), axis=1)
+        for q in range(self.Qf):
+            self.LNp[q, -1] = self.Fq[q].dot(self.Z[-1])
+
 
 
     def computeOfflineReducedBasis(self, mus, orth=True):
