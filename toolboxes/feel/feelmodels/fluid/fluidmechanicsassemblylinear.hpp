@@ -509,32 +509,43 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
     }
 
     //--------------------------------------------------------------------------------------------------//
-#if 0 // VINCENT
+
+    // normal stress bc
     bool build_BoundaryNeumannTerm = BuildNonCstPart;
     if ( this->useFSISemiImplicitScheme() )
     {
         build_BoundaryNeumannTerm = BuildCstPart;
     }
-    // Neumann bc
     if ( build_BoundaryNeumannTerm )
     {
-        for( auto const& d : this->M_bcNeumannScalar )
-            myLinearFormV +=
-                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= timeSteppingScaling*expression(d,this->symbolsExpr())*inner( N(),id(v) ),
-                           _geomap=this->geomap() );
-        for( auto const& d : this->M_bcNeumannVectorial )
-            myLinearFormV +=
-                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,name(d)) ),
-                           _expr= timeSteppingScaling*inner( expression(d,this->symbolsExpr()),id(v) ),
-                           _geomap=this->geomap() );
-        for( auto const& d : this->M_bcNeumannTensor2 )
-            myLinearFormV +=
-                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,name(d)) ),
-                           _expr= timeSteppingScaling*inner( expression(d,this->symbolsExpr())*N(),id(v) ),
-                           _geomap=this->geomap() );
+        for ( auto const& [bcId,bcData] : M_boundaryConditions.normalStress() )
+        {
+            if ( bcData->isScalarExpr() )
+            {
+                auto normalStessExpr = bcData->exprScalar( se );
+                myLinearFormV +=
+                    integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                               _expr= timeSteppingScaling*normalStessExpr*inner( N(),id(v) ),
+                               _geomap=this->geomap() );
+            }
+            else if ( bcData->isVectorialExpr() )
+            {
+                auto normalStessExpr = bcData->exprVectorial( se );
+                myLinearFormV +=
+                    integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                               _expr= timeSteppingScaling*inner( normalStessExpr,id(v) ),
+                               _geomap=this->geomap() );
+            }
+            else if ( bcData->isMatrixExpr() )
+            {
+                auto normalStessExpr = bcData->exprMatrix( se );
+                myLinearFormV +=
+                    integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                               _expr= timeSteppingScaling*inner( normalStessExpr*N(),id(v) ),
+                               _geomap=this->geomap() );
+            }
+        }
     }
-#endif // VINCENT
     //--------------------------------------------------------------------------------------------------//
 
     if ( !M_boundaryConditions.pressureImposed().empty() )
