@@ -89,7 +89,7 @@ int main(int argc, char**argv )
     a = integrate(_range=elements(mesh), _expr=trans(idt(u))*id(v));
     a += integrate(_range=elements(mesh), _expr=id(q)*divt(u) - idt(p)*div(v) );
     a += integrate(_range=elements(mesh), _expr=1e-6*id(q)*idt(p));
-    a += on( markedfaces(mesh, (boost::any)4 ), _element=u, _rhs=l, _expr=vec(cst(1.0),cst(1.),cst(0.) ) );
+    a += on( _range=markedfaces(mesh, (boost::any)4 ), _element=u, _rhs=l, _expr=vec(cst(1.0),cst(1.),cst(0.) ) );
 
     a.solve(_rhs=l,_solution=U);
 

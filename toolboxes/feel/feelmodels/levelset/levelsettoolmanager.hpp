@@ -403,7 +403,7 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::grad( element_scalar_type const& phi, L
             //return this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
             return this->projectorL2Vectorial()->derivate( idv(phi) );
         case LevelSetDerivationMethod::SMOOTH_PROJECTION:
-            return this->projectorSMVectorial()->project( trans(gradv(phi)) );
+            return this->projectorSMVectorial()->project( _expr=trans(gradv(phi)) );
         //case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
             //CHECK( M_useSpaceIsoPN ) << "use-space-iso-pn must be enabled to use PN_NODAL_PROJECTION \n";
             //auto phiPN = this->functionSpaceManager()->opInterpolationScalarToPN()->operator()( phi );
@@ -429,9 +429,9 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::modGrad( element_scalar_type const& phi
                     _expr=sqrt( gradv(phi)*trans(gradv(phi)) )
                     );
         case LevelSetDerivationMethod::L2_PROJECTION:
-            return this->projectorL2Scalar()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
+            return this->projectorL2Scalar()->project( _expr=sqrt( gradv(phi)*trans(gradv(phi)) ) );
         case LevelSetDerivationMethod::SMOOTH_PROJECTION:
-            return this->projectorSMScalar()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
+            return this->projectorSMScalar()->project( _expr=sqrt( gradv(phi)*trans(gradv(phi)) ) );
         //case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
             //CHECK( M_useSpaceIsoPN ) << "use-space-iso-pn must be enabled to use PN_NODAL_PROJECTION \n";
             //auto phiPN = this->functionSpaceManager()->opInterpolationScalarToPN()->operator()( phi );

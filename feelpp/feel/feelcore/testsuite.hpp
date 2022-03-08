@@ -37,11 +37,16 @@
 //#define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
 #include <boost/test/results_reporter.hpp>
+#if BOOST_VERSION >= 107100
+#include <boost/test/tools/output_test_stream.hpp>
+#include <boost/test/tools/floating_point_comparison.hpp>
+#else
 #include <boost/test/output_test_stream.hpp>
+#include <boost/test/floating_point_comparison.hpp>
+#endif
 #include <boost/test/unit_test_log.hpp>
 #include <boost/test/unit_test_suite.hpp>
 #include <boost/test/framework.hpp>
-#include <boost/test/floating_point_comparison.hpp>
 #include <feel/feelcore/environment.hpp>
 
 #if BOOST_VERSION >= 105900

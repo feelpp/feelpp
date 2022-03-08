@@ -386,7 +386,7 @@ void
 Diode::checkDG( ExExpr expr )
 {
     // check continuity
-    auto ijump  = integrate( internalfaces( mesh ), trans( jumpv( expr ) )*jumpv( expr )  ).evaluate()( 0, 0 );
+    auto ijump  = integrate( _range=internalfaces( mesh ), _expr=trans( jumpv( expr ) )*jumpv( expr )  ).evaluate()( 0, 0 );
     std::cout << "continuity 1:" <<  math::sqrt( ijump ) << "\n";
 #if 1
     auto v = vec( expr,expr,expr );
@@ -396,8 +396,8 @@ Diode::checkDG( ExExpr expr )
     auto A2 = trans( vec( cst( 1. ), cst( 1. ), cst( 1.0 ) ) );
     auto myjump1 = ( A1*( vL-vR ) )*leftfacev( N() );
     auto myjump2 = ( A2*( vL-vR ) )*leftfacev( N() );
-    auto ijump1 = integrate( internalfaces( mesh ), trans( myjump1 )*myjump1  ).evaluate()( 0, 0 );
-    auto ijump2 = integrate( internalfaces( mesh ), trans( myjump2 )*myjump2  ).evaluate()( 0, 0 );
+    auto ijump1 = integrate( _range=internalfaces( mesh ), _expr=trans( myjump1 )*myjump1  ).evaluate()( 0, 0 );
+    auto ijump2 = integrate( _range=internalfaces( mesh ), _expr=trans( myjump2 )*myjump2  ).evaluate()( 0, 0 );
     std::cout << "continuity 1:" << math::sqrt( ijump1 ) << "\n";;
     std::cout << "continuity 2:" << math::sqrt( ijump2 ) << "\n";
 #endif
@@ -416,7 +416,7 @@ Diode::FSolve( BdyExpr& wbdy,
                element_type& dtBz )
 
 {
-    boost::timer ti;
+    Feel::Timer ti;
     //Solve dtw*M = l(W)
     //l(W) = int (Ai di phi.w + bord)
     auto w = vec( idv( Exn ),idv( Eyn ),idv( Bzn ) );
@@ -486,7 +486,7 @@ Diode::FSolve( BdyExpr& wbdy,
     if ( verbose )
         std::cout << " -- assembly in " << ti.elapsed() << "s\n";
 
-    ti.restart();
+    ti.start();
 
     //
     // Solve
@@ -641,7 +641,7 @@ void
 Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "examples/maxwell/%1%/%2%/P%3%G%4%/h_%5%/" )
+        Environment::changeRepository( _directory=boost::format( "examples/maxwell/%1%/%2%/P%3%G%4%/h_%5%/" )
                                        % this->about().appName()
                                        % convex
                                        % Order
@@ -690,9 +690,9 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     F_Bz = M_backend->newVector( Xh );
 
     // left hand side
-    D=M_backend->newMatrix( Xh, Xh );
-    auto a = form2( _test=Xh, _trial=Xh, _matrix=D, _init=true );
-    a = integrate( elements( mesh ), idt( Ex )*id( u ) );
+    D=M_backend->newMatrix( _test=Xh, _trial=Xh );
+    auto a = form2( _test=Xh, _trial=Xh, _matrix=D );
+    a = integrate( _range=elements( mesh ), _expr=idt( Ex )*id( u ) );
     //D->printMatlab("mass.m");
     auto backend = backend_type::build( soption("backend") );
     auto exporter( export_type::New( this->vm(),
@@ -703,21 +703,21 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     if ( this->vm()["initfields"].as<int>() == 1 )
     {
-        Ex = L2ProjDisc->project( Ex_exact );
-        Ey = L2ProjDisc->project( Ey_exact );
-        Bz = L2ProjDisc->project( Bz_exact );
+        Ex = L2ProjDisc->project( _expr=Ex_exact );
+        Ey = L2ProjDisc->project( _expr=Ey_exact );
+        Bz = L2ProjDisc->project( _expr=Bz_exact );
     }
 
     auto L2Proj = projector( Xhc, Xhc );
-    Exc = L2Proj->project( idv( Ex ) );
-    Eyc = L2Proj->project( idv( Ey ) );
-    Bzc = L2Proj->project( idv( Bz ) );
+    Exc = L2Proj->project( _expr=idv( Ex ) );
+    Eyc = L2Proj->project( _expr=idv( Ey ) );
+    Bzc = L2Proj->project( _expr=idv( Bz ) );
 
     exporter->step( time )->setMesh( mesh );
 
-    exporter->step( time )->add( "Exc", L2Proj->project( idv( Ex ) ) );
-    exporter->step( time )->add( "Eyc", L2Proj->project( idv( Ey ) ) );
-    exporter->step( time )->add( "Bzc", L2Proj->project( idv( Bz ) ) );
+    exporter->step( time )->add( "Exc", L2Proj->project( _expr=idv( Ex ) ) );
+    exporter->step( time )->add( "Eyc", L2Proj->project( _expr=idv( Ey ) ) );
+    exporter->step( time )->add( "Bzc", L2Proj->project( _expr=idv( Bz ) ) );
 
     auto w = vec( idv( Ex ),idv( Ey ),idv( Bz ) );
     auto wR = vec( rightfacev( idv( Ex ) ),rightfacev( idv( Ey ) ),rightfacev( idv( Bz ) ) );
@@ -797,9 +797,9 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
             std::cout<<"exporting results"<<std::endl;
             exporter->step( time )->setMesh( mesh );
 
-            Exc = L2Proj->project( idv( Ex ) );
-            Eyc = L2Proj->project( idv( Ey ) );
-            Bzc = L2Proj->project( idv( Bz ) );
+            Exc = L2Proj->project( _expr=idv( Ex ) );
+            Eyc = L2Proj->project( _expr=idv( Ey ) );
+            Bzc = L2Proj->project( _expr=idv( Bz ) );
             exporter->step( time )->add( "Exc", Exc );
             exporter->step( time )->add( "Eyc", Eyc );
             exporter->step( time )->add( "Bzc", Bzc );

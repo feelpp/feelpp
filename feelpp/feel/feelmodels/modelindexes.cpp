@@ -39,6 +39,7 @@ ModelIndexes::generateIndexFromString( std::string const& input )
         res.push_back( input );
     else
     {
+        try {
         std::vector<int> rangeDef;
         for( auto const& r : kvlist )
             rangeDef.push_back(std::stoi(r));
@@ -47,9 +48,183 @@ ModelIndexes::generateIndexFromString( std::string const& input )
         auto rangeOfInt = boost::irange(rangeDef[0],rangeDef[1],rangeDef[2]);
         for( auto const& i : rangeOfInt )
             res.push_back( std::to_string(i) );
+        }
+        catch ( std::invalid_argument const& )
+        {
+            // the char : come from an expression
+            res.push_back( input );
+        }
     }
     return res;
 }
+
+std::vector<ModelIndexes>
+ModelIndexes::generateAllCases( nl::json const& jarg, int startIndex )
+{
+    // evaluate each index
+    int currentIndex = startIndex;
+    std::map<int,std::vector<std::vector<std::string>>> M_indexes;
+    while ( 1 )
+    {
+        std::string keyIndex = (boost::format( "index%1%")%currentIndex).str();
+        if ( !jarg.contains( keyIndex ) )
+             break;
+        auto const& jKeyIndex = jarg.at( keyIndex );
+
+        M_indexes[currentIndex].clear();
+        if ( jKeyIndex.is_string() ) // string value case
+        {
+            std::vector<std::string> indexReaded = generateIndexFromString( jKeyIndex.get<std::string>() );
+            for ( std::string const& s : indexReaded )
+                M_indexes[currentIndex].push_back( { s } );
+        }
+        else if ( jKeyIndex.is_array() ) // array case
+        {
+            int nSubKey = -1;
+            for ( auto const& el : jKeyIndex.items() )
+            {
+                auto const& el_val = el.value();
+                if ( el_val.is_array() ) // array of array
+                {
+                    int nItem = std::distance(el_val.items().begin(),el_val.items().end());
+                    if ( nSubKey > 0 )
+                        CHECK( nSubKey == nItem ) << "number of subkey is different (probably a subarray has not the good size)";
+                    else
+                        nSubKey = nItem;
+                    std::vector<std::string> currentIndexValues;
+                    currentIndexValues.reserve( nItem );
+                    for ( auto const& el2 : el_val.items() )
+                    {
+                        auto const& el2_val = el2.value();
+                        CHECK( el2_val.is_string() ) << "TODO : take into account other type";
+                        std::vector<std::string> indexReaded = generateIndexFromString( el2_val );
+                        for ( std::string const& s : indexReaded )
+                            currentIndexValues.push_back( s );
+                    }
+                    M_indexes[currentIndex].push_back( currentIndexValues );
+                }
+                else
+                {
+                    if ( nSubKey > 0 )
+                        CHECK( nSubKey == 1 ) << "number of subkey is different (probably a subarray has not the good size)";
+                    else
+                        nSubKey = 1;
+                    CHECK( el_val.is_string() ) << "TODO : take into account other type";
+                    std::vector<std::string> indexReaded = generateIndexFromString( el_val );
+                    for ( std::string const& s : indexReaded )
+                        M_indexes[currentIndex].push_back( { s } );
+                }
+            }
+        }
+        else
+            CHECK( false ) << "TODO : an other type " << jKeyIndex;
+
+        if ( M_indexes[currentIndex].empty() )
+            break;
+        ++currentIndex;
+    }
+
+    // create mapping tag to replacement strings for each index
+    std::map< int, std::map<std::string, std::vector<std::string> > > indexTagToReplacementStrings;
+    for ( auto const& [ indexId, indexes ] : M_indexes )
+    {
+        CHECK( !indexes.empty() ) << "something wrong";
+        int sizeOfSubArray = indexes[0].size();
+        if ( sizeOfSubArray == 1 )
+        {
+            std::string indexTag = "%"+std::to_string(indexId)+"%";
+            for ( int k=0;k<indexes.size();++k )
+            {
+                CHECK( indexes[k].size() == sizeOfSubArray ) << "wrong subarray size";
+                indexTagToReplacementStrings[indexId][indexTag].push_back( indexes[k][0] );
+            }
+        }
+        else
+        {
+            for ( int k=0;k<indexes.size();++k )
+            {
+                for ( int l=0;l<indexes[k].size();++l )
+                {
+                    std::string indexTag = "%"+std::to_string(indexId)+"_"+std::to_string(l+1)+"%";
+                    indexTagToReplacementStrings[indexId][indexTag].push_back( indexes[k][l] );
+                }
+            }
+        }
+    }
+
+    // generate all cases
+    std::vector<ModelIndexes> crsfiAllCases;
+    if ( indexTagToReplacementStrings.size() == 0 )
+    {
+        crsfiAllCases.push_back( ModelIndexes() );
+    }
+    else
+    {
+        for ( auto const& [ indexId, tagToReplaceStrings ] : indexTagToReplacementStrings )
+        {
+            std::vector<ModelIndexes> crsfiOnIndex;
+
+            std::vector<std::string> listTags;
+            int sizeOfSubArray{0};
+            for ( auto const& [ indexTag, indexes ] : tagToReplaceStrings )
+            {
+                listTags.push_back( indexTag );
+                sizeOfSubArray = indexes.size();
+            }
+
+            for (int k= 0;k<sizeOfSubArray;++k)
+            {
+                ModelIndexes _tmp;
+                for ( std::string const& indexTag : listTags )
+                {
+                    auto const& indexes = tagToReplaceStrings.find( indexTag )->second;
+                    _tmp[indexTag] = indexes[k];
+                }
+                crsfiOnIndex.push_back( _tmp );
+            }
+
+            if ( crsfiAllCases.empty() )
+            {
+                crsfiAllCases = crsfiOnIndex;
+            }
+            else
+            {
+                // cartesian product
+                std::vector<ModelIndexes> crsfiNew;
+                for ( auto const& crsfi1 : crsfiAllCases )
+                {
+                    for ( auto const& crsfi2 : crsfiOnIndex )
+                    {
+                        ModelIndexes _tmp;
+                        for ( auto const& [key,value] : crsfi1 )
+                            _tmp[key]=value;
+                        for ( auto const& [key,value] : crsfi2 )
+                            _tmp[key]=value;
+                        crsfiNew.push_back( _tmp );
+                    }
+                }
+                crsfiAllCases = crsfiNew;
+            }
+        }
+    }
+
+    for ( auto & indexToUp : crsfiAllCases )
+        indexToUp.setNextFreeIndex( currentIndex );
+
+    return crsfiAllCases;
+}
+
+
+ std::vector<ModelIndexes>
+ ModelIndexes::generateAllCases( nl::json const& jarg, ModelIndexes const& indexes )
+ {
+     std::vector<ModelIndexes> res = ModelIndexes::generateAllCases( jarg, indexes.nextFreeIndex() );
+     for ( auto & indexesToUp : res )
+         for ( auto const& [key,value] : indexes )
+             indexesToUp[key] = value;
+     return res;
+ }
+
 
 std::vector<ModelIndexes>
 ModelIndexes::generateAllCases( pt::ptree const& pt, int startIndex )

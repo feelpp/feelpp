@@ -9,6 +9,17 @@
         "alpha":3.6e-3,
         "Lorentz":2.47e-8
     },
+    "Meshes":
+    {
+        "thermoelectric":
+        {
+            "Import":
+            {
+                "filename":"girder:{file:5af862d6b0e9574027047fc8}",
+                "partition":1
+            }
+        }
+    },
     "Materials":
     {
         "Cu":
@@ -17,6 +28,18 @@
             //"k":"sigma0*Lorentz*heat_T/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:Lorentz:heat_T"
             //"k":"materials_Cu_sigma*Lorentz*heat_T:materials_Cu_sigma:Lorentz:heat_T"
             "k":"sigma*Lorentz*heat_T:sigma:Lorentz:heat_T"
+        }
+    },
+    "InitialConditions":
+    {
+        "heat":{
+            "temperature":{
+                "Expression":{
+                    "myic1":{
+                        "expr":"290"
+                    }
+                }
+            }
         }
     },
     "BoundaryConditions":
@@ -65,8 +88,7 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
-        "thermo-electric":
+        "thermoelectric":
         {
             "Exports":
             {
@@ -130,12 +152,12 @@
                         "value":1.9858752627481331e+00,
                         "tolerance":1e-1
                     },
-                    "Points_closeToV0_temperature":
+                    "Points_closeToV0_field_temperature":
                     {
                         "value":2.9228730968105037e+02,
                         "tolerance":1e-3
                     },
-                    "Points_closeToV1_temperature":
+                    "Points_closeToV1_field_temperature":
                     {
                         "value": 2.9130483450540504e+02,
                         "tolerance":1e-3
@@ -201,12 +223,12 @@
                         "value":-2.9492993990629227e+04,
                         "tolerance":1e-1
                     },
-                    "Points_closeToV0_electric-potential":
+                    "Points_closeToV0_field_electric-potential":
                     {
                         "value":0,
                         "tolerance":1e-3
                     },
-                    "Points_closeToV1_electric-potential":
+                    "Points_closeToV1_field_electric-potential":
                     {
                         "value":9,
                         "tolerance":1e-3

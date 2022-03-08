@@ -33,12 +33,8 @@
     on tensorised geometries.
 **/
 
-// Boost.Test
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
-#include <boost/test/test_case_template.hpp>
-#include <boost/mpl/list.hpp>
-using boost::unit_test::test_suite;
+#define BOOST_TEST_MODULE test_quad_order
+#include <feel/feelcore/testsuite.hpp>
 
 #include <boost/numeric/ublas/banded.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
@@ -392,6 +388,11 @@ void PK_Monom_N_opt_3D()
 /*
  * Testsuite
  */
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+BOOST_AUTO_TEST_SUITE( quad_order )
+
 #if 0
 typedef boost::mpl::list<boost::mpl::int_<2>,
         boost::mpl::int_<4>,
@@ -433,3 +434,5 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( PK_Monom_N_opt_3D_double, T, test_types )
     PK_Monom_N_opt_3D<T::value,double>();
 }
 #endif
+
+BOOST_AUTO_TEST_SUITE_END()

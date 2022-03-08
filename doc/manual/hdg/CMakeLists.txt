@@ -21,6 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+
+if ( 0 )
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/toolboxes)
@@ -45,7 +47,7 @@ if (FEELPP_TOOLBOXES_ENABLE_HDG)
    #endforeach()
    
    
-      # feelpp_add_application( lamina-cribrosa-model_3DP1 SRCS lc_main_model.cpp  LINK_LIBRARIES Feelpp::feelpp_modelcore Feelpp::feelpp_toolbox_hdg_poisson_lib DEFS FEELPP_DIM=3 FEELPP_ORDER=1 FEELPP_G_ORDER=1 )
+   #   feelpp_add_application( lamina-cribrosa-model_3DP1 SRCS lc_main_model.cpp  LINK_LIBRARIES Feelpp::feelpp_modelcore Feelpp::feelpp_toolbox_hdg_poisson_lib DEFS FEELPP_DIM=3 FEELPP_ORDER=1 FEELPP_G_ORDER=1 )
 endif()
 
 feelpp_add_application( mixed-stokes SRCS mixedstokes.cpp DEFS FEELPP_DIM=2 FEELPP_ORDER=1)
@@ -54,3 +56,4 @@ feelpp_add_testcase(quarter-turn)
 feelpp_add_testcase(lamina-cribrosa)
 feelpp_add_testcase(kovasznay)
 feelpp_add_testcase(eye2brain_doc)
+endif()

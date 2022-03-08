@@ -30,7 +30,6 @@
 #include <feel/feeldiscr/check.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <tabulate/table.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/print.hpp>
@@ -138,7 +137,7 @@ int hdg_laplacian()
     auto r_2 = un;
 #endif
     tic();
-    auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
     toc("mesh",true);
 
     // ****** Hybrid-mixed formulation ******
@@ -416,23 +415,30 @@ int main( int argc, char** argv )
     // tag::env[]
     using namespace Feel;
 
-	Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
-                     _about=about(_name="qs_hdg_laplacian",
-                                  _author="Feel++ Consortium",
-                                  _email="feelpp-devel@feelpp.org"));
-    // end::env[]
-    if ( ioption( "order" ) == 1 )
-        return hdg_laplacian<FEELPP_DIM,1>();
-    if ( ioption( "order" ) == 2 )
-        return hdg_laplacian<FEELPP_DIM,2>();
+    try 
+    {
+	    Environment env( _argc=argc, _argv=argv,
+                         _desc=makeOptions(),
+                         _about=about(_name="qs_hdg_laplacian",
+                                      _author="Feel++ Consortium",
+                                      _email="feelpp-devel@feelpp.org"));
+        // end::env[]
+        if ( ioption( "order" ) == 1 )
+            return hdg_laplacian<FEELPP_DIM,1>();
+        if ( ioption( "order" ) == 2 )
+            return hdg_laplacian<FEELPP_DIM,2>();
 
  #if 0   
-    if ( ioption( "order" ) == 3 )
-        return hdg_laplacian<FEELPP_DIM,3>();
+        if ( ioption( "order" ) == 3 )
+            return hdg_laplacian<FEELPP_DIM,3>();
 
-    if ( ioption( "order" ) == 4 )
-        return hdg_laplacian<FEELPP_DIM,4>();
+        if ( ioption( "order" ) == 4 )
+            return hdg_laplacian<FEELPP_DIM,4>();
 #endif
+    }
+    catch( ... )
+    {
+        handleExceptions();
+    }
     return 1;
 }

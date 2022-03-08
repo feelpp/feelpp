@@ -70,7 +70,7 @@ protected:
     using expr_type = ExprT;
     using context_type = typename gm_type::template Context<typename std::remove_const<typename element_type::type>::type >;
     using context_ptrtype = std::shared_ptr<context_type>;
-    using map_gmc_type = map_gmc_type<context_type>;
+    using map_gmc_type = Feel::vf::map_gmc_type<context_type>;
     using evaluator_type = typename expr_type::template tensor<map_gmc_type>;
     using evaluator_ptrtype = std::shared_ptr<evaluator_type>;
     using weights_type = ublas::vector<double>;

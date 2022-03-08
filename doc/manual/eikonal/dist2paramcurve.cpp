@@ -64,8 +64,8 @@ int main( int argc, char** argv )
   auto ellipse = disttocurve->fromParametrizedCurve(x_ell, y_ell,
                                                     0,    /*tStart*/
                                                     6.29, /*tEnd*/
-                                                    option("gmsh.hsize").as<double>() / 2. /*dt*/ );
-  *ellipse = fm->march( ellipse, true );
+                                                    doption(_name="gmsh.hsize") / 2. /*dt*/ );
+  *ellipse = fm->march( ellipse );
   std::cout<<"ellipse done"<<std::endl;
   // ------------------------------------
 
@@ -75,8 +75,8 @@ int main( int argc, char** argv )
   // ------------- pre defined ellipse --------------
   auto ellipseParam = CurveParametrization::ellipse( 0.25, 0.28, 0.5, 0.5 );
   auto predefEllipse = disttocurve->fromParametrizedCurve(ellipseParam,
-                                                          option("gmsh.hsize").as<double>() / 2. );
-  *predefEllipse = fm->march( predefEllipse, true );
+                                                          doption(_name="gmsh.hsize") / 2. );
+  *predefEllipse = fm->march( predefEllipse );
   std::cout<<"predef ellipse done"<<std::endl;
   // ------------------------------------------------
 
@@ -90,17 +90,17 @@ int main( int argc, char** argv )
   auto y_epi = [&](double t) -> double { return ((1+a_epi) * sin(a_epi*t) - a_epi*b_epi * sin( (1+a_epi) * t )) / 4 + 0.5; };
 
   auto unsigned_epitro = disttocurve->fromParametrizedCurve( x_epi, y_epi,
-                                                    0, 100, option("gmsh.hsize").as<double>()/2.,
+                                                    0, 100, doption(_name="gmsh.hsize")/2.,
                                                     false, 0., false, "",
                                                     false /* signedDistance */ );
-  *unsigned_epitro = fm->march(unsigned_epitro, true );
+  *unsigned_epitro = fm->march(unsigned_epitro );
   std::cout<<"epitrochoid done"<<std::endl;
   // ----------------------------------------
 
   // ------------- unsigned epitrochoid --------------
   auto epitro = disttocurve->fromParametrizedCurve( x_epi, y_epi,
-                                                    0, 100, option("gmsh.hsize").as<double>()/2. );
-  *epitro = fm->march( epitro, true );
+                                                    0, 100, doption(_name="gmsh.hsize")/2. );
+  *epitro = fm->march( epitro );
   std::cout<<"epitrochoid done"<<std::endl;
   // ----------------------------------------
 
@@ -110,7 +110,7 @@ int main( int argc, char** argv )
   const double R1=0.5;
   const double R2=0.21;
   const double H=0.2; // height of the cell
-  const double l=option("gmsh.hsize").as<double>(); // length of the cut at the peak (top and bottom)
+  const double l=doption(_name="gmsh.hsize"); // length of the cut at the peak (top and bottom)
 
   // position of the sickle cell (the center of the first circle)
   const double dx = 0.;
@@ -162,10 +162,10 @@ int main( int argc, char** argv )
   auto sickle_cell = disttocurve->fromParametrizedCurve(/* x(t), y(t) */
                                                         x_sc, y_sc,
                                                         /* tStart, tEnd, dt */
-                                                       -t1+dt1, t1+2*t2+dt1, option("gmsh.hsize").as<double>()/8.,
+                                                       -t1+dt1, t1+2*t2+dt1, doption(_name="gmsh.hsize")/8.,
                                                         /* broaden points for detection, broadening thickness, export points*/
-                                                        true, option("gmsh.hsize").as<double>() / 10., true );
-  *sickle_cell = fm->march( sickle_cell, true );
+                                                        true, doption(_name="gmsh.hsize") / 10., true );
+  *sickle_cell = fm->march( sickle_cell );
   std::cout<<"sc done"<<std::endl;
   // ----------------------------------------
 
@@ -179,10 +179,10 @@ int main( int argc, char** argv )
                                                                  get<1>(scpredef),
                                                                  get<2>(scpredef),
                                                                  get<3>(scpredef),
-                                                                 option("gmsh.hsize").as<double>()/8.,
-                                                                 true, option("gmsh.hsize").as<double>() / 10., true, "sc_pred" );
+                                                                 doption(_name="gmsh.hsize")/8.,
+                                                                 true, doption(_name="gmsh.hsize") / 10., true, "sc_pred" );
 
-  *siclkeCellPredefied = fm->march( siclkeCellPredefied, true );
+  *siclkeCellPredefied = fm->march( siclkeCellPredefied );
   std::cout<<"predef sc done"<<std::endl;
   // ----------------------------------------
 

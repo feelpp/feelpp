@@ -80,18 +80,18 @@ runApplicationMaxwell()
         AExpr.setParameterValues( params );
         auto Ah = maxwell->spaceMagneticPotential();
         auto A_ex = Ah->element(AExpr);
-        normA[2*i] = normL2( Ah->template rangeElements<0>(),
-                             idv(A_h) );
-        errA[2*i] = normL2( Ah->template rangeElements<0>(),
-                            idv(A_h)-idv(A_ex) );
+        normA[2*i] = normL2( _range=Ah->template rangeElements<0>(),
+                             _expr=idv(A_h) );
+        errA[2*i] = normL2( _range=Ah->template rangeElements<0>(),
+                            _expr=idv(A_h)-idv(A_ex) );
         errRelA[2*i] = errA[2*i]/normA[2*i];
-        normA[2*i+1] = normL2( Ah->template rangeElements<0>(),
+        normA[2*i+1] = normL2( _range=Ah->template rangeElements<0>(),
                                _expr=idv(A_h) );
-        normA[2*i+1] += normL2( Ah->template rangeElements<0>(),
+        normA[2*i+1] += normL2( _range=Ah->template rangeElements<0>(),
                                 _expr=curlv(A_h) );
-        errA[2*i+1] = normL2( Ah->template rangeElements<0>(),
+        errA[2*i+1] = normL2( _range=Ah->template rangeElements<0>(),
                               _expr=idv(A_h)-idv(A_ex) );
-        errA[2*i+1] += normL2( Ah->template rangeElements<0>(),
+        errA[2*i+1] += normL2( _range=Ah->template rangeElements<0>(),
                                _expr=curlv(A_h)-curlv(A_ex) );
         errRelA[2*i+1] = errA[2*i+1]/normA[2*i+1];
         e->step(i)->add("A_h", "A_h", A_h);
@@ -106,19 +106,19 @@ runApplicationMaxwell()
         BExpr.setParameterValues( params );
         auto Bh = maxwell->spaceMagneticField();
         auto B_ex = Bh->element(BExpr);
-        normB[2*i] = normL2( Bh->template rangeElements<0>(),
-                             idv(B_h) );
-        errB[2*i] = normL2( Bh->template rangeElements<0>(),
-                            idv(B_h)-idv(B_ex) );
+        normB[2*i] = normL2( _range=Bh->template rangeElements<0>(),
+                             _expr=idv(B_h) );
+        errB[2*i] = normL2( _range=Bh->template rangeElements<0>(),
+                            _expr=idv(B_h)-idv(B_ex) );
         errRelB[2*i] = errB[2*i]/normB[2*i];
 #if FEELPP_DIM==3
-        normB[2*i+1] = normL2( Bh->template rangeElements<0>(),
+        normB[2*i+1] = normL2( _range=Bh->template rangeElements<0>(),
                                _expr=idv(B_h) );
-        normB[2*i+1] += normL2( Bh->template rangeElements<0>(),
+        normB[2*i+1] += normL2( _range=Bh->template rangeElements<0>(),
                                _expr=divv(B_h) );
-        errB[2*i+1] = normL2( Bh->template rangeElements<0>(),
+        errB[2*i+1] = normL2( _range=Bh->template rangeElements<0>(),
                               _expr=idv(B_h)-idv(B_ex) );
-        errB[2*i+1] += normL2( Bh->template rangeElements<0>(),
+        errB[2*i+1] += normL2( _range=Bh->template rangeElements<0>(),
                               _expr=divv(B_h)-divv(B_ex) );
         errRelB[2*i+1] = errB[2*i+1]/normB[2*i+1];
 #endif

@@ -81,7 +81,7 @@ int main(int argc, char** argv )
                      _desc=makeOptions(),
                      _about=makeAbout() );
 
-    Environment::changeRepository( boost::format( "%1%/%2%D/P%3%/h_%4%" )
+    Environment::changeRepository( _directory=boost::format( "%1%/%2%D/P%3%/h_%4%" )
                                    % Environment::about().appName() % Dim % Order
                                    % option(_name="gmsh.hsize").as<double>() );
 
@@ -119,7 +119,7 @@ int main(int argc, char** argv )
     auto v = Xh->element();
 
 
-    auto a = form2( Xh, Xh );
+    auto a = form2( _test=Xh, _trial=Xh );
     a = integrate( _range= markedelements(mesh,"soil.0"), _expr= k0*gradt(T)*trans(grad(v)) );
     a += integrate( _range= markedelements(mesh,"soil.1"), _expr= k1*gradt(T)*trans(grad(v)) );
     a += integrate( _range= markedfaces(mesh, "ground"),

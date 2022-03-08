@@ -60,10 +60,9 @@ makeOptions()
     ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
     ( "coeff", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
     ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-    ( "penaldir", Feel::po::value<double>()->default_value( 10 ),
-      "penalisation parameter for the weak boundary Dirichlet formulation" ),
-      ( "export-matlab", "export matrix and vectors in matlab" )
-      ;
+    ( "penaldir", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary Dirichlet formulation" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+        ;
     return threefieldsoptions.add( Feel::feel_options() );
 }
 
@@ -182,7 +181,7 @@ private:
     double mesh2Size;
     double mesh3Size;
     std::string shape;
-    std::map<std::string, std::pair<boost::timer, double> > timers;
+    std::map<std::string, std::pair<Feel::Timer, double> > timers;
     export_ptrtype M_firstExporter;
     export_ptrtype M_secondExporter;
     trace_export_ptrtype M_trace1_exporter,M_trace2_exporter;
@@ -292,13 +291,13 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::exportResults( element1_type&
     auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
 
     auto e1 = Xh1->element();
-    e1 = vf::project( Xh1, elements( mesh1 ), g );
+    e1.on(_range=elements( mesh1 ), _expr=g );
 
     auto e2 = Xh2->element();
-    e2 = vf::project( Xh2, elements( mesh2 ), g );
+    e2.on(_range=elements( mesh2 ), _expr=g );
 
     LOG(INFO) << "exportResults starts\n";
-    timers["export"].first.restart();
+    timers["export"].first.start();
 
     M_firstExporter->step( 0 )->setMesh( mesh1 );
     M_firstExporter->step( 0 )->add( "solution", ( boost::format( "solution-%1%" ) % int( 1 ) ).str(), u );
@@ -351,7 +350,7 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
     LOG(INFO) << "Execute ThreeFieldsLaplacian<" << Dim << "," << Order1 << "," << Order2 << "," << Order3 << ">\n";
 
     if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/manual/%1%/%2%-%3%/P%4%-P%5%-P%6%/h_%7%-%8%-%9%/" )
+        Environment::changeRepository( _directory=boost::format( "doc/manual/%1%/%2%-%3%/P%4%-P%5%-P%6%/h_%7%-%8%-%9%/" )
                                        % this->about().appName()
                                        % shape
                                        % Dim
@@ -432,17 +431,17 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
     value_type coeff = doption("coeff");
 
     LOG(INFO) << "assembly_F1 starts\n";
-    timers["assemby_F1"].first.restart();
+    timers["assemby_F1"].first.start();
 
     auto F1 = M_backend->newVector( Xh1 );
-    form1( _test=Xh1, _vector=F1, _init=true ) =
-        integrate( elements( mesh1 ), f*id( v1 ) );
+    form1( _test=Xh1, _vector=F1 ) =
+        integrate( _range=elements( mesh1 ), _expr=f*id( v1 ) );
 
     BOOST_FOREACH( int marker, outside1 )
     {
         form1( _test=Xh1, _vector=F1 ) +=
-            integrate( markedfaces( mesh1,marker ),
-                       g*( -grad( v1 )*vf::N()+penaldir*id( v1 )/hFace() ) );
+            integrate( _range=markedfaces( mesh1,marker ),
+                       _expr=g*( -grad( v1 )*vf::N()+penaldir*id( v1 )/hFace() ) );
     }
 
     timers["assemby_F1"].second = timers["assemby_F1"].first.elapsed();
@@ -451,17 +450,18 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
     F1->close();
 
     LOG(INFO) << "assembly_D1 starts\n";
-    timers["assemby_D1"].first.restart();
+    timers["assemby_D1"].first.start();
 
-    auto D1 = M_backend->newMatrix( Xh1, Xh1 );
+    auto D1 = M_backend->newMatrix( _test=Xh1, _trial=Xh1 );
 
-    form2( _trial=Xh1, _test=Xh1, _matrix=D1, _init=true ) =
-        integrate( elements( mesh1 ), coeff*gradt( u1 )*trans( grad( v1 ) ) );
+    form2( _trial=Xh1, _test=Xh1, _matrix=D1 ) =
+        integrate( _range=elements( mesh1 ), _expr=coeff*gradt( u1 )*trans( grad( v1 ) ) );
 
     BOOST_FOREACH( int marker, outside1 )
     {
         form2( _trial=Xh1, _test=Xh1, _matrix=D1 ) +=
-            integrate( markedfaces( mesh1,marker ),
+            integrate( _range=markedfaces( mesh1,marker ),
+                       _expr=
                        -( gradt( u1 )*vf::N() )*id( v1 )
                        -( grad( v1 )*vf::N() )*idt( u1 )
                        +penaldir*id( v1 )*idt( u1 )/hFace() );
@@ -476,11 +476,11 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
         D1->printMatlab( "D1.m" );
 
     LOG(INFO) << "assembly_B1 starts\n";
-    timers["assemby_B1"].first.restart();
+    timers["assemby_B1"].first.start();
 
-    auto B1 = M_backend->newMatrix( Xh1, Lh1 );
-    form2( _trial=Xh1, _test=Lh1, _matrix=B1, _init=true ) +=
-        integrate( elements( Lh->mesh() ), -idt( u1 )*id( nu1 ) );
+    auto B1 = M_backend->newMatrix( _test=Xh1, _trial=Lh1 );
+    form2( _trial=Xh1, _test=Lh1, _matrix=B1 ) +=
+        integrate( _range=elements( Lh->mesh() ), _expr=-idt( u1 )*id( nu1 ) );
 
     timers["assemby_B1"].second = timers["assemby_B1"].first.elapsed();
     LOG(INFO) << "assemby_B1 done in " << timers["assemby_B1"].second << "s\n";
@@ -491,11 +491,11 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
         B1->printMatlab( "B1.m" );
 
     LOG(INFO) << "assembly_C1 starts\n";
-    timers["assemby_C1"].first.restart();
+    timers["assemby_C1"].first.start();
 
-    auto C1 = M_backend->newMatrix( Lh, Lh1, _buildGraphWithTranspose=!buildGraphWithTrans1 );
-    form2( _trial=Lh, _test=Lh1, _matrix=C1, _init=true ) +=
-        integrate( elements( Lh->mesh() ), idt( mu )*id( nu1 ) );
+    auto C1 = M_backend->newMatrix( _test=Lh, _trial=Lh1, _buildGraphWithTranspose=!buildGraphWithTrans1 );
+    form2( _trial=Lh, _test=Lh1, _matrix=C1 ) +=
+        integrate( _range=elements( Lh->mesh() ), _expr=idt( mu )*id( nu1 ) );
 
     timers["assemby_C1"].second = timers["assemby_C1"].first.elapsed();
     LOG(INFO) << "assemby_C1 done in " << timers["assemby_C1"].second << "s\n";
@@ -506,17 +506,17 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
         C1->printMatlab( "C1.m" );
 
     LOG(INFO) << "assembly_F2 starts\n";
-    timers["assemby_F2"].first.restart();
+    timers["assemby_F2"].first.start();
 
     auto F2 = M_backend->newVector( Xh2 );
     form1( _test=Xh2, _vector=F2, _init=true ) =
-        integrate( elements( mesh2 ), f*id( v2 ) );
+        integrate( _range=elements( mesh2 ), _expr=f*id( v2 ) );
 
     BOOST_FOREACH( int marker, outside2 )
     {
         form1( _test=Xh2, _vector=F2 ) +=
-            integrate( markedfaces( mesh2,marker ),
-                       g*( -grad( v2 )*vf::N()+penaldir*id( v2 )/hFace() ) );
+            integrate( _range=markedfaces( mesh2,marker ),
+                       _expr=g*( -grad( v2 )*vf::N()+penaldir*id( v2 )/hFace() ) );
     }
 
     timers["assemby_F2"].second = timers["assemby_F2"].first.elapsed();
@@ -525,17 +525,18 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
     F2->close();
 
     LOG(INFO) << "assembly_D2 starts\n";
-    timers["assemby_D2"].first.restart();
+    timers["assemby_D2"].first.start();
 
-    auto D2 = M_backend->newMatrix( Xh2, Xh2 );
+    auto D2 = M_backend->newMatrix( _test=Xh2, _trial=Xh2 );
 
-    form2( _trial=Xh2, _test=Xh2, _matrix=D2, _init=true ) =
-        integrate( elements( mesh2 ), coeff*gradt( u2 )*trans( grad( v2 ) ) );
+    form2( _trial=Xh2, _test=Xh2, _matrix=D2 ) =
+        integrate( _range=elements( mesh2 ), _expr=coeff*gradt( u2 )*trans( grad( v2 ) ) );
 
     BOOST_FOREACH( int marker, outside2 )
     {
         form2( _trial=Xh2, _test=Xh2, _matrix=D2 ) +=
-            integrate( markedfaces( mesh2,marker ),
+            integrate( _range=markedfaces( mesh2,marker ),
+                       _expr=
                        -( gradt( u2 )*vf::N() )*id( v2 )
                        -( grad( v2 )*vf::N() )*idt( u2 )
                        +penaldir*id( v2 )*idt( u2 )/hFace() );
@@ -551,11 +552,11 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
         D2->printMatlab( "D2.m" );
 
     LOG(INFO) << "assembly_B2 starts\n";
-    timers["assemby_B2"].first.restart();
+    timers["assemby_B2"].first.start();
 
-    auto B2 = M_backend->newMatrix( Xh2, Lh2 );
-    form2( _trial=Xh2, _test=Lh2, _matrix=B2, _init=true ) +=
-        integrate( elements( Lh->mesh() ), -idt( u2 )*id( nu2 ) );
+    auto B2 = M_backend->newMatrix( _test=Xh2, _trial=Lh2 );
+    form2( _trial=Xh2, _test=Lh2, _matrix=B2 ) +=
+        integrate( _range=elements( Lh->mesh() ), _expr=-idt( u2 )*id( nu2 ) );
 
     timers["assemby_B2"].second = timers["assemby_B2"].first.elapsed();
     LOG(INFO) << "assemby_B2 done in " << timers["assemby_B2"].second << "s\n";
@@ -567,11 +568,11 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
         B2->printMatlab( "B2.m" );
 
     LOG(INFO) << "assembly_C2 starts\n";
-    timers["assemby_C2"].first.restart();
+    timers["assemby_C2"].first.start();
 
-    auto C2 = M_backend->newMatrix( Lh, Lh2,_buildGraphWithTranspose=!buildGraphWithTrans2 );
-    form2( _trial=Lh, _test=Lh2, _matrix=C2, _init=true ) +=
-        integrate( elements( Lh->mesh() ), idt( mu )*id( nu2 ) );
+    auto C2 = M_backend->newMatrix( _test=Lh, _trial=Lh2,_buildGraphWithTranspose=!buildGraphWithTrans2 );
+    form2( _trial=Lh, _test=Lh2, _matrix=C2 ) +=
+        integrate( _range=elements( Lh->mesh() ), _expr=idt( mu )*id( nu2 ) );
 
     timers["assemby_C2"].second = timers["assemby_C2"].first.elapsed();
     LOG(INFO) << "assemby_C2 done in " << timers["assemby_C2"].second << "s\n";
@@ -583,9 +584,9 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
 
     // transposes
     LOG(INFO) << "assembly_B1t starts\n";
-    timers["assemby_B1t"].first.restart();
+    timers["assemby_B1t"].first.start();
 
-    auto B1t = M_backend->newMatrix( Lh1, Xh1, _buildGraphWithTranspose=true );
+    auto B1t = M_backend->newMatrix( _test=Lh1, _trial=Xh1, _buildGraphWithTranspose=true );
 
     B1->transpose( B1t );
 
@@ -596,9 +597,9 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
         B1t->printMatlab( "B1t.m" );
 
     LOG(INFO) << "assembly_B2t starts\n";
-    timers["assemby_B2t"].first.restart();
+    timers["assemby_B2t"].first.start();
 
-    auto B2t = M_backend->newMatrix( Lh2, Xh2, _buildGraphWithTranspose=true );
+    auto B2t = M_backend->newMatrix( _test=Lh2, _trial=Xh2, _buildGraphWithTranspose=true );
 
     B2->transpose( B2t );
 
@@ -611,9 +612,9 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
     LOG(INFO) << "matrix C1t assembly starts\n";
 
     LOG(INFO) << "assemply_C1t starts\n";
-    timers["assemply_C1t"].first.restart();
+    timers["assemply_C1t"].first.start();
 
-    auto C1t = M_backend->newMatrix( Lh1, Lh, _buildGraphWithTranspose=buildGraphWithTrans1 );
+    auto C1t = M_backend->newMatrix( _test=Lh1, _trial=Lh, _buildGraphWithTranspose=buildGraphWithTrans1 );
 
     C1->transpose( C1t );
 
@@ -624,9 +625,9 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
         C1t->printMatlab( "C1t.m" );
 
     LOG(INFO) << "assemply_C2t starts\n";
-    timers["assemply_C2t"].first.restart();
+    timers["assemply_C2t"].first.start();
 
-    auto C2t = M_backend->newMatrix( Lh2, Lh, _buildGraphWithTranspose=buildGraphWithTrans2 );
+    auto C2t = M_backend->newMatrix( _test=Lh2, _trial=Lh, _buildGraphWithTranspose=buildGraphWithTrans2 );
 
     C2->transpose( C2t );
 
@@ -655,7 +656,7 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
     auto zero35 = M_backend->newZeroMatrix( _trial=Lh, _test=Xh2 );
 
     LOG(INFO) << "assemply_Block starts\n";
-    timers["assemply_Block"].first.restart();
+    timers["assemply_Block"].first.start();
 
     auto myb = BlocksSparseMatrix<5,5>()<< D1 << B1t << zero31 << zero41 << zero51
                                         << B1 << zero22 << C1 << zero42 << zero52
@@ -703,7 +704,7 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
     }
 
     LOG(INFO) << "solve starts\n";
-    timers["solve"].first.restart();
+    timers["solve"].first.start();
 
     M_backend->solve( _matrix=AbB,
                       _solution=UbB,
@@ -730,17 +731,17 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
         u2.set( i, ( *UbB )( u1.size()+mu1.size()+mu.size()+mu2.size()+i ) );
 
     // compute errors
-    double L2error12 =integrate( elements( mesh1 ),( idv( u1 )-g )*( idv( u1 )-g ) ).evaluate()( 0,0 );
+    double L2error12 =integrate( _range=elements( mesh1 ),_expr=( idv( u1 )-g )*( idv( u1 )-g ) ).evaluate()( 0,0 );
     double L2error1 =   math::sqrt( L2error12 );
 
-    double L2error22 =integrate( elements( mesh2 ),( idv( u2 )-g )*( idv( u2 )-g ) ).evaluate()( 0,0 );
+    double L2error22 =integrate( _range=elements( mesh2 ),_expr=( idv( u2 )-g )*( idv( u2 )-g ) ).evaluate()( 0,0 );
     double L2error2 =   math::sqrt( L2error22 );
 
-    double semi_H1error1 =integrate( elements( mesh1 ),
-                                     ( gradv( u1 )-gradg )*trans( ( gradv( u1 )-gradg ) ) ).evaluate()( 0,0 );
+    double semi_H1error1 =integrate( _range=elements( mesh1 ),
+                                     _expr=( gradv( u1 )-gradg )*trans( ( gradv( u1 )-gradg ) ) ).evaluate()( 0,0 );
 
-    double semi_H1error2 =integrate( elements( mesh2 ),
-                                     ( gradv( u2 )-gradg )*trans( ( gradv( u2 )-gradg ) ) ).evaluate()( 0,0 );
+    double semi_H1error2 =integrate( _range=elements( mesh2 ),
+                                     _expr=( gradv( u2 )-gradg )*trans( ( gradv( u2 )-gradg ) ) ).evaluate()( 0,0 );
 
     double H1error1 = math::sqrt( L2error12 + semi_H1error1 );
 
@@ -766,12 +767,13 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
 
     this->exportResults( u1,u2,mu1,mu2 );
 
-    auto interface_exporter = trace_export_type::New( this->vm(),
-                                                      ( boost::format( "interface_%1%-%2%" )
-                                                        % this->about().appName()
-                                                        % Dim ).str() ) ;
+    // auto interface_exporter = trace_export_type::New( this->vm(),
+    //                                                   ( boost::format( "interface_%1%-%2%" )
+    //                                                     % this->about().appName()
+    //                                                     % Dim ).str() ) ;
 
-    interface_exporter->step( 0 )->setMesh( interface_mesh );
+    // interface_exporter->step( 0 )->setMesh( interface_mesh );
+    auto interface_exporter = exporter(_mesh=interface_mesh);
     interface_exporter->step( 0 )->add( "mu", mu );
     interface_exporter->save();
 

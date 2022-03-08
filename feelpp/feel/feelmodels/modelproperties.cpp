@@ -42,7 +42,6 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     M_mat( world ),
     M_bc( world, false ),
     M_ic( world ),
-    M_icDeprecated( world, false ),
     M_bc2( world ),
     M_postproc( world ),
     M_outputs( world )
@@ -103,44 +102,47 @@ ModelProperties::setup()
 {
     editPtreeFromOptions( M_p, M_prefix );
 
-    try {
-        M_name  = M_p.get<std::string>( "Name"  );
-    }
-    catch ( pt::ptree_bad_path& e )
+    std::ostringstream pt_ostr;
+    write_json( pt_ostr, M_p );
+    std::istringstream pt_istream( pt_ostr.str() );
+    nl::json jarg;
+    pt_istream >> jarg;
+
+    if ( jarg.contains("Name") )
     {
-        if ( Environment::isMasterRank() )
-            std::cout << "Missing Name entry in model properties\n";
+        auto const& j_name = jarg.at("Name");
+        if ( j_name.is_string() )
+            M_name = j_name.get<std::string>();
     }
-    try {
-        M_shortname = M_p.get( "ShortName", M_name );
-    }
-    catch ( pt::ptree_bad_path& e )
+    if ( jarg.contains("ShortName") )
     {
-        if ( Environment::isMasterRank() )
-            std::cout << "Missing ShortName entry in model properties - set it to the Name entry : " << M_name << "\n";
+        auto const& j_shortname = jarg.at("ShortName");
+        if ( j_shortname.is_string() )
+            M_shortname = j_shortname.get<std::string>();
     }
-    M_unit = M_p.get( "Unit", "m" );
-    if ( auto mod = M_p.get_child_optional("Models") )
+
+    M_unit = "m";
+    if ( jarg.contains("Unit") )
+    {
+        auto const& j_unit = jarg.at("Unit");
+        if ( j_unit.is_string() )
+            M_unit = j_unit.get<std::string>();
+    }
+
+    if ( jarg.contains("Models") )
     {
         LOG(INFO) << "Model with model\n";
-        M_models.setPTree( *mod );
+        M_models.setPTree( jarg.at("Models") );
     }
-    auto par = M_p.get_child_optional("Parameters");
-    if ( par )
+
+    if ( jarg.contains("Parameters") )
     {
         LOG(INFO) << "Model with parameters\n";
         if ( !M_directoryLibExpr.empty() )
             M_params.setDirectoryLibExpr( M_directoryLibExpr );
-        M_params.setPTree( *par );
+        M_params.setPTree( jarg.at("Parameters") );
     }
-    auto func = M_p.get_child_optional("Functions");
-    if ( func )
-    {
-        LOG(INFO) << "Model with functions\n";
-        if ( !M_directoryLibExpr.empty() )
-            M_functions.setDirectoryLibExpr( M_directoryLibExpr );
-        M_functions.setPTree( *func );
-    }
+
     auto bc = M_p.get_child_optional("BoundaryConditions");
     if ( bc )
     {
@@ -149,47 +151,37 @@ ModelProperties::setup()
             M_bc.setDirectoryLibExpr( M_directoryLibExpr );
         M_bc.setPTree( *bc );
     }
-    auto ic = M_p.get_child_optional("InitialConditions");
-    if ( ic )
+
+    if ( jarg.contains("InitialConditions") )
     {
         LOG(INFO) << "Model with initial conditions\n";
         if ( !M_directoryLibExpr.empty() )
             M_ic.setDirectoryLibExpr( M_directoryLibExpr );
-        M_ic.setPTree( *ic );
+        M_ic.setPTree( jarg.at("InitialConditions") );
     }
 
-    auto icDeprecated = M_p.get_child_optional("InitialConditionsDeprecated");
-    if ( icDeprecated )
-    {
-        LOG(INFO) << "Model with initial conditions\n";
-        if ( !M_directoryLibExpr.empty() )
-            M_icDeprecated.setDirectoryLibExpr( M_directoryLibExpr );
-        M_icDeprecated.setPTree( *icDeprecated );
-    }
-
-    auto mat = M_p.get_child_optional("Materials");
-    if ( mat )
+    if ( jarg.contains("Materials") )
     {
         LOG(INFO) << "Model with materials\n";
         if ( !M_directoryLibExpr.empty() )
             M_mat.setDirectoryLibExpr( M_directoryLibExpr );
-        M_mat.setPTree( *mat );
+        M_mat.setPTree( jarg.at("Materials") );
     }
-    auto pp = M_p.get_child_optional("PostProcess");
-    if ( pp )
+
+    if ( jarg.contains("PostProcess") )
     {
         LOG(INFO) << "Model with PostProcess\n";
         if ( !M_directoryLibExpr.empty() )
             M_postproc.setDirectoryLibExpr( M_directoryLibExpr );
-        M_postproc.setPTree( *pp );
+        M_postproc.setPTree( jarg.at("PostProcess") );
     }
-    auto out = M_p.get_child_optional("Outputs");
-    if ( out )
+
+    if ( jarg.contains("Outputs") )
     {
         LOG(INFO) << "Model with outputs\n";
         if ( !M_directoryLibExpr.empty() )
             M_outputs.setDirectoryLibExpr( M_directoryLibExpr );
-        M_outputs.setPTree( *out );
+        M_outputs.setPTree( jarg.at("Outputs") );
     }
 }
 

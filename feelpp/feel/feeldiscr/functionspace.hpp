@@ -36,18 +36,19 @@
 #include <boost/static_assert.hpp>
 
 #include <boost/version.hpp>
-#if BOOST_VERSION >= 106700
+#if BOOST_VERSION >= 106700 && BOOST_VERSION < 107100
 #include <contrib/boost/fusion/include/boost/fusion/container/vector/vector.hpp>
 #else
 #include <boost/fusion/container/vector.hpp>
 #endif
+//#include <boost/fusion/container/generation/make_vector.hpp>
 
-#include <boost/mpl/at.hpp>
-#include <boost/mpl/vector.hpp>
+//#include <boost/mpl/at.hpp>
+//#include <boost/mpl/vector.hpp>
 #include <boost/mpl/transform.hpp>
 #include <boost/fusion/support/pair.hpp>
-#include <boost/fusion/support/is_sequence.hpp>
-#include <boost/fusion/sequence.hpp>
+//#include <boost/fusion/support/is_sequence.hpp>
+//#include <boost/fusion/sequence.hpp>
 #include <boost/fusion/algorithm.hpp>
 #include <boost/fusion/adapted/mpl.hpp>
 #include <boost/mpl/range_c.hpp>
@@ -1975,11 +1976,12 @@ public:
         :
         //public std::vector<basis_context_ptrtype>
         //the index of point is associated to a basis_context_ptrtype
-        public std::map<int,basis_context_ptrtype>
+        public std::map<int,std::pair<basis_context_ptrtype,std::vector<index_type>>>
     {
     public:
         static const bool is_rb_context = false;
-        typedef std::map<int,basis_context_ptrtype> super;
+        //typedef std::map<int,basis_context_ptrtype> super;
+        using super = std::map<int,std::pair<basis_context_ptrtype,std::vector<index_type>>>;
         typedef typename super::value_type bc_type;
         typedef typename matrix_node<value_type>::type matrix_node_type;
         typedef typename super::iterator iterator;
@@ -2095,7 +2097,8 @@ public:
                 DVLOG(2) << "build basis function context\n";
 
                 int number = (ptIdInCtx < 0)? M_t.size()-1 : ptIdInCtx;
-                ret = this->insert( std::pair<int,basis_context_ptrtype>( number , ctx ) );
+                std::vector<index_type> ptIds;ptIds.push_back( number );
+                ret = this->insert( std::make_pair( number , std::make_pair( ctx, std::move(ptIds) ) ) );
                 //DVLOG(2) << "Context size: " << this->size() << "\n";
 
             }//if( found )
@@ -2121,10 +2124,10 @@ public:
         }//add ( non composite case )
 
     public :
-        void addCtx( basis_context_ptrtype ctx , int proc_having_the_point)
+        void addCtx( std::pair<basis_context_ptrtype,std::vector<index_type>> const& /*basis_context_ptrtype*/ ctx , int proc_having_the_point)
         {
             int position = M_t.size();
-            this->insert( std::pair<int,basis_context_ptrtype>( position , ctx ) );
+            this->insert( std::make_pair( position, ctx ) );
             node_type n;//only to increase M_t ( this function may be called during online step of crb )
             M_t.push_back( n );
             M_t_proc.push_back( proc_having_the_point );
@@ -2341,7 +2344,7 @@ public:
         //@{
 
         Element();
-        Element( Element&& );
+        Element( Element&& ) = default;
         Element( Element const& __e );
 
         friend class FunctionSpace<A0,A1,A2,A3,A4>;
@@ -3265,7 +3268,7 @@ public:
                 for( int i = 0 ; it != en; ++it, ++i )
                 {
                     v[0].setZero();
-                    auto basis = it->second;
+                    auto basis = std::get<0>( it->second );
                     id( *basis, v );
                     int global_index = it->first;
                     for(int comp=0; comp<ncdof; comp++)
@@ -3306,7 +3309,7 @@ public:
             if( proc_number == proc_having_the_point )
             {
                 auto basis = context.at( i );
-                id( *basis , v );
+                id( *std::get<0>( basis ) , v );
                 result = v[0](0,0);
             }
 
@@ -4102,23 +4105,17 @@ public:
             //super::init( M_functionspace->nDof(),  M_functionspace->nLocalDof() );
         }
 
-        BOOST_PARAMETER_CONST_MEMBER_FUNCTION( ( void ),
-                                         save,
-                                         tag,
-                                         ( required
-                                           ( path,* ) )
-                                         ( optional
-                                           ( name,( std::string ), M_name )
-                                           ( type,( std::string ),std::string( "default" ) )
-                                           ( suffix,( std::string ),std::string( "" ) )
-                                           ( sep,( std::string ),std::string( "" ) )
-                                         ) )
-        {
-#if BOOST_VERSION < 105900
-            Feel::detail::ignore_unused_variable_warning( args );
-#endif
-            saveImpl( Environment::expand( path ), name, type, suffix, sep );
-        }
+        template <typename ... Ts>
+        void save( Ts && ... v ) const
+            {
+                auto args = NA::make_arguments( std::forward<Ts>(v)... );
+                auto && path = args.get(_path);
+                std::string const& name = args.get_else(_name,M_name);
+                std::string const& type = args.get_else(_type,"default");
+                std::string const& suffix = args.get_else(_suffix,"");
+                std::string const& sep = args.get_else(_sep,"");
+                saveImpl( Environment::expand( path ), name, type, suffix, sep );
+            }
 
         //!
         //! save function space element in file
@@ -4192,25 +4189,19 @@ public:
 #endif
             }
         }
-        BOOST_PARAMETER_MEMBER_FUNCTION(
-            ( bool ),
-            load,
-            tag,
-            ( required
-              ( path,* ) )
-            ( optional
-              ( name,( std::string ), M_name )
-              ( type,( std::string ),std::string( "default" ) )
-              ( suffix,( std::string ),std::string( "" ) )
-              ( sep,( std::string ),std::string( "" ) )
-            )
-        )
-        {
-#if BOOST_VERSION < 105900
-            Feel::detail::ignore_unused_variable_warning( args );
-#endif
-            return loadImpl( Environment::expand( path ), name, type, suffix, sep );
-        }
+
+        template <typename ... Ts>
+        bool load( Ts && ... v )
+            {
+                auto args = NA::make_arguments( std::forward<Ts>(v)... );
+                auto && path = args.get(_path);
+                std::string const& name = args.get_else(_name,M_name);
+                std::string const& type = args.get_else(_type,"default");
+                std::string const& suffix = args.get_else(_suffix,"");
+                std::string const& sep = args.get_else(_sep,"");
+                return loadImpl( Environment::expand( path ), name, type, suffix, sep );
+            }
+
         //!
         //! load function space element from file
         //! @param path path to file
@@ -4355,21 +4346,18 @@ public:
                 return v;
             }
 
-        BOOST_PARAMETER_MEMBER_FUNCTION( (void),
-                                         on,
-                                         tag,
-                                         ( required
-                                           ( expr,   * )
-                                             ) // 4. one required parameter, and
-
-                                         ( optional
-                                           ( range, *, elements(this->mesh())  )
-                                           ( prefix,   ( std::string ), "" )
-                                           ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
-                                           ( accumulate,     *( boost::is_integral<mpl::_> ), false )
-                                           ( close,  (bool), false )
-                                           ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
+        template <typename ... Ts>
+        void on( Ts && ... v )
             {
+                auto args = NA::make_arguments( std::forward<Ts>(v)... );
+                auto && expr = args.get(_expr);
+                auto && range = args.get_else_invocable(_range, [this]() { return elements(this->functionSpace()->template meshSupport<0>()); } );
+                std::string const& prefix = args.get_else(_prefix,"");
+                GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT);
+                bool accumulate = args.get_else(_accumulate,false);
+                bool close = args.get_else(_close,false);
+                bool verbose = args.get_else_invocable(_verbose,[&prefix](){ return boption(_prefix=prefix,_name="on.verbose"); } );
+
                 onImpl( range, expr, prefix, Feel::detail::geomapStrategy(range,geomap), accumulate, verbose );
                 if ( close )
                 {
@@ -4378,20 +4366,17 @@ public:
                 }
             }
 
-        BOOST_PARAMETER_MEMBER_FUNCTION( (void),
-                                         plus,
-                                         tag,
-                                         ( required
-                                           ( expr,   * )
-                                           ) // 4. one required parameter, and
-
-                                         ( optional
-                                           ( range, *, elements(this->mesh())  )
-                                           ( prefix,   ( std::string ), "" )
-                                           ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
-                                           ( close,  (bool), false )
-                                           ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
+        template <typename ... Ts>
+        void plus( Ts && ... v )
             {
+                auto args = NA::make_arguments( std::forward<Ts>(v)... );
+                auto && expr = args.get(_expr);
+                auto && range = args.get_else_invocable(_range, [this]() { return elements(this->functionSpace()->template meshSupport<0>()); } );
+                std::string const& prefix = args.get_else(_prefix,"");
+                GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT);
+                bool close = args.get_else(_close,false);
+                bool verbose = args.get_else_invocable(_verbose,[&prefix](){ return boption(_prefix=prefix,_name="on.verbose"); } );
+
                 this->on(_range=range,_expr=expr,_prefix=prefix,_geomap=geomap,_accumulate=true,_close=close, _verbose=verbose );
             }
 
@@ -4622,49 +4607,28 @@ public:
         M_extendedDofTableComposite( std::vector<bool>(nSpaces,false) ),
         M_extendedDofTable( false )
     {}
-    // template<typename... FSpaceList>
-    // FunctionSpace( FSpaceList... space_list )
-    //     :
-    //     M_functionspaces( fusion::make_vector( space_list... ) )
-    // {
-    //     this->initList( space_list... );
-    // }
 
     /**
      * helper static function to create a std::shared_ptr<> out of
      * the \c FunctionSpace
      */
-#if 0 // ambiguous call with new below
-    static pointer_type New( mesh_ptrtype const& __m, size_type mesh_components = MESH_RENUMBER | MESH_CHECK )
+    template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
+    static pointer_type New( Ts && ... v )
     {
-        return pointer_type( new functionspace_type( __m, mesh_components ) );
-    }
-#endif // 0
-#if 0
-    static pointer_type New( mesh_ptrtype const& __m, std::vector<Dof<typename mesh_type::size_type> > const& dofindices )
-    {
-        return pointer_type( new functionspace_type( __m, dofindices ) );
-    }
-#endif    
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( pointer_type ),
-                                     static New,
-                                     tag,
-                                     ( required
-                                       ( mesh,* )
-                                     )
-                                     ( optional
-                                       ( worldscomm, (worldscomm_ptr_t), Feel::detail::createWorldsComm<functionspace_type>(mesh).worldsComm() )
-                                       ( components, ( size_type ), MESH_RENUMBER | MESH_CHECK )
-                                       ( periodicity,*,periodicity_type() )
-                                       ( extended_doftable,*,std::vector<bool>(nSpaces,false) )
-                                       ( range, * , mesh_support_vector_type())
-                                     )
-                                   )
-    {
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        auto && mesh = args.get(_mesh);
+        worldscomm_ptr_t worldscomm = args.get_else_invocable(_worldscomm,[&mesh](){ return Feel::detail::createWorldsComm<functionspace_type>(mesh).worldsComm(); } );
+        size_type components = args.get_else(_components, MESH_RENUMBER | MESH_CHECK);
+        auto && periodicity = args.get_else(_periodicity,periodicity_type());
+        auto && extended_doftable = args.get_else(_extended_doftable,std::vector<bool>(nSpaces,false) );
+        auto && range = args.get_else(_range,mesh_support_vector_type());
+
         auto cms = Feel::detail::createMeshSupport<functionspace_type>( mesh, range );
         std::vector<bool> edt = Feel::detail::createInfoExtendedDofTable<functionspace_type>( extended_doftable );
         return NewImpl( mesh, cms.M_meshSupportVector, worldscomm, components, periodicity, edt );
     }
+
+    static pointer_type New( mesh_ptrtype const& m ) { return New(_mesh=m); }
 
     static pointer_type NewImpl( mesh_ptrtype const& __m,
                                  mesh_support_vector_type const& meshSupport,
@@ -6010,7 +5974,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 
 #if !defined( __INTEL_COMPILER )
-        if ( boption( "connect" ) )
+        if ( boption( _name="connect" ) )
             M_mesh->addObserver( *this );
 #endif
     }

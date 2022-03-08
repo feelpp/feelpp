@@ -43,14 +43,16 @@
     },
     "InitialConditions":
     {
-        "temperature":
-        {
-            "Expression":
+        "heat":{
+            "temperature":
             {
-                "myic1":
+                "Expression":
                 {
-                    "markers":"omega",
-                    "expr": "293"
+                    "myic1":
+                    {
+                        "markers":"omega",
+                        "expr": "293"
+                    }
                 }
             }
         }
@@ -138,7 +140,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "electric":
         {
             "Exports":

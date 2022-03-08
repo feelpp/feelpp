@@ -52,7 +52,7 @@ template<int Dim,int Order>
 void
 Traces<Dim,Order>::run()
 {
-    Environment::changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
+    Environment::changeRepository( _directory=boost::format( "%1%/%2%/P%3%/h_%4%/" )
                                    % this->about().appName()
                                    % Dim
                                    % Order
@@ -63,7 +63,7 @@ Traces<Dim,Order>::run()
     auto Vh  = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order,Scalar>>>::New( _mesh=mesh,
                                                                                       _worldscomm=Environment::worldsCommSeq(1) );
 
-    auto localMesh = createSubmesh( mesh, elements(mesh), Environment::worldCommSeq() );
+    auto localMesh = createSubmesh( _mesh=mesh, _range=elements(mesh), _worldcomm=Environment::worldCommSeqPtr() );
     auto VhLocal = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order,Scalar>>>::New( _mesh=localMesh,
                                                                                      _worldscomm=Environment::worldsCommSeq(1) );
     auto uLocal = VhLocal->element();
@@ -80,13 +80,13 @@ Traces<Dim,Order>::run()
     unsigned int* send = recv + nbNeighbors;
     MPI_Request* rq = new MPI_Request[2 * nbNeighbors];
     std::string kind = soption(_name = "backend");
-    std::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build(kind, "", Environment::worldCommSeq());
+    std::shared_ptr<Backend<double>> ptr_backend = Backend<double>::build(kind, "", Environment::worldCommSeqPtr());
     int i = 0;
     for( const size_type neighbor_subdomain : mesh->faceNeighborSubdomains() )
     {
         LOG(INFO) << "Extracting trace mesh from neighbor : " << neighbor_subdomain;
-        auto trace = createSubmesh( mesh, interprocessfaces(mesh, neighbor_subdomain ),
-                                    Environment::worldCommSeq() );
+        auto trace = createSubmesh( _mesh=mesh, _range=interprocessfaces(mesh, neighbor_subdomain ),
+                                    _worldcomm=Environment::worldCommSeqPtr() );
         CHECK( nelements(elements(trace)) > 0 ) << "is not a true neighbor";
 
 
@@ -105,7 +105,7 @@ Traces<Dim,Order>::run()
 
         // strange the line below doesn t work correctly, it's necesseray to have a double in cst -> a bug is found
         //l = vf::project( Xh, elements(trace), cst( neighbor_subdomain+Environment::worldComm().globalRank() )/2. );
-        l = vf::project( Xh, elements(trace), cst( (neighbor_subdomain+Environment::worldComm().globalRank())/2. ) );
+        l.on(_range=elements(trace), _expr=cst( (neighbor_subdomain+Environment::worldComm().globalRank())/2. ) );
 
         auto op = opInterpolation( _domainSpace =Vh,
                                    _imageSpace = Xh,
@@ -135,7 +135,7 @@ Traces<Dim,Order>::run()
 
 
         //saveGMSHMesh( _filename=(boost::format( "trace-%1%-%2%-%3%.msh" ) % Dim % Environment::worldComm().globalRank() % neighbor_subdomain).str(), _mesh=trace );
-        auto m = mean( _range=elements(trace), _expr=idv(l),_worldcomm=Environment::worldCommSeq() )(0,0);
+        auto m = mean( _range=elements(trace), _expr=idv(l),_worldcomm=Environment::worldCommSeqPtr() )(0,0);
         //CHECK( math::abs( m -  double(neighbor_subdomain+1) ) < 1e-14 ) << "problem : " << m << " != " << neighbor_subdomain;
         auto verifLocal = ptr_backend->newVector(VhLocal);
         auto p = ptr_backend->newVector(Xh);

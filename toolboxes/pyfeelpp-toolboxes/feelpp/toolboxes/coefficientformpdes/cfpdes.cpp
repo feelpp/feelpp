@@ -56,13 +56,16 @@ void defSM(py::module &m)
         // mesh
         .def( "mesh", &toolbox_t::mesh, "get the mesh" )
         .def( "setMesh", &toolbox_t::setMesh, "set the mesh" )
-        .def( "exportSolutionToStep", []( std::shared_ptr<toolbox_t> const& t, step_ptr_t& s) { 
-            
-            t->apply( [&s]( auto const& cfpde ) { 
-                std::cout << fmt::format("[cfpde] exporting {}_{} ...",cfpde->equationName(),cfpde->unknownName()) << std::endl;
-                s->add( fmt::format("{}_{}",cfpde->equationName(),cfpde->unknownName()), cfpde->fieldUnknown() ); 
-                } );
-            }, "apply external exporter on solution" )
+        .def(
+            "exportSolutionToStep", []( std::shared_ptr<toolbox_t> const& t, step_ptr_t& s )
+            {
+                t->apply( [&s]( auto const& cfpde )
+                          {
+                              std::cout << fmt::format( "[cfpde] exporting {}_{} ...", cfpde->equationName(), cfpde->unknownName() ) << std::endl;
+                              s->add( fmt::format( "{}_{}", cfpde->equationName(), cfpde->unknownName() ), cfpde->fieldUnknown() );
+                          } );
+            },
+            "apply external exporter on solution" )
 
         //.def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
 
@@ -78,13 +81,12 @@ void defSM(py::module &m)
         // solve
         .def( "solve", &toolbox_t::solve, "solve the cfpde problem" )
         .def( "exportResults", static_cast<void ( toolbox_t::* )()>( &toolbox_t::exportResults ), "export the results of the cfpde problem" )
+        .def( "exportResults", static_cast<void ( toolbox_t::* )( double )>( &toolbox_t::exportResults ), py::arg("time"), "export the results of the cfpde problem at time 'time'" )
         .def( "checkResults", static_cast<bool ( toolbox_t::* )() const>( &toolbox_t::checkResults ), "check the results of the cfpde problem" )
         //        .def("exportResults",static_cast<void (toolbox_t::*)( double )>(&toolbox_t::exportResults), "export the results of the heat mechanics problem", py::arg("time"))
 
-
         .def( "setMesh", &toolbox_t::setMesh, "set the mesh", py::arg( "mesh" ) )
-        .def( "updateParameterValues", &toolbox_t::updateParameterValues, "update parameter values" )
-        ;
+        .def( "updateParameterValues", &toolbox_t::updateParameterValues, "update parameter values" );
 }
 
 

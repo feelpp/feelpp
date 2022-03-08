@@ -39,24 +39,24 @@ using namespace Feel;
 
 void run()
 {
-    boost::timer chrono;
+    Feel::Timer chrono;
 
     typedef Mesh< Simplex<DIM> > mesh_type;
     auto mesh = loadMesh( _mesh=new mesh_type );
 
     auto Xh = Pch<1>(mesh);
 
-    chrono.restart();
+    chrono.start();
     // create the fast marching
     auto thefms = fms( Xh );
     double timeInitFastMarching = chrono.elapsed();
 
     // first method: let the fm search for the elements crossed by the interface
     auto phio = Xh->element();
-    phio = vf::project(Xh, elements(mesh), h() );
-    phio +=vf::project(Xh, boundaryfaces(mesh), -idv(phio) - h()/100. );
+    phio = vf::project(_space=Xh, _range=elements(mesh), _expr=h() );
+    phio +=vf::project(_space=Xh, _range=boundaryfaces(mesh), _expr=-idv(phio) - h()/100. );
 
-    chrono.restart();
+    chrono.start();
     auto phi = thefms->march(phio);
     double timeFmsLocElt = chrono.elapsed();
 
@@ -64,15 +64,15 @@ void run()
     // second method: give to the fm the elements having the good value to start with
     auto Xh0 = Pdh<0>(mesh);
 
-    auto phio2 = Xh->element();    
-    phio2 = vf::project(Xh, boundaryelements(mesh), h() );
-    phio2 += vf::project(Xh, boundaryfaces(mesh), -idv(phio2) );
+    auto phio2 = Xh->element();
+    phio2 = vf::project(_space=Xh, _range=boundaryelements(mesh), _expr=h() );
+    phio2 += vf::project(_space=Xh, _range=boundaryfaces(mesh), _expr=-idv(phio2) );
 
-    auto mark = vf::project(Xh0, boundaryelements(mesh), cst(1) );
+    auto mark = vf::project(_space=Xh0, _range=boundaryelements(mesh), _expr=cst(1) );
     mesh->updateMarker2( mark );
 
-    chrono.restart();
-    auto phi2 = thefms->march(phio2, true);
+    chrono.start();
+    auto phi2 = thefms->march(phio2);
     double timeFmsNoLocElt = chrono.elapsed();
 
     LOG(INFO) << "fast marching initialized in "<<timeInitFastMarching<<"s"<<std::endl;

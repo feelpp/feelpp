@@ -69,7 +69,7 @@ int main( int argc, char** argv )
         // do something with the coordinate and store it in the proper vector entry in B
         auto r = vec( ( Px()-dofpt_coord[0] )*( Px()-dofpt_coord[0] ),
                       ( Py()-dofpt_coord[1] )*( Py()-dofpt_coord[1] ) );
-        auto I = integrate( elements( mesh ), r ).evaluate();
+        auto I = integrate( _range=elements( mesh ), _expr=r ).evaluate();
         std::cout << "I = " << I << "\n";
         B[dofpt_id] = I( dofpt_comp, 0 );
         std::cout << "Dof coordinate[" << dofpt_id << "]=" << dofpt_coord << ", component=" << dofpt_comp << "\n";

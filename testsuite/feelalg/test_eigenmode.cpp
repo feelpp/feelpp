@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
     toc("assembly a");
     tic();
     auto b = form2( _test=Vh, _trial=Vh);
-    b = integrate( elements(mesh), trans(idt( u ))*id( v ) );
+    b = integrate( _range=elements(mesh), _expr=trans(idt( u ))*id( v ) );
     toc("assembly b");
     tic();
     auto modes = veigs( _formA=a,

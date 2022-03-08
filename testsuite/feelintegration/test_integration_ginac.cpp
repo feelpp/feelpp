@@ -27,7 +27,6 @@
    \date 2013-07-05
  */
 #include <sstream>
-#include <boost/timer.hpp>
 
 //#define BOOST_TEST_MODULE ginac integration testsuite
 //#include <feel/feelcore/testsuite.hpp>

@@ -999,7 +999,7 @@ struct test_integration_vectorial_functions: public Application
 #endif
 
         u = project( _space=Xh, _range=elements( mesh ), _expr=Py()*oneX() + Px()*oneY() );
-        auto int_divu = integrate( elements( mesh ), _expr=divv( u ) ).evaluate();
+        auto int_divu = integrate( _range=elements( mesh ), _expr=divv( u ) ).evaluate();
 #if defined(USE_BOOST_TEST)
         value_type norm_int_divu = int_divu.norm();
         BOOST_CHECK_SMALL( norm_int_divu, eps );

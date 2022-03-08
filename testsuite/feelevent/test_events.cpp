@@ -34,7 +34,9 @@ using namespace Feel;
 class MyObject
 : virtual public Event::SignalHandler,
   virtual public Event::SlotHandler
-{};
+{
+    MyObject& operator=( MyObject && ) = delete;
+};
 
 class Slot1
 {

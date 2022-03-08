@@ -49,8 +49,8 @@ BOOST_AUTO_TEST_CASE( test_2d )
     auto a = form2( _test=Vh, _trial=Vh);
     a = integrate( _range=elements( mesh ), _expr=inner(curlt(u),curl(u)) );
 
-    auto nu = normL2(elements(mesh), curlv(u));
-    auto nv = normL2(elements(mesh), idv(v));
+    auto nu = normL2(_range=elements(mesh), _expr=curlv(u));
+    auto nv = normL2(_range=elements(mesh), _expr=idv(v));
     BOOST_CHECK_CLOSE( nu, nv, 1e-4 );
 
     auto err = normL2(_range=elements(mesh), _expr=curlv(u)-idv(v));

@@ -31,7 +31,6 @@
 
 #include <feel/feelcore/testsuite.hpp>
 
-#include <boost/timer.hpp>
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 
 #include <feel/feelcore/environment.hpp>

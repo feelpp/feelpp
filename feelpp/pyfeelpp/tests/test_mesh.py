@@ -15,11 +15,22 @@ def run( m, geofile):
         print("mesh ", m.dimension(), "D hmax:", m.hMax())
         print("mesh ", m.dimension(), "D measure:", m.measure())
 
+
+    
     r = feelpp.elements(m)
-    print("mesh elts:", feelpp.nelements(r, True))
+    ne = feelpp.nelements(r, True)
+    if feelpp.Environment.isMasterRank():
+        print("mesh elts:", ne)
     r = feelpp.boundaryfaces(m)
-    print("mesh boundary faces:", feelpp.nfaces(r, True))
-        
+    nf = feelpp.nelements(r, True)
+    if feelpp.Environment.isMasterRank():
+        print("mesh boundary faces:", nf )
+    s=feelpp.createSubmesh(m,feelpp.elements(m))  
+    nes = feelpp.nelements(feelpp.elements(s), True)
+    assert(ne==nes)
+    s2 = feelpp.createSubmesh(m, feelpp.boundaryfaces(m))
+    nfs = feelpp.nelements(feelpp.elements(s2), True)
+    assert(nf == nfs)
 
 #@pytest.mark.mpi
 def test_mesh(init_feelpp):

@@ -260,10 +260,10 @@ ALE<Convex,Order>::createALE( std::optional<range_elements_type> const& rangeElt
         M_displacementHigh.reset( new element_high_type( M_fspaceHigh, "high_order_displacement" ) );
         M_identityHigh.reset( new element_high_type( M_fspaceHigh, "high_order_identity map" ) );
 #if ALE_WITH_BOUNDARYELEMENT
-        M_harmonicHigh =  M_bHigh->newMatrix( M_fspaceHighLocal, M_fspaceHighLocal );
+        M_harmonicHigh =  M_bHigh->newMatrix( _test=M_fspaceHighLocal, _trial=M_fspaceHighLocal );
         M_rhsHigh = M_bHigh->newVector( M_fspaceHighLocal );
 #else
-        M_harmonicHigh = M_bHigh->newMatrix( M_fspaceHigh, M_fspaceHigh );
+        M_harmonicHigh = M_bHigh->newMatrix( _test=M_fspaceHigh, _trial=M_fspaceHigh );
         M_rhsHigh = M_bHigh->newVector( M_fspaceHigh );
 #endif
 
@@ -438,7 +438,7 @@ ALE<Convex,Order>::preComputeHO( mpl::true_ )
     auto w = fspaceHighLocal->element( "w" );
     //M_timer.restart();
     form2( _test=M_fspaceHighLocal, _trial=M_fspaceHighLocal, _matrix=M_harmonicHigh ) =
-        integrate( elements(M_fspaceHighLocal->mesh()), trace( trans(gradt(z))*grad(w) ) );
+        integrate( _range=elements(M_fspaceHighLocal->mesh()), _expr=trace( trans(gradt(z))*grad(w) ) );
     //form2( fspaceHighLocal, fspaceHighLocal, harmonicHigh ) +=
     //    integrate( boundaryfaces(fspaceHighLocal->mesh()), - trans((gradt(z)*N()))*id(w) );
 
@@ -447,7 +447,7 @@ ALE<Convex,Order>::preComputeHO( mpl::true_ )
     auto w = M_fspaceHigh->element( "w" );
     //M_timer.restart();
     form2( _test=M_fspaceHigh, _trial=M_fspaceHigh, _matrix=M_harmonicHigh ) =
-        integrate( elements(M_fspaceHigh->mesh()), trace( trans(gradt(z))*grad(w) ) );
+        integrate( _range=elements(M_fspaceHigh->mesh()), _expr=trace( trans(gradt(z))*grad(w) ) );
     //form2( fspaceHigh, fspaceHigh, harmonicHigh ) +=
     //    integrate( boundaryfaces(fspaceHigh->mesh()), - trans((gradt(z)*N()))*id(w) );
 #endif

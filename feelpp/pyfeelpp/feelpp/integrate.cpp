@@ -54,6 +54,7 @@ void defIntegrate( py::module& m )
             { return integrate( _range = r, _expr = expr( e ), _quad = quad_order ).evaluate(); },
             py::arg( "range" ), py::arg( "expr" ) = "1", py::arg( "quad" ) = 1, "compute the integral of the expression over the range of facets" );
     }
+#if 0
     if constexpr ( mesh_t::nDim == 3 )
     {
         m.def(
@@ -61,6 +62,7 @@ void defIntegrate( py::module& m )
             { return integrate( _range = r, _expr = expr( e ), _quad = quad_order ).evaluate(); },
             py::arg( "range" ), py::arg( "expr" ) = "1", py::arg( "quad" ) = 1, "compute the integral of the expression over the range of edges" );
     }
+#endif
 }
 
 PYBIND11_MODULE( _integrate, m )

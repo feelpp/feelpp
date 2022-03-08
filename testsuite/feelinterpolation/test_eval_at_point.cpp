@@ -49,7 +49,7 @@ template <uint16_type OrderPoly = 1, uint16_type DimGeo = 2>
 void run()
 {
     BOOST_TEST_MESSAGE( "test_eval_at_point D=" << DimGeo << " P=" << OrderPoly << "..." );
-    Environment::changeRepository( boost::format( "%1%/D%2%/P%3%" ) % Environment::about().appName() % DimGeo % OrderPoly );
+    Environment::changeRepository( _directory=boost::format( "%1%/D%2%/P%3%" ) % Environment::about().appName() % DimGeo % OrderPoly );
     auto mesh = loadMesh(_mesh = new Mesh<Simplex<DimGeo>>);
     auto Vh = Pchv<OrderPoly>( mesh );
     auto u = Vh->element();

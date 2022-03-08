@@ -87,14 +87,15 @@ Partitioning<Dim>::run()
 
     boost::mpi::communicator bComm(Environment::worldComm(), new_group);
     std::vector<int> active( bComm.size(), true );
-    WorldComm wComm(bComm,bComm,bComm,bComm.rank(),active);
+    //WorldComm wComm(bComm,bComm,bComm,bComm.rank(),active);
+    auto wComm = std::make_shared<WorldComm>(bComm,bComm,bComm,bComm.rank(),active);
     //wComm.showMe();
     std::shared_ptr<Mesh<Simplex<Dim>>> mesh;
     if(!excluded)
     {
         std::cout << "proc " << Environment::rank() 
-                  << " is not excluded and is locally rank " << wComm.rank() << " and loads mesh with " 
-                  << wComm.globalSize() << " partitions\n";
+                  << " is not excluded and is locally rank " << wComm->rank() << " and loads mesh with " 
+                  << wComm->globalSize() << " partitions\n";
         // mesh = loadMesh(_mesh = new Mesh<Simplex<Dim>>(wComm), _worldcomm=wComm );
         mesh = createGMSHMesh(_mesh = new Mesh<Simplex<Dim>>(wComm),
                               _worldcomm = wComm,
@@ -107,9 +108,9 @@ Partitioning<Dim>::run()
         auto Vh = Pch<2>( mesh );
 
         auto u = Vh->element("u");
-        auto f = expr( soption(_name="functions.f"), "f", wComm );
+        auto f = expr( soption(_name="functions.f"), "f", *wComm );
 
-        auto g = expr( soption(_name="functions.g"), "g", wComm );
+        auto g = expr( soption(_name="functions.g"), "g", *wComm );
         auto v = Vh->element( g, "g" );
 
         auto l = form1( _test=Vh );
@@ -136,7 +137,7 @@ Partitioning<Dim>::run()
         std::cout << "proc " << Environment::rank() 
                   << " is excluded and does not load mesh";
         int np = 0;
-        mpi::all_reduce(wComm, 1, np, std::plus<int>());
+        mpi::all_reduce(*wComm, 1, np, std::plus<int>());
         std::cout << "proc " << Environment::rank() 
                   <<   " - nb proc = " << np << "\n";
     }

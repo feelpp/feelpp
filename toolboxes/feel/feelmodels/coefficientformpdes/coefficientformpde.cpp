@@ -101,14 +101,14 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 
     auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
     // functionspace
-    if ( mom->isDefinedOnWholeMesh( this->physic() ) )
+    if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         this->M_rangeMeshElements = elements(this->mesh());
         M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_extended_doftable=useExtendedDoftable );
     }
     else
     {
-        this->M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physic() ));
+        this->M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
         M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=this->M_rangeMeshElements,_extended_doftable=useExtendedDoftable );
     }
 
@@ -267,12 +267,8 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     this->initBasePostProcess();
 
-    // point measures
-    auto fieldNamesWithSpaceUnknown = std::make_pair( std::set<std::string>({this->unknownName()}), this->spaceUnknown() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceUnknown );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-        M_measurePointsEvaluation->init( evalPoints );
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
 
     double tElpased = this->timerTool("Constructor").stop("initPostProcess");
     this->log("CoefficientFormPDE","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );

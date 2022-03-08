@@ -1,7 +1,7 @@
 #ifndef FEELPP_COUPLEDMIXEDPOISSON_HPP
 #define FEELPP_COUPLEDMIXEDPOISSON_HPP
 
-#include <feel/feelfmi/fmu.hpp>
+#include <feel/feelfmi/fmi4cpp.hpp>
 #include <feel/feelmodels/hdg/mixedpoisson.hpp>
 
 namespace Feel
@@ -33,7 +33,7 @@ namespace FeelModels
 {
 
 /**
- * Toolbox CopledMixedPoisson
+ * Toolbox CoupledMixedPoisson
  * @ingroup Toolboxes
  */
 template<typename ConvexType, int Order>
@@ -59,7 +59,11 @@ public:
     using bdf_buffer_ptrtype = std::shared_ptr<bdf_buffer_type>;
     using bdfs_buffer_type = std::vector<bdf_buffer_ptrtype>;
 
+#if defined( FEELPP_HAS_FMILIB)
     using fmu_ptrtype = std::shared_ptr<FMU>;
+#elif defined( FEELPP_HAS_FMI4CPP)
+    using fmu_ptrtype = std::unique_ptr<fmi2::cs_slave>;
+#endif
     using fmus_type = std::vector<fmu_ptrtype>;
 
     CoupledMixedPoisson( std::string const& prefix = "hdg.poisson",
@@ -83,10 +87,18 @@ public:
             this->M_bcIntegralMarkerManagement.addMarkerIntegralBC(name, bc.markers() );
             this->M_coupledBC.push_back(ModelBoundaryConditionCoupling(bc));
 
+#if FEELPP_HAS_FMILIB
             auto thefmu = std::make_shared<FMU>();
             thefmu->load(Environment::expand(this->M_coupledBC.back().circuit()));
             thefmu->initialize( this->timeInitial(), this->timeFinal() );
             this->M_circuits.push_back(thefmu);
+#elif FEELPP_HAS_FMI4CPP
+            auto fmu = fmi2::fmu( Environment::expand( this->M_coupledBC.back().circuit() ) ).as_cs_fmu()->new_instance();
+            fmu->setup_experiment();
+            fmu->enter_initialization_mode();
+            fmu->exit_initialization_mode();
+            this->M_circuits.push_back( std::move(fmu) );
+#endif
         }
     }
 
@@ -227,9 +239,14 @@ public:
         {
             double meas = integrate( _range=markedfaces(support(this->M_Wh), bc.markers()),
                                      _expr=cst(1.)).evaluate()(0,0);
-            double Cbuffer = M_circuits[i]->template getValue<double>( bc.capacitor() );
-            double Rbuffer = M_circuits[i]->template getValue<double>( bc.resistor() );
+            auto md = M_circuits[i]->get_model_description();
 
+            std::vector<fmi2ValueReference> vr_buffer = { md->get_variable_by_name( bc.capacitor() ).value_reference,
+                                                          md->get_variable_by_name( bc.resistor() ).value_reference };
+            std::vector<double> buffer(2);
+            M_circuits[i]->read_real( vr_buffer, buffer );
+            double Cbuffer=buffer[0], Rbuffer=buffer[1];
+            
             // <lambda, v.n>_Gamma_I
             bbf( 0_c, 3_c, 0, nbIbc+2*i ) += integrate( _range=markedfaces(support(this->M_Wh), bc.markers()),
                                                         _expr= idt(l) * normal(u) );
@@ -297,10 +314,15 @@ public:
         int nbIbc = this->nbIbc();
         for( auto const& bc : M_coupledBC )
         {
-            M_circuits[i]->setValue( bc.buffer(), this->M_mup[nbIbc+2*i+1]->max() );
-            M_circuits[i]->doSteps(this->currentTime() );
-            double buffer = M_circuits[i]->template getValue<double>( bc.buffer() );
-            *this->M_mup[nbIbc+2*i+1] = project( _space=this->M_Ch, _expr=cst(buffer) );
+            auto md = M_circuits[i]->get_model_description();
+            fmi2ValueReference vr_buffer = md->get_variable_by_name( bc.buffer() ).value_reference;
+            fmi2Real v_buffer = this->M_mup[nbIbc+2*i+1]->max();
+            M_circuits[i]->write_real( vr_buffer, v_buffer );
+            LOG(INFO) << fmt::format("bc {} time pde system: {}, time ode system: {}, time step: {}", 
+                                     i, this->currentTime(), M_circuits[i]->get_simulation_time(), this->timeStepBase()->timeStep() );
+            M_circuits[i]->step( this->timeStepBase()->timeStep() );
+            M_circuits[i]->read_real( vr_buffer, v_buffer );
+            *this->M_mup[nbIbc+2*i+1] = project( _space=this->M_Ch, _expr=cst(v_buffer) );
             M_bdfsBuffer[i]->setUnknown( 0, *this->M_mup[nbIbc+2*i+1] );
             ++i;
         }

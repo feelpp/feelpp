@@ -29,6 +29,7 @@
 #if !defined(FEELPP_DETAIL_MESH_HPP)
 #define FEELPP_DETAIL_MESH_HPP 1
 
+#if 0
 namespace Feel {
 
 /// \cond DETAIL
@@ -51,5 +52,6 @@ typedef std::shared_ptr<type> ptrtype;
 };
 
 } }
+#endif
 
 #endif /* FEELPP_DETAIL_MESH_HPP */

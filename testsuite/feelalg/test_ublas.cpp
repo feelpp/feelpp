@@ -27,11 +27,9 @@
    \date 2005-06-24
  */
 #include <iostream>
-#include <boost/timer.hpp>
-
 #include <boost/numeric/ublas/operation.hpp>
-
 #include <feel/feelalg/glas.hpp>
+#include <feel/feeltiming/timer.hpp>
 //#include <boost/numeric/bindings/traits/traits.hpp>
 //#include <boost/numeric/bindings/traits/ublas_vector.hpp>
 //#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
@@ -78,7 +76,7 @@ int main( int argc, char** argv )
                 0.0, mc3 );
     LOG(INFO) << "mc3 = trans(mc1)*mc2 using gemm = " << mc3 << "\n";
 #endif
-    boost::timer timer;
+    Feel::Timer timer;
 
     for ( int i = 0; i < N; ++i )
     {
@@ -88,7 +86,7 @@ int main( int argc, char** argv )
 
     LOG(INFO) << "ublas::prod : " << timer.elapsed() << "\n";
 
-    timer.restart();
+    timer.start();
     dcm_t mc6( S, S );
 
     for ( int i = 0; i < N; ++i )
@@ -99,7 +97,7 @@ int main( int argc, char** argv )
 
     LOG(INFO) << "ublas::obp_prod : " << timer.elapsed() << "\n";
 
-    timer.restart();
+    timer.start();
     dcm_t mc4( S, S );
 #if 0
 
@@ -116,7 +114,7 @@ int main( int argc, char** argv )
     LOG(INFO) << "||mc3-mc4|| : " << ublas::norm_frobenius( mc3-mc4 ) << "\n";
     LOG(INFO) << "||mc3-mc6|| : " << ublas::norm_frobenius( mc3-mc6 ) << "\n";
 
-    timer.restart();
+    timer.start();
 
     dcm_t mc5( S, S );
 #if 0
@@ -132,7 +130,7 @@ int main( int argc, char** argv )
 #endif
     LOG(INFO) << "blas::gemm mc3*mc4 : " << timer.elapsed() << "\n";
 
-    timer.restart();
+    timer.start();
 
     for ( int i = 0; i < N; ++i )
     {
@@ -142,7 +140,7 @@ int main( int argc, char** argv )
 
     LOG(INFO) << "ublas::prod mc3*mc4 : " << timer.elapsed() << "\n";
 
-    timer.restart();
+    timer.start();
 
     for ( int i = 0; i < N; ++i )
     {

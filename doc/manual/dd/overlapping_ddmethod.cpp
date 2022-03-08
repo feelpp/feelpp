@@ -147,7 +147,7 @@ private:
     mesh_ptrtype mesh2;
     export_ptrtype M_firstExporter;
     export_ptrtype M_secondExporter;
-    std::map<std::string, std::pair<boost::timer, double> > timers;
+    std::map<std::string, std::pair<Feel::Timer, double> > timers;
     std::map<std::string,double> stats;
     std::vector<int> dirichletFlags1;
     std::vector<int> dirichletFlags2;
@@ -172,35 +172,35 @@ ddmethod<Dim>::localProblem( element_type& u,
     auto mesh=Xh->mesh();
     auto v=Xh->element();
     auto B = M_backend->newVector( Xh );
-    timers["assembly"].first.restart();
-    form1( _test=Xh,_vector=B, _init=true ) =
-        integrate( elements( mesh ), f*id( v ) );
+    timers["assembly"].first.start();
+    form1( _test=Xh,_vector=B ) =
+        integrate( _range=elements( mesh ), _expr=f*id( v ) );
     B->close();
 
     timers["assembly"].second = timers["assembly"].first.elapsed();
     timers["assembly_B"].second = timers["assembly"].first.elapsed();
 
-    auto A = M_backend->newMatrix( Xh, Xh );
-    timers["assembly"].first.restart();
-    form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =
-        integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
+    auto A = M_backend->newMatrix( _test=Xh, _trial=Xh );
+    timers["assembly"].first.start();
+    form2( _test=Xh, _trial=Xh, _matrix=A ) =
+        integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) );
     A->close();
     BOOST_FOREACH( int marker, dirichletFlags )
     {
         // std::cout << "apply strong dirichlet on   " << marker << std::endl;
-        form2( Xh, Xh, _matrix=A ) +=
-            on( markedfaces( mesh, marker ) ,	u, B, gD );
+        form2( _test=Xh, _trial=Xh, _matrix=A ) +=
+            on( _range=markedfaces( mesh, marker ), _element=u, _rhs=B, _expr=gD );
     }
     BOOST_FOREACH( int marker, interfaceFlags )
     {
         // std::cout << "apply interface condition on   " << marker << std::endl;
-        form2( Xh, Xh, _matrix=A ) +=
-            on( markedfaces( mesh, marker ) ,	u, B, w );
+        form2( _test=Xh, _trial=Xh, _matrix=A ) +=
+            on( _range=markedfaces( mesh, marker ), _element=u, _rhs=B, _expr=w );
     }
     timers["assembly"].second += timers["assembly"].first.elapsed();
     timers["assembly_A"].second = timers["assembly"].first.elapsed();
 
-    timers["solver"].first.restart();
+    timers["solver"].first.start();
     backend_type::build(soption("backend"))->solve( _matrix=A, _solution=u, _rhs=B );//, _reuse_prec=true );
     timers["solver"].second = timers["solver"].first.elapsed();
 
@@ -218,7 +218,7 @@ ddmethod<Dim>::l2Error( element_type& u )
     auto mesh=Xh->mesh();
     value_type pi = M_PI;
     auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
-    double L2error2 =integrate( elements( mesh ), ( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0,0 );
+    double L2error2 =integrate( _range=elements( mesh ), _expr=( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0,0 );
     double error = math::sqrt( L2error2 );
     return error;
 }
@@ -234,8 +234,8 @@ ddmethod<Dim>::h1Error( element_type& u )
                         -pi*sin( pi*Px() )*sin( pi*Py() )*cos( pi*Pz() )*unitY()
                         -pi*sin( pi*Px() )*cos( pi*Py() )*sin( pi*Pz() )*unitZ() );
 
-    double semi_H1error =integrate( elements( mesh ),
-                                    ( gradv( u )-gradg )*trans( ( gradv( u )-gradg ) ) ).evaluate()( 0,0 );
+    double semi_H1error =integrate( _range=elements( mesh ),
+                                    _expr=( gradv( u )-gradg )*trans( ( gradv( u )-gradg ) ) ).evaluate()( 0,0 );
     double L2error2 = std::pow( l2Error( u ) , 2 );
     double error = math::sqrt( L2error2 + semi_H1error );
     return error;
@@ -245,7 +245,7 @@ template<int Dim>
 void
 ddmethod<Dim>::exportResults( element_type& u, element_type& v, double time )
 {
-    timers["export"].first.restart();
+    timers["export"].first.start();
 
     M_firstExporter->step( time )->setMesh( u.functionSpace()->mesh() );
     M_firstExporter->step( time )->add( "solution", ( boost::format( "solution-%1%" ) % int( 1 ) ).str(), u );
@@ -308,7 +308,7 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     value_type tolerance = doption("tolerance");
     value_type maxIterations = doption("maxIterations");
 
-    Environment::changeRepository( boost::format( "doc/manual/dd/%1%/%2%-%3%/P%4%/h_%5%/" )
+    Environment::changeRepository( _directory=boost::format( "doc/manual/dd/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()
                                    %this->shape
                                    % Dim

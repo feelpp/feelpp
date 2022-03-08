@@ -149,10 +149,6 @@ public:
     typedef Exporter<mesh_type,nOrderGeo> export_type;
     typedef std::shared_ptr<export_type> export_ptrtype;
 
-    // measure tools for points evaluation
-    typedef MeasurePointsEvaluation<space_potential_type, space_postpotential_type, space_flux_type> measure_points_evaluation_type;
-    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
-
     // time scheme
     using newmark_potential_type = Newmark<space_potential_type>;
     using newmark_potential_ptrtype = std::shared_ptr<newmark_potential_type>;
@@ -218,22 +214,19 @@ protected:
     // bool M_isPicard;
 
     export_ptrtype M_exporter;
-    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 
     mutable bool M_postMatrixInit;
 public:
 
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( self_ptrtype ), static New, tag,
-        ( required
-          ( prefix,*( boost::is_convertible<mpl::_,std::string> ) )
-          )
-        ( optional
-          ( physic, *, MixedPoissonPhysics::None )
-          ( worldcomm, *, Environment::worldCommPtr() )
-          ( repository, *, ModelBaseRepository() )
-          ) )
+    template <typename ... Ts>
+    static self_ptrtype New( Ts && ... v )
         {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            std::string const& prefix = args.get(_prefix);
+            //std::string const& keyword = args.get_else(_keyword,"hdg");
+            MixedPoissonPhysics physic =  args.get_else(_physic, MixedPoissonPhysics::None );
+            worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
+            auto && repository = args.get_else_invocable(_repository,[](){ return ModelBaseRepository{}; } );
             return std::make_shared<self_type>( prefix, physic, worldcomm, "", repository );
         }
 
@@ -465,20 +458,10 @@ template <typename ModelFieldsType, typename SymbolsExpr>
 void
 MixedPoisson<ConvexType, Order, PolySetType, E_Order>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
 {
-    bool hasMeasure = false;
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
-    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
-        hasMeasure = true;
+    model_measures_quantities_empty_t mquantities;
 
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
+    // execute common post process and save measures
+    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, symbolsExpr, mfields, mquantities );
 }
 
 template<typename ConvexType, int Order, template<uint16_type> class PolySetType, int E_Order>

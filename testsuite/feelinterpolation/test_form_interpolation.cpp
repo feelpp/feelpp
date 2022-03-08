@@ -92,7 +92,7 @@ template <uint16_type OrderPoly>
 void run()
 {
 
-    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/P%2%/" )
+    Environment::changeRepository( _directory=boost::format( "testsuite/feeldiscr/%1%/P%2%/" )
                                    % Environment::about().appName()
                                    % OrderPoly );
 
@@ -107,8 +107,8 @@ void run()
     typedef Mesh< Simplex<nDim, 1,nDim> > mesh_type;
     typedef Mesh< Simplex<nDim, 1,nDim> > mesh_bis_type;
 
-    double meshSize = option("hsize").as<double>();
-    double meshSizeBis = option("hsize-bis").as<double>();
+    double meshSize = doption(_name="hsize");
+    double meshSizeBis = doption(_name="hsize-bis");
 
     // mesh
     GeoTool::Node x1( 0,0 );
@@ -144,7 +144,7 @@ void run()
 
     //--------------------------------------------------------------//
 
-    auto A = mybackend->newMatrix( Xh, Xh );
+    auto A = mybackend->newMatrix( _test=Xh, _trial=Xh );
     auto F = mybackend->newVector( Xh );
     auto pi = cst( M_PI );
     auto u_exact = cos( pi*Px() )*sin( pi*Py() );
@@ -161,21 +161,21 @@ void run()
 
     // assemblage
     form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =
-        integrate( elements( mesh ), //_Q<15>(),
-                   + gradt( u )*trans( grad( v ) ) );
+        integrate( _range=elements( mesh ), //_Q<15>(),
+                   _expr=+ gradt( u )*trans( grad( v ) ) );
 
     form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-        integrate( boundaryfaces( mesh ),
-                   - gradt( u )*N()*id( v )
+        integrate( _range=boundaryfaces( mesh ),
+                   _expr=- gradt( u )*N()*id( v )
                    + gammabc*idt( u )*id( v )/hFace() );
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements( mesh ), // _Q<10>(),
-                   trans( f )*id( v ) );
+        integrate( _range=elements( mesh ), // _Q<10>(),
+                   _expr=trans( f )*id( v ) );
 
     form1( _test=Xh, _vector=F ) +=
-        integrate( boundaryfaces( mesh ),
-                   + gammabc*u_exact*id( v )/hFace() );
+        integrate( _range=boundaryfaces( mesh ),
+                   _expr=+ gammabc*u_exact*id( v )/hFace() );
 
     LOG(INFO) << "A,F assembled\n";
 
@@ -183,7 +183,7 @@ void run()
     //    on( boundaryfaces(mesh) , u, F, u_exact );
 
     // solve system
-    mybackend->solve( A,u,F );
+    mybackend->solve( _matrix=A,_solution=u,_rhs=F );
     LOG(INFO) << "A u = F solved\n";
     //--------------------------------------------------------------//
 
@@ -193,23 +193,23 @@ void run()
 
     // assemblage
 
-    a2 = integrate( elements( meshBis ),
-                    + gradt( u2 )*trans( grad( v ) ),
-                    _Q<10>() );
+    a2 = integrate( _range=elements( meshBis ),
+                    _expr=+ gradt( u2 )*trans( grad( v ) ),
+                    _quad=_Q<10>() );
     LOG(INFO) << "a2 grad.grad term\n";
-    a2 += integrate( boundaryfaces( meshBis ),
-                     - gradt( u2 )*N()*id( v )
+    a2 += integrate( _range=boundaryfaces( meshBis ),
+                     _expr=- gradt( u2 )*N()*id( v )
                      + gammabc*idt( u2 )*id( v )/hFace(),
-                     _Q<10>() );
+                     _quad=_Q<10>() );
     LOG(INFO) << "a2 weak dirichlet terms\n";
 
-    f2 = integrate( elements( meshBis ),
-                    trans( f )*id( v ),
-                    _Q<10>() );
+    f2 = integrate( _range=elements( meshBis ),
+                    _expr=trans( f )*id( v ),
+                    _quad=_Q<10>() );
     LOG(INFO) << "f2 source term\n";
-    f2 += integrate( boundaryfaces( meshBis ),
-                     + gammabc*u_exact*id( v )/hFace(),
-                     _Q<10>() );
+    f2 += integrate( _range=boundaryfaces( meshBis ),
+                     _expr=+ gammabc*u_exact*id( v )/hFace(),
+                     _quad=_Q<10>() );
     LOG(INFO) << "f2 dirichlet terms\n";
 
     LOG(INFO) << "a2,f2 assembled\n";
@@ -236,10 +236,10 @@ void run()
     a2.solve( _rhs=f2, _solution=u2 );
 
 
-    auto diff = std::sqrt( integrate( elements( mesh ), ( idv( u )-idv( u2 ) )*( idv( u )-idv( u2 ) ) ).evaluate()( 0,0 ) );
+    auto diff = std::sqrt( integrate( _range=elements( mesh ), _expr=( idv( u )-idv( u2 ) )*( idv( u )-idv( u2 ) ) ).evaluate()( 0,0 ) );
 #if 0
-    auto int1 = integrate( elements( mesh ), abs( idv( u ) ) ).evaluate()( 0,0 );
-    auto int2 = integrate( elements( mesh ), abs( idv( u2 ) ) ).evaluate()( 0,0 );
+    auto int1 = integrate( _range=elements( mesh ), _expr=abs( idv( u ) ) ).evaluate()( 0,0 );
+    auto int2 = integrate( _range=elements( mesh ), _expr=abs( idv( u2 ) ) ).evaluate()( 0,0 );
 
     std::cout << "\nThe diff : " << diff
               << " int1 :" << int1
@@ -253,7 +253,7 @@ void run()
 
     //--------------------------------------------------------------//
 
-    if ( option("exporter.export").as<bool>() )
+    if ( boption(_name="exporter.export") )
     {
         // export
         auto ex = exporter( _mesh=mesh );

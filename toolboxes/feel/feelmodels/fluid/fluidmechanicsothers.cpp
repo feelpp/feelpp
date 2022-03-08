@@ -245,9 +245,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
 
     super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
+    super_physics_type::updateInformationObjectFromCurrentType( p["Physics"] );
+
     nl::json subPt;
     subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
-    p["Physics"] = subPt;
+    p["Physics2"] = subPt;
 
     // Materials properties
     if ( this->materialsProperties() )
@@ -278,12 +280,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
     if ( jsonInfo.contains("Environment") )
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
-    // Physics
     if ( jsonInfo.contains("Physics") )
+        tabInfo->add( "Physics", super_physics_type::tabulateInformations( jsonInfo.at("Physics"), tabInfoProp ) );
+
+    // Physics
+    if ( jsonInfo.contains("Physics2") )
     {
         Feel::Table tabInfoPhysics;
-        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
-        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics, tabInfoProp ) );
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics2"), tabInfoProp );
+        tabInfo->add( "Physics2", TabulateInformations::New( tabInfoPhysics, tabInfoProp ) );
     }
 
     // Materials Properties
@@ -605,29 +610,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
             hasFieldToExport = true;
         }
 #endif
-    }
-
-    for ( auto const& fieldUserScalar : this->fieldsUserScalar() )
-    {
-        std::string const& userFieldName = fieldUserScalar.first;
-        if ( fields.find( userFieldName ) != fields.end() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),userFieldName),
-                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),userFieldName)),
-                                         this->fieldUserScalar( userFieldName ) );
-            hasFieldToExport = true;
-        }
-    }
-    for ( auto const& fieldUserVectorial : this->fieldsUserVectorial() )
-    {
-        std::string const& userFieldName = fieldUserVectorial.first;
-        if ( fields.find( userFieldName ) != fields.end() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),userFieldName),
-                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),userFieldName)),
-                                         this->fieldUserVectorial( userFieldName ) );
-            hasFieldToExport = true;
-        }
     }
 
     //----------------------//
@@ -987,7 +969,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 #endif
 
     if ( this->hasTurbulenceModel() && M_useSemiImplicitTurbulenceCoupling )
-        M_turbulenceModelType->solve();
+    {
+        for (int k=0;k<ioption(_name="solver-inner-turbulence.nit");++k)
+            M_turbulenceModelType->solve();
+    }
 
     // if ( this->hasTurbulenceModel() )
     //     M_turbulenceModelType->solve();
@@ -1238,7 +1223,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep( bool applyPreProcess )
     // up current time
     this->updateTime( M_bdfVelocity->time() );
 
-    if ( true )//M_useVelocityExtrapolated )
+    if ( true )
     {
         *M_vectorPreviousVelocityExtrapolated = *M_vectorVelocityExtrapolated;
         this->updateVelocityExtrapolated();
@@ -1340,7 +1325,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     if ( rebuildCstAssembly )
         this->setNeedToRebuildCstPart(true);
 
-    if ( true )//M_useVelocityExtrapolated )
+    if ( true )
     {
         *M_vectorPreviousVelocityExtrapolated = *M_vectorVelocityExtrapolated;
         this->updateVelocityExtrapolated();
@@ -1349,8 +1334,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     if ( M_usePreviousSolution )
         *M_vectorPreviousSolution = *this->algebraicBlockVectorSolution()->vectorMonolithic();
 
-    // update user functions which depend of time only
-    this->updateUserFunctions(true);
     // update all expressions in bc or in house prec
     this->updateParameterValues();
 
@@ -1595,12 +1578,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate( std::string const& marker, bool useExteriorNormal ) const
 {
-    return this->computeFlowRate( std::list<std::string>( { marker } ),useExteriorNormal );
+    return this->computeFlowRate( std::set<std::string>( { marker } ),useExteriorNormal );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate( std::set<std::string> const& markers, bool useExteriorNormal ) const
 {
     using namespace Feel::vf;
 

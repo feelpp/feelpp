@@ -1,0 +1,85 @@
+{
+"Name": "FallingSphere",
+"ShortName":"FallingSphere",
+"Models":
+    {
+        "fluid":
+        {
+            "materials":"Fluid",
+            "setup":{
+                "equations":"Navier-Stokes"
+            }
+        },
+        "body":{
+            "materials":["SphereVol"]
+        }
+    }
+},
+"Parameters":
+{
+},
+"Materials":
+{
+    "Fluid":{
+        "markers":["Fluid"],
+        "rho":"1e-6", //Reynolds number  All the mesh units are in micrometers; as a result I put these constants in micrometers too
+        "mu":"1"     // I use also micrograms -> density [micrograms/(micrometer)^3; mu [micrograms/(micrometers*second)]
+    },
+    "Solid":{
+        "markers":"SphereVol",
+        "rho":"1e-3"
+    }
+},
+"BoundaryConditions":
+{
+    "velocity":
+    {
+        "Dirichlet":
+        {
+            "Walls":
+            {
+                "expr":"{0,0,0}"
+                //"alemesh_bc":"fixed"
+            },
+            "Outlet":
+            {
+                "expr":"{0,0,0}"
+                //"alemesh_bc":"moving"
+            }
+
+        }
+    },
+    "fluid":
+    {
+        "body":
+        {
+            "p1_mark":
+            {
+                "markers":["Sphere"],
+                
+                "materials":
+                {
+                    "names":["Solid"]
+                }
+                
+            }
+        }
+    }
+},
+"PostProcess":
+{
+    "fluid":
+    {
+        "Exports":
+        {
+            "fields":["velocity","pressure","pid","displacement"] // the parameter bdrydisp is a customfield to be imposed on
+            // the boundary of the swimmer to project the displacement from ODE
+        },
+        "Measures":
+        {
+            "Forces":"Sphere"
+        }
+    }
+}
+
+}

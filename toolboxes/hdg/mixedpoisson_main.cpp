@@ -43,7 +43,7 @@ int
 runMixedPoissonSimulation()
 {
     using namespace Feel;
-    auto MP = ToolboxType::New("hdg.poisson");
+    auto MP = ToolboxType::New(_prefix="hdg.poisson");
     return runToolboxSimulation( MP );
 }
 

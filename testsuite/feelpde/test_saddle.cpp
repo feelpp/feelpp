@@ -66,7 +66,7 @@ typedef typename comp_space_type::element_type comp_element_type;
   auto q = U.element<1>(); 
 
   auto a = form2(_test=Xh, _trial=Xh);
-  auto l = form1( Xh );
+  auto l = form1( _test=Xh );
     
   ModelProperties model;
 

@@ -4,8 +4,10 @@
     "ShortName":"beam2d",
     "Models":
     {
-        "equations":"Hyper-Elasticity"
-        //"equations":"Elasticity"
+        "solid":{
+            "equations":"Hyper-Elasticity"
+            //"equations":"Elasticity"
+        }
     },
     "Materials":
     {
@@ -37,9 +39,12 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "solid":
         {
-            "fields":["displacement","velocity","pid"]
+            "Exports":
+            {
+                "fields":["displacement","velocity","pid"]
+            }
         }
     }
 

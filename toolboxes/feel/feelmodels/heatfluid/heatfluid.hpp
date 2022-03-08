@@ -39,7 +39,7 @@ class HeatFluid : public ModelNumerical,
                   public ModelPhysics<HeatType::convex_type::nDim>,
                   public std::enable_shared_from_this< HeatFluid<HeatType,FluidType> >
 {
-
+    typedef ModelPhysics<HeatType::convex_type::nDim> super_physics_type;
 public:
     typedef ModelNumerical super_type;
     typedef HeatFluid<HeatType,FluidType> self_type;
@@ -69,7 +69,7 @@ public:
     //___________________________________________________________________________________//
     // constructor
     HeatFluid( std::string const& prefix,
-               std::string const& keyword = "heat-fluid",
+               std::string const& keyword = "heatfluid",
                worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                std::string const& subPrefix = "",
                ModelBaseRepository const& modelRep = ModelBaseRepository() );
@@ -257,6 +257,16 @@ public :
     void updateResidual( DataUpdateResidual & data ) const override;
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
+
+    bool checkResults() const override
+        {
+            // several calls (not do in on line) to be sure that all check have been run
+            bool checkHeatFluid = super_type::checkResults();
+            bool checkHeat = this->heatModel()->checkResults();
+            bool checkFluid = this->fluidModel()->checkResults();
+            return checkHeatFluid && checkHeat && checkFluid;
+        }
+
 private :
     void updateLinear_Heat( DataUpdateLinear & data ) const;
     void updateResidual_Heat( DataUpdateResidual & data ) const;
@@ -283,6 +293,7 @@ private :
     materialsproperties_ptrtype M_materialsProperties;
 
     // solver
+    std::string M_solverName;
     bool M_useSemiImplicitTimeScheme;
 
     vector_ptrtype M_timeStepThetaSchemePreviousContrib, M_timeStepThetaSchemePreviousSolution;

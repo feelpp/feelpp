@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.21)
 project(pyfeelpp-all)
 
 if ( (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR) OR (FEELPP_COMPONENT STREQUAL "pyfeelpp-all" ))
@@ -24,7 +24,6 @@ if ( (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR) OR (FEELPP_COMPONENT S
     # SKIP RPATH if we set CMAKE_INSTALL_PREFIX
     SET(CMAKE_SKIP_RPATH ON)
   endif()
-  
   message(STATUS "[install] ${CMAKE_INSTALL_PREFIX}")
 endif()
 
@@ -37,6 +36,7 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   include(pybind11Tools)
 endif()
 
+message(STATUS "[pyfeelpp-all] ${FEELPP_PYTHON_MODULE_PATH}")
 add_subdirectory(pyfeelpp)
 add_subdirectory(pyfeelpp-toolboxes)
 add_subdirectory(pyfeelpp-mor)

@@ -43,7 +43,7 @@ int main( int argc, char** argv )
     const int dim = 3;
     const int order = 1;
 
-    boost::timer chrono;
+    Feel::Timer chrono;
 
     Feel::Environment env( argc, argv );
 
@@ -59,34 +59,34 @@ int main( int argc, char** argv )
     auto Y0 = Py() - y0;
     auto Z0 = Pz() - z0;
 
-    auto initShape = vf::project(Xh, elements(mesh),
-                                 sqrt( X0*X0 + Y0*Y0 + Z0*Z0 ) - r0 );
+    auto initShape = vf::project(_space=Xh, _range=elements(mesh),
+                                 _expr=sqrt( X0*X0 + Y0*Y0 + Z0*Z0 ) - r0 );
 
-    chrono.restart();
+    chrono.start();
     auto fm = fms( Xh );
     const double timeInitFms = chrono.elapsed();
 
-    chrono.restart();
+    chrono.start();
     auto phi = fm->march( initShape );
     const double timeMarch = chrono.elapsed();
 
-    const double eL2 = std::sqrt( integrate(elements(mesh),
-                                            (idv( phi ) - idv(initShape)) * (idv( phi ) - idv(initShape)) ).evaluate()(0,0) );
+    const double eL2 = std::sqrt( integrate(_range=elements(mesh),
+                                            _expr=(idv( phi ) - idv(initShape)) * (idv( phi ) - idv(initShape)) ).evaluate()(0,0) );
 
-    const double eH1 = std::sqrt( integrate(elements(mesh),
-                                            (idv( phi ) - idv(initShape)) * (idv( phi ) - idv(initShape))
+    const double eH1 = std::sqrt( integrate(_range=elements(mesh),
+                                            _expr=(idv( phi ) - idv(initShape)) * (idv( phi ) - idv(initShape))
                                             + (gradv( phi ) - gradv( initShape )) * trans( gradv( phi ) - gradv( initShape ) ) ).evaluate()(0,0) );
 
-    const double eSH1 = std::sqrt( integrate(elements(mesh),
-                                             (gradv( phi ) - gradv( initShape )) * trans( gradv( phi ) - gradv( initShape ) ) ).evaluate()(0,0) );
+    const double eSH1 = std::sqrt( integrate(_range=elements(mesh),
+                                             _expr=(gradv( phi ) - gradv( initShape )) * trans( gradv( phi ) - gradv( initShape ) ) ).evaluate()(0,0) );
 
-    const double area = integrate(elements(mesh), idv(phi) < 0 ).evaluate()(0,0);
+    const double area = integrate(_range=elements(mesh), _expr=idv(phi) < 0 ).evaluate()(0,0);
 
 
     std::ostringstream resFileName;
     resFileName<< "res_order_" <<order
                << "_h_"
-               << option("gmsh.hsize").as<double>();
+               << doption(_name="gmsh.hsize");
 
     std::fstream resFile( resFileName.str(), std::fstream::out );
     resFile << std::left<<std::setw(15) << "#h"
@@ -100,7 +100,7 @@ int main( int argc, char** argv )
             << std::left<<std::setw(15) << "tmarch"
             << std::endl
 
-            << std::left<<std::setw(15) << option("gmsh.hsize").as<double>()
+            << std::left<<std::setw(15) << doption(_name="gmsh.hsize")
             << std::left<<std::setw(15) << Environment::worldComm().size()
             << std::left<<std::setw(15) << Xh->dof()->nDof()
             << std::left<<std::setw(15) << eL2
@@ -112,13 +112,13 @@ int main( int argc, char** argv )
             << std::endl;
 
 
-    if ( option("exporter.export").as<bool>() )
+    if ( boption(_name="exporter.export") )
       {
         auto Xhv = Pchv<order>(mesh);
-        auto gradphi = vf::project(Xhv, elements(mesh), trans(gradv(phi)) );
-        auto gradinitshape = vf::project(Xhv, elements(mesh), trans(gradv(initShape)) );
+        auto gradphi = vf::project(_space=Xhv, _range=elements(mesh), _expr=trans(gradv(phi)) );
+        auto gradinitshape = vf::project(_space=Xhv, _range=elements(mesh), _expr=trans(gradv(initShape)) );
 
-        auto diffphi2 = vf::project(Xh, elements(mesh), (idv( phi ) - idv(initShape)) * (idv( phi ) - idv(initShape)) );
+        auto diffphi2 = vf::project(_space=Xh, _range=elements(mesh), _expr=(idv( phi ) - idv(initShape)) * (idv( phi ) - idv(initShape)) );
 
         auto exp = exporter(_mesh=mesh, _name="dist2curveperf");
         exp->step(0)->add("initShape", initShape);

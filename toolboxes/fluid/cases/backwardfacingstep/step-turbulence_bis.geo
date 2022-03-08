@@ -1,12 +1,18 @@
 
 h=0.01;
 hFine=h/10;
+/*
 scale=0.0127;
 //L=2;
 L1=110*scale;
 L2=50*scale;
 InletHeight=8*scale;
 StepHeight=1*scale;
+*/
+L1=0.3048;
+L2=1.3335;
+StepHeight=0.0381;
+InletHeight=0.0762;
 
 OutletHeight=StepHeight+InletHeight;
 //Point(1) = {-1, -1, 0, h};
@@ -50,7 +56,8 @@ Line Loop(24) = {13, -4, -3, -2};
 Plane Surface(25) = {24};
 
 Physical Line("inlet") = {9,10};
-Physical Line("wall") = {1,2,3,7,8};
+Physical Line("wall_horizontal") = {1,3,7,8};
+Physical Line("wall_vertical") = {2};
 Physical Line("outlet") = {4,5,6};
 Physical Surface("fluid") = {17,23,19,21,25};
 

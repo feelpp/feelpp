@@ -39,7 +39,12 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // add equations from modelProperties
     if ( this->hasModelProperties() )
-        this->setupGenericPDEs( this->modelProperties().models().model( this->keyword() ).ptree() );
+    {
+        auto const& models = this->modelProperties().models();
+        if ( models.hasType( this->keyword() ) )
+            for ( auto const& [_name,_model] : models.models( this->keyword() ) ) // only one!
+                this->setupGenericPDEs( _model.setup() );
+    }
     CHECK( !this->pdes().empty() ) << "no equation";
 
     for ( auto & eq : this->pdes() )
@@ -61,7 +66,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         std::get<1>( eq ) = newCoefficientFormPDE;
         M_coefficientFormPDEs.push_back( newCoefficientFormPDE );
     }
-    this->updateForUseGenericPDEs();
+    this->updateForUseGenericPDEs( this->keyword() );
 
     this->initMaterialProperties();
 
@@ -85,7 +90,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                                 cfpde->setManageParameterValuesOfModelProperties( false );
                             }
                             cfpde->setMaterialsProperties( M_materialsProperties );
-                            cfpde->setMesh( this->mesh() );
+                            cfpde->setModelMeshAsShared( this->modelMesh() );
 
                             // TODO check if the same space has already built
                             cfpde->init( false );
@@ -121,7 +126,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     int indexBlock = 0, startBlockSpace = 0;
     for ( auto const& cfpdeBase : M_coefficientFormPDEs )
     {
-        this->setStartSubBlockSpaceIndex( cfpdeBase->physicDefault(), startBlockSpace );
+        this->setStartSubBlockSpaceIndex( cfpdeBase->equationName(), startBlockSpace );
         auto const& blockVectorSolutionPDE = *(cfpdeBase->algebraicBlockVectorSolution());
         int nBlockPDE = blockVectorSolutionPDE.size();
         for ( int k=0;k<nBlockPDE ;++k )
@@ -221,6 +226,16 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
+
+    // start or restart the export of measures
+    if ( !this->isStationary() )
+    {
+        if ( this->doRestart() )
+            this->postProcessMeasures().restart( this->timeInitial() );
+    }
+
     double tElpased = this->timerTool("Constructor").stop("createExporters");
     this->log("CoefficientFormPDEs","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
 }
@@ -285,7 +300,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                             auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
                             if ( !cfpde ) CHECK( false ) << "failure in dynamic_pointer_cast";
 
-                            int rowId = this->startSubBlockSpaceIndex( cfpde->physicDefault() );
+                            int rowId = this->startSubBlockSpaceIndex( cfpde->equationName() );
 #if 0
                             myblockGraph(rowId,rowId) = stencil(_test=cfpde->spaceUnknown(),
                                                                 _trial=cfpde->spaceUnknown() )->graph();
@@ -316,7 +331,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
                                                     if ( cfpde->hasSymbolDependencyInCoefficients( trialSymbolNames, se ) )
                                                     {
-                                                        int colId = this->startSubBlockSpaceIndex( cfpde2->physicDefault() );
+                                                        int colId = this->startSubBlockSpaceIndex( cfpde2->equationName() );
                                                         myblockGraph(rowId,colId) = stencil(_test=cfpde->spaceUnknown(),
                                                                                      _trial=cfpde2->spaceUnknown() )->graph();
                                                     }
@@ -611,7 +626,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::solve()
     this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
 
     for (auto & cfpdeBase : M_coefficientFormPDEs )
-        cfpdeBase->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex( cfpdeBase->physicDefault() ) );
+        cfpdeBase->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex( cfpdeBase->equationName() ) );
 
     this->algebraicFactory()->solve( M_solverName, this->algebraicBlockVectorSolution()->vectorMonolithic() );
 

@@ -31,15 +31,6 @@
 #ifndef FEELPP_VF_HPP
 #define FEELPP_VF_HPP 1
 
-//#include <boost/numeric/bindings/traits/traits.hpp>
-//#include <boost/numeric/bindings/traits/ublas_vector.hpp>
-//#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
-//#include <boost/numeric/bindings/blas/blas.hpp>
-
-
-#include <boost/fusion/sequence.hpp>
-#include <boost/fusion/algorithm.hpp>
-
 /**
  * \brief allow automatic type naming of complex expression
  */
@@ -47,7 +38,7 @@
 
 #include <feel/feelcore/feel.hpp>
 
-#include <feel/feelvf/detail/gmc.hpp>
+//#include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/cast.hpp>
 #include <feel/feelvf/cst.hpp>

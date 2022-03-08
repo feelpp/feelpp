@@ -26,8 +26,8 @@
    \author Abdoulaye Samake <abdoulaye.samake@e.ujf-grenoble.fr>
    \date 2011-08-18
  */
-#ifndef _OPERATORTRACE_HPP_
-#define _OPERATORTRACE_HPP_
+#ifndef FEELPP_DISCR_OPERATORTRACE_H
+#define FEELPP_DISCR_OPERATORTRACE_H
 
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feelvf/vf.hpp>
@@ -77,29 +77,18 @@ public :
     /** @name  Methods
      */
     //@{
+    template <typename ... Ts>
+    trace_element_type trace( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && expr = args.get(_expr);
+            auto && range = args.get_else_invocable(_range, [this](){ return boundaryfaces( M_domainSpace->mesh() ); } );
 
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( trace_element_type ),
-                                     trace,
-                                     tag,
-                                     ( required
-                                       ( expr,   * )
-                                     )
-                                     ( optional
-                                       ( range,  *, boundaryfaces( M_domainSpace->mesh() ) )
-                                     ) )
-
-    {
-        using namespace vf;
-
-
-        auto Th = M_domainSpace->trace( range ) ;
-
-        trace_element_type te = Th->element();
-
-        te = vf::project( _space=Th, _range=elements( Th->mesh() ), _expr=expr );
-
-        return te;
-    }
+            auto Th = M_domainSpace->trace( range ) ;
+            //trace_element_type te = Th->element();
+            trace_element_type te = vf::project( _space=Th, _range=elements( Th->mesh() ), _expr=expr );
+            return te;
+        }
 
     //@}
 

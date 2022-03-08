@@ -45,7 +45,7 @@ EigenProblem<Dim, Order>::run()
         std::cout << "Execute EigenProblem<" << Dim << ">\n";
     }
 
-    Environment::changeRepository( boost::format( "eigen/%1%/%2%D-P%3%/h_%4%/" )
+    Environment::changeRepository( _directory=boost::format( "eigen/%1%/%2%D-P%3%/h_%4%/" )
                                    % this->about().appName()
                                    % Dim
                                    % Order
@@ -62,11 +62,11 @@ EigenProblem<Dim, Order>::run()
     a = integrate( _range=elements( mesh ), _expr=trace(trans(gradt(u))*grad(v)));
 
     auto gamma = doption(_name="parameters.gamma");
-    a += integrate( boundaryfaces(mesh), gamma*(trans(idt(u))*N())*(trans(id(u))*N())/hFace() );
+    a += integrate( _range=boundaryfaces(mesh), _expr=gamma*(trans(idt(u))*N())*(trans(id(u))*N())/hFace() );
     //a += on( _range=boundaryfaces(mesh), _element=u, _rhs=
 
     auto b = form2( _test=Xh, _trial=Xh);
-    b = integrate( elements(mesh), trans(idt( u ))*id( v ) );
+    b = integrate( _range=elements(mesh), _expr=trans(idt( u ))*id( v ) );
 
 
     if ( Environment::worldComm().isMasterRank() )

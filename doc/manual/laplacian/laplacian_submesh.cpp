@@ -18,7 +18,7 @@ int main(int argc, char**argv )
 
     //# marker2 #
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
-    auto submesh = createSubmesh( mesh, elements(mesh) );
+    auto submesh = createSubmesh( _mesh=mesh, _range=elements(mesh) );
     auto Vh = Pch<2>( mesh );
     auto Wh = Pch<2>( submesh );
     auto u = Vh->element();

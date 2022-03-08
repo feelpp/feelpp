@@ -47,11 +47,11 @@ void run()
     auto thefms = fms( Xh );
 
     auto phio = Xh->element();
-    phio = vf::project(Xh, elements(mesh), h() );
+    phio.on(_range=elements(mesh), _expr=h() );
     if ( !soption("marker").empty() )
-        phio +=vf::project(Xh, markedfaces(mesh,soption("marker")), -idv(phio) - h()/100. );
+        phio +=vf::project(_space=Xh, _range=markedfaces(mesh,soption("marker")), _expr=-idv(phio) - h()/100. );
     else
-        phio +=vf::project(Xh, boundaryfaces(mesh), -idv(phio) - h()/100. );
+        phio +=vf::project(_space=Xh, _range=boundaryfaces(mesh), _expr=-idv(phio) - h()/100. );
     auto phi = thefms->march(phio);
 
     auto exp = exporter(_mesh=mesh, _name="disttowalls");

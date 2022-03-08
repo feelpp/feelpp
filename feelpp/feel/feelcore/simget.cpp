@@ -42,7 +42,7 @@ Simget::Simget()
 Simget&
 Simget::changeRepository( boost::format fmt )
 {
-    Environment::changeRepository( fmt );
+    Environment::changeRepository( _directory=fmt );
     return  *this;
 }
 

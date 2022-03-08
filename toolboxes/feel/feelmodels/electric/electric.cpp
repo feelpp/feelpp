@@ -118,8 +118,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("Electric","init", "start" );
     this->timerTool("Constructor").start();
 
-    if ( this->physics().empty() )
-        this->initPhysics( this->keyword(), this->modelProperties().models() );
+    // physics
+    this->initPhysics( this->keyword(), this->modelProperties().models() );
 
     // physical properties
     if ( !M_materialsProperties )
@@ -269,22 +269,13 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
-    // point measures
-    auto fieldNamesWithSpaceElectricPotential = std::make_pair( std::set<std::string>({"electric-potential"}), this->spaceElectricPotential() );
-    //auto fieldNamesWithSpaceElectricField = std::make_pair( std::set<std::string>({"electric-field"}), this->spaceElectricField() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceElectricPotential/*, fieldNamesWithSpaceElectricField*/ );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-    {
-       M_measurePointsEvaluation->init( evalPoints );
-    }
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
 
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
-            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-        else
-            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
+            this->postProcessMeasures().restart( this->timeInitial() );
     }
 
     double tElpased = this->timerTool("Constructor").stop("createExporters");
@@ -312,11 +303,12 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 
     super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
+    super_physics_type::updateInformationObjectFromCurrentType( p["Physics"] );
 
     // Physics
     nl::json subPt;
     subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
-    p["Physics"] = subPt;
+    p["Physics2"] = subPt;
 
     // Boundary Conditions
 #if 0
@@ -362,10 +354,13 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Ta
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
     if ( jsonInfo.contains("Physics") )
+        tabInfo->add( "Physics", super_physics_type::tabulateInformations( jsonInfo.at("Physics"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Physics2") )
     {
         Feel::Table tabInfoPhysics;
-        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
-        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics, tabInfoProp ) );
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics2"), tabInfoProp );
+        tabInfo->add( "Physics2", TabulateInformations::New( tabInfoPhysics, tabInfoProp ) );
     }
 
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )

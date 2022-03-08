@@ -117,7 +117,7 @@ testMatrixDestructor()
     std::string str = ( boost::format("pslog-%1%D-P%2%") %Dim %Order ).str();
     PsLogger ps (str);
     ps.log(myformat("before matrix creation", Dim, Order) );
-    auto matrix = backend()->newMatrix( Xh , Xh);
+    auto matrix = backend()->newMatrix( _test=Xh , _trial=Xh);
     ps.log(myformat("matrix created",Dim,Order));
 
     //call destructor

@@ -27,9 +27,8 @@
    \author Vincent Chabannes <vincent.chabannes@feelpp.org>
    \date 2010-08-07
  */
-#include <cmath>
+//#include <cmath>
 
-#include <boost/timer.hpp>
 #define BOOST_TEST_MODULE vector testsuite
 #include <feel/feelcore/testsuite.hpp>
 

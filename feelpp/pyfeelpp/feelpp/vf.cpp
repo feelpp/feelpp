@@ -48,6 +48,12 @@ PYBIND11_MODULE(_vf, m )
     std::string pyclass_name = "ExprGinacEx2";
     py::class_<Expr<GinacEx<2>> >(m,pyclass_name.c_str())
         .def(py::init<>());
+    pyclass_name = "ExprGinacMatrix212";
+    py::class_<Expr<GinacMatrix<2,1,2>>>( m, pyclass_name.c_str() )
+        .def( py::init<>() );
+    pyclass_name = "ExprGinacMatrix312";
+    py::class_<Expr<GinacMatrix<3,1,2>>>( m, pyclass_name.c_str() )
+        .def( py::init<>() );
 
     m.def( "expr_", static_cast<Expr<GinacEx<2>> (*)( std::string const&, std::string const&, WorldComm const&, std::string const&)>(&expr),
            py::arg("expr"),
@@ -55,5 +61,16 @@ PYBIND11_MODULE(_vf, m )
            py::arg("worldComm"),
            py::arg("dir")="",
            "create an expression out of a string" );
-                                                      
+    m.def( "exprv2_", static_cast<Expr<GinacMatrix<2,1,2>> ( * )( std::string const&, std::string , WorldComm const&, std::string const& )>( &expr<2,1,2> ),
+           py::arg( "expr" ),
+           py::arg( "filename" ) = "",
+           py::arg( "worldComm" ),
+           py::arg( "dir" ) = "",
+           "create an 2D vectorial expression out of a string" );
+    m.def( "exprv3_", static_cast<Expr<GinacMatrix<3, 1, 2>> ( * )( std::string const&, std::string , WorldComm const&, std::string const& )>( &expr<3,1,2> ),
+           py::arg( "expr" ),
+           py::arg( "filename" ) = "",
+           py::arg( "worldComm" ),
+           py::arg( "dir" ) = "",
+           "create an 3D vectorial expression out of a string" );
 }

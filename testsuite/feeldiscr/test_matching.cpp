@@ -25,7 +25,7 @@ using namespace Feel::vf;
 void
 run()
 {
-    Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/h_%2%/" )
+    Environment::changeRepository( _directory=boost::format( "testsuite/feeldiscr/%1%/h_%2%/" )
                                    % Environment::about().appName()
                                    % option(_name="gmsh.hsize2").as<double>() );
 

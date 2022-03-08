@@ -53,7 +53,7 @@ class Electric : public ModelNumerical,
                  public ModelPhysics<ConvexType::nDim>,
                  public std::enable_shared_from_this< Electric<ConvexType,BasisPotentialType> >
 {
-
+    typedef ModelPhysics<ConvexType::nDim> super_physics_type;
 public:
     typedef ModelNumerical super_type;
     typedef Electric<ConvexType,BasisPotentialType> self_type;
@@ -84,10 +84,6 @@ public:
     // exporter
     typedef Exporter<mesh_type,nOrderGeo> export_type;
     typedef std::shared_ptr<export_type> export_ptrtype;
-
-    // measure tools for points evaluation
-    typedef MeasurePointsEvaluation<space_electricpotential_type> measure_points_evaluation_type;
-    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     struct FieldTag
     {
@@ -372,7 +368,6 @@ private :
 
     // post-process
     export_ptrtype M_exporter;
-    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 };
 
 
@@ -405,20 +400,10 @@ template <typename ModelFieldsType,typename SymbolsExpr>
 void
 Electric<ConvexType,BasisPotentialType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
 {
-    bool hasMeasure = false;
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
-    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
-        hasMeasure = true;
+    model_measures_quantities_empty_t mquantities;
 
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
+    // execute common post process and save measures
+    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, symbolsExpr, mfields, mquantities );
 }
 
 } // namespace FeelModels

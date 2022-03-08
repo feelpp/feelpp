@@ -19,7 +19,8 @@
                     "type": "BOOL",
                     "value": "ON"
                 },
-                "FEELPP_ENABLE_MOR": "ON"
+                "FEELPP_ENABLE_MOR": "ON",
+                "FEELPP_ENABLE_FMILIB": "OFF"
             },
             "environment": {
                 "MY_ENVIRONMENT_VARIABLE": "Test"
@@ -64,7 +65,9 @@
             "cacheVariables": {
                 "FEELPP_COMPONENT": "feelpp",
                 "FEELPP_ENABLE_MOR": "OFF",
-                "FEELPP_ENABLE_TOOLBOXES": "OFF"
+                "FEELPP_ENABLE_TOOLBOXES": "OFF",
+                "FEELPP_ENABLE_TESTS": "OFF",
+                "FEELPP_ENABLE_FMILIB": "OFF"
             }
         },
         {
@@ -84,7 +87,19 @@
             "description": "Build only the Feel++ MOR Component",
             "binaryDir": "${sourceDir}/build/mor",
             "cacheVariables": {
-                "FEELPP_COMPONENT": "mor"
+                "FEELPP_COMPONENT": "mor",
+                "FEELPP_ENABLE_RESEARCH": "OFF"
+            }
+        },
+        {
+            "name": "research-mor",
+            "inherits": "default",
+            "displayName": "resarch-mor",
+            "description": "Build only the Feel++ MOR and Research Components",
+            "binaryDir": "${sourceDir}/build/research-mor",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "mor",
+                "FEELPP_ENABLE_RESEARCH": "ON"
             }
         },
         {
@@ -124,6 +139,18 @@
             "description": "Build only the Feel++ pyfeelpp-all Component",
             "binaryDir": "${sourceDir}/build/pyfeelpp-all",
             "cacheVariables": {
+                "FEELPP_COMPONENT": "pyfeelpp-all",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/pyfeelpp-all/install/"
+            }
+        },
+        {
+            "name": "pyfeelpp-all-dbg",
+            "inherits": "default",
+            "displayName": "pyfeelpp-all-dbg",
+            "description": "Build only the Feel++ pyfeelpp-all Component in Debug mode",
+            "binaryDir": "${sourceDir}/build/pyfeelpp-all-dbg",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
                 "FEELPP_COMPONENT": "pyfeelpp-all"
             }
         },
@@ -138,6 +165,16 @@
             }
         },
         {
+            "name": "benchmarks",
+            "inherits": "default",
+            "displayName": "benchmarks",
+            "description": "Build only the Feel++ benchmarks Component",
+            "binaryDir": "${sourceDir}/build/benchmarks",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "benchmarks"
+            }
+        },
+        {
             "name": "windows-only",
             "inherits": "default",
             "displayName": "Windows-only configuration",
@@ -146,6 +183,16 @@
                 "type": "equals",
                 "lhs": "${hostSystemName}",
                 "rhs": "Windows"
+            }
+        },
+        {
+            "name": "doxygen",
+            "inherits": "default",
+            "displayName": "doxygen",
+            "description": "Build Feel++ doxygen documentation",
+            "binaryDir": "${sourceDir}/build/doxygen",
+            "cacheVariables": {
+                "FEELPP_ENABLE_DOXYGEN": "ON"
             }
         }
     ],
@@ -158,7 +205,12 @@
         {
             "name": "dbg",
             "configurePreset": "dbg",
-            "jobs": 10
+            "jobs": 10,
+            "targets": [
+                "feelpp",
+                "pyfeelpp",
+                "install"
+            ]
         },
         {
             "name": "feelpp",
@@ -173,7 +225,13 @@
         {
             "name": "mor",
             "inherits": "default",
-            "configurePreset": "mor"
+            "configurePreset": "mor",
+            "targets": [
+                "feelpp_mor",
+                "pyfeelppmor",
+                "feelpp_mor_apps",
+                "install"
+            ]
         },
         {
             "name": "pyfeelpp",
@@ -181,19 +239,30 @@
             "configurePreset": "pyfeelpp"
         },
         {
-            "name": "pyfeelpp-toolboxes",
-            "inherits": "default",
-            "configurePreset": "pyfeelpp-toolboxes"
-        },
-        {
-            "name": "pyfeelpp-mor",
-            "inherits": "default",
-            "configurePreset": "pyfeelpp-mor"
-        },
-        {
             "name": "pyfeelpp-all",
             "inherits": "default",
-            "configurePreset": "pyfeelpp-all"
+            "configurePreset": "pyfeelpp-all",
+            "targets": [
+                "pyfeelpp",
+                "pyfeelpp-toolboxes",
+                "pyfeelpp-mor",
+                "all",
+                "install"
+            ]
+        },
+        {
+            "name": "pyfeelpp-all-dbg",
+            "inherits": "default",
+            "configurePreset": "pyfeelpp-all-dbg",
+            "targets": [
+                "all",
+                "install"
+            ]
+        },
+        {
+            "name": "doxygen",
+            "configurePreset": "doxygen",
+            "targets": ["doxygen"]
         }
     ],
     "testPresets": [

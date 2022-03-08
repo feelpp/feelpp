@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-01-31
  */
-#ifndef __OperatorLagrangeP1_H
-#define __OperatorLagrangeP1_H 1
+#ifndef FEELPP_DISCR_OPERATORLAGRANGEP1_H
+#define FEELPP_DISCR_OPERATORLAGRANGEP1_H 1
 
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelpoly/fekete.hpp>
@@ -815,45 +815,19 @@ opLagrangeP1_impl( std::shared_ptr<space_type> const& Xh,
     return std::shared_ptr<OperatorLagrangeP1<space_type> >( new OperatorLagrangeP1<space_type>( Xh,backend,pathMeshLagP1,prefix,rebuild,parallel,meshUpdate ) );
 }
 
-
-template<typename Args>
-struct compute_opLagrangeP1_return
+template <typename ... Ts>
+auto lagrangeP1( Ts && ... v )
 {
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
-    typedef std::shared_ptr<OperatorLagrangeP1<space_type> > type;
-};
-
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_opLagrangeP1_return<Args>::type ), // 1. return type
-    lagrangeP1,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( space,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    ) // required
-    ( optional
-      ( backend,    *, Backend<typename compute_opLagrangeP1_return<Args>::space_type::value_type>::build( soption( _name="backend" ) ) )
-      ( path,       *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
-      ( prefix,     *( boost::is_convertible<mpl::_,std::string> ), std::string("") )
-      ( rebuild,    *( boost::is_integral<mpl::_> ), 1 )
-      ( parallel,   *( boost::is_integral<mpl::_> ), 1 )
-      ( update,     *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
-    ) // optionnal
-)
-{
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && space = args.get(_space);
+    auto && backend = args.get_else_invocable(_backend, [](){ return Feel::backend(); } );
+    std::string const& path = args.get_else(_path,".");
+    std::string const& prefix = args.get_else(_prefix,"");
+    bool rebuild = args.get_else(_rebuild, true );
+    bool parallel = args.get_else(_parallel, true );
+    size_type update = args.get_else(_update, /*MESH_RENUMBER|*/MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     return opLagrangeP1_impl(space,backend,path,prefix,rebuild,parallel,update);
 }
-
-
-
-
-
-
-
-
 
 
 } // Feel
