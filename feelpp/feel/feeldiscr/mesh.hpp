@@ -747,29 +747,98 @@ class Mesh
     void updateMeshFragmentation()
         {
             using _marker_element_type = typename element_type::marker_type;
-            std::set<_marker_element_type> collectMarkerIds;
+
+            std::array<std::set<_marker_element_type>,nDim+1> collectMarkerIds;
+            std::vector<ElementsType> ets(collectMarkerIds.size());
             _marker_element_type emptyMarker;
-            auto it = this->beginOrderedElement();
-            auto en = this->endOrderedElement();
-            for ( ; it != en; ++it )
+
+            if constexpr ( nDim >= 1 )
             {
-                auto const& elt = unwrap_ref( *it );
-                if ( elt.isGhostCell() )
-                    continue;
-                _marker_element_type const& eltMarkers = elt.hasMarker()? elt.marker() : emptyMarker;
-                collectMarkerIds.insert( eltMarkers );
+                auto & collectEltMarkerIds = collectMarkerIds[0];
+                ets[0] = ElementsType::MESH_ELEMENTS;
+                auto it = this->beginOrderedElement();
+                auto en = this->endOrderedElement();
+                for ( ; it != en; ++it )
+                {
+                    auto const& elt = unwrap_ref( *it );
+#if 0
+                    if ( elt.isGhostCell() )
+                        continue;
+#endif
+                    _marker_element_type const& eltMarkers = elt.hasMarker()? elt.marker() : emptyMarker;
+                    collectMarkerIds[0].insert( eltMarkers );
+                }
             }
 
-            mpi::all_reduce( MeshBase<>::worldComm().localComm(), mpi::inplace( collectMarkerIds ), UpdateSetForAllReduce<std::set<_marker_element_type>>() );
+            if constexpr ( nDim >= 2 )
+            {
+                auto & collectFaceMarkerIds = collectMarkerIds[1];
+                ets[1] = ElementsType::MESH_FACES;
+                auto itf = this->beginOrderedFace();
+                auto enf = this->endOrderedFace();
+                for ( ; itf != enf; ++itf )
+                {
+                    auto const& face = unwrap_ref( *itf );
+#if 0
+                    if ( face.isGhostCell() )
+                        continue;
+#endif
+                    _marker_element_type const& faceMarkers = face.hasMarker()? face.marker() : emptyMarker;
+                    collectFaceMarkerIds.insert( faceMarkers );
+                }
+            }
 
-            M_meshFragmentationByMarker.clear();
-            int fragmentId = 0;
-            for ( _marker_element_type const& mIds : collectMarkerIds )
-                M_meshFragmentationByMarker.emplace( fragmentId++, mIds );
+            if constexpr ( nDim >= 3 )
+            {
+                auto & collectEdgeMarkerIds = collectMarkerIds[2];
+                ets[2] = ElementsType::MESH_EDGES;
+                auto ited = this->beginOrderedEdge();
+                auto ened = this->endOrderedEdge();
+                for ( ; ited != ened; ++ited )
+                {
+                    auto const& edge = unwrap_ref( *ited );
+#if 0
+                    if ( edge.isGhostCell() )
+                        continue;
+#endif
+                    _marker_element_type const& edgeMarkers = edge.hasMarker()? edge.marker() : emptyMarker;
+                    collectEdgeMarkerIds.insert( edgeMarkers );
+                }
+            }
+
+            auto & collectPointMarkerIds = collectMarkerIds[nDim];
+            ets[nDim] = ElementsType::MESH_POINTS;
+            auto itp = this->beginOrderedPoint();
+            auto enp = this->endOrderedPoint();
+            for ( ; itp != enp; ++itp )
+            {
+                auto const& point = unwrap_ref( *itp );
+#if 0
+                if ( point.isGhostCell() )
+                    continue;
+#endif
+                _marker_element_type const& pointMarkers = point.hasMarker()? point.marker() : emptyMarker;
+                collectPointMarkerIds.insert( pointMarkers );
+            }
+
+            mpi::all_reduce( MeshBase<>::worldComm().localComm(), mpi::inplace( collectMarkerIds.data() ), collectMarkerIds.size(), UpdateSetForAllReduce<std::set<_marker_element_type>>() );
+
+            for (int cd=0;cd<ets.size();++cd )
+            {
+                ElementsType et = ets[cd];
+                M_meshFragmentationByMarker[et].clear();
+                auto & mfbym = M_meshFragmentationByMarker[et];
+                int fragmentId = 0;
+                for ( _marker_element_type const& mIds : collectMarkerIds[cd] )
+                    mfbym.emplace( fragmentId++, mIds );
+            }
         }
 
-    //! return mesg fragmentation : mapping fragment id to elements marker ids
-    std::map<int,typename element_type::marker_type> const& meshFragmentationByMarker() const { return M_meshFragmentationByMarker; }
+    //! return mesh fragmentation : mapping fragment id to elements marker ids
+    std::map<int,typename element_type::marker_type> const& meshFragmentationByMarker( ElementsType et = ElementsType::MESH_ELEMENTS ) const { return M_meshFragmentationByMarker.find( et )->second; }
+
+    //! return mesh fragmentation : mapping fragment id to elements marker ids for all entities
+    std::map<ElementsType, std::map<int,typename element_type::marker_type>> const& meshFragmentationByMarkerByEntity() const { return M_meshFragmentationByMarker; }
 
     //! !
     //! ! @return the topological dimension
@@ -1712,8 +1781,8 @@ public:
 
   private:
 
-    // fragment id to elements marker ids
-    std::map<int,typename element_type::marker_type> M_meshFragmentationByMarker;
+    // entity type -> ( fragment id to elements marker ids )
+    std::map<ElementsType, std::map<int,typename element_type::marker_type>> M_meshFragmentationByMarker;
 
     //! ! communicator
     size_type M_numGlobalElements, M_numGlobalFaces, M_numGlobalEdges, M_numGlobalPoints, M_numGlobalVertices;
