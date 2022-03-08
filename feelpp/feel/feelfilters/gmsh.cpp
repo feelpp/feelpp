@@ -88,7 +88,6 @@ void PrintParserSymbols(bool help, std::vector<std::string> &vec);
 
 namespace Feel
 {
-namespace fs = boost::filesystem;
 
 
 #if !defined( FEELPP_HAS_GMSH_API )

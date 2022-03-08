@@ -4159,14 +4159,14 @@ public:
 
                 if ( typeUsed == "binary" )
                 {
-                    fs::ofstream ofs( p );
+                    std::ofstream ofs( p );
                     boost::archive::binary_oarchive oa( ofs );
                     oa << *this;
                 }
 
                 else if ( typeUsed == "text" )
                 {
-                    fs::ofstream ofs( p );
+                    std::ofstream ofs( p );
                     boost::archive::text_oarchive oa( ofs );
                     oa << *this;
                 }
@@ -4262,7 +4262,7 @@ public:
 
             if ( typeUsed == "binary" || typeUsed == "text" || typeUsed == "xml" )
             {
-                fs::ifstream ifs( p );
+                std::ifstream ifs( p );
                 if ( typeUsed == "binary" )
                 {
                     boost::archive::binary_iarchive ia( ifs );

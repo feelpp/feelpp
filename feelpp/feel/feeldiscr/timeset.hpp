@@ -75,7 +75,6 @@
 
 namespace Feel
 {
-//namespace fs = boost::filesystem;
 
 enum
 {
@@ -1521,7 +1520,7 @@ public:
 
     void load( std::string const& _nameFile, Real __time )
     {
-        fs::ifstream ifs( _nameFile );
+        std::ifstream ifs( _nameFile );
         // load data from archive
         boost::archive::text_iarchive ia( ifs );
         ia >> *this;
@@ -1533,7 +1532,7 @@ public:
     {
         if ( worldComm.isMasterRank() )
         {
-            fs::ofstream ofs( _nameFile );
+            std::ofstream ofs( _nameFile );
             // save data from archive
             boost::archive::text_oarchive oa( ofs );
             oa << *this;

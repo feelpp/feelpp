@@ -233,7 +233,9 @@ ModelBaseUpload::uploadPreProcess( std::string const& dataPath,
 
     fs::path folder = fs::path( relDataPath ).parent_path();
 
-    std::time_t dataLWT = fs::last_write_time( dataFsPath );
+    //std::time_t dataLWT = fs::last_write_time( dataFsPath );
+    auto dataLastWriteTimePoint = fs::last_write_time( dataFsPath );
+    std::time_t dataLWT = decltype(dataLastWriteTimePoint)::clock::to_time_t( dataLastWriteTimePoint );
 
     std::string parentId;
     auto itFindFolder = M_treeDataStructure.find( folder.string() );
@@ -245,7 +247,7 @@ ModelBaseUpload::uploadPreProcess( std::string const& dataPath,
         if ( itFindFile != filesInFolder.end() )
         {
             auto const& fileInfo = itFindFile->second;
-            if ( fileInfo.second == fs::last_write_time( dataFsPath ) )
+            if ( fileInfo.second == dataLWT )
                 return;
             else
                 resReplaceFile.push_back( std::make_tuple(dataPath, dataLWT, folder.string(), fileInfo.first) );

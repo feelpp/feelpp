@@ -105,7 +105,7 @@ gmsh_ptrtype geo( Ts && ... v )
                                          std::cout << "File : " << file_path << " doesn't exist or is not a regular file" << std::endl;
 
                                      else if ( !fs::exists( cp / _filename )  )
-                                         fs::copy_file( file_path, fs::path( _filename ), fs::copy_option::none );
+                                         fs::copy_file( file_path, fs::path( _filename ), fs::copy_options::none );
 
                                  }
 

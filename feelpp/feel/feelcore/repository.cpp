@@ -56,9 +56,9 @@ fs::path findHome()
 std::optional<fs::path> findGitDirectory( fs::path p )
 {
     //Feel::cout << "path:"  << p << " parent: " << p.parent_path() << std::endl;
-    if ( fs::exists( p/".git" ) && ( (fs::status(p).permissions() & fs::perms::owner_all) != fs::perms::no_perms ) )
+    if ( fs::exists( p/".git" ) && ( (fs::status(p).permissions() & fs::perms::owner_all) != fs::perms::none ) )
         return p;
-    else if ( !p.parent_path().empty() && (fs::status(p.parent_path()).permissions() & fs::perms::owner_all) != fs::perms::no_perms )
+    else if ( !p.parent_path().empty() && (fs::status(p.parent_path()).permissions() & fs::perms::owner_all) != fs::perms::none )
         return findGitDirectory( p.parent_path() );
     else 
         return {};

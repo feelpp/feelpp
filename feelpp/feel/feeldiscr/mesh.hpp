@@ -1297,7 +1297,7 @@ public:
         std::ostringstream os1;
         os1 << name << sep << suffix << "-" << MeshBase<>::worldComm().globalSize() << "." << MeshBase<>::worldComm().globalRank() << ".fdb";
         fs::path p = fs::path( path ) / os1.str();
-        fs::ofstream ofs( p );
+        std::ofstream ofs( p );
 
         if ( type == "binary" )
         {
@@ -1355,7 +1355,7 @@ public:
             return false;
         }
 
-        fs::ifstream ifs( p );
+        std::ifstream ifs( p );
 
         if ( type == "binary" )
         {

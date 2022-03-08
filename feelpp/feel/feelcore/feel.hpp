@@ -151,7 +151,7 @@
 namespace Feel
 {
 namespace assign = boost::assign;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 namespace mpl = boost::mpl;
 namespace lambda = boost::lambda;
 namespace po = boost::program_options;
