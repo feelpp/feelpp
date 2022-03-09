@@ -306,6 +306,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("SolidMechanics","initMesh", "start" );
     this->timerTool("Constructor").start();
 
+    if ( auto ptMeshes = this->modelProperties().pTree().get_child_optional("Meshes") )
+        super_type::super_model_meshes_type::setup( *ptMeshes, {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
@@ -654,8 +656,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
     if ( this->hasSolidEquationStandard() )
     {
-        if ( !this->mesh() )
-            this->initMesh();
+        //if ( !this->mesh() )
+        this->initMesh();
 
         this->materialsProperties()->addMesh( this->mesh() );
 
