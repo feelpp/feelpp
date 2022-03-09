@@ -35,12 +35,18 @@
 namespace Feel
 {
 enum class Location {
-    unknown=0,
-    global=10,
-    local,
-    git,
-    given
+    unknown=0, ///! unknown directory
+    global=10, ///! global repository
+    relative, ///! relative to current directory
+    absolute, ///! absolute directory given 
+    git ///! relative to git repository
 };
+// map TaskState values to JSON as strings
+NLOHMANN_JSON_SERIALIZE_ENUM( Location, { { Location::unknown, nullptr },
+                                          { Location::global, "global" },
+                                          { Location::relative, "relative" },
+                                          { Location::absolute, "absolute" },
+                                          { Location::git, "git" } } )
 /**
  * @brief get the location strings assocation to enum Location
  * 
@@ -51,9 +57,9 @@ inline const std::map<Location, std::string> &location_strings()
     static const std::map<Location, std::string> location_strings = {
         {Location::unknown, ""},
         {Location::global, "global"},
-        {Location::local, "local"},
+        {Location::relative, "relative"},
+        {Location::absolute, "absolute"},
         {Location::git, "git"},
-        {Location::given, "given"}
     };
     return location_strings;
 }
@@ -84,26 +90,54 @@ inline Location location(const std::string &location_string) noexcept
     if(location_string.size() < 3)
       return Location::unknown;
     if ( location_string  == "global" ) return Location::global;
-    if ( location_string  == "local" ) return Location::local;
+    if ( location_string  == "relative" ) return Location::relative;
+    if ( location_string  == "absolute" ) return Location::absolute;
     if ( location_string  == "git" ) return Location::git;
-    if ( location_string  == "given" ) return Location::given;
     return Location::unknown;
-}
+};
+struct GithubUser
+{
+    GithubUser();
+    bool update();
+    std::optional<std::string> login;
+    std::optional<std::string> name;
+    std::optional<std::string> email;
+    std::optional<std::string> company;
+    std::optional<std::string> location;
+    std::optional<std::string> html_url;
+    std::optional<std::string> blog;
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE( GithubUser, login, name, email, company, location, html_url, blog )
+};
 /**
- * @brief data structure to handle repository of results
+ * @ structure to handle repository of results
  * 
  */
 class Repository
 {
 
 public:
+    struct Owner {
+        std::string name = {};
+        std::string email = {};
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(Owner,name,email)
+    };
     struct Config {
-        Config() = default;
-        Config( fs::path d, Location l): directory(d), location(l) {};
-        Config( fs::path d, Location l, nl::json dat ): directory(d), location(l), data(dat) {};
+        Config();
+        Config( nl::json const& j );
+        Config( nl::json && j );
+        Config( fs::path d, Location l);
+        Config( fs::path d, Location l, nl::json const& dat );
+        Owner owner;
+        fs::path feelppdb = "feelppdb";
+        Location location = Location::global;
+        fs::path global_root;
         fs::path directory;
-        Location location =  Location::global;
-        nl::json data;
+        fs::path exprs = "exprs";
+        fs::path logs = "logs";
+        fs::path geos = "geo";
+        bool append_date = false;
+        bool append_np = true;
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE( Config, owner, feelppdb, location, global_root, directory, exprs, logs, geos, append_date, append_np )
     };
 
     Repository() = default;
@@ -113,24 +147,47 @@ public:
      * @brief configure the repository directories based on @p Config
      * 
      */
-    void configure();
-    
+    Repository& configure();
+
+    /**
+     * @brief configure for a json configuration
+     *
+     * @param j json file to configure the repo
+     */
+    Repository& configure( nl::json const& j )
+    {
+        config_ = j.get<Config>();
+        return configure();
+    }
+    /**
+     * @brief configure for a given directory
+     *
+     * @param d directory path
+     * @param l type of location 
+     */
+    Repository& configure( fs::path const& d, Location const& l )
+    {
+        config_.directory = d;
+        config_.location = l;
+        return configure();
+    }
+
     /**
      * @brief configure for a given directory
      * 
      * @param d directory path
      */
-    void configure( fs::path const& d ) { config_.directory = d; configure(); }
+    Repository& configure( fs::path const& d ) { config_.directory = d; return configure(); }
 
     /**
-     * @return get the root of the repository
+     * @return get the root of the repository where the results will be stored
      */
     fs::path const& root()  const { return root_; }
 
     /**
-     * @return get the global root repository
+     * @return get the global root repository associated to the global location
      */
-    fs::path const& globalRoot()  const { return global_root_; }
+    fs::path const& globalRoot()  const { return config_.global_root; }
 
     /**
      * @brief get the geo directory
@@ -147,6 +204,14 @@ public:
      * @return get the exprs directory of the repository
      */
     fs::path const& exprs()  const { return exprs_; }
+
+    /**
+     * @brief get the logs directory
+     * The logs directory contains feelpp apps log files
+     *
+     * @return get the logs directory of the repository
+     */
+    fs::path const& logs() const { return logs_; }
 
     /**
      * @brief the result repository absolute directory 
@@ -170,10 +235,16 @@ public:
     fs::path relativeDirectory() const;
 
     /**
-     * 
+     *
      * @return true if repository is local, false otherwise
      */
-    bool isLocal() const { return config_.location == Location::local; }
+    bool isLocal() const { return config_.location == Location::relative; }
+
+    /**
+     *
+     * @return true if repository is local, false otherwise
+     */
+    bool isRelative() const { return config_.location == Location::relative; }
 
     /**
      * 
@@ -182,42 +253,58 @@ public:
     bool isGlobal() const { return config_.location == Location::global; }
 
     /**
+     *
+     * @return true if repository is absolute, false otherwise
+     */
+    bool isAbsolute() const { return config_.location == Location::absolute; }
+
+    /**
      * 
      * @return true if repository is relative to a git repository, false otherwise
      */
     bool isGit() const { return config_.location == Location::git; }
 
     /**
-     * if Config.directory is absolute, then the repository is considered given
-     * @return true if repository is given, false otherwise
-     */
-    bool isGiven() const { return config_.location == Location::given; }
-
-    /**
      * @brief the user name
      * 
      * @return std::string 
      */
-    std::string userName() const { return ( config_.data.contains("user") && config_.data["user"].contains("name") )?config_.data["user"]["name"].get<std::string>():""; }
+    std::string userName() const { return config_.owner.name; }
 
     /**
      * @brief the user email
      * 
      * @return std::string 
      */
-    std::string userEmail() const { return ( config_.data.contains("user") && config_.data["user"].contains("email") )?config_.data["user"]["email"].get<std::string>():""; }
+    std::string userEmail() const { return config_.owner.email; }
 
     /**
-     * @brief data configuration
+     * @brief get the configuration of the repository
      * 
+     * @return Config const& 
      */
-    json const& data() const { return config_.data; }
+    Config const& config() const { return config_; }
+
+    /**
+     * @brief get the configuration of the repository
+     * 
+     * @return Config & 
+     */
+    Config& config() { return config_; }
+
+    /**
+     * @brief change directory to current configuration
+     * 
+     * @return Repository& return the current directory
+     */
+    Repository& cd();
+
 private:
     Config config_;
     fs::path root_;
-    fs::path global_root_;
     fs::path geo_;
     fs::path exprs_;
+    fs::path logs_;
 };
 
 inline Repository::Config globalRepository( std::string reldir, nl::json d = {} )
@@ -226,7 +313,7 @@ inline Repository::Config globalRepository( std::string reldir, nl::json d = {} 
 }
 inline Repository::Config localRepository( std::string reldir, nl::json d = {} )
 {
-    return Repository::Config(fs::path(reldir), Location::local, d );
+    return Repository::Config(fs::path(reldir), Location::relative, d );
 }   
 inline Repository::Config unknownRepository()
 {
