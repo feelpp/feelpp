@@ -41,6 +41,8 @@ private:
     std::string M_filename;
 
     std::map<index_type, std::tuple<std::string,std::vector<std::tuple<index_type,index_type,index_type>>>> M_selGroupMailles;
+
+    std::map<index_type, std::tuple<std::string,std::map<index_type,std::vector<uint16_type>>>> M_selGroupFaces; // marker id -> ( markername, ( eltId -> faces index in elt )
 };
 
 template <typename MeshType>
@@ -184,15 +186,10 @@ ImporterSamcefMesh<MeshType>::visit( mesh_type* mesh )
 
     for ( auto const& [_mId,_gData] : M_selGroupMailles )
     {
-#if 0
-        // case hexa
-        if ( _mId == 34 ) continue; // TO REMOVE
-#endif
-        //if ( _mId > 3 ) continue; // TO REMOVE
         std::string const& markerName = std::get<0>( _gData );
         for ( auto const& _gRange : std::get<1>( _gData ) )
         {
-            std::cout << "marker " << _mId << " range " << std::get<0>( _gRange ) << " , " << std::get<1>( _gRange ) << std::endl;
+            //std::cout << "marker " << _mId << " range " << std::get<0>( _gRange ) << " , " << std::get<1>( _gRange ) << std::endl;
             for ( index_type eId = std::get<0>( _gRange ); eId <= std::get<1>( _gRange ); eId+=std::get<2>( _gRange ) )
             {
                 auto itFindElt = mapSamcefEltIdToFeelElt.find( eId );
@@ -203,6 +200,68 @@ ImporterSamcefMesh<MeshType>::visit( mesh_type* mesh )
         }
         mesh->addMarkerName( markerName, _mId, mesh_type::nDim );
     }
+
+    using face_wrapper_type = boost::reference_wrapper<face_type>;
+    std::unordered_map<std::set<index_type>,face_wrapper_type,Feel::HashTables::HasherContainers<index_type>> mapFacePtIdsToFeelFace;
+    std::vector<index_type> facePtIdsInInElt( element_type::numVertices );
+
+
+    std::vector<uint16_type> samcefFaceIdInEltToFeelFaceIdInElt(element_type::numTopologicalFaces);
+    if ( element_type::is_hypercube )
+    {
+        for ( int k=0;k<element_type::numTopologicalFaces;++k )
+            samcefFaceIdInEltToFeelFaceIdInElt[k] = k;
+    }
+    else if ( element_type::is_simplex )
+    {
+        samcefFaceIdInEltToFeelFaceIdInElt = { 3, 2, 0, 1 };
+    }
+
+    for ( auto const& [_mId,_gData] : M_selGroupFaces )
+    {
+         std::string const& markerName = std::get<0>( _gData );
+         //std::cout << "[FACE marker] id " << _mId << " markerName : " << markerName << " nElt : " << std::get<1>( _gData ).size() << std::endl;
+         for ( auto const& [eltId,faceIds] : std::get<1>( _gData ) )
+         {
+             auto itFindElt = mapSamcefEltIdToFeelElt.find( eltId );
+             CHECK( itFindElt !=mapSamcefEltIdToFeelElt.end() ) << "not find samcef elt id " << eltId;
+             auto & elt = unwrap_ref( itFindElt->second );
+
+             for ( uint16_type faceId : faceIds )
+             {
+                 std::set<index_type> ptIds;
+                 for (int k=0;k<face_type::numVertices;++k )
+                 {
+                     facePtIdsInInElt[k] = elt.f2p( samcefFaceIdInEltToFeelFaceIdInElt[faceId-1], k ); // faceId start to 1 in samcef
+                     ptIds.insert( elt.point( facePtIdsInInElt[k] ).id() );
+                 }
+
+                 auto itFindFace = mapFacePtIdsToFeelFace.find( ptIds );
+                 if ( itFindFace != mapFacePtIdsToFeelFace.end() )
+                 {
+                     unwrap_ref( itFindFace->second ).addMarker( _mId );
+                 }
+                 else
+                 {
+                     face_type f;
+                     f.setId( mesh->numFaces() );
+                     f.setProcessIdInPartition( partId );
+                     f.setProcessId( partId );
+                     for (int k=0;k<face_type::numVertices;++k )
+                     {
+                         point_type & pt = elt.point( facePtIdsInInElt[k] );
+                         f.setPoint( k, pt );
+                     }
+                     f.addMarker( _mId );
+
+                     auto [newFaceIt,isAdded] = mesh->addFace( std::move(f) );
+                     mapFacePtIdsToFeelFace.emplace( ptIds, boost::ref(newFaceIt->second) );
+                 }
+             }
+         }
+         mesh->addMarkerName( markerName, _mId, mesh_type::nDim-1 );
+    }
+
 }
 
 
@@ -304,7 +363,9 @@ ImporterSamcefMesh<MeshType>::readSEL( std::ifstream & __is)
         else if ( nextKeyword.substr(0,4) == "FACE" )
         {
             typeOfGroup = "FACES";
-            __is >> tmpString >> tmpString;
+            //__is >> tmpString >> tmpString;
+            // TODO PEAU
+            std::tie(readedStr,nextKeyword) = this->readNextPart( __is, {"MAILL","MAILLE","NOM"}, commandFinished );
         }
         else if ( nextKeyword.substr(0,5) == "NOEUD" )
         {
@@ -354,7 +415,24 @@ ImporterSamcefMesh<MeshType>::readSEL( std::ifstream & __is)
                     break;
             }
         }
-        else // faces cases
+        else if ( typeOfGroup == "FACES"  ) // faces cases
+        {
+             auto & curGroupFaces = M_selGroupFaces[markerId];
+             std::get<0>( curGroupFaces ) = groupName;
+             while ( true )
+             {
+                  if ( nextKeyword.substr(0,5) == "MAILL" )
+                  {
+                      std::tie(readedStr,nextKeyword) = this->readNextPart( __is, {"MAILL","MAILLE","GROUPE","GROUP"}, commandFinished );
+                      index_type cellId = std::stoi(readedStr[0]);
+                      if (readedStr.at(1) == "FACE")
+                          std::get<1>( curGroupFaces )[cellId].push_back( std::stoi( readedStr.at(2) ) );
+                  }
+                  else if ( nextKeyword.substr(0,5) == "GROUP" || commandFinished )
+                    break;
+             }
+        }
+        else // noeud cases
         {
             std::tie(readedStr,nextKeyword) = this->readNextPart( __is, {"GROUPE","GROUP"}, commandFinished );
         }
