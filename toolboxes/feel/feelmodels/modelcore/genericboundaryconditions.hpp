@@ -205,7 +205,7 @@ public:
             if ( !this->isMethodElimination() )
                 return;
             auto meshMarkersByEntities = Feel::FeelModels::detail::distributeMarkerListOnSubEntity( mesh, M_markers );
-            ComponentType comp = ComponentType::NO_COMPONENT;
+            ComponentType comp = M_comp;
             static const int indexDistrib = Feel::FeelModels::detail::indexInDistributeMarker<ET>();
             auto const& listMarkedEntities = std::get</*0*/indexDistrib >( meshMarkersByEntities );
             if ( listMarkedEntities.empty() )
