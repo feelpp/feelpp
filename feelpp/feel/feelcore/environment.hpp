@@ -32,8 +32,14 @@
 #include <cstdlib>
 #include <memory>
 
+#include <fmt/core.h>
+#include <fmt/format.h>
+
 #include <boost/noncopyable.hpp>
 #include <boost/signals2/signal.hpp>
+
+#include <boost/stacktrace.hpp>
+#include <boost/exception/all.hpp>
 
 #include <boost/format.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
@@ -68,6 +74,7 @@
 #include <feel/feelcore/about.hpp>
 #include <feel/feelcore/termcolor.hpp>
 #include <feel/options.hpp>
+#include <feel/feelcore/repository.hpp>
 
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
@@ -86,6 +93,23 @@ namespace tc = termcolor;
 namespace pt =  boost::property_tree;
 namespace uuids =  boost::uuids;
 
+// boost::error_info typedef that holds the stacktrace:
+using traced = boost::error_info<struct tag_stacktrace, boost::stacktrace::stacktrace>;
+
+/**
+ * @brief helper class for throwing any exception with stacktrace:
+ *
+ * @tparam E exception type
+ * @param e exception thown
+ */
+template <class E>
+void throw_with_trace( const E& e )
+{
+    throw boost::enable_error_info( e )
+        << traced( boost::stacktrace::stacktrace() );
+}
+
+// forward declarationx@
 class TimerTable;
 
 //!
@@ -330,6 +354,14 @@ public:
      */
     static bool finalized();
 
+    /** Determine if the MPI environment has already been aborted.
+     *
+     *  this occurs if MPI_Abort has been called
+     *
+     *  @returns @c true if the Feel++ nvironment has been aborted.
+     */
+    static bool aborted();
+
     /**
      * @return the shared_ptr WorldComm
      */
@@ -525,6 +557,13 @@ public:
     //@{
 
     /**
+     * @brief get the repository info
+     * 
+     * @return Repository& 
+     */
+    static Repository& repository() { return S_repository; }
+
+    /**
      * set the static worldcomm
      */
     static void setWorldComm( WorldComm& worldcomm )
@@ -602,11 +641,12 @@ public:
     {
         auto args = NA::make_arguments( std::forward<Ts>(v)... );
         boost::format directory = args.get(_directory);
+        std::string location_str = args.get_else( _location, "global" );
         std::string const& filename = args.get_else(_filename, "logfile" );
         bool subdir = args.get_else_invocable(_subdir, [](){ return S_vm["npdir"].as<bool>(); } );
         WorldComm const& worldcomm = args.get_else(_worldcomm, Environment::worldComm() );
         bool remove = args.get_else(_remove, false );
-        changeRepositoryImpl( directory, filename, subdir, worldcomm, remove );
+        changeRepositoryImpl( directory, filename, location(location_str), subdir, worldcomm, remove );
     }
 
     //! \return the root repository (default: \c $HOME/feel)
@@ -695,17 +735,18 @@ public:
         std::string const& prefix = args.get_else(_prefix, "" );
         po::variables_map const& vm = args.get_else(_vm, Environment::vm() );
 
-        std::ostringstream os;
+        auto opt = fmt::memory_buffer();
 
         if ( !prefix.empty() )
-            os << prefix << ".";
-
+            fmt::format_to( opt, "{}.",prefix);
         if ( !sub.empty() )
-            os << sub << "-";
-
-        os << name;
-        auto it = vm.find( os.str() );
-        CHECK( it != vm.end() ) << "Invalid option " << os.str() << "\n";
+            fmt::format_to( std::back_inserter( opt ), "{}-",sub);
+        fmt::format_to( std::back_inserter( opt ), "{}",name);
+        std::string optname = fmt::to_string(opt);
+        auto it = vm.find( optname );
+        if ( it == vm.end() )
+            throw_with_trace( std::invalid_argument( fmt::format( "{}:{} invalid or missing option {}", __FILE__, __LINE__, optname ) ) );
+        ///CHECK( it != vm.end() ) << "Invalid option " << os.str() << "\n";
         return *it;
     }
 
@@ -834,7 +875,7 @@ private:
     //! @{
 
     //! change the directory where the results are stored
-    static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np, WorldComm const& worldcomm, bool remove );
+    static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, Location location, bool add_subdir_np, WorldComm const& worldcomm, bool remove );
 
 #if defined ( FEELPP_HAS_PETSC_H )
     FEELPP_NO_EXPORT void initPetsc( int * argc = 0, char *** argv = NULL );
@@ -882,6 +923,7 @@ private:
     static fs::path S_scratchdir;
     static fs::path S_cfgdir;
     static AboutData S_about;
+    static inline bool S_aborted = false;
     static inline bool S_init_python = true;
     static std::shared_ptr<po::command_line_parser> S_commandLineParser;
     static std::vector<std::tuple<std::string,std::istringstream> > S_configFiles;
