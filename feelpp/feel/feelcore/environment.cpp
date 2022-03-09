@@ -57,6 +57,7 @@ extern "C"
 #include <feel/feelinfo.h>
 #include <feel/feelconfig.h>
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/table.hpp>
 
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
@@ -741,7 +742,15 @@ Environment::~Environment()
     if ( boption( _name="display-stats" ) )
         Environment::saveTimers( true );
 
-    double t = toc("env");
+    double t = toc("env",no_display);
+    Table summary;
+    summary.add_row( { S_about.appName() } );
+    summary( 0, 0 ).format().setFontAlign( Font::Align::center );
+    Table data;
+    data.add_row( { "logs", Environment::logsRepository() } );
+    data.add_row( { "results", Environment::appRepository() } );
+    summary.add_row({data});
+    cout << summary << std::endl;
     cout << "[ Stopping Feel++ ] " << tc::green << "application " << S_about.appName()
          << " execution time " << t << "s" << tc::reset << std::endl;
  
@@ -858,7 +867,7 @@ Environment::~Environment()
 #if defined ( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
-    if ( is_petsc_initialized )
+    if ( is_petsc_initialized && !Environment::aborted() )
     {
 #if defined( FEELPP_HAS_SLEPC )
         SlepcFinalize();
@@ -876,7 +885,8 @@ Environment::~Environment()
     S_informationObject.reset();
 
     // make sure everybody is here
-    Environment::worldComm().barrier();
+    if ( !Environment::aborted() )
+        Environment::worldComm().barrier();
     if ( Environment::isMasterRank() && S_vm.count("rm") )
     {
         cout << tc::red << "Removing all files (--rm)  in " << appRepository() << "..." << tc::reset << std::endl;
@@ -888,6 +898,8 @@ Environment::~Environment()
         }
     }
 
+    if ( !Environment::aborted() )
+    {
     // call gmsh::finalize() at the end because if gmsh is compiled with MPI support, the gmsh lib call MPI_Finalize
 #if defined( FEELPP_HAS_GMSH_H )
 #if defined( FEELPP_HAS_GMSH_API )
@@ -896,7 +908,7 @@ Environment::~Environment()
         GmshFinalize();
 #endif
 #endif
-
+    }
 }
 
 
@@ -1598,6 +1610,7 @@ Environment::doOptions( int argc, char** argv,
         LOG( WARNING ) << "Command line or config file option parsing error: " << e.what() << "\n"
                        << "  o faulty option: " << e.get_option_name() << "\n"
                        << "Warning: the .cfg file or some options may not have been read properly\n";
+                       
     }
 
     catch ( boost::program_options::ambiguous_option const& e )
@@ -1623,12 +1636,14 @@ Environment::doOptions( int argc, char** argv,
     // catches program_options exceptions
     catch ( std::exception& e )
     {
-        LOG( WARNING ) << "Application option parsing: unknown option:" << e.what() << " (the .cfg file or some options may not have been read properly)\n";
+        //LOG( WARNING ) << "Application option parsing: unknown option:" << e.what() << " (the .cfg file or some options may not have been read properly)\n";
+        throw;
     }
 
     catch ( ... )
     {
-        LOG( WARNING ) << "Application option parsing: unknown exception triggered  (the .cfg file or some options may not have been read properly)\n";
+        //LOG( WARNING ) << "Application option parsing: unknown exception triggered  (the .cfg file or some options may not have been read properly)\n";
+        throw;
     }
 }
 
@@ -1653,6 +1668,10 @@ Environment::initialized()
     return mpi::environment::initialized() ;
 }
 
+bool Environment::aborted()
+{
+    return S_aborted;
+}
 bool
 Environment::finalized()
 {
@@ -1672,6 +1691,7 @@ Environment::isMainThread()
 void
 Environment::abort( int error_code )
 {
+    S_aborted = true;
     return mpi::environment::abort( error_code );
 }
 
