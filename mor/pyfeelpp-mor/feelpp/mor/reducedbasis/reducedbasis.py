@@ -373,7 +373,9 @@ class reducedbasisOffline(reducedbasis):
         A_tmp = self.assembleA(self.betaA_bar[0])
         AT_tmp = A_tmp.copy()
         AT_tmp.transpose()
-        self.Abar = 0.5*(A_tmp + AT_tmp)
+
+        self.scal = 0.5*(A_tmp + AT_tmp)
+        self.Abar = self.assembleA(self.betaA_bar[0])
 
 
         # KSP to solve
@@ -402,11 +404,15 @@ class reducedbasisOffline(reducedbasis):
 
         E = SLEPc.EPS()
         E.create()
-        E.setOperators(self.Abar)
+        E.setOperators(self.Abar, self.scal)
+
+        # for mubarbar:
+        #   Compute the smallest eignevalue and keep it in memory for online stage TODO
+        #   now it is only made with {mubarbar} = {mubar}
 
         E.setFromOptions()
-        E.setWhichEigenpairs(E.Which.LARGEST_REAL)
-        # E.setDimensions(5)
+        E.setWhichEigenpairs(E.Which.SMALLEST_MAGNITUDE)
+        E.setDimensions(1)
 
         E.solve()
 
@@ -414,24 +420,25 @@ class reducedbasisOffline(reducedbasis):
         if rank == 0:
             print(f"[slepc4py] number of eigenvalues computed : {nCv}")
 
-        alphaMubar = E.getEigenvalue(0).real
+        self.alphaMubar = E.getEigenvalue(0).real
         # alphaMubar = 1
         if rank == 0:
-            print(f"[reducedbasis] Constant of continuity : {alphaMubar}")
+            print(f"[reducedbasis] Constant of continuity : {self.alphaMubar}")
         betaA_bar_np = np.array(self.betaA_bar)
         
         def alphaLB(mu):
             # From a parameter
-            betaMu = self.model.computeBetaQm(self.mu)[0][0]
-            return alphaMubar * np.min( betaMu / betaA_bar_np )
+            betaMu = self.model.computeBetaQm(mu)[0][0]
+            return self.alphaMubar * np.min( betaMu / betaA_bar_np )
 
         def alphaLB_(betaA):
             # From a decomposition
-            return alphaMubar * np.min( betaA / betaA_bar_np )
+            return self.alphaMubar * np.min( betaA / betaA_bar_np )
 
         self.alphaLB = alphaLB
         self.alphaLB_ = alphaLB_
 
+        self.isInitialized = True
 
 
     
@@ -468,8 +475,8 @@ class reducedbasisOffline(reducedbasis):
     """
     Handle Gram-Schmidt orthogonalization
     """   
-    def scalarA(self, u, v):
-        """Return the ernegy scalar product associed to the matrix Abar
+    def scalarX(self, u, v):
+        """Return the ernegy scalar product associed to the prolem
 
         Args:
             u (PETSc.Vec): vector
@@ -478,8 +485,8 @@ class reducedbasisOffline(reducedbasis):
         Returns:
             float: v.T @ A @ u
         """
-        # return v.dot( u )   # v.T @ Abar @ u
-        return v.dot( self.Abar * u )   # v.T @ Abar @ u
+        # return v.dot( u )   # v.T @ scal @ u
+        return v.dot( self.scal * u )   # v.T @ scal @ u
     
     def normA(self, u):
         """Compute the energy norm of the given vector
@@ -490,7 +497,7 @@ class reducedbasisOffline(reducedbasis):
         Returns:
             float: ||u||_X
         """
-        return np.sqrt(self.scalarA(u, u))
+        return np.sqrt(self.scalarX(u, u))
     
     def orthonormalizeZ(self, nb=0):
         """Use Gram-Schmidt algorithm to orthonormalize the reduced basis
@@ -501,7 +508,7 @@ class reducedbasisOffline(reducedbasis):
             s = self.Z[0].duplicate()
             s.set(0)
             for m in range(n):
-                s += self.scalarA(self.Z[n], self.Z[m]) * self.Z[m]
+                s += self.scalarX(self.Z[n], self.Z[m]) * self.Z[m]
             z_tmp = self.Z[n] - s
             self.Z[n] = z_tmp / self.normA(z_tmp)
         # if not (self.test_orth() == np.eye(self.N)).all() and nb < 2:
@@ -607,14 +614,14 @@ class reducedbasisOffline(reducedbasis):
         sc = np.zeros((self.N, self.N))
         for i in range(self.N):
             for j in range(self.N):
-                sc[i,j] = np.round(self.scalarA(self.Z[i], self.Z[j]), decimals=3)
-                if np.round(np.round(self.scalarA(self.Z[i], self.Z[j]), decimals=3)) != [0,1][i==j]:
+                sc[i,j] = np.round(self.scalarX(self.Z[i], self.Z[j]), decimals=3)
+                if np.round(np.round(self.scalarX(self.Z[i], self.Z[j]), decimals=3)) != [0,1][i==j]:
                     return False
         # print("sc",sc)
         # print("TESTORTH",np.linalg.norm(sc - np.eye(self.N)))
         # for i in range(self.N):
         #     for j in range(self.N):
-        #         if np.round(np.round(self.scalarA(self.Z[i], self.Z[j]), decimals=3)) != [0,1][i==j]:
+        #         if np.round(np.round(self.scalarX(self.Z[i], self.Z[j]), decimals=3)) != [0,1][i==j]:
         #             return False
         return True
 
@@ -718,10 +725,10 @@ class reducedbasisOffline(reducedbasis):
         """
         self.Sp = []
         
-        # compute solutions of Abar Sp = Fp
+        # compute solutions of scal * Sp = Fp
         pc = self.ksp.getPC()
         pc.setType(self.PC_TYPE)
-        self.ksp.setOperators(self.Abar)
+        self.ksp.setOperators(self.scal)
 
         for Fp in self.Fq:
             sol = self.Fq[0].duplicate()
@@ -732,7 +739,7 @@ class reducedbasisOffline(reducedbasis):
         # compute matrix of scalar products
         for p,Fp in enumerate(self.Sp):
             for p_,Fp_ in enumerate(self.Sp):
-                self.SS[p,p_] = self.scalarA(Fp, Fp_)
+                self.SS[p,p_] = self.scalarX(Fp, Fp_)
 
     def computeOfflineError(self):
         """Compute offline errors associated to the reduced basis, dependant of N
@@ -741,7 +748,7 @@ class reducedbasisOffline(reducedbasis):
 
         pc = self.ksp.getPC()
         pc.setType(self.PC_TYPE)
-        self.ksp.setOperators(self.Abar)
+        self.ksp.setOperators(self.scal)
         for n, ksi in enumerate(self.Z):
             for q, Aq in enumerate(self.Aq):
                 sol = self.Fq[0].duplicate()
@@ -754,11 +761,11 @@ class reducedbasisOffline(reducedbasis):
         for q in range(self.Qa):
             for n in range(self.N):
                 for p in range(self.Qf):
-                    self.SL[q,p,n] = self.scalarA(self.Sp[p], self.Lnq[n,q])
+                    self.SL[q,p,n] = self.scalarX(self.Sp[p], self.Lnq[n,q])
 
                 for n_ in range(self.N):
                     for q_ in range(self.Qa):
-                        self.LL[q,n,q_,n_] = self.scalarA(self.Lnq[n,q], self.Lnq[n_,q_])
+                        self.LL[q,n,q_,n_] = self.scalarX(self.Lnq[n,q], self.Lnq[n_,q_])
 
     def expandOffline(self):
         """Add errors to values computed in previous steps.
@@ -767,7 +774,7 @@ class reducedbasisOffline(reducedbasis):
         # self.Sp and self.SS are independant of N, so they don't change
         pc = self.ksp.getPC()
         pc.setType(self.PC_TYPE)
-        self.ksp.setOperators(self.Abar)
+        self.ksp.setOperators(self.scal)
 
         self.SL = np.concatenate( ( self.SL, np.zeros( (self.Qa, self.Qf, 1) ) ), axis=2 )
         self.LL = np.concatenate( ( self.LL, np.zeros( (self.Qa, 1, self.Qa, self.N) ) ), axis=1 )
@@ -782,12 +789,12 @@ class reducedbasisOffline(reducedbasis):
 
         for q in range(self.Qa):
             for p in range(self.Qf):
-                self.SL[q,p,-1] = self.scalarA(self.Sp[p], self.Lnq[self.N,q])
+                self.SL[q,p,-1] = self.scalarX(self.Sp[p], self.Lnq[self.N,q])
 
             for n in range(self.N+1):
                 for q_ in range(self.Qa):
-                    self.LL[q,n,q_,-1] = self.scalarA( self.Lnq[n,q], self.Lnq[self.N,q_] )
-                    self.LL[q,-1,q_,n] = self.scalarA( self.Lnq[self.N,q], self.Lnq[n,q_] )
+                    self.LL[q,n,q_,-1] = self.scalarX( self.Lnq[n,q], self.Lnq[self.N,q_] )
+                    self.LL[q,-1,q_,n] = self.scalarX( self.Lnq[self.N,q], self.Lnq[n,q_] )
 
 
 
@@ -821,7 +828,7 @@ class reducedbasisOffline(reducedbasis):
 
         pc = self.ksp.getPC()
         pc.setType(self.PC_TYPE)
-        self.ksp.setOperators(self.Abar)
+        self.ksp.setOperators(self.scal)
         self.reshist = {}
         
         E = self.Fq[0].duplicate()
@@ -945,9 +952,13 @@ class reducedbasisOffline(reducedbasis):
 
                 self.N += 1
 
-                self.generateANq()
-                self.generateLNp()
-                self.generateFNp()
+                # self.generateANq()
+                # self.generateFNp()
+                # self.generateLNp()
+                self.expandANq()
+                self.expandFNp()
+                self.expandLNp()
+
 
             mu_max = 0
             i_max = 0
@@ -959,7 +970,7 @@ class reducedbasisOffline(reducedbasis):
             for i,mu_tmp in enumerate(tqdm(Dmu, desc=f"[reducedBasis] Greedy, step {self.N}", ascii=False, ncols=120)):
                 beta = betas[mu_tmp]
                 ANmu = self.assembleAN(beta[0][0])
-                uN,_ = self.getSolutions(mu_tmp)
+                uN,_ = self.getSolutions(mu_tmp, beta=beta)
                 norm_uMu = np.sqrt( uN.T @ ANmu @ uN )
 
                 precalc = {"betaA":beta[0][0], "betaF":beta[1][0][0], "uN":uN}
