@@ -2243,7 +2243,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                                 {
                                     auto faceIt = mesh->faceIterator( itFindGmhsId->second );
                                     CHECK( faceIt != mesh->endFace() ) << "face not found";
-                                    faceIt->second.addMarkers( gmshEltToUpdate.physical );
+                                    faceIt->second.addMarker( gmshEltToUpdate.physical );
                                 }
                                 else if ( mesh_type::nDim == 3 && entityDim == ( mesh_type::nDim - 2 ) )
                                 {
@@ -2251,14 +2251,14 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                                     {
                                         auto edgeIt = mesh->edgeIterator( itFindGmhsId->second );
                                         CHECK( edgeIt != mesh->endEdge() ) << "face not found";
-                                        edgeIt->second.addMarkers( gmshEltToUpdate.physical );
+                                        edgeIt->second.addMarker( gmshEltToUpdate.physical );
                                     }
                                 }
                                 else if ( entityDim == 0 )
                                 {
                                     auto pointIt = mesh->pointIterator( itFindGmhsId->second );
                                     CHECK( pointIt != mesh->endPoint() ) << "point not found";
-                                    pointIt->second.addMarkers( gmshEltToUpdate.physical );
+                                    pointIt->second.addMarker( gmshEltToUpdate.physical );
                                 }
                             }
                             useThisEntity = false;
@@ -2605,7 +2605,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement con
     auto & pt = pit->second;
 
     if ( !__e.physical.empty() )
-        pt.addMarkers( __e.physical );
+        pt.addMarker( __e.physical );
     if ( false )
         pt.setMarker2( __e.elementary );
     //pt.setProcessId( __e.partition );
@@ -2631,7 +2631,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     //e.setWorldComm(this->worldComm());
     e.setProcessIdInPartition( this->worldComm().localRank() );
     if ( !__e.physical.empty() )
-        e.addMarkers( __e.physical );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
@@ -2668,7 +2668,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setId( mesh->numFaces() );
     if ( !__e.physical.empty() )
-        e.addMarkers( __e.physical );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
@@ -2706,7 +2706,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setId( mesh->numEdges() );
     if ( !__e.physical.empty() )
-        e.addMarkers( __e.physical );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     // warning : process id is define after (when call mesh->updateForUse()
@@ -2761,7 +2761,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setId( ( false )? __e.num : mesh->elements().size() );
     e.setProcessIdInPartition( this->worldComm().localRank() );
     if ( !__e.physical.empty() )
-        e.addMarkers( __e.physical );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
@@ -2797,7 +2797,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setId( mesh->numFaces() );
     if ( !__e.physical.empty() )
-        e.addMarkers( __e.physical );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
@@ -2851,7 +2851,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
     e.setProcessIdInPartition( this->worldComm().localRank() );
     GmshOrdering<element_type> ordering;
     if ( !__e.physical.empty() )
-        e.addMarkers( __e.physical );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
