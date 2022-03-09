@@ -508,12 +508,12 @@ updateGrad( geometric_mapping_context_type* thegmc, rank_t<1> )
             if constexpr ( is_hdiv_conforming )
             {
                 auto v = (*M_gradphi)[i][q].contract(B,dims1);
-                gradiq = K.contract(v,dims2)/thegmc->J(q);
+                gradiq.reshape( tensorGradShapeAfterContract ) = K.contract(v,dims2)/thegmc->J(q);
             }
             else if constexpr ( is_hcurl_conforming )
             {
                 //auto v = (*M_gradphi)[i][q].contract(B,dims1);
-                gradiq = B.contract((*M_gradphi)[i][q].contract(B,dims1),dims2);
+                gradiq.reshape( tensorGradShapeAfterContract ) = B.contract((*M_gradphi)[i][q].contract(B,dims1),dims2);
             }
             else
             {
