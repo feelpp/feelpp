@@ -28,8 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-09-03
  */
-#ifndef FEELPP_ELEMENTS_HPP
-#define FEELPP_ELEMENTS_HPP 1
+#ifndef FEELPP_MESH_ELEMENTS_HPP
+#define FEELPP_MESH_ELEMENTS_HPP
 
 #include <unordered_map>
 
@@ -458,7 +458,7 @@ public:
                 auto const& elt = unwrap_ref( *it );
                 if ( elt.processId() != part )
                     continue;
-                if ( !elt.hasMarker( markerType ) )
+                if ( !elt.hasMarkerType( markerType ) )
                     continue;
                 if ( elt.marker( markerType ).isOff() )
                     continue;
@@ -483,7 +483,7 @@ public:
                 auto const& elt = unwrap_ref( *it );
                 if ( elt.processId() != part )
                     continue;
-                if ( !elt.hasMarker( markerType ) )
+                if ( !elt.hasMarkerType( markerType ) )
                     continue;
                 if ( !elt.marker( markerType ).hasOneOf( markerFlags ) )
                     continue;
@@ -568,7 +568,7 @@ public:
                     if ( isActiveElt )
                         continue;
 
-                if ( !elt.hasMarker( markerType ) )
+                if ( !elt.hasMarkerType( markerType ) )
                     continue;
                 if ( elt.marker( markerType ).isOff() )
                     continue;
@@ -885,20 +885,15 @@ public:
 
             auto & eltModified = this->elementIterator( elt )->second;
 
-            //std::map<uint16_type,std::set<typename element_type::marker_type::value_type>> newEltMarkers;
             for (uint16_type f=0;f<elt.numTopologicalFaces; ++f)
             {
                 auto const& theface = elt.face(f);
                 for ( uint16_type const& markerType : markersType )
                 {
-                    if ( theface.hasMarker( markerType ) )
-                        eltModified.addMarker( theface.marker( markerType ) );
-                    //newEltMarkers[ markerType ].insert( theface.marker( markerType ).begin();
+                    if ( theface.hasMarkerType( markerType ) )
+                        eltModified.addMarker( markerType, theface.marker( markerType ) );
                 }
             }
-            //for ( auto const& newMark : newEltMarkers )
-            //  eltModified.setMarker( newMark.first, newMark.second );
-
         }
     }
     void updateMarkersFromFaces()
